@@ -36,7 +36,7 @@ review_on:
 
 # Use cases: Platform and Foundation (system use cases)
 
-Product meaning: Platform has no product bounded context (`PFREQ001`). Its meaning comes from [system overview](../../architecture/system-overview.md), [events, realtime and delivery boundary](../../architecture/events-realtime-and-delivery-boundary.md), [data ownership and consistency](../../architecture/data-ownership-and-consistency.md) and [platform and messaging](../../../backend/docs/architecture/platform-and-messaging.md). Team: [platform-foundation](../teams/platform-foundation.md). Execution packs: [spec](../executions/platform-foundation/platform-foundation.spec.md), [tests](../executions/platform-foundation/platform-foundation.tests.md), [certification](../executions/platform-foundation/platform-foundation.certification.md), and the backend closure [spec](../executions/backend-team-architecture-closure/backend-team-architecture-closure.spec.md) and [certification](../executions/backend-team-architecture-closure/backend-team-architecture-closure.certification.md). Context code: PLT. Requirement ids are `PFREQ001` to `PFREQ128`; message rules are the `BE-PLT` rules of the platform doc, written `BE-PLT-0nn`.
+Product meaning: Platform has no product bounded context (`PFREQ001`). Its meaning comes from [system overview](../../architecture/system-overview.md), [events, realtime and delivery boundary](../../architecture/events-realtime-and-delivery-boundary.md), [data ownership and consistency](../../architecture/data-ownership-and-consistency.md) and [platform and messaging](../../../backend/docs/architecture/platform-and-messaging.md). Team: [platform-foundation](../teams/platform-foundation.md). Execution packs: spec (removed; see git history), tests (removed; see git history), certification (removed; see git history), and the backend closure spec (removed; see git history) and certification (removed; see git history). Context code: PLT. Requirement ids are `PFREQ001` to `PFREQ128`; message rules are the `BE-PLT` rules of the platform doc, written `BE-PLT-0nn`.
 
 Actors here are the system, operators, background workers and the frontend runtime. A product user appears only where a mechanism is visible to them (sign-in, a stale screen).
 
@@ -992,16 +992,16 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 
 ### UC-PLT-P01 Run code checks before every push
 - Capability: P, PF-16 CI, container, security and packaging evidence
-- Actors and permission: developer and agent through the pre-push hook.
-- Preconditions: hook installed (`make hooks-install`).
+- Actors and permission: removed in #225 (the pre-push hook and `scripts/pre-push.sh` no longer exist).
+- Preconditions: removed in #225 (`make hooks-install` no longer exists).
 - Input: pushed commits.
 - Output: the touched stacks' CI code checks run locally; a failure blocks the push.
-- Main flow: `scripts/pre-push.sh` runs checks per touched folder.
+- Main flow: removed in #225; CI is the only enforced check.
 - No-op / rejection / concurrency / retry: untouched stacks are skipped.
 - UI states: n/a.
 - Rules: PFREQ114.
 - Acceptance: Given a failing frontend check, When pushing, Then the push is blocked.
-- Evidence: BE n/a · FE n/a · Design n/a · Tests `scripts/pre-push.sh` · Real e2e none
+- Evidence: removed in #225 · Real e2e none
 - State: IMPLEMENTING — local only; the exact-head CI result is separate evidence.
 
 ### UC-PLT-P02 Produce container and packaging evidence

@@ -28,7 +28,7 @@ review_on:
 
 # Use cases: Analytics and Reporting
 
-Product meaning: [analytics](../../product/analytics.md). Team: [analytics-reporting](../teams/analytics-reporting.md). Execution pack: [spec](../executions/analytics-reporting/analytics-reporting.spec.md), [tests](../executions/analytics-reporting/analytics-reporting.tests.md), [certification](../executions/analytics-reporting/analytics-reporting.certification.md). Context code: ANA. Requirement ids cited below are `ARREQ001` to `ARREQ128` of the spec and its gap ids `AR-GAP-01` to `AR-GAP-18`. Rule ids are the `ANA` rules of the product doc, written as `ANA` plus a number in the Rules line of each use case.
+Product meaning: [analytics](../../product/analytics.md). Team: [analytics-reporting](../teams/analytics-reporting.md). Execution pack: spec (removed; see git history), tests (removed; see git history), certification (removed; see git history). Context code: ANA. Requirement ids cited below are `ARREQ001` to `ARREQ128` of the spec and its gap ids `AR-GAP-01` to `AR-GAP-18`. Rule ids are the `ANA` rules of the product doc, written as `ANA` plus a number in the Rules line of each use case.
 
 # 1. Assessment
 

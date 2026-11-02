@@ -3,7 +3,7 @@ namespace Notrelix.Architecture.Tests.WorkManagement;
 
 /// <summary>
 /// WM-V3-INV-001 — executable P3 source manifest for the Work Management
-/// transactional core (docs/workstreams/executions/work-management/work-management.plan.md).
+/// transactional core (see docs/workstreams/use-cases/work-management.md).
 ///
 /// The manifest is closed-world: every MediatR request under
 /// Features.WorkManagement is classified, every request that declares

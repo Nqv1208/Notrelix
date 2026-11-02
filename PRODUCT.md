@@ -56,18 +56,17 @@ The intended detailed product ownership is:
 docs/product/
 ├── product-model.md
 ├── product-experience.md
-└── contexts/
-    ├── accounts.md
-    ├── identity.md
-    ├── workspaces.md
-    ├── governance.md
-    ├── work-management.md
-    ├── documents.md
-    ├── collaboration.md
-    ├── automation.md
-    ├── integrations.md
-    ├── billing.md
-    └── analytics.md
+├── accounts.md
+├── identity.md
+├── workspaces.md
+├── governance.md
+├── work-management.md
+├── documents.md
+├── collaboration.md
+├── automation.md
+├── integrations.md
+├── billing.md
+└── analytics.md
 ```
 
 This file may summarize those contexts, but MUST NOT diverge from them.

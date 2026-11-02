@@ -120,7 +120,7 @@ Examples:
 ```text
 product meaning
 → PRODUCT.md
-→ docs/product/contexts/<owner>.md
+→ docs/product/<owner>.md
 
 Domain behavior
 → backend/docs/architecture/domain-modeling.md
@@ -268,7 +268,7 @@ Examples:
 - realtime;
 - routing;
 - UI;
-- web/mobile/marketing behavior.
+- web/mobile/marketing/operator behavior.
 
 Required reading:
 
@@ -380,8 +380,8 @@ Required reading:
 RULE.md NRX-003
 RULE.md NRX-004
 RULE.md NRX-012
-docs/product/contexts/governance.md
-docs/product/contexts/workspaces.md
+docs/product/governance.md
+docs/product/workspaces.md
 backend/docs/architecture/security-tenancy-authorization.md
 ```
 
@@ -647,6 +647,7 @@ Hosts include:
 web
 mobile
 marketing
+operator (internal platform console)
 ```
 
 Exact package/dependency authority belongs to the executable architecture manifest.
@@ -1645,7 +1646,7 @@ Before editing a file suspected to be generated:
 
 Never hand-edit generated exact inventories as the primary fix.
 
-Known examples include frontend package boundaries and future generated documentation/project maps.
+Known examples include frontend package boundaries, the document/rule indices and the backend project map (`make docs-generate`).
 
 ---
 
@@ -1868,7 +1869,7 @@ For documentation/core authority changes, run:
 make docs-check
 ```
 
-Once the documentation-core tooling target is implemented, also run the required generated/authority/source-alignment checks.
+`make docs-check` runs the links, metadata, authority, rule-id, source-inventory and generated-drift checks.
 
 A documentation gate that cannot execute its required producer is a failed/unrun gate, not a successful skip.
 
@@ -2022,7 +2023,7 @@ Read:
 
 ```text
 PRODUCT.md
-docs/product/contexts/work-management.md
+docs/product/work-management.md
 RULE.md
 backend Domain/Application/API docs
 frontend state/UI/API docs

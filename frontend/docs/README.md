@@ -460,7 +460,7 @@ For product meaning use repository product authorities such as:
 ```text
 docs/product/product-model.md
 docs/product/product-experience.md
-docs/product/contexts/*
+docs/product/*
 ```
 
 Examples:

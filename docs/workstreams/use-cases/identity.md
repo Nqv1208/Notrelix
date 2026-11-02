@@ -31,7 +31,7 @@ review_on:
 
 # Use cases: Identity
 
-Product meaning: [identity](../../product/identity.md). Team: [identity-accounts](../teams/identity-accounts.md). Execution pack: [spec](../executions/identity-accounts/identity-accounts.spec.md), [tests](../executions/identity-accounts/identity-accounts.tests.md), [certification](../executions/identity-accounts/identity-accounts.certification.md), [decision notes](../executions/identity-accounts/decisions/PR-IA-00-decision-notes.md). The Accounts context (account lifecycle, account administration, identity-provider configuration, SCIM directory, required-MFA policy) is in [accounts](accounts.md); this file links to it and does not repeat it.
+Product meaning: [identity](../../product/identity.md). Team: [identity-accounts](../teams/identity-accounts.md). Execution pack: spec (removed; see git history), tests (removed; see git history), certification (removed; see git history), decision notes (removed; see git history). The Accounts context (account lifecycle, account administration, identity-provider configuration, SCIM directory, required-MFA policy) is in [accounts](accounts.md); this file links to it and does not repeat it.
 
 Requirement ids cited are `IAREQ` ids of the spec: `IAREQ001` to `IAREQ005` (user), `IAREQ010`, `IAREQ011` (profile), `IAREQ012` to `IAREQ023` (authentication, sessions), `IAREQ040` to `IAREQ058` (OAuth, MFA, security), `IAREQ059` to `IAREQ067` (API tokens), `IAREQ079` to `IAREQ083` (API contract) and `IAREQ126` to `IAREQ130` (browser CSRF). Product rules are `ID-001` to `ID-018` of the product doc, quoted by section number.
 

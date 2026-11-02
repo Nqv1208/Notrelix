@@ -478,7 +478,7 @@ Stop rather than guess when:
 DESIGN.md
 PRODUCT.md
 docs/product/product-model.md
-docs/product/contexts/*.md
+docs/product/*.md
 frontend/docs/architecture/ui-and-design-system.md
 frontend/docs/architecture/state-query-mutations.md
 frontend/docs/architecture/realtime.md
