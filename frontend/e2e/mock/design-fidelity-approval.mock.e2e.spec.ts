@@ -179,6 +179,7 @@ test.describe("approval block, owner, 1440 px", () => {
   // The artboard's card holds only the heading row and the form; the app keeps the "asks you" row and
   // the requester's note above the form (+128.5 px), and its text box is 14 px with an 8 px radius where
   // the artboard has 13.5 px and 7 px. Both live in card-popup/approval/approval-section.tsx.
+  // Known gap (WM-Approval card 2): the asks-you row and note stay above the reason box, and its text box is 14 px / 8 px.
   test("card 2, the form replaces the row and the note, the text box is 13.5 px with a 7 px radius", async ({
     page,
   }) => {
@@ -195,6 +196,7 @@ test.describe("approval block, owner, 1440 px", () => {
 
   // The artboard's "Từ chối yêu cầu" is the filled red button (white 13 px / 600 text) 12 px under the
   // note; the app's is a text-only red button 6 px under it.
+  // Known gap (WM-Approval card 2): the confirm button is text-only red, 6 px under the note, not filled and 12 px.
   test("card 2, Từ chối yêu cầu is the filled danger button, 12 px under the note", async ({
     page,
   }) => {
@@ -299,6 +301,7 @@ test.describe("approval block, owner, 1440 px", () => {
 
   // The artboard stacks the two result cards with a 10 px gap under the heading row (the pending cards
   // use 12) and tints them with its own palette; the app keeps 12 px everywhere and the system tints.
+  // Known gap (WM-Approval cards 4 and 6): result banners sit 12 px under the heading row (artboard 10 px) with other tints.
   test("cards 4 and 6: the result banners sit 10 px under the heading row and use the artboard's tints", async ({
     page,
   }) => {
