@@ -1312,7 +1312,7 @@ The final state MUST restore one owner.
 
 Documentation governance is a required quality gate.
 
-At minimum the target governance must verify:
+At minimum the governance (`make docs-check`) must verify:
 
 ```text
 relative links

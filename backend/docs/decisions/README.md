@@ -701,9 +701,9 @@ Do not turn the ADR into an incident timeline.
 
 ---
 
-# 37. Current ADR-001 routing
+# 37. Current pipeline-decision routing
 
-`ADR-001` preserves the accepted rationale for Application pipeline boundary zones.
+`ADR-001` (pipeline boundary zones) is superseded by `ADR-006`, which preserves the accepted rationale for the frozen seven-behavior Application pipeline.
 
 Current authority:
 
@@ -718,13 +718,11 @@ src/Notrelix.Application/DependencyInjection.cs
 tests/Notrelix.Architecture.Tests/ApplicationLayer/ApplicationArchitectureTests.cs
 ```
 
-The exact concrete behavior inventory can evolve while the decision's zone/dependency semantics remain current.
-
 ---
 
 # 38. BE-DEC-015 — Pipeline concrete class count is evidence, not ADR identity
 
-If a new behavior is introduced in the correct accepted zone without changing the architectural decision:
+If a new behavior is introduced without changing the architectural decision:
 
 ```text
 update source/tests/current architecture
@@ -732,7 +730,7 @@ update source/tests/current architecture
 
 A new ADR is not automatically required.
 
-If the zone model itself changes materially, supersede ADR-001.
+If the pipeline model itself changes materially, supersede ADR-006.
 
 ---
 

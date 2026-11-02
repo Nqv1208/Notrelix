@@ -803,7 +803,7 @@ When local patch cannot prove safe ordering/version, test invalidate/refetch to 
 
 # 63. UI foundation tests
 
-Current frontend CI runs Storybook Playwright a11y/visual gates.
+Storybook Playwright a11y/visual gates run locally; they are not in `ci.yml`.
 
 This is useful for:
 
@@ -1425,66 +1425,18 @@ This optimizes feedback without reducing final proof.
 
 ---
 
-# 117. Backend CI mapping
+# 117. CI mapping
 
-Current backend:
-
-```text
-quality
-→ restore/format/build/vulnerability/SQLite guards
-
-architecture-tests
-→ architecture project + critical gate verification
-
-core-tests
-→ Domain/Application/Infrastructure
-
-platform-tests
-→ messaging/reliability
-
-api-tests
-→ API + idempotency + OpenAPI drift
-
-integration-tests
-→ RLS/outbox/idempotency/realtime/migration/production graph
-
-docker-build
-→ after required backend evidence
-
-backend-ci
-→ final exact result gate
-```
-
----
-
-# 118. Frontend CI mapping
-
-Current frontend:
+`ci.yml` runs these jobs, aggregated by the required check `CI gate`:
 
 ```text
-quality
-→ codegen/architecture/docs/test taxonomy/type/lint/format
-
-test-core
-→ guarded Node/Web/Integration
-
-test-mobile
-→ guarded mobile/category coverage
-
-test-tooling
-→ guarded generators
-
-ui-foundation
-→ Storybook Playwright a11y/visual
-
-build-web/marketing/mobile
-
-e2e-production
-→ exact built web artifact
-
-frontend-gate
-→ every required job success
+backend-unit        → format, build, Domain/Application/Infrastructure/Architecture/Platform/API tests, OpenAPI drift
+backend-integration → 3 shards: workspaces-auth, work-rls, rest
+frontend            → format:check, typecheck, lint, check:architecture, check:i18n, codegen:check, test:node, test:web, app-web build
+dependencies        → security-ci.yml (NuGet and pnpm audit)
 ```
+
+Not in `ci.yml`: Storybook a11y/visual, Playwright e2e (mock or real), `make docs-check`, `scripts/ci/validate-infra.py`, the required-proof TRX check and Docker image build. They run locally.
 
 ---
 

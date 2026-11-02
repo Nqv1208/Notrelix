@@ -289,7 +289,9 @@ It owns:
 
 - Workspace lifecycle;
 - membership;
-- invitation.
+- invitation;
+- Spaces (the organizational tree, including the Department type);
+- Teams.
 
 Many resources are Workspace-scoped without being Workspaces-owned.
 

@@ -35,7 +35,7 @@ review_on:
 
 # Use cases: Documents
 
-Product meaning: [documents](../../product/documents.md). Team: [documents-collaboration](../teams/documents-collaboration.md). Execution pack: [spec](../executions/documents-collaboration/documents-collaboration.spec.md), [tests](../executions/documents-collaboration/documents-collaboration.tests.md), [certification](../executions/documents-collaboration/documents-collaboration.certification.md). Permission and role meaning: [governance](../../product/governance.md). Comments, mentions delivery, attachments, presence and notifications are Collaboration use cases: see [collaboration.md](collaboration.md). Board items and the links from items to pages are Work Management use cases: see [work-management.md](work-management.md).
+Product meaning: [documents](../../product/documents.md). Team: [documents-collaboration](../teams/documents-collaboration.md). Execution pack: spec (removed; see git history), tests (removed; see git history), certification (removed; see git history). Permission and role meaning: [governance](../../product/governance.md). Comments, mentions delivery, attachments, presence and notifications are Collaboration use cases: see [collaboration.md](collaboration.md). Board items and the links from items to pages are Work Management use cases: see [work-management.md](work-management.md).
 
 Id note: the product doc has rules `DCT-001` to `DCT-031`, and the team spec reuses `DCT-001` to `DCT-012` as capability numbers. In this file "product rule DCT-n" always means the product rule and "capability n" means the team capability. Requirement ids `DCREQ001` to `DCREQ191` are cited from the pack, not restated.
 

@@ -171,7 +171,7 @@ tests/
 
 Do not maintain a manually authored project inventory elsewhere as an equal authority.
 
-A generated project map may summarize the solution later:
+A generated project map summarizes the solution (produced by `scripts/docs/generate-backend-project-map.mjs`):
 
 ```text
 backend/docs/generated/project-map.md
@@ -778,17 +778,14 @@ A required suite selecting zero relevant tests is a failure.
 
 Backend CI is repository evidence, not architecture.
 
-Current CI separates concerns such as:
+`.github/workflows/ci.yml` runs these jobs behind one `CI gate`:
 
 ```text
-quality/security
-architecture
-core layer tests
-Platform tests
-API/OpenAPI
-integration
-Docker packaging
-final gate
+changes (path filter)
+backend-unit (build and unit tests)
+backend-integration (three shards)
+frontend
+dependencies (audit)
 ```
 
 Exact job names may evolve.
@@ -816,6 +813,7 @@ docs/
 │   ├── security-tenancy-authorization.md
 │   └── testing-and-quality-gates.md
 ├── operations/
+│   ├── access-facts-query-evidence.md
 │   ├── configuration-and-runtime.md
 │   └── migrations-and-data-change.md
 ├── decisions/
@@ -894,14 +892,7 @@ Backend ADRs live under:
 docs/decisions/
 ```
 
-Current backend history includes:
-
-```text
-ADR-001 Pipeline boundary
-ADR-002 RLS bootstrap connection lifecycle
-ADR-003 CSRF protection
-ADR-004 Rate limiting architecture
-```
+The ADR registry (ADR-001 onward, with status and supersession) is [`docs/decisions/README.md`](docs/decisions/README.md).
 
 ADRs preserve historical rationale.
 

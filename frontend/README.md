@@ -27,7 +27,7 @@ review_on:
 
 The Notrelix frontend is the client platform for the Notrelix enterprise work-management product.
 
-It is a **pnpm/Turborepo workspace** with three host applications:
+It is a **pnpm/Turborepo workspace** with three product host applications plus an internal operator host:
 
 ```text
 apps/web
@@ -38,6 +38,9 @@ apps/mobile
 
 apps/marketing
 → Next.js marketing application
+
+apps/operator
+→ internal platform operator console (Vite + React); see docs/architecture/hosts-composition-routing.md section 3.1
 ```
 
 Reusable client behavior is organized into explicit package families under:
@@ -1479,7 +1482,7 @@ Avoid product state dependencies.
 
 # 65. Framework split
 
-The three hosts intentionally use different frameworks/runtime stacks.
+The three product hosts intentionally use different frameworks/runtime stacks.
 
 This is not a defect to “normalize” through a universal framework abstraction.
 

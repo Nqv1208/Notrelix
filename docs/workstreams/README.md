@@ -65,6 +65,11 @@ docs/workstreams/
 ├── use-cases/
 │   ├── README.md
 │   └── <context>.md
+├── executions/
+│   ├── identity-accounts/identity-accounts.plan.md
+│   ├── work-management/work-management.spec.md
+│   ├── work-management/work-management.tests.md
+│   └── workspace-experience/workspace-experience.plan.md
 └── teams/
     ├── identity-accounts.md
     ├── workspace-governance.md
@@ -77,6 +82,8 @@ docs/workstreams/
 ```
 
 The `teams/` documents are execution specifications, not permanent architecture documents.
+
+`executions/` holds only the four files that code or manifests read (architecture tests and the workspace UI evidence manifest). The use-case catalogs superseded the other execution packs; git keeps their history. Do not add new files there.
 
 They may evolve as capabilities move from planning to implementation and hardening.
 

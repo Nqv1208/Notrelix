@@ -188,7 +188,7 @@ as the only runtime truth.
 
 # 6. WM-002 — One work model, many views
 
-Table, Kanban, Calendar, Timeline, Form, Dashboard, and future view types operate over shared work state.
+Table, Kanban, Calendar, Timeline, Form, and future view types operate over shared work state.
 
 No view owns a duplicate authoritative Item store.
 

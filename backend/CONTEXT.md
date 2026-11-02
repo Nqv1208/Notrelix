@@ -200,13 +200,7 @@ tests/
 └── Notrelix.Testing.Integration
 ```
 
-A future:
-
-```text
-docs/generated/project-map.md
-```
-
-may summarize this inventory, but it should be generated from executable project manifests.
+The generated `docs/generated/project-map.md` (produced by `scripts/docs/generate-backend-project-map.mjs`) summarizes this inventory from executable project manifests.
 
 ---
 
@@ -255,8 +249,7 @@ Integrations
 WorkManagement
 Workspaces
 Notifications
-Operations
-Search
+Operators
 ```
 
 The first group aligns with product contexts/capabilities.
@@ -265,8 +258,7 @@ The existence of:
 
 ```text
 Notifications
-Operations
-Search
+Operators
 ```
 
 as source folders does **not** automatically promote each one to a business bounded context.
@@ -401,7 +393,8 @@ MediatR
 FluentValidation
 AutoMapper
 Microsoft.EntityFrameworkCore
-Microsoft.Extensions.Hosting.Abstractions
+FluentValidation.DependencyInjectionExtensions
+Microsoft.Extensions.Hosting
 ```
 
 The EF Core package is a **current exception/transition fact**.
@@ -1009,19 +1002,16 @@ Do not let cache/broker/provider become business source-of-truth accidentally.
 
 # 36. Current CI mental model
 
-Backend CI currently separates protected properties into multiple jobs/gates rather than one undifferentiated `dotnet test`.
+`.github/workflows/ci.yml` runs `changes` (path filter), `backend-unit`, `backend-integration` (three shards), `frontend` and `dependencies`, all behind one `CI gate`.
 
-Typical protected areas include:
+Protected areas include:
 
 ```text
-quality/security
 architecture
 core layer behavior
 Platform
 API/OpenAPI
 integration / PostgreSQL / RLS / production graph
-container packaging
-final completion gate
 ```
 
 Exact workflow topology is current evidence and may evolve.
@@ -1032,14 +1022,7 @@ The protected properties should remain.
 
 # 37. Current architecture decision history
 
-Backend ADRs currently registered:
-
-```text
-ADR-001 Pipeline boundary
-ADR-002 RLS bootstrap connection lifecycle
-ADR-003 CSRF protection
-ADR-004 Rate limiting architecture
-```
+The ADR registry is [`docs/decisions/README.md`](docs/decisions/README.md).
 
 They preserve rationale.
 

@@ -29,7 +29,7 @@ review_on:
 
 # Use cases: Billing
 
-Context code `BIL`. Product meaning: [billing](../../product/billing.md). Team spec: [billing-entitlements](../teams/billing-entitlements.md). Execution pack: [spec](../executions/billing-entitlements/billing-entitlements.spec.md), [certification](../executions/billing-entitlements/billing-entitlements.certification.md), [tests](../executions/billing-entitlements/billing-entitlements.tests.md). Router and rules: [README](README.md). Delivery context: [capability-delivery-map](../capability-delivery-map.md), [cross-team-dependencies](../cross-team-dependencies.md).
+Context code `BIL`. Product meaning: [billing](../../product/billing.md). Team spec: [billing-entitlements](../teams/billing-entitlements.md). Execution pack: spec (removed; see git history), certification (removed; see git history), tests (removed; see git history). Router and rules: [README](README.md). Delivery context: [capability-delivery-map](../capability-delivery-map.md), [cross-team-dependencies](../cross-team-dependencies.md).
 
 Two numbering systems meet in this file. `BIL-001` to `BIL-033` in the product doc are rules (cited as "product BIL-008"). `BIL-001` to `BIL-024` in the team spec are capabilities; this catalog calls them by letter (Part 2). `BILREQnnn` are execution-pack requirements.
 

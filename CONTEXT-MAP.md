@@ -61,6 +61,7 @@ Start by identifying the **kind of question** you are trying to answer.
 | What exact project/package inventory exists? | executable manifest/generated evidence |
 | How must a breaking change migrate? | `docs/delivery/migration-policy.md` |
 | How is documentation authority governed? | `docs/governance/documentation-authority.md` |
+| What is the live delivery state of a use case? | `docs/workstreams/use-cases/<context>.md` (non-normative evidence) |
 
 ---
 

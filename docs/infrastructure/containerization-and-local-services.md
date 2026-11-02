@@ -1187,16 +1187,7 @@ Those remain owned by their gates.
 
 # 100. Frontend packaging current evidence
 
-Current `.github/workflows/container-ci.yml` builds:
-
-```text
-web Dockerfile
-marketing Dockerfile
-```
-
-from repository-root context.
-
-The job is named `Container smoke`, but current steps only execute `docker build`.
+`.github/workflows/container-ci.yml` builds the backend, web and marketing images from repository-root context and runs a Trivy gate and SBOM. It is `workflow_call` only and has no caller, so no pull-request workflow builds images today.
 
 ---
 
@@ -1611,15 +1602,11 @@ rather than maintaining independent hidden versions.
 
 # 143. Container source-debt inventory
 
-Current source evidence requiring final/incremental improvement includes:
+Current source debt:
 
 ```text
-1. root .dockerignore does not exclude .env/.env.* despite root-context frontend builds;
-2. frontend packaging job named "Container smoke" only builds images;
-3. staging/prod Compose currently builds on deployment target rather than promoting an already-built immutable image.
+root .dockerignore does not exclude .env/.env.* despite root-context frontend builds
 ```
-
-The third item is already classified in `deployment-runtime.md`.
 
 ---
 

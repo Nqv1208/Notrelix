@@ -32,7 +32,7 @@ review_on:
 
 # Use cases: Workspaces
 
-Product meaning: [workspaces](../../product/workspaces.md). Team: [workspace-governance](../teams/workspace-governance.md). Execution packs: [governance spec](../executions/workspace-governance/workspace-governance.spec.md), [governance tests](../executions/workspace-governance/workspace-governance.tests.md), [governance certification](../executions/workspace-governance/workspace-governance.certification.md), [workspace experience plan](../executions/workspace-experience/workspace-experience.plan.md).
+Product meaning: [workspaces](../../product/workspaces.md). Team: [workspace-governance](../teams/workspace-governance.md). Execution packs: governance spec (removed; see git history), governance tests (removed; see git history), governance certification (removed; see git history), [workspace experience plan](../executions/workspace-experience/workspace-experience.plan.md).
 
 Roles, permissions, policy, audit and the admin plane belong to Governance: see [governance.md](governance.md) and [governance product doc](../../product/governance.md). This file names the permission each use case needs and does not redefine it.
 

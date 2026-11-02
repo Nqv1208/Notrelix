@@ -195,34 +195,6 @@ Local-only test secrets should be unmistakably synthetic.
 
 Do not weaken secret scanning to accommodate realistic credentials in fixtures/examples.
 
-# 15. Current onboarding drift
-
-Current root README references:
-
-```text
-.env.dev.example
-```
-
-while the current repository template is:
-
-```text
-.env.example
-```
-
-and the Makefile consumes:
-
-```text
-.env.dev
-```
-
-This is a documentation drift to correct during repository synchronization.
-
-# 16. DEL-DEV-007 — Onboarding drift is fixed at the source, not duplicated
-
-Do not add another setup path to compensate for stale README.
-
-Correct root README/template/commands coherently.
-
 # 17. Required local environment values
 
 The Compose configuration currently requires at least safe local values for dependency credentials such as PostgreSQL and Redis passwords, with additional provider/OAuth/email values optional according to enabled features.

@@ -954,30 +954,16 @@ Avoid one-off patch when the same failure class remains possible elsewhere.
 
 # 92. Current CI alignment
 
-Current backend delivery evidence includes:
+CI is one workflow, `.github/workflows/ci.yml`, with one required check, `CI gate`:
 
 ```text
-quality/security
-architecture
-core tests
-Platform
-API/OpenAPI
-integration
-Docker
-final gate
+backend-unit         format, build, Domain/Application/Infrastructure/Architecture/Platform/API tests, OpenAPI drift
+backend-integration  integration tests in 3 shards
+frontend             format, typecheck, lint, architecture, i18n, codegen, node and web tests, web build
+dependencies         dependency audit
 ```
 
-Current frontend delivery evidence includes:
-
-```text
-codegen/architecture/taxonomy
-type/lint/format
-guarded test categories
-UI accessibility/visual
-builds
-production E2E
-final gate
-```
+Docker image builds, UI accessibility/visual checks, Playwright E2E and `make docs-check` are not PR gates; they run locally (see `docs/delivery/ci-cd-architecture.md`).
 
 Exact topology can evolve while the protected completion properties remain.
 

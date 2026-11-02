@@ -1,6 +1,7 @@
 # Nhóm 4 — Tự động hoá, báo cáo, thanh toán, tích hợp (2026-10-12)
 
-Read with: `decisions.md` (world facts, people, editing rules — all apply), `group4-rules.md` (product rules digest; cite rule IDs in small captions only where they explain a visible behaviour), and for mobile `mobile-brief.md`.
+Read with: `decisions.md` (world facts, people, editing rules — all apply), and for mobile `mobile-brief.md`.
+The run-as person is decided (2026-10-30: every rule runs as one named person). Board-scoped Email-in/webhook and OneDrive/SharePoint shown here are mockup-only (owner decision 45: workspace scope only).
 Every number, name and date below is canonical for this batch. Do not invent other counts; if you need an extra fact, keep it small and list it in your report under "Assumed".
 
 ## Global decisions for this batch
