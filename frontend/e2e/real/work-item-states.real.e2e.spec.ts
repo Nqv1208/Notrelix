@@ -508,3 +508,176 @@ test("a description is saved from the card, the same text changes nothing and on
   );
   expect(afterLong.version).toBe(afterSame.version);
 });
+
+test("a description save that lost the race keeps my text, names who saved first and lets me keep mine or view theirs", async ({
+  browser,
+  page,
+}) => {
+  await signIn(page, realUsers.workspaceAdmin);
+  const { workspace, board } = await openBoard(
+    page,
+    "Workspace 3",
+    "Engineering Tasks",
+  );
+  const unique = Date.now().toString(36);
+  const item = await makeItem(page, board.id, `Describe race ${unique}`);
+  await page.goto(
+    `/workspaces/${workspace.id}/boards/${board.id}?item=${item.id}`,
+  );
+  const dialog = page.getByRole("dialog", { name: `Describe race ${unique}` });
+  await dialog.getByRole("button", { name: "Add a description…" }).click();
+  const editor = dialog.getByRole("textbox", { name: "Description" });
+  await expect(editor).toBeVisible();
+
+  // Another member saved the description first; the page still holds the version it read.
+  const writer = await otherMember(browser);
+  const theirs = `Theirs ${unique}`;
+  expect(
+    (
+      await apiWrite(writer.other, "PATCH", `/board-items/${item.id}`, {
+        descriptionMd: theirs,
+        expectedVersion: item.version,
+      })
+    ).status,
+  ).toBeLessThan(300);
+  await writer.close();
+  const routePattern = `**/board-items/${item.id}`;
+  const sendVersion = (version: number) =>
+    page.route(routePattern, async (route) => {
+      if (route.request().method() !== "PATCH") return route.continue();
+      const body = route.request().postDataJSON() as Record<string, unknown>;
+      await route.continue({
+        postData: JSON.stringify({ ...body, expectedVersion: version }),
+      });
+    });
+  const patchAnswer = () =>
+    page.waitForResponse(
+      (response) =>
+        response.request().method() === "PATCH" &&
+        response.url().endsWith(`/board-items/${item.id}`) &&
+        response.status() !== 403,
+    );
+  await sendVersion(item.version);
+  const refused = patchAnswer();
+  const mine = `Mine ${unique}`;
+  await editor.fill(mine);
+  await dialog.getByRole("button", { name: "Save", exact: true }).click();
+  expect((await refused).status()).toBe(412);
+  await page.unroute(routePattern);
+
+  // Nothing of mine was kept on the server, my text is still in the editor and the notice names the winner.
+  await expect(
+    dialog.getByText(`${writer.name} saved the description first`),
+  ).toBeVisible();
+  await expect(editor).toHaveValue(mine);
+  expect(
+    (await apiRead<{ descriptionMd?: string }>(page, `/board-items/${item.id}`))
+      .descriptionMd,
+  ).toBe(theirs);
+
+  // Keep mine saves it over theirs on purpose.
+  const kept = patchAnswer();
+  await dialog.getByRole("button", { name: "Keep mine" }).click();
+  expect((await kept).status()).toBeLessThan(300);
+  await expect(editor).toBeHidden();
+  const afterKeep = await apiRead<{ descriptionMd?: string; version: number }>(
+    page,
+    `/board-items/${item.id}`,
+  );
+  expect(afterKeep.descriptionMd).toBe(mine);
+
+  // View the new version drops my text and shows theirs; no second write is sent.
+  const writerTwo = await otherMember(browser);
+  const theirsAgain = `Theirs again ${unique}`;
+  expect(
+    (
+      await apiWrite(writerTwo.other, "PATCH", `/board-items/${item.id}`, {
+        descriptionMd: theirsAgain,
+        expectedVersion: afterKeep.version,
+      })
+    ).status,
+  ).toBeLessThan(300);
+  await writerTwo.close();
+  await dialog.getByRole("button", { name: "Edit" }).click();
+  await sendVersion(afterKeep.version);
+  const refusedAgain = patchAnswer();
+  await editor.fill(`Mine again ${unique}`);
+  await dialog.getByRole("button", { name: "Save", exact: true }).click();
+  expect((await refusedAgain).status()).toBe(412);
+  await page.unroute(routePattern);
+  await dialog.getByRole("button", { name: "View the new version" }).click();
+  await expect(editor).toBeHidden();
+  await expect(dialog.getByText(theirsAgain)).toBeVisible();
+  expect(
+    (await apiRead<{ descriptionMd?: string }>(page, `/board-items/${item.id}`))
+      .descriptionMd,
+  ).toBe(theirsAgain);
+});
+
+test("an assignee the server refuses because they cannot see the board is told with the reason and a Share action", async ({
+  browser,
+  page,
+}) => {
+  await signIn(page, realUsers.workspaceAdmin);
+  const workspace = await findWorkspace(page, "Workspace 3");
+  const unique = Date.now().toString(36);
+  const title = `Share first ${unique}`;
+  expect(
+    (
+      await apiWrite(page, "POST", `/workspaces/${workspace.id}/boards`, {
+        title,
+        visibility: "Private",
+      })
+    ).status,
+  ).toBeLessThan(300);
+  const board = (
+    await apiRead<{ id: string; title: string }[]>(
+      page,
+      `/workspaces/${workspace.id}/boards`,
+    )
+  ).find((candidate) => candidate.title === title)!;
+  await apiWrite(page, "POST", `/boards/${board.id}/groups`, { title: "Todo" });
+  const item = await makeItem(page, board.id, `Assign ${unique}`);
+
+  // A Guest of the workspace holds no grant on this Private board; the page's list still offered someone else, as a
+  // list read before the access changed would.
+  const guestContext = await browser.newContext();
+  const guestPage = await guestContext.newPage();
+  await signIn(guestPage, realUsers.workspaceGuest);
+  const guest = await apiRead<{ id: string }>(guestPage, "/auth/me");
+  await guestContext.close();
+  const me = await apiRead<{ name: string }>(page, "/auth/me");
+  await page.route(`**/board-items/${item.id}/assignees`, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    await route.continue({ postData: JSON.stringify({ userId: guest.id }) });
+  });
+
+  await page.goto(`/workspaces/${workspace.id}/boards/${board.id}?view=table`);
+  await page
+    .getByRole("searchbox", { name: "Search the table" })
+    .fill(item.itemKey);
+  const row = page.locator(`[data-row-id="${item.id}"]`);
+  await row
+    .getByRole("button", { name: `Change assignee of ${item.itemKey}` })
+    .click();
+  const answer = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      response.url().includes(`/board-items/${item.id}/assignees`),
+  );
+  await page.getByRole("button", { name: new RegExp(me.name) }).click();
+  const refused = await answer;
+  expect(refused.status()).toBe(403);
+  expect(await refused.text()).toContain(
+    "work-management.assignee.board-not-shared",
+  );
+
+  const toast = page.getByText(/cannot see the board yet/);
+  await expect(toast).toContainText("Share the board with them first");
+  await page.getByRole("button", { name: "Share the board" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  expect(
+    (await apiRead<{ members: unknown[] }>(page, `/board-items/${item.id}`))
+      .members,
+  ).toEqual([]);
+});
