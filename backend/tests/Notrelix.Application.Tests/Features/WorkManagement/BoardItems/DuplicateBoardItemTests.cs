@@ -134,10 +134,12 @@ public class DuplicateBoardItemTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
-    public void Validator_RejectsATooLongName()
+    public void Validator_TakesTheSameTitleLimitAsCreateAndRename()
     {
-        new DuplicateBoardItemCommandValidator()
-            .Validate(new DuplicateBoardItemCommand(Guid.CreateVersion7(), new string('x', 201)))
+        var validator = new DuplicateBoardItemCommandValidator();
+        validator.Validate(new DuplicateBoardItemCommand(Guid.CreateVersion7(), new string('x', BoardItem.NameMaxLength)))
+            .IsValid.Should().BeTrue();
+        validator.Validate(new DuplicateBoardItemCommand(Guid.CreateVersion7(), new string('x', BoardItem.NameMaxLength + 1)))
             .IsValid.Should().BeFalse();
     }
 }

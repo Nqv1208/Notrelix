@@ -8,7 +8,7 @@ public class DuplicateBoardItemCommandValidator : AbstractValidator<DuplicateBoa
             .NotEmpty();
 
         RuleFor(x => x.Name)
-            .MaximumLength(200)
+            .MaximumLength(BoardItem.NameMaxLength)
             .When(x => x.Name is not null);
     }
 }

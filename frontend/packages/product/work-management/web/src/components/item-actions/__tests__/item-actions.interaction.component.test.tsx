@@ -262,9 +262,9 @@ describe("DuplicateItemDialog", () => {
     }
   });
 
-  it("FUI[wm.item-lifecycle:duplicate-long] counts the name and blocks one over 200 characters", () => {
-    renderDup({ defaultName: "x".repeat(212) });
-    expect(screen.getByText("212/200")).toBeTruthy();
+  it("FUI[wm.item-lifecycle:duplicate-long] counts the name and blocks one over 500 characters", () => {
+    renderDup({ defaultName: "x".repeat(512) });
+    expect(screen.getByText("512/500")).toBeTruthy();
     expect(screen.getByRole("alert").textContent).toBe(en.dupNameTooLong);
     expect(
       (screen.getByRole("button", { name: en.dupConfirm }) as HTMLButtonElement)

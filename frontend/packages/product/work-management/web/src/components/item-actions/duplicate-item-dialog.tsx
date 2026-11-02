@@ -12,10 +12,9 @@ import {
   Input,
   cn,
 } from "@notrelix/ui-web";
+import { ITEM_TITLE_MAX_LENGTH } from "@notrelix/work-management-core";
 import { fillLifecycleCopy } from "../item-lifecycle/item-lifecycle.copy";
 import type { ItemActionsCopy } from "./item-actions.copy";
-
-export const DUPLICATE_NAME_MAX = 200;
 
 /** What the copy takes along; comments, history and files are never offered. */
 export interface DuplicateChoices {
@@ -95,7 +94,7 @@ export function DuplicateItemDialog({
       setChoices(ALL);
     }
   }, [open, defaultName]);
-  const tooLong = name.length > DUPLICATE_NAME_MAX;
+  const tooLong = name.length > ITEM_TITLE_MAX_LENGTH;
   const empty = name.trim().length === 0;
   return (
     <Dialog
