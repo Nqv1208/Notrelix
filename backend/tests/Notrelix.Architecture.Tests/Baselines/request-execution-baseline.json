@@ -4991,7 +4991,7 @@
     "requiresSubscription": false,
     "requiresFeature": false,
     "expectedVersion": true,
-    "idempotent": false,
+    "idempotent": true,
     "realtime": false,
     "authorizedCache": false,
     "publicCache": false,
