@@ -23,8 +23,7 @@ evidence:
   - docs/quality/testing-strategy.md
   - backend/contracts/openapi/notrelix.v1.json
   - frontend/tooling/codegen/
-  - .github/workflows/be-ci.yml
-  - .github/workflows/fe-ci.yml
+  - .github/workflows/ci.yml
 review_on:
   - public-contract-change
   - versioning-policy-change

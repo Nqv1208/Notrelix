@@ -519,8 +519,7 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             MockWorkspaceHandler<UnarchiveTeamCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<DeleteTeamCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<RestoreTeamCommand, Result>(services, Result.Success());
-            MockWorkspaceHandler<RegisterCommand, Result<AuthResult>>(services,
-                Result<AuthResult>.Success(CreateAuthResult()));
+            MockWorkspaceHandler<RegisterCommand, Result>(services, Result.Success());
 
             // ── WorkManagement handler mocks ──
             // Boards

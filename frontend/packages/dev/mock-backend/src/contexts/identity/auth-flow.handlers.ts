@@ -19,6 +19,7 @@ import {
   ok,
   unauthorized,
 } from "../../transport/create-response";
+import { MOCK_AUTH } from "../../state/mock-auth-directory";
 import type { MockStore } from "../../state/mock-store";
 
 const EMAIL = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
@@ -154,6 +155,39 @@ export const authFlowOperations = [
           Email: ["Enter a work email."],
         });
       return ok({ success: true });
+    },
+  }),
+
+  defineMockOperation<
+    Record<string, never>,
+    { name?: string; email?: string; password?: string },
+    unknown
+  >({
+    id: "auth.register",
+    contract: { kind: "openapi", operationId: "Identity.Auth.Register" },
+    method: "POST",
+    route: "/auth/register",
+    async handle({ body }) {
+      const email = body?.email?.trim() ?? "";
+      const errors: Record<string, string[]> = {};
+      if (!EMAIL.test(email)) errors.Email = ["Enter a work email."];
+      if (!body?.name?.trim()) errors.Name = ["Enter your name."];
+      if ((body?.password ?? "").length < 8)
+        errors.Password = ["Password must be at least 8 characters"];
+      if (Object.keys(errors).length)
+        return genericProblem(
+          400,
+          "validation.failed",
+          "Validation failed",
+          errors,
+        );
+      // Test addresses for the two refusals a form must show.
+      if (email === MOCK_AUTH.registerLimitedEmail)
+        return genericProblem(429, "rate_limit.exceeded", "Too many requests");
+      if (email === MOCK_AUTH.registerDownEmail)
+        return genericProblem(503, "server.unavailable", "Unavailable");
+      // The same neutral answer for a new and an existing address; no session is opened.
+      return ok({});
     },
   }),
 

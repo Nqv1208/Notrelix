@@ -17,7 +17,7 @@ evidence:
   - docs/quality/testing-strategy.md
   - frontend/docs/architecture/ui-and-design-system.md
   - frontend/tooling/storybook/
-  - .github/workflows/fe-ci.yml
+  - .github/workflows/ci.yml
 review_on:
   - accessibility-baseline-change
   - design-system-primitive-change
@@ -1275,7 +1275,7 @@ loading/error/empty/permission/conflict are first-class
 accessibility is part of component contract
 ```
 
-Current frontend CI includes a dedicated Storybook accessibility/visual gate.
+The Storybook accessibility/visual suite runs locally; it is not in `ci.yml`.
 
 Those are existing executable foundations; this standard defines the broader product quality contract.
 
