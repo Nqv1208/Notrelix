@@ -12,6 +12,7 @@ import {
 import {
   useBoardPlacements,
   useMoveBoardToSpace,
+  type BoardPlacement,
 } from "../board-placement-bridge";
 
 (
@@ -86,9 +87,8 @@ async function settled(check: () => boolean) {
   expect(check()).toBe(true);
 }
 
-const placementOf = (
-  rows: { id: string; spaceId: string | null }[] | undefined,
-) => rows?.find((row) => row.id === BOARD);
+const placementOf = (rows: BoardPlacement[] | undefined) =>
+  rows?.find((row) => row.id === BOARD);
 
 describe("useMoveBoardToSpace", () => {
   it("sends the read version and one idempotency key, and the Board reads in the new Space after", async () => {
