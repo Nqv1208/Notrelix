@@ -140,6 +140,7 @@ function GroupPicker() {
     <PanelPopover
       open={open}
       onOpenChange={setOpen}
+      label={picker.title}
       width={280}
       trigger={
         <PopoverTrigger asChild>
