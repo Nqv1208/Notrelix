@@ -2,47 +2,51 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Services;
 using Notrelix.Application.Features.Identity.Registration.Ports;
 using Notrelix.Application.Features.Identity.Registration.Services;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 
 namespace Notrelix.Application.Features.Identity.Registration.Commands.Register;
 
-public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<AuthResult>>
+public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result>
 {
     private readonly IIdentityDbContext _identityContext;
     private readonly IAccountProvisioningActions _provisioningActions;
     private readonly IPasswordHasher _passwordHasher;
-    private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IIntegrationEventCollector _integrationEventCollector;
+    private readonly IRateLimitService _rateLimitService;
     private readonly IEmailVerificationTokenIssuer? _emailVerificationTokenIssuer;
     private readonly IEmailRegistrationProbe? _registrationProbe;
     private readonly RegistrationScope? _registrationScope;
+    private readonly CredentialScope? _credentialScope;
 
     public RegisterCommandHandler(
         IIdentityDbContext identityContext,
         IAccountProvisioningActions provisioningActions,
         IPasswordHasher passwordHasher,
-        IAuthSessionIssuer sessionIssuer,
         IDateTimeProvider dateTimeProvider,
         IIntegrationEventCollector integrationEventCollector,
+        IRateLimitService rateLimitService,
         IEmailVerificationTokenIssuer? emailVerificationTokenIssuer = null,
         IEmailRegistrationProbe? registrationProbe = null,
-        RegistrationScope? registrationScope = null)
+        RegistrationScope? registrationScope = null,
+        CredentialScope? credentialScope = null)
     {
+        _credentialScope = credentialScope;
         _registrationProbe = registrationProbe;
         _registrationScope = registrationScope;
         _identityContext = identityContext;
         _provisioningActions = provisioningActions;
         _passwordHasher = passwordHasher;
-        _sessionIssuer = sessionIssuer;
+        _rateLimitService = rateLimitService;
         _dateTimeProvider = dateTimeProvider;
         _integrationEventCollector = integrationEventCollector;
         _emailVerificationTokenIssuer = emailVerificationTokenIssuer;
     }
 
-    public async Task<Result<AuthResult>> Handle(RegisterCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
 
@@ -51,13 +55,17 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
             : await _identityContext.Users
                 .AnyAsync(u => u.NormalizedEmail == normalizedEmail, cancellationToken);
 
+        // One neutral answer for a new and for an existing address: nothing in the response, the status or
+        // (as far as the hash below levels it) the time says whether the address is registered. The person
+        // behind an existing address is told by mail instead.
+        var passwordHash = _passwordHasher.HashPassword(request.Password);
         if (emailExists)
         {
-            return Result<AuthResult>.Failure("Email is already in use");
+            await NotifyExistingOwnerAsync(normalizedEmail, _dateTimeProvider.UtcNow, cancellationToken);
+            return Result.Success();
         }
 
         var now = _dateTimeProvider.UtcNow;
-        var passwordHash = _passwordHasher.HashPassword(request.Password);
         var user = User.Create(request.Email, request.Name, passwordHash, now, hasPasswordCredential: true);
         if (_registrationScope is not null)
             await _registrationScope.EnterAsync(user.Id, cancellationToken);
@@ -96,7 +104,37 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
                 CausationId: null,
                 OccurredAt: now));
 
-        var authResult = await _sessionIssuer.IssueAsync(user, now, cancellationToken);
-        return Result<AuthResult>.Success(authResult with { WorkspaceProvisioning = "pending" });
+        return Result.Success();
+    }
+
+    private async Task NotifyExistingOwnerAsync(
+        string normalizedEmail,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        // Silent when limited: an answer that changed would show the address exists, and a loop of
+        // registrations must not become a stream of mail to its owner.
+        var limited = await _rateLimitService.IsRateLimitedAsync(
+            "register-existing-notice", normalizedEmail, maxAttempts: 3, window: TimeSpan.FromHours(1));
+        if (limited)
+        {
+            return;
+        }
+
+        // The notice is an event in the outbox, and the database lets a tenantless event in only under a
+        // user scope: the same credential scope the sign-in and recovery steps use derives the one existing
+        // user from the address, so this request can write that one event and read nothing of the account.
+        if (_credentialScope is not null)
+            await _credentialScope.EnterByEmailAsync(normalizedEmail, cancellationToken);
+
+        // The mail itself is queued after the commit by a consumer: the request does the same work and
+        // takes the same time whether or not the address is registered.
+        var eventId = Guid.CreateVersion7();
+        _integrationEventCollector.Add(
+            new RegistrationAttemptedOnExistingAccountIntegrationEventV1(
+                EventId: eventId,
+                Email: normalizedEmail,
+                CorrelationId: eventId,
+                OccurredAt: now));
     }
 }

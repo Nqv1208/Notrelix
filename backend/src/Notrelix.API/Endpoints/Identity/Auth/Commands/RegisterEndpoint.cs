@@ -1,4 +1,3 @@
-using Notrelix.API.Contracts.Identity;
 using Notrelix.API.Extensions;
 using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
@@ -11,18 +10,18 @@ public static class RegisterEndpoint
     {
         group.MapPublicPost("/register", HandleAsync)
             .WithName("Identity.Auth.Register")
-            .Produces<AuthSessionResponse>(StatusCodes.Status200OK, "application/json")
-            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status409Conflict, StatusCodes.Status429TooManyRequests)
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Register a new account")
+            .WithDescription("Answers 200 with no body for a new and for an existing address alike, and sets no session: a new person confirms the email from the mail and signs in; the owner of an existing address gets a notice mail. Nothing in the answer says whether the address was registered.")
             .WithMetadata(new RateLimitPolicyAttribute("AuthCredentialByIp"));
         return group;
     }
 
     private static async Task<IResult> HandleAsync(
         RegisterRequest request,
-        ISender sender,
-        ICookieService cookieService)
+        ISender sender)
     {
         var command = new RegisterCommand
         {
@@ -31,13 +30,16 @@ public static class RegisterEndpoint
             Name = request.Name
         };
 
-        var result = await sender.Send(command);
-
-        if (result.Succeeded && result.Data is not null)
+        try
         {
-            cookieService.SetTokenCookie(result.Data.AccessToken, result.Data.RefreshToken);
+            var result = await sender.Send(command);
+            return result.ToApiResult();
         }
-
-        return result.ToSessionApiResult();
+        catch (ConflictException)
+        {
+            // The loser of a concurrent registration of one address (the unique index decided): the same
+            // neutral answer, the winner's mail already covers the address.
+            return Results.Ok();
+        }
     }
 }

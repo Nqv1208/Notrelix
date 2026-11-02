@@ -25,14 +25,6 @@ export type LoginResponseApi = {
   mfaExpiresAt?: string | null;
 };
 
-export type RegisterRequestApi = {
-  name: string;
-  email: string;
-  password: string;
-};
-
-export type RegisterResponseApi = LoginResponseApi;
-
 /** Logout and refresh read the cookies; neither sends a token. */
 export type LogoutRequest = Record<string, never>;
 
