@@ -217,6 +217,10 @@ export const en = {
     changePriority: "Change priority of {{key}}",
     assigneeList: "Assignee",
     clearDue: "Clear due date",
+    dueBeforeStart:
+      "The due date is before the start date. Choose a later day.",
+    dueBeforeStartFrom:
+      "The due date is before the start date. Choose a day from {{start}} on.",
     updated: {
       justNow: "Just now",
       minutes_one: "{{count}} minute ago",
@@ -509,6 +513,9 @@ export const vi: MainTableCopy = {
     changePriority: "Đổi ưu tiên của {{key}}",
     assigneeList: "Người phụ trách",
     clearDue: "Bỏ hạn",
+    dueBeforeStart: "Hạn đang trước ngày bắt đầu. Chọn một ngày muộn hơn.",
+    dueBeforeStartFrom:
+      "Hạn đang trước ngày bắt đầu. Chọn một ngày từ {{start}} trở đi.",
     updated: {
       justNow: "Vừa xong",
       minutes_one: "{{count}} phút trước",

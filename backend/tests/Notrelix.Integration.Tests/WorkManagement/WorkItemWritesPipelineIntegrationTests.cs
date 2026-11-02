@@ -245,6 +245,94 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         (await VersionAsync(scene.Items[0])).Should().Be(version);
     }
 
+    // ---- UC-WM-D04 dates through the item update the table uses (PATCH /board-items/{id}) ------------------
+
+    [Fact]
+    public async Task DueDateThroughTheItemUpdate_SetsTheDay_ClearsIt_AndTheSameDayAgainBumpsNoVersion()
+    {
+        var scene = await SeedAsync();
+        using var owner = Provider(scene.Stack);
+        var due = new DateTime(2026, 11, 20, 10, 0, 0, DateTimeKind.Utc);
+        var read = await VersionAsync(scene.Items[0]);
+
+        await OrgTreeTestHost.SendAsync(owner, new UpdateBoardItemCommand(scene.Items[0], null, due, null, read));
+        var afterSet = await ItemAsync(scene.Items[0]);
+        await OrgTreeTestHost.SendAsync(owner, new UpdateBoardItemCommand(scene.Items[0], null, due, null, afterSet.Version));
+        var afterSame = await ItemAsync(scene.Items[0]);
+        await OrgTreeTestHost.SendAsync(owner, new UpdateBoardItemCommand(scene.Items[0], null, null, null, afterSame.Version, ClearDueDate: true));
+
+        afterSet.DueAt.Should().Be(new DateTimeOffset(due));
+        afterSet.Version.Should().Be(read + 1);
+        afterSame.Version.Should().Be(afterSet.Version, "the same day is a semantic no-op");
+        (await ItemAsync(scene.Items[0])).DueAt.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task DueDateThroughTheItemUpdate_BeforeTheStartDate_IsRefusedAndNothingChanges()
+    {
+        var scene = await SeedAsync();
+        using var owner = Provider(scene.Stack);
+        var start = new DateTime(2026, 12, 10, 0, 0, 0, DateTimeKind.Utc);
+        await OrgTreeTestHost.SendAsync(owner, new UpdateBoardItemCommand(scene.Items[0], null, null, start, await VersionAsync(scene.Items[0])));
+        var before = await ItemAsync(scene.Items[0]);
+
+        var onlyDue = () => OrgTreeTestHost.SendAsync(owner,
+            new UpdateBoardItemCommand(scene.Items[0], null, new DateTime(2026, 12, 1, 0, 0, 0, DateTimeKind.Utc), null, before.Version));
+        var both = () => OrgTreeTestHost.SendAsync(owner,
+            new UpdateBoardItemCommand(scene.Items[0], null, new DateTime(2026, 12, 1, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 12, 20, 0, 0, 0, DateTimeKind.Utc), before.Version));
+
+        (await onlyDue.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+            .Which.RuleCode.Should().Be(Notrelix.Domain.WorkManagement.WorkManagementRuleCodes.WorkManagement_Item_DueDateMustBeAfterStartDate);
+        await both.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+        var after = await ItemAsync(scene.Items[0]);
+        after.DueAt.Should().BeNull();
+        after.StartedAt.Should().Be(before.StartedAt);
+        after.Version.Should().Be(before.Version, "a refused range changes nothing");
+    }
+
+    [Fact]
+    public async Task DueDateThroughTheItemUpdate_WithAStaleVersion_IsRefusedAndTheDateStaysUnset()
+    {
+        var scene = await SeedAsync();
+        using var owner = Provider(scene.Stack);
+        var read = await VersionAsync(scene.Items[0]);
+        await OrgTreeTestHost.SendAsync(owner, Rename(scene.Items[0], "Moved on", read));
+        var current = await VersionAsync(scene.Items[0]);
+
+        var stale = () => OrgTreeTestHost.SendAsync(owner,
+            new UpdateBoardItemCommand(scene.Items[0], null, new DateTime(2026, 11, 20, 0, 0, 0, DateTimeKind.Utc), null, read));
+
+        await stale.Should().ThrowAsync<PreconditionFailed>();
+        (await ItemAsync(scene.Items[0])).DueAt.Should().BeNull();
+        (await VersionAsync(scene.Items[0])).Should().Be(current);
+    }
+
+    // ---- UC-WM-B09 archive ---------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task Archive_RetriedWithTheSameKey_HasOneEffect_AndAStaleVersionIsRefusedAndChangesNothing()
+    {
+        var scene = await SeedAsync(itemCount: 2);
+        using var owner = Provider(scene.Stack);
+        var read = await VersionAsync(scene.Items[0]);
+        var command = new ArchiveBoardItemCommand(scene.Items[0], read);
+        var key = $"archive-{Guid.NewGuid():N}";
+
+        var first = await OrgTreeTestHost.SendIdempotentAsync(owner, command, key);
+        var afterFirst = await ItemAsync(scene.Items[0]);
+        var replay = await OrgTreeTestHost.SendIdempotentAsync(owner, command, key);
+        var secondRead = await VersionAsync(scene.Items[1]);
+        await OrgTreeTestHost.SendAsync(owner, Rename(scene.Items[1], "Moved on", secondRead));
+        var stale = () => OrgTreeTestHost.SendAsync(owner, new ArchiveBoardItemCommand(scene.Items[1], secondRead));
+
+        replay.Should().BeEquivalentTo(first, "a replay returns the first committed result");
+        afterFirst.IsArchived.Should().BeTrue();
+        afterFirst.Version.Should().Be(read + 1, "one logical archive raised the version once");
+        (await VersionAsync(scene.Items[0])).Should().Be(afterFirst.Version, "the replay archived nothing a second time");
+        await stale.Should().ThrowAsync<PreconditionFailed>();
+        (await ItemAsync(scene.Items[1])).IsArchived.Should().BeFalse("a refused archive changes nothing");
+    }
+
     // ---- UC-WM-J02, E04, E06, F03 move between groups or lanes ----------------------------------------------
 
     [Fact]
