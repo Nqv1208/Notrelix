@@ -44,16 +44,20 @@ const COLOUR = {
   muted: "rgb(79, 88, 102)",
 } as const;
 
-async function openShare(page: Page) {
+async function openShare(page: Page, dark = false) {
   await page.clock.setFixedTime(NOW);
-  await page.addInitScript(() => {
-    try {
-      window.localStorage.setItem("notrelix-locale", "vi");
-      window.localStorage.setItem("notrelix-system-rail", "pinned");
-    } catch {
-      // Private mode: the defaults apply.
-    }
-  });
+  await page.addInitScript(
+    (mode) => {
+      try {
+        window.localStorage.setItem("notrelix-locale", "vi");
+        window.localStorage.setItem("notrelix-theme-mode", mode);
+        window.localStorage.setItem("notrelix-system-rail", "pinned");
+      } catch {
+        // Private mode: the defaults apply.
+      }
+    },
+    dark ? "dark" : "light",
+  );
   await page.goto(BOARD);
   await page
     .getByRole("button", { name: /^Chia sẻ/ })
@@ -411,6 +415,76 @@ test.describe("Board share at smaller windows (owner)", () => {
       ).toBeLessThanOrEqual(1);
       expect(Math.abs(dialog.y - 56)).toBeLessThanOrEqual(1);
       expect(dialog.y + dialog.height).toBeLessThanOrEqual(size.height);
+    });
+  }
+});
+
+/**
+ * Final-M-Share (390 x 844) `chia-se`, light and dark: the share dialog is a bottom sheet from 88 px
+ * under the top to the window's bottom edge, with a grab handle, a 52 px header and a 50 px add field.
+ * Numbers are read from the artboard rendered in Chromium, relative to the sheet's top-left. Still
+ * different from the artboard: the "Quyền khi thêm" row (the app keeps its level button and Mời on one
+ * row), the department row as a chevron card, the person rows and the stacked footer (the app keeps
+ * its three footer buttons); those are not measured.
+ */
+test.describe("Board share at 390 px (Final-M-Share, owner)", () => {
+  test.skip(
+    persona !== "owner" || scenario !== "default" || faults !== "",
+    "Owner checks need the default owner world without faults",
+  );
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  for (const dark of [false, true]) {
+    test(`the bottom sheet, grab handle, header and add field (${dark ? "dem" : "sang"})`, async ({
+      page,
+    }) => {
+      await openShare(page, dark);
+      const sheet = f(page, "dlg");
+      expectRect(
+        await box(sheet),
+        { x: 0, y: 88, width: 390, height: 756 },
+        "sheet",
+      );
+      expect(await style(sheet, "border-radius")).toBe("14px 14px 0px 0px");
+
+      expectRect(
+        await rel(page, f(page, "grab")),
+        { x: 177, y: 6, width: 36, height: 5 },
+        "grab handle",
+      );
+      expect(await style(f(page, "grab"), "border-radius")).toBe("3px");
+
+      expectRect(
+        await rel(page, f(page, "dh")),
+        { x: 0, y: 13, width: 390, height: 52 },
+        "header",
+      );
+      const title = f(page, "dt");
+      expectRect(await rel(page, title), { x: 20, y: 26.7 }, "title");
+      expect(await style(title, "font-size")).toBe("17px");
+      expect(await style(title, "font-weight")).toBe("650");
+      const close = page.getByRole("button", { name: "Đóng" }).first();
+      expectRect(
+        await rel(page, close),
+        { x: 338, y: 17, width: 44, height: 44 },
+        "close",
+      );
+
+      const field = f(page, "in");
+      expectRect(
+        await rel(page, field),
+        { x: 16, y: 71, width: 358, height: 50 },
+        "add field",
+      );
+      expect(await style(field, "border-radius")).toBe("12px");
+      // The level and the invite buttons are touch targets.
+      for (const name of ["lvl", "invite"]) {
+        expect((await box(f(page, name))).height).toBeGreaterThanOrEqual(43.5);
+      }
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth,
+      );
+      expect(overflow).toBeLessThanOrEqual(0);
     });
   }
 });

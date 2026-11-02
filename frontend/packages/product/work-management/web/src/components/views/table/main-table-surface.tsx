@@ -14,6 +14,7 @@ import { TableAddGroup, type TableAddGroupProps } from "./table-add-group";
 import {
   TableArchivedNotice,
   TableBulkBar,
+  TableBulkFailure,
   type TableBulkBarProps,
 } from "./table-bulk-bar";
 import { groupAccent } from "./table-chrome";
@@ -125,6 +126,8 @@ export interface MainTableSurfaceProps {
   onCreateItem: (groupId: string, title: string) => void;
   onClearFilter: () => void;
   onShowDone: () => void;
+  /** A refused or lost bulk change: the banner under the table with "Thử lại"; absent = none. */
+  bulkFailure?: { detail: string; onRetry: () => void } | null;
   onBulkStatus: TableBulkBarProps["onStatus"];
   onBulkDue: TableBulkBarProps["onDue"];
   onBulkArchive: TableBulkBarProps["onArchive"];
@@ -200,6 +203,7 @@ export function MainTableSurface({
   onCreateItem,
   onClearFilter,
   onShowDone,
+  bulkFailure,
   onBulkStatus,
   onBulkDue,
   onBulkArchive,
@@ -665,22 +669,41 @@ export function MainTableSurface({
       ) : null}
 
       {selectedCount > 0 ? (
-        <TableBulkBar
-          copy={copy}
-          count={selectedCount}
-          limit={{ max: BULK_ITEM_LIMIT, available: allRowIds.length }}
-          statusOptions={statusOptions}
-          canEdit={canEdit}
-          canArchive={canArchive}
-          onStatus={onBulkStatus}
-          onDue={onBulkDue}
-          onArchive={onBulkArchive}
-          onDelete={onBulkDelete}
-          priority={bulkPriority}
-          onClear={onClearSelection}
-          assign={bulkAssign}
-          move={bulkMove}
-        />
+        // The banner and the bar share one bottom anchor, so the bar never covers the banner (BC-Bulk bk-err).
+        <div
+          data-table-bulk-stack=""
+          className="pointer-events-none absolute inset-x-3 bottom-5.5 z-20 flex flex-col items-center gap-6 max-md:bottom-3"
+        >
+          {bulkFailure ? (
+            <div className="w-full px-1 sm:px-3">
+              <div className="pointer-events-auto rounded-[10px] bg-background shadow-bar">
+                <TableBulkFailure
+                  copy={copy}
+                  count={selectedCount}
+                  detail={bulkFailure.detail}
+                  onRetry={bulkFailure.onRetry}
+                />
+              </div>
+            </div>
+          ) : null}
+          <TableBulkBar
+            copy={copy}
+            count={selectedCount}
+            limit={{ max: BULK_ITEM_LIMIT, available: allRowIds.length }}
+            stacked
+            statusOptions={statusOptions}
+            canEdit={canEdit}
+            canArchive={canArchive}
+            onStatus={onBulkStatus}
+            onDue={onBulkDue}
+            onArchive={onBulkArchive}
+            onDelete={onBulkDelete}
+            priority={bulkPriority}
+            onClear={onClearSelection}
+            assign={bulkAssign}
+            move={bulkMove}
+          />
+        </div>
       ) : archivedNotice ? (
         <TableArchivedNotice
           copy={copy}
