@@ -11,6 +11,8 @@ evidence:
   - docs/workstreams/README.md
   - docs/workstreams/capability-delivery-map.md
   - docs/delivery/definition-of-done.md
+  - docs/delivery/product-delivery-lifecycle.md
+  - docs/workstreams/product-roadmap.md
   - docs/templates/feature-spec-template.md
 review_on:
   - capability-state-change
@@ -101,18 +103,12 @@ The lifecycle of `docs/workstreams/README.md` §8, applied to one use case:
 | IMPLEMENTING | Some backend or frontend code exists; the use case cannot run end to end. |
 | INTEGRATING | Backend and frontend exist and connect; end-to-end proof or required states are missing. |
 | HARDENING | Runs end to end against the real backend; gaps remain in states, design fidelity, tests or security proof. |
-| DONE | Every acceptance line in §7 holds on one commit of `develop`. |
+| DONE | Every line of the acceptance standard (§7) holds on one commit of `develop`. |
 | BLOCKED | Waits on a named decision or dependency. |
 
 ## 7. Acceptance standard
 
-A use case is DONE only when all of these hold on the same commit (`docs/delivery/definition-of-done.md`):
-
-1. **Backend**: the server authorizes every actor and returns the identical NotFound to people without access. Competing writes carry the expected version, and a stale write changes nothing. A retry with the same idempotency key has no second effect. A semantic no-op bumps no version and emits nothing. Tests cover success, each rejection, the no-op and the conflict; tenant-scoped data has a cross-tenant negative test.
-2. **Frontend**: the UI uses the generated API client. Every applicable state is built: loading, empty, success, validation error, permission denied, read-only, conflict, pending, offline and destructive confirmation. Optimistic writes roll back on rejection. Keyboard and screen reader complete the flow, and axe reports no serious violation.
-3. **Design**: every screen and state that has an artboard matches it within 1 px, proven by a box-tree comparison, at each width and theme the artboard draws. A state or width the canvas does not draw is built from design-system components and tokens on the pattern of the nearest drawn state, and the acceptance screenshots at 1440, 1024 and 390 px in light and dark show no overflow, clipping or squeezed columns, 44 px targets at 390 px and no serious axe violation. The Evidence line names which states were measured and which were reviewed.
-4. **End to end**: one journey per use case runs against the real backend and covers the main flow and one rejection.
-5. **Lead acceptance**: the lead, or an acceptance agent that did not build the use case, runs the use case on the development stack against every acceptance line and records the evidence (the real e2e spec and its pass count, screenshots or the box-tree report) in the use case's Evidence line. The owner tests released versions as a user and files what they find as defects, not as a gate.
+The four-line standard for DONE (backend, frontend, design, real end to end), the evidence rules, and who accepts what are owned by [`docs/delivery/product-delivery-lifecycle.md`](../../delivery/product-delivery-lifecycle.md) (DEL-003 to DEL-005). A use case's pull request sets DONE; the lead reads the diff and the Evidence line and merges. Versions are accepted by the owner (DEL-012).
 
 The design canvas holding the artboards is the owner's claude.ai artifact `18L4jUXGfdXh7Wn9YQvA2x`. Artboard ids in the catalog refer to it.
 
@@ -122,7 +118,7 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 |---|---|---|---|---|---|---|---|
 | Accounts | 42 | 16 | 22 | 2 | 2 | 0 | 0 |
 | Identity | 61 | 6 | 10 | 12 | 6 | 23 | 4 |
-| Workspaces | 91 | 6 | 13 | 45 | 14 | 11 | 2 |
+| Workspaces | 91 | 6 | 13 | 45 | 12 | 13 | 2 |
 | Governance | 75 | 15 | 19 | 14 | 21 | 0 | 6 |
 | Work Management | 171 | 10 | 1 | 13 | 142 | 4 | 1 |
 | Documents | 82 | 12 | 4 | 43 | 20 | 0 | 3 |
@@ -132,9 +128,9 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 | Billing | 99 | 56 | 27 | 8 | 7 | 0 | 1 |
 | Analytics | 61 | 28 | 22 | 5 | 4 | 0 | 2 |
 | Platform and Foundation | 58 | 4 | 33 | 4 | 16 | 0 | 1 |
-| **Total** | **959** | **196** | **204** | **215** | **280** | **38** | **26** |
+| **Total** | **959** | **196** | **204** | **215** | **278** | **40** | **26** |
 
-Thirty-eight use cases are DONE: Work Management A13 and A14 (set by the board lifecycle pull request, 2026-11-03), Work Management B09, accepted 2026-11-02 by an independent acceptance agent that did not build it at develop `ab1246eb3` (the same run kept Work Management B04 at HARDENING: the update validator caps a title at 200 where the Domain and the catalog say 500, and no artboard draws the title editor; the Work Management counts were re-taken with awk from the index),  Workspaces G04, G05, G06, H01 and H03 and Identity B06 and B07, accepted 2026-11-02 by a fifth independent acceptance agent that did not build them at develop `e368b0dc2` (the invitation and join pages and the forgot and reset password pages were fixed in the two changes before it; the counts were re-taken with awk from the context indexes and agree with this table), Identity B09, D01 and I01, accepted 2026-11-02 by a third independent acceptance agent that did not build them at develop `28ef68aaf` (the same run kept Identity B06 and B07 at HARDENING: a visitor who opens or reloads `/forgot-password` or `/reset-password` directly is sent to sign-in as if the session had ended; the counts were re-taken with awk from the context indexes and agree with this table, Work Management included: 171 index rows, the six-field retired rows such as A27 and A28 are not use cases), Workspaces F02 and B01, accepted 2026-11-02 by a fourth independent acceptance agent that did not build them at develop `8d139a73e` (the same run kept Workspaces G04, G05, G06, H01 and H03 and Work Management B36, A16, B28, B09 and C07 at HARDENING, each with its gap in the State line), Workspaces F05, G01, I04 and K01, accepted 2026-11-02 by an independent acceptance agent that did not build them at develop `a6708f501` (the same run held Workspaces F02, G04, G05, G06, H01, H03 and B01 and Work Management B36 and A16 at HARDENING, each with its gap in the State line; F02 and B01 were accepted by the later run named above), Identity C01, C02, C04, D03, H03 and J02, accepted 2026-11-02 by an independent acceptance agent that did not build them (the same run did not accept Identity B04, B05, B06, B07, B09, D01, I01, I02 and J01; their gaps are in their State lines), Identity B04, B05, I02 and J01, accepted 2026-11-02 by a second independent acceptance agent that did not build them at develop `876ebfb57` (the same run held Identity B06, B07, B09, D01 and I01 at HARDENING, each with its gap in the State line), and Identity C03, D02, H01, J03, K04, K05 and Work Management A24, each accepted 2026-11-01 by an acceptance agent that did not build it, and Identity H02 and K03, which that agent rejected on one line each (a concurrent activation, the missing provider step-up screen) and the fix lane accepted again after closing those lines; an independent acceptance agent confirmed H02 and K03 on all five lines on 2026-11-02 at `6ac912d0c` (see their State lines). The same run kept Work Management B36, B09, C07, A16 and B28 and sixteen Workspaces use cases at HARDENING, each with its gaps in the State line (the later run named above re-judged B36, B09, C07, A16 and B28 and kept them at HARDENING). Another independent acceptance agent, at develop `47df9399c`, judged Work Management D04, D05, D06, B09, I02 and J02 and kept all six at HARDENING, each with its gaps in the State line.
+Forty use cases are DONE: Work Management A13 and A14 (set by the board lifecycle pull request, 2026-11-03), Workspaces E02 and H05, closed 2026-11-02 after the independent acceptance at develop `4131c937a` found no gap in their lines 1–3 (CI covers their Integration classes and the build run of #286 ran their real specs), Work Management B09, accepted 2026-11-02 by an independent acceptance agent that did not build it at develop `ab1246eb3` (the same run kept Work Management B04 at HARDENING: the update validator caps a title at 200 where the Domain and the catalog say 500, and no artboard draws the title editor; the Work Management counts were re-taken with awk from the index),  Workspaces G04, G05, G06, H01 and H03 and Identity B06 and B07, accepted 2026-11-02 by a fifth independent acceptance agent that did not build them at develop `e368b0dc2` (the invitation and join pages and the forgot and reset password pages were fixed in the two changes before it; the counts were re-taken with awk from the context indexes and agree with this table), Identity B09, D01 and I01, accepted 2026-11-02 by a third independent acceptance agent that did not build them at develop `28ef68aaf` (the same run kept Identity B06 and B07 at HARDENING: a visitor who opens or reloads `/forgot-password` or `/reset-password` directly is sent to sign-in as if the session had ended; the counts were re-taken with awk from the context indexes and agree with this table, Work Management included: 171 index rows, the six-field retired rows such as A27 and A28 are not use cases), Workspaces F02 and B01, accepted 2026-11-02 by a fourth independent acceptance agent that did not build them at develop `8d139a73e` (the same run kept Workspaces G04, G05, G06, H01 and H03 and Work Management B36, A16, B28, B09 and C07 at HARDENING, each with its gap in the State line), Workspaces F05, G01, I04 and K01, accepted 2026-11-02 by an independent acceptance agent that did not build them at develop `a6708f501` (the same run held Workspaces F02, G04, G05, G06, H01, H03 and B01 and Work Management B36 and A16 at HARDENING, each with its gap in the State line; F02 and B01 were accepted by the later run named above), Identity C01, C02, C04, D03, H03 and J02, accepted 2026-11-02 by an independent acceptance agent that did not build them (the same run did not accept Identity B04, B05, B06, B07, B09, D01, I01, I02 and J01; their gaps are in their State lines), Identity B04, B05, I02 and J01, accepted 2026-11-02 by a second independent acceptance agent that did not build them at develop `876ebfb57` (the same run held Identity B06, B07, B09, D01 and I01 at HARDENING, each with its gap in the State line), and Identity C03, D02, H01, J03, K04, K05 and Work Management A24, each accepted 2026-11-01 by an acceptance agent that did not build it, and Identity H02 and K03, which that agent rejected on one line each (a concurrent activation, the missing provider step-up screen) and the fix lane accepted again after closing those lines; an independent acceptance agent confirmed H02 and K03 on all five lines on 2026-11-02 at `6ac912d0c` (see their State lines). The same run kept Work Management B36, B09, C07, A16 and B28 and sixteen Workspaces use cases at HARDENING, each with its gaps in the State line (the later run named above re-judged B36, B09, C07, A16 and B28 and kept them at HARDENING). Another independent acceptance agent, at develop `47df9399c`, judged Work Management D04, D05, D06, B09, I02 and J02 and kept all six at HARDENING, each with its gaps in the State line.
 
 Patterns that repeat across contexts, each detailed with file paths in the context files:
 
@@ -165,9 +161,10 @@ Architecture decisions that wait for a real consumer: ordered message delivery (
 
 ## 10. Delivery rule
 
-- One use case at a time, through review, QA and green CI on the same commit, then merge.
-- The pull request that implements a use case also applies that use case's "Canonical updates required" text to the owning product doc and moves the use case's state in this catalog.
-- Defects that leak data across tenants or permissions, lose data, or lose concurrent writes are fixed before new capability in the same context.
+Lanes, pull requests, release stages and the defect policy are owned by [`docs/delivery/product-delivery-lifecycle.md`](../../delivery/product-delivery-lifecycle.md). Two catalog duties stay here:
+
+- The pull request that implements a use case also applies that use case's "Canonical updates required" text to the owning product doc and moves the use case's state in this catalog (DEL-005).
+- Defects that leak data across tenants or permissions, lose data, or lose concurrent writes are fixed before new capability in the same context (DEL-013).
 
 ## 11. Maintenance
 
@@ -177,70 +174,4 @@ Architecture decisions that wait for a real consumer: ordered message delivery (
 
 ## 12. Version scope
 
-A use case belongs to the first version whose scope lists it. The catalog state stays the single progress measure: a version is cut when every use case in its scope is DONE (`docs/delivery/ci-cd-architecture.md` §13). This section names scope; it carries no counts of progress, percentages, assignees or dates (§11).
-
-### 12.1 Version 0.1.0: Work Management core, sign-in and session, workspaces and members
-
-Scope as the owner approved it, pinned to use-case IDs. Teams, onboarding and Home, the rest of Spaces, comments and attachments on items, provider sign-in, profile and API tokens are not in it unless the owner adds them. Use cases BLOCKED on an owner decision (§9) are outside it until the owner decides.
-Workspace delete and restore (UC-WSP-D03, D04) are in 0.1.0 now that owner decision 3 is made (§9).
-
-**Identity (`identity.md`)**
-
-| Capability | Name | Use cases | Count |
-|---|---|---|---|
-| A | Session bootstrap | A01-A03 | 3 |
-| B | Login | B01-B07, B09 | 8 |
-| C | Logout | C01-C04 | 4 |
-| D | Session expiration | D01-D05 | 5 |
-| H | MFA enrollment | H01-H03 | 3 |
-| I | MFA challenge | I01-I02 | 2 |
-| J | MFA recovery (with disable) | J01-J03 | 3 |
-| K | Security settings (step-up only) | K03-K05 | 3 |
-| | Total | | 31 |
-
-**Workspaces (`workspaces.md`)**
-
-| Capability | Name | Use cases | Count |
-|---|---|---|---|
-| A | Workspace create | A01-A02, A04 | 3 |
-| B | Workspace read / resolve | B01, B04 | 2 |
-| C | Workspace update | C01 | 1 |
-| D | Workspace lifecycle transition (delete and restore only) | D03-D04 | 2 |
-| E | Membership read | E01-E02 | 2 |
-| F | Membership add / remove / change | F02, F05 | 2 |
-| G | Invitation create | G01, G03-G06 | 5 |
-| H | Invitation accept / reject / revoke | H01-H03, H05-H06 | 5 |
-| I | Workspace selection / switch integration | I01-I02, I04 | 3 |
-| K | Spaces (minimal: create, read, place a board) | K01-K02, K15 | 3 |
-| | Total | | 28 |
-
-**Work Management (`work-management.md`)**
-
-| Capability | Name | Use cases | Count |
-|---|---|---|---|
-| A | Board lifecycle | A01-A10, A12-A18, A21-A22, A24, A26 | 21 |
-| B | BoardItem lifecycle | B01-B16, B18-B20, B22-B26, B28-B31, B33-B36 | 32 |
-| C | BoardField definitions | C01-C02, C04, C06-C16, C22 | 15 |
-| D | Field values | D01-D12 | 12 |
-| E | Groups and grouping | E01-E06 | 6 |
-| F | Ordering | F01-F04 | 4 |
-| G | Checklists | G01-G02 | 2 |
-| H | Query, filter and sort foundation | H01-H19 | 19 |
-| I | Table view | I01-I03 | 3 |
-| J | Kanban view | J01-J06 | 6 |
-| K | Calendar view | K01 | 1 |
-| L | Timeline view | L01 | 1 |
-| N | Form input | N01-N05 | 5 |
-| O | Activity and event production | O01, O04 | 2 |
-| P | Realtime synchronization | P01-P04 | 4 |
-| T | Performance and hardening | T01 | 1 |
-| | Total | | 134 |
-
-Version 0.1.0 holds 193 use cases.
-
-### 12.2 Later versions (capabilities only)
-
-- 0.2: Documents and Collaboration.
-- 0.3: Governance, Accounts and the operator console.
-- 0.4: Automation and Integrations.
-- 1.0: general availability, with real Billing, Analytics and the deploy pipeline.
+Which release holds each use case, the acceptance journeys, the order of the work and the provisional windows are in [`docs/workstreams/product-roadmap.md`](../product-roadmap.md). The catalog state stays the single progress measure: a version is cut when every use case in its scope is DONE and the owner has accepted it ([`product-delivery-lifecycle.md`](../../delivery/product-delivery-lifecycle.md) DEL-014). This catalog carries no scope lists, counts of progress, percentages, assignees or dates beyond §8 (§11).

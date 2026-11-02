@@ -109,6 +109,20 @@ Then the affected producer/consumer/data owner.
 
 ---
 
+## Use-case acceptance, release scope or release acceptance
+
+Read:
+
+```text
+delivery/product-delivery-lifecycle.md
+workstreams/product-roadmap.md
+workstreams/use-cases/README.md
+```
+
+Then the use-case file of the affected context.
+
+---
+
 ## Security / tenancy
 
 Start with:
@@ -263,6 +277,7 @@ docs/
 │   ├── definition-of-done.md
 │   ├── local-development.md
 │   ├── migration-policy.md
+│   ├── product-delivery-lifecycle.md
 │   ├── release-and-rollout.md
 │   └── team-ownership.md
 │
@@ -291,6 +306,7 @@ docs/
 │
 ├── workstreams/
 │   ├── README.md
+│   ├── product-roadmap.md   (release plan, non-normative)
 │   ├── teams/, executions/
 │   └── use-cases/<context>.md   (live delivery catalogs, non-normative evidence)
 │
@@ -1279,6 +1295,27 @@ delivery/release-and-rollout.md
 Owns shared release-change principles.
 
 Exact environment/deployment mechanics route to infrastructure/operations owners.
+
+---
+
+## 14.5 Product delivery lifecycle
+
+File:
+
+```text
+delivery/product-delivery-lifecycle.md
+```
+
+Owns how product work moves from the use-case catalog to a released version:
+
+- roles and who decides what;
+- when a use case is DONE and what evidence proves it;
+- the lane model;
+- release stages, release readiness and owner acceptance;
+- defect severity;
+- commit and pull request content.
+
+The release plan (what each version holds and in what order) is `workstreams/product-roadmap.md`; it is a plan, not authority.
 
 ---
 
