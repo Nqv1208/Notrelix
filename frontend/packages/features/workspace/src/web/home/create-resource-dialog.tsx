@@ -39,6 +39,9 @@ export interface CreateResourceDialogProps {
    * loading, or the read failed) = the plain name form.
    */
   readonly boardTemplates?: readonly CreateBoardTemplateChoice[];
+  /** Whether the starters are still being read or the read failed; a plain board can be made either way. */
+  readonly boardTemplatesStatus?: "loading" | "error" | "ready";
+  readonly onRetryBoardTemplates?: () => void;
   readonly onSubmit: (
     kind: CreatableResource,
     name: string,
@@ -71,6 +74,8 @@ export function CreateResourceDialog({
   spaceName = null,
   templates = [],
   boardTemplates = [],
+  boardTemplatesStatus = "ready",
+  onRetryBoardTemplates,
   onOpenChange,
   onSubmit,
 }: CreateResourceDialogProps) {
@@ -135,6 +140,35 @@ export function CreateResourceDialog({
                 : null}
             </DialogDescription>
           </DialogHeader>
+          {isBoard && boardTemplatesStatus === "loading" ? (
+            <p
+              role="status"
+              className="m-0 rounded-[10px] border border-dashed border-input p-3 text-xs text-muted-foreground"
+            >
+              {copy.create.templatesLoading}
+            </p>
+          ) : null}
+          {isBoard && boardTemplatesStatus === "error" ? (
+            <div
+              role="alert"
+              className="flex flex-wrap items-center gap-2 rounded-[10px] border border-input bg-muted p-3 text-xs text-muted-foreground"
+            >
+              <span className="min-w-0 flex-1">
+                {copy.create.templatesFailed}
+              </span>
+              {onRetryBoardTemplates ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="max-sm:h-11"
+                  onClick={onRetryBoardTemplates}
+                >
+                  {copy.create.templatesRetry}
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
           {isBoard && boardTemplates.length > 0 ? (
             <BoardTemplateGallery
               copy={copy}

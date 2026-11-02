@@ -62,7 +62,7 @@ export function TemplatesSection({
   const close = () => setAdding(false);
 
   async function save() {
-    if (trimmed === "") return;
+    if (trimmed === "" || overCap) return;
     const result = await run(
       () =>
         panel.onSave({

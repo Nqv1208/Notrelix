@@ -213,6 +213,24 @@ describe("BoardShareDialogSurface", () => {
     expect(screen.getByText(copy.link.publicOn)).toBeTruthy();
   });
 
+  it("keeps the caller's own row and the board's Owner fixed: no level menu to open", () => {
+    renderShare(shareDefaultScenario(), {
+      onChangeLevel: vi.fn(),
+      onRemove: vi.fn(),
+    });
+    // The caller sees their own level as plain text, not a button: a person cannot lower themselves.
+    const own = screen.getByText(/Nguyễn Thu Hà/).closest('[data-f="pr"]')!;
+    expect(within(own as HTMLElement).queryByRole("button")).toBeNull();
+    expect(within(own as HTMLElement).getByText("Quản lý")).toBeTruthy();
+    // A person who is neither the caller nor the Owner keeps a menu.
+    const other = screen
+      .getByText("Nhóm Kế toán tổng hợp")
+      .closest('[data-f="pr"]')!;
+    expect(
+      within(other as HTMLElement).getByRole("button", { name: /Quyền của/ }),
+    ).toBeTruthy();
+  });
+
   it("hides the permission list from a reader the producer discloses no entries to and says how many can open the Board", () => {
     const scenario = shareDefaultScenario();
     renderShare({

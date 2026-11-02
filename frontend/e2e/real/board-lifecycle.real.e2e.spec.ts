@@ -174,6 +174,62 @@ test("a manager archives, unarchives, deletes and restores a board; a member is 
   }
 });
 
+test("a member's open board turns read-only when a manager archives it and writable again when it is unarchived, without a reload", async ({
+  browser,
+  page,
+}) => {
+  await signIn(page, realUsers.admin);
+  const workspace = await createOwnedWorkspace(page, "Board live archive");
+  const member = await joinAs(
+    browser,
+    page,
+    workspace.id,
+    realUsers.workspaceAdmin,
+    "Member",
+  );
+  const boardId = await createBoard(
+    page,
+    workspace.id,
+    `Live ${Date.now().toString(36)}`,
+  );
+
+  try {
+    await member.page.goto(`/workspaces/${workspace.id}/boards/${boardId}`);
+    const banner = member.page.getByText(
+      "This board is archived. It is read-only until a manager unarchives it.",
+    );
+    await expect(
+      member.page.getByRole("heading", { level: 1 }).first(),
+    ).toBeVisible();
+    await expect(banner).toHaveCount(0);
+
+    // The manager archives through the API; the member's page, not reloaded, shows the banner.
+    const version = await versionOf(page, boardId);
+    const archived = await apiWrite(
+      page,
+      "POST",
+      `/boards/${boardId}/archive`,
+      {
+        expectedVersion: version,
+      },
+    );
+    expect(archived.status).toBeLessThan(300);
+    await expect(banner).toBeVisible({ timeout: 30_000 });
+
+    // Unarchive: the banner goes away on the same page, without a reload.
+    const unarchived = await apiWrite(
+      page,
+      "POST",
+      `/boards/${boardId}/unarchive`,
+      { expectedVersion: await versionOf(page, boardId) },
+    );
+    expect(unarchived.status).toBeLessThan(300);
+    await expect(banner).toHaveCount(0, { timeout: 30_000 });
+  } finally {
+    await member.context.close();
+  }
+});
+
 test("a workspace admin saves a board as a template and publishes it, a member starts a board from it and cannot publish, and an archived template is no longer offered", async ({
   browser,
   page,

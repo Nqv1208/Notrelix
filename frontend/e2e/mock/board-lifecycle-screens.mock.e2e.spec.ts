@@ -42,6 +42,13 @@ const SCREENS = {
     await page.getByRole("button", { name: "Bảng mới" }).first().click();
     await expect(page.getByRole("dialog", { name: "Bảng mới" })).toBeVisible();
   },
+  "new-board-dialog-error": async (page: Page) => {
+    await page.goto(`${WS}/library`);
+    await page.getByRole("button", { name: "Bảng mới" }).first().click();
+    const dialog = page.getByRole("dialog", { name: "Bảng mới" });
+    await dialog.getByRole("button", { name: "Tạo Bảng" }).click();
+    await expect(dialog.getByText("Nhập tên để tiếp tục.")).toBeVisible();
+  },
 } as const;
 
 for (const [name, show] of Object.entries(SCREENS)) {
@@ -152,3 +159,22 @@ for (const [name, show] of Object.entries(SCREENS)) {
     }
   }
 }
+
+test("an address that names a view that is gone shows the default view once, with one notice", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    try {
+      window.localStorage.setItem("notrelix-locale", "vi");
+    } catch {
+      // Private mode: the defaults apply.
+    }
+  });
+  await page.goto(`${ROADMAP}?savedView=00000000-0000-4000-8000-0000000000aa`);
+  const notice = page.getByText(
+    "Chế độ xem này không còn nữa. Đang hiện chế độ xem mặc định.",
+  );
+  await expect(notice).toHaveCount(1);
+  await expect(page).not.toHaveURL(/savedView=/);
+  await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
+});
