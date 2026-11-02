@@ -28,6 +28,12 @@ function pendingFor(queryClient: QueryClient): Map<string, number> {
   return pending;
 }
 
+/** The answer never arrived (no response, or a gateway failure), so the server may have applied the write. */
+export function outcomeUnknown(error: unknown): boolean {
+  const status = (error as { status?: unknown } | null)?.status;
+  return typeof status !== "number" || status >= 500;
+}
+
 export interface CardCommandContext {
   readonly correlationId: string;
   readonly idempotencyKey: string;
