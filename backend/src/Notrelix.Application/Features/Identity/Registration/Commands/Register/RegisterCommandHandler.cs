@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 using Notrelix.Application.Features.Identity.Abstractions;
+using Notrelix.Application.Features.Identity.Auth.Services;
 using Notrelix.Application.Features.Identity.Registration.Ports;
 using Notrelix.Application.Features.Identity.Registration.Services;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
@@ -19,6 +20,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
     private readonly IEmailVerificationTokenIssuer? _emailVerificationTokenIssuer;
     private readonly IEmailRegistrationProbe? _registrationProbe;
     private readonly RegistrationScope? _registrationScope;
+    private readonly CredentialScope? _credentialScope;
 
     public RegisterCommandHandler(
         IIdentityDbContext identityContext,
@@ -29,8 +31,10 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         IRateLimitService rateLimitService,
         IEmailVerificationTokenIssuer? emailVerificationTokenIssuer = null,
         IEmailRegistrationProbe? registrationProbe = null,
-        RegistrationScope? registrationScope = null)
+        RegistrationScope? registrationScope = null,
+        CredentialScope? credentialScope = null)
     {
+        _credentialScope = credentialScope;
         _registrationProbe = registrationProbe;
         _registrationScope = registrationScope;
         _identityContext = identityContext;
@@ -116,6 +120,12 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         {
             return;
         }
+
+        // The notice is an event in the outbox, and the database lets a tenantless event in only under a
+        // user scope: the same credential scope the sign-in and recovery steps use derives the one existing
+        // user from the address, so this request can write that one event and read nothing of the account.
+        if (_credentialScope is not null)
+            await _credentialScope.EnterByEmailAsync(normalizedEmail, cancellationToken);
 
         // The mail itself is queued after the commit by a consumer: the request does the same work and
         // takes the same time whether or not the address is registered.

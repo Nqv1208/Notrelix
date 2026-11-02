@@ -1,6 +1,8 @@
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
+using Notrelix.Application.Common.Data.Rls;
+using Notrelix.Application.Features.Identity.Auth.Services;
 using Notrelix.Application.Features.Identity.Registration.Ports;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 using Notrelix.Domain.Identity.Users;
@@ -146,6 +148,46 @@ public class RegisterTests : IdentityHandlerTestBase
 
         result.Succeeded.Should().BeTrue();
         IntegrationEventCollectorMock.Verify(c => c.Add(It.IsAny<IIntegrationEvent>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenEmailAlreadyExists_EntersTheCredentialScopeOfTheAddressBeforeTheNoticeIsRaised()
+    {
+        // The database lets a tenantless event in only under a user scope (found by the real run: the first
+        // version wrote the event with no scope and the outbox refused it).
+        SetupExistingAddress();
+        var rls = new Mock<IRlsSessionContext>();
+        rls.SetupGet(r => r.IsSessionContextEnabled).Returns(true);
+        CredentialScopeRequest? entered = null;
+        var order = new List<string>();
+        rls.Setup(r => r.EnterCredentialScopeAsync(It.IsAny<CredentialScopeRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<CredentialScopeRequest, CancellationToken>((request, _) =>
+            {
+                entered = request;
+                order.Add("scope");
+            })
+            .ReturnsAsync((Guid?)Guid.NewGuid());
+        IntegrationEventCollectorMock
+            .Setup(c => c.Add(It.IsAny<IIntegrationEvent>()))
+            .Callback<IIntegrationEvent>(_ => order.Add("event"));
+        var sut = new RegisterCommandHandler(
+            IdentityContextMock.Object,
+            _provisioningActionsMock.Object,
+            PasswordHasherMock.Object,
+            DateTimeProviderMock.Object,
+            IntegrationEventCollectorMock.Object,
+            RateLimitServiceMock.Object,
+            null,
+            _probeMock.Object,
+            null,
+            new CredentialScope(rls.Object));
+
+        var result = await sut.Handle(Command(), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        entered!.Kind.Should().Be(CredentialScopeKind.NormalizedEmail);
+        entered.Credential.Should().Be(TestEmail);
+        order.Should().Equal("scope", "event");
     }
 
     [Fact]
