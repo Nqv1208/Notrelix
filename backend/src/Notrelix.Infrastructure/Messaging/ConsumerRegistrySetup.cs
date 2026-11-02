@@ -59,6 +59,16 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "SendRegistrationNoticeEmailConsumer",
+                EventName = "identity.registration-attempted-on-existing-account",
+                EventVersion = 1,
+                EndpointName = "notrelix-identity-registration-notice-v1",
+                BoundedContext = "Identity",
+                Description = "Tells the owner of an existing address that someone tried to register with it",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "UserDeactivatedConsumer",
                 EventName = "user.deactivated",
                 EventVersion = 1,

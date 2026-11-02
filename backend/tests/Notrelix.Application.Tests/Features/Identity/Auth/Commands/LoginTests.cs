@@ -151,6 +151,43 @@ public class LoginTests : IdentityHandlerTestBase
     }
 
     [Fact]
+    public async Task Handle_EveryRejection_AnswersTheSameCodeTypeAndMessage()
+    {
+        // unknown address, wrong password, inactive and suspended accounts: nothing in the answer tells them apart
+        var answers = new List<(string[] Errors, (string Code, ApplicationErrorType Type)[] Typed)>();
+
+        async Task Attempt(User[] users, bool passwordMatches)
+        {
+            SetupUsers(users);
+            PasswordHasherMock.Setup(h => h.VerifyPassword(TestPassword, It.IsAny<string>())).Returns(passwordMatches);
+            var result = await CreateSut().Handle(
+                new LoginCommand { Email = TestEmail, Password = TestPassword }, CancellationToken.None);
+            result.Succeeded.Should().BeFalse();
+            answers.Add((result.Errors.ToArray(), result.TypedErrors.Select(e => (e.Code, e.Type)).ToArray()));
+        }
+
+        await Attempt([], passwordMatches: false);
+        await Attempt([CreateUser()], passwordMatches: false);
+        await Attempt([CreateUser(status: UserStatus.Inactive)], passwordMatches: true);
+        await Attempt([CreateUser(status: UserStatus.Suspended)], passwordMatches: true);
+
+        answers.Should().HaveCount(4);
+        answers.Skip(1).Should().AllSatisfy(answer =>
+        {
+            answer.Errors.Should().Equal(answers[0].Errors);
+            answer.Typed.Should().Equal(answers[0].Typed);
+        });
+        SessionIssuerMock.Verify(s => s.IssueAsync(It.IsAny<User>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData("", "any-password")]
+    [InlineData("not-an-email", "any-password")]
+    [InlineData("person@example.com", "")]
+    public void Validator_RefusesAMissingOrMalformedField(string email, string password) =>
+        new LoginCommandValidator().Validate(new LoginCommand { Email = email, Password = password }).IsValid.Should().BeFalse();
+
+    [Fact]
     public async Task Handle_WhenUserHasActiveMfaMethod_ReturnsChallengeAndIssuesNoSession()
     {
         var user = CreateUser();

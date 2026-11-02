@@ -146,17 +146,9 @@ export const identityOperations = [
     contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "POST",
     route: "/auth/register",
-    async handle({ store }) {
-      const user = store.getCurrentUser();
-      return ok({
-        ...sessionOf(store),
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          avatarUrl: user.avatarUrl,
-        },
-      });
+    async handle() {
+      // The same neutral answer for a new and an existing address; no session is opened.
+      return ok({ success: true });
     },
   }),
 

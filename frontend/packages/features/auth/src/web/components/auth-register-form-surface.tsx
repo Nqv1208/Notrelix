@@ -1,240 +1,322 @@
 import { useState } from "react";
+import { Mail } from "lucide-react";
+import { PASSWORD_MIN_LENGTH } from "../../core/schemas/password-policy";
+import { fillAuthCopy } from "../copy/fill-auth-copy";
+import type { AuthCopy } from "../copy/auth.copy";
 import {
-  AlertCircle,
-  ArrowRight,
-  Eye,
-  EyeOff,
-  Loader2,
-  Lock,
-  Mail,
-  User,
-} from "lucide-react";
-import { Button, Checkbox, Input, Label } from "@notrelix/ui-web";
-import { GoogleMark } from "./google-mark";
+  AuthHeading,
+  BUTTON_CLASS,
+  FieldError,
+  INPUT_CLASS,
+  LABEL_CLASS,
+  LINK_BUTTON_CLASS,
+  PasswordField,
+} from "./auth-parts";
+
+/**
+ * Registration. No artboard draws it, so it is built on the pattern of the
+ * drawn sign-in pages (the Final-Auth fields, buttons and links). The answer to
+ * the form is one neutral "check your email" step: it says the same thing for
+ * a new address and for one that already has an account, so the page never
+ * tells whether an address is registered. Pure: the step, the copy and the
+ * callbacks are injected; the typed values are its own.
+ */
+export type AuthRegisterStep =
+  | {
+      readonly kind: "form";
+      readonly error?: "unreachable" | "limited" | null;
+      /** The server's word on a field, shown under it. */
+      readonly fieldErrors?: {
+        readonly name?: string;
+        readonly email?: string;
+        readonly password?: string;
+      };
+    }
+  | { readonly kind: "sent"; readonly email: string };
 
 export interface RegisterSubmitData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly email: string;
+  readonly password: string;
 }
 
 export interface AuthRegisterFormSurfaceProps {
-  status?: "idle" | "pending";
-  serverError?: string | null;
-  onSubmit: (data: RegisterSubmitData) => void;
-  onGoogleSignIn?: () => void;
-  onGithubSignIn?: () => void;
-  onSignIn?: () => void;
+  readonly copy: AuthCopy;
+  readonly step: AuthRegisterStep;
+  readonly pending?: boolean;
+  readonly onSubmit: (data: RegisterSubmitData) => void;
+  readonly onSignIn: () => void;
+  /** "Use another email": back to the form with empty fields. */
+  readonly onOtherEmail: () => void;
 }
 
-export function AuthRegisterFormSurface({
-  status = "idle",
-  serverError = null,
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
+
+export function AuthRegisterFormSurface(props: AuthRegisterFormSurfaceProps) {
+  return props.step.kind === "form" ? (
+    <RegisterForm {...props} step={props.step} />
+  ) : (
+    <SentStep {...props} step={props.step} />
+  );
+}
+
+function RegisterForm({
+  copy,
+  step,
+  pending,
   onSubmit,
-  onGoogleSignIn,
-  onGithubSignIn,
   onSignIn,
-}: AuthRegisterFormSurfaceProps) {
+}: AuthRegisterFormSurfaceProps & {
+  step: Extract<AuthRegisterStep, { kind: "form" }>;
+}) {
+  const t = copy.register;
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const isPending = status === "pending";
+  const [terms, setTerms] = useState(false);
+  const [tried, setTried] = useState(false);
+
+  const firstError = tried && !firstName.trim() ? t.firstRequired : null;
+  const lastError = tried && !lastName.trim() ? t.lastRequired : null;
+  const emailError =
+    step.fieldErrors?.email ??
+    (tried && !EMAIL_SHAPE.test(email.trim()) ? t.emailInvalid : null);
+  const passwordError =
+    step.fieldErrors?.password ??
+    (tried && password.length < PASSWORD_MIN_LENGTH
+      ? fillAuthCopy(t.passwordShort, { count: PASSWORD_MIN_LENGTH })
+      : null);
+  const termsError = tried && !terms ? t.termsRequired : null;
+  const nameError = step.fieldErrors?.name ?? null;
 
   return (
-    <form
-      className="flex flex-col gap-6"
-      onSubmit={(event) => {
-        event.preventDefault();
-        onSubmit({ firstName, lastName, email, password });
-      }}
-    >
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight mb-1.5">
-          Create your account
-        </h1>
-        <p className="text-muted-foreground text-body">
-          Get started with Notrelix for free
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <Button
-          variant="outline"
-          type="button"
-          className="h-10 text-sm font-medium"
-          onClick={onGoogleSignIn}
-        >
-          <GoogleMark className="size-4 mr-2 shrink-0" />
-          Google
-        </Button>
-        <Button
-          variant="outline"
-          type="button"
-          className="h-10 text-sm font-medium"
-          onClick={onGithubSignIn}
-        >
-          <svg
-            className="size-4 mr-2 shrink-0"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
-          </svg>
-          GitHub
-        </Button>
-      </div>
-
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center">
-          <span className="bg-background px-3 text-xs text-muted-foreground uppercase tracking-wider">
-            or continue with email
-          </span>
-        </div>
-      </div>
-
-      {serverError ? (
-        <div className="flex items-start gap-2.5 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-foreground">
-          <AlertCircle className="size-4 shrink-0 mt-0.5 text-destructive" />
-          <span>{serverError}</span>
-        </div>
-      ) : null}
-
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <Label htmlFor="firstName">First name</Label>
-            <div className="relative">
-              <User className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="firstName"
-                type="text"
-                placeholder="John"
-                autoComplete="given-name"
-                value={firstName}
-                onChange={(event) => setFirstName(event.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="lastName">Last name</Label>
-            <div className="relative">
-              <User className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="lastName"
-                type="text"
-                placeholder="Doe"
-                autoComplete="family-name"
-                value={lastName}
-                onChange={(event) => setLastName(event.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="email">Work email</Label>
-          <div className="relative">
-            <Mail className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@company.com"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="pl-9"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <div className="relative">
-            <Lock className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              placeholder="Min. 8 characters"
-              autoComplete="new-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="pl-9 pr-10"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((value) => !value)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? (
-                <EyeOff className="size-4" />
-              ) : (
-                <Eye className="size-4" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-start gap-2.5">
-          <Checkbox id="terms" className="mt-0.5" />
-          <Label
-            htmlFor="terms"
-            className="text-sm font-normal cursor-pointer leading-relaxed text-muted-foreground"
-          >
-            I agree to the{" "}
-            <a
-              href="/legal/terms"
-              className="text-foreground underline-offset-4 hover:underline"
-            >
-              Terms of Service
-            </a>{" "}
-            and{" "}
-            <a
-              href="/legal/privacy"
-              className="text-foreground underline-offset-4 hover:underline"
-            >
-              Privacy Policy
-            </a>
-          </Label>
-        </div>
-      </div>
-
-      <Button
-        type="submit"
-        className="w-full h-10 bg-[image:var(--brand-gradient)] hover:opacity-90 text-white font-medium shadow-md shadow-danger/10 transition-all border-0"
-        disabled={isPending}
+    <>
+      <AuthHeading title={t.title} lead={t.lead} />
+      <form
+        noValidate
+        className="flex flex-col gap-4.5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setTried(true);
+          if (
+            !firstName.trim() ||
+            !lastName.trim() ||
+            !EMAIL_SHAPE.test(email.trim()) ||
+            password.length < PASSWORD_MIN_LENGTH ||
+            !terms
+          )
+            return;
+          onSubmit({
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            email: email.trim(),
+            password,
+          });
+        }}
       >
-        {isPending ? (
-          <>
-            <Loader2 className="size-4 mr-2 animate-spin" />
-            Creating account...
-          </>
-        ) : (
-          <>
-            Create account
-            <ArrowRight className="size-4 ml-2" />
-          </>
-        )}
-      </Button>
-
-      <p className="text-center text-sm text-muted-foreground">
-        Already have an account?{" "}
+        <div className="grid grid-cols-2 gap-3 max-md:grid-cols-1">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="auth-register-first" className={LABEL_CLASS}>
+              {t.firstName}
+            </label>
+            <input
+              id="auth-register-first"
+              name="firstName"
+              type="text"
+              autoComplete="given-name"
+              value={firstName}
+              aria-invalid={firstError || nameError ? true : undefined}
+              aria-describedby={
+                firstError ? "auth-register-first-error" : undefined
+              }
+              onChange={(event) => setFirstName(event.target.value)}
+              className={INPUT_CLASS}
+            />
+            {firstError ? (
+              <FieldError id="auth-register-first-error">
+                {firstError}
+              </FieldError>
+            ) : null}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="auth-register-last" className={LABEL_CLASS}>
+              {t.lastName}
+            </label>
+            <input
+              id="auth-register-last"
+              name="lastName"
+              type="text"
+              autoComplete="family-name"
+              value={lastName}
+              aria-invalid={lastError || nameError ? true : undefined}
+              aria-describedby={
+                lastError ? "auth-register-last-error" : undefined
+              }
+              onChange={(event) => setLastName(event.target.value)}
+              className={INPUT_CLASS}
+            />
+            {lastError ? (
+              <FieldError id="auth-register-last-error">{lastError}</FieldError>
+            ) : null}
+          </div>
+        </div>
+        {nameError ? <FieldError>{nameError}</FieldError> : null}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="auth-register-email" className={LABEL_CLASS}>
+            {t.email}
+          </label>
+          <input
+            id="auth-register-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            placeholder={t.emailPlaceholder}
+            aria-invalid={emailError ? true : undefined}
+            aria-describedby={
+              emailError ? "auth-register-email-error" : undefined
+            }
+            onChange={(event) => setEmail(event.target.value)}
+            className={INPUT_CLASS}
+          />
+          {emailError ? (
+            <FieldError id="auth-register-email-error">{emailError}</FieldError>
+          ) : null}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="auth-register-password" className={LABEL_CLASS}>
+            {t.password}
+          </label>
+          <PasswordField
+            id="auth-register-password"
+            value={password}
+            onChange={setPassword}
+            invalid={Boolean(passwordError)}
+            describedBy={
+              passwordError
+                ? "auth-register-password-error"
+                : "auth-register-password-hint"
+            }
+            autoComplete="new-password"
+            showLabel={t.show}
+            hideLabel={t.hide}
+          />
+          {passwordError ? (
+            <FieldError id="auth-register-password-error">
+              {passwordError}
+            </FieldError>
+          ) : (
+            <p
+              id="auth-register-password-hint"
+              className="m-0 text-crumb leading-normal text-meta-foreground"
+            >
+              {fillAuthCopy(t.passwordHint, { count: PASSWORD_MIN_LENGTH })}
+            </p>
+          )}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="auth-register-terms"
+            className="flex min-h-touch cursor-pointer items-start gap-2.5 text-item-ui leading-normal text-muted-foreground md:min-h-0"
+          >
+            <input
+              id="auth-register-terms"
+              name="terms"
+              type="checkbox"
+              checked={terms}
+              aria-invalid={termsError ? true : undefined}
+              aria-describedby={
+                termsError ? "auth-register-terms-error" : undefined
+              }
+              onChange={(event) => setTerms(event.target.checked)}
+              className="mt-0.5 size-4.5 shrink-0 cursor-pointer accent-primary"
+            />
+            <span>
+              {t.termsBefore}
+              <a
+                href="/legal/terms"
+                className="font-medium text-brand-subtle-foreground hover:underline"
+              >
+                {t.terms}
+              </a>
+              {t.termsBetween}
+              <a
+                href="/legal/privacy"
+                className="font-medium text-brand-subtle-foreground hover:underline"
+              >
+                {t.privacy}
+              </a>
+            </span>
+          </label>
+          {termsError ? (
+            <FieldError id="auth-register-terms-error">{termsError}</FieldError>
+          ) : null}
+        </div>
+        {step.error ? <FieldError>{t[step.error]}</FieldError> : null}
         <button
-          type="button"
-          onClick={onSignIn}
-          className="font-medium text-foreground hover:text-link transition-colors underline-offset-4 hover:underline"
+          type="submit"
+          disabled={pending}
+          className={BUTTON_CLASS.primary}
         >
-          Sign in
+          {pending ? t.submitting : t.submit}
+        </button>
+      </form>
+      <p className="m-0 text-item-ui leading-normal text-muted-foreground">
+        {t.haveAccount}{" "}
+        <button type="button" onClick={onSignIn} className={LINK_BUTTON_CLASS}>
+          {t.signIn}
         </button>
       </p>
-    </form>
+    </>
+  );
+}
+
+function SentStep({
+  copy,
+  step,
+  onSignIn,
+  onOtherEmail,
+}: AuthRegisterFormSurfaceProps & {
+  step: Extract<AuthRegisterStep, { kind: "sent" }>;
+}) {
+  const t = copy.register;
+  return (
+    <>
+      <span
+        aria-hidden="true"
+        className="grid size-13 place-items-center rounded-[14px] bg-success-subtle text-success-text"
+      >
+        <Mail className="size-6" />
+      </span>
+      <div role="status">
+        <AuthHeading
+          title={t.sentTitle}
+          lead={
+            <>
+              {t.sentBody}
+              <b className="font-semibold text-foreground">{step.email}</b>
+              {t.sentBodyEnd}
+            </>
+          }
+        />
+      </div>
+      <p className="m-0 text-item-prose leading-normal text-muted-foreground">
+        {t.sentSpam}
+      </p>
+      <button type="button" onClick={onSignIn} className={BUTTON_CLASS.primary}>
+        {t.sentSignIn}
+      </button>
+      <div>
+        <button
+          type="button"
+          onClick={onOtherEmail}
+          className={LINK_BUTTON_CLASS}
+        >
+          {t.sentOther}
+        </button>
+      </div>
+    </>
   );
 }
