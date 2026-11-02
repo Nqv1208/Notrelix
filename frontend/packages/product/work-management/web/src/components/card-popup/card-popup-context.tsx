@@ -77,8 +77,24 @@ export interface CardPopupSlots {
   readonly linksExtras?: ReactNode;
 }
 
+/** What the column picker needs beyond the move: how full each column is and a move that names the place in it. */
+export interface CardPopupLanePicker {
+  /** Items per column, by the column's option id. */
+  readonly counts: Readonly<Record<string, number>>;
+  /** The warning limit of the columns that have one, by option id. */
+  readonly wipLimits: Readonly<Record<string, number>>;
+  /** Moves the card to the top or the bottom of a column; the promise tracks the save. */
+  readonly move: (
+    cardId: string,
+    optionId: string,
+    position: "top" | "bottom",
+  ) => Promise<unknown>;
+}
+
 /** Writes the popup needs beyond the sheet's callbacks; absent: the control is off. */
 export interface CardPopupActions {
+  /** The column picker of a board view that lays out columns; absent: a plain field write. */
+  readonly lanePicker?: CardPopupLanePicker;
   /** Moves the card to another column of the board (MoveBoardItem). */
   readonly moveToGroup?: (groupId: string) => void;
   /** Renames or recolours a board label (UpdateLabel); resolves false when refused. */

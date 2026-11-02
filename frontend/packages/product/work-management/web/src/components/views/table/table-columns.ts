@@ -48,7 +48,7 @@ export interface TableColumnSpec {
  * 40 px selection column that the table adds in front.
  */
 export const TABLE_COLUMNS: readonly TableColumnSpec[] = [
-  { id: "key", width: 84 },
+  { id: "key", width: 84, locked: true },
   { id: "title", width: 340, Icon: AlignLeft, locked: true },
   { id: "status", width: 140, Icon: CircleCheck },
   { id: "assignee", width: 184, Icon: User },
@@ -146,6 +146,21 @@ export function moveColumnId(
   if (index < 0 || target < 0 || target >= ids.length) return null;
   const next = ids.slice();
   [next[index], next[target]] = [next[target]!, next[index]!];
+  return next;
+}
+
+/** The ids with `id` taken out and put where `target` is (a drop); null when nothing changes. */
+export function placeColumnId(
+  ids: readonly string[],
+  id: string,
+  target: string,
+): string[] | null {
+  const from = ids.indexOf(id);
+  const to = ids.indexOf(target);
+  if (from < 0 || to < 0 || from === to) return null;
+  const next = ids.slice();
+  next.splice(from, 1);
+  next.splice(to, 0, id);
   return next;
 }
 

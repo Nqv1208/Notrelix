@@ -117,7 +117,7 @@ function fakeServices(
       board = applyItemStatus(board, id, optionId) ?? board;
     }),
     createCard: vi.fn(async () => ({ id: "item-new", version: 1 })),
-    moveCard: vi.fn(async () => undefined),
+    moveCard: vi.fn(async () => ({ version: 2 })),
     updateFieldValue: vi.fn(async () => undefined),
     updateCard: vi.fn(async () => undefined),
     deleteCard: vi.fn(async () => undefined),

@@ -727,7 +727,7 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
   }) => {
     await openTable(page);
     await page.getByRole("button", { name: /^Cột \d+\/\d+$/ }).click();
-    await page.getByRole("menuitemradio", { name: "Gọn" }).click();
+    await page.getByRole("radio", { name: "Gọn" }).click();
     await page.keyboard.press("Escape");
     await expect(
       page.locator("[data-slot=main-table-surface]"),

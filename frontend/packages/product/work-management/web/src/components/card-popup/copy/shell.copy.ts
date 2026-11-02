@@ -57,6 +57,9 @@ export const en = {
   },
   groupMenuTitle: "Move to column",
   groupFullNote: "At the limit",
+  groupPosition: "Position in the column",
+  positionTop: "Top of the column",
+  positionBottom: "Bottom of the column",
   groupNote:
     "Moving is saved at once. A column over its limit still takes the card.",
   labels: "Labels",
@@ -187,6 +190,9 @@ export const vi: ShellCopy = {
   },
   groupMenuTitle: "Chuyển sang cột",
   groupFullNote: "Đã đủ giới hạn",
+  groupPosition: "Vị trí trong cột",
+  positionTop: "Đầu cột",
+  positionBottom: "Cuối cột",
   groupNote:
     "Chuyển cột là lưu ngay. Cột vượt giới hạn vẫn nhận thẻ, chỉ cảnh báo.",
   labels: "Nhãn",

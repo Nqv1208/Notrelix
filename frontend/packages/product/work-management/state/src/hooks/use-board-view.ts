@@ -209,7 +209,7 @@ export function useSavedViews(boardId: string, workspaceId?: string) {
 /** What a caller of `updateViewConfig` hears once the write ended. */
 export interface ViewConfigWriteResult {
   readonly onSuccess?: () => void;
-  readonly onError?: () => void;
+  readonly onError?: (error: unknown) => void;
 }
 
 /**
@@ -245,14 +245,14 @@ export function useBoardView(
           .then((made) =>
             saveConfig({ viewId: made.id, viewConfig: next }, result),
           )
-          .catch(() => result?.onError?.());
+          .catch((error: unknown) => result?.onError?.(error));
         return;
       }
       const made = create({ viewMode, viewConfig: next });
       creating.current = made;
       void made
         .then(() => result?.onSuccess?.())
-        .catch(() => result?.onError?.())
+        .catch((error: unknown) => result?.onError?.(error))
         .finally(() => {
           creating.current = null;
         });

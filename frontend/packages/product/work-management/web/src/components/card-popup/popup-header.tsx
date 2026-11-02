@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Check, ChevronDown, Loader2, MoreHorizontal, X } from "lucide-react";
 import {
   DropdownMenu,
@@ -76,6 +76,9 @@ function GroupPicker() {
     track,
   } = useCardPopup();
   const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<"top" | "bottom">("bottom");
+  const positionId = useId();
+  const lanePicker = actions.lanePicker;
   const t = copy.shell;
   const laneField = groupField ?? fields.status;
   const isStatus =
@@ -103,7 +106,9 @@ function GroupPicker() {
   const move = (laneId: string) => {
     setOpen(false);
     if (laneId === currentId || saving) return;
-    if (laneField)
+    if (laneField && lanePicker)
+      track(MOVE_SAVE_KEY, () => lanePicker.move(card.id, laneId, position));
+    else if (laneField)
       track(MOVE_SAVE_KEY, async () =>
         callbacks.onUpdateFieldValue({
           cardId: card.id,
@@ -141,7 +146,7 @@ function GroupPicker() {
       open={open}
       onOpenChange={setOpen}
       label={picker.title}
-      width={280}
+      width={300}
       trigger={
         <PopoverTrigger asChild>
           <button
@@ -176,12 +181,23 @@ function GroupPicker() {
         </PopoverTrigger>
       }
     >
-      <div className="mb-2 flex h-8 items-center justify-center">
-        <b className="text-[14px] font-[650]">{picker.title}</b>
+      <div className="relative mb-2 flex h-8 items-center justify-center">
+        <b className="text-[14px] leading-[1.45] font-[650]">{picker.title}</b>
+        <IconBtn
+          small
+          aria-label={t.close}
+          onClick={() => setOpen(false)}
+          className="absolute top-0 -right-1"
+        >
+          <X aria-hidden="true" className="size-4" />
+        </IconBtn>
       </div>
       <div role="listbox" aria-label={picker.title} className="flex flex-col">
         {lanes.map((lane) => {
           const selected = lane.id === currentId;
+          const count = lanePicker?.counts[lane.id];
+          const limit = lanePicker?.wipLimits[lane.id];
+          const full = limit !== undefined && (count ?? 0) >= limit;
           return (
             <button
               key={lane.id}
@@ -190,21 +206,59 @@ function GroupPicker() {
               aria-selected={selected}
               onClick={() => move(lane.id)}
               className={cn(
-                "flex min-h-10 w-full items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-[14px] hover:bg-state-hover-strong",
+                "flex min-h-10 w-full items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-[14px] hover:bg-state-hover-strong max-md:min-h-11",
                 selected &&
                   "bg-brand-subtle font-semibold text-brand-subtle-foreground",
               )}
             >
               <LaneDot lane={lane} />
-              {lane.title}
-              {selected ? (
+              <span className="flex min-w-0 flex-col">
+                <span className="leading-[1.3]">{lane.title}</span>
+                {full ? (
+                  <span className="text-[12px] leading-[1.3] font-medium text-warning-text">
+                    {t.groupFullNote}
+                  </span>
+                ) : null}
+              </span>
+              {count !== undefined ? (
+                <small className="ml-auto text-[12.5px] leading-[1.45] font-normal text-meta-foreground">
+                  {limit !== undefined ? `${count} / ${limit}` : count}
+                </small>
+              ) : selected ? (
                 <Check aria-hidden="true" className="ml-auto size-4" />
               ) : null}
             </button>
           );
         })}
       </div>
-      <p className="mt-2.5 mb-0 px-0.5 text-[12.5px] leading-[1.45] text-meta-foreground">
+      {lanePicker ? (
+        <>
+          <label
+            htmlFor={positionId}
+            className="mt-3 mb-1.5 block text-[12px] leading-[1.45] font-semibold text-muted-foreground"
+          >
+            {t.groupPosition}
+          </label>
+          <div className="relative">
+            <select
+              id={positionId}
+              value={position}
+              onChange={(event) =>
+                setPosition(event.target.value === "top" ? "top" : "bottom")
+              }
+              className="h-9 w-full appearance-none rounded-[8px] border border-line-strong bg-popover pr-9 pl-3 text-[14px] text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary max-md:h-11"
+            >
+              <option value="top">{t.positionTop}</option>
+              <option value="bottom">{t.positionBottom}</option>
+            </select>
+            <ChevronDown
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 right-3 size-[13px] -translate-y-1/2 text-meta-foreground"
+            />
+          </div>
+        </>
+      ) : null}
+      <p className="mx-0.5 mt-2.5 mb-0 text-[12.5px] leading-[1.45] text-meta-foreground">
         {picker.note}
       </p>
     </PanelPopover>
