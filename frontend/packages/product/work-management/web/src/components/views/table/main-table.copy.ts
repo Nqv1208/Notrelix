@@ -208,6 +208,8 @@ export const en = {
       moveToBoard: "Move to another board…",
       delete: "Delete…",
     },
+    /** The language of the due-date picker. */
+    pickerLocale: "en",
     changeStatus: "Change status of {{key}}",
     changeAssignee: "Change assignee of {{key}}",
     changeDue: "Change due date of {{key}}",
@@ -499,6 +501,7 @@ export const vi: MainTableCopy = {
       moveToBoard: "Chuyển sang board khác…",
       delete: "Xoá…",
     },
+    pickerLocale: "vi",
     changeStatus: "Đổi trạng thái của {{key}}",
     changeAssignee: "Đổi người phụ trách của {{key}}",
     changeDue: "Đổi hạn của {{key}}",

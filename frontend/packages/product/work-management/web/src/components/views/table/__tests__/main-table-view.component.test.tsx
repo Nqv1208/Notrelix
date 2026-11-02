@@ -71,8 +71,56 @@ function detailOf(board: FullBoardResponse, id: string): CardDetail {
   };
 }
 
-function fakeServices(access: BoardAccess) {
-  let board = erpBoardScenario();
+/** The board with the Person, Due date and Priority fields the cell editors write through. */
+function withItemFields(board: FullBoardResponse): FullBoardResponse {
+  const base = {
+    boardId: board.board.id,
+    position: 90,
+    isHidden: false,
+    isSystemField: true,
+  };
+  return {
+    ...board,
+    board: {
+      ...board.board,
+      members: [
+        { userId: "u-quan", name: "Trần Minh Quân", initials: "TQ" },
+        ...board.board.members,
+      ],
+      fieldDefinitions: [
+        ...board.board.fieldDefinitions,
+        {
+          ...base,
+          id: "field-person",
+          name: "Phụ trách",
+          fieldType: "person",
+          options: [],
+        },
+        {
+          ...base,
+          id: "field-due-date",
+          name: "Hạn",
+          fieldType: "date",
+          options: [],
+        },
+        {
+          ...base,
+          id: "field-priority",
+          name: "Ưu tiên",
+          fieldType: "select",
+          options: [
+            { id: "p-urgent", label: "Khẩn", color: "red", position: "a" },
+          ],
+        },
+      ],
+    },
+  } as FullBoardResponse;
+}
+
+function fakeServices(access: BoardAccess, itemFields = false) {
+  let board = itemFields
+    ? withItemFields(erpBoardScenario())
+    : erpBoardScenario();
   let saved: SavedBoardView = {
     id: "view-1",
     name: "Table",
@@ -243,8 +291,9 @@ function RoutedView({
 function renderTable(
   access: BoardAccess,
   props: Parameters<typeof RoutedView>[0] = {},
+  itemFields = false,
 ) {
-  const fake = fakeServices(access);
+  const fake = fakeServices(access, itemFields);
   const view = renderPureUi(
     <Providers services={fake.services}>
       <RoutedView {...props} />
@@ -395,6 +444,45 @@ describe("MainTableView on the ERP board", () => {
         name: /Viết tài liệu quy trình/,
       }),
     ).toBeTruthy();
+  });
+
+  it("tells the person when a due date lost the race and names who won", async () => {
+    const { cards } = renderTable(erpOwnerAccess(), {}, true);
+    cards.updateCard.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));
+    await ready();
+    fireEvent.click(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi hạn của ERP-149",
+      }),
+    );
+    fireEvent.click(screen.getByRole("grid").querySelectorAll("button")[15]!);
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(toast.error.mock.calls[0]?.[0]).toMatch(
+      /^Lê Hoàng Phúc vừa sửa “Viết tài liệu quy trình nhập hoá đơn đầu vào” trước bạn/,
+    );
+  });
+
+  it("tells the person when an assignee or a priority lost the race and names who won", async () => {
+    const { cards } = renderTable(erpOwnerAccess(), {}, true);
+    cards.updateFieldValue.mockRejectedValue(lostRace("Lê Hoàng Phúc"));
+    await ready();
+    fireEvent.click(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi người phụ trách của ERP-149",
+      }),
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /Trần Minh Quân/ })[0]!);
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+    fireEvent.keyDown(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi ưu tiên của ERP-149",
+      }),
+      { key: "Enter" },
+    );
+    fireEvent.click(screen.getAllByRole("menuitem")[0]!);
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(2));
+    for (const call of toast.error.mock.calls)
+      expect(call[0]).toMatch(/^Lê Hoàng Phúc vừa sửa “Viết tài liệu/);
   });
 
   // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.

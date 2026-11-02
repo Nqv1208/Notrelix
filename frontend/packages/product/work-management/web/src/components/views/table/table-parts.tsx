@@ -52,7 +52,9 @@ export function TableCheckbox({
         onChange(checked !== true);
       }}
       className={cn(
-        "grid size-3.75 shrink-0 place-items-center rounded-[4px] border-[1.5px] p-0 text-transparent",
+        "relative grid size-3.75 shrink-0 place-items-center rounded-[4px] border-[1.5px] p-0 text-transparent",
+        // 44 px hit area on a phone around the 15 px box.
+        "max-md:after:absolute max-md:after:-inset-[15px] max-md:after:content-['']",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         on
           ? "border-primary bg-primary text-primary-foreground"
