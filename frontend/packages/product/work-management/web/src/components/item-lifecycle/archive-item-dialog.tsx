@@ -196,7 +196,7 @@ export function ArchiveItemDialog({
             type="button"
             variant="outline"
             disabled={busy}
-            className={cn(buttonClass, cancelClass, busy && "sm:h-8")}
+            className={cn(buttonClass, cancelClass, busy && "px-3 sm:h-8")}
             onClick={onCancel}
           >
             {blocked ? copy.archiveClose : copy.archiveCancel}
@@ -208,8 +208,8 @@ export function ArchiveItemDialog({
               className={cn(
                 buttonClass,
                 "border-primary font-semibold",
-                // The artboard draws the pending buttons flat and 32 px tall.
-                busy && "font-medium sm:h-8",
+                // The artboard draws the pending buttons flat, 32 px tall and 12 px side padding.
+                busy && "px-3 font-medium sm:h-8",
               )}
               onClick={onConfirm}
             >
