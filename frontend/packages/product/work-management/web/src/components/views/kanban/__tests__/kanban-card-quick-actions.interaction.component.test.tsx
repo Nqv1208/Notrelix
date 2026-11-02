@@ -6,6 +6,7 @@ import type { Card } from "@notrelix/work-management-core";
 import { cardFixture, memberFixture } from "@notrelix/work-management-testing";
 import { KanbanCard } from "../kanban-card";
 import type { KanbanCardActions } from "../kanban-card-quick-actions";
+import type { KanbanCardMove } from "../kanban-card-move-menu";
 import { kanbanCardCopy } from "../kanban-card.copy";
 
 const VI = kanbanCardCopy("vi");
@@ -30,6 +31,76 @@ function renderCard(
   );
   return { card, onOpenDetails };
 }
+
+const LANES: KanbanCardMove["lanes"] = [
+  { id: "todo", title: "Cần làm", category: "todo", color: null },
+  { id: "doing", title: "Đang làm", category: "in_progress", color: null },
+  { id: "review", title: "Chờ duyệt", category: "review", color: null },
+];
+
+function openOptions() {
+  fireEvent.keyDown(screen.getByRole("button", { name: "Thêm tuỳ chọn" }), {
+    key: "Enter",
+  });
+}
+
+describe("KanbanCard Chuyển sang", () => {
+  it("names the current column on the item and moves the card to the column picked in the submenu", () => {
+    const onMove = vi.fn();
+    const { card } = renderCard({
+      move: { lanes: LANES, currentLaneId: () => "doing", onMove },
+    });
+    openOptions();
+    const item = screen.getByRole("menuitem", { name: "Chuyển sang Đang làm" });
+    fireEvent.keyDown(item, { key: "ArrowRight" });
+    const rows = screen.getAllByRole("menuitemradio");
+    expect(rows.map((row) => row.textContent)).toEqual([
+      "Cần làm",
+      "Đang làm",
+      "Chờ duyệt",
+    ]);
+    expect(rows.map((row) => row.getAttribute("aria-checked"))).toEqual([
+      "false",
+      "true",
+      "false",
+    ]);
+    // The current column is not a move.
+    fireEvent.click(rows[1]!);
+    expect(onMove).not.toHaveBeenCalled();
+    openOptions();
+    fireEvent.keyDown(
+      screen.getByRole("menuitem", { name: "Chuyển sang Đang làm" }),
+      { key: "ArrowRight" },
+    );
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Chờ duyệt" }));
+    expect(onMove).toHaveBeenCalledTimes(1);
+    expect(onMove).toHaveBeenCalledWith(
+      expect.objectContaining({ id: card.id }),
+      "review",
+    );
+  });
+
+  it("shows the item disabled with its reason when the viewer may not move cards", () => {
+    const onMove = vi.fn();
+    renderCard({
+      onCopyLink: vi.fn(),
+      move: {
+        lanes: LANES,
+        currentLaneId: () => "doing",
+        onMove,
+        disabledReason: "Bạn chỉ được xem board này, không chuyển thẻ được",
+      },
+    });
+    openOptions();
+    const item = screen.getByRole("menuitem", { name: "Chuyển sang" });
+    expect(item.getAttribute("aria-disabled")).toBe("true");
+    expect(
+      screen.getByText("Bạn chỉ được xem board này, không chuyển thẻ được"),
+    ).toBeTruthy();
+    fireEvent.click(item);
+    expect(onMove).not.toHaveBeenCalled();
+  });
+});
 
 describe("KanbanCard quick actions", () => {
   it("offers assign to me, the due date and options as buttons that stay reachable by Tab", () => {

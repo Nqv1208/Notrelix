@@ -414,6 +414,17 @@ describe("KanbanView on the ERP board", () => {
     expect(
       screen.getByRole("combobox", { name: "Vị trí trong cột" }),
     ).toBeTruthy();
+    // The current column draws a check and no count; the others keep their count.
+    const rows = within(
+      screen.getByRole("listbox", { name: "Chuyển sang cột" }),
+    ).getAllByRole("option");
+    const current = rows.find(
+      (row) => row.getAttribute("aria-selected") === "true",
+    )!;
+    expect(current.querySelector("small")).toBeNull();
+    expect(current.querySelector("svg")).not.toBeNull();
+    for (const row of rows.filter((entry) => entry !== current))
+      expect(row.querySelector("small")).not.toBeNull();
   }, 20_000);
 
   // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.

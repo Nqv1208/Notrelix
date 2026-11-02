@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CalendarDays, MoreHorizontal, UserRound } from "lucide-react";
 import {
   Button,
@@ -11,8 +11,16 @@ import {
   PopoverContent,
   PopoverTrigger,
   cn,
+  useMediaQuery,
 } from "@notrelix/ui-web";
 import type { Card } from "@notrelix/work-management-core";
+import {
+  CardMoveMenuItem,
+  CardMoveSheet,
+  MENU_ITEM_CLASS,
+  MENU_PANEL_CLASS,
+  type KanbanCardMove,
+} from "./kanban-card-move-menu";
 import type { KanbanCardCopy } from "./kanban-card.copy";
 
 /**
@@ -31,6 +39,8 @@ export interface KanbanCardActions {
   readonly onArchive?: (cardId: string) => void;
   readonly onDelete?: (cardId: string) => void;
   readonly onMoveToBoard?: (cardId: string) => void;
+  /** "Chuyển sang": the columns and the one write that moves the card to one of them. */
+  readonly move?: KanbanCardMove;
 }
 
 /** `YYYY-MM-DD` of the day the card is due (the backend keeps UTC days). */
@@ -70,6 +80,9 @@ export function KanbanCardQuickActions({
   onDueOpenChange: (open: boolean) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const moreRef = useRef<HTMLButtonElement>(null);
+  const phone = useMediaQuery("(max-width: 767px)");
   const {
     onAssignMe,
     onSetDue,
@@ -78,11 +91,12 @@ export function KanbanCardQuickActions({
     onArchive,
     onDelete,
     onMoveToBoard,
+    move,
   } = actions;
   const canAssign =
     Boolean(onAssignMe) && !isAssignedTo(card, actions.currentUserId);
   const hasMenu = Boolean(
-    onCopyLink || onDuplicate || onArchive || onDelete || onMoveToBoard,
+    onCopyLink || onDuplicate || onArchive || onDelete || onMoveToBoard || move,
   );
   if (!canAssign && !onSetDue && !hasMenu) return null;
   const pinned = dueOpen || menuOpen;
@@ -166,6 +180,7 @@ export function KanbanCardQuickActions({
         <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger asChild>
             <Button
+              ref={moreRef}
               type="button"
               variant="ghost"
               size="icon-sm"
@@ -176,30 +191,55 @@ export function KanbanCardQuickActions({
               <MoreHorizontal aria-hidden="true" className="size-3.5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent
+            align="end"
+            className={cn(MENU_PANEL_CLASS, "w-[272px]")}
+          >
+            {move ? (
+              <CardMoveMenuItem
+                card={card}
+                move={move}
+                copy={copy}
+                phone={phone}
+                onOpenSheet={() => setMoveOpen(true)}
+              />
+            ) : null}
             {onCopyLink ? (
-              <DropdownMenuItem onSelect={() => onCopyLink(card.id)}>
+              <DropdownMenuItem
+                className={MENU_ITEM_CLASS}
+                onSelect={() => onCopyLink(card.id)}
+              >
                 {copy.copyLink}
               </DropdownMenuItem>
             ) : null}
             {onDuplicate ? (
-              <DropdownMenuItem onSelect={() => onDuplicate(card.id)}>
+              <DropdownMenuItem
+                className={MENU_ITEM_CLASS}
+                onSelect={() => onDuplicate(card.id)}
+              >
                 {copy.duplicate}
               </DropdownMenuItem>
             ) : null}
             {onMoveToBoard ? (
-              <DropdownMenuItem onSelect={() => onMoveToBoard(card.id)}>
+              <DropdownMenuItem
+                className={MENU_ITEM_CLASS}
+                onSelect={() => onMoveToBoard(card.id)}
+              >
                 {copy.moveToBoard}
               </DropdownMenuItem>
             ) : null}
             {onArchive ? (
-              <DropdownMenuItem onSelect={() => onArchive(card.id)}>
+              <DropdownMenuItem
+                className={MENU_ITEM_CLASS}
+                onSelect={() => onArchive(card.id)}
+              >
                 {copy.archive}
               </DropdownMenuItem>
             ) : null}
             {onDelete ? (
               <DropdownMenuItem
                 variant="destructive"
+                className={MENU_ITEM_CLASS}
                 onSelect={() => onDelete(card.id)}
               >
                 {copy.delete}
@@ -207,6 +247,16 @@ export function KanbanCardQuickActions({
             ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
+      ) : null}
+      {move && !move.disabledReason ? (
+        <CardMoveSheet
+          card={card}
+          move={move}
+          copy={copy}
+          open={moveOpen}
+          onOpenChange={setMoveOpen}
+          returnFocus={() => moreRef.current?.focus()}
+        />
       ) : null}
     </span>
   );

@@ -17,6 +17,37 @@ const laneRow = (list: Locator, name: string) =>
     name: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(\\s|$)`),
   });
 
+/** The writes the page sends for one item, in order. */
+function itemWrites(page: Page, itemId: string) {
+  const writes: { method: string; path: string; body: unknown }[] = [];
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (request.method() === "GET" || !path.includes(`/board-items/${itemId}/`))
+      return;
+    writes.push({
+      method: request.method(),
+      path,
+      body: request.postData() ? request.postDataJSON() : null,
+    });
+  });
+  return writes;
+}
+
+/** Exactly one write left the page and it is a move naming the lane field and the lane option. */
+async function expectOneLaneMove(
+  writes: { method: string; path: string; body: unknown }[],
+) {
+  await expect.poll(() => writes.length).toBeGreaterThan(0);
+  expect(writes.map((write) => `${write.method} ${write.path}`)).toHaveLength(
+    1,
+  );
+  expect(writes[0]!.path).toMatch(/\/board-items\/[^/]+\/move$/);
+  expect(writes[0]!.body).toMatchObject({
+    laneFieldId: expect.any(String),
+    laneOptionId: expect.any(String),
+  });
+}
+
 /** A new card of Engineering Tasks that starts in a real lane, made as the Workspace 3 admin. */
 async function scene(page: Page) {
   await signIn(page, realUsers.workspaceAdmin);
@@ -88,14 +119,16 @@ test("a member moves a card to another column from its popup and the move surviv
   const target = options.map(laneName).find((name) => name !== before)!;
   await expect(laneRow(list, before)).toHaveAttribute("aria-selected", "true");
 
+  // One request moves the card: a POST /move that carries the lane field and the lane option, and no status write.
+  const writes = itemWrites(page, itemId);
   const written = page.waitForResponse(
     (response) =>
-      ["POST", "PATCH"].includes(response.request().method()) &&
-      /\/(move|status)$/.test(new URL(response.url()).pathname) &&
-      response.url().includes(`/board-items/${itemId}/`),
+      response.request().method() === "POST" &&
+      new URL(response.url()).pathname.endsWith(`/board-items/${itemId}/move`),
   );
   await laneRow(list, target).click();
   expect((await written).status()).toBeLessThan(300);
+  await expectOneLaneMove(writes);
   await expect(picker).toContainText(target);
   await expect(picker).toHaveAttribute("aria-busy", "false");
 
@@ -210,6 +243,56 @@ test("a move that lost the race is refused, the card keeps its column, and a vie
       );
     await guestContext.close();
   }
+});
+
+/**
+ * The card's own "More options" menu on the board: "Move to" lists the columns with the current one checked, and a
+ * pick is the same one write as the popup's picker and a drag (a POST /move with the lane field and the lane
+ * option); the card is in the new column after a reload.
+ */
+test("a member moves a card to another column from its card menu and the move survives a reload", async ({
+  page,
+}) => {
+  const { workspace, board, itemId } = await scene(page);
+  await page.goto(`/workspaces/${workspace.id}/boards/${board.id}`);
+  const card = page
+    .locator("article")
+    .filter({ has: page.locator(`button[data-card-id="${itemId}"]`) });
+  await expect(card).toBeVisible();
+  const writes = itemWrites(page, itemId);
+  await card.hover();
+  await card.getByRole("button", { name: "More options" }).click();
+  await page
+    .getByRole("menuitem", { name: /^Move to (?!another board)/ })
+    .focus();
+  await page.keyboard.press("ArrowRight");
+  const rows = page
+    .locator('[data-slot="dropdown-menu-sub-content"]')
+    .getByRole("menuitemradio");
+  await expect(rows.first()).toBeVisible();
+  expect(await rows.count()).toBeGreaterThan(1);
+  const current = rows.and(page.locator('[aria-checked="true"]'));
+  await expect(current).toHaveCount(1);
+  const target = (
+    await rows.and(page.locator('[aria-checked="false"]')).first().innerText()
+  ).trim();
+
+  const written = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      new URL(response.url()).pathname.endsWith(`/board-items/${itemId}/move`),
+  );
+  await rows.filter({ hasText: target }).first().click();
+  expect((await written).status()).toBeLessThan(300);
+  await expectOneLaneMove(writes);
+  const inTarget = () =>
+    page
+      .getByRole("region", { name: target, exact: true })
+      .locator(`button[data-card-id="${itemId}"]`);
+  await expect(inTarget()).toHaveCount(1);
+
+  await page.reload();
+  await expect(inTarget()).toHaveCount(1);
 });
 
 /**
