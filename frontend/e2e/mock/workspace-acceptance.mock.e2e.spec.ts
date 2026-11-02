@@ -227,6 +227,52 @@ for (const viewport of viewports) {
       });
     }
 
+    test(`invitee flyout with two waiting, then empty, ${mode}`, async ({
+      page,
+    }) => {
+      await prepare(page, viewport, dark);
+      await page.goto(WORKSPACE);
+      // The rail is pinned on a desktop and opens from the workspace chip on a tablet and a phone.
+      const trigger = page.getByRole("button", {
+        name: "Pending workspace invitations",
+      });
+      if (!(await trigger.isVisible())) {
+        if (viewport.width < 768) {
+          await page
+            .getByRole("button", { name: "Show or hide navigation" })
+            .first()
+            .click();
+        }
+        await page
+          .getByRole("button", { name: /open the Notrelix system rail/ })
+          .first()
+          .click();
+      }
+      await trigger.click();
+      const flyout = page.locator("[data-rail-flyout]");
+      await expect(flyout).toBeVisible();
+      await expect(flyout.getByText("Studio Sao Mai")).toBeVisible();
+      // The card itself stays inside the screen (on a phone it opens beside the 76 px rail).
+      const card = await flyout.boundingBox();
+      expect(
+        card!.x + card!.width,
+        "flyout ends inside the viewport",
+      ).toBeLessThanOrEqual(viewport.width);
+      await audit(page, "invitee-flyout", viewport, dark, flyout);
+
+      // Declining both leaves the empty state; the decline leaves the row at once and the buttons of the other wait.
+      for (const workspace of ["Studio Sao Mai", "Kế toán Minh An"]) {
+        await flyout
+          .getByRole("button", {
+            name: `Decline the invitation to ${workspace}`,
+          })
+          .click();
+        await expect(flyout.getByText(workspace)).toHaveCount(0);
+      }
+      await expect(flyout.getByText("No pending invitations")).toBeVisible();
+      await audit(page, "invitee-flyout-empty", viewport, dark, flyout);
+    });
+
     test(`workspace not found, ${mode}`, async ({ page }) => {
       await prepare(page, viewport, dark);
       await page.goto("/workspaces/no-such-workspace");
@@ -275,3 +321,33 @@ for (const viewport of viewports) {
     });
   }
 }
+
+test("invitee flyout: the keyboard opens it, reaches Accept and Decline, and Escape closes it", async ({
+  page,
+}) => {
+  await prepare(page, viewports[0], false);
+  await page.goto(WORKSPACE);
+  const trigger = page.getByRole("button", {
+    name: "Pending workspace invitations",
+  });
+  const chip = page
+    .getByRole("button", { name: /open the Notrelix system rail/ })
+    .first();
+  await chip.focus();
+  await page.keyboard.press("Enter");
+  await trigger.focus();
+  await page.keyboard.press("Enter");
+  const flyout = page.locator("[data-rail-flyout]");
+  await expect(flyout).toBeVisible();
+  // Focus moves into the flyout on its first button (Accept of the first row); Tab reaches its Decline.
+  await expect(
+    flyout.getByRole("button", { name: /^Accept the invitation to / }).first(),
+  ).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(
+    flyout.getByRole("button", { name: /^Decline the invitation to / }).first(),
+  ).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(flyout).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
