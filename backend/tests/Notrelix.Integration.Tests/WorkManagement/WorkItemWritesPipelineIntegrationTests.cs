@@ -171,6 +171,23 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         (await VersionAsync(scene.Items[0])).Should().Be(version);
     }
 
+    [Fact]
+    public async Task Status_ByAPersonOutsideTheWorkspace_NeverReachesTheItem()
+    {
+        var scene = await SeedAsync();
+        var version = await VersionAsync(scene.Items[0]);
+
+        await ForEachOutsiderAsync(scene.Stack, async provider =>
+        {
+            var act = () => OrgTreeTestHost.SendAsync(provider,
+                new UpdateBoardItemStatusCommand(scene.Items[0], scene.DoneOptionId.ToString(), version));
+            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+        });
+
+        (await ItemAsync(scene.Items[0])).CompletedAt.Should().BeNull();
+        (await VersionAsync(scene.Items[0])).Should().Be(version);
+    }
+
     // ---- UC-WM-D04 dates -----------------------------------------------------------------------------------
 
     [Fact]
@@ -337,10 +354,28 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         (await VersionAsync(scene.Items[0])).Should().Be(version);
     }
 
+    [Fact]
+    public async Task Assign_ByAPersonOutsideTheWorkspace_NeverReachesTheItem()
+    {
+        var scene = await SeedAsync();
+        var assignee = await _host.AddMemberAsync(scene.Stack, WorkspaceRole.Member, "Assignee");
+        var version = await VersionAsync(scene.Items[0]);
+
+        await ForEachOutsiderAsync(scene.Stack, async provider =>
+        {
+            var act = () => OrgTreeTestHost.SendAsync(provider,
+                new AssignBoardItemMemberCommand(scene.Items[0], assignee, version));
+            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+        });
+
+        (await AssigneesAsync(scene.Items[0])).Should().BeEmpty();
+        (await VersionAsync(scene.Items[0])).Should().Be(version);
+    }
+
     // ---- UC-WM-D06 priority (a Select value) ----------------------------------------------------------------
 
     [Fact]
-    public async Task Priority_RetriedWithTheSameKey_HasOneEffect_AndAnOptionOfAnotherFieldIsRefused()
+    public async Task Priority_RetriedWithTheSameKey_HasOneEffect_TheSameOptionChangesNothing_AndAnOptionOfAnotherFieldIsRefused()
     {
         var scene = await SeedAsync();
         using var owner = Provider(scene.Stack);
@@ -351,11 +386,13 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         await OrgTreeTestHost.SendIdempotentAsync(owner, command, key);
         var afterFirst = await VersionAsync(scene.Items[0]);
         await OrgTreeTestHost.SendIdempotentAsync(owner, command, key);
+        await OrgTreeTestHost.SendAsync(owner,
+            new UpdateBoardItemFieldValueCommand(scene.Items[0], scene.PriorityFieldId, scene.HighOptionId.ToString(), afterFirst));
         var otherFieldsOption = () => OrgTreeTestHost.SendAsync(owner,
             new UpdateBoardItemFieldValueCommand(scene.Items[0], scene.PriorityFieldId, scene.DoneOptionId.ToString(), afterFirst));
 
         afterFirst.Should().Be(read + 1);
-        (await VersionAsync(scene.Items[0])).Should().Be(afterFirst, "the replay wrote nothing");
+        (await VersionAsync(scene.Items[0])).Should().Be(afterFirst, "the replay and the same option again wrote nothing");
         await otherFieldsOption.Should().ThrowAsync<Exception>("an option of the Status field is not a Priority option");
         (await StoredValueAsync(scene.Items[0], scene.PriorityFieldId)).Should().Contain(scene.HighOptionId.ToString());
     }
