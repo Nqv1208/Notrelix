@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import {
   apiRead,
@@ -575,6 +576,54 @@ test("a description save that lost the race keeps my text, names who saved first
       .descriptionMd,
   ).toBe(theirs);
 
+  // No artboard draws this notice, so it is reviewed at 1440, 1024 and 390 in light and dark on the pattern of the
+  // card's drawn conflict notice: inside the viewport, no sideways scroll, 44 px buttons at 390, no serious axe issue.
+  const notice = dialog.getByRole("alert").filter({
+    hasText: "saved the description first",
+  });
+  for (const [width, height] of [
+    [1440, 900],
+    [1024, 768],
+    [390, 844],
+  ] as const) {
+    for (const dark of [false, true]) {
+      await page.setViewportSize({ width, height });
+      await page.evaluate((mode) => {
+        document.documentElement.classList.remove("light", "dark");
+        document.documentElement.classList.add(mode ? "dark" : "light");
+      }, dark);
+      await notice.scrollIntoViewIfNeeded();
+      const box = (await notice.boundingBox())!;
+      const label = `${width} ${dark ? "dark" : "light"}`;
+      expect(box.x, label).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width, label).toBeLessThanOrEqual(width + 0.5);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth - window.innerWidth,
+        ),
+        `${label}: the page scrolls sideways`,
+      ).toBeLessThanOrEqual(0);
+      if (width === 390)
+        for (const name of ["View the new version", "Keep mine"]) {
+          const button = (await notice
+            .getByRole("button", { name })
+            .boundingBox())!;
+          expect(button.height, `${label} ${name}`).toBeGreaterThanOrEqual(
+            43.5,
+          );
+        }
+      if (process.env.WM_SHOTS_DIR)
+        await page.screenshot({
+          path: `${process.env.WM_SHOTS_DIR}/description-clash-${width}-${dark ? "dark" : "light"}.png`,
+        });
+      const serious = (await new AxeBuilder({ page }).analyze()).violations
+        .filter((v) => ["serious", "critical"].includes(v.impact ?? ""))
+        .map((v) => v.id);
+      expect(serious, label).toEqual([]);
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 900 });
+
   // Keep mine saves it over theirs on purpose.
   const kept = patchAnswer();
   await dialog.getByRole("button", { name: "Keep mine" }).click();
@@ -649,7 +698,10 @@ test("an assignee the server refuses because they cannot see the board is told w
   const me = await apiRead<{ name: string }>(page, "/auth/me");
   await page.route(`**/board-items/${item.id}/assignees`, async (route) => {
     if (route.request().method() !== "POST") return route.continue();
-    await route.continue({ postData: JSON.stringify({ userId: guest.id }) });
+    const body = route.request().postDataJSON() as Record<string, unknown>;
+    await route.continue({
+      postData: JSON.stringify({ ...body, userId: guest.id }),
+    });
   });
 
   await page.goto(`/workspaces/${workspace.id}/boards/${board.id}?view=table`);
@@ -665,7 +717,7 @@ test("an assignee the server refuses because they cannot see the board is told w
       response.request().method() === "POST" &&
       response.url().includes(`/board-items/${item.id}/assignees`),
   );
-  await page.getByRole("button", { name: new RegExp(me.name) }).click();
+  await page.getByRole("button", { name: me.name, exact: true }).click();
   const refused = await answer;
   expect(refused.status()).toBe(403);
   expect(await refused.text()).toContain(
@@ -674,6 +726,47 @@ test("an assignee the server refuses because they cannot see the board is told w
 
   const toast = page.getByText(/cannot see the board yet/);
   await expect(toast).toContainText("Share the board with them first");
+
+  // The reason toast is the drawn toast with its action link; it is reviewed at 1440, 1024 and 390 in light and dark:
+  // inside the viewport, no sideways scroll, no serious axe violation. The pointer rests on it so it does not time out.
+  const card = page
+    .locator("[data-sonner-toast]")
+    .filter({ hasText: "cannot see the board yet" });
+  for (const [width, height] of [
+    [1440, 900],
+    [1024, 768],
+    [390, 844],
+  ] as const) {
+    for (const dark of [false, true]) {
+      await page.setViewportSize({ width, height });
+      await page.evaluate((mode) => {
+        document.documentElement.classList.remove("light", "dark");
+        document.documentElement.classList.add(mode ? "dark" : "light");
+      }, dark);
+      await page.waitForTimeout(400);
+      const box = (await card.boundingBox())!;
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      const label = `${width} ${dark ? "dark" : "light"}`;
+      expect(box.x, label).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width, label).toBeLessThanOrEqual(width + 0.5);
+      expect(box.y + box.height, label).toBeLessThanOrEqual(height + 0.5);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth - window.innerWidth,
+        ),
+        `${label}: the page scrolls sideways`,
+      ).toBeLessThanOrEqual(0);
+      if (process.env.WM_SHOTS_DIR)
+        await page.screenshot({
+          path: `${process.env.WM_SHOTS_DIR}/assignee-refused-${width}-${dark ? "dark" : "light"}.png`,
+        });
+      const serious = (await new AxeBuilder({ page }).analyze()).violations
+        .filter((v) => ["serious", "critical"].includes(v.impact ?? ""))
+        .map((v) => v.id);
+      expect(serious, label).toEqual([]);
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 900 });
   await page.getByRole("button", { name: "Share the board" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   expect(
