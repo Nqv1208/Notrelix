@@ -174,8 +174,14 @@ for (const [width, height] of [
           const count = await targets.count();
           expect(count, `${shot} targets`).toBeGreaterThan(0);
           for (let index = 0; index < count; index += 1) {
-            const target = await targets.nth(index).boundingBox();
-            if (target)
+            // A checkbox button inside a label is hit through the whole row: the row is the target.
+            const target = await targets.nth(index).evaluate((node) => {
+              const rect = (
+                node.closest("label") ?? node
+              ).getBoundingClientRect();
+              return { height: rect.height };
+            });
+            if (target.height > 0)
               expect(
                 target.height,
                 `${shot} target ${index}`,

@@ -12,7 +12,10 @@ import type {
 import { usePickerActions } from "../../card-popup/pickers/use-picker-actions";
 import { CardPopupSurface } from "../../card-popup/card-popup-surface";
 import { useCardPopupModel } from "../../card-popup/use-card-popup-model";
-import type { CardPopupSlots } from "../../card-popup/card-popup-context";
+import type {
+  CardPopupLanePicker,
+  CardPopupSlots,
+} from "../../card-popup/card-popup-context";
 import { withBoardPriority } from "../../shared/item-priority";
 import type {
   ItemSheetGroup,
@@ -39,6 +42,8 @@ interface KanbanCardDetailPanelProps {
   groups?: readonly ItemSheetGroup[];
   /** The field the view lays its columns by; the popup's column picker changes it. */
   groupField?: FieldDefinition;
+  /** The column picker's counts, limits and positioned move. */
+  lanePicker?: CardPopupLanePicker;
   slots?: CardPopupSlots;
 }
 
@@ -57,6 +62,7 @@ export function KanbanCardDetailPanel({
   now,
   groups,
   groupField,
+  lanePicker,
   slots,
 }: KanbanCardDetailPanelProps) {
   const [openedAt] = useState(() => new Date());
@@ -72,7 +78,7 @@ export function KanbanCardDetailPanel({
     groupField,
     now: now ?? openedAt,
     slots,
-    actions: pickerActions,
+    actions: lanePicker ? { ...pickerActions, lanePicker } : pickerActions,
   });
   const { refetch } = useCard(card.id, card.workspaceId);
   const { refetch: refetchBoard } = useFullBoard(

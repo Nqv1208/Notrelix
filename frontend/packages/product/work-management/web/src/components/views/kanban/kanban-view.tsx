@@ -70,7 +70,14 @@ import { CardPopupSurface } from "../../card-popup/card-popup-surface";
 import { approvalFailure } from "../../card-popup/approval/approval-model";
 import { KanbanCardDetailPanel } from "./kanban-card-detail-panel";
 import { fillCopy } from "./kanban-card.copy";
-import type { KanbanLaneDrop } from "./kanban-dnd";
+import {
+  arrangeKanbanLanes,
+  getKanbanDrop,
+  kanbanLaneKey,
+  moveCardInArrangement,
+  type KanbanLaneDrop,
+} from "./kanban-dnd";
+import type { CardPopupLanePicker } from "../../card-popup/card-popup-context";
 import { emptyKanbanFilter, isKanbanCardOverdue } from "./kanban-filter";
 import type { KanbanLaneCopy } from "./kanban-lane.copy";
 import { KanbanSkeleton } from "./kanban-skeleton";
@@ -846,6 +853,85 @@ export function KanbanView({
     });
   };
 
+  /**
+   * The popup's column picker: the lanes' counts and limits, and a move to a lane at its top or bottom,
+   * read like a drag (`getKanbanDrop`) so the same writes run.
+   */
+  const lanePicker: CardPopupLanePicker | undefined = kanban.groupByField
+    ? {
+        counts: Object.fromEntries(
+          kanban.allLanes.flatMap((lane) =>
+            lane.optionId ? [[lane.optionId, lane.total]] : [],
+          ),
+        ),
+        wipLimits: kanbanSettings.wipLimits,
+        placeableLanes: (cardId) => {
+          const lanes = kanban.allLanes;
+          const listId = lanes
+            .flatMap((lane) => lane.cards)
+            .find((card) => card.id === cardId)?.listId;
+          return lanes.flatMap((lane) =>
+            lane.optionId &&
+            lane.cards.some(
+              (card) => card.id !== cardId && card.listId === listId,
+            )
+              ? [lane.optionId]
+              : [],
+          );
+        },
+        move: (cardId, optionId, position) => {
+          const field = kanban.groupByField!;
+          const lanes = kanban.allLanes;
+          const drop = getKanbanDrop({
+            lanes,
+            arrangement: moveCardInArrangement(
+              arrangeKanbanLanes(lanes),
+              cardId,
+              kanbanLaneKey(optionId),
+              position === "top" ? 0 : Number.MAX_SAFE_INTEGER,
+            ),
+            cardId,
+            groups: kanban.groups,
+          });
+          noteOrigin(cardId);
+          if (drop?.kind === "place")
+            return kanban.dropItemInLane.mutateAsync({
+              cardId,
+              lane: {
+                fieldDefinitionId: field.id,
+                optionId,
+                viaStatusEndpoint: isStatusGrouping,
+              },
+              placement: {
+                listId: drop.listId,
+                position: drop.position,
+                previousSiblingId: drop.previousSiblingId,
+                nextSiblingId: drop.nextSiblingId,
+              },
+            });
+          if (drop?.kind === "reorder")
+            return kanban.moveCard.mutateAsync({
+              cardId,
+              listId: drop.listId,
+              position: drop.position,
+              previousSiblingId: drop.previousSiblingId,
+              nextSiblingId: drop.nextSiblingId,
+            });
+          // Only the lane's value changes (its natural place), or the card is not in the lanes shown.
+          return isStatusGrouping
+            ? kanban.updateStatus.mutateAsync({
+                cardId,
+                statusOptionId: optionId,
+              })
+            : kanban.updateFieldValue.mutateAsync({
+                cardId,
+                fieldDefinitionId: field.id,
+                value: optionId,
+              });
+        },
+      }
+    : undefined;
+
   const handleCopyLink = (cardId: string) => {
     const link = buildCardLink(window.location, cardId);
     void Promise.resolve()
@@ -1235,6 +1321,7 @@ export function KanbanView({
             onCopyLink={handleCopyLink}
             onMoveToGroup={handleMoveToGroup}
             onUpdateFieldValue={handleSheetFieldValue}
+            lanePicker={lanePicker}
             onDuplicate={removal.requestDuplicate}
           />
         ) : null}
@@ -1261,6 +1348,8 @@ export interface SelectedItemProps {
     payload: UpdateFieldValueInput,
   ) => void | Promise<unknown>;
   onDuplicate: (cardId: string) => void;
+  /** The column picker's counts, limits and positioned move; absent: it moves to the end of a lane as a field write. */
+  lanePicker?: CardPopupLanePicker;
 }
 
 /**
@@ -1353,6 +1442,7 @@ function KanbanSelectedItemReady({
   onCopyLink,
   onMoveToGroup,
   onUpdateFieldValue,
+  lanePicker,
 }: Omit<SelectedItemProps, "cardId" | "onRestoreFocus"> & {
   card: CardDetail;
   onCloseAutoFocus: (event: Event) => void;
@@ -1405,6 +1495,7 @@ function KanbanSelectedItemReady({
         capabilities={capabilities}
         groups={groups}
         groupField={groupField}
+        lanePicker={lanePicker}
         onCloseAutoFocus={onCloseAutoFocus}
         detailData={{
           files: files.data ?? card.files,

@@ -10,22 +10,36 @@ import {
 test.use({ viewport: { width: 1440, height: 900 } });
 
 /**
- * The "Columns" menu of the board table on the real stack: a member hides a column, the choice is theirs alone
- * and is kept after a reload; showing it again brings it back; and a viewer of the board may arrange their own
- * columns but cannot save them to the shared view (the menu item is off and says why).
+ * The "Columns" menu of the board table on the real stack: a member hides, shows and reorders columns, the choice
+ * is theirs alone and is kept after a reload; and a viewer of the board may arrange their own columns but cannot
+ * save them to the shared view (the button is off and says why).
  */
-const header = (page: Page, name: string) =>
-  page.getByRole("columnheader", { name: new RegExp(`^${name}\\b`) });
+const headerNames = async (page: Page) =>
+  (await page.getByRole("columnheader").allInnerTexts()).map((text) =>
+    text.trim(),
+  );
 
-const columnsMenu = (page: Page) =>
+const position = async (page: Page, name: string) =>
+  (await headerNames(page)).findIndex((text) => text.startsWith(name));
+
+const columnsButton = (page: Page) =>
   page.getByRole("button", { name: /^Columns/ });
+
+const menuOf = (page: Page) => page.getByRole("dialog", { name: "Columns" });
 
 async function openTable(page: Page, workspaceId: string, boardId: string) {
   await page.goto(`/workspaces/${workspaceId}/boards/${boardId}?view=table`);
-  await expect(columnsMenu(page)).toBeVisible();
+  await expect(columnsButton(page)).toBeVisible();
 }
 
-test("a member hides a column, it stays hidden after a reload, and showing it again brings it back", async ({
+const ownColumnsSaved = (page: Page) =>
+  page.waitForResponse(
+    (response) =>
+      response.request().method() === "PUT" &&
+      /\/preferences?\b/.test(response.url()),
+  );
+
+test("a member hides, shows and reorders a column, and the choice stays after a reload", async ({
   page,
 }) => {
   await signIn(page, realUsers.workspaceAdmin);
@@ -35,39 +49,56 @@ test("a member hides a column, it stays hidden after a reload, and showing it ag
     "Engineering Tasks",
   );
   await openTable(page, workspace.id, board.id);
-  await expect(header(page, "Priority")).toBeVisible();
+  await expect.poll(() => position(page, "Priority")).toBeGreaterThan(-1);
 
   try {
-    await columnsMenu(page).click();
-    const written = page.waitForResponse(
-      (response) =>
-        response.request().method() === "PUT" &&
-        /\/preferences?\b/.test(response.url()),
-    );
-    await page.getByRole("menuitemcheckbox", { name: "Priority" }).click();
-    expect((await written).status()).toBeLessThan(300);
+    // Hide.
+    await columnsButton(page).click();
+    const hidden = ownColumnsSaved(page);
+    await menuOf(page).getByRole("checkbox", { name: "Priority" }).click();
+    expect((await hidden).status()).toBeLessThan(300);
     await page.keyboard.press("Escape");
-    await expect(header(page, "Priority")).toHaveCount(0);
+    await expect.poll(() => position(page, "Priority")).toBe(-1);
 
     // The choice is kept on the server, not in the page.
     await page.reload();
-    await expect(columnsMenu(page)).toBeVisible();
-    await expect(header(page, "Status")).toBeVisible();
-    await expect(header(page, "Priority")).toHaveCount(0);
+    await expect(columnsButton(page)).toBeVisible();
+    await expect.poll(() => position(page, "Status")).toBeGreaterThan(-1);
+    await expect.poll(() => position(page, "Priority")).toBe(-1);
 
-    await columnsMenu(page).click();
-    await page.getByRole("menuitemcheckbox", { name: "Priority" }).click();
+    // Show again.
+    await columnsButton(page).click();
+    const shown = ownColumnsSaved(page);
+    await menuOf(page).getByRole("checkbox", { name: "Priority" }).click();
+    expect((await shown).status()).toBeLessThan(300);
     await page.keyboard.press("Escape");
-    await expect(header(page, "Priority")).toBeVisible();
+    await expect.poll(() => position(page, "Priority")).toBeGreaterThan(-1);
+
+    // Reorder: Alt+Down on the Status row moves the column one place to the right.
+    const before = await position(page, "Status");
+    await columnsButton(page).click();
+    const moved = ownColumnsSaved(page);
+    const status = menuOf(page).getByRole("checkbox", { name: "Status" });
+    await status.focus();
+    await page.keyboard.press("Alt+ArrowDown");
+    expect((await moved).status()).toBeLessThan(300);
+    await page.keyboard.press("Escape");
+    await expect.poll(() => position(page, "Status")).toBe(before + 1);
+
     await page.reload();
-    await expect(header(page, "Priority")).toBeVisible();
+    await expect(columnsButton(page)).toBeVisible();
+    await expect.poll(() => position(page, "Status")).toBe(before + 1);
   } finally {
-    // Leave the member's columns as found even when a step above failed.
+    // Leave the member's columns as found even when a step above failed: the menu's own way back.
     await openTable(page, workspace.id, board.id);
-    await columnsMenu(page).click();
-    const priority = page.getByRole("menuitemcheckbox", { name: "Priority" });
-    if ((await priority.getAttribute("aria-checked")) === "false")
-      await priority.click();
+    await columnsButton(page).click();
+    const back = menuOf(page).getByRole("button", {
+      name: "Back to the shared view",
+    });
+    if ((await back.getAttribute("aria-disabled")) !== "true") {
+      await back.click();
+      await expect(back).toHaveAttribute("aria-disabled", "true");
+    }
   }
 });
 
@@ -94,25 +125,27 @@ test("a viewer of the board arranges their own columns but cannot save them to t
   expect(grant.status).toBeLessThan(300);
   try {
     await openTable(guest, workspace.id, board.id);
-    await columnsMenu(guest).click();
-    const written = guest.waitForResponse(
-      (response) =>
-        response.request().method() === "PUT" &&
-        /\/preferences?\b/.test(response.url()),
-    );
-    await guest.getByRole("menuitemcheckbox", { name: "Priority" }).click();
+    await columnsButton(guest).click();
+    const written = ownColumnsSaved(guest);
+    await menuOf(guest).getByRole("checkbox", { name: "Priority" }).click();
     expect((await written).status()).toBeLessThan(300);
 
-    const save = guest.getByRole("menuitem", {
-      name: "Save to shared view",
+    const save = menuOf(guest).getByRole("button", {
+      name: "Save to the shared view",
     });
     await expect(save).toHaveAttribute("aria-disabled", "true");
-    await expect(
-      guest.getByText("Only editors can change the columns of the shared view"),
-    ).toBeVisible();
+    const reason = menuOf(guest).getByText(
+      "Only board editors can save to the shared view.",
+    );
+    await expect(reason).toBeVisible();
+    // The reason is what the locked button is described by.
+    const reasonId = await save.getAttribute("aria-describedby");
+    await expect(guest.locator(`[id="${reasonId}"]`)).toHaveText(
+      "Only board editors can save to the shared view.",
+    );
 
     // Restore the viewer's own columns.
-    await guest.getByRole("menuitemcheckbox", { name: "Priority" }).click();
+    await menuOf(guest).getByRole("checkbox", { name: "Priority" }).click();
   } finally {
     // Leave the board as found: the grant would break the next spec.
     const rows = await apiRead<

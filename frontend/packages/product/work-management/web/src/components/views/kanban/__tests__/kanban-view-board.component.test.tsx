@@ -117,7 +117,7 @@ function fakeServices(
       board = applyItemStatus(board, id, optionId) ?? board;
     }),
     createCard: vi.fn(async () => ({ id: "item-new", version: 1 })),
-    moveCard: vi.fn(async () => undefined),
+    moveCard: vi.fn(async () => ({ version: 2 })),
     updateFieldValue: vi.fn(async () => undefined),
     updateCard: vi.fn(async () => undefined),
     deleteCard: vi.fn(async () => undefined),
@@ -376,6 +376,28 @@ describe("KanbanView on the ERP board", () => {
       expect.any(Number),
       expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
+  }, 20_000);
+
+  // The server orders a group, not a column: the select names a place where another column holds a card of the group
+  // (this fixture has one group; the mock e2e covers a board where no column does).
+  it("draws the position select of the column picker when another column holds a card of the group", async () => {
+    renderKanban(erpOwnerAccess(), { initialItem: erpItemId("ERP-151") });
+    const dialog = await screen.findByRole("dialog", {
+      name: "Cấu hình quyền truy cập theo phòng ban cho phân hệ Kế toán",
+    });
+    const pill = await waitFor(
+      () => {
+        const button = within(dialog).getByTitle("Chuyển thẻ sang cột khác");
+        expect(button.getAttribute("aria-disabled")).not.toBe("true");
+        return button;
+      },
+      { timeout: 8000 },
+    );
+    fireEvent.click(pill);
+    await screen.findByRole("listbox", { name: "Chuyển sang cột" });
+    expect(
+      screen.getByRole("combobox", { name: "Vị trí trong cột" }),
+    ).toBeTruthy();
   }, 20_000);
 
   // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
