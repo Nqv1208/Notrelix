@@ -436,10 +436,10 @@ describe("MainTableView on the ERP board", () => {
       target: { value: "2026-11-03" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
-    await waitFor(() => expect(toast.error).toHaveBeenCalled());
-    expect(toast.error.mock.calls.at(-1)?.[0]).toContain(
-      "Chưa có gì bị thay đổi",
-    );
+    const banner = await screen.findByRole("alert");
+    expect(banner.textContent).toContain("Không áp dụng được cho việc này");
+    expect(banner.textContent).toContain("Chưa có gì bị thay đổi");
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
   // The popover closes on Apply, so a second press is the same pick made again.
@@ -458,8 +458,8 @@ describe("MainTableView on the ERP board", () => {
     await ready();
     fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-151" }));
     await applyDueDate();
-    await waitFor(() => expect(toast.error).toHaveBeenCalled());
-    await applyDueDate();
+    const banner = await screen.findByRole("alert");
+    fireEvent.click(within(banner).getByRole("button", { name: "Thử lại" }));
     await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(2));
     const [first, second] = cards.bulkUpdate.mock.calls.map(
       (call) =>
@@ -487,7 +487,7 @@ describe("MainTableView on the ERP board", () => {
     await ready();
     fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-151" }));
     await applyDueDate();
-    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    await screen.findByRole("alert");
     await applyDueDate();
     await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(2));
     const keys = cards.bulkUpdate.mock.calls.map(
@@ -510,8 +510,7 @@ describe("MainTableView on the ERP board", () => {
       target: { value: "2026-11-03" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
-    await waitFor(() => expect(toast.error).toHaveBeenCalled());
-    const message = String(toast.error.mock.calls.at(-1)?.[0]);
+    const message = (await screen.findByRole("alert")).textContent ?? "";
     expect(message).toContain("chưa có gì bị thay đổi");
     expect(message).toContain("Cấu hình quyền truy cập theo phòng ban");
     // The pick stays so the person can retry or change it.

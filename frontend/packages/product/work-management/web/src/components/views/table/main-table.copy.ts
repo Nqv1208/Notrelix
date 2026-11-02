@@ -267,6 +267,9 @@ export const en = {
     assignNobody: "Unassigned",
     moveLabel: "Move to board",
     moveNone: "No other board where you may add items",
+    failedTitle_one: "Couldn't change this item",
+    failedTitle_other: "Couldn't apply to all {{count}} items",
+    retry: "Try again",
   },
   archived: {
     done_one: "Archived {{count}} item",
@@ -556,6 +559,9 @@ export const vi: MainTableCopy = {
     assignNobody: "Chưa giao",
     moveLabel: "Chuyển sang board",
     moveNone: "Không có board khác bạn được thêm việc",
+    failedTitle_one: "Không áp dụng được cho việc này",
+    failedTitle_other: "Không áp dụng được cho cả {{count}} việc",
+    retry: "Thử lại",
   },
   archived: {
     done_one: "Đã lưu trữ {{count}} việc",

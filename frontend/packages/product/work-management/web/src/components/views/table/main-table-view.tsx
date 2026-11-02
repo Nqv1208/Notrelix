@@ -265,6 +265,11 @@ export function MainTableView({
     },
   });
   const bulkUpdate = useBulkUpdateItems(boardId, workspaceId);
+  const [bulkFailure, setBulkFailure] = useState<{
+    picked: string;
+    change: BulkItemChange;
+    detail: string;
+  } | null>(null);
   const bulkMutate = bulkUpdate.mutate;
   const moveItem = useMoveItemToBoard(boardId, workspaceId, {
     onError: (_error, { cardId }) =>
@@ -588,7 +593,9 @@ export function MainTableView({
   // Status, due date and assignee of the selected rows: one request, all or none.
   const bulkWrite = (change: BulkItemChange) => {
     for (const id of selectedList) noteTitle(id);
-    // The selection is spent only once the server took the change; a refusal keeps it and names the item.
+    const picked = [...selectedList].sort().join();
+    setBulkFailure(null);
+    // The selection is spent only once the server took the change; a refusal keeps it, names the item and offers a retry.
     bulkMutate(
       { itemIds: selectedList, change },
       {
@@ -596,16 +603,22 @@ export function MainTableView({
         onError: (error) => {
           const failed = bulkFailedItemId(error);
           const title = failed ? titles.current.get(failed) : undefined;
-          toast.error(
-            title
+          setBulkFailure({
+            picked,
+            change,
+            detail: title
               ? fillTableCopy(copy.failed.bulkItem, { title })
               : copy.failed.bulk,
-            { id: `table-bulk-${++toastAttempt.current}` },
-          );
+          });
         },
       },
     );
   };
+  // The banner belongs to the pick it refused: another pick drops it.
+  const failure =
+    bulkFailure && bulkFailure.picked === [...selectedList].sort().join()
+      ? bulkFailure
+      : null;
 
   const itemFields = findItemFields(board);
   const members = board.members.map((member) => ({
@@ -966,6 +979,14 @@ export function MainTableView({
             setShowDone(true);
           }}
           onShowDone={() => setShowDone(true)}
+          bulkFailure={
+            failure
+              ? {
+                  detail: failure.detail,
+                  onRetry: () => bulkWrite(failure.change),
+                }
+              : null
+          }
           onBulkStatus={(optionId) =>
             bulkWrite({ type: "set-status", statusOptionId: optionId })
           }
