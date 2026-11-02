@@ -125,6 +125,7 @@ async function audit(
   if (shots) {
     await page.screenshot({
       path: `${shots}/${name}-${viewport.width}-${dark ? "dark" : "light"}.png`,
+      fullPage: true,
     });
   }
 }
@@ -184,6 +185,10 @@ for (const viewport of viewports) {
           page.locator("tbody tr", { hasText: address }),
         ).toBeVisible();
       }
+      // The last toast would sit over the rows the screenshot is for.
+      await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, {
+        timeout: 15_000,
+      });
       await audit(page, "invitations", viewport, dark, page.locator("main"));
     });
 
