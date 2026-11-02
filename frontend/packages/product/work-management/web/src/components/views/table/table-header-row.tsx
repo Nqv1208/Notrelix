@@ -9,6 +9,7 @@ import {
   type TableColumnSpec,
   type TableColumnWidths,
 } from "./table-columns";
+import { useTableLayout } from "./table-layout";
 import { TableCheckbox } from "./table-parts";
 
 const HEAD_CELL =
@@ -47,13 +48,26 @@ export function TableHeaderRow({
   onWidthCommit: (columnId: string, width: number) => void;
   onWidthReset: (columnId: string) => void;
 }) {
+  const tablet = useTableLayout() === "tablet";
+  // The tablet header is 44 px with 13 px labels and no glyphs; the checkbox and the title stay pinned.
+  const headCell = cn(
+    HEAD_CELL,
+    tablet && "h-11 gap-1.5 px-3 text-compact border-line-strong",
+  );
   return (
     <div
       role="row"
       className="sticky top-0 z-3 grid min-w-full"
       style={{ gridTemplateColumns: "var(--table-grid)" }}
     >
-      <div role="columnheader" className={cn(HEAD_CELL, "pr-0 pl-3.5")}>
+      <div
+        role="columnheader"
+        style={tablet ? { left: 0 } : undefined}
+        className={cn(
+          headCell,
+          tablet ? "sticky z-3 justify-center px-0.5" : "pr-0 pl-3.5",
+        )}
+      >
         <TableCheckbox
           checked={allChecked}
           label={copy.header.selectAll}
@@ -91,7 +105,14 @@ export function TableHeaderRow({
                   : "descending"
                 : undefined
             }
-            className={cn(HEAD_CELL, sorted && "text-foreground")}
+            style={tablet && column.id === "title" ? { left: 48 } : undefined}
+            className={cn(
+              headCell,
+              sorted && "text-foreground",
+              tablet &&
+                column.id === "title" &&
+                "sticky z-3 border-r border-r-line-strong",
+            )}
           >
             {computed ? (
               <span
@@ -100,7 +121,7 @@ export function TableHeaderRow({
               >
                 ƒx
               </span>
-            ) : Icon ? (
+            ) : Icon && !tablet ? (
               <Icon
                 className="size-3.25 flex-none text-meta-foreground"
                 aria-hidden="true"

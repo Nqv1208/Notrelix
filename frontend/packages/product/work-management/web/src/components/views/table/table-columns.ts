@@ -183,11 +183,60 @@ export function columnWidth(
 export function tableGridTemplate(
   columns: readonly TableColumnSpec[],
   widths: TableColumnWidths = {},
+  selectWidth: number = TABLE_SELECT_WIDTH,
 ): string {
-  return [
-    TABLE_SELECT_WIDTH,
-    ...columns.map((column) => columnWidth(column, widths)),
-  ]
+  return [selectWidth, ...columns.map((column) => columnWidth(column, widths))]
     .map((width) => `${width}px`)
     .join(" ");
+}
+
+/** Width of the selection column on the tablet drawing: the 44 px checkbox button between 2 px edges. */
+export const TABLET_SELECT_WIDTH = 48;
+
+/** The tablet drawing's column widths (`Final-T-Table`): the grid `48 312 124 116 200 128 112 128 140`. */
+const TABLET_WIDTH: Readonly<Record<string, number>> = {
+  title: 312,
+  status: 124,
+  due: 116,
+  assignee: 200,
+  priority: 128,
+  progress: 112,
+  label: 128,
+  updated: 140,
+};
+
+/** The tablet drawing's order of the built-in columns when the member has not ordered them. */
+const TABLET_ORDER: readonly string[] = [
+  "status",
+  "due",
+  "assignee",
+  "priority",
+  "progress",
+  "label",
+  "updated",
+];
+
+/**
+ * The columns of the tablet drawing: the key moves into the title cell, and without a saved order the
+ * built-in columns follow the artboard (status, due, assignee, priority, progress, label, updated).
+ */
+export function tabletTableColumns(
+  columns: readonly TableColumnSpec[],
+  ordered: boolean,
+): TableColumnSpec[] {
+  const rest = columns
+    .filter((column) => column.id !== "key")
+    .map((column) => {
+      const width = TABLET_WIDTH[column.id];
+      return width === undefined ? column : { ...column, width };
+    });
+  if (ordered) return rest;
+  const rank = (column: TableColumnSpec) => {
+    const index = TABLET_ORDER.indexOf(column.id);
+    return index < 0 ? TABLET_ORDER.length : index;
+  };
+  const [title, ...others] = rest;
+  return title?.id === "title"
+    ? [title, ...others.sort((a, b) => rank(a) - rank(b))]
+    : rest;
 }

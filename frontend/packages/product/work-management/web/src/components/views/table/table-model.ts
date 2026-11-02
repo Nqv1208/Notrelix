@@ -38,7 +38,12 @@ export interface TableRowModel {
     readonly initials: string;
     readonly more: number;
   } | null;
-  readonly due: { readonly kind: TableDueKind; readonly text: string };
+  readonly due: {
+    readonly kind: TableDueKind;
+    readonly text: string;
+    /** The date itself ("10/10") of an overdue or due-today item, which `text` replaces on the desktop grid. */
+    readonly date?: string;
+  };
   /** The due instant as the board gives it; null when none. */
   readonly dueAt: string | null;
   /** The start instant as the board gives it; null when none. */
@@ -170,9 +175,10 @@ export function buildTableRow(
               },
               due.days,
             ),
+            date: due.text,
           }
         : due.kind === "today"
-          ? { kind: "today", text: copy.row.dueToday }
+          ? { kind: "today", text: copy.row.dueToday, date: due.text }
           : { kind: "date", text: due.text };
 
   const member = card.members?.[0];

@@ -507,3 +507,75 @@ test("a member sets and clears a due date in the table, and a due date that lost
     (await apiRead<ItemRead>(page, `/board-items/${s.item.id}`)).dueAt,
   ).toBeNull();
 });
+
+test("on a phone a member changes an item's status from the row sheet, and a change that lost the race is refused and names who won", async ({
+  browser,
+  page,
+}) => {
+  // The table at 390 px is the card list: a row's writes are in the sheet its "…" opens.
+  await page.setViewportSize({ width: 390, height: 844 });
+  const s = await scene(page, "Phone status");
+  const status = s.columns.find((column) => column.fieldType === "Status")!;
+  const doing = status.options!.find(
+    (option) =>
+      option.category !== "done" && option.id !== s.item.statusOptionId,
+  )!;
+  const back = status.options!.find(
+    (option) => option.category !== "done" && option.id !== doing.id,
+  )!;
+
+  const openSheet = async () => {
+    await page.goto(
+      `/workspaces/${s.workspace.id}/boards/${s.board.id}?view=table`,
+    );
+    await page
+      .getByRole("searchbox", { name: "Search the table" })
+      .fill(s.unique);
+    const card = page.locator(
+      `[data-slot=table-phone-list] [data-row-id="${s.item.id}"]`,
+    );
+    await expect(card).toBeVisible();
+    await card
+      .getByRole("button", { name: `More actions for ${s.item.itemKey}` })
+      .click();
+    return page.getByRole("dialog");
+  };
+
+  // Pick a status in the sheet: one write with the version the page read, and the server holds it.
+  let sheet = await openSheet();
+  const set = itemWriteAnswer(page, s.item.id, "PATCH");
+  await sheet
+    .getByRole("button", { name: `${doing.name}`, exact: true })
+    .click();
+  const answer = await set;
+  expect(answer.status()).toBeLessThan(300);
+  let after = await apiRead<ItemRead>(page, `/board-items/${s.item.id}`);
+  expect(after.statusOptionId).toBe(doing.id);
+  await expect(page.getByRole("dialog")).toBeHidden();
+
+  // The rejection: someone renames it first (a finished item would leave the list, as the filter hides those); the
+  // page's next write carries the version from before.
+  const writer = await otherMember(browser);
+  expect(
+    (
+      await apiWrite(writer.other, "PATCH", `/board-items/${s.item.id}`, {
+        title: `${s.unique} by them`,
+        expectedVersion: after.version,
+      })
+    ).status,
+  ).toBeLessThan(300);
+  await writer.close();
+  after = await apiRead<ItemRead>(page, `/board-items/${s.item.id}`);
+  await sendOldVersion(page, s.item.id, after.version - 1);
+  sheet = await openSheet();
+  const lost = itemWriteAnswer(page, s.item.id, "PATCH");
+  await sheet.getByRole("button", { name: back.name, exact: true }).click();
+  expect((await lost).status()).toBe(412);
+  const toast = conflictToast(page, writer.name);
+  await expect(toast).toBeVisible();
+  const box = (await toast.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(390.5);
+  const kept = await apiRead<ItemRead>(page, `/board-items/${s.item.id}`);
+  expect(kept.statusOptionId).toBe(doing.id);
+});

@@ -36,12 +36,12 @@ import type { TableStatusOption } from "./table-model";
 import { StatusDot } from "./table-parts";
 
 const BAR_BASE =
-  "z-20 mx-auto flex w-fit items-center gap-1 rounded-[12px] bg-inverse-surface py-1.5 pr-1.5 pl-3.5 whitespace-nowrap text-inverse-foreground shadow-bar flex-wrap max-md:py-2 max-md:pl-3";
+  "z-20 mx-auto flex w-fit items-center gap-1 rounded-[12px] bg-inverse-surface py-1.5 pr-1.5 pl-3.5 whitespace-nowrap text-inverse-foreground shadow-bar flex-wrap max-xl:rounded-[14px] max-xl:py-1 max-xl:pl-4.5 max-md:py-2 max-md:pl-3";
 
 const BAR_CLASS = `absolute inset-x-3 bottom-5.5 max-md:bottom-3 ${BAR_BASE}`;
 
 const BAR_BUTTON_CLASS =
-  "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border-0 bg-transparent px-2.5 text-compact font-medium text-inverse-foreground max-md:h-11 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-inverse-foreground disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent";
+  "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border-0 bg-transparent px-2.5 text-compact font-medium text-inverse-foreground max-xl:h-11 max-xl:rounded-[10px] hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-inverse-foreground disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent";
 
 export interface TableBulkBarProps {
   copy: MainTableCopy;
@@ -154,7 +154,7 @@ export function TableBulkBar({
         stacked ? cn("pointer-events-auto max-w-full", BAR_BASE) : BAR_CLASS
       }
     >
-      <b className="mr-2 text-dense-body font-semibold">
+      <b className="mr-2 text-dense-body font-semibold max-xl:text-[14.5px] max-xl:font-[650]">
         {over && limit
           ? fillTableCopy(b.overLimit, { count, max: limit.max })
           : fillTableCopy(b.selected, { count })}
@@ -384,7 +384,7 @@ export function TableBulkBar({
 
         <span
           aria-hidden="true"
-          className="mx-1 h-4.5 w-px bg-white/18 max-md:hidden"
+          className="mx-1 h-4.5 w-px bg-white/18 max-xl:h-6 max-md:hidden"
         />
 
         <button
@@ -440,7 +440,7 @@ export function TableBulkBar({
         onClick={onClear}
         className={cn(
           BAR_BUTTON_CLASS,
-          "max-md:min-w-11 max-md:justify-center",
+          "max-xl:min-w-11 max-xl:justify-center",
         )}
       >
         <X className="size-4" aria-hidden="true" />
@@ -517,7 +517,7 @@ export function TableArchivedNotice({
       data-table-archived=""
       className={BAR_CLASS}
     >
-      <b className="mr-2 text-dense-body font-semibold">
+      <b className="mr-2 text-dense-body font-semibold max-xl:text-[14.5px] max-xl:font-[650]">
         {pluralTableCopy({ one: a.done_one, other: a.done_other }, count)}
       </b>
       {onUndo ? (
