@@ -11,7 +11,7 @@ README.md        this index
 render.py        renders one screen state to static HTML
 decisions.md     shared review decisions from the design review
 briefs/          the design briefs the screens were produced from
-  mobile.md  tablet.md  group4.md  group4-rules.md
+  mobile.md  tablet.md  group4.md
 src/             the 43 Final-*.dc.html screen sources, copied unchanged
 ```
 

@@ -1682,10 +1682,10 @@ backend/docs/architecture/security-tenancy-authorization.md
 frontend/docs/architecture/realtime.md
 frontend/docs/architecture/state-query-mutations.md
 
-docs/product/contexts/collaboration.md
-docs/product/contexts/governance.md
-docs/product/contexts/automation.md
-docs/product/contexts/integrations.md
+docs/product/collaboration.md
+docs/product/governance.md
+docs/product/automation.md
+docs/product/integrations.md
 ```
 
 ---

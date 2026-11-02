@@ -88,7 +88,7 @@ Use the correct owner.
 
 | Question | Canonical owner |
 |---|---|
-| Product meaning / lifecycle | `../docs/product/contexts/**` |
+| Product meaning / lifecycle | `../docs/product/**` |
 | System boundary / context relationship | `../docs/architecture/**` |
 | Backend overall topology | `docs/architecture/backend-overview.md` |
 | How do I build this cross-context interaction? (reference pack map) | `docs/architecture/backend-overview.md` § 74A |

@@ -31,7 +31,7 @@ review_on:
 > This file is generated discovery evidence.
 > Rule meaning remains owned by the canonical source document in which the rule is declared.
 
-Rule count: 2691
+Rule count: 2690
 
 ## Namespace summary
 
@@ -56,7 +56,7 @@ Rule count: 2691
 | `DEC` | 26 |
 | `DEL-CHG` | 40 |
 | `DEL-CON` | 40 |
-| `DEL-DEV` | 41 |
+| `DEL-DEV` | 40 |
 | `DEL-DONE` | 44 |
 | `DEL-MIG` | 46 |
 | `DEL-OWN` | 40 |
@@ -981,7 +981,6 @@ Rule count: 2691
 | `DEL-DEV-004` | `DEL-DEV` | Container path does not hide required architecture | [`docs/delivery/local-development.md`](../delivery/local-development.md) |
 | `DEL-DEV-005` | `DEL-DEV` | Local secret files are untracked | [`docs/delivery/local-development.md`](../delivery/local-development.md) |
 | `DEL-DEV-006` | `DEL-DEV` | Example configuration never contains reusable production-like secrets | [`docs/delivery/local-development.md`](../delivery/local-development.md) |
-| `DEL-DEV-007` | `DEL-DEV` | Onboarding drift is fixed at the source, not duplicated | [`docs/delivery/local-development.md`](../delivery/local-development.md) |
 | `DEL-DEV-008` | `DEL-DEV` | This handbook does not duplicate the entire environment schema | [`docs/delivery/local-development.md`](../delivery/local-development.md) |
 | `DEL-DEV-009` | `DEL-DEV` | Start command is idempotent enough for daily use | [`docs/delivery/local-development.md`](../delivery/local-development.md) |
 | `DEL-DEV-010` | `DEL-DEV` | Destructive local commands are unmistakably local/destructive | [`docs/delivery/local-development.md`](../delivery/local-development.md) |

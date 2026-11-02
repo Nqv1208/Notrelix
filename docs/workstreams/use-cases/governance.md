@@ -54,7 +54,7 @@ Capability letters follow the Governance list of the team spec, in order.
 | I | Architecture coverage for resource kinds and actions | 3 | 1 | 0 | 0 | 2 | 0 | 0 |
 | | Total | 74 | 19 | 19 | 15 | 14 | 0 | 7 |
 
-No use case is DONE: none has a recorded owner check or a 1-px design diff, and none meets every line of README section 7. The execution pack certifies Governance parts as VERIFIED or PARTIALLY_VERIFIED on a base commit ([certification](../executions/workspace-governance/workspace-governance.certification.md), records P2B-CERT-004 to P2B-CERT-016); that is backend proof only.
+No use case is DONE: none has a recorded owner check or a 1-px design diff, and none meets every line of README section 7. The execution pack certifies Governance parts as VERIFIED or PARTIALLY_VERIFIED on a base commit (certification (removed; see git history), records P2B-CERT-004 to P2B-CERT-016); that is backend proof only.
 
 ## 1.2 The ten most important gaps
 

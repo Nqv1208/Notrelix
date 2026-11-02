@@ -94,7 +94,7 @@ The `commenter` persona is Đỗ Khánh Linh: a workspace member outside the Eng
 
 - `pnpm test:node:guarded`: Runs all unit tests (including mock backend suite) with zero-test assertion guard.
 - `pnpm mock:freeze:check`: Runs the consumer surface / registry closure gate.
-- `pnpm mock:contract`: Runs `test:node:guarded` + `mock:freeze:check` combined (CI mock-contract job command).
+- `pnpm mock:contract`: Runs `test:node:guarded` + `mock:freeze:check` combined.
 - `pnpm e2e:mock`: Runs browser Playwright tests with mock backend active.
 - `pnpm e2e:mock:count`: Asserts Playwright JSON results have zero failures and zero skips.
 - `pnpm check:production-mock-isolation`: Verifies that `apps/web/dist` contains zero mock signatures.
@@ -150,16 +150,18 @@ Search (`/api/v1/search`) is **not implemented** in the mock backend. This is a 
 
 The `permission-limited` state uses the `viewer` persona. This triggers a purely view-only UI — mutations are disabled at the UI layer before being dispatched. No mock 403 responses are injected; the authorization gap is recorded as `AUTHZ-CONTRACT-GAP`.
 
-## CI Required Commands (summary)
+## Local verification commands (summary)
+
+None of these run in `ci.yml`.
 
 ```bash
-# Contract + freeze gate (mock-contract CI job)
+# Contract + freeze gate
 pnpm mock:contract
 
-# E2E mock suite (mock-e2e CI job, run per persona × state matrix)
+# E2E mock suite (per persona × state)
 VITE_MOCK_PERSONA=owner VITE_MOCK_STATE=default pnpm e2e:mock
 pnpm e2e:mock:count
 
-# Production artifact isolation (mock-artifact-isolation CI job)
+# Production artifact isolation
 pnpm check:production-mock-isolation
 ```

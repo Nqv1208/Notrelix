@@ -15,12 +15,12 @@ evidence:
   - PRODUCT.md
   - docs/product/product-model.md
   - docs/product/product-experience.md
-  - docs/product/contexts/accounts.md
-  - docs/product/contexts/identity.md
-  - docs/product/contexts/governance.md
-  - docs/product/contexts/work-management.md
-  - docs/product/contexts/documents.md
-  - docs/product/contexts/automation.md
+  - docs/product/accounts.md
+  - docs/product/identity.md
+  - docs/product/governance.md
+  - docs/product/work-management.md
+  - docs/product/documents.md
+  - docs/product/automation.md
   - docs/architecture/events-realtime-and-delivery-boundary.md
   - docs/architecture/data-ownership-and-consistency.md
   - docs/architecture/contract-boundaries.md
@@ -1668,15 +1668,15 @@ Stop rather than guess if:
 PRODUCT.md
 docs/product/product-model.md
 docs/product/product-experience.md
-docs/product/contexts/accounts.md
-docs/product/contexts/identity.md
-docs/product/contexts/governance.md
-docs/product/contexts/work-management.md
-docs/product/contexts/documents.md
-docs/product/contexts/collaboration.md
-docs/product/contexts/automation.md
-docs/product/contexts/billing.md
-docs/product/contexts/analytics.md
+docs/product/accounts.md
+docs/product/identity.md
+docs/product/governance.md
+docs/product/work-management.md
+docs/product/documents.md
+docs/product/collaboration.md
+docs/product/automation.md
+docs/product/billing.md
+docs/product/analytics.md
 docs/architecture/events-realtime-and-delivery-boundary.md
 docs/architecture/data-ownership-and-consistency.md
 docs/architecture/contract-boundaries.md
