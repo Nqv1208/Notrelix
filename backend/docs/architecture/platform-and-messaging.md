@@ -586,6 +586,11 @@ Bounds (`Messaging:Outbox`, validated on start):
 |---|---|---|
 | `StreamBatchSize` | 100 | most consecutive messages of one stream per poll |
 | `MaxStreamMessagesPerPoll` | 500 | most ordered messages per poll across all streams |
+| `BatchSize` | 20 | most unordered messages (no stream key) one claim takes |
+| `ProcessingTimeoutSeconds` | 60 | how long a claimed row stays leased before another dispatcher may reclaim it |
+| `PollIntervalSeconds` | 1 | longest wait between polls when no wake signal arrives |
+
+The retry budget (5 attempts) and the backoff (up to 60 seconds) are properties of the outbox row, not dispatcher options: each message carries its own `MaxRetries`.
 
 Contract:
 
