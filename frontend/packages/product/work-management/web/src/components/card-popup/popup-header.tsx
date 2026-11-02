@@ -104,9 +104,7 @@ function GroupPicker() {
   // Top and bottom only mean something in a column that holds a card of the item's own group.
   const positionable =
     lanePicker !== undefined &&
-    lanePicker
-      .placeableLanes(card.id)
-      .some((laneId) => laneId !== currentId);
+    lanePicker.placeableLanes(card.id).some((laneId) => laneId !== currentId);
   const canMove =
     readOnly === null && (mode === "create" || capabilities.canMoveCard);
   const move = (laneId: string) => {
