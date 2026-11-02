@@ -557,6 +557,28 @@ describe.each([
     );
   });
 
+  it(`shows the workspace time zone and week start read-only and names the department (${locale})`, () => {
+    const settings = erpBoardSettings();
+    renderPage(copy, {
+      section: "general",
+      settings: {
+        ...settings,
+        unavailable: { ...settings.unavailable, locale: true },
+      },
+    });
+    for (const label of [copy.general.timeZone, copy.general.weekStart]) {
+      const box = screen.getByLabelText(new RegExp(label)) as HTMLInputElement;
+      expect(box.readOnly).toBe(true);
+    }
+    expect(
+      screen.getByText(
+        fillCopy(copy.general.departmentName, {
+          name: erpSettingsSpace.name,
+        }),
+      ),
+    ).toBeTruthy();
+  });
+
   it(`${fui("wm.board-settings:groups", locale)}deletes a group by moving its items first (${locale})`, async () => {
     const actions = spyActions();
     renderPage(copy, {

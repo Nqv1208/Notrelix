@@ -102,7 +102,7 @@ export function BoardSettingsSurface(props: BoardSettingsSurfaceProps) {
         </div>
         <span className="flex-1" />
         {forbidden ? null : (
-          <span className="text-item-small text-meta-foreground">
+          <span className="text-metadata leading-[1.45] text-meta-foreground">
             {copy.header.hint}
           </span>
         )}
@@ -290,7 +290,7 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
     );
   const count = (value?: number) =>
     value === undefined ? null : (
-      <span className="ml-auto text-metadata font-medium text-meta-foreground">
+      <span className="ml-auto text-metadata leading-[1.45] font-medium text-meta-foreground">
         {value}
       </span>
     );
