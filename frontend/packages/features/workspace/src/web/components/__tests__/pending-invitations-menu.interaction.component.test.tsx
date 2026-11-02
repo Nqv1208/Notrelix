@@ -58,8 +58,19 @@ const decline = () =>
 describe("PendingInvitationsMenu answers", () => {
   it("FUI[workspace.pending-invitations:seat-refused] tells the person why a refused accept was refused and keeps the invitation", async () => {
     const reason = "The member limit of this account's plan has been reached.";
+    // The producer answers a refused acceptance as a 400 whose detail is the generic validation title.
     mount(() =>
-      Promise.reject(Object.assign(new Error(reason), { status: 400 })),
+      Promise.reject(
+        Object.assign(new Error("One or more validation errors occurred."), {
+          status: 400,
+          kind: "validation",
+          details: {
+            errorCode: "validation.failed",
+            detail: "One or more validation errors occurred.",
+            errors: { _errors: [reason] },
+          },
+        }),
+      ),
     );
     await open();
 

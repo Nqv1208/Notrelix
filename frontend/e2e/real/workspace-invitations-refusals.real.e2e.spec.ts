@@ -114,30 +114,32 @@ test("an invitation is accepted once: the flyout lands in the workspace, a repea
     1,
   );
 
-  // An address nobody confirmed: the list is empty and neither answer works, whatever the id.
+  // An address nobody confirmed: the list is empty, and accepting or declining is refused the same way
+  // for this invitation as for an id that never existed (the pipeline asks for a confirmed address first).
   const unconfirmedContext = await browser.newContext();
   const unconfirmedPage = await unconfirmedContext.newPage();
   const stranger = await registerPerson(unconfirmedPage, "unconfirmed");
   const waitingId = await invite(page, workspace.id, stranger.email);
   expect(await pendingOf(unconfirmedPage)).toHaveLength(0);
-  expect(
-    (
-      await apiWrite(
-        unconfirmedPage,
-        "POST",
-        `/invitations/${waitingId}/accept`,
-      )
-    ).status,
-  ).toBe(404);
-  expect(
-    (
-      await apiWrite(
-        unconfirmedPage,
-        "POST",
-        `/invitations/${waitingId}/decline`,
-      )
-    ).status,
-  ).toBe(404);
+  for (const verb of ["accept", "decline"]) {
+    const real = await apiWrite(
+      unconfirmedPage,
+      "POST",
+      `/invitations/${waitingId}/${verb}`,
+    );
+    const made = await apiWrite(
+      unconfirmedPage,
+      "POST",
+      `/invitations/${crypto.randomUUID()}/${verb}`,
+    );
+    expect(real.status, `${verb} before confirming`).toBeGreaterThanOrEqual(
+      400,
+    );
+    expect(
+      real.status,
+      `${verb}: an existing id answers like a made-up one`,
+    ).toBe(made.status);
+  }
   // The invitation is untouched: still Pending for its owner.
   expect(
     (await invitationsOf(page, workspace.id)).find(
