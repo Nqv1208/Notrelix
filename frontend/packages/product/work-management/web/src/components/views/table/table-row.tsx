@@ -477,6 +477,7 @@ export function TableRow({
                 copy={copy}
                 dueAt={row.dueAt}
                 itemKey={row.key ?? undefined}
+                startAt={row.startAt}
                 label={fillTableCopy(copy.row.changeDue, { key: keyLabel })}
                 onPick={(day, time) =>
                   time

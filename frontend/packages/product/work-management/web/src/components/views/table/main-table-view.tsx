@@ -113,6 +113,19 @@ function listForNewItem(
   return [...groups].sort((a, b) => a.position - b.position)[0]?.id;
 }
 
+/** The server refused the write for the due day coming before the start day. */
+function isRefusedRange(error: unknown, hasStart: boolean): boolean {
+  const e = error as {
+    status?: unknown;
+    kind?: unknown;
+    ruleCode?: unknown;
+  } | null;
+  return (
+    e?.ruleCode === "WorkManagement_Item_DueDateMustBeAfterStartDate" ||
+    (hasStart && (e?.status === 400 || e?.kind === "validation"))
+  );
+}
+
 /** "YYYY-MM-DD" as an instant at `time` ("HH:MM", 17:00 by default) of that local day. */
 function dueInstant(day: string, time = "17:00"): string {
   return new Date(`${day}T${time}:00`).toISOString();
@@ -671,12 +684,27 @@ export function MainTableView({
       value: userId ? [userId] : [],
     });
   };
-  const writeDue = (cardId: string, day: string | null, time?: string) => {
+  const writeDue = async (
+    cardId: string,
+    day: string | null,
+    time?: string,
+  ) => {
     noteTitle(cardId);
-    updateCard.mutate(
-      { cardId, patch: { dueDate: day ? dueInstant(day, time) : null } },
-      { onError: (error) => reportCardWriteFailure(error, cardId) },
-    );
+    try {
+      await updateCard.mutateAsync({
+        cardId,
+        patch: { dueDate: day ? dueInstant(day, time) : null },
+      });
+      return true;
+    } catch (error) {
+      // A due day before the start is said in the picker, not as a generic toast.
+      const hasStart = allCards.some(
+        (candidate) => candidate.id === cardId && candidate.startDate,
+      );
+      if (isRefusedRange(error, hasStart)) return false;
+      reportCardWriteFailure(error, cardId);
+      return true;
+    }
   };
   const editors: TableEditors | undefined = itemFields.person
     ? {

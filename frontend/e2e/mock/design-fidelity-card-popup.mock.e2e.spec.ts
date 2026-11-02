@@ -5,8 +5,9 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * no page of its own since f2897fe9e, so the popup is the item view and its fidelity is measured here.
  *
  * Two surfaces are measured, each against the artboard that draws it:
- * - the archive confirmation, against `BC-Actions` (frames `act-arc-sang` / `act-arc-S-sang` / `act-arc-E-sang`
- *   at 440 px and `act320-arc-sang` at 320 px);
+ * - the archive confirmation, against `BC-Actions`, every frame of it: `act-arc-sang` / `-S-sang` / `-E-sang` and
+ *   `act-arc-dem` / `-S-dem` / `-E-dem` at 440 px, `act320-arc-sang` / `-E-sang` and `act320-arc-dem` / `-E-dem` at
+ *   320 px (the `act-gone*` frames are the deleted-meanwhile notice, another surface);
  * - the approval block of the side column, against `WM-Approval` (the first card, the approver's view).
  *
  * Every number is read from the artboard rendered in Chromium (box relative to the dialog's or the card's own
@@ -235,8 +236,15 @@ test.describe("archive confirmation (BC-Actions), 1440 px", () => {
     near((await box(p.title, dialog)).y, 17, "title y");
     const footer = await box(p.footer, dialog);
     near(footer.h, 57, "footer height");
+    // 12 px side padding: Huỷ 50.4 and Đang lưu trữ… 135.7 wide, 8 px apart, 21 px from the right edge.
+    const widths = [
+      { x: 224.91, w: 50.42 },
+      { x: 283.33, w: 135.67 },
+    ];
     for (const index of [0, 1]) {
       const b = await box(p.buttons.nth(index), dialog);
+      near(b.x, widths[index]!.x, "button x");
+      near(b.w, widths[index]!.w, "button width");
       near(b.h, 32, "button height");
       near(b.y, footer.y + 13, "button y");
       expect(await style(p.buttons.nth(index))).toMatchObject({
@@ -261,6 +269,8 @@ test.describe("archive confirmation (BC-Actions), 1440 px", () => {
     await p.buttons.nth(1).click();
     const alert = dialog.getByRole("alert");
     await expect(alert).toBeVisible();
+    // The buttons grow from the busy 32 px to the error 36 px: measure once they have settled.
+    await page.waitForTimeout(700);
     const box1 = await box(alert, dialog);
     near(box1.x, 21, "alert x");
     near(box1.w, 398, "alert width");
@@ -343,6 +353,187 @@ test.describe("archive confirmation (BC-Actions), dark", () => {
     // Dark surface: the sheet is not the light one.
     expect(dialogStyle.bg).not.toBe("rgb(255, 255, 255)");
     expect((await style(p.buttons.nth(1))).fw).toBe("600");
+  });
+});
+
+/** The busy buttons of `act-arc-S-sang` and `act-arc-S-dem`: flat, 32 px high, 12 px side padding. */
+const BUSY_BUTTONS = [
+  { x: 224.91, w: 50.42 },
+  { x: 283.33, w: 135.67 },
+];
+
+test.describe("archive confirmation (BC-Actions), the dark frames and the 320 error frames", () => {
+  test.describe("1440 px", () => {
+    test.use({ viewport: { width: 1440, height: 900 } });
+
+    test("busy, dark: flat grey buttons at the artboard's x and width (act-arc-S-dem)", async ({
+      page,
+    }) => {
+      test.skip(latency !== "slow", "Needs VITE_MOCK_LATENCY=slow");
+      const dialog = await openArchiveDialog(page, true);
+      const p = parts(dialog);
+      await p.buttons.nth(1).click();
+      await expect(p.buttons.nth(1)).toBeDisabled();
+      await expect(p.close).toHaveCount(0);
+      const footer = await box(p.footer, dialog);
+      near(footer.h, 57, "footer height");
+      for (const index of [0, 1]) {
+        const b = await box(p.buttons.nth(index), dialog);
+        near(b.x, BUSY_BUTTONS[index]!.x, "button x");
+        near(b.w, BUSY_BUTTONS[index]!.w, "button width");
+        near(b.h, 32, "button height");
+        near(b.y, footer.y + 13, "button y");
+        expect(await style(p.buttons.nth(index))).toMatchObject({
+          fs: "13px",
+          fw: "500",
+          r: "7px",
+          c: "rgb(143, 153, 167)",
+          bg: "rgb(35, 42, 52)",
+        });
+      }
+    });
+
+    test("error, dark: the refusal and Thử lại (act-arc-E-dem)", async ({
+      page,
+    }) => {
+      test.skip(
+        !faults.includes("archive=network"),
+        "Needs the archive network fault",
+      );
+      const dialog = await openArchiveDialog(page, true);
+      const p = parts(dialog);
+      await p.buttons.nth(1).click();
+      const alert = dialog.getByRole("alert");
+      await expect(alert).toBeVisible();
+      // The buttons grow from the busy 32 px to the error 36 px: measure once they have settled.
+      await page.waitForTimeout(700);
+      const refusal = await box(alert, dialog);
+      near(refusal.x, 21, "alert x");
+      near(refusal.w, 398, "alert width");
+      expect(await style(alert)).toMatchObject({
+        fs: "13px",
+        r: "10px",
+        c: "rgb(255, 107, 129)",
+      });
+      const last = await box(p.lines.last(), dialog);
+      near(refusal.y, last.y + last.h + 14, "alert y follows the rows");
+      const footer = await box(p.footer, dialog);
+      near(footer.h, 61, "footer height");
+      await expect(p.buttons.nth(1)).toHaveText("Thử lại");
+      const retry = await box(p.buttons.nth(1), dialog);
+      near(retry.x, 345.78, "Thử lại x");
+      near(retry.w, 73.22, "Thử lại width");
+      near(retry.h, 36, "Thử lại height");
+      near((await box(p.buttons.nth(0), dialog)).w, 54.42, "Huỷ width");
+      expect(await style(p.buttons.nth(1))).toMatchObject({
+        fs: "13px",
+        fw: "600",
+        c: "rgb(4, 17, 31)",
+        bg: "rgb(90, 169, 255)",
+      });
+    });
+  });
+
+  test.describe("320 px sheet", () => {
+    test.use({ viewport: { width: 320, height: 800 } });
+
+    // The artboard's frame adds a 1 px border either side of a 318 px sheet, so each width is 2 px short.
+    async function stack(dialog: Locator, withAlert: boolean) {
+      const p = parts(dialog);
+      const d = (await dialog.boundingBox())!;
+      near(d.width, 320, "sheet width");
+      expect(await style(dialog)).toMatchObject({ r: "16px" });
+      const close = await box(p.close, dialog);
+      near(close.w, 44, "close width");
+      near(close.h, 44, "close height");
+      const footer = await box(p.footer, dialog);
+      near(footer.h, 121, "footer height");
+      const confirm = await box(p.buttons.nth(1), dialog);
+      const cancel = await box(p.buttons.nth(0), dialog);
+      for (const b of [confirm, cancel]) {
+        near(b.h, 44, "button height");
+        near(b.x, 21, "button x");
+        near(b.w, 278, "button width");
+      }
+      near(confirm.y, footer.y + 13, "confirm y");
+      near(cancel.y, footer.y + 65, "cancel y");
+      if (withAlert) {
+        const alert = await box(dialog.getByRole("alert"), dialog);
+        near(alert.x, 21, "alert x");
+        near(alert.w, 278, "alert width");
+        const last = await box(p.lines.last(), dialog);
+        near(alert.y, last.y + last.h + 14, "alert y follows the rows");
+      }
+      return p;
+    }
+
+    test("ready, dark: the sheet of act320-arc-dem", async ({ page }) => {
+      test.skip(
+        faults !== "" || latency === "slow",
+        "Ready state, default world",
+      );
+      const dialog = await openArchiveDialog(page, true);
+      const p = await stack(dialog, false);
+      expect(await style(p.buttons.nth(1))).toMatchObject({
+        fs: "14px",
+        fw: "600",
+        c: "rgb(4, 17, 31)",
+        bg: "rgb(90, 169, 255)",
+      });
+      expect(await style(p.buttons.nth(0))).toMatchObject({
+        fs: "14px",
+        fw: "500",
+        c: "rgb(230, 233, 238)",
+      });
+    });
+
+    for (const dark of [false, true]) {
+      test(`error, ${dark ? "dark" : "light"}: the refusal above stacked buttons (act320-arc-${dark ? "E-dem" : "E-sang"})`, async ({
+        page,
+      }) => {
+        test.skip(
+          !faults.includes("archive=network"),
+          "Needs the archive network fault",
+        );
+        const dialog = await openArchiveDialog(page, dark);
+        await parts(dialog).buttons.nth(1).click();
+        await expect(dialog.getByRole("alert")).toBeVisible();
+        const p = await stack(dialog, true);
+        expect(await style(dialog.getByRole("alert"))).toMatchObject({
+          fs: "13px",
+          r: "10px",
+          c: dark ? "rgb(255, 107, 129)" : "rgb(196, 35, 64)",
+        });
+        await expect(p.buttons.nth(1)).toHaveText("Thử lại");
+      });
+    }
+  });
+});
+
+test.describe("move picker of the popup, 390 px", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("every option of the column picker is a 44 px target inside the viewport", async ({
+    page,
+  }) => {
+    test.skip(faults !== "" || latency === "slow", "Default world");
+    await open(page, `${BOARD}?item=mock-erp-item-144`);
+    await page.locator('button[aria-haspopup="listbox"]').first().click();
+    const options = page
+      .getByRole("listbox", { name: "Chuyển thẻ sang cột khác" })
+      .or(page.getByRole("listbox").first());
+    await expect(options.first()).toBeVisible();
+    await page.waitForTimeout(300);
+    const items = options.first().getByRole("option");
+    const count = await items.count();
+    expect(count).toBeGreaterThan(1);
+    for (let index = 0; index < count; index += 1) {
+      const b = (await items.nth(index).boundingBox())!;
+      expect(b.height, `option ${index}`).toBeGreaterThanOrEqual(43.5);
+      expect(b.x + b.width, `option ${index} right edge`).toBeLessThanOrEqual(
+        390,
+      );
+    }
   });
 });
 

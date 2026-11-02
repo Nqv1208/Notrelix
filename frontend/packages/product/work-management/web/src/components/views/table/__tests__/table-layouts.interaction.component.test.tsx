@@ -1,5 +1,11 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
+import {
+  fireEvent,
+  renderPureUi,
+  screen,
+  waitFor,
+  within,
+} from "@notrelix/testing";
 import {
   ERP_TABLE_ITEM,
   erpTableProps,
@@ -142,7 +148,7 @@ describe("the table on a phone", () => {
     );
   });
 
-  it("the row menu moves, assigns, sets the due date and the priority", () => {
+  it("the row menu moves, assigns, sets the due date and the priority", async () => {
     const props = render("phone");
     const open = (key: string) =>
       fireEvent.click(
@@ -171,6 +177,8 @@ describe("the table on a phone", () => {
       null,
       "17:00",
     );
+    // The sheet closes once the write has been answered.
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
 
     open("ERP-151");
     fireEvent.click(screen.getByRole("button", { name: /^Đặt ưu tiên…/ }));

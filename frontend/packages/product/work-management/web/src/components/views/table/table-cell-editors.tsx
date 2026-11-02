@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { AlertCircle } from "lucide-react";
 import {
   Calendar,
   calendarLocale,
@@ -38,8 +39,15 @@ export interface TableEditors {
   readonly priorities: readonly TablePriorityOption[];
   /** `null` = nobody. */
   readonly onAssignee: (rowId: string, userId: string | null) => void;
-  /** "YYYY-MM-DD", or `null` to clear the date; `time` ("HH:MM") is given by the tablet and phone picker. */
-  readonly onDue: (rowId: string, day: string | null, time?: string) => void;
+  /**
+   * "YYYY-MM-DD", or `null` to clear the date; `time` ("HH:MM") is given by the tablet and phone picker.
+   * Resolves `false` when the server refused the day as before the start date.
+   */
+  readonly onDue: (
+    rowId: string,
+    day: string | null,
+    time?: string,
+  ) => void | Promise<boolean>;
   readonly onPriority: (rowId: string, optionId: string) => void;
 }
 
@@ -175,6 +183,7 @@ export function PickRow({
 export function DueEditor({
   copy,
   dueAt,
+  startAt,
   label,
   itemKey,
   onPick,
@@ -182,22 +191,65 @@ export function DueEditor({
 }: {
   copy: MainTableCopy;
   dueAt: string | null;
+  startAt: string | null;
   label: string;
   /** The item key the tablet picker names in its title. */
   itemKey?: string;
-  onPick: (day: string | null, time?: string) => void;
+  onPick: (day: string | null, time?: string) => void | Promise<boolean>;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [rangeRefused, setRangeRefused] = useState(false);
+  const refusal = useRef<HTMLParagraphElement>(null);
   const tablet = useTableLayout() === "tablet";
-  const pick = (day: string | null, time?: string) => {
-    setOpen(false);
-    onPick(day, time);
-  };
   const triggerClass = useTriggerClass();
+  useEffect(() => {
+    if (open && rangeRefused) refusal.current?.focus();
+  }, [open, rangeRefused]);
+  const pick = (day: string | null, time?: string) => {
+    setRangeRefused(false);
+    // The picker stays up until the server has answered: a refused range is told where the person picked.
+    void Promise.resolve(onPick(day, time)).then((accepted) => {
+      if (accepted === false) setRangeRefused(true);
+      else setOpen(false);
+    });
+  };
+  const start = useMemo(() => {
+    if (!startAt) return null;
+    const day = new Date(startAt);
+    day.setHours(0, 0, 0, 0);
+    return day;
+  }, [startAt]);
+  const refusalNote = rangeRefused ? (
+    <p
+      ref={refusal}
+      tabIndex={-1}
+      role="alert"
+      className="m-2 flex max-w-72 items-start gap-2 rounded-md bg-danger-subtle px-2.5 py-2 text-crumb leading-[1.45] text-danger-text outline-none focus-visible:outline-2 focus-visible:outline-ring"
+    >
+      <AlertCircle className="mt-0.5 size-4 flex-none" aria-hidden="true" />
+      <span>
+        {start
+          ? copy.row.dueBeforeStartFrom.replace(
+              "{{start}}",
+              start.toLocaleDateString(copy.row.pickerLocale, {
+                day: "numeric",
+                month: "numeric",
+              }),
+            )
+          : copy.row.dueBeforeStart}
+      </span>
+    </p>
+  ) : null;
   if (tablet)
     return (
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) setRangeRefused(false);
+        }}
+      >
         <PopoverTrigger asChild>
           <button
             type="button"
@@ -219,11 +271,18 @@ export function DueEditor({
             heading={itemKey ? { key: itemKey } : undefined}
             onPick={pick}
           />
+          {refusalNote}
         </PopoverContent>
       </Popover>
     );
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setRangeRefused(false);
+      }}
+    >
       <PopoverTrigger asChild>
         <button type="button" aria-label={label} className={triggerClass}>
           {children}
@@ -234,9 +293,11 @@ export function DueEditor({
           mode="single"
           locale={calendarLocale(copy.row.pickerLocale)}
           selected={dueAt ? new Date(dueAt) : undefined}
-          defaultMonth={dueAt ? new Date(dueAt) : undefined}
+          defaultMonth={dueAt ? new Date(dueAt) : (start ?? undefined)}
+          disabled={start ? { before: start } : undefined}
           onSelect={(date: Date | undefined) => pick(date ? dayOf(date) : null)}
         />
+        {refusalNote}
         {dueAt ? (
           <div className="flex justify-end border-t border-border p-2">
             <button

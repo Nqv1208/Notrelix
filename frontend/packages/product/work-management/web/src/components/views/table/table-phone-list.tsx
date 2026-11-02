@@ -175,7 +175,11 @@ export function TablePhoneList({
   const openOption =
     statusOptions.find((option) => option.category === "todo") ??
     statusOptions.find((option) => option.category !== "done");
-  const close = () => setSheet(null);
+  const [dueRefused, setDueRefused] = useState(false);
+  const close = () => {
+    setDueRefused(false);
+    setSheet(null);
+  };
   const keyOf = (row: TableRowModel) => row.key ?? row.title;
   const canTick = canEdit && Boolean(doneOption);
 
@@ -253,10 +257,30 @@ export function TablePhoneList({
             copy={copy}
             dueAt={row.dueAt}
             onPick={(day, time) => {
-              close();
-              editors.onDue(row.id, day, time);
+              setDueRefused(false);
+              // The sheet stays up until the server answers: a refused range is said here, not as a toast.
+              void Promise.resolve(editors.onDue(row.id, day, time)).then(
+                (accepted) =>
+                  accepted === false ? setDueRefused(true) : close(),
+              );
             }}
           />
+          {dueRefused ? (
+            <p
+              role="alert"
+              className="mx-1 mt-2 rounded-md bg-danger-subtle px-3 py-2.5 text-sm leading-[1.45] text-danger-text"
+            >
+              {row.startAt
+                ? copy.row.dueBeforeStartFrom.replace(
+                    "{{start}}",
+                    new Date(row.startAt).toLocaleDateString(
+                      copy.row.pickerLocale,
+                      { day: "numeric", month: "numeric" },
+                    ),
+                  )
+                : copy.row.dueBeforeStart}
+            </p>
+          ) : null}
         </div>
       );
     if (view === "priority" && editors)

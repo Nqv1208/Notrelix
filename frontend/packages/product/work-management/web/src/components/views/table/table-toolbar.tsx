@@ -28,6 +28,9 @@ import {
   visibleTableColumns,
 } from "./table-columns";
 
+/** A phone target is 44 px: every row of the Cột menu. */
+const MENU_ROW_CLASS = "max-md:min-h-11";
+
 /** The member's own columns and what they can do with them. */
 export interface TableColumnState {
   /** The member has hidden, ordered or resized columns of their own. */
@@ -176,13 +179,15 @@ export function MainTableToolbar({
             </b>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56">
+        {/* 15+ rows scroll on a short screen: the region itself is focusable so the keyboard reaches it (axe scrollable-region-focusable). */}
+        <DropdownMenuContent align="start" className="w-56" tabIndex={0}>
           <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
             {t.columns.heading}
           </DropdownMenuLabel>
           {orderedColumns.map((column) => (
             <DropdownMenuCheckboxItem
               key={column.id}
+              className={MENU_ROW_CLASS}
               checked={column.locked || !hiddenColumnIds.includes(column.id)}
               disabled={column.locked}
               aria-keyshortcuts={
@@ -239,6 +244,7 @@ export function MainTableToolbar({
                 </p>
               ) : null}
               <DropdownMenuItem
+                className={MENU_ROW_CLASS}
                 disabled={
                   !columnState.canSaveToView ||
                   !columnState.personal ||
@@ -272,6 +278,7 @@ export function MainTableToolbar({
               ) : null}
               {columnState.personal ? (
                 <DropdownMenuItem
+                  className={MENU_ROW_CLASS}
                   onSelect={(event) => {
                     event.preventDefault();
                     columnState.onReset();
@@ -293,10 +300,13 @@ export function MainTableToolbar({
                 if (value !== density) onDensityChange(value);
             }}
           >
-            <DropdownMenuRadioItem value="comfortable">
+            <DropdownMenuRadioItem
+              value="comfortable"
+              className={MENU_ROW_CLASS}
+            >
               {t.columns.comfortable}
             </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="compact">
+            <DropdownMenuRadioItem value="compact" className={MENU_ROW_CLASS}>
               {t.columns.compact}
             </DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
