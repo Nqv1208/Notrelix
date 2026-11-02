@@ -50,7 +50,12 @@ async function undersized(scope: Locator) {
       const isChoice =
         element.matches('input[type="radio"], input[type="checkbox"]') ||
         ["radio", "checkbox"].includes(element.getAttribute("role") ?? "");
-      const target = (isChoice && element.closest("label")) || element;
+      // A switch is operated through its labelled row: the label toggles it.
+      const isSwitch = element.getAttribute("role") === "switch";
+      const target =
+        (isChoice && element.closest("label")) ||
+        (isSwitch && element.closest("[data-slot='field']")) ||
+        element;
       const box = target.getBoundingClientRect();
       const style = getComputedStyle(element);
       if (box.width === 0 || box.height === 0) continue;

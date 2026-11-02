@@ -122,7 +122,7 @@ export function AccountFrame({
                       links[tab].onNavigate();
                     }}
                     className={cn(
-                      "flex h-[34px] shrink-0 items-center gap-[9px] rounded-[7px] px-2.5 text-nav leading-[1.45] font-medium text-muted-foreground hover:bg-state-hover-strong hover:text-foreground",
+                      "flex h-[34px] max-md:h-touch shrink-0 items-center gap-[9px] rounded-[7px] px-2.5 text-nav leading-[1.45] font-medium text-muted-foreground hover:bg-state-hover-strong hover:text-foreground",
                       on &&
                         "bg-popover font-semibold text-foreground ring-1 ring-line hover:bg-popover dark:bg-card dark:hover:bg-card",
                       FOCUS,

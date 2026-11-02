@@ -120,6 +120,74 @@ for (const viewport of viewports) {
       });
     }
 
+    test(`workspace settings and the delete confirmation, ${mode}`, async ({
+      page,
+    }) => {
+      await prepare(page, viewport, dark);
+      await page.goto(`${WORKSPACE}/settings`);
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Settings" }),
+      ).toBeVisible();
+      await audit(
+        page,
+        "workspace-settings",
+        viewport,
+        dark,
+        page.locator("main"),
+      );
+      // The danger zone asks for the typed name before it deletes.
+      await page
+        .getByRole("button", { name: /^Delete workspace/ })
+        .first()
+        .click();
+      const dialog = page.getByRole("alertdialog");
+      await expect(dialog).toBeVisible();
+      await audit(page, "workspace-delete", viewport, dark, dialog);
+    });
+
+    test(`my workspaces with the archived and recently deleted groups, ${mode}`, async ({
+      page,
+    }) => {
+      await prepare(page, viewport, dark);
+      await page.goto(`${WORKSPACE}/account/workspaces`);
+      await expect(
+        page.getByRole("heading", { level: 2, name: "Your workspaces" }),
+      ).toBeVisible();
+      await audit(
+        page,
+        "account-workspaces",
+        viewport,
+        dark,
+        page.locator("main"),
+      );
+    });
+
+    test(`workspace switcher in the system rail, ${mode}`, async ({ page }) => {
+      await prepare(page, viewport, dark);
+      await page.goto(WORKSPACE);
+      if (viewport.width < 768) {
+        await page
+          .getByRole("button", { name: "Show or hide navigation" })
+          .first()
+          .click();
+      }
+      const add = page.getByRole("button", { name: "Add", exact: true });
+      // Pinned open on a wide screen; opened from the workspace chip elsewhere.
+      if (!(await add.isVisible()))
+        await page
+          .getByRole("button", { name: /open the Notrelix system rail/ })
+          .first()
+          .click();
+      await expect(add).toBeVisible();
+      await audit(
+        page,
+        "workspace-switcher",
+        viewport,
+        dark,
+        add.locator("xpath=ancestor::*[self::nav or self::aside][1]"),
+      );
+    });
+
     test(`role-lowering confirmation, ${mode}`, async ({ page }) => {
       await prepare(page, viewport, dark);
       await page.goto(`${WORKSPACE}/members`);
@@ -288,8 +356,15 @@ for (const viewport of viewports) {
         .getByRole("button", { name: /^Move .* to a Space$/ })
         .first();
       // The button shows on hover of its row on a desktop; on a phone it is always there and must take a plain tap.
-      if (viewport.width < 768) await move.click();
-      else await move.click({ force: true });
+      if (viewport.width < 768) {
+        // In reach without scrolling the table sideways: its box ends inside the screen.
+        const box = await move.boundingBox();
+        expect(
+          (box?.x ?? Infinity) + (box?.width ?? 0),
+          "library: Move ends inside the phone screen",
+        ).toBeLessThanOrEqual(viewport.width);
+        await move.click();
+      } else await move.click({ force: true });
       const dialog = page.getByRole("dialog", { name: /to a Space$/ });
       await expect(dialog).toBeVisible();
       await audit(page, "space-placement", viewport, dark, dialog);
