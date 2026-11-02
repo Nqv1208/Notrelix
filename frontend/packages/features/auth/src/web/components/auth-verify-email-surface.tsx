@@ -19,7 +19,7 @@ import { formatCountdown } from "./auth-sign-in-surface";
 export type AuthVerifyEmailStep =
   | { readonly kind: "confirming" }
   | { readonly kind: "done" }
-  | { readonly kind: "failed" }
+  | { readonly kind: "failed"; readonly expired?: boolean }
   | { readonly kind: "waiting" };
 
 export interface AuthVerifyEmailSurfaceProps {
@@ -89,6 +89,7 @@ function ResendStep({
   const invalid =
     error === "invalid" || (tried && !EMAIL_SHAPE.test(email.trim()));
   const failed = step.kind === "failed";
+  const expired = failed && step.expired === true;
   return (
     <>
       <span
@@ -106,8 +107,10 @@ function ResendStep({
         )}
       </span>
       <AuthHeading
-        title={failed ? t.failedTitle : t.waitingTitle}
-        lead={failed ? t.failedLead : t.waitingLead}
+        title={
+          expired ? t.expiredTitle : failed ? t.failedTitle : t.waitingTitle
+        }
+        lead={expired ? t.expiredLead : failed ? t.failedLead : t.waitingLead}
       />
       <form
         noValidate
