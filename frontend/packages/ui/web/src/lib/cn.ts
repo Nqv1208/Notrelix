@@ -45,6 +45,8 @@ export const TEXT_ROLES = [
   "list-title",
   "account-title",
   "brand-name",
+  "brand-name-compact",
+  "card-title",
   "brand-promise",
   "empty-title",
   "dialog-title",

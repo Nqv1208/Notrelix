@@ -770,41 +770,48 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
           </p>
         ) : (
           <div className="overflow-x-auto rounded-lg border border-border bg-surface-panel">
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr className="border-b border-border">
+            <table
+              role="table"
+              className="w-full border-collapse text-left max-md:block"
+            >
+              <thead role="rowgroup" className="max-md:sr-only">
+                <tr role="row" className="border-b border-border">
                   <th
+                    role="columnheader"
                     scope="col"
                     className="h-9 px-4 text-metadata font-medium text-muted-foreground"
                   >
                     {copy.invitations.columns.email}
                   </th>
                   <th
+                    role="columnheader"
                     scope="col"
                     className="h-9 px-2 text-metadata font-medium text-muted-foreground"
                   >
                     {copy.invitations.columns.role}
                   </th>
                   <th
+                    role="columnheader"
                     scope="col"
                     className="hidden h-9 px-2 text-metadata font-medium text-muted-foreground sm:table-cell"
                   >
                     {copy.invitations.columns.sent}
                   </th>
                   <th
+                    role="columnheader"
                     scope="col"
                     className="hidden h-9 px-2 text-metadata font-medium text-muted-foreground sm:table-cell"
                   >
                     {copy.invitations.columns.expires}
                   </th>
-                  <th scope="col" className="h-9 px-2">
+                  <th role="columnheader" scope="col" className="h-9 px-2">
                     <span className="sr-only">
                       {copy.invitations.columns.actions}
                     </span>
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody role="rowgroup" className="max-md:block">
                 {visibleInvitations.map((invitation) => {
                   const expired =
                     invitationState(invitation, now) === "expired";
@@ -812,12 +819,16 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                   return (
                     <tr
                       key={invitation.id}
+                      role="row"
                       className={cn(
-                        "border-t border-border first:border-t-0 hover:bg-state-hover",
+                        "border-t border-border first:border-t-0 hover:bg-state-hover max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:items-center max-md:gap-x-2 max-md:px-4 max-md:py-2",
                         expired && "text-muted-foreground",
                       )}
                     >
-                      <td className="w-full min-w-36 max-w-0 px-4 py-2.5 align-middle max-md:min-w-24">
+                      <td
+                        role="cell"
+                        className="w-full min-w-36 max-w-0 px-4 py-2.5 align-middle max-md:col-span-2 max-md:min-w-0 max-md:max-w-none max-md:px-0 max-md:pt-1 max-md:pb-0"
+                      >
                         <span className="block break-all text-label">
                           {invitation.email}
                         </span>
@@ -830,7 +841,10 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                               )}
                         </span>
                       </td>
-                      <td className="px-2 py-2.5 align-middle whitespace-nowrap text-body">
+                      <td
+                        role="cell"
+                        className="px-2 py-2.5 align-middle whitespace-nowrap text-body max-md:px-0 max-md:py-1"
+                      >
                         {props.onChangeInvitationRole &&
                         !expired &&
                         !invitation.isAccepted &&
@@ -868,10 +882,16 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                           copy.roles[invitation.role]
                         )}
                       </td>
-                      <td className="hidden px-2 py-2.5 align-middle whitespace-nowrap text-metadata tabular-nums text-muted-foreground sm:table-cell">
+                      <td
+                        role="cell"
+                        className="hidden px-2 py-2.5 align-middle whitespace-nowrap text-metadata tabular-nums text-muted-foreground sm:table-cell"
+                      >
                         {formatters.date(invitation.createdAt, DATE_FORMAT)}
                       </td>
-                      <td className="hidden px-2 py-2.5 align-middle whitespace-nowrap text-metadata tabular-nums sm:table-cell">
+                      <td
+                        role="cell"
+                        className="hidden px-2 py-2.5 align-middle whitespace-nowrap text-metadata tabular-nums sm:table-cell"
+                      >
                         {expired ? (
                           <Badge variant="outline">
                             {copy.invitations.expired}
@@ -882,7 +902,10 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                           </span>
                         )}
                       </td>
-                      <td className="w-24 px-2 py-2.5 text-right align-middle whitespace-nowrap">
+                      <td
+                        role="cell"
+                        className="w-24 px-2 py-2.5 text-right align-middle whitespace-nowrap max-md:w-auto max-md:px-0 max-md:py-1"
+                      >
                         {props.onResend && !invitation.isAccepted ? (
                           <Button
                             variant="ghost"
