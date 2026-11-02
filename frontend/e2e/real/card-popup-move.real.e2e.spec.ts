@@ -295,6 +295,55 @@ test("a member moves a card to another column from its card menu and the move su
   await expect(inTarget()).toHaveCount(1);
 });
 
+/** A drag of the card onto another lane is the same one move write, and it survives a reload. */
+test("a member drags a card to another column and the move survives a reload", async ({
+  page,
+}) => {
+  const { workspace, board, itemId } = await scene(page);
+  await page.goto(`/workspaces/${workspace.id}/boards/${board.id}`);
+  const card = page
+    .locator("article")
+    .filter({ has: page.locator(`button[data-card-id="${itemId}"]`) });
+  await expect(card).toBeVisible();
+  const lanes = page
+    .getByRole("region")
+    .filter({ has: page.locator("article") });
+  const target = lanes
+    .filter({ hasNot: page.locator(`button[data-card-id="${itemId}"]`) })
+    .first();
+  const targetName = await target.getAttribute("aria-label");
+  expect(targetName).toBeTruthy();
+  const writes = itemWrites(page, itemId);
+
+  const start = (await card.boundingBox())!;
+  const end = (await target.boundingBox())!;
+  await page.mouse.move(start.x + 90, start.y + 50);
+  await page.mouse.down();
+  await page.mouse.move(start.x + 100, start.y + 60, { steps: 3 });
+  await page.mouse.move(end.x + end.width / 2, end.y + 120, { steps: 12 });
+  const written = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      new URL(response.url()).pathname.endsWith(`/board-items/${itemId}/move`),
+  );
+  await page.mouse.up();
+  const response = await written;
+  expect(
+    response.status(),
+    `${response.request().postData()} -> ${await response.text()}`,
+  ).toBeLessThan(300);
+
+  await expectOneLaneMove(writes);
+  const inTarget = () =>
+    page
+      .getByRole("region", { name: targetName!, exact: true })
+      .locator(`button[data-card-id="${itemId}"]`);
+  await expect(inTarget()).toHaveCount(1);
+
+  await page.reload();
+  await expect(inTarget()).toHaveCount(1);
+});
+
 /**
  * The position choice: the select shows where another column holds a card of the same group, and the card is
  * placed at the top of its group in that column, or at the bottom by default.
