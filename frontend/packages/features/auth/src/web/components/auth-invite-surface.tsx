@@ -226,7 +226,7 @@ function InviteForm({
           <div className="flex items-center gap-3 px-4 py-3.5">
             <span
               aria-hidden="true"
-              className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-primary text-[12px] font-bold text-primary-foreground"
+              className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-primary text-metadata font-bold text-primary-foreground"
             >
               {(role ? invite.orgName : invite.boardTitle)
                 .split(/\s+/)
@@ -235,7 +235,7 @@ function InviteForm({
                 .join("")}
             </span>
             <span className="min-w-0">
-              <b className="block text-[16px] font-[650]">
+              <b className="block text-card-title">
                 {role ? invite.orgName : invite.boardTitle}
               </b>
               {role ? null : (
