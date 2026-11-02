@@ -188,6 +188,27 @@ for (const viewport of viewports) {
       );
     });
 
+    test(`create workspace dialog, ${mode}`, async ({ page }) => {
+      await prepare(page, viewport, dark);
+      await page.goto(WORKSPACE);
+      if (viewport.width < 768) {
+        await page
+          .getByRole("button", { name: "Show or hide navigation" })
+          .first()
+          .click();
+      }
+      const add = page.getByRole("button", { name: "Add", exact: true });
+      if (!(await add.isVisible()))
+        await page
+          .getByRole("button", { name: /open the Notrelix system rail/ })
+          .first()
+          .click();
+      await add.click();
+      const dialog = page.getByRole("dialog", { name: "Create workspace" });
+      await expect(dialog).toBeVisible();
+      await audit(page, "workspace-create", viewport, dark, dialog);
+    });
+
     test(`role-lowering confirmation, ${mode}`, async ({ page }) => {
       await prepare(page, viewport, dark);
       await page.goto(`${WORKSPACE}/members`);

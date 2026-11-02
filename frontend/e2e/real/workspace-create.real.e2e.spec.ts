@@ -103,9 +103,8 @@ test("an Admin renames the workspace in settings: the version steps once, the sa
   const renamed = `${workspace.name} renamed`;
   await page.getByLabel("Workspace name").fill(renamed);
   await page.getByRole("button", { name: "Save changes" }).first().click();
-  await expect(page.getByLabel("Workspace name")).toHaveValue(renamed);
+  await expect.poll(async () => (await read()).name).toBe(renamed);
   const after = await read();
-  expect(after).toMatchObject({ name: renamed });
   expect(after.version).toBe(before.version + 1);
 
   // The same name and description again: nothing changes.
