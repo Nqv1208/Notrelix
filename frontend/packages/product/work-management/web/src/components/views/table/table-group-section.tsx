@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Plus, TriangleAlert } from "lucide-react";
 import { Button, cn } from "@notrelix/ui-web";
+import { ITEM_TITLE_MAX_LENGTH } from "@notrelix/work-management-core";
 import {
   fillTableCopy,
   pluralTableCopy,
@@ -336,6 +337,7 @@ export function TableAddRow({
             <input
               ref={inputRef}
               value={title}
+              maxLength={ITEM_TITLE_MAX_LENGTH}
               onChange={(event) => setTitle(event.target.value)}
               aria-label={fillTableCopy(copy.group.newItemLabel, {
                 name: group.name,

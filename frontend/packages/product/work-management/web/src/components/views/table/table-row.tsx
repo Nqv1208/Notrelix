@@ -6,6 +6,7 @@ import {
   type KeyboardEvent,
 } from "react";
 import {
+  AlertCircle,
   ChevronRight,
   Flag,
   MessageCircle,
@@ -13,6 +14,7 @@ import {
   SquareCheck,
 } from "lucide-react";
 import { PriorityGlyph } from "../../shared/priority-glyph";
+import { ITEM_TITLE_MAX_LENGTH } from "@notrelix/work-management-core";
 import {
   cn,
   ContextMenu,
@@ -38,6 +40,7 @@ import {
   type TableEditors,
 } from "./table-cell-editors";
 import { TableFieldCell, type TableFieldEditing } from "./table-field-cell";
+import { AnchoredNote } from "./table-field-editors";
 import { StatusDot, TableCheckbox } from "./table-parts";
 import { useTableLayout } from "./table-layout";
 import { TableStatusPicker } from "./table-status-picker";
@@ -77,8 +80,11 @@ export interface TableRowProps {
   fieldEditing?: TableFieldEditing;
   /** The row's menu; absent = no menu. */
   actions?: TableRowActions;
-  /** Saves a new title typed in place; absent = the title cannot be edited here. */
-  onRename?: (title: string) => void;
+  /**
+   * Saves a new title typed in place; absent = the title cannot be edited here.
+   * Resolves `false` when the server refused the title: the editor stays open with the typed text.
+   */
+  onRename?: (title: string) => void | Promise<boolean>;
   /** The sub-items of this row can be shown under it; absent = the row has none. */
   expand?: { expanded: boolean; count: number; onToggle: () => void };
   /** The status list is open on this row. */
@@ -189,6 +195,8 @@ export function TableRow({
   const refocus = useRef(false);
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleButton = useRef<HTMLButtonElement>(null);
+  const titleInput = useRef<HTMLInputElement>(null);
+  const [refused, setRefused] = useState(false);
   useEffect(
     () => () => {
       if (openTimer.current) clearTimeout(openTimer.current);
@@ -205,6 +213,7 @@ export function TableRow({
     if (!onRename) return;
     if (openTimer.current) clearTimeout(openTimer.current);
     settled.current = false;
+    setRefused(false);
     setDraft(row.title);
     setRenaming(true);
   };
@@ -213,9 +222,20 @@ export function TableRow({
     if (settled.current) return;
     settled.current = true;
     const next = draft.trim();
-    if (save && next && next !== row.title) onRename?.(next);
-    refocus.current = restoreFocus;
-    setRenaming(false);
+    const written =
+      save && next && next !== row.title ? onRename?.(next) : undefined;
+    const close = () => {
+      refocus.current = restoreFocus;
+      setRenaming(false);
+    };
+    if (!(written instanceof Promise)) return close();
+    // The editor stays until the server has answered: a refused title is told under it, the text kept.
+    void written.then((accepted) => {
+      if (accepted === false) {
+        settled.current = false;
+        setRefused(true);
+      } else close();
+    });
   };
 
   const render = (column: TableColumnSpec) => {
@@ -261,27 +281,60 @@ export function TableRow({
               </button>
             ) : null}
             {renaming ? (
-              <input
-                autoFocus
-                value={draft}
-                aria-label={fillTableCopy(copy.row.editTitle, {
-                  key: keyLabel,
-                })}
-                onChange={(event) => setDraft(event.target.value)}
-                onFocus={(event) => event.currentTarget.select()}
-                onBlur={() => endRename(true, false)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    endRename(true, true);
-                  } else if (event.key === "Escape") {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    endRename(false, true);
-                  }
-                }}
-                className="h-6.5 min-w-0 flex-1 rounded-[7px] border border-line-strong bg-popover px-2 text-nav font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring dark:bg-card"
-              />
+              <AnchoredNote
+                tone="danger"
+                focusRef={titleInput}
+                onEscape={() => endRename(false, true)}
+                note={
+                  refused ? (
+                    <p
+                      role="alert"
+                      className="flex items-start gap-1.5 text-danger-text"
+                    >
+                      <AlertCircle
+                        className="mt-0.5 size-3.5 flex-none"
+                        aria-hidden="true"
+                      />
+                      <span>
+                        {fillTableCopy(copy.row.titleRefused, {
+                          max: ITEM_TITLE_MAX_LENGTH,
+                        })}
+                      </span>
+                    </p>
+                  ) : null
+                }
+              >
+                <input
+                  ref={titleInput}
+                  autoFocus
+                  value={draft}
+                  maxLength={ITEM_TITLE_MAX_LENGTH}
+                  aria-invalid={refused || undefined}
+                  aria-label={fillTableCopy(copy.row.editTitle, {
+                    key: keyLabel,
+                  })}
+                  onChange={(event) => {
+                    setDraft(event.target.value);
+                    setRefused(false);
+                  }}
+                  onFocus={(event) => event.currentTarget.select()}
+                  // A refused title stays on screen with its reason until it is changed or dropped.
+                  onBlur={() => {
+                    if (!refused) endRename(true, false);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      endRename(true, true);
+                    } else if (event.key === "Escape") {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      endRename(false, true);
+                    }
+                  }}
+                  className="h-6.5 min-w-0 flex-1 rounded-[7px] border border-line-strong bg-popover px-2 text-nav font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring dark:bg-card"
+                />
+              </AnchoredNote>
             ) : (
               <button
                 ref={titleButton}

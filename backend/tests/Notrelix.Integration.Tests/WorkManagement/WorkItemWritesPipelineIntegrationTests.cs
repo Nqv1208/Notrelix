@@ -148,6 +148,28 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Rename_ALongTitleToAShorterOne_IsAccepted_AndOneOverTheDomainLimitIsRefusedUnchanged()
+    {
+        var scene = await SeedAsync();
+        using var owner = Provider(scene.Stack);
+        var long300 = new string('a', 300);
+        var read = await VersionAsync(scene.Items[0]);
+
+        // Create takes up to the Domain limit, so rename must take the same titles.
+        await OrgTreeTestHost.SendAsync(owner, Rename(scene.Items[0], long300, read));
+        var afterLong = await VersionAsync(scene.Items[0]);
+        await OrgTreeTestHost.SendAsync(owner, Rename(scene.Items[0], new string('b', 250), afterLong));
+        var afterShorter = await VersionAsync(scene.Items[0]);
+        var tooLong = () => OrgTreeTestHost.SendAsync(owner, Rename(scene.Items[0], new string('c', BoardItem.NameMaxLength + 1), afterShorter));
+
+        (await ItemAsync(scene.Items[0])).Name.Should().Be(new string('b', 250));
+        // This host has no request validators, so the Domain guard is what answers; the API answers both with a 400.
+        await tooLong.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>("a title over the Domain limit is refused");
+        (await ItemAsync(scene.Items[0])).Name.Should().Be(new string('b', 250));
+        (await VersionAsync(scene.Items[0])).Should().Be(afterShorter, "the refusal changed nothing");
+    }
+
+    [Fact]
     public async Task Rename_ByAMemberWhoCannotReadThePrivateBoard_AnswersLikeAMissingItem()
     {
         var scene = await SeedAsync(BoardVisibility.Private);
@@ -174,7 +196,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         await ForEachOutsiderAsync(scene.Stack, async provider =>
         {
             var act = () => OrgTreeTestHost.SendAsync(provider, Rename(scene.Items[0], "Hijacked", version));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
 
         (await ItemAsync(scene.Items[0])).Name.Should().Be("Task 0");
@@ -250,7 +272,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         {
             var act = () => OrgTreeTestHost.SendAsync(provider,
                 new UpdateBoardItemStatusCommand(scene.Items[0], scene.DoneOptionId.ToString(), version));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
 
         (await ItemAsync(scene.Items[0])).CompletedAt.Should().BeNull();
@@ -307,7 +329,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         {
             var act = () => OrgTreeTestHost.SendAsync(provider,
                 new SetBoardItemDueDateCommand(scene.Items[0], new DateTime(2026, 11, 20, 0, 0, 0, DateTimeKind.Utc), null, version));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
 
         (await ItemAsync(scene.Items[0])).DueAt.Should().BeNull();
@@ -444,7 +466,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         await ForEachOutsiderAsync(scene.Stack, async outsider =>
         {
             var act = () => OrgTreeTestHost.SendAsync(outsider, new MoveBoardItemCommand(scene.Items[0], scene.OtherGroupId, version));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
 
         (await ItemAsync(scene.Items[0])).GroupId.Should().NotBe(scene.OtherGroupId);
@@ -582,7 +604,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         await ForEachOutsiderAsync(scene.Stack, async outsider =>
         {
             var act = () => OrgTreeTestHost.SendAsync(outsider, Lane(scene.Items[0]));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
 
         (await StoredValueAsync(scene.Items[0], scene.PriorityFieldId)).Should().BeNull();
@@ -660,7 +682,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         {
             var act = () => OrgTreeTestHost.SendAsync(provider,
                 new AssignBoardItemMemberCommand(scene.Items[0], assignee, version));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
 
         (await AssigneesAsync(scene.Items[0])).Should().BeEmpty();
@@ -719,7 +741,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         {
             var act = () => OrgTreeTestHost.SendAsync(provider,
                 new UpdateBoardItemFieldValueCommand(scene.Items[0], scene.PriorityFieldId, scene.HighOptionId.ToString(), version));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
 
         (await StoredValueAsync(scene.Items[0], scene.PriorityFieldId)).Should().BeNull();
@@ -837,7 +859,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         await ForEachOutsiderAsync(scene.Stack, async provider =>
         {
             var act = () => OrgTreeTestHost.SendAsync(provider, new ListBoardItemTrashQuery(scene.BoardId));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
     }
 
@@ -883,7 +905,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         await ForEachOutsiderAsync(scene.Stack, async provider =>
         {
             var act = () => OrgTreeTestHost.SendAsync(provider, new ListArchivedBoardItemsQuery(scene.BoardId));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
     }
 

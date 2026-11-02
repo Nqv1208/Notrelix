@@ -126,6 +126,12 @@ function isRefusedRange(error: unknown, hasStart: boolean): boolean {
   );
 }
 
+/** The server refused the write as invalid (a 400): the person fixes the value, a toast cannot help. */
+function isRefusedValue(error: unknown): boolean {
+  const e = error as { status?: unknown; kind?: unknown } | null;
+  return e?.status === 400 || e?.kind === "validation";
+}
+
 /** "YYYY-MM-DD" as an instant at `time` ("HH:MM", 17:00 by default) of that local day. */
 function dueInstant(day: string, time = "17:00"): string {
   return new Date(`${day}T${time}:00`).toISOString();
@@ -974,14 +980,16 @@ export function MainTableView({
           fieldEditing={fieldEditing}
           onRename={
             capabilities.canEditFields
-              ? (cardId, title) => {
+              ? async (cardId, title) => {
                   noteTitle(cardId);
-                  updateCard.mutate(
-                    { cardId, patch: { title } },
-                    {
-                      onError: (error) => reportCardWriteFailure(error, cardId),
-                    },
-                  );
+                  try {
+                    await updateCard.mutateAsync({ cardId, patch: { title } });
+                  } catch (error) {
+                    // A refused title is told under the editor, with the typed text kept; the row is already back.
+                    if (isRefusedValue(error)) return false;
+                    reportCardWriteFailure(error, cardId);
+                  }
+                  return true;
                 }
               : undefined
           }
