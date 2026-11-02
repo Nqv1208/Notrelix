@@ -1,6 +1,10 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { changedByNameOf } from "@notrelix/work-management-state";
-import type { Board, CardDetail } from "@notrelix/work-management-core";
+import type {
+  Board,
+  CardDetail,
+  FieldDefinition,
+} from "@notrelix/work-management-core";
 import { findItemFields } from "../card-detail/item-field-editors";
 import type {
   ItemSheetGroup,
@@ -30,6 +34,8 @@ export interface CardPopupModelInput {
   readonly callbacks: TaskDetailCallbacks;
   readonly actions?: CardPopupActions;
   readonly groups?: readonly ItemSheetGroup[];
+  /** The field the open view lays its columns by; the column picker changes it. */
+  readonly groupField?: FieldDefinition;
   readonly now: Date;
   readonly timeZone?: string;
   readonly slots?: CardPopupSlots;
@@ -114,7 +120,11 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
           if (mounted.current)
             setSaves((current) => ({
               ...current,
-              [key]: { status: "error", retry: attempt },
+              [key]: {
+                status: "error",
+                retry: attempt,
+                reason: (error as { kind?: string } | null)?.kind,
+              },
             }));
         },
       );
@@ -154,6 +164,7 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
     callbacks: input.callbacks,
     actions: input.actions ?? NO_ACTIONS,
     groups: input.groups ?? NO_GROUPS,
+    groupField: input.groupField,
     fields,
     copy,
     now: input.now,

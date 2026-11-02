@@ -73,7 +73,6 @@ export function useBoardPreference(
 
   // The member's columns: written through their own mutation so a failed
   // column save never shows as a failed filter save.
-  const [localColumns, setLocalColumns] = useState<TableColumnPreference>({});
   const lastColumns = useRef<TableColumnPreference | null>(null);
   const [columnsFailed, setColumnsFailed] = useState(false);
   const columnsMutation = useMutation({
@@ -97,9 +96,15 @@ export function useBoardPreference(
   const saveColumns = useCallback(
     (columns: TableColumnPreference) => {
       if (enabled) mutateColumns(columns);
-      else setLocalColumns(columns);
+      // shortcut: a board with no saved view has no server row to hold the member's columns (a preference
+      // belongs to a view), so they stay in the query cache while the board is open; upgrade: a view made on demand.
+      else
+        queryClient.setQueryData<BoardPreferenceState>(queryKey, (state) => ({
+          criteria: state?.criteria ?? {},
+          columns,
+        }));
     },
-    [enabled, mutateColumns],
+    [enabled, mutateColumns, queryClient, queryKey],
   );
   const retryColumns = useCallback(() => {
     if (lastColumns.current) saveColumns(lastColumns.current);
@@ -115,7 +120,7 @@ export function useBoardPreference(
     saveFailed: failed,
     retry,
     /** The member's own table columns; empty when they have none. */
-    columns: enabled ? (query.data?.columns ?? {}) : localColumns,
+    columns: query.data?.columns ?? {},
     saveColumns,
     columnsSaving: columnsMutation.isPending,
     columnsFailed,

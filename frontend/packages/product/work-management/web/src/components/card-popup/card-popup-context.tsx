@@ -1,5 +1,9 @@
 import { createContext, useContext, type ReactNode } from "react";
-import type { Board, CardDetail } from "@notrelix/work-management-core";
+import type {
+  Board,
+  CardDetail,
+  FieldDefinition,
+} from "@notrelix/work-management-core";
 import type {
   ItemSheetGroup,
   TaskDetailCallbacks,
@@ -24,7 +28,15 @@ export type CardPopupReadOnly =
 /** The state of one field's save: the chip row and the sections show it in place. */
 export type FieldSave =
   | { readonly status: "saving" }
-  | { readonly status: "error"; readonly retry: () => void };
+  | {
+      readonly status: "error";
+      readonly retry: () => void;
+      /** The refusal's kind ("forbidden", "network", ...), when the error named one. */
+      readonly reason?: string;
+    };
+
+/** The save key of a move between columns or groups: the picker and the notice under the header read it. */
+export const MOVE_SAVE_KEY = "move";
 
 /** The pickers the quick row and the "+ Thêm" menu open. */
 export type CardPopupPicker =
@@ -104,6 +116,8 @@ export interface CardPopupModel {
   readonly callbacks: TaskDetailCallbacks;
   readonly actions: CardPopupActions;
   readonly groups: readonly ItemSheetGroup[];
+  /** The Select or Status field the open view lays its columns by; absent: the Status field, else the board groups. */
+  readonly groupField?: FieldDefinition;
   readonly fields: ReturnType<typeof findItemFields>;
   readonly copy: CardPopupCopy;
   readonly now: Date;
