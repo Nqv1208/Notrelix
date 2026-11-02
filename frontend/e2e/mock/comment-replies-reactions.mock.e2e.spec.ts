@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * Replies and reactions on the card popup's comments: a reply under its comment, a reply carrying no reply
- * button of its own (the thread stays one level deep), the thread folding past three replies when the card is
+ * Replies and reactions on the card popup's comments: a reply under its comment, a reply to a reply landing in the same
+ * top-level thread (one level deep), the thread folding past three replies when the card is
  * opened again, emoji toggled on and off, and a viewer who reads the chips but cannot react. The owner checks
  * run for the default persona, the viewer check with VITE_MOCK_PERSONA=viewer.
  */
@@ -48,7 +48,7 @@ test.describe("owner", () => {
     "Needs the default owner scenario",
   );
 
-  test("replies into the thread, a reply has no reply button, and the thread folds past three", async ({
+  test("replies, replies to a reply into the same thread, and folds past three", async ({
     page,
   }) => {
     await open(page);
@@ -58,12 +58,16 @@ test.describe("owner", () => {
     await expect(replies(page)).toHaveCount(1);
     await expect(replies(page).getByText("First reply")).toBeVisible();
 
-    // The thread is one level deep: a reply cannot be replied to.
-    await expect(
-      replies(page).getByRole("button", { name: "Reply", exact: true }),
-    ).toHaveCount(0);
+    // Replying to the reply lands in the same thread, not one level deeper.
+    await reply(
+      page,
+      replies(page).getByRole("button", { name: "Reply", exact: true }).first(),
+      "Reply to the reply",
+    );
+    await expect(replies(page)).toHaveCount(1);
+    await expect(replies(page).getByText("Reply to the reply")).toBeVisible();
 
-    for (const text of ["Second", "Third", "Fourth", "Fifth"]) {
+    for (const text of ["Third", "Fourth", "Fifth"]) {
       await reply(page, topReply.first(), text);
     }
     await expect(replies(page)).toHaveCount(1);
