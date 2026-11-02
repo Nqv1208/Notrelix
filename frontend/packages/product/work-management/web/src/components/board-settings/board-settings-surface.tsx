@@ -90,7 +90,7 @@ export function BoardSettingsSurface(props: BoardSettingsSurfaceProps) {
             <PageLink
               href={props.boardHref}
               onNavigate={props.onBack}
-              className="font-medium text-brand-subtle-foreground hover:underline"
+              className="font-medium text-brand-subtle-foreground hover:underline max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
             >
               {props.boardTitle}
             </PageLink>{" "}

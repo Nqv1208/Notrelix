@@ -317,7 +317,7 @@ export function GeneralSection({
                   type="button"
                   aria-disabled="true"
                   aria-label={t.changeIcon}
-                  className="grid size-[30px] cursor-default place-items-center rounded-lg border-0 text-white"
+                  className="grid size-[30px] cursor-default place-items-center rounded-lg border-0 text-white max-sm:size-11"
                   style={{ backgroundColor: color }}
                 >
                   <SquareKanban aria-hidden="true" className="size-3.5" />
@@ -331,7 +331,7 @@ export function GeneralSection({
                   aria-pressed={option.toLowerCase() === color.toLowerCase()}
                   aria-label={t.colors[option]}
                   onClick={() => setColor(option)}
-                  className="size-[22px] shrink-0 cursor-pointer rounded-[6px] border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-pressed:shadow-[0_0_0_2px_var(--popover),0_0_0_4px_var(--foreground)]"
+                  className="size-[22px] shrink-0 cursor-pointer rounded-[6px] max-sm:size-11 border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-pressed:shadow-[0_0_0_2px_var(--popover),0_0_0_4px_var(--foreground)]"
                   style={{ backgroundColor: option }}
                 />
               ))}

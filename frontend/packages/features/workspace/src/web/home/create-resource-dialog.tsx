@@ -151,7 +151,8 @@ export function CreateResourceDialog({
               id={inputId}
               value={name}
               autoFocus
-              maxLength={200}
+              className="max-sm:h-11"
+              maxLength={isBoard ? 120 : 200}
               placeholder={
                 isBoard
                   ? copy.create.boardPlaceholder
@@ -189,11 +190,12 @@ export function CreateResourceDialog({
             <Button
               type="button"
               variant="outline"
+              className="max-sm:h-11"
               onClick={() => onOpenChange(false)}
             >
               {copy.create.cancel}
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" className="max-sm:h-11" disabled={pending}>
               {pending
                 ? copy.create.submitting
                 : isBoard
