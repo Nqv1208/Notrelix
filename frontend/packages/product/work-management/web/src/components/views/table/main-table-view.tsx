@@ -59,6 +59,7 @@ import { MainTableSkeleton } from "./main-table-skeleton";
 import { MainTableSurface } from "./main-table-surface";
 import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
 import { TableSubItems } from "./table-sub-items";
+import { useViewportTableLayout } from "./table-layout";
 import type { TableEditors } from "./table-cell-editors";
 import type { TableFieldEditing } from "./table-field-cell";
 import {
@@ -112,9 +113,9 @@ function listForNewItem(
   return [...groups].sort((a, b) => a.position - b.position)[0]?.id;
 }
 
-/** "YYYY-MM-DD" as an instant at 17:00 of that local day. */
-function dueInstant(day: string): string {
-  return new Date(`${day}T17:00:00`).toISOString();
+/** "YYYY-MM-DD" as an instant at `time` ("HH:MM", 17:00 by default) of that local day. */
+function dueInstant(day: string, time = "17:00"): string {
+  return new Date(`${day}T${time}:00`).toISOString();
 }
 
 /**
@@ -316,6 +317,7 @@ export function MainTableView({
   });
   const workspaceBoards = useWorkspaceBoards(workspaceId);
   const isNarrow = useIsMobile();
+  const layout = useViewportTableLayout();
   const boardCovered = Boolean(selectedItemId) && isNarrow;
 
   const { board } = table;
@@ -669,10 +671,10 @@ export function MainTableView({
       value: userId ? [userId] : [],
     });
   };
-  const writeDue = (cardId: string, day: string | null) => {
+  const writeDue = (cardId: string, day: string | null, time?: string) => {
     noteTitle(cardId);
     updateCard.mutate(
-      { cardId, patch: { dueDate: day ? dueInstant(day) : null } },
+      { cardId, patch: { dueDate: day ? dueInstant(day, time) : null } },
       { onError: (error) => reportCardWriteFailure(error, cardId) },
     );
   };
@@ -817,6 +819,7 @@ export function MainTableView({
         aria-hidden={boardCovered || undefined}
       >
         <MainTableSurface
+          layout={layout}
           onNoGroup={noGroupNotice.noGroup}
           renderSubItems={(rowId) => (
             <TableSubItems

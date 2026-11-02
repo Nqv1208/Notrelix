@@ -13,6 +13,8 @@ import {
 } from "@notrelix/ui-web";
 import { identityMarkClass } from "../../shared/item-display";
 import type { MainTableCopy } from "./main-table.copy";
+import { TableDuePicker } from "./table-due-picker";
+import { useTableLayout } from "./table-layout";
 
 /** A person the table can assign an item to. */
 export interface TableEditorMember {
@@ -36,8 +38,8 @@ export interface TableEditors {
   readonly priorities: readonly TablePriorityOption[];
   /** `null` = nobody. */
   readonly onAssignee: (rowId: string, userId: string | null) => void;
-  /** "YYYY-MM-DD", or `null` to clear the date. */
-  readonly onDue: (rowId: string, day: string | null) => void;
+  /** "YYYY-MM-DD", or `null` to clear the date; `time` ("HH:MM") is given by the tablet and phone picker. */
+  readonly onDue: (rowId: string, day: string | null, time?: string) => void;
   readonly onPriority: (rowId: string, optionId: string) => void;
 }
 
@@ -51,6 +53,20 @@ export function dayOf(date: Date): string {
 /** The trigger look: the cell's own content, a soft hover and no shift. */
 export const EDIT_TRIGGER_CLASS =
   "-mx-1.5 flex min-w-0 max-md:min-h-11 cursor-pointer items-center gap-[7px] rounded-md border-0 bg-transparent px-1.5 py-0.5 text-left font-[inherit] text-[length:inherit] text-inherit hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring";
+
+/**
+ * The tablet trigger (`Final-T-Table` `tb-cell`): a 44 px button that reaches 8 px past the cell's padding on both
+ * sides; it takes a 2 px ring and the panel colour while its list is open.
+ */
+export const TABLET_TRIGGER_CLASS =
+  "-mx-2 flex h-11 w-[calc(100%+1rem)] min-w-0 cursor-pointer items-center gap-2 rounded-[9px] border-0 bg-transparent px-2 text-left font-[inherit] text-[length:inherit] text-inherit hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring aria-expanded:bg-popover aria-expanded:shadow-[inset_0_0_0_2px_var(--color-primary)] dark:aria-expanded:bg-card";
+
+/** The trigger class of the cell editors for the layout the table is drawn in. */
+function useTriggerClass(): string {
+  return useTableLayout() === "tablet"
+    ? TABLET_TRIGGER_CLASS
+    : EDIT_TRIGGER_CLASS;
+}
 
 export function AssigneeEditor({
   copy,
@@ -68,6 +84,7 @@ export function AssigneeEditor({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const triggerClass = useTriggerClass();
   const pick = (userId: string | null) => {
     setOpen(false);
     onPick(userId);
@@ -75,7 +92,7 @@ export function AssigneeEditor({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" aria-label={label} className={EDIT_TRIGGER_CLASS}>
+        <button type="button" aria-label={label} className={triggerClass}>
           {children}
         </button>
       </PopoverTrigger>
@@ -145,7 +162,7 @@ export function PickRow({
       aria-pressed={pressed}
       onClick={onClick}
       className={cn(
-        "flex h-8 max-md:h-11 w-full cursor-pointer items-center gap-2 rounded-md border-0 bg-transparent px-2 text-left text-compact text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring",
+        "flex h-8 max-xl:h-11 w-full cursor-pointer items-center gap-2 rounded-md border-0 bg-transparent px-2 text-left text-compact text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring",
         pressed && "bg-state-hover font-semibold",
       )}
     >
@@ -159,24 +176,56 @@ export function DueEditor({
   copy,
   dueAt,
   label,
+  itemKey,
   onPick,
   children,
 }: {
   copy: MainTableCopy;
   dueAt: string | null;
   label: string;
-  onPick: (day: string | null) => void;
+  /** The item key the tablet picker names in its title. */
+  itemKey?: string;
+  onPick: (day: string | null, time?: string) => void;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const pick = (day: string | null) => {
+  const tablet = useTableLayout() === "tablet";
+  const pick = (day: string | null, time?: string) => {
     setOpen(false);
-    onPick(day);
+    onPick(day, time);
   };
+  const triggerClass = useTriggerClass();
+  if (tablet)
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label={label}
+            aria-haspopup="dialog"
+            className={TABLET_TRIGGER_CLASS}
+          >
+            {children}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          aria-label={label}
+          className="w-85 gap-0 rounded-[14px] border border-line bg-popover p-2 shadow-pop ring-0 dark:bg-card"
+        >
+          <TableDuePicker
+            copy={copy}
+            dueAt={dueAt}
+            heading={itemKey ? { key: itemKey } : undefined}
+            onPick={pick}
+          />
+        </PopoverContent>
+      </Popover>
+    );
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" aria-label={label} className={EDIT_TRIGGER_CLASS}>
+        <button type="button" aria-label={label} className={triggerClass}>
           {children}
         </button>
       </PopoverTrigger>
@@ -217,10 +266,11 @@ export function PriorityEditor({
   onPick: (optionId: string) => void;
   children: ReactNode;
 }) {
+  const triggerClass = useTriggerClass();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button type="button" aria-label={label} className={EDIT_TRIGGER_CLASS}>
+        <button type="button" aria-label={label} className={triggerClass}>
           {children}
         </button>
       </DropdownMenuTrigger>
@@ -229,7 +279,7 @@ export function PriorityEditor({
           <DropdownMenuItem
             key={option.id}
             className={cn(
-              "max-md:min-h-11",
+              "max-xl:min-h-11",
               option.label === currentLabel && "font-semibold",
             )}
             onSelect={() => onPick(option.id)}

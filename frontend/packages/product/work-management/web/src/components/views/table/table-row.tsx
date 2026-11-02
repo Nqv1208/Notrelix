@@ -7,6 +7,7 @@ import {
 } from "react";
 import {
   ChevronRight,
+  Flag,
   MessageCircle,
   Paperclip,
   SquareCheck,
@@ -38,6 +39,7 @@ import {
 } from "./table-cell-editors";
 import { TableFieldCell, type TableFieldEditing } from "./table-field-cell";
 import { StatusDot, TableCheckbox } from "./table-parts";
+import { useTableLayout } from "./table-layout";
 import { TableStatusPicker } from "./table-status-picker";
 
 /** The row's own menu (right click, or the context-menu key). */
@@ -104,23 +106,41 @@ const PRIORITY_CLASS = {
   low: "font-normal text-meta-foreground",
 } as const;
 
+/**
+ * A cell of the row. On the tablet drawing it is 52 px tall with 12 px of padding; the checkbox and the title cell
+ * stay pinned while the other columns scroll (`pinned` is the left offset in px).
+ */
 function Cell({
   className,
   selected,
+  pinned,
   children,
 }: {
   className?: string;
   selected: boolean;
+  pinned?: 0 | 48;
   children?: React.ReactNode;
 }) {
+  const tablet = useTableLayout() === "tablet";
   return (
     <div
       role="cell"
+      style={tablet && pinned !== undefined ? { left: pinned } : undefined}
       className={cn(
-        "relative box-border flex h-(--table-row-height) max-md:h-11 min-w-0 items-center gap-[7px] overflow-hidden border-b border-border px-2.5 whitespace-nowrap",
+        "relative box-border flex min-w-0 items-center overflow-hidden border-b border-border whitespace-nowrap",
+        tablet
+          ? "h-13 gap-2 px-3 text-sm"
+          : "h-(--table-row-height) max-md:h-11 gap-[7px] px-2.5",
+        tablet && pinned !== undefined && "sticky z-3",
+        tablet && pinned === 0 && "justify-center px-0.5",
+        tablet && pinned === 48 && "border-r border-line-strong",
         selected
           ? "bg-row-selected"
-          : cn(tablePanelClass, "group-hover/row:bg-state-hover"),
+          : cn(
+              tablePanelClass,
+              "group-hover/row:bg-state-hover",
+              tablet && "group-data-[accent-active=true]/row:bg-state-selected",
+            ),
         className,
       )}
     >
@@ -162,6 +182,7 @@ export function TableRow({
   onKeyDown,
 }: TableRowProps) {
   const keyLabel = row.key ?? row.title;
+  const tablet = useTableLayout() === "tablet";
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState("");
   const settled = useRef(false);
@@ -209,7 +230,12 @@ export function TableRow({
         );
       case "title":
         return (
-          <Cell key="title" selected={selected}>
+          <Cell
+            key="title"
+            selected={selected}
+            pinned={48}
+            className={tablet ? "whitespace-normal" : undefined}
+          >
             {expand ? (
               <button
                 type="button"
@@ -279,8 +305,18 @@ export function TableRow({
                 aria-keyshortcuts={onRename ? "F2 Enter" : undefined}
                 title={row.title}
                 data-row-open=""
-                className="min-w-0 truncate text-left text-nav font-medium text-foreground max-md:min-h-11 focus-visible:outline-2 focus-visible:outline-ring"
+                className={
+                  tablet
+                    ? // The whole cell is the target: the key and the title wrap under it, two lines at most.
+                      "line-clamp-2 min-w-0 flex-1 text-left text-[14.5px] leading-[1.38] font-medium text-pretty text-foreground after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:rounded-[8px] focus-visible:after:outline-2 focus-visible:after:-outline-offset-3 focus-visible:after:outline-ring"
+                    : "min-w-0 truncate text-left text-nav font-medium text-foreground max-md:min-h-11 focus-visible:outline-2 focus-visible:outline-ring"
+                }
               >
+                {tablet && row.key ? (
+                  <span className="mr-1.5 font-mono text-[12.5px] font-medium text-meta-foreground">
+                    {row.key}
+                  </span>
+                ) : null}
                 {row.title}
               </button>
             )}
@@ -299,6 +335,9 @@ export function TableRow({
               "relative inline-flex h-6 items-center gap-1.5 rounded-full border-0 px-[9px] text-crumb font-semibold text-foreground",
               // A phone target is 44 px: the pill stays 24 px tall and its hit area reaches the row edges.
               "max-md:after:absolute max-md:after:-inset-y-2.5 max-md:after:inset-x-0 max-md:after:content-['']",
+              // The tablet pill is 28 px tall and its hit area reaches the 44 px the drawing gives the cell.
+              tablet &&
+                "h-7 px-2.5 text-compact after:absolute after:-inset-y-2 after:inset-x-0 after:content-['']",
               status ? STATUS_TINT_CLASS[status.category] : "bg-state-hover",
               editing && "ring-2 ring-primary",
               canEdit ? "cursor-pointer" : "cursor-default",
@@ -346,12 +385,18 @@ export function TableRow({
               aria-hidden="true"
               className={cn(
                 "flex size-6 shrink-0 items-center justify-center rounded-full text-avatar-md select-none",
+                tablet && "size-7 text-[10.5px]",
                 identityMarkClass(row.assignee.userId),
               )}
             >
               {row.assignee.initials}
             </span>
-            <span className="min-w-0 truncate text-nav font-normal">
+            <span
+              className={cn(
+                "min-w-0 truncate text-nav font-normal",
+                tablet && "text-sm",
+              )}
+            >
               {row.assignee.name}
             </span>
           </>
@@ -359,11 +404,19 @@ export function TableRow({
           <>
             <span
               aria-hidden="true"
-              className="flex size-6 shrink-0 items-center justify-center rounded-full text-avatar-md font-bold text-meta-foreground shadow-[inset_0_0_0_1.5px_var(--line-strong)]"
+              className={cn(
+                "flex size-6 shrink-0 items-center justify-center rounded-full text-avatar-md font-bold text-meta-foreground shadow-[inset_0_0_0_1.5px_var(--line-strong)]",
+                tablet && "size-7 text-[10.5px]",
+              )}
             >
               +
             </span>
-            <span className="min-w-0 truncate text-nav font-normal">
+            <span
+              className={cn(
+                "min-w-0 truncate text-nav font-normal",
+                tablet && "text-sm",
+              )}
+            >
               {copy.row.unassigned}
             </span>
           </>
@@ -393,15 +446,28 @@ export function TableRow({
         );
       }
       case "due": {
+        // The tablet cell stacks the date over what the desktop grid writes instead of it ("Quá hạn 2 ngày").
+        const stacked = tablet && row.due.date !== undefined;
         const due = (
           <span
             data-due={row.due.kind}
             className={cn(
               "text-nav font-normal tabular-nums",
+              tablet && "flex flex-col text-sm leading-[1.25]",
               DUE_CLASS[row.due.kind],
+              tablet &&
+                row.due.kind === "date" &&
+                "font-medium text-foreground",
             )}
           >
-            {row.due.text}
+            {stacked ? (
+              <>
+                <b className="font-semibold">{row.due.date}</b>
+                <small className="text-xs font-semibold">{row.due.text}</small>
+              </>
+            ) : (
+              row.due.text
+            )}
           </span>
         );
         return (
@@ -410,8 +476,13 @@ export function TableRow({
               <DueEditor
                 copy={copy}
                 dueAt={row.dueAt}
+                itemKey={row.key ?? undefined}
                 label={fillTableCopy(copy.row.changeDue, { key: keyLabel })}
-                onPick={(day) => editors.onDue(row.id, day)}
+                onPick={(day, time) =>
+                  time
+                    ? editors.onDue(row.id, day, time)
+                    : editors.onDue(row.id, day)
+                }
               >
                 {due}
               </DueEditor>
@@ -428,12 +499,19 @@ export function TableRow({
             data-priority={priority ?? undefined}
             className={cn(
               "inline-flex items-center gap-1 text-crumb",
+              tablet && "gap-1.5 text-sm",
               priority
                 ? PRIORITY_CLASS[priority]
                 : "font-normal text-meta-foreground",
             )}
           >
-            {priority ? <PriorityGlyph level={priority} /> : null}
+            {priority ? (
+              tablet ? (
+                <Flag className="size-3.75" aria-hidden="true" />
+              ) : (
+                <PriorityGlyph level={priority} />
+              )
+            ) : null}
             {priority ? copy.row.priority[priority] : copy.row.noPriority}
           </span>
         );
@@ -485,11 +563,17 @@ export function TableRow({
                   done: row.progress.done,
                   total: row.progress.total,
                 })}
-                className="flex w-27.5 items-center gap-2 text-metadata leading-[1.45] tabular-nums text-meta-foreground"
+                className={cn(
+                  "flex w-27.5 items-center gap-2 text-metadata leading-[1.45] tabular-nums text-meta-foreground",
+                  tablet && "w-full text-compact text-muted-foreground",
+                )}
               >
                 <span
                   aria-hidden="true"
-                  className="block h-1.25 flex-1 overflow-hidden rounded-[3px] bg-state-hover-strong"
+                  className={cn(
+                    "block h-1.25 flex-1 overflow-hidden rounded-[3px] bg-state-hover-strong",
+                    tablet && "h-1.5 w-12 flex-none",
+                  )}
                 >
                   <span
                     data-progress-fill=""
@@ -500,6 +584,10 @@ export function TableRow({
                 <span aria-hidden="true">
                   {row.progress.done}/{row.progress.total}
                 </span>
+              </span>
+            ) : tablet ? (
+              <span aria-hidden="true" className="text-meta-foreground">
+                —
               </span>
             ) : null}
           </Cell>
@@ -562,7 +650,12 @@ export function TableRow({
       case "updated":
         return (
           <Cell key="updated" selected={selected}>
-            <span className="text-crumb text-meta-foreground">
+            <span
+              className={cn(
+                "text-crumb text-meta-foreground",
+                tablet && "text-nav",
+              )}
+            >
               {row.updatedText}
             </span>
           </Cell>
@@ -650,6 +743,10 @@ export function TableRow({
       className={cn(
         "group/row relative grid min-w-full cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
         editing && "z-5",
+        // The open item's row wears the 2 px ring of the tablet drawing.
+        tablet &&
+          active &&
+          "after:pointer-events-none after:absolute after:inset-0 after:bottom-px after:z-4 after:shadow-[inset_0_0_0_2px_var(--color-primary)] after:content-['']",
       )}
       style={
         {
@@ -666,9 +763,14 @@ export function TableRow({
           "bg-[color-mix(in_oklch,var(--row-accent)_22%,transparent)]",
           "group-hover/row:bg-(--row-accent) group-focus-within/row:bg-(--row-accent)",
           active && "bg-(--row-accent)",
+          tablet && "hidden",
         )}
       />
-      <Cell selected={selected} className="pr-0 pl-3.5">
+      <Cell
+        selected={selected}
+        pinned={0}
+        className={tablet ? undefined : "pr-0 pl-3.5"}
+      >
         <TableCheckbox
           checked={selected}
           label={fillTableCopy(copy.row.select, { key: keyLabel })}
