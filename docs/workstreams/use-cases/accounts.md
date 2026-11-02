@@ -29,7 +29,7 @@ review_on:
 
 # Use cases: Accounts
 
-Product meaning: [accounts](../../product/accounts.md). Team: [identity-accounts](../teams/identity-accounts.md). Execution pack: [spec](../executions/identity-accounts/identity-accounts.spec.md), [tests](../executions/identity-accounts/identity-accounts.tests.md), [certification](../executions/identity-accounts/identity-accounts.certification.md). Permission and role meaning: [governance](../../product/governance.md). Sign-in, session, MFA, profile and the personal "My account" pages are Identity use cases: see [identity.md](identity.md). This file covers the Account (organization) boundary only.
+Product meaning: [accounts](../../product/accounts.md). Team: [identity-accounts](../teams/identity-accounts.md). Execution pack: spec (removed; see git history), tests (removed; see git history), certification (removed; see git history). Permission and role meaning: [governance](../../product/governance.md). Sign-in, session, MFA, profile and the personal "My account" pages are Identity use cases: see [identity.md](identity.md). This file covers the Account (organization) boundary only.
 
 Requirement ids cited below are `IAREQ024` to `IAREQ036` (Account capability, current Account, tenant isolation) and `CORE-CERT-004`, `CORE-CERT-005` of the pack. The test plan ids are `IA-TST-ACCOUNT-*`.
 

@@ -43,7 +43,7 @@ This document is the canonical backend owner for Domain modeling mechanics.
 Product rules themselves remain owned by:
 
 ```text
-../../../docs/product/contexts/
+../../../docs/product/
 ```
 
 This document defines **how** those rules are represented safely in `Notrelix.Domain`.
@@ -2529,7 +2529,7 @@ A structural Domain change also requires applicable architecture gates.
 Product semantics:
 
 ```text
-../../../docs/product/contexts/
+../../../docs/product/
 ```
 
 Backend architecture:

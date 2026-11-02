@@ -43,6 +43,22 @@ public class CsrfProtectionTests
     }
 
     [Fact]
+    public async Task Bootstrap_EveryCallIssuesANewToken_AndTheCookieFollowsTheLatest()
+    {
+        await using var factory = new CsrfEnabledApiFactory();
+        var client = factory.CreateClient();
+
+        var first = await client.GetAsync(BootstrapPath);
+        var second = await client.GetAsync(BootstrapPath);
+
+        var firstBody = await first.Content.ReadFromJsonAsync<IssueCsrfTokenResponse>(Json);
+        var secondBody = await second.Content.ReadFromJsonAsync<IssueCsrfTokenResponse>(Json);
+        secondBody!.Token.Should().NotBe(firstBody!.Token);
+        var cookie = second.Headers.GetValues("Set-Cookie").Single(c => c.StartsWith("csrf_token="));
+        Uri.UnescapeDataString(ExtractCookieValue(cookie)).Should().Be(secondBody.Token);
+    }
+
+    [Fact]
     public async Task Production_Protector_UsesSecureNoneCookiePolicy()
     {
         var environment = new HostEnvironmentStub { EnvironmentName = Environments.Production };

@@ -114,21 +114,19 @@ The checked-in repository currently contains the following major areas:
 ├── artifacts/contracts
 ├── backend
 ├── backups
+├── delivery
 ├── docs
-├── docs-refoundation
 ├── frontend
 ├── infra
 ├── scripts
+├── tools
 ├── AGENTS.md
-├── CLAUDE.md
 ├── CONTEXT-MAP.md
 ├── CONTEXT.md
 ├── DESIGN.md
-├── MEMORY.md
 ├── PRODUCT.md
 ├── README.md
 ├── RULE.md
-├── SKILL.md
 ├── Makefile
 ├── docker-compose.yml
 ├── docker-compose.dev.yml
@@ -138,9 +136,8 @@ The checked-in repository currently contains the following major areas:
 
 Important:
 
-- `docs-refoundation/`, root `MEMORY.md`, root `SKILL.md`, and the current `docs/engineering/` tree are part of an active documentation transition and are **not** intended to remain independent permanent authority layers.
-- The target documentation architecture is being consolidated around root constitution files, repository cross-stack/product docs, `backend/docs`, and `frontend/docs`.
-- Historical/transitional documentation is not product or architecture authority merely because it remains present in the current tree.
+- `delivery/` holds the delivery catalog/policy and `tools/` holds `deliveryctl`, the delivery-state tool.
+- The documentation architecture is root constitution files, repository cross-stack/product docs, `backend/docs`, and `frontend/docs`; `make docs-check` passes on this tree.
 
 ---
 
@@ -544,6 +541,7 @@ packages/runtimes/*
 packages/ui/*
 packages/product/*/*
 packages/features/*
+packages/dev/*
 tooling/*
 tooling/storybook/web
 ```
@@ -607,7 +605,7 @@ Current host facts:
 - Next.js;
 - default development/start port `3000`;
 - imports shared token/web UI/icon packages;
-- package currently declares several framework/dependency versions as `latest`, so the lockfile is required for exact resolved versions.
+- package declares several framework/dependency versions as `latest`, so the lockfile is required for exact resolved versions.
 
 Current command:
 
@@ -639,7 +637,7 @@ Current host facts:
 - React Native;
 - native runtime;
 - native-safe product adapters/UI packages;
-- several runtime package versions are currently declared as `latest`, so the lockfile is required for exact resolved versions.
+- dependency versions are pinned in its `package.json`; only marketing declares `latest`.
 
 Current command:
 
@@ -647,6 +645,24 @@ Current command:
 cd frontend
 pnpm dev:mobile
 ```
+
+---
+
+## 11.4 Operator
+
+Path:
+
+```text
+frontend/apps/operator
+```
+
+Package:
+
+```text
+@notrelix/app-operator
+```
+
+Internal platform operator console (Vite + React, development port `5180`). It is not a product host; see `frontend/docs/architecture/hosts-composition-routing.md` section 3.1.
 
 ---
 
@@ -711,6 +727,7 @@ The current architecture manifest includes foundation packages such as:
 @notrelix/query
 @notrelix/realtime
 @notrelix/observability
+@notrelix/i18n
 ```
 
 Current path family:
@@ -1037,11 +1054,11 @@ The development stack currently defines:
 ```text
 PostgreSQL 16
 Redis 7
-RabbitMQ 3.13             optional messaging profile
+RabbitMQ 4.3              optional messaging profile
 .NET SDK 9 backend
 Node 22 marketing host
 Node 22 web host
-Nginx 1.27 gateway
+Nginx 1.29 gateway
 pgAdmin 9                 optional tools profile
 ```
 
@@ -1106,7 +1123,8 @@ The root Makefile currently provides command groups for:
 - staging;
 - production;
 - Compose configuration;
-- documentation check;
+- documentation check and generation;
+- delivery-state validation (`ci-validate`);
 - cleanup.
 
 Examples:
@@ -1129,6 +1147,8 @@ make be-test
 
 make config-dev
 make docs-check
+make docs-generate
+make ci-validate
 ```
 
 The Makefile is the exact authority for root make targets.
@@ -1139,9 +1159,7 @@ Read destructive targets before execution; several reset/clean targets remove Do
 
 # 27. Documentation current state
 
-The repository is currently in an active documentation re-foundation.
-
-The desired long-term authority model is:
+The documentation re-foundation is complete. The authority model is:
 
 ```text
 root constitution/router files
@@ -1157,77 +1175,9 @@ generated evidence
 ADRs
 ```
 
-However, the checked-in tree still contains artifacts from an overlapping documentation generation.
+`docs/engineering/`, `docs-refoundation/`, root `MEMORY.md`, root `SKILL.md` and root `CLAUDE.md` no longer exist. Reusable agent workflows live under `.agents/skills/`.
 
----
-
-# 28. Current documentation conflict
-
-The current repository still contains:
-
-```text
-docs/engineering/
-docs-refoundation/
-MEMORY.md
-SKILL.md
-```
-
-At the same time, the current documentation checker contains `docs/engineering` in its forbidden legacy-authority path list.
-
-It also treats references to `docs/engineering` as forbidden.
-
-Therefore:
-
-> **the checked-in documentation tree and its current governance script are not yet mutually consistent.**
-
-This is a known documentation-transition defect.
-
-Do not resolve it by treating `docs/engineering` as canonical simply because the directory exists.
-
-Do not resolve it by deleting unique knowledge before it has been migrated.
-
-The re-foundation process must:
-
-1. extract retained cross-stack/product/governance knowledge;
-2. merge backend/frontend implementation knowledge into their project canonical owners;
-3. establish the target repository `docs/` tree;
-4. migrate references;
-5. remove obsolete authority paths;
-6. make documentation governance pass on the final tree.
-
----
-
-# 29. Root `MEMORY.md` current status
-
-A root `MEMORY.md` currently exists in the checked-in tree.
-
-It is not part of the target permanent documentation authority.
-
-Current-state facts belong in this `CONTEXT.md`.
-
-Durable architectural rationale belongs in ADRs/canonical documents.
-
-Historical project state belongs in Git/PR history.
-
-Do not add new durable architecture rules to the legacy memory snapshot.
-
----
-
-# 30. Root `SKILL.md` current status
-
-A root `SKILL.md` currently exists in the checked-in tree.
-
-Reusable Coding Agent workflows now live under:
-
-```text
-.agents/skills/
-```
-
-The root `SKILL.md` is therefore transitional/legacy and is not the intended permanent workflow authority.
-
-Skills describe procedure.
-
-They do not redefine architecture.
+Live delivery state lives in `docs/workstreams/use-cases/<context>.md` and `delivery/`; it is non-normative evidence.
 
 ---
 
@@ -1263,15 +1213,14 @@ make docs-check
 currently executes:
 
 ```text
-node scripts/check-documentation.mjs
+node scripts/docs/check-*.mjs  (six scripts, see Makefile docs-check)
 ```
 
 The script presently checks concerns including:
 
 - `file:///` absolute links;
 - broken relative Markdown links;
-- forbidden legacy authority paths;
-- forbidden legacy references;
+- forbidden legacy authority paths and references;
 - duplicate backend ADR IDs;
 - duplicate frontend ADR IDs;
 - required backend production projects in `backend.slnx`;
@@ -1281,9 +1230,7 @@ The script presently checks concerns including:
 - frontend generated package-boundary drift;
 - branch/freeze/version-style authority wording.
 
-The documentation-core re-foundation plans to evolve this into stronger composable governance.
-
-Current script behavior remains current evidence until that tooling is replaced.
+The Makefile `docs-check` target is the exact list of scripts.
 
 ---
 
@@ -1336,11 +1283,11 @@ Product ownership remains defined by Product/system docs.
 
 ---
 
-## 33.3 Marketing/mobile use `latest` declarations
+## 33.3 Marketing uses `latest` declarations
 
 Fact:
 
-some marketing/mobile framework/runtime dependencies are currently declared as:
+some marketing framework/runtime dependencies are declared as:
 
 ```text
 latest
@@ -1354,26 +1301,6 @@ Not implied:
 Exact resolved version requires the lockfile.
 
 Dependency/version policy may be hardened separately.
-
----
-
-## 33.4 Current documentation paths overlap
-
-Fact:
-
-```text
-docs/engineering
-backend/docs
-frontend/docs
-```
-
-currently coexist.
-
-Not implied:
-
-all three are equal canonical owners.
-
-This is an active documentation migration issue.
 
 ---
 
@@ -1446,7 +1373,7 @@ frontend codegen consumers
 ## Documentation governance
 
 ```text
-scripts/check-documentation.mjs
+scripts/docs/**
 Makefile
 .github/**
 ```
@@ -1471,23 +1398,6 @@ Do not infer:
 This is a current-state dossier.
 
 It is not a maturity certificate.
-
----
-
-# 36. Active documentation migration expectations
-
-While the documentation-core work is being completed:
-
-- new root constitution files should be reviewed one by one;
-- product semantics should be stabilized before dependent backend/frontend prose;
-- current legacy knowledge should be treated as evidence, not authority;
-- competing backend/frontend definitions under repository-level engineering docs should be merged into project owners rather than retained;
-- generated inventories should be preserved through their producers;
-- transition-only files should be deleted only after knowledge/reference migration is complete.
-
-This section is temporary context.
-
-It should be removed or rewritten after the documentation re-foundation is certified.
 
 ---
 

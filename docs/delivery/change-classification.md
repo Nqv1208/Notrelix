@@ -21,8 +21,7 @@ evidence:
   - docs/quality/engineering-quality-standard.md
   - docs/quality/testing-strategy.md
   - docs/quality/security-quality-standard.md
-  - .github/workflows/be-ci.yml
-  - .github/workflows/fe-ci.yml
+  - .github/workflows/ci.yml
 review_on:
   - change-classification-change
   - delivery-model-change

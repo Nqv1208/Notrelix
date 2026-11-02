@@ -1,9 +1,5 @@
 # Notrelix Enterprise Schema V2 — Verified RLS Policy Pack
 
-This pack was regenerated against the uploaded baseline:
-
-`notrelix-enterprise-schema-v2-clean-baseline(1).sql`
-
 It is intentionally split by responsibility. Do **not** use the previous single `rls-policy-pack.sql` because it still references stale/removed tables such as:
 
 - `governance.audit_retention_policies`
@@ -13,25 +9,7 @@ It is intentionally split by responsibility. Do **not** use the previous single 
 
 ## Apply order
 
-Use `000_apply_order.sql` or embed the files in the same order:
-
-1. `001_roles.sql`
-2. `002_context_helpers.sql`
-3. `003_authz_access_helpers.sql`
-4. `004_policy_runtime.sql`
-5. `005_grants.sql`
-6. `006_policies_identity.sql`
-7. `007_policies_platform.sql`
-8. `008_policies_workspace_scoped_domain.sql`
-9. `009_policies_notifications_activity_search.sql`
-10. `010_policies_events_messaging_audit_ops.sql`
-11. `011_verification.sql`
-12. `012_principal_scopes.sql`
-13. `013_co_member_profiles.sql`
-14. `014_anonymous_scopes.sql`
-15. `015_internal_principals.sql`
-16. `016_policies_derived_scope.sql`
-17. `017_webhook_scope.sql`
+`000_apply_order.sql` is the authoritative apply order (001 to 028). Use it, or embed the files in exactly that order.
 
 ## Important fixes
 

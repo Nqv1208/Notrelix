@@ -30,26 +30,14 @@ review_on:
 | architecture regression policy | `tools/deliveryctl/architecture.py` |
 | release validation | `tools/deliveryctl/release.py` |
 | deployment bundle materialization | `tools/deliveryctl/bundle.py` |
-| CI domain proofs | `.github/workflows/*-ci.yml` |
-| infra topology proof | `scripts/ci/validate-infra.py` |
+| pull-request gate | `.github/workflows/ci.yml` (`Notrelix CI`) |
+| infra topology proof | `scripts/ci/validate-infra.py` (local) |
 
-Workflows are standalone domain owners; they consume no delivery authority and do not receive planner-resolved contracts.
+`ci.yml` consumes no delivery authority. The release path (`release.yml`, `promote-release.yml`, `deploy.yml`) does.
 
 ## 2. Required repository checks
 
-Protected trunk should require the six stable domain gates plus the security checks GitHub actually emits on each workflow run (CodeQL):
-
-```text
-Backend CI gate
-Frontend gate
-Documentation Governance gate
-Infrastructure CI gate
-Container CI gate
-CI Definition Safety gate
-CodeQL (repository security; exact check names per workflow run)
-```
-
-Do not require per-job names as branch-protection authorities; the fail-closed domain gates are the stable check names. There is no separate `Security CI` required check.
+Protected trunk requires the single check `CI gate` (it aggregates `changes`, `backend-unit`, `backend-integration`, `frontend` and `dependencies`), plus the CodeQL checks GitHub emits. Do not require per-job names.
 
 ## 3. Local validation
 
@@ -65,31 +53,14 @@ node frontend/scripts/ci/host-artifact.roundtrip.test.mjs
 make docs-check
 ```
 
-A Docker-capable environment additionally runs pinned actionlint and `python3 scripts/ci/validate-infra.py`.
+None of the commands above run in `ci.yml`. A Docker-capable environment additionally runs `python3 scripts/ci/validate-infra.py`; `ci.yml` does not.
 
-## 4. Domain maintenance
+## 4. Maintenance notes
 
-### Backend
-
-Keep explicit critical-test execution verification. Broad project execution is not a replacement for proving critical named tests were discovered and executed. Runtime service images (Redis) are declared locally by the workflow; image digests still live only in `delivery/images.lock.toml`. The NuGet vulnerability guard must fail on vulnerable packages, not merely report.
-
-### Frontend
-
-Keep repository invariants separate from affected proof. Host E2E restores the exact artifact produced by host-build and does not rebuild it. Verify production/mock artifact isolation with the restored production artifact.
-
-Final domain gates are fail closed. Never hide `require` failures behind `|| true`.
-
-### Container
-
-CI is validation-only: build once -> runtime smoke exact image -> HIGH/CRITICAL gate -> SPDX SBOM. Publish and attestation belong to the release path; CI must not push images or create attestations.
-
-### Infrastructure
-
-`validate-infra.py` renders Compose directly and must not import deliveryctl or parse `delivery/*.toml`, while retaining topology/rootless/RLS/staging semantic checks. The assembled job validates the full staging stack (migrations, RLS, HTTP probes) with ephemeral credentials.
-
-### Documentation/security
-
-Documentation executes repository `make docs-check`. Dependency security keeps diagnostic artifacts and fails the scan contract. Security and release workflows are outside the domain-owned migration and remain untouched.
+- Backend: runtime service images are declared in the workflow; image digests live only in `delivery/images.lock.toml`.
+- Frontend: never hide failures behind `|| true`.
+- Container images are validation-only in CI; publish and attestation belong to the release path.
+- Dependency security (`security-ci.yml`) is called by `ci.yml` as the `dependencies` job.
 
 ## 5. GitHub Environments
 
@@ -99,10 +70,10 @@ Current Compose/SSH adapter expects values such as deployment host/user/key/know
 
 ## 6. Release lifecycle
 
-For a releaseable `main` push:
+Dormant until `ci.yml` produces the release-candidate input `release.yml` waits for. Intended flow for a releaseable `main` push:
 
 ```text
-domain CI gates
+CI gate
   -> merge to main
   -> ReleaseCandidate attestation
   -> staging deploy without rebuild
@@ -120,7 +91,7 @@ If a schema-changing migration has begun, automatic application downgrade is dis
 
 ## 8. Image-lock updates
 
-`delivery/images.lock.toml` is the only immutable image authority. Update source version intentionally, resolve/commit digest, run delivery validation. The CI Definition runtime-lock security job scans the pinned runtime digests when the lock changes.
+`delivery/images.lock.toml` is the only immutable image authority. Update source version intentionally, resolve/commit digest, run delivery validation. 
 
 Do not create another committed lock/env file as a parallel authority.
 
@@ -128,7 +99,7 @@ Do not create another committed lock/env file as a parallel authority.
 
 `[images.postgres]` is the derived image published by `.github/workflows/postgres-image.yml` (see `infra/postgres/Dockerfile`), not an official tag, once it is pinned to a `ghcr.io/<owner>/notrelix-postgres@sha256:...` digest. The Dockerfile pins its base (`POSTGRES_BASE`), the Go toolchain (`GO_IMAGE`) and the gosu source commit by digest/commit; there are no floating tags.
 
-Rebuild obligation until upstream ships a patched gosu: every time the official postgres digest is bumped, update `POSTGRES_BASE` in the Dockerfile, let the workflow rebuild and publish on `main` (or run it with `workflow_dispatch`), then re-pin `[images.postgres].ref` (and the single `FALLBACK_*` copies in `container-ci.yml` and `infra-ci.yml`) to the new derived digest in a reviewed commit. A stateful image change is never deployed automatically; the target environment needs `DEPLOY_ALLOW_STATEFUL_IMAGE_CHANGE=true` for that release.
+Rebuild obligation until upstream ships a patched gosu: every time the official postgres digest is bumped, update `POSTGRES_BASE` in the Dockerfile, let the workflow rebuild and publish on `main` (or run it with `workflow_dispatch`), then re-pin `[images.postgres].ref` (and the `FALLBACK_*` copy in `container-ci.yml`) to the new derived digest in a reviewed commit. A stateful image change is never deployed automatically; the target environment needs `DEPLOY_ALLOW_STATEFUL_IMAGE_CHANGE=true` for that release.
 
 Reassessment condition: drop the derived image and pin the official digest again when an official postgres digest ships `gosu` built with Go >= 1.26.10 / 1.27.3 and passes the runtime-image gate without any ignore file.
 
@@ -143,9 +114,7 @@ Development builds remain available through Make. Staging/production build/deplo
 Do not:
 
 - reintroduce `.python-version`, setup-ci-python or `actions/setup-python` into delivery execution;
-- reintroduce a central orchestrator (`ci.yml`, `ci-v2.yml`, `ci-orchestrator.yml`, `ci-gate.yml`);
-- call `tools.deliveryctl plan` or read delivery authority from a workflow;
-- emit evidence from a domain workflow;
+- read delivery authority from `ci.yml`;
 - duplicate runtime image digests in providers;
 - weaken named critical-test execution guards;
 - use fail-open final-gate shell constructs or `|| true` on gate checks;

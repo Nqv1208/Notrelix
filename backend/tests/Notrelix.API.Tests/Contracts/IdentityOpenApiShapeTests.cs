@@ -73,7 +73,6 @@ public class IdentityOpenApiShapeTests
 
     [Theory]
     [InlineData("Identity.Auth.Login", "AuthSessionResponse")]
-    [InlineData("Identity.Auth.Register", "AuthSessionResponse")]
     [InlineData("Identity.Auth.RefreshToken", "AuthSessionResponse")]
     [InlineData("Identity.Mfa.VerifyChallenge", "AuthSessionResponse")]
     [InlineData("Identity.Auth.GetCurrentUser", "UserDto")]
@@ -94,6 +93,7 @@ public class IdentityOpenApiShapeTests
     }
 
     [Theory]
+    [InlineData("Identity.Auth.Register")]
     [InlineData("Identity.Auth.ForgotPassword")]
     [InlineData("Identity.Auth.ResetPassword")]
     [InlineData("Identity.Auth.Logout")]

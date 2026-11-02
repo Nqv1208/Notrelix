@@ -59,6 +59,24 @@ public sealed class RateLimitTiersTests : IClassFixture<ShippedRateLimitsApiFact
     }
 
     [Fact]
+    public async Task Register_SharesTheCredentialBudget_AndAnswers429AfterThirty()
+    {
+        // Its own host: the class host's credential budget is spent by the test above.
+        using var factory = new ShippedRateLimitsApiFactory();
+        var client = factory.CreateClient();
+
+        for (var attempt = 1; attempt <= 30; attempt++)
+        {
+            var allowed = await client.PostAsync("/api/v1/auth/register", Json("{}"));
+            allowed.StatusCode.Should().NotBe(HttpStatusCode.TooManyRequests, $"attempt {attempt} is within the limit");
+        }
+
+        var limited = await client.PostAsync("/api/v1/auth/register", Json("{}"));
+
+        await AssertRateLimitProblemAsync(limited);
+    }
+
+    [Fact]
     public async Task RefreshTier_IsNotThrottledAtFivePerMinute_AndLimitsAtThreeHundred()
     {
         var client = _factory.CreateClient();

@@ -110,7 +110,7 @@ The executable manifest remains the current exact authority.
 Current `backend/global.json` pins:
 
 ```text
-.NET SDK 9.0.313
+.NET SDK 9.0.317
 rollForward latestPatch
 allowPrerelease false
 ```
@@ -194,34 +194,6 @@ Local-only test secrets should be unmistakably synthetic.
 # 14. DEL-DEV-006 — Example configuration never contains reusable production-like secrets
 
 Do not weaken secret scanning to accommodate realistic credentials in fixtures/examples.
-
-# 15. Current onboarding drift
-
-Current root README references:
-
-```text
-.env.dev.example
-```
-
-while the current repository template is:
-
-```text
-.env.example
-```
-
-and the Makefile consumes:
-
-```text
-.env.dev
-```
-
-This is a documentation drift to correct during repository synchronization.
-
-# 16. DEL-DEV-007 — Onboarding drift is fixed at the source, not duplicated
-
-Do not add another setup path to compensate for stale README.
-
-Correct root README/template/commands coherently.
 
 # 17. Required local environment values
 

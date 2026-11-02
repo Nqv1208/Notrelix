@@ -33,7 +33,7 @@ review_on:
 >
 > Detailed business semantics remain in:
 >
-> `docs/product/contexts/*.md`
+> `docs/product/*.md`
 
 A bounded context is:
 
@@ -242,7 +242,7 @@ It does not create a new authority hierarchy.
 Canonical product owner:
 
 ```text
-docs/product/contexts/accounts.md
+docs/product/accounts.md
 ```
 
 ## Owns
@@ -314,7 +314,7 @@ then Accounts is not the owner merely because the fact is account-scoped.
 Canonical product owner:
 
 ```text
-docs/product/contexts/identity.md
+docs/product/identity.md
 ```
 
 ## Owns
@@ -397,7 +397,7 @@ Do not merge these questions into generic roles attached to Identity.
 Canonical product owner:
 
 ```text
-docs/product/contexts/workspaces.md
+docs/product/workspaces.md
 ```
 
 ## Owns
@@ -471,7 +471,7 @@ Workspaces must not directly delete internal state in every other context by obj
 Canonical product owner:
 
 ```text
-docs/product/contexts/governance.md
+docs/product/governance.md
 ```
 
 ## Owns
@@ -562,7 +562,7 @@ Governance/audit evidence has different trust and retention semantics from Colla
 Canonical product owner:
 
 ```text
-docs/product/contexts/work-management.md
+docs/product/work-management.md
 ```
 
 ## Owns
@@ -652,7 +652,7 @@ Work Management remains owner of work state.
 Canonical product owner:
 
 ```text
-docs/product/contexts/documents.md
+docs/product/documents.md
 ```
 
 ## Owns
@@ -728,7 +728,7 @@ Analytics
 Canonical product owner:
 
 ```text
-docs/product/contexts/collaboration.md
+docs/product/collaboration.md
 ```
 
 ## Owns
@@ -799,7 +799,7 @@ If a user is disabled/deleted, Collaboration applies its own retention/display p
 Canonical product owner:
 
 ```text
-docs/product/contexts/automation.md
+docs/product/automation.md
 ```
 
 ## Owns
@@ -885,7 +885,7 @@ Automation owns execution product semantics.
 Canonical product owner:
 
 ```text
-docs/product/contexts/integrations.md
+docs/product/integrations.md
 ```
 
 ## Owns
@@ -959,7 +959,7 @@ They do not turn Infrastructure into the product Integrations context.
 Canonical product owner:
 
 ```text
-docs/product/contexts/billing.md
+docs/product/billing.md
 ```
 
 ## Owns
@@ -1013,7 +1013,7 @@ Provider status names must not automatically become Notrelix business lifecycle 
 Canonical product owner:
 
 ```text
-docs/product/contexts/analytics.md
+docs/product/analytics.md
 ```
 
 ## Owns
@@ -1711,7 +1711,7 @@ testing/change impact
 under:
 
 ```text
-docs/product/contexts/
+docs/product/
 ```
 
 ---

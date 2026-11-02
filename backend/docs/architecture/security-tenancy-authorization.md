@@ -2256,9 +2256,9 @@ testing-and-quality-gates.md
 Repository:
 
 ```text
-../../../docs/product/contexts/governance.md
-../../../docs/product/contexts/identity.md
-../../../docs/product/contexts/workspaces.md
+../../../docs/product/governance.md
+../../../docs/product/identity.md
+../../../docs/product/workspaces.md
 ../../../docs/quality/security-quality-standard.md
 ../../../docs/architecture/data-ownership-and-consistency.md
 ```
