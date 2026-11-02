@@ -39,9 +39,9 @@ Counts come from the catalog index at develop `3916a25a5` (2026-11-03). Re-take 
 
 | Release | What a user can do | Contexts | Use cases | Still to do |
 |---|---|---|---:|---:|
-| 0.1.0 | A team works on boards: sign in with a second factor, create a workspace, invite people, build a board with fields and views, move work, and see it live. | Identity 31, Workspaces 28, Governance 11, Work Management 134, Billing 1, Platform 17 | 222 | 186 |
+| 0.1.0 | A team works on boards: sign in with a second factor, create a workspace, invite people, build a board with fields and views, move work, and see it live. | Identity 30, Workspaces 28, Governance 10, Work Management 134, Billing 1, Platform 17 | 220 | 184 |
 | 0.2 | The team writes pages, comments, mentions people, attaches files and works from an Inbox. | Work Management 10, Documents 81, Collaboration 83, Platform 1 | 175 | 175 |
-| 0.3 | An organisation is governed: Teams, Spaces, onboarding and Home, custom roles and sharing, admin and operator consoles, provider sign-in, profile and API tokens. | Accounts 42, Identity 29, Workspaces 63, Governance 63, Work Management 17, Platform 4 | 218 | 218 |
+| 0.3 | An organisation is governed: Teams, Spaces, onboarding and Home, custom roles and sharing, admin and operator consoles, provider sign-in, profile and API tokens. | Accounts 42, Identity 30, Workspaces 63, Governance 64, Work Management 17, Platform 4 | 220 | 220 |
 | 0.4 | Work reacts and connects: automation rules, provider connections, inbound and outbound events. | Identity 1, Work Management 4, Automation 79, Integrations 55, Platform 7 | 146 | 146 |
 | 1.0 | The product can be sold and run: real Billing, dashboards and reports, the rest of the platform, deploy, backup and observability. | Work Management 6, Billing 98, Analytics 61, Platform 28 | 193 | 193 |
 | After 1.0 | Waits for an architecture decision with a real consumer, or a deferral already decided. | Governance 1, Documents 1, Collaboration 2, Platform 1 | 5 | 5 |
@@ -51,9 +51,9 @@ State of the allocated use cases today:
 
 | Release | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED | Total |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| 0.1.0 | 0 | 7 | 11 | 168 | 36 | 0 | 222 |
+| 0.1.0 | 0 | 6 | 10 | 168 | 36 | 0 | 220 |
 | 0.2 | 31 | 12 | 82 | 45 | 0 | 5 | 175 |
-| 0.3 | 46 | 66 | 77 | 17 | 0 | 12 | 218 |
+| 0.3 | 46 | 67 | 78 | 17 | 0 | 12 | 220 |
 | 0.4 | 27 | 52 | 32 | 33 | 0 | 2 | 146 |
 | 1.0 | 91 | 67 | 13 | 19 | 0 | 3 | 193 |
 | After 1.0 | 1 | 0 | 0 | 0 | 0 | 4 | 5 |
@@ -69,17 +69,17 @@ Notation, as in the former catalog scope: a capability letter alone is every use
 
 ### Release 0.1.0
 
-0.1.0 is the 193 use cases the owner approved for Work Management core, sign-in and session, workspaces and members, plus 29 foundation use cases the owner added on 2026-11-03: Governance `B01`, `D01-D04`, `E01`, `E04-E06`, `F01`, `I01`; Platform `A01-A03`, `C01-C02`, `D03`, `F01`, `G01`, `G02`, `G08`, `I01-I04`, `K01-K03`; Billing `F01`. It was built on unaccepted authorization, realtime, CSRF, outbox and idempotency foundations; these 29 close that gap.
+0.1.0 is the 192 use cases the owner approved for Work Management core, sign-in and session, workspaces and members, plus 28 foundation use cases the owner added on 2026-11-03: Governance `B01`, `D01`, `D03-D04`, `E01`, `E04-E06`, `F01`, `I01`; Platform `A01-A03`, `C01-C02`, `D03`, `F01`, `G01`, `G02`, `G08`, `I01-I04`, `K01-K03`; Billing `F01`. It was built on unaccepted authorization, realtime, CSRF, outbox and idempotency foundations; these 28 close that gap. On 2026-11-03 the owner moved `IDN-D04` and `GOV-D02` to 0.3 (section 5).
 
 | Context | Use cases | Count |
 |---|---|---:|
-| `IDN` | A01-A03, B01-B07, B09, C, D, H, I, J01-J03, K03-K05 | 31 |
+| `IDN` | A01-A03, B01-B07, B09, C, D01-D03, D05, H, I, J01-J03, K03-K05 | 30 |
 | `WSP` | A01-A02, A04, B01, B04, C01, D03-D04, E, F02, F05, G01, G03-G06, H01-H03, H05-H06, I01-I02, I04, K01-K02, K15 | 28 |
-| `GOV` | B01, D01-D04, E01, E04-E06, F01, I01 | 11 |
+| `GOV` | B01, D01, D03-D04, E01, E04-E06, F01, I01 | 10 |
 | `WM` | A01-A10, A12-A18, A21-A22, A24, A26, B01-B16, B18-B20, B22-B26, B28-B31, B33-B36, C01-C02, C04, C06-C16, C22, D-L, N01-N05, O01, O04, P, T01 | 134 |
 | `BIL` | F01 | 1 |
 | `PLT` | A, C01-C02, D03, F01, G01-G02, G08, I01-I04, K | 17 |
-| | **Total** | **222** |
+| | **Total** | **220** |
 
 ### Release 0.2
 
@@ -96,12 +96,12 @@ Notation, as in the former catalog scope: a capability letter alone is every use
 | Context | Use cases | Count |
 |---|---|---:|
 | `ACC` | A-H | 42 |
-| `IDN` | A04, B08, E-G, J04-J05, K01-K02, K06-K11, L01-L04, L06-L08, M | 29 |
+| `IDN` | A04, B08, D04, E-G, J04-J05, K01-K02, K06-K11, L01-L04, L06-L08, M | 30 |
 | `WSP` | A03, B02-B03, C02, D01-D02, D05-D06, F01, F03-F04, F06-F10, G02, G07-G09, H04, I03, I05-I06, J, K03-K14, L-N | 63 |
-| `GOV` | A01-A03, B02-B05, C, D05-D15, E02-E03, E07-E13, F02-F05, G, H, I02-I03 | 63 |
+| `GOV` | A01-A03, B02-B05, C, D02, D05-D15, E02-E03, E07-E13, F02-F05, G, H, I02-I03 | 64 |
 | `WM` | A11, A19-A20, A23, A25, A27, B17, B21, B27, C03, C05, C17-C21, N06 | 17 |
 | `PLT` | B04, G07, I05, J03 | 4 |
-| | **Total** | **218** |
+| | **Total** | **220** |
 
 ### Release 0.4
 
@@ -151,6 +151,7 @@ Notation, as in the former catalog scope: a capability letter alone is every use
 | `WM-A19`, `A20`, `A23` with `WSP-G07`, `G08` and `GOV-D07` | 0.3 |
 | `WSP-F10` with `ACC-H15`, `H16` | 0.3 |
 | `IDN-B08` with `ACC-H13`, `H14` | 0.3 |
+| `IDN-D04` with `IDN-L08` (ending a person's access needs the Accounts caller) | 0.3 |
 | `WSP-D06` with `ACC-D06` | 0.3 |
 | `AUT-D09` with `INT-F03` | 0.4 |
 
@@ -165,6 +166,7 @@ These follow a dependency rather than the capability. The owner may reverse any 
 | `PLT-B02`, `PLT-C03`, `PLT-G03`, `PLT-G04`, `PLT-H01` to `H03` | 0.4 | Automation and Integrations need a bounded background principal, consumer dedup, stale-claim recovery, retry with dead letter and declared ordering (`cross-team-dependencies.md` section 14) |
 | `IDN-L05` | 0.4 | Token scopes (owner decision 6) matter when automation and integrations call the API; tokens without scopes ship in 0.3 |
 | `WM-N06` | 0.3 | Public forms wait for the anonymous principal (owner decision 2) with share links |
+| `IDN-D04`, `GOV-D02` | 0.3 | Owner decision 2026-11-03: ending access when a person is disabled needs the Accounts caller; the Team picker in the Share dialog needs Teams (`WSP-K`) and an artboard |
 
 ## 3.4 Platform use cases left in 1.0 that earlier releases already exercise
 
@@ -176,7 +178,7 @@ These follow a dependency rather than the capability. The owner may reverse any 
 
 **Goal.** A person registers, signs in with a second factor, creates a workspace, invites colleagues, and the team builds a board with fields, groups, items and four views, moves work on Kanban, edits without losing writes, and sees changes live.
 
-**Scope.** 222 use cases: implementing 7, integrating 11, hardening 168, done 36. Still to do: 186.
+**Scope.** 220 use cases: implementing 6, integrating 10, hardening 168, done 36. Still to do: 184.
 
 **Owner decisions needed before it starts.** None open. Decisions 1, 3 and 7 are made.
 
@@ -230,7 +232,7 @@ These follow a dependency rather than the capability. The owner may reverse any 
 
 **Goal.** Teams and Spaces, onboarding and Home, custom roles, sharing and guests, workspace and account administration, operator console, Google and Microsoft sign-in, profile, API tokens.
 
-**Scope.** 218 use cases: defined 46, implementing 66, integrating 77, hardening 17, blocked 12. Still to do: 218.
+**Scope.** 220 use cases: defined 46, implementing 67, integrating 78, hardening 17, blocked 12. Still to do: 220.
 
 **Owner decisions needed before it starts.** Decision 2 for `WM-N06`, `GOV-G03`, `GOV-G05`; decision 4 (custom roles in the decision order) for `GOV-C04`, `GOV-C05`; decision 5 (sign-in policy, verified domain, SCIM principal, second-factor recovery) for `IDN-B08`, `IDN-J04`, `IDN-J05`, `WSP-F10`, `WSP-J04`; where the job title lives (Identity or Workspaces); the admin-plane decisions for `GOV-H13`, `GOV-H14`; retention log and expiry for `GOV-D11`, `GOV-D12`; what the customer sees as the operator audit actor (decision 1, open part). Per DEL-010, a blocked use case without its decision at R0 moves to the next release.
 
@@ -318,6 +320,13 @@ These follow a dependency rather than the capability. The owner may reverse any 
 | 6 API token scopes | 0.4 | `IDN-L05` |
 | Plan tier list; operator MFA and support access | 1.0 | Billing plans, `BIL-L05`, `ANA-X02` |
 
+Decisions recorded in the roadmap (DEL-010):
+
+| Date | Decision | Effect |
+|---|---|---|
+| 2026-11-03 | `IDN-D04` (end access when a person is disabled) and `GOV-D02` (give a Team access, with the Team picker in the Share dialog) move from 0.1.0 to 0.3 | 0.1.0 is 220 use cases, 0.3 is 220; the total stays 959; the catalog rows of both say "release 0.3 by owner decision 2026-11-03" |
+| 2026-11-03 | `PLT-G08`: when Redis is down, token revocation stays fail-closed and the answer is 503 `auth.revocation_unavailable` (retryable), not 500 | No change of scope; the use case stays in 0.1.0 |
+
 # 6. How the work runs
 
 - **Lanes.** One lane owns one capability group and ships one pull request (DEL-006); at most 3 run in parallel (DEL-007). Lanes below name the group, not the engineer.
@@ -327,9 +336,9 @@ These follow a dependency rather than the capability. The owner may reverse any 
 
 | Wave | Lane | Use cases | Still to do |
 |---|---|---|---:|
-| W1 | Identity rest and Workspaces rest | 59 (`IDN` 31, `WSP` 28) | 25 |
+| W1 | Identity rest and Workspaces rest | 58 (`IDN` 30, `WSP` 28) | 24 |
 | W1 | Work Management board lifecycle (`WM-A`) | 21 | 20 |
-| W1 | Foundation: Governance, Platform, Billing | 29 | 29 |
+| W1 | Foundation: Governance, Platform, Billing | 28 | 28 |
 | W2 | Work Management items (`WM-B`) | 32 | 31 |
 | W2 | Fields and values (`WM-C`, `WM-D`) | 27 | 27 |
 | W2 | Views, filter, table (`WM-H`, `WM-I`) | 22 | 22 |
@@ -352,7 +361,7 @@ The foundation lane runs in W1 so that every later wave builds on authorization,
 
 | Release | Window | Basis |
 |---|---|---|
-| 0.1.0 | about 1 week | 186 use cases to do, 168 of the 222 already HARDENING |
+| 0.1.0 | about 1 week | 184 use cases to do, 168 of the 220 already HARDENING |
 | 0.2 | 3 to 4 weeks | Mostly INTEGRATING and DEFINED |
 | 0.3 | 4 to 6 weeks | The most DEFINED and IMPLEMENTING use cases; owner decisions |
 | 0.4 | 3 to 5 weeks | Automation and Integrations are still IMPLEMENTING |

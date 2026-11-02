@@ -136,7 +136,7 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-D01 | Refresh the session silently | D | Signed-in client | yes | yes | n/a | yes | DONE | accepted 2026-11-02, see the Evidence line |
 | UC-IDN-D02 | Session expired or revoked | D | Signed-in person | yes | yes | Final-Auth | yes | DONE | accepted 2026-11-01, see the Evidence line |
 | UC-IDN-D03 | Reject a replayed refresh credential | D | System | yes | n/a | n/a | yes | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-IDN-D04 | End access when a person is disabled | D | System | partial | no | none | no | IMPLEMENTING | no caller, no revocation |
+| UC-IDN-D04 | End access when a person is disabled | D | System | partial | no | none | no | IMPLEMENTING | release 0.3 by owner decision 2026-11-03; no caller, no revocation |
 | UC-IDN-D05 | Bound the absolute session lifetime | D | System | yes | n/a | n/a | no | INTEGRATING | Domain tests; no real proof of a 91-day chain |
 | UC-IDN-E01 | Start Google or Microsoft sign-in | E | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; real run needs provider credentials |
 | UC-IDN-F01 | Complete provider sign-in | F | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; real run needs provider credentials |
@@ -482,7 +482,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Rules: ID sections 8, 55; ID-003, ID-006, ID-016; IAREQ003, IAREQ004.
 - Acceptance: Given an active person with two sessions and one token, when they are disabled, then all three stop working at once.
 - Evidence: Domain `backend/src/Notrelix.Domain/Identity/Users/User.cs` (`Activate`, `Deactivate`, `Suspend`); BE refresh blocks a non-Active user (`RefreshToken.cs`) and login refuses it; no Application command calls them · FE none · Design none · Tests Domain `UserTests`, Application `RefreshTokenTests` · Real e2e none
-- State: IMPLEMENTING. Not built in this pass: nothing in the product can disable a person yet, so an Identity command would have no caller; it needs the Accounts caller (who may disable whom, SCIM deprovisioning) first. Missing: the command, the session and token revocation, the caller in Accounts, tests. Lead decision (2026-10-30): disabling revokes every session and token at once.
+- State: IMPLEMENTING; release 0.3 by owner decision 2026-11-03. Not built in this pass: nothing in the product can disable a person yet, so an Identity command would have no caller; it needs the Accounts caller (who may disable whom, SCIM deprovisioning) first. Missing: the command, the session and token revocation, the caller in Accounts, tests. Lead decision (2026-10-30): disabling revokes every session and token at once.
 
 ### UC-IDN-D05 Bound the absolute session lifetime
 - Capability: D Session expiration
