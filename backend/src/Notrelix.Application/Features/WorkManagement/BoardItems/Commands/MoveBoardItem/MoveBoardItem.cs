@@ -9,7 +9,9 @@ public record MoveBoardItemCommand(
     Guid NewGroupId,
     long ExpectedVersion,
     Guid? PreviousSiblingId = null,
-    Guid? NextSiblingId = null) : ICommand<BoardItemSlimDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest, IExpectedVersionRequest
+    Guid? NextSiblingId = null,
+    Guid? LaneFieldId = null,
+    Guid? LaneOptionId = null) : ICommand<BoardItemSlimDto>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.MoveItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), ItemId);
@@ -45,7 +47,10 @@ public class MoveBoardItemCommandHandler : IRequestHandler<MoveBoardItemCommand,
             request.NewGroupId,
             new WorkPlacementIntent(request.PreviousSiblingId, request.NextSiblingId),
             _currentUser.UserId,
-            cancellationToken);
+            cancellationToken,
+            request.LaneFieldId is { } laneFieldId && request.LaneOptionId is { } laneOptionId
+                ? new LaneValueWrite(laneFieldId, laneOptionId)
+                : null);
         return outcome.Item;
     }
 }
