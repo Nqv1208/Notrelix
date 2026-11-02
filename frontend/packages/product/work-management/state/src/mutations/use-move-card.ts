@@ -22,6 +22,9 @@ export interface ItemMoveRequest {
   readonly expectedVersion: number;
   readonly previousSiblingId: string | null;
   readonly nextSiblingId: string | null;
+  /** The lane's field and option, when the card is dropped in a lane. */
+  readonly laneFieldId?: string;
+  readonly laneOptionId?: string;
 }
 
 interface ItemMover {

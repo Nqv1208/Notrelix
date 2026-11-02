@@ -575,7 +575,6 @@ export function KanbanView({
           lane: {
             fieldDefinitionId: kanban.groupByField.id,
             optionId: drop.optionId,
-            viaStatusEndpoint: isStatusGrouping,
           },
           placement: {
             listId: drop.listId,
@@ -900,7 +899,6 @@ export function KanbanView({
               lane: {
                 fieldDefinitionId: field.id,
                 optionId,
-                viaStatusEndpoint: isStatusGrouping,
               },
               placement: {
                 listId: drop.listId,
