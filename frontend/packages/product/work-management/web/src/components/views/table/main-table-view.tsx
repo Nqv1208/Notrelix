@@ -18,6 +18,8 @@ import {
   useRemoveFieldOption,
   useUpdateCard,
   useWorkspaceBoards,
+  changedByNameOf,
+  isVersionConflict,
   type KanbanWriteFailure,
   type BulkItemChange,
 } from "@notrelix/work-management-state";
@@ -194,6 +196,22 @@ export function MainTableView({
     (failure: KanbanWriteFailure) => {
       const title =
         failure.title ?? titles.current.get(failure.cardId ?? "") ?? "";
+      // Lost to someone else's change: the board is read again, so the row now shows theirs; name who.
+      if (failure.conflict) {
+        toast.error(
+          fillTableCopy(copy.failed.conflict, {
+            actor:
+              changedByNameOf(failure.error) ??
+              failure.conflict.card.updatedByName ??
+              copy.failed.someone,
+            title,
+          }),
+          {
+            id: `table-write-${failure.cardId ?? "create"}-${++toastAttempt.current}`,
+          },
+        );
+        return;
+      }
       const message =
         failure.kind === "create"
           ? copy.failed.create
@@ -215,6 +233,22 @@ export function MainTableView({
     onWriteError,
   });
   const { capabilities } = useBoardCapabilities(boardId, workspaceId);
+  // A title or due-date write that failed: the row is already back; say if someone else got there first.
+  const reportCardWriteFailure = (error: unknown, cardId: string) => {
+    const title = titles.current.get(cardId) ?? "";
+    toast.error(
+      isVersionConflict(error)
+        ? fillTableCopy(copy.failed.conflict, {
+            actor:
+              changedByNameOf(error) ??
+              table.lastEditorOf(cardId) ??
+              copy.failed.someone,
+            title,
+          })
+        : fillTableCopy(copy.failed.save, { title }),
+      { id: `table-write-${cardId}-${++toastAttempt.current}` },
+    );
+  };
   const addOption = useAddFieldOption(boardId, workspaceId);
   const noGroupNotice = useNoGroupNotice(boardId, workspaceId);
   const { addGroup, isPending: addingGroup } = useAddGroup(
@@ -624,10 +658,10 @@ export function MainTableView({
   };
   const writeDue = (cardId: string, day: string | null) => {
     noteTitle(cardId);
-    updateCard.mutate({
-      cardId,
-      patch: { dueDate: day ? dueInstant(day) : null },
-    });
+    updateCard.mutate(
+      { cardId, patch: { dueDate: day ? dueInstant(day) : null } },
+      { onError: (error) => reportCardWriteFailure(error, cardId) },
+    );
   };
   const editors: TableEditors | undefined = itemFields.person
     ? {
@@ -896,7 +930,12 @@ export function MainTableView({
             capabilities.canEditFields
               ? (cardId, title) => {
                   noteTitle(cardId);
-                  updateCard.mutate({ cardId, patch: { title } });
+                  updateCard.mutate(
+                    { cardId, patch: { title } },
+                    {
+                      onError: (error) => reportCardWriteFailure(error, cardId),
+                    },
+                  );
                 }
               : undefined
           }

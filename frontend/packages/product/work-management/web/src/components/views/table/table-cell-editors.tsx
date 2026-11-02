@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import {
   Calendar,
+  calendarLocale,
   cn,
   DropdownMenu,
   DropdownMenuContent,
@@ -49,7 +50,7 @@ export function dayOf(date: Date): string {
 
 /** The trigger look: the cell's own content, a soft hover and no shift. */
 export const EDIT_TRIGGER_CLASS =
-  "-mx-1.5 flex min-w-0 cursor-pointer items-center gap-[7px] rounded-md border-0 bg-transparent px-1.5 py-0.5 text-left font-[inherit] text-[length:inherit] text-inherit hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring";
+  "-mx-1.5 flex min-w-0 max-md:min-h-11 cursor-pointer items-center gap-[7px] rounded-md border-0 bg-transparent px-1.5 py-0.5 text-left font-[inherit] text-[length:inherit] text-inherit hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring";
 
 export function AssigneeEditor({
   copy,
@@ -144,7 +145,7 @@ export function PickRow({
       aria-pressed={pressed}
       onClick={onClick}
       className={cn(
-        "flex h-8 w-full cursor-pointer items-center gap-2 rounded-md border-0 bg-transparent px-2 text-left text-compact text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring",
+        "flex h-8 max-md:h-11 w-full cursor-pointer items-center gap-2 rounded-md border-0 bg-transparent px-2 text-left text-compact text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring",
         pressed && "bg-state-hover font-semibold",
       )}
     >
@@ -182,6 +183,7 @@ export function DueEditor({
       <PopoverContent align="start" aria-label={label} className="w-auto p-0">
         <Calendar
           mode="single"
+          locale={calendarLocale(copy.row.pickerLocale)}
           selected={dueAt ? new Date(dueAt) : undefined}
           defaultMonth={dueAt ? new Date(dueAt) : undefined}
           onSelect={(date: Date | undefined) => pick(date ? dayOf(date) : null)}
@@ -191,7 +193,7 @@ export function DueEditor({
             <button
               type="button"
               onClick={() => pick(null)}
-              className="h-8 cursor-pointer rounded-[7px] border-0 bg-transparent px-3 text-compact font-medium text-danger-text hover:bg-state-hover-strong"
+              className="h-8 max-md:h-11 cursor-pointer rounded-[7px] border-0 bg-transparent px-3 text-compact font-medium text-danger-text hover:bg-state-hover-strong"
             >
               {copy.row.clearDue}
             </button>
@@ -226,7 +228,10 @@ export function PriorityEditor({
         {options.map((option) => (
           <DropdownMenuItem
             key={option.id}
-            className={cn(option.label === currentLabel && "font-semibold")}
+            className={cn(
+              "max-md:min-h-11",
+              option.label === currentLabel && "font-semibold",
+            )}
             onSelect={() => onPick(option.id)}
           >
             {option.label}
