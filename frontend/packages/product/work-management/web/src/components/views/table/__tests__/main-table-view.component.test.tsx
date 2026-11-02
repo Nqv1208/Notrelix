@@ -471,7 +471,9 @@ describe("MainTableView on the ERP board", () => {
         name: "Đổi người phụ trách của ERP-149",
       }),
     );
-    fireEvent.click(screen.getAllByRole("button", { name: /Trần Minh Quân/ })[0]!);
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /Trần Minh Quân/ })[0]!,
+    );
     await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
     fireEvent.keyDown(
       within(row("ERP-149")!).getByRole("button", {
