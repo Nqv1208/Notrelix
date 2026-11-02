@@ -74,6 +74,33 @@ describe("createWorkManagementServices", () => {
     ]);
   });
 
+  it("sends the lane's field and option with the move so one command writes both", async () => {
+    const { client, calls } = createRecordingClient();
+    const services = createWorkManagementServices(client);
+
+    await services.cards.moveCard(
+      {
+        cardId: "card-1",
+        listId: "group-2",
+        expectedVersion: 4,
+        previousSiblingId: null,
+        nextSiblingId: "card-3",
+        laneFieldId: "field-status",
+        laneOptionId: "option-doing",
+      },
+      { correlationId: "corr-1", idempotencyKey: "idem-key-1" },
+    );
+
+    expect(calls[0]?.body).toEqual({
+      groupId: "group-2",
+      expectedVersion: 4,
+      previousSiblingId: null,
+      nextSiblingId: "card-3",
+      laneFieldId: "field-status",
+      laneOptionId: "option-doing",
+    });
+  });
+
   it("maps create-card identifiers and forwards command identity", async () => {
     const { client, calls } = createRecordingClient();
     const services = createWorkManagementServices(client);

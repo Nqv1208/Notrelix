@@ -28050,6 +28050,16 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          },
+          "laneFieldId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "laneOptionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false

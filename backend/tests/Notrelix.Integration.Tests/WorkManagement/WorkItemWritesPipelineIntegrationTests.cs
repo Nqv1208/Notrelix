@@ -14,6 +14,7 @@ using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoa
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemStatus;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash;
+using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.BoardGroups;
@@ -472,6 +473,144 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         (await VersionAsync(scene.Items[0])).Should().Be(version);
     }
 
+    // ---- a card dropped in a Kanban lane: placement and lane value in one command ---------------------------
+
+    [Fact]
+    public async Task MoveToLane_WritesGroupPositionAndTheLaneValueTogether_AStatusLaneAlsoCompletesTheItem()
+    {
+        var scene = await SeedAsync(itemCount: 2);
+        using var owner = Provider(scene.Stack);
+        var read = await VersionAsync(scene.Items[0]);
+
+        await OrgTreeTestHost.SendAsync(owner, new MoveBoardItemCommand(
+            scene.Items[0], scene.OtherGroupId, read, LaneFieldId: scene.PriorityFieldId, LaneOptionId: scene.HighOptionId));
+        var priority = await ItemAsync(scene.Items[0]);
+        await OrgTreeTestHost.SendAsync(owner, new MoveBoardItemCommand(
+            scene.Items[1], scene.OtherGroupId, await VersionAsync(scene.Items[1]), PreviousSiblingId: scene.Items[0],
+            LaneFieldId: scene.StatusFieldId, LaneOptionId: scene.DoneOptionId));
+        var done = await ItemAsync(scene.Items[1]);
+
+        priority.GroupId.Should().Be(scene.OtherGroupId);
+        (await StoredValueAsync(scene.Items[0], scene.PriorityFieldId)).Should().Contain(scene.HighOptionId.ToString());
+        done.GroupId.Should().Be(scene.OtherGroupId);
+        done.Position.Should().BeGreaterThan(priority.Position, "the card sits after the sibling it named");
+        done.CompletedAt.Should().NotBeNull("a Done-category lane completes the item, as the status write does");
+        (await StoredValueAsync(scene.Items[1], scene.StatusFieldId)).Should().Contain(scene.DoneOptionId.ToString());
+    }
+
+    [Fact]
+    public async Task MoveToLane_WithAStaleVersion_IsRefusedAndNeitherThePlaceNorTheLaneValueChanges()
+    {
+        var scene = await SeedAsync();
+        using var owner = Provider(scene.Stack);
+        var read = await VersionAsync(scene.Items[0]);
+        await OrgTreeTestHost.SendAsync(owner, Rename(scene.Items[0], "Moved on", read));
+        var current = await ItemAsync(scene.Items[0]);
+
+        var stale = () => OrgTreeTestHost.SendAsync(owner, new MoveBoardItemCommand(
+            scene.Items[0], scene.OtherGroupId, read, LaneFieldId: scene.PriorityFieldId, LaneOptionId: scene.HighOptionId));
+
+        await stale.Should().ThrowAsync<PreconditionFailed>();
+        var after = await ItemAsync(scene.Items[0]);
+        after.Version.Should().Be(current.Version, "a refused drop is not partly kept");
+        after.GroupId.Should().Be(current.GroupId);
+        after.Position.Should().Be(current.Position);
+        (await StoredValueAsync(scene.Items[0], scene.PriorityFieldId)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task MoveToLane_WithAnOptionTheFieldDoesNotHave_IsRefusedAndTheItemDoesNotMove()
+    {
+        var scene = await SeedAsync();
+        using var owner = Provider(scene.Stack);
+        var read = await VersionAsync(scene.Items[0]);
+
+        var refused = () => OrgTreeTestHost.SendAsync(owner, new MoveBoardItemCommand(
+            scene.Items[0], scene.OtherGroupId, read, LaneFieldId: scene.PriorityFieldId, LaneOptionId: Guid.CreateVersion7()));
+
+        await refused.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+        var after = await ItemAsync(scene.Items[0]);
+        after.GroupId.Should().NotBe(scene.OtherGroupId, "the place is not kept when the lane value is refused");
+        after.Version.Should().Be(read);
+    }
+
+    [Fact]
+    public async Task MoveToLane_RetriedWithTheSameKey_HasOneEffect_AndAnotherPayloadUnderTheKeyIsRefused()
+    {
+        var scene = await SeedAsync();
+        using var owner = Provider(scene.Stack);
+        var read = await VersionAsync(scene.Items[0]);
+        var command = new MoveBoardItemCommand(
+            scene.Items[0], scene.OtherGroupId, read, LaneFieldId: scene.PriorityFieldId, LaneOptionId: scene.HighOptionId);
+        var key = $"lane-{Guid.NewGuid():N}";
+
+        var first = await OrgTreeTestHost.SendIdempotentAsync(owner, command, key);
+        var afterFirst = await VersionAsync(scene.Items[0]);
+        var replay = await OrgTreeTestHost.SendIdempotentAsync(owner, command, key);
+        var otherPayload = () => OrgTreeTestHost.SendIdempotentAsync(owner, command with { LaneOptionId = scene.DoneOptionId }, key);
+
+        replay.Should().BeEquivalentTo(first, "a replay returns the first committed result, not a stale refusal");
+        (await VersionAsync(scene.Items[0])).Should().Be(afterFirst, "the replay wrote nothing");
+        await otherPayload.Should().ThrowAsync<IdempotencyPayloadMismatchException>();
+        (await VersionAsync(scene.Items[0])).Should().Be(afterFirst);
+    }
+
+    [Fact]
+    public async Task MoveToLane_ToThePlaceAndValueTheItemHolds_BumpsNoVersion()
+    {
+        var scene = await SeedAsync();
+        using var owner = Provider(scene.Stack);
+        await OrgTreeTestHost.SendAsync(owner, new MoveBoardItemCommand(
+            scene.Items[0], scene.OtherGroupId, await VersionAsync(scene.Items[0]), LaneFieldId: scene.PriorityFieldId, LaneOptionId: scene.HighOptionId));
+        var settled = await VersionAsync(scene.Items[0]);
+
+        await OrgTreeTestHost.SendAsync(owner, new MoveBoardItemCommand(
+            scene.Items[0], scene.OtherGroupId, settled, LaneFieldId: scene.PriorityFieldId, LaneOptionId: scene.HighOptionId));
+
+        (await VersionAsync(scene.Items[0])).Should().Be(settled, "the same lane and the same place is a semantic no-op");
+    }
+
+    [Fact]
+    public async Task MoveToLane_ByAViewer_IsForbiddenAndNothingChanges()
+    {
+        var scene = await SeedAsync(BoardVisibility.Private);
+        var viewer = await _host.AddMemberAsync(scene.Stack, WorkspaceRole.Member, "Viewer");
+        await _host.SeedResourcePermissionAsync(scene.Stack, "work-management.board", scene.BoardId, PermissionSubjectType.User, viewer, PermissionLevel.Viewer);
+        var version = await VersionAsync(scene.Items[0]);
+        using var provider = _host.CreateProvider(scene.Stack.AccountId, viewer);
+
+        var act = () => OrgTreeTestHost.SendAsync(provider, new MoveBoardItemCommand(
+            scene.Items[0], scene.OtherGroupId, version, LaneFieldId: scene.PriorityFieldId, LaneOptionId: scene.HighOptionId));
+
+        await act.Should().ThrowAsync<AppForbidden>();
+        (await ItemAsync(scene.Items[0])).GroupId.Should().NotBe(scene.OtherGroupId);
+        (await StoredValueAsync(scene.Items[0], scene.PriorityFieldId)).Should().BeNull();
+        (await VersionAsync(scene.Items[0])).Should().Be(version);
+    }
+
+    [Fact]
+    public async Task MoveToLane_ByAMemberWhoCannotReadTheBoardOrAnOutsider_NeverReachesTheItem()
+    {
+        var scene = await SeedAsync(BoardVisibility.Private);
+        var member = await _host.AddMemberAsync(scene.Stack, WorkspaceRole.Member, "Member");
+        var version = await VersionAsync(scene.Items[0]);
+        MoveBoardItemCommand Lane(Guid id) => new(id, scene.OtherGroupId, version, LaneFieldId: scene.PriorityFieldId, LaneOptionId: scene.HighOptionId);
+        using var provider = _host.CreateProvider(scene.Stack.AccountId, member);
+
+        var hidden = () => OrgTreeTestHost.SendAsync(provider, Lane(scene.Items[0]));
+        var missing = () => OrgTreeTestHost.SendAsync(provider, Lane(Guid.CreateVersion7()));
+        (await hidden.Should().ThrowAsync<AppNotFound>()).Which.GetType()
+            .Should().Be((await missing.Should().ThrowAsync<AppNotFound>()).Which.GetType());
+        await ForEachOutsiderAsync(scene.Stack, async outsider =>
+        {
+            var act = () => OrgTreeTestHost.SendAsync(outsider, Lane(scene.Items[0]));
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
+        });
+
+        (await StoredValueAsync(scene.Items[0], scene.PriorityFieldId)).Should().BeNull();
+        (await VersionAsync(scene.Items[0])).Should().Be(version);
+    }
+
     // ---- UC-WM-B05 assignees -------------------------------------------------------------------------------
 
     [Fact]
@@ -773,7 +912,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
     // ---- scene and helpers ---------------------------------------------------------------------------------
 
     private sealed record Scene(
-        OrgStack Stack, Guid BoardId, List<Guid> Items, Guid PriorityFieldId, Guid HighOptionId, Guid DoneOptionId, Guid OtherGroupId);
+        OrgStack Stack, Guid BoardId, List<Guid> Items, Guid PriorityFieldId, Guid HighOptionId, Guid DoneOptionId, Guid OtherGroupId, Guid StatusFieldId);
 
     private async Task<Scene> SeedAsync(BoardVisibility visibility = BoardVisibility.Workspace, int itemCount = 1)
     {
@@ -798,7 +937,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
             c.BoardFields.AddRange(priority, status);
             return Task.CompletedTask;
         });
-        return new Scene(stack, boardId, items.Select(i => i.Id).ToList(), priority.Id, high.Id, done.Id, other.Id);
+        return new Scene(stack, boardId, items.Select(i => i.Id).ToList(), priority.Id, high.Id, done.Id, other.Id, status.Id);
     }
 
     private static UpdateBoardItemCommand Rename(Guid itemId, string title, long version) =>

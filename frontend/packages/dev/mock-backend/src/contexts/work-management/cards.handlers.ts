@@ -625,6 +625,8 @@ export const cardsOperations = [
         expectedVersion?: number;
         previousSiblingId?: string | null;
         nextSiblingId?: string | null;
+        laneFieldId?: string | null;
+        laneOptionId?: string | null;
       };
       if (!data.groupId)
         return badRequest({ groupId: ["The group is required."] });
@@ -637,11 +639,33 @@ export const cardsOperations = [
       if (!item) return notFound("Card not found");
       // MoveItem: editors and managers only.
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
+      // A drop in a lane names the lane's field and option: refused before anything moves, so both or neither.
+      const lane =
+        data.laneFieldId || data.laneOptionId
+          ? store
+              .getColumns(item.boardId)
+              .find((column) => column.id === data.laneFieldId)
+          : undefined;
+      if (
+        (data.laneFieldId || data.laneOptionId) &&
+        (!lane ||
+          (lane.fieldType !== "status" && lane.fieldType !== "select") ||
+          !lane.options?.some((option) => option.id === data.laneOptionId))
+      )
+        return badRequest({
+          laneOptionId: ["Not an option of the lane's field."],
+        });
       const moved = store.moveItem(params.id, data.groupId, {
         expectedVersion: data.expectedVersion,
         previousSiblingId: data.previousSiblingId ?? null,
         nextSiblingId: data.nextSiblingId ?? null,
       });
+      if (moved.result === "ok" && lane && data.laneOptionId) {
+        if (lane.fieldType === "status") {
+          if (!rollRepeatOnCompletion(store, params.id, data.laneOptionId))
+            store.updateItemStatus(params.id, data.laneOptionId);
+        } else store.updateFieldValue(params.id, lane.id, data.laneOptionId);
+      }
       switch (moved.result) {
         case "not-found":
           return notFound("Card not found");
@@ -660,7 +684,7 @@ export const cardsOperations = [
             position: String(moved.card.position),
             memberIds: moved.card.assigneeUserIds ?? [],
             labelIds: [],
-            version: moved.version,
+            version: store.getCard(moved.card.id)?.version ?? moved.version,
           });
       }
     },
