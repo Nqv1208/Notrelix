@@ -299,3 +299,36 @@ test("roster: the keyboard filters, opens a row menu, reaches Remove and Escape 
   await expect(remove).toBeHidden();
   await expect(actions).toBeFocused();
 });
+
+test("placement: the keyboard opens the dialog, Escape cancels it, and a picked Space takes the move", async ({
+  page,
+}) => {
+  await prepare(page, viewports[0], false);
+  await page.goto(`${WORKSPACE}/library`);
+  const move = page
+    .getByRole("button", { name: /^Move .* to a Space$/ })
+    .first();
+  await move.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: /to a Space$/ });
+  await expect(dialog).toBeVisible();
+  // Escape cancels and focus returns to the button that opened it.
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(move).toBeFocused();
+
+  await page.keyboard.press("Enter");
+  await expect(dialog).toBeVisible();
+  const target = dialog
+    .getByRole("radio")
+    .and(dialog.locator(":not([disabled])"))
+    .first();
+  await target.focus();
+  await page.keyboard.press("Space");
+  const submit = dialog.getByRole("button", { name: "Move here" });
+  await expect(submit).toBeEnabled();
+  await submit.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByText(/ was moved\./)).toBeVisible();
+  await expect(dialog).toBeHidden();
+});
