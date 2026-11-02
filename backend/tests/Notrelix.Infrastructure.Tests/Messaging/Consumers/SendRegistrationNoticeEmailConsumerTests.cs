@@ -43,6 +43,7 @@ public class SendRegistrationNoticeEmailConsumerTests
         request.SourceContext.Should().Be("identity");
         request.TemplateKey.Should().Be("registration-attempt-notice");
         request.BodyHtml.Should().Contain("account already exists");
+        request.BodyText.Should().Contain("account already exists");
         emailOutboxWriter.Verify(
             w => w.QueueRenderedEmailAsync(It.IsAny<QueueRenderedEmailRequest>(), It.IsAny<CancellationToken>()),
             Times.Once);

@@ -56,6 +56,8 @@ const SIGNED_IN = /\/(workspaces\/[^/]+|onboarding)/;
 test("a new person registers, sees the neutral step, confirms the email and signs in; registering the same address again changes nothing and says the same", async ({
   page,
 }) => {
+  // The mail log is read from the backend container after the outbox delivers: allow for it.
+  test.setTimeout(90_000);
   await english(page);
   const person = {
     email: `register-${randomUUID().slice(0, 8)}@example.com`,

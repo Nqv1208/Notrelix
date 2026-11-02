@@ -9,6 +9,8 @@ async function confirmationLinkFor(email: string): Promise<string> {
 test("a new member confirms the email from the link and then creates the workspace", async ({
   page,
 }) => {
+  // The mail log is read from the backend container after the outbox delivers: allow for it.
+  test.setTimeout(90_000);
   const suffix = randomUUID().slice(0, 8);
   const email = `confirm-${suffix}@example.com`;
   const password = `Pw-${randomUUID()}`;

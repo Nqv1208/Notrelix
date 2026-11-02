@@ -6,6 +6,12 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Identity.RegistrationNotic
 public sealed class SendRegistrationNoticeEmailConsumer
     : IConsumer<RegistrationAttemptedOnExistingAccountIntegrationEventV1>
 {
+    // The plain-text part: the development backend logs it, and mail clients without HTML show it.
+    private const string NoticeText =
+        "Someone tried to create a Notrelix account with this email address, but an account already exists. "
+        + "Nothing was changed. If it was you, sign in with your existing account, or choose \"Forgot password\" on the sign-in page. "
+        + "If it was not you, you can ignore this email.";
+
     private readonly IEmailOutboxWriter _emailOutboxWriter;
     private readonly ILogger<SendRegistrationNoticeEmailConsumer> _logger;
 
@@ -29,7 +35,7 @@ public sealed class SendRegistrationNoticeEmailConsumer
                 RecipientName: null,
                 Subject: "Someone tried to register with your email — Notrelix",
                 BodyHtml: EmailTemplateService.RegistrationAttemptOnExistingAccount(),
-                BodyText: null,
+                BodyText: NoticeText,
                 WorkspaceId: null,
                 RecipientUserId: null,
                 SourceContext: "identity",
