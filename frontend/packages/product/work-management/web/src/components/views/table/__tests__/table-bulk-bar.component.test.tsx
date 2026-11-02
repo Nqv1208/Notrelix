@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, renderPureUi, screen } from "@notrelix/testing";
 import { mainTableCopy } from "../main-table.copy";
-import { TableBulkBar, type TableBulkBarProps } from "../table-bulk-bar";
+import {
+  TableBulkBar,
+  TableBulkFailure,
+  type TableBulkBarProps,
+} from "../table-bulk-bar";
 
 const copy = mainTableCopy("en");
 
@@ -71,5 +75,39 @@ describe("TableBulkBar without edit rights", () => {
     expect(screen.queryByLabelText(copy.bulk.dueLabel)).toBeNull();
     expect(props.onStatus).not.toHaveBeenCalled();
     expect(props.onDue).not.toHaveBeenCalled();
+  });
+
+  it("Assign to and Move to board look disabled and the reason is written on the bar", () => {
+    bar({ canEdit: false });
+    const reason = copy.bulk.readOnly;
+
+    // A touch screen shows no title or label: the reason is text on the bar.
+    expect(screen.getByText(reason)).toBeTruthy();
+    for (const name of [copy.bulk.assign, copy.bulk.move]) {
+      const control = button(`${name}: ${reason}`);
+      expect(control.getAttribute("aria-disabled")).toBe("true");
+      expect(control.className).toContain("opacity-50");
+    }
+  });
+});
+
+describe("TableBulkFailure", () => {
+  it("names what happened and retries on Try again", () => {
+    const onRetry = vi.fn();
+    renderPureUi(
+      <TableBulkFailure
+        copy={copy}
+        count={3}
+        detail="Nothing was changed."
+        onRetry={onRetry}
+      />,
+    );
+
+    expect(screen.getByRole("alert").textContent).toContain(
+      "Couldn't apply to all 3 items",
+    );
+    expect(screen.getByText("Nothing was changed.")).toBeTruthy();
+    fireEvent.click(button(copy.bulk.retry));
+    expect(onRetry).toHaveBeenCalledOnce();
   });
 });

@@ -5,6 +5,7 @@ import type { FullBoardResponse } from "@notrelix/work-management-core";
 import { findBoardCard } from "../cache/card-restore";
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
+import { outcomeUnknown } from "./card-command";
 import { neededVersion } from "./seen-version";
 
 /** What was sent for one submission: a retry of it sends the same key and the same versions. */
@@ -12,12 +13,6 @@ interface Submission {
   readonly signature: string;
   readonly idempotencyKey: string;
   readonly expectedVersions: Readonly<Record<string, number>>;
-}
-
-/** The answer never arrived (no response, or a gateway failure), so the server may have applied it. */
-function outcomeUnknown(error: unknown): boolean {
-  const status = (error as { status?: unknown } | null)?.status;
-  return typeof status !== "number" || status >= 500;
 }
 
 /**
