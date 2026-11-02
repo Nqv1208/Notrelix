@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail } from "lucide-react";
+import { Check, Mail } from "lucide-react";
 import { PASSWORD_MIN_LENGTH } from "../../core/schemas/password-policy";
 import { fillAuthCopy } from "../copy/fill-auth-copy";
 import type { AuthCopy } from "../copy/auth.copy";
@@ -221,18 +221,26 @@ function RegisterForm({
             htmlFor="auth-register-terms"
             className="flex min-h-touch cursor-pointer items-start gap-2.5 text-item-ui leading-normal text-muted-foreground md:min-h-0"
           >
-            <input
-              id="auth-register-terms"
-              name="terms"
-              type="checkbox"
-              checked={terms}
-              aria-invalid={termsError ? true : undefined}
-              aria-describedby={
-                termsError ? "auth-register-terms-error" : undefined
-              }
-              onChange={(event) => setTerms(event.target.checked)}
-              className="mt-0.5 size-4.5 shrink-0 cursor-pointer accent-primary"
-            />
+            <span className="relative mt-0.5 grid size-4.5 shrink-0 place-items-center">
+              <input
+                id="auth-register-terms"
+                name="terms"
+                type="checkbox"
+                checked={terms}
+                aria-invalid={termsError ? true : undefined}
+                aria-describedby={
+                  termsError ? "auth-register-terms-error" : undefined
+                }
+                onChange={(event) => setTerms(event.target.checked)}
+                className="peer absolute -inset-3.25 size-11 cursor-pointer opacity-0 md:inset-0 md:size-full"
+              />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none grid size-4.5 place-items-center rounded-[5px] border border-input bg-popover text-primary-foreground peer-checked:border-primary peer-checked:bg-primary peer-focus-visible:ring-2 peer-focus-visible:ring-focus-ring peer-aria-invalid:border-danger-text [&>svg]:opacity-0 peer-checked:[&>svg]:opacity-100"
+              >
+                <Check className="size-3.5" />
+              </span>
+            </span>
             <span>
               {t.termsBefore}
               <a

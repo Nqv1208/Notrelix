@@ -3,7 +3,6 @@ using Notrelix.Application.Common.Behaviors;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
-using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Integration.Tests.Containers;

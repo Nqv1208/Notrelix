@@ -1,4 +1,3 @@
-using Notrelix.API.Contracts.Identity;
 using Notrelix.API.Extensions;
 using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;

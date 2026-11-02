@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Email;
 using Notrelix.Application.Events.Identity;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Identity.RegistrationNotice;

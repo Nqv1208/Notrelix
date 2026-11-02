@@ -4,7 +4,6 @@
  * Operations:
  *   identity.profile        — GET /auth/me
  *   identity.login          — POST /auth/login
- *   identity.register       — POST /auth/register
  *   identity.refresh        — POST /auth/refresh
  *   identity.logout         — POST /auth/logout
  *   identity.forgotPassword — POST /auth/forgot-password
@@ -138,17 +137,6 @@ export const identityOperations = [
         });
       store.loginCurrentUser();
       return ok(sessionOf(store));
-    },
-  }),
-
-  defineMockOperation({
-    id: "identity.register",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
-    method: "POST",
-    route: "/auth/register",
-    async handle() {
-      // The same neutral answer for a new and an existing address; no session is opened.
-      return ok({ success: true });
     },
   }),
 

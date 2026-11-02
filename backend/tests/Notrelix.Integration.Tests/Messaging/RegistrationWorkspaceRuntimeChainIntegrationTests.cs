@@ -4,7 +4,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
-using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure;
 using Notrelix.Infrastructure.Data;
