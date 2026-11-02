@@ -35832,6 +35832,10 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "invitedBy": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "additionalProperties": false

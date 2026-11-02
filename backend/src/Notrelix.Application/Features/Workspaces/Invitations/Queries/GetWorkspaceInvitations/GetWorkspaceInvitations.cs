@@ -83,7 +83,8 @@ public class GetWorkspaceInvitationsQueryHandler : IRequestHandler<GetWorkspaceI
                 : invitation.InitialEntries
                     .Select(e => new WorkspaceInvitationEntryDto(e.Kind.ToString(), e.TargetId, e.Role))
                     .ToList(),
-            invitation.Version
+            invitation.Version,
+            invitation.InvitedBy
         )).ToList();
 
         var nextCursor = hasMore ? InvitationCursor.Encode(invitations[^1].CreatedAt, invitations[^1].Id) : null;
