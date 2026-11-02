@@ -480,7 +480,7 @@ function MainTableSurfaceBody({
         }}
         className={cn(
           "mx-4 min-h-0 flex-1 overflow-auto rounded-[12px] border border-border bg-popover sm:mx-6 dark:bg-card",
-          tablet && "rounded-[14px]",
+          tablet && "@container rounded-[14px]",
           // The phone cards sit on the page, not in a frame.
           phone &&
             "mx-0 rounded-none border-0 bg-transparent sm:mx-0 dark:bg-transparent",

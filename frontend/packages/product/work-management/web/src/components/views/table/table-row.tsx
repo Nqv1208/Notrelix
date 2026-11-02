@@ -248,7 +248,7 @@ export function TableRow({
                   { key: keyLabel, count: expand.count },
                 )}
                 onClick={expand.onToggle}
-                className="grid size-5 shrink-0 cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-meta-foreground hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-ring"
+                className="grid size-5 max-xl:h-11 max-xl:w-6 shrink-0 cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-meta-foreground hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-ring"
               >
                 <ChevronRight
                   aria-hidden="true"

@@ -60,7 +60,7 @@ export function dayOf(date: Date): string {
 
 /** The trigger look: the cell's own content, a soft hover and no shift. */
 export const EDIT_TRIGGER_CLASS =
-  "-mx-1.5 flex min-w-0 max-md:min-h-11 cursor-pointer items-center gap-[7px] rounded-md border-0 bg-transparent px-1.5 py-0.5 text-left font-[inherit] text-[length:inherit] text-inherit hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring";
+  "-mx-1.5 flex min-w-0 max-xl:min-h-11 cursor-pointer items-center gap-[7px] rounded-md border-0 bg-transparent px-1.5 py-0.5 text-left font-[inherit] text-[length:inherit] text-inherit hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring";
 
 /**
  * The tablet trigger (`Final-T-Table` `tb-cell`): a 44 px button that reaches 8 px past the cell's padding on both

@@ -314,7 +314,7 @@ export function TablePhoneList({
         </div>
       );
     return (
-      <div className="flex flex-col">
+      <div className="flex shrink-0 flex-col">
         {canEdit ? (
           <>
             <p className="m-0 px-5 pt-1.5 pb-1 text-compact font-semibold text-meta-foreground">
@@ -486,34 +486,37 @@ export function TablePhoneList({
         return (
           <section
             key={group.id}
-            aria-labelledby={headingId}
+            aria-labelledby={collapsed ? undefined : headingId}
+            aria-label={collapsed ? group.name : undefined}
             className="flex flex-col"
           >
-            <h2
-              id={headingId}
-              className="m-0 mb-1 flex min-h-10 items-center gap-2 text-[17px] font-semibold text-foreground"
-            >
-              <StatusDot category={group.category} className="size-2.5" />
-              {group.name}
-              <span className="text-[15px] font-medium text-meta-foreground">
-                {count}
-              </span>
-              {group.overdueCount > 0 ? (
-                <span className="ml-auto text-compact font-semibold text-danger-text">
-                  {pluralTableCopy(
-                    { one: t.overdueGroup_one, other: t.overdueGroup_other },
-                    group.overdueCount,
-                  )}
+            {collapsed ? null : (
+              <h2
+                id={headingId}
+                className="m-0 mb-1 flex min-h-10 items-center gap-2 text-[17px] font-[650] text-foreground"
+              >
+                <StatusDot category={group.category} className="size-2.5" />
+                {group.name}
+                <span className="text-[15px] font-medium text-meta-foreground">
+                  {count}
                 </span>
-              ) : null}
-            </h2>
+                {group.overdueCount > 0 ? (
+                  <span className="ml-auto text-compact font-semibold text-danger-text">
+                    {pluralTableCopy(
+                      { one: t.overdueGroup_one, other: t.overdueGroup_other },
+                      group.overdueCount,
+                    )}
+                  </span>
+                ) : null}
+              </h2>
+            )}
             {collapsed ? (
               <button
                 type="button"
                 aria-expanded="false"
                 aria-label={fillTableCopy(t.openGroup, { name: group.name })}
                 onClick={() => onGroupToggle(group.id)}
-                className="flex min-h-13 w-full cursor-pointer items-center gap-2.5 rounded-[14px] border border-border bg-popover pr-3 pl-4 text-left text-[15px] text-foreground dark:bg-card"
+                className="flex min-h-[54px] w-full cursor-pointer items-center gap-2.5 rounded-[14px] border border-border bg-popover pr-3 pl-4 text-left text-[15px] text-foreground dark:bg-card"
               >
                 <StatusDot category={group.category} className="size-2.5" />
                 <b className="font-semibold">{group.name}</b>
@@ -549,7 +552,7 @@ export function TablePhoneList({
                           const next = done ? openOption : doneOption;
                           if (next) onStatusChange(row.id, next.id);
                         }}
-                        className="grid size-11 flex-none cursor-pointer place-items-center rounded-xl border-0 bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-default disabled:opacity-60"
+                        className="grid size-11 flex-none cursor-pointer place-items-center rounded-[12px] border-0 bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-default disabled:opacity-60"
                       >
                         <span
                           aria-hidden="true"
@@ -569,13 +572,13 @@ export function TablePhoneList({
                         type="button"
                         data-row-open=""
                         onClick={() => onOpenItem(row.id)}
-                        className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-start gap-2.5 rounded-lg border-0 bg-transparent py-[5px] text-left text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                        className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-start gap-2.5 rounded-[8px] border-0 bg-transparent py-[5px] text-left text-foreground focus-visible:outline-2 focus-visible:outline-ring"
                       >
                         <span className="min-w-0 flex-1">
                           <span className="line-clamp-2 text-[15px] leading-[1.36] font-medium">
                             {row.title}
                           </span>
-                          <span className="mt-[3px] flex min-w-0 items-center gap-1.5 text-[13px] whitespace-nowrap text-meta-foreground">
+                          <span className="mt-[3px] flex min-w-0 items-center gap-1.5 text-[13px] whitespace-nowrap text-meta-foreground leading-[1.45]">
                             {row.key ? (
                               <span className="flex-none font-mono text-xs">
                                 {row.key}
@@ -621,7 +624,7 @@ export function TablePhoneList({
                         onClick={() =>
                           setSheet({ rowId: row.id, view: "menu" })
                         }
-                        className="grid size-11 flex-none cursor-pointer place-items-center rounded-xl border-0 bg-transparent p-0 text-meta-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                        className="grid size-11 flex-none cursor-pointer place-items-center rounded-[12px] border-0 bg-transparent p-0 text-meta-foreground focus-visible:outline-2 focus-visible:outline-ring"
                       >
                         <MoreHorizontal className="size-5" aria-hidden="true" />
                       </button>
@@ -638,7 +641,7 @@ export function TablePhoneList({
                           [group.id]: group.rows.length,
                         }))
                       }
-                      className="flex min-h-12 w-full cursor-pointer items-center justify-center gap-0.5 border-0 bg-transparent text-sm font-medium text-state-selected-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+                      className="flex min-h-[47px] w-full cursor-pointer items-center justify-center gap-0.5 border-0 bg-transparent text-sm font-medium text-state-selected-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
                     >
                       {pluralTableCopy(
                         { one: t.showMore_one, other: t.showMore_other },
@@ -667,9 +670,9 @@ export function TablePhoneList({
             <>
               <div
                 aria-hidden="true"
-                className="mx-auto mb-0.5 h-1.25 w-9 rounded-[3px] bg-line-strong"
+                className="mx-auto mb-0.5 h-1.25 w-9 shrink-0 rounded-[3px] bg-line-strong"
               />
-              <div className="flex min-h-13 items-start gap-2 pr-2 pl-5">
+              <div className="flex min-h-13 shrink-0 items-start gap-2 pr-2 pb-2 pl-5">
                 <div className="min-w-0 flex-1 pt-1.5">
                   {sheet.view === "menu" ? (
                     <span className="block text-xs text-meta-foreground">
