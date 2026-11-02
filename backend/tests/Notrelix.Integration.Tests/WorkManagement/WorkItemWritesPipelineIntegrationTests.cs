@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Features.WorkManagement.Ordering;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember;
@@ -76,6 +77,73 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         await staleRetry.Should().ThrowAsync<PreconditionFailed>("the writer last read the item before the rename");
         (await ItemAsync(scene.Items[0])).Name.Should().Be("Renamed");
         (await VersionAsync(scene.Items[0])).Should().Be(afterRename);
+    }
+
+    [Fact]
+    public async Task Rename_RetriedWithTheSameKeyAfterTheCommit_ReplaysTheFirstResult_AndChangesNothing()
+    {
+        var scene = await SeedAsync();
+        using var owner = Provider(scene.Stack);
+        var read = await VersionAsync(scene.Items[0]);
+        var key = $"rename-{Guid.NewGuid():N}";
+
+        var first = await OrgTreeTestHost.SendIdempotentAsync(owner, Rename(scene.Items[0], "Renamed", read), key);
+        var afterFirst = await VersionAsync(scene.Items[0]);
+        // The answer was lost: the retry names the version the first attempt read, which has moved on.
+        var replay = await OrgTreeTestHost.SendIdempotentAsync(owner, Rename(scene.Items[0], "Renamed", read), key);
+
+        afterFirst.Should().Be(read + 1);
+        replay.Should().BeEquivalentTo(first, "a replay returns the first committed result, not a stale refusal");
+        (await VersionAsync(scene.Items[0])).Should().Be(afterFirst, "the replay wrote nothing");
+        (await ItemAsync(scene.Items[0])).Name.Should().Be("Renamed");
+    }
+
+    [Fact]
+    public async Task Rename_RetriedWithTheSameKeyButAnotherPayload_IsRefusedAndChangesNothing()
+    {
+        var scene = await SeedAsync();
+        using var owner = Provider(scene.Stack);
+        var read = await VersionAsync(scene.Items[0]);
+        var key = $"rename-{Guid.NewGuid():N}";
+        await OrgTreeTestHost.SendIdempotentAsync(owner, Rename(scene.Items[0], "Renamed", read), key);
+        var afterFirst = await VersionAsync(scene.Items[0]);
+
+        var mismatch = () => OrgTreeTestHost.SendIdempotentAsync(owner, Rename(scene.Items[0], "Another title", read), key);
+
+        await mismatch.Should().ThrowAsync<IdempotencyPayloadMismatchException>();
+        (await ItemAsync(scene.Items[0])).Name.Should().Be("Renamed");
+        (await VersionAsync(scene.Items[0])).Should().Be(afterFirst);
+    }
+
+    [Fact]
+    public async Task Description_RetriedWithTheSameKeyAfterTheCommit_ReplaysTheFirstResult_AndChangesNothing()
+    {
+        var scene = await SeedAsync();
+        using var owner = Provider(scene.Stack);
+        var read = await VersionAsync(scene.Items[0]);
+        var key = $"describe-{Guid.NewGuid():N}";
+        var describe = new UpdateBoardItemCommand(scene.Items[0], null, null, null, read, "What and why");
+
+        await OrgTreeTestHost.SendIdempotentAsync(owner, describe, key);
+        var afterFirst = await VersionAsync(scene.Items[0]);
+        await OrgTreeTestHost.SendIdempotentAsync(owner, describe, key);
+
+        (await ItemAsync(scene.Items[0])).DescriptionMd.Should().Be("What and why");
+        (await VersionAsync(scene.Items[0])).Should().Be(afterFirst, "the replay wrote nothing");
+    }
+
+    [Fact]
+    public async Task Rename_WithANewKeyAndTheMovedVersion_IsStillRefusedAsStale()
+    {
+        var scene = await SeedAsync();
+        using var owner = Provider(scene.Stack);
+        var read = await VersionAsync(scene.Items[0]);
+        await OrgTreeTestHost.SendIdempotentAsync(owner, Rename(scene.Items[0], "Renamed", read), $"rename-{Guid.NewGuid():N}");
+
+        var stale = () => OrgTreeTestHost.SendIdempotentAsync(owner, Rename(scene.Items[0], "Renamed again", read), $"rename-{Guid.NewGuid():N}");
+
+        await stale.Should().ThrowAsync<PreconditionFailed>("a key never lets a different edit past the version check");
+        (await ItemAsync(scene.Items[0])).Name.Should().Be("Renamed");
     }
 
     [Fact]

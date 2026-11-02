@@ -226,15 +226,20 @@ export function BoardShareDialogSurface(props: BoardShareDialogSurfaceProps) {
             ?.querySelector<HTMLElement>("[data-f='ib']")
             ?.focus();
         }}
-        className="top-[56px] box-border flex w-[640px] max-md:max-h-[calc(100dvh-72px)] max-w-[calc(100%-2rem)] translate-y-0 flex-col gap-0 overflow-visible rounded-[14px] border-0 bg-popover p-0 text-body leading-[1.45] font-normal shadow-dialog ring-0 sm:max-w-[calc(100%-2rem)] dark:bg-card"
+        className="top-[56px] box-border flex w-[640px] max-w-[calc(100%-2rem)] translate-y-0 flex-col gap-0 overflow-visible rounded-[14px] border-0 bg-popover p-0 text-body leading-[1.45] font-normal shadow-dialog ring-0 sm:max-w-[calc(100%-2rem)] dark:bg-card max-md:top-[88px] max-md:bottom-0 max-md:left-0 max-md:w-full max-md:max-w-none max-md:translate-x-0 max-md:rounded-t-[14px] max-md:rounded-b-none max-md:data-open:zoom-in-100 max-md:data-open:slide-in-from-bottom-10 max-md:sm:max-w-none"
       >
         <div
+          data-f="grab"
+          aria-hidden="true"
+          className="mx-auto mt-1.5 mb-0.5 hidden h-[5px] w-9 shrink-0 rounded-[3px] bg-line-strong max-md:block"
+        />
+        <div
           data-f="dh"
-          className="flex items-center gap-2.5 px-5 pt-[18px] pb-1"
+          className="flex items-center gap-2.5 px-5 pt-[18px] pb-1 max-md:h-[52px] max-md:shrink-0 max-md:py-0 max-md:pr-2 max-md:pl-5"
         >
           <DialogTitle
             data-f="dt"
-            className="m-0 text-dialog-title leading-[1.45] font-[650] text-foreground"
+            className="m-0 text-dialog-title leading-[1.45] font-[650] text-foreground max-md:text-[17px]"
           >
             {screen === "private" ? copy.privateConfirm.title : title}
           </DialogTitle>
@@ -242,7 +247,7 @@ export function BoardShareDialogSurface(props: BoardShareDialogSurfaceProps) {
         </div>
         <DialogDescription
           data-f="dsub"
-          className="m-0 flex items-center gap-1.5 px-5 text-compact leading-[1.45] text-meta-foreground"
+          className="m-0 flex items-center gap-1.5 px-5 text-compact leading-[1.45] text-meta-foreground max-md:sr-only"
         >
           {view.space ? (
             <span
@@ -337,7 +342,7 @@ function ShareBody({
     <>
       <div
         data-f="db"
-        className="flex flex-col gap-4 px-5 pt-4 pb-1.5 max-md:min-h-0 max-md:overflow-y-auto"
+        className="flex flex-col gap-4 px-5 pt-4 pb-1.5 max-md:min-h-0 max-md:overflow-y-auto max-md:px-4 max-md:pt-1.5"
       >
         {notice ? (
           <ShareNotice notice={notice} copy={copy} onAddManager={addManager} />
@@ -354,7 +359,7 @@ function ShareBody({
             <label
               data-f="in"
               title={copy.add.unavailable}
-              className="box-content flex h-[38px] flex-1 items-center gap-2 rounded-[9px] max-md:h-[42px] max-md:basis-full border border-line-strong px-2.5 text-nav leading-[1.45] font-normal text-meta-foreground"
+              className="box-content flex h-[38px] flex-1 items-center gap-2 rounded-[9px] max-md:box-border max-md:h-[50px] max-md:basis-full max-md:rounded-[12px] border border-line-strong px-2.5 text-nav leading-[1.45] font-normal text-meta-foreground"
             >
               <UserPlus
                 aria-hidden="true"
@@ -814,7 +819,7 @@ function AddPeople({
     <div data-f="add" className="relative flex gap-2 max-md:flex-wrap">
       <label
         data-f="in"
-        className="box-content flex h-[38px] flex-1 items-center gap-2 rounded-[9px] max-md:h-[42px] max-md:basis-full border border-line-strong px-2.5 text-nav leading-[1.45] font-normal text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring"
+        className="box-content flex h-[38px] flex-1 items-center gap-2 rounded-[9px] max-md:box-border max-md:h-[50px] max-md:basis-full max-md:rounded-[12px] border border-line-strong px-2.5 text-nav leading-[1.45] font-normal text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring"
       >
         <UserPlus
           aria-hidden="true"
@@ -1439,7 +1444,7 @@ function PrivateBody({
     <>
       <div
         data-f="db"
-        className="flex flex-col gap-4 px-5 pt-4 pb-1.5 max-md:min-h-0 max-md:overflow-y-auto"
+        className="flex flex-col gap-4 px-5 pt-4 pb-1.5 max-md:min-h-0 max-md:overflow-y-auto max-md:px-4 max-md:pt-1.5"
       >
         <div
           data-f="lbl"
@@ -1675,7 +1680,7 @@ function LogBody({ copy, log, onClose, setScreen }: BodyProps) {
     <>
       <div
         data-f="db"
-        className="flex flex-col gap-4 px-5 pt-4 pb-1.5 max-md:min-h-0 max-md:overflow-y-auto"
+        className="flex flex-col gap-4 px-5 pt-4 pb-1.5 max-md:min-h-0 max-md:overflow-y-auto max-md:px-4 max-md:pt-1.5"
       >
         <div data-f="lh2" className="flex items-center gap-2">
           <button
