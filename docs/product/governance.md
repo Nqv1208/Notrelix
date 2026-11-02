@@ -475,7 +475,8 @@ Account membership still never implies Workspace access, and Workspace membershi
 For a Board or Page in Workspace `W` (placed in Space `S` or unplaced), the decision is evaluated in this order; the first matching step decides:
 
 ```text
-1. resource missing / deleted / other Workspace          → NotFound
+1. resource missing / deleted / other Workspace /
+   caller holds no active Workspace membership             → NotFound
    (an archived Board is not missing: steps 2–6 decide it, then it takes no write, below;
    a deleted Board is reachable only for its restore and delete; a Page in the trash is
    reachable only for restore and delete-for-good)

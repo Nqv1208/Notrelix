@@ -80,13 +80,13 @@ public sealed class CreateCommentTargetPolicyMatrixTests
     }
 
     [Fact]
-    public void BoardItem_NonMember_IsForbidden()
+    public void BoardItem_NonMember_IsNotFound()
     {
         var decision = EvaluateComment(
             CreateCommentCommand.ForBoardItem(Guid.NewGuid(), "Hello", null),
             Facts(workspaceRole: null));
 
-        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
+        decision.Kind.Should().Be(AccessDecisionKind.NotFound);
     }
 
     [Fact]

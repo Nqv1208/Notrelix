@@ -80,7 +80,7 @@
     "subscription": "not-required",
     "features": [],
     "requestedPermission": "ViewWorkspace",
-    "expectedDecision": "Forbidden",
+    "expectedDecision": "NotFound",
     "expectedErrorCode": "not_workspace_member",
     "characterizationTest": "EvaluateAsync_ShouldDenyNonMembers"
   },
