@@ -15,8 +15,8 @@ applies_to:
 evidence:
   - PRODUCT.md
   - docs/product/product-model.md
-  - docs/product/contexts/accounts.md
-  - docs/product/contexts/workspaces.md
+  - docs/product/accounts.md
+  - docs/product/workspaces.md
   - docs/architecture/bounded-context-map.md
   - backend/src/Notrelix.Domain/Identity/
   - backend/tests/Notrelix.Domain.Tests/
@@ -872,11 +872,11 @@ Stop rather than guess if:
 # 76. Related canonical owners
 
 ```text
-docs/product/contexts/accounts.md
-docs/product/contexts/workspaces.md
-docs/product/contexts/governance.md
-docs/product/contexts/integrations.md
-docs/product/contexts/billing.md
+docs/product/accounts.md
+docs/product/workspaces.md
+docs/product/governance.md
+docs/product/integrations.md
+docs/product/billing.md
 docs/product/product-model.md
 docs/architecture/contract-boundaries.md
 docs/architecture/events-realtime-and-delivery-boundary.md

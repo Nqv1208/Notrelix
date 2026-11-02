@@ -11,13 +11,9 @@ applies_to:
 evidence:
   - RULE.md
   - AGENTS.md
-  - .github/workflows/backend-ci.yml
-  - .github/workflows/frontend-ci.yml
-  - .github/workflows/docs-ci.yml
-  - .github/workflows/infra-ci.yml
+  - .github/workflows/ci.yml
   - .github/workflows/container-ci.yml
   - .github/workflows/security-ci.yml
-  - .github/workflows/ci-definition.yml
   - delivery/catalog.toml
   - delivery/policy.toml
   - delivery/images.lock.toml

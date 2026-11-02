@@ -20,7 +20,7 @@ evidence:
   - frontend/playwright.config.ts
   - frontend/playwright.mock.config.ts
   - frontend/playwright.storybook.config.ts
-  - .github/workflows/frontend-ci.yml
+  - .github/workflows/ci.yml
 review_on:
   - frontend-test-taxonomy-change
   - frontend-ci-gate-change
@@ -938,7 +938,7 @@ It does not make a failed required gate acceptable.
 
 # 71. Current CI topology
 
-Current `frontend-ci.yml` semantic process stages (frontend-ci-process-reorganization v1.1):
+Current `.github/workflows/ci.yml` semantic process stages (frontend-ci-process-reorganization v1.1):
 
 ```text
 select (transition-only selection)
@@ -1985,7 +1985,7 @@ frontend/tooling/testing/
 frontend/tooling/dependency-rules/
 frontend/playwright.config.ts
 frontend/playwright.storybook.config.ts
-.github/workflows/frontend-ci.yml
+.github/workflows/ci.yml
 ```
 
 Current CI explicitly protects:

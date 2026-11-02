@@ -20,8 +20,7 @@ evidence:
   - docs/quality/accessibility-standard.md
   - docs/quality/performance-and-scalability.md
   - docs/governance/documentation-lifecycle.md
-  - .github/workflows/be-ci.yml
-  - .github/workflows/fe-ci.yml
+  - .github/workflows/ci.yml
 review_on:
   - definition-of-done-change
   - required-proof-change

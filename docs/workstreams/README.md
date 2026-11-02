@@ -10,7 +10,7 @@ applies_to:
   - parallel-feature-delivery
 evidence:
   - docs/delivery/team-ownership.md
-  - docs/workstreams/capability-map.md
+  - docs/workstreams/capability-delivery-map.md
   - docs/workstreams/cross-team-dependencies.md
 review_on:
   - team-topology-change
@@ -60,7 +60,7 @@ Canonical structure:
 ```text
 docs/workstreams/
 ├── README.md
-├── capability-map.md
+├── capability-delivery-map.md
 ├── cross-team-dependencies.md
 ├── use-cases/
 │   ├── README.md
@@ -474,7 +474,7 @@ For stable team ownership:
 For capability decomposition:
 
 ```text
-./capability-map.md
+./capability-delivery-map.md
 ```
 
 For cross-team dependencies:

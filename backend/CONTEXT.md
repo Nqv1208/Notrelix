@@ -231,7 +231,7 @@ Analytics / Reporting
 Their product meaning belongs to:
 
 ```text
-../docs/product/contexts/
+../docs/product/
 ```
 
 Backend folders implement those semantics but do not redefine them.

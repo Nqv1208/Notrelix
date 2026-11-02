@@ -20,8 +20,7 @@ evidence:
   - docs/quality/engineering-quality-standard.md
   - docs/quality/security-quality-standard.md
   - docs/quality/performance-and-scalability.md
-  - .github/workflows/be-ci.yml
-  - .github/workflows/fe-ci.yml
+  - .github/workflows/ci.yml
 review_on:
   - release-model-change
   - rollout-strategy-change

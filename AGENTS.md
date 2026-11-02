@@ -120,7 +120,7 @@ Examples:
 ```text
 product meaning
 → PRODUCT.md
-→ docs/product/contexts/<owner>.md
+→ docs/product/<owner>.md
 
 Domain behavior
 → backend/docs/architecture/domain-modeling.md
@@ -380,8 +380,8 @@ Required reading:
 RULE.md NRX-003
 RULE.md NRX-004
 RULE.md NRX-012
-docs/product/contexts/governance.md
-docs/product/contexts/workspaces.md
+docs/product/governance.md
+docs/product/workspaces.md
 backend/docs/architecture/security-tenancy-authorization.md
 ```
 
@@ -2022,7 +2022,7 @@ Read:
 
 ```text
 PRODUCT.md
-docs/product/contexts/work-management.md
+docs/product/work-management.md
 RULE.md
 backend Domain/Application/API docs
 frontend state/UI/API docs

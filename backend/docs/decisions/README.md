@@ -234,7 +234,7 @@ The registry does not restate the decision body.
 
 | ID | Decision | Status | Current architecture owner | Superseded by |
 |---|---|---|---|---|
-| `ADR-001` | [Pipeline Boundary Zones](ADR-001-pipeline-boundary.md) | `Accepted` | `../architecture/application-model.md` | None |
+| `ADR-001` | [Pipeline Boundary Zones](ADR-001-pipeline-boundary.md) | `Superseded` | `../architecture/application-model.md` | [ADR-006](ADR-006-frozen-seven-behavior-pipeline.md) |
 | `ADR-002` | [RLS Bootstrap Connection Lifecycle](ADR-002-rls-bootstrap-connection-lifecycle.md) | `Accepted` | `../architecture/security-tenancy-authorization.md`, `../architecture/infrastructure-and-data.md` | None |
 | `ADR-003` | [CSRF Protection via Double Submit Cookie](ADR-003-csrf-protection.md) | `Superseded` | `../architecture/api-and-contracts.md`, `../architecture/security-tenancy-authorization.md` | [ADR-005](ADR-005-csrf-cross-origin-bootstrap.md) |
 | `ADR-004` | [5-Tier Rate Limiting Architecture](ADR-004-rate-limiting-architecture.md) | `Accepted` | `../architecture/api-and-contracts.md`, `../architecture/security-tenancy-authorization.md` | None |

@@ -22,7 +22,7 @@ evidence:
   - backend/tests/Notrelix.Testing.Domain/
   - backend/tests/Notrelix.Testing.Application/
   - backend/tests/Notrelix.Testing.Integration/
-  - .github/workflows/be-ci.yml
+  - .github/workflows/ci.yml
 review_on:
   - backend-test-topology-change
   - architecture-gate-change
@@ -2276,7 +2276,7 @@ backend/tests/**
 Current workflow evidence:
 
 ```text
-.github/workflows/be-ci.yml
+.github/workflows/ci.yml
 ```
 
 Broad local:

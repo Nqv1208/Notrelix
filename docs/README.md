@@ -37,7 +37,7 @@ Read:
 ../PRODUCT.md
 product/README.md
 product/product-model.md
-product/contexts/<owning-context>.md
+product/<owning-context>.md
 ```
 
 Then read affected backend/frontend/system owners.
@@ -101,7 +101,7 @@ Read:
 
 ```text
 delivery/change-classification.md
-delivery/change-impact-and-migration.md
+delivery/migration-policy.md
 architecture/contract-boundaries.md
 ```
 
@@ -119,9 +119,9 @@ Start with:
     NRX-004
     NRX-012
 
-product/contexts/identity.md
-product/contexts/workspaces.md
-product/contexts/governance.md
+product/identity.md
+product/workspaces.md
+product/governance.md
 quality/security-quality-standard.md
 ```
 
@@ -236,18 +236,17 @@ docs/
 │   ├── README.md
 │   ├── product-model.md
 │   ├── product-experience.md
-│   └── contexts/
-│       ├── accounts.md
-│       ├── identity.md
-│       ├── workspaces.md
-│       ├── governance.md
-│       ├── work-management.md
-│       ├── documents.md
-│       ├── collaboration.md
-│       ├── automation.md
-│       ├── integrations.md
-│       ├── billing.md
-│       └── analytics.md
+│   ├── accounts.md
+│   ├── identity.md
+│   ├── workspaces.md
+│   ├── governance.md
+│   ├── work-management.md
+│   ├── documents.md
+│   ├── collaboration.md
+│   ├── automation.md
+│   ├── integrations.md
+│   ├── billing.md
+│   └── analytics.md
 │
 ├── quality/
 │   ├── engineering-quality-standard.md
@@ -258,9 +257,15 @@ docs/
 │
 ├── delivery/
 │   ├── change-classification.md
-│   ├── change-impact-and-migration.md
+│   ├── ci-cd-architecture.md
+│   ├── ci-cd-extension-guide.md
+│   ├── ci-cd-implementation-guide.md
+│   ├── contract-first-delivery.md
 │   ├── definition-of-done.md
-│   └── release-rollout-and-recovery.md
+│   ├── local-development.md
+│   ├── migration-policy.md
+│   ├── release-and-rollout.md
+│   └── team-ownership.md
 │
 ├── operations/
 │   ├── observability.md
@@ -364,9 +369,9 @@ Product context documents define business meaning independently of implementatio
 Examples:
 
 ```text
-product/contexts/work-management.md
-product/contexts/governance.md
-product/contexts/billing.md
+product/work-management.md
+product/governance.md
+product/billing.md
 ```
 
 They answer:
@@ -596,8 +601,8 @@ Read:
     NRX-003
     NRX-014
 
-product/contexts/work-management.md
-product/contexts/workspaces.md
+product/work-management.md
+product/workspaces.md
 
 ../frontend/AGENTS.md
 ../frontend/docs/architecture/state-query-mutations.md
@@ -804,7 +809,7 @@ Owns:
 Detailed business meaning remains in:
 
 ```text
-product/contexts/*.md
+product/*.md
 ```
 
 ---
@@ -980,17 +985,17 @@ Each context document is the canonical product owner for its semantic area.
 Required contexts:
 
 ```text
-product/contexts/accounts.md
-product/contexts/identity.md
-product/contexts/workspaces.md
-product/contexts/governance.md
-product/contexts/work-management.md
-product/contexts/documents.md
-product/contexts/collaboration.md
-product/contexts/automation.md
-product/contexts/integrations.md
-product/contexts/billing.md
-product/contexts/analytics.md
+product/accounts.md
+product/identity.md
+product/workspaces.md
+product/governance.md
+product/work-management.md
+product/documents.md
+product/collaboration.md
+product/automation.md
+product/integrations.md
+product/billing.md
+product/analytics.md
 ```
 
 Each context must define, as relevant:
@@ -1026,7 +1031,7 @@ It must not fill template headings with generic prose.
 Example:
 
 ```text
-product/contexts/work-management.md
+product/work-management.md
     owns Board / BoardField / BoardItem / BoardGroup / BoardView meaning
 
 backend/docs/architecture/domain-modeling.md
@@ -1216,7 +1221,7 @@ Each class maps to required owners/evidence.
 File:
 
 ```text
-delivery/change-impact-and-migration.md
+delivery/migration-policy.md
 ```
 
 Owns:
@@ -1261,7 +1266,7 @@ Compilation is not definition of done.
 File:
 
 ```text
-delivery/release-rollout-and-recovery.md
+delivery/release-and-rollout.md
 ```
 
 Owns shared release-change principles.
@@ -1727,9 +1732,9 @@ Recommended:
 ```text
 ../RULE.md
 → quality/security-quality-standard.md
-→ product/contexts/identity.md
-→ product/contexts/workspaces.md
-→ product/contexts/governance.md
+→ product/identity.md
+→ product/workspaces.md
+→ product/governance.md
 → backend security docs
 → affected frontend/docs/runtime evidence
 ```
@@ -1740,9 +1745,9 @@ Recommended:
 
 ```text
 delivery/change-classification.md
-→ delivery/change-impact-and-migration.md
+→ delivery/migration-policy.md
 → affected contract/data owner
-→ release-rollout-and-recovery.md
+→ release-and-rollout.md
 → operations/infrastructure as required
 ```
 
@@ -1754,7 +1759,7 @@ delivery/change-classification.md
 
 ```text
 ../PRODUCT.md
-→ product/contexts/<owner>.md
+→ product/<owner>.md
 → ../RULE.md
 → ../backend/AGENTS.md
 → ../backend/docs/architecture/domain-modeling.md
@@ -1776,7 +1781,7 @@ product owner
 
 ```text
 product owner
-→ delivery/change-impact-and-migration.md
+→ delivery/migration-policy.md
 → ../backend/docs/architecture/infrastructure-and-data.md
 → ../backend/docs/operations/migrations-and-data-change.md
 → migrations/tests
@@ -1828,10 +1833,10 @@ product owner
 
 ```text
 ../PRODUCT.md
-→ product/contexts/<owner>.md
+→ product/<owner>.md
 → architecture/bounded-context-map.md if ownership changes
 → affected backend/frontend docs
-→ delivery/change-impact-and-migration.md
+→ delivery/migration-policy.md
 → ADR if consequential
 ```
 
@@ -2150,7 +2155,7 @@ Deep files are expected where the system is deep.
 Examples likely to be deep:
 
 ```text
-product/contexts/work-management.md
+product/work-management.md
 ../backend/docs/architecture/domain-modeling.md
 ../backend/docs/architecture/application-model.md
 ../backend/docs/architecture/platform-and-messaging.md

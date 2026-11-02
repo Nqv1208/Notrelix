@@ -1037,11 +1037,11 @@ The development stack currently defines:
 ```text
 PostgreSQL 16
 Redis 7
-RabbitMQ 3.13             optional messaging profile
+RabbitMQ 4.3              optional messaging profile
 .NET SDK 9 backend
 Node 22 marketing host
 Node 22 web host
-Nginx 1.27 gateway
+Nginx 1.29 gateway
 pgAdmin 9                 optional tools profile
 ```
 
@@ -1263,7 +1263,7 @@ make docs-check
 currently executes:
 
 ```text
-node scripts/check-documentation.mjs
+node scripts/docs/check-*.mjs  (six scripts, see Makefile docs-check)
 ```
 
 The script presently checks concerns including:
@@ -1446,7 +1446,7 @@ frontend codegen consumers
 ## Documentation governance
 
 ```text
-scripts/check-documentation.mjs
+scripts/docs/**
 Makefile
 .github/**
 ```

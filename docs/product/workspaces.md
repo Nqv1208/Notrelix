@@ -13,9 +13,9 @@ applies_to:
 evidence:
   - PRODUCT.md
   - docs/product/product-model.md
-  - docs/product/contexts/accounts.md
-  - docs/product/contexts/identity.md
-  - docs/product/contexts/governance.md
+  - docs/product/accounts.md
+  - docs/product/identity.md
+  - docs/product/governance.md
   - docs/architecture/bounded-context-map.md
   - backend/src/Notrelix.Domain/Workspaces/
   - backend/docs/decisions/ADR-009-space-scoped-authorization.md
@@ -1095,12 +1095,12 @@ Stop rather than guess if:
 # 95. Related canonical owners
 
 ```text
-docs/product/contexts/accounts.md
-docs/product/contexts/identity.md
-docs/product/contexts/governance.md
-docs/product/contexts/billing.md
-docs/product/contexts/work-management.md
-docs/product/contexts/documents.md
+docs/product/accounts.md
+docs/product/identity.md
+docs/product/governance.md
+docs/product/billing.md
+docs/product/work-management.md
+docs/product/documents.md
 docs/product/product-model.md
 docs/architecture/bounded-context-map.md
 docs/architecture/data-ownership-and-consistency.md

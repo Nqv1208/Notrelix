@@ -992,16 +992,16 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 
 ### UC-PLT-P01 Run code checks before every push
 - Capability: P, PF-16 CI, container, security and packaging evidence
-- Actors and permission: developer and agent through the pre-push hook.
-- Preconditions: hook installed (`make hooks-install`).
+- Actors and permission: removed in #225 (the pre-push hook and `scripts/pre-push.sh` no longer exist).
+- Preconditions: removed in #225 (`make hooks-install` no longer exists).
 - Input: pushed commits.
 - Output: the touched stacks' CI code checks run locally; a failure blocks the push.
-- Main flow: `scripts/pre-push.sh` runs checks per touched folder.
+- Main flow: removed in #225; CI is the only enforced check.
 - No-op / rejection / concurrency / retry: untouched stacks are skipped.
 - UI states: n/a.
 - Rules: PFREQ114.
 - Acceptance: Given a failing frontend check, When pushing, Then the push is blocked.
-- Evidence: BE n/a · FE n/a · Design n/a · Tests `scripts/pre-push.sh` · Real e2e none
+- Evidence: removed in #225 · Real e2e none
 - State: IMPLEMENTING — local only; the exact-head CI result is separate evidence.
 
 ### UC-PLT-P02 Produce container and packaging evidence

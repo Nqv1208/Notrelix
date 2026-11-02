@@ -10,8 +10,7 @@ applies_to:
   - ci
 evidence:
   - docs/quality/engineering-quality-standard.md
-  - .github/workflows/be-ci.yml
-  - .github/workflows/fe-ci.yml
+  - .github/workflows/ci.yml
   - backend/backend.slnx
   - backend/tests/
   - frontend/package.json

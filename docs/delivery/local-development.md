@@ -110,7 +110,7 @@ The executable manifest remains the current exact authority.
 Current `backend/global.json` pins:
 
 ```text
-.NET SDK 9.0.313
+.NET SDK 9.0.317
 rollForward latestPatch
 allowPrerelease false
 ```

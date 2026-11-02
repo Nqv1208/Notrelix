@@ -412,7 +412,7 @@ PRODUCT.md
 Detailed business semantic owners:
 
 ```text
-docs/product/contexts/*.md
+docs/product/*.md
 ```
 
 Product docs own:
@@ -434,7 +434,7 @@ They MUST NOT independently redefine them.
 Example:
 
 ```text
-product/contexts/work-management.md
+product/work-management.md
     owns the meaning of BoardGroup
 
 frontend Kanban implementation

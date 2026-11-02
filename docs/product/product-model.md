@@ -39,7 +39,7 @@ This document owns **cross-context product semantics**.
 
 Root `PRODUCT.md` remains the product constitution.
 
-Detailed context lifecycle/invariants belong to `docs/product/contexts/*.md`.
+Detailed context lifecycle/invariants belong to `docs/product/*.md`.
 
 System architecture owns consistency, delivery, contracts, and extraction mechanics.
 
@@ -2027,17 +2027,17 @@ This is semantic orientation, not a call graph.
 # 135. Detailed context owners
 
 ```text
-docs/product/contexts/accounts.md
-docs/product/contexts/identity.md
-docs/product/contexts/workspaces.md
-docs/product/contexts/governance.md
-docs/product/contexts/work-management.md
-docs/product/contexts/documents.md
-docs/product/contexts/collaboration.md
-docs/product/contexts/automation.md
-docs/product/contexts/integrations.md
-docs/product/contexts/billing.md
-docs/product/contexts/analytics.md
+docs/product/accounts.md
+docs/product/identity.md
+docs/product/workspaces.md
+docs/product/governance.md
+docs/product/work-management.md
+docs/product/documents.md
+docs/product/collaboration.md
+docs/product/automation.md
+docs/product/integrations.md
+docs/product/billing.md
+docs/product/analytics.md
 ```
 
 These files own the detailed semantics intentionally omitted here.

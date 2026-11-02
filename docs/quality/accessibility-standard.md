@@ -17,7 +17,7 @@ evidence:
   - docs/quality/testing-strategy.md
   - frontend/docs/architecture/ui-and-design-system.md
   - frontend/tooling/storybook/
-  - .github/workflows/fe-ci.yml
+  - .github/workflows/ci.yml
 review_on:
   - accessibility-baseline-change
   - design-system-primitive-change

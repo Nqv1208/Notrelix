@@ -36,7 +36,7 @@ Current executable manifests define the exact package versions. The backend curr
 | Area | Technology |
 |---|---|
 | Runtime / language | .NET 9 / C# / `net9.0` |
-| SDK | .NET SDK `9.0.313` (`latestPatch`, no prerelease) |
+| SDK | .NET SDK `9.0.317` (`latestPatch`, no prerelease) |
 | Web host | ASP.NET Core |
 | Application messaging | MediatR |
 | Validation | FluentValidation |
@@ -113,7 +113,7 @@ For ordinary backend work, read in this order:
 2. ../RULE.md
 3. ../AGENTS.md
 4. ./AGENTS.md
-5. owning product-context document under ../docs/product/contexts/
+5. owning product-context document under ../docs/product/
 6. relevant backend architecture document under ./docs/architecture/
 7. relevant ADR if the architecture choice matters
 8. current source/tests/manifests for executable evidence
@@ -606,7 +606,7 @@ Runtime/degradation/recovery semantics are documented at repository and backend 
 Required baseline:
 
 ```text
-.NET SDK 9.0.313-compatible installation
+.NET SDK 9.0.317-compatible installation
 Docker / Docker Compose for local dependencies/full stack
 repository environment configuration
 ```
@@ -834,7 +834,7 @@ For backend work:
 
 ```text
 product meaning
-→ ../docs/product/contexts/**
+→ ../docs/product/**
 
 system boundary
 → ../docs/architecture/**

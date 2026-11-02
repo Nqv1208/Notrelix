@@ -13,8 +13,6 @@ applies_to:
   - development-tooling
   - packaging-ci
 evidence:
-  - docs/engineering/07-infrastructure/02-container-builds.md
-  - Dockerfile
   - .dockerignore
   - backend/Dockerfile
   - backend/.dockerignore
@@ -25,8 +23,8 @@ evidence:
   - docker-compose.staging.yml
   - docker-compose.prod.yml
   - Makefile
-  - .github/workflows/be-ci.yml
-  - .github/workflows/fe-packaging.yml
+  - .github/workflows/ci.yml
+  - .github/workflows/container-ci.yml
   - docs/infrastructure/environment-model.md
   - docs/infrastructure/deployment-runtime.md
   - docs/delivery/local-development.md
@@ -1189,7 +1187,7 @@ Those remain owned by their gates.
 
 # 100. Frontend packaging current evidence
 
-Current `fe-packaging.yml` builds:
+Current `.github/workflows/container-ci.yml` builds:
 
 ```text
 web Dockerfile

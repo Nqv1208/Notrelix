@@ -1151,7 +1151,7 @@ Detailed rules:
 
 ```text
 contract-boundaries.md
-delivery/change-impact-and-migration.md
+delivery/migration-policy.md
 ```
 
 ---

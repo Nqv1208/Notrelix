@@ -12,7 +12,7 @@ evidence:
   - frontend/docs/README.md
   - frontend/tooling/dependency-rules/src/architecture-manifest.ts
   - frontend/package.json
-  - .github/workflows/frontend-ci.yml
+  - .github/workflows/ci.yml
 review_on:
   - frontend-agent-contract-change
   - frontend-authority-routing-change
@@ -2198,7 +2198,7 @@ FE ADR files
 source/tests
 → current implementation evidence
 
-frontend-ci.yml
+.github/workflows/ci.yml
 → current CI execution
 ```
 

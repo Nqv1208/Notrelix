@@ -14,7 +14,7 @@ evidence:
   - frontend/apps/
   - frontend/packages/
   - frontend/tooling/dependency-rules/src/architecture-manifest.ts
-  - .github/workflows/fe-ci.yml
+  - .github/workflows/ci.yml
 review_on:
   - frontend-workspace-topology-change
   - frontend-host-change
@@ -1134,7 +1134,7 @@ final frontend gate
 The exact workflow is:
 
 ```text
-.github/workflows/fe-ci.yml
+.github/workflows/ci.yml
 ```
 
 CI topology may evolve.
@@ -2342,7 +2342,7 @@ frontend/tooling/dependency-rules/src/architecture-manifest.ts
 frontend/docs/generated/package-boundaries.md
 → generated readable boundary evidence
 
-.github/workflows/fe-ci.yml
+.github/workflows/ci.yml
 → CI protected execution
 ```
 
