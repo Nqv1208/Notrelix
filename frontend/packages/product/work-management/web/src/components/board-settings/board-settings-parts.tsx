@@ -66,7 +66,7 @@ export const BUTTON_CLASS = {
 
 /** Text input and select (mockup `.inp`). */
 export const INPUT_CLASS =
-  "box-border flex h-[34px] w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-item-ui text-foreground outline-none placeholder:text-meta-foreground focus-visible:ring-2 focus-visible:ring-focus-ring aria-invalid:border-danger disabled:cursor-not-allowed disabled:bg-background disabled:text-meta-foreground";
+  "box-border flex h-[34px] max-md:h-11 w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-item-ui text-foreground outline-none placeholder:text-meta-foreground focus-visible:ring-2 focus-visible:ring-focus-ring aria-invalid:border-danger disabled:cursor-not-allowed disabled:bg-background disabled:text-meta-foreground";
 
 export const TEXTAREA_CLASS = cn(
   INPUT_CLASS,
@@ -74,7 +74,7 @@ export const TEXTAREA_CLASS = cn(
 );
 
 export const ICON_BUTTON_CLASS =
-  "grid size-7.5 shrink-0 cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent p-0 text-muted-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-not-allowed aria-disabled:opacity-40 [&_svg]:size-3.5 [&_svg]:shrink-0";
+  "grid size-7.5 max-md:size-11 shrink-0 cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent p-0 text-muted-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-not-allowed aria-disabled:opacity-40 [&_svg]:size-3.5 [&_svg]:shrink-0";
 
 export const FIELD_LABEL_CLASS =
   "text-crumb font-semibold text-muted-foreground";

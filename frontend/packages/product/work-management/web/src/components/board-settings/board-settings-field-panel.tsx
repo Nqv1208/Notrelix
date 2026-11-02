@@ -241,10 +241,10 @@ export function FieldPanel({
   return (
     <aside
       aria-label={fillCopy(t.label, { name: field.name })}
-      className="flex min-h-0 w-[400px] shrink-0 flex-col border-l border-line bg-popover max-md:absolute max-md:inset-0 max-md:z-10 max-md:w-full max-md:border-l-0"
+      className="flex min-h-0 w-[400px] shrink-0 flex-col border-l border-line bg-popover max-xl:absolute max-xl:inset-y-0 max-xl:right-0 max-xl:z-10 max-xl:shadow-pop max-md:inset-0 max-md:w-full max-md:border-l-0 max-md:shadow-none"
     >
       <div className="flex items-center gap-2.5 border-b border-line px-[18px] py-3.5">
-        <TypeMark icon={Icon} size="md" />
+        <TypeMark icon={Icon} size="md" className="rounded-[8px]" />
         <div className="min-w-0">
           <b className="block truncate text-[15px] leading-[1.45] font-[650]">
             {field.name}
@@ -360,7 +360,7 @@ export function FieldPanel({
                 <button
                   type="button"
                   aria-disabled="true"
-                  className="cursor-default border-0 bg-transparent p-0 font-medium text-brand-subtle-foreground"
+                  className="cursor-default border-0 bg-transparent p-0 font-medium text-brand-subtle-foreground max-md:min-h-11 max-md:min-w-11"
                 >
                   {t.changeType}
                 </button>
@@ -611,7 +611,7 @@ function OptionsEditor({ field }: { field: BoardSettingsFieldDto }) {
       label={t.options}
       hint={taken ? copy.feedback.nameTaken : t.optionsHint}
     >
-      <div className="flex flex-col overflow-hidden rounded-lg border border-line">
+      <div className="flex flex-col overflow-hidden rounded-[8px] border border-line">
         <SortableList
           ids={field.options.map((option) => option.id)}
           onReorder={(ids) =>
@@ -671,7 +671,7 @@ function OptionsEditor({ field }: { field: BoardSettingsFieldDto }) {
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="flex h-[35px] cursor-pointer items-center gap-[7px] border-0 border-t border-line bg-transparent px-2.5 text-left text-item-small font-medium text-brand-subtle-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            className="flex h-[35px] max-md:h-11 cursor-pointer items-center gap-[7px] border-0 border-t border-line bg-transparent px-2.5 text-left text-item-small font-medium text-brand-subtle-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             <Plus aria-hidden="true" className="size-3.5" />
             {t.addOption}
@@ -717,17 +717,18 @@ function OptionRow({
     <SortableRow
       id={option.id}
       handleLabel={`${copy.common.dragHandle}: ${option.name}`}
-      className="group flex h-[37px] items-center gap-[9px] border-t border-line bg-popover pr-2.5 pl-1.5 text-item-small first:h-9 first:border-t-0 max-md:h-11 max-md:first:h-11"
+      className="group relative flex h-[37px] items-center gap-[9px] border-t border-line bg-popover pr-2.5 pl-1.5 text-item-small first:h-9 first:border-t-0 max-md:h-11 max-md:first:h-11"
     >
       {(handle) => (
         <>
-          {handle}
+          {/* Final-Settings draws a 14 px grip; the 28 px handle keeps its target around it. */}
+          <span className="flex md:-mx-[7px]">{handle}</span>
           <Popover>
             <PopoverTrigger asChild>
               <button
                 type="button"
                 aria-label={fillCopy(t.optionColor, { name: option.name })}
-                className="grid size-5 shrink-0 cursor-pointer place-items-center rounded-[5px] border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring max-md:size-11"
+                className="grid size-5 shrink-0 cursor-pointer place-items-center rounded-[5px] border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring max-md:size-11 md:-mx-[3px]"
               >
                 <ColorSquare color={option.color} />
               </button>
@@ -769,7 +770,7 @@ function OptionRow({
             }}
             className="min-w-0 flex-1 border-0 bg-transparent p-0 text-item-small outline-none focus-visible:ring-2 focus-visible:ring-focus-ring max-md:h-11"
           />
-          <span className="ml-auto shrink-0 text-metadata text-meta-foreground">
+          <span className="ml-auto shrink-0 text-metadata text-meta-foreground md:group-focus-within:invisible md:group-hover:invisible">
             {plural(t.optionCount_one, t.optionCount_other, option.itemCount)}
           </span>
           {canDelete ? (
@@ -779,7 +780,7 @@ function OptionRow({
               onClick={() =>
                 void run(() => actions.deleteOption(field.id, option.id), scope)
               }
-              className="grid size-5 shrink-0 cursor-pointer place-items-center rounded-[5px] border-0 bg-transparent p-0 text-meta-foreground opacity-0 outline-none group-hover:opacity-100 hover:text-danger-text focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus-ring max-md:size-11 max-md:opacity-100"
+              className="grid size-5 shrink-0 cursor-pointer place-items-center rounded-[5px] border-0 bg-transparent p-0 text-meta-foreground opacity-0 outline-none group-hover:opacity-100 hover:text-danger-text focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus-ring max-md:size-11 max-md:opacity-100 md:absolute md:top-1/2 md:right-2.5 md:-translate-y-1/2"
             >
               <X aria-hidden="true" className="size-3" />
             </button>
