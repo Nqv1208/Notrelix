@@ -44,10 +44,11 @@
  */
 
 import { projectComputedValues } from "../../state/mock-computed-values";
-import type {
-  CardDtoApi,
-  ChecklistDtoApi,
-  CommentDtoApi,
+import {
+  ITEM_TITLE_MAX_LENGTH,
+  type CardDtoApi,
+  type ChecklistDtoApi,
+  type CommentDtoApi,
 } from "@notrelix/work-management-core";
 import { defineMockOperation } from "../../operations/types";
 import type { MockHttpResult } from "../../transport/create-response";
@@ -152,6 +153,15 @@ function badRequest(errors: Record<string, string[]>) {
     status: 400,
     body: { message: "Validation failed", code: "VALIDATION_ERROR", errors },
   };
+}
+
+/** The 400 the real API gives a title over the Domain limit; absent when the title fits. */
+function titleTooLong(title: string | undefined) {
+  return title !== undefined && title.length > ITEM_TITLE_MAX_LENGTH
+    ? badRequest({
+        title: [`A title takes at most ${ITEM_TITLE_MAX_LENGTH} characters.`],
+      })
+    : null;
 }
 
 const MOCK_IMAGE_SVG =
@@ -380,6 +390,8 @@ export const cardsOperations = [
       };
       const list = store.getList(data.groupId || "fallback");
       if (!list) return notFound("List not found");
+      const tooLong = titleTooLong(data.title);
+      if (tooLong) return tooLong;
       const created = store.createCardByListId(data.groupId || "fallback", {
         title: data.title,
         position: data.position,
@@ -511,6 +523,8 @@ export const cardsOperations = [
         data.descriptionMd !== undefined
           ? data.descriptionMd
           : data.description;
+      const tooLong = titleTooLong(data.title);
+      if (tooLong) return tooLong;
       // Only the fields the request names change: a spread of `undefined`
       // would wipe the title of a date-only patch.
       const updated = store.updateCard(params.id, {
@@ -1326,6 +1340,8 @@ export const cardsOperations = [
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
       const title = body?.title?.trim();
       if (!title) return badRequest({ title: ["The title is required."] });
+      const tooLong = titleTooLong(title);
+      if (tooLong) return tooLong;
       const child = store.createChildItem(params.id, title);
       return child
         ? ok(childItemDto(store, child))

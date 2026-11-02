@@ -446,6 +446,26 @@ describe("MainTableView on the ERP board", () => {
     ).toBeTruthy();
   });
 
+  it("tells a refused title (400) under the editor, keeps the typed text and shows no toast", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.updateCard.mockRejectedValueOnce(
+      Object.assign(new Error("Value exceeds maximum length of 500."), {
+        status: 400,
+      }),
+    );
+    await renameErp149("Tên quá dài");
+    const note = await screen.findByRole("alert");
+    expect(note.textContent).toMatch(/Tên tối đa 500 ký tự/);
+    expect(
+      (
+        screen.getByRole("textbox", {
+          name: "Sửa tên ERP-149",
+        }) as HTMLInputElement
+      ).value,
+    ).toBe("Tên quá dài");
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
   it("tells the person when a due date lost the race and names who won", async () => {
     const { cards } = renderTable(erpOwnerAccess(), {}, true);
     cards.updateCard.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));

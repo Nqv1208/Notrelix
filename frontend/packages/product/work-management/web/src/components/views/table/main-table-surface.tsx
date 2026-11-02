@@ -72,7 +72,7 @@ export interface MainTableSurfaceProps {
   /** Editing of the custom field columns; absent = they show values only. */
   fieldEditing?: TableFieldEditing;
   /** Saves a row's title typed in place; absent = titles are read-only here. */
-  onRename?: (rowId: string, title: string) => void;
+  onRename?: (rowId: string, title: string) => void | Promise<boolean>;
   /** The viewer may add items. */
   canCreate: boolean;
   /** Opens the full "Add item" form; without it "Add item" starts the first group's inline row. */
