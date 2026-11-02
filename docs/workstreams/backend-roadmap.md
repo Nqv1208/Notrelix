@@ -1,7 +1,7 @@
 ---
 document_id: WRK-BACKEND-ROADMAP
 document_type: workstream-roadmap
-status: active
+status: superseded
 owner: engineering-delivery
 applies_to:
   - backend
@@ -54,9 +54,11 @@ review_on:
 
 # Backend Development Roadmap
 
+> **Superseded by [`product-roadmap.md`](product-roadmap.md).** Release scope, order and journeys are there; acceptance and release rules are in [`../delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md). This file is kept as history of the P0 to P6 sequencing and is not authority (`DOC-013`). Do not update it.
+
 ## 1. Purpose
 
-This document is the canonical execution roadmap for backend capability development after the backend foundation has been frozen.
+This document was the execution roadmap for backend capability development after the backend foundation was frozen.
 
 It answers:
 

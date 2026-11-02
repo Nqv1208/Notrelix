@@ -9,7 +9,7 @@ import {
   Paperclip,
   SquareCheck,
 } from "lucide-react";
-import { cn } from "@notrelix/ui-web";
+import { cn, useMediaQuery } from "@notrelix/ui-web";
 import { CardCover } from "../../card-popup/capabilities/card-cover";
 import { ColourBlindLabelMark } from "../../card-popup/capabilities/colour-blind-label-mark";
 import { useKanbanFace } from "../../card-popup/capabilities/face-context";
@@ -23,6 +23,8 @@ import {
 } from "./kanban-card.copy";
 import {
   KanbanCardQuickActions,
+  MORE_ALWAYS_QUERY,
+  hasCardMenu,
   isAssignedTo,
   type KanbanCardActions,
 } from "./kanban-card-quick-actions";
@@ -209,11 +211,14 @@ function KanbanCardContent({
   copy,
   parts,
   idPrefix,
+  reserveMore = false,
 }: {
   card: Card;
   copy: KanbanCardCopy;
   parts: ReturnType<typeof cardParts>;
   idPrefix: string;
+  /** The options button is always on the card (touch): the top row stops short of it. */
+  reserveMore?: boolean;
 }) {
   const {
     isDone,
@@ -266,10 +271,13 @@ function KanbanCardContent({
           />
         )
       ) : null}
-      {hasTop ? (
+      {hasTop || reserveMore ? (
         <div
           id={`${idPrefix}-top`}
-          className="flex min-h-[22px] min-w-0 items-center gap-1.5 text-metadata text-meta-foreground"
+          className={cn(
+            "flex min-h-[22px] min-w-0 items-center gap-1.5 text-metadata text-meta-foreground",
+            reserveMore && "pr-[37px]",
+          )}
         >
           {shownLabels.map((label, index) => {
             const tone = itemLabelTone(label);
@@ -606,6 +614,7 @@ export function KanbanCard({
   selection?: KanbanCardSelection;
 }) {
   const [dueOpen, setDueOpen] = useState(false);
+  const touchMore = useMediaQuery(MORE_ALWAYS_QUERY);
   const picked = selection?.selectedIds.has(card.id) ?? false;
   const picking = (selection?.selectedIds.size ?? 0) > 0;
   const { listeners, setNodeRef, transform, transition, isDragging } =
@@ -754,6 +763,7 @@ export function KanbanCard({
         copy={copy}
         parts={parts}
         idPrefix={descriptionId}
+        reserveMore={touchMore && actions !== undefined && hasCardMenu(actions)}
       />
     </article>
   );

@@ -30,7 +30,7 @@ review_on:
 > This file is generated discovery evidence.
 > It does not replace the canonical authority described by each source document.
 
-Document count: 96
+Document count: 97
 
 ## Documents by type
 
@@ -41,7 +41,7 @@ Document count: 96
 | `architecture-policy` | 1 |
 | `decision-registry` | 3 |
 | `delivery-handbook` | 1 |
-| `delivery-policy` | 9 |
+| `delivery-policy` | 10 |
 | `generated` | 3 |
 | `governance` | 5 |
 | `index-router` | 1 |
@@ -59,7 +59,7 @@ Document count: 96
 | Value | Count |
 |:---|---:|
 | `Accepted` | 15 |
-| `active` | 76 |
+| `active` | 77 |
 | `generated` | 3 |
 | `Superseded` | 2 |
 
@@ -100,6 +100,7 @@ Document count: 96
 | `DEL-DEFINITION-OF-DONE` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `backend`, `frontend`, `documentation`, `ci` | [`docs/delivery/definition-of-done.md`](../delivery/definition-of-done.md) |
 | `DEL-LOCAL-DEVELOPMENT` | `delivery-handbook` | `active` | `engineering-delivery` | `repository`, `local-development`, `onboarding`, `backend`, `frontend`, `docker`, `developer-tooling` | [`docs/delivery/local-development.md`](../delivery/local-development.md) |
 | `DEL-MIGRATION` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `backend`, `database`, `persisted-contracts`, `data-backfills`, `ownership-migrations`, `projections`, `message-backlogs` | [`docs/delivery/migration-policy.md`](../delivery/migration-policy.md) |
+| `DEL-PRODUCT-LIFECYCLE` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `use-case-catalog`, `releases`, `lanes`, `acceptance` | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
 | `DEL-RELEASE-ROLLOUT` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `backend`, `frontend`, `mobile`, `workers`, `infrastructure`, `feature-flags`, `releases` | [`docs/delivery/release-and-rollout.md`](../delivery/release-and-rollout.md) |
 | `DEL-TEAM-OWNERSHIP` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `product-contexts`, `backend`, `frontend`, `platform`, `quality`, `delivery`, `operations`, `infrastructure` | [`docs/delivery/team-ownership.md`](../delivery/team-ownership.md) |
 | `DOC-AUTHORITY` | `governance` | `active` | `documentation-governance` | `repository` | [`docs/governance/documentation-authority.md`](../governance/documentation-authority.md) |

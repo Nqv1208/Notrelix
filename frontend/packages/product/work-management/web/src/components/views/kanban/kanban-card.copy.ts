@@ -47,6 +47,10 @@ export const en = {
   archive: "Archive",
   delete: "Delete…",
   moveToBoard: "Move to another board…",
+  moveTo: "Move to",
+  moveCurrent: "Current",
+  moveDenied: "You can read this board but not move cards",
+  close: "Close",
 };
 
 export type KanbanCardCopy = typeof en;
@@ -88,6 +92,10 @@ export const vi: KanbanCardCopy = {
   archive: "Lưu trữ",
   delete: "Xoá…",
   moveToBoard: "Chuyển sang board khác…",
+  moveTo: "Chuyển sang",
+  moveCurrent: "Hiện tại",
+  moveDenied: "Bạn chỉ được xem board này, không chuyển thẻ được",
+  close: "Đóng",
 };
 
 export function kanbanCardCopy(locale: "vi" | "en"): KanbanCardCopy {
