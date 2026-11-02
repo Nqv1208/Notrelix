@@ -93,11 +93,7 @@ const variables = {
   workspaceId: "ws-1",
   boardId: "b-1",
   cardId: "a",
-  lane: {
-    fieldDefinitionId: FIELD,
-    optionId: "o-doing",
-    viaStatusEndpoint: true,
-  },
+  lane: { fieldDefinitionId: FIELD, optionId: "o-doing" },
   placement: {
     listId: "g-1",
     position: 2.5,
@@ -113,23 +109,17 @@ function cardOf(queryClient: QueryClient, key: readonly unknown[]) {
 }
 
 describe("runDropItemInLane", () => {
-  it("shows the card in the new lane at its new place at once, then sends the move before the status", async () => {
+  it("shows the card in the new lane at its new place at once, then sends one move with the lane's value", async () => {
     const { queryClient, key } = seeded();
-    const calls: string[] = [];
     let during: Card | undefined;
     const writer = {
       moveCard: vi.fn(async () => {
-        calls.push("move");
         during = cardOf(queryClient, key);
-        return { version: 6 };
+        return { version: 7 };
       }),
-      updateStatus: vi.fn(async () => {
-        calls.push("status");
-      }),
-      updateFieldValue: vi.fn(),
     };
     await runDropItemInLane(queryClient, writer, variables);
-    expect(calls).toEqual(["move", "status"]);
+    expect(writer.moveCard).toHaveBeenCalledTimes(1);
     expect(during).toMatchObject({ statusOptionId: "o-doing", position: 2.5 });
     expect(writer.moveCard).toHaveBeenCalledWith(
       {
@@ -138,85 +128,66 @@ describe("runDropItemInLane", () => {
         expectedVersion: 5,
         previousSiblingId: "b",
         nextSiblingId: "c",
+        laneFieldId: FIELD,
+        laneOptionId: "o-doing",
       },
       expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
-    expect(writer.updateStatus).toHaveBeenCalledWith(
-      "a",
-      "o-doing",
-      6,
-      expect.objectContaining({
-        idempotencyKey: expect.stringMatching(/^item-status:a:/),
-      }),
-    );
+    // The server's new version is kept for the next write before the refetch.
+    expect(cardOf(queryClient, key).version).toBe(7);
   });
 
-  it("writes a Select lane through its field value", async () => {
-    const { queryClient } = seeded();
-    const writer = {
-      moveCard: vi.fn(async () => ({ version: 6 })),
-      updateStatus: vi.fn(),
-      updateFieldValue: vi.fn(async () => undefined),
-    };
-    await runDropItemInLane(queryClient, writer, {
-      ...variables,
-      lane: { ...variables.lane, viaStatusEndpoint: false },
-    });
-    expect(writer.updateStatus).not.toHaveBeenCalled();
-    expect(writer.updateFieldValue).toHaveBeenCalledWith(
-      {
-        cardId: "a",
-        fieldDefinitionId: FIELD,
-        value: "o-doing",
-      },
-      { expectedVersion: 6 },
-    );
-  });
-
-  it("moves the card back to its old place on the server when the status write fails after the move", async () => {
-    const { queryClient } = seeded();
-    const writer = {
-      moveCard: vi.fn(async () => ({ version: 6 })),
-      updateStatus: vi.fn(async () => {
-        throw new Error("403");
-      }),
-      updateFieldValue: vi.fn(),
-    };
-    await expect(
-      runDropItemInLane(queryClient, writer, variables),
-    ).rejects.toThrow("403");
-    expect(writer.moveCard).toHaveBeenCalledTimes(2);
-    // a is the first card of its group: nothing before it, b after it.
-    expect(writer.moveCard).toHaveBeenLastCalledWith(
-      {
-        cardId: "a",
-        listId: "g-1",
-        expectedVersion: 6,
-        previousSiblingId: null,
-        nextSiblingId: "b",
-      },
-      expect.objectContaining({
-        idempotencyKey: expect.stringMatching(/^undo-move:a:/),
-      }),
-    );
-  });
-
-  it("puts the card back in its lane and place when the status write fails", async () => {
+  it("puts the card back in its lane and place with one rollback when the server refuses", async () => {
     const { queryClient, key } = seeded();
     const writer = {
-      moveCard: vi.fn(async () => ({ version: 6 })),
-      updateStatus: vi.fn(async () => {
-        throw new Error("403");
+      moveCard: vi.fn(async () => {
+        throw Object.assign(new Error("403"), { status: 403 });
       }),
-      updateFieldValue: vi.fn(),
     };
     await expect(
       runDropItemInLane(queryClient, writer, variables),
     ).rejects.toThrow("403");
+    // No second write undoes a first: a refusal changed nothing on the server.
+    expect(writer.moveCard).toHaveBeenCalledTimes(1);
     expect(cardOf(queryClient, key)).toMatchObject({
       statusOptionId: "o-todo",
       position: 1,
     });
+  });
+
+  it("repeats a drop whose answer never came with the same key and version, and a refused one with a new key", async () => {
+    const { queryClient } = seeded();
+    const sent: { key?: string; version: number }[] = [];
+    const outcomes: unknown[] = [
+      new Error("network"),
+      Object.assign(new Error("412"), { status: 412 }),
+      { version: 7 },
+    ];
+    const writer = {
+      moveCard: vi.fn(
+        async (
+          move: { expectedVersion: number },
+          options?: { idempotencyKey?: string },
+        ) => {
+          sent.push({
+            key: options?.idempotencyKey,
+            version: move.expectedVersion,
+          });
+          const outcome = outcomes.shift();
+          if (outcome instanceof Error) throw outcome;
+          return outcome as { version: number };
+        },
+      ),
+    };
+    await expect(
+      runDropItemInLane(queryClient, writer, variables),
+    ).rejects.toThrow("network");
+    await expect(
+      runDropItemInLane(queryClient, writer, variables),
+    ).rejects.toThrow("412");
+    await runDropItemInLane(queryClient, writer, variables);
+    expect(sent[1]).toEqual(sent[0]);
+    expect(sent[2]!.key).not.toBe(sent[0]!.key);
   });
 
   it("sends nothing when the item's version is unknown", async () => {
@@ -230,11 +201,7 @@ describe("runDropItemInLane", () => {
         ),
       })),
     }));
-    const writer = {
-      moveCard: vi.fn(),
-      updateStatus: vi.fn(),
-      updateFieldValue: vi.fn(),
-    };
+    const writer = { moveCard: vi.fn() };
     await expect(
       runDropItemInLane(queryClient, writer, variables),
     ).rejects.toThrow(/version/);

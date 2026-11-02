@@ -393,6 +393,41 @@ describe("ERP board in the mock world", () => {
       ).rejects.toBeTruthy();
     });
 
+    it("move into a lane: writes the lane's option with the place in one call, or neither", async () => {
+      const { client, store } = clientFor();
+      const cards = createCardApi(client);
+      const group = store.getLists(boardId)[0]!;
+      const item = store.getCards(group.id)[0]!;
+      const statusField = store
+        .getColumns(boardId)
+        .find((column) => column.fieldType === "status")!;
+      await expect(
+        cards.moveCard({
+          cardId: item.id,
+          listId: group.id,
+          expectedVersion: item.version ?? 1,
+          previousSiblingId: null,
+          nextSiblingId: null,
+          laneFieldId: statusField.id,
+          laneOptionId: "not-an-option",
+        }),
+      ).rejects.toBeTruthy();
+      expect(store.getCard(item.id)?.version ?? 1).toBe(item.version ?? 1);
+      const moved = await cards.moveCard({
+        cardId: item.id,
+        listId: group.id,
+        expectedVersion: item.version ?? 1,
+        previousSiblingId: null,
+        nextSiblingId: null,
+        laneFieldId: statusField.id,
+        laneOptionId: "mock-erp-status-doing",
+      });
+      expect(store.getFieldValues(item.id)[statusField.id]).toBe(
+        "mock-erp-status-doing",
+      );
+      expect(moved.version).toBe(store.getCard(item.id)?.version ?? 1);
+    });
+
     it("move: 400 without a version or a key, 403 for a commenter", async () => {
       const owner = rawFetch();
       const group = owner.store.getLists(boardId)[0]!;

@@ -218,6 +218,8 @@ export const en = {
     changeAssignee: "Change assignee of {{key}}",
     changeDue: "Change due date of {{key}}",
     editTitle: "Edit title of {{key}}",
+    titleRefused:
+      "A title takes at most {{max}} characters. Shorten it and press Enter.",
     changePriority: "Change priority of {{key}}",
     assigneeList: "Assignee",
     clearDue: "Clear due date",
@@ -583,6 +585,7 @@ export const vi: MainTableCopy = {
     changeAssignee: "Đổi người phụ trách của {{key}}",
     changeDue: "Đổi hạn của {{key}}",
     editTitle: "Sửa tên {{key}}",
+    titleRefused: "Tên tối đa {{max}} ký tự. Rút ngắn rồi nhấn Enter.",
     changePriority: "Đổi ưu tiên của {{key}}",
     assigneeList: "Người phụ trách",
     clearDue: "Bỏ hạn",

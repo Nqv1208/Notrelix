@@ -130,4 +130,16 @@ public class UpdateBoardItemTests : WorkManagementHandlerTestBase
 
         item.DueAt.Should().NotBeNull();
     }
+
+    [Theory]
+    [InlineData(500, true)]
+    [InlineData(501, false)]
+    public void Validator_TakesATitleUpToWhatTheDomainTakes(int length, bool valid)
+    {
+        BoardItem.NameMaxLength.Should().Be(500, "create and rename share the Domain limit");
+
+        new UpdateBoardItemCommandValidator()
+            .Validate(new UpdateBoardItemCommand(Guid.CreateVersion7(), new string('x', length), null, null, 1))
+            .IsValid.Should().Be(valid);
+    }
 }

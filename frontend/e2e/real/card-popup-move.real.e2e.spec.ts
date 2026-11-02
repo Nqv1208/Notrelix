@@ -65,7 +65,7 @@ async function scene(page: Page) {
 
 /**
  * The card popup's column picker on the real stack. The board is grouped by Status, so the picker is the
- * Status: picking a lane writes the Status (the same write a drag between lanes makes), the picker is busy
+ * Status: picking a lane writes the Status, with the place when there is one to choose, in one command (the same write a drag between lanes makes), the picker is busy
  * while the write is out, and the card is in the new lane after a reload. A member who may not edit sees the
  * column as a label.
  */
@@ -90,8 +90,9 @@ test("a member moves a card to another column from its popup and the move surviv
 
   const written = page.waitForResponse(
     (response) =>
-      response.request().method() === "PATCH" &&
-      response.url().includes(`/board-items/${itemId}/status`),
+      ["POST", "PATCH"].includes(response.request().method()) &&
+      /\/(move|status)$/.test(new URL(response.url()).pathname) &&
+      response.url().includes(`/board-items/${itemId}/`),
   );
   await laneRow(list, target).click();
   expect((await written).status()).toBeLessThan(300);
@@ -133,8 +134,9 @@ test("a move that lost the race is refused, the card keeps its column, and a vie
   });
   expect(touched.status).toBeLessThan(300);
   await other.close();
+  // The move (placed in the column) or the status write (no place to choose) names the version the popup read.
   await page.route(
-    new RegExp(`/board-items/${itemId}/status`),
+    new RegExp(`/board-items/${itemId}/(move|status)$`),
     async (route) => {
       const body = route.request().postDataJSON() as Record<string, unknown>;
       return route.continue({
@@ -149,8 +151,9 @@ test("a move that lost the race is refused, the card keeps its column, and a vie
   const target = options.map(laneName).find((name) => name !== before)!;
   const refused = page.waitForResponse(
     (response) =>
-      response.request().method() === "PATCH" &&
-      response.url().includes(`/board-items/${itemId}/status`),
+      ["POST", "PATCH"].includes(response.request().method()) &&
+      /\/(move|status)$/.test(new URL(response.url()).pathname) &&
+      response.url().includes(`/board-items/${itemId}/`),
   );
   await laneRow(list, target).click();
   expect((await refused).status()).toBe(412);
@@ -165,8 +168,8 @@ test("a move that lost the race is refused, the card keeps its column, and a vie
     position?: unknown;
     listId?: unknown;
   }>(page, `/board-items/${itemId}`);
-  // A placed move writes the order first and puts it back when the status is refused: the version moves on, the place does not.
-  expect(kept.version).toBeGreaterThanOrEqual(read.version + 1);
+  // The refused drop is one command that changed nothing: only the other writer's save moved the version.
+  expect(kept.version).toBe(read.version + 1);
   expect(kept.listId).toEqual(read.listId);
   expect(kept.position).toEqual(read.position);
 

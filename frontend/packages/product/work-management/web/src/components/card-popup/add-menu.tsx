@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { PopoverTrigger, cn } from "@notrelix/ui-web";
+import { ITEM_TITLE_MAX_LENGTH } from "@notrelix/work-management-core";
 import { customItemFields } from "../card-detail/item-field-editors";
 import { isFieldValueEmpty } from "../card-detail/item-field-more-editors";
 import { foldForSearch } from "../item-page/item-pickers";
@@ -98,7 +99,7 @@ function SubItemPanel({
       <PanelInput
         data-autofocus=""
         value={title}
-        maxLength={200}
+        maxLength={ITEM_TITLE_MAX_LENGTH}
         placeholder={t.subitem.placeholder}
         aria-label={t.subitem.title}
         onChange={(event) => setTitle(event.target.value)}
