@@ -52,7 +52,7 @@ export function useItemSheetActions({
       .filter((card) => card.id !== cardId)
       .sort((a, b) => a.position - b.position)
       .at(-1);
-    kanban.moveCard.mutate({
+    return kanban.moveCard.mutateAsync({
       cardId,
       listId: groupId,
       position: generatePosition(last?.position, undefined),
