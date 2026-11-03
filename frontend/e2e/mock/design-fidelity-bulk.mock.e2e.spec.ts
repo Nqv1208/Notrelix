@@ -100,7 +100,7 @@ function near(actual: number, want: number, label: string) {
 async function refuseOnce(page: Page, dark: boolean) {
   await openTable(page, dark);
   await pick(page, ["ERP-142", "ERP-144", "ERP-146"]);
-  await page.getByRole("button", { name: "Đặt hạn", exact: true }).click();
+  await page.getByRole("button", { name: "Hạn", exact: true }).click();
   await page.getByLabel("Hạn", { exact: true }).fill("2026-11-03");
   await page.getByRole("button", { name: "Áp dụng", exact: true }).click();
   const banner = page.locator("[data-table-bulk-failure]");
@@ -257,7 +257,7 @@ test.describe("A viewer's bulk bar (bk-ro)", () => {
     });
     const reason = "Bạn chỉ xem được board này, không đổi được các việc";
     await expect(bar.getByText(reason, { exact: true })).toBeVisible();
-    for (const name of ["Giao cho", "Chuyển board", "Trạng thái", "Đặt hạn"]) {
+    for (const name of ["Người phụ trách", "Thêm", "Trạng thái", "Hạn"]) {
       const control = bar.getByRole("button", { name: `${name}: ${reason}` });
       await expect(control).toHaveAttribute("aria-disabled", "true");
       expect(await style(control, "opacity")).toBe("0.5");

@@ -63,7 +63,7 @@ import { useKanbanLaneCopy } from "../kanban/use-kanban-lane-copy";
 import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
 import { MainTableError } from "./main-table-error";
 import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
-import { fillTableCopy } from "./main-table.copy";
+import { fillTableCopy, pluralTableCopy } from "./main-table.copy";
 import { MainTableSkeleton } from "./main-table-skeleton";
 import { MainTableSurface } from "./main-table-surface";
 import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
@@ -639,6 +639,35 @@ export function MainTableView({
     () => new Set([...selection].filter((id) => visibleIds.has(id))),
     [selection, visibleIds],
   );
+  // Items picked and then deleted by someone else: the board reloads without them, they leave the pick and the bar says so.
+  const [goneNotice, setGoneNotice] = useState<{
+    count: number;
+    left: number;
+  } | null>(null);
+  // What the last bulk change did, for a few seconds.
+  const [doneNotice, setDoneNotice] = useState<{
+    text: string;
+    onUndo?: () => void;
+  } | null>(null);
+  useEffect(() => {
+    if (!doneNotice) return;
+    const timer = setTimeout(() => setDoneNotice(null), 6000);
+    return () => clearTimeout(timer);
+  }, [doneNotice]);
+  const boardLoaded = !table.isLoading && groups.every((g) => !g.hasMore);
+  useEffect(() => {
+    if (!boardLoaded) return;
+    const present = new Set(allCards.map((card) => card.id));
+    const gone = [...selection].filter((id) => !present.has(id));
+    if (gone.length === 0) return;
+    setSelection(
+      (current) => new Set([...current].filter((id) => present.has(id))),
+    );
+    setGoneNotice({ count: gone.length, left: selection.size - gone.length });
+  }, [allCards, boardLoaded, selection]);
+  useEffect(() => {
+    if (selection.size === 0) setGoneNotice(null);
+  }, [selection]);
   const noteTitle = (cardId: string) => {
     const card = allCards.find((candidate) => candidate.id === cardId);
     if (card) titles.current.set(cardId, card.title);
@@ -686,16 +715,82 @@ export function MainTableView({
     for (const id of selectedList) write(id);
     setSelection(new Set());
   };
+  // The change that takes a status or due-date edit back, when every picked item held the same value before it; otherwise none.
+  const inverseBulkChange = (
+    change: BulkItemChange,
+    ids: readonly string[],
+  ): BulkItemChange | null => {
+    const rows = groups.flatMap((group) => group.rows);
+    const picked = ids.map((id) => rows.find((row) => row.id === id));
+    if (picked.some((row) => !row)) return null;
+    const same = <T,>(
+      read: (row: (typeof rows)[number]) => T,
+    ): T | undefined => {
+      const first = read(picked[0]!);
+      return picked.every((row) => read(row!) === first) ? first : undefined;
+    };
+    if (change.type === "set-status") {
+      const prev = same((row) => row.status?.id ?? null);
+      return prev ? { type: "set-status", statusOptionId: prev } : null;
+    }
+    if (change.type === "set-due-date" || change.type === "clear-due-date") {
+      const prev = same((row) => row.dueAt);
+      if (prev === undefined) return null;
+      return prev
+        ? { type: "set-due-date", dueDate: prev }
+        : { type: "clear-due-date" };
+    }
+    return null;
+  };
+  // After the server took a status, due-date or priority change: the count, and "Hoàn tác" where the inverse is one request.
+  const announceBulk = (
+    change: BulkItemChange,
+    ids: readonly string[],
+    inverse: BulkItemChange | null,
+  ) => {
+    const b = copy.bulk;
+    const text =
+      change.type === "set-status"
+        ? pluralTableCopy(
+            { one: b.doneStatus_one, other: b.doneStatus_other },
+            ids.length,
+          )
+        : change.type === "set-due-date" || change.type === "clear-due-date"
+          ? pluralTableCopy(
+              { one: b.doneDue_one, other: b.doneDue_other },
+              ids.length,
+            )
+          : change.type === "set-priority"
+            ? pluralTableCopy(
+                { one: b.donePriority_one, other: b.donePriority_other },
+                ids.length,
+              )
+            : null;
+    if (!text) return;
+    setDoneNotice({
+      text,
+      onUndo: inverse
+        ? () => {
+            setDoneNotice(null);
+            bulkMutate({ itemIds: [...ids], change: inverse });
+          }
+        : undefined,
+    });
+  };
   // Status, due date and assignee of the selected rows: one request, all or none.
   const bulkWrite = (change: BulkItemChange) => {
     for (const id of selectedList) noteTitle(id);
     const picked = [...selectedList].sort().join();
+    const inverse = inverseBulkChange(change, selectedList);
     setBulkFailure(null);
     // The selection is spent only once the server took the change; a refusal keeps it, names the item and offers a retry.
     bulkMutate(
       { itemIds: selectedList, change },
       {
-        onSuccess: () => setSelection(new Set()),
+        onSuccess: () => {
+          setSelection(new Set());
+          announceBulk(change, selectedList, inverse);
+        },
         onError: (error) => {
           const failed = bulkFailedItemId(error);
           const title = failed ? titles.current.get(failed) : undefined;
@@ -1105,6 +1200,13 @@ export function MainTableView({
             setShowDone(true);
           }}
           onShowDone={() => setShowDone(true)}
+          bulkSaving={bulkUpdate.isPending}
+          bulkDone={doneNotice}
+          goneNotice={
+            goneNotice
+              ? { ...goneNotice, onClose: () => setGoneNotice(null) }
+              : null
+          }
           bulkFailure={
             failure
               ? {

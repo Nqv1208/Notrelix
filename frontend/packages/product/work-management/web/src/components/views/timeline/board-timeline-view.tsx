@@ -59,6 +59,8 @@ export interface BoardTimelineViewProps {
     id: string | undefined,
     options?: { replace?: boolean },
   ) => void;
+  /** Opens an item of any board (a link or a dependency of the open item); absent: only this board's items open. */
+  onOpenItem?: (boardId: string, itemId: string) => void;
   /** The signed-in member (from the host's session): offers "Giao cho tôi". */
   currentUserId?: string | null;
   /** The route `filter` parameter (compound or older facet form), shared with the other views. */
@@ -108,6 +110,7 @@ export function BoardTimelineView({
   selectedItemId,
   currentUserId,
   onSelectedItemChange,
+  onOpenItem,
   filter: filterParam,
   onFilterChange,
   onOpenCalendar,
@@ -525,6 +528,10 @@ export function BoardTimelineView({
       {selectedItemId && board ? (
         <KanbanSelectedItem
           board={board}
+          onOpenItem={(targetBoardId, itemId) => {
+            if (onOpenItem) onOpenItem(targetBoardId, itemId);
+            else if (targetBoardId === boardId) onSelectedItemChange?.(itemId);
+          }}
           cardId={selectedItemId}
           capabilities={capabilities}
           groups={sheetGroups}

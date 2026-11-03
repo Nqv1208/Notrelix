@@ -420,6 +420,9 @@ test("keyboard: the picker opens from the keyboard, the select takes arrow keys 
     .first()
     .click();
   const trigger = page.getByTitle("Chuyển thẻ sang cột khác");
+  // The popup moves focus into itself as it opens: focus the trigger only after that, or the picker returns focus there.
+  await expect(trigger).toBeVisible();
+  await page.waitForTimeout(500);
   await trigger.focus();
   await page.keyboard.press("Enter");
   const picker = page.getByRole("dialog", { name: "Chuyển sang cột" });
