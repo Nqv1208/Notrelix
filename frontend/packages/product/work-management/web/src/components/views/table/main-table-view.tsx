@@ -665,7 +665,8 @@ export function MainTableView({
   }, []);
 
   if (table.isLoading) return <MainTableSkeleton copy={copy} />;
-  if (table.error || !board) return <MainTableError copy={copy} />;
+  if (table.error || !board)
+    return <MainTableError copy={copy} onRetry={() => void table.refetch()} />;
 
   const writeStatus = (cardId: string, statusOptionId: string) => {
     noteTitle(cardId);

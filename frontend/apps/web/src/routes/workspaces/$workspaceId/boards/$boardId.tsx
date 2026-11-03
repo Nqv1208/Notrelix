@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { useParams, useSearch, useNavigate } from "@tanstack/react-router";
 import { useCurrentUser } from "@notrelix/features-auth";
 import { useLocale } from "@notrelix/i18n";
@@ -9,6 +8,8 @@ import {
   BoardHeaderDataContext,
   BoardLayoutShell,
   BoardArchiveHost,
+  BoardGone,
+  ViewGoneBanner,
   BoardTrashHost,
   BoardWorkspaceViewContent,
   useBoardHeaderCopy,
@@ -55,9 +56,10 @@ export function BoardPage() {
   const viewType = activeSaved?.viewMode ?? search.view;
   const view = { type: viewType, name: viewType.toUpperCase() };
 
-  const { board } = useFullBoard(boardId, workspaceId);
+  const { board, error: boardError } = useFullBoard(boardId, workspaceId);
   const headerCopy = useBoardHeaderCopy();
   const goneNotice = useRef<string | null>(null);
+  const [viewGone, setViewGone] = useState(false);
   // An address that names a saved view that is gone shows the default once, with one notice.
   useEffect(() => {
     const wanted = search.savedView;
@@ -65,20 +67,13 @@ export function BoardPage() {
     if (saved.views.some((entry) => entry.id === wanted)) return;
     if (goneNotice.current !== wanted) {
       goneNotice.current = wanted;
-      toast(headerCopy.viewGone);
+      setViewGone(true);
     }
     void navigate({
       search: (prev: BoardSearch) => ({ ...prev, savedView: undefined }),
       replace: true,
     });
-  }, [
-    headerCopy.viewGone,
-    navigate,
-    saved.isError,
-    saved.isLoading,
-    saved.views,
-    search.savedView,
-  ]);
+  }, [navigate, saved.isError, saved.isLoading, saved.views, search.savedView]);
   const currentUser = useCurrentUser();
   const connection = useRealtimeConnection();
   const { locale } = useLocale();
@@ -183,6 +178,21 @@ export function BoardPage() {
     navigate({ search: (prev: BoardSearch) => ({ ...prev, groupBy }) });
   };
 
+  // A board that is gone or not visible answers the same page, without its name, tabs or cards.
+  const boardKind = (boardError as { kind?: string } | null)?.kind;
+  if (boardKind === "not_found" || boardKind === "forbidden")
+    return (
+      <BoardGone
+        copy={headerCopy}
+        onHome={() =>
+          void navigate({
+            to: "/workspaces/$workspaceId/home",
+            params: { workspaceId },
+          })
+        }
+      />
+    );
+
   return (
     <BoardHeaderCopyContext.Provider value={headerCopy}>
       <BoardHeaderDataContext.Provider value={headerData}>
@@ -196,6 +206,14 @@ export function BoardPage() {
           onAddView={(layout) => void handleAddView(layout)}
           onOpenTrash={() => setTrashOpen(true)}
           onOpenArchive={() => setArchiveOpen(true)}
+          banner={
+            viewGone ? (
+              <ViewGoneBanner
+                copy={headerCopy}
+                onClose={() => setViewGone(false)}
+              />
+            ) : undefined
+          }
           notice={
             <BoardConnectionNotice
               state={connection.state}

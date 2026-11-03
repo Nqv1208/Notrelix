@@ -26,7 +26,7 @@ import type {
   TableStatusOption,
 } from "./table-model";
 import { StatusDot } from "./table-parts";
-import { TableEmpty, TableNoResults } from "./table-states";
+import { TableNoResults } from "./table-states";
 import type { TableRowActions } from "./table-row";
 
 /** A group shows this many rows, then "Xem thêm N việc" (the mobile Board artboard, list view). */
@@ -475,8 +475,6 @@ export function TablePhoneList({
           hidesDone={hideDone}
           onClear={onClearFilter}
         />
-      ) : groups.length === 0 ? (
-        <TableEmpty copy={copy} />
       ) : null}
       {groups.map((group) => {
         const collapsed = collapsedGroupIds.has(group.id);

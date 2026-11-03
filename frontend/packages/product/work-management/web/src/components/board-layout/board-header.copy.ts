@@ -26,7 +26,17 @@ export const en = {
   untitledBoard: "Board",
   addView: "Add view",
   /** One notice when the address names a saved view that no longer exists. */
-  viewGone: "That view no longer exists. Showing the default view.",
+  viewGone: {
+    title: "The view you opened no longer exists",
+    body: "Showing the board's default view.",
+    close: "Close",
+  },
+  /** The board is missing or the person may not see it: one answer for both (BC-Shell NP). */
+  boardGone: {
+    title: "You can't view this page",
+    body: "The page doesn't exist or you don't have permission to view it. Ask the board manager if you need access.",
+    home: "Back to home",
+  },
   /** Marks a saved view only its creator sees. */
   privateView: "Private view",
   header: {
@@ -119,7 +129,16 @@ export const vi: BoardHeaderCopy = {
   },
   untitledBoard: "Board",
   addView: "Thêm chế độ xem",
-  viewGone: "Chế độ xem này không còn nữa. Đang hiện chế độ xem mặc định.",
+  viewGone: {
+    title: "Chế độ xem này không còn nữa",
+    body: "Đang hiện chế độ xem mặc định.",
+    close: "Đóng",
+  },
+  boardGone: {
+    title: "Bạn không xem được trang này",
+    body: "Trang không tồn tại hoặc bạn chưa có quyền xem. Hỏi người quản lý board nếu bạn cần quyền truy cập.",
+    home: "Về trang chủ",
+  },
   privateView: "Chế độ xem riêng tư",
   header: {
     settings: "Thiết lập",

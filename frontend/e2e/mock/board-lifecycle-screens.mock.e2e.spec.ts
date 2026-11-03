@@ -171,10 +171,9 @@ test("an address that names a view that is gone shows the default view once, wit
     }
   });
   await page.goto(`${ROADMAP}?savedView=00000000-0000-4000-8000-0000000000aa`);
-  const notice = page.getByText(
-    "Chế độ xem này không còn nữa. Đang hiện chế độ xem mặc định.",
-  );
+  const notice = page.getByText("Chế độ xem này không còn nữa");
   await expect(notice).toHaveCount(1);
+  await expect(page.getByText("Đang hiện chế độ xem mặc định.")).toHaveCount(1);
   await expect(page).not.toHaveURL(/savedView=/);
   await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
 });
