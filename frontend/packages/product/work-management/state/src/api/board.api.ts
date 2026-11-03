@@ -48,12 +48,13 @@ export const defaultTableViewConfig: ViewConfig = {
 
 /** The query string of a paged read: the filter and sort only when set, the rest as given. */
 function criteriaQuery(
-  criteria: { filter: string; sort: string },
+  criteria: { filter: string; sort: string; search?: string },
   rest: Record<string, string>,
 ): string {
   const params = new URLSearchParams(rest);
   if (criteria.filter) params.set("filter", criteria.filter);
   if (criteria.sort) params.set("sort", criteria.sort);
+  if (criteria.search) params.set("q", criteria.search);
   return params.toString();
 }
 
@@ -79,7 +80,7 @@ export function createBoardApi(client: NotrelixClient) {
       boardId: string,
       context: {
         workspaceId: string;
-        page?: { size: number; filter: string; sort: string };
+        page?: { size: number; filter: string; sort: string; search?: string };
       },
     ): Promise<FullBoardResponse> {
       const query = context.page
@@ -110,6 +111,8 @@ export function createBoardApi(client: NotrelixClient) {
         limit: number;
         filter: string;
         sort: string;
+        /** Keeps the items whose title or key holds the text. */
+        search?: string;
         board: Board;
         fieldDefinitions: FieldDefinition[];
       },

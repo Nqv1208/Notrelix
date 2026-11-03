@@ -10,19 +10,23 @@ public sealed record CriteriaSortLevel(string FieldId, bool Descending);
 /// compound filter <c>c2:and~field.op.value~...</c> and the sort <c>field.asc~field.desc</c>. Parts are
 /// percent-encoded so "." and "~" stay separators. The same criteria drive the paged read and its filtered totals.
 /// </summary>
-public sealed record BoardItemCriteria(bool MatchAll, IReadOnlyList<CriteriaCondition> Conditions, IReadOnlyList<CriteriaSortLevel> Sorts)
+public sealed record BoardItemCriteria(bool MatchAll, IReadOnlyList<CriteriaCondition> Conditions, IReadOnlyList<CriteriaSortLevel> Sorts, string? Search = null)
 {
     public const int MaxSortLevels = 3;
     public const int MaxConditions = 20;
     public const int MaxLength = 4000;
+    public const int MaxSearchLength = 200;
 
     public static readonly BoardItemCriteria None = new(true, [], []);
 
     public bool HasFilter => Conditions.Count > 0;
 
-    public static BoardItemCriteria Parse(string? filter, string? sort)
+    /// <param name="search">Keeps the Items whose title or key holds the text, ignoring case and accents; it narrows the filtered counts, not the lane's own size.</param>
+    public static BoardItemCriteria Parse(string? filter, string? sort, string? search = null)
     {
-        if (string.IsNullOrWhiteSpace(filter) && string.IsNullOrWhiteSpace(sort)) return None;
+        var term = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
+        if (term is { Length: > MaxSearchLength }) throw Refuse("q", "The search text is too long.");
+        if (string.IsNullOrWhiteSpace(filter) && string.IsNullOrWhiteSpace(sort)) return term is null ? None : None with { Search = term };
         if ((filter?.Length ?? 0) > MaxLength) throw Refuse("filter", "The filter is too long.");
         if ((sort?.Length ?? 0) > MaxLength) throw Refuse("sort", "The sort is too long.");
 
@@ -65,7 +69,7 @@ public sealed record BoardItemCriteria(bool MatchAll, IReadOnlyList<CriteriaCond
             if (sorts.Count > MaxSortLevels) throw Refuse("sort", $"A sort has at most {MaxSortLevels} levels.");
         }
 
-        return new BoardItemCriteria(matchAll, conditions, sorts);
+        return new BoardItemCriteria(matchAll, conditions, sorts, term);
     }
 
     public static Notrelix.Application.Common.Exceptions.ValidationException Refuse(string property, string message) =>
