@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { findClippedText } from "./support/text-clipping";
 import {
   audit,
   prepare,
@@ -65,6 +66,147 @@ for (const viewport of viewports) {
       const confirm = page.getByRole("alertdialog");
       await expect(confirm).toBeVisible();
       await audit(page, "roster-confirm", viewport, dark, confirm);
+    });
+
+    // Vietnamese is the product default and its labels are the longest: the same audit at 390 px with the labels
+    // the people actually read, found by structure because the English accessible names do not apply.
+    if (viewport.width === 390) {
+      test(`roster in Vietnamese, ${mode}`, async ({ page }) => {
+        await prepare(page, viewport, dark, "vi");
+        await page.goto(`${WORKSPACE}/members`);
+        await expect(
+          page.getByRole("heading", { level: 1, name: "Thành viên" }),
+        ).toBeVisible();
+        await expect(page.getByRole("combobox").first()).toBeVisible();
+        await audit(page, "roster-vi", viewport, dark, page.locator("main"));
+        // No role is cut ("Quản t…") and no name runs past two lines.
+        expect(
+          await findClippedText(page, "main table", ".sr-only"),
+          "roster-vi: clipped text",
+        ).toEqual([]);
+        const tall = await page
+          .locator("main tbody tr td:first-child")
+          .evaluateAll((cells) =>
+            cells
+              .filter((cell) => cell.getBoundingClientRect().height > 80)
+              .map((cell) => (cell.textContent ?? "").slice(0, 30)),
+          );
+        expect(tall, "roster-vi: a member cell taller than 80 px").toEqual([]);
+        await page
+          .locator('main tbody tr button[aria-haspopup="menu"]')
+          .first()
+          .click();
+        await expect(page.getByRole("menuitem").first()).toBeVisible();
+        await audit(
+          page,
+          "roster-menu-vi",
+          viewport,
+          dark,
+          page.locator("main"),
+        );
+      });
+
+      test(`invitations in Vietnamese, ${mode}`, async ({ page }) => {
+        await prepare(page, viewport, dark, "vi");
+        await page.goto(`${WORKSPACE}/members?tab=invitations`);
+        await expect(page.getByRole("form")).toBeVisible();
+        await audit(
+          page,
+          "invitations-vi",
+          viewport,
+          dark,
+          page.locator("main"),
+        );
+      });
+    }
+
+    test(`workspace settings and the delete confirmation, ${mode}`, async ({
+      page,
+    }) => {
+      await prepare(page, viewport, dark);
+      await page.goto(`${WORKSPACE}/settings`);
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Settings" }),
+      ).toBeVisible();
+      await audit(
+        page,
+        "workspace-settings",
+        viewport,
+        dark,
+        page.locator("main"),
+      );
+      // The danger zone asks for the typed name before it deletes.
+      await page
+        .getByRole("button", { name: /^Delete workspace/ })
+        .first()
+        .click();
+      const dialog = page.getByRole("alertdialog");
+      await expect(dialog).toBeVisible();
+      await audit(page, "workspace-delete", viewport, dark, dialog);
+    });
+
+    test(`my workspaces with the archived and recently deleted groups, ${mode}`, async ({
+      page,
+    }) => {
+      await prepare(page, viewport, dark);
+      await page.goto(`${WORKSPACE}/account/workspaces`);
+      await expect(
+        page.getByRole("heading", { level: 2, name: "Your workspaces" }),
+      ).toBeVisible();
+      await audit(
+        page,
+        "account-workspaces",
+        viewport,
+        dark,
+        page.locator("main"),
+      );
+    });
+
+    test(`workspace switcher in the system rail, ${mode}`, async ({ page }) => {
+      await prepare(page, viewport, dark);
+      await page.goto(WORKSPACE);
+      if (viewport.width < 768) {
+        await page
+          .getByRole("button", { name: "Show or hide navigation" })
+          .first()
+          .click();
+      }
+      const add = page.getByRole("button", { name: "Add", exact: true });
+      // Pinned open on a wide screen; opened from the workspace chip elsewhere.
+      if (!(await add.isVisible()))
+        await page
+          .getByRole("button", { name: /open the Notrelix system rail/ })
+          .first()
+          .click();
+      await expect(add).toBeVisible();
+      await audit(
+        page,
+        "workspace-switcher",
+        viewport,
+        dark,
+        add.locator("xpath=ancestor::*[self::nav or self::aside][1]"),
+      );
+    });
+
+    test(`create workspace dialog, ${mode}`, async ({ page }) => {
+      await prepare(page, viewport, dark);
+      await page.goto(WORKSPACE);
+      if (viewport.width < 768) {
+        await page
+          .getByRole("button", { name: "Show or hide navigation" })
+          .first()
+          .click();
+      }
+      const add = page.getByRole("button", { name: "Add", exact: true });
+      if (!(await add.isVisible()))
+        await page
+          .getByRole("button", { name: /open the Notrelix system rail/ })
+          .first()
+          .click();
+      await add.click();
+      const dialog = page.getByRole("dialog", { name: "Create workspace" });
+      await expect(dialog).toBeVisible();
+      await audit(page, "workspace-create", viewport, dark, dialog);
     });
 
     test(`role-lowering confirmation, ${mode}`, async ({ page }) => {
@@ -235,8 +377,15 @@ for (const viewport of viewports) {
         .getByRole("button", { name: /^Move .* to a Space$/ })
         .first();
       // The button shows on hover of its row on a desktop; on a phone it is always there and must take a plain tap.
-      if (viewport.width < 768) await move.click();
-      else await move.click({ force: true });
+      if (viewport.width < 768) {
+        // In reach without scrolling the table sideways: its box ends inside the screen.
+        const box = await move.boundingBox();
+        expect(
+          (box?.x ?? Infinity) + (box?.width ?? 0),
+          "library: Move ends inside the phone screen",
+        ).toBeLessThanOrEqual(viewport.width);
+        await move.click();
+      } else await move.click({ force: true });
       const dialog = page.getByRole("dialog", { name: /to a Space$/ });
       await expect(dialog).toBeVisible();
       await audit(page, "space-placement", viewport, dark, dialog);

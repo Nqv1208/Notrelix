@@ -49,4 +49,55 @@ public class BoardTemplateTests
         template.Name.Should().Be("Sprint");
         template.Description.Should().BeNull();
     }
+
+    private static BoardTemplate Saved() =>
+        BoardTemplate.Create(AccountId, WorkspaceId, "Sprint", null, JsonValue.EmptyObject(), DateTimeOffset.UtcNow);
+
+    [Fact]
+    public void Publish_ADraft_PublishesAndBumpsTheVersion_AndPublishingAgainIsANoOp()
+    {
+        var template = Saved();
+        var actor = Guid.NewGuid();
+
+        template.Publish(actor, DateTimeOffset.UtcNow);
+        var version = template.Version;
+        var events = template.DomainEvents.Count;
+        template.Publish(actor, DateTimeOffset.UtcNow);
+
+        template.Status.Should().Be(TemplateStatus.Published);
+        template.Version.Should().Be(version, "publishing a published template changes nothing");
+        template.DomainEvents.Should().HaveCount(events);
+    }
+
+    [Fact]
+    public void Archive_APublishedTemplate_ArchivesIt_AndArchivingAgainIsANoOp_AndAnArchivedOneCannotBePublished()
+    {
+        var template = Saved();
+        var actor = Guid.NewGuid();
+        template.Publish(actor, DateTimeOffset.UtcNow);
+
+        template.Archive(actor, DateTimeOffset.UtcNow);
+        var version = template.Version;
+        template.Archive(actor, DateTimeOffset.UtcNow);
+        var publishArchived = () => template.Publish(actor, DateTimeOffset.UtcNow);
+
+        template.Status.Should().Be(TemplateStatus.Archived);
+        template.Version.Should().Be(version, "archiving an archived template changes nothing");
+        publishArchived.Should().Throw<BusinessRuleException>("an archived template is restored first");
+        template.Status.Should().Be(TemplateStatus.Archived);
+        template.Version.Should().Be(version, "the refused publish left no change");
+    }
+
+    [Fact]
+    public void Delete_ATemplate_DeletesIt_AndItCannotBePublishedAfterwards()
+    {
+        var template = Saved();
+        var actor = Guid.NewGuid();
+
+        template.Delete(actor, DateTimeOffset.UtcNow);
+        var publishDeleted = () => template.Publish(actor, DateTimeOffset.UtcNow);
+
+        template.IsDeleted.Should().BeTrue();
+        publishDeleted.Should().Throw<BusinessRuleException>();
+    }
 }

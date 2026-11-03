@@ -687,7 +687,11 @@ export function WorkspaceLibrarySurface({
                   <col className="w-24" />
                   <col className="w-40" />
                   <col className="w-32" />
-                  <col className={onMoveBoard || onMoveDoc ? "w-24" : "w-20"} />
+                  <col
+                    className={
+                      onMoveBoard || onMoveDoc ? "w-28 md:w-24" : "w-28 md:w-20"
+                    }
+                  />
                 </colgroup>
                 <thead className="sticky top-0 z-sticky bg-surface-panel">
                   <tr aria-rowindex={1}>
@@ -744,7 +748,7 @@ export function WorkspaceLibrarySurface({
                     ))}
                     <th
                       scope="col"
-                      className="h-9 border-b border-border px-2 text-right align-middle text-metadata font-medium text-muted-foreground"
+                      className="h-9 border-b border-border bg-surface-panel px-2 text-right align-middle text-metadata font-medium text-muted-foreground max-md:sticky max-md:right-0 max-md:z-10"
                     >
                       {copy.columns.pinned}
                     </th>
@@ -854,7 +858,16 @@ export function WorkspaceLibrarySurface({
                             </>
                           )}
                         </td>
-                        <td className="px-2 text-right align-middle whitespace-nowrap">
+                        <td
+                          className={cn(
+                            "px-2 text-right align-middle whitespace-nowrap",
+                            // A phone scrolls the wide table sideways: Move and Pin stay at the right edge, in reach.
+                            "max-md:sticky max-md:right-0 max-md:z-10",
+                            isSelected
+                              ? "bg-state-selected"
+                              : "bg-surface-panel group-hover/row:bg-state-hover",
+                          )}
+                        >
                           {onMoveEntry ? (
                             <Button
                               type="button"
