@@ -1,5 +1,8 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { staleSchemaOf } from "@notrelix/work-management-state";
+import {
+  isRequiredRefusal,
+  staleSchemaOf,
+} from "@notrelix/work-management-state";
 import type { CellWrite } from "./table-field-cell";
 
 type Send = (
@@ -63,7 +66,9 @@ export function useFieldCellWrites(send: Send, reload: () => Promise<unknown>) {
             key,
             schema
               ? { status: "schema", value, schema }
-              : { status: isConflict(error) ? "conflict" : "error", value },
+              : isRequiredRefusal(error)
+                ? { status: "error", value, required: true }
+                : { status: isConflict(error) ? "conflict" : "error", value },
           );
         },
       );

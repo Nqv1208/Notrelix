@@ -336,6 +336,8 @@ export const en = {
     defaultHint:
       "Applies only to items created from now on. The {{count}} existing items keep their value.",
     required: "Required when creating an item",
+    requiredNeedsDefault:
+      "Pick a default value before making this field required",
     requiredHint: "The form and the “Add item” button will ask for this field",
     guidance: "Guidance for the person filling it in",
     guidancePlaceholder: "A sentence that helps fill this field in",
@@ -1069,6 +1071,7 @@ export const vi: BoardSettingsCopy = {
     defaultHint:
       "Chỉ áp dụng cho việc tạo từ bây giờ. {{count}} việc hiện có giữ nguyên giá trị.",
     required: "Bắt buộc khi tạo việc",
+    requiredNeedsDefault: "Chọn giá trị mặc định trước khi bắt buộc trường này",
     requiredHint: 'Form và nút "Thêm công việc" sẽ hỏi trường này',
     guidance: "Hướng dẫn cho người điền",
     guidancePlaceholder: "Một câu giúp người dùng điền trường này",

@@ -64,6 +64,7 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_FieldSettings_StatusMustIncludeTransitions = "WorkManagement_FieldSettings_StatusMustIncludeTransitions";
     public const string WorkManagement_FieldSettings_RequiredMustBeBoolean = "WorkManagement_FieldSettings_RequiredMustBeBoolean";
     public const string WorkManagement_FieldSettings_GuidanceInvalid = "WorkManagement_FieldSettings_GuidanceInvalid";
+    public const string WorkManagement_FieldSettings_RequiredNeedsDefault = "WorkManagement_FieldSettings_RequiredNeedsDefault";
     public const string WorkManagement_FieldValue_Required = "WorkManagement_FieldValue_Required";
     public const string WorkManagement_FieldSettings_FormulaExpressionRequired = "WorkManagement_FieldSettings_FormulaExpressionRequired";
     public const string WorkManagement_FieldSettings_FormulaSyntaxInvalid = "WorkManagement_FieldSettings_FormulaSyntaxInvalid";

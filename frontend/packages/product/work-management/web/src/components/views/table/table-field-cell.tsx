@@ -31,6 +31,8 @@ export interface CellWrite {
   readonly status: "pending" | "error" | "conflict" | "schema" | "reloading";
   /** What the board changed under the write (`schema`). */
   readonly schema?: StaleSchemaDetail;
+  /** The refusal is "this field is required": nothing was stored and retrying cannot help. */
+  readonly required?: boolean;
   /** The value the person wrote; shown while the write has not settled. */
   readonly value: unknown;
 }
@@ -477,6 +479,31 @@ export function TableFieldCell({
           {field.fieldType === "checkbox" ? null : f.saving}
         </span>
       </>
+    );
+  if (write.status === "error" && write.required)
+    return (
+      <AnchoredNote
+        tone="danger"
+        className="ring-1 ring-danger-text"
+        note={
+          <div role="alert" className="flex flex-col gap-1">
+            <span className="flex items-center gap-1 text-crumb font-semibold text-danger-text">
+              <AlertCircle className="size-3.5" aria-hidden="true" />
+              {fillTableCopy(f.requiredRefused, { field: field.name })}
+            </span>
+            <span>{f.requiredRefusedBody}</span>
+            <button
+              type="button"
+              onClick={onUseTheirs}
+              className="h-6 w-fit cursor-pointer rounded-md border border-line-strong bg-popover px-2 text-crumb font-medium text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring dark:bg-card"
+            >
+              {f.requiredDismiss}
+            </button>
+          </div>
+        }
+      >
+        {editor}
+      </AnchoredNote>
     );
   if (write.status === "error")
     return (

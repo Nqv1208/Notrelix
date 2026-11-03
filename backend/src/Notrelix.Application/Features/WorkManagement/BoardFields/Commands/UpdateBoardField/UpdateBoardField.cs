@@ -77,6 +77,12 @@ public class UpdateBoardFieldCommandHandler : IRequestHandler<UpdateBoardFieldCo
             column.SetDefaultValue(fallback.IsEmpty ? null : fallback, _currentUser.UserId, now);
         }
 
+        // Quick add must never be blocked: a required field needs a default, except a checkbox whose empty value is unchecked.
+        if ((request.Settings is not null || request.DefaultValueJson is not null)
+            && column.IsRequired && column.DefaultValue is null && column.Type != FieldType.Checkbox)
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(Notrelix.Domain.WorkManagement.WorkManagementRuleCodes.WorkManagement_FieldSettings_RequiredNeedsDefault,
+                $"The field '{column.Name}' can be required only when it has a default value.");
+
         return Result.Success();
     }
 }

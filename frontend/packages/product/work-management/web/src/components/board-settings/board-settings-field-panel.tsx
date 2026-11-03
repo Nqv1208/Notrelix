@@ -234,6 +234,9 @@ export function FieldPanel({
     setNameTaken(!result.ok && result.field === "name");
   }
 
+  // Quick add must never be blocked: a field is required only with a default, or when empty is already safe (a checkbox).
+  const needsDefault =
+    required && defaultId === null && field.type !== "checkbox";
   const Icon = fieldIcon(field.type, field.key);
   const hasOptions = field.hasColumn && field.options.length > 0;
   const canArchive = field.type !== "status";
@@ -406,6 +409,15 @@ export function FieldPanel({
                 label={t.required}
               />
             </div>
+            {needsDefault ? (
+              <p
+                role="alert"
+                className="m-0 flex items-start gap-1.5 text-metadata leading-[1.45] font-medium text-danger-text"
+              >
+                <Info aria-hidden="true" className="size-3.5 shrink-0" />
+                {t.requiredNeedsDefault}
+              </p>
+            ) : null}
 
             <FormGroup label={t.guidance} htmlFor={guidanceId}>
               <textarea
@@ -487,7 +499,9 @@ export function FieldPanel({
           </button>
           <button
             type="button"
-            disabled={trimmed === "" || saving || conflict !== null}
+            disabled={
+              trimmed === "" || saving || conflict !== null || needsDefault
+            }
             onClick={() => void save()}
             className={BUTTON_CLASS.primary}
           >

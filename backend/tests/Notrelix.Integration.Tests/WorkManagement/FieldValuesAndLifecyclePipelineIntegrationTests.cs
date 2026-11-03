@@ -329,7 +329,7 @@ public sealed class FieldValuesAndLifecyclePipelineIntegrationTests : IAsyncLife
         var scene = await SeedAsync(FieldType.Text);
         using var owner = Provider(scene.Stack);
         await WriteAsync(owner, scene, "giữ lại");
-        await OrgTreeTestHost.SendAsync(owner, new UpdateBoardFieldCommand(scene.BoardId, scene.FieldId, null, "{\"required\":true}", await FieldVersionAsync(scene.FieldId)));
+        await OrgTreeTestHost.SendAsync(owner, new UpdateBoardFieldCommand(scene.BoardId, scene.FieldId, null, "{\"required\":true}", await FieldVersionAsync(scene.FieldId), "\"mặc định\""));
         var version = await VersionAsync(scene.ItemId);
 
         var byNull = () => WriteAsync(owner, scene, null);
@@ -343,7 +343,18 @@ public sealed class FieldValuesAndLifecyclePipelineIntegrationTests : IAsyncLife
     }
 
     [Fact]
-    public async Task ANewItem_GetsTheDefault_AndARequiredFieldWithoutOneRefusesTheCreate()
+    public async Task ACheckboxCanBeRequiredWithoutADefault_BecauseEmptyMeansUnchecked()
+    {
+        var scene = await SeedAsync(FieldType.Checkbox);
+        using var owner = Provider(scene.Stack);
+
+        await OrgTreeTestHost.SendAsync(owner, new UpdateBoardFieldCommand(scene.BoardId, scene.FieldId, null, "{\"required\":true}", await FieldVersionAsync(scene.FieldId)));
+
+        (await _host.ReadAsync(c => c.BoardFields.AsNoTracking().SingleAsync(f => f.Id == scene.FieldId))).IsRequired.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ARequiredFieldNeedsADefault_AndANewItemGetsIt()
     {
         var scene = await SeedAsync(FieldType.Select);
         using var owner = Provider(scene.Stack);
@@ -360,12 +371,11 @@ public sealed class FieldValuesAndLifecyclePipelineIntegrationTests : IAsyncLife
             return item;
         }
 
-        await OrgTreeTestHost.SendAsync(owner, new UpdateBoardFieldCommand(scene.BoardId, scene.FieldId, null, "{\"required\":true}", await FieldVersionAsync(scene.FieldId)));
-        var refused = CreateAsync;
-        (await refused.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_FieldValue_Required);
-        (await _host.ReadAsync(c => c.BoardItems.AsNoTracking().CountAsync(i => i.BoardId == scene.BoardId && i.Name == "Việc mới"))).Should().Be(0);
+        var noDefault = async () => await OrgTreeTestHost.SendAsync(owner, new UpdateBoardFieldCommand(scene.BoardId, scene.FieldId, null, "{\"required\":true}", await FieldVersionAsync(scene.FieldId)));
+        (await noDefault.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_FieldSettings_RequiredNeedsDefault);
+        (await _host.ReadAsync(c => c.BoardFields.AsNoTracking().SingleAsync(f => f.Id == scene.FieldId))).IsRequired.Should().BeFalse("a refused write stores nothing");
 
-        await OrgTreeTestHost.SendAsync(owner, new UpdateBoardFieldCommand(scene.BoardId, scene.FieldId, null, null, await FieldVersionAsync(scene.FieldId), $"\"{scene.Options[1]}\""));
+        await OrgTreeTestHost.SendAsync(owner, new UpdateBoardFieldCommand(scene.BoardId, scene.FieldId, null, "{\"required\":true}", await FieldVersionAsync(scene.FieldId), $"\"{scene.Options[1]}\""));
         var created = await CreateAsync();
 
         (await StoredValueAsync(created.Id, scene.FieldId)).Should().Contain(scene.Options[1].ToString(), "the default is applied when the item is created");

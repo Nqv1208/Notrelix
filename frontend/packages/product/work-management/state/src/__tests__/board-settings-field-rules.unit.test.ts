@@ -39,3 +39,14 @@ describe("field rules in the settings JSON", () => {
     );
   });
 });
+
+describe("the required refusal", () => {
+  it("is told apart by its rule code", async () => {
+    const { isRequiredRefusal } = await import("../queries/use-item-conflict");
+    expect(
+      isRequiredRefusal({ ruleCode: "WorkManagement_FieldValue_Required" }),
+    ).toBe(true);
+    expect(isRequiredRefusal({ ruleCode: "other" })).toBe(false);
+    expect(isRequiredRefusal(null)).toBe(false);
+  });
+});

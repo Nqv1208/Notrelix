@@ -151,6 +151,7 @@ export function PillNote({ field }: { field: FieldDefinition }) {
       </div>
     );
   if (save?.status !== "error") return null;
+  const required = save.reason === "required";
   return (
     <div
       role="alert"
@@ -158,10 +159,12 @@ export function PillNote({ field }: { field: FieldDefinition }) {
     >
       <span className="inline-flex items-center gap-[5px] text-[12px] leading-[1.45] font-semibold text-danger-text">
         <AlertCircle aria-hidden="true" className="size-4" />
-        {fillPopupCopy(t.saveFailed, { name: field.name })}
+        {fillPopupCopy(required ? t.requiredRefused : t.saveFailed, {
+          name: field.name,
+        })}
       </span>
       <span className="text-[12.5px] leading-[1.45] text-meta-foreground">
-        {t.saveFailedBody}
+        {required ? t.requiredRefusedBody : t.saveFailedBody}
       </span>
       <div className="flex justify-end gap-1.5">
         <PanelBtn
@@ -172,15 +175,17 @@ export function PillNote({ field }: { field: FieldDefinition }) {
         >
           {t.discard}
         </PanelBtn>
-        <PanelBtn
-          small
-          variant="primary"
-          className={NOTE_BTN}
-          onClick={save.retry}
-        >
-          <RefreshCw aria-hidden="true" className="size-3.5" />
-          {t.retry}
-        </PanelBtn>
+        {required ? null : (
+          <PanelBtn
+            small
+            variant="primary"
+            className={NOTE_BTN}
+            onClick={save.retry}
+          >
+            <RefreshCw aria-hidden="true" className="size-3.5" />
+            {t.retry}
+          </PanelBtn>
+        )}
       </div>
     </div>
   );
