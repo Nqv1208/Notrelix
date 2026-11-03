@@ -19,7 +19,6 @@ vi.mock("@notrelix/work-management-state", () => ({
   useBoardTrash: () => ({ total: 0 }),
   useSavedViews: () => ({ views: [], create: vi.fn() }),
   pickSavedView: () => undefined,
-  useBoardTrash: () => ({ total: 0 }),
   BoardViewSelectionProvider: ({ children }: { children: React.ReactNode }) =>
     children,
 }));
