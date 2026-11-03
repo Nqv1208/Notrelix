@@ -81,6 +81,7 @@ export function viewFields(locale: "vi" | "en" = "vi"): FilterField[] {
       { id: "label-security", name: "Bảo mật" },
       { id: "label-doc", name: "Tài liệu" },
     ],
+    labelsComplete: true,
     names: {
       title: copy.field.title,
       label: copy.field.label,

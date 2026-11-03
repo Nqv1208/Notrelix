@@ -21,6 +21,7 @@ import {
   evaluateFilter,
   parseCompoundFilter,
   serializeCompoundFilter,
+  NONE_VALUE,
   type CompoundFilter,
   type FilterCondition,
 } from "./compound-filter";
@@ -83,6 +84,8 @@ export interface FilterField {
   /** True for the title, label and overdue pseudo fields (no stored field value). */
   readonly builtin: boolean;
   readonly read: (card: Card) => unknown;
+  /** True when `field.options` is the board's whole list, so a value outside it names an option that was deleted. */
+  readonly optionsComplete?: boolean;
 }
 
 export interface FilterFieldInput {
@@ -96,6 +99,8 @@ export interface FilterFieldInput {
     /** Names the assignee filter of a board that has no Person field; absent: that board has none. */
     assignee?: string;
   };
+  /** True when `labels` is the board's own list (not the labels the loaded items happen to hold). */
+  readonly labelsComplete?: boolean;
   /** Whether the card counts as overdue (the same rule as its due wording). */
   readonly isOverdue: (card: Card) => boolean;
 }
@@ -181,6 +186,7 @@ export function buildFilterFields(input: FilterFieldInput): FilterField[] {
     ),
     builtin: true,
     read: (card) => card.labels.map((l) => l.id),
+    ...(input.labelsComplete ? { optionsComplete: true } : {}),
   };
   const overdue: FilterField = {
     id: OVERDUE_FIELD_ID,
@@ -246,7 +252,36 @@ export function staleFieldIdsOf(
   ];
 }
 
-/** Whether a card passes the compound filter; conditions on missing fields are ignored. */
+/**
+ * A condition the board can no longer honour: its field is gone, or every option it names was deleted (a label
+ * removed from the board). Such a condition is ignored, never a mismatch, and the bar says so.
+ */
+export function isStaleCondition(
+  condition: FilterCondition,
+  byId: ReadonlyMap<string, FilterField>,
+): boolean {
+  const field = byId.get(condition.fieldId);
+  if (!field) return true;
+  if (!field.optionsComplete) return false;
+  const named = condition.values.filter((value) => value !== NONE_VALUE);
+  if (named.length === 0) return false;
+  const known = new Set(field.field.options.map((option) => option.id));
+  return named.every((value) => !known.has(value));
+}
+
+/** The filter without its stale conditions: what is evaluated here and sent to the server. */
+export function dropStaleConditions(
+  filter: CompoundFilter,
+  fields: readonly FilterField[],
+): CompoundFilter {
+  const byId = new Map(fields.map((f) => [f.id, f]));
+  const kept = filter.conditions.filter((c) => !isStaleCondition(c, byId));
+  return kept.length === filter.conditions.length
+    ? filter
+    : { ...filter, conditions: kept };
+}
+
+/** Whether a card passes the compound filter; stale conditions are ignored. */
 export function cardMatchesFilter(
   filter: CompoundFilter,
   fields: readonly FilterField[],
@@ -256,7 +291,7 @@ export function cardMatchesFilter(
 ): boolean {
   if (filter.conditions.length === 0) return true;
   const byId = new Map(fields.map((f) => [f.id, f]));
-  return evaluateFilter(filter, {
+  return evaluateFilter(dropStaleConditions(filter, fields), {
     resolve: (fieldId) => {
       const found = byId.get(fieldId);
       return found

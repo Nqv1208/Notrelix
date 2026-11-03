@@ -1802,6 +1802,28 @@ export class MockStore {
         joinedAt: "2026-09-15T02:00:00.000Z",
       })) as MockBoardMemberRecord[],
     );
+    // The saved-filter menu's rows on the payables board: the owner's own, and one a colleague shared.
+    this.savedFilters.add({
+      boardId: mockIds.boards.payables,
+      name: "Việc gấp tuần này",
+      criteria: null,
+      createdBy: mockIds.users.owner,
+    });
+    this.savedFilters.add({
+      boardId: mockIds.boards.payables,
+      name: "Sprint hiện tại",
+      criteria: null,
+      createdBy: mockIds.users.admin,
+    }).visibility = "Public";
+    // The viewer reads the ERP board, not payables: the same shared filter there, for the viewer's read-only menu.
+    if (this.config.persona === "viewer") {
+      this.savedFilters.add({
+        boardId: mockIds.boards.erp,
+        name: "Sprint hiện tại",
+        criteria: null,
+        createdBy: mockIds.users.admin,
+      }).visibility = "Public";
+    }
   }
 
   /** Members of a board, in seeded order. */

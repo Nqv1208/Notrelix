@@ -3,6 +3,7 @@ import type { Card } from "../types/item-types";
 import {
   buildFilterFields,
   cardMatchesFilter,
+  dropStaleConditions,
   LABEL_FIELD_ID,
 } from "./view-state";
 
@@ -55,5 +56,49 @@ describe("filtering items by label", () => {
     expect(matches("is_empty", [], card())).toBe(true);
     expect(matches("is_empty", [], card("bug"))).toBe(false);
     expect(matches("is_not_empty", [], card("bug"))).toBe(true);
+  });
+});
+
+describe("a filter on a label the board deleted", () => {
+  const complete = buildFilterFields({
+    fieldDefinitions: [],
+    members: [],
+    labels: [{ id: "bug", name: "Bug" }],
+    labelsComplete: true,
+    names: { title: "Title", label: "Labels", overdue: "Overdue" },
+    isOverdue: () => false,
+  });
+  const condition = (operator: string, values: string[]) => ({
+    fieldId: LABEL_FIELD_ID,
+    operator,
+    values,
+  });
+  const filterOf = (...conditions: ReturnType<typeof condition>[]) =>
+    ({ join: "and", conditions }) as never;
+
+  it("is ignored, like a deleted field, so every item stays", () => {
+    const filter = filterOf(condition("has_any", ["gone"]));
+    expect(
+      cardMatchesFilter(filter, complete, names.person as never, card("bug")),
+    ).toBe(true);
+    expect(
+      cardMatchesFilter(filter, complete, names.person as never, card()),
+    ).toBe(true);
+    expect(dropStaleConditions(filter, complete).conditions).toEqual([]);
+  });
+
+  it("keeps a condition that still names one live label, and the unassigned token", () => {
+    const kept = filterOf(condition("has_any", ["gone", "bug"]));
+    expect(dropStaleConditions(kept, complete)).toBe(kept);
+    const none = filterOf(condition("has_any", ["__none__"]));
+    expect(dropStaleConditions(none, complete)).toBe(none);
+    expect(
+      cardMatchesFilter(kept, complete, names.person as never, card()),
+    ).toBe(false);
+  });
+
+  it("is not ignored while the board's labels are still unknown", () => {
+    const filter = filterOf(condition("has_any", ["gone"]));
+    expect(dropStaleConditions(filter, fields)).toBe(filter);
   });
 });
