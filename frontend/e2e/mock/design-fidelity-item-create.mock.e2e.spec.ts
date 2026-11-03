@@ -174,3 +174,146 @@ test.describe("create popup, desktop", () => {
     ).toBeVisible();
   });
 });
+
+/**
+ * Frame 2, "Đã điền nháp": a draft with a title, people, labels, dates, priority and a description. The artboard's text
+ * boxes are compared one by one (relative to the popup), so the summary row, the description and the comments column
+ * are held to 1 px. Its custom-fields rows, the queued attachments and the links section below them are owed (the app
+ * draws fields as pills where the artboard draws label and value rows).
+ */
+test.describe("create popup, desktop, filled draft", () => {
+  test.skip(
+    persona !== "owner" || scenario !== "default",
+    "Needs the default owner world",
+  );
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("frame 2: the filled draft", async ({ page }) => {
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem("notrelix-locale", "vi");
+      } catch {
+        // Private mode: the defaults apply.
+      }
+    });
+    await page.goto(BOARD);
+    await page
+      .getByRole("button", { name: "Thêm công việc", exact: true })
+      .first()
+      .click();
+    const pop = page.getByRole("dialog").first();
+    await expect(pop.getByText("Thêm vào cột")).toBeVisible();
+    await page.waitForTimeout(900);
+    await pop
+      .getByRole("textbox")
+      .first()
+      .fill("Chốt lịch đào tạo kế toán trưởng");
+    // Labels: Đào tạo and Tài liệu.
+    await pop.getByRole("button", { name: "Nhãn" }).first().click();
+    await page
+      .locator("[data-radix-popper-content-wrapper]")
+      .last()
+      .getByRole("checkbox")
+      .nth(2)
+      .click();
+    await page
+      .locator("[data-radix-popper-content-wrapper]")
+      .last()
+      .getByRole("checkbox")
+      .nth(4)
+      .click();
+    await page.keyboard.press("Escape");
+    // Assignee: Lê Hoàng Phúc (the row's plus).
+    await pop.getByRole("button", { name: "Người làm" }).first().click();
+    const phuc = page.getByText("Lê Hoàng Phúc").first();
+    await phuc
+      .locator("xpath=ancestor::*[.//button][1]")
+      .locator("button")
+      .last()
+      .click()
+      .catch(async () => {
+        await phuc.click();
+      });
+    await page.keyboard.press("Escape");
+    // Dates: 15/10 to 20/10.
+    await pop.getByRole("button", { name: "Ngày" }).first().click();
+    const dates = page.getByRole("checkbox");
+    const due = page.locator("input[value$='/2026']").last();
+    const start = page
+      .locator("input[value$='/2026'], input[placeholder='dd/mm/yyyy']")
+      .first();
+    await dates.nth((await dates.count()) - 2).check();
+    await due.fill("20/10/2026");
+    await start.fill("15/10/2026");
+    await page.getByRole("button", { name: "Lưu", exact: true }).click();
+    // Priority: Cao.
+    await pop
+      .getByRole("button", { name: "Thêm", exact: true })
+      .first()
+      .click();
+    await page.getByRole("option", { name: "Ưu tiên", exact: true }).click();
+    await page.waitForTimeout(500);
+    await page
+      .getByRole("option", { name: "Cao", exact: true })
+      .click({ force: true });
+    // Description.
+    await pop.getByText("Thêm mô tả…").first().click();
+    await page.keyboard.type(
+      "Làm việc với kế toán trưởng Minh An Group để chọn hai buổi đào tạo phân hệ công nợ trước ngày chạy thử.",
+    );
+    await page.getByRole("button", { name: "Lưu", exact: true }).click();
+    await page.waitForTimeout(500);
+    await page.mouse.move(2, 2);
+
+    const texts = await pop.evaluate((root) => {
+      const o = root.getBoundingClientRect();
+      const res: [string, number, number, number, number][] = [];
+      const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let n: Node | null;
+      while ((n = w.nextNode())) {
+        const t = (n.textContent ?? "").trim();
+        if (!t) continue;
+        const r = document.createRange();
+        r.selectNodeContents(n);
+        const q = r.getBoundingClientRect();
+        res.push([t, q.x - o.x, q.y - o.y, q.width, q.height]);
+      }
+      return res;
+    });
+    const at = (text: string, nth = 0) => {
+      const hit = texts.filter(([t]) => t === text)[nth];
+      if (!hit) throw new Error(`no text "${text}"`);
+      return { x: hit[1], y: hit[2], w: hit[3], h: hit[4] };
+    };
+    // [text, nth, x, y, w, h] read from the artboard; x is left out where the width of a chosen label moves it.
+    const want: [string, number, number, number, number, number][] = [
+      ["Thêm vào cột", 0, 16, 19.4, 84.3, 16],
+      ["Thêm", 0, 94, 119.6, 35.8, 16],
+      ["Nhãn", 0, 182.8, 119.6, 33.4, 16],
+      ["Ngày", 0, 269.2, 119.6, 33.8, 16],
+      ["Checklist", 0, 356, 119.6, 60.3, 16],
+      ["Người làm", 0, 469.2, 119.6, 64.2, 16],
+      ["Người làm", 1, 60, 165, 59.8, 15],
+      ["HP", 0, 71.3, 199.1, 13.4, 13],
+      ["Nhãn", 1, 135.8, 165, 31.1, 15],
+      ["Đào tạo", 0, 147.8, 195.6, 53, 16],
+      ["Tài liệu", 0, 230.8, 195.6, 45.7, 16],
+      ["Ngày", 1, 342.5, 165, 31.5, 15],
+      ["Ưu tiên", 0, 594.7, 165, 41.7, 15],
+      ["Mô tả", 0, 60, 250.1, 42.7, 19],
+      ["Sửa", 0, 661.4, 251.9, 23.6, 16],
+      ["Bình luận và hoạt động", 0, 771, 76.1, 171.9, 19],
+      ["Hiện chi tiết", 0, 1015.5, 77.9, 73.5, 16],
+      ["Bình luận mở sau khi tạo thẻ", 0, 822.5, 253, 196, 18],
+      ["Tạo tiếp thẻ khác", 0, 51, 732.2, 116.3, 18],
+      ["Tạo thẻ", 0, 1028.8, 732.2, 52.2, 18],
+    ];
+    for (const [text, nth, x, y, w, h] of want) {
+      const got = at(text, nth);
+      near(got.x, x, `${text}#${nth}.x`);
+      near(got.y, y, `${text}#${nth}.y`);
+      near(got.w, w, `${text}#${nth}.w`);
+      near(got.h, h, `${text}#${nth}.h`);
+    }
+  });
+});

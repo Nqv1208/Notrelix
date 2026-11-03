@@ -8,6 +8,7 @@ import { calendarParts, pad2, toValidDate } from "../../shared/item-display";
 import { useCanEdit, useCardPopup } from "../card-popup-context";
 import {
   EmptySection,
+  LinkBtn,
   PanelPopover,
   PopSection,
   SECTION_ICONS,
@@ -123,10 +124,18 @@ export function FieldsSection() {
       width={340}
       trigger={
         <PopoverTrigger asChild>
-          <PillBtn aria-haspopup="dialog" dashed>
-            <Plus aria-hidden="true" className="size-4" />
-            {t.addField}
-          </PillBtn>
+          {mode === "create" && rows.length === 0 ? (
+            // Kanban-CardPopup-Create folds an empty fields section to the link-coloured action.
+            <LinkBtn aria-haspopup="dialog">
+              <Plus aria-hidden="true" className="size-[13px]" />
+              {t.addFieldCreate}
+            </LinkBtn>
+          ) : (
+            <PillBtn aria-haspopup="dialog" dashed>
+              <Plus aria-hidden="true" className="size-4" />
+              {t.addField}
+            </PillBtn>
+          )}
         </PopoverTrigger>
       }
     >
