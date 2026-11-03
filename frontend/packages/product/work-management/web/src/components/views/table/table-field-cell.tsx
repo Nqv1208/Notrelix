@@ -1,5 +1,5 @@
 import { useRef, type ReactNode } from "react";
-import { AlertCircle, ExternalLink, Loader2 } from "lucide-react";
+import { AlertCircle, ExternalLink, Loader2, Lock } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import type { StaleSchemaDetail } from "@notrelix/work-management-state";
 import {
@@ -376,7 +376,26 @@ export function TableFieldCell({
     }
   }
 
-  if (!write) return <>{editor}</>;
+  if (!write)
+    return (
+      <>
+        {editor}
+        {/* A viewer's cell ends with a lock that names the field (`WM-Field-Editors`, "Chỉ xem"). */}
+        {!editable && spec.editable ? (
+          <span
+            role="img"
+            aria-label={fillTableCopy(f.viewOnlyLabel, { field: field.name })}
+            title={f.viewOnly}
+            className={cn(
+              "inline-flex flex-none text-meta-foreground",
+              field.fieldType !== "number" && "ml-auto",
+            )}
+          >
+            <Lock className="size-4" aria-hidden="true" />
+          </span>
+        ) : null}
+      </>
+    );
   const valueLabel = text || f.empty;
   if (write.status === "reloading")
     return (

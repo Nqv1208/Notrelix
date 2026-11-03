@@ -96,6 +96,8 @@ export const en = {
     /** Header lock names: one lock per read-only column. */
     lockViewer: "Read only, you can't edit this field",
     lockType: "Read only, this field type can't be edited here",
+    viewOnly: "View only: you can't edit this",
+    viewOnlyLabel: "{{field}}: view only, you can't edit this",
     lockComputed: "Calculated, read only",
     computedMark: "Calculated",
     computedValue: "Calculated: {{value}}",
@@ -481,6 +483,8 @@ export const vi: MainTableCopy = {
     notSet: "Chưa đặt",
     lockViewer: "Chỉ xem, bạn không có quyền sửa trường này",
     lockType: "Chỉ xem, kiểu trường này chưa sửa được ở bảng",
+    viewOnly: "Chỉ xem: bạn không có quyền sửa",
+    viewOnlyLabel: "{{field}}: chỉ xem, bạn không có quyền sửa",
     lockComputed: "Tự tính, chỉ xem",
     computedMark: "Tự tính",
     computedValue: "Tự tính: {{value}}",
