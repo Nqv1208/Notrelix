@@ -181,6 +181,7 @@ function CreateBody({
       p.dates ||
       p.checklists ||
       p.attachments > 0 ||
+      p.dependencies > 0 ||
       p.fields;
     if (dirty) setConfirming(true);
     else onOpenChange(false);

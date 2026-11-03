@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import {
   useBoardLabels,
+  useFullBoard,
   useWorkManagementServices,
   usePeopleDirectory,
   type CreateItemWithDetailsInput,
@@ -19,6 +20,8 @@ import { findItemFields } from "../../card-detail/item-field-editors";
 import { withBoardPriority } from "../../shared/item-priority";
 import type { ItemChecklistsModel } from "../../checklists/item-checklists";
 import type {
+  ItemSheetLink,
+  ItemSheetLinkCandidate,
   TaskDetailCallbacks,
   TaskDetailData,
 } from "../../card-detail/task-detail-types";
@@ -52,6 +55,8 @@ export interface CardDraft {
     readonly name: string;
   }[];
   readonly files: readonly { readonly id: string; readonly file: File }[];
+  /** Links to other items of the board, written once the card exists. */
+  readonly dependencies: readonly ItemSheetLink[];
 }
 
 export interface CardDraftDefaults {
@@ -80,6 +85,7 @@ function emptyDraft(defaults: CardDraftDefaults): CardDraft {
     checklists: [],
     links: [],
     files: [],
+    dependencies: [],
   };
 }
 
@@ -98,6 +104,7 @@ export function draftParts(draft: CardDraft, initial: CardDraft) {
       draft.dueDate !== initial.dueDate,
     checklists: draft.checklists.length > 0,
     attachments: draft.links.length + draft.files.length,
+    dependencies: draft.dependencies.length,
     fields:
       JSON.stringify(draft.fieldValues) !==
         JSON.stringify(initial.fieldValues) ||
@@ -130,6 +137,24 @@ export function useCardDraft({
   const { labels: labelsApi } = useWorkManagementServices();
   const catalogue = useBoardLabels(board.id, workspaceId);
   const { directory } = usePeopleDirectory(board.id, workspaceId);
+  const full = useFullBoard(board.id, workspaceId);
+  const linkCandidates = useMemo<ItemSheetLinkCandidate[]>(
+    () =>
+      full.groups
+        .flatMap((group) => group.cards)
+        .filter((entry) => !entry.parentItemId)
+        .map((entry) => ({
+          id: entry.id,
+          key: entry.itemKey ?? null,
+          title: entry.title,
+          statusCategory: entry.statusCategory ?? null,
+          statusName:
+            fields.status?.options.find(
+              (option) => option.id === entry.fieldValues?.[fields.status!.id],
+            )?.label ?? null,
+        })),
+    [full.groups, fields.status],
+  );
   const patch = useCallback(
     (change: Partial<CardDraft>) =>
       setDraft((current) => ({ ...current, ...change })),
@@ -329,13 +354,23 @@ export function useCardDraft({
       activityLoading: false,
       activityFetching: false,
       boardLabels: catalogue.data,
+      links: draft.dependencies,
+      linkCandidates,
       checklists: checklistModel,
       viewerUserId,
       people: directory
         ? { people: directory.people, teams: directory.teams, canInvite: false }
         : undefined,
     }),
-    [draftFiles, catalogue.data, checklistModel, directory, viewerUserId],
+    [
+      draftFiles,
+      catalogue.data,
+      draft.dependencies,
+      linkCandidates,
+      checklistModel,
+      directory,
+      viewerUserId,
+    ],
   );
 
   const onUpdateFieldValue = useCallback(
@@ -419,13 +454,48 @@ export function useCardDraft({
         }));
         return Promise.resolve(true);
       },
+      onAddLink: (itemId, relation) => {
+        const target = linkCandidates.find((entry) => entry.id === itemId);
+        if (!target) return;
+        setDraft((current) => ({
+          ...current,
+          dependencies: [
+            ...current.dependencies,
+            {
+              id: localId(),
+              relation,
+              item: {
+                id: target.id,
+                key: target.key,
+                title: target.title,
+                statusName: target.statusName ?? null,
+                statusCategory: target.statusCategory ?? null,
+              },
+            },
+          ],
+        }));
+      },
+      onRemoveLink: (linkId) =>
+        setDraft((current) => ({
+          ...current,
+          dependencies: current.dependencies.filter(
+            (entry) => entry.id !== linkId,
+          ),
+        })),
       onRefreshActivity: NOOP,
       onCreateUpdate: NOOP,
       onUpdateUpdate: NOOP,
       onDeleteUpdate: NOOP,
       onSelectTab: NOOP,
     };
-  }, [onUpdateFieldValue, patch, labelsApi, board.id, catalogue]);
+  }, [
+    onUpdateFieldValue,
+    patch,
+    labelsApi,
+    board.id,
+    catalogue,
+    linkCandidates,
+  ]);
 
   const actions = useMemo<CardPopupActions>(
     () => ({
@@ -483,6 +553,10 @@ export function useCardDraft({
         items: list.items.map((i) => i.title),
       })),
     links: draft.links.map(({ url, name }) => ({ url, name })),
+    dependencies: draft.dependencies.map((link) => ({
+      itemId: link.item.id,
+      relation: link.relation,
+    })),
     files: draft.files.map((entry) => entry.file),
     idempotencyKey,
   });
