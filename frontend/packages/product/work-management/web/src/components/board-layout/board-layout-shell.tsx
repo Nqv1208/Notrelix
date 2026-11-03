@@ -17,6 +17,8 @@ interface BoardLayoutShellProps {
   onOpenArchive?: () => void;
   /** A notice between the title row and the view tabs. */
   notice?: React.ReactNode;
+  /** A band between the view tabs and the view (the opened view is gone). */
+  banner?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -32,6 +34,7 @@ export function BoardLayoutShell({
   onOpenTrash,
   onOpenArchive,
   notice,
+  banner,
   children,
 }: BoardLayoutShellProps) {
   return (
@@ -47,7 +50,14 @@ export function BoardLayoutShell({
         onOpenArchive={onOpenArchive}
         notice={notice}
       />
-      <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
+      {banner ? (
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {banner}
+          <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
+      )}
     </div>
   );
 }
