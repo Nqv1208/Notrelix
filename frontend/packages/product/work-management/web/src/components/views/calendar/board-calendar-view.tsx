@@ -74,6 +74,8 @@ export interface BoardCalendarViewProps {
     id: string | undefined,
     options?: { replace?: boolean },
   ) => void;
+  /** Opens an item of any board (a link or a dependency of the open item); absent: only this board's items open. */
+  onOpenItem?: (boardId: string, itemId: string) => void;
   /** The route `filter` parameter (`serializeKanbanFilter` form), shared with the Kanban. */
   filter?: string;
   /**
@@ -100,6 +102,7 @@ export function BoardCalendarView({
   selectedItemId,
   currentUserId,
   onSelectedItemChange,
+  onOpenItem,
   filter: filterParam,
   onFilterChange,
   timeZone: timeZoneProp,
@@ -493,6 +496,10 @@ export function BoardCalendarView({
       {selectedItemId && board ? (
         <KanbanSelectedItem
           board={board}
+          onOpenItem={(targetBoardId, itemId) => {
+            if (onOpenItem) onOpenItem(targetBoardId, itemId);
+            else if (targetBoardId === boardId) onSelectedItemChange?.(itemId);
+          }}
           cardId={selectedItemId}
           capabilities={capabilities}
           groups={sheetGroups}

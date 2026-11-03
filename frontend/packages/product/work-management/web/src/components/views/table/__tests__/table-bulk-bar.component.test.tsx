@@ -4,6 +4,7 @@ import { mainTableCopy } from "../main-table.copy";
 import {
   TableBulkBar,
   TableBulkFailure,
+  TableBulkNotice,
   type TableBulkBarProps,
 } from "../table-bulk-bar";
 
@@ -33,8 +34,8 @@ describe("TableBulkBar selection limit", () => {
   it("a pick over the most one change covers says so and locks every action", () => {
     bar({ count: 201, limit: { max: 200, available: 260 } });
 
-    expect(screen.getByText("201 selected, at most 200")).toBeTruthy();
-    for (const name of [/Status/, /Set due date/, /Archive/]) {
+    expect(screen.getByText("201 selected")).toBeTruthy();
+    for (const name of [/Status/, /Due date/, /Archive/]) {
       expect(button(name).matches(":disabled")).toBe(true);
     }
     // The way out stays open (the fieldset locks the actions, not the close button).
@@ -56,6 +57,37 @@ describe("TableBulkBar selection limit", () => {
 
     expect(screen.getByText("5 selected")).toBeTruthy();
     expect(screen.queryByRole("status")).toBeNull();
+  });
+});
+
+describe("TableBulkBar while a change is on its way", () => {
+  it("shows only the count and the progress line", () => {
+    bar({ count: 3, saving: true });
+
+    expect(screen.getByText("3 selected")).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toBe("Applying to 3 items…");
+    expect(screen.queryByRole("button", { name: /Status/ })).toBeNull();
+    expect(screen.getByRole("toolbar").getAttribute("aria-busy")).toBe("true");
+  });
+});
+
+describe("TableBulkNotice", () => {
+  it("writes its title and sentence, and its button acts", () => {
+    const onClick = vi.fn();
+    renderPureUi(
+      <TableBulkNotice
+        tone="info"
+        title="2 items were deleted by someone else"
+        detail="Nothing changed."
+        action={{ label: "Close", onClick }}
+      />,
+    );
+    expect(
+      screen.getByRole("status").getAttribute("data-table-bulk-notice"),
+    ).toBe("info");
+    expect(screen.getByText("Nothing changed.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(onClick).toHaveBeenCalledOnce();
   });
 });
 
@@ -83,7 +115,7 @@ describe("TableBulkBar without edit rights", () => {
 
     // A touch screen shows no title or label: the reason is text on the bar.
     expect(screen.getByText(reason)).toBeTruthy();
-    for (const name of [copy.bulk.assign, copy.bulk.move]) {
+    for (const name of [copy.bulk.assign, copy.bulk.more]) {
       const control = button(`${name}: ${reason}`);
       expect(control.getAttribute("aria-disabled")).toBe("true");
       expect(control.className).toContain("opacity-50");

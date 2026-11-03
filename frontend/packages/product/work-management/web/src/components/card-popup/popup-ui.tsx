@@ -396,9 +396,13 @@ function PanelPopoverDesktop({
  * phone width down a bottom sheet (the artboard's `.bsh`: 16 px top corners, a
  * grab handle, up to 94 % of the screen).
  */
-export function PanelPopover(
-  props: ComponentProps<typeof PanelPopoverDesktop>,
-) {
+export function PanelPopover({
+  fieldSheet,
+  ...props
+}: ComponentProps<typeof PanelPopoverDesktop> & {
+  /** The field editors' 320 px sheet draws a 36 x 4 handle 10 px down; the other sheets a 40 x 4 one at 8. */
+  fieldSheet?: boolean;
+}) {
   const phone = useMediaQuery("(max-width: 767px)");
   if (!phone) return <PanelPopoverDesktop {...props} />;
   const { trigger, open, onOpenChange, children, label } = props;
@@ -421,12 +425,18 @@ export function PanelPopover(
               ) ?? sheet
             ).focus();
           }}
-          className="max-h-[94%] gap-0 overflow-y-auto rounded-t-[16px] data-[side=bottom]:border-t-0 bg-popover px-4 pt-2.5 pb-4 text-[14px] text-popover-foreground"
+          className={cn(
+            "max-h-[94%] gap-0 overflow-y-auto rounded-t-[16px] data-[side=bottom]:border-t-0 bg-popover px-4 text-[14px] text-popover-foreground",
+            fieldSheet ? "pt-2.5 pb-4" : "pt-2 pb-6",
+          )}
         >
           <SheetTitle className="sr-only">{label}</SheetTitle>
           <div
             aria-hidden="true"
-            className="mx-auto mb-3 h-1 w-9 rounded-[2px] bg-line-strong"
+            className={cn(
+              "mx-auto h-1 rounded-[2px] bg-line-strong",
+              fieldSheet ? "mb-3 w-9" : "mb-2 w-10",
+            )}
           />
           {children}
         </SheetContent>

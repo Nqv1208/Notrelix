@@ -167,6 +167,7 @@ function BoardFullDataView({
             workspaceId={workspaceId}
             selectedItemId={kanbanParams?.selectedItemId}
             onSelectedItemChange={kanbanParams?.onSelectedItemChange}
+            onOpenItem={kanbanParams?.onOpenItem}
             filter={kanbanParams?.filter}
             onFilterChange={kanbanParams?.onFilterChange}
             currentUserId={currentUserId}
@@ -177,6 +178,7 @@ function BoardFullDataView({
             workspaceId={workspaceId}
             selectedItemId={kanbanParams?.selectedItemId}
             onSelectedItemChange={kanbanParams?.onSelectedItemChange}
+            onOpenItem={kanbanParams?.onOpenItem}
             filter={kanbanParams?.filter}
             onFilterChange={kanbanParams?.onFilterChange}
             currentUserId={currentUserId}
