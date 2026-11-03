@@ -332,15 +332,24 @@ export function BoardShareDialog({
     return null;
   }, [copy, refused, view]);
 
-  const copyLink = useCallback(() => {
-    const link = `${window.location.origin}/workspaces/${encodeURIComponent(workspaceId)}/boards/${encodeURIComponent(boardId)}`;
-    void Promise.resolve()
-      .then(() => navigator.clipboard.writeText(link))
-      .then(
-        () => toast.success(copy.footer.copied),
-        () => toast.error(copy.footer.copyFailed),
-      );
-  }, [boardId, copy, workspaceId]);
+  const copyLink = useCallback(
+    (options?: { readonly silent?: boolean }) => {
+      const link = `${window.location.origin}/workspaces/${encodeURIComponent(workspaceId)}/boards/${encodeURIComponent(boardId)}`;
+      return Promise.resolve()
+        .then(() => navigator.clipboard.writeText(link))
+        .then(
+          () => {
+            if (!options?.silent) toast.success(copy.footer.copied);
+            return true;
+          },
+          () => {
+            if (!options?.silent) toast.error(copy.footer.copyFailed);
+            return false;
+          },
+        );
+    },
+    [boardId, copy, workspaceId],
+  );
 
   const subjectOf = (rowId: string, removal: boolean) => {
     const row = view?.rows.find((candidate) => candidate.id === rowId);
@@ -368,8 +377,10 @@ export function BoardShareDialog({
           ? async (userId: string, level: ShareLevel) => {
               try {
                 await sharing.invite(userId, SHARING_LEVEL_OF[level]);
+                return true;
               } catch (error: unknown) {
                 toastFailure(copy.footer.writeFailed, error, "");
+                return false;
               }
             }
           : undefined
