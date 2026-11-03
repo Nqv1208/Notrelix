@@ -12,7 +12,7 @@ render.py        renders one screen state to static HTML
 decisions.md     shared review decisions from the design review
 briefs/          the design briefs the screens were produced from
   mobile.md  tablet.md  group4.md
-src/             the 43 Final-*.dc.html screen sources and the 3 state boards below, copied unchanged
+src/             the 44 Final-*.dc.html screen sources and the 3 state boards below, copied unchanged
 ```
 
 ## Render a state
@@ -40,7 +40,8 @@ Device comes from the file's preview size. Phase and owner come from the roadmap
 | `Final-Calendar.dc.html` | Desktop 1440 | `state`: `keo-tha`, `tao-nhanh`, `binh-thuong`, `khong-ket-qua`; `range`: `thang`, `tuan`, `ngay`; `nav`: `an`, `hien-de`, `hien-day` | P5 | product/work-management/web |
 | `Final-Command.dc.html` | Desktop 1440 | `state`: `tim-kiem`, `chua-go`, `lenh`, `khong-thay`, `dang-chay`; `nav`: `an`, `hien-de`, `hien-day` | P7 | features/workspace shell + features/search |
 | `Final-Detail.dc.html` | Desktop 1440 | `state`: `tong-quan`, `lich-su`, `xung-dot`, `chi-xem`, `binh-luan`; `nav`: `an`, `hien-de`, `hien-day` | P3 | product/work-management/web + apps/web route |
-| `Final-Docs.dc.html` | Desktop 1440 | `state`: `binh-thuong`, `menu-tep`, `go-lenh`, `nhac-viec`, `binh-luan`, `muc-luc`, `loi-luu`, `chia-se`, `phien-ban`; `nav`: `an`, `hien-de`, `hien-day` | P11 | product/docs/web |
+| `Final-Docs-2.dc.html` | Desktop 1440 | none (static, normal state, nav pinned; drawn from the shipped page) | P11 | product/docs/web |
+| `Final-Docs-2-Dem.dc.html` | Desktop 1440 | none (static, dark twin of `Final-Docs-2`) | P11 | product/docs/web |
 | `Final-Home.dc.html` | Desktop 1440 | `state`: `binh-thuong`, `xong-viec`, `dang-tai`; `nav`: `an`, `hien-de`, `hien-day` | P6 | features/workspace |
 | `Final-Inbox.dc.html` | Desktop 1440 | `state`: `binh-thuong`, `het-viec`, `tat-ca`; `nav`: `an`, `hien-de`, `hien-day` | P6 | features/notifications |
 | `Final-Integrations.dc.html` | Desktop 1440 | `state`: `danh-sach`, `chi-tiet`, `uy-quyen-lai`, `webhook`, `ket-noi`, `ngat-ket-noi`, `can-nang-cap`, `khong-co-quyen`; `nav`: `an`, `hien-de`, `hien-day` | P15 | features/integrations |

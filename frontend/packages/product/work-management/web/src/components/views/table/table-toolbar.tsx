@@ -136,7 +136,8 @@ export function MainTableToolbar({
 
       <span
         aria-hidden="true"
-        className="mx-1 h-5 w-px bg-border max-md:hidden"
+        // The personal-columns toolbar draws 8 px between boxes: 4 px of margin more beside the separator.
+        className={`h-5 w-px bg-border max-md:hidden ${columnState?.personal ? "mx-1.5" : "mx-1"}`}
       />
 
       <TableColumnsMenu
