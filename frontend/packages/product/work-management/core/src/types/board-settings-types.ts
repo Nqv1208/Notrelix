@@ -91,6 +91,8 @@ export interface BoardSettingsFieldDto {
   readonly defaultOptionId: string | null;
   readonly required: boolean;
   readonly guidance: string;
+  /** The field's settings JSON as stored, merged with an edit of its rules before it is saved. */
+  readonly settingsJson?: string;
   readonly usedIn: readonly BoardSettingsUsageDto[];
   /** What a Formula or Rollup computes; the expression shows field names. */
   readonly computed?: BoardSettingsComputedDto;

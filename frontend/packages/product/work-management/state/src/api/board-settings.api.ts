@@ -60,7 +60,6 @@ const UNAVAILABLE: BoardSettingsUnavailable = {
   locale: true,
   fieldArchive: true,
   fieldDelete: false,
-  fieldRules: true,
   views: false,
   viewSplit: true,
   automations: true,
@@ -132,6 +131,57 @@ function multipleOf(settings: string | null | undefined): boolean {
   }
 }
 
+/** The rules a board owner sets on a field live in its settings JSON: `required` (bool) and `guidance` (text). */
+function rulesOf(settings: string | null | undefined): {
+  required: boolean;
+  guidance: string;
+} {
+  try {
+    const parsed = JSON.parse(settings || "{}") as {
+      required?: unknown;
+      guidance?: unknown;
+    };
+    return {
+      required: parsed.required === true,
+      guidance: typeof parsed.guidance === "string" ? parsed.guidance : "",
+    };
+  } catch {
+    return { required: false, guidance: "" };
+  }
+}
+
+/** The option a select-like field starts with: its `defaultValue` is an option id, or a list of one. */
+function defaultOptionOf(value: string | null | undefined): string | null {
+  try {
+    const parsed: unknown = JSON.parse(value || "null");
+    const id = Array.isArray(parsed) ? parsed[0] : parsed;
+    return typeof id === "string" ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The settings JSON with the edited rules merged in; every other setting stays as it is. */
+export function settingsWithRules(
+  base: string | undefined,
+  changes: BoardSettingsFieldPatch,
+): string | undefined {
+  if (changes.required === undefined && changes.guidance === undefined)
+    return changes.settings;
+  const merged: Record<string, unknown> = JSON.parse(
+    changes.settings ?? (base || "{}"),
+  ) as Record<string, unknown>;
+  if (changes.required !== undefined) {
+    if (changes.required) merged.required = true;
+    else delete merged.required;
+  }
+  if (changes.guidance !== undefined) {
+    if (changes.guidance.trim() !== "") merged.guidance = changes.guidance;
+    else delete merged.guidance;
+  }
+  return JSON.stringify(merged);
+}
+
 function byPosition<T extends { position?: string | null }>(
   rows: readonly T[],
 ): T[] {
@@ -183,9 +233,9 @@ function mapField(column: OverviewField): BoardSettingsFieldDto {
     hasColumn: type === "status" || type === "select" || type === "multiselect",
     valueCount: column.valueCount ?? 0,
     options,
-    defaultOptionId: null,
-    required: false,
-    guidance: "",
+    defaultOptionId: defaultOptionOf(column.defaultValue),
+    ...rulesOf(column.settings),
+    settingsJson: column.settings ?? "{}",
     usedIn: [],
     ...computedOf(type, column.settings),
   };
@@ -619,16 +669,31 @@ export function createBoardSettingsApi(client: NotrelixClient) {
       s: BoardSettingsDto,
       fieldId: string,
       changes: BoardSettingsFieldPatch,
-    ) =>
-      api.patch<void>(
+    ) => {
+      const field = fieldOf(s, fieldId);
+      const settings = settingsWithRules(field.settingsJson, changes);
+      return api.patch<void>(
         endpoints.boardFields.detail(s.boardId, fieldId),
         {
-          expectedVersion: fieldOf(s, fieldId).version ?? 0,
+          expectedVersion: field.version ?? 0,
           name: changes.name,
-          ...(changes.settings ? { settingsJson: changes.settings } : {}),
+          ...(settings ? { settingsJson: settings } : {}),
+          ...(changes.defaultOptionId !== undefined
+            ? {
+                defaultValueJson:
+                  changes.defaultOptionId === null
+                    ? "null"
+                    : JSON.stringify(
+                        field.type === "multiselect"
+                          ? [changes.defaultOptionId]
+                          : changes.defaultOptionId,
+                      ),
+              }
+            : {}),
         },
         quiet,
-      ),
+      );
+    },
     addOption: (
       s: BoardSettingsDto,
       fieldId: string,

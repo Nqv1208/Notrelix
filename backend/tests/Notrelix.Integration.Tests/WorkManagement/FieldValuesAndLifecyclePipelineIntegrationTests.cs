@@ -3,8 +3,10 @@ using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBo
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RestoreBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateFieldOption;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ClearFieldValue;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 using Notrelix.Domain.SharedKernel;
+using Notrelix.Domain.WorkManagement;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Boards;
@@ -298,6 +300,93 @@ public sealed class FieldValuesAndLifecyclePipelineIntegrationTests : IAsyncLife
         await nonString.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
         (await mixed.Should().ThrowAsync<AppForbidden>()).Which.Code.Should().Be(Notrelix.Application.Features.WorkManagement.Boards.Services.BoardAssigneeGuard.BoardNotSharedCode);
         (await StoredValueAsync(scene.ItemId, scene.FieldId)).Should().BeNull("a refused set stores nothing, not even the person who can see");
+        (await VersionAsync(scene.ItemId)).Should().Be(read);
+    }
+
+    [Fact]
+    public async Task TheFieldRules_Guidance_Required_AndDefault_AreStored_AndReadBack()
+    {
+        var scene = await SeedAsync(FieldType.Select);
+        using var owner = Provider(scene.Stack);
+
+        await OrgTreeTestHost.SendAsync(owner, new UpdateBoardFieldCommand(scene.BoardId, scene.FieldId, null,
+            "{\"required\":true,\"guidance\":\"Chọn phòng ban phụ trách\"}", await FieldVersionAsync(scene.FieldId), $"\"{scene.Options[0]}\""));
+
+        var field = await _host.ReadAsync(c => c.BoardFields.AsNoTracking().SingleAsync(f => f.Id == scene.FieldId));
+        System.Text.Json.JsonDocument.Parse(field.Settings.Data.Value).RootElement.GetProperty("guidance").GetString().Should().Be("Chọn phòng ban phụ trách");
+        field.IsRequired.Should().BeTrue();
+        field.DefaultValue!.Data.Value.Should().Contain(scene.Options[0].ToString());
+
+        var badRequired = async () => await OrgTreeTestHost.SendAsync(owner, new UpdateBoardFieldCommand(scene.BoardId, scene.FieldId, null, "{\"required\":\"yes\"}", await FieldVersionAsync(scene.FieldId)));
+        await badRequired.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+        var foreignDefault = async () => await OrgTreeTestHost.SendAsync(owner, new UpdateBoardFieldCommand(scene.BoardId, scene.FieldId, null, null, await FieldVersionAsync(scene.FieldId), $"\"{Guid.NewGuid()}\""));
+        await foreignDefault.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>("a default must be one of the field's options");
+    }
+
+    [Fact]
+    public async Task ARequiredField_RefusesClearingItsValue_AndTheValueStays()
+    {
+        var scene = await SeedAsync(FieldType.Text);
+        using var owner = Provider(scene.Stack);
+        await WriteAsync(owner, scene, "giữ lại");
+        await OrgTreeTestHost.SendAsync(owner, new UpdateBoardFieldCommand(scene.BoardId, scene.FieldId, null, "{\"required\":true}", await FieldVersionAsync(scene.FieldId)));
+        var version = await VersionAsync(scene.ItemId);
+
+        var byNull = () => WriteAsync(owner, scene, null);
+        var byClear = () => OrgTreeTestHost.SendAsync(owner, new ClearFieldValueCommand(scene.ItemId, scene.FieldId, version));
+
+        (await byNull.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_FieldValue_Required);
+        await byClear.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+        (await StoredValueAsync(scene.ItemId, scene.FieldId)).Should().Contain("giữ lại");
+        (await VersionAsync(scene.ItemId)).Should().Be(version);
+        await WriteAsync(owner, scene, "đổi được");
+    }
+
+    [Fact]
+    public async Task ANewItem_GetsTheDefault_AndARequiredFieldWithoutOneRefusesTheCreate()
+    {
+        var scene = await SeedAsync(FieldType.Select);
+        using var owner = Provider(scene.Stack);
+        var groupId = await _host.ReadAsync(c => c.BoardGroups.AsNoTracking().Where(g => g.BoardId == scene.BoardId).Select(g => g.Id).FirstAsync());
+        // The create handler needs the placement stack this host does not wire; the rules it applies are this one call.
+        async Task<BoardItem> CreateAsync()
+        {
+            var item = BoardItem.CreateRoot(scene.Stack.AccountId, scene.Stack.WorkspaceId, scene.BoardId, groupId, "Việc mới", FractionalIndex.Create("a1"), scene.Stack.OwnerId, OrgTreeTestHost.BaseTime);
+            await _host.WithSystemContextAsync(async c =>
+            {
+                await Notrelix.Application.Features.WorkManagement.BoardItems.Services.BoardItemFieldWrites.ApplyCreateRulesAsync(c, item, scene.Stack.OwnerId, OrgTreeTestHost.BaseTime, default);
+                c.BoardItems.Add(item);
+            });
+            return item;
+        }
+
+        await OrgTreeTestHost.SendAsync(owner, new UpdateBoardFieldCommand(scene.BoardId, scene.FieldId, null, "{\"required\":true}", await FieldVersionAsync(scene.FieldId)));
+        var refused = CreateAsync;
+        (await refused.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_FieldValue_Required);
+        (await _host.ReadAsync(c => c.BoardItems.AsNoTracking().CountAsync(i => i.BoardId == scene.BoardId && i.Name == "Việc mới"))).Should().Be(0);
+
+        await OrgTreeTestHost.SendAsync(owner, new UpdateBoardFieldCommand(scene.BoardId, scene.FieldId, null, null, await FieldVersionAsync(scene.FieldId), $"\"{scene.Options[1]}\""));
+        var created = await CreateAsync();
+
+        (await StoredValueAsync(created.Id, scene.FieldId)).Should().Contain(scene.Options[1].ToString(), "the default is applied when the item is created");
+        (await StoredValueAsync(scene.ItemId, scene.FieldId)).Should().BeNull("existing items are not rewritten by a default");
+    }
+
+    [Fact]
+    public async Task AValueNamingAnOptionThatWasRemoved_AnswersPreconditionNamingTheFieldAndTheOption_AndStoresNothing()
+    {
+        var scene = await SeedAsync(FieldType.Select);
+        using var owner = Provider(scene.Stack);
+        var removed = Guid.CreateVersion7();
+        var read = await VersionAsync(scene.ItemId);
+
+        var stale = () => OrgTreeTestHost.SendAsync(owner, new UpdateBoardItemFieldValueCommand(scene.ItemId, scene.FieldId, removed.ToString(), read));
+
+        var error = (await stale.Should().ThrowAsync<PreconditionFailed>()).Which;
+        error.ErrorCode.Should().Be("work-management.field.option-removed");
+        error.Extensions["fieldName"].Should().Be("Note");
+        error.Extensions["optionId"].Should().Be(removed);
+        (await StoredValueAsync(scene.ItemId, scene.FieldId)).Should().BeNull();
         (await VersionAsync(scene.ItemId)).Should().Be(read);
     }
 

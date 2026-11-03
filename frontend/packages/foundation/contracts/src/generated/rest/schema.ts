@@ -6916,6 +6916,7 @@ export interface components {
             settingsJson?: string | null;
             /** Format: int64 */
             expectedVersion?: number;
+            defaultValueJson?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.BoardGroupVersionRequest": {
             /** Format: int64 */

@@ -99,7 +99,8 @@ public static class MapBoardFieldEndpoints
             fieldId,
             body.Name,
             body.SettingsJson,
-            body.ExpectedVersion), cancellationToken);
+            body.ExpectedVersion,
+            body.DefaultValueJson), cancellationToken);
         return result.ToApiResult();
     }
 

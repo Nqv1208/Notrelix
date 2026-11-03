@@ -27769,6 +27769,10 @@
           "expectedVersion": {
             "type": "integer",
             "format": "int64"
+          },
+          "defaultValueJson": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

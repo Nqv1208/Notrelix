@@ -283,7 +283,7 @@ function projectField(
     name: column.name,
     fieldType,
     settings: column.settings ?? "{}",
-    defaultValue: null,
+    defaultValue: column.defaultValue ?? null,
     position: positionKey(index + 1),
     isSystem: fieldType === "Status",
     isDeleted: false,
@@ -1035,6 +1035,7 @@ export const boardsOperations = [
       fieldType?: string;
       settings?: string;
       settingsJson?: string;
+      defaultValueJson?: string;
       isHidden?: boolean;
     },
     void
@@ -1048,9 +1049,12 @@ export const boardsOperations = [
     route: "/boards/:boardId/fields/:columnId",
     async handle({ params, body, store }) {
       // The producer's request names the settings `settingsJson`.
-      const { settingsJson, ...rest } = body ?? {};
+      const { settingsJson, defaultValueJson, ...rest } = body ?? {};
       const updated = store.updateColumn(params.columnId, {
         ...rest,
+        ...(defaultValueJson !== undefined
+          ? { defaultValue: defaultValueJson }
+          : {}),
         ...(settingsJson !== undefined ? { settings: settingsJson } : {}),
       });
       if (!updated) return notFound("Column not found");

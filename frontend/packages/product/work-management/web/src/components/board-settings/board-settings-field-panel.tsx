@@ -379,7 +379,7 @@ export function FieldPanel({
                   value={defaultId}
                   onChange={setDefaultId}
                 />
-                <Callout icon={Info}>
+                <Callout icon={Info} className="rounded-[8px]">
                   <span>
                     {fillCopy(t.defaultHint, { count: field.valueCount })}
                   </span>
@@ -393,8 +393,10 @@ export function FieldPanel({
           <>
             <div className="flex items-center gap-2.5 text-item-small">
               <span className="flex-1">
-                <span id={`${nameId}-req`}>{t.required}</span>
-                <small className="block text-metadata text-meta-foreground">
+                <span id={`${nameId}-req`} className="block leading-[1.45]">
+                  {t.required}
+                </span>
+                <small className="block text-metadata leading-[1.45] text-meta-foreground">
                   {t.requiredHint}
                 </small>
               </span>
@@ -412,7 +414,7 @@ export function FieldPanel({
                 rows={2}
                 placeholder={t.guidancePlaceholder}
                 onChange={(event) => setGuidance(event.target.value)}
-                className={TEXTAREA_CLASS}
+                className={cn(TEXTAREA_CLASS, "min-h-[58px]")}
               />
             </FormGroup>
           </>
@@ -539,7 +541,10 @@ function DefaultSelect({
     >
       <SelectTrigger
         aria-label={copy.panel.default}
-        className={cn(INPUT_CLASS, "justify-between shadow-none")}
+        className={cn(
+          INPUT_CLASS,
+          "data-[size=default]:h-[34px] justify-between shadow-none",
+        )}
       >
         <SelectValue>
           {selected ? (

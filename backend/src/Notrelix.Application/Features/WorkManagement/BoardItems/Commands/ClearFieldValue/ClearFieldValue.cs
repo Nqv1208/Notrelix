@@ -52,6 +52,7 @@ public class ClearFieldValueCommandHandler : IRequestHandler<ClearFieldValueComm
             .FirstOrDefaultAsync(f => f.Id == request.FieldId && f.BoardId == item.BoardId, ct);
         if (field is null) throw new NotFoundException(nameof(BoardField), request.FieldId);
 
+        BoardItemFieldWrites.EnsureNotClearingRequired(field, FieldValue.Empty());
         var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, item.BoardId, ct);
         BoardItemFieldWrites.Write(item, field, FieldValue.Empty(), statusField, _currentUser.UserId, _timeProvider.UtcNow);
         return Result.Success();
