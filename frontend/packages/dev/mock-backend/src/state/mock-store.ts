@@ -1309,6 +1309,7 @@ export class MockStore {
       boardId,
       name: "Người nghiệm thu",
       fieldType: "person",
+      settings: JSON.stringify({ multiple: true }),
       position: 15,
     });
     this.boardViewsByBoardId.set(boardId, {

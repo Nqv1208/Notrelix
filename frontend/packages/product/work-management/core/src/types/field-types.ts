@@ -47,6 +47,8 @@ export interface FieldDefinition {
   isSystemField: boolean;
   /** Unit shown after a number ("giờ"), from the field settings. */
   unit?: string;
+  /** A Person field holds several people (field setting `multiple`); otherwise one. */
+  multiple?: boolean;
   /** "mark": a select value drawn with a coloured initials mark (departments). */
   display?: "mark";
   semanticRole?: FieldSemanticRole;

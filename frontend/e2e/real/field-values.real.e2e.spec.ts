@@ -72,12 +72,13 @@ async function createField(
   boardId: string,
   name: string,
   type: string,
+  settingsJson?: string,
 ) {
   const created = await apiWrite<Created>(
     page,
     "POST",
     `/boards/${boardId}/fields`,
-    { name, type },
+    { name, type, ...(settingsJson ? { settingsJson } : {}) },
   );
   expect(created.status, `create field ${name}`).toBeLessThan(300);
   return idOf(created.data);
@@ -336,6 +337,14 @@ test("a member picks from the option and date cells and clears them again, and e
   const module = await createField(page, boardId, "Module", "select");
   const related = await createField(page, boardId, "Related", "multiselect");
   const due = await createField(page, boardId, "Go live", "date");
+  const owner = await createField(page, boardId, "Owner", "person");
+  const reviewers = await createField(
+    page,
+    boardId,
+    "Reviewers",
+    "person",
+    JSON.stringify({ multiple: true }),
+  );
   for (const fieldId of [module, related]) {
     for (const name of ["Accounting", "Warehouse", "Purchasing"]) {
       const full = await apiRead<FullBoard>(page, `/boards/${boardId}/full`);
@@ -399,6 +408,25 @@ test("a member picks from the option and date cells and clears them again, and e
   }
   await page.getByRole("button", { name: "Done", exact: true }).click();
   expect(await valueOf(related)).toHaveLength(2);
+
+  // People: a single field takes one person id and closes; a multiple one takes a list, each tick writes.
+  await edit("Owner").click();
+  const one = wrote(owner);
+  await page.getByRole("option").first().click();
+  expect((await one).status()).toBeLessThan(300);
+  expect(typeof (await valueOf(owner))).toBe("string");
+  await settle(page);
+  await edit("Reviewers").click();
+  const people = await page.getByRole("option").count();
+  for (let index = 0; index < Math.min(2, people); index += 1) {
+    const tick = wrote(reviewers);
+    await page.getByRole("option").nth(index).click();
+    expect((await tick).status()).toBeLessThan(300);
+    await settle(page);
+  }
+  expect(Array.isArray(await valueOf(reviewers))).toBe(true);
+  await page.keyboard.press("Escape");
+  await settle(page);
 
   // Date: a day writes and closes; "Clear date" empties it; a second clear sends nothing.
   await edit("Go live").click();

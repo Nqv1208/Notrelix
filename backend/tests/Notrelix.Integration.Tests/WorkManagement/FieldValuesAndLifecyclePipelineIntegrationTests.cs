@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RestoreBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateFieldOption;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
@@ -9,9 +10,11 @@ using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
+using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Integration.Tests.Workspaces.OrgTree;
 using AppNotFound = Notrelix.Application.Common.Exceptions.NotFoundException;
+using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
 using Conflict = Notrelix.Application.Common.Exceptions.ConflictException;
 using PreconditionFailed = Notrelix.Application.Common.Exceptions.PreconditionFailedException;
 
@@ -190,15 +193,127 @@ public sealed class FieldValuesAndLifecyclePipelineIntegrationTests : IAsyncLife
         (await FieldDeletedAtAsync(scene.FieldId)).Should().BeNull();
     }
 
-    private record Scene(OrgStack Stack, Guid BoardId, Guid ItemId, Guid FieldId);
+    [Fact]
+    public async Task ASinglePersonField_TakesOnePersonId_AndRefusesAList()
+    {
+        var scene = await SeedAsync(FieldType.Person);
+        var colleague = await _host.AddMemberAsync(scene.Stack, WorkspaceRole.Member, "Colleague");
+        using var owner = Provider(scene.Stack);
 
-    private async Task<Scene> SeedAsync(FieldType type)
+        await WriteAsync(owner, scene, colleague.ToString());
+        var after = await VersionAsync(scene.ItemId);
+        await WriteAsync(owner, scene, colleague.ToString());
+        var asList = () => WriteAsync(owner, scene, new[] { colleague.ToString() });
+
+        (await StoredValueAsync(scene.ItemId, scene.FieldId)).Should().Contain(colleague.ToString());
+        (await VersionAsync(scene.ItemId)).Should().Be(after, "the same person again is a no-op");
+        await asList.Should().ThrowAsync<Exception>("a single field holds one person, not a list");
+    }
+
+    [Fact]
+    public async Task AMultiplePersonField_TakesAList_HoldsEachPersonOnce_AndTheSameSetIsANoOp()
+    {
+        var scene = await SeedAsync(FieldType.Person, "{\"multiple\":true}");
+        var first = await _host.AddMemberAsync(scene.Stack, WorkspaceRole.Member, "First");
+        var second = await _host.AddMemberAsync(scene.Stack, WorkspaceRole.Member, "Second");
+        using var owner = Provider(scene.Stack);
+
+        await WriteAsync(owner, scene, new[] { first.ToString(), second.ToString(), first.ToString() });
+        var after = await VersionAsync(scene.ItemId);
+        var stored = System.Text.Json.JsonSerializer.Deserialize<Guid[]>((await StoredValueAsync(scene.ItemId, scene.FieldId))!)!;
+        await WriteAsync(owner, scene, new[] { second.ToString(), first.ToString() });
+        var asOne = () => WriteAsync(owner, scene, first.ToString());
+
+        stored.Should().BeEquivalentTo([first, second], "a repeated person is held once");
+        (await VersionAsync(scene.ItemId)).Should().Be(after, "the same set in another order is a no-op");
+        await asOne.Should().ThrowAsync<Exception>("a multiple field holds a list");
+
+        await WriteAsync(owner, scene, Array.Empty<string>());
+        (await StoredValueAsync(scene.ItemId, scene.FieldId)).Should().BeOneOf([null, "null"], "an empty list clears the field");
+    }
+
+    [Fact]
+    public async Task APersonWhoCannotViewTheBoard_IsRefusedWithTheReasonToShareFirst_AndNothingChanges()
+    {
+        var scene = await SeedAsync(FieldType.Person, "{\"multiple\":true}", BoardVisibility.Private);
+        var cannotSee = await _host.AddMemberAsync(scene.Stack, WorkspaceRole.Member, "Cannot see");
+        using var owner = Provider(scene.Stack);
+        var read = await VersionAsync(scene.ItemId);
+
+        var refused = () => WriteAsync(owner, scene, new[] { cannotSee.ToString() });
+
+        (await refused.Should().ThrowAsync<AppForbidden>()).Which.Code.Should().Be(Notrelix.Application.Features.WorkManagement.Boards.Services.BoardAssigneeGuard.BoardNotSharedCode);
+        (await StoredValueAsync(scene.ItemId, scene.FieldId)).Should().BeNull();
+        (await VersionAsync(scene.ItemId)).Should().Be(read);
+    }
+
+    [Fact]
+    public async Task ARenamedOption_KeepsItsId_AndTheItemsStillHoldIt()
+    {
+        var scene = await SeedAsync(FieldType.Select);
+        using var owner = Provider(scene.Stack);
+        await WriteAsync(owner, scene, scene.Options[0].ToString());
+        var item = await VersionAsync(scene.ItemId);
+
+        await OrgTreeTestHost.SendAsync(owner, new UpdateFieldOptionCommand(
+            scene.BoardId, scene.FieldId, scene.Options[0], "Kế toán", "#1666CC", await FieldVersionAsync(scene.FieldId)));
+
+        (await StoredValueAsync(scene.ItemId, scene.FieldId)).Should().Contain(scene.Options[0].ToString());
+        (await VersionAsync(scene.ItemId)).Should().Be(item, "renaming an option does not touch the items holding it");
+        var option = await _host.ReadAsync(c => c.BoardFields.AsNoTracking().Include(f => f.Options).Where(f => f.Id == scene.FieldId).Select(f => f.Options.Single(o => o.Id == scene.Options[0])).SingleAsync());
+        option.Name.Should().Be("Kế toán");
+    }
+
+    [Fact]
+    public async Task AMultiSelect_HoldsAnOptionOnce_ARepeatedOptionIsRefusedAndTheSetStays()
+    {
+        var scene = await SeedAsync(FieldType.MultiSelect);
+        using var owner = Provider(scene.Stack);
+        var (first, second) = (scene.Options[0].ToString(), scene.Options[1].ToString());
+
+        await WriteAsync(owner, scene, new[] { first });
+        var after = await VersionAsync(scene.ItemId);
+        await WriteAsync(owner, scene, new[] { first });
+        var twice = () => WriteAsync(owner, scene, new[] { first, second, first });
+
+        (await VersionAsync(scene.ItemId)).Should().Be(after, "the same set is a no-op");
+        await twice.Should().ThrowAsync<Exception>("an option cannot be in the set twice");
+        System.Text.Json.JsonSerializer.Deserialize<string[]>((await StoredValueAsync(scene.ItemId, scene.FieldId))!).Should().Equal(first);
+        (await VersionAsync(scene.ItemId)).Should().Be(after);
+    }
+
+    [Fact]
+    public async Task APersonValueOverTheCap_OrWithANonStringElement_IsRefusedBeforeAnyLookup_AndMixedSetsNameTheMissingShare()
+    {
+        var scene = await SeedAsync(FieldType.Person, "{\"multiple\":true}", BoardVisibility.Private);
+        var cannotSee = await _host.AddMemberAsync(scene.Stack, WorkspaceRole.Member, "Cannot see");
+        using var owner = Provider(scene.Stack);
+        var read = await VersionAsync(scene.ItemId);
+
+        var overCap = () => WriteAsync(owner, scene, Enumerable.Range(0, 51).Select(_ => Guid.NewGuid().ToString()).ToArray());
+        var nonString = () => WriteAsync(owner, scene, new object[] { Guid.NewGuid().ToString(), 7 });
+        var mixed = () => WriteAsync(owner, scene, new[] { scene.Stack.OwnerId.ToString(), cannotSee.ToString() });
+
+        (await overCap.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which.Message.Should().Contain("at most 50");
+        await nonString.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+        (await mixed.Should().ThrowAsync<AppForbidden>()).Which.Code.Should().Be(Notrelix.Application.Features.WorkManagement.Boards.Services.BoardAssigneeGuard.BoardNotSharedCode);
+        (await StoredValueAsync(scene.ItemId, scene.FieldId)).Should().BeNull("a refused set stores nothing, not even the person who can see");
+        (await VersionAsync(scene.ItemId)).Should().Be(read);
+    }
+
+    private record Scene(OrgStack Stack, Guid BoardId, Guid ItemId, Guid FieldId, IReadOnlyList<Guid> Options);
+
+    private async Task<Scene> SeedAsync(FieldType type, string? settings = null, BoardVisibility visibility = BoardVisibility.Workspace)
     {
         var stack = await _host.SeedWorkspaceAsync();
-        var boardId = await _host.SeedBoardAsync(stack, "Fields", BoardVisibility.Workspace);
+        var boardId = await _host.SeedBoardAsync(stack, "Fields", visibility);
         var group = BoardGroup.Create(stack.AccountId, stack.WorkspaceId, boardId, "Todo", Color.Create("#808080"), FractionalIndex.Create("a0"), stack.OwnerId, OrgTreeTestHost.BaseTime);
         var item = BoardItem.CreateRoot(stack.AccountId, stack.WorkspaceId, boardId, group.Id, "Task", FractionalIndex.Create("a0"), stack.OwnerId, OrgTreeTestHost.BaseTime);
-        var field = BoardField.Create(stack.AccountId, stack.WorkspaceId, boardId, "Note", type, FieldSettings.Empty(), FractionalIndex.Create("a5"), stack.OwnerId, OrgTreeTestHost.BaseTime);
+        var field = BoardField.Create(stack.AccountId, stack.WorkspaceId, boardId, "Note", type, settings is null ? FieldSettings.Empty() : FieldSettings.Create(JsonValue.Create(settings)), FractionalIndex.Create("a5"), stack.OwnerId, OrgTreeTestHost.BaseTime);
+        var options = type is FieldType.Select or FieldType.MultiSelect
+            ? new[] { "Accounting", "Warehouse" }.Select((name, index) =>
+                field.AddOption(name, Color.Create("#1666CC"), FractionalIndex.Create($"a{index}"), stack.OwnerId, OrgTreeTestHost.BaseTime).Id).ToList()
+            : [];
         await _host.WithSystemContextAsync(c =>
         {
             c.BoardGroups.Add(group);
@@ -206,7 +321,7 @@ public sealed class FieldValuesAndLifecyclePipelineIntegrationTests : IAsyncLife
             c.BoardFields.Add(field);
             return Task.CompletedTask;
         });
-        return new Scene(stack, boardId, item.Id, field.Id);
+        return new Scene(stack, boardId, item.Id, field.Id, options);
     }
 
     private ServiceProvider Provider(OrgStack stack) => _host.CreateProvider(stack.AccountId, stack.OwnerId);

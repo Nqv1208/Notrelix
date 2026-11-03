@@ -23,4 +23,18 @@ public static class BoardAssigneeGuard
                 "This person is a viewer of the board and cannot be given work. Make them a member first.");
         }
     }
+
+    /// <summary>The same refusal for a set of people, in one query.</summary>
+    public static async Task EnsureNoneViewerAsync(
+        IWorkManagementDbContext context, Guid boardId, IReadOnlyCollection<Guid> userIds, CancellationToken ct)
+    {
+        var anyViewer = await context.BoardMembers.AsNoTracking()
+            .AnyAsync(m => m.BoardId == boardId && userIds.Contains(m.UserId) && BoardRoles.Viewers.Contains(m.Role), ct);
+        if (anyViewer)
+        {
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                WorkManagementRuleCodes.WorkManagement_BoardItem_AssigneeIsViewer,
+                "This person is a viewer of the board and cannot be given work. Make them a member first.");
+        }
+    }
 }

@@ -774,6 +774,7 @@ function mapBoardColumnDto(
     isSystemField:
       "isSystemField" in dto ? dto.isSystemField : (dto.isSystem ?? false),
     ...(typeof settings.unit === "string" ? { unit: settings.unit } : {}),
+    ...(settings.multiple === true ? { multiple: true } : {}),
     ...(settings.display === "mark" ? { display: "mark" as const } : {}),
     ...(normalizeName(rawType) === "status"
       ? { semanticRole: "status" as const }
