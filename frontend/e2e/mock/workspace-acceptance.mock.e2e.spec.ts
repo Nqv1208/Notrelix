@@ -162,6 +162,47 @@ for (const viewport of viewports) {
       );
     });
 
+    // The page outside a workspace, where a person with none left restores a deleted one. The Account canvas draws
+    // its frame; this state (one menu page, no workspace shell) is not drawn.
+    test(`your workspaces outside a workspace, ${mode}`, async ({ page }) => {
+      await prepare(page, viewport, dark);
+      await page.goto("/account/workspaces");
+      await expect(
+        page.getByRole("heading", { level: 2, name: "Your workspaces" }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByRole("navigation", { name: "Account settings" })
+          .getByRole("link"),
+      ).toHaveCount(1);
+      await audit(
+        page,
+        "account-workspaces-outside",
+        viewport,
+        dark,
+        page.locator("main"),
+      );
+    });
+
+    if (viewport.width === 390) {
+      test(`your workspaces outside a workspace in Vietnamese, ${mode}`, async ({
+        page,
+      }) => {
+        await prepare(page, viewport, dark, "vi");
+        await page.goto("/account/workspaces");
+        await expect(
+          page.getByRole("heading", { level: 2, name: "Workspace của bạn" }),
+        ).toBeVisible();
+        await audit(
+          page,
+          "account-workspaces-outside-vi",
+          viewport,
+          dark,
+          page.locator("main"),
+        );
+      });
+    }
+
     test(`workspace switcher in the system rail, ${mode}`, async ({ page }) => {
       await prepare(page, viewport, dark);
       await page.goto(WORKSPACE);
@@ -325,6 +366,39 @@ for (const viewport of viewports) {
         page.locator("body"),
       );
     });
+
+    // The Space index on the web at 390 px is this tree in the drawer (the native Phòng ban tab frames belong to the
+    // mobile runtime): reviewed in Vietnamese, the language whose labels are the longest.
+    if (viewport.width === 390) {
+      test(`Space tree in Vietnamese with a department open, ${mode}`, async ({
+        page,
+      }) => {
+        await prepare(page, viewport, dark, "vi");
+        await page.goto(WORKSPACE);
+        await page
+          .getByRole("button", { name: "Hiện hoặc ẩn điều hướng" })
+          .first()
+          .click();
+        const nav = page.getByRole("navigation", {
+          name: "Điều hướng không gian làm việc",
+        });
+        const tree = nav.getByRole("tree", { name: "Phòng ban" });
+        await expect(tree.getByRole("treeitem").first()).toBeVisible();
+        await tree
+          .locator('[role="treeitem"][aria-expanded="false"]')
+          .first()
+          .focus();
+        await page.keyboard.press("ArrowRight");
+        await expect(
+          tree.locator('[role="treeitem"][aria-expanded="true"]'),
+        ).toHaveCount(1);
+        await audit(page, "space-tree-vi", viewport, dark, nav);
+        expect(
+          await findClippedText(page, "nav", ".sr-only"),
+          "space-tree-vi: clipped text",
+        ).toEqual([]);
+      });
+    }
 
     test(`Space tree with a department open, ${mode}`, async ({ page }) => {
       await prepare(page, viewport, dark);

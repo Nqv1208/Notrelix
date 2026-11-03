@@ -87,6 +87,15 @@ test("a new person registers, sees the neutral step, confirms the email and sign
   expect(me.email).toBe(person.email);
   expect(me.emailConfirmed).toBe(true);
 
+  // The registration fact made exactly one personal workspace and sign-in lands inside it (not on onboarding).
+  const mine = async () =>
+    (await apiRead<readonly { id: string }[]>(page, "/workspaces")).map(
+      (workspace) => workspace.id,
+    );
+  await expect.poll(async () => (await mine()).length).toBe(1);
+  const [personal] = await mine();
+  await expect(page).toHaveURL(new RegExp(`/workspaces/${personal}`));
+
   // The same address again, with another password, in a signed-out browser.
   await page.context().clearCookies();
   const intruder = `Pw-${randomUUID()}`;
@@ -110,6 +119,8 @@ test("a new person registers, sees the neutral step, confirms the email and sign
   await expect(page).toHaveURL(/\/sign-in/);
   await signInThroughThePage(page, person.email, person.password);
   await expect(page).toHaveURL(SIGNED_IN, { timeout: 20_000 });
+  // Registering twice and signing in twice made no second workspace.
+  expect(await mine()).toEqual([personal]);
 });
 
 test("sign-in: a wrong password and an unknown address are refused with the same words, and the right password opens the app", async ({
