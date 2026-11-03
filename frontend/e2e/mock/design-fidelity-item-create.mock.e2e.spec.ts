@@ -129,11 +129,10 @@ test.describe("create popup, desktop", () => {
     const left = pop.locator("section").first().locator("..");
     await expectRel(left, pop, { x: 0, y: 56, w: 720 }, "item column");
     const sections = pop.locator("section");
-    // The canvas draws four sections (description, fields, attachments, links) at 152, 208, 260 and 312; the app has
-    // the first three at the same y. The links section is the open gap (see the fixme below).
-    for (const [i, y] of [152, 208, 260].entries())
+    // The canvas draws four sections (description, fields, attachments, links) at 152, 208, 260 and 312.
+    for (const [i, y] of [152, 208, 260, 312].entries())
       near((await rel(sections.nth(i), pop)).y, y, `section ${i}.y`);
-    await expect(sections).toHaveCount(3);
+    await expect(sections).toHaveCount(4);
 
     // Footer: keep-going tick, Huỷ, Tạo thẻ.
     const keep = pop.getByLabel("Tạo tiếp thẻ khác");
@@ -157,14 +156,21 @@ test.describe("create popup, desktop", () => {
     );
   });
 
-  // Kanban-CardPopup-Create draws "Liên kết và phụ thuộc · Chưa có gì · Thêm liên kết" in a new card; the draft holds
-  // no dependency links yet (`LinksSection` returns null in create mode), so the section is not built.
-  test.fixme("frame 1: the links section is drawn under the attachments", async ({
+  // Kanban-CardPopup-Create draws "Liên kết và phụ thuộc · Chưa có gì · Thêm liên kết" in a new card;
+  // the draft holds the links and they are written once the card exists.
+  test("frame 1: the links section is drawn under the attachments with its add button", async ({
     page,
   }) => {
     await page.goto(BOARD);
+    await page
+      .getByRole("button", { name: "Thêm công việc", exact: true })
+      .first()
+      .click();
+    const pop = page.getByRole("dialog").first();
+    await expect(pop.getByText("Liên kết và phụ thuộc")).toBeVisible();
+    await expect(pop.getByText("Chưa có gì").last()).toBeVisible();
     await expect(
-      page.getByRole("dialog").getByText("Liên kết và phụ thuộc"),
+      pop.getByRole("button", { name: "Thêm liên kết" }),
     ).toBeVisible();
   });
 });
