@@ -49,6 +49,7 @@ import {
   accountAppearanceRoute,
   accountNotificationsRoute,
   accountWorkspacesRoute,
+  accountOutsideWorkspaceRoute,
 } from "./routes/account.routes";
 
 export const routeTree = rootRoute.addChildren([
@@ -64,6 +65,7 @@ export const routeTree = rootRoute.addChildren([
   inviteLinkRoute,
   onboardingRoute,
   welcomeRoute,
+  accountOutsideWorkspaceRoute,
   workspaceRoute.addChildren([
     workspaceIndexRoute,
     boardRoute,
