@@ -531,7 +531,7 @@ export function BillingSeatInviteDialog(props: BillingSeatInviteDialogProps) {
               </SelectContent>
             </Select>
           </div>
-          {/* The dark wash is the artboard's amber (#F2C14E) at 12%: the product's amber token is two levels off it. */}
+          {/* The dark wash is the artboard's amber at 12%: the product's amber token is a few levels off it. */}
           {over && seats ? (
             <div
               role="alert"

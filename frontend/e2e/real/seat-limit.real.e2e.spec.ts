@@ -1,5 +1,9 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { freshMember, registerPerson } from "./support/fresh-person";
+import {
+  confirmEmailOf,
+  freshMember,
+  registerPerson,
+} from "./support/fresh-person";
 import { apiRead, apiWrite } from "./support/real-session";
 import {
   createOwnedWorkspace,
@@ -23,6 +27,8 @@ async function person(browser: Browser, label: string) {
   const context = await browser.newContext();
   const page = await context.newPage();
   const registered = await registerPerson(page, label);
+  // An unconfirmed address cannot accept an invitation.
+  await confirmEmailOf(page, registered.email, "2m");
   return { context, page, ...registered };
 }
 
@@ -36,7 +42,9 @@ async function invite(owner: Page, workspaceId: string, email: string) {
   );
   expect(invited.status, `invite ${email}`).toBe(201);
   const pending = (await invitationsOf(owner, workspaceId)).find(
-    (row) => row.email === email && row.status === "Pending",
+    (row) =>
+      row.email.toLowerCase() === email.toLowerCase() &&
+      row.status === "Pending",
   );
   expect(pending, `pending invitation of ${email}`).toBeDefined();
   return pending!.id;
@@ -46,7 +54,7 @@ test("the Free plan holds ten member seats: the eleventh person is refused with 
   browser,
   page,
 }) => {
-  const owner = await freshMember(page, "SeatOwner");
+  const owner = await freshMember(page, "seatowner");
   const workspaceId = owner.workspaceId;
   const seated: Awaited<ReturnType<typeof person>>[] = [];
   const cleanup: (() => Promise<void>)[] = [];
@@ -54,7 +62,7 @@ test("the Free plan holds ten member seats: the eleventh person is refused with 
   try {
     // The owner holds one seat; nine invited people take the rest.
     for (let index = 1; index < MEMBER_SEATS; index += 1) {
-      const member = await person(browser, `Seat${index}`);
+      const member = await person(browser, `seat${index}`);
       cleanup.push(() => member.context.close());
       const invitationId = await invite(page, workspaceId, member.email);
       const accepted = await apiWrite(
@@ -71,7 +79,7 @@ test("the Free plan holds ten member seats: the eleventh person is refused with 
     const eleventhContext = await browser.newContext();
     cleanup.push(() => eleventhContext.close());
     const eleventhPage = await eleventhContext.newPage();
-    const eleventh = await freshMember(eleventhPage, "SeatEleven");
+    const eleventh = await freshMember(eleventhPage, "seateleven");
     const refusedInvitation = await invite(page, workspaceId, eleventh.email);
 
     await eleventhPage.goto(`/workspaces/${eleventh.workspaceId}`);
@@ -82,9 +90,9 @@ test("the Free plan holds ten member seats: the eleventh person is refused with 
       name: /^Accept the invitation to/,
     });
     await accept.click();
-    await expect(eleventhPage.getByRole("alert")).toContainText(
-      "member limit of this account's plan has been reached",
-    );
+    await expect(
+      eleventhPage.getByRole("alert").filter({ hasText: /member limit/ }),
+    ).toContainText("member limit of this account's plan has been reached");
     // The invitation stays, so it can be accepted once a seat is free; no membership was made.
     await expect(accept).toBeVisible();
     expect(await membersOf(page, workspaceId)).toHaveLength(MEMBER_SEATS);

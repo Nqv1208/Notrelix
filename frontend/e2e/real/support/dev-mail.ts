@@ -22,6 +22,8 @@ export async function devMails(
   email: string,
   body: string,
   seen = 0,
+  /** How far back the backend log is read; a spec that mails many people in one run narrows it. */
+  since = "20m",
 ): Promise<string[]> {
   const pattern = new RegExp(
     `Development email to ${escapeRegExp(maskedRecipient(email))}: [\\s\\S]*?${body}`,
@@ -30,7 +32,7 @@ export async function devMails(
   for (let attempt = 0; attempt < 40; attempt += 1) {
     const logs = execFileSync(
       "docker",
-      ["logs", "--since", "20m", backendContainer],
+      ["logs", "--since", since, backendContainer],
       {
         encoding: "utf8",
         maxBuffer: 256 * 1024 * 1024,

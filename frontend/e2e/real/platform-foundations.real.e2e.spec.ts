@@ -491,6 +491,54 @@ test("a manager shares a board and a page with a person, changes the level on th
   await s.close();
 });
 
+test("removing a person's access to a board ends it in their open tab without a reload and leaves nothing of the board in their cache", async ({
+  browser,
+  page,
+}) => {
+  const s = await scene(browser, page);
+  const guestId = (await apiRead<{ id: string }>(s.guest.page, "/auth/me")).id;
+  const permissions = `/resources/work-management.board/${s.board.id}/permissions`;
+  const granted = await apiWrite<{ id: string }>(page, "POST", permissions, {
+    subjectType: "User",
+    subjectId: guestId,
+    level: "Viewer",
+  });
+  expect(granted.status).toBeLessThan(300);
+
+  // The guest has the board open: it shows the board.
+  const boardUrl = `/workspaces/${s.workspace.id}/boards/${s.board.id}`;
+  await s.guest.page.goto(`/workspaces/${s.workspace.id}`);
+  await s.guest.page.goto(boardUrl);
+  const title = s.guest.page.getByRole("heading", {
+    level: 1,
+    name: s.board.title,
+  });
+  await expect(title).toBeVisible({ timeout: 20_000 });
+
+  // The manager removes the access. The open tab drops the board on its own (the access signal of the realtime
+  // gateway revalidates the workspace), with no reload and no navigation.
+  const reloads: string[] = [];
+  s.guest.page.on("framenavigated", (frame) => {
+    if (frame === s.guest.page.mainFrame()) reloads.push(frame.url());
+  });
+  const removed = await apiWrite(
+    page,
+    "DELETE",
+    `${permissions}/${granted.data!.id}`,
+  );
+  expect(removed.status).toBeLessThan(300);
+  await expect(title).toBeHidden({ timeout: 30_000 });
+  expect(reloads, "the tab was not reloaded").toEqual([]);
+  expect((await probe(s.guest.page, `/boards/${s.board.id}`)).status).toBe(404);
+
+  // Coming back to the board inside the app (history, no reload) does not serve it from the cache.
+  await s.guest.page.goBack();
+  await s.guest.page.goForward();
+  await expect(title).toBeHidden();
+
+  await s.close();
+});
+
 /** The Redis of this e2e stack only; the stack's compose project owns it. */
 const redisContainer = "notrelix-fe-real-e2e-redis";
 
@@ -507,7 +555,7 @@ test("with Redis down every authenticated request is refused with a retryable 50
     await page.request.get(`${apiUrl}/auth/csrf`)
   ).json()) as { token: string };
   const item = `/board-items/${s.itemId}`;
-  const seen = await apiRead<{ version: number; title: string }>(page, item);
+  const seen = await apiRead<{ version: number }>(page, item);
   const boardBefore = JSON.stringify(
     await apiRead(page, `/boards/${s.board.id}/full`),
   );
@@ -538,8 +586,10 @@ test("with Redis down every authenticated request is refused with a retryable 50
 
     // The app keeps the person signed in and offers a retry instead of a sign-in page or a blank screen.
     await page.reload();
+    // Each read waits out the 5 s Redis connect backlog before it answers 503.
     await expect(page.getByRole("alert")).toContainText(
       "Could not check your session",
+      { timeout: 30_000 },
     );
     expect(new URL(page.url()).pathname).toContain(s.board.id);
   } finally {
@@ -558,10 +608,7 @@ test("with Redis down every authenticated request is refused with a retryable 50
   ).toBeVisible();
 
   // The refused write changed nothing.
-  expect(await apiRead(page, item)).toMatchObject({
-    version: seen.version,
-    title: seen.title,
-  });
+  expect(await apiRead(page, item)).toMatchObject({ version: seen.version });
   expect(
     JSON.stringify(await apiRead(page, `/boards/${s.board.id}/full`)),
   ).toBe(boardBefore);

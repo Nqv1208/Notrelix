@@ -36,8 +36,8 @@ export async function registerPerson(
 }
 
 /** Opens the confirmation link the development backend logged for the address. */
-export async function confirmEmailOf(page: Page, email: string) {
-  const link = (await devMails(email, CONFIRMATION_LINK)).at(-1)!;
+export async function confirmEmailOf(page: Page, email: string, since = "20m") {
+  const link = (await devMails(email, CONFIRMATION_LINK, 0, since)).at(-1)!;
   const token = decodeURIComponent(new URL(link).hash.replace("#token=", ""));
   const confirmed = await apiWrite(
     page,
