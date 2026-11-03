@@ -787,6 +787,8 @@ Decided 2026-11-01 (owner decision, delegated to the lead):
 - the Owner alone sees it in a "Recently deleted" list of the Account and may restore it within 30 days;
 - there is no workspace export yet, so none is offered during the 30 days;
 - after 30 days a purge job erases the workspace's data (the audit trail, billing records and the outbox are kept) and writes an audit fact.
+- a realtime subscription open when the workspace is deleted ends at once: the delete signals the realtime gateway, which re-authorizes the workspace's subscriptions and revokes each (the periodic pass stays as the backstop), and a new subscription is refused with the denial a stranger gets;
+- no other context reacts to the deletion beyond that access cut and the purge: no downstream retention, provider-side cleanup, export or notification is specified, and none is built (a context that needs one defines it through its own retention rule and a stable contract, section 64).
 
 # 62. WSP-018 — Workspace deletion is a process, not ORM cascade
 
@@ -803,6 +805,8 @@ If Workspace restore exists, define:
 - what remains irreversible.
 
 Decided 2026-11-01: the Owner restores a workspace inside 30 days of deleting it, and everything comes back as it was (status, memberships, grants, Spaces, Boards and pages are untouched by deletion, so nothing is rebuilt). After the 30 days restore is refused. What stays irreversible: the data erased by the purge, which cannot be restored.
+
+The Owner finds the deleted workspace in Recently deleted on "Your workspaces". A person with no workspace left reaches the same page outside a workspace (`/account/workspaces`, the account frame with its one page that needs no workspace); sign-in lands there instead of onboarding while they have a workspace waiting in Recently deleted.
 
 # 64. Cross-context deletion
 
