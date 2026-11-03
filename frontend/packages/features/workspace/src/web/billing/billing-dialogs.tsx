@@ -448,7 +448,7 @@ export function BillingSeatInviteDialog(props: BillingSeatInviteDialogProps) {
         showCloseButton={false}
         overlayClassName={DIALOG_OVERLAY}
         aria-labelledby="inv-dlg-t"
-        className={DIALOG_PANEL}
+        className={cn(DIALOG_PANEL, "dark:bg-popover")}
       >
         <DialogHead
           id="inv-dlg-t"
@@ -500,7 +500,7 @@ export function BillingSeatInviteDialog(props: BillingSeatInviteDialogProps) {
                   }
                 }}
                 onBlur={() => commit(draft)}
-                className="h-[26px] min-w-[100px] flex-1 border-0 bg-transparent text-nav leading-[1.45] text-foreground outline-none placeholder:text-meta-foreground"
+                className="box-content h-[26px] min-w-[100px] flex-1 border-0 bg-transparent px-0.5 py-px text-nav leading-[1.45] font-normal text-foreground outline-none placeholder:text-meta-foreground"
               />
             </div>
             {invalid ? (
@@ -519,7 +519,10 @@ export function BillingSeatInviteDialog(props: BillingSeatInviteDialogProps) {
                 props.onRole(value === "guest" ? "guest" : "member")
               }
             >
-              <SelectTrigger id="inv-role" className="w-full">
+              <SelectTrigger
+                id="inv-role"
+                className="w-full rounded-[8px] text-nav font-normal"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -528,11 +531,12 @@ export function BillingSeatInviteDialog(props: BillingSeatInviteDialogProps) {
               </SelectContent>
             </Select>
           </div>
+          {/* The dark wash is the artboard's amber (#F2C14E) at 12%: the product's amber token is two levels off it. */}
           {over && seats ? (
             <div
               role="alert"
               id="seat-msg"
-              className="flex items-start gap-2.5 rounded-[10px] border border-warning-text/40 bg-warning-subtle p-3 text-compact leading-[1.45] text-foreground"
+              className="flex items-start gap-2.5 rounded-[10px] border border-warning-text/40 bg-warning-subtle p-3 dark:bg-[rgb(242_193_78/0.12)] text-compact leading-[1.45] text-foreground"
             >
               <BillingGlyph name="warn" className="mt-0.5 text-warning-text" />
               <div>
@@ -560,7 +564,7 @@ export function BillingSeatInviteDialog(props: BillingSeatInviteDialogProps) {
                     onClick={() =>
                       props.onEmails(emails.slice(0, Math.max(0, left)))
                     }
-                    className={BILLING_BTN_SM}
+                    className={cn(BILLING_BTN_SM, "dark:bg-popover")}
                   >
                     {c.trim}
                   </button>
@@ -579,7 +583,11 @@ export function BillingSeatInviteDialog(props: BillingSeatInviteDialogProps) {
             {formatCopy(c.foot, { count: emails.length })}
           </small>
           <span className="grow" />
-          <button type="button" onClick={props.onClose} className={BILLING_BTN}>
+          <button
+            type="button"
+            onClick={props.onClose}
+            className={cn(BILLING_BTN, "dark:bg-popover")}
+          >
             {c.cancel}
           </button>
           <button
