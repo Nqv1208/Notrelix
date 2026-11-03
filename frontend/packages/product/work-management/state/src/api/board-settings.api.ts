@@ -524,8 +524,12 @@ export function createBoardSettingsApi(client: NotrelixClient) {
           idempotencyKey: crypto.randomUUID(),
         },
       ),
+    // `DELETE /boards/{id}/fields/{fieldId}?expectedVersion=n`: a soft delete a Manager can restore for 30 days.
     deleteField: (s: BoardSettingsDto, fieldId: string) =>
-      api.delete<void>(endpoints.boardFields.detail(s.boardId, fieldId), quiet),
+      api.delete<void>(
+        `${endpoints.boardFields.detail(s.boardId, fieldId)}?expectedVersion=${fieldOf(s, fieldId).version ?? 0}`,
+        quiet,
+      ),
     reorderFields: async (s: BoardSettingsDto, ids: readonly string[]) => {
       const moved = movedId(
         s.fields.map((field) => field.id),
