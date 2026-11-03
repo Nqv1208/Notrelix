@@ -24,8 +24,6 @@ describe("useKanbanToolbarCopy", () => {
     expect(copy.filter.trigger).toBe("Lọc");
     expect(copy.groupBy.label).toBe("Nhóm theo");
     expect(copy.addItem).toBe("Thêm công việc");
-    expect(copy.noResults.title).toBe("Không có việc khớp bộ lọc");
-    expect(copy.noResults.clear).toBe("Bỏ lọc");
   });
 
   it("selects the English copy for the en locale", () => {

@@ -34,6 +34,8 @@ export type SavedFilterWriteResult =
 export interface SummaryPhrase {
   readonly text: string;
   readonly group?: boolean;
+  /** The condition is on a field that was removed: it is ignored, and the row says so. */
+  readonly stale?: boolean;
 }
 
 export type SavedFiltersStatus = "loading" | "error" | "ready";
@@ -305,13 +307,21 @@ function SavedFiltersList({
               key={filter.id}
               copy={copy}
               filter={filter}
+              stale={
+                describe
+                  ? describe(filter.criteria).filter((phrase) => phrase.stale)
+                      .length
+                  : 0
+              }
               subtitle={[
                 // A filter shared by a colleague says who made it ("Hà Nguyễn · …").
                 ...(filter.isMine || !filter.createdByName
                   ? []
                   : [filter.createdByName]),
                 ...(describe
-                  ? describe(filter.criteria).map((phrase) => phrase.text)
+                  ? describe(filter.criteria)
+                      .filter((phrase) => !phrase.stale)
+                      .map((phrase) => phrase.text)
                   : []),
               ].join(" · ")}
               applied={filter.id === appliedId}
@@ -437,6 +447,7 @@ function SavedFilterRow({
   copy,
   filter,
   subtitle,
+  stale,
   applied,
   canEdit,
   onApply,
@@ -446,7 +457,13 @@ function SavedFilterRow({
 }: Pick<
   SavedFiltersMenuProps,
   "copy" | "canEdit" | "onApply" | "onRename" | "onSetVisibility" | "onRemove"
-> & { filter: SavedFilter; subtitle: string; applied: boolean }) {
+> & {
+  filter: SavedFilter;
+  subtitle: string;
+  /** Conditions on a removed field: they are ignored when the filter is applied. */
+  stale: number;
+  applied: boolean;
+}) {
   const t = copy.row;
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState(filter.name);
@@ -534,7 +551,12 @@ function SavedFilterRow({
         className={`flex ${subtitle ? "min-h-13" : "min-h-11"} min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg border-0 bg-transparent py-1 pr-2.5 pl-2.5 text-left text-sm focus-visible:outline-2 focus-visible:outline-ring`}
       >
         <span className="grid h-4 w-4.5 shrink-0 place-items-center text-brand-subtle-foreground">
-          {applied ? (
+          {stale > 0 ? (
+            <CircleAlert
+              className="size-4 text-warning-text"
+              aria-hidden="true"
+            />
+          ) : applied ? (
             <Check className="size-4" aria-hidden="true" />
           ) : shared ? (
             <Users
@@ -549,12 +571,22 @@ function SavedFilterRow({
           <b className="block truncate text-[13.5px] font-semibold">
             {filter.name}
           </b>
+          {stale > 0 ? (
+            <small className="block text-xs leading-[1.45] text-warning-text">
+              {t.staleHint}
+            </small>
+          ) : null}
           {subtitle ? (
             <small className="block truncate text-xs leading-[1.45] text-meta-foreground">
               {subtitle}
             </small>
           ) : null}
         </span>
+        {stale > 0 ? (
+          <small className="shrink-0 text-xs leading-[1.45] whitespace-nowrap text-meta-foreground">
+            {fillSavedFiltersCopy(t.staleCount, { count: stale })}
+          </small>
+        ) : null}
         {canEdit ? null : (
           <span className="shrink-0 rounded-md bg-state-hover-strong px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
             {shared ? copy.menu.badgeShared : copy.menu.badgeMine}

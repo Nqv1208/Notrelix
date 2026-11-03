@@ -54,6 +54,8 @@ export const en = {
     share: "Share {{name}} with the board",
     unshare: "Make {{name}} only mine",
     remove: "Delete {{name}}",
+    staleHint: "A condition uses a field that was removed and will be ignored",
+    staleCount: "{{count}} ignored",
   },
   toast: {
     saved: "Saved filter {{name}}",
@@ -122,6 +124,8 @@ export const vi: SavedFiltersCopy = {
     share: "Chia sẻ {{name}} với board",
     unshare: "Chuyển {{name}} về riêng tôi",
     remove: "Xoá {{name}}",
+    staleHint: "Điều kiện dùng trường đã bị xoá, sẽ bị bỏ qua",
+    staleCount: "{{count}} bị bỏ qua",
   },
   toast: {
     saved: "Đã lưu bộ lọc {{name}}",

@@ -1,10 +1,7 @@
 import type { ReactNode } from "react";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@notrelix/ui-web";
-import {
-  kanbanOutlineButtonClass,
-  kanbanPrimaryButtonClass,
-} from "./kanban-chrome";
+import { kanbanPrimaryButtonClass } from "./kanban-chrome";
 import type { KanbanToolbarCopy } from "./kanban-toolbar.copy";
 
 /** A field the board can be grouped by: the Status field or a Select field. */
@@ -25,27 +22,11 @@ export interface KanbanToolbarProps {
   /** False for a viewer who cannot add items: the add button is not shown. */
   canAdd: boolean;
   onAddItem: () => void;
-  /**
-   * Set when search and filter leave no item on the board: renders the
-   * no-results bar with the number of items they hide.
-   */
-  noResults?: { hiddenCount: number } | null;
-  /** Clears the filter conditions (the no-results bar also clears the search). */
-  onClearFilter: () => void;
-}
-
-function fill(
-  message: string,
-  values: Readonly<Record<string, string | number>>,
-) {
-  return message.replace(/\{\{(\w+)\}\}/g, (match, key: string) =>
-    key in values ? String(values[key]) : match,
-  );
 }
 
 /**
  * Kanban toolbar (pure surface): search, the view controls slot and "Thêm
- * công việc", plus the no-results bar under it when nothing matches.
+ * công việc". When nothing matches the filter the board shows `FilterNoResults`.
  */
 export function KanbanToolbar({
   copy,
@@ -55,8 +36,6 @@ export function KanbanToolbar({
   endActions,
   canAdd,
   onAddItem,
-  noResults,
-  onClearFilter,
 }: KanbanToolbarProps) {
   return (
     <div data-kanban-toolbar="">
@@ -90,38 +69,6 @@ export function KanbanToolbar({
           </Button>
         ) : null}
       </div>
-
-      {noResults ? (
-        <div
-          role="status"
-          className="mb-2 flex flex-wrap items-center gap-3 rounded-[10px] border border-line bg-popover px-3 py-2.5 dark:bg-card text-compact text-muted-foreground"
-        >
-          <span>
-            <b className="font-semibold text-foreground">
-              {copy.noResults.title}
-            </b>
-            {copy.separator}
-            {fill(
-              noResults.hiddenCount === 1
-                ? copy.noResults.hidden_one
-                : copy.noResults.hidden_other,
-              { count: noResults.hiddenCount },
-            )}
-          </span>
-          <span className="flex-1" />
-          <Button
-            variant="outline"
-            size="sm"
-            className={kanbanOutlineButtonClass}
-            onClick={() => {
-              onClearFilter();
-              if (searchQuery !== "") onSearchChange("");
-            }}
-          >
-            {copy.noResults.clear}
-          </Button>
-        </div>
-      ) : null}
     </div>
   );
 }
