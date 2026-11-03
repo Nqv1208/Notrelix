@@ -33,8 +33,6 @@ export interface SaveFormState {
   describe: (criteria: SavedFilterCriteria) => readonly SummaryPhrase[];
 }
 
-
-
 export interface ViewStateBarProps {
   copy: FiltersCopy;
   view: ViewStateControl;

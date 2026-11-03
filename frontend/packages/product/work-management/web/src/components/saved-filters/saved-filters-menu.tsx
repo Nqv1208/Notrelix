@@ -214,9 +214,7 @@ function SaveFilterPopover({
             />
           </div>
           <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
-            <legend className="sr-only">
-              {t.visibilityLabel}
-            </legend>
+            <legend className="sr-only">{t.visibilityLabel}</legend>
             {(
               [
                 ["me", t.personal, t.personalHint],

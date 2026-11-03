@@ -120,9 +120,7 @@ test.describe("Saved filters against the canvas", () => {
     });
 
     await openApp(page);
-    await page
-      .getByRole("button", { name: "Lưu bộ lọc", exact: true })
-      .click();
+    await page.getByRole("button", { name: "Lưu bộ lọc", exact: true }).click();
     const form = page.getByRole("form", { name: "Lưu bộ lọc hiện tại" });
     await form.getByRole("textbox", { name: "Tên bộ lọc" }).fill(NAME);
     await form.getByRole("button", { name: "Lưu bộ lọc", exact: true }).click();
@@ -144,7 +142,14 @@ test.describe("Saved filters against the canvas", () => {
       clear: '[role="separator"] ~ button',
     });
     // One row in the mock world: the menu's height and the clear button's y follow the row count.
-    same(app, art, { root: "h", clear: "y", icon: "f", rename: "f", share: "f", remove: "f" });
+    same(app, art, {
+      root: "h",
+      clear: "y",
+      icon: "f",
+      rename: "f",
+      share: "f",
+      remove: "f",
+    });
   });
 
   test("the save form equals WM-SavedFilter-Save", async ({ page }) => {
@@ -165,9 +170,7 @@ test.describe("Saved filters against the canvas", () => {
     );
 
     await openApp(page);
-    await page
-      .getByRole("button", { name: "Lưu bộ lọc", exact: true })
-      .click();
+    await page.getByRole("button", { name: "Lưu bộ lọc", exact: true }).click();
     const form = page.getByRole("form", { name: "Lưu bộ lọc hiện tại" });
     await expect(form).toBeVisible();
     await page.waitForTimeout(400);
