@@ -57,11 +57,11 @@ async function applyLatency(
 // ─── Scripted write (design states) ──────────────────────────────────────────
 
 /**
- * A browser test can script the next create of an item: `localStorage["notrelix-mock-create"]` is
- * "hold" (the request waits until the key is cleared, then goes through) or "fail-once" (the next
- * request fails like a lost connection and the key clears). Dev only: the mock never ships.
+ * A browser test can script the next create of an item through `globalThis.__notrelixMockCreate`:
+ * "hold" (the request waits until the flag is cleared, then goes through) or "fail-once" (the next
+ * request fails like a lost connection and the flag clears). Dev only: the mock never ships.
  */
-const CREATE_SCRIPT_KEY = "notrelix-mock-create";
+type CreateScriptHost = { __notrelixMockCreate?: "hold" | "fail-once" };
 
 async function applyCreateScript(request: {
   method: string;
@@ -72,20 +72,13 @@ async function applyCreateScript(request: {
     !request.normalizedPathname.endsWith("/items")
   )
     return;
-  let mode: string | null = null;
-  try {
-    mode = globalThis.localStorage?.getItem(CREATE_SCRIPT_KEY) ?? null;
-  } catch {
-    return;
-  }
-  if (mode === "fail-once") {
-    globalThis.localStorage.removeItem(CREATE_SCRIPT_KEY);
+  const host = globalThis as CreateScriptHost;
+  if (host.__notrelixMockCreate === "fail-once") {
+    delete host.__notrelixMockCreate;
     throw new TypeError("[MockFetch] Scripted network failure");
   }
-  while (mode === "hold") {
+  while (host.__notrelixMockCreate === "hold")
     await new Promise<void>((resolve) => setTimeout(resolve, 50));
-    mode = globalThis.localStorage.getItem(CREATE_SCRIPT_KEY);
-  }
 }
 
 // ─── Factory ─────────────────────────────────────────────────────────────────

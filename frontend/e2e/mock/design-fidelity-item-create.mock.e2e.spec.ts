@@ -8,8 +8,8 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * "Tạo tiếp thẻ khác" and Huỷ / Tạo thẻ. Opened from "Thêm công việc" of the toolbar, the lane is chosen for the person.
  *
  * Frame 2 (the filled draft) and the states frames (`Kanban-CardPopup-Create-States`: creating, a lost connection, created
- * in place, closing a draft) are measured text by text below; a scripted create ("notrelix-mock-create" in the browser's
- * storage, read by the mock) holds or fails the request. Kept deviations: the artboard's custom field is "Hạng mục = Đào
+ * in place, closing a draft) are measured text by text below; a scripted create (`__notrelixMockCreate` on the page, read
+ * by the mock) holds or fails the request. Kept deviations: the artboard's custom field is "Hạng mục = Đào
  * tạo", the mock board's own field stands for it; in the created frame the comments column and everything under the quick
  * row are the open card's own popup, measured with the card popup specs; the 320 px sheet is `Kanban-CardPopup-M-Create`.
  */
@@ -127,8 +127,6 @@ async function fillFrame2(page: Page, pop: Locator) {
   await page.getByRole("button", { name: "Gắn", exact: true }).click();
   await page.waitForTimeout(500);
 }
-
-const CREATE_SCRIPT = "notrelix-mock-create";
 
 async function openFilled(page: Page) {
   await page.addInitScript(() => {
@@ -500,7 +498,10 @@ test.describe("create popup, states", () => {
 
   test("frame 1: creating, the request goes once", async ({ page }) => {
     const pop = await openFilled(page);
-    await page.evaluate((k) => localStorage.setItem(k, "hold"), CREATE_SCRIPT);
+    await page.evaluate(() => {
+      (globalThis as { __notrelixMockCreate?: string }).__notrelixMockCreate =
+        "hold";
+    });
     await pop.getByRole("button", { name: "Tạo thẻ" }).click();
     await expect(pop.getByText("Đang tạo thẻ, chỉ gửi một lần.")).toBeVisible();
     await page.mouse.move(2, 2);
@@ -517,17 +518,20 @@ test.describe("create popup, states", () => {
     near(note[0]![1], 43, "note.x");
     near(note[0]![2], 733.9, "note.y");
     near(note[1]![1] + note[1]![3] - note[0]![1], 397, "note.w");
-    await page.evaluate((k) => localStorage.removeItem(k), CREATE_SCRIPT);
+    await page.evaluate(() => {
+      delete (globalThis as { __notrelixMockCreate?: string })
+        .__notrelixMockCreate;
+    });
   });
 
   test("frame 2: a lost connection keeps the draft and retries safely", async ({
     page,
   }) => {
     const pop = await openFilled(page);
-    await page.evaluate(
-      (k) => localStorage.setItem(k, "fail-once"),
-      CREATE_SCRIPT,
-    );
+    await page.evaluate(() => {
+      (globalThis as { __notrelixMockCreate?: string }).__notrelixMockCreate =
+        "fail-once";
+    });
     await pop.getByRole("button", { name: "Tạo thẻ" }).click();
     await expect(pop.getByText("Chưa tạo được thẻ")).toBeVisible();
     await page.mouse.move(2, 2);
@@ -867,7 +871,10 @@ test.describe("create popup, 390 px sheet", () => {
     const pop = await openFilled(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForTimeout(500);
-    await page.evaluate((k) => localStorage.setItem(k, "hold"), CREATE_SCRIPT);
+    await page.evaluate(() => {
+      (globalThis as { __notrelixMockCreate?: string }).__notrelixMockCreate =
+        "hold";
+    });
     await pop.getByRole("button", { name: "Tạo thẻ" }).click();
     await expect(pop.getByText("Đang tạo thẻ, chỉ gửi một lần.")).toBeVisible();
     await page.mouse.move(2, 2);
@@ -883,7 +890,10 @@ test.describe("create popup, 390 px sheet", () => {
         text === "Liên kết và phụ thuộc" ||
         text === "· Chưa có gì",
     );
-    await page.evaluate((k) => localStorage.removeItem(k), CREATE_SCRIPT);
+    await page.evaluate(() => {
+      delete (globalThis as { __notrelixMockCreate?: string })
+        .__notrelixMockCreate;
+    });
   });
 
   test("frame 2: the checklist and the files, the comments wait", async ({
