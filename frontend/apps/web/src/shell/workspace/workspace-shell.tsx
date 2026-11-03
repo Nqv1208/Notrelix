@@ -258,7 +258,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     ]);
   }, [activeBoardSpaceId, reveal, spaceIndex]);
   // An open document shows its department's document tree under the Docs row
-  // (Final-Docs): the pages placed in the department's Spaces, nested by parent.
+  // (Final-Docs-2): the pages placed in the department's Spaces, nested by parent.
   const activeDocId = location?.section === "doc" ? location.docId : null;
   const [docsExpanded, setDocsExpanded] = useState<ReadonlySet<string>>(
     () => new Set(),

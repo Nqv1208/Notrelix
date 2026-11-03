@@ -1010,7 +1010,7 @@ export const calendarTones: Record<ThemeAppearance, CalendarTones> = {
 };
 
 /**
- * Document page surfaces (Final-Docs `.nx`): the page sheet, body ink, the
+ * Document page surfaces (Final-Docs-2 `.nx`): the page sheet, body ink, the
  * comment highlight, the info notice, the lane tints behind status chips in
  * the embedded task table and the review dot. One fill per appearance,
  * authored on the CSS emit grid so they render the mockup hex.
