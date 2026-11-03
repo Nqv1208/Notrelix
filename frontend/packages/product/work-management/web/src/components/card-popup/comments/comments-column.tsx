@@ -448,7 +448,7 @@ export function CommentsColumn() {
           className={cn(
             "m-0 flex-1 leading-[1.45] font-[650]",
             // Kanban-CardPopup-Create draws the comments title at 15 px; an open card keeps 16.
-            create ? "text-[15px]" : "text-[16px]",
+            create ? "text-[15px] max-md:text-[16px]" : "text-[16px]",
           )}
         >
           {copy.shell.comments}
