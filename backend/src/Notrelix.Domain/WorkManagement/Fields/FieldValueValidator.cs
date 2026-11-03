@@ -12,6 +12,9 @@ public static class FieldValueValidator
         "yyyy-MM-ddTHH:mm:ss.FFFFFFFK",
     ];
 
+    /// <summary>The most people one multiple Person value names (the same bound the work reports use for assignees).</summary>
+    public const int MaxPeople = 50;
+
     public static void Validate(FieldValue value, FieldType type, FieldSettings settings)
     {
         if (value == null)
@@ -107,6 +110,8 @@ public static class FieldValueValidator
                     // A multiple People field holds a list of principal ids; repeats collapse in BoardItem (same set = no-op).
                     if (kind != JsonValueKind.Array)
                         throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, "Value for a multiple Person field must be an array of user IDs.");
+                    if (element.GetArrayLength() > MaxPeople)
+                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, $"A Person field holds at most {MaxPeople} people.");
                     foreach (var person in element.EnumerateArray())
                     {
                         if (person.ValueKind != JsonValueKind.String || !Guid.TryParse(person.GetString(), out var personId) || personId == Guid.Empty)

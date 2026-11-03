@@ -282,6 +282,25 @@ public sealed class FieldValuesAndLifecyclePipelineIntegrationTests : IAsyncLife
         (await VersionAsync(scene.ItemId)).Should().Be(after);
     }
 
+    [Fact]
+    public async Task APersonValueOverTheCap_OrWithANonStringElement_IsRefusedBeforeAnyLookup_AndMixedSetsNameTheMissingShare()
+    {
+        var scene = await SeedAsync(FieldType.Person, "{\"multiple\":true}", BoardVisibility.Private);
+        var cannotSee = await _host.AddMemberAsync(scene.Stack, WorkspaceRole.Member, "Cannot see");
+        using var owner = Provider(scene.Stack);
+        var read = await VersionAsync(scene.ItemId);
+
+        var overCap = () => WriteAsync(owner, scene, Enumerable.Range(0, 51).Select(_ => Guid.NewGuid().ToString()).ToArray());
+        var nonString = () => WriteAsync(owner, scene, new object[] { Guid.NewGuid().ToString(), 7 });
+        var mixed = () => WriteAsync(owner, scene, new[] { scene.Stack.OwnerId.ToString(), cannotSee.ToString() });
+
+        (await overCap.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which.Message.Should().Contain("at most 50");
+        await nonString.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+        (await mixed.Should().ThrowAsync<AppForbidden>()).Which.Code.Should().Be(Notrelix.Application.Features.WorkManagement.Boards.Services.BoardAssigneeGuard.BoardNotSharedCode);
+        (await StoredValueAsync(scene.ItemId, scene.FieldId)).Should().BeNull("a refused set stores nothing, not even the person who can see");
+        (await VersionAsync(scene.ItemId)).Should().Be(read);
+    }
+
     private record Scene(OrgStack Stack, Guid BoardId, Guid ItemId, Guid FieldId, IReadOnlyList<Guid> Options);
 
     private async Task<Scene> SeedAsync(FieldType type, string? settings = null, BoardVisibility visibility = BoardVisibility.Workspace)

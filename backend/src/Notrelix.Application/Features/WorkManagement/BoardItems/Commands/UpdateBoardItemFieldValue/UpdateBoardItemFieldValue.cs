@@ -66,29 +66,28 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
                 ? new NotFoundException("BoardField", request.FieldId)
                 : await BoardFields.StaleFieldGuard.MissingAsync(_context, _actors, _requestContext, item.BoardId, request.FieldId, cancellationToken);
 
-        // A person field names who the work is for: each person must be able to view the board
-        // (share it first) and a board Viewer is not offered there.
+        // A person field names who the work is for. The value is validated first (shape, size, at most 50 people),
+        // so only a well-formed set reaches the checks: each person must be able to view the board (share it
+        // first) and a board Viewer is not offered there.
         if (field.Type == FieldType.Person && request.Value is not null)
         {
-            var json = System.Text.Json.JsonSerializer.Serialize(request.Value);
-            var named = new List<Guid>();
-            using (var doc = System.Text.Json.JsonDocument.Parse(json))
+            FieldValueValidator.Validate(FieldValue.Create(JsonValue.Create(System.Text.Json.JsonSerializer.Serialize(request.Value))), field.Type, field.Settings);
+            var named = new HashSet<Guid>();
+            using (var doc = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(request.Value)))
             {
                 var root = doc.RootElement;
                 if (root.ValueKind == System.Text.Json.JsonValueKind.Array)
-                    named.AddRange(root.EnumerateArray().Select(e => Guid.TryParse(e.GetString(), out var g) ? g : Guid.Empty).Where(g => g != Guid.Empty));
-                else if (Guid.TryParse(root.ValueKind == System.Text.Json.JsonValueKind.String ? root.GetString() : null, out var one))
-                    named.Add(one);
+                    foreach (var e in root.EnumerateArray()) named.Add(Guid.Parse(e.GetString()!));
+                else if (root.ValueKind == System.Text.Json.JsonValueKind.String)
+                    named.Add(Guid.Parse(root.GetString()!));
             }
-            foreach (var userId in named.Distinct())
+            if (named.Count > 0)
             {
                 if (_visibility is not null && _requestContext is not null)
-                {
-                    var visibleBoards = await _visibility.VisibleBoardIdsAsync(item.WorkspaceId, userId, cancellationToken);
-                    if (!visibleBoards.Contains(item.BoardId))
-                        throw new ForbiddenException("Người này chưa xem được board của việc, nên chưa thể chọn. Hãy chia sẻ board với họ trước.", BoardAssigneeGuard.BoardNotSharedCode);
-                }
-                await BoardAssigneeGuard.EnsureNotViewerAsync(_context, item.BoardId, userId, cancellationToken);
+                    foreach (var userId in named)
+                        if (!(await _visibility.VisibleBoardIdsAsync(item.WorkspaceId, userId, cancellationToken)).Contains(item.BoardId))
+                            throw new ForbiddenException("Người này chưa xem được board của việc, nên chưa thể chọn. Hãy chia sẻ board với họ trước.", BoardAssigneeGuard.BoardNotSharedCode);
+                await BoardAssigneeGuard.EnsureNoneViewerAsync(_context, item.BoardId, named, cancellationToken);
             }
         }
 

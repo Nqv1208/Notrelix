@@ -87,9 +87,9 @@ test.describe("Board table, in-place edits (owner)", () => {
     for (const key of ["ERP-142", "ERP-146"])
       await page.getByRole("checkbox", { name: `Chọn ${key}` }).click();
     await page.getByRole("button", { name: /^Giao cho/ }).click();
-    await page.getByRole("button", { name: "Phan Ngọc Anh" }).click();
-    await expect(row(page, "ERP-142")).toContainText("Phan Ngọc Anh");
-    await expect(row(page, "ERP-146")).toContainText("Phan Ngọc Anh");
+    await page.getByRole("button", { name: "Bùi Thanh Tâm" }).click();
+    await expect(row(page, "ERP-142")).toContainText("Bùi Thanh Tâm");
+    await expect(row(page, "ERP-146")).toContainText("Bùi Thanh Tâm");
   });
 
   test("bulk: Chuyển board sends the row to the other board", async ({
@@ -135,11 +135,19 @@ test.describe("Board table, in-place edits (owner)", () => {
   }) => {
     await openTable(page);
     await page.getByRole("button", { name: /^Lọc/ }).click();
-    await page.getByText("Đặng Minh Tuấn").first().click();
+    // The filter is a builder: add a condition on the assignee and pick the person.
+    await page.getByRole("button", { name: "Thêm điều kiện" }).click();
+    await page
+      .getByRole("combobox", { name: "Trường (Điều kiện 1)" })
+      .selectOption({ label: "Người thực hiện" });
+    await page
+      .getByRole("listbox", { name: "Giá trị (Điều kiện 1)" })
+      .getByRole("option", { name: "Bùi Thanh Tâm" })
+      .click();
     await page.keyboard.press("Escape");
     await expect(
       page.getByText(
-        "Đặng Minh Tuấn chưa phụ trách việc nào chưa xong trên board này.",
+        "Bùi Thanh Tâm chưa phụ trách việc nào chưa xong trên board này.",
       ),
     ).toBeVisible();
     await expect(
