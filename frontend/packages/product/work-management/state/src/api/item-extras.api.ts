@@ -1,5 +1,6 @@
 import type { NotrelixClient } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
+import type { OperationResponse } from "@notrelix/contracts";
 import { personInitials } from "@notrelix/work-management-core";
 
 /** A Documents page linked to an item that the caller may open. */
@@ -261,7 +262,10 @@ export interface MoveToBoardResultDto {
   readonly droppedAssignees: number;
 }
 
-/** An item in a board's archive. */
+type TrashPage = OperationResponse<"WorkManagement.BoardItems.Trash">;
+type ArchivedPage = OperationResponse<"WorkManagement.BoardItems.Archived">;
+
+/** An item in a board's archive: who archived it and when, and how many sub-items come back with it. */
 export interface BoardArchivedEntryDto {
   readonly id: string;
   readonly name: string;
@@ -269,10 +273,12 @@ export interface BoardArchivedEntryDto {
   readonly groupId: string;
   readonly archivedAt: string;
   readonly archivedBy: string | null;
+  readonly archivedByName: string | null;
+  readonly subItemCount: number;
   readonly version: number;
 }
 
-/** An item in a board's trash. */
+/** An item in a board's trash: who deleted it and when, how many sub-items went with it, and the last day it can be restored. */
 export interface BoardTrashEntryDto {
   readonly id: string;
   readonly name: string;
@@ -280,8 +286,23 @@ export interface BoardTrashEntryDto {
   readonly groupId: string;
   readonly deletedAt: string;
   readonly deletedBy: string | null;
+  readonly deletedByName: string | null;
+  readonly subItemCount: number;
   readonly restorableUntil: string;
 }
+
+/** One page of the archive or the trash: the rows, the cursor of the next page (null on the last) and the size of the whole list. */
+export interface ListPage<Row> {
+  readonly rows: readonly Row[];
+  readonly nextCursor: string | null;
+  readonly total: number;
+}
+
+/** The server's answers when a deleted item cannot be restored: past the 30 days, or the parent of a sub-item is still deleted. */
+export const RESTORE_WINDOW_CLOSED_CODE =
+  "work-management.item.restore-window-closed";
+export const RESTORE_PARENT_DELETED_CODE =
+  "work-management.item.restore-parent-deleted";
 
 /** The version an item has after a lifecycle write, for the write that undoes it. */
 export interface ItemVersionDto {
@@ -484,7 +505,7 @@ export function createItemExtrasApi(
     ): Promise<ItemVersionDto> {
       return versionOf(
         await api.post<VersionBody>(
-          `/board-items/${itemId}/unarchive?expectedVersion=${expectedVersion}`,
+          `${endpoints.boardItems.unarchive(itemId)}?expectedVersion=${expectedVersion}`,
           {},
           { idempotencyKey: key(), ...quiet },
         ),
@@ -579,30 +600,66 @@ export function createItemExtrasApi(
         droppedAssignees: result?.droppedAssignees ?? 0,
       };
     },
-    /** `WorkManagement.BoardItems.Trash`: items deleted from the board in the last 30 days. */
-    async listTrash(boardId: string): Promise<BoardTrashEntryDto[]> {
-      const rows = await api.get<BoardTrashEntryDto[]>(
-        `/boards/${boardId}/items/trash`,
+    /** `WorkManagement.BoardItems.Trash`: items deleted from the board in the last 30 days, newest first, a page at a time. */
+    async listTrash(
+      boardId: string,
+      cursor?: string,
+    ): Promise<ListPage<BoardTrashEntryDto>> {
+      const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+      const page = await api.get<TrashPage | null>(
+        `${endpoints.boardItems.trash(boardId)}${query}`,
         quiet,
       );
-      return rows ?? [];
+      return {
+        rows: (page?.items ?? []).map((row) => ({
+          id: row.id ?? "",
+          name: row.name ?? "",
+          itemKey: row.itemKey ?? null,
+          groupId: row.groupId ?? "",
+          deletedAt: row.deletedAt ?? "",
+          deletedBy: row.deletedBy ?? null,
+          deletedByName: row.deletedByName ?? null,
+          subItemCount: row.subItemCount ?? 0,
+          restorableUntil: row.restorableUntil ?? "",
+        })),
+        nextCursor: page?.nextCursor ?? null,
+        total: page?.total ?? 0,
+      };
     },
-    /** `WorkManagement.BoardItems.Archived`: the board's archived items, newest first, optionally narrowed by name. */
+    /** `WorkManagement.BoardItems.Archived`: the board's archived items, newest first, optionally narrowed by name or key, a page at a time. */
     async listArchived(
       boardId: string,
       search?: string,
-    ): Promise<BoardArchivedEntryDto[]> {
-      const q = search?.trim() ? `?q=${encodeURIComponent(search.trim())}` : "";
-      const rows = await api.get<BoardArchivedEntryDto[]>(
-        `/boards/${boardId}/items/archived${q}`,
+      cursor?: string,
+    ): Promise<ListPage<BoardArchivedEntryDto>> {
+      const query = new URLSearchParams();
+      if (search?.trim()) query.set("q", search.trim());
+      if (cursor) query.set("cursor", cursor);
+      const text = query.toString();
+      const page = await api.get<ArchivedPage | null>(
+        `${endpoints.boardItems.archived(boardId)}${text ? `?${text}` : ""}`,
         quiet,
       );
-      return rows ?? [];
+      return {
+        rows: (page?.items ?? []).map((row) => ({
+          id: row.id ?? "",
+          name: row.name ?? "",
+          itemKey: row.itemKey ?? null,
+          groupId: row.groupId ?? "",
+          archivedAt: row.archivedAt ?? "",
+          archivedBy: row.archivedBy ?? null,
+          archivedByName: row.archivedByName ?? null,
+          subItemCount: row.subItemCount ?? 0,
+          version: row.version ?? 0,
+        })),
+        nextCursor: page?.nextCursor ?? null,
+        total: page?.total ?? 0,
+      };
     },
     /** `WorkManagement.BoardItems.Restore`: a deleted item comes back from the trash. */
     async restoreDeleted(itemId: string): Promise<void> {
       await api.post<void>(
-        `/board-items/${itemId}/restore`,
+        endpoints.boardItems.restore(itemId),
         {},
         { idempotencyKey: key(), ...quiet },
       );
@@ -752,4 +809,16 @@ export function classifyRemindError(
   }
   if (status === 400) return { kind: "nobody" };
   return { kind: "error" };
+}
+
+/** Why the server refused to bring a deleted item back: past the 30 days, the parent still deleted, gone, no right to, or the network. */
+export function classifyRestoreError(
+  error: unknown,
+): "windowClosed" | "parentDeleted" | "gone" | "denied" | "error" {
+  const { status, code } = failureOf(error);
+  if (code === RESTORE_WINDOW_CLOSED_CODE) return "windowClosed";
+  if (code === RESTORE_PARENT_DELETED_CODE) return "parentDeleted";
+  if (status === 404) return "gone";
+  if (status === 403) return "denied";
+  return "error";
 }
