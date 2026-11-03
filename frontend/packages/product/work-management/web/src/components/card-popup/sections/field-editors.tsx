@@ -344,10 +344,15 @@ function Feedback({
         className="m-0 flex items-center gap-2 text-[12.5px] font-medium text-danger-text"
       >
         <AlertCircle aria-hidden="true" className="size-4 shrink-0" />
-        {fillPopupCopy(t.saveFailed, { name: field.name })}
-        <PanelBtn small onClick={save.retry}>
-          {t.retry}
-        </PanelBtn>
+        {fillPopupCopy(
+          save.reason === "required" ? t.requiredRefused : t.saveFailed,
+          { name: field.name },
+        )}
+        {save.reason === "required" ? null : (
+          <PanelBtn small onClick={save.retry}>
+            {t.retry}
+          </PanelBtn>
+        )}
       </p>
     );
   return null;

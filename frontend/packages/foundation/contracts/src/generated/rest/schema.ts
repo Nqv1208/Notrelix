@@ -2896,6 +2896,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/fields/preview-formula": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Evaluate a draft formula against one item of the board, without saving it */
+        get: operations["WorkManagement.BoardFields.PreviewFormula"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/fields/{fieldId}/options": {
         parameters: {
             query?: never;
@@ -6916,6 +6933,7 @@ export interface components {
             settingsJson?: string | null;
             /** Format: int64 */
             expectedVersion?: number;
+            defaultValueJson?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardGroups.Requests.BoardGroupVersionRequest": {
             /** Format: int64 */
@@ -9458,6 +9476,7 @@ export interface components {
             isMine?: boolean;
             /** Format: int64 */
             version?: number;
+            createdByName?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Templates.DTOs.BoardTemplateDto": {
             /** Format: uuid */
@@ -16675,6 +16694,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "WorkManagement.BoardFields.PreviewFormula": {
+        parameters: {
+            query: {
+                itemId: string;
+                expression: string;
+            };
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"];
+                };
             };
         };
     };

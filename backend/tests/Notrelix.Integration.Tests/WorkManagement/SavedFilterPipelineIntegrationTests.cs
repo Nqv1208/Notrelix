@@ -298,6 +298,7 @@ public sealed class SavedFilterPipelineIntegrationTests : IAsyncLifetime
 
         services.AddScoped<Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility, PostgresResourceVisibility>();
         services.AddScoped<Notrelix.Application.Common.Tenancy.IActorLookupService, ActorLookupService>();
+        services.AddScoped<Notrelix.Application.Common.Tenancy.IWorkspaceAccessResolver, WorkspaceAccessResolver>();
         services.AddScoped<IRequestHandler<CreateSavedFilterCommand, Result<Guid>>, CreateSavedFilterCommandHandler>();
         services.AddScoped<IRequestHandler<ListSavedFiltersQuery, Result<List<SavedFilterDto>>>, ListSavedFiltersQueryHandler>();
         services.AddScoped<IRequestHandler<RenameSavedFilterCommand, Result>, RenameSavedFilterCommandHandler>();

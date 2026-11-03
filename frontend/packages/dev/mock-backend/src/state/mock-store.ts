@@ -1179,6 +1179,10 @@ export class MockStore {
       boardId,
       name: "Ưu tiên",
       fieldType: "select",
+      // The rules the Final-Settings artboard draws on this field: required, guidance, a default option.
+      settings:
+        '{"required":true,"guidance":"Chỉ chọn Khẩn khi việc chặn ngày go-live 01/11."}',
+      defaultValue: '"mock-erp-priority-medium"',
       position: 2,
       options: ERP_PRIORITY_OPTIONS.map((option) => ({ ...option })),
     });
@@ -2383,6 +2387,7 @@ export class MockStore {
       name?: string;
       fieldType?: string;
       settings?: string;
+      defaultValue?: string;
       isHidden?: boolean;
     },
   ): boolean {
@@ -2393,6 +2398,12 @@ export class MockStore {
       name: patch.name ?? col.name,
       fieldType: patch.fieldType ?? col.fieldType,
       settings: patch.settings !== undefined ? patch.settings : col.settings,
+      defaultValue:
+        patch.defaultValue !== undefined
+          ? patch.defaultValue === "null"
+            ? undefined
+            : patch.defaultValue
+          : col.defaultValue,
       isHidden: patch.isHidden !== undefined ? patch.isHidden : col.isHidden,
     };
     this.columnsById.set(columnId, updated);

@@ -645,12 +645,32 @@ describe("MainTableSurface", () => {
     expect(props.onShowDone).toHaveBeenCalledOnce();
   });
 
-  it("keeps empty groups of a new board with their add rows", () => {
-    renderTable(erpTableEmptyProps());
-    expect(screen.getAllByRole("rowgroup")).toHaveLength(4);
-    expect(
-      screen.getByRole("button", { name: "Thêm vào Hoàn thành" }),
-    ).toBeTruthy();
+  it("says a board with no item yet is empty and offers the first item", () => {
+    const onOpen = vi.fn();
+    renderTable({
+      ...erpTableEmptyProps(),
+      canCreate: true,
+      onOpenCreateDialog: onOpen,
+    });
+    expect(screen.getByText("Board chưa có công việc nào")).toBeTruthy();
+    expect(screen.queryAllByRole("rowgroup")).toHaveLength(0);
+    fireEvent.click(
+      within(screen.getByRole("status")).getByRole("button", {
+        name: "Thêm công việc",
+      }),
+    );
+    expect(onOpen).toHaveBeenCalledOnce();
+  });
+
+  it("tells a viewer an empty board is theirs to look at only", () => {
+    renderTable({ ...erpTableEmptyProps(), canEdit: false, canCreate: false });
+    expect(screen.getByText(/Bạn chỉ xem được board này/)).toBeTruthy();
+    expect(within(screen.getByRole("status")).queryByRole("button")).toBeNull();
+  });
+
+  it("warns that a board with no group cannot take an item and offers Thêm nhóm", () => {
+    renderTable(erpTableProps({ lanes: [] }));
+    expect(screen.getByText("Chưa thêm được công việc")).toBeTruthy();
   });
 
   it("sizes rows by density and drops hidden columns", () => {

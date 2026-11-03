@@ -673,7 +673,8 @@ export function MainTableView({
   }, []);
 
   if (table.isLoading) return <MainTableSkeleton copy={copy} />;
-  if (table.error || !board) return <MainTableError copy={copy} />;
+  if (table.error || !board)
+    return <MainTableError copy={copy} onRetry={() => void table.refetch()} />;
 
   const writeStatus = (cardId: string, statusOptionId: string) => {
     noteTitle(cardId);
@@ -776,6 +777,7 @@ export function MainTableView({
     canEdit: capabilities.canEditFields,
     members,
     writeOf: cellWrites.writeOf,
+    refusedFieldIds: cellWrites.refusedFieldIds,
     onWrite: (cardId, fieldDefinitionId, value, stale) => {
       noteTitle(cardId);
       cellWrites.write(cardId, fieldDefinitionId, value, stale);

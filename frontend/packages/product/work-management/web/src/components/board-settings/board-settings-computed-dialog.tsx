@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { AlertCircle, Info } from "lucide-react";
 import {
   Dialog,
@@ -11,6 +11,7 @@ import type {
   BoardSettingsComputedDto,
   BoardSettingsFieldDto,
   BoardSettingsWriteResult,
+  FormulaPreviewDto,
 } from "@notrelix/work-management-core";
 import { useSettings } from "./board-settings-context";
 import { fillCopy } from "./board-settings-format";
@@ -139,6 +140,34 @@ export function ComputedFieldDialog({
     { ok: false }
   > | null>(null);
 
+  // "Xem thử": the draft is evaluated by the server on one item once typing pauses; nothing is saved.
+  const previewItem = settings.previewItem;
+  const [preview, setPreview] = useState<FormulaPreviewDto | null | "checking">(
+    null,
+  );
+  useEffect(() => {
+    if (kind !== "formula" || !previewItem || expression.trim() === "") {
+      setPreview(null);
+      return;
+    }
+    let current = true;
+    setPreview("checking");
+    const timer = setTimeout(() => {
+      void actions.previewFormula(previewItem.id, expression.trim()).then(
+        (result) => {
+          if (current) setPreview(result);
+        },
+        () => {
+          if (current) setPreview(null);
+        },
+      );
+    }, 400);
+    return () => {
+      current = false;
+      clearTimeout(timer);
+    };
+  }, [actions, expression, kind, previewItem]);
+
   const nodes = formulaNodeCount(expression);
   const tooBig = kind === "formula" && nodes > FORMULA_NODE_CAP;
   const needsSource = kind === "rollup" && fn !== "count";
@@ -264,6 +293,36 @@ export function ComputedFieldDialog({
                   {fillCopy(t.nodes, { count: String(nodes) })}
                 </p>
               </div>
+              {previewItem && preview !== null ? (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  data-preview-state={
+                    preview === "checking" ? "checking" : preview.state
+                  }
+                  className="flex items-center gap-2 rounded-[8px] bg-state-hover px-2.5 py-2 text-[13px] text-muted-foreground"
+                >
+                  <Info aria-hidden="true" className="size-4 flex-none" />
+                  <span>{fillCopy(t.preview, { key: previewItem.key })}</span>
+                  <span
+                    className={cn(
+                      "min-w-0 truncate text-[14px] font-bold text-foreground tabular-nums",
+                      preview !== "checking" &&
+                        preview.state === "error" &&
+                        "text-danger-text",
+                    )}
+                  >
+                    {preview === "checking"
+                      ? t.previewChecking
+                      : preview.state === "ok"
+                        ? preview.value
+                        : preview.state === "empty"
+                          ? t.previewEmpty
+                          : (t.previewErrors[preview.errorCode ?? ""] ??
+                            t.previewError)}
+                  </span>
+                </div>
+              ) : null}
               <div>
                 <span className="mb-1 block text-metadata leading-[1.45] font-semibold text-meta-foreground">
                   {t.insertField}
@@ -287,27 +346,35 @@ export function ComputedFieldDialog({
             </>
           ) : (
             <>
-              <div
-                role="radiogroup"
-                aria-label={t.rollupFunction}
-                className="flex flex-wrap gap-1"
-              >
-                {ROLLUP_FUNCTIONS.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    role="radio"
-                    aria-checked={fn === option}
-                    onClick={() => setFn(option)}
-                    className={cn(
-                      "h-8 rounded-[7px] border border-line-strong bg-popover px-3 text-item-small font-medium",
-                      fn === option &&
-                        "border-primary bg-row-selected font-semibold text-primary",
-                    )}
-                  >
-                    {t.functionNames[option]}
-                  </button>
-                ))}
+              <div>
+                <span
+                  id={`${exprId}-fn`}
+                  className="mb-1 block text-metadata leading-[1.45] font-semibold text-meta-foreground"
+                >
+                  {t.rollupFunction}
+                </span>
+                <div
+                  role="radiogroup"
+                  aria-labelledby={`${exprId}-fn`}
+                  className="flex flex-wrap gap-1"
+                >
+                  {ROLLUP_FUNCTIONS.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      role="radio"
+                      aria-checked={fn === option}
+                      onClick={() => setFn(option)}
+                      className={cn(
+                        "h-8 rounded-[7px] border border-line-strong bg-popover px-3 text-item-small font-medium",
+                        fn === option &&
+                          "border-primary bg-row-selected font-semibold text-primary",
+                      )}
+                    >
+                      {t.functionNames[option]}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div>
                 <label
@@ -342,8 +409,8 @@ export function ComputedFieldDialog({
                   {t.noNumberField}
                 </p>
               ) : null}
-              <p className="m-0 flex items-start gap-2 rounded-lg bg-state-hover px-2.5 py-2 text-item-small text-muted-foreground">
-                <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+              <p className="m-0 flex items-start gap-2 rounded-[8px] bg-state-hover px-2.5 py-2 text-[12.5px] leading-[1.45] text-muted-foreground">
+                <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
                 {t.subItemsOnly}
               </p>
             </>

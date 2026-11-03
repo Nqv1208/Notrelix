@@ -10822,6 +10822,63 @@
         ]
       }
     },
+    "/api/v1/boards/{boardId}/fields/preview-formula": {
+      "get": {
+        "tags": [
+          "WorkManagement.BoardFields"
+        ],
+        "summary": "Evaluate a draft formula against one item of the board, without saving it",
+        "operationId": "WorkManagement.BoardFields.PreviewFormula",
+        "parameters": [
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "expression",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/boards/{boardId}/fields/{fieldId}/options": {
       "post": {
         "tags": [
@@ -27790,6 +27847,10 @@
           "expectedVersion": {
             "type": "integer",
             "format": "int64"
+          },
+          "defaultValueJson": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -35309,6 +35370,10 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "createdByName": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

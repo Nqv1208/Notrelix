@@ -336,6 +336,8 @@ export const en = {
     defaultHint:
       "Applies only to items created from now on. The {{count}} existing items keep their value.",
     required: "Required when creating an item",
+    requiredNeedsDefault:
+      "Pick a default value before making this field required",
     requiredHint: "The form and the “Add item” button will ask for this field",
     guidance: "Guidance for the person filling it in",
     guidancePlaceholder: "A sentence that helps fill this field in",
@@ -362,6 +364,17 @@ export const en = {
     functions:
       "Functions: IF(condition; a; b), SUM, MIN, MAX, ROUND(number; digits), DAYS(end; start). Join text with &. Only fields of this board.",
     nodes: "{{count}} / 200 elements",
+    preview: "Try it with {{key}}:",
+    previewEmpty: "No value",
+    previewChecking: "Checking…",
+    previewErrors: {
+      "unknown-field": "A field in the formula is not on this board",
+      "divide-by-zero": "Divides by zero on this item",
+      "invalid-definition": "The formula is not valid yet",
+      cycle: "The formula reads itself",
+      "unsupported-type": "A field in the formula has a type it cannot read",
+    } as Readonly<Record<string, string>>,
+    previewError: "Cannot be computed",
     rollupFunction: "Calculation",
     functionNames: {
       count: "Count",
@@ -1064,6 +1077,7 @@ export const vi: BoardSettingsCopy = {
     defaultHint:
       "Chỉ áp dụng cho việc tạo từ bây giờ. {{count}} việc hiện có giữ nguyên giá trị.",
     required: "Bắt buộc khi tạo việc",
+    requiredNeedsDefault: "Chọn giá trị mặc định trước khi bắt buộc trường này",
     requiredHint: 'Form và nút "Thêm công việc" sẽ hỏi trường này',
     guidance: "Hướng dẫn cho người điền",
     guidancePlaceholder: "Một câu giúp người dùng điền trường này",
@@ -1088,6 +1102,17 @@ export const vi: BoardSettingsCopy = {
     functions:
       "Hàm: IF(điều kiện; a; b), SUM, MIN, MAX, ROUND(số; chữ số), DAYS(ngày cuối; ngày đầu). Nối chữ bằng &. Chỉ dùng trường của bảng này.",
     nodes: "{{count}} / 200 phần tử",
+    preview: "Xem thử với {{key}}:",
+    previewEmpty: "Chưa có giá trị",
+    previewChecking: "Đang tính…",
+    previewErrors: {
+      "unknown-field": "Công thức dùng một trường không có ở bảng này",
+      "divide-by-zero": "Chia cho 0 ở việc này",
+      "invalid-definition": "Công thức chưa hợp lệ",
+      cycle: "Công thức đọc chính nó",
+      "unsupported-type": "Công thức dùng trường có loại chưa đọc được",
+    } as Readonly<Record<string, string>>,
+    previewError: "Không tính được",
     rollupFunction: "Phép tính",
     functionNames: {
       count: "Đếm",

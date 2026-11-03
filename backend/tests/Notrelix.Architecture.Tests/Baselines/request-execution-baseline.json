@@ -4175,6 +4175,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.PreviewFormulaQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.PreviewFormulaQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.ArchiveBoardGroup.ArchiveBoardGroupCommand",
     "kind": "Command",
     "principalMarkers": [

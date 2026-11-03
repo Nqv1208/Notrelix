@@ -95,7 +95,7 @@ test("tabs write the layout to the address, Back and Forward follow it, and a go
   await expect(page).toHaveURL(/view=kanban/);
 
   // An id that names no view: the default opens, with one notice.
-  const gone = "That view no longer exists. Showing the default view.";
+  const gone = "The view you opened no longer exists";
   await page.goto(
     `${boardPath}?view=table&savedView=00000000-0000-4000-8000-000000000000`,
   );

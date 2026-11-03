@@ -95,6 +95,8 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
         var jsonString = System.Text.Json.JsonSerializer.Serialize(request.Value);
         var fieldValue = FieldValue.Create(JsonValue.Create(jsonString));
 
+        BoardFields.StaleFieldGuard.EnsureOptionsExist(field, fieldValue);
+        BoardItemFieldWrites.EnsureNotClearingRequired(field, fieldValue);
         var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, item.BoardId, cancellationToken);
         BoardItemFieldWrites.Write(item, field, fieldValue, statusField, _currentUser.UserId, now);
 

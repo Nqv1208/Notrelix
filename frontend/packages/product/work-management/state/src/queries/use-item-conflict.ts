@@ -31,6 +31,14 @@ export function assigneeRefusalOf(error: unknown): AssigneeRefusal | null {
     : null;
 }
 
+/** A write that clears a required field, or leaves it empty on create, is refused with this rule. */
+export function isRequiredRefusal(error: unknown): boolean {
+  return (
+    (error as { ruleCode?: unknown } | null)?.ruleCode ===
+    "WorkManagement_FieldValue_Required"
+  );
+}
+
 /** The schema change a stale write ran into and who made it: a field the board no longer has, an option it no longer lists, or a field whose type changed. */
 export interface StaleSchemaDetail {
   readonly kind: "field-deleted" | "option-removed" | "type-changed";
