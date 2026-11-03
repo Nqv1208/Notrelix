@@ -81,4 +81,20 @@ public class JwtBlacklistServiceTests
 
         result.Should().Be(revokedBefore);
     }
+
+    [Fact]
+    public async Task EveryRevocationRead_WhenRedisIsDown_FailsClosedAsUnavailable()
+    {
+        var service = CreateService();
+        var down = new RedisConnectionException(ConnectionFailureType.UnableToConnect, "redis is down");
+        _dbMock.Setup(d => d.KeyExistsAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>())).ThrowsAsync(down);
+        _dbMock.Setup(d => d.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>())).ThrowsAsync(down);
+
+        await FluentActions.Awaiting(() => service.IsBlacklistedAsync("jti"))
+            .Should().ThrowAsync<Notrelix.Application.Common.Exceptions.RevocationStoreUnavailableException>();
+        await FluentActions.Awaiting(() => service.GetUserRevokedBeforeAsync(Guid.CreateVersion7()))
+            .Should().ThrowAsync<Notrelix.Application.Common.Exceptions.RevocationStoreUnavailableException>();
+        await FluentActions.Awaiting(() => service.GetSessionRevokedBeforeAsync(Guid.CreateVersion7()))
+            .Should().ThrowAsync<Notrelix.Application.Common.Exceptions.RevocationStoreUnavailableException>();
+    }
 }

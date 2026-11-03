@@ -1,4 +1,5 @@
 using System.Globalization;
+using Notrelix.Application.Common.Exceptions;
 
 namespace Notrelix.Infrastructure.Auth.Jwt;
 
@@ -21,14 +22,12 @@ public class JwtBlacklistService : IJwtBlacklistService
 
     public async Task<bool> IsBlacklistedAsync(string jti)
     {
-        var db = _redis.GetDatabase();
-        return await db.KeyExistsAsync(BuildKey(jti));
+        return await GuardReadAsync(() => _redis.GetDatabase().KeyExistsAsync(BuildKey(jti)));
     }
 
     public async Task<DateTimeOffset?> GetUserRevokedBeforeAsync(Guid userId)
     {
-        var db = _redis.GetDatabase();
-        var value = await db.StringGetAsync(BuildUserWatermarkKey(userId));
+        var value = await GuardReadAsync(() => _redis.GetDatabase().StringGetAsync(BuildUserWatermarkKey(userId)));
         if (!value.HasValue)
             return null;
 
@@ -50,8 +49,7 @@ public class JwtBlacklistService : IJwtBlacklistService
 
     public async Task<DateTimeOffset?> GetSessionRevokedBeforeAsync(Guid sessionId)
     {
-        var db = _redis.GetDatabase();
-        var value = await db.StringGetAsync(BuildSessionWatermarkKey(sessionId));
+        var value = await GuardReadAsync(() => _redis.GetDatabase().StringGetAsync(BuildSessionWatermarkKey(sessionId)));
         if (!value.HasValue)
             return null;
 
@@ -69,6 +67,19 @@ public class JwtBlacklistService : IJwtBlacklistService
             BuildSessionWatermarkKey(sessionId),
             revokedBefore.ToString("O", CultureInfo.InvariantCulture),
             expiration);
+    }
+
+    // A failed read must never read as "not revoked": it surfaces as a retryable 503 (fail closed).
+    private static async Task<T> GuardReadAsync<T>(Func<Task<T>> read)
+    {
+        try
+        {
+            return await read();
+        }
+        catch (RedisException ex)
+        {
+            throw new RevocationStoreUnavailableException(ex);
+        }
     }
 
     private static string BuildKey(string jti)
