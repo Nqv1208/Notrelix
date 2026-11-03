@@ -208,6 +208,49 @@ for (const [width, height] of [
       }
     });
 
+    // No artboard draws the title editor (UC-WM-B04), so it is reviewed here on the pattern of the nearest drawn state.
+    // At 390 px the phone list has no inline editor: the title is renamed in the item popup, whose title field is drawn.
+    test(`the title editor stays inside the viewport and has no serious axe violation, ${label}`, async ({
+      page,
+    }) => {
+      test.skip(faults !== "", "Default world");
+      test.setTimeout(60_000);
+      await open(page, width, height, dark);
+      const phone = width < 768;
+      const row = page.locator(
+        `${phone ? "[data-slot=table-phone-list] " : ""}[data-row-id="mock-erp-item-149"]`,
+      );
+      const title = phone
+        ? row.getByRole("button", { name: /Viết tài liệu quy trình/ })
+        : row.locator("[data-row-open]");
+      let editor;
+      if (phone) {
+        await title.click();
+        editor = page.getByRole("dialog").getByRole("textbox").first();
+      } else {
+        await title.dblclick();
+        editor = page.getByRole("textbox", { name: /ERP-149/ });
+      }
+      await expect(editor).toBeVisible();
+      await editor.focus();
+      const box = (await editor.boundingBox())!;
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(width + 0.5);
+      expect(box.y + box.height).toBeLessThanOrEqual(height + 0.5);
+      if (phone) expect(box.height).toBeGreaterThanOrEqual(43.5);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth - window.innerWidth,
+        ),
+        "the page scrolls sideways",
+      ).toBeLessThanOrEqual(0);
+      if (shots)
+        await page.screenshot({
+          path: `${shots}/title-editor-${width}-${dark ? "dark" : "light"}.png`,
+        });
+      expect(await seriousViolations(page)).toEqual([]);
+    });
+
     test(`a status write refused as a lost race names who won in a toast inside the viewport, ${label}`, async ({
       page,
     }) => {

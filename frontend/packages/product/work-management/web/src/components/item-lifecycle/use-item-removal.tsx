@@ -20,6 +20,7 @@ import {
   useWorkspaceBoards,
 } from "@notrelix/work-management-state";
 import {
+  ITEM_TITLE_MAX_LENGTH,
   previewMoveToBoard,
   type Card,
   type FullBoardResponse,
@@ -631,7 +632,7 @@ export function useItemRemoval({
         />
         <DuplicateItemDialog
           copy={actions}
-          defaultName={`${duplicating?.title ?? ""} (${copySuffix(actions.locale)})`}
+          defaultName={copyName(duplicating?.title ?? "", actions.locale)}
           open={duplicating !== null}
           busy={duplicateCard.isPending}
           failed={duplicateCard.isError}
@@ -658,6 +659,8 @@ export function useItemRemoval({
   };
 }
 
-function copySuffix(locale: string): string {
-  return locale === "vi" ? "bản sao" : "copy";
+/** "<title> (copy)", the title shortened so the name stays within the title limit. */
+function copyName(title: string, locale: string): string {
+  const suffix = ` (${locale === "vi" ? "bản sao" : "copy"})`;
+  return `${title.slice(0, ITEM_TITLE_MAX_LENGTH - suffix.length)}${suffix}`;
 }

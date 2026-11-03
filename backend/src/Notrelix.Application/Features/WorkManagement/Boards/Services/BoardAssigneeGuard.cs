@@ -8,6 +8,9 @@ namespace Notrelix.Application.Features.WorkManagement.Boards.Services;
 /// </summary>
 public static class BoardAssigneeGuard
 {
+    /// <summary>The 403 reason when the assignee cannot yet see the board: the caller may share the board first (WM-040).</summary>
+    public const string BoardNotSharedCode = "work-management.assignee.board-not-shared";
+
     public static async Task EnsureNotViewerAsync(
         IWorkManagementDbContext context, Guid boardId, Guid userId, CancellationToken ct)
     {

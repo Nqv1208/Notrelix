@@ -18,6 +18,19 @@ export function isVersionConflict(error: unknown): boolean {
   );
 }
 
+/** Why the server refused to give someone work: the person cannot see the board yet (share it first), or only views it. */
+export type AssigneeRefusal = "board-not-shared" | "viewer";
+
+/** The refusal reason of an assignee write, read from the error's stable codes; null for any other failure. */
+export function assigneeRefusalOf(error: unknown): AssigneeRefusal | null {
+  const e = error as { code?: unknown; ruleCode?: unknown } | null;
+  if (e?.code === "work-management.assignee.board-not-shared")
+    return "board-not-shared";
+  return e?.ruleCode === "WorkManagement_BoardItem_AssigneeIsViewer"
+    ? "viewer"
+    : null;
+}
+
 /** The schema change a stale write ran into (a field the board no longer has) and who made it. */
 export interface StaleSchemaDetail {
   readonly kind: "field-deleted";

@@ -44,7 +44,14 @@ export type MockLatency = "instant" | "fast" | "normal" | "slow";
 
 export interface MockFaultProfile {
   /** Key: normalized pathname or "*" for all routes. Value: fault type. */
-  [pathOrStar: string]: "network" | "401" | "409" | "500" | "validation";
+  [pathOrStar: string]:
+    | "network"
+    | "401"
+    | "409"
+    | "500"
+    | "validation"
+    // A second writer got there first: a handler that takes an expected version answers 412.
+    | "stale";
 }
 
 // ─── Config interface ─────────────────────────────────────────────────────────
@@ -184,6 +191,7 @@ const VALID_FAULTS = new Set<string>([
   "409",
   "500",
   "validation",
+  "stale",
 ]);
 
 export function parseMockConfigFromEnv(

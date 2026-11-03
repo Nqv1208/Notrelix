@@ -80,6 +80,31 @@ export const en = {
   archiveListSince: "Archived on {{day}}",
   unarchived: "“{{title}}” was unarchived",
   unarchiveFailed: "Couldn't unarchive “{{title}}”.",
+  listSearchTrash: "Search deleted items",
+  listSearchArchive: "Search archived items",
+  listEmptyTrashTitle: "Nothing was deleted",
+  listEmptyArchiveTitle: "No item is archived yet",
+  listEmptyArchiveBody:
+    "Items you archive are kept here; unarchive them any time.",
+  listNoResultsTitle: "No results",
+  listNoResultsBody: "No item here matches “{{query}}”.",
+  listErrorTitle: "The list couldn't be loaded",
+  listErrorBody: "Check your connection and try again.",
+  listRetry: "Try again",
+  listBusy: "Working…",
+  listSubItems_one: "{{count}} sub-item",
+  listSubItems_other: "{{count}} sub-items",
+  listMore: "Show {{count}} more",
+  listShown: "Showing {{shown}} of {{total}}",
+  trashBy: "Deleted by {{who}} · {{day}} · {{days}} left",
+  trashByNobody: "Deleted {{day}} · {{days}} left",
+  archiveBy: "Archived by {{who}} · {{when}}",
+  archiveByNobody: "Archived {{when}}",
+  restoreWindowClosed:
+    "It was deleted more than 30 days ago, so it can't be restored any more.",
+  restoreParentDeleted:
+    "Not restored yet: the parent item is still in Deleted items. Restore the parent to get both back.",
+  restoreGone: "This item is no longer in Deleted items.",
 };
 
 export type ItemLifecycleCopy = typeof en;
@@ -161,6 +186,30 @@ export const vi: ItemLifecycleCopy = {
   archiveListSince: "Lưu trữ ngày {{day}}",
   unarchived: "Đã bỏ lưu trữ “{{title}}”",
   unarchiveFailed: "Không bỏ lưu trữ được “{{title}}”.",
+  listSearchTrash: "Tìm trong việc đã xoá",
+  listSearchArchive: "Tìm trong việc đã lưu trữ",
+  listEmptyTrashTitle: "Chưa có việc nào bị xoá",
+  listEmptyArchiveTitle: "Chưa có việc nào được lưu trữ",
+  listEmptyArchiveBody:
+    "Việc bạn lưu trữ sẽ nằm ở đây, bỏ lưu trữ bất cứ lúc nào.",
+  listNoResultsTitle: "Không có kết quả",
+  listNoResultsBody: "Không việc nào ở đây khớp “{{query}}”.",
+  listErrorTitle: "Không tải được danh sách",
+  listErrorBody: "Kiểm tra kết nối rồi thử lại.",
+  listRetry: "Thử lại",
+  listBusy: "Đang xử lý…",
+  listSubItems_one: "{{count}} việc con",
+  listSubItems_other: "{{count}} việc con",
+  listMore: "Hiện thêm {{count}} việc",
+  listShown: "Đã hiện {{shown}} trên {{total}}",
+  trashBy: "Xoá bởi {{who}} · {{day}} · còn {{days}} ngày",
+  trashByNobody: "Xoá {{day}} · còn {{days}} ngày",
+  archiveBy: "Lưu trữ bởi {{who}} · {{when}}",
+  archiveByNobody: "Lưu trữ {{when}}",
+  restoreWindowClosed: "Đã quá 30 ngày nên không khôi phục được nữa.",
+  restoreParentDeleted:
+    "Chưa khôi phục được: việc cha vẫn đang trong Việc đã xoá. Khôi phục việc cha để lấy lại cả hai.",
+  restoreGone: "Việc này không còn trong Việc đã xoá.",
 };
 
 export function itemLifecycleCopy(locale: string): ItemLifecycleCopy {
