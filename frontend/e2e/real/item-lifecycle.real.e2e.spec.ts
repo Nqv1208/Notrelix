@@ -319,7 +319,7 @@ test("the archive is read a page at a time and searched, a deleted item comes ba
       response.url().includes(`/board-items/${parentId}`),
   );
   await page
-    .getByRole("alertdialog")
+    .getByRole("dialog", { name: /^Delete “/ })
     .getByRole("button", { name: "Delete item" })
     .click();
   expect((await deleted).status()).toBeLessThan(300);
@@ -432,7 +432,7 @@ test("a member duplicates an item with its sub-item from the dialog, the copy si
     `/board-items/${sourceId}/child-items`,
   );
   expect(originalKids.items.map((kid) => kid.id)).toEqual([kidId]);
-  expect(cards.find((card) => card.id === sourceId)?.title).toBe(
+  expect(cards.find((card) => card.id === sourceId)?.name).toBe(
     `Copy me ${unique}`,
   );
 
