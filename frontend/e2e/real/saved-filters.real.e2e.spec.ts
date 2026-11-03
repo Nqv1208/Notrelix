@@ -34,6 +34,10 @@ test("saving, applying, sharing and deleting a saved filter", async ({
     "Engineering Tasks",
   );
   const boardPath = `/workspaces/${workspace.id}/boards/${board.id}`;
+  // The menu button carries the name of the applied filter.
+  const menuButton = page.getByRole("button", {
+    name: new RegExp(`^(Saved filters|${name})`),
+  });
   const filters = () =>
     apiRead<SavedFilter[]>(page, `/boards/${board.id}/saved-filters`);
   const viewsBefore = await apiRead<SavedView[]>(
@@ -52,15 +56,17 @@ test("saving, applying, sharing and deleting a saved filter", async ({
   await expect(page.getByText(`Saved filter ${name}`)).toBeVisible();
   const saved = (await filters()).find((filter) => filter.name === name);
   expect(saved, "the saved filter is on the server").toBeDefined();
-  expect(saved!.visibility).not.toBe("Board");
+  expect(saved!.visibility).toBe("Private");
 
   // Back to the shared view, then apply it from the menu: the chip returns.
-  const chip = page.getByText(`Title contains “${word}”`);
+  const chip = page
+    .getByLabel("Filter", { exact: true })
+    .getByText(`Title contains “${word}”`);
   await page
     .getByRole("button", { name: "Back to shared view", exact: true })
     .click();
   await expect(chip).toHaveCount(0);
-  await page.getByRole("button", { name: /^Saved filters/ }).click();
+  await menuButton.click();
   await page.getByRole("button", { name: `Apply filter ${name}` }).click();
   await expect(chip).toBeVisible();
   expect(
@@ -70,7 +76,7 @@ test("saving, applying, sharing and deleting a saved filter", async ({
 
   // Share it: a colleague lists it with the sharer's name and applies it on their own bar.
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: /^Saved filters/ }).click();
+  await menuButton.click();
   await page
     .getByRole("button", { name: `Share ${name} with the board` })
     .click();
@@ -78,7 +84,7 @@ test("saving, applying, sharing and deleting a saved filter", async ({
     .poll(
       async () => (await filters()).find((f) => f.id === saved!.id)?.visibility,
     )
-    .toBe("Board");
+    .toBe("Public");
   const other = await browser.newContext();
   const colleague = await other.newPage();
   try {
@@ -95,14 +101,18 @@ test("saving, applying, sharing and deleting a saved filter", async ({
     await colleague
       .getByRole("button", { name: `Apply filter ${name}` })
       .click();
-    await expect(colleague.getByText(`Title contains “${word}”`)).toBeVisible();
+    await expect(
+      colleague
+        .getByLabel("Filter", { exact: true })
+        .getByText(`Title contains “${word}”`),
+    ).toBeVisible();
   } finally {
     await other.close();
   }
 
   // Delete it from the menu: the list no longer carries it.
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: /^Saved filters/ }).click();
+  await menuButton.click();
   await page.getByRole("button", { name: `Delete ${name}` }).click();
   await expect(page.getByText(`Deleted filter ${name}`)).toBeVisible();
   await expect
