@@ -148,6 +148,8 @@ export interface CardPopupModel {
   readonly saves: Readonly<Record<string, FieldSave | undefined>>;
   /** Runs a write and tracks it under `key`; a failure keeps `retry`. */
   readonly track: (key: string, run: () => Promise<unknown>) => void;
+  /** Drops a failed save of `key`: the field shows the stored value again. */
+  readonly discardSave: (key: string) => void;
   /** A write was refused because someone else saved first. */
   readonly conflict: boolean;
   /** Who saved first, when the server named them; null: no one named. */
@@ -198,3 +200,17 @@ export function useCanEdit(): boolean {
   const { readOnly, capabilities } = useCardPopup();
   return readOnly === null && capabilities.canEditFields;
 }
+
+/** A schema change a refused write ran into (D12): the popup's banner names it and the changed field's pill shows it. */
+export interface PopupStaleSchema {
+  readonly kind?: "field-deleted" | "option-removed" | "type-changed";
+  readonly fieldName: string;
+  readonly byName: string | null;
+  readonly optionLabel?: string;
+  readonly fromType?: string;
+  readonly toType?: string;
+}
+
+const StaleSchemaContext = createContext<PopupStaleSchema | null>(null);
+export const StaleSchemaProvider = StaleSchemaContext.Provider;
+export const useStaleSchema = () => useContext(StaleSchemaContext);

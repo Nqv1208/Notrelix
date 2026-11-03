@@ -99,9 +99,9 @@ export function KanbanCardDetailPanel({
       conflict={model.conflict || shared.conflict}
       conflictBy={model.conflictBy ?? shared.changedBy}
       staleSchema={shared.staleSchema}
-      onReloadConflict={() => {
-        refetch();
-        void refetchBoard();
+      onReloadConflict={async () => {
+        // The banner says "reloading" until both reads answer, then what changed.
+        await Promise.all([refetch(), refetchBoard()]);
         model.clearConflict();
         shared.clear();
       }}

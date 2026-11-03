@@ -172,6 +172,8 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
     slots,
     saves,
     track,
+    discardSave: (key: string) =>
+      setSaves((current) => ({ ...current, [key]: undefined })),
     conflict,
     conflictBy,
     clearConflict: () => {
