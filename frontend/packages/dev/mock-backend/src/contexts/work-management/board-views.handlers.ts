@@ -9,6 +9,8 @@
  *   boards.views.rename       — PATCH  /boards/:boardId/views/:viewId/rename
  *   boards.views.visibility   — PATCH  /boards/:boardId/views/:viewId/visibility
  *   boards.views.setDefault   — POST   /boards/:boardId/views/:viewId/set-default
+ *   boards.views.archive      — POST   /boards/:boardId/views/:viewId/archive
+ *   boards.views.unarchive    — POST   /boards/:boardId/views/:viewId/unarchive
  *   boards.views.delete       — DELETE /boards/:boardId/views/:viewId
  *
  * The rules mirror the producer: a shared view is every member's and an
@@ -78,11 +80,12 @@ export const boardViewsOperations = [
     },
     method: "GET",
     route: "/boards/:boardId/views/saved",
-    async handle({ params, store }) {
+    async handle({ params, query, store }) {
       if (!canReadBoard(params.boardId, store))
         return notFound("Board not found");
       const me = store.getCurrentUser().id;
-      return ok(store.savedViews.list(params.boardId, me).map(dto));
+      const archived = query?.archived === "true";
+      return ok(store.savedViews.list(params.boardId, me, archived).map(dto));
     },
   }),
 
@@ -196,6 +199,38 @@ export const boardViewsOperations = [
           view: ["A private view cannot be the Board's default view."],
         });
       store.savedViews.setDefault(params.boardId, view.id);
+      return noContent();
+    },
+  }),
+
+  defineMockOperation<ViewParams, { newDefaultViewId?: string }, void>({
+    id: "boards.views.archive",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardViews.Archive",
+    },
+    method: "POST",
+    route: "/boards/:boardId/views/:viewId/archive",
+    async handle({ params, body, store }) {
+      const { view, refusal } = editable(store, params.boardId, params.viewId);
+      if (!view) return refusal;
+      store.savedViews.archive(params.boardId, view, body?.newDefaultViewId);
+      return noContent();
+    },
+  }),
+
+  defineMockOperation<ViewParams, never, void>({
+    id: "boards.views.unarchive",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardViews.Unarchive",
+    },
+    method: "POST",
+    route: "/boards/:boardId/views/:viewId/unarchive",
+    async handle({ params, store }) {
+      const { view, refusal } = editable(store, params.boardId, params.viewId);
+      if (!view) return refusal;
+      store.savedViews.unarchive(view);
       return noContent();
     },
   }),

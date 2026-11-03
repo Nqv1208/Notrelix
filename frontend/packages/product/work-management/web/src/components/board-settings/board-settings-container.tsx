@@ -176,6 +176,9 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       },
       setDefaultView: (viewId) =>
         write((api, s) => api.setDefaultView(s, viewId)),
+      archiveView: (viewId) => write((api, s) => api.archiveView(s, viewId)),
+      unarchiveView: (viewId) =>
+        write((api, s) => api.unarchiveView(s, viewId)),
       deleteView: (viewId, newDefaultViewId) =>
         write((api, s) => api.deleteView(s, viewId, newDefaultViewId)),
       createGroup: (name) => write((api, s) => api.createGroup(s, name)),
