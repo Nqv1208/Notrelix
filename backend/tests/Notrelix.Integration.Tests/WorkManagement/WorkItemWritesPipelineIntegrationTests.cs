@@ -14,6 +14,8 @@ using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoa
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemStatus;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks;
+using Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.CreateBoardItemLink;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.SharedKernel;
@@ -996,6 +998,36 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
             return Task.CompletedTask;
         });
         return child.Id;
+    }
+
+    // ---- UC-WM-B35 a target lost while the link is being written ---------------------------------------------
+
+    [Fact]
+    public async Task LinkWrite_RacingTheDeleteOfItsTarget_LeavesNoLinkShown_AndNoFailureOtherThanNotFound()
+    {
+        const int rounds = 4; // the seed holds ten items at most
+        var scene = await SeedAsync(itemCount: rounds * 2);
+        using var owner = Provider(scene.Stack);
+
+        for (var round = 0; round < rounds; round++)
+        {
+            var source = scene.Items[round * 2];
+            var target = scene.Items[round * 2 + 1];
+            var version = await VersionAsync(target);
+
+            // Two transactions at once: the link to the target, and the delete of the target.
+            var link = Task.Run(async () =>
+            {
+                try { await OrgTreeTestHost.SendAsync(owner, new CreateBoardItemLinkCommand(source, target, "blocked-by")); return true; }
+                catch (AppNotFound) { return false; }
+            });
+            var delete = Task.Run(() => OrgTreeTestHost.SendAsync(owner, new DeleteBoardItemCommand(target, version)));
+            await Task.WhenAll(link, delete);
+
+            (await IsDeletedAsync(target)).Should().BeTrue("the delete wins whichever way the race goes");
+            var shown = (Notrelix.Application.Common.Models.Result<BoardItemLinkListDto>)(await OrgTreeTestHost.SendAsync(owner, new ListBoardItemLinksQuery(source)))!;
+            shown.Data!.Links.Should().BeEmpty("a link that won the race is hidden while its target is in the trash, so none dangles on screen");
+        }
     }
 
     // ---- scene and helpers ---------------------------------------------------------------------------------
