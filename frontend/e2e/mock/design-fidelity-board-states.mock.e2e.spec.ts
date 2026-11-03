@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
 
@@ -24,6 +25,10 @@ const ARTBOARD = {
   320: "BC-Shell-320.dc.html",
 } as const;
 type Width = keyof typeof ARTBOARD;
+/** The owner canvas's boards when downloaded (`WM_CANVAS_DIR`), else the repository's copy. */
+const CANVAS = process.env.WM_CANVAS_DIR ?? "/tmp/wmv-canvas/project";
+const SRC = `${process.cwd()}/../docs/design/mockups/2026-10/src`;
+const dir = (file: string) => (existsSync(`${CANVAS}/${file}`) ? CANVAS : SRC);
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const faults = process.env.VITE_MOCK_FAULTS ?? "";
@@ -68,9 +73,7 @@ async function artNote(
   title: string,
 ): Promise<Parts> {
   await page.goto(
-    pathToFileURL(
-      `${process.cwd()}/../docs/design/mockups/2026-10/src/${ARTBOARD[width]}`,
-    ).href,
+    pathToFileURL(`${dir(ARTBOARD[width])}/${ARTBOARD[width]}`).href,
   );
   return page.evaluate(
     ({ frame, title: t, fn }) => {
@@ -239,9 +242,7 @@ test.describe("Board content states against BC-Shell", () => {
       }) => {
         test.skip(persona !== "owner" || faults !== "", "Owner world");
         await page.goto(
-          pathToFileURL(
-            `${process.cwd()}/../docs/design/mockups/2026-10/src/${ARTBOARD[width]}`,
-          ).href,
+          pathToFileURL(`${dir(ARTBOARD[width])}/${ARTBOARD[width]}`).href,
         );
         const expected = await page.evaluate((frame) => {
           const band = document.querySelector(
