@@ -23,21 +23,23 @@ test("a date filter lists items by the workspace's day, not the browser's", asyn
 }) => {
   await signIn(page, realUsers.admin);
   const workspace = await createOwnedWorkspace(page, "Time zone");
-  const settings = await apiRead<{ version: number } & Record<string, unknown>>(
-    page,
-    `/workspaces/${workspace.id}/settings`,
+  // The workspace's own defaults form, as its owner uses it.
+  await page.goto(`/workspaces/${workspace.id}/settings`);
+  await page
+    .getByLabel("Time zone", { exact: true })
+    .fill("Pacific/Kiritimati");
+  const saved = page.waitForResponse(
+    (response) =>
+      response.request().method() === "PUT" &&
+      response.url().endsWith(`/workspaces/${workspace.id}/settings`),
   );
-  const zoned = await apiWrite(
-    page,
-    "PUT",
-    `/workspaces/${workspace.id}/settings`,
-    {
-      ...settings,
-      timeZone: "Pacific/Kiritimati",
-      expectedVersion: settings.version,
-    },
+  await page
+    .getByRole("form", { name: "Defaults" })
+    .getByRole("button", { name: "Save changes" })
+    .click();
+  expect((await saved).status(), "set the workspace time zone").toBeLessThan(
+    300,
   );
-  expect(zoned.status, "set the workspace time zone").toBeLessThan(300);
 
   const created = await apiWrite<string>(
     page,

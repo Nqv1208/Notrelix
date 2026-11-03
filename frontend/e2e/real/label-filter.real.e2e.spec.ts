@@ -65,7 +65,7 @@ test("a label filter keeps only the items holding the label, on the server and i
   const filtered = (id: string) =>
     apiRead<Full>(
       page,
-      `/boards/${board}/full?filter=${encodeURIComponent(`c2:and~%24label.has_any.${id}`)}`,
+      `/boards/${board}/full?pageSize=50&filter=${encodeURIComponent(`c2:and~%24label.has_any.${id}`)}`,
     );
   const sizeOf = (read: Full) =>
     (read.lanes ?? []).reduce((sum, lane) => sum + lane.filteredCount, 0);

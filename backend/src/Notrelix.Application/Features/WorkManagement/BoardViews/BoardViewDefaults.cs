@@ -39,6 +39,8 @@ internal static class BoardViewDefaults
             .ThenBy(view => view.Id)
             .FirstOrDefaultAsync(cancellationToken);
 
+        // The board keeps one default shared view: the last one stays.
+        BoardViewRules.EnsureCanDeleteView(isDefault: true, availableViewCount: next is null ? 1 : 2);
         leaving.ClearDefault(userId, now);
         next?.SetDefault(userId, now);
     }

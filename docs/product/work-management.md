@@ -2055,15 +2055,11 @@ for unauthorized users.
 
 # 154. Default View
 
-If the product defines a default, the invariant should be deterministic:
+A Board has exactly one default View, and it is shared: a private View is never the default (D76.9).
 
-```text
-at most one
-or
-exactly one active default
-```
+Deleting or archiving the default View names the View that takes its place; when none is named, the oldest shared View takes it, in the same write. The only shared View of a Board cannot be deleted or archived. Setting the current default again changes nothing. A write on a View names the version the caller read: a stale one changes nothing and answers a conflict, and the shared View's save without a version is refused the same way.
 
-with safe fallback on deletion.
+A private View is its creator's alone: another member's list, read or action on it answers the same NotFound as an unknown id, and the Board's realtime topic never carries it (D77.4).
 
 ---
 

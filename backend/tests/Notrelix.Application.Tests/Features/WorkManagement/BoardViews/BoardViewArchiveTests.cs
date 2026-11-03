@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.ArchiveBoardView;
+using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.DeleteBoardView;
 using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.RestoreBoardView;
 using Notrelix.Application.Features.WorkManagement.BoardViews.Commands.UnarchiveBoardView;
 
@@ -66,6 +67,27 @@ public class BoardViewArchiveTests : WorkManagementHandlerTestBase
         await Archive(leaving.Id);
 
         oldest.IsDefault.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task TheOnlySharedView_CannotLeave_ByArchiveOrDelete_AndNothingChanges()
+    {
+        var only = View("Only", isDefault: true);
+        var mine = View("Mine", visibility: BoardViewVisibility.Private);
+        SetupBoardViews(only, mine);
+        var before = only.Version;
+
+        var archive = () => Archive(only.Id);
+        var delete = () => new DeleteBoardViewCommandHandler(DbContextMock.Object, _currentUser.Object, DateTimeProviderMock.Object)
+            .Handle(new DeleteBoardViewCommand(_board, only.Id, 1), CancellationToken.None);
+
+        foreach (var act in new[] { archive, delete })
+            (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which.RuleCode
+                .Should().Be(Notrelix.Domain.WorkManagement.WorkManagementRuleCodes.WorkManagement_View_CannotDeleteDefault);
+        only.IsArchived.Should().BeFalse();
+        only.IsDeleted.Should().BeFalse();
+        only.IsDefault.Should().BeTrue();
+        only.Version.Should().Be(before);
     }
 
     [Fact]

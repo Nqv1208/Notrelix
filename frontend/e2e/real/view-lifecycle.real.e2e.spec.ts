@@ -99,6 +99,14 @@ test("the tab strip sets the default, archives and restores a view, deletes the 
   await page.getByRole("tab", { name: first }).click();
   await menuOf(page, first).click();
   await page.getByRole("menuitem", { name: "Archive view…" }).click();
+  // The page already took the version the other write made (realtime refreshes it), so the request it sends is
+  // made stale on the wire: it names the version before the other person's write.
+  await page.route(/\/views\/[^/]+\/archive$/, async (route) => {
+    const sent = route.request().postDataJSON() as { expectedVersion: number };
+    await route.continue({
+      postData: JSON.stringify({ ...sent, expectedVersion: current.version }),
+    });
+  });
   const refused = answered(page, "POST", /\/views\/[^/]+\/archive$/);
   await page
     .getByRole("alertdialog")
@@ -109,6 +117,7 @@ test("the tab strip sets the default, archives and restores a view, deletes the 
     "Someone changed this view first",
   );
   expect((await viewOf(firstId))!.version).toBe(current.version + 1);
+  await page.unroute(/\/views\/[^/]+\/archive$/);
   await page.keyboard.press("Escape");
 
   // Archive with the version it has read now, then restore it from the same menu.
