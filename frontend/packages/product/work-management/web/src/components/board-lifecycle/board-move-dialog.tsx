@@ -202,7 +202,9 @@ export function BoardMoveDialog(props: BoardMoveDialogProps) {
                 strokeWidth={1.8}
               />
               <span className="flex min-w-0 flex-1 flex-col gap-px">
-                <b className="font-semibold">{copy.failedTitle}</b>
+                <b className="font-semibold text-foreground">
+                  {copy.failedTitle}
+                </b>
                 <span>{error}</span>
               </span>
             </div>
@@ -315,13 +317,33 @@ export function BoardMoveDialog(props: BoardMoveDialogProps) {
                 <div
                   role="status"
                   aria-label={copy.loading}
-                  className="flex flex-col gap-2 motion-safe:animate-in motion-safe:fade-in-0"
+                  className={cn(
+                    BOX,
+                    "motion-safe:animate-in motion-safe:fade-in-0",
+                  )}
                 >
-                  <Skeleton className="h-[74px] rounded-[10px]" />
-                  <Skeleton className="h-[74px] rounded-[10px]" />
-                  <span className="text-[12.5px] text-meta-foreground">
-                    {copy.loading}
-                  </span>
+                  {[
+                    ["46%", "82%"],
+                    ["40%", "76%"],
+                    ["52%", "60%"],
+                  ].map(([short, long]) => (
+                    <div
+                      key={short}
+                      className="flex h-16 items-center gap-3 px-3.5"
+                    >
+                      <Skeleton className="size-7 flex-none rounded-[7px] bg-state-hover-strong" />
+                      <div className="flex min-w-0 flex-1 flex-col gap-2">
+                        <Skeleton
+                          className="h-2.5 rounded-[4px] bg-state-hover-strong"
+                          style={{ width: short }}
+                        />
+                        <Skeleton
+                          className="h-2.5 rounded-[4px] bg-state-hover-strong"
+                          style={{ width: long }}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : impactState === "error" || !impact ? (
                 <div
@@ -356,9 +378,9 @@ export function BoardMoveDialog(props: BoardMoveDialogProps) {
           data-f="mf"
           className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-line bg-popover px-5 py-3 max-md:px-4 max-md:pb-4"
         >
-          {picked === undefined && !error ? (
+          {(picked === undefined || impactState === "loading") && !error ? (
             <span className="min-w-0 flex-1 text-[12.5px] leading-[1.4] text-meta-foreground max-md:basis-full">
-              {copy.pickHint}
+              {picked === undefined ? copy.pickHint : copy.loading}
             </span>
           ) : null}
           {pending ? null : (
@@ -413,7 +435,7 @@ export function BoardMoveDialog(props: BoardMoveDialogProps) {
                 ? copy.retry
                 : strandedHere
                   ? pluralLifecycle(copy, "moveAdding", chosen.length)
-                  : picked === undefined
+                  : picked === undefined || impactState === "loading"
                     ? copy.confirm
                     : fill(copy.confirmTo, { name: target })}
           </button>

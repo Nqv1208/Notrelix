@@ -134,13 +134,17 @@ export function useMoveToSpace() {
         return;
       }
       const described = describeWorkspaceFailure(failure);
+      if (subject?.kind === "board" && described.kind === "network") {
+        setError(lifecycle.move.networkFailed);
+        return;
+      }
       setError(
         described.kind === "rule" || described.kind === "validation"
           ? (described.detail ?? copy.toasts.unknown)
           : spaceRecoveryHint(copy)(described),
       );
     },
-    [copy],
+    [copy, lifecycle.move.networkFailed, subject?.kind],
   );
 
   const onSubmit = useCallback(

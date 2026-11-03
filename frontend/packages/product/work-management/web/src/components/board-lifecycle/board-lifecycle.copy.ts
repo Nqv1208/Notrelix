@@ -54,6 +54,8 @@ export const en = {
     confirm: "Move board",
     confirmTo: "Move to {{name}}",
     failedTitle: "The board was not moved",
+    networkFailed:
+      "Connection lost. Nothing changed: the place and access stay as they were. Trying again does not move it twice.",
     addPerson: "Add {{name}} to the board",
     close: "Close",
     cancel: "Cancel",
@@ -355,6 +357,8 @@ export const vi: BoardLifecycleCopy = {
     confirm: "Chuyển board",
     confirmTo: "Chuyển sang {{name}}",
     failedTitle: "Chưa chuyển được board",
+    networkFailed:
+      "Mất kết nối. Chưa có gì thay đổi: nơi đặt và quyền giữ nguyên. Thử lại không chuyển hai lần.",
     addPerson: "Thêm {{name}} vào board",
     close: "Đóng",
     cancel: "Huỷ",
