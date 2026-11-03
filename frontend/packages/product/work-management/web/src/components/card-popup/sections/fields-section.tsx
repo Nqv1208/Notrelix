@@ -8,7 +8,6 @@ import { calendarParts, pad2, toValidDate } from "../../shared/item-display";
 import { useCanEdit, useCardPopup } from "../card-popup-context";
 import {
   EmptySection,
-  LinkBtn,
   PanelPopover,
   PopSection,
   SECTION_ICONS,
@@ -17,6 +16,7 @@ import {
 } from "../popup-ui";
 import { PopoverTrigger } from "@notrelix/ui-web";
 import { AddFieldPanel } from "./add-field-panel";
+import { PillBtn, PillKey, PillStatic } from "./field-pill";
 import { FieldControl } from "./field-editors";
 
 /** `dd/mm/yyyy hh:mm` of an instant, in the card's time zone. */
@@ -54,8 +54,8 @@ export function useSectionFields() {
   );
   const filled = (f: (typeof rest)[number]) => {
     const computed = card.computedValues?.[f.id];
-    if (computed !== undefined)
-      return computed.state === "ok" || computed.state === "stale";
+    // A calculated property always shows, with its empty, error and stale state.
+    if (computed !== undefined) return true;
     return !isFieldValueEmpty(card.fieldValues[f.id]);
   };
   return {
@@ -123,10 +123,10 @@ export function FieldsSection() {
       width={340}
       trigger={
         <PopoverTrigger asChild>
-          <LinkBtn aria-haspopup="dialog" className="-ml-2.5">
-            <Plus aria-hidden="true" className="size-[13px]" />
+          <PillBtn aria-haspopup="dialog" dashed>
+            <Plus aria-hidden="true" className="size-4" />
             {t.addField}
-          </LinkBtn>
+          </PillBtn>
         </PopoverTrigger>
       }
     >
@@ -180,35 +180,28 @@ export function FieldsSection() {
           />
         ) : null}
       </SectionHead>
-      <div className="mt-1 flex flex-col">
+      <div className="mt-1 flex flex-wrap gap-1.5" data-field-pills>
         {rows.map((field) => (
-          <div
+          <span
             key={field.id}
             data-field-row={field.id}
-            className="grid min-h-11 grid-cols-[116px_minmax(0,1fr)] items-center gap-x-3 md:min-h-9 md:grid-cols-[140px_minmax(0,1fr)]"
+            className="inline-flex max-w-full"
           >
-            <span className="text-[13px] leading-[1.25] font-semibold text-muted-foreground md:truncate md:leading-[1.45]">
-              {field.name}
-            </span>
-            <FieldControl field={field} variant="ctl" />
-          </div>
+            <FieldControl field={field} variant="pill" />
+          </span>
         ))}
-        <div className="grid min-h-11 grid-cols-[116px_minmax(0,1fr)] items-center gap-x-3 md:min-h-9 md:grid-cols-[140px_minmax(0,1fr)]">
-          <span className="text-[13px] leading-[1.25] font-semibold text-muted-foreground md:truncate md:leading-[1.45]">
-            {t.createdAt}
-          </span>
-          <span
-            title={copy.shell.createdHint}
-            className="box-border flex h-11 w-[calc(100%+16px)] -ml-2 items-center gap-2 rounded-[8px] px-2 text-[14px] text-muted-foreground md:h-8"
-          >
-            <Clock aria-hidden="true" className="size-[13px]" />
-            {mode === "create"
-              ? t.createdValue
-              : dateTimeText(card.createdAt, timeZone)}
-          </span>
-        </div>
+        <PillStatic title={copy.shell.createdHint}>
+          <Clock
+            aria-hidden="true"
+            className="size-[13px] text-meta-foreground"
+          />
+          <PillKey>{t.createdAt}</PillKey>
+          {mode === "create"
+            ? t.createdValue
+            : dateTimeText(card.createdAt, timeZone)}
+        </PillStatic>
+        {addButton}
       </div>
-      {addButton ? <div className="mt-0.5">{addButton}</div> : null}
     </PopSection>
   );
 }

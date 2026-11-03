@@ -31,22 +31,44 @@ export function assigneeRefusalOf(error: unknown): AssigneeRefusal | null {
     : null;
 }
 
-/** The schema change a stale write ran into (a field the board no longer has) and who made it. */
+/** The schema change a stale write ran into and who made it: a field the board no longer has, an option it no longer lists, or a field whose type changed. */
 export interface StaleSchemaDetail {
-  readonly kind: "field-deleted";
+  readonly kind: "field-deleted" | "option-removed" | "type-changed";
   readonly fieldName: string;
   readonly byName: string | null;
+  /** The option the write chose and the field no longer lists (`option-removed`). */
+  readonly optionLabel?: string;
+  /** The field's type before and after the change (`type-changed`). */
+  readonly fromType?: string;
+  readonly toType?: string;
 }
+
+const STALE_CODES = {
+  "work-management.field.deleted": "field-deleted",
+  "work-management.field.option-removed": "option-removed",
+  "work-management.field.type-changed": "type-changed",
+} as const;
 
 /** The stale-schema detail of a refused write, when the server named one (D12). */
 export function staleSchemaOf(error: unknown): StaleSchemaDetail | null {
   const body = (error as { details?: unknown } | null)?.details as
     Record<string, unknown> | null | undefined;
-  if (body?.errorCode !== "work-management.field.deleted") return null;
+  const kind =
+    typeof body?.errorCode === "string"
+      ? (STALE_CODES as Record<string, StaleSchemaDetail["kind"]>)[
+          body.errorCode
+        ]
+      : undefined;
+  if (!body || !kind) return null;
+  const text = (key: string) =>
+    typeof body[key] === "string" ? (body[key] as string) : undefined;
   return {
-    kind: "field-deleted",
-    fieldName: typeof body.fieldName === "string" ? body.fieldName : "",
-    byName: typeof body.changedByName === "string" ? body.changedByName : null,
+    kind,
+    fieldName: text("fieldName") ?? "",
+    byName: text("changedByName") ?? null,
+    optionLabel: text("optionLabel"),
+    fromType: text("fromType"),
+    toType: text("toType"),
   };
 }
 
@@ -111,7 +133,7 @@ export function useItemConflict(workspaceId: string, itemId: string) {
   const detail = data && typeof data === "object" ? data : null;
   return {
     conflict: data === true || detail !== null,
-    staleSchema: detail?.kind === "field-deleted" ? detail : null,
+    staleSchema: detail && detail.kind !== "stale-version" ? detail : null,
     /** Who changed the item first, when the refused write was a plain lost race and the server named them. */
     changedBy: detail?.kind === "stale-version" ? detail.byName : null,
     clear: () =>

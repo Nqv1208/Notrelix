@@ -125,6 +125,28 @@ export const en = {
     someone: "Someone else",
     body: "The value you chose was not saved and nothing changed. Reload the fields to see the latest board.",
     reload: "Reload the fields",
+    optionRemoved: "{{who}} just edited the options of {{field}}",
+    optionRemovedBody:
+      "“{{option}}” is no longer in the field. The value you chose was not saved; choose again from the new list.",
+    optionReload: "Choose again",
+    typeChanged:
+      "{{who}} just changed the type of {{field}} from {{from}} to {{to}}",
+    typeChangedBody:
+      "The value you entered was not saved. Reload the field to edit it in the new type.",
+    pending: "Reloading the board's fields…",
+    pendingBody:
+      "Values you have not saved are kept; nothing has been sent again.",
+    doneDeleted: "Fields reloaded: {{field}} is no longer on this board.",
+    doneDeletedBody: "The value you chose was not saved.",
+    doneOption: "Fields reloaded: the options of {{field}} are up to date.",
+    doneOptionBody: "Choose a value from the new list.",
+    doneType: "Fields reloaded: {{field}} has a new type.",
+    doneTypeBody: "Enter the value again for the new type.",
+    failed: "Could not reload the fields",
+    failedBody:
+      "Lost the connection. Your value is still not saved and the board is unchanged.",
+    retry: "Retry",
+    deletedTag: "field deleted",
   },
   fieldConflict: {
     title: "Someone else just changed {{field}} to {{value}}",
@@ -258,6 +280,27 @@ export const vi: ShellCopy = {
     someone: "Một người khác",
     body: "Giá trị bạn chọn chưa được lưu, không có gì thay đổi. Tải lại trường để thấy bảng mới nhất.",
     reload: "Tải lại trường",
+    optionRemoved: "{{who}} vừa sửa các lựa chọn của {{field}}",
+    optionRemovedBody:
+      "“{{option}}” không còn trong trường. Giá trị bạn chọn chưa được lưu; chọn lại trong danh sách mới.",
+    optionReload: "Chọn lại",
+    typeChanged: "{{who}} vừa đổi loại của {{field}} từ {{from}} sang {{to}}",
+    typeChangedBody:
+      "Giá trị bạn nhập chưa được lưu. Tải lại trường để sửa theo loại mới.",
+    pending: "Đang tải lại các trường của board…",
+    pendingBody:
+      "Các giá trị bạn chưa lưu được giữ lại; chưa gửi lại thay đổi nào.",
+    doneDeleted: "Đã tải lại trường: {{field}} không còn ở board này.",
+    doneDeletedBody: "Giá trị bạn chọn không được lưu.",
+    doneOption: "Đã tải lại trường: các lựa chọn của {{field}} đã cập nhật.",
+    doneOptionBody: "Chọn một giá trị trong danh sách mới.",
+    doneType: "Đã tải lại trường: {{field}} có loại mới.",
+    doneTypeBody: "Nhập lại giá trị theo loại mới.",
+    failed: "Chưa tải lại được các trường",
+    failedBody:
+      "Mất kết nối. Giá trị của bạn vẫn chưa được lưu; bảng không đổi.",
+    retry: "Thử lại",
+    deletedTag: "trường đã bị xoá",
   },
   fieldConflict: {
     title: "Một người khác vừa đổi {{field}} thành {{value}}",
