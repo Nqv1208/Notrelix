@@ -32,6 +32,8 @@ export const en = {
     lockedPill: "Read-only: you cannot edit this",
     saveFailedBody:
       "Lost the connection to the server. The value you entered is still here.",
+    requiredRefused: "{{name}} is required",
+    requiredRefusedBody: "It cannot be empty, so the value stays as it was.",
     discard: "Discard change",
     conflictMine: "Keep my value",
     conflictTheirs: "Use the new value ({{value}})",
@@ -173,6 +175,8 @@ export const vi: SectionsCopy = {
     readOnlyChip: "{{name}}, chỉ đọc",
     lockedPill: "Chỉ xem: bạn không có quyền sửa",
     saveFailedBody: "Mất kết nối tới máy chủ. Giá trị bạn gõ vẫn còn ở đây.",
+    requiredRefused: "{{name}} là trường bắt buộc",
+    requiredRefusedBody: "Không để trống được nên giá trị giữ như cũ.",
     discard: "Bỏ thay đổi",
     conflictMine: "Giữ giá trị của tôi",
     conflictTheirs: "Dùng giá trị mới ({{value}})",

@@ -1,5 +1,8 @@
-import { useCallback, useRef, useState } from "react";
-import { staleSchemaOf } from "@notrelix/work-management-state";
+import { useCallback, useMemo, useRef, useState } from "react";
+import {
+  isRequiredRefusal,
+  staleSchemaOf,
+} from "@notrelix/work-management-state";
 import type { CellWrite } from "./table-field-cell";
 
 type Send = (
@@ -63,7 +66,9 @@ export function useFieldCellWrites(send: Send, reload: () => Promise<unknown>) {
             key,
             schema
               ? { status: "schema", value, schema }
-              : { status: isConflict(error) ? "conflict" : "error", value },
+              : isRequiredRefusal(error)
+                ? { status: "error", value, required: true }
+                : { status: isConflict(error) ? "conflict" : "error", value },
           );
         },
       );
@@ -107,5 +112,24 @@ export function useFieldCellWrites(send: Send, reload: () => Promise<unknown>) {
     [put, reload, writes],
   );
 
-  return { writeOf, write, retry, keepMine, takeTheirs, reloadSchema };
+  // The columns a refused cell belongs to: their header takes the danger colour while the choice is open (D12).
+  const refusedFieldIds = useMemo(
+    () =>
+      new Set(
+        [...writes]
+          .filter(([, w]) => w.status === "schema" || w.status === "reloading")
+          .map(([key]) => key.split("\u0000")[1]!),
+      ),
+    [writes],
+  );
+
+  return {
+    writeOf,
+    write,
+    retry,
+    keepMine,
+    takeTheirs,
+    reloadSchema,
+    refusedFieldIds,
+  };
 }

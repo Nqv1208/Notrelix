@@ -36,6 +36,7 @@ public static class FieldSettingsValidator
         {
             using var doc = System.Text.Json.JsonDocument.Parse(data);
             var root = doc.RootElement;
+            FieldRules.Validate(root);
 
             switch (type)
             {

@@ -165,6 +165,8 @@ export interface MockColumnRecord {
   name: string;
   fieldType: string;
   settings?: string;
+  /** The default value for a new item, a JSON value (what `defaultValueJson` stores). */
+  defaultValue?: string;
   position: number;
   isHidden?: boolean;
   /** Options of a Status or Select field, in position order. */

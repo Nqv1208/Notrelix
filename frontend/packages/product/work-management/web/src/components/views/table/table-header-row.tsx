@@ -28,6 +28,7 @@ export function TableHeaderRow({
   allChecked,
   canSelect,
   canEditFields = false,
+  refusedFieldIds,
   onToggleAll,
   onWidthPreview,
   onWidthCommit,
@@ -43,6 +44,8 @@ export function TableHeaderRow({
   canSelect: boolean;
   /** The viewer may write field values; without it every field column carries the lock. */
   canEditFields?: boolean;
+  /** Fields with a refused cell: their header reads in the danger colour. */
+  refusedFieldIds?: ReadonlySet<string>;
   onToggleAll: (selectAll: boolean) => void;
   onWidthPreview: (columnId: string, width: number | null) => void;
   onWidthCommit: (columnId: string, width: number) => void;
@@ -109,6 +112,7 @@ export function TableHeaderRow({
             className={cn(
               headCell,
               sorted && "text-foreground",
+              field && refusedFieldIds?.has(field.id) && "text-danger-text",
               tablet &&
                 column.id === "title" &&
                 "sticky z-3 border-r border-r-line-strong",

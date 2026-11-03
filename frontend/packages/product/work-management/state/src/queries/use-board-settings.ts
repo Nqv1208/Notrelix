@@ -142,8 +142,18 @@ export function useBoardSettings(boardId: string, workspaceId: string) {
     [boardId, boardSettings],
   );
 
+  /** What a draft formula shows on `itemId`; null when the server could not be asked. */
+  const previewFormula = useCallback(
+    (itemId: string, expression: string) =>
+      boardSettings
+        .previewFormula(boardId, itemId, expression)
+        .catch(() => null),
+    [boardId, boardSettings],
+  );
+
   return {
     readLatest,
+    previewFormula,
     settings: query.data ?? null,
     isLoading: query.isLoading,
     isError: query.isError && !forbidden && !notFound,

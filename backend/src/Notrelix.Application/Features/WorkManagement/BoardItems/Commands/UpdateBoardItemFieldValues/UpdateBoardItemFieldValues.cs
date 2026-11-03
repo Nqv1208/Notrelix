@@ -98,6 +98,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                 case "priority":
                     {
                         var fv = FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(NormalizeStoredValue(value))));
+                        BoardItemFieldWrites.EnsureNotClearingRequired(column, fv);
                         BoardItemFieldWrites.Write(card, column, fv, statusField, _requestContext.UserId, now);
                         break;
                     }
@@ -147,6 +148,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                 case "multi_select":
                     {
                         var fv = FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(NormalizeStoredValue(value))));
+                        BoardItemFieldWrites.EnsureNotClearingRequired(column, fv);
                         BoardItemFieldWrites.Write(card, column, fv, statusField, _requestContext.UserId, now);
                         break;
                     }

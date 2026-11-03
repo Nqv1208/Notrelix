@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type {
   BoardSettingsDto,
   BoardSettingsFieldPatch,
+  FormulaPreviewDto,
   BoardSettingsFieldType,
   BoardSettingsGeneralPatch,
   BoardSettingsViewDto,
@@ -134,6 +135,11 @@ export interface BoardSettingsActions {
     fieldId: string,
     changes: BoardSettingsFieldPatch,
   ): Promise<BoardSettingsWriteResult>;
+  /** What a draft formula shows on the item it is tried on; null when the server could not be asked. */
+  previewFormula(
+    itemId: string,
+    expression: string,
+  ): Promise<FormulaPreviewDto | null>;
   archiveField(fieldId: string): Promise<BoardSettingsWriteResult>;
   /** Deletes a field for good; a board Manager confirms first. */
   deleteField(fieldId: string): Promise<BoardSettingsWriteResult>;

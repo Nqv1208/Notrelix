@@ -171,6 +171,7 @@ public sealed class WorkP3ManifestArchitectureTests
         ["Boards.DuplicateBoardCommand"] = new(Disposition.Keep, "-"),
 
         // Schema read boundary
+        ["BoardFields.PreviewFormulaQuery"] = new(Disposition.Keep, "-"),
         ["BoardSchema.GetBoardSchemaQuery"] = new(Disposition.Harden, "APP-BOUNDARY-002, CONC-002"),
 
         // Labels (Work-owned item metadata, WMREQ023)
@@ -251,6 +252,8 @@ public sealed class WorkP3ManifestArchitectureTests
     /// </summary>
     private static readonly HashSet<string> NonP3PositionWriters = new(StringComparer.Ordinal)
     {
+        // Builds a throwaway field to evaluate a draft formula; it stores no position.
+        "Notrelix.Application/Features/WorkManagement/BoardFields/Queries/PreviewFormula/PreviewFormula.cs",
         "Notrelix.Application/Features/WorkManagement/Forms/Commands/AddFormQuestion/AddFormQuestion.cs",
         "Notrelix.Application/Features/WorkManagement/Forms/Commands/UpdateFormQuestion/UpdateFormQuestion.cs",
         "Notrelix.Infrastructure/Data/Converters/ValueConverters.cs",
