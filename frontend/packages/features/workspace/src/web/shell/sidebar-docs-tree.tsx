@@ -20,7 +20,7 @@ export interface SidebarDocsTreeNavProps {
 }
 
 /**
- * Start padding (px) of a row, from Final-Docs `.side .tree`: departments
+ * Start padding (px) of a row, from Final-Docs-2 `.side .tree`: departments
  * 28, a page with children 46 and 18 per further level, a leaf page 71 (51
  * directly under a department) and 20 per further level.
  */
