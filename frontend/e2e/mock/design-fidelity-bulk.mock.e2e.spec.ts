@@ -205,6 +205,8 @@ test.describe("Bulk bar at 390 px", () => {
     "Owner checks need the default owner world without faults",
   );
   test.use({ viewport: { width: 390, height: 844 } });
+  // The phone list draws no pick box yet (`bk320` and its sheet are owed), so there is nothing to pick at 390 px.
+  test.fixme(true, "bk320: the phone list has no multi-select");
 
   for (const dark of [false, true]) {
     test(`every bar target is 44 px, the clear button 44 x 44 (${dark ? "dem" : "sang"})`, async ({

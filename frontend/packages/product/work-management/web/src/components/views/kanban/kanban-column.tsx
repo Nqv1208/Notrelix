@@ -854,7 +854,12 @@ export function KanbanColumn({
           laneName={name}
           copy={copy}
           openRequest={openAddRequest}
-          onSubmit={onCreateItem}
+          onSubmit={(title) => {
+            // The new item lands at the bottom: open the lane so it is in view.
+            setExpanded(true);
+            setPageShown((shown) => Math.max(shown, loaded + 1));
+            return onCreateItem(title);
+          }}
           onExpand={onExpandCreate}
         />
       ) : null}
