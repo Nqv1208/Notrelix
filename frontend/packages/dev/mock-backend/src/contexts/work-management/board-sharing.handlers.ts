@@ -283,8 +283,13 @@ export const boardSharingOperations = [
         });
       if (existing && existing.grantLevel === level) return noContent();
       if (existing && existing.grantLevel !== null) {
-        // Changing a grant's level names the version read with it.
-        if (body?.expectedVersion !== (existing.version ?? 1))
+        // Changing a grant's level names the version read with it. The `stale` fault stands for a second
+        // manager who changed the grant first: whatever version is named has gone.
+        const raced =
+          store.getConfig().faultProfile[
+            `/resources/${params.resourceType}/${params.resourceId}/permissions`
+          ] === "stale";
+        if (raced || body?.expectedVersion !== (existing.version ?? 1))
           return {
             status: 412,
             body: {

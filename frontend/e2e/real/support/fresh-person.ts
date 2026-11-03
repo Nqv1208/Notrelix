@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
-import { CONFIRMATION_LINK, devMails } from "./dev-mail";
+import { CONFIRMATION_LINK, devMails, latestMails } from "./dev-mail";
 import { apiWrite } from "./real-session";
 import { createOwnedWorkspace, uniqueEmail } from "./real-workspace";
 import { totpCode } from "./totp";
@@ -36,8 +36,8 @@ export async function registerPerson(
 }
 
 /** Opens the confirmation link the development backend logged for the address. */
-export async function confirmEmailOf(page: Page, email: string) {
-  const link = (await devMails(email, CONFIRMATION_LINK)).at(-1)!;
+export async function confirmEmailOf(page: Page, email: string, since = "20m") {
+  const link = (await devMails(email, CONFIRMATION_LINK, 0, since)).at(-1)!;
   const token = decodeURIComponent(new URL(link).hash.replace("#token=", ""));
   const confirmed = await apiWrite(
     page,
@@ -46,6 +46,30 @@ export async function confirmEmailOf(page: Page, email: string) {
     { token },
   );
   expect(confirmed.status, "confirm email").toBeLessThan(300);
+}
+
+/** Confirms many registered people with one read of the backend log. */
+export async function confirmEmailsOf(
+  people: readonly { page: Page; email: string }[],
+  since = "10m",
+) {
+  const links = await latestMails(
+    people.map((one) => one.email),
+    CONFIRMATION_LINK,
+    since,
+  );
+  for (const { page, email } of people) {
+    const token = decodeURIComponent(
+      new URL(links.get(email)!).hash.replace("#token=", ""),
+    );
+    const confirmed = await apiWrite(
+      page,
+      "POST",
+      "/auth/email-verification/confirm",
+      { token },
+    );
+    expect(confirmed.status, `confirm ${email}`).toBeLessThan(300);
+  }
 }
 
 /**

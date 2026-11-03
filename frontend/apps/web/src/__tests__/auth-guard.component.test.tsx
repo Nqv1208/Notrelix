@@ -151,6 +151,39 @@ describe("auth guard: reading the signed-in person", () => {
     expect(host?.querySelector('[role="alert"]')).toBeNull();
   });
 
+  it("treats the retryable 503 of an unchecked revocation as a session that could not be read, never as signed out", async () => {
+    const unchecked = () =>
+      new AppError({
+        kind: "server",
+        status: 503,
+        code: "auth.revocation_unavailable",
+        message: "Your session could not be verified right now. Retry shortly.",
+      });
+    const reads = [
+      () => Promise.reject(unchecked()),
+      () => Promise.resolve(person),
+    ];
+    const { router, get } = await mountAt("/workspaces/w1", () => {
+      const next = reads.shift();
+      return next ? next() : Promise.resolve(person);
+    });
+
+    expect(router.state.location.pathname).toBe("/workspaces/w1");
+    expect(host?.querySelector('[role="alert"]')?.textContent).toContain(
+      "Could not check your session",
+    );
+    expect(text()).not.toContain("protected page");
+
+    const retry = Array.from(host?.querySelectorAll("button") ?? []).find(
+      (button) => button.textContent === "Try again",
+    );
+    await act(async () => retry?.click());
+    await settle();
+
+    expect(get).toHaveBeenCalledTimes(2);
+    expect(text()).toContain("protected page");
+  });
+
   it("keeps a person who is already read on the page when a later read of the session fails", async () => {
     const reads = [
       () => Promise.resolve(person),
