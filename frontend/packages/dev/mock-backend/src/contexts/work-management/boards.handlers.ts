@@ -358,6 +358,7 @@ function projectFullBoard(
     version: board.version ?? 1,
     spaceId: visibleSpaceId(store, board.workspaceId, board.spaceId),
     itemKeyPrefix: board.itemKeyPrefix ?? null,
+    isArchived: board.isArchived,
   };
 }
 

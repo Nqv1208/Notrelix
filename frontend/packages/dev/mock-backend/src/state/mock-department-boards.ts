@@ -38,6 +38,10 @@ export interface DepartmentBoard {
   readonly priorityColumnId: string;
   /** Defaults to the whole workspace. */
   readonly visibility?: "private" | "workspace";
+  /** An archived board: readable, not writable. */
+  readonly archived?: boolean;
+  /** A board whose table has no group yet (it holds no list). */
+  readonly noList?: boolean;
   readonly listId: string;
   readonly listTitle: string;
   readonly items: readonly DepartmentItem[];
@@ -206,6 +210,43 @@ export const TECH_SIDE_BOARDS: readonly DepartmentBoard[] = [
     listId: "mock-itb-list-plan",
     listTitle: "Dự toán",
     visibility: "private",
+    items: [],
+  },
+];
+
+/**
+ * The overlay `board-states` adds two boards the Board content states (BC-Shell RO, NG) need: an archived one and one
+ * with no group. They stay out of the plain world, whose sidebar and department counts the other specs measure.
+ */
+export const BOARD_STATE_BOARDS: readonly DepartmentBoard[] = [
+  {
+    id: "mock-board-it-archived",
+    title: "Di dời trung tâm dữ liệu 2025",
+    description: "Dự án đã xong, giữ lại để tra cứu.",
+    prefix: "DD",
+    color: "#1E6FD0",
+    spaceId: mockIds.spaces.engineering,
+    statusColumnId: "mock-ita-col-status",
+    statusPrefix: "mock-ita-status",
+    priorityColumnId: "mock-ita-col-priority",
+    listId: "mock-ita-list-done",
+    listTitle: "Đã xong",
+    archived: true,
+    items: [],
+  },
+  {
+    id: "mock-board-it-no-group",
+    title: "Kế hoạch đào tạo CNTT",
+    description: "Board mới, chưa chia nhóm.",
+    prefix: "DT",
+    color: "#1E6FD0",
+    spaceId: mockIds.spaces.engineering,
+    statusColumnId: "mock-itn-col-status",
+    statusPrefix: "mock-itn-status",
+    priorityColumnId: "mock-itn-col-priority",
+    listId: "mock-itn-list-none",
+    listTitle: "Chưa có",
+    noList: true,
     items: [],
   },
 ];
