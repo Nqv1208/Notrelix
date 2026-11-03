@@ -102,11 +102,12 @@ describe.each([
     const labels = panel();
     renderLabels(labels, copy);
     fireEvent.click(screen.getByRole("button", { name: t.add }));
-    const name = screen.getByRole("textbox", { name: t.nameLabel });
+    const form = screen.getByRole("form", { name: t.newLabel });
+    const name = within(form).getByRole("textbox", { name: t.nameLabel });
     expect(document.activeElement).toBe(name);
     fireEvent.change(name, { target: { value: "Urgent" } });
-    fireEvent.click(screen.getByRole("radio", { name: t.colors.test }));
-    fireEvent.click(screen.getByRole("button", { name: t.addConfirm }));
+    fireEvent.click(within(form).getByRole("radio", { name: t.colors.test }));
+    fireEvent.click(within(form).getByRole("button", { name: t.addConfirm }));
     await waitFor(() =>
       expect(labels.onCreate).toHaveBeenCalledWith(
         "Urgent",
@@ -125,8 +126,12 @@ describe.each([
     const name = screen.getByRole("textbox", { name: t.nameLabel });
     fireEvent.change(name, { target: { value: "bug" } });
     expect(
-      (screen.getByRole("button", { name: t.addConfirm }) as HTMLButtonElement)
-        .disabled,
+      (
+        within(screen.getByRole("form", { name: t.newLabel })).getByRole(
+          "button",
+          { name: t.addConfirm },
+        ) as HTMLButtonElement
+      ).disabled,
     ).toBe(true);
     expect(name.getAttribute("aria-describedby")).toBeTruthy();
     expect(screen.getByText(t.nameTaken)).toBeTruthy();
@@ -143,7 +148,12 @@ describe.each([
     fireEvent.click(screen.getByRole("button", { name: t.add }));
     const name = screen.getByRole("textbox", { name: t.nameLabel });
     fireEvent.change(name, { target: { value: "Urgent" } });
-    fireEvent.click(screen.getByRole("button", { name: t.addConfirm }));
+    fireEvent.click(
+      within(screen.getByRole("form", { name: t.newLabel })).getByRole(
+        "button",
+        { name: t.addConfirm },
+      ),
+    );
     const alert = await screen.findByRole("alert");
     expect((name as HTMLInputElement).value).toBe("Urgent");
     expect(name.getAttribute("aria-describedby")).toBe(alert.id);
@@ -153,7 +163,7 @@ describe.each([
     await waitFor(() => expect(labels.onCreate).toHaveBeenCalledTimes(2));
   });
 
-  it("renames a label on blur", async () => {
+  it("renames a label and saves it with Save", async () => {
     const labels = panel();
     renderLabels(labels, copy);
     fireEvent.click(
@@ -161,23 +171,27 @@ describe.each([
     );
     const input = screen.getByRole("textbox", { name: t.nameLabel });
     fireEvent.change(input, { target: { value: "Defect" } });
-    fireEvent.blur(input);
+    fireEvent.click(screen.getByRole("button", { name: t.save }));
     await waitFor(() =>
       expect(labels.onUpdate).toHaveBeenCalledWith("l-bug", { name: "Defect" }),
     );
   });
 
-  it("recolours a label from the colour popover", async () => {
+  it("recolours a label from the colour popover of its row in edit", async () => {
     const labels = panel();
     renderLabels(labels, copy);
     fireEvent.click(
+      screen.getByRole("button", { name: fillCopy(t.rename, { name: "Bug" }) }),
+    );
+    fireEvent.click(
       screen.getByRole("button", {
-        name: fillCopy(t.recolor, { name: "Bug" }),
+        name: fillCopy(t.recolor, { name: t.colors.security }),
       }),
     );
     fireEvent.click(
       await screen.findByRole("button", { name: t.colors.training }),
     );
+    fireEvent.click(screen.getByRole("button", { name: t.save }));
     await waitFor(() =>
       expect(labels.onUpdate).toHaveBeenCalledWith("l-bug", {
         color: ITEM_LABEL_COLORS.training,
@@ -191,7 +205,7 @@ describe.each([
     fireEvent.click(
       screen.getByRole("button", { name: fillCopy(t.delete, { name: "Bug" }) }),
     );
-    const confirm = screen.getByRole("group", {
+    const confirm = screen.getByRole("alertdialog", {
       name: fillCopy(t.deleteQuestion, { name: "Bug" }),
     });
     expect(

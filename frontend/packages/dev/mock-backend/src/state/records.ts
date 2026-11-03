@@ -209,6 +209,8 @@ export interface MockLabelRecord {
   boardId: string;
   name: string;
   color: string;
+  /** The label version a write names; starts at 1 and moves on every update. */
+  version?: number;
 }
 
 export interface MockCardLabelRecord {

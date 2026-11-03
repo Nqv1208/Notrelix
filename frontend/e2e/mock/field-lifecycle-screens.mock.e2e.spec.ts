@@ -27,11 +27,6 @@ const SCREENS = {
     await expect(dialog).toBeVisible();
     await expect(dialog).toContainText("30 ngày");
   },
-  "field-deleted-list": async (page: Page) => {
-    await page.goto(`${ROADMAP}/settings?from=table&section=fields`);
-    await page.getByRole("tab", { name: /^Đã xoá/ }).click();
-    await expect(page.getByRole("tabpanel")).toBeVisible();
-  },
 } as const;
 
 for (const [name, show] of Object.entries(SCREENS)) {

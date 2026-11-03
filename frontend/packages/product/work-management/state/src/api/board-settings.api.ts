@@ -117,6 +117,20 @@ function unitOf(settings: string | null | undefined): string | null {
   return null;
 }
 
+function multipleOf(settings: string | null | undefined): boolean {
+  if (!settings) return false;
+  try {
+    const parsed: unknown = JSON.parse(settings);
+    return (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      (parsed as { multiple?: unknown }).multiple === true
+    );
+  } catch {
+    return false;
+  }
+}
+
 function byPosition<T extends { position?: string | null }>(
   rows: readonly T[],
 ): T[] {
@@ -162,6 +176,9 @@ function mapField(column: OverviewField): BoardSettingsFieldDto {
     usage: "",
     accent: type === "status",
     unit: unitOf(column.settings),
+    ...(type === "person" && multipleOf(column.settings)
+      ? { multiple: true }
+      : {}),
     hasColumn: type === "status" || type === "select" || type === "multiselect",
     valueCount: column.valueCount ?? 0,
     options,
@@ -521,7 +538,7 @@ export function createBoardSettingsApi(client: NotrelixClient) {
     ) =>
       api.post<unknown>(
         endpoints.boardFields.create(s.boardId),
-        { name, type, ...(settings ? { settings } : {}) },
+        { name, type, ...(settings ? { settingsJson: settings } : {}) },
         quiet,
       ),
     /** The fields deleted in the last 30 days, newest first (a Manager reads it). */
@@ -593,7 +610,7 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         {
           expectedVersion: fieldOf(s, fieldId).version ?? 0,
           name: changes.name,
-          ...(changes.settings ? { settings: changes.settings } : {}),
+          ...(changes.settings ? { settingsJson: changes.settings } : {}),
         },
         quiet,
       ),
