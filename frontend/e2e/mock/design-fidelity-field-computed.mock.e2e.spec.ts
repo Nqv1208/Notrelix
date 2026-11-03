@@ -9,9 +9,11 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * two 32 px buttons, "Huỷ" 50 px and "Lưu trường" 96 px wide, 8 px apart, 21 px from the right edge) and the table's
  * calculated cell (the value, or the dash, right-aligned at the cell's 10 px padding; the ƒx mark and the lock sit in
  * the column header only, as drawn).
- * Not built: "Xem thử với ERP-145" (the preview row needs the server to evaluate a draft formula, no such read
- * exists), the field chips limited to what the drawn list shows, and the rollup dialog's frames (the mock board
- * has no rollup field to open).
+ * The preview row ("Xem thử với ERP-145:", the 16 px info mark, the 14 px bold value after the text, 36.3 px
+ * high at y 266.2, 518 wide) and the rollup dialog (398.4 px high without its preview row, the 34 px name input at y 93.4, the 32 px
+ * calculation buttons at y 160.8, the 34 px field select, the info note) are measured too; the mock answers the
+ * preview with a sample value. Not built: the "(Điểm = 13)" detail after the key and the field chips limited to
+ * what the drawn list shows.
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
@@ -126,5 +128,61 @@ for (const dark of [false, true]) {
         "13.5px",
       );
     }
+  });
+
+  test(`the formula preview row, ${mode}`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await theme(page, dark);
+    await page.goto(`${BOARD}/settings?from=table&section=fields`);
+    await page.getByText("Điểm gấp đôi", { exact: true }).first().click();
+    await page.getByRole("button", { name: /Sửa công thức/ }).click();
+    const dlg = page.getByRole("dialog");
+    const row = dlg.locator("[data-preview-state]");
+    await expect(row).toHaveText(/Xem thử với .+:/);
+    await expect(row).not.toHaveAttribute("data-preview-state", "checking");
+    await page.waitForTimeout(700);
+    const r = await at(row, dlg);
+    near(r.x, 21, "preview x");
+    near(r.y, 266.2, "preview y");
+    near(r.w, 518, "preview width");
+    near(r.h, 36.3, "preview height");
+    const mark = await at(row.locator("svg"), row);
+    near(mark.w, 16, "info mark width");
+    near(mark.x, 10, "info mark x");
+    const value = row.locator("span").last();
+    expect(await value.evaluate((el) => getComputedStyle(el).fontSize)).toBe(
+      "14px",
+    );
+    expect(await value.evaluate((el) => getComputedStyle(el).fontWeight)).toBe(
+      "700",
+    );
+    expect(await row.evaluate((el) => getComputedStyle(el).borderRadius)).toBe(
+      "8px",
+    );
+  });
+
+  test(`the rollup dialog, ${mode}`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await theme(page, dark);
+    await page.goto(`${BOARD}/settings?from=table&section=fields`);
+    await page.getByRole("button", { name: "Thêm trường" }).click();
+    await page.getByRole("button", { name: /^Tổng hợp Cộng/ }).click();
+    const dlg = page.getByRole("dialog");
+    await page.waitForTimeout(700);
+    const d = (await dlg.boundingBox())!;
+    near(d.width, 560, "dialog width");
+    // 446.7 drawn with the rollup preview row (36.3 + the 12 gap), which is not built.
+    near(d.height, 398.4, "dialog height");
+    near((await at(dlg.getByLabel("Tên trường"), dlg)).y, 93.4, "name y");
+    near((await at(dlg.getByLabel("Tên trường"), dlg)).h, 34, "name height");
+    const calc = await at(dlg.getByRole("radio", { name: "Đếm" }), dlg);
+    near(calc.y, 160.8, "calculation y");
+    near(calc.h, 32, "calculation height");
+    const footer = await at(
+      dlg.getByRole("button", { name: "Lưu trường" }),
+      dlg,
+    );
+    near(footer.h, 32, "save height");
+    near(footer.y, 353.4, "save y");
   });
 }

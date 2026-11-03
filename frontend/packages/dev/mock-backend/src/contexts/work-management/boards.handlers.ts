@@ -283,7 +283,7 @@ function projectField(
     name: column.name,
     fieldType,
     settings: column.settings ?? "{}",
-    defaultValue: null,
+    defaultValue: column.defaultValue ?? null,
     position: positionKey(index + 1),
     isSystem: fieldType === "Status",
     isDeleted: false,
@@ -1036,6 +1036,7 @@ export const boardsOperations = [
       fieldType?: string;
       settings?: string;
       settingsJson?: string;
+      defaultValueJson?: string;
       isHidden?: boolean;
     },
     void
@@ -1049,13 +1050,60 @@ export const boardsOperations = [
     route: "/boards/:boardId/fields/:columnId",
     async handle({ params, body, store }) {
       // The producer's request names the settings `settingsJson`.
-      const { settingsJson, ...rest } = body ?? {};
+      const { settingsJson, defaultValueJson, ...rest } = body ?? {};
       const updated = store.updateColumn(params.columnId, {
         ...rest,
+        ...(defaultValueJson !== undefined
+          ? { defaultValue: defaultValueJson }
+          : {}),
         ...(settingsJson !== undefined ? { settings: settingsJson } : {}),
       });
       if (!updated) return notFound("Column not found");
       return ok<void>(undefined);
+    },
+  }),
+
+  // ─── GET /boards/:boardId/fields/preview-formula ─────────────────────────
+
+  defineMockOperation<
+    { boardId: string },
+    never,
+    { state: string; value: unknown; errorCode: string | null }
+  >({
+    id: "boards.fields.previewFormula",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.PreviewFormula",
+    } as any,
+    method: "GET",
+    route: "/boards/:boardId/fields/preview-formula",
+    async handle({ params, request, store }) {
+      if (!store.getBoard(params.boardId)) return notFound("Board not found");
+      const expression = (
+        new URL(request.url).searchParams.get("expression") ?? ""
+      ).trim();
+      // The mock does not read fields: plain arithmetic is evaluated, any other formula answers a fixed sample value.
+      if (expression === "")
+        return ok({ state: "empty", value: null, errorCode: null });
+      if (/^[\d\s+\-*/().]+$/.test(expression)) {
+        try {
+          const value = Function(`"use strict";return (${expression})`)();
+          if (Number.isFinite(value))
+            return ok({ state: "ok", value, errorCode: null });
+          return ok({
+            state: "error",
+            value: null,
+            errorCode: "divide-by-zero",
+          });
+        } catch {
+          return ok({
+            state: "error",
+            value: null,
+            errorCode: "invalid-definition",
+          });
+        }
+      }
+      return ok({ state: "ok", value: 12, errorCode: null });
     },
   }),
 

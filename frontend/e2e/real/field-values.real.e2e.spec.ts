@@ -994,3 +994,75 @@ test("a manager adds, renames, recolours and deletes a label in Settings, and th
   await settle(page);
   expect(await labelsOnServer()).toEqual([]);
 });
+
+test("a field can be required only with a default, a new item gets the default, and clearing a required cell is refused with the field named", async ({
+  page,
+}) => {
+  await signIn(page, realUsers.admin);
+  const workspace = await createOwnedWorkspace(page, "Required fields");
+  const boardId = await createBoard(page, workspace.id);
+  const summary = await createField(page, boardId, "Summary", "text");
+  const columnVersion = async () =>
+    (await apiRead<FullBoard>(page, `/boards/${boardId}/full`)).columns.find(
+      (column) => column.id === summary,
+    )!.version;
+
+  // Required with no default is refused by the server with the rule, and nothing is stored.
+  const refused = await apiWrite<{ ruleCode?: string }>(
+    page,
+    "PATCH",
+    `/boards/${boardId}/fields/${summary}`,
+    {
+      settingsJson: '{"required":true}',
+      expectedVersion: await columnVersion(),
+    },
+  );
+  expect(refused.status).toBeGreaterThanOrEqual(400);
+  expect(refused.data?.ruleCode).toBe(
+    "WorkManagement_FieldSettings_RequiredNeedsDefault",
+  );
+  const stored = (
+    await apiRead<FullBoard>(page, `/boards/${boardId}/full`)
+  ).columns.find((column) => column.id === summary)!;
+  expect(stored.settings ?? "{}").not.toContain("required");
+
+  // With a default in the same write it is accepted.
+  const accepted = await apiWrite(
+    page,
+    "PATCH",
+    `/boards/${boardId}/fields/${summary}`,
+    {
+      settingsJson: '{"required":true}',
+      defaultValueJson: '"Chưa có tóm tắt"',
+      expectedVersion: await columnVersion(),
+    },
+  );
+  expect(accepted.status).toBeLessThan(300);
+
+  // A new item gets the default.
+  const board = await apiRead<FullBoard>(page, `/boards/${boardId}/full`);
+  const created = await apiWrite<{ id: string }>(
+    page,
+    "POST",
+    `/boards/${boardId}/items`,
+    { groupId: board.lists[0]!.id, title: "Needs a summary" },
+  );
+  expect(created.status).toBeLessThan(300);
+  const itemId = created.data!.id;
+  const read = () => apiRead<ItemRead>(page, `/board-items/${itemId}`);
+  expect((await read()).fieldValues?.[summary]).toBe("Chưa có tóm tắt");
+
+  // Clearing the cell is refused: the note names the field and the value stays.
+  await page.goto(`/workspaces/${workspace.id}/boards/${boardId}?view=table`);
+  const row = page.locator(`[data-row-id="${itemId}"]`);
+  await expect(row).toBeVisible();
+  const key = (await read()).itemKey;
+  const version = (await read()).version;
+  await row.getByRole("button", { name: `Edit Summary of ${key}` }).click();
+  const box = page.getByRole("textbox", { name: `Edit Summary of ${key}` });
+  await box.fill("");
+  await box.press("Enter");
+  await expect(page.getByRole("alert")).toContainText("Summary is required");
+  expect((await read()).fieldValues?.[summary]).toBe("Chưa có tóm tắt");
+  expect((await read()).version).toBe(version);
+});

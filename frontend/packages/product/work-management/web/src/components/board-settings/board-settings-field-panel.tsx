@@ -234,6 +234,9 @@ export function FieldPanel({
     setNameTaken(!result.ok && result.field === "name");
   }
 
+  // Quick add must never be blocked: a field is required only with a default, or when empty is already safe (a checkbox).
+  const needsDefault =
+    required && defaultId === null && field.type !== "checkbox";
   const Icon = fieldIcon(field.type, field.key);
   const hasOptions = field.hasColumn && field.options.length > 0;
   const canArchive = field.type !== "status";
@@ -379,7 +382,7 @@ export function FieldPanel({
                   value={defaultId}
                   onChange={setDefaultId}
                 />
-                <Callout icon={Info}>
+                <Callout icon={Info} className="rounded-[8px]">
                   <span>
                     {fillCopy(t.defaultHint, { count: field.valueCount })}
                   </span>
@@ -393,8 +396,10 @@ export function FieldPanel({
           <>
             <div className="flex items-center gap-2.5 text-item-small">
               <span className="flex-1">
-                <span id={`${nameId}-req`}>{t.required}</span>
-                <small className="block text-metadata text-meta-foreground">
+                <span id={`${nameId}-req`} className="block leading-[1.45]">
+                  {t.required}
+                </span>
+                <small className="block text-metadata leading-[1.45] text-meta-foreground">
                   {t.requiredHint}
                 </small>
               </span>
@@ -404,6 +409,15 @@ export function FieldPanel({
                 label={t.required}
               />
             </div>
+            {needsDefault ? (
+              <p
+                role="alert"
+                className="m-0 flex items-start gap-1.5 text-metadata leading-[1.45] font-medium text-danger-text"
+              >
+                <Info aria-hidden="true" className="size-3.5 shrink-0" />
+                {t.requiredNeedsDefault}
+              </p>
+            ) : null}
 
             <FormGroup label={t.guidance} htmlFor={guidanceId}>
               <textarea
@@ -412,7 +426,7 @@ export function FieldPanel({
                 rows={2}
                 placeholder={t.guidancePlaceholder}
                 onChange={(event) => setGuidance(event.target.value)}
-                className={TEXTAREA_CLASS}
+                className={cn(TEXTAREA_CLASS, "min-h-[58px]")}
               />
             </FormGroup>
           </>
@@ -485,7 +499,9 @@ export function FieldPanel({
           </button>
           <button
             type="button"
-            disabled={trimmed === "" || saving || conflict !== null}
+            disabled={
+              trimmed === "" || saving || conflict !== null || needsDefault
+            }
             onClick={() => void save()}
             className={BUTTON_CLASS.primary}
           >
@@ -539,7 +555,10 @@ function DefaultSelect({
     >
       <SelectTrigger
         aria-label={copy.panel.default}
-        className={cn(INPUT_CLASS, "justify-between shadow-none")}
+        className={cn(
+          INPUT_CLASS,
+          "data-[size=default]:h-[34px] justify-between shadow-none",
+        )}
       >
         <SelectValue>
           {selected ? (

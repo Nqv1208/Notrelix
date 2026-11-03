@@ -777,6 +777,7 @@ export function MainTableView({
     canEdit: capabilities.canEditFields,
     members,
     writeOf: cellWrites.writeOf,
+    refusedFieldIds: cellWrites.refusedFieldIds,
     onWrite: (cardId, fieldDefinitionId, value, stale) => {
       noteTitle(cardId);
       cellWrites.write(cardId, fieldDefinitionId, value, stale);
