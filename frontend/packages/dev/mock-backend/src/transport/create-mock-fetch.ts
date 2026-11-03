@@ -78,7 +78,16 @@ export function createMockFetch(store: MockStore): typeof fetch {
       return createMockResponse(unauthorized());
     }
     if (fault === "409") {
-      return createMockResponse(conflict("Simulated conflict"));
+      const refused = conflict("Simulated conflict");
+      // The producer names who saved first on a refused stale view write (changedByName).
+      return createMockResponse<object>(
+        request.normalizedPathname.includes("/views")
+          ? {
+              ...refused,
+              body: { ...refused.body, changedByName: "Hà Nguyễn" },
+            }
+          : refused,
+      );
     }
     if (fault === "500") {
       return createMockResponse(serverError("Simulated server error"));

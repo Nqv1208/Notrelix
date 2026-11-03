@@ -485,7 +485,7 @@
   --color-timeline-milestone: var(--timeline-milestone);
   --color-timeline-tip-note: var(--timeline-tip-note);
 
-  /* Document page (Final-Docs): page sheet, body ink, comment highlight, notice and status chip tints. */
+  /* Document page (Final-Docs-2): page sheet, body ink, comment highlight, notice and status chip tints. */
   --color-doc-page: var(--doc-page);
   --color-doc-panel: var(--doc-panel);
   --color-doc-file-word: var(--doc-file-word);
