@@ -12,6 +12,7 @@ import type {
   BoardSettingsFieldType,
   BoardSettingsGeneralPatch,
   BoardSettingsGroupDto,
+  BoardSettingsUsageDto,
   BoardSettingsSystemFieldDto,
   BoardSettingsUnavailable,
   BoardSettingsViewDto,
@@ -289,6 +290,33 @@ export function mapSettingsView(
   };
 }
 
+/**
+ * Where a field is in use: the saved views that filter, sort or split by it, show it on a card, or (a table)
+ * show it as a column. Read from the views the page already has, so it needs no extra request; `how` is left
+ * for the page to word.
+ */
+export function usedInOf(
+  fieldId: string,
+  views: readonly SavedBoardView[],
+): BoardSettingsUsageDto[] {
+  return views.flatMap((view): BoardSettingsUsageDto[] => {
+    const config = view.viewConfig;
+    const kind: BoardSettingsUsageDto["kind"] | null = config.filters.some(
+      (filter) => filter.fieldId === fieldId,
+    )
+      ? "filter"
+      : (config.cardFieldIds ?? []).includes(fieldId)
+        ? "card"
+        : config.sortBy.some((sort) => sort.fieldId === fieldId) ||
+            config.groupBy === fieldId ||
+            (view.viewMode === "table" &&
+              !(config.hiddenFields ?? []).includes(fieldId))
+          ? "view"
+          : null;
+    return kind ? [{ kind, name: view.name, how: "" }] : [];
+  });
+}
+
 /** The settings page model of a board read. */
 export function mapBoardSettings(
   boardId: string,
@@ -307,7 +335,10 @@ export function mapBoardSettings(
   ).map(mapGroup);
   const fields = columns
     .filter((column) => !isLockedSystemField(column))
-    .map(mapField);
+    .map((column) => ({
+      ...mapField(column),
+      usedIn: usedInOf(column.id ?? "", savedViews),
+    }));
   return {
     boardId,
     version: board.version ?? 0,

@@ -442,6 +442,9 @@ function FieldRow({
 }) {
   const { copy } = useSettings();
   const t = copy.fields;
+  const viewCount = new Set(
+    field.usedIn.filter((usage) => usage.kind !== "rule").map((u) => u.name),
+  ).size;
   const optionKind = ["status", "select", "multiselect"].includes(field.type);
   const detail =
     field.detail ||
@@ -498,13 +501,21 @@ function FieldRow({
               <Tag_>{field.usage || copy.fields.splitsKanban}</Tag_>
             ) : field.usage ? (
               field.usage
+            ) : viewCount > 0 ? (
+              plural(
+                copy.fields.inViews_one,
+                copy.fields.inViews_other,
+                viewCount,
+              )
             ) : field.valueCount > 0 ? (
               plural(
                 copy.archiveDialog.values_one,
                 copy.archiveDialog.values_other,
                 field.valueCount,
               )
-            ) : null}
+            ) : (
+              copy.fields.unused
+            )}
           </span>
         </>
       )}
