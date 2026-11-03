@@ -8,7 +8,6 @@ using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RestoreB
 using Notrelix.Application.Features.WorkManagement.BoardFields.Queries.ListDeletedBoardFields;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula;
-using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema;
 
 namespace Notrelix.API.Endpoints.WorkManagement.BoardFields;
