@@ -9,12 +9,13 @@ import {
 import { ArrowUp } from "lucide-react";
 import { BULK_ITEM_LIMIT } from "@notrelix/work-management-core";
 import { Button, cn } from "@notrelix/ui-web";
-import { fillTableCopy } from "./main-table.copy";
+import { fillTableCopy, pluralTableCopy } from "./main-table.copy";
 import { TableAddGroup, type TableAddGroupProps } from "./table-add-group";
 import {
   TableArchivedNotice,
   TableBulkBar,
   TableBulkFailure,
+  TableBulkNotice,
   type TableBulkBarProps,
 } from "./table-bulk-bar";
 import { groupAccent } from "./table-chrome";
@@ -137,6 +138,10 @@ export interface MainTableSurfaceProps {
   onShowDone: () => void;
   /** A refused or lost bulk change: the banner under the table with "Thử lại"; absent = none. */
   bulkFailure?: { detail: string; onRetry: () => void } | null;
+  /** A change is on its way: the bar shows the progress line. */
+  bulkSaving?: boolean;
+  /** Picked items another person deleted: the note over the bar; `left` are still picked. */
+  goneNotice?: { count: number; left: number; onClose: () => void } | null;
   onBulkStatus: TableBulkBarProps["onStatus"];
   onBulkDue: TableBulkBarProps["onDue"];
   onBulkArchive: TableBulkBarProps["onArchive"];
@@ -226,6 +231,8 @@ function MainTableSurfaceBody({
   onClearFilter,
   onShowDone,
   bulkFailure,
+  bulkSaving,
+  goneNotice,
   onBulkStatus,
   onBulkDue,
   onBulkArchive,
@@ -759,12 +766,48 @@ function MainTableSurfaceBody({
         </div>
       ) : null}
 
-      {selectedCount > 0 ? (
+      {selectedCount > 0 || goneNotice ? (
         // The banner and the bar share one bottom anchor, so the bar never covers the banner (BC-Bulk bk-err).
         <div
           data-table-bulk-stack=""
           className="pointer-events-none absolute inset-x-3 bottom-5.5 z-20 flex flex-col items-center gap-6 max-md:bottom-3"
         >
+          {selectedCount > BULK_ITEM_LIMIT ? (
+            <div className="pointer-events-auto w-full px-1 sm:px-3">
+              <TableBulkNotice
+                tone="warning"
+                title={fillTableCopy(copy.bulk.capTitle, {
+                  count: selectedCount,
+                  max: BULK_ITEM_LIMIT,
+                })}
+                detail={fillTableCopy(copy.bulk.capBody, {
+                  over: selectedCount - BULK_ITEM_LIMIT,
+                })}
+              />
+            </div>
+          ) : null}
+          {goneNotice ? (
+            <div className="pointer-events-auto w-full px-1 sm:px-3">
+              <TableBulkNotice
+                tone="info"
+                title={pluralTableCopy(
+                  {
+                    one: copy.bulk.goneTitle_one,
+                    other: copy.bulk.goneTitle_other,
+                  },
+                  goneNotice.count,
+                )}
+                detail={fillTableCopy(copy.bulk.goneBody, {
+                  count: goneNotice.count,
+                  left: goneNotice.left,
+                })}
+                action={{
+                  label: copy.bulk.goneClose,
+                  onClick: goneNotice.onClose,
+                }}
+              />
+            </div>
+          ) : null}
           {bulkFailure ? (
             <div className="w-full px-1 sm:px-3">
               <div className="pointer-events-auto rounded-[10px] bg-background shadow-bar">
@@ -777,23 +820,26 @@ function MainTableSurfaceBody({
               </div>
             </div>
           ) : null}
-          <TableBulkBar
-            copy={copy}
-            count={selectedCount}
-            limit={{ max: BULK_ITEM_LIMIT, available: allRowIds.length }}
-            stacked
-            statusOptions={statusOptions}
-            canEdit={canEdit}
-            canArchive={canArchive}
-            onStatus={onBulkStatus}
-            onDue={onBulkDue}
-            onArchive={onBulkArchive}
-            onDelete={onBulkDelete}
-            priority={bulkPriority}
-            onClear={onClearSelection}
-            assign={bulkAssign}
-            move={bulkMove}
-          />
+          {selectedCount > 0 ? (
+            <TableBulkBar
+              copy={copy}
+              saving={bulkSaving}
+              count={selectedCount}
+              limit={{ max: BULK_ITEM_LIMIT, available: allRowIds.length }}
+              stacked
+              statusOptions={statusOptions}
+              canEdit={canEdit}
+              canArchive={canArchive}
+              onStatus={onBulkStatus}
+              onDue={onBulkDue}
+              onArchive={onBulkArchive}
+              onDelete={onBulkDelete}
+              priority={bulkPriority}
+              onClear={onClearSelection}
+              assign={bulkAssign}
+              move={bulkMove}
+            />
+          ) : null}
         </div>
       ) : archivedNotice ? (
         <TableArchivedNotice

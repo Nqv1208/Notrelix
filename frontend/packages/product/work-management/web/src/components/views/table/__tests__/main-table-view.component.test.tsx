@@ -616,7 +616,7 @@ describe("MainTableView on the ERP board", () => {
     const { cards } = renderTable(erpOwnerAccess());
     await ready();
     fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-151" }));
-    fireEvent.click(screen.getByRole("button", { name: "Đặt hạn" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hạn" }));
     fireEvent.change(screen.getByLabelText("Hạn"), {
       target: { value: "2026-11-03" },
     });
@@ -664,12 +664,42 @@ describe("MainTableView on the ERP board", () => {
     expect(cards.updateStatus).not.toHaveBeenCalled();
   }, 20_000);
 
+  it("announces a bulk status change and takes it back when every row held the same status", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    await ready();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-151" }));
+    const bar = screen.getByRole("toolbar");
+    fireEvent.keyDown(within(bar).getByRole("button", { name: /Trạng thái/ }), {
+      key: "Enter",
+    });
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: /Hoàn thành/ }),
+    );
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    const [text, options] = toast.success.mock.calls.at(-1) as unknown as [
+      string,
+      { action?: { label: string; onClick: () => void } },
+    ];
+    expect(text).toBe("Đã đổi trạng thái cho 1 việc");
+    expect(options.action?.label).toBe("Hoàn tác");
+    options.action?.onClick();
+    await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(2));
+    const undo = cards.bulkUpdate.mock.calls[1] as unknown as [
+      string,
+      string[],
+      { type: string; statusOptionId: string },
+    ];
+    expect(undo[1]).toEqual([erpItemId("ERP-151")]);
+    expect(undo[2].type).toBe("set-status");
+    expect(undo[2].statusOptionId).not.toBe(ERP_STATUS_OPTION_IDS.done);
+  }, 20_000);
+
   it("says nothing was changed when the batch is refused", async () => {
     const { cards } = renderTable(erpOwnerAccess());
     cards.bulkUpdate.mockRejectedValueOnce(new Error("rejected"));
     await ready();
     fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-151" }));
-    fireEvent.click(screen.getByRole("button", { name: "Đặt hạn" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hạn" }));
     fireEvent.change(screen.getByLabelText("Hạn"), {
       target: { value: "2026-11-03" },
     });
@@ -683,7 +713,7 @@ describe("MainTableView on the ERP board", () => {
   // The popover closes on Apply, so a second press is the same pick made again.
   async function applyDueDate() {
     if (!screen.queryByLabelText("Hạn"))
-      fireEvent.click(screen.getByRole("button", { name: "Đặt hạn" }));
+      fireEvent.click(screen.getByRole("button", { name: "Hạn" }));
     fireEvent.change(screen.getByLabelText("Hạn"), {
       target: { value: "2026-11-03" },
     });
@@ -743,7 +773,7 @@ describe("MainTableView on the ERP board", () => {
     );
     await ready();
     fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-151" }));
-    fireEvent.click(screen.getByRole("button", { name: "Đặt hạn" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hạn" }));
     fireEvent.change(screen.getByLabelText("Hạn"), {
       target: { value: "2026-11-03" },
     });

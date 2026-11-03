@@ -150,12 +150,10 @@ describe("MainTableSurface", () => {
     });
     expect(within(bar).getByText("2 đã chọn")).toBeTruthy();
 
-    // Assign and move have no write behind them: present, inert, explained.
-    for (const name of [/Giao cho/, /Chuyển board/]) {
-      const button = within(bar).getByRole("button", { name });
-      expect(button.getAttribute("aria-disabled")).toBe("true");
-      expect(button.getAttribute("title")).toBe("Chưa khả dụng");
-    }
+    // Assign has no write behind it: present, inert, explained.
+    const assign = within(bar).getByRole("button", { name: /Người phụ trách/ });
+    expect(assign.getAttribute("aria-disabled")).toBe("true");
+    expect(assign.getAttribute("title")).toBe("Chưa khả dụng");
 
     fireEvent.click(within(bar).getByRole("button", { name: "Lưu trữ" }));
     expect(props.onBulkArchive).toHaveBeenCalledOnce();
@@ -841,10 +839,13 @@ describe("MainTableSurface in-place edits and bulk people and boards", () => {
         onMove,
       },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^Giao cho/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Người phụ trách/ }));
     fireEvent.click(screen.getByRole("button", { name: "Nguyễn Thu Hà" }));
     expect(onAssign).toHaveBeenCalledWith("u-ha");
-    fireEvent.click(screen.getByRole("button", { name: /^Chuyển board/ }));
+    fireEvent.keyDown(screen.getByRole("button", { name: "Thêm" }), {
+      key: "Enter",
+    });
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Chuyển board…/ }));
     fireEvent.click(screen.getByRole("button", { name: "Hỗ trợ nội bộ" }));
     expect(onMove).toHaveBeenCalledWith("board-support");
   });
@@ -899,12 +900,19 @@ describe("MainTableSurface in-place edits and bulk people and boards", () => {
     expect(within(bar).queryByRole("button", { name: "Xoá" })).toBeNull();
   });
 
-  it("without a write behind them Giao cho and Chuyển board stay disabled with the reason", () => {
+  it("without a write behind them Người phụ trách and Chuyển board… stay disabled with the reason", () => {
     renderTable(erpTableSelectedProps());
-    for (const name of [/^Giao cho/, /^Chuyển board/]) {
-      const button = screen.getByRole("button", { name });
-      expect(button.getAttribute("aria-disabled")).toBe("true");
-    }
+    expect(
+      screen
+        .getByRole("button", { name: /^Người phụ trách/ })
+        .getAttribute("aria-disabled"),
+    ).toBe("true");
+    fireEvent.keyDown(screen.getByRole("button", { name: "Thêm" }), {
+      key: "Enter",
+    });
+    const move = screen.getByRole("menuitem", { name: /^Chuyển board…/ });
+    expect(move.getAttribute("aria-disabled")).toBe("true");
+    expect(move.textContent).toContain("Cần quyền tạo việc ở board đích");
   });
 
   it("the row menu opens the item, duplicates, copies the link and archives", () => {

@@ -94,6 +94,7 @@ export function KanbanBulkBar({
     <TableBulkBar
       copy={copy}
       count={ids.length}
+      saving={bulk.isPending}
       limit={{ max: BULK_ITEM_LIMIT, available: ids.length }}
       statusOptions={
         statusField
