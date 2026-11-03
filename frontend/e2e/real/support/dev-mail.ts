@@ -49,6 +49,39 @@ export async function devMails(
   throw new Error(`no matching email was logged for ${email}`);
 }
 
+/**
+ * The newest message matching `body` for each address, from one read of the backend log (a spec that mails many people
+ * reads the log once instead of once per person; each read is slow while the backend logs every query).
+ */
+export async function latestMails(
+  emails: readonly string[],
+  body: string,
+  since = "10m",
+): Promise<Map<string, string>> {
+  const found = new Map<string, string>();
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const logs = execFileSync(
+      "docker",
+      ["logs", "--since", since, backendContainer],
+      { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 },
+    );
+    const entries = logs.split(/(?=^.*Development email to )/m);
+    for (const email of emails) {
+      const pattern = new RegExp(
+        `Development email to ${escapeRegExp(maskedRecipient(email))}: [\\s\\S]*?${body}`,
+      );
+      const hit = entries
+        .map((entry) => pattern.exec(entry)?.[1])
+        .filter((value): value is string => value !== undefined)
+        .at(-1);
+      if (hit) found.set(email, hit);
+    }
+    if (found.size === emails.length) return found;
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  throw new Error("not every address was mailed");
+}
+
 export const CONFIRMATION_LINK =
   '(http[^\\s"<>]*/verify-email#token=[^\\s"<>]+)';
 

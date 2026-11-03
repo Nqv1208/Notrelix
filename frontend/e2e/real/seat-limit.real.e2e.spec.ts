@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import {
-  confirmEmailOf,
+  confirmEmailsOf,
   freshMember,
   registerPerson,
 } from "./support/fresh-person";
@@ -18,8 +18,12 @@ import {
  * admitted to a second workspace at the limit; a repeated accept takes no second seat. The people are registered
  * through the public API of the stack, the same way each spec makes its own.
  */
-test.setTimeout(420_000);
-test.use({ viewport: { width: 1440, height: 900 } });
+test.setTimeout(600_000);
+test.use({
+  viewport: { width: 1440, height: 900 },
+  // A wrong locator fails in half a minute, not at the end of the test budget.
+  actionTimeout: 30_000,
+});
 
 const MEMBER_SEATS = 10;
 
@@ -27,8 +31,6 @@ async function person(browser: Browser, label: string) {
   const context = await browser.newContext();
   const page = await context.newPage();
   const registered = await registerPerson(page, label);
-  // An unconfirmed address cannot accept an invitation.
-  await confirmEmailOf(page, registered.email, "2m");
   return { context, page, ...registered };
 }
 
@@ -60,10 +62,20 @@ test("the Free plan holds ten member seats: the eleventh person is refused with 
   const cleanup: (() => Promise<void>)[] = [];
 
   try {
+    // Register the nine invited people and the eleventh, then confirm all ten addresses from one read of the backend
+    // log: an unconfirmed address cannot accept an invitation.
+    const crowd: Awaited<ReturnType<typeof person>>[] = [];
+    for (let index = 1; index <= MEMBER_SEATS; index += 1) {
+      const one = await person(browser, `seat${index}`);
+      cleanup.push(() => one.context.close());
+      crowd.push(one);
+    }
+    await confirmEmailsOf(crowd);
+    const eleventh = crowd.pop()!;
+
     // The owner holds one seat; nine invited people take the rest.
-    for (let index = 1; index < MEMBER_SEATS; index += 1) {
-      const member = await person(browser, `seat${index}`);
-      cleanup.push(() => member.context.close());
+    for (const [position, member] of crowd.entries()) {
+      const index = position + 1;
       const invitationId = await invite(page, workspaceId, member.email);
       const accepted = await apiWrite(
         member.page,
@@ -76,13 +88,14 @@ test("the Free plan holds ten member seats: the eleventh person is refused with 
     expect(await membersOf(page, workspaceId)).toHaveLength(MEMBER_SEATS);
 
     // The eleventh person is invited (the invitation is not a seat) and refused when they accept.
-    const eleventhContext = await browser.newContext();
-    cleanup.push(() => eleventhContext.close());
-    const eleventhPage = await eleventhContext.newPage();
-    const eleventh = await freshMember(eleventhPage, "seateleven");
+    const eleventhPage = eleventh.page;
+    await createOwnedWorkspace(eleventhPage, "seateleven");
     const refusedInvitation = await invite(page, workspaceId, eleventh.email);
 
-    await eleventhPage.goto(`/workspaces/${eleventh.workspaceId}`);
+    await eleventhPage.goto("/");
+    await eleventhPage
+      .getByRole("button", { name: /open the Notrelix system rail/ })
+      .click();
     await eleventhPage
       .getByRole("button", { name: "Pending workspace invitations" })
       .click();
