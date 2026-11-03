@@ -96,6 +96,7 @@ export function createBoardApi(client: NotrelixClient) {
               criteria: {
                 filter: context.page.filter,
                 sort: context.page.sort,
+                ...(context.page.search ? { search: context.page.search } : {}),
               },
             }
           : {}),

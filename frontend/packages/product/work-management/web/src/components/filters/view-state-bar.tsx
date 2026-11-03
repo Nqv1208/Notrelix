@@ -6,6 +6,8 @@ import {
   type FieldRef,
   type FilterField,
   type MemberNames,
+  type SavedFilterCriteria,
+  viewStateFromCriteria,
 } from "@notrelix/work-management-core";
 import {
   kanbanOutlineButtonClass,
@@ -15,6 +17,7 @@ import { describeCondition, staleConditionCount } from "./condition-label";
 import { FilterBuilder } from "./filter-builder";
 import { FieldRefMenu } from "./field-ref-menu";
 import { fillFiltersCopy, type FiltersCopy } from "./filters.copy";
+import type { SummaryPhrase } from "../saved-filters/saved-filters-menu";
 import { SortMenu } from "./sort-menu";
 import type { ViewStateControl } from "./view-state-control";
 
@@ -24,6 +27,10 @@ const MAX_CHIPS = 3;
 export interface SaveFormState {
   saveOpen: boolean;
   onSaveOpenChange: (open: boolean) => void;
+  /** What the bar shows now, one phrase per condition and the grouping: the save form's summary. */
+  summary: readonly SummaryPhrase[];
+  /** The same phrases for a saved filter's criteria: the subtitle of its row. */
+  describe: (criteria: SavedFilterCriteria) => readonly SummaryPhrase[];
 }
 
 export interface ViewStateBarProps {
@@ -85,9 +92,55 @@ export function ViewStateBar(props: ViewStateBarProps) {
   const setOpen = props.onFilterOpenChange ?? setOpenInner;
   const [saveOpen, setSaveOpen] = useState(false);
   const reasonId = useId();
+  const describe = (criteria: SavedFilterCriteria): SummaryPhrase[] => {
+    const state = viewStateFromCriteria(criteria);
+    const groupField = state.group
+      ? fields.find((f) => f.id === state.group?.fieldId)
+      : undefined;
+    return [
+      ...state.filter.conditions
+        .filter((condition) => conditionIssue(condition) === null)
+        .map((condition) => ({
+          text: describeCondition(
+            copy,
+            condition,
+            fields.find((f) => f.id === condition.fieldId),
+            memberName,
+          ),
+        })),
+      ...(groupField
+        ? [{ text: `${copy.group.label} ${groupField.name}`, group: true }]
+        : []),
+    ];
+  };
   const saved =
     typeof props.savedFilters === "function"
-      ? props.savedFilters({ saveOpen, onSaveOpenChange: setSaveOpen })
+      ? props.savedFilters({
+          saveOpen,
+          onSaveOpenChange: setSaveOpen,
+          summary: [
+            ...applied.map((condition) => ({
+              text: describeCondition(
+                copy,
+                condition,
+                fields.find((f) => f.id === condition.fieldId),
+                memberName,
+              ),
+            })),
+            ...(view.state.group
+              ? [
+                  {
+                    text: `${copy.group.label} ${
+                      fields.find((f) => f.id === view.state.group?.fieldId)
+                        ?.name ?? ""
+                    }`,
+                    group: true,
+                  },
+                ]
+              : []),
+          ],
+          describe,
+        })
       : props.savedFilters;
   const onSaveAsNew =
     typeof props.savedFilters === "function"
