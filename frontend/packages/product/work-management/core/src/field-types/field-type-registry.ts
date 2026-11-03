@@ -27,6 +27,8 @@ export type FilterOperator =
 export interface FieldContext {
   readonly field: FieldDefinition;
   readonly memberName: (userId: string) => string;
+  /** The IANA zone a date instant's day is judged in (the board's); absent: UTC. */
+  readonly timeZone?: string;
 }
 
 /** A draft typed in an inline editor, parsed to the value the write carries. */

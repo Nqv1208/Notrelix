@@ -364,7 +364,7 @@ export const workFeedOperations = [
           status: 400,
           body: {
             message: "Nobody else is in charge of this item.",
-            code: "work.item.remind-no-recipients",
+            errorCode: "work.item.remind-no-recipients",
           },
         };
       const now = store.getClock().isoNow();
@@ -376,9 +376,9 @@ export const workFeedOperations = [
         return {
           status: 409,
           body: {
-            message: "A reminder was sent in the last 24 hours.",
-            code: "work.item.remind-too-soon",
-            nextRemindAt: next(last),
+            // The wording of the real command: the client reads the time from the end.
+            message: `The people in charge were already reminded; it is possible again at ${next(last)}.`,
+            errorCode: "work.item.remind-too-soon",
           },
         };
       sent.set(params.id, now);
