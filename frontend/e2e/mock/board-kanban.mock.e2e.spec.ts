@@ -156,11 +156,14 @@ for (const viewport of VIEWPORTS) {
       await page
         .getByRole("combobox", { name: "Trường (Điều kiện 2)" })
         .selectOption({ label: "Ưu tiên" });
+      await page.getByRole("button", { name: "Giá trị (Điều kiện 2)" }).click();
       await page
         .getByRole("listbox", { name: "Giá trị (Điều kiện 2)" })
         .getByRole("option", { name: "Thấp" })
         .click();
+      // Escape closes the list of values; Xong closes the dialog.
       await page.keyboard.press("Escape");
+      await page.getByRole("button", { name: "Xong" }).click();
 
       const bar = page
         .getByRole("status")
