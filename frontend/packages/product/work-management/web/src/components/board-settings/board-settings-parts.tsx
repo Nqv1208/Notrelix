@@ -193,7 +193,7 @@ export function SectionHeader({
         </p>
       </div>
       <span className="flex-1" />
-      <div className="flex shrink-0 items-center gap-2">{actions}</div>
+      <div className="flex shrink-0 items-center gap-3">{actions}</div>
     </div>
   );
 }

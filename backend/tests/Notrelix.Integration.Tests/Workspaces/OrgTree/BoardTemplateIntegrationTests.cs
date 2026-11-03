@@ -122,6 +122,34 @@ public sealed class BoardTemplateIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task SaveAsTemplate_WithItems_RefusesABoardOverTheCap_AndSavesNothing_ButSavesItWithoutItems()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        using var owner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
+        var source = await SeedSourceBoardAsync(stack, owner);
+        // The seed holds one item; 500 more make 501, one over the cap.
+        await _host.WithSystemContextAsync(async c =>
+        {
+            var group = await c.BoardGroups.IgnoreQueryFilters().FirstAsync(g => g.BoardId == source);
+            var orders = FractionalIndexGenerator.GenerateNKeysBetween(FractionalIndex.Initial(), null, 500);
+            for (var n = 2; n <= 501; n++)
+            {
+                c.BoardItems.Add(BoardItem.CreateRoot(stack.AccountId, stack.WorkspaceId, source, group.Id, $"Item {n}",
+                    orders[n - 2], stack.OwnerId, OrgTreeTestHost.BaseTime, itemKey: $"SP-{n}", itemSequence: n));
+            }
+        });
+
+        var withItems = () => OrgTreeTestHost.SendIdempotentAsync(owner, new CreateBoardTemplateCommand(source, "Too big", null, true));
+        (await withItems.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which.RuleCode
+            .Should().Be(Notrelix.Domain.WorkManagement.WorkManagementRuleCodes.WorkManagement_BoardTemplate_TooManyItems);
+        (await _host.ReadAsync(c => c.BoardTemplates.IgnoreQueryFilters().CountAsync(t => t.Name == "Too big")))
+            .Should().Be(0, "a refused save leaves no template and nothing truncated");
+
+        var withoutItems = await SendForIdAsync(owner, new CreateBoardTemplateCommand(source, "Structure only", null, false));
+        withoutItems.Should().NotBe(Guid.Empty, "the same board saves when items are not asked for");
+    }
+
+    [Fact]
     public async Task BuiltInStarter_CreatesABoard_AndTheListCarriesBuiltIns()
     {
         var stack = await _host.SeedWorkspaceAsync();

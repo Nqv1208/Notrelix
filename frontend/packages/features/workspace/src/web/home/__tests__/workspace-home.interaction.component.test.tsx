@@ -398,6 +398,51 @@ describe("CreateResourceDialog", () => {
     expect(screen.getByText(copy.create.noWorkspaceTemplates)).toBeTruthy();
   });
 
+  it("FUI[workspace.create-resource:board-gallery-states] says the starters are loading, or failed and can be read again, while a plain board can still be made", () => {
+    const onSubmit = vi.fn();
+    const onRetry = vi.fn();
+    const view = renderPureUi(
+      <CreateResourceDialog
+        copy={copy}
+        kind="board"
+        pending={false}
+        error={null}
+        boardTemplatesStatus="loading"
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+    expect(screen.getByRole("status").textContent).toBe(
+      copy.create.templatesLoading,
+    );
+    view.rerender(
+      <CreateResourceDialog
+        copy={copy}
+        kind="board"
+        pending={false}
+        error={null}
+        boardTemplatesStatus="error"
+        onRetryBoardTemplates={onRetry}
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+    expect(screen.getByRole("alert").textContent).toContain(
+      copy.create.templatesFailed,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.create.templatesRetry }),
+    );
+    expect(onRetry).toHaveBeenCalledTimes(1);
+    fireEvent.change(screen.getByLabelText(copy.create.boardLabel), {
+      target: { value: "Roadmap" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.create.submitBoard }),
+    );
+    expect(onSubmit).toHaveBeenCalledWith("board", "Roadmap");
+  });
+
   it("FUI[workspace.create-resource:submit] submits the trimmed name for the requested kind", () => {
     const onSubmit = vi.fn();
     renderPureUi(
