@@ -644,6 +644,16 @@ export function MainTableView({
     count: number;
     left: number;
   } | null>(null);
+  // What the last bulk change did, for a few seconds.
+  const [doneNotice, setDoneNotice] = useState<{
+    text: string;
+    onUndo?: () => void;
+  } | null>(null);
+  useEffect(() => {
+    if (!doneNotice) return;
+    const timer = setTimeout(() => setDoneNotice(null), 6000);
+    return () => clearTimeout(timer);
+  }, [doneNotice]);
   const boardLoaded = !table.isLoading && groups.every((g) => !g.hasMore);
   useEffect(() => {
     if (!boardLoaded) return;
@@ -757,12 +767,12 @@ export function MainTableView({
               )
             : null;
     if (!text) return;
-    toast.success(text, {
-      id: "table-bulk-done",
-      action: inverse
-        ? {
-            label: copy.archived.undo,
-            onClick: () => bulkMutate({ itemIds: [...ids], change: inverse }),
+    setDoneNotice({
+      text,
+      onUndo: inverse
+        ? () => {
+            setDoneNotice(null);
+            bulkMutate({ itemIds: [...ids], change: inverse });
           }
         : undefined,
     });
@@ -1190,6 +1200,7 @@ export function MainTableView({
           }}
           onShowDone={() => setShowDone(true)}
           bulkSaving={bulkUpdate.isPending}
+          bulkDone={doneNotice}
           goneNotice={
             goneNotice
               ? { ...goneNotice, onClose: () => setGoneNotice(null) }

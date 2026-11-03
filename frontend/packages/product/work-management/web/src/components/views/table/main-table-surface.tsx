@@ -14,6 +14,7 @@ import { TableAddGroup, type TableAddGroupProps } from "./table-add-group";
 import {
   TableArchivedNotice,
   TableBulkBar,
+  TableBulkDone,
   TableBulkFailure,
   TableBulkNotice,
   type TableBulkBarProps,
@@ -140,6 +141,8 @@ export interface MainTableSurfaceProps {
   bulkFailure?: { detail: string; onRetry: () => void } | null;
   /** A change is on its way: the bar shows the progress line. */
   bulkSaving?: boolean;
+  /** What the last bulk change did; "Hoàn tác" shows when `onUndo` is given. */
+  bulkDone?: { text: string; onUndo?: () => void } | null;
   /** Picked items another person deleted: the note over the bar; `left` are still picked. */
   goneNotice?: { count: number; left: number; onClose: () => void } | null;
   onBulkStatus: TableBulkBarProps["onStatus"];
@@ -232,6 +235,7 @@ function MainTableSurfaceBody({
   onShowDone,
   bulkFailure,
   bulkSaving,
+  bulkDone,
   goneNotice,
   onBulkStatus,
   onBulkDue,
@@ -841,6 +845,12 @@ function MainTableSurfaceBody({
             />
           ) : null}
         </div>
+      ) : bulkDone ? (
+        <TableBulkDone
+          text={bulkDone.text}
+          undoLabel={copy.archived.undo}
+          onUndo={bulkDone.onUndo}
+        />
       ) : archivedNotice ? (
         <TableArchivedNotice
           copy={copy}

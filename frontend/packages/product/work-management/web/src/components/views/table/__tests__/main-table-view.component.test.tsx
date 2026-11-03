@@ -675,14 +675,9 @@ describe("MainTableView on the ERP board", () => {
     fireEvent.click(
       await screen.findByRole("menuitem", { name: /Hoàn thành/ }),
     );
-    await waitFor(() => expect(toast.success).toHaveBeenCalled());
-    const [text, options] = toast.success.mock.calls.at(-1) as unknown as [
-      string,
-      { action?: { label: string; onClick: () => void } },
-    ];
-    expect(text).toBe("Đã đổi trạng thái cho 1 việc");
-    expect(options.action?.label).toBe("Hoàn tác");
-    options.action?.onClick();
+    const done = await screen.findByText("Đã đổi trạng thái cho 1 việc");
+    expect(done.closest("[data-table-bulk-done]")).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Hoàn tác" }));
     await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(2));
     const undo = cards.bulkUpdate.mock.calls[1] as unknown as [
       string,

@@ -3,6 +3,7 @@ import {
   Archive,
   ArrowRight,
   Calendar,
+  Check,
   ChevronDown,
   Info,
   Loader2,
@@ -41,7 +42,7 @@ import type { TableStatusOption } from "./table-model";
 import { StatusDot } from "./table-parts";
 
 const BAR_BASE =
-  "z-20 mx-auto flex w-fit items-center gap-1 rounded-[12px] bg-inverse-surface py-1.5 pr-1.5 pl-3.5 whitespace-nowrap text-inverse-foreground shadow-bar flex-wrap max-xl:rounded-[14px] max-xl:py-1 max-xl:pl-4.5 max-md:py-2 max-md:pl-3";
+  "z-20 mx-auto flex w-fit items-center gap-0.5 rounded-[12px] bg-inverse-surface py-1.5 pr-1.5 pl-3.5 whitespace-nowrap text-inverse-foreground shadow-bar flex-wrap max-xl:rounded-[14px] max-xl:py-1 max-xl:pl-4.5 max-md:py-2 max-md:pl-3";
 
 const BAR_CLASS = `absolute inset-x-3 bottom-5.5 max-md:bottom-3 ${BAR_BASE}`;
 
@@ -117,6 +118,9 @@ function ReadOnlyButton({
   );
 }
 
+const MORE_ITEM =
+  "h-9 gap-2.5 rounded-[7px] px-2.5 py-0 text-[13.5px] data-disabled:text-meta-foreground";
+
 const CHEVRON = "size-[13px] opacity-80";
 
 /**
@@ -155,7 +159,7 @@ export function TableBulkBar({
   const [assignOpen, setAssignOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const canMove = move !== undefined && canEdit;
+  const canMove = canEdit && move !== undefined && move.boards.length > 0;
 
   return (
     <div
@@ -167,7 +171,7 @@ export function TableBulkBar({
         stacked ? cn("pointer-events-auto max-w-full", BAR_BASE) : BAR_CLASS
       }
     >
-      <b className="mr-2 text-dense-body font-semibold max-xl:text-[14.5px] max-xl:font-[650]">
+      <b className="mr-1.5 text-dense-body font-semibold max-xl:text-[14.5px] max-xl:font-[650]">
         {fillTableCopy(b.selected, { count })}
       </b>
       {saving ? (
@@ -178,7 +182,7 @@ export function TableBulkBar({
           />
           <span
             role="status"
-            className="inline-flex items-center gap-2 pr-3 pl-1 text-dense-body"
+            className="inline-flex items-center gap-2 px-2.5 text-dense-body"
           >
             <Loader2
               aria-hidden="true"
@@ -372,7 +376,7 @@ export function TableBulkBar({
             {canEdit ? (
               <Popover open={moveOpen} onOpenChange={setMoveOpen}>
                 <PopoverAnchor asChild>
-                  <span className="contents">
+                  <span className="inline-flex">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button type="button" className={BAR_BUTTON_CLASS}>
@@ -386,16 +390,25 @@ export function TableBulkBar({
                       <DropdownMenuContent
                         align="end"
                         side="top"
+                        sideOffset={16}
+                        // The board list opens under the button next: focus must not go back and dismiss it.
+                        onCloseAutoFocus={(event) => {
+                          if (moveOpen) event.preventDefault();
+                        }}
                         aria-label={b.moreLabel}
-                        className="w-64"
+                        className="flex w-80 flex-col gap-0.5 rounded-[12px] border border-line-strong bg-popover p-1.5 shadow-pop ring-0"
                       >
-                        <DropdownMenuItem onSelect={() => onDue(null)}>
+                        <DropdownMenuItem
+                          onSelect={() => onDue(null)}
+                          className={MORE_ITEM}
+                        >
                           <Calendar className="size-4" aria-hidden="true" />
                           {b.moreDueClear}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           disabled={!assign}
                           onSelect={() => assign?.onAssign(null)}
+                          className={MORE_ITEM}
                         >
                           <User className="size-4" aria-hidden="true" />
                           {b.moreUnassign}
@@ -403,16 +416,20 @@ export function TableBulkBar({
                         <DropdownMenuItem
                           disabled={!canMove}
                           onSelect={() => setMoveOpen(true)}
-                          className="items-start"
+                          className={cn(
+                            MORE_ITEM,
+                            !canMove &&
+                              "h-auto items-center py-1.5 data-disabled:opacity-100",
+                          )}
                         >
                           <ArrowRight
-                            className="mt-0.5 size-4"
+                            className="size-4 shrink-0"
                             aria-hidden="true"
                           />
-                          <span className="flex flex-col">
+                          <span className="flex flex-1 flex-col leading-[1.45]">
                             {b.moreMove}
                             {!canMove ? (
-                              <span className="text-[12px] text-meta-foreground">
+                              <span className="text-[12px] leading-[1.3] text-meta-foreground">
                                 {b.moreMoveHint}
                               </span>
                             ) : null}
@@ -519,13 +536,49 @@ export function TableBulkBar({
             onClick={onClear}
             className={cn(
               BAR_BUTTON_CLASS,
-              "max-xl:min-w-11 max-xl:justify-center",
+              "w-8 justify-center px-0 max-xl:w-11",
             )}
           >
             <X className="size-4" aria-hidden="true" />
           </button>
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * What a bulk change did (BC-Bulk `bk-ok`): a dark pill over the foot of the table with the count
+ * and, where the change can be taken back as one request, "Hoàn tác". It stands in the place the
+ * bar left.
+ */
+export function TableBulkDone({
+  text,
+  undoLabel,
+  onUndo,
+}: {
+  text: string;
+  undoLabel: string;
+  onUndo?: () => void;
+}) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      data-table-bulk-done=""
+      className="absolute inset-x-3 bottom-5.5 z-20 mx-auto flex w-fit max-w-full items-center gap-3 rounded-[10px] bg-inverse-surface py-2.5 pr-3 pl-3.5 text-[13px] leading-[1.45] text-inverse-foreground shadow-bar max-md:bottom-3"
+    >
+      <Check className="size-4 shrink-0" aria-hidden="true" />
+      <span>{text}</span>
+      {onUndo ? (
+        <button
+          type="button"
+          onClick={onUndo}
+          className="h-7 cursor-pointer rounded-[6px] border-0 bg-transparent px-1.5 text-[13px] font-semibold text-inverse-foreground hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-inverse-foreground"
+        >
+          {undoLabel}
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -644,7 +697,7 @@ export function TableArchivedNotice({
       role="status"
       aria-live="polite"
       data-table-archived=""
-      className={BAR_CLASS}
+      className={cn(BAR_CLASS, "gap-1")}
     >
       <b className="mr-2 text-dense-body font-semibold max-xl:text-[14.5px] max-xl:font-[650]">
         {pluralTableCopy({ one: a.done_one, other: a.done_other }, count)}
