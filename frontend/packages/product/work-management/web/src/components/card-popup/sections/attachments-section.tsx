@@ -374,70 +374,88 @@ export function AttachmentsSection() {
               tile={tile.node}
               tone={tile.tone}
               name={file.name}
-              nameHref={isLink ? file.url : undefined}
+              nameHref={isLink && mode === "view" ? file.url : undefined}
               meta={
-                isLink
-                  ? fillPopupCopy(t.linkMeta, {
+                mode === "create"
+                  ? fillPopupCopy(isLink ? t.queuedLink : t.queuedFile, {
                       host: hostOf(file.url),
-                      date: date(file.createdAt).split(" ")[0] ?? "",
-                      author,
-                    })
-                  : fillPopupCopy(t.addedBy, {
-                      date: date(file.createdAt),
                       size: formatFileSize(file.size, locale),
-                      author,
                     })
+                  : isLink
+                    ? fillPopupCopy(t.linkMeta, {
+                        host: hostOf(file.url),
+                        date: date(file.createdAt).split(" ")[0] ?? "",
+                        author,
+                      })
+                    : fillPopupCopy(t.addedBy, {
+                        date: date(file.createdAt),
+                        size: formatFileSize(file.size, locale),
+                        author,
+                      })
               }
               actions={
-                <>
-                  {!isLink && callbacks.onDownloadFile ? (
-                    <IconBtn
-                      small
-                      aria-label={fillPopupCopy(t.downloadFile, {
-                        name: file.name,
-                      })}
-                      title={t.download}
-                      onClick={() => callbacks.onDownloadFile?.(file)}
-                    >
-                      <Download aria-hidden="true" className="size-4" />
-                    </IconBtn>
-                  ) : null}
-                  {isLink || (canEdit && callbacks.onDeleteFile) ? (
-                    <OptionsMenu
-                      label={fillPopupCopy(t.options, { name: file.name })}
-                    >
-                      {isLink ? (
-                        <DropdownMenuItem asChild>
-                          <a
-                            href={file.url}
-                            target="_blank"
-                            rel="noreferrer noopener"
+                mode === "create" ? (
+                  // A queued file is not stored yet: it leaves the draft at once.
+                  <IconBtn
+                    small
+                    aria-label={fillPopupCopy(t.removeQueued, {
+                      name: file.name,
+                    })}
+                    onClick={() => void callbacks.onDeleteFile?.(file)}
+                  >
+                    <X aria-hidden="true" className="size-4" />
+                  </IconBtn>
+                ) : (
+                  <>
+                    {!isLink && callbacks.onDownloadFile ? (
+                      <IconBtn
+                        small
+                        aria-label={fillPopupCopy(t.downloadFile, {
+                          name: file.name,
+                        })}
+                        title={t.download}
+                        onClick={() => callbacks.onDownloadFile?.(file)}
+                      >
+                        <Download aria-hidden="true" className="size-4" />
+                      </IconBtn>
+                    ) : null}
+                    {isLink || (canEdit && callbacks.onDeleteFile) ? (
+                      <OptionsMenu
+                        label={fillPopupCopy(t.options, { name: file.name })}
+                      >
+                        {isLink ? (
+                          <DropdownMenuItem asChild>
+                            <a
+                              href={file.url}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                            >
+                              <ExternalLink aria-hidden="true" />
+                              {t.openLink}
+                            </a>
+                          </DropdownMenuItem>
+                        ) : null}
+                        {canEdit && callbacks.onDeleteFile ? (
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() =>
+                              setConfirm({
+                                title: fillPopupCopy(t.deleteTitle, {
+                                  name: file.name,
+                                }),
+                                body: t.deleteBody,
+                                action: t.deleteConfirm,
+                                run: () => callbacks.onDeleteFile!(file),
+                              })
+                            }
                           >
-                            <ExternalLink aria-hidden="true" />
-                            {t.openLink}
-                          </a>
-                        </DropdownMenuItem>
-                      ) : null}
-                      {canEdit && callbacks.onDeleteFile ? (
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onSelect={() =>
-                            setConfirm({
-                              title: fillPopupCopy(t.deleteTitle, {
-                                name: file.name,
-                              }),
-                              body: t.deleteBody,
-                              action: t.deleteConfirm,
-                              run: () => callbacks.onDeleteFile!(file),
-                            })
-                          }
-                        >
-                          {t.deleteFile}
-                        </DropdownMenuItem>
-                      ) : null}
-                    </OptionsMenu>
-                  ) : null}
-                </>
+                            {t.deleteFile}
+                          </DropdownMenuItem>
+                        ) : null}
+                      </OptionsMenu>
+                    ) : null}
+                  </>
+                )
               }
             />
           );

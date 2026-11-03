@@ -253,16 +253,40 @@ test.describe("create popup, desktop, filled draft", () => {
       .click();
     await page.getByRole("option", { name: "Ưu tiên", exact: true }).click();
     await page.waitForTimeout(500);
-    await page
-      .getByRole("option", { name: "Cao", exact: true })
-      .click({ force: true });
+    await expect(page.getByText("Khẩn", { exact: true }).last()).toBeVisible();
+    await page.getByText("Cao", { exact: true }).last().click();
     // Description.
     await pop.getByText("Thêm mô tả…").first().click();
-    await page.keyboard.type(
-      "Làm việc với kế toán trưởng Minh An Group để chọn hai buổi đào tạo phân hệ công nợ trước ngày chạy thử.",
+    await page.keyboard.insertText(
+      "Làm việc với kế toán trưởng Minh An Group để chọn hai buổi đào tạo phân hệ công nợ trước ngày chạy thử.\n\n- Buổi 1: nhập chứng từ và đối chiếu\n- Buổi 2: báo cáo công nợ\n\nGửi lịch cho các phòng ban liên quan.",
     );
     await page.getByRole("button", { name: "Lưu", exact: true }).click();
     await page.waitForTimeout(500);
+    // A custom field (the board's own "Phân hệ ERP" stands for the artboard's "Hạng mục").
+    await pop.getByRole("button", { name: "Thêm trường" }).click();
+    await page.getByText("Phân hệ ERP").first().click();
+    await page.waitForTimeout(300);
+    await pop.getByRole("button", { name: "Chọn…" }).click();
+    await page.getByText("Kế toán", { exact: true }).last().click();
+    // A queued file and a queued link.
+    await page.getByRole("button", { name: "Thêm đính kèm" }).click();
+    await page
+      .locator("input[type=file]")
+      .first()
+      .setInputFiles({
+        name: "Lich-dao-tao-ke-toan.xlsx",
+        mimeType: "application/vnd.ms-excel",
+        buffer: Buffer.alloc(1153434),
+      });
+    await page.waitForTimeout(400);
+    await page
+      .getByPlaceholder(/Dán liên kết/)
+      .fill("https://minhan.example/lich-phong-dao-tao");
+    await page.getByLabel("Tên hiển thị").fill("Lịch phòng đào tạo tháng 10");
+    await page.getByRole("button", { name: "Gắn", exact: true }).click();
+    await page.waitForTimeout(500);
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(300);
     await page.mouse.move(2, 2);
 
     const texts = await pop.evaluate((root) => {
@@ -307,6 +331,26 @@ test.describe("create popup, desktop, filled draft", () => {
       ["Bình luận mở sau khi tạo thẻ", 0, 822.5, 253, 196, 18],
       ["Tạo tiếp thẻ khác", 0, 51, 732.2, 116.3, 18],
       ["Tạo thẻ", 0, 1028.8, 732.2, 52.2, 18],
+      [
+        "Làm việc với kế toán trưởng Minh An Group để chọn hai buổi đào tạo phân hệ công nợ trước ngày chạy thử.",
+        0,
+        72,
+        291,
+        580.4,
+        39.7,
+      ],
+      ["Buổi 1: nhập chứng từ và đối chiếu", 0, 92, 340.4, 228.8, 18],
+      ["Gửi lịch cho các phòng ban liên quan.", 0, 72, 387.8, 253.1, 18],
+      ["Trường tuỳ chỉnh", 0, 60, 448.6, 124.7, 19],
+      ["Trường hiển thị trên thẻ", 0, 542.8, 450.4, 142.2, 16],
+      ["Thêm trường", 0, 79, 522, 82.4, 16],
+      ["Đính kèm", 0, 60, 570.6, 68.3, 19],
+      ["XLSX", 0, 88.3, 626.5, 31.3, 14],
+      ["Lich-dao-tao-ke-toan.xlsx", 0, 152, 615.1, 196.6, 18],
+      ["1,1 MB · tải lên sau khi thẻ được tạo", 0, 152, 636.4, 208.3, 16],
+      ["Lịch phòng đào tạo tháng 10", 0, 152, 675.1, 199.2, 18],
+      ["minhan.example · đính kèm khi tạo", 0, 152, 696.4, 207.4, 16],
+      ["Liên kết và phụ thuộc", 0, 60, 751.3, 150.5, 18],
     ];
     for (const [text, nth, x, y, w, h] of want) {
       const got = at(text, nth);

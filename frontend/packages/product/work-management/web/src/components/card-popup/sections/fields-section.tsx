@@ -124,9 +124,13 @@ export function FieldsSection() {
       width={340}
       trigger={
         <PopoverTrigger asChild>
-          {mode === "create" && rows.length === 0 ? (
+          {mode === "create" ? (
             // Kanban-CardPopup-Create folds an empty fields section to the link-coloured action.
-            <LinkBtn aria-haspopup="dialog">
+            <LinkBtn
+              aria-haspopup="dialog"
+              // Under rows the action starts at the rows' own edge.
+              className={rows.length > 0 ? "-ml-2.5" : undefined}
+            >
               <Plus aria-hidden="true" className="size-[13px]" />
               {t.addFieldCreate}
             </LinkBtn>
@@ -173,44 +177,61 @@ export function FieldsSection() {
   return (
     <PopSection label={t.title} icon={SECTION_ICONS.fields}>
       <SectionHead title={t.title}>
-        {mode === "view" ? (
-          <FaceFieldsButton
-            boardId={board.id}
-            workspaceId={board.workspaceId}
-            fields={board.fieldDefinitions}
-            canEdit={canEdit}
-            sampleCard={card}
-            trigger={
-              <SmallBtn>
-                <SlidersHorizontal aria-hidden="true" className="size-[13px]" />
-                {copy.sections.fields.showOnCard}
-              </SmallBtn>
-            }
-          />
-        ) : null}
+        <FaceFieldsButton
+          boardId={board.id}
+          workspaceId={board.workspaceId}
+          fields={board.fieldDefinitions}
+          canEdit={canEdit}
+          sampleCard={card}
+          trigger={
+            <SmallBtn>
+              <SlidersHorizontal aria-hidden="true" className="size-[13px]" />
+              {copy.sections.fields.showOnCard}
+            </SmallBtn>
+          }
+        />
       </SectionHead>
-      <div className="mt-1 flex flex-wrap gap-1.5" data-field-pills>
-        {rows.map((field) => (
-          <span
-            key={field.id}
-            data-field-row={field.id}
-            className="inline-flex max-w-full"
-          >
-            <FieldControl field={field} variant="pill" />
-          </span>
-        ))}
-        <PillStatic title={copy.shell.createdHint}>
-          <Clock
-            aria-hidden="true"
-            className="size-[13px] text-meta-foreground"
-          />
-          <PillKey>{t.createdAt}</PillKey>
-          {mode === "create"
-            ? t.createdValue
-            : dateTimeText(card.createdAt, timeZone)}
-        </PillStatic>
-        {addButton}
-      </div>
+      {mode === "create" ? (
+        // Kanban-CardPopup-Create: label and value rows, the add action under them.
+        <div className="mt-1" data-field-rows>
+          {rows.map((field) => (
+            <div
+              key={field.id}
+              data-field-row={field.id}
+              className="flex min-h-8 items-center"
+            >
+              <span className="w-[145px] shrink-0 truncate text-[12.5px] font-semibold text-muted-foreground">
+                {field.name}
+              </span>
+              <div className="min-w-0 flex-1 pr-2">
+                <FieldControl field={field} variant="ctl" />
+              </div>
+            </div>
+          ))}
+          <div className="mt-1.5">{addButton}</div>
+        </div>
+      ) : (
+        <div className="mt-1 flex flex-wrap gap-1.5" data-field-pills>
+          {rows.map((field) => (
+            <span
+              key={field.id}
+              data-field-row={field.id}
+              className="inline-flex max-w-full"
+            >
+              <FieldControl field={field} variant="pill" />
+            </span>
+          ))}
+          <PillStatic title={copy.shell.createdHint}>
+            <Clock
+              aria-hidden="true"
+              className="size-[13px] text-meta-foreground"
+            />
+            <PillKey>{t.createdAt}</PillKey>
+            {dateTimeText(card.createdAt, timeZone)}
+          </PillStatic>
+          {addButton}
+        </div>
+      )}
     </PopSection>
   );
 }
