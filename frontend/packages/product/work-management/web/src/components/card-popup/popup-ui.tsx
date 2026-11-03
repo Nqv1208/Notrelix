@@ -404,12 +404,12 @@ export function PanelPopover(
               ) ?? sheet
             ).focus();
           }}
-          className="max-h-[94%] gap-0 overflow-y-auto rounded-t-[16px] data-[side=bottom]:border-t-0 bg-popover px-4 pt-2 pb-6 text-[14px] text-popover-foreground"
+          className="max-h-[94%] gap-0 overflow-y-auto rounded-t-[16px] data-[side=bottom]:border-t-0 bg-popover px-4 pt-2.5 pb-4 text-[14px] text-popover-foreground"
         >
           <SheetTitle className="sr-only">{label}</SheetTitle>
           <div
             aria-hidden="true"
-            className="mx-auto mb-2 h-1 w-10 rounded-[2px] bg-line-strong"
+            className="mx-auto mb-3 h-1 w-9 rounded-[2px] bg-line-strong"
           />
           {children}
         </SheetContent>

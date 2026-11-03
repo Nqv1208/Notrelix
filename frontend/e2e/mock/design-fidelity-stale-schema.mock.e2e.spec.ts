@@ -12,7 +12,8 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * Run once per variant: `VITE_MOCK_FAULTS=/board-items/mock-erp-item-142/values/mock-erp-col-estimate=<fault>` with
  * `stale`, `stale-option` or `stale-type`; `VITE_MOCK_LATENCY=slow` for the reloading notice.
  * The two amber variants have no server producer yet (only the deleted field does): the mock answers them.
- * Not built: the table's cell variants (the artboard's "Ô trong Bảng"), the failed reload's frame at 390 px.
+ * The table's cell variant is measured in `design-fidelity-stale-schema-table`. At 390 px the popup is the full screen:
+ * the notice sits in the 16 px gutter, its button is 44 px high and the field rows are 44 px.
  */
 const faults = process.env.VITE_MOCK_FAULTS ?? "";
 const latency = process.env.VITE_MOCK_LATENCY ?? "";
@@ -29,8 +30,8 @@ async function at(el: Locator, origin: Locator) {
   return { x: e.x - o.x, y: e.y - o.y, w: e.width, h: e.height };
 }
 
-async function trigger(page: Page, dark: boolean) {
-  await page.setViewportSize({ width: 1440, height: 1100 });
+async function trigger(page: Page, dark: boolean, width = 1440) {
+  await page.setViewportSize({ width, height: width < 768 ? 844 : 1100 });
   await page.addInitScript(
     (mode) => {
       try {
@@ -146,3 +147,31 @@ test("reloading: the notice says the values are kept", async ({ page }) => {
     ),
   ).toBeVisible();
 });
+
+for (const dark of [false, true]) {
+  test(`390 px: the notice in the gutter, a 44 px button, 44 px rows, ${dark ? "dark" : "light"}`, async ({
+    page,
+  }) => {
+    test.skip(
+      persona !== "owner" || !faults.endsWith("=stale") || latency === "slow",
+    );
+    const dialog = await trigger(page, dark, 390);
+    const notice = dialog.getByRole("alert").filter({ hasText: "vừa xoá trường" });
+    await expect(notice).toBeVisible();
+    const n = (await notice.boundingBox())!;
+    near(n.x, 0 + 16, "notice x (16 px gutter)");
+    near(n.width, 390 - 32, "notice width");
+    const button = notice.getByRole("button", { name: "Tải lại trường" });
+    near((await button.boundingBox())!.height, 44, "button height");
+    expect(await notice.evaluate((el) => getComputedStyle(el).paddingTop)).toBe(
+      "10px",
+    );
+    const row = dialog.locator('[data-field-row="mock-erp-col-estimate"]');
+    near((await row.boundingBox())!.height, 44, "field row height");
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth,
+      ),
+    ).toBeLessThanOrEqual(0);
+  });
+}

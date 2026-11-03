@@ -774,6 +774,7 @@ export function MainTableView({
     onRetry: cellWrites.retry,
     onKeepMine: cellWrites.keepMine,
     onUseTheirs: cellWrites.takeTheirs,
+    onReloadSchema: cellWrites.reloadSchema,
   };
   const moveTargets = (workspaceBoards.data ?? [])
     .filter(

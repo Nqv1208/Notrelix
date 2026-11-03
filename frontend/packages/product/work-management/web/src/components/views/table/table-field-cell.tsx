@@ -1,6 +1,7 @@
 import { useRef, type ReactNode } from "react";
 import { AlertCircle, ExternalLink, Loader2 } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
+import type { StaleSchemaDetail } from "@notrelix/work-management-state";
 import {
   specOf,
   type ComputedValue,
@@ -27,7 +28,9 @@ import {
 
 /** The write state of one cell: saving, failed (the value typed is kept), or in conflict. */
 export interface CellWrite {
-  readonly status: "pending" | "error" | "conflict";
+  readonly status: "pending" | "error" | "conflict" | "schema" | "reloading";
+  /** What the board changed under the write (`schema`). */
+  readonly schema?: StaleSchemaDetail;
   /** The value the person wrote; shown while the write has not settled. */
   readonly value: unknown;
 }
@@ -47,6 +50,8 @@ export interface TableFieldEditing {
   readonly onRetry: (rowId: string, fieldId: string) => void;
   readonly onKeepMine: (rowId: string, fieldId: string) => void;
   readonly onUseTheirs: (rowId: string, fieldId: string) => void;
+  /** Reload the board's fields after a stale write; the unsaved value is dropped. */
+  readonly onReloadSchema: (rowId: string, fieldId: string) => void;
 }
 
 export interface TableFieldCellProps {
@@ -63,6 +68,7 @@ export interface TableFieldCellProps {
   onRetry: () => void;
   onKeepMine: () => void;
   onUseTheirs: () => void;
+  onReloadSchema: () => void;
 }
 
 /** At most two of a list, then "+N" that names the rest in its tooltip. */
@@ -164,6 +170,7 @@ export function TableFieldCell({
   onRetry,
   onKeepMine,
   onUseTheirs,
+  onReloadSchema,
 }: TableFieldCellProps) {
   const f = copy.fields;
   const spec = specOf(field);
@@ -377,6 +384,62 @@ export function TableFieldCell({
 
   if (!write) return <>{editor}</>;
   const valueLabel = text || f.empty;
+  if (write.status === "reloading")
+    return (
+      <span
+        role="status"
+        aria-label={f.staleReloading}
+        className="h-3 w-[70px] animate-pulse rounded-sm bg-state-hover-strong motion-reduce:animate-none"
+      />
+    );
+  if (write.status === "schema" && write.schema) {
+    const { schema } = write;
+    const who = schema.byName ?? f.staleSomeone;
+    const title = fillTableCopy(
+      schema.kind === "field-deleted"
+        ? f.staleDeleted
+        : schema.kind === "option-removed"
+          ? f.staleOption
+          : f.staleType,
+      { who, field: field.name },
+    );
+    return (
+      <AnchoredNote
+        tone="danger"
+        className="bg-danger-soft ring-2 ring-danger-text"
+        noteClassName="w-[330px] gap-2.5 rounded-[12px] p-3"
+        note={
+          <div role="alert" className="flex flex-col gap-2.5">
+            <span className="flex items-start gap-2 font-semibold text-danger-text">
+              <AlertCircle className="size-4 flex-none" aria-hidden="true" />
+              {title}
+            </span>
+            <span className="leading-normal text-muted-foreground">
+              {fillTableCopy(f.staleDeletedBody, { value: valueLabel })}
+            </span>
+            <span className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={onUseTheirs}
+                className="h-8 cursor-pointer rounded-[7px] border border-line-strong bg-popover px-3 text-compact font-medium whitespace-nowrap hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring dark:bg-card"
+              >
+                {f.staleDrop}
+              </button>
+              <button
+                type="button"
+                onClick={onReloadSchema}
+                className="h-8 cursor-pointer rounded-[7px] border-0 bg-primary px-3 text-compact font-semibold whitespace-nowrap text-primary-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                {f.staleReload}
+              </button>
+            </span>
+          </div>
+        }
+      >
+        {editor}
+      </AnchoredNote>
+    );
+  }
   if (write.status === "pending")
     return (
       <>

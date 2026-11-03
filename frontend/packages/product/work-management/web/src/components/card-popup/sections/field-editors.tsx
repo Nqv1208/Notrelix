@@ -1172,7 +1172,7 @@ function TypedControl({
             if (commit()) setOpen(false);
           }}
         >
-          <b className="text-[14px] font-[650]">{field.name}</b>
+          <b className="text-[14px] font-[650] max-md:text-[13px]">{field.name}</b>
           {kind === "long_text" ? (
             <textarea
               data-autofocus
@@ -1204,7 +1204,7 @@ function TypedControl({
               {invalid}
             </p>
           ) : null}
-          <div className="flex justify-end gap-1.5">
+          <div className="flex justify-end gap-1.5 max-md:gap-2">
             <PanelBtn small variant="ghost" onClick={cancel}>
               {t.cancel}
             </PanelBtn>

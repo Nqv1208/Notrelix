@@ -13,6 +13,8 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * `VITE_MOCK_PERSONA=viewer` draws the lock. On a phone the pill is 44 px high (the finger rule of the product
  * wins over the artboard's 30 px; the 320 px frame's sheet editor is the popup's bottom sheet). The version clash
  * note is proved by `field-pill.component.test.tsx`, because the mock world has no second writer.
+ * The 320 px frame's drawer (grab handle 36 x 4, 10 px above it, the title 12 px under it, the input and the two
+ * buttons 44 px, 8 px between the buttons, 16 px top radius) is measured by the last test.
  * Not measured: the contents of the option popovers (the popup's own pickers, as before).
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
@@ -192,5 +194,58 @@ for (const dark of [false, true]) {
         dialog.getByRole("button", { name: "Thêm thuộc tính" }),
       ).toHaveCount(0);
     });
+  });
+}
+
+for (const dark of [false, true]) {
+  test(`320 px: the editor is a bottom drawer with 44 px controls, ${dark ? "dark" : "light"}`, async ({
+    page,
+  }) => {
+    test.skip(persona !== "owner" || faults !== "" || latency === "slow");
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.addInitScript(
+      (mode) => {
+        try {
+          window.localStorage.setItem("notrelix-locale", "vi");
+          window.localStorage.setItem("notrelix-theme-mode", mode);
+        } catch {
+          // Private mode: the defaults apply.
+        }
+      },
+      dark ? "dark" : "light",
+    );
+    await page.goto(BOARD);
+    await page.getByRole("button", { name: CARD, exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: CARD });
+    await expect(dialog).toBeVisible();
+    await page.waitForTimeout(500);
+    await pillOf(dialog, "mock-erp-col-estimate").click();
+    await page.waitForTimeout(500);
+    const drawer = page.getByRole("dialog").last();
+    const d = (await drawer.boundingBox())!;
+    expect(d.width).toBe(320);
+    expect(await drawer.evaluate((el) => getComputedStyle(el).borderRadius)).toBe(
+      "16px 16px 0px 0px",
+    );
+    const grab = drawer.locator("div[aria-hidden=true]").first();
+    const g = (await grab.boundingBox())!;
+    near(g.width, 36, "grab width");
+    near(g.height, 4, "grab height");
+    near(g.y - d.y, 10, "grab top");
+    near(g.x + g.width / 2, 160, "grab centred");
+    const input = drawer.getByRole("textbox");
+    near((await input.boundingBox())!.height, 44, "input height");
+    const cancel = drawer.getByRole("button", { name: "Huỷ" });
+    const save = drawer.getByRole("button", { name: "Lưu" });
+    const [c, v] = [(await cancel.boundingBox())!, (await save.boundingBox())!];
+    near(c.height, 44, "cancel height");
+    near(v.height, 44, "save height");
+    near(v.x - (c.x + c.width), 8, "gap between the buttons");
+    near(320 - 16 - (v.x + v.width), 0, "save at the right gutter");
+    near(
+      (await input.boundingBox())!.y - (g.y + g.height),
+      38.8,
+      "the input under the grab (12, the 13 px title, 8)",
+    );
   });
 }
