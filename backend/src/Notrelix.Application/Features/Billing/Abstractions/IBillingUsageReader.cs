@@ -22,6 +22,12 @@ public interface IBillingUsageReader
     Task<bool> HasSeatAsync(
         Guid accountId, Guid workspaceId, Guid userId, bool guest, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Serialises seat admission for the account until the request transaction ends, so two people
+    /// accepted at once cannot both take the last seat. Must run inside the request transaction.
+    /// </summary>
+    Task LockSeatAdmissionAsync(Guid accountId, CancellationToken cancellationToken);
+
     /// <summary>True when the user is an active Owner of the account.</summary>
     Task<bool> IsAccountOwnerAsync(Guid accountId, Guid userId, CancellationToken cancellationToken);
 }
