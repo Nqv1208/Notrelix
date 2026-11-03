@@ -515,6 +515,8 @@ export const en = {
       "The key is set when the board is created; it cannot be changed yet.",
     timeZone: "Deadline time zone",
     timeZoneHint: "Applies to everyone viewing",
+    localeInherited:
+      "The board follows the workspace time zone and week start; change them in the workspace settings",
     timeZones: {
       "Asia/Ho_Chi_Minh": "(GMT+7) Hanoi, Ho Chi Minh City",
       "Asia/Singapore": "(GMT+8) Singapore",
@@ -1215,6 +1217,8 @@ export const vi: BoardSettingsCopy = {
     keyReadOnly: "Mã được đặt khi tạo board; chưa đổi được.",
     timeZone: "Múi giờ hạn chót",
     timeZoneHint: "Áp dụng cho mọi người xem",
+    localeInherited:
+      "Board theo múi giờ và ngày bắt đầu tuần của workspace; đổi trong cài đặt workspace",
     timeZones: {
       "Asia/Ho_Chi_Minh": "(GMT+7) Hà Nội, TP. Hồ Chí Minh",
       "Asia/Singapore": "(GMT+8) Singapore",

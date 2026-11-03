@@ -62,7 +62,7 @@ export function TemplatesSection({
   const close = () => setAdding(false);
 
   async function save() {
-    if (trimmed === "") return;
+    if (trimmed === "" || overCap) return;
     const result = await run(
       () =>
         panel.onSave({
@@ -140,7 +140,19 @@ export function TemplatesSection({
                 className={INPUT_CLASS}
               />
             </div>
-            <div className="flex items-start gap-2.5">
+            {/* At 390 the whole row is the 44 px target. */}
+            <div
+              data-hit-row=""
+              className="flex items-start gap-2.5 max-sm:min-h-11 max-sm:items-center"
+              onClick={(event) => {
+                if (
+                  items === 0 ||
+                  (event.target as HTMLElement).closest("button, label, input")
+                )
+                  return;
+                setIncludeItems((value) => !value);
+              }}
+            >
               <Checkbox
                 id={itemsId}
                 checked={includeItems}
