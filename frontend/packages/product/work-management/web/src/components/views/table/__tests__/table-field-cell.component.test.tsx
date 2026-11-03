@@ -47,6 +47,7 @@ function cell(
       onRetry={extra.onRetry ?? vi.fn()}
       onKeepMine={extra.onKeepMine ?? vi.fn()}
       onUseTheirs={extra.onUseTheirs ?? vi.fn()}
+      onReloadSchema={vi.fn()}
     />,
   );
 }
@@ -179,6 +180,7 @@ describe("a custom field cell of the table", () => {
         onRetry={vi.fn()}
         onKeepMine={vi.fn()}
         onUseTheirs={vi.fn()}
+        onReloadSchema={vi.fn()}
       />,
     );
     expect(screen.queryByRole("button")).toBeNull();
@@ -280,6 +282,7 @@ describe("the write state of the custom cells", () => {
           onRetry={vi.fn()}
           onKeepMine={vi.fn()}
           onUseTheirs={vi.fn()}
+          onReloadSchema={vi.fn()}
         />,
       );
       fireEvent.click(screen.getAllByRole("button")[0]!);

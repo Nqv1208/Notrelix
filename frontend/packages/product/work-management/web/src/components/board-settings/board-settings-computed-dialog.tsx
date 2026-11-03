@@ -196,16 +196,16 @@ export function ComputedFieldDialog({
       <DialogContent
         showCloseButton={false}
         overlayClassName="bg-modal-scrim backdrop-blur-none"
-        className="top-[90px] box-border flex max-h-[calc(100vh-120px)] w-[560px] max-w-[calc(100%-2rem)] translate-y-0 flex-col gap-0 overflow-auto rounded-[14px] border-0 bg-popover p-0 text-body leading-[1.45] font-normal shadow-dialog ring-0 sm:max-w-[calc(100%-2rem)] dark:bg-card"
+        className="top-[90px] box-border flex max-h-[calc(100vh-120px)] w-[560px] max-w-[calc(100%-2rem)] translate-y-0 flex-col gap-0 overflow-auto rounded-[12px] border border-line bg-popover p-0 text-body leading-[1.45] font-normal shadow-dialog ring-0 sm:max-w-[calc(100%-2rem)] dark:bg-card"
       >
-        <div className="flex items-center gap-2 border-b border-line px-5 py-3.5">
+        <div className="flex items-center gap-2 border-b border-line px-5 py-4">
           <span
             aria-hidden="true"
-            className="rounded-[5px] bg-state-hover-strong px-1 font-mono text-[11px] font-medium text-muted-foreground"
+            className="inline-flex h-[18px] items-center rounded-[5px] bg-state-hover-strong px-[5px] font-mono text-[11px] font-medium text-muted-foreground"
           >
             {kind === "formula" ? "ƒx" : "∑"}
           </span>
-          <DialogTitle className="m-0 text-[16px] leading-[1.45] font-[650] text-foreground">
+          <DialogTitle className="m-0 text-[15px] leading-[1.45] font-[650] text-foreground">
             {kind === "formula" ? t.formulaTitle : t.rollupTitle}
           </DialogTitle>
         </div>
@@ -217,7 +217,7 @@ export function ComputedFieldDialog({
           <div>
             <label
               htmlFor={nameId}
-              className="mb-1 block text-metadata font-semibold text-meta-foreground"
+              className="mb-1 block text-metadata leading-[1.45] font-semibold text-meta-foreground"
             >
               {t.name}
             </label>
@@ -225,7 +225,7 @@ export function ComputedFieldDialog({
               id={nameId}
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="h-[34px] w-full rounded-[7px] border border-line-strong bg-background px-2.5 text-item-ui text-foreground"
+              className="h-[34px] w-full rounded-md border border-line-strong bg-background px-2.5 text-[13px] text-foreground"
             />
           </div>
 
@@ -234,28 +234,28 @@ export function ComputedFieldDialog({
               <div>
                 <label
                   htmlFor={exprId}
-                  className="mb-1 block text-metadata font-semibold text-meta-foreground"
+                  className="mb-1 block text-metadata leading-[1.45] font-semibold text-meta-foreground"
                 >
                   {t.expression}
                 </label>
                 <textarea
                   id={exprId}
                   ref={area}
-                  rows={3}
+                  rows={2}
                   value={expression}
                   placeholder={t.expressionHint}
                   aria-invalid={tooBig || undefined}
                   aria-describedby={message ? errorId : undefined}
                   onChange={(event) => setExpression(event.target.value)}
                   className={cn(
-                    "w-full rounded-[7px] border border-line-strong bg-background px-3 py-2 font-mono text-[13px] leading-[1.55] text-foreground",
+                    "block min-h-16 w-full rounded-[7px] border border-line-strong bg-background px-3 py-2.5 font-mono text-[13px] leading-[1.55] text-foreground",
                     (tooBig || (failure && failure.reason === "invalid")) &&
                       "border-danger",
                   )}
                 />
                 <p
                   className={cn(
-                    "m-0 mt-1 text-[12px] tabular-nums",
+                    "m-0 mt-3 text-right text-[12px] tabular-nums",
                     tooBig
                       ? "font-semibold text-danger-text"
                       : "text-meta-foreground",
@@ -265,7 +265,7 @@ export function ComputedFieldDialog({
                 </p>
               </div>
               <div>
-                <span className="mb-1 block text-metadata font-semibold text-meta-foreground">
+                <span className="mb-1 block text-metadata leading-[1.45] font-semibold text-meta-foreground">
                   {t.insertField}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
@@ -274,14 +274,14 @@ export function ComputedFieldDialog({
                       key={f.id}
                       type="button"
                       onClick={() => insert(f.name)}
-                      className="h-6 rounded-md border border-line-strong bg-popover px-2 text-[12px] font-medium text-foreground hover:bg-state-hover-strong"
+                      className="h-5.5 rounded-sm border border-line-strong bg-popover px-2 text-[12px] font-semibold text-foreground hover:bg-state-hover-strong"
                     >
                       {f.name}
                     </button>
                   ))}
                 </div>
               </div>
-              <p className="m-0 text-[12px] text-meta-foreground">
+              <p className="m-0 text-[12.5px] text-meta-foreground">
                 {t.functions}
               </p>
             </>
@@ -312,7 +312,7 @@ export function ComputedFieldDialog({
               <div>
                 <label
                   htmlFor={`${exprId}-src`}
-                  className="mb-1 block text-metadata font-semibold text-meta-foreground"
+                  className="mb-1 block text-metadata leading-[1.45] font-semibold text-meta-foreground"
                 >
                   {t.sourceField}
                 </label>
