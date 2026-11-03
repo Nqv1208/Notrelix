@@ -81,7 +81,10 @@ export function FieldsSection({
     if (fieldId && !selected) onSelectField(null);
   }, [fieldId, onSelectField, selected]);
 
-  async function addField(type: BoardSettingsFieldType) {
+  async function addField(
+    type: BoardSettingsFieldType,
+    typeSettings?: string,
+  ) {
     setPickerOpen(false);
     // A calculated field needs its definition: the dialog collects it and creates the field.
     if (type === "formula" || type === "rollup") {
@@ -89,7 +92,9 @@ export function FieldsSection({
       return;
     }
     knownIds.current = settings.fields.map((field) => field.id);
-    const result = await run(() => actions.createField(type));
+    const result = await run(() =>
+      actions.createField(type, typeSettings ? { settings: typeSettings } : undefined),
+    );
     if (!result.ok) knownIds.current = null;
   }
 
@@ -136,7 +141,7 @@ export function FieldsSection({
                 align="end"
                 side="bottom"
                 sideOffset={15}
-                className="w-[520px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-line-strong bg-popover p-0 shadow-popover"
+                className="w-[522px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-line-strong bg-popover p-0 shadow-popover"
               >
                 <FieldTypePicker
                   copy={copy}
@@ -441,6 +446,7 @@ function FieldRow({
   const optionKind = ["status", "select", "multiselect"].includes(field.type);
   const detail =
     field.detail ||
+    (field.multiple ? copy.picker.personKind.detail : "") ||
     (optionKind && field.options.length > 0
       ? plural(t.optionsCount_one, t.optionsCount_other, field.options.length)
       : "");

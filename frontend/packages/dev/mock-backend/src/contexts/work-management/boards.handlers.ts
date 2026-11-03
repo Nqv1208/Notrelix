@@ -1311,7 +1311,7 @@ export const boardsOperations = [
   defineMockOperation<
     { boardId: string },
     never,
-    { labelId: string; name: string; color: string }[]
+    { labelId: string; name: string; color: string; version: number }[]
   >({
     id: "boards.labels.list",
     contract: {
@@ -1327,6 +1327,7 @@ export const boardsOperations = [
           labelId: l.id,
           name: l.name,
           color: l.color,
+          version: l.version ?? 1,
         })),
       );
     },

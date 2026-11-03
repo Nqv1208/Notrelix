@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search } from "lucide-react";
+import { ChevronLeft, Search } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import type { BoardSettingsFieldType } from "@notrelix/work-management-core";
 import type { BoardSettingsCopy } from "./board-settings.copy";
@@ -32,8 +32,11 @@ export function FieldTypePicker({
   copy: BoardSettingsCopy;
   /** The types a field can be created as; absent = all. */
   allowed?: readonly BoardSettingsFieldType[];
-  onPick: (type: BoardSettingsFieldType) => void;
+  /** `settings` is the settings JSON the type needs at creation (a People field's `{"multiple":true}`). */
+  onPick: (type: BoardSettingsFieldType, settings?: string) => void;
 }) {
+  // A People field asks one more question, in place: how many people it holds.
+  const [asking, setAsking] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState<PickableType>("date");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -61,6 +64,54 @@ export function FieldTypePicker({
     setActive(flat[(index + step + flat.length) % flat.length]!);
   }
 
+  function pick(type: PickableType) {
+    if (type === "person") setAsking(true);
+    else onPick(type);
+  }
+
+  if (asking) {
+    const kind = copy.picker.personKind;
+    return (
+      <div role="group" aria-label={kind.title}>
+        <div className="flex h-[43px] items-center gap-2 border-b border-line px-2.5 text-item-ui">
+          <button
+            type="button"
+            aria-label={kind.back}
+            onClick={() => setAsking(false)}
+            className="grid size-7.5 cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent text-meta-foreground outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            <ChevronLeft aria-hidden="true" className="size-4" />
+          </button>
+          <b className="font-semibold">{kind.title}</b>
+        </div>
+        <div className="grid grid-cols-2 gap-0.5 px-2.5 py-2.5">
+          {(
+            [
+              ["one", kind.one, kind.oneHint, undefined],
+              ["many", kind.many, kind.manyHint, '{"multiple":true}'],
+            ] as const
+          ).map(([key, name, hint, settings]) => (
+            <button
+              key={key}
+              type="button"
+              autoFocus={key === "one"}
+              onClick={() => onPick("person", settings)}
+              className="flex cursor-pointer items-center gap-2.5 rounded-lg border-0 bg-transparent px-2 py-[7px] text-left outline-none hover:bg-row-selected focus-visible:bg-row-selected focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              <TypeMark icon={fieldIcon("person")} />
+              <span className="min-w-0">
+                <b className="block text-item-small font-semibold">{name}</b>
+                <small className="block text-[11.5px] leading-[1.45] text-meta-foreground">
+                  {hint}
+                </small>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       role="group"
@@ -74,11 +125,11 @@ export function FieldTypePicker({
           move(-1);
         } else if (event.key === "Enter" && current) {
           event.preventDefault();
-          onPick(current);
+          pick(current);
         }
       }}
     >
-      <div className="flex h-[42px] items-center gap-2 border-b border-line px-3.5 text-item-ui text-meta-foreground">
+      <div className="flex h-[43px] items-center gap-2 border-b border-line px-3.5 text-item-ui text-meta-foreground">
         <Search aria-hidden="true" className="size-4 shrink-0" />
         <input
           ref={inputRef}
@@ -96,7 +147,7 @@ export function FieldTypePicker({
       ) : (
         groups.map((group) => (
           <div key={group.key} className="px-2.5 pt-2 pb-1">
-            <div className="px-1.5 py-1 text-metadata font-semibold text-meta-foreground">
+            <div className="px-1.5 py-1 text-metadata leading-[1.45] font-semibold text-meta-foreground">
               {copy.picker.groups[group.key]}
             </div>
             <div className="grid grid-cols-2 gap-0.5">
@@ -107,7 +158,7 @@ export function FieldTypePicker({
                   <button
                     key={type}
                     type="button"
-                    onClick={() => onPick(type)}
+                    onClick={() => pick(type)}
                     onMouseEnter={() => setActive(type)}
                     onFocus={() => setActive(type)}
                     aria-describedby={undefined}
@@ -121,7 +172,7 @@ export function FieldTypePicker({
                       <b className="block text-item-small font-semibold">
                         {name}
                       </b>
-                      <small className="block text-[11.5px] leading-snug text-meta-foreground">
+                      <small className="block text-[11.5px] leading-[1.45] text-meta-foreground">
                         {hint}
                       </small>
                     </span>

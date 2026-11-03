@@ -2675,6 +2675,7 @@ export class MockStore {
       ...lbl,
       name: patch.name ?? lbl.name,
       color: patch.color ?? lbl.color,
+      version: (lbl.version ?? 1) + 1,
     };
     this.labelsById.set(labelId, updated);
     return true;
