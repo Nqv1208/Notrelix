@@ -12096,6 +12096,21 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -12104,10 +12119,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash.BoardItemTrashEntryDto"
-                  }
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash.BoardItemTrashPageDto"
                 }
               }
             }
@@ -12147,6 +12159,21 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -12155,10 +12182,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems.ArchivedBoardItemEntryDto"
-                  }
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems.ArchivedBoardItemPageDto"
                 }
               }
             }
@@ -33390,9 +33414,38 @@
             "format": "uuid",
             "nullable": true
           },
+          "archivedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "subItemCount": {
+            "type": "integer",
+            "format": "int32"
+          },
           "version": {
             "type": "integer",
             "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems.ArchivedBoardItemPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems.ArchivedBoardItemEntryDto"
+            },
+            "nullable": true
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -33452,9 +33505,38 @@
             "format": "uuid",
             "nullable": true
           },
+          "deletedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "subItemCount": {
+            "type": "integer",
+            "format": "int32"
+          },
           "restorableUntil": {
             "type": "string",
             "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash.BoardItemTrashPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash.BoardItemTrashEntryDto"
+            },
+            "nullable": true
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

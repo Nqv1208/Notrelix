@@ -746,14 +746,20 @@ export const cardsOperations = [
     { boardId: string },
     never,
     {
-      id: string;
-      name: string;
-      itemKey: string | null;
-      groupId: string;
-      deletedAt: string;
-      deletedBy: string | null;
-      restorableUntil: string;
-    }[]
+      items: {
+        id: string;
+        name: string;
+        itemKey: string | null;
+        groupId: string;
+        deletedAt: string;
+        deletedBy: string | null;
+        deletedByName: string | null;
+        subItemCount: number;
+        restorableUntil: string;
+      }[];
+      nextCursor: string | null;
+      total: number;
+    }
   >({
     id: "wm.boardItems.trash",
     contract: {
@@ -762,23 +768,29 @@ export const cardsOperations = [
     },
     method: "GET",
     route: "/boards/:boardId/items/trash",
-    async handle({ params, store }) {
+    async handle({ params, store, request }) {
       if (!canWriteBoardItems(params.boardId, store)) return forbidden();
-      return ok(
-        store
-          .getTrashedCards(params.boardId)
-          .map(({ card, deletedAt, deletedBy }) => ({
-            id: card.id,
-            name: card.title,
-            itemKey: card.itemKey ?? null,
-            groupId: card.listId,
-            deletedAt,
-            deletedBy,
-            restorableUntil: isoOfMs(
-              Date.parse(deletedAt) + 30 * 24 * 60 * 60 * 1000,
-            ),
-          })),
-      );
+      const all = store.getTrashedCards(params.boardId);
+      const url = new URL(request.url);
+      const start = Number(url.searchParams.get("cursor") ?? 0) || 0;
+      const page = all.slice(start, start + 50);
+      return ok({
+        items: page.map(({ card, deletedAt, deletedBy }) => ({
+          id: card.id,
+          name: card.title,
+          itemKey: card.itemKey ?? null,
+          groupId: card.listId,
+          deletedAt,
+          deletedBy,
+          deletedByName: store.getUser(deletedBy)?.name ?? null,
+          subItemCount: store.getChildCards(card.id).length,
+          restorableUntil: isoOfMs(
+            Date.parse(deletedAt) + 30 * 24 * 60 * 60 * 1000,
+          ),
+        })),
+        nextCursor: start + 50 < all.length ? String(start + 50) : null,
+        total: all.length,
+      });
     },
   }),
 

@@ -57,6 +57,12 @@ public class RestoreBoardItemCommandHandler : IRequestHandler<RestoreBoardItemCo
         if (item.DeletedAt is { } deletedAt && _dateTimeProvider.UtcNow - deletedAt > BoardItemTrashPolicy.RestoreWindow)
             throw new ConflictException("This item was deleted more than 30 days ago and can no longer be restored.", "work-management.item.restore-window-closed");
 
+        // A sub-item comes back with its parent, never on its own while the parent is still in the Trash.
+        if (item.IsDeleted && item.ParentItemId is { } parentId
+            && await _context.BoardItems.IgnoreQueryFilters().AnyAsync(
+                p => p.Id == parentId && p.AccountId == accountId && p.WorkspaceId == workspaceId && p.DeletedAt != null, ct))
+            throw new ConflictException("Restore the parent item first; a sub-item comes back with it.", "work-management.item.restore-parent-deleted");
+
         // A deleted root item's key may have been reissued to an active sibling;
         // restore keeps the key when free, otherwise lands right after its holder.
         FractionalIndex? replacement = null;

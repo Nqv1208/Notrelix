@@ -326,6 +326,11 @@ export const endpoints = {
     linkPage: (itemId: string) => `/board-items/${itemId}/link-page`,
     duplicate: (itemId: string) => `/board-items/${itemId}/duplicate`,
     archive: (itemId: string) => `/board-items/${itemId}/archive`,
+    unarchive: (itemId: string) => `/board-items/${itemId}/unarchive`,
+    // WorkManagement.BoardItems.Trash / .Archived: the board's deleted and archived items, a page at a time.
+    trash: (boardId: string) => `/boards/${boardId}/items/trash`,
+    archived: (boardId: string) => `/boards/${boardId}/items/archived`,
+    restore: (itemId: string) => `/board-items/${itemId}/restore`,
     complete: (itemId: string) => `/board-items/${itemId}/complete`,
     status: (itemId: string) => `/board-items/${itemId}/status`,
     fieldValues: (itemId: string) => `/board-items/${itemId}/field-values`,
