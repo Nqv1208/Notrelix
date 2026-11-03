@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { CloudOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -19,7 +19,12 @@ import { fillPopupCopy } from "../card-popup.copy";
 import { PanelBtn } from "../popup-ui";
 import { useCardPopupModel } from "../use-card-popup-model";
 import { useCardPopupCopy } from "../use-card-popup-copy";
-import { useCardDraft, type CardDraftDefaults } from "./use-card-draft";
+import { announceCreated } from "./created-notice";
+import {
+  keepDraft,
+  useCardDraft,
+  type CardDraftDefaults,
+} from "./use-card-draft";
 import { findItemFields } from "../../card-detail/item-field-editors";
 
 const FULL: TaskDetailCapabilities = {
@@ -162,7 +167,10 @@ function CreateBody({
             {failed ? (
               <FailedBanner
                 onRetry={() => submit()}
-                onClose={() => onOpenChange(false)}
+                onClose={() => {
+                  keepDraft(board.id, d.draft);
+                  onOpenChange(false);
+                }}
               />
             ) : null}
           </>
@@ -223,7 +231,19 @@ function CreateBody({
           setAttempted(false);
           return;
         }
-        if (itemId) onOpenItem?.(itemId);
+        if (itemId && onOpenItem) {
+          announceCreated({
+            itemId,
+            // The lane the header names: the Status option, or the group of a board not grouped by Status.
+            groupTitle:
+              findItemFields(board).status?.options.find(
+                (option) => option.id === d.draft.statusOptionId,
+              )?.label ??
+              groups.find((group) => group.id === d.draft.listId)?.title ??
+              "",
+          });
+          onOpenItem(itemId);
+        }
         onOpenChange(false);
       },
       onError: () => setFailed(true),
@@ -235,8 +255,10 @@ function CreateBody({
       {pending ? (
         <span className="inline-flex items-center gap-1.5 text-[12.5px] leading-[1.45] text-meta-foreground">
           <Loader2 aria-hidden="true" className="size-[13px] animate-spin" />
-          {t.submittingNote}
-          <span className="max-md:hidden">{t.submittingNoteMore}</span>
+          <span>
+            {t.submittingNote}
+            <span className="max-md:hidden"> {t.submittingNoteMore}</span>
+          </span>
         </span>
       ) : (
         <>
@@ -328,9 +350,9 @@ function FailedBanner({
       role="alert"
       className="mx-6 mt-3 box-border flex items-start gap-3 rounded-[10px] bg-danger-subtle px-4 py-3 text-[13.5px] leading-[1.45] ring-1 ring-danger ring-inset"
     >
-      <AlertCircle
+      <CloudOff
         aria-hidden="true"
-        className="mt-px size-4 shrink-0 text-danger-text"
+        className="mt-px size-5 shrink-0 text-danger-text"
       />
       <div className="flex-1">
         <b className="font-[650]">{t.failedTitle}</b>
@@ -402,12 +424,16 @@ function DiscardConfirm({
           {body}
         </AlertDialogDescription>
         <div className="mt-4 flex justify-end gap-2">
-          <PanelBtn autoFocus onClick={() => onOpenChange(false)}>
+          <PanelBtn
+            autoFocus
+            className="leading-[1.45]"
+            onClick={() => onOpenChange(false)}
+          >
             {t.discardKeep}
           </PanelBtn>
           <PanelBtn
             variant="primary"
-            className="border-danger bg-danger text-danger-foreground"
+            className="border-danger bg-danger leading-[1.45] text-danger-foreground"
             onClick={() => {
               onOpenChange(false);
               onDiscard();

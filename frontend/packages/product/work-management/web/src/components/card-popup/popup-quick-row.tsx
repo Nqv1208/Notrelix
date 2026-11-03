@@ -47,48 +47,51 @@ function PickerButton({
   );
 }
 
-/** `.q-row`: the quick buttons under the title. Hidden when the card is read-only. */
+/** `.q-row`: the quick buttons under the title. Hidden when the card is read-only; dimmed while a new card is on its way. */
 export function PopupQuickRow() {
-  const { copy, openPicker } = useCardPopup();
+  const { copy, openPicker, readOnly, capabilities } = useCardPopup();
   const t = copy.shell;
   const canEdit = useCanEdit();
-  if (!canEdit) return null;
+  const creating = readOnly === "creating" && capabilities.canEditFields;
+  if (!canEdit && !creating) return null;
   const close = () => openPicker(null);
   return (
     <div className="box-border flex flex-wrap gap-2 pt-2 pr-4 pl-4 md:h-11 md:pt-1 md:flex-nowrap md:pr-6 md:pl-[60px]">
-      <AddMenu />
-      <PickerButton
-        id="labels"
-        icon={<Tag aria-hidden="true" className="size-4" />}
-        label={t.labels}
-        width={328}
-      >
-        {() => <LabelsPanel onClose={close} />}
-      </PickerButton>
-      <PickerButton
-        id="dates"
-        icon={<Clock aria-hidden="true" className="size-4" />}
-        label={t.dates}
-        width={344}
-      >
-        {() => <DatesPanel onClose={close} />}
-      </PickerButton>
-      <PickerButton
-        id="checklist"
-        icon={<ListChecks aria-hidden="true" className="size-4" />}
-        label={t.checklist}
-        width={328}
-      >
-        {() => <ChecklistPanel onClose={close} />}
-      </PickerButton>
-      <PickerButton
-        id="assignees"
-        icon={<UserPlus aria-hidden="true" className="size-4" />}
-        label={t.assignees}
-        width={312}
-      >
-        {() => <PeoplePanel onClose={close} />}
-      </PickerButton>
+      <fieldset disabled={creating} className="contents">
+        <AddMenu />
+        <PickerButton
+          id="labels"
+          icon={<Tag aria-hidden="true" className="size-4" />}
+          label={t.labels}
+          width={328}
+        >
+          {() => <LabelsPanel onClose={close} />}
+        </PickerButton>
+        <PickerButton
+          id="dates"
+          icon={<Clock aria-hidden="true" className="size-4" />}
+          label={t.dates}
+          width={344}
+        >
+          {() => <DatesPanel onClose={close} />}
+        </PickerButton>
+        <PickerButton
+          id="checklist"
+          icon={<ListChecks aria-hidden="true" className="size-4" />}
+          label={t.checklist}
+          width={328}
+        >
+          {() => <ChecklistPanel onClose={close} />}
+        </PickerButton>
+        <PickerButton
+          id="assignees"
+          icon={<UserPlus aria-hidden="true" className="size-4" />}
+          label={t.assignees}
+          width={312}
+        >
+          {() => <PeoplePanel onClose={close} />}
+        </PickerButton>
+      </fieldset>
     </div>
   );
 }

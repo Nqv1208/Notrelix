@@ -103,9 +103,9 @@ test.describe("Kanban pick box and bar", () => {
       for (const name of [
         "Trạng thái",
         "Ưu tiên",
-        "Giao cho",
-        "Đặt hạn",
-        "Chuyển board",
+        "Người phụ trách",
+        "Hạn",
+        "Thêm",
         "Lưu trữ",
         "Xoá",
       ])

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import type { CardMember } from "@notrelix/work-management-core";
 import { identityMarkClass } from "../shared/item-display";
+import { useCardPopup } from "./card-popup-context";
 
 /**
  * The popup's own parts, sized to the artboard (px values are the artboard's).
@@ -230,8 +231,15 @@ export function SectionHead({
   title: ReactNode;
   children?: ReactNode;
 }) {
+  const { mode } = useCardPopup();
   return (
-    <div className="flex min-h-11 items-center gap-2 md:min-h-8">
+    <div
+      className={cn(
+        "flex items-center gap-2 md:min-h-8",
+        // The new-card sheet keeps the 32 px heading row; its buttons are 44 px on their own.
+        mode === "create" ? "min-h-8" : "min-h-11",
+      )}
+    >
       <h3 className="m-0 flex-1 text-[16px] leading-[1.45] md:text-[15px] font-[650] tracking-[-0.005em]">
         {title}
       </h3>
@@ -271,10 +279,11 @@ export function EmptySection({
   none: string;
   children?: ReactNode;
 }) {
+  const { mode } = useCardPopup();
   return (
     <section
       aria-label={label}
-      className="relative box-border flex min-h-16 items-center gap-2 pt-5 pr-4 pl-4 md:min-h-[52px] md:pr-6 md:pl-[60px]"
+      className="relative box-border flex min-h-16 items-center gap-2 pt-5 pr-4 pl-4 max-md:flex-wrap max-md:content-start max-md:gap-y-0 md:min-h-[52px] md:pr-6 md:pl-[60px]"
     >
       <span
         aria-hidden="true"
@@ -282,7 +291,13 @@ export function EmptySection({
       >
         {icon}
       </span>
-      <b className="text-[15px] leading-[1.45] font-[650] md:text-[14px]">
+      <b
+        className={cn(
+          "text-[15px] leading-[1.45] font-[650] md:text-[14px]",
+          // The new-card sheet draws its empty sections at 14 px.
+          mode === "create" && "max-md:text-[14px]",
+        )}
+      >
         {label}
       </b>
       <span className="text-[13.5px] leading-[1.45] text-meta-foreground">
@@ -290,7 +305,9 @@ export function EmptySection({
       </span>
       <span className="flex-1" />
       {children ? (
-        <div className="flex items-center max-md:min-h-11">{children}</div>
+        <div className="flex items-center max-md:min-h-11 max-md:basis-full">
+          {children}
+        </div>
       ) : null}
     </section>
   );
@@ -379,9 +396,13 @@ function PanelPopoverDesktop({
  * phone width down a bottom sheet (the artboard's `.bsh`: 16 px top corners, a
  * grab handle, up to 94 % of the screen).
  */
-export function PanelPopover(
-  props: ComponentProps<typeof PanelPopoverDesktop>,
-) {
+export function PanelPopover({
+  fieldSheet,
+  ...props
+}: ComponentProps<typeof PanelPopoverDesktop> & {
+  /** The field editors' 320 px sheet draws a 36 x 4 handle 10 px down; the other sheets a 40 x 4 one at 8. */
+  fieldSheet?: boolean;
+}) {
   const phone = useMediaQuery("(max-width: 767px)");
   if (!phone) return <PanelPopoverDesktop {...props} />;
   const { trigger, open, onOpenChange, children, label } = props;
@@ -404,12 +425,18 @@ export function PanelPopover(
               ) ?? sheet
             ).focus();
           }}
-          className="max-h-[94%] gap-0 overflow-y-auto rounded-t-[16px] data-[side=bottom]:border-t-0 bg-popover px-4 pt-2.5 pb-4 text-[14px] text-popover-foreground"
+          className={cn(
+            "max-h-[94%] gap-0 overflow-y-auto rounded-t-[16px] data-[side=bottom]:border-t-0 bg-popover px-4 text-[14px] text-popover-foreground",
+            fieldSheet ? "pt-2.5 pb-4" : "pt-2 pb-6",
+          )}
         >
           <SheetTitle className="sr-only">{label}</SheetTitle>
           <div
             aria-hidden="true"
-            className="mx-auto mb-3 h-1 w-9 rounded-[2px] bg-line-strong"
+            className={cn(
+              "mx-auto h-1 rounded-[2px] bg-line-strong",
+              fieldSheet ? "mb-3 w-9" : "mb-2 w-10",
+            )}
           />
           {children}
         </SheetContent>

@@ -201,6 +201,14 @@ export function useCanEdit(): boolean {
   return readOnly === null && capabilities.canEditFields;
 }
 
+/** The chips keep their editable look while a new card is on its way (they are inert then): Kanban-CardPopup-Create-States. */
+export function useChipsLookEditable(): boolean {
+  const { readOnly, capabilities } = useCardPopup();
+  return (
+    (readOnly === null || readOnly === "creating") && capabilities.canEditFields
+  );
+}
+
 /** A schema change a refused write ran into (D12): the popup's banner names it and the changed field's pill shows it. */
 export interface PopupStaleSchema {
   readonly kind?: "field-deleted" | "option-removed" | "type-changed";
