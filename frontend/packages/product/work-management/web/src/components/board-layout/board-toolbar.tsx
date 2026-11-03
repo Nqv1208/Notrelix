@@ -8,6 +8,7 @@ import {
   type BoardHeaderData,
 } from "./board-header-surface";
 import { ViewTabs, AddViewMenu, type ViewTabSavedView } from "./view-tabs";
+import { ViewTabMenu, type ViewTabActions } from "./view-tab-menu";
 
 interface BoardToolbarProps {
   boardTitle: string;
@@ -17,6 +18,8 @@ interface BoardToolbarProps {
   savedViews?: readonly ViewTabSavedView[];
   /** Makes a saved view of a layout; absent: the layout is only shown. */
   onAddView?: (viewType: string) => void;
+  /** Archive, delete, default and restore of a saved view; absent: no menu. */
+  viewActions?: ViewTabActions;
   /**
    * Header data (Space crumb, access summary, actions). Defaults to the data
    * the board route provides through `BoardHeaderDataContext`.
@@ -51,6 +54,7 @@ export function BoardToolbar({
   onViewChange,
   savedViews,
   onAddView,
+  viewActions,
   header: headerProp,
   copy: copyProp,
   onOpenSettings,
@@ -66,6 +70,7 @@ export function BoardToolbar({
   // Table, Calendar and Timeline headers end at Settings and Share.
   const activeLayout =
     savedViews?.find((view) => view.id === activeView)?.viewMode ?? activeView;
+  const activeSaved = savedViews?.find((view) => view.id === activeView);
   const headerForView =
     activeLayout === "kanban" ? header : { ...header, onCopyLink: undefined };
   const headerWithTrash =
@@ -97,6 +102,15 @@ export function BoardToolbar({
             savedViews={savedViews}
           />
         </div>
+        {viewActions && activeSaved ? (
+          <ViewTabMenu
+            key={activeSaved.id}
+            view={activeSaved}
+            savedViews={savedViews ?? []}
+            actions={viewActions}
+            copy={copy}
+          />
+        ) : null}
         <AddViewMenu onAddView={onAddView ?? onViewChange} copy={copy} />
       </div>
     </div>

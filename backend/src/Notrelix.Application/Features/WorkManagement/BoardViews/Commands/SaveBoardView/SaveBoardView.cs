@@ -8,7 +8,8 @@ namespace Notrelix.Application.Features.WorkManagement.BoardViews.Commands.SaveB
 public record SaveBoardViewCommand(
     Guid BoardId,
     ViewMode ViewMode,
-    string? Filters) : ICommand<Result>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
+    string? Filters,
+    long? ExpectedVersion = null) : ICommand<Result>, IWriteRequest, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IIdempotentRequest
 {
     // Saves the Board's shared view, changed for everyone: an Editor change.
     public PermissionAction Action => PermissionAction.UpdateBoardView;
@@ -65,6 +66,12 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
 
         if (view is not null)
         {
+            // The view is found here, not named by the request, so the pipeline's version guard cannot bind to it;
+            // the version is checked on the tracked view and the row's version token still guards the write.
+            // Fails closed: overwriting an existing shared view without naming the version read is refused.
+            if (request.ExpectedVersion != view.Version)
+                throw new PreconditionFailedException(
+                    "The view was modified by another request. Reload and retry.", "common.precondition-failed", request.ExpectedVersion, view.Version);
             view.UpdateConfig(config, _requestContext.UserId, now);
         }
         else

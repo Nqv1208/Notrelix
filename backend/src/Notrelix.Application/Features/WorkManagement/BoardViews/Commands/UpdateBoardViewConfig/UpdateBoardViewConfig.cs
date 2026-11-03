@@ -44,7 +44,8 @@ public class UpdateBoardViewConfigCommandHandler : IRequestHandler<UpdateBoardVi
         view.UpdateConfig(config, _currentUser.UserId, _dateTimeProvider.UtcNow);
 
         var response = BoardViewDto.From(view);
-        if (_realtime is not null && _events is not null)
+        // A private view is its creator's alone: the board's topic reaches every member, so it carries nothing of it.
+        if (_realtime is not null && _events is not null && view.Visibility == BoardViewVisibility.Board)
             _events.Add(_realtime.Map(request, response, view.Version));
         return response;
     }

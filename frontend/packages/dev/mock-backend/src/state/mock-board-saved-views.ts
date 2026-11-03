@@ -99,10 +99,16 @@ export class MockBoardSavedViews {
     return created;
   }
 
-  remove(boardId: string, viewId: string): void {
+  /** Deletes a view; the default hands over to `nextId`, else the oldest shared live view (as the producer does). */
+  remove(boardId: string, viewId: string, nextId?: string): void {
     const views = this.all(boardId);
     const index = views.findIndex((v) => v.id === viewId);
-    if (index >= 0) views.splice(index, 1);
+    if (index < 0) return;
+    const [removed] = views.splice(index, 1);
+    if (!removed?.isDefault) return;
+    const live = views.filter((v) => !v.isArchived && v.visibility === "Board");
+    const next = live.find((v) => v.id === nextId) ?? live[0];
+    if (next) next.isDefault = true;
   }
 
   /** Archives a view; the default hands over to `nextId`, else the oldest shared live view. */

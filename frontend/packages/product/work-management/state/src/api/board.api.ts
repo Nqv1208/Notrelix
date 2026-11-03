@@ -140,13 +140,19 @@ export function createBoardApi(client: NotrelixClient) {
 
     async saveBoardView(
       boardId: string,
-      input: { viewMode: ViewMode; viewConfig: ViewConfig },
+      input: {
+        viewMode: ViewMode;
+        viewConfig: ViewConfig;
+        /** The version of the shared view last read; omitted only for the board's first save. */
+        expectedVersion?: number;
+      },
     ): Promise<void> {
       const config = JSON.stringify(input.viewConfig);
       const body: SaveBoardViewBody = {
         viewMode: input.viewMode,
         config,
         filters: config,
+        expectedVersion: input.expectedVersion,
       };
       await api.put<void>(endpoints.boardViews.detail(boardId), body);
     },
