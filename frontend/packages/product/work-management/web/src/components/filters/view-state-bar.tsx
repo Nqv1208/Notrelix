@@ -9,6 +9,7 @@ import {
 } from "@notrelix/ui-web";
 import {
   conditionIssue,
+  OVERDUE_FIELD_ID,
   type FieldRef,
   type FilterField,
   type MemberNames,
@@ -252,6 +253,11 @@ export function ViewStateBar(props: ViewStateBarProps) {
           copy={copy}
           kind="group"
           fields={props.groupFields}
+          unavailableFields={fields.filter(
+            (field) =>
+              field.id !== OVERDUE_FIELD_ID &&
+              !props.groupFields?.some((group) => group.id === field.id),
+          )}
           value={view.state.group}
           fallback={props.groupFallback}
           onChange={view.setGroup}
