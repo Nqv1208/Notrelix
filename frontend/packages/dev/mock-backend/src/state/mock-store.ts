@@ -1285,9 +1285,32 @@ export class MockStore {
         boardId,
         name: field.name,
         fieldType: field.fieldType,
-        position: 14 + index,
+        position: 16 + index,
       }),
     );
+    // A multi-select and a person field with no value: the table's cell editors for them (`WM-Field-Editors`).
+    this.insertColumn({
+      id: "mock-erp-col-related-modules",
+      boardId,
+      name: "Phân hệ liên quan",
+      fieldType: "multi_select",
+      position: 14,
+      options: ERP_MODULE_OPTIONS.map(
+        (option, index): MockFieldOptionRecord => ({
+          id: `${option.id}-related`,
+          name: option.name,
+          color: "#64748B",
+          position: `a${String(index).padStart(4, "0")}`,
+        }),
+      ),
+    });
+    this.insertColumn({
+      id: "mock-erp-col-reviewer",
+      boardId,
+      name: "Người nghiệm thu",
+      fieldType: "person",
+      position: 15,
+    });
     this.boardViewsByBoardId.set(boardId, {
       boardId,
       viewMode: "kanban",
