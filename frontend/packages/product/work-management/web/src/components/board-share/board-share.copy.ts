@@ -141,6 +141,31 @@ export const en = {
     keepGuest: "guest **{{name}}**",
     keepAnd: " and ",
   },
+  sheet: {
+    levelShort: {
+      manage: "Manager",
+      edit: "Edit",
+      comment: "Comment",
+      view: "View",
+    },
+    addLevelLabel: "Permission when adding",
+    peopleCount: "{{count}} people",
+    accessRoles: "Permission by department role: ",
+    accessChange: ". Change who can open the board",
+    searchEmpty: "No workspace member matches.",
+    added: "Added {{name}} · {{level}}",
+    undo: "Undo",
+    linkCopied: "Link copied · only people with access can open it",
+    privateDesc:
+      "Only people and teams added to the board can open it. Department roles no longer open this board, department admins included.",
+    privateNote:
+      "Workspace admins also need to be added; only the workspace owner can always open it. Items of people who lose access stay as they are.",
+    warnWork: " {{work}} of them have items that aren't done here.",
+    addBefore: "Add to the board before switching",
+    itemsOpen: "{{count}} items not done",
+    itemsOverdue: "{{count}} items not done, {{overdue}} overdue",
+    back: "Back to Share",
+  },
   leave: {
     title: "Leave board",
     private:
@@ -331,6 +356,31 @@ export const vi: BoardShareCopy = {
     keepInSpace: "**{{names}}** (đã được thêm riêng)",
     keepGuest: "khách **{{name}}**",
     keepAnd: " và ",
+  },
+  sheet: {
+    levelShort: {
+      manage: "Quản lý",
+      edit: "Sửa",
+      comment: "Bình luận",
+      view: "Xem",
+    },
+    addLevelLabel: "Quyền khi thêm",
+    peopleCount: "{{count}} người",
+    accessRoles: "Quyền theo vai trò ở phòng ban: ",
+    accessChange: ". Đổi ai vào được board",
+    searchEmpty: "Không có thành viên workspace nào khớp.",
+    added: "Đã thêm {{name}} · {{level}}",
+    undo: "Hoàn tác",
+    linkCopied: "Đã sao chép liên kết · chỉ người có quyền mở được",
+    privateDesc:
+      "Chỉ người và nhóm được thêm vào board vào được. Vai trò ở phòng ban không còn mở được board này, kể cả Quản trị phòng.",
+    privateNote:
+      "Quản trị workspace cũng cần được thêm riêng; chỉ chủ sở hữu workspace luôn vào được. Việc của người mất quyền vẫn còn nguyên.",
+    warnWork: " {{work}} người trong đó đang có việc chưa xong ở đây.",
+    addBefore: "Thêm vào board trước khi chuyển",
+    itemsOpen: "{{count}} việc chưa xong",
+    itemsOverdue: "{{count}} việc chưa xong, {{overdue}} quá hạn",
+    back: "Quay lại Chia sẻ",
   },
   leave: {
     title: "Rời board",

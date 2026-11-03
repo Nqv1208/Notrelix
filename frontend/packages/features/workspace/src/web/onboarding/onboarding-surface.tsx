@@ -130,7 +130,7 @@ export function OnboardingSurface(props: OnboardingSurfaceProps) {
   if (step === "workspace") {
     footer = (
       <>
-        <span className="text-item-ui text-muted-foreground">
+        <span className="flex-1 text-crumb leading-[1.45] text-meta-foreground">
           {address.kind === "taken"
             ? copy.workspace.footTaken
             : address.kind === "invalid"
@@ -151,7 +151,7 @@ export function OnboardingSurface(props: OnboardingSurfaceProps) {
   } else if (step === "done") {
     footer = (
       <>
-        <span className="text-item-ui text-muted-foreground">
+        <span className="flex-1 text-crumb leading-[1.45] text-meta-foreground">
           {copy.done.foot}
         </span>
         <button
@@ -578,7 +578,7 @@ function DoneStep({
               <Check className="size-3.5" strokeWidth={3} />
             </span>
             <span className="min-w-0 flex-1">{row.title}</span>
-            <span className="text-item-ui text-muted-foreground">
+            <span className="flex-1 text-crumb leading-[1.45] text-meta-foreground">
               {row.note}
             </span>
           </li>

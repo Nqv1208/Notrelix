@@ -7,6 +7,7 @@ using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.WorkManagement.Checklists;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.Workspaces.Workspaces;
@@ -95,6 +96,8 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
         seed.BoardGroups.Add(_group);
         seed.BoardFields.AddRange(_status, _priority);
         seed.BoardItems.AddRange(_parent, _doneChild, _todoChild, _archivedChild, _archivedRoot, _plain, _trashed);
+        // Both the parent (with sub-items) and the plain item (without) hold a checklist of 3 with 1 done.
+        seed.Checklists.AddRange(ChecklistOf(_parent), ChecklistOf(_plain));
         // Plain is blocked by the open Parent and by the completed child: only the open one counts.
         var itemKind = ResourceKind.Create("work-management.board-item");
         seed.BoardItemLinks.AddRange(
@@ -133,6 +136,26 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
         plain.ChildProgress.Should().BeNull("an Item without child Items has no derived progress");
         plain.OpenBlockerCount.Should().Be(1, "only the not-completed blocker counts");
         parent.OpenBlockerCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Progress_IsTheSubItemShare_AndAChecklistKeepsItsOwnCount()
+    {
+        var board = await FullBoardAsync(visibleSpaces: [_spaceId]);
+        var items = board.Lists.Single(l => l.Id == _group.Id).BoardItems;
+
+        // One precedence: with sub-items the progress is theirs (1 of 2), whatever the checklist holds.
+        var parent = items.Single(i => i.Id == _parent.Id);
+        parent.ChildProgress.Should().Be(new BoardItemChildProgressDto(1, 2));
+        (parent.ChecklistProgress, parent.ChecklistTotal).Should().Be((1, 3), "the checklist is its own count and never feeds the parent's progress");
+
+        // Without sub-items there is no derived progress: a checklist does not become one.
+        var plain = items.Single(i => i.Id == _plain.Id);
+        plain.ChildProgress.Should().BeNull();
+        (plain.ChecklistProgress, plain.ChecklistTotal).Should().Be((1, 3));
+
+        // The detail read agrees with the board read.
+        (await ItemAsync(_parent.Id)).ChildProgress.Should().Be(parent.ChildProgress);
     }
 
     [Fact]
@@ -246,6 +269,16 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
             .Handle(new GetBoardItemQuery(itemId), CancellationToken.None);
         result.Succeeded.Should().BeTrue();
         return result.Data!;
+    }
+
+    private Checklist ChecklistOf(BoardItem item)
+    {
+        var checklist = Checklist.Create(_accountId, _workspaceId, item.Id, "Steps", FractionalIndex.Create("a0"), _userId, Now);
+        var first = checklist.AddItem("One", FractionalIndex.Create("a0"), _userId, Now);
+        checklist.AddItem("Two", FractionalIndex.Create("a1"), _userId, Now);
+        checklist.AddItem("Three", FractionalIndex.Create("a2"), _userId, Now);
+        checklist.SetItemCompletion(first.Id, true, _userId, Now);
+        return checklist;
     }
 
     private Guid Category(WorkStatusCategory category) => _status.Options.Single(o => o.Category == category).Id;
