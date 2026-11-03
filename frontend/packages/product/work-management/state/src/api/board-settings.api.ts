@@ -68,6 +68,23 @@ const UNAVAILABLE: BoardSettingsUnavailable = {
 
 const DEFAULT_COLOR = "#1E6FD0";
 
+/**
+ * A new board stores its background as `{"type":"color","value":"#..."}`; the General page saves the
+ * bare hex. Either reads back as the colour, anything else as the default.
+ */
+export function boardColor(background: string | null | undefined): string {
+  const text = (background ?? "").trim();
+  if (/^#[0-9a-f]{6}$/i.test(text)) return text;
+  try {
+    const value: unknown = (JSON.parse(text) as { value?: unknown }).value;
+    if (typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value))
+      return value;
+  } catch {
+    // Not JSON: the default applies.
+  }
+  return DEFAULT_COLOR;
+}
+
 /** What a board inherits from its workspace (`Workspaces.Settings.GetWorkspaceSettings`). */
 interface WorkspaceLocale {
   readonly timeZone: string;
@@ -281,7 +298,7 @@ export function mapBoardSettings(
     general: {
       title: board.title ?? "",
       description: board.description ?? "",
-      color: board.background || DEFAULT_COLOR,
+      color: boardColor(board.background),
       icon: "",
       sampleItemKey: null,
       itemKeyPrefix: board.itemKeyPrefix ?? "",

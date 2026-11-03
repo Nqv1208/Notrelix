@@ -42,7 +42,7 @@ export interface RetiredBoardsSurfaceProps {
 }
 
 const BUTTON =
-  "inline-flex h-8 items-center rounded-[7px] border border-line bg-popover px-3 text-item-small font-medium text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-default disabled:opacity-60";
+  "inline-flex h-8 items-center rounded-[7px] max-sm:h-11 border border-line bg-popover px-3 text-item-small font-medium text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-default disabled:opacity-60";
 
 /** The archived and deleted boards of a workspace, with Unarchive and Restore. */
 export function RetiredBoardsSurface({
@@ -88,7 +88,7 @@ export function RetiredBoardsSurface({
             aria-controls={`${headingId}-panel`}
             onClick={() => onTab(id)}
             className={cn(
-              "-mb-px h-9 border-b-2 px-3 text-item-small font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+              "-mb-px h-9 border-b-2 px-3 max-sm:h-11 text-item-small font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
               tab === id
                 ? "border-foreground text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground",
