@@ -739,6 +739,16 @@ export function useItemRemoval({
           open={reminding !== null}
           onCancel={() => setReminding(null)}
           onConfirm={confirmRemind}
+          // Nobody else is in charge: the item opens where the assignees are set.
+          onAssign={
+            onOpenItem && reminding
+              ? () => {
+                  const { id } = reminding;
+                  setReminding(null);
+                  onOpenItem(id);
+                }
+              : undefined
+          }
         />
       </>
     ),
