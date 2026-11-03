@@ -196,6 +196,20 @@ export const en = {
     toolbar: "View controls",
     inertBackground: "Closed while the filter is open",
   },
+  sheet: {
+    trigger: "View",
+    title: "View",
+    close: "Close",
+    searchOpen: "Search items",
+    sort: "SORT",
+    sortDefault: "As the shared view",
+    group: "GROUP BY",
+    lane: "LANE BY",
+    bucket: "BUCKET BY",
+    note: "This only changes your own view, not the shared one.",
+    reset: "Reset",
+    done: "Done",
+  },
 };
 
 export type FiltersCopy = typeof en;
@@ -392,6 +406,20 @@ export const vi: FiltersCopy = {
   a11y: {
     toolbar: "Điều khiển cách xem",
     inertBackground: "Đang đóng khi mở bộ lọc",
+  },
+  sheet: {
+    trigger: "Cách xem",
+    title: "Cách xem",
+    close: "Đóng",
+    searchOpen: "Tìm việc",
+    sort: "SẮP XẾP",
+    sortDefault: "Theo view chung",
+    group: "NHÓM THEO",
+    lane: "LÀN THEO",
+    bucket: "GOM NGÀY THEO",
+    note: "Chỉ đổi cách xem của bạn, không đổi view chung.",
+    reset: "Đặt lại",
+    done: "Xong",
   },
 };
 

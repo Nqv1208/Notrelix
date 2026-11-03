@@ -28,6 +28,8 @@ export interface SavedFiltersControlProps {
   onApply: (criteria: SavedFilterCriteria) => void;
   /** The "Lưu bộ lọc" form, controlled by the filter bar (its removed-field warning opens it). */
   compact?: boolean;
+  /** A phone (`WM-Filter-320`): 36 px icon trigger; the save trigger only anchors the form. */
+  phone?: boolean;
   saveOpen?: boolean;
   onSaveOpenChange?: (open: boolean) => void;
   /** What the bar shows now, as phrases: the save form's summary. */
@@ -61,6 +63,7 @@ export function SavedFiltersControl({
   saveOpen,
   onSaveOpenChange,
   compact,
+  phone,
   summary,
   describe,
 }: SavedFiltersControlProps) {
@@ -107,7 +110,8 @@ export function SavedFiltersControl({
       filters={filters}
       appliedId={applied?.id ?? null}
       canEdit={canEdit}
-      {...(compact ? { compact } : {})}
+      {...(compact || phone ? { compact: true } : {})}
+      {...(phone ? { phone } : {})}
       {...(summary ? { summary } : {})}
       {...(describe ? { describe } : {})}
       {...(saveOpen !== undefined ? { saveOpen } : {})}

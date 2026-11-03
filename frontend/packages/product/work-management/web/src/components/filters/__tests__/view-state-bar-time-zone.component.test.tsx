@@ -24,7 +24,9 @@ const dated = {
 
 describe("the time-zone note on date filters", () => {
   it("names the workspace zone under the date row", () => {
-    renderPureUi(erpViewBar({ state: dated, timeZone: "Pacific/Kiritimati" }));
+    renderPureUi(
+      <>{erpViewBar({ state: dated, timeZone: "Pacific/Kiritimati" })}</>,
+    );
     fireEvent.click(screen.getByRole("button", { name: /^Lọc/ }));
     expect(
       screen.getByText(
@@ -35,11 +37,13 @@ describe("the time-zone note on date filters", () => {
 
   it("tells a member who cannot read the setting that the default applies", () => {
     renderPureUi(
-      erpViewBar({
-        state: dated,
-        timeZone: "Asia/Ho_Chi_Minh",
-        timeZoneIsDefault: true,
-      }),
+      <>
+        {erpViewBar({
+          state: dated,
+          timeZone: "Asia/Ho_Chi_Minh",
+          timeZoneIsDefault: true,
+        })}
+      </>,
     );
     fireEvent.click(screen.getByRole("button", { name: /^Lọc/ }));
     expect(
