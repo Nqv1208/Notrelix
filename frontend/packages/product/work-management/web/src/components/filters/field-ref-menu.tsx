@@ -79,10 +79,10 @@ export function FieldRefMenu({
           className={cn(kanbanPillClass, value && current && activePillClass)}
         >
           <Icon className="size-4" aria-hidden="true" />
-          {t.trigger}
+          {t.label}
           {current ? (
             <>
-              {": "}
+              {" "}
               <b className="max-w-40 truncate font-semibold">{current.name}</b>
             </>
           ) : null}
