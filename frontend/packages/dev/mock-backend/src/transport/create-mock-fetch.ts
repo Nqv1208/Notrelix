@@ -67,7 +67,10 @@ async function applyCreateScript(request: {
   method: string;
   normalizedPathname: string;
 }): Promise<void> {
-  if (request.method !== "POST" || !request.normalizedPathname.endsWith("/items"))
+  if (
+    request.method !== "POST" ||
+    !request.normalizedPathname.endsWith("/items")
+  )
     return;
   let mode: string | null = null;
   try {

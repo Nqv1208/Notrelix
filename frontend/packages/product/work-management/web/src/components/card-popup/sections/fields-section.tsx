@@ -15,7 +15,7 @@ import {
   SectionHead,
   SmallBtn,
 } from "../popup-ui";
-import { PopoverTrigger } from "@notrelix/ui-web";
+import { PopoverTrigger, cn } from "@notrelix/ui-web";
 import { AddFieldPanel } from "./add-field-panel";
 import { PillBtn, PillKey, PillStatic } from "./field-pill";
 import { FieldControl } from "./field-editors";
@@ -163,7 +163,12 @@ export function FieldsSection() {
   if (rows.length === 0)
     return addButton ? (
       <PopSection label={t.title} icon={SECTION_ICONS.fields}>
-        <div className="flex min-h-11 items-center max-md:pl-2.5 md:min-h-8">
+        <div
+          className={cn(
+            "flex min-h-11 items-center md:min-h-8",
+            mode !== "create" && "max-md:pl-2.5",
+          )}
+        >
           {addButton}
         </div>
       </PopSection>

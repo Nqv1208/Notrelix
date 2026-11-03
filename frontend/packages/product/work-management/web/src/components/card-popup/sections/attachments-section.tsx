@@ -112,12 +112,16 @@ function Row({
   actions?: ReactNode;
   busy?: boolean;
 }) {
+  // The new-card sheet lets the note wrap on two 20.3 px lines (Kanban-CardPopup-M-Create).
+  const queued = useCardPopup().mode === "create";
   return (
     <div
       aria-busy={busy || undefined}
       className="box-border flex min-h-[60px] items-center gap-3 rounded-[8px] px-2 py-1.5 hover:bg-state-hover-strong"
     >
-      <span className={cn(THUMB, tone)}>{tile}</span>
+      <span className={cn(THUMB, tone, queued && "max-md:-mt-0.5")}>
+        {tile}
+      </span>
       <span className="min-w-0 flex-1">
         {nameHref ? (
           <a
@@ -133,7 +137,13 @@ function Row({
             {name}
           </span>
         )}
-        <span className="block truncate text-[12.5px] text-meta-foreground">
+        <span
+          className={cn(
+            "block truncate text-[12.5px] text-meta-foreground",
+            queued &&
+              "max-md:-mt-[1.2px] max-md:mb-[1.2px] max-md:leading-[20.3px] max-md:whitespace-normal",
+          )}
+        >
           {meta}
         </span>
       </span>
