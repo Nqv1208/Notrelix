@@ -4,6 +4,7 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   Ban,
   Calendar,
+  Check,
   ListChecks,
   MessageCircle,
   Paperclip,
@@ -31,7 +32,6 @@ import {
 import { prefersReducedMotion } from "./kanban-chrome";
 import { KANBAN_CARD_TYPE } from "./kanban-collision";
 import type { KanbanCardSelection } from "./kanban-selection";
-import { TableCheckbox } from "../table/table-parts";
 import type { KanbanMoveDirection } from "./kanban-dnd";
 import {
   PRIORITY_TONE_CLASS,
@@ -212,6 +212,7 @@ function KanbanCardContent({
   parts,
   idPrefix,
   reserveMore = false,
+  reservePick = false,
 }: {
   card: Card;
   copy: KanbanCardCopy;
@@ -219,6 +220,8 @@ function KanbanCardContent({
   idPrefix: string;
   /** The options button is always on the card (touch): the top row stops short of it. */
   reserveMore?: boolean;
+  /** Cards are being picked: the pick box sits at the start of the top row, which starts after it (BC-Bulk). */
+  reservePick?: boolean;
 }) {
   const {
     isDone,
@@ -271,12 +274,13 @@ function KanbanCardContent({
           />
         )
       ) : null}
-      {hasTop || reserveMore ? (
+      {hasTop || reserveMore || reservePick ? (
         <div
           id={`${idPrefix}-top`}
           className={cn(
             "flex min-h-[22px] min-w-0 items-center gap-1.5 text-metadata text-meta-foreground",
             reserveMore && "pr-[37px]",
+            reservePick && "pl-[26px]",
           )}
         >
           {shownLabels.map((label, index) => {
@@ -734,20 +738,30 @@ export function KanbanCard({
         }}
       />
       {selection && !isDragging ? (
-        <span
+        // BC-Bulk: an 18 px box, 5 px radius, at the start of the top row; it shows on hover or focus until a card is picked.
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={picked}
+          aria-label={fillCopy(copy.selectCard, { title: card.title })}
+          onClick={(event) => {
+            event.stopPropagation();
+            selection.onToggle(card.id, { range: event.shiftKey });
+          }}
           className={cn(
-            "absolute top-2 left-2 z-20 grid place-items-center rounded-[5px] bg-popover/90 p-0.5 dark:bg-card/90",
+            "absolute top-[13px] left-3 z-20 grid size-[18px] cursor-pointer place-items-center rounded-[5px] border-0 p-0 text-primary-foreground before:absolute before:-inset-2 before:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+            picked
+              ? "bg-primary"
+              : "bg-popover shadow-[inset_0_0_0_1.5px_var(--color-line-strong)] dark:bg-card",
             !picked &&
               !picking &&
-              "opacity-0 focus-within:opacity-100 group-hover:opacity-100",
+              "opacity-0 focus-visible:opacity-100 group-hover:opacity-100",
           )}
         >
-          <TableCheckbox
-            checked={picked}
-            label={fillCopy(copy.selectCard, { title: card.title })}
-            onChange={() => selection.onToggle(card.id)}
-          />
-        </span>
+          {picked ? (
+            <Check aria-hidden="true" className="size-3" strokeWidth={3} />
+          ) : null}
+        </button>
       ) : null}
       {actions && !isDragging ? (
         <KanbanCardQuickActions
@@ -764,6 +778,7 @@ export function KanbanCard({
         parts={parts}
         idPrefix={descriptionId}
         reserveMore={touchMore && actions !== undefined && hasCardMenu(actions)}
+        reservePick={picking && !isDragging}
       />
     </article>
   );

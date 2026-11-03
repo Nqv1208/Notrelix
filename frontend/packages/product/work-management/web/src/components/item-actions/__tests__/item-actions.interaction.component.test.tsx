@@ -122,7 +122,11 @@ const losing: MovePreviewView = {
   boardTitle: "Kế hoạch Q4",
   group: { title: "Đang chạy", matched: true },
   status: { name: "Đang làm", matched: true },
-  losses: ["property Budget", "label Data", "assignee Nam"],
+  losses: [
+    "Budget (the other board has no such property)",
+    "label Data",
+    "assignee Nam",
+  ],
 };
 
 function renderMove(
@@ -151,11 +155,15 @@ describe("MoveBoardDialog", () => {
   it("FUI[wm.item-lifecycle:move] asks for a board first and says what carries over before it moves", () => {
     const onPick = vi.fn();
     const onConfirm = renderMove({ onPick, preview: losing });
-    const move = screen.getByRole("button", { name: /Move and drop 3/ });
-    expect((move as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      screen
+        .getByRole("button", { name: en.moveConfirm })
+        .getAttribute("aria-disabled"),
+    ).toBe("true");
+    expect(screen.getByText(en.movePick)).toBeTruthy();
     fireEvent.click(screen.getByRole("option", { name: "Kế hoạch Q4" }));
     expect(onPick).toHaveBeenCalledWith("b1");
-    expect(screen.getByText("Loses 3 items")).toBeTruthy();
+    expect(screen.getAllByText("Loses 3 items").length).toBeGreaterThan(0);
     expect(screen.getByText(/Gets the other board's next key/)).toBeTruthy();
     expect(onConfirm).not.toHaveBeenCalled();
   });
@@ -164,13 +172,14 @@ describe("MoveBoardDialog", () => {
     const onConfirm = renderMove({ preview: losing });
     fireEvent.click(screen.getByRole("option", { name: "Kế hoạch Q4" }));
     const move = screen.getByRole("button", { name: /Move and drop 3/ });
-    expect((move as HTMLButtonElement).disabled).toBe(true);
+    expect(move.getAttribute("aria-disabled")).toBe("true");
+    expect(screen.getByText(en.moveHintAck)).toBeTruthy();
     fireEvent.click(
       screen.getByRole("checkbox", {
-        name: /property Budget, label Data, assignee Nam/,
+        name: "I understand 3 of these will be lost",
       }),
     );
-    expect((move as HTMLButtonElement).disabled).toBe(false);
+    expect(move.getAttribute("aria-disabled")).toBeNull();
     fireEvent.click(move);
     expect(onConfirm).toHaveBeenCalledWith("b1");
   });
@@ -178,7 +187,9 @@ describe("MoveBoardDialog", () => {
   it("FUI[wm.item-lifecycle:move-clean] moves without a tick when nothing is lost", () => {
     const onConfirm = renderMove({ preview: { ...losing, losses: [] } });
     fireEvent.click(screen.getByRole("option", { name: "Kế hoạch Q4" }));
-    fireEvent.click(screen.getByRole("button", { name: en.moveConfirm }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Move to Kế hoạch Q4" }),
+    );
     expect(onConfirm).toHaveBeenCalledWith("b1");
   });
 
@@ -196,7 +207,9 @@ describe("MoveBoardDialog", () => {
   it("FUI[wm.item-lifecycle:move-dependencies] names the dependency refusal and offers to open the blocking item", () => {
     const onOpenBlocking = vi.fn();
     renderMove({ status: "deps", blockingKey: "ERP-140", onOpenBlocking });
-    expect(screen.getByRole("alert").textContent).toContain(en.moveRefusedDeps);
+    expect(screen.getByRole("alert").textContent).toContain(
+      "ERP-140 is blocking this item",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Open ERP-140" }));
     expect(onOpenBlocking).toHaveBeenCalled();
   });
@@ -205,9 +218,10 @@ describe("MoveBoardDialog", () => {
     renderMove({ status: "busy", preview: losing });
     expect(screen.queryByRole("button", { name: en.cancel })).toBeNull();
     expect(
-      (screen.getByRole("button", { name: en.moveBusy }) as HTMLButtonElement)
-        .disabled,
-    ).toBe(true);
+      screen
+        .getByRole("button", { name: en.moveBusy })
+        .getAttribute("aria-disabled"),
+    ).toBe("true");
   });
 
   it("FUI[wm.item-lifecycle:move-empty] says so when no board accepts items", () => {
@@ -304,14 +318,20 @@ describe("RemindDialog", () => {
 
   it("FUI[wm.item-lifecycle:remind] names who will get the reminder and sends on confirm", () => {
     const onConfirm = renderRemind();
-    expect(screen.getByText(/Ha, Minh will get a notice/)).toBeTruthy();
+    expect(screen.getByText("Ha, Minh will get a notice")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: en.remindSend }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
   it("FUI[wm.item-lifecycle:remind-limit] says when the next reminder is possible when the server refuses", () => {
-    renderRemind({ state: "tooSoon", nextRemindAt: "13/10 14:30" });
-    expect(screen.getByRole("alert").textContent).toContain("13/10 14:30");
+    renderRemind({
+      state: "tooSoon",
+      nextRemindAt: "14:30 on 13/10",
+      remindedAt: "14:30 today",
+    });
+    const note = screen.getByRole("status").textContent;
+    expect(note).toContain("14:30 on 13/10");
+    expect(note).toContain("14:30 today");
     expect(screen.queryByRole("button", { name: en.remindSend })).toBeNull();
   });
 
