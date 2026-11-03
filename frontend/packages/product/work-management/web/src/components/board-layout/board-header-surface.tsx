@@ -22,6 +22,7 @@ import {
   TooltipTrigger,
 } from "@notrelix/ui-web";
 import { identityMarkClass } from "../shared/item-display";
+import { BOARD_BAND_BUTTON, BoardBand } from "./board-state-block";
 import { fillBoardHeaderCopy, type BoardHeaderCopy } from "./board-header.copy";
 
 /**
@@ -635,34 +636,37 @@ export function BoardHeaderSurface({
       </div>
 
       {archived ? (
-        <div className="mx-4 mt-3 flex flex-wrap items-center gap-2.5 rounded-[9px] border border-line bg-state-hover px-3 py-[9px] text-compact leading-[1.45] font-medium text-foreground sm:mx-6">
-          <Archive aria-hidden="true" className="size-4 shrink-0" />
-          <span className="min-w-0 flex-1">
-            {archived.onUnarchive
-              ? h.archived.bannerManager
-              : h.archived.banner}
-          </span>
-          {archived.onUnarchive ? (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={archived.state === "pending"}
-              onClick={archived.onUnarchive}
-            >
-              {archived.state === "pending"
-                ? h.archived.unarchiving
-                : h.archived.unarchive}
-            </Button>
-          ) : null}
+        <div className="mx-4 mt-3 sm:mx-6" data-slot="board-archived">
+          <BoardBand
+            tone="info"
+            icon={<Archive />}
+            title={h.archived.title}
+            description={
+              archived.onUnarchive
+                ? h.archived.bannerManager
+                : h.archived.banner
+            }
+            action={
+              archived.onUnarchive ? (
+                <button
+                  type="button"
+                  className={BOARD_BAND_BUTTON}
+                  disabled={archived.state === "pending"}
+                  onClick={archived.onUnarchive}
+                >
+                  {archived.state === "pending"
+                    ? h.archived.unarchiving
+                    : h.archived.unarchive}
+                </button>
+              ) : undefined
+            }
+          />
           {archived.state &&
           archived.state !== "idle" &&
           archived.state !== "pending" ? (
-            <span
-              role="alert"
-              className="basis-full text-crumb text-danger-text"
-            >
+            <p role="alert" className="mt-1.5 text-crumb text-danger-text">
               {h.archived[archived.state]}
-            </span>
+            </p>
           ) : null}
         </div>
       ) : null}

@@ -993,6 +993,7 @@ export function MainTableView({
         <MainTableSurface
           layout={layout}
           onNoGroup={noGroupNotice.noGroup}
+          noBoardGroup={table.groups.length === 0}
           renderSubItems={(rowId) => (
             <TableSubItems
               itemId={rowId}

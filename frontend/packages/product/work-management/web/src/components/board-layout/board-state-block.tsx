@@ -88,4 +88,4 @@ export function BoardBand({
 
 /** The 32 px outline button of a band or a state block. */
 export const BOARD_BAND_BUTTON =
-  "inline-flex h-8 max-sm:h-11 max-sm:px-3.5 max-sm:text-[14px] cursor-pointer items-center justify-center gap-1.5 rounded-[7px] border border-line-strong bg-popover px-3 text-[13px] font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring dark:bg-card";
+  "inline-flex h-8 max-sm:h-11 max-sm:px-3.5 max-sm:text-[14px] cursor-pointer items-center justify-center gap-1.5 rounded-[7px] border border-line-strong [&_svg]:size-4 bg-popover px-3 text-[13px] font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring dark:bg-card";

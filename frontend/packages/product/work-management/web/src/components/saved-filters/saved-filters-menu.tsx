@@ -4,8 +4,10 @@ import {
   BookmarkPlus,
   Check,
   ChevronDown,
+  CircleAlert,
   Lock,
   Pencil,
+  RotateCw,
   Trash2,
   Users,
   X,
@@ -358,24 +360,37 @@ function SavedFiltersList({
           <div
             role="status"
             aria-label={t.loading}
-            className="flex flex-col gap-1.5 p-1"
+            className="flex flex-col gap-0.5"
           >
             <div className="h-10 rounded-md bg-state-hover-strong" />
             <div className="h-10 rounded-md bg-state-hover-strong" />
           </div>
         ) : status === "error" ? (
-          <div role="alert" className="flex flex-col items-start gap-2 p-2.5">
-            <p className="m-0 text-sm text-danger-text">{t.loadFailed}</p>
-            <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+          <div role="alert" className="flex flex-col items-start gap-0.5 pb-2">
+            <div className="flex items-start gap-2 p-2.5 text-[12.5px] text-danger-text">
+              <CircleAlert
+                aria-hidden="true"
+                className="mt-px size-4 shrink-0"
+              />
+              <p className="m-0 flex-1">{t.loadFailed}</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mx-2.5 h-7 gap-2 text-[12.5px]"
+              onClick={onRetry}
+            >
+              <RotateCw aria-hidden="true" className="size-3.5" />
               {t.retry}
             </Button>
           </div>
         ) : (
           <>
             {filters.length === 0 ? (
-              <div className="px-3 py-4 text-center">
-                <b className="block text-sm font-semibold">{t.empty}</b>
-                <span className="text-xs text-muted-foreground">
+              <div className="px-3.5 py-[18px] text-center">
+                <b className="block text-[13.5px] font-semibold">{t.empty}</b>
+                <span className="text-[12.5px] text-muted-foreground">
                   {t.emptyHint}
                 </span>
               </div>
