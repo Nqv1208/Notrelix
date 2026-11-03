@@ -12,6 +12,9 @@ public static class FieldValueValidator
         "yyyy-MM-ddTHH:mm:ss.FFFFFFFK",
     ];
 
+    /// <summary>The most people one multiple Person value names (the same bound the work reports use for assignees).</summary>
+    public const int MaxPeople = 50;
+
     public static void Validate(FieldValue value, FieldType type, FieldSettings settings)
     {
         if (value == null)
@@ -100,6 +103,20 @@ public static class FieldValueValidator
                 case FieldType.Checkbox:
                     if (kind != JsonValueKind.True && kind != JsonValueKind.False)
                         throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidBooleanValue, "Value for field type Checkbox must be a boolean.");
+                    break;
+
+                case FieldType.Person when settingsDoc != null
+                    && settingsDoc.RootElement.TryGetProperty("multiple", out var multipleToken) && multipleToken.ValueKind == JsonValueKind.True:
+                    // A multiple People field holds a list of principal ids; repeats collapse in BoardItem (same set = no-op).
+                    if (kind != JsonValueKind.Array)
+                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, "Value for a multiple Person field must be an array of user IDs.");
+                    if (element.GetArrayLength() > MaxPeople)
+                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, $"A Person field holds at most {MaxPeople} people.");
+                    foreach (var person in element.EnumerateArray())
+                    {
+                        if (person.ValueKind != JsonValueKind.String || !Guid.TryParse(person.GetString(), out var personId) || personId == Guid.Empty)
+                            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, "Person items must be valid user GUIDs.");
+                    }
                     break;
 
                 case FieldType.Status:

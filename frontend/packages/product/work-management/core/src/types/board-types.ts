@@ -106,7 +106,12 @@ export interface BoardPaging {
   /** Items of the board that pass the server filter. */
   readonly filteredTotal: number;
   /** The filter and sort the pages were read under; later pages are read under the same. */
-  readonly criteria: { readonly filter: string; readonly sort: string };
+  readonly criteria: {
+    readonly filter: string;
+    readonly sort: string;
+    /** The title or key text the lanes were read under; absent: none. */
+    readonly search?: string;
+  };
 }
 
 export interface FullBoardResponse {

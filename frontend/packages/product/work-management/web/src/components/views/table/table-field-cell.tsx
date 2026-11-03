@@ -223,7 +223,9 @@ export function TableFieldCell({
     case "multi_select":
     case "person": {
       const isPerson = field.fieldType === "person";
-      const multi = field.fieldType !== "select";
+      const multi = isPerson
+        ? field.multiple === true
+        : field.fieldType !== "select";
       const options: EditorOption[] = isPerson
         ? members.map((member) => ({
             id: member.userId,
@@ -387,7 +389,11 @@ export function TableFieldCell({
           )}
         >
           <Loader2
-            className="size-3 animate-spin motion-reduce:animate-none"
+            className={cn(
+              "animate-spin motion-reduce:animate-none",
+              // The saving row draws an 18 px ring at the cell's right padding.
+              field.fieldType === "checkbox" ? "size-4.5" : "size-3",
+            )}
             aria-hidden="true"
           />
           {field.fieldType === "checkbox" ? null : f.saving}

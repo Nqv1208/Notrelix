@@ -7,8 +7,9 @@ namespace Notrelix.Application.Features.WorkManagement.BoardViews.Queries.ListBo
 /// <summary>
 /// The saved views the caller sees on a Board: every active Board view and the caller's own private ones,
 /// the default first, then oldest first (WM-8). A private view of another member is not listed.
+/// With <paramref name="Archived"/> it lists the archived ones instead (the "Archived views" entry), under the same visibility rule.
 /// </summary>
-public record ListBoardViewsQuery(Guid BoardId)
+public record ListBoardViewsQuery(Guid BoardId, bool Archived = false)
     : IQuery<Result<IReadOnlyList<BoardViewDto>>>, IRequirePermission, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
@@ -33,7 +34,7 @@ public class ListBoardViewsQueryHandler : IRequestHandler<ListBoardViewsQuery, R
             .AsNoTracking()
             .Where(v => v.BoardId == request.BoardId
                         && v.DeletedAt == null
-                        && !v.IsArchived
+                        && v.IsArchived == request.Archived
                         && (v.Visibility == BoardViewVisibility.Board || v.CreatedBy == userId))
             .OrderByDescending(v => v.IsDefault)
             .ThenBy(v => v.CreatedAt)

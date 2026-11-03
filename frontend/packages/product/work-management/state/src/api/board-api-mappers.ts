@@ -160,7 +160,7 @@ export function mapFullBoardDto(
   context: {
     workspaceId: string;
     /** The filter and sort a paged read was made under. */
-    criteria?: { filter: string; sort: string };
+    criteria?: { filter: string; sort: string; search?: string };
   },
 ): FullBoardResponse {
   const boardId = dto.id ?? "";
@@ -225,7 +225,7 @@ function mapBoardPaging(
   dto: GeneratedFullBoardDto,
   lanes: NonNullable<GeneratedFullBoardDto["lanes"]>,
   grouped: readonly KanbanStatusLane[],
-  criteria: { filter: string; sort: string },
+  criteria: { filter: string; sort: string; search?: string },
 ): BoardPaging {
   const loadedBy = new Map(
     grouped.map((lane) => [lane.optionId ?? NO_STATUS_LANE, lane.cards.length]),
@@ -774,6 +774,7 @@ function mapBoardColumnDto(
     isSystemField:
       "isSystemField" in dto ? dto.isSystemField : (dto.isSystem ?? false),
     ...(typeof settings.unit === "string" ? { unit: settings.unit } : {}),
+    ...(settings.multiple === true ? { multiple: true } : {}),
     ...(settings.display === "mark" ? { display: "mark" as const } : {}),
     ...(normalizeName(rawType) === "status"
       ? { semanticRole: "status" as const }

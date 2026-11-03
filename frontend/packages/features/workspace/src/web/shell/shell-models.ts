@@ -232,7 +232,7 @@ export interface SidebarDocsDepartment {
 }
 
 /**
- * The document tree under the Docs row (Final-Docs `.tree`): shown on a
+ * The document tree under the Docs row (Final-Docs-2 `.tree`): shown on a
  * document page, for the department that holds it.
  */
 export interface SidebarDocsTree {

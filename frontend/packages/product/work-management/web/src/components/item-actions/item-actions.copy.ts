@@ -302,8 +302,7 @@ export const vi: ItemActionsCopy = {
   remindDesc: "Người đang phụ trách việc này sẽ nhận một lời nhắc.",
   remindBusyBody: "Đang gửi. Yêu cầu đã gửi nên không huỷ được.",
   remindWho: "{{who}} sẽ nhận thông báo",
-  remindWhoNote:
-    "Nói bạn đang chờ cập nhật về {{key}}. Họ thấy trong Hộp thư.",
+  remindWhoNote: "Nói bạn đang chờ cập nhật về {{key}}. Họ thấy trong Hộp thư.",
   remindWhoNoteNoKey: "Nói bạn đang chờ cập nhật. Họ thấy trong Hộp thư.",
   remindLimit: "Mỗi việc nhắc tối đa một lần trong 24 giờ",
   remindLimitNote: "Giới hạn tính theo từng người nhắc.",
@@ -313,8 +312,7 @@ export const vi: ItemActionsCopy = {
   remindBusy: "Đang gửi…",
   remindSent: "Đã nhắc {{who}}. Nhắc lại được sau {{when}}.",
   remindSentCount: "Đã nhắc {{count}} người. Nhắc lại được sau {{when}}.",
-  remindTooSoon:
-    "Bạn đã nhắc việc này lúc {{at}}. Nhắc lại được sau {{when}}.",
+  remindTooSoon: "Bạn đã nhắc việc này lúc {{at}}. Nhắc lại được sau {{when}}.",
   remindTooSoonNow: "Bạn đã nhắc việc này trong 24 giờ qua.",
   remindNobody: "Chưa có ai để nhắc",
   remindNobodyBody:

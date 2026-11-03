@@ -9,7 +9,7 @@ import type {
   SavedFilterCriteria,
 } from "@notrelix/work-management-core";
 import { fillSavedFiltersCopy } from "./saved-filters.copy";
-import { SavedFiltersMenu } from "./saved-filters-menu";
+import { SavedFiltersMenu, type SummaryPhrase } from "./saved-filters-menu";
 import { useSavedFiltersCopy } from "./use-saved-filters-copy";
 
 export interface SavedFiltersControlProps {
@@ -30,6 +30,10 @@ export interface SavedFiltersControlProps {
   compact?: boolean;
   saveOpen?: boolean;
   onSaveOpenChange?: (open: boolean) => void;
+  /** What the bar shows now, as phrases: the save form's summary. */
+  summary?: readonly SummaryPhrase[];
+  /** The phrases of a saved filter's criteria: the subtitle of its row. */
+  describe?: (criteria: SavedFilterCriteria) => readonly SummaryPhrase[];
 }
 
 /** A saved filter is applied when the bar already shows its filter (and its grouping, if it kept one). */
@@ -57,6 +61,8 @@ export function SavedFiltersControl({
   saveOpen,
   onSaveOpenChange,
   compact,
+  summary,
+  describe,
 }: SavedFiltersControlProps) {
   const copy = useSavedFiltersCopy();
   const query = useSavedFilters(boardId, workspaceId);
@@ -102,6 +108,8 @@ export function SavedFiltersControl({
       appliedId={applied?.id ?? null}
       canEdit={canEdit}
       {...(compact ? { compact } : {})}
+      {...(summary ? { summary } : {})}
+      {...(describe ? { describe } : {})}
       {...(saveOpen !== undefined ? { saveOpen } : {})}
       {...(onSaveOpenChange ? { onSaveOpenChange } : {})}
       canSaveCurrent={Boolean(filter) && applied === undefined}
