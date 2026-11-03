@@ -346,7 +346,7 @@ function ShareBody({
             onInvite={onInvite}
             managerToken={managerToken}
           />
-        ) : (
+        ) : view.canManage ? (
           <div data-f="add" className="flex gap-2 max-md:flex-wrap">
             <label
               data-f="in"
@@ -394,7 +394,7 @@ function ShareBody({
               {copy.add.invite}
             </button>
           </div>
-        )}
+        ) : null}
 
         <div>
           <div
@@ -464,35 +464,39 @@ function ShareBody({
                 </span>
               ) : null}
             </span>
-            <button
-              data-f="lvl-plain"
-              type="button"
-              aria-haspopup="listbox"
-              aria-expanded="false"
-              aria-disabled={
-                onChangeGeneral && general.kind !== "private" ? undefined : true
-              }
-              title={onChangeGeneral ? undefined : g.changeUnavailable}
-              onClick={
-                onChangeGeneral && general.kind !== "private"
-                  ? () => {
-                      onChangeGeneral("private");
-                      setScreen("private");
-                    }
-                  : undefined
-              }
-              className={cn(
-                "ml-auto box-border inline-flex h-[30px] max-md:h-11 items-center gap-1.5 rounded-[9px] border border-transparent bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:border-line-strong aria-disabled:cursor-default dark:bg-card",
-                FOCUS,
-              )}
-            >
-              {g.change}
-              <ChevronDown
-                aria-hidden="true"
-                className="size-[13px] text-meta-foreground"
-                strokeWidth={1.8}
-              />
-            </button>
+            {view.canManage ? (
+              <button
+                data-f="lvl-plain"
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-disabled={
+                  onChangeGeneral && general.kind !== "private"
+                    ? undefined
+                    : true
+                }
+                title={onChangeGeneral ? undefined : g.changeUnavailable}
+                onClick={
+                  onChangeGeneral && general.kind !== "private"
+                    ? () => {
+                        onChangeGeneral("private");
+                        setScreen("private");
+                      }
+                    : undefined
+                }
+                className={cn(
+                  "ml-auto box-border inline-flex h-[30px] max-md:h-11 items-center gap-1.5 rounded-[9px] border border-transparent bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:border-line-strong aria-disabled:cursor-default dark:bg-card",
+                  FOCUS,
+                )}
+              >
+                {g.change}
+                <ChevronDown
+                  aria-hidden="true"
+                  className="size-[13px] text-meta-foreground"
+                  strokeWidth={1.8}
+                />
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -732,18 +736,18 @@ function ShareBody({
           >
             {copy.footer.log}
           </button>
-        ) : (
+        ) : view.canManage ? (
           <InertHint reason={copy.footer.logUnavailable}>
             <button
               data-f="logl"
               type="button"
               aria-disabled="true"
-              className="cursor-default rounded-sm border-0 bg-transparent p-0 text-crumb leading-[1.45] font-medium text-state-selected-foreground"
+              className="cursor-default rounded-sm border-0 bg-transparent p-0 text-crumb leading-[1.45] font-medium text-state-selected-foreground max-md:inline-flex max-md:min-h-11 max-md:items-center"
             >
               {copy.footer.log}
             </button>
           </InertHint>
-        )}
+        ) : null}
         <span className="flex-1" />
         <button
           data-f="btn"
