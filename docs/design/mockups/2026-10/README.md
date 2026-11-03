@@ -12,7 +12,7 @@ render.py        renders one screen state to static HTML
 decisions.md     shared review decisions from the design review
 briefs/          the design briefs the screens were produced from
   mobile.md  tablet.md  group4.md
-src/             the 43 Final-*.dc.html screen sources, copied unchanged
+src/             the 43 Final-*.dc.html screen sources and the 3 state boards below, copied unchanged
 ```
 
 ## Render a state
@@ -75,6 +75,16 @@ Device comes from the file's preview size. Phase and owner come from the roadmap
 | `Final-M-Search.dc.html` | Mobile 390 | `state`: `gan-day`, `ket-qua`, `khong-co`, `nguoi`, `dang-tim` | P17+ | apps/mobile + product/*/mobile (web owner: features/search) |
 | `Final-M-Share.dc.html` | Mobile 390 | `state`: `chia-se`, `doi-quyen`, `rieng-tu`, `nhat-ky`, `da-sao-chep` | P17+ | apps/mobile + product/*/mobile (web owner: features/governance) |
 | `Final-M-Space.dc.html` | Mobile 390 | `state`: `danh-sach`, `phong`, `tao-moi`, `chi-xem`, `thiet-lap` | P17+ | apps/mobile + product/*/mobile (web owner: features/workspace) |
+
+## State boards (static)
+
+Three boards of the owner canvas carry every state of one component side by side, light (`sang`) and dark (`dem`), as fixed frames. They have no props and `render.py` does not apply: open the file in a browser and read a frame by its `data-frame` attribute (for example `wmmoveboard3-sang`). The specs measure boxes inside a frame the same way as for the screens above.
+
+| File | Frames (`data-frame`) | Roadmap phase | Owner package |
+|---|---|---|---|
+| `WM-MoveBoard.dc.html` | `wmmoveboard1` to `wmmoveboard11` at 700 px, `wmmoveboard12` to `wmmoveboard14` at 390 px: move a board to a department, the access impact and who is left behind | P3 | product/work-management/web |
+| `BC-Shell-1280-768.dc.html` | `sh1280-<state>-<mode>` (1022 px content column of the 1280 px window) and `sh768-<state>-<mode>`; nine states per width and mode (codes R, L, Er, NP, RO, E, Ev, NG, VM; R is the ready board) | P2 | product/work-management/web + apps/web shell |
+| `BC-Shell-320.dc.html` | `sh320-<state>-<mode>`: the same nine states at 320 px | P2 | product/work-management/web + apps/web shell |
 
 ## Related
 
