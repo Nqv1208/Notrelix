@@ -241,7 +241,7 @@ export function FieldPanel({
   return (
     <aside
       aria-label={fillCopy(t.label, { name: field.name })}
-      className="flex min-h-0 w-[400px] shrink-0 flex-col border-l border-line bg-popover max-xl:absolute max-xl:inset-y-0 max-xl:right-0 max-xl:z-10 max-xl:shadow-pop max-md:inset-0 max-md:w-full max-md:border-l-0 max-md:shadow-none"
+      className="flex min-h-0 w-[401px] shrink-0 flex-col border-l border-line bg-popover max-xl:absolute max-xl:inset-y-0 max-xl:right-0 max-xl:z-10 max-xl:shadow-pop max-md:inset-0 max-md:w-full max-md:border-l-0 max-md:shadow-none"
     >
       <div className="flex items-center gap-2.5 border-b border-line px-[18px] py-3.5">
         <TypeMark icon={Icon} size="md" className="rounded-[8px]" />

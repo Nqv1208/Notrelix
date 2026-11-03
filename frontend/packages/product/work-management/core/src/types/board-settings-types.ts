@@ -82,6 +82,8 @@ export interface BoardSettingsFieldDto {
   /** The field splits the Kanban: drawn as a chip. */
   readonly accent: boolean;
   readonly unit: string | null;
+  /** A People field holds several people (settings.multiple), not one. */
+  readonly multiple?: boolean;
   /** The field is a stored column (it has values and options to edit). */
   readonly hasColumn: boolean;
   readonly valueCount: number;

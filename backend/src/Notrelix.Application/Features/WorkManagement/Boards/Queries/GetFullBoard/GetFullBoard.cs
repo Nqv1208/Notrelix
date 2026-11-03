@@ -1,4 +1,3 @@
-using System.Text.Json;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.Governance.Public.Visibility;
@@ -216,10 +215,10 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 column.Name,
                 column.Type.ToString(),
                 // A Formula's saved field ids are shown as the fields' current names.
+                // The settings JSON itself, not the value object that holds it.
                 column.Type == FieldType.Formula
-                    ? JsonSerializer.Serialize(
-                        FieldSettings.Create(JsonValue.Create(ComputedFieldGraph.RenderNames(column.Settings.Data.Value, fieldInputs))), (JsonSerializerOptions?)null)
-                    : JsonSerializer.Serialize(column.Settings, (JsonSerializerOptions?)null),
+                    ? ComputedFieldGraph.RenderNames(column.Settings.Data.Value, fieldInputs)
+                    : column.Settings.Data.Value,
                 column.DefaultValue == null ? null : column.DefaultValue.Data.Value,
                 column.Position.Value,
                 column.IsSystem,

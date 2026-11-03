@@ -134,6 +134,12 @@ test.describe("Board table, in-place edits (owner)", () => {
     page,
   }) => {
     await openTable(page);
+    // Every seeded person holds an open item: Bùi Thanh Tâm's only one (ERP-147) goes to nobody first.
+    await page
+      .getByRole("button", { name: "Đổi người phụ trách của ERP-147" })
+      .click();
+    await page.getByRole("button", { name: /Chưa giao/ }).click();
+    await expect(row(page, "ERP-147")).toContainText("Chưa giao");
     await page.getByRole("button", { name: /^Lọc/ }).click();
     // The filter is a builder: add a condition on the assignee and pick the person.
     await page.getByRole("button", { name: "Thêm điều kiện" }).click();
