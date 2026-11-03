@@ -1470,7 +1470,8 @@ export class MockStore {
     // The many-cards overlay: 127 more archived items, so the archive holds 128 and reads in pages of 50.
     if (this.config.overlays.includes("many-cards")) {
       for (let n = 1; n <= 127; n += 1) {
-        const at = new Date(Date.UTC(2026, 9, 7, 3, 0) - n * 60_000);
+        const minute = 180 - n; // minutes after 00:00 UTC on 7 Oct, newest first
+        const at = `2026-10-07T${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}:00.000Z`;
         this.insertCard({
           id: erpItemId(`ERP-${400 + n}`),
           boardId,
@@ -1478,7 +1479,7 @@ export class MockStore {
           title: `Việc đã lưu trữ số ${n}`,
           position: 1000 + n,
           createdAt: "2026-09-14T02:00:00.000Z",
-          updatedAt: at.toISOString(),
+          updatedAt: at,
           itemKey: `ERP-${400 + n}`,
           description: "",
           parentItemId: null,
@@ -1489,7 +1490,7 @@ export class MockStore {
           childProgress: null,
           unlisted: true,
           isArchived: true,
-          archivedAt: at.toISOString(),
+          archivedAt: at,
           archivedByUserId: ERP_PEOPLE.HA.id,
         });
       }
