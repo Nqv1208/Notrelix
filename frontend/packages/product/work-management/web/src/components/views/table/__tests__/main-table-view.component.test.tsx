@@ -806,13 +806,10 @@ describe("MainTableView on the ERP board", () => {
     fireEvent.click(
       within(dialog).getByRole("button", { name: "Thêm cách sắp xếp" }),
     );
-    const field = within(dialog).getByLabelText(
-      "Trường sắp xếp 1",
-    ) as HTMLSelectElement;
-    const priority = within(field).getByRole("option", {
-      name: "Ưu tiên",
-    }) as HTMLOptionElement;
-    fireEvent.change(field, { target: { value: priority.value } });
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Trường sắp xếp 1" }),
+    );
+    fireEvent.click(await screen.findByRole("option", { name: /^Ưu tiên/ }));
     await waitFor(() =>
       expect(
         screen
@@ -821,6 +818,31 @@ describe("MainTableView on the ERP board", () => {
       ).toBe("ascending"),
     );
     expect(boards.updateSavedViewConfig).not.toHaveBeenCalled();
+  });
+
+  it("moves a sort level down with the arrow keys on its grip", async () => {
+    renderTable(erpOwnerAccess());
+    await ready();
+    fireEvent.click(screen.getByRole("button", { name: /^Sắp xếp/ }));
+    const dialog = await screen.findByRole("dialog", { name: "Sắp xếp" });
+    const add = within(dialog).getByRole("button", {
+      name: "Thêm cách sắp xếp",
+    });
+    fireEvent.click(add);
+    fireEvent.click(add);
+    const first = () =>
+      within(dialog).getByRole("button", { name: "Trường sắp xếp 1" })
+        .textContent;
+    const before = first();
+    fireEvent.keyDown(
+      within(dialog).getByRole("button", { name: "Đổi thứ tự cách sắp xếp 1" }),
+      { key: "ArrowDown" },
+    );
+    await waitFor(() => expect(first()).not.toBe(before));
+    expect(
+      within(dialog).getByRole("button", { name: "Trường sắp xếp 2" })
+        .textContent,
+    ).toBe(before);
   });
 
   it("resizes a column as the member's own state and drops it again on reset", async () => {

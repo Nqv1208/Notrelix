@@ -148,6 +148,7 @@ test.describe("Board table, in-place edits (owner)", () => {
     await page
       .getByRole("combobox", { name: "Trường (Điều kiện 1)" })
       .selectOption({ label: "Người thực hiện" });
+    await page.getByRole("button", { name: "Giá trị (Điều kiện 1)" }).click();
     await page
       .getByRole("listbox", { name: "Giá trị (Điều kiện 1)" })
       .getByRole("option", { name: "Bùi Thanh Tâm" })

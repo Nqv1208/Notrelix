@@ -1,18 +1,22 @@
 import { useId, useState, type ReactNode } from "react";
 import { AlertCircle, Lock, RefreshCw, User, X } from "lucide-react";
-import { Button, cn } from "@notrelix/ui-web";
+import {
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  cn,
+} from "@notrelix/ui-web";
 import {
   conditionIssue,
+  OVERDUE_FIELD_ID,
   type FieldRef,
   type FilterField,
   type MemberNames,
   type SavedFilterCriteria,
   viewStateFromCriteria,
 } from "@notrelix/work-management-core";
-import {
-  kanbanOutlineButtonClass,
-  kanbanPillClass,
-} from "../views/kanban/kanban-chrome";
+import { kanbanPillClass } from "../views/kanban/kanban-chrome";
 import { describeCondition, staleConditionCount } from "./condition-label";
 import { FilterBuilder } from "./filter-builder";
 import { FieldRefMenu } from "./field-ref-menu";
@@ -100,14 +104,13 @@ export function ViewStateBar(props: ViewStateBarProps) {
     return [
       ...state.filter.conditions
         .filter((condition) => conditionIssue(condition) === null)
-        .map((condition) => ({
-          text: describeCondition(
-            copy,
-            condition,
-            fields.find((f) => f.id === condition.fieldId),
-            memberName,
-          ),
-        })),
+        .map((condition) => {
+          const field = fields.find((f) => f.id === condition.fieldId);
+          return {
+            text: describeCondition(copy, condition, field, memberName),
+            ...(known && !field ? { stale: true } : {}),
+          };
+        }),
       ...(groupField
         ? [{ text: `${copy.group.label} ${groupField.name}`, group: true }]
         : []),
@@ -189,14 +192,14 @@ export function ViewStateBar(props: ViewStateBarProps) {
                 <span
                   data-stale={stale || undefined}
                   className={cn(
-                    "inline-flex h-6.5 max-w-full items-center gap-1 rounded-full pl-2.5 pr-1 text-compact font-semibold",
+                    "inline-flex h-6.5 max-w-full items-center gap-1 rounded-full pl-2.5 pr-1 text-[12.5px] font-semibold",
                     stale
                       ? "bg-warning-subtle text-warning-subtle-foreground ring-1 ring-warning/50"
                       : "bg-state-selected text-state-selected-foreground",
                   )}
                 >
                   {stale ? (
-                    <AlertCircle className="size-3.5" aria-hidden="true" />
+                    <AlertCircle className="size-4" aria-hidden="true" />
                   ) : null}
                   <span className="min-w-0 truncate">{label}</span>
                   <button
@@ -212,7 +215,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
                         ),
                       })
                     }
-                    className="grid size-5 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-inherit hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
+                    className="grid size-4.5 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-inherit hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
                   >
                     <X className="size-3.5" aria-hidden="true" />
                   </button>
@@ -225,7 +228,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
               <button
                 type="button"
                 onClick={() => setOpen(true)}
-                className="h-6.5 cursor-pointer rounded-full border-0 bg-state-hover px-2.5 text-compact font-medium text-muted-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
+                className="h-6.5 cursor-pointer rounded-full border-0 bg-state-hover px-2.5 text-[12.5px] font-semibold text-muted-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
               >
                 {fillFiltersCopy(copy.filter.more, { count: hidden })}
               </button>
@@ -247,6 +250,11 @@ export function ViewStateBar(props: ViewStateBarProps) {
           copy={copy}
           kind="group"
           fields={props.groupFields}
+          unavailableFields={fields.filter(
+            (field) =>
+              field.id !== OVERDUE_FIELD_ID &&
+              !props.groupFields?.some((group) => group.id === field.id),
+          )}
           value={view.state.group}
           fallback={props.groupFallback}
           onChange={view.setGroup}
@@ -281,21 +289,41 @@ export function ViewStateBar(props: ViewStateBarProps) {
         </span>
       ) : null}
       {props.canSave === false && applied.length > 0 ? (
-        <span title={copy.viewer.saveDisabled} className="inline-flex">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled
-            aria-describedby={reasonId}
-            className={kanbanPillClass}
-          >
-            <Lock className="size-4" aria-hidden="true" />
-            {copy.viewer.saveLabel}
-          </Button>
+        <>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                tabIndex={0}
+                className="inline-flex rounded-md outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled
+                  aria-describedby={reasonId}
+                  className={kanbanPillClass}
+                >
+                  <Lock className="size-4" aria-hidden="true" />
+                  {copy.viewer.saveLabel}
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {/* Drawn without an arrow (WM-Filter-States, "Người chỉ xem"): a lock and the reason, 340 px wide. */}
+            <TooltipContent
+              arrow={false}
+              side="bottom"
+              align="start"
+              sideOffset={6}
+              className="block min-h-13.5 w-85 max-w-85 rounded-[8px] px-2.5 py-2 text-crumb leading-[1.4] shadow-popover"
+            >
+              <Lock className="mr-1.5 inline size-4" aria-hidden="true" />
+              {copy.viewer.saveDisabled}
+            </TooltipContent>
+          </Tooltip>
           <span id={reasonId} className="sr-only">
             {copy.viewer.saveDisabled}
           </span>
-        </span>
+        </>
       ) : null}
       {saved}
       <div className="basis-full empty:hidden">
@@ -329,55 +357,61 @@ export function ViewStateNotices({
     fields.length > 0 ? staleConditionCount(view.state.filter, fields) : 0;
   if (stale === 0 && !view.saveFailed) return null;
   const known = new Set(fields.map((f) => f.id));
+  const small =
+    "h-7 cursor-pointer gap-1.5 rounded-[7px] px-2.5 text-[12.5px] font-medium";
   return (
     <div className="flex flex-col gap-2 pb-2">
       {stale > 0 ? (
-        <div
-          role="status"
-          className="flex flex-wrap items-center gap-2 rounded-[9px] bg-warning-subtle px-3 py-2 text-compact text-warning-subtle-foreground ring-1 ring-warning/50"
-        >
-          <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
-          <span className="min-w-0 flex-1">
-            {fillFiltersCopy(copy.stale.hint, { count: stale })}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            className={kanbanOutlineButtonClass}
-            onClick={() =>
-              view.setFilter({
-                ...view.state.filter,
-                conditions: view.state.filter.conditions.filter((c) =>
-                  known.has(c.fieldId),
-                ),
-              })
-            }
+        <div className="flex flex-col gap-2">
+          <div
+            role="status"
+            className="flex items-start gap-2 rounded-[9px] bg-warning-subtle px-3 py-[9px] text-[12.5px] leading-[1.45] text-warning-subtle-foreground ring-1 ring-warning/50 ring-inset"
           >
-            {copy.stale.removeIgnored}
-          </Button>
-          {onSaveAsNew ? (
+            <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 flex-1">
+              {fillFiltersCopy(copy.stale.hint, { count: stale })}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
-              className={kanbanOutlineButtonClass}
-              onClick={onSaveAsNew}
+              className={small}
+              onClick={() =>
+                view.setFilter({
+                  ...view.state.filter,
+                  conditions: view.state.filter.conditions.filter((c) =>
+                    known.has(c.fieldId),
+                  ),
+                })
+              }
             >
-              {copy.stale.saveNew}
+              {copy.stale.removeIgnored}
             </Button>
-          ) : null}
+            {onSaveAsNew ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className={small}
+                onClick={onSaveAsNew}
+              >
+                {copy.stale.saveNew}
+              </Button>
+            ) : null}
+          </div>
         </div>
       ) : null}
       {view.saveFailed ? (
         <div
           role="alert"
-          className="flex flex-wrap items-center gap-2 rounded-[9px] bg-destructive/10 px-3 py-2 text-compact text-destructive"
+          className="flex items-start gap-2 rounded-[9px] bg-destructive/10 px-3 py-[9px] text-[12.5px] leading-[1.45] text-destructive"
         >
           <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
           <span className="min-w-0 flex-1">{copy.personal.saveFailed}</span>
           <Button
             variant="outline"
             size="sm"
-            className={kanbanOutlineButtonClass}
+            className={small}
             onClick={view.retrySave}
           >
             <RefreshCw className="size-4" aria-hidden="true" />
