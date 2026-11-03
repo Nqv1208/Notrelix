@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, Info, RefreshCw, TriangleAlert } from "lucide-react";
+import {
+  AlertCircle,
+  Check,
+  Info,
+  RefreshCw,
+  TriangleAlert,
+} from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import {
   MOVE_SAVE_KEY,
@@ -8,6 +14,7 @@ import {
 } from "../card-popup-context";
 import { fillPopupCopy } from "../card-popup.copy";
 import { PanelBtn } from "../popup-ui";
+import { useCreatedNotice } from "../create/created-notice";
 import { useCardPopupCopy } from "../use-card-popup-copy";
 
 /** `.sk`: a grey block in the shape of the part it stands for; it does not move. */
@@ -198,7 +205,7 @@ function Banner({
   schema,
   children,
 }: {
-  tone: "danger" | "warn" | "info";
+  tone: "danger" | "warn" | "info" | "success";
   /** A schema-change notice (D12): the artboard's 10 x 14 px padding, 13 px text on a 1.4 line, a 44 px button. */
   schema?: boolean;
   title: string;
@@ -207,10 +214,11 @@ function Banner({
   action?: React.ReactNode;
   children?: React.ReactNode;
 }) {
-  const Icon = tone === "info" ? Info : TriangleAlert;
+  const Icon =
+    tone === "info" ? Info : tone === "success" ? Check : TriangleAlert;
   return (
     <div
-      role={tone === "info" ? "status" : "alert"}
+      role={tone === "info" || tone === "success" ? "status" : "alert"}
       className={cn(
         "mx-4 mt-3 box-border flex md:mx-6 items-start rounded-[10px] text-foreground",
         schema
@@ -222,6 +230,7 @@ function Banner({
             ? "bg-warning-subtle"
             : "bg-warning-subtle shadow-[inset_0_0_0_1px_var(--warning-text)]"),
         tone === "info" && "bg-brand-subtle",
+        tone === "success" && "bg-success-subtle",
       )}
     >
       <Icon
@@ -229,6 +238,7 @@ function Banner({
         className={cn(
           schema ? "size-4 shrink-0" : "mt-px size-5 shrink-0",
           tone === "danger" && "text-danger-text",
+          tone === "success" && "text-success-text",
           schema && tone === "warn" && "text-warning-text",
         )}
       />
@@ -287,11 +297,22 @@ export function PopupBanners({
     return () => window.clearTimeout(id);
   }, [phase]);
   const move = saves[MOVE_SAVE_KEY];
+  const created = useCreatedNotice(card.id);
   const t = copy.shell;
   const typeName = (type: string | undefined) =>
     type ? (copy.sections.fields.typeNames[type] ?? type) : "";
   return (
     <>
+      {created ? (
+        <Banner
+          tone="success"
+          title={fillPopupCopy(copy.create.createdIn, {
+            key: card.itemKey ?? "",
+            group: created.groupTitle,
+          })}
+          body={copy.create.createdStay}
+        />
+      ) : null}
       {/* A custom field's clash is drawn at its own pill; the banner keeps the title's. */}
       {fieldConflicts
         .filter((c) => !c.key.startsWith("field:"))

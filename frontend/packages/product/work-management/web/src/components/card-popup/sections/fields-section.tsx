@@ -79,6 +79,7 @@ export function FieldsSection() {
     openPicker,
     timeZone,
     startNewField,
+    readOnly,
   } = useCardPopup();
   const t = copy.sections.fields;
   const canEdit = useCanEdit();
@@ -177,19 +178,21 @@ export function FieldsSection() {
   return (
     <PopSection label={t.title} icon={SECTION_ICONS.fields}>
       <SectionHead title={t.title}>
-        <FaceFieldsButton
-          boardId={board.id}
-          workspaceId={board.workspaceId}
-          fields={board.fieldDefinitions}
-          canEdit={canEdit}
-          sampleCard={card}
-          trigger={
-            <SmallBtn>
-              <SlidersHorizontal aria-hidden="true" className="size-[13px]" />
-              {copy.sections.fields.showOnCard}
-            </SmallBtn>
-          }
-        />
+        {readOnly === "creating" ? null : (
+          <FaceFieldsButton
+            boardId={board.id}
+            workspaceId={board.workspaceId}
+            fields={board.fieldDefinitions}
+            canEdit={canEdit}
+            sampleCard={card}
+            trigger={
+              <SmallBtn>
+                <SlidersHorizontal aria-hidden="true" className="size-[13px]" />
+                {copy.sections.fields.showOnCard}
+              </SmallBtn>
+            }
+          />
+        )}
       </SectionHead>
       {mode === "create" ? (
         // Kanban-CardPopup-Create: label and value rows, the add action under them.
@@ -208,7 +211,11 @@ export function FieldsSection() {
               </div>
             </div>
           ))}
-          <div className="mt-1.5">{addButton}</div>
+          {addButton ? (
+            <div className="mt-1.5">{addButton}</div>
+          ) : (
+            <div aria-hidden="true" className="h-1" />
+          )}
         </div>
       ) : (
         <div className="mt-1 flex flex-wrap gap-1.5" data-field-pills>

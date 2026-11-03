@@ -89,6 +89,16 @@ function emptyDraft(defaults: CardDraftDefaults): CardDraft {
   };
 }
 
+/** A draft kept by "Giữ nháp và đóng": the next create popup of the same board opens on it, once. */
+const keptDrafts = new Map<string, CardDraft>();
+export const keepDraft = (boardId: string, draft: CardDraft) =>
+  keptDrafts.set(boardId, draft);
+function takeKeptDraft(boardId: string): CardDraft | undefined {
+  const kept = keptDrafts.get(boardId);
+  keptDrafts.delete(boardId);
+  return kept;
+}
+
 const localId = () => crypto.randomUUID();
 const NOOP = () => undefined;
 
@@ -132,7 +142,9 @@ export function useCardDraft({
 }) {
   const fields = useMemo(() => findItemFields(board), [board]);
   const initial = useMemo(() => emptyDraft(defaults), [defaults]);
-  const [draft, setDraft] = useState<CardDraft>(initial);
+  const [draft, setDraft] = useState<CardDraft>(
+    () => takeKeptDraft(board.id) ?? initial,
+  );
   const [createdAt] = useState(() => new Date().toISOString());
   const { labels: labelsApi } = useWorkManagementServices();
   const catalogue = useBoardLabels(board.id, workspaceId);
