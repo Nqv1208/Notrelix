@@ -54,6 +54,7 @@ interface FullBoard {
     readonly fieldType: string;
     readonly isSystem?: boolean;
     readonly settings?: string | null;
+    readonly defaultValue?: string | null;
   }[];
 }
 
@@ -1065,4 +1066,45 @@ test("a field can be required only with a default, a new item gets the default, 
   await expect(page.getByRole("alert")).toContainText("Summary is required");
   expect((await read()).fieldValues?.[summary]).toBe("Chưa có tóm tắt");
   expect((await read()).version).toBe(version);
+});
+
+test("the field panel asks for a default before a Text field is required and saves both", async ({
+  page,
+}) => {
+  await signIn(page, realUsers.admin);
+  const workspace = await createOwnedWorkspace(page, "Required panel");
+  const boardId = await createBoard(page, workspace.id);
+  const notes = await createField(page, boardId, "Notes", "text");
+
+  await page.goto(
+    `/workspaces/${workspace.id}/boards/${boardId}/settings?section=fields`,
+  );
+  await page.getByRole("button", { name: "Edit the field Notes" }).click();
+  const panel = page.getByRole("complementary", {
+    name: "Edit the field Notes",
+  });
+  await panel
+    .getByRole("switch", { name: "Required when creating an item" })
+    .click();
+  await expect(
+    panel.getByText("Pick a default value before making this field required"),
+  ).toBeVisible();
+  await expect(
+    panel.getByRole("button", { name: "Save changes" }),
+  ).toBeDisabled();
+
+  await panel.getByLabel("Default value for new items").fill("To be written");
+  const saved = page.waitForResponse(
+    (response) =>
+      response.request().method() === "PATCH" &&
+      response.url().includes(`/fields/${notes}`),
+  );
+  await panel.getByRole("button", { name: "Save changes" }).click();
+  expect((await saved).status()).toBeLessThan(300);
+
+  const stored = (
+    await apiRead<FullBoard>(page, `/boards/${boardId}/full`)
+  ).columns.find((column) => column.id === notes)!;
+  expect(stored.settings ?? "").toContain('"required":true');
+  expect(stored.defaultValue).toBe('"To be written"');
 });

@@ -8,8 +8,10 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  *
  * The mock world's field is `Ưu tiên` (the artboard's `Mức ưu tiên`) with the artboard's rules saved in its
  * settings: required, the guidance sentence and Trung bình as the default. Its usage rows come from the saved
- * views the page already has; the mock world's views do not touch this field, so the usage rows (32 px high, 4
- * px apart, radius 7 in the source) are not box-measured here, only the label and the empty line.
+ * views the page already has; the mock world's views do not touch this field, so only the label and the empty line
+ * are measured on it. The usage rows are measured on `Sẵn sàng bàn giao`, which the Kanban view shows on its card:
+ * a 32 px row (radius 7, 13 px name, 9 px gap, 14 px icon at x 8, the 12 px "how" 8 px from the right edge) that
+ * starts 24.1 px under the label, against `Final-Settings` `truong` rendered in Chromium.
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
@@ -25,7 +27,7 @@ interface Rect {
   readonly height: number;
 }
 
-async function open(page: Page, dark: boolean) {
+async function open(page: Page, dark: boolean, field = "Ưu tiên") {
   await page.clock.setFixedTime(NOW);
   await page.addInitScript(
     (mode) => {
@@ -39,7 +41,7 @@ async function open(page: Page, dark: boolean) {
     dark ? "dark" : "light",
   );
   await page.goto(`${BOARD}/settings?from=table&section=fields`);
-  await page.getByText("Ưu tiên", { exact: true }).first().click();
+  await page.getByText(field, { exact: true }).first().click();
   const panel = page.getByRole("complementary", { name: /^Sửa trường/ });
   await expect(panel).toBeVisible();
   await page.waitForTimeout(400);
@@ -178,6 +180,26 @@ test.describe("Field panel rule groups (Final-Settings truong), 1440 px", () => 
         "usage none",
       );
       expect(await style(none)).toMatchObject({ fs: "12px" });
+    });
+  }
+  for (const dark of [false, true]) {
+    test(`usage rows (${dark ? "dem" : "sang"})`, async ({ page }) => {
+      const body = await open(page, dark, "Sẵn sàng bàn giao");
+      const label = body.getByText("Đang được dùng ở", { exact: true });
+      const l = await rel(label, body);
+      const row = body.getByRole("listitem").filter({ hasText: "Kanban" });
+      await expect(row).toHaveCount(1);
+      const r = await rel(row, body);
+      box(r, { x: 18, width: 364, height: 32 }, "usage row");
+      expect(Math.abs(r.y - (l.y + 24.125))).toBeLessThanOrEqual(TOL);
+      expect(await style(row)).toMatchObject({ fs: "13px", r: "7px" });
+      expect(await row.evaluate((el) => getComputedStyle(el).gap)).toBe("9px");
+      const how = row.getByText("hiện trên thẻ", { exact: true });
+      expect(await style(how)).toMatchObject({ fs: "12px" });
+      const h = await rel(how, row);
+      expect(Math.abs(r.width - 8 - (h.x + h.width))).toBeLessThanOrEqual(TOL);
+      const icon = await rel(row.locator("svg"), row);
+      box(icon, { x: 8, width: 14 }, "usage icon");
     });
   }
 });
