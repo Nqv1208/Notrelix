@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import type { CardMember } from "@notrelix/work-management-core";
 import { identityMarkClass } from "../shared/item-display";
+import { useCardPopup } from "./card-popup-context";
 
 /**
  * The popup's own parts, sized to the artboard (px values are the artboard's).
@@ -230,8 +231,15 @@ export function SectionHead({
   title: ReactNode;
   children?: ReactNode;
 }) {
+  const { mode } = useCardPopup();
   return (
-    <div className="flex min-h-11 items-center gap-2 md:min-h-8">
+    <div
+      className={cn(
+        "flex items-center gap-2 md:min-h-8",
+        // The new-card sheet keeps the 32 px heading row; its buttons are 44 px on their own.
+        mode === "create" ? "min-h-8" : "min-h-11",
+      )}
+    >
       <h3 className="m-0 flex-1 text-[16px] leading-[1.45] md:text-[15px] font-[650] tracking-[-0.005em]">
         {title}
       </h3>
@@ -271,10 +279,11 @@ export function EmptySection({
   none: string;
   children?: ReactNode;
 }) {
+  const { mode } = useCardPopup();
   return (
     <section
       aria-label={label}
-      className="relative box-border flex min-h-16 items-center gap-2 pt-5 pr-4 pl-4 md:min-h-[52px] md:pr-6 md:pl-[60px]"
+      className="relative box-border flex min-h-16 items-center gap-2 pt-5 pr-4 pl-4 max-md:flex-wrap max-md:content-start max-md:gap-y-0 md:min-h-[52px] md:pr-6 md:pl-[60px]"
     >
       <span
         aria-hidden="true"
@@ -282,7 +291,13 @@ export function EmptySection({
       >
         {icon}
       </span>
-      <b className="text-[15px] leading-[1.45] font-[650] md:text-[14px]">
+      <b
+        className={cn(
+          "text-[15px] leading-[1.45] font-[650] md:text-[14px]",
+          // The new-card sheet draws its empty sections at 14 px.
+          mode === "create" && "max-md:text-[14px]",
+        )}
+      >
         {label}
       </b>
       <span className="text-[13.5px] leading-[1.45] text-meta-foreground">
@@ -290,7 +305,9 @@ export function EmptySection({
       </span>
       <span className="flex-1" />
       {children ? (
-        <div className="flex items-center max-md:min-h-11">{children}</div>
+        <div className="flex items-center max-md:min-h-11 max-md:basis-full">
+          {children}
+        </div>
       ) : null}
     </section>
   );

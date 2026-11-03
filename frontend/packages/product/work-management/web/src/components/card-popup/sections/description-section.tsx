@@ -535,7 +535,7 @@ function Editor({
 
 /** The description: Markdown to read, a Markdown editor with a toolbar to write. */
 export function DescriptionSection() {
-  const { card, copy } = useCardPopup();
+  const { card, copy, mode } = useCardPopup();
   const t = copy.sections.description;
   const canEdit = useCanEdit();
   const [editing, setEditing] = useState(false);
@@ -579,6 +579,7 @@ export function DescriptionSection() {
         <div
           className={cn(
             "mt-1.5 rounded-[8px] bg-background px-3 py-2.5 text-[14px] leading-[1.55] md:py-2",
+            mode === "create" && "max-md:mt-2",
             canEdit && "cursor-text",
           )}
           onClick={

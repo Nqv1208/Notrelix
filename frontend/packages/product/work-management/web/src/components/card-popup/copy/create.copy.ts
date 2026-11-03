@@ -10,6 +10,8 @@ export const en = {
   nameRequired: "A card needs a name",
   created: "Card created",
   createdIn: "Created {{key}} in {{group}}",
+  createdStay:
+    "The popup stays on the new card. Comments and activity are open.",
   createdAnother: "Created {{title}}. The form is ready for the next one.",
   createdWithout:
     "Card created, but {{details}} could not be saved. Open the card to set it.",
@@ -29,7 +31,7 @@ export const en = {
   failedBody:
     "The connection dropped before the server answered. Everything you typed is still here. Retrying uses the same request code, so it never creates two cards.",
   retry: "Try again",
-  keepDraft: "Close",
+  keepDraft: "Keep the draft and close",
   discardTitle: "Discard the card you are writing?",
   discardBody:
     "The {{parts}} you just entered has not been created and will be lost.",
@@ -74,6 +76,7 @@ export const vi: CreateCopy = {
   nameRequired: "Thẻ cần có tên",
   created: "Đã tạo thẻ",
   createdIn: "Đã tạo {{key}} trong {{group}}",
+  createdStay: "Popup ở lại trên thẻ vừa tạo. Bình luận và hoạt động đã mở.",
   createdAnother: "Đã tạo {{title}}. Form sẵn sàng cho thẻ tiếp theo.",
   createdWithout:
     "Đã tạo thẻ, nhưng chưa lưu được {{details}}. Mở thẻ để đặt lại.",
@@ -93,7 +96,7 @@ export const vi: CreateCopy = {
   failedBody:
     "Mất kết nối trước khi máy chủ trả lời. Mọi thứ bạn nhập vẫn còn. Thử lại dùng cùng mã yêu cầu nên không bao giờ tạo hai thẻ.",
   retry: "Thử lại",
-  keepDraft: "Đóng",
+  keepDraft: "Giữ nháp và đóng",
   discardTitle: "Bỏ thẻ đang soạn?",
   discardBody: "{{parts}} bạn vừa nhập chưa được tạo và sẽ mất.",
   discardKeep: "Tiếp tục soạn",
