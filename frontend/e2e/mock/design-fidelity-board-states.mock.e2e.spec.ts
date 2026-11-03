@@ -14,7 +14,8 @@ import { expect, test, type Page } from "@playwright/test";
  * Worlds (the spec skips the others, as the repo's design specs do):
  * - default owner: E (`mock-board-it-budget` holds no item), NP (an unknown board), VM (an unknown `savedView`);
  * - `VITE_MOCK_PERSONA=viewer`: Ev;
- * - `VITE_MOCK_FAULTS=/boards/mock-board-erp/full=network`: Er.
+ * - `VITE_MOCK_FAULTS=/boards/mock-board-erp/full=network`: Er;
+ * - `VITE_MOCK_OVERLAYS=board-states` (owner and viewer): RO (`mock-board-it-archived`), NG (`mock-board-it-no-group`, owner).
  * Not drawn by the app and written down: the artboard keeps the toolbar row above E and Er and the header and tabs
  * above NP; the app has no toolbar while the board is unreadable and none worth showing above a board without items
  * (its toolbar filters and sorts items), and answers NP with the shell only, so a missing board shows no name or tab.
@@ -32,6 +33,7 @@ const dir = (file: string) => (existsSync(`${CANVAS}/${file}`) ? CANVAS : SRC);
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const faults = process.env.VITE_MOCK_FAULTS ?? "";
+const overlays = process.env.VITE_MOCK_OVERLAYS ?? "";
 const latency = process.env.VITE_MOCK_LATENCY ?? "";
 const BOARDS = "/workspaces/mock-workspace-primary/boards";
 
@@ -316,6 +318,113 @@ test.describe("Board content states against BC-Shell", () => {
           expect(a[6], `${key} right gap`).toBeCloseTo(x[6] as number, 0);
         }
         expect(got.root[1]).toBeCloseTo(e.root[1], 0);
+      });
+    }
+});
+
+/** Evaluated in the page: a band's title and button boxed against the band's own top-left and right edge. */
+const BAND_PARTS = `(band) => {
+  const o = band.getBoundingClientRect();
+  const pick = (el) => {
+    if (!el) return null;
+    const b = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    return [b.x - o.x, b.y - o.y, b.width, b.height, cs.fontSize, cs.fontWeight, o.right - b.right];
+  };
+  return { root: [o.width, o.height, o.y], title: pick(band.querySelector("b")), button: pick(band.querySelector("button")) };
+}`;
+
+type BandBoxes = {
+  root: number[];
+  title: number[] | null;
+  button: number[] | null;
+};
+
+/** RO and NG: the drawn band against the app's, read live (title, button, height, fonts). */
+async function compareBand(
+  page: Page,
+  width: Width,
+  mode: string,
+  state: "RO" | "NG",
+  appSelector: string,
+  path: string,
+) {
+  await page.goto(
+    pathToFileURL(`${dir(ARTBOARD[width])}/${ARTBOARD[width]}`).href,
+  );
+  const expected = (await page.evaluate(
+    ({ frame, fn }) =>
+      (0, eval)(fn)(document.querySelector(`[data-frame="${frame}"] .bn`)),
+    { frame: `sh${width}-${state}-${mode}`, fn: BAND_PARTS },
+  )) as BandBoxes;
+  await open(page, width, mode, path);
+  const band = page.locator(appSelector);
+  await expect(band).toBeVisible();
+  const got = (await band.evaluate(
+    (el, fn) => (0, eval)(fn)(el),
+    BAND_PARTS,
+  )) as BandBoxes;
+  console.log(state, width, mode, JSON.stringify({ expected, got }));
+  // The artboard draws the band for someone who may not act; a manager's "Bỏ lưu trữ" is an extra action.
+  // The shipped chrome's sidebar (768) and 16 px gutter (320) make the frame narrower than the drawn one, so the text wraps
+  // onto another line there: the height is compared only where the band is as wide as the drawn one.
+  const extraAction =
+    (!expected.button && !!got.button) ||
+    Math.abs(got.root[0] - expected.root[0]) > 2.5;
+  if (!extraAction)
+    expect(got.root[1], `${state} height`).toBeCloseTo(expected.root[1], 0);
+  for (const key of ["title", "button"] as const) {
+    const e = expected[key];
+    const a = got[key];
+    if (!e) continue;
+    expect(a, `${state} ${key} exists`).toBeTruthy();
+    if (!extraAction || key === "title")
+      expect(a![1], `${state} ${key} y`).toBeCloseTo(e[1], 0);
+    expect(a![3], `${state} ${key} height`).toBeCloseTo(e[3], 0);
+    expect(a![4], `${state} ${key} font size`).toBe(e[4]);
+    expect(a![5], `${state} ${key} font weight`).toBe(e[5]);
+    if (key === "title")
+      expect(a![0], `${state} ${key} x`).toBeCloseTo(e[0], 0);
+    if (!extraAction)
+      expect(a![6], `${state} ${key} right gap`).toBeCloseTo(e[6], 0);
+  }
+}
+
+test.describe("Archived and no-group boards against BC-Shell", () => {
+  test.skip(
+    scenario !== "default" ||
+      latency !== "" ||
+      faults !== "" ||
+      overlays !== "board-states",
+    "Needs VITE_MOCK_OVERLAYS=board-states",
+  );
+  for (const width of WIDTHS)
+    for (const mode of MODES) {
+      test(`RO at ${width} px, ${mode}: an archived board`, async ({
+        page,
+      }) => {
+        await compareBand(
+          page,
+          width,
+          mode,
+          "RO",
+          '[data-slot="board-archived"]',
+          `${BOARDS}/mock-board-it-archived?view=table`,
+        );
+      });
+      // NG is the owner's (a viewer has no band to add a group); RO runs for both (the viewer has no action).
+      test(`NG at ${width} px, ${mode}: a board with no group`, async ({
+        page,
+      }) => {
+        test.skip(persona !== "owner", "Owner world");
+        await compareBand(
+          page,
+          width,
+          mode,
+          "NG",
+          '[data-slot="board-band"]',
+          `${BOARDS}/mock-board-it-no-group?view=table`,
+        );
       });
     }
 });

@@ -196,7 +196,7 @@ test("a member's open board turns read-only when a manager archives it and writa
   try {
     await member.page.goto(`/workspaces/${workspace.id}/boards/${boardId}`);
     const banner = member.page.getByText(
-      "This board is archived. It is read-only until a manager unarchives it.",
+      "You can view it but not change it. A manager can unarchive it in Settings.",
     );
     await expect(
       member.page.getByRole("heading", { level: 1 }).first(),

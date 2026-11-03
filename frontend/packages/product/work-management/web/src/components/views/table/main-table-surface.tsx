@@ -84,6 +84,8 @@ export interface MainTableSurfaceProps {
   onOpenCreateDialog?: () => void;
   /** Said when "Add item" has no group to start in (a board needs one to hold an item). */
   onNoGroup?: () => void;
+  /** The board holds no group (list) to put an item in: the warning band shows, not the empty note. */
+  noBoardGroup?: boolean;
   /** The viewer may archive items. */
   canArchive: boolean;
   /** Saved column widths by column id (the view config); absent ids use the design width. */
@@ -203,6 +205,7 @@ function MainTableSurfaceBody({
   canCreate,
   onOpenCreateDialog,
   onNoGroup,
+  noBoardGroup,
   canArchive,
   addGroup,
   groupMenu,
@@ -454,6 +457,7 @@ function MainTableSurfaceBody({
   // Not one item on the board (a filter that hides them all is "no results", not this).
   const boardEmpty =
     !noResults &&
+    !noBoardGroup &&
     groups.length > 0 &&
     shown + hidden === 0 &&
     (paging ? paging.boardTotal === 0 : true);
@@ -484,7 +488,7 @@ function MainTableSurfaceBody({
         />
       </div>
 
-      {groups.length === 0 && !noResults ? (
+      {(groups.length === 0 && !noResults) || noBoardGroup ? (
         <TableNoGroup copy={copy} addGroup={addGroup} />
       ) : null}
       {boardEmpty ? (
