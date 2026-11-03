@@ -16,6 +16,8 @@ export { itemLifecycleCatalog } from "./components/item-lifecycle/item-lifecycle
 export { itemActionsCatalog } from "./components/item-actions/item-actions.catalog";
 export * from "./components/board-layout/board-toolbar";
 export * from "./components/board-layout/view-tabs";
+export * from "./components/board-layout/view-tab-menu";
+export * from "./components/board-layout/use-view-tab-actions";
 export * from "./components/board-layout/board-header-surface";
 export {
   BoardConnectionNotice,

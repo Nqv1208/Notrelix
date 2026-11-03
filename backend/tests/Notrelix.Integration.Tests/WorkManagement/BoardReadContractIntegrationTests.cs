@@ -10,6 +10,7 @@ using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Checklists;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
+using Notrelix.Domain.WorkManagement.Labels;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
@@ -47,6 +48,7 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
     private BoardItem _archivedRoot = null!;
     private BoardItem _plain = null!;
     private BoardItem _trashed = null!;
+    private Label _label = null!;
 
     public BoardReadContractIntegrationTests(PostgresTestContainer db)
     {
@@ -90,12 +92,16 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
         _trashed = Root("Trashed", "a6");
         _trashed.Delete(_userId, Now);
 
+        _label = Label.Create(_accountId, workspace.Id, _board.Id, "Bug", LabelColor.Create("#E53935"), _userId, Now);
+
         await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         seed.Boards.Add(_board);
         seed.BoardGroups.Add(_group);
         seed.BoardFields.AddRange(_status, _priority);
         seed.BoardItems.AddRange(_parent, _doneChild, _todoChild, _archivedChild, _archivedRoot, _plain, _trashed);
+        seed.Labels.Add(_label);
+        seed.BoardItemLabels.Add(BoardItemLabel.Create(_accountId, workspace.Id, _board.Id, _plain.Id, _label.Id, _userId, Now));
         // Both the parent (with sub-items) and the plain item (without) hold a checklist of 3 with 1 done.
         seed.Checklists.AddRange(ChecklistOf(_parent), ChecklistOf(_plain));
         // Plain is blocked by the open Parent and by the completed child: only the open one counts.
@@ -256,13 +262,26 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
         byKey.Lists.Single(l => l.Id == _group.Id).BoardItems.Select(i => i.Name).Should().Equal(["Parent"]);
     }
 
-    private async Task<FullBoardDto> FullBoardAsync(IReadOnlyList<Guid> visibleSpaces, string? search = null)
+    [Fact]
+    public async Task FullBoard_PagedWithALabelFilter_KeepsOnlyTheItemsHoldingAnyOfTheLabels_AndALabelOfNoItemMatchesNothing()
+    {
+        var any = await FullBoardAsync([_spaceId], filter: $"c2:and~%24label.has_any.{_label.Id}");
+        any.Lists.Single(l => l.Id == _group.Id).BoardItems.Select(i => i.Name).Should().Equal(["Plain"]);
+        any.Lanes!.Sum(l => l.FilteredCount).Should().Be(1);
+        any.Lanes!.Sum(l => l.ItemCount).Should().Be(2, "the filter narrows the filtered size, not the lane's own");
+
+        var other = await FullBoardAsync([_spaceId], filter: $"c2:and~%24label.has_any.{Guid.NewGuid()}");
+        other.Lists.Single(l => l.Id == _group.Id).BoardItems.Should().BeEmpty("a label of another board matches nothing");
+        other.Lanes!.Sum(l => l.FilteredCount).Should().Be(0);
+    }
+
+    private async Task<FullBoardDto> FullBoardAsync(IReadOnlyList<Guid> visibleSpaces, string? search = null, string? filter = null)
     {
         var visibility = new Mock<IResourceVisibility>();
         visibility.Setup(v => v.VisibleSpaceIdsAsync(_workspaceId, _userId, It.IsAny<CancellationToken>())).ReturnsAsync(visibleSpaces);
         await using var context = _db.CreateOwnerContext(Tenant());
         var result = await new GetFullBoardQueryHandler(context, Actors(), new Notrelix.Application.Features.WorkManagement.BoardItems.Services.BoardItemSummaryBuilder(context, Actors(), Collaboration(), Request()), new Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemPageReader(context), visibility.Object, Request())
-            .Handle(search is null ? new GetFullBoardQuery(_board.Id) : new GetFullBoardQuery(_board.Id, 50, Search: search), CancellationToken.None);
+            .Handle(search is null && filter is null ? new GetFullBoardQuery(_board.Id) : new GetFullBoardQuery(_board.Id, 50, Filter: filter, Search: search), CancellationToken.None);
         result.Succeeded.Should().BeTrue();
         return result.Data!;
     }

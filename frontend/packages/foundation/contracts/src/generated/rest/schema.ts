@@ -7152,6 +7152,8 @@ export interface components {
             viewMode?: string | null;
             filters?: string | null;
             config?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.SetBoardViewVisibilityRequest": {
             visibility?: string | null;

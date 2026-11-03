@@ -1,5 +1,6 @@
 import { BoardToolbar } from "./board-toolbar";
 import type { ViewTabSavedView } from "./view-tabs";
+import type { ViewTabActions } from "./view-tab-menu";
 
 interface BoardLayoutShellProps {
   workspaceId: string;
@@ -9,6 +10,7 @@ interface BoardLayoutShellProps {
   onViewChange: (viewKey: string) => void;
   savedViews?: readonly ViewTabSavedView[];
   onAddView?: (viewType: string) => void;
+  viewActions?: ViewTabActions;
   /** Opens the active view's settings; absent: Settings stays disabled. */
   onOpenSettings?: () => void;
   /** Opens the board's deleted items; absent: no entry in the menu. */
@@ -30,6 +32,7 @@ export function BoardLayoutShell({
   onViewChange,
   savedViews,
   onAddView,
+  viewActions,
   onOpenSettings,
   onOpenTrash,
   onOpenArchive,
@@ -45,6 +48,7 @@ export function BoardLayoutShell({
         onViewChange={onViewChange}
         savedViews={savedViews}
         onAddView={onAddView}
+        viewActions={viewActions}
         onOpenSettings={onOpenSettings}
         onOpenTrash={onOpenTrash}
         onOpenArchive={onOpenArchive}

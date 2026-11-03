@@ -41,10 +41,13 @@ public class UpdateBoardViewConfigCommandHandler : IRequestHandler<UpdateBoardVi
 
         BoardViewAccess.EnsureCanEdit(view, _currentUser.UserId);
         var config = BoardViewConfig.Create(JsonValue.Create(request.ConfigJson));
+        var before = view.Version;
         view.UpdateConfig(config, _currentUser.UserId, _dateTimeProvider.UtcNow);
 
         var response = BoardViewDto.From(view);
-        if (_realtime is not null && _events is not null)
+        // A private view is its creator's alone: the board's topic reaches every member, so it carries nothing of it.
+        // A save that changed nothing bumps no version and tells no one.
+        if (_realtime is not null && _events is not null && view.Version != before && view.Visibility == BoardViewVisibility.Board)
             _events.Add(_realtime.Map(request, response, view.Version));
         return response;
     }

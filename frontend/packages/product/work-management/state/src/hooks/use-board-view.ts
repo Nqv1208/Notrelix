@@ -67,7 +67,11 @@ export class UnknownViewVersionError extends Error {
 }
 
 /** The saved views of a board and the writes that change them. */
-export function useSavedViews(boardId: string, workspaceId?: string) {
+export function useSavedViews(
+  boardId: string,
+  workspaceId?: string,
+  options: { readonly withArchived?: boolean } = {},
+) {
   const queryClient = useQueryClient();
   const { boards } = useWorkManagementServices();
   const queryKey = wmQueryKeys.view(workspaceId ?? "workspace", boardId);
@@ -154,6 +158,34 @@ export function useSavedViews(boardId: string, workspaceId?: string) {
     },
     onSettled: refresh,
   });
+  // The default view cannot leave the strip without a next one: the server takes `newDefaultViewId`, else the oldest shared view.
+  const archive = useMutation({
+    mutationFn: (input: { viewId: string; newDefaultViewId?: string }) =>
+      boards.archiveSavedView(
+        boardId,
+        input.viewId,
+        versionOf(input.viewId),
+        input.newDefaultViewId,
+      ),
+    onSettled: refresh,
+  });
+  // The archived views sit under the same key, so every write above refreshes them too.
+  const archivedQuery = useQuery({
+    queryKey: [...queryKey, "archived"],
+    queryFn: () => boards.listSavedViews(boardId, true),
+    enabled: Boolean(boardId) && options.withArchived === true,
+    staleTime: 30_000,
+  });
+  const unarchive = useMutation({
+    mutationFn: (viewId: string) => {
+      const version = archivedQuery.data?.find(
+        (view) => view.id === viewId,
+      )?.version;
+      if (!version) throw new UnknownViewVersionError(viewId);
+      return boards.unarchiveSavedView(boardId, viewId, version);
+    },
+    onSettled: refresh,
+  });
   const saveConfig = useMutation({
     mutationFn: (input: { viewId: string; viewConfig: ViewConfig }) =>
       boards.updateSavedViewConfig(
@@ -201,6 +233,9 @@ export function useSavedViews(boardId: string, workspaceId?: string) {
     setVisibility: setVisibility.mutateAsync,
     setDefault: setDefault.mutateAsync,
     remove: remove.mutateAsync,
+    archive: archive.mutateAsync,
+    unarchive: unarchive.mutateAsync,
+    archivedViews: archivedQuery.data ?? [],
     saveConfig: saveConfig.mutate,
     isSaving: saveConfig.isPending || create.isPending,
   };
