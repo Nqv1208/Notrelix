@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Calendar, Check, Filter, Plus, X } from "lucide-react";
+import { Bookmark, Calendar, Check, Filter, Plus, User, X } from "lucide-react";
 import {
   Button,
   cn,
@@ -25,7 +25,7 @@ import { kanbanPillClass } from "../views/kanban/kanban-chrome";
 import { fillFiltersCopy, type FiltersCopy } from "./filters.copy";
 
 const controlClass =
-  "h-8.5 min-w-0 rounded-[7px] border border-line-strong bg-popover px-2.5 text-compact text-foreground focus-visible:outline-2 focus-visible:outline-ring";
+  "h-8.5 min-w-0 rounded-[7px] border border-line-strong bg-popover px-2.5 text-[13.5px] text-foreground focus-visible:outline-2 focus-visible:outline-ring";
 export const activePillClass =
   "bg-state-selected text-state-selected-foreground hover:bg-state-selected";
 
@@ -47,6 +47,8 @@ export interface FilterBuilderProps {
   /** Opens the dialog (controlled by the host so "Sửa điều kiện" can open it). */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Shows "Lưu bộ lọc" in the footer; the host closes the dialog and opens its save form. */
+  onSaveFilter?: () => void;
 }
 
 /**
@@ -78,31 +80,43 @@ export function FilterBuilder(props: FilterBuilderProps) {
         align="start"
         aria-label={copy.filter.title}
         collisionPadding={12}
-        className="max-h-[var(--radix-popover-content-available-height)] w-[min(46rem,calc(100vw-1.5rem))] gap-3 overflow-y-auto rounded-[12px] border border-line p-4"
+        className="max-h-[var(--radix-popover-content-available-height)] w-[min(47.5rem,calc(100vw-1.5rem))] gap-3 overflow-y-auto rounded-[12px] border border-line p-4"
       >
         <BuilderBody {...props} filter={filter} onChange={onChange} />
-        <div className="flex items-center gap-2 border-t border-line pt-3">
+        <div className="flex items-center gap-2.5 border-t border-line pt-3">
           <span
             role="status"
             aria-live="polite"
-            className="flex-1 text-compact text-muted-foreground"
+            className="flex-1 text-[12.5px] text-muted-foreground"
           >
-            {fillFiltersCopy(copy.filter.count, {
-              shown: props.counts.shown,
-              total: props.counts.total,
-            })}
+            <MatchCount
+              template={copy.filter.count}
+              shown={props.counts.shown}
+              total={props.counts.total}
+            />
           </span>
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-compact"
+            className="h-7 text-[12.5px]"
             onClick={() => onChange({ ...filter, conditions: [] })}
           >
             {copy.filter.clearAll}
           </Button>
+          {props.onSaveFilter && activeCount > 0 ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1.5 rounded-[7px] border-line-strong bg-popover px-2.5 text-[12.5px] font-medium shadow-none dark:bg-card"
+              onClick={props.onSaveFilter}
+            >
+              <Bookmark className="size-4" aria-hidden="true" />
+              {copy.filter.saveFilter}
+            </Button>
+          ) : null}
           <Button
             size="sm"
-            className="h-7 text-compact"
+            className="h-7 text-[12.5px] font-semibold"
             onClick={() => setOpen(false)}
           >
             {copy.filter.done}
@@ -110,6 +124,32 @@ export function FilterBuilder(props: FilterBuilderProps) {
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+/** "Khớp 5 / 24 việc": the two numbers in bold, as the canvas draws them. */
+function MatchCount({
+  template,
+  shown,
+  total,
+}: {
+  template: string;
+  shown: number;
+  total: number;
+}) {
+  const parts = template.split(/(\{\{shown\}\}.*?\{\{total\}\})/);
+  return (
+    <>
+      {parts.map((part, index) =>
+        index % 2 === 1 ? (
+          <b key={index} className="font-bold text-foreground">
+            {fillFiltersCopy(part, { shown, total })}
+          </b>
+        ) : (
+          part
+        ),
+      )}
+    </>
   );
 }
 
@@ -136,7 +176,9 @@ function BuilderBody({
   return (
     <>
       <div className="flex items-center gap-3">
-        <h2 className="flex-1 text-base font-semibold">{copy.filter.title}</h2>
+        <h2 className="flex-1 text-base leading-[1.45] font-[650]">
+          {copy.filter.title}
+        </h2>
         <div
           role="group"
           aria-label={copy.filter.matchLabel}
@@ -149,20 +191,17 @@ function BuilderBody({
               aria-pressed={filter.join === join}
               onClick={() => onChange({ ...filter, join })}
               className={cn(
-                "inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border-0 bg-transparent px-3 text-compact text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring",
+                "inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border-0 bg-transparent px-3 text-[12.5px] font-semibold text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring",
                 filter.join === join &&
                   "bg-popover font-bold text-foreground ring-1 ring-line-strong",
               )}
             >
-              {filter.join === join ? (
-                <Check className="size-3.5" aria-hidden="true" />
-              ) : null}
               {join === "and" ? copy.filter.matchAll : copy.filter.matchAny}
             </button>
           ))}
         </div>
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         {filter.conditions.map((condition, index) => (
           <ConditionRow
             key={index}
@@ -182,7 +221,7 @@ function BuilderBody({
       <Button
         variant="ghost"
         size="sm"
-        className="h-7 self-start text-compact text-muted-foreground"
+        className="h-7 gap-[6px] self-start text-[12.5px] text-muted-foreground"
         disabled={!first}
         onClick={() =>
           first &&
@@ -234,9 +273,13 @@ function ConditionRow({
         ? copy.filter.and
         : copy.filter.or;
   return (
-    <div role="group" aria-label={label} className="flex flex-col gap-1">
-      <div className="grid grid-cols-[2.75rem_minmax(0,11.5rem)_minmax(0,10.5rem)_minmax(0,1fr)_2rem] items-center gap-2 max-sm:grid-cols-1">
-        <span className="text-right text-xs font-semibold text-muted-foreground max-sm:text-left">
+    <div
+      role="group"
+      aria-label={label}
+      className="group/row flex flex-col gap-1"
+    >
+      <div className="grid grid-cols-[2.75rem_11.875rem_10.625rem_minmax(0,1fr)_1.875rem] items-start gap-2 max-sm:grid-cols-1">
+        <span className="flex h-8.5 items-center justify-end text-xs font-semibold text-muted-foreground max-sm:justify-start">
           {lead}
         </span>
         <select
@@ -324,7 +367,7 @@ function ConditionRow({
             n: index + 1,
           })}
           onClick={onRemove}
-          className="grid size-8 cursor-pointer place-items-center rounded-md border-0 bg-transparent text-muted-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
+          className="mt-0.5 grid size-7.5 cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent text-muted-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
         >
           <X className="size-4" aria-hidden="true" />
         </button>
@@ -362,14 +405,11 @@ function Segmented({
           aria-pressed={value === id}
           onClick={() => onChange(id)}
           className={cn(
-            "inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border-0 bg-transparent px-3 text-compact text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring",
+            "inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border-0 bg-transparent px-3 text-[12.5px] font-semibold text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring",
             value === id &&
               "bg-popover font-bold text-foreground ring-1 ring-line-strong",
           )}
         >
-          {value === id ? (
-            <Check className="size-3.5" aria-hidden="true" />
-          ) : null}
           {text}
         </button>
       ))}
@@ -414,9 +454,9 @@ function ValueEditor({
 
   if (type === "date") {
     const input = (id: string, at: number, text: string) => (
-      <label className="relative inline-flex items-center">
+      <label className="relative inline-flex min-w-0 flex-1 items-center">
         <Calendar
-          className="pointer-events-none absolute left-2 size-4 text-muted-foreground"
+          className="pointer-events-none absolute left-2 z-10 size-4 text-muted-foreground"
           aria-hidden="true"
         />
         <input
@@ -435,7 +475,7 @@ function ValueEditor({
           }}
           className={cn(
             controlClass,
-            "w-40 pl-8",
+            "relative w-full pr-0.5 pl-7 text-left [&::-webkit-datetime-edit]:p-0 [&::-webkit-datetime-edit-text]:p-0 [&::-webkit-datetime-edit-month-field]:p-0 [&::-webkit-datetime-edit-day-field]:p-0 [&::-webkit-datetime-edit-year-field]:p-0 [&::-webkit-datetime-edit-fields-wrapper]:p-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:size-full [&::-webkit-calendar-picker-indicator]:opacity-0",
             invalid && "border-destructive",
           )}
         />
@@ -444,10 +484,11 @@ function ValueEditor({
     return (
       <div className="flex flex-col gap-2">
         {operator === "between" ? (
+          // The presets grow in under the row while it is being edited; the canvas draws the quiet row without them.
           <div
             role="group"
             aria-label={copy.filter.presets.week}
-            className="flex flex-wrap gap-1.5"
+            className="hidden flex-wrap gap-1.5 group-focus-within/row:flex"
           >
             {DATE_PRESETS.map((preset) => (
               <button
@@ -463,11 +504,14 @@ function ValueEditor({
             ))}
           </div>
         ) : null}
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex items-center gap-1.5">
           {input(`${condition.fieldId}-from`, 0, copy.filter.from)}
           {operator === "between" ? (
             <>
-              <span aria-hidden="true" className="text-muted-foreground">
+              <span
+                aria-hidden="true"
+                className="text-[14px] text-muted-foreground"
+              >
                 {copy.filter.rangeTo}
               </span>
               {input(`${condition.fieldId}-to`, 1, copy.filter.to)}
@@ -505,51 +549,14 @@ function ValueEditor({
         {copy.filter.noOptions}
       </p>
     ) : (
-      <ul
-        role="listbox"
-        aria-multiselectable="true"
-        aria-label={valueLabelText}
-        className="m-0 flex max-h-44 list-none flex-col gap-0.5 overflow-auto rounded-lg border border-line p-1"
-      >
-        {options.map((option) => {
-          const on = values.includes(option.id);
-          return (
-            <li
-              key={option.id}
-              role="option"
-              aria-selected={on}
-              tabIndex={0}
-              onClick={() => toggle(option.id)}
-              onKeyDown={(event) => {
-                if (event.key === " " || event.key === "Enter") {
-                  event.preventDefault();
-                  toggle(option.id);
-                }
-              }}
-              className={cn(
-                "flex min-h-8 cursor-pointer items-center gap-2 rounded-md px-2 text-compact hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-ring",
-                on && "bg-state-selected",
-              )}
-            >
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "grid size-4 shrink-0 place-items-center rounded-[4px] border-[1.5px] border-line-strong",
-                  on && "border-primary bg-primary text-primary-foreground",
-                )}
-              >
-                {on ? <Check className="size-3" /> : null}
-              </span>
-              <span className="min-w-0 flex-1 truncate">{option.name}</span>
-              {option.hint ? (
-                <span className="text-xs text-muted-foreground">
-                  {option.hint}
-                </span>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
+      <ValuePicker
+        label={valueLabelText}
+        placeholder={copy.filter.valuePlaceholder}
+        options={options}
+        values={values}
+        person={type === "person"}
+        onToggle={toggle}
+      />
     );
   }
 
@@ -594,5 +601,131 @@ function ValueEditor({
       }
       className={cn(controlClass, "w-full")}
     />
+  );
+}
+
+interface PickOption {
+  id: string;
+  name: string;
+  hint?: string;
+}
+
+/** The round mark of a person: the first letter, or a dashed person for "Chưa giao" (BC filter card). */
+function PersonMark({ option }: { option: PickOption }) {
+  return option.id === NONE_VALUE ? (
+    <span
+      aria-hidden="true"
+      className="grid size-5.5 shrink-0 place-items-center rounded-full border-[1.5px] border-dashed border-line-strong text-meta-foreground"
+    >
+      <User className="size-3" />
+    </span>
+  ) : (
+    <span
+      aria-hidden="true"
+      className="grid size-5.5 shrink-0 place-items-center rounded-full bg-state-selected text-[11px] font-bold text-state-selected-foreground"
+    >
+      {option.name.trim().charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
+/**
+ * The chosen values of a "một trong" or "tất cả" condition as chips in the row; the whole area opens the list of
+ * choices (a listbox with a tick per value) so the row stays one line tall.
+ */
+function ValuePicker({
+  label,
+  placeholder,
+  options,
+  values,
+  person,
+  onToggle,
+}: {
+  label: string;
+  placeholder: string;
+  options: readonly PickOption[];
+  values: readonly string[];
+  person: boolean;
+  onToggle: (id: string) => void;
+}) {
+  const chosen = options.filter((option) => values.includes(option.id));
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          aria-haspopup="listbox"
+          className={cn(
+            "flex min-h-8.5 w-full cursor-pointer flex-wrap items-center gap-1.5 rounded-[7px] border-0 bg-transparent p-0 text-left focus-visible:outline-2 focus-visible:outline-ring",
+            chosen.length === 0 &&
+              "h-8.5 border border-line-strong bg-popover px-2.5 text-[13.5px] text-muted-foreground",
+          )}
+        >
+          {chosen.length === 0
+            ? placeholder
+            : chosen.map((option) => (
+                <span
+                  key={option.id}
+                  className="inline-flex h-6.5 items-center gap-1.5 rounded-md bg-state-hover-strong px-2 text-[11.5px] font-semibold text-foreground"
+                >
+                  {person ? <PersonMark option={option} /> : null}
+                  {option.name}
+                </span>
+              ))}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[min(20rem,calc(100vw-1.5rem))] gap-0 rounded-[12px] border border-line p-1.5"
+      >
+        <ul
+          role="listbox"
+          aria-multiselectable="true"
+          aria-label={label}
+          className="m-0 flex max-h-56 list-none flex-col gap-0.5 overflow-auto p-0"
+        >
+          {options.map((option) => {
+            const on = values.includes(option.id);
+            return (
+              <li
+                key={option.id}
+                role="option"
+                aria-selected={on}
+                tabIndex={0}
+                onClick={() => onToggle(option.id)}
+                onKeyDown={(event) => {
+                  if (event.key === " " || event.key === "Enter") {
+                    event.preventDefault();
+                    onToggle(option.id);
+                  }
+                }}
+                className={cn(
+                  "flex min-h-9 cursor-pointer items-center gap-2 rounded-md px-2 text-[13.5px] hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-ring",
+                  on && "bg-state-selected",
+                )}
+              >
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "grid size-4 shrink-0 place-items-center rounded-[4px] border-[1.5px] border-line-strong",
+                    on && "border-primary bg-primary text-primary-foreground",
+                  )}
+                >
+                  {on ? <Check className="size-3" /> : null}
+                </span>
+                {person ? <PersonMark option={option} /> : null}
+                <span className="min-w-0 flex-1 truncate">{option.name}</span>
+                {option.hint ? (
+                  <span className="text-xs text-muted-foreground">
+                    {option.hint}
+                  </span>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      </PopoverContent>
+    </Popover>
   );
 }
