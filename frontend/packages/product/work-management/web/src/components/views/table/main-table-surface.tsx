@@ -520,6 +520,7 @@ function MainTableSurfaceBody({
             allChecked={allChecked}
             canSelect={allRowIds.length > 0}
             canEditFields={canEdit && Boolean(fieldEditing?.canEdit)}
+            refusedFieldIds={fieldEditing?.refusedFieldIds}
             onToggleAll={onSelectAllChange}
             onWidthPreview={(id, width) =>
               setPreview(width === null ? null : { id, width })

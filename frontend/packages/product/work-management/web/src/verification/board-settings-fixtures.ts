@@ -432,6 +432,7 @@ export function noopSettingsActions(
     createField: ok,
     reorderFields: ok,
     updateField: ok,
+    previewFormula: () => Promise.resolve(null),
     archiveField: ok,
     deleteField: ok,
     restoreField: ok,

@@ -68,6 +68,15 @@ export interface BoardSettingsUsageDto {
   readonly how: string;
 }
 
+/** What a draft formula shows on one item: a value, nothing, or the reason it cannot be computed. */
+export interface FormulaPreviewDto {
+  readonly state: "ok" | "empty" | "error";
+  /** The value as text; null unless `state` is `ok`. */
+  readonly value: string | null;
+  /** The server's code for an error (`unknown-field`, `divide-by-zero`, `invalid-definition`). */
+  readonly errorCode: string | null;
+}
+
 export interface BoardSettingsFieldDto {
   readonly id: string;
   /** Version of the field, sent back by a write on it. */
@@ -207,6 +216,8 @@ export interface BoardSettingsDto {
   /** Version of this read: a write may send it back to detect a conflict. */
   readonly version: number;
   readonly itemCount: number;
+  /** An item a draft formula can be tried on ("Xem thử với ERP-145"); none on an empty board. */
+  readonly previewItem?: { readonly id: string; readonly key: string };
   readonly general: BoardSettingsGeneralDto;
   readonly fields: readonly BoardSettingsFieldDto[];
   /**

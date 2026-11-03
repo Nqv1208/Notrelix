@@ -6,6 +6,7 @@ import type {
 import { endpoints } from "@notrelix/contracts";
 import type {
   BoardSettingsDto,
+  FormulaPreviewDto,
   BoardSettingsComputedDto,
   BoardSettingsFieldDto,
   BoardSettingsFieldPatch,
@@ -367,6 +368,19 @@ export function usedInOf(
   });
 }
 
+/** The first item the board read carries: the one a draft formula is tried on. */
+function previewItemOf(
+  board: Overview,
+): { previewItem: { id: string; key: string } } | Record<string, never> {
+  for (const group of board.lists ?? []) {
+    const item = (group.boardItems ?? []).find((entry) => entry.id);
+    if (item?.id) {
+      return { previewItem: { id: item.id, key: item.itemKey ?? "" } };
+    }
+  }
+  return {};
+}
+
 /** The settings page model of a board read. */
 export function mapBoardSettings(
   boardId: string,
@@ -393,6 +407,7 @@ export function mapBoardSettings(
     boardId,
     version: board.version ?? 0,
     itemCount: groups.reduce((sum, group) => sum + group.itemCount, 0),
+    ...previewItemOf(board),
     general: {
       title: board.title ?? "",
       description: board.description ?? "",
@@ -693,6 +708,33 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         },
         quiet,
       );
+    },
+    /** What a draft formula shows on one item; nothing is saved. */
+    previewFormula: async (
+      boardId: string,
+      itemId: string,
+      expression: string,
+    ): Promise<FormulaPreviewDto> => {
+      const result = await api.get<{
+        state?: string;
+        value?: unknown;
+        errorCode?: string | null;
+      }>(
+        endpoints.boardFields.previewFormula(boardId, itemId, expression),
+        quiet,
+      );
+      const state =
+        result.state === "ok" || result.state === "empty"
+          ? result.state
+          : "error";
+      return {
+        state,
+        value:
+          state === "ok" && result.value !== null && result.value !== undefined
+            ? String(result.value)
+            : null,
+        errorCode: result.errorCode ?? null,
+      };
     },
     addOption: (
       s: BoardSettingsDto,

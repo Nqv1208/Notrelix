@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { AlertCircle, Info } from "lucide-react";
 import {
   Dialog,
@@ -11,6 +11,7 @@ import type {
   BoardSettingsComputedDto,
   BoardSettingsFieldDto,
   BoardSettingsWriteResult,
+  FormulaPreviewDto,
 } from "@notrelix/work-management-core";
 import { useSettings } from "./board-settings-context";
 import { fillCopy } from "./board-settings-format";
@@ -139,6 +140,34 @@ export function ComputedFieldDialog({
     { ok: false }
   > | null>(null);
 
+  // "Xem thử": the draft is evaluated by the server on one item once typing pauses; nothing is saved.
+  const previewItem = settings.previewItem;
+  const [preview, setPreview] = useState<FormulaPreviewDto | null | "checking">(
+    null,
+  );
+  useEffect(() => {
+    if (kind !== "formula" || !previewItem || expression.trim() === "") {
+      setPreview(null);
+      return;
+    }
+    let current = true;
+    setPreview("checking");
+    const timer = setTimeout(() => {
+      void actions.previewFormula(previewItem.id, expression.trim()).then(
+        (result) => {
+          if (current) setPreview(result);
+        },
+        () => {
+          if (current) setPreview(null);
+        },
+      );
+    }, 400);
+    return () => {
+      current = false;
+      clearTimeout(timer);
+    };
+  }, [actions, expression, kind, previewItem]);
+
   const nodes = formulaNodeCount(expression);
   const tooBig = kind === "formula" && nodes > FORMULA_NODE_CAP;
   const needsSource = kind === "rollup" && fn !== "count";
@@ -264,6 +293,37 @@ export function ComputedFieldDialog({
                   {fillCopy(t.nodes, { count: String(nodes) })}
                 </p>
               </div>
+              {previewItem && preview !== null ? (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  data-preview-state={
+                    preview === "checking" ? "checking" : preview.state
+                  }
+                  className="flex items-center gap-2 rounded-lg bg-state-hover px-2.5 py-2 text-item-small"
+                >
+                  <span className="text-meta-foreground">
+                    {fillCopy(t.preview, { key: previewItem.key })}
+                  </span>
+                  <span
+                    className={cn(
+                      "ml-auto min-w-0 truncate font-semibold tabular-nums",
+                      preview !== "checking" &&
+                        preview.state === "error" &&
+                        "text-danger-text",
+                    )}
+                  >
+                    {preview === "checking"
+                      ? t.previewChecking
+                      : preview.state === "ok"
+                        ? preview.value
+                        : preview.state === "empty"
+                          ? t.previewEmpty
+                          : (t.previewErrors[preview.errorCode ?? ""] ??
+                            t.previewError)}
+                  </span>
+                </div>
+              ) : null}
               <div>
                 <span className="mb-1 block text-metadata leading-[1.45] font-semibold text-meta-foreground">
                   {t.insertField}

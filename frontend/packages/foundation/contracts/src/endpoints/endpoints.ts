@@ -366,6 +366,9 @@ export const endpoints = {
       `/boards/${boardId}/fields/${fieldId}/options`,
     option: (boardId: string, fieldId: string, optionId: string) =>
       `/boards/${boardId}/fields/${fieldId}/options/${optionId}`,
+    // WorkManagement.BoardFields.PreviewFormula: a draft formula evaluated on one item, never saved.
+    previewFormula: (boardId: string, itemId: string, expression: string) =>
+      `/boards/${boardId}/fields/preview-formula?itemId=${itemId}&expression=${encodeURIComponent(expression)}`,
   },
   // WorkManagement.SavedFilters.*: listed and created per board, changed by filter id.
   savedFilters: {

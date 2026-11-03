@@ -7,6 +7,8 @@ using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveBoar
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RestoreBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Queries.ListDeletedBoardFields;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula;
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema;
 
 namespace Notrelix.API.Endpoints.WorkManagement.BoardFields;
@@ -44,6 +46,11 @@ public static class MapBoardFieldEndpoints
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.Move")
             .WithSummary("Move a field relative to its neighbors");
+
+        group.MapResourceGet("/preview-formula", HandlePreviewFormula)
+            .WithName("WorkManagement.BoardFields.PreviewFormula")
+            .Produces<ComputedValueDto>(StatusCodes.Status200OK, "application/json")
+            .WithSummary("Evaluate a draft formula against one item of the board, without saving it");
 
         group.MapFieldOptionEndpoints();
 
@@ -103,6 +110,14 @@ public static class MapBoardFieldEndpoints
             body.DefaultValueJson), cancellationToken);
         return result.ToApiResult();
     }
+
+    private static async Task<IResult> HandlePreviewFormula(
+        Guid boardId,
+        Guid itemId,
+        string expression,
+        ISender sender,
+        CancellationToken cancellationToken) =>
+        Results.Ok(await sender.Send(new PreviewFormulaQuery(boardId, itemId, expression), cancellationToken));
 
     private static async Task<IResult> HandleDeleteBoardField(
         Guid boardId,

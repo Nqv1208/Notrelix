@@ -41,6 +41,8 @@ export interface TableFieldEditing {
   readonly canEdit: boolean;
   readonly members: readonly TableFieldMember[];
   readonly writeOf: (rowId: string, fieldId: string) => CellWrite | undefined;
+  /** Fields with a refused cell (a column the board changed): the header takes the danger colour. */
+  readonly refusedFieldIds?: ReadonlySet<string>;
   readonly onWrite: (
     rowId: string,
     fieldId: string,

@@ -7,7 +7,7 @@ import { expect, test, type Page } from "@playwright/test";
  * with a 7 px radius, 12 px side padding and 8 px between them, right-aligned. "Tải lại cột" turns the cell into a
  * skeleton while the fields load again (`VITE_MOCK_LATENCY=slow` holds it), then the unsaved value is dropped.
  * Run with `VITE_MOCK_FAULTS=/board-items/mock-erp-item-142/values/mock-erp-col-estimate=stale`.
- * Not built: the column header taking the danger colour while a cell is refused (drawn, not in the app yet).
+ * The column header takes the danger colour while a cell is refused and goes back when the value is dropped.
  */
 const faults = process.env.VITE_MOCK_FAULTS ?? "";
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
@@ -54,6 +54,12 @@ for (const dark of [false, true]) {
       .evaluate((el) => getComputedStyle(el));
     expect(style.borderRadius).toBe("12px");
     expect(style.paddingTop).toBe("12px");
+    // The column's header reads in the danger colour, the same as the note's title.
+    const head = page.getByRole("columnheader", { name: /Ước lượng/ });
+    const ink = (el: Element) => getComputedStyle(el).color;
+    expect(await head.evaluate(ink)).toBe(
+      await note.locator("span.font-semibold").first().evaluate(ink),
+    );
     const buttons = note.getByRole("button");
     await expect(buttons).toHaveCount(2);
     for (const i of [0, 1]) {
@@ -82,8 +88,13 @@ test("Tải lại cột turns the cell into a skeleton, then drops the value", a
 }) => {
   test.skip(persona !== "owner" || !faults.endsWith("=stale"));
   const note = await refuse(page, false);
+  const head = page.getByRole("columnheader", { name: /Ước lượng/ });
+  const refused = await head.evaluate((el) => getComputedStyle(el).color);
   await note.getByRole("button", { name: "Tải lại cột" }).click();
   await expect(note).toBeHidden();
+  await expect
+    .poll(() => head.evaluate((el) => getComputedStyle(el).color))
+    .not.toBe(refused);
   await expect(
     page.getByRole("alert").filter({ hasText: "vừa xoá cột" }),
   ).toHaveCount(0);
