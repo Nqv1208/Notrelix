@@ -882,8 +882,7 @@ export const vi: BoardSettingsCopy = {
         "Chưa khôi phục được: tên “{{name}}” đang được một trường khác dùng. Đổi tên trường đang dùng đó rồi khôi phục lại.",
       openLive: "Mở trường đang dùng",
       openField: "Mở trường",
-      expired:
-        "Đã quá 30 ngày nên không khôi phục được nữa.",
+      expired: "Đã quá 30 ngày nên không khôi phục được nữa.",
       dismiss: "Bỏ khỏi danh sách",
       already: "{{name}} đã được người khác khôi phục. Danh sách đã làm mới.",
       forbidden:

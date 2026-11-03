@@ -55,12 +55,16 @@ describe("a custom field cell of the table", () => {
   it("saves a typed number once on Enter and sends nothing when the value is unchanged", () => {
     const onWrite = vi.fn();
     cell("field-points", 13, { onWrite });
-    fireEvent.click(screen.getByRole("button", { name: /Edit Điểm of ERP-142/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Edit Điểm of ERP-142/ }),
+    );
     const input = screen.getByRole("textbox", { name: /Edit Điểm of ERP-142/ });
     fireEvent.keyDown(input, { key: "Enter" });
     expect(onWrite).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: /Edit Điểm of ERP-142/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Edit Điểm of ERP-142/ }),
+    );
     const next = screen.getByRole("textbox", { name: /Edit Điểm of ERP-142/ });
     fireEvent.change(next, { target: { value: "14" } });
     fireEvent.keyDown(next, { key: "Enter" });
@@ -71,7 +75,9 @@ describe("a custom field cell of the table", () => {
   it("keeps a number that is not a number open with its reason and sends nothing", () => {
     const onWrite = vi.fn();
     cell("field-points", 13, { onWrite });
-    fireEvent.click(screen.getByRole("button", { name: /Edit Điểm of ERP-142/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Edit Điểm of ERP-142/ }),
+    );
     const input = screen.getByRole("textbox", { name: /Edit Điểm of ERP-142/ });
     fireEvent.change(input, { target: { value: "13a" } });
     fireEvent.keyDown(input, { key: "Enter" });
@@ -82,8 +88,12 @@ describe("a custom field cell of the table", () => {
   it("refuses a link that is not http or https", () => {
     const onWrite = vi.fn();
     cell("field-link", "https://erp.minhan.vn/t/142", { onWrite });
-    fireEvent.click(screen.getByRole("button", { name: /Edit Liên kết of ERP-142/ }));
-    const input = screen.getByRole("textbox", { name: /Edit Liên kết of ERP-142/ });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Edit Liên kết of ERP-142/ }),
+    );
+    const input = screen.getByRole("textbox", {
+      name: /Edit Liên kết of ERP-142/,
+    });
     fireEvent.change(input, { target: { value: "javascript:alert(1)" } });
     fireEvent.keyDown(input, { key: "Enter" });
     expect(screen.getByRole("alert").textContent).toContain("http");
@@ -93,8 +103,12 @@ describe("a custom field cell of the table", () => {
   it("puts the old text back on Escape", () => {
     const onWrite = vi.fn();
     cell("field-link", "https://erp.minhan.vn/t/142", { onWrite });
-    fireEvent.click(screen.getByRole("button", { name: /Edit Liên kết of ERP-142/ }));
-    const input = screen.getByRole("textbox", { name: /Edit Liên kết of ERP-142/ });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Edit Liên kết of ERP-142/ }),
+    );
+    const input = screen.getByRole("textbox", {
+      name: /Edit Liên kết of ERP-142/,
+    });
     fireEvent.change(input, { target: { value: "https://other.vn" } });
     fireEvent.keyDown(input, { key: "Escape" });
     expect(onWrite).not.toHaveBeenCalled();
@@ -121,7 +135,10 @@ describe("a custom field cell of the table", () => {
 
   it("keeps the typed value after a failed write and offers Retry", () => {
     const onRetry = vi.fn();
-    cell("field-points", 13, { write: { status: "error", value: 14 }, onRetry });
+    cell("field-points", 13, {
+      write: { status: "error", value: 14 },
+      onRetry,
+    });
     expect(screen.getByText("14")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(onRetry).toHaveBeenCalledTimes(1);
