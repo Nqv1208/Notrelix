@@ -430,3 +430,24 @@ test.describe("item move dialog, phone", () => {
     });
   }
 });
+
+test.describe("item move dialog, refusal", () => {
+  test.skip(!plain, "Needs the default owner world");
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("dependencies: the refusal names the blocker and offers its way out", async ({
+    page,
+  }) => {
+    test.skip(faults !== "" || latency === "slow", "Needs the plain world");
+    await page.goto(`${BOARD}?item=mock-erp-item-146`);
+    await page.getByRole("button", { name: "Thao tác trên thẻ" }).click();
+    await page.getByRole("menuitem", { name: /^Chuyển board/ }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByRole("option").first().click();
+    if ((await dialog.getByRole("checkbox").count()) > 0)
+      await dialog.getByRole("checkbox").click();
+    await dialog.getByRole("button", { name: /^Chuyển (sang|và bỏ)/ }).click();
+    await expect(dialog.getByText(/^Chưa chuyển được: /)).toBeVisible();
+    await expect(dialog.getByText(/phụ thuộc|đang chặn/)).toBeVisible();
+  });
+});

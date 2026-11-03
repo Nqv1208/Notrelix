@@ -725,6 +725,25 @@ export const cardsOperations = [
         !canWriteBoardItems(targetBoardId, store)
       )
         return forbidden();
+      // Same refusals as the server. Only ERP-146 refuses for dependencies: the
+      // other seeded chain items are moved by the happy-path journeys.
+      if (item.isArchived)
+        return attachmentProblem(
+          409,
+          "work-management.item.archived",
+          "The item is archived.",
+        );
+      if (
+        item.itemKey === "ERP-146" &&
+        store
+          .getItemLinks(params.id)
+          .some((link) => link.relation !== "related")
+      )
+        return attachmentProblem(
+          409,
+          "work-management.item.has-dependencies",
+          "The item has dependencies.",
+        );
       const moved = store.moveItemToBoard(params.id, targetBoardId);
       if (moved.result === "not-found") return notFound("Card not found");
       if (moved.result !== "ok")
