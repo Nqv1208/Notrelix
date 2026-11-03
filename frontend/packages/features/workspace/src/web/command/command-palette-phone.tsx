@@ -199,7 +199,7 @@ export function PhoneSearchSheet(props: PhoneSearchSheetProps) {
                   aria-controls={props.listId}
                   onClick={() => props.onFilter(name)}
                   className={cn(
-                    "box-border inline-flex h-11 flex-none cursor-pointer items-center gap-1.5 rounded-xl border px-3.5 text-[14px] whitespace-nowrap",
+                    "box-border inline-flex h-11 flex-none cursor-pointer items-center gap-1.5 rounded-xl border px-3.5 text-sm whitespace-nowrap",
                     selected
                       ? "border-foreground bg-foreground font-semibold text-popover dark:text-card"
                       : "border-line-strong bg-popover font-medium text-foreground dark:bg-card",
@@ -226,7 +226,7 @@ export function PhoneSearchSheet(props: PhoneSearchSheetProps) {
         {showChips ? (
           <div
             data-f="rcount"
-            className="-mt-1.5 -mb-2.5 flex min-h-11 items-center gap-2 text-[13px] text-muted-foreground"
+            className="-mt-1.5 -mb-2.5 flex min-h-11 items-center gap-2 text-compact text-muted-foreground"
           >
             <span>
               {formatCopy(total === 1 ? t.results_one : t.results_other, {
@@ -239,7 +239,7 @@ export function PhoneSearchSheet(props: PhoneSearchSheetProps) {
               aria-disabled="true"
               aria-label={`${copy.scope.label}: ${props.workspace.name}`}
               title={copy.scope.unavailable}
-              className="-mr-1.5 ml-auto inline-flex h-11 cursor-not-allowed items-center gap-1.5 rounded-[10px] border-0 bg-transparent pr-1.5 pl-2 text-[13px] font-semibold text-foreground"
+              className="-mr-1.5 ml-auto inline-flex h-11 cursor-not-allowed items-center gap-1.5 rounded-[10px] border-0 bg-transparent pr-1.5 pl-2 text-compact font-semibold text-foreground"
             >
               <DepartmentMark
                 name={props.workspace.name}
@@ -258,7 +258,7 @@ export function PhoneSearchSheet(props: PhoneSearchSheetProps) {
         {view.state === "none" ? (
           <p
             data-f="empty"
-            className="m-0 py-6 text-center text-[13px] text-muted-foreground"
+            className="m-0 py-6 text-center text-compact text-muted-foreground"
           >
             <b className="mb-1 block text-[15px] font-bold text-foreground">
               {props.emptyTitle}
@@ -310,7 +310,7 @@ export function PhoneSearchSheet(props: PhoneSearchSheetProps) {
                       {row.ctx.length > 0 ? (
                         <span
                           data-f="ctx"
-                          className="mt-1 flex min-w-0 items-center gap-1.5 text-[13px] whitespace-nowrap text-meta-foreground"
+                          className="mt-1 flex min-w-0 items-center gap-1.5 text-compact whitespace-nowrap text-meta-foreground"
                         >
                           {row.ctx.map((piece, i) =>
                             piece.type === "mark" ? (
