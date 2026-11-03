@@ -86,7 +86,7 @@ export function BoardToolbar({
           // One height for every view, so switching views moves nothing: the
           // mockups differ by 2 px (Final-Board's tab is content-box, the
           // others' border-box) and the Board's 48 px is the one used.
-          "flex min-h-12 items-end gap-0.5 border-b border-line px-4 pt-2.5 sm:px-6",
+          "flex min-h-12 items-end gap-0.5 border-b border-line px-4 pt-2.5 lg:px-6",
         )}
       >
         <div className="-mb-px min-w-0 overflow-x-auto">

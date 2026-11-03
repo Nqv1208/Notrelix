@@ -1181,6 +1181,8 @@ child Items whose Work Status is in the done category / non-archived child Items
 
 shown as a count ("3/5") and a percentage. It is read-only, recomputed when a child changes status or is added, archived or removed, and never stored as an independently editable value. An Item without child Items has no derived progress.
 
+No other source feeds it. A checklist keeps its own count ("2 of 4") beside the Item and never becomes the parent's progress, and a status category is a status, not a percentage. This is the one precedence on every surface (board read, item read, table, card), decided 2026-11-03.
+
 ---
 
 # 78. Labels
@@ -1721,6 +1723,8 @@ Dependent:
 - Integrations
 
 must be migrated/rejected explicitly.
+
+Deleting a field is a soft delete: the field leaves every view and keeps its values for 30 days, a Board manager restores it from the Deleted fields list with its values, and after 30 days a restore is refused with the reason. Nothing is purged in the first release (no data is destroyed; the purge job needs an owner decision), and a write to a field deleted since the client loaded the board answers a precondition failure that names the field and who deleted it, and stores nothing.
 
 ---
 
