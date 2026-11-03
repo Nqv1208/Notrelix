@@ -433,21 +433,123 @@ test.describe("item move dialog, phone", () => {
 
 test.describe("item move dialog, refusal", () => {
   test.skip(!plain, "Needs the default owner world");
+  test.skip(faults !== "" || latency === "slow", "Needs the plain world");
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test("dependencies: the refusal names the blocker and offers its way out", async ({
+  for (const dark of [false, true]) {
+    const theme = dark ? "dark" : "light";
+
+    test(`dependencies: banner, Mở ERP-140 and the locked primary, ${theme}`, async ({
+      page,
+    }) => {
+      await page.clock.setFixedTime(NOW);
+      await page.addInitScript((mode) => {
+        try {
+          window.localStorage.setItem("notrelix-locale", "vi");
+          window.localStorage.setItem("notrelix-theme-mode", mode);
+        } catch {
+          // Private mode: the defaults apply.
+        }
+      }, theme);
+      await page.goto(`${BOARD}?item=mock-erp-item-146`);
+      await page.getByRole("button", { name: "Thao tác trên thẻ" }).click();
+      await page.getByRole("menuitem", { name: /^Chuyển board/ }).click();
+      const dialog = page.getByRole("dialog");
+      await dialog.getByRole("option").first().click();
+      await page.waitForTimeout(500);
+      if ((await dialog.getByRole("checkbox").count()) > 0)
+        await dialog.getByRole("checkbox").click();
+      await dialog
+        .getByRole("button", { name: /^Chuyển (sang|và bỏ)/ })
+        .click();
+      const banner = dialog.getByRole("alert");
+      await expect(banner).toContainText("Chưa chuyển được: ");
+      await expect(banner).toContainText("đang chặn việc này");
+      await page.waitForTimeout(700);
+      await page.mouse.move(2, 2);
+      const dy = await shift(dialog);
+      expect((await box(dialog, dialog)).w).toBe(560);
+      await expectHeader(dialog, dark);
+      // Banner: 516 wide at x 22, 36.13 tall once the list (112) and the search (34) sit above it.
+      const b = await box(banner, dialog);
+      near(b.x, 22, "banner.x");
+      near(b.w, 516, "banner.w");
+      near(b.h, 36.13, "banner.h");
+      expect(await css(banner, "border-radius")).toBe("8px");
+      expect(await css(banner.locator("span"), "font-size")).toBe("12.5px");
+      await expectColour(
+        banner,
+        "background-color",
+        dark ? [58, 28, 36] : [253, 236, 239],
+        "banner",
+      );
+      // Footer: 64 tall, buttons 30 tall, Huỷ 48.4, Mở ERP-xxx, then the primary at 50% (aria-disabled).
+      const footer = dialog.getByRole("button", { name: "Huỷ", exact: true });
+      const fb = await box(footer, dialog);
+      near(fb.h, 30, "Huỷ.h");
+      near(fb.w, 48.4, "Huỷ.w");
+      const open = dialog.getByRole("button", { name: /^Mở ERP-/ });
+      near((await box(open, dialog)).h, 30, "Mở.h");
+      near((await box(open, dialog)).y, fb.y, "Mở.y");
+      const primary = dialog.getByRole("button", {
+        name: /^Chuyển/,
+      });
+      await expect(primary).toBeDisabled();
+      expect(await css(primary, "opacity")).toBe("0.5");
+      near(
+        (await box(primary, dialog)).x + (await box(primary, dialog)).w,
+        538,
+        "primary right edge",
+      );
+      near(fb.y + dy * 0, fb.y, "row");
+    });
+  }
+
+  test("archived: the dialog drops to the banner with Huỷ and Bỏ lưu trữ", async ({
     page,
   }) => {
-    test.skip(faults !== "" || latency === "slow", "Needs the plain world");
-    await page.goto(`${BOARD}?item=mock-erp-item-146`);
+    await page.clock.setFixedTime(NOW);
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem("notrelix-locale", "vi");
+        window.localStorage.setItem("notrelix-theme-mode", "light");
+      } catch {
+        // Private mode: the defaults apply.
+      }
+    });
+    await page.goto(`${BOARD}?item=mock-erp-item-147`);
     await page.getByRole("button", { name: "Thao tác trên thẻ" }).click();
     await page.getByRole("menuitem", { name: /^Chuyển board/ }).click();
     const dialog = page.getByRole("dialog");
     await dialog.getByRole("option").first().click();
+    await page.waitForTimeout(500);
     if ((await dialog.getByRole("checkbox").count()) > 0)
       await dialog.getByRole("checkbox").click();
     await dialog.getByRole("button", { name: /^Chuyển (sang|và bỏ)/ }).click();
-    await expect(dialog.getByText(/^Chưa chuyển được: /)).toBeVisible();
-    await expect(dialog.getByText(/phụ thuộc|đang chặn/)).toBeVisible();
+    const banner = dialog.getByRole("alert");
+    await expect(banner).toContainText(
+      "Chưa chuyển được: việc đã lưu trữ. Bỏ lưu trữ rồi chuyển lại.",
+    );
+    await page.waitForTimeout(700);
+    await page.mouse.move(2, 2);
+    await expect(dialog.getByRole("option")).toHaveCount(0);
+    const dy = await shift(dialog);
+    expectBox0(
+      await box(banner, dialog),
+      { x: 22, w: 516, h: 36.13 },
+      "banner",
+    );
+    near((await box(banner, dialog)).y, 107.22 + dy, "banner.y");
+    const footer = dialog.getByRole("button", { name: "Huỷ", exact: true });
+    const fb = await box(footer, dialog);
+    near(fb.w, 48.4, "Huỷ.w");
+    near(fb.h, 30, "Huỷ.h");
+    const un = dialog.getByRole("button", { name: "Bỏ lưu trữ", exact: true });
+    const ub = await box(un, dialog);
+    near(ub.w, 84.4, "Bỏ lưu trữ.w");
+    near(ub.h, 30, "Bỏ lưu trữ.h");
+    near(ub.x + ub.w, 538, "Bỏ lưu trữ right edge");
+    near(fb.x + fb.w + 8, ub.x, "gap between Huỷ and Bỏ lưu trữ");
+    near((await box(dialog, dialog)).h, 207.34 + dy, "dialog height");
   });
 });

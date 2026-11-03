@@ -727,7 +727,8 @@ export const cardsOperations = [
         return forbidden();
       // Same refusals as the server. Only ERP-146 refuses for dependencies: the
       // other seeded chain items are moved by the happy-path journeys.
-      if (item.isArchived)
+      // ERP-147 stands for an item someone archived after the dialog opened (the menu locks archived items).
+      if (item.isArchived || item.itemKey === "ERP-147")
         return attachmentProblem(
           409,
           "work-management.item.archived",

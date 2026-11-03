@@ -175,6 +175,16 @@ export function BoardPage() {
     });
   };
 
+  // The toast after a move names the item on its new board; the board that blocks a move is this one.
+  const handleOpenItem = (targetBoardId: string, item: string) => {
+    if (targetBoardId === boardId) return handleSelectedItemChange(item);
+    navigate({
+      to: "/workspaces/$workspaceId/boards/$boardId",
+      params: { workspaceId, boardId: targetBoardId },
+      search: { item },
+    });
+  };
+
   // The Kanban filter (`serializeKanbanFilter` form). A user change pushes
   // history; the view's own cleanup of stale ids replaces it.
   const handleFilterChange = (
@@ -230,6 +240,7 @@ export function BoardPage() {
               selectedItemId={search.item}
               currentUserId={currentUser?.id ?? null}
               onSelectedItemChange={handleSelectedItemChange}
+              onOpenItem={handleOpenItem}
               filter={search.filter}
               onFilterChange={handleFilterChange}
               groupBy={search.groupBy}
