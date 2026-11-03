@@ -875,3 +875,54 @@ test("a parent's progress is its sub-items, a checklist keeps its own count, a f
   expect(await hidden.json()).toMatchObject({ status: 404 });
   await outsiderContext.close();
 });
+
+test("a member creates a label from the typed text in the item's picker, it lands on the item on the server, and unticking takes it off", async ({
+  page,
+}) => {
+  await signIn(page, realUsers.admin);
+  const workspace = await createOwnedWorkspace(page, "Labels");
+  const boardId = await createBoard(page, workspace.id);
+  const board = await apiRead<FullBoard>(page, `/boards/${boardId}/full`);
+  const created = await apiWrite<{ id: string }>(
+    page,
+    "POST",
+    `/boards/${boardId}/items`,
+    { groupId: board.lists[0]!.id, title: "Label row" },
+  );
+  expect(created.status).toBeLessThan(300);
+  const itemId = created.data!.id;
+  const labelsOf = async () =>
+    (
+      (
+        await apiRead<{ labels?: { name: string }[] | null }>(
+          page,
+          `/board-items/${itemId}`,
+        )
+      ).labels ?? []
+    ).map((label) => label.name);
+
+  await page.goto(
+    `/workspaces/${workspace.id}/boards/${boardId}/items/${itemId}`,
+  );
+  await page.getByRole("button", { name: "Labels", exact: true }).click();
+  await page.getByRole("textbox", { name: "Find labels" }).fill("Urgent");
+  await expect(page.getByText("No label named “Urgent” yet")).toBeVisible();
+  await page.getByRole("button", { name: /^Create label “Urgent”/ }).click();
+  const attach = page.getByRole("checkbox", {
+    name: "Put label Urgent on the card",
+  });
+  await expect(attach).toBeChecked();
+  await settle(page);
+  expect(await labelsOf()).toEqual(["Urgent"]);
+
+  // Unticking takes the label off the item; the label stays on the board for the next one.
+  await attach.click();
+  await expect(attach).not.toBeChecked();
+  await settle(page);
+  expect(await labelsOf()).toEqual([]);
+  const boardLabels = await apiRead<{ name: string }[]>(
+    page,
+    `/boards/${boardId}/labels`,
+  );
+  expect(boardLabels.map((label) => label.name)).toContain("Urgent");
+});

@@ -67,19 +67,21 @@ test.describe("Board settings (owner)", () => {
     await expect(list.getByText("Nhãn đã đổi")).toHaveCount(0);
   });
 
-  test("item picker: creates a label from the typed text and puts it on the item", async ({
+  test("item picker: creates a label from the typed text, puts it on the item and takes it off", async ({
     page,
   }) => {
     await open(page, `${BOARD}/items/mock-erp-item-142`);
     await page.getByRole("button", { name: "Nhãn", exact: true }).click();
-    const search = page.getByRole("textbox", { name: "Tìm hoặc tạo nhãn" });
+    const search = page.getByRole("textbox", { name: "Tìm nhãn" });
     await search.fill("Gấp");
-    await page.getByRole("button", { name: "Tạo nhãn “Gấp”" }).click();
+    await expect(page.getByText("Chưa có nhãn “Gấp”")).toBeVisible();
+    await page.getByRole("button", { name: /^Tạo nhãn “Gấp”/ }).click();
+    const attach = page.getByRole("checkbox", { name: "Gắn nhãn Gấp" });
+    await expect(attach).toBeChecked();
+    await attach.click();
+    await expect(attach).not.toBeChecked();
     await expect(
-      page.getByRole("list", { name: "Nhãn" }).getByRole("button", {
-        name: "Gấp",
-        pressed: true,
-      }),
+      page.getByRole("link", { name: "Quản lý nhãn trong Thiết lập board" }),
     ).toBeVisible();
   });
 
