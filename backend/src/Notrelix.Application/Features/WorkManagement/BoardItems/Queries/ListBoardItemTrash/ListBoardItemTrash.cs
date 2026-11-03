@@ -28,8 +28,9 @@ public sealed record BoardItemTrashPageDto(List<BoardItemTrashEntryDto> Items, s
 /// The root items deleted from a board in the last 30 days, newest first, one page at a time (50 by default, at most 200).
 /// Seeing the trash needs the same permission restoring does (UpdateItem), so people who cannot restore never see what was deleted.
 /// </summary>
+/// <param name="Search">Keeps the items whose name or key holds the text.</param>
 /// <param name="Cursor">The previous page's NextCursor; none reads the first page.</param>
-public record ListBoardItemTrashQuery(Guid BoardId, string? Cursor = null, int? Limit = null)
+public record ListBoardItemTrashQuery(Guid BoardId, string? Search = null, string? Cursor = null, int? Limit = null)
     : IQuery<BoardItemTrashPageDto>, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IReadRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
@@ -67,6 +68,13 @@ public class ListBoardItemTrashQueryHandler : IRequestHandler<ListBoardItemTrash
             .AsNoTracking()
             .Where(i => i.AccountId == accountId && i.WorkspaceId == workspaceId && i.BoardId == request.BoardId
                 && i.DeletedAt != null && i.DeletedAt >= since && i.ParentItemId == null);
+        var term = request.Search?.Trim();
+        if (!string.IsNullOrEmpty(term))
+        {
+            var lowered = term.ToLowerInvariant();
+            rows = rows.Where(i => i.Name.ToLower().Contains(lowered) || (i.ItemKey != null && i.ItemKey.ToLower().Contains(lowered)));
+        }
+
         var total = await rows.CountAsync(ct);
         if (after is { } cursor)
         {
