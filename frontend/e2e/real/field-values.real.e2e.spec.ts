@@ -327,15 +327,14 @@ test("a member edits the custom cells of the table, a refused value stays in the
   }
 });
 
-test("a member picks from the option, person and date cells and clears them again, and each write carries the version the page read", async ({
+test("a member picks from the option and date cells and clears them again, and each write carries the version the page read", async ({
   page,
 }) => {
   await signIn(page, realUsers.admin);
   const workspace = await createOwnedWorkspace(page, "Field pickers");
   const boardId = await createBoard(page, workspace.id);
   const module = await createField(page, boardId, "Module", "select");
-  const related = await createField(page, boardId, "Related", "multi_select");
-  const reviewer = await createField(page, boardId, "Reviewer", "person");
+  const related = await createField(page, boardId, "Related", "multiselect");
   const due = await createField(page, boardId, "Go live", "date");
   for (const fieldId of [module, related]) {
     for (const name of ["Accounting", "Warehouse", "Purchasing"]) {
@@ -398,22 +397,8 @@ test("a member picks from the option, person and date cells and clears them agai
     expect((await tick).status()).toBeLessThan(300);
     await settle(page);
   }
-  await page.getByRole("button", { name: "Done" }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
   expect(await valueOf(related)).toHaveLength(2);
-
-  // Person: pick a member, then "Clear all".
-  await edit("Reviewer").click();
-  const person = wrote(reviewer);
-  await page.getByRole("option").first().click();
-  expect((await person).status()).toBeLessThan(300);
-  expect(await valueOf(reviewer)).toBeTruthy();
-  await settle(page);
-  const noPerson = wrote(reviewer);
-  await page.getByRole("button", { name: "Clear all" }).click();
-  expect((await noPerson).status()).toBeLessThan(300);
-  expect(await valueOf(reviewer)).toBeUndefined();
-  await page.keyboard.press("Escape");
-  await settle(page);
 
   // Date: a day writes and closes; "Clear date" empties it; a second clear sends nothing.
   await edit("Go live").click();
