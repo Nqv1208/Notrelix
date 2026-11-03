@@ -30,7 +30,7 @@ export type DeleteDialogStatus = "idle" | "busy" | "error";
 
 // The WM-Actions-Trash `.btn`: 30 px (48 px on a phone), 7 px radius, 13 px type.
 const buttonClass =
-  "h-[30px] rounded-[7px] px-[11px] text-[13px] leading-[1.45] max-sm:h-12 max-sm:rounded-xl max-sm:text-[15px] max-sm:w-full";
+  "h-[30px] rounded-[7px] px-[11px] text-[13px] leading-[1.45] max-sm:h-12 max-sm:rounded-[12px] max-sm:text-[15px] max-sm:w-full";
 const dangerClass =
   "border-danger bg-danger font-semibold text-danger-foreground hover:bg-danger/90 aria-disabled:pointer-events-none aria-disabled:opacity-50";
 
@@ -139,7 +139,7 @@ export function DeleteItemDialog({
           <div className="px-[22px] pt-2.5 max-sm:px-0 max-sm:pt-0">
             <div
               role="alert"
-              className="flex items-start gap-2 rounded-lg bg-danger-subtle px-2.5 py-2 text-[12.5px] leading-[1.45] text-danger-text max-sm:mx-4 max-sm:mb-2 max-sm:text-[13.5px]"
+              className="flex items-start gap-2 rounded-[8px] bg-danger-subtle px-2.5 py-[9px] text-[12.5px] leading-[1.45] text-danger-text max-sm:mx-4 max-sm:mb-2 max-sm:text-[13.5px]"
             >
               <TriangleAlert
                 aria-hidden="true"

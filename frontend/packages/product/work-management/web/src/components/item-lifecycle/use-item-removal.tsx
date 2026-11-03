@@ -524,6 +524,9 @@ export function useItemRemoval({
   const dependencyLinks = (archiveLinks.data ?? []).filter(
     (link) => link.relation !== "related",
   );
+  const duplicateCardView = duplicating
+    ? findCard(sourceBoard as FullBoardResponse, duplicating.id)?.card
+    : undefined;
   const deleteCardView = deleting
     ? findCard(sourceBoard as FullBoardResponse, deleting.id)?.card
     : undefined;
@@ -671,6 +674,20 @@ export function useItemRemoval({
         />
         <DuplicateItemDialog
           copy={actions}
+          summary={
+            duplicateCardView
+              ? {
+                  fields: Object.values(duplicateCardView.fieldValues).filter(
+                    (value) =>
+                      value !== null && value !== undefined && value !== "",
+                  ).length,
+                  checklists: duplicateCardView.checklists.length,
+                  subItems: duplicateCardView.childProgress?.total ?? 0,
+                  labels: duplicateCardView.labels.length,
+                  assignees: duplicateCardView.members.map((m) => m.name),
+                }
+              : undefined
+          }
           defaultName={copyName(duplicating?.title ?? "", actions.locale)}
           open={duplicating !== null}
           busy={duplicateCard.isPending}
