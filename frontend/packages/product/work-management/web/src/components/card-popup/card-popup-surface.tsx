@@ -1,7 +1,12 @@
 import type { ReactNode } from "react";
 import { X } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, cn } from "@notrelix/ui-web";
-import { CardPopupProvider, type CardPopupModel } from "./card-popup-context";
+import {
+  CardPopupProvider,
+  StaleSchemaProvider,
+  type CardPopupModel,
+  type PopupStaleSchema,
+} from "./card-popup-context";
 import { PopupHeader } from "./popup-header";
 import { PopupTitleRow } from "./popup-title-row";
 import { PopupQuickRow } from "./popup-quick-row";
@@ -43,8 +48,8 @@ export interface CardPopupSurfaceProps {
   /** Who deleted the card (status `deleted`); null: the server named no one. */
   readonly deletedBy?: string | null;
   /** The conflict is a field the board no longer has (D12): names who changed it. */
-  readonly staleSchema?: { fieldName: string; byName: string | null } | null;
-  readonly onReloadConflict?: () => void;
+  readonly staleSchema?: PopupStaleSchema | null;
+  readonly onReloadConflict?: () => void | Promise<unknown>;
   /** Dialogs of the host that must sit inside the popup (the draft confirm). */
   readonly overlays?: ReactNode;
 }
@@ -121,40 +126,42 @@ export function CardPopupSurface({
         </DialogTitle>
         {ready ? (
           <CardPopupProvider value={model}>
-            <PopupHeader onClose={onClose} />
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto md:flex-row md:overflow-hidden">
-              <div
-                // 720 px when the popup is 1120 px wide; the column gives way first when the window is narrower.
-                className="relative box-border min-w-0 pb-6 md:flex-[0_1_720px] md:overflow-y-auto"
-                data-popup-left=""
-              >
-                {model.slots.coverBanner}
-                <PopupBanners
-                  conflict={conflict}
-                  conflictBy={conflictBy}
-                  staleSchema={staleSchema}
-                  onReload={onReloadConflict}
-                />
-                <PopupTitleRow />
-                <PopupQuickRow />
-                <ChipsRow />
-                <DescriptionSection />
-                <FieldsSection />
-                <ChecklistsSection />
-                <AttachmentsSection />
-                <LinksSection />
+            <StaleSchemaProvider value={staleSchema ?? null}>
+              <PopupHeader onClose={onClose} />
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto md:flex-row md:overflow-hidden">
+                <div
+                  // 720 px when the popup is 1120 px wide; the column gives way first when the window is narrower.
+                  className="relative box-border min-w-0 pb-6 md:flex-[0_1_720px] md:overflow-y-auto"
+                  data-popup-left=""
+                >
+                  {model.slots.coverBanner}
+                  <PopupBanners
+                    conflict={conflict}
+                    conflictBy={conflictBy}
+                    staleSchema={staleSchema}
+                    onReload={onReloadConflict}
+                  />
+                  <PopupTitleRow />
+                  <PopupQuickRow />
+                  <ChipsRow />
+                  <DescriptionSection />
+                  <FieldsSection />
+                  <ChecklistsSection />
+                  <AttachmentsSection />
+                  <LinksSection />
+                </div>
+                <aside
+                  aria-label={model.copy.shell.comments}
+                  className="relative box-border flex min-w-0 flex-col gap-3.5 border-t border-line bg-background px-4 pt-4 pb-6 md:min-w-[300px] md:flex-[0_1_400px] md:px-5 md:overflow-y-auto md:border-t-0 md:border-l"
+                >
+                  <ApprovalSection />
+                  <CommentsColumn />
+                </aside>
               </div>
-              <aside
-                aria-label={model.copy.shell.comments}
-                className="relative box-border flex min-w-0 flex-col gap-3.5 border-t border-line bg-background px-4 pt-4 pb-6 md:min-w-[300px] md:flex-[0_1_400px] md:px-5 md:overflow-y-auto md:border-t-0 md:border-l"
-              >
-                <ApprovalSection />
-                <CommentsColumn />
-              </aside>
-            </div>
-            <CommentsBar />
-            {footer}
-            {overlays}
+              <CommentsBar />
+              {footer}
+              {overlays}
+            </StaleSchemaProvider>
           </CardPopupProvider>
         ) : (
           <>

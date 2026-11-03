@@ -200,3 +200,17 @@ export function useCanEdit(): boolean {
   const { readOnly, capabilities } = useCardPopup();
   return readOnly === null && capabilities.canEditFields;
 }
+
+/** A schema change a refused write ran into (D12): the popup's banner names it and the changed field's pill shows it. */
+export interface PopupStaleSchema {
+  readonly kind?: "field-deleted" | "option-removed" | "type-changed";
+  readonly fieldName: string;
+  readonly byName: string | null;
+  readonly optionLabel?: string;
+  readonly fromType?: string;
+  readonly toType?: string;
+}
+
+const StaleSchemaContext = createContext<PopupStaleSchema | null>(null);
+export const StaleSchemaProvider = StaleSchemaContext.Provider;
+export const useStaleSchema = () => useContext(StaleSchemaContext);

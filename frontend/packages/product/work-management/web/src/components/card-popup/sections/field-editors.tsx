@@ -38,7 +38,11 @@ import {
 } from "../../card-detail/item-field-more-editors";
 import { useItemSheetCopy } from "../../card-detail/use-item-sheet-copy";
 import { fillPopupCopy, type CardPopupCopy } from "../card-popup.copy";
-import { useCardPopup, useCanEdit } from "../card-popup-context";
+import {
+  useCardPopup,
+  useCanEdit,
+  useStaleSchema,
+} from "../card-popup-context";
 import {
   FxMark,
   PillBtn,
@@ -420,13 +424,17 @@ function FieldControlBody({
   const saving = save?.status === "saving";
   const failed = save?.status === "error";
   const clashing = fieldConflicts.some((c) => c.key === `field:${field.id}`);
-  const pillState = failed
-    ? "failed"
-    : clashing
-      ? "conflict"
-      : saving
-        ? "saving"
-        : "rest";
+  // The field a refused write named (D12): a deleted one is struck, a changed one takes the red border.
+  const stale = useStaleSchema();
+  const staleHere = pill && stale !== null && stale.fieldName === field.name;
+  const pillState =
+    failed || (staleHere && stale?.kind !== "field-deleted")
+      ? "failed"
+      : clashing
+        ? "conflict"
+        : saving
+          ? "saving"
+          : "rest";
   const label = field.name;
   const pillEnd = failed ? (
     <AlertCircle
@@ -441,6 +449,28 @@ function FieldControlBody({
   ) : saving ? (
     <PillSpinner />
   ) : null;
+
+  if (staleHere && (stale?.kind === "field-deleted" || !stale?.kind)) {
+    const shown =
+      field.options.find((o) => o.id === raw)?.label ??
+      (typeof raw === "string" || typeof raw === "number" ? String(raw) : "");
+    return (
+      <PillStatic
+        title={copy.shell.staleSchema.deletedTag}
+        className="border-danger bg-danger-subtle"
+      >
+        <PillKey>{label}</PillKey>
+        <span className="max-w-[220px] truncate">{shown}</span>
+        <span className="text-[12px] text-meta-foreground">
+          {copy.shell.staleSchema.deletedTag}
+        </span>
+        <AlertCircle
+          aria-hidden="true"
+          className="size-4 shrink-0 text-danger-text"
+        />
+      </PillStatic>
+    );
+  }
 
   const trigger = (
     content: ReactNode,
