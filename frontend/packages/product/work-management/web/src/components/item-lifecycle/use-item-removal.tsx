@@ -141,6 +141,7 @@ export function useItemRemoval({
   const archiveCard = useArchiveCard(boardId, workspaceId);
   const seenVersion = useSeenItemVersion(boardId, workspaceId);
   const archiveLinks = useItemLinks(archiving?.id ?? "", workspaceId, boardId);
+  const deleteLinks = useItemLinks(deleting?.id ?? "", workspaceId, boardId);
   // Hook-level: the card sheet closes with the optimistic removal, which would drop the callbacks of `mutate`.
   const deleteCard = useDeleteCard(boardId, workspaceId, {
     onSuccess: ({ cardId, title = "" }) => {
@@ -165,7 +166,7 @@ export function useItemRemoval({
         : toast.error(fillLifecycleCopy(copy.deleteFailed, { title })),
   });
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
-  const trash = useBoardTrash(boardId, workspaceId, false);
+  const trash = useBoardTrash(boardId, workspaceId, "", false);
   const boards = useWorkspaceBoards(workspaceId);
   const source = useFullBoard(boardId, workspaceId);
   const target = useFullBoard(moveTarget ?? undefined, workspaceId);
@@ -502,6 +503,12 @@ export function useItemRemoval({
   const dependencyLinks = (archiveLinks.data ?? []).filter(
     (link) => link.relation !== "related",
   );
+  const deleteCardView = deleting
+    ? findCard(sourceBoard as FullBoardResponse, deleting.id)?.card
+    : undefined;
+  const deleteDependencies = (deleteLinks.data ?? []).filter(
+    (link) => link.relation !== "related",
+  );
 
   return {
     requestArchive: (itemId) => {
@@ -593,7 +600,15 @@ export function useItemRemoval({
         />
         <DeleteItemDialog
           copy={copy}
-          actions={actions}
+          impact={{
+            subItems: deleteCardView?.childProgress?.total ?? 0,
+            dependencies: {
+              count: deleteDependencies.length,
+              keys: deleteDependencies
+                .map((link) => link.item.key)
+                .filter((key): key is string => Boolean(key)),
+            },
+          }}
           title={deleting?.title ?? ""}
           open={deleting !== null}
           onCancel={() => setDeleting(null)}

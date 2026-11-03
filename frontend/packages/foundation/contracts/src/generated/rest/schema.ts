@@ -17365,6 +17365,7 @@ export interface operations {
     "WorkManagement.BoardItems.Trash": {
         parameters: {
             query?: {
+                q?: string;
                 cursor?: string;
                 limit?: number;
             };

@@ -8,24 +8,33 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@notrelix/ui-web";
-import type { ItemActionsCopy } from "../item-actions/item-actions.copy";
 import {
   fillLifecycleCopy,
+  pluralLifecycleCopy,
   type ItemLifecycleCopy,
 } from "./item-lifecycle.copy";
+
+/** What deleting takes along: the sub-items and the dependency links (with the keys at the other end). */
+export interface DeleteImpact {
+  readonly subItems: number;
+  readonly dependencies: {
+    readonly count: number;
+    readonly keys: readonly string[];
+  };
+}
 
 /** Asks before an item is deleted; the item can be restored from the board's trash for 30 days. */
 export function DeleteItemDialog({
   copy,
-  actions,
+  impact,
   title,
   open,
   onCancel,
   onConfirm,
 }: {
   copy: ItemLifecycleCopy;
-  /** The item actions copy, for the lines on sub-items and links. */
-  actions?: ItemActionsCopy;
+  /** The sub-items and dependency links that go with the item; the lines show only when there are some. */
+  impact?: DeleteImpact;
   title: string;
   open: boolean;
   onCancel: () => void;
@@ -43,7 +52,26 @@ export function DeleteItemDialog({
           </AlertDialogTitle>
           <AlertDialogDescription>
             {copy.deleteBody}
-            {actions ? ` ${actions.deleteSubItems} ${actions.deleteLinks}` : ""}
+            {impact && impact.subItems > 0
+              ? ` ${pluralLifecycleCopy(
+                  {
+                    one: copy.deleteSubItems_one,
+                    other: copy.deleteSubItems_other,
+                  },
+                  impact.subItems,
+                )}`
+              : ""}
+            {impact && impact.dependencies.count > 0
+              ? ` ${fillLifecycleCopy(
+                  impact.dependencies.count === 1
+                    ? copy.deleteLinks_one
+                    : copy.deleteLinks_other,
+                  {
+                    count: impact.dependencies.count,
+                    keys: impact.dependencies.keys.join(", "),
+                  },
+                )}`
+              : ""}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

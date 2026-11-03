@@ -11,7 +11,7 @@ import { useWorkManagementServices } from "../services";
 
 /**
  * The items deleted from a board in the last 30 days (only people who may
- * edit items can read it), a page at a time, and the way back: restoring puts
+ * edit items can read it), a page at a time and optionally narrowed by name or key, and the way back: restoring puts
  * the item (and the sub-items that went with it) in its group again and
  * refreshes the board and the lists that show items. A refusal (past the 30
  * days, the parent still deleted) is thrown to the caller, which tells why.
@@ -19,14 +19,15 @@ import { useWorkManagementServices } from "../services";
 export function useBoardTrash(
   boardId: string,
   workspaceId: string,
+  search = "",
   enabled = true,
 ) {
   const { itemExtras } = useWorkManagementServices();
   const queryClient = useQueryClient();
   const query = useInfiniteQuery({
-    queryKey: wmQueryKeys.boardTrash(workspaceId, boardId),
+    queryKey: wmQueryKeys.boardTrash(workspaceId, boardId, search),
     queryFn: ({ pageParam }) =>
-      itemExtras.listTrash(boardId, pageParam ?? undefined),
+      itemExtras.listTrash(boardId, search, pageParam ?? undefined),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.nextCursor,
     enabled: enabled && Boolean(boardId && workspaceId),
