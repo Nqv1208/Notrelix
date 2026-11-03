@@ -7,6 +7,43 @@ import { DeleteItemDialog } from "../item-lifecycle-dialogs";
 import { en } from "../item-lifecycle.copy";
 
 describe("DeleteItemDialog", () => {
+  it("names the sub-items and the dependency links that go with the item", () => {
+    render(
+      <DeleteItemDialog
+        copy={en}
+        title="Fix login"
+        impact={{
+          subItems: 3,
+          dependencies: { count: 2, keys: ["ERP-1", "ERP-2"] },
+        }}
+        open
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/3 sub-items are deleted with it\./)).toBeTruthy();
+    expect(
+      screen.getByText(
+        /2 dependency links \(ERP-1, ERP-2\) are hidden until it is restored\./,
+      ),
+    ).toBeTruthy();
+  });
+
+  it("says nothing of sub-items or links when there are none", () => {
+    render(
+      <DeleteItemDialog
+        copy={en}
+        title="Fix login"
+        impact={{ subItems: 0, dependencies: { count: 0, keys: [] } }}
+        open
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/deleted with it/)).toBeNull();
+    expect(screen.queryByText(/hidden until it is restored/)).toBeNull();
+  });
+
   it("FUI[wm.item-lifecycle:delete] asks before deleting and only deletes on confirm", async () => {
     const onConfirm = vi.fn();
     const onCancel = vi.fn();
@@ -132,8 +169,8 @@ describe("ArchiveItemDialog", () => {
         }}
       />,
     );
-    expect(screen.queryByText(/sub-item/)).toBeNull();
-    expect(screen.queryByText(/dependency link/)).toBeNull();
+    expect(screen.queryByText(/deleted with it/)).toBeNull();
+    expect(screen.queryByText(/hidden until it is restored/)).toBeNull();
     expect(screen.getByRole("button", { name: "Archive item" })).toBeTruthy();
   });
 

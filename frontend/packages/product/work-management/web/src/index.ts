@@ -45,9 +45,11 @@ export {
 } from "./components/board-lifecycle/board-lifecycle.copy";
 export { useBoardLifecycleCopy } from "./components/board-lifecycle/use-board-lifecycle-copy";
 export {
-  BoardMoveImpactPanel,
+  BoardMoveDialog,
+  type BoardMoveDialogProps,
   type BoardMoveImpact,
-} from "./components/board-lifecycle/board-move-impact";
+  type MovePlaceView,
+} from "./components/board-lifecycle/board-move-dialog";
 export { boardShareCatalog } from "./components/board-share/board-share.catalog";
 export {
   boardShareCopy,

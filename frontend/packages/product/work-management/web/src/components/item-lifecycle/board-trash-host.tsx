@@ -23,7 +23,8 @@ export function BoardTrashHost({
   onClose: () => void;
 }) {
   const copy = useItemLifecycleCopy();
-  const trash = useBoardTrash(boardId, workspaceId, open);
+  const [search, setSearch] = useState("");
+  const trash = useBoardTrash(boardId, workspaceId, search.trim(), open);
   // Why the last try on a row was refused; it stays until the next try on that row.
   const [refused, setRefused] = useState<Readonly<Record<string, string>>>({});
   const dayFormat = new Intl.DateTimeFormat(copy.locale, {
@@ -47,6 +48,8 @@ export function BoardTrashHost({
     <BoardTrashSheet
       copy={copy}
       open={open}
+      search={search}
+      onSearch={setSearch}
       loading={trash.isLoading}
       failed={trash.isError}
       total={trash.total}

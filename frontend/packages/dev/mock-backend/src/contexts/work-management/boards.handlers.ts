@@ -28,6 +28,7 @@
  */
 
 import { projectComputedValues } from "../../state/mock-computed-values";
+import { mockIds } from "../../state/mock-ids";
 import type { OperationResponse } from "@notrelix/contracts";
 import type {
   BoardDtoApi,
@@ -828,8 +829,10 @@ export const boardsOperations = [
 
   // ─── GET /boards/:boardId/move-impact ──────────────────────────────────────
 
-  // The mock world has one access model per Board, so a move never gains or strands anyone: the answer
-  // says the move is allowed and names the target Space (`unchanged` when the Board is already there).
+  // The mock world has one access model per Board, so a move gains or strands no one, except the ERP Board
+  // leaving Công nghệ for Kế toán or Marketing, which carries the numbers of the WM-MoveBoard mockup: 22 people
+  // lose it, three of them with unfinished items (Kế toán only), 18 or 12 gain it. Elsewhere the answer says the
+  // move is allowed and names the target Space (`unchanged` when the Board is already there).
   defineMockOperation<{ boardId: string }, never, Record<string, unknown>>({
     id: "boards.moveImpact",
     contract: {
@@ -846,22 +849,56 @@ export const boardsOperations = [
         new URL(request.url).searchParams.get("targetSpaceId") ?? null;
       const denied = targetSpaceDenied(store, board.workspaceId, target);
       if (denied) return denied;
+      const fromEngineering = board.spaceId === mockIds.spaces.engineering;
+      const toAccounting = target === mockIds.spaces.accounting;
+      const toMarketing = target === mockIds.spaces.marketing;
+      const carries = fromEngineering && (toAccounting || toMarketing);
       return ok({
         boardId: board.id,
         targetSpaceId: target,
         targetSpaceName: target ? store.spaces.getSpace(target)?.name : null,
         unchanged: (board.spaceId ?? null) === target,
-        losingCount: 0,
-        gainingCount: 0,
+        losingCount: carries ? 22 : 0,
+        gainingCount: toAccounting ? 18 : toMarketing ? 12 : 0,
         everyoneGains: false,
         everyoneLoses: false,
-        targetPeople: 0,
-        stranded: [],
-        strandedCount: 0,
-        strandedItems: 0,
-        strandedOverdue: 0,
-        keptNames: [],
-        keptCount: 0,
+        targetPeople: toAccounting ? 18 : toMarketing ? 12 : 0,
+        stranded:
+          carries && toAccounting
+            ? [
+                {
+                  userId: mockIds.users.owner,
+                  name: "Trần Minh Quân",
+                  items: 2,
+                  overdue: 1,
+                },
+                {
+                  userId: mockIds.users.member,
+                  name: "Phan Ngọc Anh",
+                  items: 1,
+                  overdue: 0,
+                },
+                {
+                  userId: mockIds.users.viewer,
+                  name: "Vũ Thanh",
+                  items: 1,
+                  overdue: 0,
+                },
+              ]
+            : [],
+        strandedCount: carries && toAccounting ? 3 : 0,
+        strandedItems: carries && toAccounting ? 4 : 0,
+        strandedOverdue: carries && toAccounting ? 1 : 0,
+        keptNames: carries
+          ? [
+              "Lê Hoàng Phúc",
+              "Nguyễn Thu Hà",
+              "Nhóm Kế toán tổng hợp",
+              "Đỗ Khánh Linh",
+              "khách Đặng Minh Tuấn",
+            ]
+          : [],
+        keptCount: carries ? 5 : 0,
         keptTeamCount: 0,
         boardVersion: board.version ?? 0,
       });
