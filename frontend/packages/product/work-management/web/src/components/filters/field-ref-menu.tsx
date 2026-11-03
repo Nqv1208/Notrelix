@@ -39,6 +39,8 @@ export interface FieldRefMenuProps {
   blockedFieldId?: string | undefined;
   /** The fields this menu cannot offer, named under "Chưa nhóm được" (the group menu only). */
   unavailableFields?: readonly FilterField[] | undefined;
+  /** Under the date buckets: which zone the days are judged in. */
+  timeZoneNote?: string | undefined;
 }
 
 const SECTIONS = ["select", "person", "date", "checkbox"] as const;
@@ -96,6 +98,7 @@ export function FieldRefMenu({
   onChange,
   blockedFieldId,
   unavailableFields,
+  timeZoneNote,
 }: FieldRefMenuProps) {
   const t = kind === "group" ? copy.group : copy.lane;
   const shown = value ?? fallback;
@@ -224,6 +227,14 @@ export function FieldRefMenu({
                         <p className="px-2.5 py-1 text-xs leading-[1.45] text-muted-foreground">
                           {copy.group.noDueNote}
                         </p>
+                        {timeZoneNote ? (
+                          <p
+                            data-f="tz-note"
+                            className="px-2.5 py-1 text-xs leading-[1.45] text-muted-foreground"
+                          >
+                            {timeZoneNote}
+                          </p>
+                        ) : null}
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
                   );

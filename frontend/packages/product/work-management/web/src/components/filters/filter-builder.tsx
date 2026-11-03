@@ -42,6 +42,8 @@ export interface FilterBuilderProps {
   now: Date;
   /** The board's IANA zone: presets pick "today" in it. */
   timeZone?: string;
+  /** The caption under the date row: which zone the days are judged in. */
+  timeZoneNote?: string;
   /** The number the trigger shows: conditions that apply. */
   activeCount: number;
   /** Opens the dialog (controlled by the host so "Sửa điều kiện" can open it). */
@@ -160,6 +162,7 @@ function BuilderBody({
   onChange,
   now,
   timeZone,
+  timeZoneNote,
   people,
 }: FilterBuilderProps) {
   const update = (index: number, next: FilterCondition) =>
@@ -212,6 +215,7 @@ function BuilderBody({
             join={filter.join}
             now={now}
             timeZone={timeZone}
+            timeZoneNote={timeZoneNote}
             people={people}
             onChange={(next) => update(index, next)}
             onRemove={() => remove(index)}
@@ -246,6 +250,7 @@ function ConditionRow({
   join,
   now,
   timeZone,
+  timeZoneNote,
   people,
   onChange,
   onRemove,
@@ -259,6 +264,8 @@ function ConditionRow({
   now: Date;
   /** The board's IANA zone: presets pick "today" in it. */
   timeZone?: string;
+  /** The caption under the date row: which zone the days are judged in. */
+  timeZoneNote?: string;
   onChange: (condition: FilterCondition) => void;
   onRemove: () => void;
 }) {
@@ -353,6 +360,7 @@ function ConditionRow({
                   label={label}
                   now={now}
                   timeZone={timeZone}
+                  timeZoneNote={timeZoneNote}
                   people={people}
                   invalid={issue === "range"}
                   onChange={onChange}
@@ -432,6 +440,7 @@ function ValueEditor({
   label,
   now,
   timeZone,
+  timeZoneNote,
   people,
   invalid,
   onChange,
@@ -444,6 +453,8 @@ function ValueEditor({
   now: Date;
   /** The board's IANA zone: presets pick "today" in it. */
   timeZone?: string;
+  /** The caption under the date row: which zone the days are judged in. */
+  timeZoneNote?: string;
   invalid: boolean;
   onChange: (condition: FilterCondition) => void;
 }): ReactNode {
@@ -518,6 +529,15 @@ function ValueEditor({
             </>
           ) : null}
         </div>
+        {timeZoneNote ? (
+          // Under the row, growing in with the presets: the canvas draws the quiet row without it.
+          <p
+            data-f="tz-note"
+            className="m-0 hidden text-xs leading-[1.45] text-muted-foreground group-focus-within/row:block"
+          >
+            {timeZoneNote}
+          </p>
+        ) : null}
       </div>
     );
   }

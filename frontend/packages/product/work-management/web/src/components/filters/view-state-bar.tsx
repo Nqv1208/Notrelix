@@ -48,6 +48,8 @@ export interface ViewStateBarProps {
   now: Date;
   /** The board's IANA zone (its workspace's). */
   timeZone?: string;
+  /** True while the workspace setting could not be read and the default zone stands in. */
+  timeZoneIsDefault?: boolean;
   /** Which of the sort, group and swimlane controls this view has. */
   sort?: boolean;
   /** The shared view's sort as text, shown by the sort pill while the member has none. */
@@ -149,6 +151,14 @@ export function ViewStateBar(props: ViewStateBarProps) {
     typeof props.savedFilters === "function"
       ? () => setSaveOpen(true)
       : props.onSaveAsNew;
+  const zoneNote = props.timeZone
+    ? fillFiltersCopy(
+        props.timeZoneIsDefault
+          ? copy.filter.timeZoneDefaultNote
+          : copy.filter.timeZoneNote,
+        { zone: props.timeZone },
+      )
+    : undefined;
   return (
     <>
       <FilterBuilder
@@ -160,6 +170,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
         counts={props.counts}
         now={props.now}
         timeZone={props.timeZone}
+        timeZoneNote={zoneNote}
         activeCount={applied.length}
         open={open}
         onOpenChange={setOpen}
@@ -257,6 +268,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
           )}
           value={view.state.group}
           fallback={props.groupFallback}
+          timeZoneNote={zoneNote}
           onChange={view.setGroup}
         />
       ) : null}

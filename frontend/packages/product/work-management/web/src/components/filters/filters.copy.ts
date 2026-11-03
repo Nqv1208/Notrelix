@@ -31,6 +31,9 @@ export const en = {
     from: "From day",
     to: "To day",
     rangeTo: "to",
+    timeZoneNote: "Days follow the workspace time zone: {{zone}}.",
+    timeZoneDefaultNote:
+      "The workspace time zone could not be read, so the default {{zone}} applies.",
     unassigned: "Unassigned",
     unassignedHint: "no one is responsible",
     noOptions: "No choices yet",
@@ -225,6 +228,9 @@ export const vi: FiltersCopy = {
     from: "Từ ngày",
     to: "Đến ngày",
     rangeTo: "đến",
+    timeZoneNote: "Ngày tính theo múi giờ của không gian làm việc: {{zone}}.",
+    timeZoneDefaultNote:
+      "Không đọc được múi giờ của không gian làm việc, đang dùng múi giờ mặc định {{zone}}.",
     unassigned: "Chưa giao",
     unassignedHint: "không có người phụ trách",
     noOptions: "Chưa có lựa chọn",
