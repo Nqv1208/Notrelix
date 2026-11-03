@@ -6,6 +6,7 @@ import {
   Link2,
   Lock,
   MoreHorizontal,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -119,6 +120,8 @@ export interface BoardHeaderData {
   readonly onCopyLink?: () => void;
   /** Opens the board's deleted items; absent: no "Deleted items" entry. */
   readonly onOpenTrash?: () => void;
+  /** Items in the board's trash that can still be restored; shown on the entry when above zero. */
+  readonly trashCount?: number;
   /** Opens the board's archived items; absent: no entry in the menu. */
   readonly onOpenArchive?: () => void;
   /** Opens the Leave board dialog; absent: no entry in the menu. */
@@ -384,6 +387,7 @@ export function BoardHeaderSurface({
   onImport,
   onExport,
   onOpenTrash,
+  trashCount = 0,
   onOpenArchive,
   archived,
 }: BoardHeaderSurfaceProps) {
@@ -530,7 +534,7 @@ export function BoardHeaderSurface({
                 <MoreHorizontal aria-hidden="true" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-60">
               {canManage ? (
                 <DropdownMenuItem
                   className="xl:hidden"
@@ -553,8 +557,25 @@ export function BoardHeaderSurface({
                 </DropdownMenuItem>
               ) : null}
               {onOpenTrash && canEditItems ? (
-                <DropdownMenuItem onSelect={onOpenTrash}>
+                <DropdownMenuItem
+                  className="gap-2.5 rounded-[7px] px-2.5 text-[13.5px] font-medium"
+                  onSelect={onOpenTrash}
+                  aria-label={
+                    trashCount > 0
+                      ? `${h.deletedItems}, ${fillBoardHeaderCopy(h.deletedItemsCount, { count: trashCount })}`
+                      : undefined
+                  }
+                >
+                  <Trash2 aria-hidden="true" />
                   {h.deletedItems}
+                  {trashCount > 0 ? (
+                    <span
+                      aria-hidden="true"
+                      className="ml-auto grid h-[18px] min-w-[18px] place-items-center rounded-[9px] bg-state-hover-strong px-[5px] text-[11px] leading-none font-bold text-muted-foreground"
+                    >
+                      {trashCount}
+                    </span>
+                  ) : null}
                 </DropdownMenuItem>
               ) : null}
               {canManage && onOpenSettings ? (

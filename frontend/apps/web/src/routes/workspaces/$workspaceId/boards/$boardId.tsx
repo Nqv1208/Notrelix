@@ -17,6 +17,7 @@ import {
 import {
   BoardViewSelectionProvider,
   pickSavedView,
+  useBoardTrash,
   useFullBoard,
   useSavedViews,
 } from "@notrelix/work-management-state";
@@ -107,6 +108,14 @@ export function BoardPage() {
     () => setImportOpen(true),
     canExport ? () => setExportOpen(true) : undefined,
   );
+  // The count on the "Việc đã xoá" entry: only people who may edit items can read the trash.
+  const myLevel = headerData.access?.myLevel;
+  const trashCount = useBoardTrash(
+    boardId,
+    workspaceId,
+    "",
+    myLevel === "manager" || myLevel === "editor",
+  ).total;
 
   const showView = (mode: BoardSearch["view"], savedView?: string) => {
     // The item belongs to the view it was opened in; filter, sort and
@@ -195,7 +204,7 @@ export function BoardPage() {
 
   return (
     <BoardHeaderCopyContext.Provider value={headerCopy}>
-      <BoardHeaderDataContext.Provider value={headerData}>
+      <BoardHeaderDataContext.Provider value={{ ...headerData, trashCount }}>
         <BoardLayoutShell
           workspaceId={workspaceId}
           boardId={boardId}
