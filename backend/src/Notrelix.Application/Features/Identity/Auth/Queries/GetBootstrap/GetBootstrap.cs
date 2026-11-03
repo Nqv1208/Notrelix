@@ -44,7 +44,6 @@ public class GetBootstrapQueryHandler : IRequestHandler<GetBootstrapQuery, Resul
                     Id = workspace.Id,
                     Name = workspace.Name,
                     Slug = workspace.Slug,
-                    Role = workspace.Role,
                     AccountId = workspace.AccountId
                 })
                 .ToList(),

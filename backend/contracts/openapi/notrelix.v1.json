@@ -32146,7 +32146,6 @@
           "accountId",
           "id",
           "name",
-          "role",
           "slug"
         ],
         "type": "object",
@@ -32160,10 +32159,6 @@
             "nullable": true
           },
           "slug": {
-            "type": "string",
-            "nullable": true
-          },
-          "role": {
             "type": "string",
             "nullable": true
           },

@@ -59,6 +59,10 @@ export const en = {
       "No workspace template yet. Open a board, go to Board settings, then Board templates to save one.",
     templateCopies:
       "Copies the fields, statuses, groups, labels and views of the template. The new board is not linked to it.",
+    templatesLoading: "Loading the starters and templates…",
+    templatesFailed:
+      "The starters and templates could not be loaded. You can still create a blank board.",
+    templatesRetry: "Try again",
   },
   work: {
     weekdays: {
@@ -435,6 +439,9 @@ export const vi: WorkspaceHomeCopy = {
       "Workspace chưa có mẫu nào. Mở một board, vào Thiết lập board › Mẫu board để lưu một mẫu.",
     templateCopies:
       "Sao chép trường, trạng thái, nhóm việc, nhãn và view của mẫu. Board mới không liên kết với mẫu.",
+    templatesLoading: "Đang tải các mẫu có sẵn và mẫu của workspace…",
+    templatesFailed: "Không tải được các mẫu. Bạn vẫn tạo được board trống.",
+    templatesRetry: "Thử lại",
   },
   work: {
     weekdays: {
