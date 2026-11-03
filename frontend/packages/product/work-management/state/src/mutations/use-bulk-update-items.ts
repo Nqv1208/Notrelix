@@ -30,7 +30,7 @@ export function useBulkUpdateItems(boardId: string, workspaceId: string) {
   const { cards } = useWorkManagementServices();
   const submission = useRef<Submission | null>(null);
   return useMutation({
-    mutationFn: (input: {
+    mutationFn: async (input: {
       readonly itemIds: readonly string[];
       readonly change: BulkItemChange;
     }) => {
@@ -39,9 +39,12 @@ export function useBulkUpdateItems(boardId: string, workspaceId: string) {
         input.change,
       ]);
       if (submission.current?.signature !== signature) {
-        const board = queryClient.getQueryData<FullBoardResponse>(
-          wmQueryKeys.fullBoard(workspaceId, boardId),
-        );
+        // A change just made leaves the read stale until it is read again (Undo comes right after it):
+        // the versions sent are the ones the server holds now, not the ones before the last bulk change.
+        const key = wmQueryKeys.fullBoard(workspaceId, boardId);
+        if (queryClient.getQueryState(key)?.isInvalidated)
+          await queryClient.refetchQueries({ queryKey: key, type: "all" });
+        const board = queryClient.getQueryData<FullBoardResponse>(key);
         const expectedVersions: Record<string, number> = {};
         for (const id of input.itemIds)
           expectedVersions[id] = neededVersion(
