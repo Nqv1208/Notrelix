@@ -303,13 +303,15 @@ function SavedFiltersList({
               key={filter.id}
               copy={copy}
               filter={filter}
-              subtitle={
-                describe
-                  ? describe(filter.criteria)
-                      .map((phrase) => phrase.text)
-                      .join(" · ")
-                  : ""
-              }
+              subtitle={[
+                // A filter shared by a colleague says who made it ("Hà Nguyễn · …").
+                ...(filter.isMine || !filter.createdByName
+                  ? []
+                  : [filter.createdByName]),
+                ...(describe
+                  ? describe(filter.criteria).map((phrase) => phrase.text)
+                  : []),
+              ].join(" · ")}
               applied={filter.id === appliedId}
               canEdit={canEdit}
               onApply={(filter) => {

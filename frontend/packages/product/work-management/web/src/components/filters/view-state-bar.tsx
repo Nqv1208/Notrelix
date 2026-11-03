@@ -160,6 +160,14 @@ export function ViewStateBar(props: ViewStateBarProps) {
         activeCount={applied.length}
         open={open}
         onOpenChange={setOpen}
+        onSaveFilter={
+          typeof props.savedFilters === "function"
+            ? () => {
+                setOpen(false);
+                setSaveOpen(true);
+              }
+            : undefined
+        }
       />
       {shown.length > 0 ? (
         <ul

@@ -1,32 +1,45 @@
-import { AlertCircle } from "lucide-react";
+import { RefreshCw, TriangleAlert } from "lucide-react";
+import { Button, cn } from "@notrelix/ui-web";
+import { kanbanPrimaryButtonClass } from "../kanban/kanban-chrome";
+import { BoardStateBlock } from "../../board-layout/board-state-block";
 import { mainTableCopy, type MainTableCopy } from "./main-table.copy";
 
-/** The table could not be loaded. */
+/** The board could not be loaded (BC-Shell Er): what is wrong, that nothing is lost, and "Thử lại". */
 export function MainTableError({
   copy = mainTableCopy("vi"),
   message,
+  onRetry,
 }: {
   copy?: MainTableCopy;
   /** Replaces the default description. */
   message?: string;
+  /** Loads the board again; absent = no button. */
+  onRetry?: () => void;
 }) {
   return (
-    <div className="px-4 py-6 sm:px-6" data-slot="main-table-unavailable">
-      <div
-        role="status"
-        className="rounded-[12px] border border-border bg-popover p-8 text-center dark:bg-card"
-      >
-        <AlertCircle
-          className="mx-auto mb-3 size-8 text-destructive"
-          aria-hidden="true"
-        />
-        <h2 className="text-[0.9375rem] font-semibold text-foreground">
-          {copy.unavailable.title}
-        </h2>
-        <p className="mt-2 text-nav font-normal text-muted-foreground">
-          {message ?? copy.unavailable.description}
-        </p>
-      </div>
+    <div data-slot="main-table-unavailable">
+      <BoardStateBlock
+        role="alert"
+        className="py-9"
+        icon={<TriangleAlert />}
+        title={copy.unavailable.title}
+        description={message ?? copy.unavailable.description}
+        action={
+          onRetry ? (
+            <Button
+              size="sm"
+              className={cn(
+                kanbanPrimaryButtonClass,
+                "max-sm:h-11 max-sm:px-3.5 max-sm:text-[14px]",
+              )}
+              onClick={onRetry}
+            >
+              <RefreshCw className="size-4" aria-hidden="true" />
+              {copy.unavailable.retry}
+            </Button>
+          ) : undefined
+        }
+      />
     </div>
   );
 }
