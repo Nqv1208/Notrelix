@@ -308,14 +308,13 @@ export function useBoardKanban(
   );
 
   // Pages of Status lanes serve a view that lays the board out by Status and filters by what the server can
-  // evaluate; anything else (another grouping, a swimlane, a search, a facet filter) reads the whole board.
+  // evaluate; anything else (another grouping, a swimlane, a facet filter); the search box goes to the server as `q` reads the whole board.
   const compoundFilter = view?.state.filter;
   const needsWholeBoard =
     allCards ||
     Boolean(flatGroupField) ||
     (groupByField !== undefined && groupByField.id !== statusField?.id) ||
     Boolean(view?.state.lane) ||
-    debouncedQuery.trim() !== "" ||
     filter.statusOptionIds.length > 0 ||
     filter.priorities.length > 0 ||
     filter.assigneeIds.length > 0 ||
@@ -328,6 +327,7 @@ export function useBoardKanban(
         ? serializeCompoundFilter(compoundFilter)
         : "",
     sort: "",
+    search: debouncedQuery.trim(),
   });
   const lanePager = useLanePager(boardId, workspaceId);
 
@@ -343,6 +343,7 @@ export function useBoardKanban(
       compound,
       filterFields,
       memberName,
+      view?.timeZone,
     );
     return {
       ...legacyFiltered,
@@ -350,7 +351,7 @@ export function useBoardKanban(
       visibleCount: lanes.reduce((sum, lane) => sum + lane.cards.length, 0),
       active: true,
     };
-  }, [compound, filterFields, legacyFiltered, memberName]);
+  }, [compound, filterFields, legacyFiltered, memberName, view?.timeZone]);
 
   const queryClient = useQueryClient();
   // A refused stale write has already refetched the board (the write's own

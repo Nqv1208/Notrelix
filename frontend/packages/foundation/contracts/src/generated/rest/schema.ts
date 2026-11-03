@@ -17274,6 +17274,7 @@ export interface operations {
                 limit?: number;
                 filter?: string;
                 sort?: string;
+                q?: string;
             };
             header?: never;
             path: {
@@ -19283,6 +19284,7 @@ export interface operations {
                 pageSize?: number;
                 filter?: string;
                 sort?: string;
+                q?: string;
             };
             header?: never;
             path: {
@@ -20044,7 +20046,9 @@ export interface operations {
     };
     "WorkManagement.BoardViews.List": {
         parameters: {
-            query?: never;
+            query?: {
+                archived?: boolean;
+            };
             header?: never;
             path: {
                 boardId: string;

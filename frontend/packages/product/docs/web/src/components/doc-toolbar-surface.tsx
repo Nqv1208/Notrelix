@@ -260,7 +260,7 @@ function DocMenuBar({
 }
 
 /**
- * The document menu bar and formatting toolbar (Final-Docs `.tbar`): six menu
+ * The document menu bar and formatting toolbar (Final-Docs-2 `.tbar`): six menu
  * buttons over a wrapping tool row, and the File menu when open. Tools with no
  * producer yet render disabled with the stated reason.
  */

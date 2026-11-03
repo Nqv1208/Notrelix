@@ -22,10 +22,11 @@ public static class ListBoardLaneItemsEndpoint
         int? limit,
         string? filter,
         string? sort,
+        string? q,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var page = await sender.Send(new ListBoardLaneItemsQuery(boardId, lane, cursor, limit, filter, sort), cancellationToken);
+        var page = await sender.Send(new ListBoardLaneItemsQuery(boardId, lane, cursor, limit, filter, sort, q), cancellationToken);
         return Results.Ok(page);
     }
 }

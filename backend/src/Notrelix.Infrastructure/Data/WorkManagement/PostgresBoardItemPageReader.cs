@@ -56,6 +56,8 @@ public sealed class PostgresBoardItemPageReader(ApplicationDbContext context) : 
         // whether it passes the filter and its sort keys; the lane sizes and the wanted window come from that.
         var builder = new Builder(fields);
         var filter = builder.Filter(criteria);
+        var search = builder.Search(criteria.Search);
+        if (search is not null) filter = filter is null ? search : $"({search}) AND COALESCE(({filter}), false)";
         var lane = builder.Lane(laneField);
         var keyColumns = builder.SortKeys(criteria);
         var columns = string.Concat(keyColumns.Select((key, index) => $", {key.Expression} AS s{index}"));
@@ -150,6 +152,14 @@ public sealed class PostgresBoardItemPageReader(ApplicationDbContext context) : 
         }
 
         // ---- filter ----
+
+        /// <summary>The text search: the title or the key holds the text, ignoring case and accents.</summary>
+        public string? Search(string? term)
+        {
+            if (string.IsNullOrEmpty(term)) return null;
+            var needle = Fold(Add(term, NpgsqlDbType.Text));
+            return $"strpos({Fold("i.name")}, {needle}) > 0 OR strpos({Fold("COALESCE(i.item_key, '')")}, {needle}) > 0";
+        }
 
         public string? Filter(BoardItemCriteria criteria)
         {

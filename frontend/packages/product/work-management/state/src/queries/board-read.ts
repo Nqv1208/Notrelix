@@ -21,6 +21,8 @@ export interface BoardReadNeed {
   /** The filter and sort in the wire forms; empty: none. */
   readonly filter: string;
   readonly sort: string;
+  /** Keeps the items whose title or key holds the text (the board search box); empty or absent: none. */
+  readonly search?: string;
 }
 
 const needsByBoard = new Map<string, Map<string, BoardReadNeed>>();
@@ -29,8 +31,9 @@ const refused = new Set<string>();
 
 const boardKey = (workspaceId: string, boardId: string) =>
   `${workspaceId}:${boardId}`;
-const criteriaKeyOf = (need: Pick<BoardReadNeed, "filter" | "sort">) =>
-  `${need.filter}|${need.sort}`;
+const criteriaKeyOf = (
+  need: Pick<BoardReadNeed, "filter" | "sort" | "search">,
+) => `${need.filter}|${need.sort}|${need.search ?? ""}`;
 
 /** What every mounted view of the board needs together: one view wanting everything reads everything. */
 export function resolveReadNeed(
@@ -40,6 +43,7 @@ export function resolveReadNeed(
   let full = false;
   let filter = "";
   let sort = "";
+  let search = "";
   // A view brings the filter, another the sort (the table sorts by its own columns): each is the last one set.
   for (const need of needsByBoard
     .get(boardKey(workspaceId, boardId))
@@ -47,11 +51,12 @@ export function resolveReadNeed(
     if (need.full) full = true;
     if (need.filter) filter = need.filter;
     if (need.sort) sort = need.sort;
+    if (need.search) search = need.search;
   }
   const refusedHere = refused.has(
-    `${boardKey(workspaceId, boardId)}|${criteriaKeyOf({ filter, sort })}`,
+    `${boardKey(workspaceId, boardId)}|${criteriaKeyOf({ filter, sort, search })}`,
   );
-  return { full: full || refusedHere, filter, sort };
+  return { full: full || refusedHere, filter, sort, search };
 }
 
 /** Whether the server refused to read a board under these criteria. */
@@ -77,10 +82,16 @@ export async function readBoard(
   try {
     read = await boards.getFullBoard(boardId, {
       workspaceId,
-      page: { size: BOARD_FIRST_PAGE, filter: need.filter, sort: need.sort },
+      page: {
+        size: BOARD_FIRST_PAGE,
+        filter: need.filter,
+        sort: need.sort,
+        ...(need.search ? { search: need.search } : {}),
+      },
     });
   } catch (error) {
-    if (!isRefusal(error) || (!need.filter && !need.sort)) throw error;
+    if (!isRefusal(error) || (!need.filter && !need.sort && !need.search))
+      throw error;
     refused.add(`${boardKey(workspaceId, boardId)}|${criteriaKeyOf(need)}`);
     return boards.getFullBoard(boardId, { workspaceId });
   }
@@ -133,13 +144,13 @@ export function useBoardReadNeed(
 ): void {
   const owner = useId();
   const queryClient = useQueryClient();
-  const { full, filter, sort } = need;
+  const { full, filter, sort, search } = need;
   useEffect(() => {
     if (!boardId || !workspaceId) return;
     const key = boardKey(workspaceId, boardId);
     const owners = needsByBoard.get(key) ?? new Map<string, BoardReadNeed>();
     needsByBoard.set(key, owners);
-    owners.set(owner, { full, filter, sort });
+    owners.set(owner, { full, filter, sort, search });
     const queryKey = wmQueryKeys.fullBoard(workspaceId, boardId);
     const cached = queryClient.getQueryData<FullBoardResponse>(queryKey);
     const resolved = resolveReadNeed(workspaceId, boardId);
@@ -153,7 +164,7 @@ export function useBoardReadNeed(
       owners.delete(owner);
       if (owners.size === 0) needsByBoard.delete(key);
     };
-  }, [boardId, workspaceId, owner, full, filter, sort, queryClient]);
+  }, [boardId, workspaceId, owner, full, filter, sort, search, queryClient]);
 }
 
 /** Where each lane's "show more" stands: reading, or failed (the loaded cards stay, the person can retry). */
@@ -207,6 +218,9 @@ export function useLanePager(
         limit: BOARD_LANE_PAGE,
         filter: board.paging.criteria.filter,
         sort: board.paging.criteria.sort,
+        ...(board.paging.criteria.search
+          ? { search: board.paging.criteria.search }
+          : {}),
         board: board.board,
         fieldDefinitions: board.fieldDefinitions,
       });
