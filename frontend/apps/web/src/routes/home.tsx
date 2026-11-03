@@ -26,7 +26,8 @@ import { CreateWorkspaceDialog } from "@/shell/workspace/create-workspace-dialog
  * so `/home` resolves into a workspace instead of rendering a second shell:
  * members with a workspace land on the one they chose as default (the first
  * by name when they chose none or the choice cannot be read); members without
- * one get an onboarding state. The duplicate home sidebar and switcher are retired.
+ * one set one up (the Onboarding mockup), unless they still have a workspace in Recently deleted:
+ * then they land on "Your workspaces" outside a workspace to restore it. The duplicate home sidebar and switcher are retired.
  */
 function HomeLanding() {
   const copy = useWorkspaceShellCopy();
@@ -61,15 +62,26 @@ function HomeLanding() {
   // The default is a hint: the person's own choice opens when it is still one they can open; a list
   // that cannot be read must not keep them out, so a failed read falls back to the first.
   const defaultSettled = account.workspaces !== undefined || account.isError;
-  const isLoading = listLoading || (first !== undefined && !defaultSettled);
+  // With no workspace the Recently deleted list decides where they land, so wait for it (a failed read falls through).
+  const deletedSettled =
+    account.deleted !== undefined || account.deletedIsError;
+  const noWorkspace = !first && !listLoading && !isError;
+  const isLoading =
+    listLoading ||
+    (first !== undefined && !defaultSettled) ||
+    (noWorkspace && !deletedSettled);
   const chosen = account.workspaces?.find(
     (workspace) => workspace.isDefault && !workspace.isArchived,
   );
   const target =
     workspaces?.find((workspace) => workspace.id === chosen?.id) ?? first;
-  // A member with no workspace yet sets one up (the Onboarding mockup).
-  if (!first && !isLoading && !isError) {
-    return <Navigate to="/onboarding" replace />;
+  if (noWorkspace && !isLoading) {
+    return (
+      <Navigate
+        to={account.deleted?.length ? "/account/workspaces" : "/onboarding"}
+        replace
+      />
+    );
   }
   if (target && !isLoading) {
     return (
