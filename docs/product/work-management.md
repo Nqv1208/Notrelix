@@ -542,6 +542,7 @@ Decided 2026-10-27 (matches the Detail mockup, whose item opens on a written des
 - an Item's own facts — name, description, start and due date — may be given when it is created, so it never exists half-filled; people, labels, status and priority are other facts and are written through their own routes after the create;
 - a due or start date is removed with an explicit clear; a date that is merely absent from a request means "unchanged";
 - no event is published for a description change until a consumer needs one.
+- when two members save the description, the second save is refused as stale and changes nothing; that person's text stays in the editor and the notice names who saved first and offers two choices: view the new version (their text is dropped) or keep mine (it is saved over theirs on purpose, with the version just read).
 
 ---
 
@@ -550,6 +551,8 @@ Decided 2026-10-27 (matches the Detail mockup, whose item opens on a written des
 If an Item has a primary name/title, its semantics should be stable enough for cross-view identity and user recognition.
 
 It is not the durable technical ID.
+
+An Item title is 1 to 500 characters after trim. One limit holds on create, rename, sub-item create and duplicate (`BoardItem.NameMaxLength`); a title over it is refused with the limit named, and the typed text stays.
 
 ---
 
@@ -1057,6 +1060,7 @@ related    undirected, no workflow meaning
 Decided 2026-10-12 (UI mockup review).
 
 - assigning a User who cannot `ViewBoard` on the Item's Board is rejected on every write path (UI, API, Automation, Import, WM-030); assignee pickers show such people as unavailable, with an invite action for principals who may grant access;
+- a refused assignment says why: the person cannot see the Board yet (share the Board first) or only views it (make them a member first); the refusal for "cannot see the Board" carries the stable code `work-management.assignee.board-not-shared`, and principals who may grant access are offered Share from the message;
 - losing access later (Board made Private, Space role removed, entry expired) does not unassign: the Item keeps its value and the assignee simply cannot open it;
 - access-changing flows warn about open Items assigned to people who will lose access and offer to grant them access first (GOV-025).
 

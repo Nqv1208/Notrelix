@@ -3,7 +3,14 @@ import {
   tableCollapsedGroupsKey,
   useKanbanCollapsedLanes,
 } from "../kanban/use-kanban-collapsed-lanes";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
 import { useIsMobile } from "@notrelix/ui-web";
 import {
@@ -18,6 +25,7 @@ import {
   useRemoveFieldOption,
   useUpdateCard,
   useWorkspaceBoards,
+  assigneeRefusalOf,
   changedByNameOf,
   isVersionConflict,
   type KanbanWriteFailure,
@@ -54,6 +62,7 @@ import { buildCardLink } from "../kanban/kanban-view-helpers";
 import { useKanbanLaneCopy } from "../kanban/use-kanban-lane-copy";
 import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
 import { MainTableError } from "./main-table-error";
+import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
 import { fillTableCopy } from "./main-table.copy";
 import { MainTableSkeleton } from "./main-table-skeleton";
 import { MainTableSurface } from "./main-table-surface";
@@ -209,6 +218,8 @@ export function MainTableView({
     () => collapsedGroups.initial,
   );
 
+  // The route gives Share only to people who may grant board access.
+  const openShare = useContext(BoardHeaderDataContext)?.onOpenShare;
   const titles = useRef(new Map<string, string>());
   // Each failure toast takes its own id: reusing one id swallows the next result toast.
   const toastAttempt = useRef(0);
@@ -232,6 +243,26 @@ export function MainTableView({
         );
         return;
       }
+      // The server named why this person cannot be given the work: say it, and offer Share to who may grant access.
+      const refusal = assigneeRefusalOf(failure.error);
+      if (refusal) {
+        toast.error(
+          fillTableCopy(
+            refusal === "viewer"
+              ? copy.failed.assigneeViewer
+              : copy.failed.assigneeNotShared,
+            { title },
+          ),
+          {
+            id: `table-write-${failure.cardId ?? "create"}-${++toastAttempt.current}`,
+            action:
+              refusal === "board-not-shared" && openShare
+                ? { label: copy.failed.shareBoard, onClick: openShare }
+                : undefined,
+          },
+        );
+        return;
+      }
       const message =
         failure.kind === "create"
           ? copy.failed.create
@@ -242,7 +273,7 @@ export function MainTableView({
         id: `table-write-${failure.cardId ?? "create"}-${++toastAttempt.current}`,
       });
     },
-    [copy],
+    [copy, openShare],
   );
 
   const table = useBoardTable(boardId, workspaceId, {

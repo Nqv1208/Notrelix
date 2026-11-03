@@ -33,6 +33,7 @@ import {
 import { kanbanLaneCatalog } from "../../kanban/kanban-lane.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
 import { statusOptionFormCatalog } from "../../../status-option/status-option-form.catalog";
+import { BoardHeaderDataContext } from "../../../board-layout/board-header-data-context";
 import { mainTableCatalog } from "../main-table.catalog";
 import { ARCHIVE_UNDO_MS, MainTableView } from "../main-table-view";
 
@@ -505,6 +506,59 @@ describe("MainTableView on the ERP board", () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(2));
     for (const call of toast.error.mock.calls)
       expect(call[0]).toMatch(/^Lê Hoàng Phúc vừa sửa “Viết tài liệu/);
+  });
+
+  it("tells the person why an assignee was refused and offers Share to who may grant access", async () => {
+    const onOpenShare = vi.fn();
+    const fake = fakeServices(erpOwnerAccess(), true);
+    fake.cards.updateFieldValue.mockRejectedValue({
+      status: 403,
+      code: "work-management.assignee.board-not-shared",
+    });
+    renderPureUi(
+      <Providers services={fake.services}>
+        <BoardHeaderDataContext.Provider value={{ onOpenShare }}>
+          <RoutedView />
+        </BoardHeaderDataContext.Provider>
+      </Providers>,
+    );
+    await ready();
+    fireEvent.click(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi người phụ trách của ERP-149",
+      }),
+    );
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /Trần Minh Quân/ })[0]!,
+    );
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+    expect(toast.error.mock.calls[0]?.[0]).toMatch(
+      /^Chưa giao “Viết tài liệu.*người này chưa xem được board\. Hãy chia sẻ board với họ trước\.$/,
+    );
+    const action = toast.error.mock.calls[0]?.[1]?.action;
+    expect(action?.label).toBe("Chia sẻ board");
+    action?.onClick();
+    expect(onOpenShare).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives no Share action when the person cannot grant access, and names a viewer refusal", async () => {
+    const { cards } = renderTable(erpOwnerAccess(), {}, true);
+    cards.updateFieldValue.mockRejectedValue({
+      status: 400,
+      ruleCode: "WorkManagement_BoardItem_AssigneeIsViewer",
+    });
+    await ready();
+    fireEvent.click(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi người phụ trách của ERP-149",
+      }),
+    );
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /Trần Minh Quân/ })[0]!,
+    );
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+    expect(toast.error.mock.calls[0]?.[0]).toMatch(/người này chỉ xem board/);
+    expect(toast.error.mock.calls[0]?.[1]?.action).toBeUndefined();
   });
 
   // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.

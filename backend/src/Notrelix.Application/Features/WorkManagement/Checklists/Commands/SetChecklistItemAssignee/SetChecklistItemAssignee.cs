@@ -49,7 +49,7 @@ public class SetChecklistItemAssigneeCommandHandler(
                 ?? throw new NotFoundException(nameof(BoardItem), checklist.ItemId);
             var visibleBoards = await visibility.VisibleBoardIdsAsync(checklist.WorkspaceId, assignee, ct);
             if (!visibleBoards.Contains(boardId))
-                throw new ForbiddenException("Người này chưa xem được board của việc, nên chưa thể giao mục. Hãy chia sẻ board với họ trước.");
+                throw new ForbiddenException("Người này chưa xem được board của việc, nên chưa thể giao mục. Hãy chia sẻ board với họ trước.", BoardAssigneeGuard.BoardNotSharedCode);
             await BoardAssigneeGuard.EnsureNotViewerAsync(context, boardId, assignee, ct);
         }
 
