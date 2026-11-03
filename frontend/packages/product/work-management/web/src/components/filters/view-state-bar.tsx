@@ -35,6 +35,8 @@ export interface ViewStateBarProps {
   /** Items the filter keeps and the items it was applied to. */
   counts: { shown: number; total: number };
   now: Date;
+  /** The board's IANA zone (its workspace's). */
+  timeZone?: string;
   /** Which of the sort, group and swimlane controls this view has. */
   sort?: boolean;
   /** The shared view's sort as text, shown by the sort pill while the member has none. */
@@ -101,6 +103,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
         onChange={view.setFilter}
         counts={props.counts}
         now={props.now}
+        timeZone={props.timeZone}
         activeCount={applied.length}
         open={open}
         onOpenChange={setOpen}

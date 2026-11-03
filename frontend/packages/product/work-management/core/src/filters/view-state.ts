@@ -14,6 +14,7 @@ import {
   priorityFromOptionName,
 } from "../utils/status-lanes";
 import {
+  dayOf,
   decodePart,
   emptyCompoundFilter,
   escapePart,
@@ -220,8 +221,9 @@ export type MemberNames = (userId: string) => string;
 export function fieldContext(
   field: FilterField,
   memberName: MemberNames,
+  timeZone?: string,
 ): FieldContext {
-  return { field: field.field, memberName };
+  return { field: field.field, memberName, ...(timeZone ? { timeZone } : {}) };
 }
 
 /* ---------- filter ---------- */
@@ -250,6 +252,7 @@ export function cardMatchesFilter(
   fields: readonly FilterField[],
   memberName: MemberNames,
   card: Card,
+  timeZone?: string,
 ): boolean {
   if (filter.conditions.length === 0) return true;
   const byId = new Map(fields.map((f) => [f.id, f]));
@@ -258,7 +261,7 @@ export function cardMatchesFilter(
       const found = byId.get(fieldId);
       return found
         ? {
-            context: fieldContext(found, memberName),
+            context: fieldContext(found, memberName, timeZone),
             value: found.read(card),
           }
         : undefined;
@@ -272,12 +275,13 @@ export function filterLanesByCompound(
   filter: CompoundFilter,
   fields: readonly FilterField[],
   memberName: MemberNames,
+  timeZone?: string,
 ): KanbanStatusLane[] {
   if (filter.conditions.length === 0) return [...lanes];
   return lanes.map((lane) => ({
     ...lane,
     cards: lane.cards.filter((card) =>
-      cardMatchesFilter(filter, fields, memberName, card),
+      cardMatchesFilter(filter, fields, memberName, card, timeZone),
     ),
   }));
 }
@@ -333,20 +337,7 @@ export function groupableFields(fields: readonly FilterField[]): FilterField[] {
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-/** The day (YYYY-MM-DD) of a date value, in `timeZone` when the value is an instant. */
-export function dayOf(value: unknown, timeZone?: string): string | null {
-  if (typeof value !== "string" || value === "") return null;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-  const time = Date.parse(value);
-  if (Number.isNaN(time)) return null;
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: timeZone ?? "UTC",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(time);
-  return parts;
-}
+export { dayOf };
 
 /** The bucket a day falls in: its day, the Monday of its week, `YYYY-MM`, `YYYY-Qn` or `YYYY`. */
 export function bucketKeyOf(day: string, bucket: DateBucket): string {

@@ -382,7 +382,21 @@ export function createBoardSettingsApi(client: NotrelixClient) {
   const optionVersion = (s: BoardSettingsDto, fieldId: string) =>
     fieldOf(s, fieldId).version ?? 0;
 
+  const workspaceLocale = (workspaceId: string): Promise<WorkspaceLocale> =>
+    api
+      .get<{ timeZone?: string | null; weekStart?: string | null }>(
+        endpoints.workspaces.settings(workspaceId),
+        quiet,
+      )
+      .then((workspace): WorkspaceLocale => ({
+        timeZone: workspace.timeZone || DEFAULT_LOCALE.timeZone,
+        weekStart: workspace.weekStart === "sunday" ? "sunday" : "monday",
+      }))
+      .catch(() => DEFAULT_LOCALE);
+
   return {
+    /** The workspace's locale a board inherits (its time zone judges the days). */
+    workspaceLocale,
     async get(boardId: string): Promise<BoardSettingsDto> {
       const board = await api.get<Overview>(
         endpoints.boards.full(boardId),
@@ -390,16 +404,7 @@ export function createBoardSettingsApi(client: NotrelixClient) {
       );
       // The workspace's locale is context, not the page's own data: without it the defaults show.
       const inherited = board.workspaceId
-        ? await api
-            .get<{ timeZone?: string | null; weekStart?: string | null }>(
-              endpoints.workspaces.settings(board.workspaceId),
-              quiet,
-            )
-            .then((workspace): WorkspaceLocale => ({
-              timeZone: workspace.timeZone || DEFAULT_LOCALE.timeZone,
-              weekStart: workspace.weekStart === "sunday" ? "sunday" : "monday",
-            }))
-            .catch(() => DEFAULT_LOCALE)
+        ? await workspaceLocale(board.workspaceId)
         : DEFAULT_LOCALE;
       const savedViews = await boardApi.listSavedViews(boardId).catch(() => []);
       // Only a manager reads the impact; the settings page is a manager's page, and without it the
