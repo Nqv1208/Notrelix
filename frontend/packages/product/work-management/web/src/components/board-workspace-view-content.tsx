@@ -21,6 +21,8 @@ export interface BoardScreenProps {
     id: string | undefined,
     options?: { replace?: boolean },
   ) => void;
+  /** Opens an item of any board (the toast after a move, the item that blocks a move); absent: only this board's items open, through `onSelectedItemChange`. */
+  onOpenItem?: (boardId: string, itemId: string) => void;
   /** The route `filter` parameter (Kanban). */
   filter?: string;
   onFilterChange?: (
@@ -43,6 +45,7 @@ type KanbanParams = Pick<
   BoardScreenProps,
   | "selectedItemId"
   | "onSelectedItemChange"
+  | "onOpenItem"
   | "filter"
   | "onFilterChange"
   | "groupBy"
