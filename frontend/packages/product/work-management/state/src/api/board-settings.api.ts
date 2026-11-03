@@ -278,6 +278,7 @@ export function mapBoardSettings(
   board: Overview,
   inherited: WorkspaceLocale = DEFAULT_LOCALE,
   savedViews: readonly SavedBoardView[] = [],
+  archivedViews: readonly SavedBoardView[] = [],
 ): BoardSettingsDto {
   const columns = byPosition(
     (board.columns ?? []).filter((column) => column.isDeleted !== true),
@@ -313,6 +314,7 @@ export function mapBoardSettings(
     systemFields: columns.filter(isLockedSystemField).map(mapSystemField),
     archivedFields: [],
     views: savedViews.map((view) => mapSettingsView(view, fields)),
+    archivedViews: archivedViews.map((view) => mapSettingsView(view, fields)),
     groups,
     archivedGroups,
     automations: [],
@@ -382,7 +384,21 @@ export function createBoardSettingsApi(client: NotrelixClient) {
   const optionVersion = (s: BoardSettingsDto, fieldId: string) =>
     fieldOf(s, fieldId).version ?? 0;
 
+  const workspaceLocale = (workspaceId: string): Promise<WorkspaceLocale> =>
+    api
+      .get<{ timeZone?: string | null; weekStart?: string | null }>(
+        endpoints.workspaces.settings(workspaceId),
+        quiet,
+      )
+      .then((workspace): WorkspaceLocale => ({
+        timeZone: workspace.timeZone || DEFAULT_LOCALE.timeZone,
+        weekStart: workspace.weekStart === "sunday" ? "sunday" : "monday",
+      }))
+      .catch(() => DEFAULT_LOCALE);
+
   return {
+    /** The workspace's locale a board inherits (its time zone judges the days). */
+    workspaceLocale,
     async get(boardId: string): Promise<BoardSettingsDto> {
       const board = await api.get<Overview>(
         endpoints.boards.full(boardId),
@@ -390,18 +406,12 @@ export function createBoardSettingsApi(client: NotrelixClient) {
       );
       // The workspace's locale is context, not the page's own data: without it the defaults show.
       const inherited = board.workspaceId
-        ? await api
-            .get<{ timeZone?: string | null; weekStart?: string | null }>(
-              endpoints.workspaces.settings(board.workspaceId),
-              quiet,
-            )
-            .then((workspace): WorkspaceLocale => ({
-              timeZone: workspace.timeZone || DEFAULT_LOCALE.timeZone,
-              weekStart: workspace.weekStart === "sunday" ? "sunday" : "monday",
-            }))
-            .catch(() => DEFAULT_LOCALE)
+        ? await workspaceLocale(board.workspaceId)
         : DEFAULT_LOCALE;
       const savedViews = await boardApi.listSavedViews(boardId).catch(() => []);
+      const archivedViews = await boardApi
+        .listSavedViews(boardId, true)
+        .catch(() => []);
       // Only a manager reads the impact; the settings page is a manager's page, and without it the
       // confirmations name the effect without counts.
       const impact = await api
@@ -417,7 +427,13 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         }))
         .catch(() => undefined);
       return {
-        ...mapBoardSettings(boardId, board, inherited, savedViews),
+        ...mapBoardSettings(
+          boardId,
+          board,
+          inherited,
+          savedViews,
+          archivedViews,
+        ),
         ...(impact ? { impact } : {}),
       };
     },
@@ -690,6 +706,16 @@ export function createBoardSettingsApi(client: NotrelixClient) {
     },
     setDefaultView: (s: BoardSettingsDto, viewId: string) =>
       boardApi.setDefaultSavedView(s.boardId, viewId, viewVersion(s, viewId)),
+    /** Takes the view out of the tab strip; the default view hands over to the oldest shared one. */
+    archiveView: (s: BoardSettingsDto, viewId: string) =>
+      boardApi.archiveSavedView(s.boardId, viewId, viewVersion(s, viewId)),
+    unarchiveView: (s: BoardSettingsDto, viewId: string) => {
+      const version = s.archivedViews?.find(
+        (view) => view.id === viewId,
+      )?.version;
+      if (!version) throw new Error(`Unknown archived view ${viewId}`);
+      return boardApi.unarchiveSavedView(s.boardId, viewId, version);
+    },
     /** The default view cannot leave without a next one: the server takes `newDefaultViewId`, else the oldest shared view. */
     deleteView: (
       s: BoardSettingsDto,

@@ -244,13 +244,25 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
         (await ItemAsync(_archivedRoot.Id, guest: true)).ArchivedByName.Should().BeNull();
     }
 
-    private async Task<FullBoardDto> FullBoardAsync(IReadOnlyList<Guid> visibleSpaces)
+    [Fact]
+    public async Task FullBoard_PagedWithSearch_KeepsTheItemsWhoseTitleOrKeyHoldsTheText_IgnoringCase()
+    {
+        var byTitle = await FullBoardAsync([_spaceId], search: "PLAIN");
+        byTitle.Lists.Single(l => l.Id == _group.Id).BoardItems.Select(i => i.Name).Should().Equal(["Plain"]);
+        byTitle.Lanes!.Sum(l => l.FilteredCount).Should().Be(1);
+        byTitle.Lanes!.Sum(l => l.ItemCount).Should().Be(2, "the search narrows the filtered size, not the lane's own");
+
+        var byKey = await FullBoardAsync([_spaceId], search: _parent.ItemKey!.ToLowerInvariant());
+        byKey.Lists.Single(l => l.Id == _group.Id).BoardItems.Select(i => i.Name).Should().Equal(["Parent"]);
+    }
+
+    private async Task<FullBoardDto> FullBoardAsync(IReadOnlyList<Guid> visibleSpaces, string? search = null)
     {
         var visibility = new Mock<IResourceVisibility>();
         visibility.Setup(v => v.VisibleSpaceIdsAsync(_workspaceId, _userId, It.IsAny<CancellationToken>())).ReturnsAsync(visibleSpaces);
         await using var context = _db.CreateOwnerContext(Tenant());
         var result = await new GetFullBoardQueryHandler(context, Actors(), new Notrelix.Application.Features.WorkManagement.BoardItems.Services.BoardItemSummaryBuilder(context, Actors(), Collaboration(), Request()), new Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemPageReader(context), visibility.Object, Request())
-            .Handle(new GetFullBoardQuery(_board.Id), CancellationToken.None);
+            .Handle(search is null ? new GetFullBoardQuery(_board.Id) : new GetFullBoardQuery(_board.Id, 50, Search: search), CancellationToken.None);
         result.Succeeded.Should().BeTrue();
         return result.Data!;
     }

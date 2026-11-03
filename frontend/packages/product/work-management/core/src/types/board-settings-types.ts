@@ -214,6 +214,8 @@ export interface BoardSettingsDto {
   readonly systemFields: readonly BoardSettingsSystemFieldDto[];
   readonly archivedFields: readonly BoardSettingsArchivedFieldDto[];
   readonly views: readonly BoardSettingsViewDto[];
+  /** Views taken out of the tab strip; Restore brings one back. */
+  readonly archivedViews?: readonly BoardSettingsViewDto[];
   readonly groups: readonly BoardSettingsGroupDto[];
   /** Groups taken out of every view; their items stay in them, read-only, until the group is unarchived. */
   readonly archivedGroups: readonly BoardSettingsGroupDto[];

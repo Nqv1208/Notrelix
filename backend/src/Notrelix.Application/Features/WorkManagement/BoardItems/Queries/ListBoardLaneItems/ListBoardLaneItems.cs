@@ -22,7 +22,8 @@ public record BoardLaneItemPageDto(
 /// <param name="Lane">A Status option id, or "none" for the lane of Items with no status.</param>
 /// <param name="Cursor">The previous page's NextCursor; none reads the first page.</param>
 /// <param name="Limit">Page size, 50 when absent, clamped to 1..200.</param>
-public record ListBoardLaneItemsQuery(Guid BoardId, string Lane, string? Cursor = null, int? Limit = null, string? Filter = null, string? Sort = null)
+/// <param name="Search">Keeps the items whose title or key holds the text.</param>
+public record ListBoardLaneItemsQuery(Guid BoardId, string Lane, string? Cursor = null, int? Limit = null, string? Filter = null, string? Sort = null, string? Search = null)
     : IQuery<BoardLaneItemPageDto>, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IReadRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
@@ -47,7 +48,7 @@ public class ListBoardLaneItemsQueryHandler : IRequestHandler<ListBoardLaneItems
 
     public async Task<BoardLaneItemPageDto> Handle(ListBoardLaneItemsQuery request, CancellationToken cancellationToken)
     {
-        var criteria = BoardItemCriteria.Parse(request.Filter, request.Sort);
+        var criteria = BoardItemCriteria.Parse(request.Filter, request.Sort, request.Search);
         var limit = PageCursor.ClampLimit(request.Limit);
         Guid? optionId = null;
         if (request.Lane != "none")
