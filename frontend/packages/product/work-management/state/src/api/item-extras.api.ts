@@ -600,14 +600,18 @@ export function createItemExtrasApi(
         droppedAssignees: result?.droppedAssignees ?? 0,
       };
     },
-    /** `WorkManagement.BoardItems.Trash`: items deleted from the board in the last 30 days, newest first, a page at a time. */
+    /** `WorkManagement.BoardItems.Trash`: items deleted from the board in the last 30 days, newest first, optionally narrowed by name or key, a page at a time. */
     async listTrash(
       boardId: string,
+      search?: string,
       cursor?: string,
     ): Promise<ListPage<BoardTrashEntryDto>> {
-      const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+      const query = new URLSearchParams();
+      if (search?.trim()) query.set("q", search.trim());
+      if (cursor) query.set("cursor", cursor);
+      const text = query.toString();
       const page = await api.get<TrashPage | null>(
-        `${endpoints.boardItems.trash(boardId)}${query}`,
+        `${endpoints.boardItems.trash(boardId)}${text ? `?${text}` : ""}`,
         quiet,
       );
       return {

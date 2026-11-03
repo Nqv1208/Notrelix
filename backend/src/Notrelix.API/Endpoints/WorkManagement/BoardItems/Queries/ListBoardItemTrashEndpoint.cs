@@ -16,12 +16,13 @@ public static class ListBoardItemTrashEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid boardId,
+        [FromQuery] string? q,
         [FromQuery] string? cursor,
         [FromQuery] int? limit,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new ListBoardItemTrashQuery(boardId, cursor, limit), cancellationToken);
+        var result = await sender.Send(new ListBoardItemTrashQuery(boardId, q, cursor, limit), cancellationToken);
         return Results.Ok(result);
     }
 }

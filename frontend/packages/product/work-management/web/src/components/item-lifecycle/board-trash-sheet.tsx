@@ -1,5 +1,18 @@
-import { AlertCircle, CornerDownRight, Search, Undo2, X } from "lucide-react";
-import { Sheet, SheetClose, SheetContent, SheetTitle } from "@notrelix/ui-web";
+import {
+  AlertCircle,
+  CornerDownRight,
+  Loader2,
+  Search,
+  Undo2,
+  X,
+} from "lucide-react";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetTitle,
+  cn,
+} from "@notrelix/ui-web";
 import {
   fillLifecycleCopy,
   type ItemLifecycleCopy,
@@ -48,7 +61,7 @@ const PAGE_SIZE = 50;
 /**
  * The board's deleted (or archived) items with the way back, a page at a time: a count beside the title, a search,
  * who did it and when, the sub-items that come back with the item and the reason when a try was refused. A right
- * panel from 640 px, the whole screen under it with 44 px buttons.
+ * panel from 640 px, the whole screen under it with 44 px buttons; under 360 px the button sits under the line.
  */
 export function BoardTrashSheet({
   copy,
@@ -97,13 +110,13 @@ export function BoardTrashSheet({
         side="right"
         showCloseButton={false}
         aria-describedby={undefined}
-        className="w-full gap-0 border-line-strong p-0 sm:max-w-[440px]"
+        className="gap-0 border-line-strong p-0 data-[side=right]:w-full data-[side=right]:sm:max-w-[440px]"
       >
         <div className="flex items-center gap-2 pt-3 pr-2 pb-1 pl-4">
           <SheetTitle className="m-0 min-w-0 flex-1 text-[17px] font-[650]">
             {labels.title}
             {rows.length > 0 || size > 0 ? (
-              <span className="ml-2 inline-flex h-[22px] items-center rounded-md bg-state-hover-strong px-2 align-[2px] text-[12px] font-semibold text-muted-foreground">
+              <span className="ml-2 inline-flex h-[22px] items-center rounded-[6px] bg-state-hover-strong px-2 align-[2px] text-[12px] font-semibold text-muted-foreground">
                 {size}
               </span>
             ) : null}
@@ -119,7 +132,7 @@ export function BoardTrashSheet({
             </button>
           </SheetClose>
         </div>
-        {labels.searchPlaceholder && onSearch ? (
+        {labels.searchPlaceholder && onSearch && !(empty && !searching) ? (
           <div className="px-4 py-2">
             <label className="box-border flex h-11 w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-meta-foreground sm:h-9">
               <Search aria-hidden="true" className="size-4 shrink-0" />
@@ -152,7 +165,7 @@ export function BoardTrashSheet({
             <div className="p-4">
               <div
                 role="alert"
-                className="flex items-start gap-2.5 rounded-[10px] bg-danger-subtle px-3.5 py-2.5 text-[13px] leading-[1.4] text-danger-text"
+                className="flex flex-wrap items-start gap-2.5 rounded-[10px] bg-danger-subtle px-3.5 py-2.5 text-[13px] leading-[1.4] text-danger-text dark:bg-danger-text/14"
               >
                 <AlertCircle
                   aria-hidden="true"
@@ -163,16 +176,18 @@ export function BoardTrashSheet({
                   <span>{copy.listErrorBody}</span>
                 </span>
                 {onRetry ? (
-                  <ListButton onClick={onRetry}>{copy.listRetry}</ListButton>
+                  <ListButton onClick={onRetry} className="max-[359px]:w-full">
+                    {copy.listRetry}
+                  </ListButton>
                 ) : null}
               </div>
             </div>
           ) : empty ? (
             <div className="flex flex-col items-center gap-1.5 px-6 py-12 text-center">
-              <span className="grid size-11 place-items-center rounded-xl bg-state-hover-strong text-muted-foreground">
+              <span className="grid size-11 place-items-center rounded-[12px] bg-state-hover-strong text-muted-foreground">
                 <Undo2 aria-hidden="true" className="size-5" />
               </span>
-              <b className="text-[14px] font-semibold">
+              <b className="text-[14px] font-bold">
                 {searching
                   ? copy.listNoResultsTitle
                   : (labels.emptyTitle ?? labels.empty)}
@@ -191,7 +206,7 @@ export function BoardTrashSheet({
                 {rows.map((row) => (
                   <li
                     key={row.id}
-                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-b border-line px-4 py-2.5"
+                    className="grid grid-cols-1 items-center gap-x-3 gap-y-1.5 border-b border-line px-4 py-3 min-[360px]:grid-cols-[minmax(0,1fr)_auto] min-[360px]:gap-y-1 min-[360px]:py-2.5"
                   >
                     <span className="min-w-0">
                       <span className="flex items-center gap-2">
@@ -201,7 +216,7 @@ export function BoardTrashSheet({
                           </span>
                         ) : null}
                         {row.subItemCount ? (
-                          <span className="inline-flex h-[22px] items-center gap-1 rounded-md bg-state-hover-strong px-2 text-[12px] font-semibold text-muted-foreground">
+                          <span className="inline-flex h-[22px] items-center gap-1 rounded-[6px] bg-state-hover-strong px-2 text-[12px] font-semibold text-muted-foreground">
                             <CornerDownRight
                               aria-hidden="true"
                               className="size-[13px]"
@@ -218,16 +233,18 @@ export function BoardTrashSheet({
                       <span className="block text-[14px] font-medium wrap-break-word">
                         {row.name}
                       </span>
-                      <span className="block text-[12.5px] text-muted-foreground">
-                        {row.note ??
-                          fillLifecycleCopy(copy.trashUntil, {
-                            day: row.restorableUntilDay ?? "",
-                          })}
+                      <span className="block">
+                        <span className="text-[12.5px] text-muted-foreground max-[359px]:block">
+                          {row.note ??
+                            fillLifecycleCopy(copy.trashUntil, {
+                              day: row.restorableUntilDay ?? "",
+                            })}
+                        </span>
                       </span>
                       {row.refusal ? (
                         <span
                           role="alert"
-                          className="mt-1 flex items-start gap-1.5 text-[12.5px] leading-[1.4] font-medium text-danger-text"
+                          className="mt-1 flex items-start gap-1.5 text-[12.5px] leading-[1.45] font-medium text-danger-text"
                         >
                           <AlertCircle
                             aria-hidden="true"
@@ -240,9 +257,19 @@ export function BoardTrashSheet({
                     <ListButton
                       disabled={restoringId === row.id}
                       onClick={() => onRestore(row)}
+                      className={cn(
+                        "justify-self-start min-[360px]:justify-self-auto",
+                        restoringId === row.id && "sm:h-8 sm:px-3",
+                      )}
                     >
                       {restoringId === row.id ? (
-                        copy.listBusy
+                        <>
+                          <Loader2
+                            aria-hidden="true"
+                            className="size-4 animate-spin motion-reduce:animate-none"
+                          />
+                          {copy.listBusy}
+                        </>
                       ) : (
                         <>
                           <Undo2 aria-hidden="true" className="size-4" />
@@ -287,10 +314,12 @@ export function BoardTrashSheet({
 function ListButton({
   disabled,
   onClick,
+  className,
   children,
 }: {
   disabled?: boolean;
   onClick: () => void;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -299,7 +328,10 @@ function ListButton({
       disabled={disabled}
       aria-disabled={disabled || undefined}
       onClick={onClick}
-      className="box-border inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-[7px] border border-line-strong bg-popover px-3.5 text-[13px] font-medium whitespace-nowrap text-foreground hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:bg-state-hover-strong disabled:text-meta-foreground"
+      className={cn(
+        "box-border inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-[7px] border border-line-strong bg-popover px-3.5 text-[13px] font-medium whitespace-nowrap text-foreground hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:bg-state-hover-strong disabled:text-meta-foreground max-sm:text-sm",
+        className,
+      )}
     >
       {children}
     </button>

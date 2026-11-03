@@ -20,6 +20,8 @@ export interface ErpStateItem {
   /** Instant the item was created. */
   readonly createdAt: string;
   readonly archived?: { readonly at: string; readonly byUserId: string };
+  /** In the board's Trash: removed at this instant by this person. */
+  readonly deleted?: { readonly at: string; readonly byUserId: string };
   readonly children?: number;
 }
 
@@ -52,6 +54,16 @@ export const ERP_STATE_ITEMS: readonly ErpStateItem[] = [
     assignee: "VT",
     createdAt: "2026-09-14T02:00:00.000Z",
     archived: { at: "2026-10-08T03:00:00.000Z", byUserId: ERP_PEOPLE.HA.id },
+  },
+  {
+    key: "ERP-121",
+    group: "prep",
+    title: "Nhập số dư đầu kỳ",
+    status: "todo",
+    priority: "medium",
+    assignee: "VT",
+    createdAt: "2026-09-20T02:00:00.000Z",
+    deleted: { at: "2026-10-10T08:00:00.000Z", byUserId: ERP_PEOPLE.HA.id },
   },
   {
     key: "ERP-160",

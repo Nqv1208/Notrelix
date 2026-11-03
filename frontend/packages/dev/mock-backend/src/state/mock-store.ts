@@ -1458,6 +1458,41 @@ export class MockStore {
             erpStatusOptionId(done ? "done" : "todo"),
           );
         });
+      if (item.deleted) {
+        this.deleteCard(id);
+        const trashed = this.trashedCardsById.get(id);
+        if (trashed) {
+          trashed.deletedAt = item.deleted.at;
+          trashed.deletedBy = item.deleted.byUserId;
+        }
+      }
+    }
+    // The many-cards overlay: 127 more archived items, so the archive holds 128 and reads in pages of 50.
+    if (this.config.overlays.includes("many-cards")) {
+      for (let n = 1; n <= 127; n += 1) {
+        const at = new Date(Date.UTC(2026, 9, 7, 3, 0) - n * 60_000);
+        this.insertCard({
+          id: erpItemId(`ERP-${400 + n}`),
+          boardId,
+          listId: erpGroupId("prep"),
+          title: `Việc đã lưu trữ số ${n}`,
+          position: 1000 + n,
+          createdAt: "2026-09-14T02:00:00.000Z",
+          updatedAt: at.toISOString(),
+          itemKey: `ERP-${400 + n}`,
+          description: "",
+          parentItemId: null,
+          dueAt: null,
+          startedAt: null,
+          completedAt: null,
+          assigneeUserIds: [],
+          childProgress: null,
+          unlisted: true,
+          isArchived: true,
+          archivedAt: at.toISOString(),
+          archivedByUserId: ERP_PEOPLE.HA.id,
+        });
+      }
     }
     const planId = (ref: string) =>
       ref.startsWith("ERP-") ? erpItemId(ref) : ref;

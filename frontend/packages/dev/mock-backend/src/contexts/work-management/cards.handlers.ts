@@ -770,8 +770,16 @@ export const cardsOperations = [
     route: "/boards/:boardId/items/trash",
     async handle({ params, store, request }) {
       if (!canWriteBoardItems(params.boardId, store)) return forbidden();
-      const all = store.getTrashedCards(params.boardId);
       const url = new URL(request.url);
+      const term = (url.searchParams.get("q") ?? "").trim().toLowerCase();
+      const all = store
+        .getTrashedCards(params.boardId)
+        .filter(
+          ({ card }) =>
+            !term ||
+            card.title.toLowerCase().includes(term) ||
+            (card.itemKey ?? "").toLowerCase().includes(term),
+        );
       const start = Number(url.searchParams.get("cursor") ?? 0) || 0;
       const page = all.slice(start, start + 50);
       return ok({
@@ -807,6 +815,22 @@ export const cardsOperations = [
     async handle({ params, store, request }) {
       const missingKey = missingIdempotencyKey(request);
       if (missingKey) return missingKey;
+      // The mock world's ERP-121 stands for a sub-item whose parent is still in Deleted items (the BC-Archive-Trash refusal row).
+      if (
+        store
+          .getTrashedCards("mock-board-erp")
+          .some(
+            ({ card }) => card.id === params.id && card.itemKey === "ERP-121",
+          )
+      )
+        return {
+          status: 409,
+          body: {
+            message: "The parent item is still deleted.",
+            code: "CONFLICT",
+            errorCode: "work-management.item.restore-parent-deleted",
+          },
+        };
       const restored = store.restoreDeletedCard(params.id);
       if (!restored) return notFound("Card not found");
       return noContent();

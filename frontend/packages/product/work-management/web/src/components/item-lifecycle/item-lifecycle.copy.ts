@@ -12,6 +12,12 @@ export const en = {
     "The item and its sub-items leave the board. You can restore it from the board's deleted items for 30 days.",
   deleteCancel: "Cancel",
   deleteConfirm: "Delete item",
+  deleteSubItems_one: "{{count}} sub-item is deleted with it.",
+  deleteSubItems_other: "{{count}} sub-items are deleted with it.",
+  deleteLinks_one:
+    "{{count}} dependency link ({{keys}}) is hidden until it is restored.",
+  deleteLinks_other:
+    "{{count}} dependency links ({{keys}}) are hidden until it is restored.",
   deleted: "“{{title}}” was deleted",
   deletedUndo: "Restore",
   deleteFailed: "Couldn't delete “{{title}}”. Nothing changed.",
@@ -118,6 +124,12 @@ export const vi: ItemLifecycleCopy = {
     "Việc và các việc con sẽ rời khỏi board. Bạn có thể khôi phục từ mục việc đã xoá của board trong 30 ngày.",
   deleteCancel: "Huỷ",
   deleteConfirm: "Xoá việc",
+  deleteSubItems_one: "{{count}} việc con xoá cùng việc này.",
+  deleteSubItems_other: "{{count}} việc con xoá cùng việc này.",
+  deleteLinks_one:
+    "{{count}} liên kết phụ thuộc ({{keys}}) tạm ẩn, quay lại khi khôi phục.",
+  deleteLinks_other:
+    "{{count}} liên kết phụ thuộc ({{keys}}) tạm ẩn, quay lại khi khôi phục.",
   deleted: "Đã xoá “{{title}}”",
   deletedUndo: "Khôi phục",
   deleteFailed: "Không xoá được “{{title}}”. Chưa có gì thay đổi.",

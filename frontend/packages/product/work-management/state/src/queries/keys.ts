@@ -82,13 +82,14 @@ export const wmQueryKeys = {
       boardId,
       search,
     ),
-  boardTrash: (workspaceId: string, boardId: string) =>
+  boardTrash: (workspaceId: string, boardId: string, search?: string) =>
     workspaceQueryKey(
       workspaceId,
       "work-management",
       "boards",
       "trash",
       boardId,
+      ...(search ? [search] : []),
     ),
   fullBoard: (workspaceId: string, boardId: string) =>
     workspaceQueryKey(

@@ -963,6 +963,9 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         var lastTrash = (BoardItemTrashPageDto)(await OrgTreeTestHost.SendAsync(reader, new ListBoardItemTrashQuery(scene.BoardId, Limit: 2, Cursor: firstTrash.NextCursor)))!;
         lastTrash.Items.Should().ContainSingle().Which.SubItemCount.Should().Be(1);
         lastTrash.NextCursor.Should().BeNull();
+        var foundTrash = (BoardItemTrashPageDto)(await OrgTreeTestHost.SendAsync(reader, new ListBoardItemTrashQuery(scene.BoardId, Search: "TASK 1")))!;
+        foundTrash.Items.Should().ContainSingle().Which.Name.Should().Be("Task 1");
+        foundTrash.Total.Should().Be(1, "the count follows the search");
         _ = child;
     }
 
