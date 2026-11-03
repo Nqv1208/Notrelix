@@ -72,7 +72,10 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
             if (request.ExpectedVersion != view.Version)
                 throw new PreconditionFailedException(
                     "The view was modified by another request. Reload and retry.", "common.precondition-failed", request.ExpectedVersion, view.Version);
+            var before = view.Version;
             view.UpdateConfig(config, _requestContext.UserId, now);
+            // A save that changed nothing bumps no version and tells no one.
+            if (view.Version == before) return Result.Success();
         }
         else
         {

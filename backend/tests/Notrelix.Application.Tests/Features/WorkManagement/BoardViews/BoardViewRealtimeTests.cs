@@ -61,4 +61,20 @@ public class BoardViewRealtimeTests : WorkManagementHandlerTestBase
 
         Pending().Should().Be(broadcast);
     }
+
+    [Fact]
+    public async Task ASaveThatChangesNothing_BumpsNoVersion_AndTellsNoOne()
+    {
+        var board = CreateBoard();
+        var view = BoardView.Create(
+            TestAccountId, TestWorkspaceId, board.Id, "View", ViewType.Table,
+            BoardViewConfig.Create(JsonValue.Create("{\"hidden\":[]}")), TestUserId, TestNow);
+        SetupBoardViews(view);
+        var before = view.Version;
+
+        await UpdateHandler().Handle(new UpdateBoardViewConfigCommand(board.Id, view.Id, "{\"hidden\":[]}", before), CancellationToken.None);
+
+        view.Version.Should().Be(before);
+        Pending().Should().Be(0);
+    }
 }

@@ -169,3 +169,73 @@ test("the tab strip sets the default, archives, restores and deletes a view", as
   ).toBeVisible();
   await expect(page.getByText("Chế độ xem này không còn nữa")).toHaveCount(0);
 });
+
+/** Goes to a route without reloading: the mock world lives in the page and a reload would reset it. */
+const spa = (page: Page, url: string) =>
+  page.evaluate((to) => {
+    window.history.pushState({}, "", to);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }, url);
+
+/**
+ * UC-WM-H05: a view set to "Chỉ mình tôi" in the settings carries a lock on its tab. Undrawn, so reviewed: at 1440,
+ * 1024 and 390 px in light and dark the strip has no sideways scroll, the lock is named and sits inside its tab,
+ * and the tab list has no serious axe violation.
+ */
+for (const [width, height] of [
+  [1440, 900],
+  [1024, 768],
+  [390, 844],
+] as const) {
+  for (const dark of [false, true]) {
+    test(`${width} ${dark ? "dark" : "light"}: the private view's badge`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height });
+      await page.clock.setFixedTime(NOW);
+      await page.addInitScript(
+        (mode) => {
+          try {
+            window.localStorage.setItem("notrelix-locale", "vi");
+            window.localStorage.setItem("notrelix-theme-mode", mode);
+          } catch {
+            // Private mode: the defaults apply.
+          }
+        },
+        dark ? "dark" : "light",
+      );
+      await page.goto(`${BOARD}?view=table`);
+      await page.getByRole("button", { name: "Thêm chế độ xem" }).click();
+      await page.getByRole("menuitem", { name: "Bảng", exact: true }).click();
+      await expect(
+        page.getByRole("tab", { name: "Bảng", selected: true }),
+      ).toBeVisible();
+      await spa(page, `${BOARD}/settings`);
+      await page.getByRole("button", { name: /^Chế độ xem/ }).click();
+      await page
+        .getByRole("button", { name: "Sửa chế độ xem Bảng", exact: true })
+        .click();
+      const panel = page.getByRole("complementary", {
+        name: /^Sửa chế độ xem/,
+      });
+      await panel.getByRole("radio", { name: "Chỉ mình tôi" }).click();
+      await panel.getByRole("button", { name: "Lưu", exact: true }).click();
+      await spa(page, `${BOARD}?view=table`);
+
+      const tab = page.getByRole("tab", { name: "Bảng" });
+      await expect(tab.getByLabel("Chế độ xem riêng tư")).toBeVisible();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth - window.innerWidth,
+        ),
+        "sideways scroll",
+      ).toBeLessThanOrEqual(0);
+      // The tab itself is the drawn 36 px tab (Final-M-Board); the badge sits inside it, unclipped.
+      const lock = await tab.getByLabel("Chế độ xem riêng tư").boundingBox();
+      const box = (await tab.boundingBox())!;
+      expect(lock!.x + lock!.width).toBeLessThanOrEqual(box.x + box.width);
+      expect(await serious(page, '[role="tablist"]'), "tab list").toEqual([]);
+      await shot(page, "private-badge", width, dark);
+    });
+  }
+}
