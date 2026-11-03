@@ -151,9 +151,13 @@ export function createBoardApi(client: NotrelixClient) {
     },
 
     /** The saved views the caller sees: the board's shared ones and their own private ones. */
-    async listSavedViews(boardId: string): Promise<SavedBoardView[]> {
+    /** The views the caller sees; `archived` lists the archived ones instead. */
+    async listSavedViews(
+      boardId: string,
+      archived = false,
+    ): Promise<SavedBoardView[]> {
       const views = await api.get<BoardViewDtoApi[]>(
-        endpoints.boardViews.saved(boardId),
+        `${endpoints.boardViews.saved(boardId)}${archived ? "?archived=true" : ""}`,
       );
       return views.map(mapSavedView);
     },
@@ -227,6 +231,30 @@ export function createBoardApi(client: NotrelixClient) {
     ): Promise<void> {
       await api.post<void>(
         `${endpoints.boardViews.view(boardId, viewId)}/set-default`,
+        { expectedVersion },
+      );
+    },
+
+    /** Archiving the default view hands the default to `newDefaultViewId` (else the oldest shared view). */
+    async archiveSavedView(
+      boardId: string,
+      viewId: string,
+      expectedVersion: number,
+      newDefaultViewId?: string,
+    ): Promise<void> {
+      await api.post<void>(
+        `${endpoints.boardViews.view(boardId, viewId)}/archive`,
+        { expectedVersion, ...(newDefaultViewId ? { newDefaultViewId } : {}) },
+      );
+    },
+
+    async unarchiveSavedView(
+      boardId: string,
+      viewId: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      await api.post<void>(
+        `${endpoints.boardViews.view(boardId, viewId)}/unarchive`,
         { expectedVersion },
       );
     },

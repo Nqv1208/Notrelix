@@ -20046,7 +20046,9 @@ export interface operations {
     };
     "WorkManagement.BoardViews.List": {
         parameters: {
-            query?: never;
+            query?: {
+                archived?: boolean;
+            };
             header?: never;
             path: {
                 boardId: string;
