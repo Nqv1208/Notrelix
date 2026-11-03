@@ -74,6 +74,8 @@ export interface KanbanSwimlaneBoardProps {
   laneName: (lane: KanbanStatusLane) => string;
   wipLimits: Readonly<Record<string, number>>;
   selectedItemId: string | undefined;
+  /** A filter or search is on: a lane with no card says nothing matches there instead of offering empty cells. */
+  filterActive?: boolean;
   canDrag: boolean;
   cardActions: KanbanCardActions | undefined;
   /** Picking cards for the bulk bar. */
@@ -400,7 +402,17 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
                   </span>
                 ) : null}
               </div>
-              {isCollapsed ? null : (
+              {isCollapsed ? null : props.filterActive &&
+                lane.cards.length === 0 ? (
+                <div
+                  data-swimlane-empty=""
+                  className="flex min-h-[70px] items-center justify-center p-2"
+                >
+                  <span className="w-full rounded-[9px] border-[1.5px] border-dashed border-line-strong px-3.5 py-3 text-center text-crumb leading-[1.45] text-meta-foreground">
+                    {copy.states.emptyLane}
+                  </span>
+                </div>
+              ) : (
                 <div className="grid" style={{ gridTemplateColumns: template }}>
                   {columns.map((column) => {
                     const colKey = keyOf(column.optionId);
