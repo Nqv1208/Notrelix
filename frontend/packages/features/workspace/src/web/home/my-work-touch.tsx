@@ -46,7 +46,6 @@ import type { WorkspaceHomeCopy } from "./workspace-home.copy";
 
 export type MyWorkTouchLayout = "tablet" | "phone";
 
-
 const ICON_BUTTON_CLASS =
   "relative grid size-11 shrink-0 cursor-pointer place-items-center rounded-[10px] border-0 bg-transparent p-0 text-muted-foreground no-underline outline-none hover:bg-state-hover-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-not-allowed";
 const CHIP_CLASS =
