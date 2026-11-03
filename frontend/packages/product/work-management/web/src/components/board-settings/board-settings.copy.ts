@@ -364,7 +364,7 @@ export const en = {
     functions:
       "Functions: IF(condition; a; b), SUM, MIN, MAX, ROUND(number; digits), DAYS(end; start). Join text with &. Only fields of this board.",
     nodes: "{{count}} / 200 elements",
-    preview: "Try it with {{key}}",
+    preview: "Try it with {{key}}:",
     previewEmpty: "No value",
     previewChecking: "Checking…",
     previewErrors: {
@@ -1096,7 +1096,7 @@ export const vi: BoardSettingsCopy = {
     functions:
       "Hàm: IF(điều kiện; a; b), SUM, MIN, MAX, ROUND(số; chữ số), DAYS(ngày cuối; ngày đầu). Nối chữ bằng &. Chỉ dùng trường của bảng này.",
     nodes: "{{count}} / 200 phần tử",
-    preview: "Xem thử với {{key}}",
+    preview: "Xem thử với {{key}}:",
     previewEmpty: "Chưa có giá trị",
     previewChecking: "Đang tính…",
     previewErrors: {

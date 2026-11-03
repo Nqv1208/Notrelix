@@ -300,14 +300,13 @@ export function ComputedFieldDialog({
                   data-preview-state={
                     preview === "checking" ? "checking" : preview.state
                   }
-                  className="flex items-center gap-2 rounded-lg bg-state-hover px-2.5 py-2 text-item-small"
+                  className="flex items-center gap-2 rounded-[8px] bg-state-hover px-2.5 py-2 text-[13px] text-muted-foreground"
                 >
-                  <span className="text-meta-foreground">
-                    {fillCopy(t.preview, { key: previewItem.key })}
-                  </span>
+                  <Info aria-hidden="true" className="size-4 flex-none" />
+                  <span>{fillCopy(t.preview, { key: previewItem.key })}</span>
                   <span
                     className={cn(
-                      "ml-auto min-w-0 truncate font-semibold tabular-nums",
+                      "min-w-0 truncate text-[14px] font-bold text-foreground tabular-nums",
                       preview !== "checking" &&
                         preview.state === "error" &&
                         "text-danger-text",
@@ -347,27 +346,35 @@ export function ComputedFieldDialog({
             </>
           ) : (
             <>
-              <div
-                role="radiogroup"
-                aria-label={t.rollupFunction}
-                className="flex flex-wrap gap-1"
-              >
-                {ROLLUP_FUNCTIONS.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    role="radio"
-                    aria-checked={fn === option}
-                    onClick={() => setFn(option)}
-                    className={cn(
-                      "h-8 rounded-[7px] border border-line-strong bg-popover px-3 text-item-small font-medium",
-                      fn === option &&
-                        "border-primary bg-row-selected font-semibold text-primary",
-                    )}
-                  >
-                    {t.functionNames[option]}
-                  </button>
-                ))}
+              <div>
+                <span
+                  id={`${exprId}-fn`}
+                  className="mb-1 block text-metadata leading-[1.45] font-semibold text-meta-foreground"
+                >
+                  {t.rollupFunction}
+                </span>
+                <div
+                  role="radiogroup"
+                  aria-labelledby={`${exprId}-fn`}
+                  className="flex flex-wrap gap-1"
+                >
+                  {ROLLUP_FUNCTIONS.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      role="radio"
+                      aria-checked={fn === option}
+                      onClick={() => setFn(option)}
+                      className={cn(
+                        "h-8 rounded-[7px] border border-line-strong bg-popover px-3 text-item-small font-medium",
+                        fn === option &&
+                          "border-primary bg-row-selected font-semibold text-primary",
+                      )}
+                    >
+                      {t.functionNames[option]}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div>
                 <label
@@ -402,8 +409,8 @@ export function ComputedFieldDialog({
                   {t.noNumberField}
                 </p>
               ) : null}
-              <p className="m-0 flex items-start gap-2 rounded-lg bg-state-hover px-2.5 py-2 text-item-small text-muted-foreground">
-                <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+              <p className="m-0 flex items-start gap-2 rounded-[8px] bg-state-hover px-2.5 py-2 text-[12.5px] leading-[1.45] text-muted-foreground">
+                <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
                 {t.subItemsOnly}
               </p>
             </>
