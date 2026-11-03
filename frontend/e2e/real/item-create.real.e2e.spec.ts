@@ -62,7 +62,10 @@ test("the create popup writes a queued item link and a file once the item exists
   ).itemKey;
   await page.reload();
 
-  await page.getByRole("button", { name: "Add item", exact: true }).first().click();
+  await page
+    .getByRole("button", { name: "Add item", exact: true })
+    .first()
+    .click();
   const popup = page.getByRole("dialog").first();
   const title = `Created in popup ${unique}`;
   await popup.getByRole("textbox").first().fill(title);
@@ -70,16 +73,25 @@ test("the create popup writes a queued item link and a file once the item exists
   // A queued item link (Related), shown in the popup before anything is sent.
   await popup.getByRole("button", { name: "Add link", exact: true }).click();
   await page.getByLabel("Item on this board").fill(targetKey);
-  await page.getByRole("option", { name: new RegExp(targetKey) }).first().click();
-  await page.getByRole("button", { name: "Add link", exact: true }).last().click();
+  await page
+    .getByRole("option", { name: new RegExp(targetKey) })
+    .first()
+    .click();
+  await page
+    .getByRole("button", { name: "Add link", exact: true })
+    .last()
+    .click();
 
   // A queued file.
   await popup.getByRole("button", { name: "Add an attachment" }).click();
-  await page.locator("input[type=file]").first().setInputFiles({
-    name: `plan-${unique}.txt`,
-    mimeType: "text/plain",
-    buffer: Buffer.from("plan"),
-  });
+  await page
+    .locator("input[type=file]")
+    .first()
+    .setInputFiles({
+      name: `plan-${unique}.txt`,
+      mimeType: "text/plain",
+      buffer: Buffer.from("plan"),
+    });
   await expect(popup.getByText(`plan-${unique}.txt`)).toBeVisible();
 
   const created = page.waitForResponse(
@@ -127,7 +139,9 @@ test("a quick add over a lane's WIP limit still creates the item and the column 
   const lane = ((await add.innerText()) ?? "").trim().replace(/^Add to /, "");
   const region = page.getByRole("region", { name: lane, exact: true });
   // A limit of one: the column is at or over it already.
-  await region.getByRole("button", { name: `Options for column ${lane}` }).click();
+  await region
+    .getByRole("button", { name: `Options for column ${lane}` })
+    .click();
   await page.getByRole("menuitem", { name: "Set item limit" }).click();
   await page.getByLabel(`Item limit of ${lane}`).fill("1");
   await page.getByRole("button", { name: "Save limit" }).click();
@@ -141,7 +155,9 @@ test("a quick add over a lane's WIP limit still creates the item and the column 
     /over the limit of 1/,
   );
   // Leave the board as it was.
-  await region.getByRole("button", { name: `Options for column ${lane}` }).click();
+  await region
+    .getByRole("button", { name: `Options for column ${lane}` })
+    .click();
   await page.getByRole("menuitem", { name: "Set item limit" }).click();
   await page.getByLabel(`Item limit of ${lane}`).fill("");
   await page.getByRole("button", { name: "Remove limit" }).click();

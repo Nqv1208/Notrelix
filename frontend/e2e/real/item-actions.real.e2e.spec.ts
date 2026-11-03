@@ -13,7 +13,11 @@ test.setTimeout(120_000);
 
 interface Full {
   lists: { id: string }[];
-  columns: { id: string; fieldType: string; options?: { id: string; name: string }[] }[];
+  columns: {
+    id: string;
+    fieldType: string;
+    options?: { id: string; name: string }[];
+  }[];
 }
 interface ItemRead {
   readonly id: string;
@@ -100,7 +104,9 @@ test("a member reminds the assignee and a second reminder inside 24 hours is ref
   // The second one within 24 hours: the server refuses and the page names the time.
   await remind();
   await expect(
-    page.getByText(/You reminded about this item at .*You can remind again after /),
+    page.getByText(
+      /You reminded about this item at .*You can remind again after /,
+    ),
   ).toBeVisible();
   const again = await apiWrite<{ code?: string }>(
     page,
@@ -146,9 +152,7 @@ test("a member moves an item to another board and the toast opens it there", asy
   await target.click();
   await picker.getByRole("button", { name: /^Move to / }).click();
 
-  const toast = page.getByText(
-    new RegExp(`^“Move me ${unique}” moved to `),
-  );
+  const toast = page.getByText(new RegExp(`^“Move me ${unique}” moved to `));
   await expect(toast).toBeVisible({ timeout: 20_000 });
   await expect(toast).toContainText(targetName);
   const moved = await apiRead<{ boardId: string; itemKey: string }>(
@@ -180,8 +184,12 @@ test("a bulk status change on three items applies to all three and Undo puts the
   for (const n of [1, 2, 3])
     items.push(await makeItem(page, board.id, `Bulk ${n} ${unique}`, 0));
   const statusOf = async (id: string) =>
-    (await apiRead<{ statusOptionId: string | null }>(page, `/board-items/${id}`))
-      .statusOptionId;
+    (
+      await apiRead<{ statusOptionId: string | null }>(
+        page,
+        `/board-items/${id}`,
+      )
+    ).statusOptionId;
 
   await page.goto(`/workspaces/${workspace.id}/boards/${board.id}?view=table`);
   for (const item of items)
