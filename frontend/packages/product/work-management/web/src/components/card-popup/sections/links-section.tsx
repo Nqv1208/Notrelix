@@ -328,7 +328,7 @@ function AddLinkButton({ quiet }: { quiet?: boolean }) {
 
 /** Blocks, blocked by, related, parent and sub-items of the card. */
 export function LinksSection() {
-  const { card, data, callbacks, copy, slots, mode } = useCardPopup();
+  const { card, data, callbacks, copy, slots } = useCardPopup();
   const t = copy.related.links;
   const canEdit = useCanEdit() && Boolean(callbacks.onAddLink);
   const links = data.links ?? [];
@@ -340,7 +340,6 @@ export function LinksSection() {
     ["blocked-by", t.groupBlockedBy, t.hintBlockedBy],
     ["related", t.groupRelated, undefined],
   ];
-  if (mode === "create" && links.length === 0) return null;
   const empty = links.length === 0 && kids.length === 0 && !card.parentItemId;
   if (empty)
     return (
