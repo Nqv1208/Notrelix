@@ -53,6 +53,7 @@ interface FullBoard {
     readonly version: number;
     readonly fieldType: string;
     readonly isSystem?: boolean;
+    readonly settings?: string | null;
   }[];
 }
 
@@ -421,7 +422,15 @@ test("a member picks from the option and date cells and clears them again, and e
   for (let index = 0; index < Math.min(2, people); index += 1) {
     const tick = wrote(reviewers);
     await page.getByRole("option").nth(index).click();
-    expect((await tick).status()).toBeLessThan(300);
+    const sent = await tick;
+    expect(
+      sent.status(),
+      `${sent.request().postData()} -> ${await sent.text()} | ${JSON.stringify(
+        (
+          await apiRead<FullBoard>(page, `/boards/${boardId}/full`)
+        ).columns.find((column) => column.id === reviewers),
+      )}`,
+    ).toBeLessThan(300);
     await settle(page);
   }
   expect(Array.isArray(await valueOf(reviewers))).toBe(true);

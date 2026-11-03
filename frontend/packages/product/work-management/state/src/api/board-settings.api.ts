@@ -522,7 +522,7 @@ export function createBoardSettingsApi(client: NotrelixClient) {
     ) =>
       api.post<unknown>(
         endpoints.boardFields.create(s.boardId),
-        { name, type, ...(settings ? { settings } : {}) },
+        { name, type, ...(settings ? { settingsJson: settings } : {}) },
         quiet,
       ),
     /** The fields deleted in the last 30 days, newest first (a Manager reads it). */
@@ -594,7 +594,7 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         {
           expectedVersion: fieldOf(s, fieldId).version ?? 0,
           name: changes.name,
-          ...(changes.settings ? { settings: changes.settings } : {}),
+          ...(changes.settings ? { settingsJson: changes.settings } : {}),
         },
         quiet,
       ),
