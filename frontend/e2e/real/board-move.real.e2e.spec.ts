@@ -72,7 +72,7 @@ test("a manager moves a board to another department from the card list; the same
     // The department the board sits in is listed and cannot be picked; nothing is picked, nothing moves.
     const here = dialog.getByRole("radio", { name: /Engineering/ });
     await expect(here).toHaveAttribute("aria-disabled", "true");
-    await expect(dialog.getByText("Here")).toBeVisible();
+    await expect(dialog.getByText("Here", { exact: true })).toBeVisible();
     await expect(
       dialog.getByRole("button", { name: "Move board" }),
     ).toHaveAttribute("aria-disabled", "true");
