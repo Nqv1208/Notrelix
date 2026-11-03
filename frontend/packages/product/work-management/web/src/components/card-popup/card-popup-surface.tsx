@@ -152,7 +152,11 @@ export function CardPopupSurface({
                 </div>
                 <aside
                   aria-label={model.copy.shell.comments}
-                  className="relative box-border flex min-w-0 flex-col gap-3.5 border-t border-line bg-background px-4 pt-4 pb-6 md:min-w-[300px] md:flex-[0_1_400px] md:px-5 md:overflow-y-auto md:border-t-0 md:border-l"
+                  className={cn(
+                    "relative box-border flex min-w-0 flex-col border-t border-line bg-background px-4 pt-4 pb-6 md:min-w-[300px] md:flex-[0_1_400px] md:px-5 md:overflow-y-auto md:border-t-0 md:border-l",
+                    // Kanban-CardPopup-Create draws a 12 px rhythm in its comments column; an open card keeps 14.
+                    model.mode === "create" ? "gap-3" : "gap-3.5",
+                  )}
                 >
                   <ApprovalSection />
                   <CommentsColumn />

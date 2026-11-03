@@ -15,7 +15,8 @@ const loadedBoard = vi.hoisted(() => ({
 }));
 
 vi.mock("@notrelix/work-management-state", () => ({
-  useFullBoard: () => ({ board: loadedBoard.current }),
+  useFullBoard: () => ({ board: loadedBoard.current, groups: [] }),
+  useBoardTrash: () => ({ total: 0 }),
   useSavedViews: () => ({ views: [], create: vi.fn() }),
   pickSavedView: () => undefined,
   BoardViewSelectionProvider: ({ children }: { children: React.ReactNode }) =>

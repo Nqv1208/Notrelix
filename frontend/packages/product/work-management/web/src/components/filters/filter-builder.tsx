@@ -40,6 +40,8 @@ export interface FilterBuilderProps {
   people: readonly { id: string; name: string }[];
   /** The day "Hôm nay" and "Tuần này" are judged against. */
   now: Date;
+  /** The board's IANA zone: presets pick "today" in it. */
+  timeZone?: string;
   /** The number the trigger shows: conditions that apply. */
   activeCount: number;
   /** Opens the dialog (controlled by the host so "Sửa điều kiện" can open it). */
@@ -117,6 +119,7 @@ function BuilderBody({
   filter,
   onChange,
   now,
+  timeZone,
   people,
 }: FilterBuilderProps) {
   const update = (index: number, next: FilterCondition) =>
@@ -169,6 +172,7 @@ function BuilderBody({
             condition={condition}
             join={filter.join}
             now={now}
+            timeZone={timeZone}
             people={people}
             onChange={(next) => update(index, next)}
             onRemove={() => remove(index)}
@@ -202,6 +206,7 @@ function ConditionRow({
   condition,
   join,
   now,
+  timeZone,
   people,
   onChange,
   onRemove,
@@ -213,6 +218,8 @@ function ConditionRow({
   condition: FilterCondition;
   join: "and" | "or";
   now: Date;
+  /** The board's IANA zone: presets pick "today" in it. */
+  timeZone?: string;
   onChange: (condition: FilterCondition) => void;
   onRemove: () => void;
 }) {
@@ -302,6 +309,7 @@ function ConditionRow({
                   condition={condition}
                   label={label}
                   now={now}
+                  timeZone={timeZone}
                   people={people}
                   invalid={issue === "range"}
                   onChange={onChange}
@@ -383,6 +391,7 @@ function ValueEditor({
   condition,
   label,
   now,
+  timeZone,
   people,
   invalid,
   onChange,
@@ -393,6 +402,8 @@ function ValueEditor({
   condition: FilterCondition;
   label: string;
   now: Date;
+  /** The board's IANA zone: presets pick "today" in it. */
+  timeZone?: string;
   invalid: boolean;
   onChange: (condition: FilterCondition) => void;
 }): ReactNode {
@@ -442,7 +453,9 @@ function ValueEditor({
               <button
                 key={preset}
                 type="button"
-                onClick={() => onChange(presetCondition(field.id, preset, now))}
+                onClick={() =>
+                  onChange(presetCondition(field.id, preset, now, timeZone))
+                }
                 className="h-7 cursor-pointer rounded-full border border-line-strong bg-popover px-2.5 text-xs font-medium text-muted-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
               >
                 {copy.filter.presets[preset]}

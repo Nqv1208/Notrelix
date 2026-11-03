@@ -172,6 +172,9 @@ export interface BoardSettingsActions {
   duplicateView(viewId: string): Promise<BoardSettingsWriteResult>;
   /** The tab a board opens on. */
   setDefaultView(viewId: string): Promise<BoardSettingsWriteResult>;
+  /** Takes a view out of the tab strip (the default hands over to the oldest shared view). */
+  archiveView(viewId: string): Promise<BoardSettingsWriteResult>;
+  unarchiveView(viewId: string): Promise<BoardSettingsWriteResult>;
   /** Deleting the default view names the view that becomes the default. */
   deleteView(
     viewId: string,

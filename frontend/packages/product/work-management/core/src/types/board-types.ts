@@ -33,6 +33,10 @@ export interface Board {
    * gap `CTR-GAP-WM-TABLE-BULK`). Absent = not known.
    */
   canAddItems?: boolean;
+  /** The key the board's items carry ("KHQ" in KHQ-27), when the list read says it. */
+  itemKeyPrefix?: string;
+  /** The department the board belongs to, when the list read says it (the move picker shows it). */
+  departmentName?: string;
 }
 
 export type ViewMode = "table" | "kanban" | "calendar" | "timeline";
@@ -102,7 +106,12 @@ export interface BoardPaging {
   /** Items of the board that pass the server filter. */
   readonly filteredTotal: number;
   /** The filter and sort the pages were read under; later pages are read under the same. */
-  readonly criteria: { readonly filter: string; readonly sort: string };
+  readonly criteria: {
+    readonly filter: string;
+    readonly sort: string;
+    /** The title or key text the lanes were read under; absent: none. */
+    readonly search?: string;
+  };
 }
 
 export interface FullBoardResponse {
@@ -159,6 +168,8 @@ export interface BoardDtoApi {
   createdAt: string;
   /** Gap field (`CTR-GAP-WM-TABLE-BULK`): the caller may add items. */
   canAddItems?: boolean;
+  itemKeyPrefix?: string | null;
+  departmentName?: string | null;
 }
 
 export interface FullBoardDtoApi {

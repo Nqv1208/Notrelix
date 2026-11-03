@@ -445,6 +445,8 @@ export function noopSettingsActions(
     updateView: ok,
     duplicateView: ok,
     setDefaultView: ok,
+    archiveView: ok,
+    unarchiveView: ok,
     deleteView: ok,
     createGroup: ok,
     reorderGroups: ok,

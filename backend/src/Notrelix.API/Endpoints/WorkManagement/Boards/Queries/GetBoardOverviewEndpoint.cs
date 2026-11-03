@@ -21,10 +21,11 @@ public static class GetBoardOverviewEndpoint
         int? pageSize,
         string? filter,
         string? sort,
+        string? q,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetFullBoardQuery(boardId, pageSize, filter, sort), cancellationToken);
+        var result = await sender.Send(new GetFullBoardQuery(boardId, pageSize, filter, sort, q), cancellationToken);
         return result.ToApiResult();
     }
 }

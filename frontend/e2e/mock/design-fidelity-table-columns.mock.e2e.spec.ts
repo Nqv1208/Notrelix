@@ -388,6 +388,20 @@ test.describe("owner world", () => {
       near(bi!.width, 32, "indicator width");
       near(bi!.height, 32, "indicator height");
       near(bi!.y, bp!.y, "indicator y against the Cột pill");
+      // The toolbar row of the artboard: 8 px between boxes and a 4 px margin each side of the separator.
+      const bs = await page
+        .locator("[data-table-toolbar] > span.w-px")
+        .boundingBox();
+      near(
+        bs!.x - (bi!.x + bi!.width),
+        12,
+        "gap from the indicator to the separator",
+      );
+      near(
+        bp!.x - (bs!.x + bs!.width),
+        12,
+        "gap from the separator to the Cột pill",
+      );
       const page_ = dark ? [14, 17, 22] : [247, 248, 250];
       const st = await style(indicator, `rgb(${page_.join(",")})`);
       expect(st.r).toBe("7px");
@@ -566,6 +580,11 @@ test.describe("save refused", () => {
       await menu.getByRole("button", { name: "Lưu vào view chung" }).click();
       const tone = network ? "err" : "warn";
       await expect(menu.getByRole("alert")).toBeVisible();
+      // The server names who saved first; the notice says so.
+      if (conflict)
+        await expect(menu.getByRole("alert")).toContainText(
+          "Hà Nguyễn vừa đổi cột của view chung",
+        );
       await expectFrame(menu, dark);
       await expectNotice(
         menu,
