@@ -178,13 +178,12 @@ test.describe("a person who may not manage the Board (permission denied)", () =>
         await openShare(page, size, dark);
         const dialog = page.getByRole("dialog", { name: /^Chia sẻ/ });
         await expect(dialog.getByRole("combobox")).toHaveCount(0);
-        // The add row is drawn inert (aria-disabled, read-only), never live.
-        await expect(dialog.locator('[data-f="invite"]')).toHaveAttribute(
-          "aria-disabled",
-          "true",
-        );
+        // Read-only: no add row, no change of general access, no write control at all.
+        await expect(dialog.locator('[data-f="add"]')).toHaveCount(0);
+        await expect(dialog.locator('[data-f="lvl-plain"]')).toHaveCount(0);
+        // No row offers a level menu or a removal.
         await expect(
-          dialog.getByRole("button", { name: /Có thể (xem|sửa|bình luận)/ }),
+          dialog.locator('[data-f="pr"]').getByRole("button"),
         ).toHaveCount(0);
         await review(page, "share-denied", size, dark);
       });
