@@ -2976,6 +2976,20 @@ export class MockStore {
       .sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
   }
 
+  /** The board's archived root items, newest first. */
+  getArchivedCards(boardId: string): MockCardRecord[] {
+    return [...this.cardsById.values()]
+      .filter(
+        (card) =>
+          card.boardId === boardId && card.isArchived && !card.parentItemId,
+      )
+      .sort(
+        (a, b) =>
+          (b.archivedAt ?? "").localeCompare(a.archivedAt ?? "") ||
+          b.id.localeCompare(a.id),
+      );
+  }
+
   /** Brings a deleted card back to its list; false when it is not in the trash. */
   restoreDeletedCard(cardId: string): boolean {
     const entry = this.trashedCardsById.get(cardId);

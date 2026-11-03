@@ -8,7 +8,7 @@ public static class ListBoardItemTrashEndpoint
     {
         group.MapResourceGet("/trash", HandleAsync)
             .WithName("WorkManagement.BoardItems.Trash")
-            .Produces<List<BoardItemTrashEntryDto>>(StatusCodes.Status200OK, "application/json")
+            .Produces<BoardItemTrashPageDto>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("List the items deleted from a board in the last 30 days");
         return group;
@@ -16,10 +16,12 @@ public static class ListBoardItemTrashEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid boardId,
+        [FromQuery] string? cursor,
+        [FromQuery] int? limit,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new ListBoardItemTrashQuery(boardId), cancellationToken);
+        var result = await sender.Send(new ListBoardItemTrashQuery(boardId, cursor, limit), cancellationToken);
         return Results.Ok(result);
     }
 }

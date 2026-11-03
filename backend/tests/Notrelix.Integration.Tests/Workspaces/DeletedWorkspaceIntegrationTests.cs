@@ -385,7 +385,7 @@ public sealed class DeletedWorkspaceIntegrationTests : IAsyncLifetime
     private Task DeleteAsync(Guid userId, Guid accountId, Guid workspace, long version) =>
         RunAsync<bool>(userId, accountId, workspace, Constraint(typeof(DeleteWorkspaceCommand), workspace, version), async (context, request) =>
         {
-            var handler = new DeleteWorkspaceCommandHandler(context, request, Clock(), _audit.Object);
+            var handler = new DeleteWorkspaceCommandHandler(context, request, Clock(), _audit.Object, new Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
             return (await handler.Handle(new DeleteWorkspaceCommand(workspace, version), default)).Succeeded;
         });
 
