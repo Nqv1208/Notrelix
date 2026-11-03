@@ -3,6 +3,7 @@ import { wmQueryKeys } from "../queries/keys";
 import type { createCardApi } from "../api/item.api";
 import type { createLabelApi } from "../api/label.api";
 import type { createChecklistApi } from "../api/checklist.api";
+import type { createItemExtrasApi } from "../api/item-extras.api";
 import { useWorkManagementServices } from "../services";
 
 /** What the create dialog collects for a new item. */
@@ -39,6 +40,11 @@ export interface CreateItemWithDetailsInput {
   }[];
   /** Web links attached while drafting. */
   readonly links?: readonly { readonly url: string; readonly name: string }[];
+  /** Links to other items chosen while drafting (waits on, blocks, related). */
+  readonly dependencies?: readonly {
+    readonly itemId: string;
+    readonly relation: "blocked-by" | "blocks" | "related";
+  }[];
   /** Files chosen while drafting; uploaded once the item exists. */
   readonly files?: readonly File[];
   /**
@@ -58,6 +64,7 @@ export type CreateItemDetail =
   | "fields"
   | "checklists"
   | "links"
+  | "dependencies"
   | "files";
 
 export interface CreateItemWithDetailsResult {
@@ -91,10 +98,11 @@ export interface ItemDetailWriters {
     ReturnType<typeof createChecklistApi>,
     "createChecklist" | "getChecklists" | "createChecklistItem"
   >;
+  readonly itemExtras?: Pick<ReturnType<typeof createItemExtrasApi>, "addLink">;
 }
 
 export async function runCreateItemWithDetails(
-  { cards, labels, checklists }: ItemDetailWriters,
+  { cards, labels, checklists, itemExtras }: ItemDetailWriters,
   boardId: string,
   input: CreateItemWithDetailsInput,
 ): Promise<CreateItemWithDetailsResult> {
@@ -227,6 +235,12 @@ export async function runCreateItemWithDetails(
           await addLink(itemId, link, { idempotencyKey: crypto.randomUUID() });
       });
     }
+    if (input.dependencies?.length && itemExtras) {
+      const dependencies = input.dependencies;
+      await attempt("dependencies", async () => {
+        for (const link of dependencies) await itemExtras.addLink(itemId, link);
+      });
+    }
     if (input.files?.length && cards.uploadCardFile) {
       const files = input.files;
       const upload = cards.uploadCardFile;
@@ -241,10 +255,14 @@ export async function runCreateItemWithDetails(
 
 export function useCreateItemWithDetails(boardId: string, workspaceId: string) {
   const queryClient = useQueryClient();
-  const { cards, labels, checklists } = useWorkManagementServices();
+  const { cards, labels, checklists, itemExtras } = useWorkManagementServices();
   return useMutation({
     mutationFn: (input: CreateItemWithDetailsInput) =>
-      runCreateItemWithDetails({ cards, labels, checklists }, boardId, input),
+      runCreateItemWithDetails(
+        { cards, labels, checklists, itemExtras },
+        boardId,
+        input,
+      ),
     onSettled: () =>
       queryClient.invalidateQueries({
         queryKey: wmQueryKeys.fullBoard(workspaceId, boardId),
