@@ -124,21 +124,15 @@ function ComputedCell({
       title={view.title}
       data-computed-state={view.tone}
       className={cn(
-        "inline-flex min-w-0 items-center gap-1.25 text-nav tabular-nums text-muted-foreground",
+        "ml-auto inline-flex min-w-0 items-center gap-1.25 text-nav font-normal tabular-nums text-foreground",
         // Dimmed by italic and the spinner, never by opacity: the text keeps its 4.5:1 contrast in both themes.
         view.tone === "stale" && "italic",
-        view.tone === "error" && "font-semibold text-danger-text",
+        view.tone === "error" && "text-caption font-semibold text-danger-text",
         view.tone === "empty" && "text-meta-foreground",
       )}
     >
-      <span
-        aria-hidden="true"
-        className="inline-flex h-4.5 flex-none items-center rounded-[5px] bg-state-hover-strong px-1.25 font-mono text-micro font-medium text-muted-foreground"
-      >
-        ƒx
-      </span>
       {view.tone === "error" ? (
-        <AlertCircle className="size-3.5 flex-none" aria-hidden="true" />
+        <AlertCircle className="size-4 flex-none" aria-hidden="true" />
       ) : null}
       <span className="truncate">{view.text}</span>
       {view.tone === "stale" ? (
@@ -153,7 +147,7 @@ function ComputedCell({
 
 /**
  * What a custom field column shows in one cell, and its editor. Formula and
- * Rollup cells are read-only with the ƒx mark; a viewer, or a type with no
+ * Rollup cells are read-only (the ƒx mark and the lock sit in the column header); a viewer, or a type with no
  * inline editor, gets the value alone (the lock sits in the column header).
  * A write shows "Đang lưu" while it runs, an inline error with "Thử lại"
  * when it fails (the typed value stays), and the in-cell conflict choice.
