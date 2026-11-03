@@ -1035,6 +1035,7 @@ export const boardsOperations = [
       name?: string;
       fieldType?: string;
       settings?: string;
+      settingsJson?: string;
       isHidden?: boolean;
     },
     void
@@ -1047,7 +1048,12 @@ export const boardsOperations = [
     method: "PATCH",
     route: "/boards/:boardId/fields/:columnId",
     async handle({ params, body, store }) {
-      const updated = store.updateColumn(params.columnId, body ?? {});
+      // The producer's request names the settings `settingsJson`.
+      const { settingsJson, ...rest } = body ?? {};
+      const updated = store.updateColumn(params.columnId, {
+        ...rest,
+        ...(settingsJson !== undefined ? { settings: settingsJson } : {}),
+      });
       if (!updated) return notFound("Column not found");
       return ok<void>(undefined);
     },
@@ -1312,7 +1318,7 @@ export const boardsOperations = [
   defineMockOperation<
     { boardId: string },
     never,
-    { labelId: string; name: string; color: string }[]
+    { labelId: string; name: string; color: string; version: number }[]
   >({
     id: "boards.labels.list",
     contract: {
@@ -1328,6 +1334,7 @@ export const boardsOperations = [
           labelId: l.id,
           name: l.name,
           color: l.color,
+          version: l.version ?? 1,
         })),
       );
     },
