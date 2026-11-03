@@ -59,6 +59,19 @@ public class DuplicateBoardItemTests : WorkManagementHandlerTestBase
             .Should().ThrowAsync<NotFoundException>();
     }
 
+    [Fact]
+    public async Task Handle_ArchivedItem_IsRefusedAndNothingIsCopied()
+    {
+        var item = CreateBoardItem();
+        item.Archive(TestUserId, TestNow);
+        SetupBoardItems(item);
+
+        await _handler.Invoking(h => h.Handle(new DuplicateBoardItemCommand(item.Id), CancellationToken.None))
+            .Should().ThrowAsync<BusinessRuleException>();
+
+        DbContextMock.Object.BoardItems.Count().Should().Be(1);
+    }
+
     private (BoardItem Source, BoardField Field, Guid LabelId, Guid Assignee) RichSource()
     {
         var board = CreateBoard();

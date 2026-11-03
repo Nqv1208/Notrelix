@@ -44,7 +44,10 @@ import {
   ArchiveItemDialog,
   type ArchiveDialogStatus,
 } from "./archive-item-dialog";
-import { DeleteItemDialog } from "./item-lifecycle-dialogs";
+import {
+  DeleteItemDialog,
+  type DeleteDialogStatus,
+} from "./item-lifecycle-dialogs";
 import { fillLifecycleCopy, pluralLifecycleCopy } from "./item-lifecycle.copy";
 import { useItemLifecycleCopy } from "./use-item-lifecycle-copy";
 
@@ -56,6 +59,8 @@ interface Pending {
 /** A delete waiting for its confirmation, with the item version the dialog opened on. */
 interface DeletePending extends Pending {
   readonly version: number;
+  /** What the dialog listed when the write went out: the card has left the board read by then. */
+  readonly subItems?: number;
 }
 
 /** An archive waiting for its answer, with the item version the dialog opened on. */
@@ -131,6 +136,7 @@ export function useItemRemoval({
   const [archiveStatus, setArchiveStatus] =
     useState<ArchiveDialogStatus>("idle");
   const [deleting, setDeleting] = useState<DeletePending | null>(null);
+  const [deleteStatus, setDeleteStatus] = useState<DeleteDialogStatus>("idle");
   const [moving, setMoving] = useState<Pending | null>(null);
   const [moveTarget, setMoveTarget] = useState<string | null>(null);
   const [moveStatus, setMoveStatus] = useState<MoveDialogStatus>("idle");
@@ -145,6 +151,8 @@ export function useItemRemoval({
   // Hook-level: the card sheet closes with the optimistic removal, which would drop the callbacks of `mutate`.
   const deleteCard = useDeleteCard(boardId, workspaceId, {
     onSuccess: ({ cardId, title = "" }) => {
+      setDeleting(null);
+      setDeleteStatus("idle");
       toast.success(fillLifecycleCopy(copy.deleted, { title }), {
         action: {
           label: copy.deletedUndo,
@@ -158,12 +166,21 @@ export function useItemRemoval({
       });
       onGone?.(cardId);
     },
-    onError: (error, { title = "" }) =>
-      isVersionConflict(error)
-        ? toast.error(copy.archiveConflictTitle, {
-            description: copy.deleteConflictBody,
-          })
-        : toast.error(fillLifecycleCopy(copy.deleteFailed, { title })),
+    onError: (error) => {
+      if (isVersionConflict(error)) {
+        // The item sheet shows the newer version; the dialog has nothing more to offer.
+        setDeleting(null);
+        setDeleteStatus("idle");
+        toast.error(copy.archiveConflictTitle, {
+          description: copy.deleteConflictBody,
+        });
+      } else {
+        setDeleting((current) =>
+          current ? { ...current, subItems: undefined } : current,
+        );
+        setDeleteStatus("error");
+      }
+    },
   });
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
   const trash = useBoardTrash(boardId, workspaceId, "", false);
@@ -303,7 +320,11 @@ export function useItemRemoval({
   const confirmDelete = () => {
     if (!deleting) return;
     const { id, title, version } = deleting;
-    setDeleting(null);
+    setDeleting({
+      ...deleting,
+      subItems: deleteCardView?.childProgress?.total ?? 0,
+    });
+    setDeleteStatus("busy");
     deleteCard.mutate({ cardId: id, expectedVersion: version, title });
   };
 
@@ -503,6 +524,9 @@ export function useItemRemoval({
   const dependencyLinks = (archiveLinks.data ?? []).filter(
     (link) => link.relation !== "related",
   );
+  const duplicateCardView = duplicating
+    ? findCard(sourceBoard as FullBoardResponse, duplicating.id)?.card
+    : undefined;
   const deleteCardView = deleting
     ? findCard(sourceBoard as FullBoardResponse, deleting.id)?.card
     : undefined;
@@ -527,6 +551,7 @@ export function useItemRemoval({
         );
         return;
       }
+      setDeleteStatus("idle");
       setDeleting({ id: itemId, title: titleOf(itemId), version });
     },
     requestMove: (itemId) => {
@@ -601,7 +626,8 @@ export function useItemRemoval({
         <DeleteItemDialog
           copy={copy}
           impact={{
-            subItems: deleteCardView?.childProgress?.total ?? 0,
+            subItems:
+              deleting?.subItems ?? deleteCardView?.childProgress?.total ?? 0,
             dependencies: {
               count: deleteDependencies.length,
               keys: deleteDependencies
@@ -610,6 +636,7 @@ export function useItemRemoval({
             },
           }}
           title={deleting?.title ?? ""}
+          status={deleteStatus}
           open={deleting !== null}
           onCancel={() => setDeleting(null)}
           onConfirm={confirmDelete}
@@ -647,6 +674,20 @@ export function useItemRemoval({
         />
         <DuplicateItemDialog
           copy={actions}
+          summary={
+            duplicateCardView
+              ? {
+                  fields: Object.values(duplicateCardView.fieldValues).filter(
+                    (value) =>
+                      value !== null && value !== undefined && value !== "",
+                  ).length,
+                  checklists: duplicateCardView.checklists.length,
+                  subItems: duplicateCardView.childProgress?.total ?? 0,
+                  labels: duplicateCardView.labels.length,
+                  assignees: duplicateCardView.members.map((m) => m.name),
+                }
+              : undefined
+          }
           defaultName={copyName(duplicating?.title ?? "", actions.locale)}
           open={duplicating !== null}
           busy={duplicateCard.isPending}
