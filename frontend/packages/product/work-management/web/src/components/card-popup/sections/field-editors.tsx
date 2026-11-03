@@ -41,6 +41,7 @@ import { fillPopupCopy, type CardPopupCopy } from "../card-popup.copy";
 import {
   useCardPopup,
   useCanEdit,
+  useChipsLookEditable,
   useStaleSchema,
 } from "../card-popup-context";
 import {
@@ -408,7 +409,9 @@ function FieldControlBody({
   const t = copy.sections.chips;
   const f = copy.sections.fields;
   const sheetCopy = useItemSheetCopy();
-  const canEdit = useCanEdit();
+  const canEditNow = useCanEdit();
+  const chipLook = useChipsLookEditable();
+  const canEdit = variant === "chip" ? chipLook : canEditNow;
   const { write, save } = useFieldWrite(field);
   const [open, setOpen] = useState(false);
   // "+ Thêm" added this field: its picker opens at once (a typed control takes the cursor itself).
