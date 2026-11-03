@@ -96,6 +96,13 @@ public static class ProblemDetailsMapper
                 exception.Message,
                 null
             ),
+            Notrelix.Application.Common.Exceptions.RevocationStoreUnavailableException => (
+                StatusCodes.Status503ServiceUnavailable,
+                ErrorCodes.RevocationUnavailable,
+                "Service unavailable",
+                "Your session could not be verified right now. Retry shortly.",
+                null
+            ),
             // Request-contract security violations (scoped request without an
             // authorization declaration, tenant context gaps) get their own
             // diagnosable category instead of a generic 500.

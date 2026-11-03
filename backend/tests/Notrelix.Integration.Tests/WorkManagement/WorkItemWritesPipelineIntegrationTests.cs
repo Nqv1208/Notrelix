@@ -846,7 +846,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         _host.Now = OrgTreeTestHost.BaseTime.AddDays(31);
         using (var owner = Provider(scene.Stack))
             await OrgTreeTestHost.SendAsync(owner, new DeleteBoardItemCommand(scene.Items[2], await VersionAsync(scene.Items[2])));
-        var trashed = await QueryListAsync<BoardItemTrashEntryDto>(Provider(scene.Stack), new ListBoardItemTrashQuery(scene.BoardId));
+        var trashed = (await OrgTreeTestHost.SendAsync(Provider(scene.Stack), new ListBoardItemTrashQuery(scene.BoardId)) as BoardItemTrashPageDto)!.Items;
 
         trashed.Select(e => e.Name).Should().Equal(["Task 2", "Task 1"], "newest first, and Task 0 is past the thirty-day window");
         trashed.Should().OnlyContain(e => e.RestorableUntil > _host.Now);
@@ -874,7 +874,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         using var owner = Provider(scene.Stack);
         foreach (var id in scene.Items)
             await OrgTreeTestHost.SendAsync(owner, new ArchiveBoardItemCommand(id, await VersionAsync(id)));
-        (await QueryListAsync<ArchivedBoardItemEntryDto>(owner, new ListArchivedBoardItemsQuery(scene.BoardId))).Should().HaveCount(2);
+        ((await OrgTreeTestHost.SendAsync(owner, new ListArchivedBoardItemsQuery(scene.BoardId)) as ArchivedBoardItemPageDto)!.Items).Should().HaveCount(2);
 
         var archivedVersion = await VersionAsync(scene.Items[0]);
         var key = $"unarchive-{Guid.NewGuid():N}";
@@ -888,7 +888,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
 
         replay.Should().BeEquivalentTo(first);
         (await VersionAsync(scene.Items[0])).Should().Be(afterFirst, "the replay unarchived nothing a second time");
-        (await QueryListAsync<ArchivedBoardItemEntryDto>(owner, new ListArchivedBoardItemsQuery(scene.BoardId)))
+        ((await OrgTreeTestHost.SendAsync(owner, new ListArchivedBoardItemsQuery(scene.BoardId)) as ArchivedBoardItemPageDto)!.Items)
             .Select(e => e.Id).Should().Equal(scene.Items[1]);
     }
 
@@ -909,6 +909,90 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
             var act = () => OrgTreeTestHost.SendAsync(provider, new ListArchivedBoardItemsQuery(scene.BoardId));
             await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
+    }
+
+    // ---- UC-WM-B10 and UC-WM-B13 pages, UC-WM-B12 sub-item restore -------------------------------------
+
+    [Fact]
+    public async Task TrashAndArchive_ArePagedByCursor_CountTheSubItemsAndNameWhoDidIt_AndTheArchiveSearchesNameAndKey()
+    {
+        var scene = await SeedAsync(itemCount: 3);
+        var child = await AddSubItemAsync(scene, scene.Items[0], "Child");
+        using (var owner = Provider(scene.Stack))
+            await OrgTreeTestHost.SendAsync(owner, new ArchiveBoardItemCommand(scene.Items[0], await VersionAsync(scene.Items[0])));
+        _host.Now = OrgTreeTestHost.BaseTime.AddMinutes(1);
+        using (var owner = Provider(scene.Stack))
+            await OrgTreeTestHost.SendAsync(owner, new ArchiveBoardItemCommand(scene.Items[1], await VersionAsync(scene.Items[1])));
+        _host.Now = OrgTreeTestHost.BaseTime.AddMinutes(2);
+        using (var owner = Provider(scene.Stack))
+            await OrgTreeTestHost.SendAsync(owner, new ArchiveBoardItemCommand(scene.Items[2], await VersionAsync(scene.Items[2])));
+
+        using var reader = Provider(scene.Stack);
+        var first = (ArchivedBoardItemPageDto)(await OrgTreeTestHost.SendAsync(reader, new ListArchivedBoardItemsQuery(scene.BoardId, Limit: 2)))!;
+        first.Items.Select(e => e.Name).Should().Equal(["Task 2", "Task 1"], "newest first");
+        first.Total.Should().Be(3);
+        first.NextCursor.Should().NotBeNull();
+        first.Items.Should().OnlyContain(e => e.ArchivedByName != null, "the person who archived is named");
+        var second = (ArchivedBoardItemPageDto)(await OrgTreeTestHost.SendAsync(reader, new ListArchivedBoardItemsQuery(scene.BoardId, Limit: 2, Cursor: first.NextCursor)))!;
+        second.Items.Should().ContainSingle().Which.Name.Should().Be("Task 0");
+        second.Items[0].SubItemCount.Should().Be(1, "the sub-item comes back with its parent");
+        second.NextCursor.Should().BeNull("the page holds the rest");
+        var found = (ArchivedBoardItemPageDto)(await OrgTreeTestHost.SendAsync(reader, new ListArchivedBoardItemsQuery(scene.BoardId, Search: "task 1")))!;
+        found.Items.Should().ContainSingle().Which.Name.Should().Be("Task 1");
+        found.Total.Should().Be(1, "the count follows the search");
+        var bad = () => OrgTreeTestHost.SendAsync(reader, new ListArchivedBoardItemsQuery(scene.BoardId, Cursor: "not-a-cursor"));
+        await bad.Should().ThrowAsync<Exception>("a cursor nobody issued is refused");
+
+        // The same two reads for the trash: the parent goes with its sub-item, so the sub-item is not a row of its own.
+        _host.Now = OrgTreeTestHost.BaseTime.AddDays(1);
+        using (var owner = Provider(scene.Stack))
+        {
+            foreach (var id in scene.Items)
+            {
+                await OrgTreeTestHost.SendAsync(owner, new UnarchiveBoardItemCommand(id, await VersionAsync(id)));
+                _host.Now = _host.Now.AddMinutes(1);
+                await OrgTreeTestHost.SendAsync(owner, new DeleteBoardItemCommand(id, await VersionAsync(id)));
+                _host.Now = _host.Now.AddMinutes(1);
+            }
+        }
+
+        var firstTrash = (BoardItemTrashPageDto)(await OrgTreeTestHost.SendAsync(reader, new ListBoardItemTrashQuery(scene.BoardId, Limit: 2)))!;
+        firstTrash.Items.Select(e => e.Name).Should().Equal(["Task 2", "Task 1"]);
+        firstTrash.Total.Should().Be(3);
+        firstTrash.Items.Should().OnlyContain(e => e.DeletedByName != null);
+        var lastTrash = (BoardItemTrashPageDto)(await OrgTreeTestHost.SendAsync(reader, new ListBoardItemTrashQuery(scene.BoardId, Limit: 2, Cursor: firstTrash.NextCursor)))!;
+        lastTrash.Items.Should().ContainSingle().Which.SubItemCount.Should().Be(1);
+        lastTrash.NextCursor.Should().BeNull();
+        _ = child;
+    }
+
+    [Fact]
+    public async Task RestoreOfASubItem_WhileItsParentIsStillDeleted_IsRefusedAndChangesNothing_ThenComesBackWithTheParent()
+    {
+        var scene = await SeedAsync();
+        var child = await AddSubItemAsync(scene, scene.Items[0], "Child");
+        using var owner = Provider(scene.Stack);
+        await OrgTreeTestHost.SendAsync(owner, new DeleteBoardItemCommand(scene.Items[0], await VersionAsync(scene.Items[0])));
+        (await IsDeletedAsync(child)).Should().BeTrue("the sub-item went with its parent");
+
+        var act = () => OrgTreeTestHost.SendAsync(owner, new RestoreBoardItemCommand(child));
+        (await act.Should().ThrowAsync<Conflict>()).Which.ErrorCode.Should().Be("work-management.item.restore-parent-deleted");
+        (await IsDeletedAsync(child)).Should().BeTrue("a refused restore changes nothing");
+
+        await OrgTreeTestHost.SendAsync(owner, new RestoreBoardItemCommand(scene.Items[0]));
+        (await IsDeletedAsync(child)).Should().BeFalse("the sub-item comes back with its parent");
+    }
+
+    private async Task<Guid> AddSubItemAsync(Scene scene, Guid parentId, string name)
+    {
+        var parent = await ItemAsync(parentId);
+        var child = BoardItem.CreateSubItem(parent, name, FractionalIndex.Create("a0"), scene.Stack.OwnerId, OrgTreeTestHost.BaseTime);
+        await _host.WithSystemContextAsync(c =>
+        {
+            c.BoardItems.Add(child);
+            return Task.CompletedTask;
+        });
+        return child.Id;
     }
 
     // ---- scene and helpers ---------------------------------------------------------------------------------

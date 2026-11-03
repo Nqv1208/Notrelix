@@ -136,11 +136,17 @@ public class MoveBoardItemToBoardTests : WorkManagementHandlerTestBase
         var elsewhere = CreateBoardItem(boardId: _destination.Id);
         elsewhere.Delete(TestUserId, TestNow.AddDays(39));
         SetupBoardItems(_item, recent, stale, elsewhere);
-        var query = new ListBoardItemTrashQueryHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
+        var actors = new Mock<IActorLookupService>();
+        actors.Setup(a => a.FindManyAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ActorSnapshot> { new(TestUserId, "Hà Nguyễn", null) });
+        var query = new ListBoardItemTrashQueryHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, actors.Object);
 
-        var rows = await query.Handle(new ListBoardItemTrashQuery(_source.Id), CancellationToken.None);
+        var page = await query.Handle(new ListBoardItemTrashQuery(_source.Id), CancellationToken.None);
 
-        rows.Should().ContainSingle().Which.Id.Should().Be(recent.Id);
-        rows[0].RestorableUntil.Should().Be(TestNow.AddDays(38).AddDays(30));
+        page.Items.Should().ContainSingle().Which.Id.Should().Be(recent.Id);
+        page.Total.Should().Be(1);
+        page.NextCursor.Should().BeNull();
+        page.Items[0].RestorableUntil.Should().Be(TestNow.AddDays(38).AddDays(30));
+        page.Items[0].DeletedByName.Should().Be("Hà Nguyễn");
     }
 }
