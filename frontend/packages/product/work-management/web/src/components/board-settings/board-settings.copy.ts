@@ -169,13 +169,13 @@ export const en = {
       gone: "Past 30 days",
       restore: "Restore",
       restoring: "Restoring…",
-      note: "A deleted field is kept 30 days, then removed with its values. Restoring brings the field and its old values back; views, filters and forms that were removed are not applied again.",
+      note: "A deleted field can be restored for 30 days; after that it can't be restored any more. Restoring brings the field and its old values back; views, filters and forms that were removed are not applied again.",
       nameTaken:
         "Couldn't restore: another field already uses the name “{{name}}”. Rename the field in use, then restore again.",
       openLive: "Open the field in use",
       openField: "Open the field",
       expired:
-        "It was deleted more than 30 days ago and can't be restored any more. Its values were removed with it.",
+        "It was deleted more than 30 days ago and can't be restored any more.",
       dismiss: "Remove from the list",
       already: "{{name}} was restored by someone else. The list is refreshed.",
       forbidden:
@@ -188,7 +188,7 @@ export const en = {
       doneBodyNone: "Views and filters are not applied again.",
       emptyTitle: "No field has been deleted",
       emptyBody:
-        "A deleted field waits here for 30 days; restoring shows its old values again. After 30 days the field and its values are removed.",
+        "A deleted field waits here for 30 days; restoring shows its old values again. After 30 days it can't be restored any more.",
       loadError: "Couldn't load the deleted fields",
       loadErrorBody:
         "The connection was lost. The old list is not shown so a field isn't restored from changed data.",
@@ -386,9 +386,9 @@ export const en = {
   },
   deleteDialog: {
     title: "Delete the field “{{name}}”?",
-    body: "Deleting removes the field and the values items hold in it. This cannot be undone.",
-    values_other: "{{count}} items have a value that will be deleted",
-    values_one: "{{count}} item has a value that will be deleted",
+    body: "The field leaves every view. For 30 days you can restore it, with its values, from the Deleted tab.",
+    values_other: "{{count}} items have a value that stays with the field",
+    values_one: "{{count}} item has a value that stays with the field",
     cancel: "Cancel",
     confirm: "Delete field",
     working: "Deleting…",
@@ -877,13 +877,13 @@ export const vi: BoardSettingsCopy = {
       gone: "Quá 30 ngày",
       restore: "Khôi phục",
       restoring: "Đang khôi phục…",
-      note: "Trường đã xoá giữ 30 ngày, sau đó bị xoá hẳn cùng giá trị. Khôi phục đưa trường và giá trị cũ về; chế độ xem, bộ lọc và biểu mẫu đã gỡ không tự áp lại.",
+      note: "Trường đã xoá khôi phục được trong 30 ngày, sau đó không khôi phục được nữa. Khôi phục đưa trường và giá trị cũ về; chế độ xem, bộ lọc và biểu mẫu đã gỡ không tự áp lại.",
       nameTaken:
         "Chưa khôi phục được: tên “{{name}}” đang được một trường khác dùng. Đổi tên trường đang dùng đó rồi khôi phục lại.",
       openLive: "Mở trường đang dùng",
       openField: "Mở trường",
       expired:
-        "Đã quá 30 ngày nên không khôi phục được nữa. Giá trị của các việc đã bị xoá cùng trường.",
+        "Đã quá 30 ngày nên không khôi phục được nữa.",
       dismiss: "Bỏ khỏi danh sách",
       already: "{{name}} đã được người khác khôi phục. Danh sách đã làm mới.",
       forbidden:
@@ -896,7 +896,7 @@ export const vi: BoardSettingsCopy = {
       doneBodyNone: "Chế độ xem và bộ lọc không tự áp lại.",
       emptyTitle: "Chưa có trường nào bị xoá",
       emptyBody:
-        "Khi xoá một trường, nó nằm ở đây 30 ngày; khôi phục là giá trị cũ hiện lại. Hết 30 ngày, trường và giá trị bị xoá hẳn.",
+        "Khi xoá một trường, nó nằm ở đây 30 ngày; khôi phục là giá trị cũ hiện lại. Hết 30 ngày thì không khôi phục được nữa.",
       loadError: "Chưa tải được trường đã xoá",
       loadErrorBody:
         "Mất kết nối. Không hiện danh sách cũ để tránh khôi phục nhầm.",
@@ -1089,9 +1089,9 @@ export const vi: BoardSettingsCopy = {
   },
   deleteDialog: {
     title: 'Xoá trường "{{name}}"?',
-    body: "Xoá sẽ bỏ trường và các giá trị mà việc đang có ở trường này. Không thể hoàn tác.",
-    values_other: "{{count}} việc có giá trị sẽ bị xoá",
-    values_one: "{{count}} việc có giá trị sẽ bị xoá",
+    body: "Trường rời mọi chế độ xem. Trong 30 ngày bạn khôi phục được trường cùng giá trị ở tab Đã xoá.",
+    values_other: "{{count}} việc có giá trị sẽ ở lại cùng trường",
+    values_one: "{{count}} việc có giá trị sẽ ở lại cùng trường",
     cancel: "Huỷ",
     confirm: "Xoá trường",
     working: "Đang xoá…",

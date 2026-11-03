@@ -113,6 +113,8 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
     write,
     readLatest,
   } = useBoardSettings(boardId, workspaceId);
+  const deletedList = useDeletedFields(boardId, workspaceId, !forbidden);
+  const readDeletedAgain = deletedList.refetch;
 
   const actions = useMemo<BoardSettingsActions>(
     () => ({
@@ -134,7 +136,12 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       updateField: (fieldId, changes) =>
         write((api, s) => api.updateField(s, fieldId, changes)),
       archiveField: unsupported,
-      deleteField: (fieldId) => write((api, s) => api.deleteField(s, fieldId)),
+      // A deleted field is listed for its restore the moment it leaves the schema.
+      deleteField: async (fieldId) => {
+        const result = await write((api, s) => api.deleteField(s, fieldId));
+        if (result.ok) void readDeletedAgain();
+        return result;
+      },
       restoreField: unsupported,
       addOption: (fieldId, option) =>
         write((api, s) => api.addOption(s, fieldId, option)),
@@ -185,10 +192,9 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
         write((api, s) => api.unarchiveGroup(s, groupId)),
       setAutomationEnabled: unsupported,
     }),
-    [copy, savedViews.views, write],
+    [copy, readDeletedAgain, savedViews.views, write],
   );
 
-  const deletedList = useDeletedFields(boardId, workspaceId, !forbidden);
   const deletedFields = useMemo<DeletedFieldsPanelProps>(
     () => ({
       status: deletedList.isError
