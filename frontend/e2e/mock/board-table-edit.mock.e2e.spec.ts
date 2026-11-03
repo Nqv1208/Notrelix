@@ -87,9 +87,9 @@ test.describe("Board table, in-place edits (owner)", () => {
     for (const key of ["ERP-142", "ERP-146"])
       await page.getByRole("checkbox", { name: `Chọn ${key}` }).click();
     await page.getByRole("button", { name: /^Giao cho/ }).click();
-    await page.getByRole("button", { name: "Phan Ngọc Anh" }).click();
-    await expect(row(page, "ERP-142")).toContainText("Phan Ngọc Anh");
-    await expect(row(page, "ERP-146")).toContainText("Phan Ngọc Anh");
+    await page.getByRole("button", { name: "Bùi Thanh Tâm" }).click();
+    await expect(row(page, "ERP-142")).toContainText("Bùi Thanh Tâm");
+    await expect(row(page, "ERP-146")).toContainText("Bùi Thanh Tâm");
   });
 
   test("bulk: Chuyển board sends the row to the other board", async ({
@@ -134,12 +134,26 @@ test.describe("Board table, in-place edits (owner)", () => {
     page,
   }) => {
     await openTable(page);
+    // Every seeded person holds an open item: Bùi Thanh Tâm's only one (ERP-147) goes to nobody first.
+    await page
+      .getByRole("button", { name: "Đổi người phụ trách của ERP-147" })
+      .click();
+    await page.getByRole("button", { name: /Chưa giao/ }).click();
+    await expect(row(page, "ERP-147")).toContainText("Chưa giao");
     await page.getByRole("button", { name: /^Lọc/ }).click();
-    await page.getByText("Đặng Minh Tuấn").first().click();
+    // The filter is a builder: add a condition on the assignee and pick the person.
+    await page.getByRole("button", { name: "Thêm điều kiện" }).click();
+    await page
+      .getByRole("combobox", { name: "Trường (Điều kiện 1)" })
+      .selectOption({ label: "Người thực hiện" });
+    await page
+      .getByRole("listbox", { name: "Giá trị (Điều kiện 1)" })
+      .getByRole("option", { name: "Bùi Thanh Tâm" })
+      .click();
     await page.keyboard.press("Escape");
     await expect(
       page.getByText(
-        "Đặng Minh Tuấn chưa phụ trách việc nào chưa xong trên board này.",
+        "Bùi Thanh Tâm chưa phụ trách việc nào chưa xong trên board này.",
       ),
     ).toBeVisible();
     await expect(

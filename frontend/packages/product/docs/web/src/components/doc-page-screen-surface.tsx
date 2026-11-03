@@ -157,7 +157,7 @@ export interface DocPageTools {
 }
 
 /**
- * The document page (Final-Docs): the document bar, the menu bar and
+ * The document page (Final-Docs-2): the document bar, the menu bar and
  * formatting toolbar, the page sheet and the side panel; version history
  * swaps the toolbar for a compare banner and the side tabs for the list.
  */

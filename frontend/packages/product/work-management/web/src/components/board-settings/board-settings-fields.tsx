@@ -34,7 +34,7 @@ import { SortableList, SortableRow } from "./board-settings-sortable";
 const ROW_GRID =
   "grid grid-cols-[22px_minmax(0,1fr)_150px_132px_104px] items-center gap-2.5 min-h-[45px] first:min-h-[44px] pr-3 pl-2 text-item-small max-xl:grid-cols-[22px_minmax(0,1fr)_96px_minmax(0,96px)] max-md:grid-cols-[22px_minmax(0,1fr)_84px_minmax(0,72px)] max-xl:[&>:nth-child(4)]:hidden";
 const HEAD_ROW =
-  "min-h-[34px] first:min-h-[34px] bg-background text-metadata font-semibold text-meta-foreground";
+  "min-h-[34.8px] first:min-h-[34.8px] bg-background text-metadata leading-[1.45] font-semibold text-meta-foreground";
 
 /** The "Trường dữ liệu" section: the field tables, the picker, the panel and the archive dialog. */
 export function FieldsSection({
@@ -53,7 +53,11 @@ export function FieldsSection({
 }) {
   const { copy, settings, actions, run, timeZone } = useSettings();
   const t = copy.fields;
-  const [tab, setTab] = useState<"live" | "deleted">("live");
+  const [pickedTab, setTab] = useState<"live" | "deleted">("live");
+  // The drawn page has no tab bar: the "Deleted" tab appears once a field has been deleted.
+  const hasDeleted =
+    !!deleted && deleted.status === "ready" && deleted.fields.length > 0;
+  const tab = hasDeleted ? pickedTab : "live";
   const [pickerOpen, setPickerOpen] = useState(defaultPickerOpen ?? false);
   const [archiveId, setArchiveId] = useState<string | null>(
     defaultArchiveFieldId ?? null,
@@ -77,7 +81,7 @@ export function FieldsSection({
     if (fieldId && !selected) onSelectField(null);
   }, [fieldId, onSelectField, selected]);
 
-  async function addField(type: BoardSettingsFieldType) {
+  async function addField(type: BoardSettingsFieldType, typeSettings?: string) {
     setPickerOpen(false);
     // A calculated field needs its definition: the dialog collects it and creates the field.
     if (type === "formula" || type === "rollup") {
@@ -85,7 +89,11 @@ export function FieldsSection({
       return;
     }
     knownIds.current = settings.fields.map((field) => field.id);
-    const result = await run(() => actions.createField(type));
+    const result = await run(() =>
+      typeSettings
+        ? actions.createField(type, { settings: typeSettings })
+        : actions.createField(type),
+    );
     if (!result.ok) knownIds.current = null;
   }
 
@@ -132,7 +140,7 @@ export function FieldsSection({
                 align="end"
                 side="bottom"
                 sideOffset={15}
-                className="w-[520px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-line-strong bg-popover p-0 shadow-popover"
+                className="w-[522px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-line-strong bg-popover p-0 shadow-popover"
               >
                 <FieldTypePicker
                   copy={copy}
@@ -144,7 +152,7 @@ export function FieldsSection({
           }
         />
 
-        {deleted ? (
+        {deleted && hasDeleted ? (
           <div
             role="tablist"
             aria-label={t.tabs.label}
@@ -178,8 +186,8 @@ export function FieldsSection({
         ) : null}
         <div
           id="bs-fields-panel"
-          role={deleted ? "tabpanel" : undefined}
-          aria-labelledby={deleted ? `bs-fields-tab-${tab}` : undefined}
+          role={hasDeleted ? "tabpanel" : undefined}
+          aria-labelledby={hasDeleted ? `bs-fields-tab-${tab}` : undefined}
         >
           {deleted && tab === "deleted" ? (
             <div className="mt-4">
@@ -289,10 +297,10 @@ export function FieldsSection({
                         </small>
                       ) : null}
                     </span>
-                    <span className="truncate font-mono text-[12px] text-meta-foreground">
+                    <span className="truncate font-mono text-[12px] leading-[1.45] text-meta-foreground">
                       {row.key}
                     </span>
-                    <span className="inline-flex items-center gap-[5px] text-metadata text-meta-foreground">
+                    <span className="inline-flex items-center gap-[5px] text-metadata leading-[1.45] text-meta-foreground">
                       <Lock aria-hidden="true" className="size-3.5" />
                       {row.lock === "rename" ? t.renameOnly : t.locked}
                     </span>
@@ -335,7 +343,7 @@ export function FieldsSection({
                               })}
                             </small>
                           </span>
-                          <span className="truncate font-mono text-[12px] text-meta-foreground">
+                          <span className="truncate font-mono text-[12px] leading-[1.45] text-meta-foreground">
                             {field.key}
                           </span>
                           <span>
@@ -433,6 +441,17 @@ function FieldRow({
   onOpen: () => void;
 }) {
   const { copy } = useSettings();
+  const t = copy.fields;
+  const viewCount = new Set(
+    field.usedIn.filter((usage) => usage.kind !== "rule").map((u) => u.name),
+  ).size;
+  const optionKind = ["status", "select", "multiselect"].includes(field.type);
+  const detail =
+    field.detail ||
+    (field.multiple ? copy.picker.personKind.detail : "") ||
+    (optionKind && field.options.length > 0
+      ? plural(t.optionsCount_one, t.optionsCount_other, field.options.length)
+      : "");
   return (
     <SortableRow
       id={field.id}
@@ -468,27 +487,35 @@ function FieldRow({
           </button>
           <span className="text-muted-foreground">
             {typeName(copy, field.type)}
-            {field.detail ? (
+            {detail ? (
               <small className="block text-[11.5px] leading-[1.45] text-meta-foreground">
-                {field.detail}
+                {detail}
               </small>
             ) : null}
           </span>
-          <span className="truncate font-mono text-[12px] text-meta-foreground">
+          <span className="truncate font-mono text-[12px] leading-[1.45] text-meta-foreground">
             {field.key}
           </span>
           <span className="truncate text-crumb text-meta-foreground">
-            {field.accent && field.usage ? (
-              <Tag_>{field.usage}</Tag_>
+            {field.accent && (field.usage || field.type === "status") ? (
+              <Tag_>{field.usage || copy.fields.splitsKanban}</Tag_>
             ) : field.usage ? (
               field.usage
+            ) : viewCount > 0 ? (
+              plural(
+                copy.fields.inViews_one,
+                copy.fields.inViews_other,
+                viewCount,
+              )
             ) : field.valueCount > 0 ? (
               plural(
                 copy.archiveDialog.values_one,
                 copy.archiveDialog.values_other,
                 field.valueCount,
               )
-            ) : null}
+            ) : (
+              copy.fields.unused
+            )}
           </span>
         </>
       )}

@@ -216,6 +216,7 @@ export function KanbanView({
     copy: filtersCopy,
     view,
     kanbanView,
+    timeZone,
   } = useBoardViewState({
     boardId,
     workspaceId,
@@ -1091,6 +1092,7 @@ export function KanbanView({
                   total: kanban.totalCount,
                 }}
                 now={now}
+                timeZone={timeZone}
                 groupFields={columnFields}
                 groupFallback={
                   kanban.groupByField

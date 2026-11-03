@@ -877,6 +877,32 @@ export const cardsOperations = [
             .getColumns(store.getCard(params.id)!.boardId)
             .find((column) => column.id === (params as any).fieldId)
         : undefined;
+      // The `stale*` faults stand for a second manager who changed the board's fields first (D12).
+      const staleKind: string | undefined = (<Record<string, string>>{
+        stale: "work-management.field.deleted",
+        "stale-option": "work-management.field.option-removed",
+        "stale-type": "work-management.field.type-changed",
+      })[
+        (store.getConfig().faultProfile[
+          `/board-items/${params.id}/values/${(params as any).fieldId}`
+        ] ?? "") as string
+      ];
+      if (staleKind)
+        return {
+          status: 412,
+          body: {
+            type: "https://notrelix.dev/problems/common.precondition-failed",
+            title: "Precondition failed",
+            status: 412,
+            detail: "The field changed since this client loaded the board.",
+            errorCode: staleKind,
+            fieldName: (target as any)?.name ?? (target as any)?.title ?? "",
+            changedByName: "Hà Nguyễn",
+            optionLabel: "Khẩn",
+            fromType: "number",
+            toType: "text",
+          },
+        } as any;
       // A Formula is evaluated by the backend and never written.
       if (target?.fieldType === "formula")
         return badRequest({ value: ["Cannot write a computed field."] });

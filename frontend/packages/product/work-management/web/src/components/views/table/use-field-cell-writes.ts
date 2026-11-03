@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { staleSchemaOf } from "@notrelix/work-management-state";
 import type { CellWrite } from "./table-field-cell";
 
 type Send = (
@@ -56,10 +57,14 @@ export function useFieldCellWrites(send: Send, reload: () => Promise<unknown>) {
         },
         (error: unknown) => {
           if (latest.current.get(key) !== attempt) return;
-          put(key, {
-            status: isConflict(error) ? "conflict" : "error",
-            value,
-          });
+          // A column the board changed under this person: the choice shows, nothing was stored (D12).
+          const schema = staleSchemaOf(error);
+          put(
+            key,
+            schema
+              ? { status: "schema", value, schema }
+              : { status: isConflict(error) ? "conflict" : "error", value },
+          );
         },
       );
     },
@@ -90,5 +95,17 @@ export function useFieldCellWrites(send: Send, reload: () => Promise<unknown>) {
     [put],
   );
 
-  return { writeOf, write, retry, keepMine, takeTheirs };
+  // "Tải lại cột": the cell is a skeleton while the board's fields load again, then the unsaved value is dropped.
+  const reloadSchema = useCallback(
+    (rowId: string, fieldId: string) => {
+      const key = keyOf(rowId, fieldId);
+      const mine = writes.get(key);
+      if (!mine) return;
+      put(key, { status: "reloading", value: mine.value });
+      void reload().finally(() => put(key, null));
+    },
+    [put, reload, writes],
+  );
+
+  return { writeOf, write, retry, keepMine, takeTheirs, reloadSchema };
 }

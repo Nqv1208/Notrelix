@@ -418,6 +418,16 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
                 throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, $"Value contains an option that is not valid for field '{field.Name}'.");
         }
 
+        if (!newValue.IsEmpty && field.Type == FieldType.Person && JsonDocument.Parse(newValue.Data.Value).RootElement.ValueKind == JsonValueKind.Array)
+        {
+            // A multiple People field is a set: canonical sorted distinct ids, so the same set is a no-op and an empty list clears.
+            var people = JsonSerializer.Deserialize<string[]>(newValue.Data.Value)!
+                .Select(Guid.Parse).Distinct().OrderBy(id => id).ToList();
+            newValue = people.Count == 0
+                ? FieldValue.Empty()
+                : FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(people)));
+        }
+
         var existingValue = _fieldValues.FirstOrDefault(fv => fv.FieldId == field.Id);
         var oldValue = existingValue?.Value ?? FieldValue.Empty();
 

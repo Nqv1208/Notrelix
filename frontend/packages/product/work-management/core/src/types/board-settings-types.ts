@@ -82,6 +82,8 @@ export interface BoardSettingsFieldDto {
   /** The field splits the Kanban: drawn as a chip. */
   readonly accent: boolean;
   readonly unit: string | null;
+  /** A People field holds several people (settings.multiple), not one. */
+  readonly multiple?: boolean;
   /** The field is a stored column (it has values and options to edit). */
   readonly hasColumn: boolean;
   readonly valueCount: number;
@@ -214,6 +216,8 @@ export interface BoardSettingsDto {
   readonly systemFields: readonly BoardSettingsSystemFieldDto[];
   readonly archivedFields: readonly BoardSettingsArchivedFieldDto[];
   readonly views: readonly BoardSettingsViewDto[];
+  /** Views taken out of the tab strip; Restore brings one back. */
+  readonly archivedViews?: readonly BoardSettingsViewDto[];
   readonly groups: readonly BoardSettingsGroupDto[];
   /** Groups taken out of every view; their items stay in them, read-only, until the group is unarchived. */
   readonly archivedGroups: readonly BoardSettingsGroupDto[];

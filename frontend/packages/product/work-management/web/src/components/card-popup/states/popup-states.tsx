@@ -1,6 +1,11 @@
+import { useEffect, useRef, useState } from "react";
 import { AlertCircle, Info, RefreshCw, TriangleAlert } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
-import { MOVE_SAVE_KEY, useCardPopup } from "../card-popup-context";
+import {
+  MOVE_SAVE_KEY,
+  useCardPopup,
+  type PopupStaleSchema,
+} from "../card-popup-context";
 import { fillPopupCopy } from "../card-popup.copy";
 import { PanelBtn } from "../popup-ui";
 import { useCardPopupCopy } from "../use-card-popup-copy";
@@ -144,7 +149,7 @@ export function PopupLoadError({
       note={requestId ? fillPopupCopy(t.ref, { ref: requestId }) : undefined}
     >
       <PanelBtn variant="primary" onClick={onRetry}>
-        <RefreshCw aria-hidden="true" className="size-4" />
+        <RefreshCw aria-hidden="true" className="size-3" />
         {t.retry}
       </PanelBtn>
       <PanelBtn onClick={onClose}>{t.close}</PanelBtn>
@@ -189,34 +194,66 @@ function Banner({
   tone,
   title,
   body,
+  action,
+  schema,
   children,
 }: {
-  tone: "warn" | "info";
+  tone: "danger" | "warn" | "info";
+  /** A schema-change notice (D12): the artboard's 10 x 14 px padding, 13 px text on a 1.4 line, a 44 px button. */
+  schema?: boolean;
   title: string;
   body: string;
+  /** The one button of the notice, at its right edge. */
+  action?: React.ReactNode;
   children?: React.ReactNode;
 }) {
-  const Icon = tone === "warn" ? TriangleAlert : Info;
+  const Icon = tone === "info" ? Info : TriangleAlert;
   return (
     <div
-      role={tone === "warn" ? "alert" : "status"}
+      role={tone === "info" ? "status" : "alert"}
       className={cn(
-        "mx-4 mt-3 box-border flex md:mx-6 items-start gap-3 rounded-[10px] px-4 py-3 text-[13.5px] leading-[1.45] text-foreground",
-        tone === "warn"
-          ? "bg-warning-subtle shadow-[inset_0_0_0_1px_var(--warning-text)]"
-          : "bg-brand-subtle",
+        "mx-4 mt-3 box-border flex md:mx-6 items-start rounded-[10px] text-foreground",
+        schema
+          ? "gap-2.5 px-3.5 py-2.5 text-[13px] leading-[1.4]"
+          : "gap-3 px-4 py-3 text-[13.5px] leading-[1.45]",
+        tone === "danger" && "bg-danger-subtle",
+        tone === "warn" &&
+          (schema
+            ? "bg-warning-subtle"
+            : "bg-warning-subtle shadow-[inset_0_0_0_1px_var(--warning-text)]"),
+        tone === "info" && "bg-brand-subtle",
       )}
     >
-      <Icon aria-hidden="true" className="mt-px size-5 shrink-0" />
-      <div className="flex-1">
+      <Icon
+        aria-hidden="true"
+        className={cn(
+          schema ? "size-4 shrink-0" : "mt-px size-5 shrink-0",
+          tone === "danger" && "text-danger-text",
+          schema && tone === "warn" && "text-warning-text",
+        )}
+      />
+      <div className="min-w-0 flex-1">
         <b className="font-[650]">{title}</b>
         <br />
-        {body}
+        <span
+          className={cn(
+            tone === "danger" && "text-danger-text",
+            schema && tone === "warn" && "text-warning-text",
+          )}
+        >
+          {body}
+        </span>
         {children}
       </div>
+      {action ? <div className="shrink-0">{action}</div> : null}
     </div>
   );
 }
+
+const SCHEMA_BTN =
+  "h-11 rounded-[7px] px-3.5 text-[13px] font-medium md:h-11 md:text-[13px]";
+
+type Phase = "idle" | "pending" | "done" | "failed";
 
 /** The notices at the top of the left column: someone else's save, or why nothing is editable. */
 export function PopupBanners({
@@ -227,34 +264,57 @@ export function PopupBanners({
 }: {
   conflict?: boolean;
   conflictBy?: string | null;
-  staleSchema?: { fieldName: string; byName: string | null } | null;
-  onReload?: () => void;
+  staleSchema?: PopupStaleSchema | null;
+  onReload?: () => void | Promise<unknown>;
 }) {
   const { card, copy, readOnly, fieldConflicts, saves } = useCardPopup();
+  // The reload of the fields: the notice becomes "reloading", then says what changed, or that it failed.
+  const [phase, setPhase] = useState<Phase>("idle");
+  const kept = useRef<PopupStaleSchema | null>(null);
+  if (staleSchema) kept.current = staleSchema;
+  const reload = async () => {
+    setPhase("pending");
+    try {
+      await onReload?.();
+      setPhase(kept.current ? "done" : "idle");
+    } catch {
+      setPhase("failed");
+    }
+  };
+  useEffect(() => {
+    if (phase !== "done") return;
+    const id = window.setTimeout(() => setPhase("idle"), 8000);
+    return () => window.clearTimeout(id);
+  }, [phase]);
   const move = saves[MOVE_SAVE_KEY];
   const t = copy.shell;
+  const typeName = (type: string | undefined) =>
+    type ? (copy.sections.fields.typeNames[type] ?? type) : "";
   return (
     <>
-      {fieldConflicts.map((c) => (
-        <Banner
-          key={c.key}
-          tone="warn"
-          title={fillPopupCopy(t.fieldConflict.title, {
-            field: c.field,
-            value: c.theirs,
-          })}
-          body={fillPopupCopy(t.fieldConflict.body, { mine: c.mine })}
-        >
-          <div className="mt-2 flex flex-wrap gap-2">
-            <PanelBtn small onClick={c.takeTheirs}>
-              {t.fieldConflict.takeTheirs}
-            </PanelBtn>
-            <PanelBtn small variant="primary" onClick={c.keepMine}>
-              {t.fieldConflict.keepMine}
-            </PanelBtn>
-          </div>
-        </Banner>
-      ))}
+      {/* A custom field's clash is drawn at its own pill; the banner keeps the title's. */}
+      {fieldConflicts
+        .filter((c) => !c.key.startsWith("field:"))
+        .map((c) => (
+          <Banner
+            key={c.key}
+            tone="warn"
+            title={fillPopupCopy(t.fieldConflict.title, {
+              field: c.field,
+              value: c.theirs,
+            })}
+            body={fillPopupCopy(t.fieldConflict.body, { mine: c.mine })}
+          >
+            <div className="mt-2 flex flex-wrap gap-2">
+              <PanelBtn small onClick={c.takeTheirs}>
+                {t.fieldConflict.takeTheirs}
+              </PanelBtn>
+              <PanelBtn small variant="primary" onClick={c.keepMine}>
+                {t.fieldConflict.keepMine}
+              </PanelBtn>
+            </div>
+          </Banner>
+        ))}
       {move?.status === "error" ? (
         <Banner
           tone="warn"
@@ -276,23 +336,87 @@ export function PopupBanners({
           )}
         </Banner>
       ) : null}
-      {staleSchema ? (
+      {phase === "pending" ? (
         <Banner
-          tone="warn"
-          title={fillPopupCopy(t.staleSchema.deleted, {
-            who: staleSchema.byName ?? t.staleSchema.someone,
-            field: staleSchema.fieldName,
-          })}
-          body={t.staleSchema.body}
-        >
-          {onReload ? (
-            <div className="mt-2 flex flex-wrap gap-2">
-              <PanelBtn small onClick={onReload}>
-                {t.staleSchema.reload}
+          schema
+          tone="info"
+          title={t.staleSchema.pending}
+          body={t.staleSchema.pendingBody}
+        />
+      ) : phase === "failed" ? (
+        <Banner
+          schema
+          tone="danger"
+          title={t.staleSchema.failed}
+          body={t.staleSchema.failedBody}
+          action={
+            <PanelBtn className={SCHEMA_BTN} onClick={() => void reload()}>
+              <RefreshCw aria-hidden="true" className="size-3" />
+              {t.staleSchema.retry}
+            </PanelBtn>
+          }
+        />
+      ) : phase === "done" && kept.current && !staleSchema ? (
+        <Banner
+          schema
+          tone="info"
+          title={fillPopupCopy(
+            kept.current.kind === "option-removed"
+              ? t.staleSchema.doneOption
+              : kept.current.kind === "type-changed"
+                ? t.staleSchema.doneType
+                : t.staleSchema.doneDeleted,
+            { field: kept.current.fieldName },
+          )}
+          body={
+            kept.current.kind === "option-removed"
+              ? t.staleSchema.doneOptionBody
+              : kept.current.kind === "type-changed"
+                ? t.staleSchema.doneTypeBody
+                : t.staleSchema.doneDeletedBody
+          }
+        />
+      ) : staleSchema ? (
+        <Banner
+          schema
+          tone={
+            staleSchema.kind === "field-deleted" || !staleSchema.kind
+              ? "danger"
+              : "warn"
+          }
+          title={fillPopupCopy(
+            staleSchema.kind === "option-removed"
+              ? t.staleSchema.optionRemoved
+              : staleSchema.kind === "type-changed"
+                ? t.staleSchema.typeChanged
+                : t.staleSchema.deleted,
+            {
+              who: staleSchema.byName ?? t.staleSchema.someone,
+              field: staleSchema.fieldName,
+              from: typeName(staleSchema.fromType),
+              to: typeName(staleSchema.toType),
+            },
+          )}
+          body={
+            staleSchema.kind === "option-removed"
+              ? fillPopupCopy(t.staleSchema.optionRemovedBody, {
+                  option: staleSchema.optionLabel ?? "",
+                })
+              : staleSchema.kind === "type-changed"
+                ? t.staleSchema.typeChangedBody
+                : t.staleSchema.body
+          }
+          action={
+            onReload ? (
+              <PanelBtn className={SCHEMA_BTN} onClick={() => void reload()}>
+                <RefreshCw aria-hidden="true" className="size-3" />
+                {staleSchema.kind === "option-removed"
+                  ? t.staleSchema.optionReload
+                  : t.staleSchema.reload}
               </PanelBtn>
-            </div>
-          ) : null}
-        </Banner>
+            ) : null
+          }
+        />
       ) : conflict ? (
         <Banner
           tone="warn"

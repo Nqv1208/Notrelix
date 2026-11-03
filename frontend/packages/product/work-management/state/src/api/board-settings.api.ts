@@ -12,6 +12,7 @@ import type {
   BoardSettingsFieldType,
   BoardSettingsGeneralPatch,
   BoardSettingsGroupDto,
+  BoardSettingsUsageDto,
   BoardSettingsSystemFieldDto,
   BoardSettingsUnavailable,
   BoardSettingsViewDto,
@@ -117,6 +118,20 @@ function unitOf(settings: string | null | undefined): string | null {
   return null;
 }
 
+function multipleOf(settings: string | null | undefined): boolean {
+  if (!settings) return false;
+  try {
+    const parsed: unknown = JSON.parse(settings);
+    return (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      (parsed as { multiple?: unknown }).multiple === true
+    );
+  } catch {
+    return false;
+  }
+}
+
 function byPosition<T extends { position?: string | null }>(
   rows: readonly T[],
 ): T[] {
@@ -162,6 +177,9 @@ function mapField(column: OverviewField): BoardSettingsFieldDto {
     usage: "",
     accent: type === "status",
     unit: unitOf(column.settings),
+    ...(type === "person" && multipleOf(column.settings)
+      ? { multiple: true }
+      : {}),
     hasColumn: type === "status" || type === "select" || type === "multiselect",
     valueCount: column.valueCount ?? 0,
     options,
@@ -272,12 +290,40 @@ export function mapSettingsView(
   };
 }
 
+/**
+ * Where a field is in use: the saved views that filter, sort or split by it, show it on a card, or (a table)
+ * show it as a column. Read from the views the page already has, so it needs no extra request; `how` is left
+ * for the page to word.
+ */
+export function usedInOf(
+  fieldId: string,
+  views: readonly SavedBoardView[],
+): BoardSettingsUsageDto[] {
+  return views.flatMap((view): BoardSettingsUsageDto[] => {
+    const config = view.viewConfig;
+    const kind: BoardSettingsUsageDto["kind"] | null = config.filters.some(
+      (filter) => filter.fieldId === fieldId,
+    )
+      ? "filter"
+      : (config.cardFieldIds ?? []).includes(fieldId)
+        ? "card"
+        : config.sortBy.some((sort) => sort.fieldId === fieldId) ||
+            config.groupBy === fieldId ||
+            (view.viewMode === "table" &&
+              !(config.hiddenFields ?? []).includes(fieldId))
+          ? "view"
+          : null;
+    return kind ? [{ kind, name: view.name, how: "" }] : [];
+  });
+}
+
 /** The settings page model of a board read. */
 export function mapBoardSettings(
   boardId: string,
   board: Overview,
   inherited: WorkspaceLocale = DEFAULT_LOCALE,
   savedViews: readonly SavedBoardView[] = [],
+  archivedViews: readonly SavedBoardView[] = [],
 ): BoardSettingsDto {
   const columns = byPosition(
     (board.columns ?? []).filter((column) => column.isDeleted !== true),
@@ -290,7 +336,10 @@ export function mapBoardSettings(
   ).map(mapGroup);
   const fields = columns
     .filter((column) => !isLockedSystemField(column))
-    .map(mapField);
+    .map((column) => ({
+      ...mapField(column),
+      usedIn: usedInOf(column.id ?? "", savedViews),
+    }));
   return {
     boardId,
     version: board.version ?? 0,
@@ -313,6 +362,7 @@ export function mapBoardSettings(
     systemFields: columns.filter(isLockedSystemField).map(mapSystemField),
     archivedFields: [],
     views: savedViews.map((view) => mapSettingsView(view, fields)),
+    archivedViews: archivedViews.map((view) => mapSettingsView(view, fields)),
     groups,
     archivedGroups,
     automations: [],
@@ -382,7 +432,21 @@ export function createBoardSettingsApi(client: NotrelixClient) {
   const optionVersion = (s: BoardSettingsDto, fieldId: string) =>
     fieldOf(s, fieldId).version ?? 0;
 
+  const workspaceLocale = (workspaceId: string): Promise<WorkspaceLocale> =>
+    api
+      .get<{ timeZone?: string | null; weekStart?: string | null }>(
+        endpoints.workspaces.settings(workspaceId),
+        quiet,
+      )
+      .then((workspace): WorkspaceLocale => ({
+        timeZone: workspace.timeZone || DEFAULT_LOCALE.timeZone,
+        weekStart: workspace.weekStart === "sunday" ? "sunday" : "monday",
+      }))
+      .catch(() => DEFAULT_LOCALE);
+
   return {
+    /** The workspace's locale a board inherits (its time zone judges the days). */
+    workspaceLocale,
     async get(boardId: string): Promise<BoardSettingsDto> {
       const board = await api.get<Overview>(
         endpoints.boards.full(boardId),
@@ -390,18 +454,12 @@ export function createBoardSettingsApi(client: NotrelixClient) {
       );
       // The workspace's locale is context, not the page's own data: without it the defaults show.
       const inherited = board.workspaceId
-        ? await api
-            .get<{ timeZone?: string | null; weekStart?: string | null }>(
-              endpoints.workspaces.settings(board.workspaceId),
-              quiet,
-            )
-            .then((workspace): WorkspaceLocale => ({
-              timeZone: workspace.timeZone || DEFAULT_LOCALE.timeZone,
-              weekStart: workspace.weekStart === "sunday" ? "sunday" : "monday",
-            }))
-            .catch(() => DEFAULT_LOCALE)
+        ? await workspaceLocale(board.workspaceId)
         : DEFAULT_LOCALE;
       const savedViews = await boardApi.listSavedViews(boardId).catch(() => []);
+      const archivedViews = await boardApi
+        .listSavedViews(boardId, true)
+        .catch(() => []);
       // Only a manager reads the impact; the settings page is a manager's page, and without it the
       // confirmations name the effect without counts.
       const impact = await api
@@ -417,7 +475,13 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         }))
         .catch(() => undefined);
       return {
-        ...mapBoardSettings(boardId, board, inherited, savedViews),
+        ...mapBoardSettings(
+          boardId,
+          board,
+          inherited,
+          savedViews,
+          archivedViews,
+        ),
         ...(impact ? { impact } : {}),
       };
     },
@@ -505,7 +569,7 @@ export function createBoardSettingsApi(client: NotrelixClient) {
     ) =>
       api.post<unknown>(
         endpoints.boardFields.create(s.boardId),
-        { name, type, ...(settings ? { settings } : {}) },
+        { name, type, ...(settings ? { settingsJson: settings } : {}) },
         quiet,
       ),
     /** The fields deleted in the last 30 days, newest first (a Manager reads it). */
@@ -577,7 +641,7 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         {
           expectedVersion: fieldOf(s, fieldId).version ?? 0,
           name: changes.name,
-          ...(changes.settings ? { settings: changes.settings } : {}),
+          ...(changes.settings ? { settingsJson: changes.settings } : {}),
         },
         quiet,
       ),
@@ -690,6 +754,16 @@ export function createBoardSettingsApi(client: NotrelixClient) {
     },
     setDefaultView: (s: BoardSettingsDto, viewId: string) =>
       boardApi.setDefaultSavedView(s.boardId, viewId, viewVersion(s, viewId)),
+    /** Takes the view out of the tab strip; the default view hands over to the oldest shared one. */
+    archiveView: (s: BoardSettingsDto, viewId: string) =>
+      boardApi.archiveSavedView(s.boardId, viewId, viewVersion(s, viewId)),
+    unarchiveView: (s: BoardSettingsDto, viewId: string) => {
+      const version = s.archivedViews?.find(
+        (view) => view.id === viewId,
+      )?.version;
+      if (!version) throw new Error(`Unknown archived view ${viewId}`);
+      return boardApi.unarchiveSavedView(s.boardId, viewId, version);
+    },
     /** The default view cannot leave without a next one: the server takes `newDefaultViewId`, else the oldest shared view. */
     deleteView: (
       s: BoardSettingsDto,

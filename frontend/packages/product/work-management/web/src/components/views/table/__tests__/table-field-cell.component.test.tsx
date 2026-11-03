@@ -47,6 +47,7 @@ function cell(
       onRetry={extra.onRetry ?? vi.fn()}
       onKeepMine={extra.onKeepMine ?? vi.fn()}
       onUseTheirs={extra.onUseTheirs ?? vi.fn()}
+      onReloadSchema={vi.fn()}
     />,
   );
 }
@@ -179,6 +180,7 @@ describe("a custom field cell of the table", () => {
         onRetry={vi.fn()}
         onKeepMine={vi.fn()}
         onUseTheirs={vi.fn()}
+        onReloadSchema={vi.fn()}
       />,
     );
     expect(screen.queryByRole("button")).toBeNull();
@@ -259,5 +261,37 @@ describe("the write state of the custom cells", () => {
     });
     expect(result.current.writeOf("row", "field")?.status).toBe("conflict");
     expect(send).not.toHaveBeenCalled();
+  });
+
+  it("sends one person id for a single People field and a list for a multiple one", () => {
+    const members = [
+      { userId: "u-1", name: "An", initials: "A" },
+      { userId: "u-2", name: "Bình", initials: "B" },
+    ];
+    const pick = (multiple: boolean) => {
+      const onWrite = vi.fn();
+      const { unmount } = renderPureUi(
+        <TableFieldCell
+          field={{ ...field("field-reviewer"), multiple }}
+          cell={{ value: multiple ? ["u-1"] : "u-1" }}
+          rowKey="ERP-142"
+          copy={copy}
+          members={members}
+          editable
+          onWrite={onWrite}
+          onRetry={vi.fn()}
+          onKeepMine={vi.fn()}
+          onUseTheirs={vi.fn()}
+          onReloadSchema={vi.fn()}
+        />,
+      );
+      fireEvent.click(screen.getAllByRole("button")[0]!);
+      fireEvent.click(screen.getByRole("option", { name: /Bình/ }));
+      unmount();
+      return onWrite;
+    };
+
+    expect(pick(false)).toHaveBeenCalledWith("u-2");
+    expect(pick(true)).toHaveBeenCalledWith(["u-1", "u-2"]);
   });
 });

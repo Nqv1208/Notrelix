@@ -53,6 +53,7 @@ interface FullBoard {
     readonly version: number;
     readonly fieldType: string;
     readonly isSystem?: boolean;
+    readonly settings?: string | null;
   }[];
 }
 
@@ -72,12 +73,13 @@ async function createField(
   boardId: string,
   name: string,
   type: string,
+  settingsJson?: string,
 ) {
   const created = await apiWrite<Created>(
     page,
     "POST",
     `/boards/${boardId}/fields`,
-    { name, type },
+    { name, type, ...(settingsJson ? { settingsJson } : {}) },
   );
   expect(created.status, `create field ${name}`).toBeLessThan(300);
   return idOf(created.data);
@@ -336,6 +338,14 @@ test("a member picks from the option and date cells and clears them again, and e
   const module = await createField(page, boardId, "Module", "select");
   const related = await createField(page, boardId, "Related", "multiselect");
   const due = await createField(page, boardId, "Go live", "date");
+  const owner = await createField(page, boardId, "Owner", "person");
+  const reviewers = await createField(
+    page,
+    boardId,
+    "Reviewers",
+    "person",
+    JSON.stringify({ multiple: true }),
+  );
   for (const fieldId of [module, related]) {
     for (const name of ["Accounting", "Warehouse", "Purchasing"]) {
       const full = await apiRead<FullBoard>(page, `/boards/${boardId}/full`);
@@ -399,6 +409,33 @@ test("a member picks from the option and date cells and clears them again, and e
   }
   await page.getByRole("button", { name: "Done", exact: true }).click();
   expect(await valueOf(related)).toHaveLength(2);
+
+  // People: a single field takes one person id and closes; a multiple one takes a list, each tick writes.
+  await edit("Owner").click();
+  const one = wrote(owner);
+  await page.getByRole("option").first().click();
+  expect((await one).status()).toBeLessThan(300);
+  expect(typeof (await valueOf(owner))).toBe("string");
+  await settle(page);
+  await edit("Reviewers").click();
+  const people = await page.getByRole("option").count();
+  for (let index = 0; index < Math.min(2, people); index += 1) {
+    const tick = wrote(reviewers);
+    await page.getByRole("option").nth(index).click();
+    const sent = await tick;
+    expect(
+      sent.status(),
+      `${sent.request().postData()} -> ${await sent.text()} | ${JSON.stringify(
+        (
+          await apiRead<FullBoard>(page, `/boards/${boardId}/full`)
+        ).columns.find((column) => column.id === reviewers),
+      )}`,
+    ).toBeLessThan(300);
+    await settle(page);
+  }
+  expect(Array.isArray(await valueOf(reviewers))).toBe(true);
+  await page.keyboard.press("Escape");
+  await settle(page);
 
   // Date: a day writes and closes; "Clear date" empties it; a second clear sends nothing.
   await edit("Go live").click();
@@ -846,4 +883,114 @@ test("a parent's progress is its sub-items, a checklist keeps its own count, a f
   expect(absent.status()).toBe(404);
   expect(await hidden.json()).toMatchObject({ status: 404 });
   await outsiderContext.close();
+});
+
+test("a member creates a label from the typed text in the item's picker, it lands on the item on the server, and unticking takes it off", async ({
+  page,
+}) => {
+  await signIn(page, realUsers.admin);
+  const workspace = await createOwnedWorkspace(page, "Labels");
+  const boardId = await createBoard(page, workspace.id);
+  const board = await apiRead<FullBoard>(page, `/boards/${boardId}/full`);
+  const created = await apiWrite<{ id: string }>(
+    page,
+    "POST",
+    `/boards/${boardId}/items`,
+    { groupId: board.lists[0]!.id, title: "Label row" },
+  );
+  expect(created.status).toBeLessThan(300);
+  const itemId = created.data!.id;
+  const labelsOf = async () =>
+    (
+      (
+        await apiRead<{ labels?: { name: string }[] | null }>(
+          page,
+          `/board-items/${itemId}`,
+        )
+      ).labels ?? []
+    ).map((label) => label.name);
+
+  await page.goto(
+    `/workspaces/${workspace.id}/boards/${boardId}/items/${itemId}`,
+  );
+  await page.getByRole("button", { name: "Labels", exact: true }).click();
+  await page.getByRole("textbox", { name: "Find labels" }).fill("Urgent");
+  await expect(page.getByText("No label named “Urgent” yet")).toBeVisible();
+  await page.getByRole("button", { name: /^Create label “Urgent”/ }).click();
+  const attach = page.getByRole("checkbox", {
+    name: "Put label Urgent on the card",
+  });
+  await expect(attach).toBeChecked();
+  await settle(page);
+  expect(await labelsOf()).toEqual(["Urgent"]);
+
+  // Unticking takes the label off the item; the label stays on the board for the next one.
+  await attach.click();
+  await expect(attach).not.toBeChecked();
+  await settle(page);
+  expect(await labelsOf()).toEqual([]);
+  const boardLabels = await apiRead<{ name: string }[]>(
+    page,
+    `/boards/${boardId}/labels`,
+  );
+  expect(boardLabels.map((label) => label.name)).toContain("Urgent");
+});
+
+test("a manager adds, renames, recolours and deletes a label in Settings, and the server holds each change", async ({
+  page,
+}) => {
+  await signIn(page, realUsers.admin);
+  const workspace = await createOwnedWorkspace(page, "Label settings");
+  const boardId = await createBoard(page, workspace.id);
+  const labelsOnServer = () =>
+    apiRead<{ name: string; color: string }[]>(
+      page,
+      `/boards/${boardId}/labels`,
+    );
+  await page.goto(
+    `/workspaces/${workspace.id}/boards/${boardId}/settings?section=labels`,
+  );
+
+  await page.getByRole("button", { name: "Add label", exact: true }).click();
+  const form = page.getByRole("form", { name: "New label" });
+  await form.getByRole("textbox", { name: "Name of the label" }).fill("Data");
+  await form.getByRole("button", { name: "Add label" }).click();
+  await expect(
+    page.getByRole("list", { name: "Labels of the board" }).getByText("Data"),
+  ).toBeVisible();
+  await settle(page);
+  expect((await labelsOnServer()).map((label) => label.name)).toEqual(["Data"]);
+
+  // Rename and recolour in one edit: Enter or "Save" sends both with the version the page read.
+  await page.getByRole("button", { name: "Rename the label Data" }).click();
+  await page
+    .getByRole("textbox", { name: "Name of the label" })
+    .fill("Data model");
+  await page.getByRole("button", { name: /^Change colour, now/ }).click();
+  await page.getByRole("button", { name: "Rose" }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await settle(page);
+  const [renamed] = await labelsOnServer();
+  expect(renamed!.name).toBe("Data model");
+  expect(renamed!.color.toLowerCase()).toBe("#d13a5b");
+
+  // A duplicate name is refused on the page and nothing is sent.
+  await page.getByRole("button", { name: "Add label", exact: true }).click();
+  const again = page.getByRole("form", { name: "New label" });
+  await again
+    .getByRole("textbox", { name: "Name of the label" })
+    .fill("data model");
+  await expect(
+    page.getByText("A label with this name already exists."),
+  ).toBeVisible();
+  await again.getByRole("button", { name: "Cancel" }).click();
+
+  await page
+    .getByRole("button", { name: "Delete the label Data model" })
+    .click();
+  await page
+    .getByRole("button", { name: "Delete the label", exact: true })
+    .click();
+  await settle(page);
+  expect(await labelsOnServer()).toEqual([]);
 });

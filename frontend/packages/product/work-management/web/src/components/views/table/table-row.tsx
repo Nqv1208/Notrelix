@@ -754,6 +754,9 @@ export function TableRow({
               onRetry={() => fieldEditing?.onRetry(row.id, field.id)}
               onKeepMine={() => fieldEditing?.onKeepMine(row.id, field.id)}
               onUseTheirs={() => fieldEditing?.onUseTheirs(row.id, field.id)}
+              onReloadSchema={() =>
+                fieldEditing?.onReloadSchema(row.id, field.id)
+              }
             />
           </Cell>
         );

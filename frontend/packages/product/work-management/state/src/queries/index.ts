@@ -17,6 +17,7 @@ export * from "./use-item-extras";
 export * from "./use-item-conflict";
 export * from "./use-item-actions";
 export * from "./use-board-settings";
+export * from "./use-board-time-zone";
 export * from "./use-retired-boards";
 export * from "./use-workspace-automations";
 export * from "./use-offline-writes";

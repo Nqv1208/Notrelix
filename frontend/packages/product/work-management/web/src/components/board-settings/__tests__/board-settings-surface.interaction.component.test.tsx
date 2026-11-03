@@ -328,6 +328,31 @@ describe.each([
     );
   });
 
+  it(`asks one person or several before it adds a People field (${locale})`, async () => {
+    const actions = spyActions();
+    renderPage(copy, { actions: actions as unknown as BoardSettingsActions });
+    fireEvent.click(screen.getByRole("button", { name: copy.fields.add }));
+    const picker = await screen.findByRole("dialog", {
+      name: copy.picker.label,
+    });
+    fireEvent.click(
+      within(picker).getByRole("button", {
+        name: new RegExp(`^${copy.picker.names.person}`),
+      }),
+    );
+    expect(actions.createField).not.toHaveBeenCalled();
+    fireEvent.click(
+      within(picker).getByRole("button", {
+        name: new RegExp(`^${copy.picker.personKind.many}`),
+      }),
+    );
+    await waitFor(() =>
+      expect(actions.createField).toHaveBeenCalledWith("person", {
+        settings: '{"multiple":true}',
+      }),
+    );
+  });
+
   it(`${fui("wm.board-settings:archive-field", locale)}shows what archiving touches before it archives (${locale})`, async () => {
     const actions = spyActions();
     const { props: pageProps } = renderPage(copy, {

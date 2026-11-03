@@ -197,6 +197,7 @@ export function MainTableView({
     copy: filtersCopy,
     view,
     kanbanView,
+    timeZone,
   } = useBoardViewState({
     boardId,
     workspaceId,
@@ -774,6 +775,7 @@ export function MainTableView({
     onRetry: cellWrites.retry,
     onKeepMine: cellWrites.keepMine,
     onUseTheirs: cellWrites.takeTheirs,
+    onReloadSchema: cellWrites.reloadSchema,
   };
   const moveTargets = (workspaceBoards.data ?? [])
     .filter(
@@ -916,6 +918,7 @@ export function MainTableView({
                   total: table.totalCount,
                 }}
                 now={now}
+                timeZone={timeZone}
                 sort
                 sortFallback={sharedSortSummary}
                 groupFields={groupableFields(table.filterFields)}
@@ -951,6 +954,7 @@ export function MainTableView({
               onRetrySave: table.retryColumnsSave,
               saveToViewFailed: table.saveColumnsToViewFailed,
               saveToViewConflict: table.saveColumnsToViewConflict,
+              saveToViewConflictBy: table.saveColumnsToViewConflictBy,
               savedToView: table.columnsSavedToView,
             },
             hiddenColumnIds: table.hiddenColumnIds,
