@@ -218,3 +218,148 @@ test("an archive that carries a stale version is refused and changes nothing", a
   );
   expect(missing.status).toBe(400);
 });
+
+test("the archive is read a page at a time and searched, a deleted item comes back with its sub-item, and a lone sub-item is refused while its parent is deleted", async ({
+  page,
+}) => {
+  test.setTimeout(240_000);
+  await signIn(page, realUsers.workspaceAdmin);
+  const { workspace, board } = await openBoard(
+    page,
+    "Workspace 3",
+    "Engineering Tasks",
+  );
+  const unique = Date.now().toString(36);
+  const groupId = (
+    await apiRead<{ lists: { id: string }[] }>(page, `/boards/${board.id}/full`)
+  ).lists[0]!.id;
+
+  // 52 items archived by one bulk write: two more than a page.
+  const ids: string[] = [];
+  for (let n = 0; n < 52; n += 1) {
+    const created = await apiWrite<{ id: string }>(
+      page,
+      "POST",
+      `/boards/${board.id}/items`,
+      { groupId, title: `Paged ${unique} ${n}` },
+    );
+    expect(created.status).toBeLessThan(300);
+    ids.push(created.data!.id);
+  }
+  const expectedVersions: Record<string, number> = {};
+  for (const id of ids)
+    expectedVersions[id] = (
+      await apiRead<ItemRead>(page, `/board-items/${id}`)
+    ).version;
+  expect(
+    (
+      await apiWrite(page, "POST", `/boards/${board.id}/items/bulk`, {
+        operation: "archive",
+        itemIds: ids,
+        expectedVersions,
+      })
+    ).status,
+  ).toBeLessThan(300);
+
+  // The first page is 50 rows, says so, and the next page comes on request.
+  await page.goto(`/workspaces/${workspace.id}/boards/${board.id}`);
+  await page.getByRole("button", { name: "More options" }).click();
+  await page.getByRole("menuitem", { name: "Archived items" }).click();
+  const sheet = page.getByRole("dialog", { name: /^Archived items/ });
+  await sheet.getByRole("searchbox").fill(`Paged ${unique}`);
+  const rows = sheet.getByRole("listitem");
+  await expect(rows).toHaveCount(50);
+  await expect(sheet.getByText("Showing 50 of 52")).toBeVisible();
+  await expect(rows.first()).toContainText("Archived by");
+  await sheet.getByRole("button", { name: "Show 2 more" }).click();
+  await expect(rows).toHaveCount(52);
+  await expect(
+    sheet.getByRole("button", { name: /Show \d+ more/ }),
+  ).toHaveCount(0);
+
+  // A name search narrows the list; one row comes back to the board.
+  await sheet.getByRole("searchbox").fill(`Paged ${unique} 7`);
+  await expect(rows).toHaveCount(1);
+  const back = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      response.url().includes(`/board-items/${ids[7]}/unarchive`),
+  );
+  await rows.first().getByRole("button", { name: "Unarchive" }).click();
+  expect((await back).status()).toBeLessThan(300);
+  await expect(rows).toHaveCount(0);
+  expect(
+    (await apiRead<ItemRead>(page, `/board-items/${ids[7]}`)).isArchived,
+  ).not.toBe(true);
+  await page.keyboard.press("Escape");
+
+  // A parent with a sub-item is deleted from its card; the Deleted items list counts the sub-item.
+  const parentId = (
+    await apiWrite<{ id: string }>(page, "POST", `/boards/${board.id}/items`, {
+      groupId,
+      title: `Delete me ${unique}`,
+    })
+  ).data!.id;
+  const childId = (
+    await apiWrite<{ id: string }>(
+      page,
+      "POST",
+      `/board-items/${parentId}/child-items`,
+      { title: `Kid ${unique}` },
+    )
+  ).data!.id;
+  await page.goto(
+    `/workspaces/${workspace.id}/boards/${board.id}?item=${parentId}`,
+  );
+  await page.getByRole("button", { name: "Card actions" }).click();
+  await page.getByRole("menuitem", { name: "Delete…" }).click();
+  const deleted = page.waitForResponse(
+    (response) =>
+      response.request().method() === "DELETE" &&
+      response.url().includes(`/board-items/${parentId}`),
+  );
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Delete item" })
+    .click();
+  expect((await deleted).status()).toBeLessThan(300);
+
+  // A sub-item alone is refused while its parent is in the Trash, and nothing changes.
+  const refused = await apiWrite<{ errorCode?: string }>(
+    page,
+    "POST",
+    `/board-items/${childId}/restore`,
+    {},
+  );
+  expect(refused.status).toBe(409);
+  expect(refused.data?.errorCode).toBe(
+    "work-management.item.restore-parent-deleted",
+  );
+
+  await page.goto(`/workspaces/${workspace.id}/boards/${board.id}`);
+  await page.getByRole("button", { name: "More options" }).click();
+  await page.getByRole("menuitem", { name: "Deleted items" }).click();
+  const trash = page.getByRole("dialog", { name: /^Deleted items/ });
+  const row = trash.getByRole("listitem").filter({
+    hasText: `Delete me ${unique}`,
+  });
+  // The 52 archive events are still being consumed, so the first read can take a while.
+  await expect(row).toContainText("1 sub-item", { timeout: 30_000 });
+  await expect(row).toContainText("Deleted by");
+  await expect(row).toContainText("left");
+
+  // The parent comes back with its sub-item.
+  const restored = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      response.url().includes(`/board-items/${parentId}/restore`),
+  );
+  await row.getByRole("button", { name: "Restore" }).click();
+  expect((await restored).status()).toBeLessThan(300);
+  await expect(row).toHaveCount(0);
+  const kids = await apiRead<{ items: { id: string }[] }>(
+    page,
+    `/board-items/${parentId}/child-items`,
+  );
+  expect(kids.items.map((kid) => kid.id)).toContain(childId);
+});
