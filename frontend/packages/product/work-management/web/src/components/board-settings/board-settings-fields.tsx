@@ -81,10 +81,7 @@ export function FieldsSection({
     if (fieldId && !selected) onSelectField(null);
   }, [fieldId, onSelectField, selected]);
 
-  async function addField(
-    type: BoardSettingsFieldType,
-    typeSettings?: string,
-  ) {
+  async function addField(type: BoardSettingsFieldType, typeSettings?: string) {
     setPickerOpen(false);
     // A calculated field needs its definition: the dialog collects it and creates the field.
     if (type === "formula" || type === "rollup") {
@@ -93,7 +90,9 @@ export function FieldsSection({
     }
     knownIds.current = settings.fields.map((field) => field.id);
     const result = await run(() =>
-      actions.createField(type, typeSettings ? { settings: typeSettings } : undefined),
+      typeSettings
+        ? actions.createField(type, { settings: typeSettings })
+        : actions.createField(type),
     );
     if (!result.ok) knownIds.current = null;
   }
