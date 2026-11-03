@@ -58,7 +58,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
       restore: vi.fn(),
     }),
     // The board's time zone is its workspace's; these tests read no settings.
-    useBoardTimeZone: () => undefined,
+    useBoardTimeZoneSource: () => ({ timeZone: undefined, isDefault: false }),
     // The member's own view state: nothing saved, nothing persisted by these tests.
     useBoardPreference: () => ({
       criteria: undefined,

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Plus, Search } from "lucide-react";
-import { Button } from "@notrelix/ui-web";
+import { Button, useMediaQuery } from "@notrelix/ui-web";
+import { CompactSearch } from "../../filters/compact-search";
 import { kanbanPrimaryButtonClass } from "./kanban-chrome";
 import type { KanbanToolbarCopy } from "./kanban-toolbar.copy";
 
@@ -37,20 +38,31 @@ export function KanbanToolbar({
   canAdd,
   onAddItem,
 }: KanbanToolbarProps) {
+  // A phone: the search is an icon button, so the bar keeps Lọc, Cách xem and the saved filters on one row.
+  const compact = useMediaQuery("(max-width: 639px)");
   return (
     <div data-kanban-toolbar="">
       <div className="flex flex-wrap items-center gap-1.5 py-2.5">
-        <label className="flex h-8 w-50 max-w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring">
-          <Search className="size-4 shrink-0" aria-hidden="true" />
-          <input
-            type="search"
+        {compact ? (
+          <CompactSearch
             value={searchQuery}
-            onChange={(event) => onSearchChange(event.target.value)}
+            onChange={onSearchChange}
+            label={copy.search.label}
             placeholder={copy.search.placeholder}
-            aria-label={copy.search.label}
-            className="min-w-0 flex-1 bg-transparent text-compact text-foreground outline-none placeholder:text-meta-foreground"
           />
-        </label>
+        ) : (
+          <label className="flex h-8 w-50 max-w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring">
+            <Search className="size-4 shrink-0" aria-hidden="true" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => onSearchChange(event.target.value)}
+              placeholder={copy.search.placeholder}
+              aria-label={copy.search.label}
+              className="min-w-0 flex-1 bg-transparent text-compact text-foreground outline-none placeholder:text-meta-foreground"
+            />
+          </label>
+        )}
 
         {viewBar}
 

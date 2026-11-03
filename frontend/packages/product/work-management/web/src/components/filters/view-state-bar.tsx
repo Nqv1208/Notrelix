@@ -6,6 +6,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   cn,
+  useMediaQuery,
 } from "@notrelix/ui-web";
 import {
   conditionIssue,
@@ -23,6 +24,7 @@ import { FieldRefMenu } from "./field-ref-menu";
 import { fillFiltersCopy, type FiltersCopy } from "./filters.copy";
 import type { SummaryPhrase } from "../saved-filters/saved-filters-menu";
 import { SortMenu } from "./sort-menu";
+import { ViewSheet } from "./view-sheet";
 import type { ViewStateControl } from "./view-state-control";
 
 const MAX_CHIPS = 3;
@@ -31,6 +33,8 @@ const MAX_CHIPS = 3;
 export interface SaveFormState {
   saveOpen: boolean;
   onSaveOpenChange: (open: boolean) => void;
+  /** A phone: the saved-filter trigger is the 36 px icon alone and "Lưu bộ lọc" is in the filter sheet. */
+  phone?: boolean;
   /** What the bar shows now, one phrase per condition and the grouping: the save form's summary. */
   summary: readonly SummaryPhrase[];
   /** The same phrases for a saved filter's criteria: the subtitle of its row. */
@@ -48,6 +52,8 @@ export interface ViewStateBarProps {
   now: Date;
   /** The board's IANA zone (its workspace's). */
   timeZone?: string;
+  /** True while the workspace setting could not be read and the default zone stands in. */
+  timeZoneIsDefault?: boolean;
   /** Which of the sort, group and swimlane controls this view has. */
   sort?: boolean;
   /** The shared view's sort as text, shown by the sort pill while the member has none. */
@@ -95,6 +101,9 @@ export function ViewStateBar(props: ViewStateBarProps) {
   const open = props.filterOpen ?? openInner;
   const setOpen = props.onFilterOpenChange ?? setOpenInner;
   const [saveOpen, setSaveOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  // Under 640 px the bar is the phone bar of WM-Filter-320: Lọc, Cách xem and the saved filters.
+  const compact = useMediaQuery("(max-width: 639px)");
   const reasonId = useId();
   const describe = (criteria: SavedFilterCriteria): SummaryPhrase[] => {
     const state = viewStateFromCriteria(criteria);
@@ -121,6 +130,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
       ? props.savedFilters({
           saveOpen,
           onSaveOpenChange: setSaveOpen,
+          ...(compact ? { phone: true } : {}),
           summary: [
             ...applied.map((condition) => ({
               text: describeCondition(
@@ -149,6 +159,79 @@ export function ViewStateBar(props: ViewStateBarProps) {
     typeof props.savedFilters === "function"
       ? () => setSaveOpen(true)
       : props.onSaveAsNew;
+  const zoneNote = props.timeZone
+    ? fillFiltersCopy(
+        props.timeZoneIsDefault
+          ? copy.filter.timeZoneDefaultNote
+          : copy.filter.timeZoneNote,
+        { zone: props.timeZone },
+      )
+    : undefined;
+  const chips =
+    shown.length > 0 ? (
+      <ul
+        aria-label={copy.filter.trigger}
+        className="m-0 flex min-w-0 list-none flex-wrap items-center gap-1.5 p-0"
+      >
+        {shown.map((condition, index) => {
+          const field = fields.find((f) => f.id === condition.fieldId);
+          const stale = known && !field;
+          const label = describeCondition(copy, condition, field, memberName);
+          const original = filter.conditions.indexOf(condition);
+          return (
+            <li key={`${condition.fieldId}-${index}`} className="contents">
+              {index > 0 ? (
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {filter.join === "and" ? copy.filter.and : copy.filter.or}
+                </span>
+              ) : null}
+              <span
+                data-stale={stale || undefined}
+                className={cn(
+                  "inline-flex h-6.5 max-w-full items-center gap-1 rounded-full pl-2.5 pr-1 text-[12.5px] font-semibold",
+                  stale
+                    ? "bg-warning-subtle text-warning-subtle-foreground ring-1 ring-warning/50"
+                    : "bg-state-selected text-state-selected-foreground",
+                )}
+              >
+                {stale ? (
+                  <AlertCircle className="size-4" aria-hidden="true" />
+                ) : null}
+                <span className="min-w-0 truncate">{label}</span>
+                <button
+                  type="button"
+                  aria-label={fillFiltersCopy(copy.filter.clearChip, {
+                    label,
+                  })}
+                  onClick={() =>
+                    view.setFilter({
+                      ...filter,
+                      conditions: filter.conditions.filter(
+                        (_, i) => i !== original,
+                      ),
+                    })
+                  }
+                  className="grid size-4.5 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-inherit hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
+                >
+                  <X className="size-3.5" aria-hidden="true" />
+                </button>
+              </span>
+            </li>
+          );
+        })}
+        {hidden > 0 ? (
+          <li>
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="h-6.5 cursor-pointer rounded-full border-0 bg-state-hover px-2.5 text-[12.5px] font-semibold text-muted-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
+            >
+              {fillFiltersCopy(copy.filter.more, { count: hidden })}
+            </button>
+          </li>
+        ) : null}
+      </ul>
+    ) : null;
   return (
     <>
       <FilterBuilder
@@ -160,7 +243,9 @@ export function ViewStateBar(props: ViewStateBarProps) {
         counts={props.counts}
         now={props.now}
         timeZone={props.timeZone}
+        timeZoneNote={zoneNote}
         activeCount={applied.length}
+        compact={compact}
         open={open}
         onOpenChange={setOpen}
         onSaveFilter={
@@ -172,71 +257,26 @@ export function ViewStateBar(props: ViewStateBarProps) {
             : undefined
         }
       />
-      {shown.length > 0 ? (
-        <ul
-          aria-label={copy.filter.trigger}
-          className="m-0 flex min-w-0 list-none flex-wrap items-center gap-1.5 p-0"
-        >
-          {shown.map((condition, index) => {
-            const field = fields.find((f) => f.id === condition.fieldId);
-            const stale = known && !field;
-            const label = describeCondition(copy, condition, field, memberName);
-            const original = filter.conditions.indexOf(condition);
-            return (
-              <li key={`${condition.fieldId}-${index}`} className="contents">
-                {index > 0 ? (
-                  <span className="text-xs font-semibold text-muted-foreground">
-                    {filter.join === "and" ? copy.filter.and : copy.filter.or}
-                  </span>
-                ) : null}
-                <span
-                  data-stale={stale || undefined}
-                  className={cn(
-                    "inline-flex h-6.5 max-w-full items-center gap-1 rounded-full pl-2.5 pr-1 text-[12.5px] font-semibold",
-                    stale
-                      ? "bg-warning-subtle text-warning-subtle-foreground ring-1 ring-warning/50"
-                      : "bg-state-selected text-state-selected-foreground",
-                  )}
-                >
-                  {stale ? (
-                    <AlertCircle className="size-4" aria-hidden="true" />
-                  ) : null}
-                  <span className="min-w-0 truncate">{label}</span>
-                  <button
-                    type="button"
-                    aria-label={fillFiltersCopy(copy.filter.clearChip, {
-                      label,
-                    })}
-                    onClick={() =>
-                      view.setFilter({
-                        ...filter,
-                        conditions: filter.conditions.filter(
-                          (_, i) => i !== original,
-                        ),
-                      })
-                    }
-                    className="grid size-4.5 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-inherit hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
-                  >
-                    <X className="size-3.5" aria-hidden="true" />
-                  </button>
-                </span>
-              </li>
-            );
-          })}
-          {hidden > 0 ? (
-            <li>
-              <button
-                type="button"
-                onClick={() => setOpen(true)}
-                className="h-6.5 cursor-pointer rounded-full border-0 bg-state-hover px-2.5 text-[12.5px] font-semibold text-muted-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
-              >
-                {fillFiltersCopy(copy.filter.more, { count: hidden })}
-              </button>
-            </li>
-          ) : null}
-        </ul>
+      {compact ? null : chips}
+      {compact && (props.sort || props.groupFields || props.laneFields) ? (
+        <>
+          <ViewSheet
+            copy={copy}
+            view={view}
+            fields={fields}
+            sort={props.sort}
+            sortFallback={props.sortFallback}
+            groupFields={props.groupFields}
+            groupFallback={props.groupFallback}
+            laneFields={props.laneFields}
+            blockedLaneFieldId={props.blockedLaneFieldId}
+            open={viewOpen}
+            onOpenChange={setViewOpen}
+          />
+        </>
       ) : null}
-      {props.sort ? (
+      {compact ? <span className="flex-1" /> : null}
+      {!compact && props.sort ? (
         <SortMenu
           copy={copy}
           fields={fields}
@@ -245,7 +285,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
           fallbackSummary={props.sortFallback}
         />
       ) : null}
-      {props.groupFields ? (
+      {!compact && props.groupFields ? (
         <FieldRefMenu
           copy={copy}
           kind="group"
@@ -257,10 +297,11 @@ export function ViewStateBar(props: ViewStateBarProps) {
           )}
           value={view.state.group}
           fallback={props.groupFallback}
+          timeZoneNote={zoneNote}
           onChange={view.setGroup}
         />
       ) : null}
-      {props.laneFields ? (
+      {!compact && props.laneFields ? (
         <FieldRefMenu
           copy={copy}
           kind="lane"
@@ -270,7 +311,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
           onChange={view.setLane}
         />
       ) : null}
-      {view.personal ? (
+      {!compact && view.personal ? (
         <span
           role="group"
           aria-label={copy.personal.label}
@@ -326,6 +367,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
         </>
       ) : null}
       {saved}
+      {compact ? chips : null}
       <div className="basis-full empty:hidden">
         <ViewStateNotices
           copy={copy}

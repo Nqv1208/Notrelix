@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import {
   Button,
+  cn,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -66,6 +67,8 @@ export interface SavedFiltersMenuProps {
   /** The "Lưu bộ lọc" form is controlled by the host so the removed-field warning can open it. */
   /** Only the icon until a filter is applied (a crowded bar, like the Calendar's); the name stays for assistive technology. */
   compact?: boolean;
+  /** A phone: the list trigger is a 36 px icon and the save trigger only anchors the form. */
+  phone?: boolean;
   saveOpen?: boolean;
   onSaveOpenChange?: (open: boolean) => void;
   /** What the bar shows now, one phrase per condition and the grouping: the save form's summary chips. */
@@ -93,6 +96,7 @@ export function SavedFiltersMenu(props: SavedFiltersMenuProps) {
           onSave={props.onSave}
           open={props.saveOpen}
           onOpenChange={props.onSaveOpenChange}
+          compact={props.phone}
         />
       ) : null}
       <SavedFiltersList {...props} copy={copy} />
@@ -106,7 +110,10 @@ function SaveFilterPopover({
   onSave,
   open: controlledOpen,
   onOpenChange,
+  compact,
 }: Pick<SavedFiltersMenuProps, "copy" | "onSave"> & {
+  /** A phone: "Lưu bộ lọc" is in the filter sheet; the trigger here only anchors the form. */
+  compact?: boolean | undefined;
   summary: readonly SummaryPhrase[];
   open?: boolean | undefined;
   onOpenChange?: ((open: boolean) => void) | undefined;
@@ -158,7 +165,12 @@ function SaveFilterPopover({
       }}
     >
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className={kanbanPillClass}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(kanbanPillClass, compact && "sr-only")}
+          {...(compact ? { tabIndex: -1, "aria-hidden": true } : {})}
+        >
           <BookmarkPlus className="size-4" aria-hidden="true" />
           {t.trigger}
         </Button>
@@ -288,6 +300,7 @@ function SavedFiltersList({
   onSetVisibility,
   onRemove,
   compact,
+  phone,
   describe,
 }: SavedFiltersMenuProps) {
   const t = copy.menu;
@@ -345,7 +358,10 @@ function SavedFiltersList({
         <Button
           variant="ghost"
           size="sm"
-          className={kanbanPillClass}
+          className={cn(
+            kanbanPillClass,
+            phone && "h-9 min-w-9 justify-center px-2",
+          )}
           aria-haspopup="dialog"
         >
           <Bookmark className="size-4" aria-hidden="true" />

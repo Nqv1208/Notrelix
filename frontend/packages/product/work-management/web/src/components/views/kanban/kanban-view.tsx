@@ -221,6 +221,7 @@ export function KanbanView({
     view,
     kanbanView,
     timeZone,
+    timeZoneIsDefault,
   } = useBoardViewState({
     boardId,
     workspaceId,
@@ -1102,6 +1103,7 @@ export function KanbanView({
                 }}
                 now={now}
                 timeZone={timeZone}
+                timeZoneIsDefault={timeZoneIsDefault}
                 groupFields={columnFields}
                 groupFallback={
                   kanban.groupByField

@@ -201,6 +201,7 @@ export function MainTableView({
     view,
     kanbanView,
     timeZone,
+    timeZoneIsDefault,
   } = useBoardViewState({
     boardId,
     workspaceId,
@@ -1025,6 +1026,7 @@ export function MainTableView({
                 }}
                 now={now}
                 timeZone={timeZone}
+                timeZoneIsDefault={timeZoneIsDefault}
                 sort
                 sortFallback={sharedSortSummary}
                 groupFields={groupableFields(table.filterFields)}

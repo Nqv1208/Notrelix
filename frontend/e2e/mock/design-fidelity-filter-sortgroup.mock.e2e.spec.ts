@@ -267,6 +267,11 @@ for (const dark of [false, true]) {
         (el, fn) => (0, eval)(fn)(el, false),
         ITEMS,
       );
+      // The time-zone note is last in the menu and undrawn: the menu is measured without it.
+      const zone = await bucket
+        .locator('[data-f="tz-note"]')
+        .evaluate((el) => el.getBoundingClientRect().height + 2);
+      gotBucket.root[3] -= zone;
       sameItems(gotBucket, wantBucket, "bucket menu");
     });
   });
