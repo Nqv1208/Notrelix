@@ -135,3 +135,57 @@ test("tabs write the layout to the address, Back and Forward follow it, and a go
     await other.close();
   }
 });
+
+test("the table search is answered by the server through q, and clearing it brings every item back", async ({
+  page,
+}) => {
+  await signIn(page, realUsers.workspaceAdmin);
+  const { workspace, board } = await openBoard(
+    page,
+    "Workspace 3",
+    "Engineering Tasks",
+  );
+  const lists = (
+    await apiRead<{ lists: { id: string }[] }>(page, `/boards/${board.id}/full`)
+  ).lists;
+  const stamp = Date.now().toString(36);
+  const needle = `Needle ${stamp}`;
+  const haystack = `Haystack ${stamp}`;
+  const ids: Record<string, string> = {};
+  for (const title of [needle, haystack]) {
+    const created = await apiWrite<{ id: string }>(
+      page,
+      "POST",
+      `/boards/${board.id}/items`,
+      { groupId: lists[0]!.id, title },
+    );
+    expect(created.status).toBeLessThan(300);
+    ids[title] = created.data!.id;
+  }
+  await page.goto(`/workspaces/${workspace.id}/boards/${board.id}?view=table`);
+  const box = page.getByRole("searchbox", { name: "Search the table" });
+  await expect(box).toBeVisible();
+  await expect(page.locator(`[data-row-id="${ids[haystack]}"]`)).toBeVisible();
+
+  const answered = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/boards/${board.id}/full`) &&
+      new URL(response.url()).searchParams.get("q") === needle,
+  );
+  await box.fill(needle);
+  const response = await answered;
+  expect(response.status()).toBe(200);
+  const titles = (
+    (await response.json()) as {
+      lists: { boardItems: { title: string }[] }[];
+    }
+  ).lists.flatMap((list) => list.boardItems.map((item) => item.title));
+  // The server narrowed the read: the match is in the answer, the other item is not.
+  expect(titles).toContain(needle);
+  expect(titles).not.toContain(haystack);
+  await expect(page.locator(`[data-row-id="${ids[needle]}"]`)).toBeVisible();
+  await expect(page.locator(`[data-row-id="${ids[haystack]}"]`)).toHaveCount(0);
+
+  await box.fill("");
+  await expect(page.locator(`[data-row-id="${ids[haystack]}"]`)).toBeVisible();
+});
