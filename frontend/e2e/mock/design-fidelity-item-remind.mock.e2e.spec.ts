@@ -247,6 +247,85 @@ test.describe("item remind dialog, desktop", () => {
     near((await dialog.boundingBox())!.height, 180.3, "dialog.h");
   });
 
+  for (const dark of [false, true]) {
+    test(`nobody else: an info note, Đóng and Giao việc, ${dark ? "dark" : "light"}`, async ({
+      page,
+    }) => {
+      test.skip(faults !== "" || latency === "slow", "Needs the plain world");
+      await page.clock.setFixedTime(NOW);
+      await page.addInitScript(
+        (mode) => {
+          try {
+            window.localStorage.setItem("notrelix-locale", "vi");
+            window.localStorage.setItem("notrelix-theme-mode", mode);
+          } catch {
+            // Private mode: the defaults apply.
+          }
+        },
+        dark ? "dark" : "light",
+      );
+      // ERP-153 has no assignee, so nobody but the caller could be reminded.
+      await page.goto(`${BOARD}?item=mock-erp-item-153`);
+      await page.getByRole("button", { name: "Thao tác trên thẻ" }).click();
+      await page
+        .getByRole("menuitem", { name: /^Nhắc người phụ trách/ })
+        .click();
+      const dialog = page.getByRole("dialog", { name: "Chưa có ai để nhắc" });
+      await expect(dialog).toBeVisible();
+      await page.waitForTimeout(700);
+      await page.mouse.move(2, 2);
+      const title = dialog.getByRole("heading").first();
+      await expectBox(title, dialog, { x: 22, y: 20, h: 26.1 }, "title");
+      expect(await css(title, "font-size")).toBe("18px");
+      expect(await css(dialog, "border-radius")).toBe("14px");
+      await expectBox(
+        dialog.getByRole("button", { name: "Đóng", exact: true }).first(),
+        dialog,
+        { x: 480, y: 14, w: 28, h: 28 },
+        "close X",
+      );
+      const note = dialog.getByRole("status");
+      await expect(note).toHaveText(
+        "Việc này chưa giao cho ai khác ngoài bạn nên chưa có ai để nhắc.",
+      );
+      await expectBox(
+        note,
+        dialog,
+        { x: 22, y: 62.1, w: 476, h: 36.1 },
+        "note",
+      );
+      expect(await css(note, "border-radius")).toBe("8px");
+      expect(await css(note, "font-size")).toBe("12.5px");
+      await expectColour(
+        note,
+        "background-color",
+        dark ? [14, 17, 22] : [247, 248, 250],
+        "note",
+      );
+      const close = dialog
+        .getByRole("button", { name: "Đóng", exact: true })
+        .last();
+      await expectBox(close, dialog, { y: 114.2, w: 58.7, h: 30 }, "Đóng");
+      const assign = dialog.getByRole("button", { name: "Giao việc" });
+      await expectBox(
+        assign,
+        dialog,
+        { x: 412.6, y: 114.2, w: 85.4, h: 30 },
+        "Giao việc",
+      );
+      await expectColour(
+        assign,
+        "background-color",
+        dark ? [90, 169, 255] : [22, 102, 204],
+        "Giao việc",
+      );
+      near((await dialog.boundingBox())!.height, 162.2, "dialog.h");
+      // Giao việc opens the item where its assignees are set.
+      await assign.click();
+      await expect(dialog).toBeHidden();
+    });
+  }
+
   test("busy: no Huỷ, the close is dimmed", async ({ page }) => {
     test.skip(latency !== "slow", "Needs VITE_MOCK_LATENCY=slow");
     const dialog = await openRemind(page, false);

@@ -115,8 +115,8 @@ export function useItemRemoval({
   boardId: string;
   titleOf: (itemId: string) => string;
   onGone?: (itemId: string) => void;
-  /** Opens another item in the host (the item a move landed on, a copy). */
-  onOpenItem?: (itemId: string) => void;
+  /** Opens an item of a board in the host (the item a move landed on, a copy, the item that blocks a move). */
+  onOpenItem?: (boardId: string, itemId: string) => void;
 }): {
   requestArchive: (itemId: string) => void;
   requestDelete: (itemId: string) => void;
@@ -149,6 +149,7 @@ export function useItemRemoval({
   const seenVersion = useSeenItemVersion(boardId, workspaceId);
   const archiveLinks = useItemLinks(archiving?.id ?? "", workspaceId, boardId);
   const deleteLinks = useItemLinks(deleting?.id ?? "", workspaceId, boardId);
+  const moveLinks = useItemLinks(moving?.id ?? "", workspaceId, boardId);
   // Hook-level: the card sheet closes with the optimistic removal, which would drop the callbacks of `mutate`.
   const deleteCard = useDeleteCard(boardId, workspaceId, {
     onSuccess: ({ cardId, title = "" }) => {
@@ -222,6 +223,14 @@ export function useItemRemoval({
             result.droppedLabels,
             result.droppedAssignees,
           ),
+          action: onOpenItem
+            ? {
+                label: fillLifecycleCopy(copy.movedOpen, {
+                  key: result.itemKey,
+                }),
+                onClick: () => onOpenItem(targetBoardId, cardId),
+              }
+            : undefined,
         },
       );
       onGone?.(cardId);
@@ -343,7 +352,7 @@ export function useItemRemoval({
               ? {
                   action: {
                     label: actions.dupOpen,
-                    onClick: () => onOpenItem(copyId),
+                    onClick: () => onOpenItem(boardId, copyId),
                   },
                 }
               : undefined,
@@ -553,6 +562,10 @@ export function useItemRemoval({
   const dependencyLinks = (archiveLinks.data ?? []).filter(
     (link) => link.relation !== "related",
   );
+  // The refusal names the item that blocks the move and offers to open it.
+  const blocker =
+    (moveLinks.data ?? []).find((link) => link.relation === "blocked-by") ??
+    (moveLinks.data ?? []).find((link) => link.relation !== "related");
   const duplicateCardView = duplicating
     ? findCard(sourceBoard as FullBoardResponse, duplicating.id)?.card
     : undefined;
@@ -678,6 +691,15 @@ export function useItemRemoval({
           open={moving !== null}
           preview={preview}
           status={moveStatus}
+          blockingKey={blocker?.item.key ?? null}
+          onOpenBlocking={
+            onOpenItem && blocker
+              ? () => {
+                  closeMove();
+                  onOpenItem(boardId, blocker.item.id);
+                }
+              : undefined
+          }
           onPick={(id) => {
             setMoveStatus("idle");
             setMoveTarget(id);
@@ -745,7 +767,7 @@ export function useItemRemoval({
               ? () => {
                   const { id } = reminding;
                   setReminding(null);
-                  onOpenItem(id);
+                  onOpenItem(boardId, id);
                 }
               : undefined
           }
