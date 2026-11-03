@@ -711,7 +711,7 @@ function FieldControlBody({
     const text = dayText(raw);
     return (
       <PanelPopover
-fieldSheet
+        fieldSheet
         open={open}
         onOpenChange={setOpen}
         width={312}
@@ -753,7 +753,7 @@ fieldSheet
       .join(", ");
     return (
       <PanelPopover
-fieldSheet
+        fieldSheet
         open={open}
         onOpenChange={setOpen}
         width={240}
@@ -847,7 +847,7 @@ fieldSheet
     const current = field.options.find((o) => o.id === raw);
     return (
       <PanelPopover
-fieldSheet
+        fieldSheet
         open={open}
         onOpenChange={setOpen}
         width={220}
@@ -912,7 +912,7 @@ fieldSheet
     const current = field.options.find((o) => o.id === raw);
     return (
       <PanelPopover
-fieldSheet
+        fieldSheet
         open={open}
         onOpenChange={setOpen}
         width={240}
@@ -983,7 +983,7 @@ fieldSheet
       .map((o) => o.label);
     return (
       <PanelPopover
-fieldSheet
+        fieldSheet
         open={open}
         onOpenChange={setOpen}
         width={240}
@@ -1156,7 +1156,7 @@ function TypedControl({
     };
     return (
       <PanelPopover
-fieldSheet
+        fieldSheet
         open={open}
         onOpenChange={(next) => {
           if (!next && draft !== initial) setDraft(initial);
