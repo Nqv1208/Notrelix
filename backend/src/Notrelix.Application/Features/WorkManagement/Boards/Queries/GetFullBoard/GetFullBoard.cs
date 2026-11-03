@@ -10,7 +10,7 @@ using Notrelix.Domain.WorkManagement.Formulas;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoard;
 
 /// <param name="PageSize">When set (clamped to 1..200), each group carries only its first page of Items, in the order of <paramref name="Sort"/>, among those that pass <paramref name="Filter"/>; null reads every Item.</param>
-public record GetFullBoardQuery(Guid BoardId, int? PageSize = null, string? Filter = null, string? Sort = null) : IQuery<Result<FullBoardDto>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
+public record GetFullBoardQuery(Guid BoardId, int? PageSize = null, string? Filter = null, string? Sort = null, string? Search = null) : IQuery<Result<FullBoardDto>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
@@ -117,7 +117,7 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
         List<BoardLaneDto>? lanes = null;
         if (request.PageSize is { } pageSize)
         {
-            var criteria = BoardItemCriteria.Parse(request.Filter, request.Sort);
+            var criteria = BoardItemCriteria.Parse(request.Filter, request.Sort, request.Search);
             var laneField = LaneFieldOf(fields);
             var read = await _pageReader.ReadAsync(
                 board.Id, listIds, laneField, CriteriaFieldsOf(fields), criteria, null, null, PageCursor.ClampLimit(pageSize), cancellationToken);
