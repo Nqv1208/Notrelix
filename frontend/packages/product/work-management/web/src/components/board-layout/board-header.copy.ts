@@ -92,10 +92,11 @@ export const en = {
     moreAvatars: "+{{count}}",
     /** The archived-board banner: read-only for everyone, Unarchive for a manager. */
     archived: {
+      title: "This board is archived",
       banner:
-        "This board is archived. It is read-only until a manager unarchives it.",
+        "You can view it but not change it. A manager can unarchive it in Settings.",
       bannerManager:
-        "This board is archived and read-only. Unarchive it to let people write again.",
+        "You can view it but not change it. Unarchive it to let people write again.",
       unarchive: "Unarchive",
       unarchiving: "Unarchiving…",
       conflict:
@@ -190,10 +191,11 @@ export const vi: BoardHeaderCopy = {
     listLastSeparator: " và ",
     moreAvatars: "+{{count}}",
     archived: {
+      title: "Board này đã lưu trữ",
       banner:
-        "Board này đã được lưu trữ. Board chỉ đọc cho đến khi quản lý bỏ lưu trữ.",
+        "Bạn xem được nhưng không sửa được. Người quản lý có thể bỏ lưu trữ trong Thiết lập.",
       bannerManager:
-        "Board này đã lưu trữ và chỉ đọc. Bỏ lưu trữ để mọi người ghi lại được.",
+        "Bạn xem được nhưng không sửa được. Bỏ lưu trữ để mọi người ghi lại được.",
       unarchive: "Bỏ lưu trữ",
       unarchiving: "Đang bỏ lưu trữ…",
       conflict:
