@@ -129,6 +129,8 @@ export interface KanbanViewProps {
     id: string | undefined,
     options?: { replace?: boolean },
   ) => void;
+  /** Opens an item of any board (the toast after a move, the item that blocks a move); absent: only this board's items open, through `onSelectedItemChange`. */
+  onOpenItem?: (boardId: string, itemId: string) => void;
   /** The route `filter` parameter (`serializeKanbanFilter` form). */
   filter?: string;
   /**
@@ -181,6 +183,7 @@ export function KanbanView({
   selectedItemId,
   currentUserId,
   onSelectedItemChange,
+  onOpenItem,
   filter: filterParam,
   onFilterChange,
   groupBy: groupByParam,
@@ -312,6 +315,10 @@ export function KanbanView({
   const showStatusControls =
     capabilities.canEditFields &&
     canManageStatuses(access?.myLevel, kanbanSettings.statusManageRoles);
+  const openItem = (targetBoardId: string, itemId: string) => {
+    if (onOpenItem) onOpenItem(targetBoardId, itemId);
+    else if (targetBoardId === boardId) onSelectedItemChange?.(itemId);
+  };
   const removal = useItemRemoval({
     workspaceId,
     boardId,
@@ -322,6 +329,7 @@ export function KanbanView({
     onGone: (itemId) => {
       if (selectedItemId === itemId) onSelectedItemChange?.(undefined);
     },
+    onOpenItem: openItem,
   });
   const updateCardDetails = useUpdateCard(boardId, workspaceId);
   // Adding a lane and renaming or recolouring one write an option of the field
@@ -1346,6 +1354,7 @@ export function KanbanView({
         {selectedItemId ? (
           <KanbanSelectedItem
             board={board}
+            onOpenItem={openItem}
             cardId={selectedItemId}
             capabilities={capabilities}
             groups={sheetGroups}
@@ -1383,6 +1392,8 @@ export interface SelectedItemProps {
     payload: UpdateFieldValueInput,
   ) => void | Promise<unknown>;
   onDuplicate: (cardId: string) => void;
+  /** Opens an item of a board (the item a move landed on, the item that blocks one). */
+  onOpenItem?: (boardId: string, itemId: string) => void;
   /** The column picker's counts, limits and positioned move; absent: it moves to the end of a lane as a field write. */
   lanePicker?: CardPopupLanePicker;
 }
@@ -1477,6 +1488,7 @@ function KanbanSelectedItemReady({
   onCopyLink,
   onMoveToGroup,
   onUpdateFieldValue,
+  onOpenItem,
   lanePicker,
 }: Omit<SelectedItemProps, "cardId" | "onRestoreFocus"> & {
   card: CardDetail;
@@ -1520,6 +1532,7 @@ function KanbanSelectedItemReady({
     boardId: card.boardId,
     titleOf: () => card.title,
     onGone: () => onClose(),
+    onOpenItem,
   });
 
   return (

@@ -103,6 +103,8 @@ export interface MainTableViewProps {
     id: string | undefined,
     options?: { replace?: boolean },
   ) => void;
+  /** Opens an item of any board (the toast after a move, the item that blocks a move); absent: only this board's items open, through `onSelectedItemChange`. */
+  onOpenItem?: (boardId: string, itemId: string) => void;
   /** The route `filter` parameter (`serializeKanbanFilter` form). */
   filter?: string;
   /** Writes the route `filter` parameter; without it the view keeps the filter. */
@@ -160,6 +162,7 @@ export function MainTableView({
   selectedItemId,
   currentUserId,
   onSelectedItemChange,
+  onOpenItem,
   filter: filterParam,
   onFilterChange,
   groupBy: groupByParam,
@@ -338,6 +341,10 @@ export function MainTableView({
         { id: `table-write-${cardId}` },
       ),
   });
+  const openItem = (targetBoardId: string, itemId: string) => {
+    if (onOpenItem) onOpenItem(targetBoardId, itemId);
+    else if (targetBoardId === boardId) onSelectedItemChange?.(itemId);
+  };
   const removal = useItemRemoval({
     workspaceId,
     boardId,
@@ -349,6 +356,7 @@ export function MainTableView({
       if (selectedItemId === itemId)
         onSelectedItemChange?.(undefined, { replace: true });
     },
+    onOpenItem: openItem,
   });
   const bulkUpdate = useBulkUpdateItems(boardId, workspaceId);
   const [bulkFailure, setBulkFailure] = useState<{
@@ -769,6 +777,7 @@ export function MainTableView({
     canEdit: capabilities.canEditFields,
     members,
     writeOf: cellWrites.writeOf,
+    refusedFieldIds: cellWrites.refusedFieldIds,
     onWrite: (cardId, fieldDefinitionId, value, stale) => {
       noteTitle(cardId);
       cellWrites.write(cardId, fieldDefinitionId, value, stale);
@@ -1203,6 +1212,7 @@ export function MainTableView({
       {selectedItemId ? (
         <KanbanSelectedItem
           board={board}
+          onOpenItem={openItem}
           cardId={selectedItemId}
           capabilities={capabilities}
           groups={sheetGroups}

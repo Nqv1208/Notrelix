@@ -135,6 +135,7 @@ public sealed class WorkPermissionActionMatrixArchitectureTests
         ["Checklists.ToggleChecklistItemCommand"] = PermissionAction.UpdateItem,
         ["Checklists.DeleteChecklistItemCommand"] = PermissionAction.UpdateItem,
 
+        ["BoardFields.PreviewFormulaQuery"] = PermissionAction.ViewBoard,
         ["BoardSchema.GetBoardSchemaQuery"] = PermissionAction.ViewBoard,
 
         ["Labels.GetLabelsQuery"] = PermissionAction.ViewBoard,
