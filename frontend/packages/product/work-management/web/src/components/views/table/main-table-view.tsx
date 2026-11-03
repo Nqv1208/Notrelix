@@ -951,6 +951,7 @@ export function MainTableView({
               onRetrySave: table.retryColumnsSave,
               saveToViewFailed: table.saveColumnsToViewFailed,
               saveToViewConflict: table.saveColumnsToViewConflict,
+              saveToViewConflictBy: table.saveColumnsToViewConflictBy,
               savedToView: table.columnsSavedToView,
             },
             hiddenColumnIds: table.hiddenColumnIds,
