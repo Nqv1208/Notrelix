@@ -106,6 +106,40 @@ describe("KanbanColumn (status lane)", () => {
     }
   });
 
+  it("opens a lane that is paged so an item quick-added at its bottom is in view", async () => {
+    const copy = kanbanLaneCopy("en");
+    const lane = erpKanbanLanes()[1]!;
+    const { container } = renderPureUi(
+      <KanbanColumn
+        lane={lane}
+        name={lane.name}
+        copy={copy}
+        filterActive={false}
+        canAdd
+        canDrag
+        collapsed={false}
+        laneCardLimit={2}
+        onCollapsedChange={vi.fn()}
+        onHide={vi.fn()}
+        onOpenDetails={vi.fn()}
+        onCreateItem={vi.fn()}
+      />,
+    );
+    const drawn = () => container.querySelectorAll("[data-card-id]").length;
+    expect(drawn()).toBe(2);
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: copy.addTo.replace("{{lane}}", lane.name),
+      }),
+    );
+    const input = screen.getByRole("textbox", {
+      name: copy.newItemLabel.replace("{{lane}}", lane.name),
+    });
+    fireEvent.change(input, { target: { value: "Cuối cột" } });
+    fireEvent.submit(input.closest("form")!);
+    await waitFor(() => expect(drawn()).toBe(lane.cards.length));
+  });
+
   it("FUI[wm.kanban.column:edit] renames and recolours the lane's status from its menu", async () => {
     for (const locale of ["vi", "en"] as const) {
       const copy = kanbanLaneCopy(locale);
