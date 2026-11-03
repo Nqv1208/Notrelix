@@ -144,6 +144,7 @@ export function useItemRemoval({
   const [reminding, setReminding] = useState<Pending | null>(null);
   const [remindState, setRemindState] = useState<RemindDialogState>("confirm");
   const [remindWhen, setRemindWhen] = useState<string | null>(null);
+  const [remindedAt, setRemindedAt] = useState<string | null>(null);
   const archiveCard = useArchiveCard(boardId, workspaceId);
   const seenVersion = useSeenItemVersion(boardId, workspaceId);
   const archiveLinks = useItemLinks(archiving?.id ?? "", workspaceId, boardId);
@@ -357,6 +358,19 @@ export function useItemRemoval({
       .filter((member) => member.userId !== viewerId)
       .map((member) => member.name);
 
+  /** "14:30 today" or "14:30 on 13/10", in the person's clock. */
+  const remindClock = (iso: string) => {
+    const at = new Date(iso);
+    const now = new Date();
+    const time = `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
+    return at.toDateString() === now.toDateString()
+      ? fillLifecycleCopy(actions.remindToday, { time })
+      : fillLifecycleCopy(actions.remindOnDate, {
+          time,
+          date: `${at.getDate()}/${at.getMonth() + 1}`,
+        });
+  };
+
   const confirmRemind = () => {
     if (!reminding) return;
     const { id, title } = reminding;
@@ -367,7 +381,7 @@ export function useItemRemoval({
         setRemindState("confirm");
         const names = recipientsOf(id);
         const when = result.nextRemindAt
-          ? new Date(result.nextRemindAt).toLocaleString()
+          ? remindClock(result.nextRemindAt)
           : "";
         toast.success(
           names.length > 0
@@ -387,8 +401,16 @@ export function useItemRemoval({
         const failure = classifyRemindError(error);
         if (failure.kind === "tooSoon") {
           setRemindWhen(
+            failure.nextRemindAt ? remindClock(failure.nextRemindAt) : null,
+          );
+          // The limit is 24 hours, so the last reminder went out a day before the next is possible.
+          setRemindedAt(
             failure.nextRemindAt
-              ? new Date(failure.nextRemindAt).toLocaleString()
+              ? remindClock(
+                  new Date(
+                    new Date(failure.nextRemindAt).getTime() - 86_400_000,
+                  ).toISOString(),
+                )
               : null,
           );
           setRemindState("tooSoon");
@@ -435,7 +457,14 @@ export function useItemRemoval({
         !candidate.isArchived &&
         candidate.canAddItems !== false,
     )
-    .map((candidate) => ({ id: candidate.id, title: candidate.title }));
+    .map((candidate) => ({
+      id: candidate.id,
+      title: candidate.title,
+      ...(candidate.itemKeyPrefix
+        ? { keyPrefix: candidate.itemKeyPrefix }
+        : {}),
+      ...(candidate.departmentName ? { space: candidate.departmentName } : {}),
+    }));
 
   const preview: MovePreviewView | null = useMemo(() => {
     if (!moving || !moveTarget || !target.board) return null;
@@ -706,9 +735,20 @@ export function useItemRemoval({
           recipients={reminding ? recipientsOf(reminding.id) : []}
           state={remindState}
           nextRemindAt={remindWhen}
+          remindedAt={remindedAt}
           open={reminding !== null}
           onCancel={() => setReminding(null)}
           onConfirm={confirmRemind}
+          // Nobody else is in charge: the item opens where the assignees are set.
+          onAssign={
+            onOpenItem && reminding
+              ? () => {
+                  const { id } = reminding;
+                  setReminding(null);
+                  onOpenItem(id);
+                }
+              : undefined
+          }
         />
       </>
     ),

@@ -33,6 +33,10 @@ export interface Board {
    * gap `CTR-GAP-WM-TABLE-BULK`). Absent = not known.
    */
   canAddItems?: boolean;
+  /** The key the board's items carry ("KHQ" in KHQ-27), when the list read says it. */
+  itemKeyPrefix?: string;
+  /** The department the board belongs to, when the list read says it (the move picker shows it). */
+  departmentName?: string;
 }
 
 export type ViewMode = "table" | "kanban" | "calendar" | "timeline";
@@ -164,6 +168,8 @@ export interface BoardDtoApi {
   createdAt: string;
   /** Gap field (`CTR-GAP-WM-TABLE-BULK`): the caller may add items. */
   canAddItems?: boolean;
+  itemKeyPrefix?: string | null;
+  departmentName?: string | null;
 }
 
 export interface FullBoardDtoApi {

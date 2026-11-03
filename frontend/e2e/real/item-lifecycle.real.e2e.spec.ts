@@ -461,3 +461,66 @@ test("a member duplicates an item with its sub-item from the dialog, the copy si
       .some((card) => card.name === `Never ${unique}`),
   ).toBe(false);
 });
+
+test("a member moves an item to another board from the dialog, sees what carries over first, and the item leaves the source board", async ({
+  page,
+}) => {
+  await signIn(page, realUsers.workspaceAdmin);
+  const { workspace, board } = await openBoard(
+    page,
+    "Workspace 3",
+    "Engineering Tasks",
+  );
+  const unique = Date.now().toString(36);
+  const groupId = (
+    await apiRead<{ lists: { id: string }[] }>(page, `/boards/${board.id}/full`)
+  ).lists[0]!.id;
+  const itemId = (
+    await apiWrite<{ id: string }>(page, "POST", `/boards/${board.id}/items`, {
+      groupId,
+      title: `Move me ${unique}`,
+    })
+  ).data!.id;
+
+  await page.goto(
+    `/workspaces/${workspace.id}/boards/${board.id}?item=${itemId}`,
+  );
+  await page.getByRole("button", { name: "Card actions" }).click();
+  await page.getByRole("menuitem", { name: /^Move board/ }).click();
+  const dialog = page.getByRole("dialog", {
+    name: `Move “Move me ${unique}” to another board`,
+  });
+  // Nothing is chosen yet: the search has focus and the primary is locked.
+  await expect(dialog.getByRole("textbox")).toBeFocused();
+  await expect(
+    dialog.getByRole("button", { name: "Move item", exact: true }),
+  ).toHaveAttribute("aria-disabled", "true");
+  const target = dialog.getByRole("option").first();
+  await target.click();
+  // The preview says what carries over; a loss needs the tick.
+  await expect(
+    dialog.getByText("Gets the other board's next key"),
+  ).toBeVisible();
+  const tick = dialog.getByRole("checkbox");
+  if (await tick.count()) await tick.check();
+  const moved = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      response.url().endsWith(`/board-items/${itemId}/move-to-board`),
+  );
+  await dialog
+    .getByRole("button", { name: /^(Move to |Move and drop )/ })
+    .click();
+  expect((await moved).status()).toBeLessThan(300);
+  await expect(dialog).toBeHidden();
+
+  const after = await apiRead<{ lists: { boardItems: { id: string }[] }[] }>(
+    page,
+    `/boards/${board.id}/full`,
+  );
+  expect(
+    after.lists
+      .flatMap((list) => list.boardItems)
+      .some((card) => card.id === itemId),
+  ).toBe(false);
+});
