@@ -113,7 +113,10 @@ export function PhoneSearchSheet(props: PhoneSearchSheetProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-surface-canvas">
       <header className="relative z-10 flex flex-none flex-col gap-2.5 bg-surface-canvas px-4 pt-1 pb-2.5 shadow-[0_1px_0_var(--color-line)]">
-        <div data-f="qrow" className="flex items-center gap-1 text-[15px]">
+        <div
+          data-f="qrow"
+          className="flex items-center gap-1 text-item-heading leading-[inherit]"
+        >
           <div
             data-f="q"
             className="box-border flex h-12 min-w-0 flex-1 items-center rounded-xl border border-meta-foreground bg-popover pl-3 text-meta-foreground focus-within:border-primary focus-within:shadow-[0_0_0_1px_var(--color-primary)] dark:bg-card"
@@ -150,7 +153,7 @@ export function PhoneSearchSheet(props: PhoneSearchSheetProps) {
                 );
               }}
               onKeyDown={props.onInputKeyDown}
-              className="m-0 box-border h-full min-w-0 flex-1 appearance-none border-0 bg-transparent py-0 pr-1 pl-2 text-[16px] text-foreground caret-primary outline-none placeholder:text-meta-foreground"
+              className="m-0 box-border h-full min-w-0 flex-1 appearance-none border-0 bg-transparent py-0 pr-1 pl-2 text-prose leading-[inherit] text-foreground caret-primary outline-none placeholder:text-meta-foreground"
             />
             {props.query ? (
               <button
@@ -174,7 +177,7 @@ export function PhoneSearchSheet(props: PhoneSearchSheetProps) {
             type="button"
             data-f="cancel"
             onClick={props.onCancel}
-            className="h-11 flex-none cursor-pointer rounded-[10px] border-0 bg-transparent pr-1 pl-2.5 text-[16px] font-medium text-state-selected-foreground"
+            className="h-11 flex-none cursor-pointer rounded-[10px] border-0 bg-transparent pr-1 pl-2.5 text-prose leading-[inherit] font-medium text-state-selected-foreground"
           >
             {t.cancel}
           </button>
@@ -260,7 +263,7 @@ export function PhoneSearchSheet(props: PhoneSearchSheetProps) {
             data-f="empty"
             className="m-0 py-6 text-center text-compact text-muted-foreground"
           >
-            <b className="mb-1 block text-[15px] font-bold text-foreground">
+            <b className="mb-1 block text-item-heading leading-[inherit] font-bold text-foreground">
               {props.emptyTitle}
             </b>
             {copy.empty.text}
@@ -269,10 +272,10 @@ export function PhoneSearchSheet(props: PhoneSearchSheetProps) {
         {view.groups.map((group) => (
           <section key={group.id} className="flex flex-col">
             {group.label ? (
-              <h2 className="m-0 mb-1 flex min-h-10 items-center gap-2 text-[17px] font-[650] tracking-[-0.01em]">
+              <h2 className="m-0 mb-1 flex min-h-10 items-center gap-2 text-calendar-title leading-[inherit] font-[650] tracking-[-0.01em]">
                 {group.label}
                 {group.count !== null ? (
-                  <span className="text-[15px] font-medium text-meta-foreground">
+                  <span className="text-item-heading leading-[inherit] font-medium text-meta-foreground">
                     {group.count}
                   </span>
                 ) : null}
@@ -303,7 +306,7 @@ export function PhoneSearchSheet(props: PhoneSearchSheetProps) {
                     <span className="min-w-0 flex-1">
                       <span
                         data-f="t"
-                        className="line-clamp-2 overflow-hidden text-[15px] leading-[1.36] font-medium"
+                        className="line-clamp-2 overflow-hidden text-item-heading leading-[1.36] font-medium"
                       >
                         <Marked text={row.title} term={term} />
                       </span>
@@ -323,7 +326,7 @@ export function PhoneSearchSheet(props: PhoneSearchSheetProps) {
                             ) : piece.type === "mono" ? (
                               <span
                                 key={i}
-                                className="flex-none font-mono text-[12px]"
+                                className="flex-none font-mono text-item-note leading-[inherit]"
                               >
                                 {piece.text}
                               </span>
@@ -341,7 +344,7 @@ export function PhoneSearchSheet(props: PhoneSearchSheetProps) {
                         data-f="end"
                         className="flex flex-none flex-col items-end gap-1 pt-0.5 text-meta-foreground"
                       >
-                        <span className="inline-flex items-center gap-[5px] text-[12px] font-semibold whitespace-nowrap text-muted-foreground">
+                        <span className="inline-flex items-center gap-[5px] text-item-note leading-[inherit] font-semibold whitespace-nowrap text-muted-foreground">
                           <span
                             aria-hidden="true"
                             className={cn(
