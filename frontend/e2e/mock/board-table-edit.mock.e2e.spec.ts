@@ -95,13 +95,14 @@ test.describe("Board table, in-place edits (owner)", () => {
   test("bulk: Chuyển board sends the row to the other board", async ({
     page,
   }) => {
+    // ERP-147 is the mock's archived-behind-the-dialog item (the move refuses it), so the move takes ERP-149.
     await openTable(page);
-    await page.getByRole("checkbox", { name: "Chọn ERP-147" }).click();
+    await page.getByRole("checkbox", { name: "Chọn ERP-149" }).click();
     await page.getByRole("button", { name: "Thêm", exact: true }).click();
     await page.getByRole("menuitem", { name: /^Chuyển board…/ }).click();
     await page.getByRole("button", { name: "Hỗ trợ nội bộ" }).click();
     await expect(
-      page.locator("[data-row-id]").filter({ hasText: "ERP-147" }),
+      page.locator("[data-row-id]").filter({ hasText: "ERP-149" }),
     ).toHaveCount(0);
     await expect(
       page.getByText("10 công việc đang hiện · 5 ẩn bởi bộ lọc"),
