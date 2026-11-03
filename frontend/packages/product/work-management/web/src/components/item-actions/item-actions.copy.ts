@@ -64,38 +64,55 @@ export const en = {
   close: "Close",
   // move preview
   moveTitle: "Move “{{title}}” to another board",
+  movePhoneTitle: "Move board…",
   moveBody:
     "Only boards where you can add items. The preview is provisional; the server decides when you move.",
-  movePick: "Pick a board to see what carries over.",
+  moveBusyBody: "Moving… The request is out, so it can't be cancelled.",
+  moveListLabel: "Target board",
+  movePlaceholder: "Find a board…",
+  movePick: "Pick one board to see the preview.",
   movePreviewGroup: "Goes into group “{{title}}”",
   movePreviewGroupMatched: "Same title as the current group",
-  movePreviewGroupFallback: "No group with that title, so the board's default",
+  movePreviewGroupFallback: "Goes into the board's default group",
+  movePreviewGroupFallbackNote: "The other board has no group with that title",
   movePreviewStatus: "Status stays “{{name}}”",
   movePreviewStatusMatched: "Same name on the other board",
-  movePreviewStatusFallback: "No status with that name, so the first one",
+  movePreviewStatusFallback: "Status becomes “{{name}}”",
+  movePreviewStatusFallbackNote:
+    "The other board has no status with that name, so the first one",
   movePreviewKey: "Gets the other board's next key",
   movePreviewKeyBody:
     "The key {{key}} isn't kept. Sub-items, files, comments, history and links go with the item.",
+  movePhoneStatusKept: "stays “{{name}}”",
+  movePhoneStatusFallback: "becomes “{{name}}”",
+  movePhoneKey: "gets the next key",
   moveLoses: "Loses {{count}} items",
   moveLosesBody: "{{what}}",
-  moveLoseField: "property {{name}}",
+  moveLoseField: "{{name}} (the other board has no such property)",
   moveLoseLabel: "label {{name}}",
   moveLoseAssignee: "assignee {{name}} (can't see that board)",
-  moveAck: "I understand {{what}} will be lost",
+  moveAck: "I understand {{count}} of these will be lost",
   moveConfirmLosing: "Move and drop {{count}}",
   moveConfirm: "Move item",
+  moveConfirmTo: "Move to {{board}}",
   moveBusy: "Moving…",
+  moveHintAck: "Tick the confirmation to move.",
+  moveHintDeps: "The reason shows as soon as you pick a board.",
   moveFailed:
     "Couldn't move. Check your connection and try again. The item stays where it is.",
   moveRefusedDeps:
     "Not moved: this item has dependencies. Remove them, then move it.",
+  moveRefusedDepsKey:
+    "Not moved: {{key}} is blocking this item. Remove the dependency, then move it.",
   moveRefusedArchived:
     "Not moved: the item is archived. Unarchive it, then move it.",
   moveConflict: "The item changed elsewhere, so it wasn't moved.",
   moveOpenBlocking: "Open {{key}}",
-  moveNoBoards: "No board where you can add items.",
+  moveNoBoards:
+    "No board where you can add items. Ask a board admin for the Create items permission.",
   moveSearch: "Find a board",
-  moveNoMatch: "No board matches. Only boards where you can add items show.",
+  moveNoMatch:
+    "No board matches “{{query}}”. Only boards where you can add items show.",
   moved: "Moved “{{title}}” to {{board}} as {{key}}",
   movedOpen: "Open {{key}}",
   movedDropped: "Lost: {{what}}.",
@@ -105,13 +122,24 @@ export const en = {
     "{{who}} will get a notice saying you're waiting for an update on {{key}}. Each item can be reminded once every 24 hours.",
   remindBodyNoKey:
     "{{who}} will get a notice saying you're waiting for an update. Each item can be reminded once every 24 hours.",
+  remindDesc: "Whoever is in charge of this item will get a reminder.",
+  remindBusyBody: "Sending. The request is out, so it can't be cancelled.",
+  remindWho: "{{who}} will get a notice",
+  remindWhoNote:
+    "Says you're waiting for an update on {{key}}. They see it in the Inbox.",
+  remindWhoNoteNoKey:
+    "Says you're waiting for an update. They see it in the Inbox.",
+  remindLimit: "Each item can be reminded once every 24 hours",
+  remindLimitNote: "The limit counts per person who reminds.",
+  remindToday: "{{time}} today",
+  remindOnDate: "{{time}} on {{date}}",
   remindSend: "Send reminder",
   remindBusy: "Sending…",
   remindSent: "Reminded {{who}}. You can remind again after {{when}}.",
   remindSentCount:
     "Reminded {{count}} people. You can remind again after {{when}}.",
   remindTooSoon:
-    "You already reminded about this item. You can remind again after {{when}}.",
+    "You reminded about this item at {{at}}. You can remind again after {{when}}.",
   remindTooSoonNow:
     "You already reminded about this item in the last 24 hours.",
   remindNobody: "Nobody else is in charge",
@@ -214,40 +242,55 @@ export const vi: ItemActionsCopy = {
   cancel: "Huỷ",
   close: "Đóng",
   moveTitle: "Chuyển “{{title}}” sang board khác",
+  movePhoneTitle: "Chuyển board…",
   moveBody:
     "Chỉ hiện board bạn được tạo việc. Phần xem trước là dự kiến, máy chủ quyết định khi chuyển.",
-  movePick: "Chọn một board để xem điều gì đi cùng.",
+  moveBusyBody: "Đang chuyển… Yêu cầu đã gửi nên không huỷ được.",
+  moveListLabel: "Board đích",
+  movePlaceholder: "Tìm board…",
+  movePick: "Chọn một board để xem trước.",
   movePreviewGroup: "Vào nhóm “{{title}}”",
   movePreviewGroupMatched: "Trùng tên với nhóm hiện tại",
-  movePreviewGroupFallback:
-    "Không có nhóm trùng tên nên vào nhóm mặc định của board",
+  movePreviewGroupFallback: "Vào nhóm mặc định của board",
+  movePreviewGroupFallbackNote: "Board đích không có nhóm trùng tên",
   movePreviewStatus: "Trạng thái giữ “{{name}}”",
   movePreviewStatusMatched: "Trùng tên trong board đích",
-  movePreviewStatusFallback:
-    "Không có trạng thái trùng tên nên dùng trạng thái đầu tiên",
+  movePreviewStatusFallback: "Trạng thái về “{{name}}”",
+  movePreviewStatusFallbackNote:
+    "Board đích không có trạng thái trùng tên, dùng trạng thái đầu tiên",
   movePreviewKey: "Nhận mã tiếp theo của board đích",
   movePreviewKeyBody:
     "Mã {{key}} không giữ lại. Việc con, tệp, bình luận, lịch sử và liên kết đi cùng việc.",
+  movePhoneStatusKept: "giữ “{{name}}”",
+  movePhoneStatusFallback: "về “{{name}}”",
+  movePhoneKey: "nhận mã tiếp theo",
   moveLoses: "Mất {{count}} mục",
   moveLosesBody: "{{what}}",
-  moveLoseField: "thuộc tính {{name}}",
+  moveLoseField: "{{name}} (board đích không có)",
   moveLoseLabel: "nhãn {{name}}",
   moveLoseAssignee: "người phụ trách {{name}} (không xem được board đích)",
-  moveAck: "Tôi hiểu {{what}} sẽ mất",
+  moveAck: "Tôi hiểu {{count}} mục này sẽ mất",
   moveConfirmLosing: "Chuyển và bỏ {{count}} mục",
   moveConfirm: "Chuyển board",
+  moveConfirmTo: "Chuyển sang {{board}}",
   moveBusy: "Đang chuyển…",
+  moveHintAck: "Hết bước xác nhận mới chuyển được.",
+  moveHintDeps: "Lý do hiện ngay khi chọn board.",
   moveFailed:
     "Không chuyển được. Kiểm tra mạng rồi thử lại. Việc vẫn ở board cũ.",
   moveRefusedDeps:
     "Chưa chuyển được: việc này có phụ thuộc. Gỡ phụ thuộc rồi chuyển lại.",
+  moveRefusedDepsKey:
+    "Chưa chuyển được: {{key}} đang chặn việc này. Gỡ phụ thuộc rồi chuyển lại.",
   moveRefusedArchived:
     "Chưa chuyển được: việc đã lưu trữ. Bỏ lưu trữ rồi chuyển lại.",
   moveConflict: "Việc vừa được sửa ở nơi khác nên chưa chuyển.",
   moveOpenBlocking: "Mở {{key}}",
-  moveNoBoards: "Chưa có board nào bạn được tạo việc.",
+  moveNoBoards:
+    "Chưa có board nào bạn được tạo việc. Nhờ quản trị board cấp quyền Tạo việc.",
   moveSearch: "Tìm board",
-  moveNoMatch: "Không có board nào khớp. Chỉ hiện board bạn được tạo việc.",
+  moveNoMatch:
+    "Không có board nào khớp “{{query}}”. Chỉ hiện board bạn được tạo việc.",
   moved: "Đã chuyển “{{title}}” sang {{board}} với mã {{key}}",
   movedOpen: "Mở {{key}}",
   movedDropped: "Đã mất: {{what}}.",
@@ -256,11 +299,22 @@ export const vi: ItemActionsCopy = {
     "{{who}} sẽ nhận thông báo nói bạn đang chờ cập nhật về {{key}}. Mỗi việc nhắc tối đa một lần trong 24 giờ.",
   remindBodyNoKey:
     "{{who}} sẽ nhận thông báo nói bạn đang chờ cập nhật. Mỗi việc nhắc tối đa một lần trong 24 giờ.",
+  remindDesc: "Người đang phụ trách việc này sẽ nhận một lời nhắc.",
+  remindBusyBody: "Đang gửi. Yêu cầu đã gửi nên không huỷ được.",
+  remindWho: "{{who}} sẽ nhận thông báo",
+  remindWhoNote:
+    "Nói bạn đang chờ cập nhật về {{key}}. Họ thấy trong Hộp thư.",
+  remindWhoNoteNoKey: "Nói bạn đang chờ cập nhật. Họ thấy trong Hộp thư.",
+  remindLimit: "Mỗi việc nhắc tối đa một lần trong 24 giờ",
+  remindLimitNote: "Giới hạn tính theo từng người nhắc.",
+  remindToday: "{{time}} hôm nay",
+  remindOnDate: "{{time}} ngày {{date}}",
   remindSend: "Gửi nhắc",
   remindBusy: "Đang gửi…",
   remindSent: "Đã nhắc {{who}}. Nhắc lại được sau {{when}}.",
   remindSentCount: "Đã nhắc {{count}} người. Nhắc lại được sau {{when}}.",
-  remindTooSoon: "Bạn đã nhắc việc này rồi. Nhắc lại được sau {{when}}.",
+  remindTooSoon:
+    "Bạn đã nhắc việc này lúc {{at}}. Nhắc lại được sau {{when}}.",
   remindTooSoonNow: "Bạn đã nhắc việc này trong 24 giờ qua.",
   remindNobody: "Chưa có ai để nhắc",
   remindNobodyBody:

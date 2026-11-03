@@ -150,6 +150,8 @@ export function mapBoardDto(dto: BoardDtoApi): Board {
     ...(typeof dto.canAddItems === "boolean"
       ? { canAddItems: dto.canAddItems }
       : {}),
+    ...(dto.itemKeyPrefix ? { itemKeyPrefix: dto.itemKeyPrefix } : {}),
+    ...(dto.departmentName ? { departmentName: dto.departmentName } : {}),
   };
 }
 
