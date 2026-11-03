@@ -60,7 +60,9 @@ for (const dark of [false, true]) {
       const b = (await buttons.nth(i).boundingBox())!;
       near(b.height, 32, "button height");
       expect(
-        await buttons.nth(i).evaluate((el) => getComputedStyle(el).borderRadius),
+        await buttons
+          .nth(i)
+          .evaluate((el) => getComputedStyle(el).borderRadius),
       ).toBe("7px");
     }
     const [a, b] = [
@@ -82,5 +84,7 @@ test("Tải lại cột turns the cell into a skeleton, then drops the value", a
   const note = await refuse(page, false);
   await note.getByRole("button", { name: "Tải lại cột" }).click();
   await expect(note).toBeHidden();
-  await expect(page.getByRole("alert").filter({ hasText: "vừa xoá cột" })).toHaveCount(0);
+  await expect(
+    page.getByRole("alert").filter({ hasText: "vừa xoá cột" }),
+  ).toHaveCount(0);
 });

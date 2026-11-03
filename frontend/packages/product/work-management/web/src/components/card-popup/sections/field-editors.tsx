@@ -1172,7 +1172,9 @@ function TypedControl({
             if (commit()) setOpen(false);
           }}
         >
-          <b className="text-[14px] font-[650] max-md:text-[13px]">{field.name}</b>
+          <b className="text-[14px] font-[650] max-md:text-[13px]">
+            {field.name}
+          </b>
           {kind === "long_text" ? (
             <textarea
               data-autofocus

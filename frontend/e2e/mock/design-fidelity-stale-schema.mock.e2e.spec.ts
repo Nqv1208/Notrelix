@@ -156,7 +156,9 @@ for (const dark of [false, true]) {
       persona !== "owner" || !faults.endsWith("=stale") || latency === "slow",
     );
     const dialog = await trigger(page, dark, 390);
-    const notice = dialog.getByRole("alert").filter({ hasText: "vừa xoá trường" });
+    const notice = dialog
+      .getByRole("alert")
+      .filter({ hasText: "vừa xoá trường" });
     await expect(notice).toBeVisible();
     const n = (await notice.boundingBox())!;
     near(n.x, 0 + 16, "notice x (16 px gutter)");

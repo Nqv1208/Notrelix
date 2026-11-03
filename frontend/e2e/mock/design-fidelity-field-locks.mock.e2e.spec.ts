@@ -38,14 +38,21 @@ for (const dark of [false, true]) {
     });
     expect(await locks.count()).toBeGreaterThan(3);
     const lock = locks.first();
-    await expect(lock).toHaveAttribute("title", "Chỉ xem: bạn không có quyền sửa");
+    await expect(lock).toHaveAttribute(
+      "title",
+      "Chỉ xem: bạn không có quyền sửa",
+    );
     const [l, host] = await Promise.all([
       lock.boundingBox(),
       lock.locator("xpath=..").boundingBox(),
     ]);
     near(l!.width, 16, "lock width");
     near(l!.height, 16, "lock height");
-    near(host!.x + host!.width - (l!.x + l!.width), 10, "lock from the cell edge");
+    near(
+      host!.x + host!.width - (l!.x + l!.width),
+      10,
+      "lock from the cell edge",
+    );
     near(l!.y + l!.height / 2, host!.y + host!.height / 2, "lock centred");
   });
 }

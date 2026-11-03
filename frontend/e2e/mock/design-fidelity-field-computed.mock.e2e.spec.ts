@@ -91,15 +91,16 @@ for (const dark of [false, true]) {
     near(count.y, 236.8, "count y");
     near(count.x + count.w, 539, "count right edge");
     const cancel = await at(dlg.getByRole("button", { name: "Huỷ" }), dlg);
-    const save = await at(
-      dlg.getByRole("button", { name: "Lưu trường" }),
-      dlg,
-    );
+    const save = await at(dlg.getByRole("button", { name: "Lưu trường" }), dlg);
     near(cancel.h, 32, "cancel height");
     near(cancel.w, 50.4, "cancel width");
     near(save.w, 95.8, "save width");
     near(save.x - (cancel.x + cancel.w), 8, "gap between the buttons");
-    near(d.width - 1 - (save.x + save.w), 21 - 1 + 1 - 1, "save from the right edge");
+    near(
+      d.width - 1 - (save.x + save.w),
+      21 - 1 + 1 - 1,
+      "save from the right edge",
+    );
   });
 
   test(`the table's calculated cell, ${mode}`, async ({ page }) => {
@@ -115,7 +116,11 @@ for (const dark of [false, true]) {
         cell.boundingBox(),
         cell.locator("xpath=..").boundingBox(),
       ]);
-      near(host!.x + host!.width - 10 - (c!.x + c!.width), 0, `${state} right padding`);
+      near(
+        host!.x + host!.width - 10 - (c!.x + c!.width),
+        0,
+        `${state} right padding`,
+      );
       expect(await cell.locator("text=ƒx").count()).toBe(0);
       expect(await cell.evaluate((el) => getComputedStyle(el).fontSize)).toBe(
         "13.5px",

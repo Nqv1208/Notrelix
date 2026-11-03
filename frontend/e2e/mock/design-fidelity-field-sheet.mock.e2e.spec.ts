@@ -224,9 +224,9 @@ for (const dark of [false, true]) {
     const drawer = page.getByRole("dialog").last();
     const d = (await drawer.boundingBox())!;
     expect(d.width).toBe(320);
-    expect(await drawer.evaluate((el) => getComputedStyle(el).borderRadius)).toBe(
-      "16px 16px 0px 0px",
-    );
+    expect(
+      await drawer.evaluate((el) => getComputedStyle(el).borderRadius),
+    ).toBe("16px 16px 0px 0px");
     const grab = drawer.locator("div[aria-hidden=true]").first();
     const g = (await grab.boundingBox())!;
     near(g.width, 36, "grab width");

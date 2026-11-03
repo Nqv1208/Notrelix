@@ -977,7 +977,9 @@ test("a manager adds, renames, recolours and deletes a label in Settings, and th
   // A duplicate name is refused on the page and nothing is sent.
   await page.getByRole("button", { name: "Add label", exact: true }).click();
   const again = page.getByRole("form", { name: "New label" });
-  await again.getByRole("textbox", { name: "Name of the label" }).fill("data model");
+  await again
+    .getByRole("textbox", { name: "Name of the label" })
+    .fill("data model");
   await expect(
     page.getByText("A label with this name already exists."),
   ).toBeVisible();
@@ -986,7 +988,9 @@ test("a manager adds, renames, recolours and deletes a label in Settings, and th
   await page
     .getByRole("button", { name: "Delete the label Data model" })
     .click();
-  await page.getByRole("button", { name: "Delete the label", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Delete the label", exact: true })
+    .click();
   await settle(page);
   expect(await labelsOnServer()).toEqual([]);
 });

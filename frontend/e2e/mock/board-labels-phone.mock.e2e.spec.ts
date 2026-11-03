@@ -47,7 +47,11 @@ for (const dark of [false, true]) {
         : undefined;
     await shot("list");
 
-    const small = async (names: RegExp[], where = page, role: "button" | "radio" = "button") => {
+    const small = async (
+      names: RegExp[],
+      where = page,
+      role: "button" | "radio" = "button",
+    ) => {
       for (const name of names) {
         const box = await where.getByRole(role, { name }).first().boundingBox();
         expect(box, String(name)).not.toBeNull();
@@ -57,7 +61,10 @@ for (const dark of [false, true]) {
     };
     await small([/^Sửa nhãn|^Đổi tên nhãn/, /^Xoá nhãn/]);
 
-    await page.getByRole("button", { name: /^Thêm nhãn/ }).first().click();
+    await page
+      .getByRole("button", { name: /^Thêm nhãn/ })
+      .first()
+      .click();
     await expect(page.getByRole("form")).toBeVisible();
     await small([/^Lam$/], page.getByRole("form"), "radio");
     await small([/Huỷ/], page.getByRole("form"));
@@ -65,7 +72,9 @@ for (const dark of [false, true]) {
     await shot("add");
     const serious = (
       await new AxeBuilder({ page }).analyze()
-    ).violations.filter((v) => ["serious", "critical"].includes(v.impact ?? ""));
+    ).violations.filter((v) =>
+      ["serious", "critical"].includes(v.impact ?? ""),
+    );
     expect(serious).toEqual([]);
   });
 }
