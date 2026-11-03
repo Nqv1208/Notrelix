@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Ordering;
+using Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.WorkManagement;
 using Notrelix.Application.Features.WorkManagement.Approvals.Queries.ListApprovalRequests;
@@ -9,6 +10,8 @@ using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveFiel
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateFieldOption;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.BulkUpdateBoardItems;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CompleteBoardItem;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ReopenBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UnarchiveBoardItem;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
@@ -125,6 +128,40 @@ public sealed class WorkAcceptanceGapsPipelineIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task CompleteAndReopen_WithAStaleVersion_AreRefusedAndStoreNothing()
+    {
+        var (stack, _, items) = await SeedBoardWithItemsAsync(1);
+        using var owner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
+        var item = items[0];
+        var read = await VersionAsync(item);
+        await OrgTreeTestHost.SendIdempotentAsync(owner, new CompleteBoardItemCommand(item, null, read));
+        var current = await VersionAsync(item);
+
+        var staleComplete = () => OrgTreeTestHost.SendIdempotentAsync(owner, new CompleteBoardItemCommand(item, null, read));
+        var staleReopen = () => OrgTreeTestHost.SendIdempotentAsync(owner, new ReopenBoardItemCommand(item, read));
+
+        await staleComplete.Should().ThrowAsync<PreconditionFailed>();
+        await staleReopen.Should().ThrowAsync<PreconditionFailed>();
+        (await VersionAsync(item)).Should().Be(current, "a refused write changes nothing");
+    }
+
+    [Fact]
+    public async Task Search_FindsAMovedItemByItsOldKey()
+    {
+        var (stack, boardId, items) = await SeedBoardWithItemsAsync(1);
+        await _host.WithSystemContextAsync(c =>
+        {
+            c.BoardItemKeyAliases.Add(BoardItemKeyAlias.Create(stack.AccountId, stack.WorkspaceId, boardId, items[0], "OLDK-7"));
+            return Task.CompletedTask;
+        });
+
+        var found = await _host.ReadAsync(c => new WorkSearchFactsAdapter(c)
+            .SearchAsync(stack.WorkspaceId, stack.OwnerId, [boardId], "OLDK-7", 10, 10, CancellationToken.None));
+
+        found.Items.Should().ContainSingle(i => i.Id == items[0]);
+    }
+
+    [Fact]
     public async Task BulkUpdate_WithAStaleItem_RefusesTheWholeRequest()
     {
         var (stack, boardId, items) = await SeedBoardWithItemsAsync(2);
@@ -170,7 +207,6 @@ public sealed class WorkAcceptanceGapsPipelineIntegrationTests : IAsyncLifetime
 
         await staleAdd.Should().ThrowAsync<PreconditionFailed>();
         await staleRename.Should().ThrowAsync<PreconditionFailed>();
-        await staleMove.Should().ThrowAsync<PreconditionFailed>();
         (await OptionNamesAsync(fieldId)).Should().Equal(["High", "Low"], "no stale write changed the options");
     }
 

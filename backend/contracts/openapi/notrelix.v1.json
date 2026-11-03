@@ -34025,6 +34025,14 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          },
+          "itemKeyPrefix": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentName": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
