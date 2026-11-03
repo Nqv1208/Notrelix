@@ -100,14 +100,13 @@ export function ViewStateBar(props: ViewStateBarProps) {
     return [
       ...state.filter.conditions
         .filter((condition) => conditionIssue(condition) === null)
-        .map((condition) => ({
-          text: describeCondition(
-            copy,
-            condition,
-            fields.find((f) => f.id === condition.fieldId),
-            memberName,
-          ),
-        })),
+        .map((condition) => {
+          const field = fields.find((f) => f.id === condition.fieldId);
+          return {
+            text: describeCondition(copy, condition, field, memberName),
+            ...(known && !field ? { stale: true } : {}),
+          };
+        }),
       ...(groupField
         ? [{ text: `${copy.group.label} ${groupField.name}`, group: true }]
         : []),

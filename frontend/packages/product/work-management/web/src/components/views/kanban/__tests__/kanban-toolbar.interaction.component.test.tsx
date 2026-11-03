@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
+import { fireEvent, renderPureUi, screen } from "@notrelix/testing";
 import {
   kanbanToolbarCopyFixture,
   kanbanToolbarDefaultScenario,
   kanbanToolbarEdgeDataScenario,
-  kanbanToolbarFilteredScenario,
   kanbanToolbarNoResultsScenario,
   kanbanToolbarReadOnlyScenario,
   type KanbanToolbarScenario,
@@ -20,18 +19,11 @@ function renderToolbar(
   const props: KanbanToolbarProps = {
     ...scenario,
     onSearchChange: vi.fn(),
-    onClearFilter: vi.fn(),
     onAddItem: vi.fn(),
     ...overrides,
   };
   const view = renderPureUi(<KanbanToolbar {...props} />);
   return { props, view };
-}
-
-function fill(message: string, values: Record<string, string | number>) {
-  return message.replace(/\{\{(\w+)\}\}/g, (_m, key: string) =>
-    String(values[key]),
-  );
 }
 
 describe("KanbanToolbar", () => {
@@ -64,9 +56,6 @@ describe("KanbanToolbar", () => {
   it("uses the mockup Vietnamese wording", () => {
     renderToolbar(kanbanToolbarNoResultsScenario("vi"));
     expect(screen.getByPlaceholderText("Tìm trong board…")).toBeTruthy();
-    expect(screen.getByRole("status").textContent).toBe(
-      "Không có việc khớp bộ lọc · 16 việc của board đang bị ẩn" + "Bỏ lọc",
-    );
     expect(screen.getByRole("button", { name: "Thêm công việc" })).toBeTruthy();
   });
 
@@ -83,43 +72,6 @@ describe("KanbanToolbar", () => {
       ).toBeTruthy();
       view.unmount();
     }
-  });
-
-  it("FUI[wm.kanban.toolbar:no-results] states how many items are hidden and clears the filter and search", () => {
-    for (const locale of LOCALES) {
-      const copy = kanbanToolbarCopyFixture(locale);
-      const scenario = kanbanToolbarNoResultsScenario(locale);
-      const { props, view } = renderToolbar({
-        ...scenario,
-        searchQuery: "hoá đơn",
-      });
-      const bar = screen.getByRole("status");
-      expect(within(bar).getByText(copy.noResults.title)).toBeTruthy();
-      expect(
-        bar.textContent?.includes(
-          fill(copy.noResults.hidden_other, { count: 16 }),
-        ),
-      ).toBe(true);
-      fireEvent.click(
-        within(bar).getByRole("button", { name: copy.noResults.clear }),
-      );
-      expect(props.onClearFilter).toHaveBeenCalledOnce();
-      expect(props.onSearchChange).toHaveBeenCalledWith("");
-      view.unmount();
-    }
-  });
-
-  it("uses the singular English form for one hidden item and omits the bar without a no-results state", () => {
-    const { view } = renderToolbar({
-      ...kanbanToolbarNoResultsScenario("en"),
-      noResults: { hiddenCount: 1 },
-    });
-    expect(screen.getByRole("status").textContent).toContain(
-      "1 board item is hidden",
-    );
-    view.unmount();
-    renderToolbar(kanbanToolbarFilteredScenario("en"));
-    expect(screen.queryByRole("status")).toBeNull();
   });
 
   it("keeps a long search readable in the edge data", () => {

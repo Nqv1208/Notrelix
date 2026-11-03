@@ -85,6 +85,7 @@ import { KanbanToolbar } from "./kanban-toolbar";
 import { SavedFiltersControl } from "../../saved-filters/saved-filters-control";
 import { fillFiltersCopy } from "../../filters/filters.copy";
 import { useBoardViewState } from "../../filters/use-board-view-state";
+import { FilterNoResults } from "../../filters/filter-no-results";
 import { ViewStateBar } from "../../filters/view-state-bar";
 import {
   KanbanSwimlaneBoard,
@@ -393,6 +394,7 @@ export function KanbanView({
   const [addRequest, setAddRequest] = useState(0);
   // The full form: from the toolbar (no lane), a lane's "+" or a lane's quick add.
   const [create, setCreate] = useState<CreateRequest | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
   const createOpen = create !== null;
   const canCreate = capabilities.canCreateCard;
   const collapsedLanes = useKanbanCollapsedLanes(
@@ -1076,14 +1078,13 @@ export function KanbanView({
             }
             searchQuery={kanban.search.query}
             onSearchChange={kanban.search.setQuery}
-            onClearFilter={() =>
-              view.setFilter({ ...view.state.filter, conditions: [] })
-            }
             viewBar={
               <ViewStateBar
                 canSave={capabilities.canEditFields}
                 copy={filtersCopy}
                 view={view}
+                filterOpen={filterOpen}
+                onFilterOpenChange={setFilterOpen}
                 fields={kanban.filterFields}
                 memberName={kanban.memberName}
                 people={kanban.filterChoices.assignees}
@@ -1116,11 +1117,6 @@ export function KanbanView({
             }
             canAdd={capabilities.canCreateCard}
             onAddItem={() => setCreate({ kind: "toolbar" })}
-            noResults={
-              kanban.filterActive && kanban.visibleCount === 0
-                ? { hiddenCount: kanban.totalCount }
-                : null
-            }
           />
         </div>
 
@@ -1135,7 +1131,18 @@ export function KanbanView({
             onScroll={measureEdges}
             className="h-full min-h-0 overflow-auto px-4 pt-1 pb-6 sm:px-6"
           >
-            {laneField ? (
+            {kanban.filterActive && kanban.visibleCount === 0 ? (
+              <FilterNoResults
+                copy={filtersCopy}
+                conditions={view.applied.filter.conditions.length}
+                total={kanban.totalCount}
+                onEdit={() => setFilterOpen(true)}
+                onClear={() => {
+                  view.setFilter({ ...view.state.filter, conditions: [] });
+                  if (kanban.search.query !== "") kanban.search.setQuery("");
+                }}
+              />
+            ) : laneField ? (
               <>
                 {capabilities.canMoveCard ? null : (
                   <p className="mb-2 text-compact text-muted-foreground">
@@ -1155,6 +1162,7 @@ export function KanbanView({
                   laneName={swimlaneLabel}
                   wipLimits={kanbanSettings.wipLimits}
                   selectedItemId={selectedItemId}
+                  filterActive={kanban.filterActive}
                   canDrag={capabilities.canMoveCard}
                   cardActions={cardActions}
                   cardSelection={cardSelection}

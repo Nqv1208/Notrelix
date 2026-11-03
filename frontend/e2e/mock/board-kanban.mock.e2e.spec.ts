@@ -142,7 +142,7 @@ for (const viewport of VIEWPORTS) {
       expect(errors).toEqual([]);
     });
 
-    test("filters by Quá hạn and Ưu tiên Thấp, shows the no-results bar and clears it with Bỏ lọc", async ({
+    test("filters by Quá hạn and Ưu tiên Thấp, shows the no-results card and clears it with Xoá bộ lọc", async ({
       page,
     }) => {
       await openBoard(page);
@@ -164,14 +164,16 @@ for (const viewport of VIEWPORTS) {
 
       const bar = page
         .getByRole("status")
-        .filter({ hasText: "Không có việc khớp bộ lọc" });
-      await expect(bar).toContainText("16 việc của board đang bị ẩn");
+        .filter({ hasText: "Không có việc nào khớp bộ lọc" });
+      await expect(bar).toContainText("2 điều kiện đang áp dụng trên 16 việc.");
       expect(new URL(page.url()).searchParams.get("filter")).toBe(
         "c2:and~%24overdue.is_true~mock-erp-col-priority.has_any.mock-erp-priority-low",
       );
-      await expect.poll(() => laneCounts(page)).toEqual(["0", "0", "0", "0"]);
+      await expect(
+        bar.getByRole("button", { name: "Sửa điều kiện" }),
+      ).toBeVisible();
 
-      await bar.getByRole("button", { name: "Bỏ lọc" }).click();
+      await bar.getByRole("button", { name: "Xoá bộ lọc" }).click();
       await expect(bar).toHaveCount(0);
       await expect.poll(() => laneCounts(page)).toEqual(["6", "3", "2", "5"]);
       expect(new URL(page.url()).searchParams.has("filter")).toBe(false);
