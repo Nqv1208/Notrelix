@@ -122,3 +122,68 @@ test.describe("Filter states against the canvas", () => {
     }
   });
 });
+
+test.describe("Viewer lock tip against the canvas (viewer persona)", () => {
+  test.skip(
+    persona !== "viewer" ||
+      scenario !== "default" ||
+      faults !== "" ||
+      !existsSync(`${CANVAS}/WM-Filter-States.dc.html`),
+    "Needs the viewer world (VITE_MOCK_PERSONA=viewer) and the downloaded canvas boards",
+  );
+  test.use({ viewport: { width: 1440, height: 1000 } });
+
+  test("the tip has no arrow and is the tile's 340 px box with its fonts", async ({
+    page,
+  }) => {
+    await page.goto(pathToFileURL(`${CANVAS}/WM-Filter-States.dc.html`).href);
+    await page.evaluate(() => document.fonts.ready);
+    const art = await page.evaluate(() => {
+      const tip = document.querySelector(".tip");
+      if (!tip) throw new Error("no tip");
+      const b = tip.getBoundingClientRect();
+      const cs = getComputedStyle(tip);
+      return {
+        w: b.width,
+        h: b.height,
+        fs: cs.fontSize,
+        lh: cs.lineHeight,
+        r: cs.borderRadius,
+        p: cs.padding,
+      };
+    });
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem("notrelix-locale", "vi");
+      } catch {
+        // Private mode: the default locale applies.
+      }
+    });
+    await page.goto(`${BOARD}?view=kanban&filter=p.high`);
+    await page.locator('[data-slot="tooltip-trigger"]').hover();
+    const tip = page.locator('[data-slot="tooltip-content"]');
+    await expect(tip).toBeVisible();
+    await page.waitForTimeout(300);
+    const app = await tip.evaluate((el) => {
+      const b = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return {
+        w: b.width,
+        h: b.height,
+        fs: cs.fontSize,
+        lh: cs.lineHeight,
+        r: cs.borderRadius,
+        p: cs.padding,
+        arrow: el.querySelectorAll("svg[width][height][viewBox='0 0 30 10']")
+          .length,
+      };
+    });
+    console.log("TIP", JSON.stringify({ art, app }));
+    expect(app.arrow).toBe(0);
+    expect(Math.abs(app.w - art.w)).toBeLessThanOrEqual(1);
+    expect(Math.abs(app.h - art.h)).toBeLessThanOrEqual(1);
+    expect(app.fs).toBe(art.fs);
+    expect(app.r).toBe(art.r);
+    expect(app.p).toBe(art.p);
+  });
+});

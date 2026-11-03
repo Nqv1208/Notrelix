@@ -1,6 +1,12 @@
 import { useId, useState, type ReactNode } from "react";
 import { AlertCircle, Lock, RefreshCw, User, X } from "lucide-react";
-import { Button, cn } from "@notrelix/ui-web";
+import {
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  cn,
+} from "@notrelix/ui-web";
 import {
   conditionIssue,
   type FieldRef,
@@ -280,21 +286,41 @@ export function ViewStateBar(props: ViewStateBarProps) {
         </span>
       ) : null}
       {props.canSave === false && applied.length > 0 ? (
-        <span title={copy.viewer.saveDisabled} className="inline-flex">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled
-            aria-describedby={reasonId}
-            className={kanbanPillClass}
-          >
-            <Lock className="size-4" aria-hidden="true" />
-            {copy.viewer.saveLabel}
-          </Button>
+        <>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                tabIndex={0}
+                className="inline-flex rounded-md outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled
+                  aria-describedby={reasonId}
+                  className={kanbanPillClass}
+                >
+                  <Lock className="size-4" aria-hidden="true" />
+                  {copy.viewer.saveLabel}
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {/* Drawn without an arrow (WM-Filter-States, "Người chỉ xem"): a lock and the reason, 340 px wide. */}
+            <TooltipContent
+              arrow={false}
+              side="bottom"
+              align="start"
+              sideOffset={6}
+              className="block min-h-13.5 w-85 max-w-85 rounded-[8px] px-2.5 py-2 text-crumb leading-[1.4] shadow-popover"
+            >
+              <Lock className="mr-1.5 inline size-4" aria-hidden="true" />
+              {copy.viewer.saveDisabled}
+            </TooltipContent>
+          </Tooltip>
           <span id={reasonId} className="sr-only">
             {copy.viewer.saveDisabled}
           </span>
-        </span>
+        </>
       ) : null}
       {saved}
       <div className="basis-full empty:hidden">
