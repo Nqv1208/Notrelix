@@ -21,6 +21,10 @@ export {
   BoardConnectionNotice,
   type BoardConnectionState,
 } from "./components/board-layout/board-connection-notice";
+export {
+  BoardGone,
+  ViewGoneBanner,
+} from "./components/board-layout/board-notices";
 export { BoardHeaderDataContext } from "./components/board-layout/board-header-data-context";
 export * from "./components/board-lifecycle/retired-boards-surface";
 export { retiredBoardsCatalog } from "./components/board-lifecycle/retired-boards.catalog";

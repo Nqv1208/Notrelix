@@ -29,7 +29,7 @@ import type { MockStore } from "../../state/mock-store";
 import { preconditionFailed } from "../workspace/space-target";
 import { canEditBoard, canReadBoard } from "./boards.handlers";
 
-function dto(filter: MockSavedFilter, me: string) {
+function dto(filter: MockSavedFilter, me: string, store: MockStore) {
   return {
     id: filter.id,
     name: filter.name,
@@ -40,6 +40,11 @@ function dto(filter: MockSavedFilter, me: string) {
     criteria: filter.criteria,
     isMine: filter.createdBy === me,
     version: filter.version,
+    // A shared filter names whoever made it; the caller's own say nothing.
+    createdByName:
+      filter.visibility === "Public" && filter.createdBy !== me
+        ? (store.getUser(filter.createdBy)?.name ?? null)
+        : null,
   };
 }
 
@@ -79,7 +84,9 @@ export const savedFiltersOperations = [
         return notFound("Board not found");
       const me = store.getCurrentUser().id;
       return ok(
-        store.savedFilters.list(params.boardId, me).map((f) => dto(f, me)),
+        store.savedFilters
+          .list(params.boardId, me)
+          .map((f) => dto(f, me, store)),
       );
     },
   }),

@@ -9,7 +9,8 @@ public record SavedFilterDto(
     DateTimeOffset CreatedAt,
     string? Criteria,
     bool IsMine,
-    long Version
+    long Version,
+    string? CreatedByName
 );
 
 public record ApprovalRequestDto(

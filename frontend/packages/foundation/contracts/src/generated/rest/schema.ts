@@ -9476,6 +9476,7 @@ export interface components {
             isMine?: boolean;
             /** Format: int64 */
             version?: number;
+            createdByName?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Templates.DTOs.BoardTemplateDto": {
             /** Format: uuid */

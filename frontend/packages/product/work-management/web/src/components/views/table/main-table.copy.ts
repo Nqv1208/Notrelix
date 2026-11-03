@@ -374,14 +374,26 @@ export const en = {
     assigneeOpen: "{{name}} has no unfinished items on this board.",
     clear: "Clear filter",
   },
+  /** The board holds no item at all (BC-Shell E, Ev). */
   empty: {
-    title: "No items yet",
-    description: "Add the first item with “Add item”.",
+    title: "This board has no items yet",
+    description: "Add the first item so the whole team can follow it.",
+    viewer:
+      "You can only view this board. Items appear here once someone adds them.",
+    add: "Add item",
+  },
+  /** The board has no group to put an item in (BC-Shell NG). */
+  noGroup: {
+    title: "Can't add an item yet",
+    description: "This board has no group to put items in. Add a group first.",
+    add: "Add group",
   },
   loading: "Loading the table",
   unavailable: {
-    title: "Table unavailable",
-    description: "The board table could not be loaded.",
+    title: "Couldn't load the board",
+    description:
+      "Check your connection and try again. Items you added earlier are not lost.",
+    retry: "Try again",
   },
   failed: {
     status: "Couldn't change the status of “{{title}}”.",
@@ -760,13 +772,24 @@ export const vi: MainTableCopy = {
     clear: "Bỏ lọc",
   },
   empty: {
-    title: "Chưa có việc",
-    description: "Thêm việc đầu tiên bằng “Thêm công việc”.",
+    title: "Board chưa có công việc nào",
+    description: "Thêm công việc đầu tiên để cả nhóm cùng theo dõi.",
+    viewer:
+      "Bạn chỉ xem được board này. Khi có người thêm việc, việc sẽ hiện ở đây.",
+    add: "Thêm công việc",
+  },
+  noGroup: {
+    title: "Chưa thêm được công việc",
+    description:
+      "Board chưa có nhóm nào để đặt công việc vào. Thêm một nhóm trước.",
+    add: "Thêm nhóm",
   },
   loading: "Đang tải bảng",
   unavailable: {
-    title: "Không mở được bảng",
-    description: "Không tải được bảng công việc của board này.",
+    title: "Không tải được board",
+    description:
+      "Kiểm tra kết nối rồi thử lại. Việc bạn đã thêm trước đó không bị mất.",
+    retry: "Thử lại",
   },
   failed: {
     status: "Không đổi được trạng thái của “{{title}}”.",
