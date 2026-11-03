@@ -327,6 +327,97 @@ test("a member edits the custom cells of the table, a refused value stays in the
   }
 });
 
+test("a member picks from the option and date cells and clears them again, and each write carries the version the page read", async ({
+  page,
+}) => {
+  await signIn(page, realUsers.admin);
+  const workspace = await createOwnedWorkspace(page, "Field pickers");
+  const boardId = await createBoard(page, workspace.id);
+  const module = await createField(page, boardId, "Module", "select");
+  const related = await createField(page, boardId, "Related", "multiselect");
+  const due = await createField(page, boardId, "Go live", "date");
+  for (const fieldId of [module, related]) {
+    for (const name of ["Accounting", "Warehouse", "Purchasing"]) {
+      const full = await apiRead<FullBoard>(page, `/boards/${boardId}/full`);
+      const field = full.columns.find((column) => column.id === fieldId)!;
+      const added = await apiWrite(
+        page,
+        "POST",
+        `/boards/${boardId}/fields/${fieldId}/options`,
+        { name, color: "#1666CC", expectedVersion: field.version },
+      );
+      expect(added.status, `option ${name}`).toBeLessThan(300);
+    }
+  }
+  const board = await apiRead<FullBoard>(page, `/boards/${boardId}/full`);
+  const created = await apiWrite<{ id: string }>(
+    page,
+    "POST",
+    `/boards/${boardId}/items`,
+    { groupId: board.lists[0]!.id, title: "Picker row" },
+  );
+  expect(created.status).toBeLessThan(300);
+  const itemId = created.data!.id;
+  const read = () => apiRead<ItemRead>(page, `/board-items/${itemId}`);
+  const valueOf = async (fieldId: string) =>
+    (await read()).fieldValues?.[fieldId];
+  await page.goto(`/workspaces/${workspace.id}/boards/${boardId}?view=table`);
+  const row = page.locator(`[data-row-id="${itemId}"]`);
+  await expect(row).toBeVisible();
+  const key = (await read()).itemKey;
+  const edit = (name: string) =>
+    row.getByRole("button", { name: new RegExp(`Edit ${name} of ${key}`) });
+  const wrote = (fieldId: string) =>
+    answer(page, "PATCH", new RegExp(`/values/${fieldId}$`));
+
+  // Select: one choice writes and closes; "Clear" empties it and the server holds nothing.
+  let before = await read();
+  await edit("Module").click();
+  const picked = wrote(module);
+  await page.getByRole("option", { name: "Warehouse" }).click();
+  const first = await picked;
+  expect(first.status()).toBeLessThan(300);
+  expect(first.request().postDataJSON()).toMatchObject({
+    expectedVersion: before.version,
+  });
+  expect(await valueOf(module)).toBeTruthy();
+  await settle(page);
+  await edit("Module").click();
+  const cleared = wrote(module);
+  await page.getByRole("button", { name: "Clear", exact: true }).click();
+  expect((await cleared).status()).toBeLessThan(300);
+  expect(await valueOf(module)).toBeUndefined();
+  await settle(page);
+
+  // Multi select: each tick writes; "Done" closes.
+  await edit("Related").click();
+  for (const name of ["Accounting", "Purchasing"]) {
+    const tick = wrote(related);
+    await page.getByRole("option", { name }).click();
+    expect((await tick).status()).toBeLessThan(300);
+    await settle(page);
+  }
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  expect(await valueOf(related)).toHaveLength(2);
+
+  // Date: a day writes and closes; "Clear date" empties it; a second clear sends nothing.
+  await edit("Go live").click();
+  const day = wrote(due);
+  await page.getByRole("gridcell", { name: /^15 / }).click();
+  expect((await day).status()).toBeLessThan(300);
+  expect(await valueOf(due)).toBeTruthy();
+  await settle(page);
+  await edit("Go live").click();
+  const noDay = wrote(due);
+  await page.getByRole("button", { name: "Clear date" }).click();
+  expect((await noDay).status()).toBeLessThan(300);
+  expect(await valueOf(due)).toBeUndefined();
+  await settle(page);
+  await edit("Go live").click();
+  await expect(page.getByRole("button", { name: "Clear date" })).toBeDisabled();
+  await page.keyboard.press("Escape");
+});
+
 test("a manager adds, renames and deletes a field from Settings, restores it with its values, and the refusals change nothing", async ({
   browser,
   page,

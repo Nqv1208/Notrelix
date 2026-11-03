@@ -6,7 +6,6 @@ import {
   type ComputedValue,
   type FieldDefinition,
 } from "@notrelix/work-management-core";
-import { identityMarkClass } from "../../shared/item-display";
 import { fillTableCopy, type MainTableCopy } from "./main-table.copy";
 import {
   AnchoredNote,
@@ -14,7 +13,9 @@ import {
   DateEditor,
   InlineInputEditor,
   LongTextEditor,
+  OptionChip,
   OptionEditor,
+  PersonMark,
   type EditorOption,
 } from "./table-field-editors";
 import {
@@ -64,24 +65,6 @@ export interface TableFieldCellProps {
   onUseTheirs: () => void;
 }
 
-const CHIP_CLASS =
-  "inline-flex h-5.5 min-w-0 items-center gap-1.5 rounded-sm bg-state-hover px-2 text-micro font-semibold text-foreground";
-
-function OptionChip({ option }: { option: EditorOption }) {
-  return (
-    <span className={CHIP_CLASS}>
-      {option.color ? (
-        <span
-          aria-hidden="true"
-          className="size-2 shrink-0 rounded-full"
-          style={{ backgroundColor: option.color }}
-        />
-      ) : null}
-      <span className="truncate">{option.label}</span>
-    </span>
-  );
-}
-
 /** At most two of a list, then "+N" that names the rest in its tooltip. */
 function Stack({
   items,
@@ -96,7 +79,7 @@ function Stack({
 }) {
   const rest = items.slice(2);
   return (
-    <span className="flex min-w-0 items-center gap-1">
+    <span className="flex min-w-0 items-center gap-[7px]">
       {items.slice(0, 2).map((item) => (
         <span key={item} className="flex min-w-0 items-center">
           {render(item)}
@@ -105,7 +88,7 @@ function Stack({
       {rest.length > 0 ? (
         <span
           title={moreTitle(rest)}
-          className="inline-flex h-5.5 shrink-0 items-center rounded-sm bg-state-hover-strong px-1.5 text-micro font-semibold text-muted-foreground"
+          className="inline-flex h-5.5 shrink-0 items-center rounded-sm bg-state-hover-strong px-2 text-caption font-semibold text-muted-foreground"
         >
           {fillTableCopy(copy.more, { count: rest.length })}
         </span>
@@ -217,6 +200,16 @@ export function TableFieldCell({
         <CheckboxEditor
           checked={on}
           editable={canEdit}
+          saving={write?.status === "pending"}
+          caption={
+            write?.status === "pending"
+              ? f.saving
+              : on
+                ? fillTableCopy(f.checkedCaption, {
+                    field: field.name.toLocaleLowerCase(),
+                  })
+                : f.uncheckedCaption
+          }
           label={fillTableCopy(on ? f.checked : f.unchecked, {
             field: field.name,
             key: rowKey,
@@ -238,21 +231,6 @@ export function TableFieldCell({
             initials: member.initials,
           }))
         : field.options.map((option) => optionOf(option.id));
-      const mark = (id: string) => {
-        const person = memberOf(id);
-        return (
-          <span
-            aria-hidden="true"
-            title={person.label}
-            className={cn(
-              "flex size-6 shrink-0 items-center justify-center rounded-full text-avatar-md select-none",
-              identityMarkClass(id),
-            )}
-          >
-            {person.initials}
-          </span>
-        );
-      };
       display = empty ? (
         dash
       ) : (
@@ -265,7 +243,11 @@ export function TableFieldCell({
               .join(", ")
           }
           render={(id) =>
-            isPerson ? mark(id) : <OptionChip option={optionOf(id)} />
+            isPerson ? (
+              <PersonMark option={memberOf(id)} />
+            ) : (
+              <OptionChip option={optionOf(id)} />
+            )
           }
         />
       );
@@ -300,6 +282,7 @@ export function TableFieldCell({
           text={text}
           label={label}
           copy={f}
+          tableCopy={copy}
           onCommit={onWrite}
         >
           {display}
@@ -350,39 +333,42 @@ export function TableFieldCell({
           ) : null}
         </span>
       );
-      const inline = (
-        <>
-          {canEdit && (field.fieldType === "text" || isNumber || isLink) ? (
-            <InlineInputEditor
-              field={field}
-              value={value}
-              text={text}
-              label={label}
-              copy={f}
-              alignEnd={isNumber}
-              onCommit={onWrite}
-            >
-              {display}
-            </InlineInputEditor>
-          ) : (
+      const open =
+        isLink && !empty && /^https?:\/\//.test(text) ? (
+          <a
+            href={text}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={f.openLink}
+            title={f.openLink}
+            className="inline-flex flex-none text-meta-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            <ExternalLink className="size-4" aria-hidden="true" />
+          </a>
+        ) : null;
+      const inline =
+        canEdit && (field.fieldType === "text" || isNumber || isLink) ? (
+          <InlineInputEditor
+            field={field}
+            value={value}
+            text={text}
+            label={label}
+            copy={f}
+            alignEnd={isNumber}
+            unit={isNumber ? field.unit : null}
+            trailing={open}
+            onCommit={onWrite}
+          >
+            {display}
+          </InlineInputEditor>
+        ) : (
+          <>
             <span title={text || undefined} className="flex min-w-0 flex-1">
               {display}
             </span>
-          )}
-          {isLink && !empty && /^https?:\/\//.test(text) ? (
-            <a
-              href={text}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={f.openLink}
-              title={f.openLink}
-              className="inline-flex flex-none text-meta-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-            >
-              <ExternalLink className="size-3.5" aria-hidden="true" />
-            </a>
-          ) : null}
-        </>
-      );
+            {open}
+          </>
+        );
       editor = inline;
     }
   }
@@ -395,13 +381,16 @@ export function TableFieldCell({
         {editor}
         <span
           role="status"
-          className="inline-flex flex-none items-center gap-1 text-crumb text-muted-foreground"
+          className={cn(
+            "inline-flex flex-none items-center gap-1 text-crumb text-muted-foreground",
+            field.fieldType === "checkbox" && "ml-auto",
+          )}
         >
           <Loader2
             className="size-3 animate-spin motion-reduce:animate-none"
             aria-hidden="true"
           />
-          {f.saving}
+          {field.fieldType === "checkbox" ? null : f.saving}
         </span>
       </>
     );
