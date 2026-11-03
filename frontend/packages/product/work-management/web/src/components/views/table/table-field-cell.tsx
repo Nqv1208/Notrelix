@@ -1,7 +1,7 @@
 import { useRef, type ReactNode } from "react";
 import { AlertCircle, ExternalLink, Loader2, Lock } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
-import type { StaleSchemaDetail } from "@notrelix/work-management-state";
+import type { StaleSchemaDetail } from "@notrelix/work-management-core";
 import {
   specOf,
   type ComputedValue,

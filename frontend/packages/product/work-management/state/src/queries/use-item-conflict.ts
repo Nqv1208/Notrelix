@@ -4,6 +4,9 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { workspaceQueryKey } from "@notrelix/query";
+import type { StaleSchemaDetail } from "@notrelix/work-management-core";
+
+export type { StaleSchemaDetail };
 
 const conflictKey = (workspaceId: string, itemId: string) =>
   workspaceQueryKey(workspaceId, "work-management", "item-conflict", itemId);
@@ -37,18 +40,6 @@ export function isRequiredRefusal(error: unknown): boolean {
     (error as { ruleCode?: unknown } | null)?.ruleCode ===
     "WorkManagement_FieldValue_Required"
   );
-}
-
-/** The schema change a stale write ran into and who made it: a field the board no longer has, an option it no longer lists, or a field whose type changed. */
-export interface StaleSchemaDetail {
-  readonly kind: "field-deleted" | "option-removed" | "type-changed";
-  readonly fieldName: string;
-  readonly byName: string | null;
-  /** The option the write chose and the field no longer lists (`option-removed`). */
-  readonly optionLabel?: string;
-  /** The field's type before and after the change (`type-changed`). */
-  readonly fromType?: string;
-  readonly toType?: string;
 }
 
 const STALE_CODES = {
