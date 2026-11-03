@@ -39,25 +39,25 @@ Counts come from the catalog index at develop `3916a25a5` (2026-11-03). Re-take 
 
 | Release | What a user can do | Contexts | Use cases | Still to do |
 |---|---|---|---:|---:|
-| 0.1.0 | A team works on boards: sign in with a second factor, create a workspace, invite people, build a board with fields and views, move work, and see it live. | Identity 30, Workspaces 28, Governance 10, Work Management 134, Billing 1, Platform 17 | 220 | 125 |
+| 0.1.0 | A team works on boards: sign in with a second factor, create a workspace, invite people, build a board with fields and views, move work, and see it live. | Identity 30, Workspaces 28, Governance 10, Work Management 134, Billing 1, Platform 17 | 220 | 122 |
 | 0.2 | The team writes pages, comments, mentions people, attaches files and works from an Inbox. | Work Management 10, Documents 81, Collaboration 83, Platform 1 | 175 | 175 |
 | 0.3 | An organisation is governed: Teams, Spaces, onboarding and Home, custom roles and sharing, admin and operator consoles, provider sign-in, profile and API tokens. | Accounts 42, Identity 30, Workspaces 63, Governance 64, Work Management 17, Platform 4 | 220 | 220 |
 | 0.4 | Work reacts and connects: automation rules, provider connections, inbound and outbound events. | Identity 1, Work Management 4, Automation 79, Integrations 55, Platform 7 | 146 | 146 |
 | 1.0 | The product can be sold and run: real Billing, dashboards and reports, the rest of the platform, deploy, backup and observability. | Work Management 6, Billing 98, Analytics 61, Platform 28 | 193 | 193 |
 | After 1.0 | Waits for an architecture decision with a real consumer, or a deferral already decided. | Governance 1, Documents 1, Collaboration 2, Platform 1 | 5 | 5 |
-| | | **Total** | **959** | **864** |
+| | | **Total** | **959** | **861** |
 
 State of the allocated use cases today:
 
 | Release | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED | Total |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| 0.1.0 | 0 | 0 | 3 | 122 | 95 | 0 | 220 |
+| 0.1.0 | 0 | 0 | 2 | 120 | 98 | 0 | 220 |
 | 0.2 | 31 | 12 | 82 | 45 | 0 | 5 | 175 |
 | 0.3 | 46 | 67 | 78 | 17 | 0 | 12 | 220 |
 | 0.4 | 27 | 52 | 32 | 33 | 0 | 2 | 146 |
 | 1.0 | 91 | 67 | 13 | 19 | 0 | 3 | 193 |
 | After 1.0 | 1 | 0 | 0 | 0 | 0 | 4 | 5 |
-| **Total** | **196** | **198** | **208** | **236** | **95** | **26** | **959** |
+| **Total** | **196** | **198** | **207** | **234** | **98** | **26** | **959** |
 
 Provisional windows (section 6.3): 0.1.0 about 1 week; each later release 3 to 6 weeks.
 
@@ -178,7 +178,7 @@ These follow a dependency rather than the capability. The owner may reverse any 
 
 **Goal.** A person registers, signs in with a second factor, creates a workspace, invites colleagues, and the team builds a board with fields, groups, items and four views, moves work on Kanban, edits without losing writes, and sees changes live.
 
-**Scope.** 220 use cases: integrating 3, hardening 122, done 95. Still to do: 125.
+**Scope.** 220 use cases: integrating 2, hardening 120, done 98. Still to do: 122.
 
 **Owner decisions needed before it starts.** None open. Decisions 1, 3 and 7 are made.
 
@@ -361,7 +361,7 @@ The foundation lane runs in W1 so that every later wave builds on authorization,
 
 | Release | Window | Basis |
 |---|---|---|
-| 0.1.0 | about 1 week | 125 use cases to do, 122 of the 220 already HARDENING |
+| 0.1.0 | about 1 week | 122 use cases to do, 120 of the 220 already HARDENING |
 | 0.2 | 3 to 4 weeks | Mostly INTEGRATING and DEFINED |
 | 0.3 | 4 to 6 weeks | The most DEFINED and IMPLEMENTING use cases; owner decisions |
 | 0.4 | 3 to 5 weeks | Automation and Integrations are still IMPLEMENTING |

@@ -378,6 +378,11 @@ export const en = {
     conflict:
       "{{actor}} changed “{{title}}” first. Your change was not saved and the row shows theirs.",
     someone: "Someone",
+    assigneeNotShared:
+      "“{{title}}” was not assigned: this person cannot see the board yet. Share the board with them first.",
+    assigneeViewer:
+      "“{{title}}” was not assigned: this person only views the board. Make them a member first.",
+    shareBoard: "Share the board",
     addGroup: "Couldn't add “{{name}}”.",
     moveGroup: "Couldn't move “{{name}}”.",
     deleteGroup: "Couldn't delete “{{name}}”.",
@@ -741,6 +746,11 @@ export const vi: MainTableCopy = {
     conflict:
       "{{actor}} vừa sửa “{{title}}” trước bạn. Thay đổi của bạn chưa được lưu và hàng đang hiện bản của họ.",
     someone: "Có người",
+    assigneeNotShared:
+      "Chưa giao “{{title}}”: người này chưa xem được board. Hãy chia sẻ board với họ trước.",
+    assigneeViewer:
+      "Chưa giao “{{title}}”: người này chỉ xem board. Hãy đổi họ thành thành viên trước.",
+    shareBoard: "Chia sẻ board",
     addGroup: "Không thêm được “{{name}}”.",
     moveGroup: "Không chuyển được “{{name}}”.",
     deleteGroup: "Không xoá được “{{name}}”.",

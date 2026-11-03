@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Common.Idempotency;
+using Notrelix.Application.Features.WorkManagement.Boards.Services;
 using Notrelix.Application.Features.WorkManagement.Ordering;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember;
@@ -665,7 +666,8 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         var notShared = () => OrgTreeTestHost.SendAsync(owner, new AssignBoardItemMemberCommand(scene.Items[0], cannotSee, version));
         var foreign = () => OrgTreeTestHost.SendAsync(owner, new AssignBoardItemMemberCommand(scene.Items[0], otherWorkspace.OwnerId, version));
 
-        await notShared.Should().ThrowAsync<AppForbidden>("the person cannot see the Private board, so the owner must share it first");
+        (await notShared.Should().ThrowAsync<AppForbidden>("the person cannot see the Private board, so the owner must share it first"))
+            .Which.Code.Should().Be(BoardAssigneeGuard.BoardNotSharedCode, "the page names the reason and offers the share action from this code");
         await foreign.Should().ThrowAsync<AppForbidden>("only people of the same Workspace can be assigned");
         (await AssigneesAsync(scene.Items[0])).Should().BeEmpty();
         (await VersionAsync(scene.Items[0])).Should().Be(version);
