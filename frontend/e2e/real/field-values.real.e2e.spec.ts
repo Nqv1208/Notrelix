@@ -52,6 +52,7 @@ interface FullBoard {
     readonly name: string;
     readonly version: number;
     readonly fieldType: string;
+    readonly isSystem?: boolean;
   }[];
 }
 
@@ -184,6 +185,35 @@ test("a member edits the custom cells of the table, a refused value stays in the
     .click();
   expect((await wroteBox).status()).toBeLessThan(300);
   expect(await valueOf(accepted)).toBe(true);
+
+  // The server refuses what the page would not send: a value of the wrong shape (400, nothing stored) and a field
+  // of another board (the identical 404 of a field that does not exist).
+  const sceneItem = await read();
+  const refused = await apiWrite(
+    page,
+    "PATCH",
+    `/board-items/${itemId}/values/${points}`,
+    { value: "13a", expectedVersion: sceneItem.version },
+  );
+  expect(refused.status).toBe(400);
+  const otherBoard = await createBoard(page, workspace.id);
+  const foreign = await createField(page, otherBoard, "Elsewhere", "number");
+  const crossBoard = await apiWrite(
+    page,
+    "PATCH",
+    `/board-items/${itemId}/values/${foreign}`,
+    { value: 1, expectedVersion: sceneItem.version },
+  );
+  const missing = await apiWrite(
+    page,
+    "PATCH",
+    `/board-items/${itemId}/values/${crypto.randomUUID()}`,
+    { value: 1, expectedVersion: sceneItem.version },
+  );
+  expect(crossBoard.status).toBe(404);
+  expect(missing.status).toBe(404);
+  expect(String(await valueOf(points))).toBe("13");
+  expect((await read()).version).toBe(sceneItem.version);
 
   // After a reload the server's values are what the cells show.
   await page.reload();
@@ -365,17 +395,27 @@ test("a manager adds, renames and deletes a field from Settings, restores it wit
     );
     expect([403, 404]).toContain(memberDelete.status);
 
-    // A system field cannot be renamed or deleted.
-    const system = full.columns.find((column) =>
-      /status/i.test(column.fieldType),
-    )!;
+    // A system field cannot be renamed or deleted, and nothing about it changes.
+    const system = full.columns.find((column) => column.isSystem)!;
     const systemRename = await apiWrite(
       page,
       "PATCH",
       `/boards/${boardId}/fields/${system.id}`,
       { name: "Nope", expectedVersion: system.version },
     );
-    expect(systemRename.status).toBeGreaterThanOrEqual(400);
+    expect(systemRename.status).toBe(409);
+    expect(JSON.stringify(systemRename.data)).toContain("system-locked");
+    const systemDelete = await apiWrite(
+      page,
+      "DELETE",
+      `/boards/${boardId}/fields/${system.id}?expectedVersion=${system.version}`,
+    );
+    expect(systemDelete.status).toBeGreaterThanOrEqual(400);
+    expect(
+      (await apiRead<FullBoard>(page, `/boards/${boardId}/full`)).columns.find(
+        (column) => column.id === system.id,
+      )?.version,
+    ).toBe(system.version);
 
     // A formula that reads the field blocks its deletion and is named.
     const formula = await apiWrite<Created>(
@@ -478,4 +518,241 @@ test("a manager adds, renames and deletes a field from Settings, restores it wit
   } finally {
     await member.context.close();
   }
+});
+
+test("a parent's progress is its sub-items, a checklist keeps its own count, a formula shows its error and a rollup counts live sub-items, and a person outside gets the NotFound of a missing item", async ({
+  browser,
+  page,
+}) => {
+  await signIn(page, realUsers.admin);
+  const workspace = await createOwnedWorkspace(page, "Field progress");
+  const boardId = await createBoard(page, workspace.id);
+  const points = await createField(page, boardId, "Points", "number");
+  const zero = await rawApiWrite<Created>(
+    page,
+    "POST",
+    `/boards/${boardId}/fields`,
+    {
+      name: "Ratio",
+      type: "formula",
+      settingsJson: JSON.stringify({
+        expression: "[Points] / ([Points] - [Points])",
+      }),
+    },
+  );
+  expect(zero.status).toBeLessThan(300);
+  const double = await rawApiWrite<Created>(
+    page,
+    "POST",
+    `/boards/${boardId}/fields`,
+    {
+      name: "Double",
+      type: "formula",
+      settingsJson: JSON.stringify({ expression: "[Points] * 2" }),
+    },
+  );
+  const rollup = await rawApiWrite<Created>(
+    page,
+    "POST",
+    `/boards/${boardId}/fields`,
+    {
+      name: "Sub points",
+      type: "rollup",
+      settingsJson: JSON.stringify({ function: "sum", fieldId: points }),
+    },
+  );
+  expect(double.status).toBeLessThan(300);
+  expect(rollup.status).toBeLessThan(300);
+  const doubleId = idOf(double.data);
+  const ratioId = idOf(zero.data);
+  const rollupId = idOf(rollup.data);
+
+  const board = await apiRead<
+    FullBoard & {
+      columns: {
+        options?: { id: string; category?: string | null }[] | null;
+      }[];
+    }
+  >(page, `/boards/${boardId}/full`);
+  const done = board.columns
+    .flatMap((column) => column.options ?? [])
+    .find((option) => option.category === "done")!;
+  const statusField = board.columns.find((column) =>
+    /status/i.test(column.fieldType),
+  )!;
+  const group = board.lists[0]!.id;
+
+  const parent = await apiWrite<{ id: string }>(
+    page,
+    "POST",
+    `/boards/${boardId}/items`,
+    {
+      groupId: group,
+      title: "Parent",
+    },
+  );
+  const parentId = parent.data!.id;
+  const child = async (title: string, value: number) => {
+    const created = await apiWrite<{ id: string }>(
+      page,
+      "POST",
+      `/board-items/${parentId}/child-items`,
+      { title },
+    );
+    expect(created.status).toBeLessThan(300);
+    const read = await apiRead<ItemRead>(
+      page,
+      `/board-items/${created.data!.id}`,
+    );
+    const set = await apiWrite(
+      page,
+      "PATCH",
+      `/board-items/${read.id}/values/${points}`,
+      {
+        value,
+        expectedVersion: read.version,
+      },
+    );
+    expect(set.status).toBeLessThan(300);
+    return read.id;
+  };
+  const first = await child("One", 3);
+  const second = await child("Two", 4);
+  const third = await child("Three", 100);
+
+  // One child is done, one is archived: the progress is 1 of 2 and the rollup sums the two live sub-items.
+  const doneRead = await apiRead<ItemRead>(page, `/board-items/${first}`);
+  expect(
+    (
+      await apiWrite(page, "PATCH", `/board-items/${first}/status`, {
+        status: done.id,
+        expectedVersion: doneRead.version,
+      })
+    ).status,
+  ).toBeLessThan(300);
+  const archiveRead = await apiRead<ItemRead>(page, `/board-items/${third}`);
+  expect(
+    (
+      await apiWrite(page, "POST", `/board-items/${third}/archive`, {
+        expectedVersion: archiveRead.version,
+      })
+    ).status,
+  ).toBeLessThan(300);
+  void second;
+  void statusField;
+
+  // A checklist of 3 with 1 done sits beside it and never feeds the parent's progress.
+  const checklist = await apiWrite<Created>(
+    page,
+    "POST",
+    `/board-items/${parentId}/checklists`,
+    {
+      title: "Steps",
+    },
+  );
+  expect(checklist.status).toBeLessThan(300);
+  const checklistOf = async () =>
+    (
+      await apiRead<{
+        checklists: { id: string; version: number; items: { id: string }[] }[];
+      }>(page, `/board-items/${parentId}`)
+    ).checklists[0]!;
+  for (const title of ["a", "b", "c"]) {
+    const current = await checklistOf();
+    const added = await apiWrite(
+      page,
+      "POST",
+      `/checklists/${current.id}/items`,
+      { title, expectedVersion: current.version },
+    );
+    expect(added.status, JSON.stringify(added.data)).toBeLessThan(300);
+  }
+  const ticked = await checklistOf();
+  expect(
+    (
+      await apiWrite(
+        page,
+        "POST",
+        `/checklist-items/${ticked.items[0]!.id}/toggle?expectedVersion=${ticked.version}`,
+      )
+    ).status,
+  ).toBeLessThan(300);
+
+  // A parent with a value for the formula: 13 doubles to 26, and the ratio is a divide-by-zero error, never a number.
+  const parentRead = await apiRead<ItemRead>(page, `/board-items/${parentId}`);
+  expect(
+    (
+      await apiWrite(
+        page,
+        "PATCH",
+        `/board-items/${parentId}/values/${points}`,
+        {
+          value: 13,
+          expectedVersion: parentRead.version,
+        },
+      )
+    ).status,
+  ).toBeLessThan(300);
+  const shown = await apiRead<{
+    childProgress: { done: number; total: number } | null;
+    computedValues: Record<
+      string,
+      { state: string; value?: unknown; errorCode?: string }
+    >;
+  }>(page, `/board-items/${parentId}`);
+  expect(shown.childProgress).toEqual({ done: 1, total: 2 });
+  expect((await checklistOf()).items).toHaveLength(3);
+  expect(shown.computedValues[doubleId]).toMatchObject({
+    state: "ok",
+    value: 26,
+  });
+  expect(shown.computedValues[ratioId]).toMatchObject({
+    state: "error",
+    errorCode: "divide-by-zero",
+  });
+  expect(shown.computedValues[rollupId]).toMatchObject({
+    state: "ok",
+    value: 7,
+  });
+  const written = await apiWrite(
+    page,
+    "PATCH",
+    `/board-items/${parentId}/values/${doubleId}`,
+    {
+      value: 1,
+      expectedVersion: (
+        await apiRead<ItemRead>(page, `/board-items/${parentId}`)
+      ).version,
+    },
+  );
+  expect(written.status).toBe(400);
+
+  // The table: the parent's row shows 1 of 2 sub-items, the formula as read only, the ratio as an error.
+  await page.goto(`/workspaces/${workspace.id}/boards/${boardId}?view=table`);
+  const row = page.locator(`[data-row-id="${parentId}"]`);
+  await expect(
+    row.getByRole("img", { name: "1 of 2 child items done" }),
+  ).toBeVisible();
+  await expect(
+    row.locator('[data-computed-state="value"]').first(),
+  ).toBeVisible();
+  await expect(row.locator('[data-computed-state="error"]')).toHaveAttribute(
+    "title",
+    /Divided by zero/,
+  );
+
+  // A person who is not in the workspace gets the answer a missing item gets.
+  const outsiderContext = await browser.newContext();
+  const outsider = await outsiderContext.newPage();
+  await signIn(outsider, realUsers.workspaceGuest);
+  const hidden = await outsider.request.get(
+    `${process.env.VITE_API_URL ?? "http://127.0.0.1:58000/api/v1"}/board-items/${parentId}`,
+  );
+  const absent = await outsider.request.get(
+    `${process.env.VITE_API_URL ?? "http://127.0.0.1:58000/api/v1"}/board-items/${crypto.randomUUID()}`,
+  );
+  expect(hidden.status()).toBe(404);
+  expect(absent.status()).toBe(404);
+  expect(await hidden.json()).toMatchObject({ status: 404 });
+  await outsiderContext.close();
 });
