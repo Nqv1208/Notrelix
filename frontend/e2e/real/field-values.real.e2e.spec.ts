@@ -935,3 +935,62 @@ test("a member creates a label from the typed text in the item's picker, it land
   );
   expect(boardLabels.map((label) => label.name)).toContain("Urgent");
 });
+
+test("a manager adds, renames, recolours and deletes a label in Settings, and the server holds each change", async ({
+  page,
+}) => {
+  await signIn(page, realUsers.admin);
+  const workspace = await createOwnedWorkspace(page, "Label settings");
+  const boardId = await createBoard(page, workspace.id);
+  const labelsOnServer = () =>
+    apiRead<{ name: string; color: string }[]>(
+      page,
+      `/boards/${boardId}/labels`,
+    );
+  await page.goto(
+    `/workspaces/${workspace.id}/boards/${boardId}/settings?section=labels`,
+  );
+
+  await page.getByRole("button", { name: "Add label", exact: true }).click();
+  const form = page.getByRole("form", { name: "New label" });
+  await form.getByRole("textbox", { name: "Name of the label" }).fill("Data");
+  await form.getByRole("button", { name: "Add label" }).click();
+  await expect(
+    page.getByRole("list", { name: "Labels of the board" }).getByText("Data"),
+  ).toBeVisible();
+  await settle(page);
+  expect((await labelsOnServer()).map((label) => label.name)).toEqual(["Data"]);
+
+  // Rename and recolour in one edit: Enter or "Save" sends both with the version the page read.
+  await page.getByRole("button", { name: "Rename the label Data" }).click();
+  await page
+    .getByRole("textbox", { name: "Name of the label" })
+    .fill("Data model");
+  await page.getByRole("button", { name: /^Change colour, now/ }).click();
+  await page.getByRole("button", { name: "Rose" }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await settle(page);
+  const [renamed] = await labelsOnServer();
+  expect(renamed!.name).toBe("Data model");
+  expect(renamed!.color.toLowerCase()).toBe("#d13a5b");
+
+  // A duplicate name is refused on the page and nothing is sent.
+  await page.getByRole("button", { name: "Add label", exact: true }).click();
+  const again = page.getByRole("form", { name: "New label" });
+  await again
+    .getByRole("textbox", { name: "Name of the label" })
+    .fill("data model");
+  await expect(
+    page.getByText("A label with this name already exists."),
+  ).toBeVisible();
+  await again.getByRole("button", { name: "Cancel" }).click();
+
+  await page
+    .getByRole("button", { name: "Delete the label Data model" })
+    .click();
+  await page
+    .getByRole("button", { name: "Delete the label", exact: true })
+    .click();
+  await settle(page);
+  expect(await labelsOnServer()).toEqual([]);
+});

@@ -10,9 +10,10 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * and its header row, one field row (grip, 26 px mark, name, type, key in 12 px, usage), the system group
  * and its lock cell.
  *
- * Not measured: the artboard's row data (its eleven fields, per-field view usage "5 view", the rules count and
- * the key names): the mock world has 21 fields with generated keys and the page has no per-field view usage
- * source, so rows are compared on their layout (offsets inside the row), not on their text. The page draws no
+ * Not measured: the artboard's row data (its eleven fields, the rules count and the key names): the mock
+ * world has 21 fields with generated keys, so rows are compared on their layout (offsets inside the row), not on
+ * their text. The usage cell reads "N view" from the saved views the page already has (a view that filters, sorts,
+ * splits by, shows on a card or shows as a table column counts once), then the value count, then "Chưa dùng". The page draws no
  * tab bar until a field has been deleted.
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";

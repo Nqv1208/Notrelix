@@ -50,6 +50,7 @@ export function AnchoredNote({
   focusRef,
   onEscape,
   className,
+  noteClassName,
   plain = false,
   children,
 }: {
@@ -60,6 +61,8 @@ export function AnchoredNote({
   focusRef?: React.RefObject<HTMLElement | null>;
   onEscape?: () => void;
   className?: string;
+  /** Sizes the box when a drawn frame sets its own (`WM-StaleSchema`'s 330 px note). */
+  noteClassName?: string;
   children: ReactNode;
 }) {
   return (
@@ -93,6 +96,7 @@ export function AnchoredNote({
             : NOTE_CLASS,
           !plain &&
             (tone === "danger" ? "border-danger-text" : "border-warning-text"),
+          noteClassName,
         )}
       >
         {note}

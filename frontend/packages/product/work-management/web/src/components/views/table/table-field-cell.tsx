@@ -1,6 +1,7 @@
 import { useRef, type ReactNode } from "react";
-import { AlertCircle, ExternalLink, Loader2 } from "lucide-react";
+import { AlertCircle, ExternalLink, Loader2, Lock } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
+import type { StaleSchemaDetail } from "@notrelix/work-management-state";
 import {
   specOf,
   type ComputedValue,
@@ -27,7 +28,9 @@ import {
 
 /** The write state of one cell: saving, failed (the value typed is kept), or in conflict. */
 export interface CellWrite {
-  readonly status: "pending" | "error" | "conflict";
+  readonly status: "pending" | "error" | "conflict" | "schema" | "reloading";
+  /** What the board changed under the write (`schema`). */
+  readonly schema?: StaleSchemaDetail;
   /** The value the person wrote; shown while the write has not settled. */
   readonly value: unknown;
 }
@@ -47,6 +50,8 @@ export interface TableFieldEditing {
   readonly onRetry: (rowId: string, fieldId: string) => void;
   readonly onKeepMine: (rowId: string, fieldId: string) => void;
   readonly onUseTheirs: (rowId: string, fieldId: string) => void;
+  /** Reload the board's fields after a stale write; the unsaved value is dropped. */
+  readonly onReloadSchema: (rowId: string, fieldId: string) => void;
 }
 
 export interface TableFieldCellProps {
@@ -63,6 +68,7 @@ export interface TableFieldCellProps {
   onRetry: () => void;
   onKeepMine: () => void;
   onUseTheirs: () => void;
+  onReloadSchema: () => void;
 }
 
 /** At most two of a list, then "+N" that names the rest in its tooltip. */
@@ -118,21 +124,15 @@ function ComputedCell({
       title={view.title}
       data-computed-state={view.tone}
       className={cn(
-        "inline-flex min-w-0 items-center gap-1.25 text-nav tabular-nums text-muted-foreground",
+        "ml-auto inline-flex min-w-0 items-center gap-1.25 text-nav font-normal tabular-nums text-foreground",
         // Dimmed by italic and the spinner, never by opacity: the text keeps its 4.5:1 contrast in both themes.
         view.tone === "stale" && "italic",
-        view.tone === "error" && "font-semibold text-danger-text",
+        view.tone === "error" && "text-caption font-semibold text-danger-text",
         view.tone === "empty" && "text-meta-foreground",
       )}
     >
-      <span
-        aria-hidden="true"
-        className="inline-flex h-4.5 flex-none items-center rounded-[5px] bg-state-hover-strong px-1.25 font-mono text-micro font-medium text-muted-foreground"
-      >
-        ƒx
-      </span>
       {view.tone === "error" ? (
-        <AlertCircle className="size-3.5 flex-none" aria-hidden="true" />
+        <AlertCircle className="size-4 flex-none" aria-hidden="true" />
       ) : null}
       <span className="truncate">{view.text}</span>
       {view.tone === "stale" ? (
@@ -147,7 +147,7 @@ function ComputedCell({
 
 /**
  * What a custom field column shows in one cell, and its editor. Formula and
- * Rollup cells are read-only with the ƒx mark; a viewer, or a type with no
+ * Rollup cells are read-only (the ƒx mark and the lock sit in the column header); a viewer, or a type with no
  * inline editor, gets the value alone (the lock sits in the column header).
  * A write shows "Đang lưu" while it runs, an inline error with "Thử lại"
  * when it fails (the typed value stays), and the in-cell conflict choice.
@@ -164,6 +164,7 @@ export function TableFieldCell({
   onRetry,
   onKeepMine,
   onUseTheirs,
+  onReloadSchema,
 }: TableFieldCellProps) {
   const f = copy.fields;
   const spec = specOf(field);
@@ -375,8 +376,83 @@ export function TableFieldCell({
     }
   }
 
-  if (!write) return <>{editor}</>;
+  if (!write)
+    return (
+      <>
+        {editor}
+        {/* A viewer's cell ends with a lock that names the field (`WM-Field-Editors`, "Chỉ xem"). */}
+        {!editable && spec.editable ? (
+          <span
+            role="img"
+            aria-label={fillTableCopy(f.viewOnlyLabel, { field: field.name })}
+            title={f.viewOnly}
+            className={cn(
+              "inline-flex flex-none text-meta-foreground",
+              field.fieldType !== "number" && "ml-auto",
+            )}
+          >
+            <Lock className="size-4" aria-hidden="true" />
+          </span>
+        ) : null}
+      </>
+    );
   const valueLabel = text || f.empty;
+  if (write.status === "reloading")
+    return (
+      <span
+        role="status"
+        aria-label={f.staleReloading}
+        className="h-3 w-[70px] animate-pulse rounded-sm bg-state-hover-strong motion-reduce:animate-none"
+      />
+    );
+  if (write.status === "schema" && write.schema) {
+    const { schema } = write;
+    const who = schema.byName ?? f.staleSomeone;
+    const title = fillTableCopy(
+      schema.kind === "field-deleted"
+        ? f.staleDeleted
+        : schema.kind === "option-removed"
+          ? f.staleOption
+          : f.staleType,
+      { who, field: field.name },
+    );
+    return (
+      <AnchoredNote
+        tone="danger"
+        className="bg-danger-soft ring-2 ring-danger-text"
+        noteClassName="w-[330px] gap-2.5 rounded-[12px] p-3"
+        note={
+          <div role="alert" className="flex flex-col gap-2.5">
+            <span className="flex items-start gap-2 font-semibold text-danger-text">
+              <AlertCircle className="size-4 flex-none" aria-hidden="true" />
+              {title}
+            </span>
+            <span className="leading-normal text-muted-foreground">
+              {fillTableCopy(f.staleDeletedBody, { value: valueLabel })}
+            </span>
+            <span className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={onUseTheirs}
+                className="h-8 cursor-pointer rounded-[7px] border border-line-strong bg-popover px-3 text-compact font-medium whitespace-nowrap hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring dark:bg-card"
+              >
+                {f.staleDrop}
+              </button>
+              <button
+                type="button"
+                onClick={onReloadSchema}
+                className="h-8 cursor-pointer rounded-[7px] border-0 bg-primary px-3 text-compact font-semibold whitespace-nowrap text-primary-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                {f.staleReload}
+              </button>
+            </span>
+          </div>
+        }
+      >
+        {editor}
+      </AnchoredNote>
+    );
+  }
   if (write.status === "pending")
     return (
       <>

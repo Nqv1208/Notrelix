@@ -150,6 +150,7 @@ export function tableFieldEditing(
     onRetry: noop,
     onKeepMine: noop,
     onUseTheirs: noop,
+    onReloadSchema: noop,
   };
 }
 
