@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
@@ -24,9 +25,11 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
     private readonly IBoardRealtimeNotifier? _realtime;
     private readonly IActorLookupService? _actors;
     private readonly ICurrentRequestContext? _requestContext;
+    private readonly IResourceVisibility? _visibility;
 
-    public UpdateBoardItemFieldValueCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, IBoardRealtimeNotifier? realtime = null, IActorLookupService? actors = null, ICurrentRequestContext? requestContext = null)
+    public UpdateBoardItemFieldValueCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, IBoardRealtimeNotifier? realtime = null, IActorLookupService? actors = null, ICurrentRequestContext? requestContext = null, IResourceVisibility? visibility = null)
     {
+        _visibility = visibility;
         _actors = actors;
         _requestContext = requestContext;
         _realtime = realtime;
@@ -63,10 +66,31 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
                 ? new NotFoundException("BoardField", request.FieldId)
                 : await BoardFields.StaleFieldGuard.MissingAsync(_context, _actors, _requestContext, item.BoardId, request.FieldId, cancellationToken);
 
-        // A person field names who the work is for: a board Viewer is not offered there.
-        if (field.Type == FieldType.Person && request.Value is not null
-            && Guid.TryParse(System.Text.Json.JsonSerializer.Serialize(request.Value).Trim('"'), out var named))
-            await BoardAssigneeGuard.EnsureNotViewerAsync(_context, item.BoardId, named, cancellationToken);
+        // A person field names who the work is for: each person must be able to view the board
+        // (share it first) and a board Viewer is not offered there.
+        if (field.Type == FieldType.Person && request.Value is not null)
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(request.Value);
+            var named = new List<Guid>();
+            using (var doc = System.Text.Json.JsonDocument.Parse(json))
+            {
+                var root = doc.RootElement;
+                if (root.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    named.AddRange(root.EnumerateArray().Select(e => Guid.TryParse(e.GetString(), out var g) ? g : Guid.Empty).Where(g => g != Guid.Empty));
+                else if (Guid.TryParse(root.ValueKind == System.Text.Json.JsonValueKind.String ? root.GetString() : null, out var one))
+                    named.Add(one);
+            }
+            foreach (var userId in named.Distinct())
+            {
+                if (_visibility is not null && _requestContext is not null)
+                {
+                    var visibleBoards = await _visibility.VisibleBoardIdsAsync(item.WorkspaceId, userId, cancellationToken);
+                    if (!visibleBoards.Contains(item.BoardId))
+                        throw new ForbiddenException("Người này chưa xem được board của việc, nên chưa thể chọn. Hãy chia sẻ board với họ trước.", BoardAssigneeGuard.BoardNotSharedCode);
+                }
+                await BoardAssigneeGuard.EnsureNotViewerAsync(_context, item.BoardId, userId, cancellationToken);
+            }
+        }
 
         var now = _timeProvider.UtcNow;
         var jsonString = System.Text.Json.JsonSerializer.Serialize(request.Value);

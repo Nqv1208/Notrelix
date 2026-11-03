@@ -102,6 +102,18 @@ public static class FieldValueValidator
                         throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidBooleanValue, "Value for field type Checkbox must be a boolean.");
                     break;
 
+                case FieldType.Person when settingsDoc != null
+                    && settingsDoc.RootElement.TryGetProperty("multiple", out var multipleToken) && multipleToken.ValueKind == JsonValueKind.True:
+                    // A multiple People field holds a list of principal ids; repeats collapse in BoardItem (same set = no-op).
+                    if (kind != JsonValueKind.Array)
+                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, "Value for a multiple Person field must be an array of user IDs.");
+                    foreach (var person in element.EnumerateArray())
+                    {
+                        if (person.ValueKind != JsonValueKind.String || !Guid.TryParse(person.GetString(), out var personId) || personId == Guid.Empty)
+                            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, "Person items must be valid user GUIDs.");
+                    }
+                    break;
+
                 case FieldType.Status:
                 case FieldType.Select:
                 case FieldType.Person:

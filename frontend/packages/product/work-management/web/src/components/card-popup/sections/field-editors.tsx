@@ -551,8 +551,20 @@ export function FieldControl({
   }
 
   if (field.fieldType === "person") {
-    // A custom Person field holds one board member; the item's own Assignee is the people picker.
-    const current = people.find((person) => person.userId === raw);
+    // A Person field holds one board member, or several when its setting says multiple.
+    const picked: string[] = Array.isArray(raw)
+      ? raw.filter((id): id is string => typeof id === "string")
+      : typeof raw === "string" && raw !== ""
+        ? [raw]
+        : [];
+    const multiple = field.multiple === true;
+    const current = multiple
+      ? undefined
+      : people.find((person) => person.userId === raw);
+    const names = people
+      .filter((person) => picked.includes(person.userId))
+      .map((person) => person.name)
+      .join(", ");
     return (
       <PanelPopover
         open={open}
@@ -562,8 +574,9 @@ export function FieldControl({
           <>
             <UserRound aria-hidden="true" className="size-[13px]" />
             {wrapChip(
-              current?.name ??
-                (typeof raw === "string" && raw !== ""
+              (multiple && names !== "" ? names : undefined) ??
+                current?.name ??
+                (!multiple && typeof raw === "string" && raw !== ""
                   ? raw
                   : chip
                     ? t.notSet
@@ -586,32 +599,40 @@ export function FieldControl({
               key={person.userId}
               type="button"
               role="option"
-              aria-selected={person.userId === raw}
+              aria-selected={picked.includes(person.userId)}
               onClick={() => {
+                if (multiple) {
+                  write(
+                    picked.includes(person.userId)
+                      ? picked.filter((id) => id !== person.userId)
+                      : [...picked, person.userId],
+                  );
+                  return;
+                }
                 write(person.userId);
                 setOpen(false);
               }}
               className={cn(
                 OPT,
-                person.userId === raw &&
+                picked.includes(person.userId) &&
                   "bg-brand-subtle font-semibold text-brand-subtle-foreground",
               )}
             >
               {person.name}
-              {person.userId === raw ? (
+              {picked.includes(person.userId) ? (
                 <Check aria-hidden="true" className="ml-auto size-4" />
               ) : null}
             </button>
           ))}
         </div>
-        {raw ? (
+        {picked.length > 0 ? (
           <>
             <div className="-mx-3 my-2 h-px bg-line" />
             <button
               type="button"
               className={OPT}
               onClick={() => {
-                write(null);
+                write(multiple ? [] : null);
                 setOpen(false);
               }}
             >

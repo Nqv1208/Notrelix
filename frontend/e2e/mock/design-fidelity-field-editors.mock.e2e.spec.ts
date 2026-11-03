@@ -12,12 +12,16 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * Checkbox (unchecked, checked, read-only), Select, Multi select, Person and Date popovers, Link (typing,
  * invalid, display with its open icon). The artboard lists 4 options (5 in the multi list); the mock board
  * lists 6, so list heights are the artboard's formula `38 n + 97` and rows are compared one by one.
- * Not measured: the saving row (`.td.dim`) and the long text counter (a field with a length limit; none exists
+ * The Checkbox saving row (`.td.dim`) is measured in the slow world at the end: the box, the caption "Đang lưu"
+ * and an 18 px spinner at the right padding; the app does not fade the row (`opacity: .72` of the artboard)
+ * because the text keeps its 4.5:1 contrast.
+ * Not measured: the long text counter (a field with a length limit; none exists
  * in 0.1.0).
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const faults = process.env.VITE_MOCK_FAULTS ?? "";
+const latency = process.env.VITE_MOCK_LATENCY ?? "";
 const BOARD = "/workspaces/mock-workspace-primary/boards/mock-board-erp";
 const NOW = new Date("2026-10-12T10:40:00+07:00");
 const TOL = 1;
@@ -443,3 +447,44 @@ function near(actual: number, want: number, label: string) {
     `${label}: ${actual.toFixed(1)} vs ${want}`,
   ).toBeLessThanOrEqual(TOL);
 }
+
+test.describe("Checkbox saving row (WM-Field-Editors), 1440 px, slow world", () => {
+  test.skip(
+    latency !== "slow" ||
+      persona !== "owner" ||
+      scenario !== "default" ||
+      faults !== "",
+    "Needs the slow owner world",
+  );
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  for (const dark of [false, true]) {
+    test(`a write in flight keeps the box, says Đang lưu and spins at the right edge (${dark ? "dem" : "sang"})`, async ({
+      page,
+    }) => {
+      // The artboard is read with the ring still (motion off): a turning ring has no fixed box.
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await openBoard(page, dark);
+      const cell = await cellOf(page, "Sẵn sàng bàn giao");
+      await cell.getByRole("checkbox").click();
+      const status = cell.getByRole("status");
+      await expect(status).toBeVisible();
+      const width = (await cell.boundingBox())!.width;
+      box(
+        await rel(cell.getByRole("checkbox"), cell),
+        { x: 10, y: 11.5, width: 16, height: 16 },
+        "box",
+      );
+      const caption = cell.locator("span.truncate");
+      await expect(caption).toHaveText("Đang lưu");
+      near((await rel(caption, cell)).x, 34, "caption x");
+      // An 18 px ring whose right edge is the cell's right padding (10 px).
+      const ring = await rel(status.locator("svg"), cell);
+      box(
+        ring,
+        { width: 18, height: 18, x: width - 10 - 18, y: 10.5 },
+        "spinner",
+      );
+    });
+  }
+});
