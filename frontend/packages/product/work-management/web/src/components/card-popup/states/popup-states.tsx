@@ -235,26 +235,29 @@ export function PopupBanners({
   const t = copy.shell;
   return (
     <>
-      {fieldConflicts.map((c) => (
-        <Banner
-          key={c.key}
-          tone="warn"
-          title={fillPopupCopy(t.fieldConflict.title, {
-            field: c.field,
-            value: c.theirs,
-          })}
-          body={fillPopupCopy(t.fieldConflict.body, { mine: c.mine })}
-        >
-          <div className="mt-2 flex flex-wrap gap-2">
-            <PanelBtn small onClick={c.takeTheirs}>
-              {t.fieldConflict.takeTheirs}
-            </PanelBtn>
-            <PanelBtn small variant="primary" onClick={c.keepMine}>
-              {t.fieldConflict.keepMine}
-            </PanelBtn>
-          </div>
-        </Banner>
-      ))}
+      {/* A custom field's clash is drawn at its own pill; the banner keeps the title's. */}
+      {fieldConflicts
+        .filter((c) => !c.key.startsWith("field:"))
+        .map((c) => (
+          <Banner
+            key={c.key}
+            tone="warn"
+            title={fillPopupCopy(t.fieldConflict.title, {
+              field: c.field,
+              value: c.theirs,
+            })}
+            body={fillPopupCopy(t.fieldConflict.body, { mine: c.mine })}
+          >
+            <div className="mt-2 flex flex-wrap gap-2">
+              <PanelBtn small onClick={c.takeTheirs}>
+                {t.fieldConflict.takeTheirs}
+              </PanelBtn>
+              <PanelBtn small variant="primary" onClick={c.keepMine}>
+                {t.fieldConflict.keepMine}
+              </PanelBtn>
+            </div>
+          </Banner>
+        ))}
       {move?.status === "error" ? (
         <Banner
           tone="warn"

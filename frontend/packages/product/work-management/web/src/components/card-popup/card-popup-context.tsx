@@ -148,6 +148,8 @@ export interface CardPopupModel {
   readonly saves: Readonly<Record<string, FieldSave | undefined>>;
   /** Runs a write and tracks it under `key`; a failure keeps `retry`. */
   readonly track: (key: string, run: () => Promise<unknown>) => void;
+  /** Drops a failed save of `key`: the field shows the stored value again. */
+  readonly discardSave: (key: string) => void;
   /** A write was refused because someone else saved first. */
   readonly conflict: boolean;
   /** Who saved first, when the server named them; null: no one named. */
