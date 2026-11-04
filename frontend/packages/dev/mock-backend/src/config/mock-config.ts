@@ -55,12 +55,15 @@ export interface MockFaultProfile {
     | "network"
     | "401"
     | "409"
+    // The target is gone, or its owner took it back: the identical NotFound.
+    | "404"
     | "500"
     | "validation"
     // A second writer got there first: a handler that takes an expected version answers 412.
     | "stale"
     | "stale-option"
-    | "stale-type";
+    | "stale-type"
+    | "required";
 }
 
 // ─── Config interface ─────────────────────────────────────────────────────────
@@ -200,11 +203,13 @@ const VALID_FAULTS = new Set<string>([
   "network",
   "401",
   "409",
+  "404",
   "500",
   "validation",
   "stale",
   "stale-option",
   "stale-type",
+  "required",
 ]);
 
 export function parseMockConfigFromEnv(

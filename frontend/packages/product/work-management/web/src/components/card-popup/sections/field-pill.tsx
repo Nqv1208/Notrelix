@@ -1,4 +1,10 @@
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import {
+  forwardRef,
+  useLayoutEffect,
+  useRef,
+  type ButtonHTMLAttributes,
+  type ReactNode,
+} from "react";
 import { AlertCircle, Loader2, Lock, RefreshCw } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import type { FieldDefinition } from "@notrelix/work-management-core";
@@ -115,6 +121,16 @@ export function PillLock({ title }: { title: string }) {
  */
 export function PillNote({ field }: { field: FieldDefinition }) {
   const { copy, saves, fieldConflicts, discardSave } = useCardPopup();
+  // The note hangs from the pill's left edge; on a phone a pill far right would push it past the screen.
+  const noteRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = noteRef.current;
+    if (!el) return;
+    el.style.translate = "";
+    const box = el.getBoundingClientRect();
+    const over = box.right - (window.innerWidth - 16);
+    if (over > 0) el.style.translate = `${-Math.min(over, box.left - 16)}px`;
+  });
   const t = copy.sections.chips;
   const key = `field:${field.id}`;
   const save = saves[key];
@@ -122,6 +138,7 @@ export function PillNote({ field }: { field: FieldDefinition }) {
   if (clash)
     return (
       <div
+        ref={noteRef}
         role="alertdialog"
         aria-label={fillPopupCopy(t.pillConflict, { name: field.name })}
         className="absolute top-9 left-0 z-10 flex w-80 max-w-[calc(100vw-48px)] flex-col gap-1.5 rounded-[10px] border border-warning-text bg-popover p-2 text-[13px] shadow-popover"
@@ -154,6 +171,7 @@ export function PillNote({ field }: { field: FieldDefinition }) {
   const required = save.reason === "required";
   return (
     <div
+      ref={noteRef}
       role="alert"
       className="absolute top-9 left-0 z-10 flex w-[300px] max-w-[calc(100vw-48px)] flex-col gap-1.5 rounded-[10px] border border-danger bg-popover p-2 text-[13px] shadow-popover"
     >

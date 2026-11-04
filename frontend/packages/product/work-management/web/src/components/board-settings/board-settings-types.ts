@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type {
   BoardSettingsDto,
   BoardSettingsFieldPatch,
+  FormulaPreviewDraft,
   FormulaPreviewDto,
   BoardSettingsFieldType,
   BoardSettingsGeneralPatch,
@@ -69,6 +70,8 @@ export interface BoardLabelsPanelProps {
 export interface DeletedFieldRow {
   readonly id: string;
   readonly name: string;
+  /** The key the field was listed under (its name as a slug). */
+  readonly key: string;
   readonly type: BoardSettingsFieldType;
   readonly deletedAt: string;
   readonly restorableUntil: string;
@@ -138,7 +141,7 @@ export interface BoardSettingsActions {
   /** What a draft formula shows on the item it is tried on; null when the server could not be asked. */
   previewFormula(
     itemId: string,
-    expression: string,
+    draft: FormulaPreviewDraft,
   ): Promise<FormulaPreviewDto | null>;
   archiveField(fieldId: string): Promise<BoardSettingsWriteResult>;
   /** Deletes a field for good; a board Manager confirms first. */
