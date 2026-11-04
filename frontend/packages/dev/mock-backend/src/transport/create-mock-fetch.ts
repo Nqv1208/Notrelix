@@ -17,6 +17,7 @@ import { buildOperationRegistry } from "../operations/build-registry";
 import { MockOperationRegistry } from "../operations/operation-registry";
 import type { MockBackendConfig } from "../config/mock-config";
 import {
+  notFound,
   serverError,
   unauthorized,
   conflict,
@@ -115,6 +116,9 @@ export function createMockFetch(store: MockStore): typeof fetch {
             }
           : refused,
       );
+    }
+    if (fault === "404") {
+      return createMockResponse(notFound());
     }
     if (fault === "500") {
       return createMockResponse(serverError("Simulated server error"));

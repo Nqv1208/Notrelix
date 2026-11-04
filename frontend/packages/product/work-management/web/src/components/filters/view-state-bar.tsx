@@ -10,6 +10,7 @@ import {
 } from "@notrelix/ui-web";
 import {
   conditionIssue,
+  isStaleCondition,
   OVERDUE_FIELD_ID,
   type FieldRef,
   type FilterField,
@@ -95,6 +96,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
   const applied = filter.conditions.filter(
     (condition) => conditionIssue(condition) === null,
   );
+  const byId = new Map(fields.map((f) => [f.id, f]));
   const shown = filter.conditions.slice(0, MAX_CHIPS);
   const hidden = filter.conditions.length - shown.length;
   const [openInner, setOpenInner] = useState(false);
@@ -117,7 +119,9 @@ export function ViewStateBar(props: ViewStateBarProps) {
           const field = fields.find((f) => f.id === condition.fieldId);
           return {
             text: describeCondition(copy, condition, field, memberName),
-            ...(known && !field ? { stale: true } : {}),
+            ...(known && (!field || isStaleCondition(condition, byId))
+              ? { stale: true }
+              : {}),
           };
         }),
       ...(groupField
@@ -175,7 +179,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
       >
         {shown.map((condition, index) => {
           const field = fields.find((f) => f.id === condition.fieldId);
-          const stale = known && !field;
+          const stale = known && (!field || isStaleCondition(condition, byId));
           const label = describeCondition(copy, condition, field, memberName);
           const original = filter.conditions.indexOf(condition);
           return (
@@ -398,7 +402,11 @@ export function ViewStateNotices({
   const stale =
     fields.length > 0 ? staleConditionCount(view.state.filter, fields) : 0;
   if (stale === 0 && !view.saveFailed) return null;
-  const known = new Set(fields.map((f) => f.id));
+  const known = new Map(fields.map((f) => [f.id, f]));
+  const goneFields = view.state.filter.conditions.filter(
+    (c) => !known.has(c.fieldId),
+  ).length;
+  const goneValues = stale - goneFields;
   const small =
     "h-7 cursor-pointer gap-1.5 rounded-[7px] px-2.5 text-[12.5px] font-medium";
   return (
@@ -411,7 +419,16 @@ export function ViewStateNotices({
           >
             <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
             <span className="min-w-0 flex-1">
-              {fillFiltersCopy(copy.stale.hint, { count: stale })}
+              {[
+                goneFields > 0
+                  ? fillFiltersCopy(copy.stale.hint, { count: goneFields })
+                  : "",
+                goneValues > 0
+                  ? fillFiltersCopy(copy.stale.valueHint, { count: goneValues })
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -422,8 +439,8 @@ export function ViewStateNotices({
               onClick={() =>
                 view.setFilter({
                   ...view.state.filter,
-                  conditions: view.state.filter.conditions.filter((c) =>
-                    known.has(c.fieldId),
+                  conditions: view.state.filter.conditions.filter(
+                    (c) => !isStaleCondition(c, known),
                   ),
                 })
               }
