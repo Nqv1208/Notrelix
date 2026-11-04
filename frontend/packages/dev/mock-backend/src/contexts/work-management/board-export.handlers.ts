@@ -29,10 +29,14 @@ interface MockExportJob {
 /** The mock world's board is smaller than the artboard's; these are the artboard's counts. */
 const VIEW_COUNT = 37;
 const ALL_COUNT = 212;
-/** A job is queued, then running, then ready, by age, so a spec can hold each state for a moment. */
-const RUNNING_AFTER_MS = 1_500;
-const READY_AFTER_MS = 4_500;
+/**
+ * A job is queued, then running, then ready, by how often it was read (the dialog polls twice a second; the mock
+ * clock stands still), so a spec can hold each state for a moment.
+ */
+const RUNNING_AFTER_READS = 3;
+const READY_AFTER_READS = 9;
 const jobs = new Map<string, MockExportJob[]>();
+const reads = new Map<string, number>();
 
 function present(job: MockExportJob) {
   return job;
@@ -57,20 +61,24 @@ function hold(job: MockExportJob, stage: string): MockExportJob {
   return job;
 }
 
-function advance(job: MockExportJob): MockExportJob {
+function advance(
+  job: MockExportJob,
+  store: { getClock(): { offsetDays(days: number): string } },
+): MockExportJob {
   const stage = (globalThis as { __mockExportStage?: string })
     .__mockExportStage;
   if (stage) return hold(job, stage);
-  const age = Date.now() - Date.parse(job.createdAt);
-  if (age >= RUNNING_AFTER_MS) {
+  const read = (reads.get(job.id) ?? 0) + 1;
+  reads.set(job.id, read);
+  if (read >= RUNNING_AFTER_READS) {
     job.status = "running";
     job.processed = Math.round(job.rowCount * 0.48);
   }
-  if (age >= READY_AFTER_MS) {
+  if (read >= READY_AFTER_READS) {
     job.status = "ready";
     job.processed = job.rowCount;
     job.size = job.rowCount * 118;
-    job.expiresAt = new Date(Date.now() + 24 * 3_600_000).toISOString();
+    job.expiresAt = store.getClock().offsetDays(1);
   }
   return job;
 }
@@ -104,7 +112,7 @@ export const boardExportOperations = [
     async handle({ params, store }) {
       if (!canReadBoard(params.boardId, store)) return notFound();
       return ok(
-        (jobs.get(params.boardId) ?? []).map((j) => present(advance(j))),
+        (jobs.get(params.boardId) ?? []).map((j) => present(advance(j, store))),
       );
     },
   }),
@@ -123,7 +131,7 @@ export const boardExportOperations = [
       const format = body.format === "xlsx" ? "xlsx" : "csv";
       const scope = body.scope === "all" ? "all" : "view";
       const job: MockExportJob = {
-        id: crypto.randomUUID(),
+        id: store.nextId("export"),
         status: "queued",
         format,
         scope,
@@ -133,7 +141,7 @@ export const boardExportOperations = [
         size: 0,
         expiresAt: null,
         failureCode: null,
-        createdAt: new Date().toISOString(),
+        createdAt: store.getClock().isoNow(),
       };
       jobs.set(params.boardId, [job, ...(jobs.get(params.boardId) ?? [])]);
       return created(present(job));
@@ -148,7 +156,7 @@ export const boardExportOperations = [
     async handle({ params, store }) {
       if (!canReadBoard(params.boardId, store)) return notFound();
       const job = jobs.get(params.boardId)?.find((j) => j.id === params.jobId);
-      return job ? ok(present(advance(job))) : notFound();
+      return job ? ok(present(advance(job, store))) : notFound();
     },
   }),
 ];

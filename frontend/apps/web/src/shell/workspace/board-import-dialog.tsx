@@ -51,6 +51,8 @@ type ColumnMap = { column: number; target: string };
 const SKIP = "$skip";
 const BUTTON =
   "inline-flex h-8 flex-none items-center justify-center gap-1.5 whitespace-nowrap rounded-[7px] border px-3 text-frame-small font-medium outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed max-sm:h-11 max-sm:min-w-[120px] max-sm:flex-1";
+// A button that is not a footer button keeps its own width on the phone.
+const SOLO = "max-sm:min-w-0 max-sm:flex-none";
 const GHOST = `${BUTTON} border-line-strong bg-popover text-foreground hover:bg-state-hover-strong`;
 const PRIMARY = `${BUTTON} border-primary bg-primary font-semibold text-primary-foreground hover:opacity-90 disabled:border-line-strong disabled:bg-state-hover-strong disabled:font-medium disabled:text-meta-foreground disabled:hover:opacity-100`;
 const LINK =
@@ -559,7 +561,7 @@ export function BoardImportDialog({
               size: sizeLabel(rejection.size),
             })}
             action={
-              <button type="button" className={GHOST} onClick={reset}>
+              <button type="button" className={cn(GHOST, SOLO)} onClick={reset}>
                 {copy.changeFile}
               </button>
             }
@@ -679,7 +681,11 @@ export function BoardImportDialog({
                 />
                 <button
                   type="button"
-                  className={rejection ? GHOST : PRIMARY}
+                  className={cn(
+                    rejection ? GHOST : PRIMARY,
+                    SOLO,
+                    "max-sm:px-3.5",
+                  )}
                   onClick={() => fileInput.current?.click()}
                 >
                   <Upload aria-hidden="true" className="size-4" />
@@ -735,7 +741,7 @@ export function BoardImportDialog({
             <div
               role="table"
               aria-label={copy.stepMap}
-              className="overflow-hidden rounded-[10px] border border-line bg-popover"
+              className="overflow-hidden rounded-[10px] border border-line bg-popover max-sm:-mb-[2.2px] max-sm:mt-[1.5px] max-sm:flex max-sm:flex-col max-sm:gap-[13.3px] max-sm:overflow-visible max-sm:border-0 max-sm:bg-transparent"
             >
               <div
                 role="row"
@@ -765,19 +771,29 @@ export function BoardImportDialog({
                         type: typeLabel(info?.type ?? ""),
                       })
                     : null;
+                // The phone sheet words the same problem shorter (the field is already in the select above).
+                const whyShort = incompatible
+                  ? fill(copy.incompatibleShort, {
+                      example: result?.examples?.[0] ?? "",
+                      type: typeLabel(info?.type ?? ""),
+                    })
+                  : null;
                 return (
                   <div
                     key={index}
                     role="row"
                     className={cn(
                       MAP_GRID,
-                      "min-h-[62px] items-center border-t border-line py-2.5 first:border-t-0 max-sm:grid-cols-1 max-sm:gap-1.5",
-                      why && "bg-danger-subtle",
+                      "min-h-[62px] items-center border-t border-line py-2.5 first:border-t-0 max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto] max-sm:gap-x-2 max-sm:gap-y-2 max-sm:rounded-xl max-sm:border max-sm:border-line max-sm:bg-popover max-sm:px-3.5 max-sm:pb-3.5 max-sm:pt-2.5 max-sm:first:border-t",
+                      why &&
+                        "bg-danger-subtle max-sm:border-danger max-sm:bg-danger-subtle",
                     )}
                   >
-                    <span role="cell" className="min-w-0">
-                      <b className="block font-semibold">{column.header}</b>
-                      <small className="block truncate font-mono text-frame-hint font-normal text-meta-foreground">
+                    <span role="cell" className="min-w-0 max-sm:contents">
+                      <b className="block font-semibold max-sm:col-start-1 max-sm:row-start-1 max-sm:text-sm max-sm:font-bold">
+                        {column.header}
+                      </b>
+                      <small className="block truncate font-mono text-frame-hint font-normal text-meta-foreground max-sm:col-span-2 max-sm:row-start-2">
                         {(column.examples ?? [])
                           .map((e) => `“${e}”`)
                           .join(", ")}
@@ -789,7 +805,10 @@ export function BoardImportDialog({
                     >
                       <ArrowRight aria-hidden="true" className="size-4" />
                     </span>
-                    <span role="cell">
+                    <span
+                      role="cell"
+                      className="max-sm:col-span-2 max-sm:row-start-3"
+                    >
                       <Select
                         value={needsTitle ? "" : target}
                         onValueChange={(value) => setTarget(index, value)}
@@ -797,7 +816,7 @@ export function BoardImportDialog({
                         <SelectTrigger
                           aria-label={`${copy.mapField}: ${column.header}`}
                           aria-invalid={needsTitle || incompatible || undefined}
-                          className="h-9 w-full rounded-[7px] pr-2.5 text-frame-body shadow-none aria-invalid:ring-1 aria-invalid:ring-inset aria-invalid:ring-danger"
+                          className="h-9 w-full rounded-[7px] pr-2.5 text-frame-body shadow-none max-sm:data-[size=default]:h-11 max-sm:text-frame-lead aria-invalid:ring-1 aria-invalid:ring-inset aria-invalid:ring-danger"
                         >
                           <SelectValue
                             placeholder={
@@ -817,7 +836,7 @@ export function BoardImportDialog({
                             ) : (
                               <span className="inline-flex items-center gap-2">
                                 {targetName(target)}
-                                <span className="text-frame-note text-meta-foreground">
+                                <span className="text-frame-note text-meta-foreground max-sm:hidden">
                                   {typeLabel(info?.type ?? "")}
                                 </span>
                               </span>
@@ -842,7 +861,10 @@ export function BoardImportDialog({
                         </SelectContent>
                       </Select>
                     </span>
-                    <span role="cell">
+                    <span
+                      role="cell"
+                      className="max-sm:col-start-2 max-sm:row-start-1"
+                    >
                       {needsTitle ? (
                         <span className={cn(CHIP, CHIPS.err)}>
                           {copy.mapRequired}
@@ -877,13 +899,22 @@ export function BoardImportDialog({
                     {why ? (
                       <p
                         role="alert"
-                        className="col-span-full m-0 flex items-start gap-1.5 text-frame-note font-medium leading-[1.5] text-danger-text"
+                        className="col-span-full m-0 flex items-start gap-1.5 max-sm:gap-[5px] text-frame-note font-medium leading-[1.5] text-danger-text max-sm:leading-[1.45]"
                       >
                         <TriangleAlert
                           aria-hidden="true"
                           className="mt-0.5 size-[13px] flex-none"
                         />
-                        <span>{why}</span>
+                        <span
+                          className={whyShort ? "max-sm:hidden" : undefined}
+                        >
+                          {why}
+                        </span>
+                        {whyShort ? (
+                          <span className="hidden max-sm:inline">
+                            {whyShort}
+                          </span>
+                        ) : null}
                       </p>
                     ) : null}
                   </div>
@@ -944,7 +975,7 @@ export function BoardImportDialog({
               <div
                 role="table"
                 aria-label={copy.previewLabel}
-                className="overflow-hidden rounded-[10px] border border-line bg-popover text-frame-small"
+                className="overflow-hidden rounded-[10px] border border-line bg-popover text-frame-small max-sm:hidden"
               >
                 <div
                   role="row"
@@ -1008,7 +1039,7 @@ export function BoardImportDialog({
               </div>
             ) : null}
             {preview && clean ? (
-              <span className="text-frame-hint text-meta-foreground">
+              <span className="text-frame-hint text-meta-foreground max-sm:hidden">
                 {fill(copy.previewNote, {
                   shown: preview.sample?.length ?? 0,
                   rows: numberLabel(rowCount),
@@ -1191,7 +1222,7 @@ export function BoardImportDialog({
         ) : shown === 3 ? (
           <>
             {preview && !clean ? (
-              <span className="min-w-0 flex-1 text-frame-note leading-[1.4] text-meta-foreground max-sm:basis-full">
+              <span className="min-w-0 flex-1 text-frame-note leading-[1.4] text-meta-foreground max-sm:hidden">
                 {copy.reportNote}
               </span>
             ) : null}

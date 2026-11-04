@@ -172,6 +172,8 @@ export const en = {
     checkIncompatible: "Cannot map",
     incompatibleBody:
       "The column holds text (for example “{{example}}”) but the field {{field}} is {{type}}. Choose another field, or skip this column.",
+    incompatibleShort:
+      "The column holds text (for example “{{example}}”) but the field is {{type}}. Choose another field or skip the column.",
     type_Text: "Text",
     type_LongText: "Long text",
     type_Number: "Number",
@@ -503,6 +505,8 @@ export const vi: BoardLifecycleCopy = {
     checkIncompatible: "Không ghép được",
     incompatibleBody:
       "Cột có chữ (ví dụ “{{example}}”) nhưng trường {{field}} là {{type}}. Chọn trường khác, hoặc bỏ qua cột này.",
+    incompatibleShort:
+      "Cột có chữ (ví dụ “{{example}}”) nhưng trường là {{type}}. Chọn trường khác hoặc bỏ qua cột.",
     type_Text: "Văn bản",
     type_LongText: "Văn bản dài",
     type_Number: "Số",
