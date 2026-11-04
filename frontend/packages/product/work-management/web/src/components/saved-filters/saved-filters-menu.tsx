@@ -29,7 +29,11 @@ import {
 /** How a write the host sent ended; the host's result is assignable to it. */
 export type SavedFilterWriteResult =
   | { readonly ok: true }
-  | { readonly ok: false; readonly reason: "forbidden" | "missing" | "failed" };
+  | {
+      readonly ok: false;
+      readonly reason: "forbidden" | "missing" | "conflict" | "failed";
+      readonly by?: string | null;
+    };
 
 /** One phrase of a filter's summary; the grouping reads apart from the conditions. */
 export interface SummaryPhrase {
@@ -54,6 +58,10 @@ export interface SavedFiltersMenuProps {
   onApply: (filter: SavedFilter) => void;
   onClearApplied: () => void;
   onRetry: () => void;
+  /** A write found the filter gone (or no longer visible): the menu says so above the refreshed list. */
+  gone?: boolean;
+  /** The menu closed: the notice has been seen. */
+  onGoneSeen?: () => void;
   onSave: (input: {
     name: string;
     visibility: "board" | "me";
@@ -302,9 +310,15 @@ function SavedFiltersList({
   compact,
   phone,
   describe,
+  gone,
+  onGoneSeen,
 }: SavedFiltersMenuProps) {
   const t = copy.menu;
-  const [open, setOpen] = useState(false);
+  const [open, setOpenInner] = useState(false);
+  const setOpen = (next: boolean) => {
+    setOpenInner(next);
+    if (!next) onGoneSeen?.();
+  };
   const applied = filters.find((filter) => filter.id === appliedId);
   const mine = filters.filter((filter) => filter.visibility === "me");
   const shared = filters.filter((filter) => filter.visibility === "board");
@@ -413,7 +427,19 @@ function SavedFiltersList({
           </div>
         ) : (
           <>
-            {filters.length === 0 ? (
+            {gone ? (
+              <div
+                role="alert"
+                className="flex items-start gap-2 p-2.5 text-[12.5px] text-danger-text"
+              >
+                <CircleAlert
+                  aria-hidden="true"
+                  className="mt-px size-4 shrink-0"
+                />
+                <p className="m-0 flex-1">{t.gone}</p>
+              </div>
+            ) : null}
+            {filters.length === 0 && gone ? null : filters.length === 0 ? (
               <div className="px-3.5 py-[18px] text-center">
                 <b className="block text-[13.5px] font-semibold">{t.empty}</b>
                 <span className="text-[12.5px] text-muted-foreground">
@@ -430,7 +456,7 @@ function SavedFiltersList({
               </>
             )}
             {!canEdit ? (
-              <p className="m-0 px-2.5 pt-1.5 pb-2 text-xs text-muted-foreground">
+              <p className="m-0 px-2.5 pt-2 pb-2.5 text-[12.5px] leading-[1.45] text-meta-foreground">
                 {t.readOnly}
               </p>
             ) : null}
@@ -501,8 +527,8 @@ function SavedFilterRow({
 
   if (renaming) {
     return (
-      <li className="rounded-md bg-state-selected p-1.5">
-        <div className="flex items-center gap-1.5">
+      <li className="rounded-lg bg-state-selected py-2.5 pr-2 pl-2.5">
+        <div className="flex items-center gap-2.5">
           <input
             type="text"
             autoFocus
@@ -524,19 +550,27 @@ function SavedFilterRow({
                 setRenaming(false);
               }
             }}
-            className="box-border h-8 min-w-0 flex-1 rounded-md border border-line-strong bg-popover px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-invalid:border-danger"
+            className="box-border h-8 min-w-0 flex-1 rounded-md border border-line-strong bg-popover px-2.5 text-[13.5px] outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-invalid:border-danger"
           />
-          <Button type="button" size="sm" onClick={() => void commitRename()}>
-            {t.renameSave}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setRenaming(false)}
-          >
-            {t.renameCancel}
-          </Button>
+          <span className="flex items-center gap-0.5">
+            <Button
+              type="button"
+              size="sm"
+              className="h-7 px-2.5 text-[12.5px]"
+              onClick={() => void commitRename()}
+            >
+              {t.renameSave}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2.5 text-[12.5px]"
+              onClick={() => setRenaming(false)}
+            >
+              {t.renameCancel}
+            </Button>
+          </span>
         </div>
         {error ? (
           <p
@@ -564,9 +598,14 @@ function SavedFilterRow({
         aria-label={fillSavedFiltersCopy(t.apply, name)}
         aria-current={applied ? "true" : undefined}
         onClick={() => onApply(filter)}
-        className={`flex ${subtitle ? "min-h-13" : "min-h-11"} min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg border-0 bg-transparent py-1 pr-2.5 pl-2.5 text-left text-sm focus-visible:outline-2 focus-visible:outline-ring`}
+        className={`flex ${subtitle || stale > 0 ? "min-h-13" : "min-h-11"} min-w-0 flex-1 cursor-pointer ${stale > 0 ? "items-start py-2" : "items-center py-1"} gap-2.5 rounded-lg border-0 bg-transparent pr-2.5 pl-2.5 text-left text-sm focus-visible:outline-2 focus-visible:outline-ring`}
       >
-        <span className="grid h-4 w-4.5 shrink-0 place-items-center text-brand-subtle-foreground">
+        <span
+          className={cn(
+            "grid h-4 w-4.5 shrink-0 place-items-center text-brand-subtle-foreground",
+            stale > 0 && "mt-0.5",
+          )}
+        >
           {stale > 0 ? (
             <CircleAlert
               className="size-4 text-warning-text"
@@ -604,7 +643,14 @@ function SavedFilterRow({
           </small>
         ) : null}
         {canEdit ? null : (
-          <span className="shrink-0 rounded-md bg-state-hover-strong px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
+          <span
+            className={cn(
+              "inline-flex h-5 shrink-0 items-center rounded-md px-1.75 text-[11.5px] font-semibold whitespace-nowrap",
+              shared
+                ? "bg-state-selected text-state-selected-foreground"
+                : "bg-state-hover-strong text-muted-foreground",
+            )}
+          >
             {shared ? copy.menu.badgeShared : copy.menu.badgeMine}
           </span>
         )}

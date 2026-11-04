@@ -1,6 +1,8 @@
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.DeleteBoardField;
 
 using Notrelix.Domain.SharedKernel.Ordering;
+using Notrelix.Domain.WorkManagement;
+using BusinessRuleException = Notrelix.Domain.Common.Exceptions.BusinessRuleException;
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardFields;
 
 public class DeleteBoardFieldTests : WorkManagementHandlerTestBase
@@ -29,6 +31,21 @@ public class DeleteBoardFieldTests : WorkManagementHandlerTestBase
         var result = await _handler.Handle(command, CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Handle_DeletingASystemField_IsRefusedAndTheFieldStays()
+    {
+        var field = BoardField.Create(TestAccountId, TestWorkspaceId, Guid.CreateVersion7(), "Due date", FieldType.Date, FieldSettings.Empty(),
+            FractionalIndex.Create("a0"), TestUserId, TestNow, isSystem: true);
+        SetupBoardFields(field);
+        var command = new DeleteBoardFieldCommand(field.BoardId, field.Id, ExpectedVersion: field.Version);
+
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        (await act.Should().ThrowAsync<BusinessRuleException>())
+            .Which.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_Field_CannotDeleteSystem);
+        field.IsDeleted.Should().BeFalse();
     }
 
     [Fact]

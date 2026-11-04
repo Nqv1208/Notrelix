@@ -94,6 +94,8 @@ export const en = {
       "Alt and arrow keys move the bar, Alt, Shift and arrow keys change the due date",
   },
   reschedule: {
+    moved: "Moved {{title}}",
+    undone: "Move undone",
     failed: "Could not move {{title}}",
     conflict: "{{actor}} changed {{title}} first. Your move was not saved.",
     someone: "Someone",
@@ -266,6 +268,8 @@ export const vi: TimelineCopy = {
       "Alt và phím mũi tên dời cả thanh, Alt, Shift và phím mũi tên đổi hạn",
   },
   reschedule: {
+    moved: "Đã dời {{title}}",
+    undone: "Đã hoàn tác việc dời",
     failed: "Không dời được {{title}}",
     conflict:
       "{{actor}} vừa sửa {{title}} trước bạn. Thay đổi của bạn chưa được lưu.",
