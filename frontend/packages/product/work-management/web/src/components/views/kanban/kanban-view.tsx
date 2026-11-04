@@ -413,6 +413,9 @@ export function KanbanView({
   const collapsedLanes = useKanbanCollapsedLanes(
     kanbanCollapsedLanesKey(workspaceId, savedViewId ?? boardId),
   );
+  const collapsedSwimlanes = useKanbanCollapsedLanes(
+    `${kanbanCollapsedLanesKey(workspaceId, savedViewId ?? boardId)}.swimlanes`,
+  );
 
   // C opens the full form, N the quick add of the first open lane; neither
   // fires while typing, with a modifier, or while a dialog is already open.
@@ -1164,6 +1167,8 @@ export function KanbanView({
                   </p>
                 )}
                 <KanbanSwimlaneBoard
+                  initialCollapsed={collapsedSwimlanes.initial}
+                  onCollapsedChange={collapsedSwimlanes.onChange}
                   copy={filtersCopy}
                   cardCopy={cardCopy}
                   now={now}
