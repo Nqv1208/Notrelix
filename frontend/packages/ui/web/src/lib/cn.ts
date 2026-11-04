@@ -74,6 +74,7 @@ export const TEXT_ROLES = [
   "frame-small",
   "frame-note",
   "frame-hint",
+  "frame-cap",
 ] as const;
 
 /**

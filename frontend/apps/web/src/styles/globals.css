@@ -134,6 +134,7 @@
   --text-frame-small: 13px;
   --text-frame-note: 12.5px;
   --text-frame-hint: 12px;
+  --text-frame-cap: 11.5px;
   --text-micro: var(--type-micro-size);
   --text-micro--line-height: var(--type-micro-line-height);
   --text-micro--font-weight: var(--type-micro-weight);
