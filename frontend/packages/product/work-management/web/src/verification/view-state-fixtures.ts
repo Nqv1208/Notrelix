@@ -135,6 +135,8 @@ export interface ViewBarOptions {
   saved?: ReactNode;
   canSave?: boolean;
   onSaveAsNew?: () => void;
+  timeZone?: string;
+  timeZoneIsDefault?: boolean;
 }
 
 /** The view bar of the ERP board as a toolbar slot. */
@@ -167,5 +169,7 @@ export function erpViewBar(options: ViewBarOptions = {}): ReactNode {
     savedFilters: options.saved,
     ...(options.canSave === undefined ? {} : { canSave: options.canSave }),
     onSaveAsNew: options.onSaveAsNew,
+    ...(options.timeZone ? { timeZone: options.timeZone } : {}),
+    ...(options.timeZoneIsDefault ? { timeZoneIsDefault: true } : {}),
   });
 }

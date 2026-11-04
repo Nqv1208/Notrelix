@@ -85,6 +85,7 @@ vi.mock("@notrelix/work-management-web", () => ({
       timeline: "Dòng thời gian",
     },
   }),
+  useViewTabActions: () => ({}),
   BoardTrashHost: () => null,
   BoardArchiveHost: () => null,
   BoardLayoutShell: ({

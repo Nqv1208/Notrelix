@@ -39,6 +39,32 @@ export const en = {
   },
   /** Marks a saved view only its creator sees. */
   privateView: "Private view",
+  /** The menu of the opened saved view, in the tab strip. */
+  viewMenu: {
+    open: "Options of the view {{name}}",
+    makeDefault: "Set as default view",
+    isDefault: "This is the default view",
+    privateCannotDefault: "A private view cannot be the default",
+    archive: "Archive view…",
+    delete: "Delete view…",
+    onlyShared: "The board's only shared view stays",
+    archived: "Archived views",
+    restore: "Restore {{name}}",
+    deleteTitle: "Delete the view {{name}}?",
+    deleteBody:
+      "Only the view's settings are deleted; the items stay. People on this view move to the default view.",
+    archiveTitle: "Archive the view {{name}}?",
+    archiveBody:
+      "The view leaves the tabs and keeps its settings. You can restore it from this menu.",
+    nextDefault: "Next default view",
+    nextDefaultHint:
+      "{{name}} is the default view. Pick the view that takes its place.",
+    keep: "Keep it",
+    working: "Working…",
+    conflict:
+      "Someone changed this view first. The latest is loaded, nothing was changed. Check it and try again.",
+    failed: "Not done. Try again.",
+  },
   header: {
     settings: "Settings",
     settingsUnavailable: "Board settings aren't available yet.",
@@ -142,6 +168,31 @@ export const vi: BoardHeaderCopy = {
     home: "Về trang chủ",
   },
   privateView: "Chế độ xem riêng tư",
+  viewMenu: {
+    open: "Tuỳ chọn của chế độ xem {{name}}",
+    makeDefault: "Đặt làm chế độ xem mặc định",
+    isDefault: "Đây là chế độ xem mặc định",
+    privateCannotDefault: "Chế độ xem riêng tư không đặt làm mặc định được",
+    archive: "Lưu trữ chế độ xem…",
+    delete: "Xoá chế độ xem…",
+    onlyShared: "Chế độ xem chung duy nhất của board được giữ lại",
+    archived: "Chế độ xem đã lưu trữ",
+    restore: "Khôi phục {{name}}",
+    deleteTitle: "Xoá chế độ xem {{name}}?",
+    deleteBody:
+      "Chỉ cấu hình của chế độ xem bị xoá, các việc vẫn còn. Người đang xem chế độ này sẽ chuyển sang chế độ xem mặc định.",
+    archiveTitle: "Lưu trữ chế độ xem {{name}}?",
+    archiveBody:
+      "Chế độ xem rời khỏi thanh tab và giữ nguyên cấu hình. Bạn khôi phục lại được từ menu này.",
+    nextDefault: "Chế độ xem mặc định kế tiếp",
+    nextDefaultHint:
+      "{{name}} đang là chế độ xem mặc định. Chọn chế độ xem thay thế.",
+    keep: "Giữ lại",
+    working: "Đang xử lý…",
+    conflict:
+      "Có người vừa sửa chế độ xem này. Bản mới nhất đã được tải, chưa có gì thay đổi. Kiểm tra rồi thử lại.",
+    failed: "Chưa xong. Thử lại.",
+  },
   header: {
     settings: "Thiết lập",
     settingsUnavailable: "Chưa có trang thiết lập board.",

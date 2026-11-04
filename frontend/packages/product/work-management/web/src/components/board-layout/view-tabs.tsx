@@ -31,6 +31,7 @@ export interface ViewTabSavedView {
   readonly name: string;
   readonly viewMode: string;
   readonly visibility?: "board" | "me";
+  readonly isDefault?: boolean;
 }
 
 interface ViewTabsProps {

@@ -6,6 +6,10 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
 } from "@notrelix/ui-web";
 import {
   NONE_VALUE,
@@ -22,6 +26,12 @@ import {
   type FilterField,
 } from "@notrelix/work-management-core";
 import { kanbanPillClass } from "../views/kanban/kanban-chrome";
+import {
+  compactIconButtonClass,
+  compactPillClass,
+  compactPillOnClass,
+  sheetClass,
+} from "./compact-chrome";
 import { fillFiltersCopy, type FiltersCopy } from "./filters.copy";
 
 const controlClass =
@@ -42,6 +52,10 @@ export interface FilterBuilderProps {
   now: Date;
   /** The board's IANA zone: presets pick "today" in it. */
   timeZone?: string;
+  /** The caption under the date row: which zone the days are judged in. */
+  timeZoneNote?: string;
+  /** A phone (under 640 px): the dialog is a sheet that rises from the bottom, each condition a stacked card. */
+  compact?: boolean;
   /** The number the trigger shows: conditions that apply. */
   activeCount: number;
   /** Opens the dialog (controlled by the host so "Sửa điều kiện" can open it). */
@@ -62,6 +76,91 @@ export function FilterBuilder(props: FilterBuilderProps) {
   const [innerOpen, setInnerOpen] = useState(false);
   const open = props.open ?? innerOpen;
   const setOpen = props.onOpenChange ?? setInnerOpen;
+  if (props.compact)
+    return (
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              compactPillClass,
+              activeCount > 0 && compactPillOnClass,
+            )}
+            aria-haspopup="dialog"
+          >
+            <Filter className="size-4" aria-hidden="true" />
+            {copy.filter.trigger}
+            {activeCount > 0 ? ` · ${activeCount}` : ""}
+          </Button>
+        </SheetTrigger>
+        <SheetContent
+          side="bottom"
+          showCloseButton={false}
+          aria-label={copy.filter.title}
+          aria-describedby={undefined}
+          className={sheetClass}
+        >
+          <div className="flex items-center gap-2 px-3 pt-3">
+            <SheetTitle className="m-0 flex-1 text-base leading-[1.45] font-[650]">
+              {copy.filter.title}
+            </SheetTitle>
+            <button
+              type="button"
+              aria-label={copy.sheet.close}
+              onClick={() => setOpen(false)}
+              className={compactIconButtonClass}
+            >
+              <X className="size-4" aria-hidden="true" />
+            </button>
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+            <BuilderBody {...props} filter={filter} onChange={onChange} />
+            {props.onSaveFilter && activeCount > 0 ? (
+              <div className="px-3 pb-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 gap-1.5 rounded-[7px] border-line-strong bg-popover px-2.5 text-[12.5px] font-medium shadow-none dark:bg-card"
+                  onClick={props.onSaveFilter}
+                >
+                  <Bookmark className="size-4" aria-hidden="true" />
+                  {copy.filter.saveFilter}
+                </Button>
+              </div>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-2 border-t border-line px-3 py-2.5">
+            <span
+              role="status"
+              aria-live="polite"
+              className="flex-1 text-[12.5px] text-foreground"
+            >
+              <MatchCount
+                template={copy.filter.count}
+                shown={props.counts.shown}
+                total={props.counts.total}
+              />
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 px-3 text-compact text-muted-foreground"
+              onClick={() => onChange({ ...filter, conditions: [] })}
+            >
+              {copy.filter.clearAll}
+            </Button>
+            <Button
+              size="sm"
+              className="h-9 px-3 text-compact font-semibold"
+              onClick={() => setOpen(false)}
+            >
+              {copy.filter.done}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
   return (
     <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
@@ -160,7 +259,9 @@ function BuilderBody({
   onChange,
   now,
   timeZone,
+  timeZoneNote,
   people,
+  compact,
 }: FilterBuilderProps) {
   const update = (index: number, next: FilterCondition) =>
     onChange({
@@ -175,14 +276,21 @@ function BuilderBody({
   const first = fields[0];
   return (
     <>
-      <div className="flex items-center gap-3">
-        <h2 className="flex-1 text-base leading-[1.45] font-[650]">
-          {copy.filter.title}
-        </h2>
+      <div
+        className={cn("flex items-center gap-3", compact && "px-3 pt-2 pb-2")}
+      >
+        {compact ? null : (
+          <h2 className="flex-1 text-base leading-[1.45] font-[650]">
+            {copy.filter.title}
+          </h2>
+        )}
         <div
           role="group"
           aria-label={copy.filter.matchLabel}
-          className="inline-flex gap-0.5 rounded-lg border border-line-strong bg-state-hover p-0.5"
+          className={cn(
+            "inline-flex gap-0.5 rounded-lg border border-line-strong bg-state-hover p-0.5",
+            compact && "w-full",
+          )}
         >
           {(["and", "or"] as const).map((join) => (
             <button
@@ -191,7 +299,8 @@ function BuilderBody({
               aria-pressed={filter.join === join}
               onClick={() => onChange({ ...filter, join })}
               className={cn(
-                "inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border-0 bg-transparent px-3 text-[12.5px] font-semibold text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring",
+                "inline-flex h-7 cursor-pointer items-center justify-center gap-1 rounded-md border-0 bg-transparent px-3 text-[12.5px] font-semibold text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring",
+                compact && "h-9 flex-1",
                 filter.join === join &&
                   "bg-popover font-bold text-foreground ring-1 ring-line-strong",
               )}
@@ -201,10 +310,11 @@ function BuilderBody({
           ))}
         </div>
       </div>
-      <div className="flex flex-col gap-3">
+      <div className={cn("flex flex-col gap-3", compact && "gap-2 px-3")}>
         {filter.conditions.map((condition, index) => (
           <ConditionRow
             key={index}
+            compact={compact}
             index={index}
             copy={copy}
             fields={fields}
@@ -212,6 +322,7 @@ function BuilderBody({
             join={filter.join}
             now={now}
             timeZone={timeZone}
+            timeZoneNote={timeZoneNote}
             people={people}
             onChange={(next) => update(index, next)}
             onRemove={() => remove(index)}
@@ -221,7 +332,10 @@ function BuilderBody({
       <Button
         variant="ghost"
         size="sm"
-        className="h-7 gap-[6px] self-start text-[12.5px] text-muted-foreground"
+        className={cn(
+          "h-7 gap-[6px] self-start text-[12.5px] text-muted-foreground",
+          compact && "mx-3 my-2 h-9",
+        )}
         disabled={!first}
         onClick={() =>
           first &&
@@ -246,10 +360,13 @@ function ConditionRow({
   join,
   now,
   timeZone,
+  timeZoneNote,
   people,
+  compact,
   onChange,
   onRemove,
 }: {
+  compact?: boolean | undefined;
   people: readonly { id: string; name: string }[];
   index: number;
   copy: FiltersCopy;
@@ -259,6 +376,8 @@ function ConditionRow({
   now: Date;
   /** The board's IANA zone: presets pick "today" in it. */
   timeZone?: string;
+  /** The caption under the date row: which zone the days are judged in. */
+  timeZoneNote?: string;
   onChange: (condition: FilterCondition) => void;
   onRemove: () => void;
 }) {
@@ -276,15 +395,29 @@ function ConditionRow({
     <div
       role="group"
       aria-label={label}
-      className="group/row flex flex-col gap-1"
+      className={cn(
+        "group/row flex flex-col gap-1",
+        compact && "rounded-[10px] border border-line p-2.5",
+      )}
     >
-      <div className="grid grid-cols-[2.75rem_11.875rem_10.625rem_minmax(0,1fr)_1.875rem] items-start gap-2 max-sm:grid-cols-1">
-        <span className="flex h-8.5 items-center justify-end text-xs font-semibold text-muted-foreground max-sm:justify-start">
+      <div
+        className={
+          compact
+            ? "grid grid-cols-[minmax(2.125rem,auto)_minmax(0,1fr)_2.25rem] items-center gap-x-2 gap-y-1.5"
+            : "grid grid-cols-[2.75rem_11.875rem_10.625rem_minmax(0,1fr)_1.875rem] items-start gap-2 max-sm:grid-cols-1"
+        }
+      >
+        <span
+          className={cn(
+            "flex h-8.5 items-center justify-end text-xs font-semibold text-muted-foreground max-sm:justify-start",
+            compact && "h-9 justify-start",
+          )}
+        >
           {lead}
         </span>
         <select
           aria-label={`${copy.filter.field} (${label})`}
-          className={controlClass}
+          className={cn(controlClass, compact && "w-full")}
           value={field ? field.id : "__stale__"}
           onChange={(event) => {
             const next = fields.find((f) => f.id === event.target.value);
@@ -303,7 +436,12 @@ function ConditionRow({
           ))}
         </select>
         {field?.field.fieldType === "checkbox" ? (
-          <span className="col-span-2 max-sm:col-span-1">
+          <span
+            className={cn(
+              "col-span-2 max-sm:col-span-1",
+              compact && "col-span-3",
+            )}
+          >
             <Segmented
               label={copy.filter.value}
               value={condition.operator}
@@ -319,13 +457,18 @@ function ConditionRow({
         ) : (
           <>
             {field?.id === "$overdue" ? (
-              <span className="text-compact text-muted-foreground">
+              <span
+                className={cn(
+                  "text-compact text-muted-foreground",
+                  compact && "col-span-3",
+                )}
+              >
                 {copy.filter.overdueFixed}
               </span>
             ) : (
               <select
                 aria-label={`${copy.filter.operator} (${label})`}
-                className={controlClass}
+                className={cn(controlClass, compact && "col-span-3 w-full")}
                 value={condition.operator}
                 disabled={!field}
                 onChange={(event) =>
@@ -344,7 +487,9 @@ function ConditionRow({
                 ))}
               </select>
             )}
-            <div className="min-w-0">
+            <div
+              className={cn("min-w-0", compact && "col-span-3 empty:hidden")}
+            >
               {field && field.id !== "$overdue" ? (
                 <ValueEditor
                   copy={copy}
@@ -353,8 +498,10 @@ function ConditionRow({
                   label={label}
                   now={now}
                   timeZone={timeZone}
+                  timeZoneNote={timeZoneNote}
                   people={people}
                   invalid={issue === "range"}
+                  compact={compact}
                   onChange={onChange}
                 />
               ) : null}
@@ -367,13 +514,19 @@ function ConditionRow({
             n: index + 1,
           })}
           onClick={onRemove}
-          className="mt-0.5 grid size-7.5 cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent text-muted-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
+          className={cn(
+            "mt-0.5 grid size-7.5 cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent text-muted-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring",
+            compact && "col-start-3 row-start-1 mt-0 size-9",
+          )}
         >
           <X className="size-4" aria-hidden="true" />
         </button>
       </div>
       {issue ? (
-        <p role="alert" className="pl-13 text-xs text-destructive">
+        <p
+          role="alert"
+          className={cn("pl-13 text-xs text-destructive", compact && "pl-0")}
+        >
           {issue === "range" ? copy.filter.rangeError : copy.filter.incomplete}
         </p>
       ) : null}
@@ -432,10 +585,13 @@ function ValueEditor({
   label,
   now,
   timeZone,
+  timeZoneNote,
   people,
   invalid,
+  compact,
   onChange,
 }: {
+  compact?: boolean | undefined;
   people: readonly { id: string; name: string }[];
   copy: FiltersCopy;
   field: FilterField;
@@ -444,6 +600,8 @@ function ValueEditor({
   now: Date;
   /** The board's IANA zone: presets pick "today" in it. */
   timeZone?: string;
+  /** The caption under the date row: which zone the days are judged in. */
+  timeZoneNote?: string;
   invalid: boolean;
   onChange: (condition: FilterCondition) => void;
 }): ReactNode {
@@ -504,13 +662,21 @@ function ValueEditor({
             ))}
           </div>
         ) : null}
-        <div className="flex items-center gap-1.5">
+        <div
+          className={cn(
+            "flex items-center gap-1.5",
+            compact && "flex-col items-stretch",
+          )}
+        >
           {input(`${condition.fieldId}-from`, 0, copy.filter.from)}
           {operator === "between" ? (
             <>
               <span
                 aria-hidden="true"
-                className="text-[14px] text-muted-foreground"
+                className={cn(
+                  "text-[14px] text-muted-foreground",
+                  compact && "sr-only",
+                )}
               >
                 {copy.filter.rangeTo}
               </span>
@@ -518,6 +684,15 @@ function ValueEditor({
             </>
           ) : null}
         </div>
+        {timeZoneNote ? (
+          // Under the row, growing in with the presets: the canvas draws the quiet row without it.
+          <p
+            data-f="tz-note"
+            className="m-0 hidden text-xs leading-[1.45] text-muted-foreground group-focus-within/row:block"
+          >
+            {timeZoneNote}
+          </p>
+        ) : null}
       </div>
     );
   }
@@ -555,6 +730,7 @@ function ValueEditor({
         options={options}
         values={values}
         person={type === "person"}
+        compact={compact}
         onToggle={toggle}
       />
     );
@@ -639,8 +815,10 @@ function ValuePicker({
   options,
   values,
   person,
+  compact,
   onToggle,
 }: {
+  compact?: boolean | undefined;
   label: string;
   placeholder: string;
   options: readonly PickOption[];
@@ -658,6 +836,8 @@ function ValuePicker({
           aria-haspopup="listbox"
           className={cn(
             "flex min-h-8.5 w-full cursor-pointer flex-wrap items-center gap-1.5 rounded-[7px] border-0 bg-transparent p-0 text-left focus-visible:outline-2 focus-visible:outline-ring",
+            // The sheet's card is as tall as its chips.
+            compact && chosen.length > 0 && "min-h-0",
             chosen.length === 0 &&
               "h-8.5 border border-line-strong bg-popover px-2.5 text-[13.5px] text-muted-foreground",
           )}

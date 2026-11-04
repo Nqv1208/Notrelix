@@ -13,6 +13,7 @@ import {
   BoardTrashHost,
   BoardWorkspaceViewContent,
   useBoardHeaderCopy,
+  useViewTabActions,
 } from "@notrelix/work-management-web";
 import {
   BoardViewSelectionProvider,
@@ -75,6 +76,20 @@ export function BoardPage() {
       replace: true,
     });
   }, [navigate, saved.isError, saved.isLoading, saved.views, search.savedView]);
+  // Archiving or deleting the opened view lands on the default view, with no "gone" notice.
+  const viewActions = useViewTabActions(
+    boardId,
+    workspaceId,
+    activeSaved?.id,
+    (viewId, phase) => {
+      if (phase === "start") goneNotice.current = viewId;
+      else
+        void saved.refetch().then(({ data }) => {
+          const next = data?.find((entry) => entry.isDefault);
+          showView(next?.viewMode ?? viewType, next?.id);
+        });
+    },
+  );
   const currentUser = useCurrentUser();
   const connection = useRealtimeConnection();
   const { locale } = useLocale();
@@ -110,6 +125,8 @@ export function BoardPage() {
   );
   // The count on the "Việc đã xoá" entry: only people who may edit items can read the trash.
   const myLevel = headerData.access?.myLevel;
+  // Archive, delete and the default are an Editor's change.
+  const canEditViews = myLevel === "manager" || myLevel === "editor";
   const trashCount = useBoardTrash(
     boardId,
     workspaceId,
@@ -223,6 +240,7 @@ export function BoardPage() {
           onViewChange={handleViewChange}
           savedViews={saved.views}
           onAddView={(layout) => void handleAddView(layout)}
+          viewActions={canEditViews ? viewActions : undefined}
           onOpenTrash={() => setTrashOpen(true)}
           onOpenArchive={() => setArchiveOpen(true)}
           banner={
