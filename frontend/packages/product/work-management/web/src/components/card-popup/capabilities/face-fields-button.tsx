@@ -1,5 +1,8 @@
 import type { Card, FieldDefinition } from "@notrelix/work-management-core";
-import { useBoardView } from "@notrelix/work-management-state";
+import {
+  useBoardView,
+  useBoardViewSelection,
+} from "@notrelix/work-management-state";
 import { FaceFieldsPopover } from "./face-fields-popover";
 
 /**
@@ -22,7 +25,13 @@ export function FaceFieldsButton({
   trigger?: React.ReactNode;
   sampleCard?: Card;
 }) {
-  const { viewConfig, updateViewConfig } = useBoardView(boardId, workspaceId);
+  // The card face is the Kanban view's: opened from the table or the calendar, the popup still writes that one.
+  const shown = useBoardViewSelection();
+  const { viewConfig, updateViewConfig } = useBoardView(
+    boardId,
+    workspaceId,
+    shown.mode === "kanban" ? shown : { mode: "kanban" },
+  );
   return (
     <FaceFieldsPopover
       fields={fields}

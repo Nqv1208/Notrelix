@@ -165,10 +165,18 @@ export function PopupLoadError({
 }
 
 /** Deleted, moved or no access read the same: one message, nothing about the card. */
-export function PopupGone({ onClose }: { onClose: () => void }) {
+export function PopupGone({
+  onClose,
+  draft,
+}: {
+  onClose: () => void;
+  /** The comment the person had typed and not sent: their own text, so it stays to copy. */
+  draft?: string;
+}) {
   const t = useCardPopupCopy().shell.gone;
   return (
     <EmptyState title={t.title} body={t.body}>
+      {draft ? <KeptDraft text={draft} /> : null}
       <PanelBtn variant="primary" onClick={onClose}>
         {t.close}
       </PanelBtn>
@@ -176,13 +184,35 @@ export function PopupGone({ onClose }: { onClose: () => void }) {
   );
 }
 
+function KeptDraft({ text }: { text: string }) {
+  const t = useCardPopupCopy().shell.keptDraft;
+  return (
+    <div className="flex w-full flex-col gap-1.5 text-left">
+      <span className="text-[12.5px] font-semibold text-foreground">
+        {t.title}
+      </span>
+      <textarea
+        readOnly
+        value={text}
+        aria-label={t.title}
+        className="box-border max-h-32 min-h-16 w-full resize-none rounded-[10px] border border-line-strong bg-popover p-2.5 text-[13.5px] text-foreground"
+      />
+      <PanelBtn onClick={() => void navigator.clipboard?.writeText(text)}>
+        {t.copy}
+      </PanelBtn>
+    </div>
+  );
+}
+
 /** The card was deleted by someone while it was open: names who, to a person who could read its board. */
 export function PopupDeleted({
   by,
   onClose,
+  draft,
 }: {
   by: string | null;
   onClose: () => void;
+  draft?: string;
 }) {
   const t = useCardPopupCopy().shell.deleted;
   return (
@@ -190,6 +220,7 @@ export function PopupDeleted({
       title={fillPopupCopy(t.title, { who: by ?? t.someone })}
       body={t.body}
     >
+      {draft ? <KeptDraft text={draft} /> : null}
       <PanelBtn variant="primary" onClick={onClose}>
         {t.close}
       </PanelBtn>

@@ -47,6 +47,8 @@ export interface CardPopupSurfaceProps {
   readonly conflictBy?: string | null;
   /** Who deleted the card (status `deleted`); null: the server named no one. */
   readonly deletedBy?: string | null;
+  /** The comment the person had typed and not sent on a card that is gone: kept to copy. */
+  readonly keptDraft?: string;
   /** The conflict is a field the board no longer has (D12): names who changed it. */
   readonly staleSchema?: PopupStaleSchema | null;
   readonly onReloadConflict?: () => void | Promise<unknown>;
@@ -69,6 +71,7 @@ export function CardPopupSurface({
   conflict,
   conflictBy,
   deletedBy,
+  keptDraft,
   staleSchema,
   onReloadConflict,
   overlays,
@@ -183,9 +186,15 @@ export function CardPopupSurface({
             {status === "error" ? (
               <PopupLoadError onRetry={onRetry ?? onClose} onClose={onClose} />
             ) : null}
-            {status === "gone" ? <PopupGone onClose={onClose} /> : null}
+            {status === "gone" ? (
+              <PopupGone onClose={onClose} draft={keptDraft} />
+            ) : null}
             {status === "deleted" ? (
-              <PopupDeleted by={deletedBy ?? null} onClose={onClose} />
+              <PopupDeleted
+                by={deletedBy ?? null}
+                onClose={onClose}
+                draft={keptDraft}
+              />
             ) : null}
           </>
         )}

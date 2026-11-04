@@ -155,7 +155,7 @@ describe("MainTableSurface", () => {
     expect(assign.getAttribute("aria-disabled")).toBe("true");
     expect(assign.getAttribute("title")).toBe("Chưa khả dụng");
 
-    fireEvent.click(within(bar).getByRole("button", { name: "Lưu trữ" }));
+    fireEvent.click(within(bar).getByRole("button", { name: /^Lưu trữ/ }));
     expect(props.onBulkArchive).toHaveBeenCalledOnce();
 
     fireEvent.click(within(bar).getByRole("button", { name: "Bỏ chọn (Esc)" }));
@@ -923,17 +923,17 @@ describe("MainTableSurface in-place edits and bulk people and boards", () => {
     };
     const { props } = renderTable({ ...erpTableProps(), rowActions });
     fireEvent.contextMenu(row("ERP-144"));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Nhân bản" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Nhân bản/ }));
     expect(rowActions.onDuplicate).toHaveBeenCalledWith(
       ERP_TABLE_ITEM("ERP-144"),
     );
     fireEvent.contextMenu(row("ERP-144"));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Lưu trữ" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Lưu trữ/ }));
     expect(rowActions.onArchive).toHaveBeenCalledWith(
       ERP_TABLE_ITEM("ERP-144"),
     );
     fireEvent.contextMenu(row("ERP-144"));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Mở chi tiết" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Mở trang đầy đủ/ }));
     expect(props.onOpenItem).toHaveBeenCalledWith(ERP_TABLE_ITEM("ERP-144"));
   });
 
@@ -1084,5 +1084,27 @@ describe("MainTableSurface title edit in place", () => {
       screen.queryByRole("textbox", { name: "Sửa tên ERP-142" }),
     ).toBeNull();
     expect(titleOf("ERP-142").getAttribute("aria-keyshortcuts")).toBeNull();
+  });
+
+  it("a pick past 200 states the cap and keeps every picked row (nothing is trimmed)", () => {
+    const base = erpTableProps({ hideDone: false });
+    const group = base.groups[0]!;
+    const rows = Array.from({ length: 205 }, (_, n) => ({
+      ...group.rows[0]!,
+      id: `bulk-${n}`,
+      key: `ERP-${900 + n}`,
+    }));
+    const props = {
+      ...base,
+      groups: [
+        { ...group, rows, total: rows.length, filteredTotal: undefined },
+      ],
+      selectedIds: new Set(rows.map((r) => r.id)),
+    } as MainTableSurfaceProps;
+    renderTable(props);
+    expect(
+      screen.getByText("Đã chọn 205 việc, nhiều nhất 200 việc mỗi lần"),
+    ).toBeTruthy();
+    expect(screen.getByText(/Bỏ chọn bớt 5 việc/)).toBeTruthy();
   });
 });

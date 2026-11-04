@@ -22,6 +22,9 @@ export interface RemindResultDto {
   readonly nextRemindAt: string;
 }
 
+type RemindResponse =
+  OperationResponse<"WorkManagement.BoardItems.RemindOwners">;
+
 /** The error code the server answers when the 24 hour reminder limit is hit. */
 export const REMIND_TOO_SOON_CODE = "work.item.remind-too-soon";
 
@@ -180,6 +183,8 @@ export interface ItemApprovalDto {
   readonly decisionNote: string | null;
   /** The request's version, sent back as the expected version when it is cancelled. */
   readonly version: number;
+  /** The rejected or cancelled request this one asks again; null for a first request. */
+  readonly previousRequestId: string | null;
 }
 
 interface ItemApprovalWire {
@@ -189,6 +194,7 @@ interface ItemApprovalWire {
   readonly requestedByUserId: string;
   readonly createdAt: string;
   readonly version: number;
+  readonly previousRequestId?: string | null;
   readonly steps?:
     | readonly {
         readonly approverUserId?: string | null;
@@ -214,6 +220,7 @@ function toItemApproval(wire: ItemApprovalWire): ItemApprovalDto {
     decidedAt: step?.decidedAt ?? null,
     decisionNote: step?.note ?? null,
     version: wire.version,
+    previousRequestId: wire.previousRequestId ?? null,
   };
 }
 
@@ -492,7 +499,7 @@ export function createItemExtrasApi(
     ): Promise<ItemVersionDto> {
       return versionOf(
         await api.post<VersionBody>(
-          `/board-items/${itemId}/reopen?expectedVersion=${expectedVersion}`,
+          `${endpoints.boardItems.reopen(itemId)}?expectedVersion=${expectedVersion}`,
           {},
           { idempotencyKey: key(), ...quiet },
         ),
@@ -587,7 +594,7 @@ export function createItemExtrasApi(
       expectedVersion: number,
     ): Promise<MoveToBoardResultDto> {
       const result = await api.post<Partial<MoveToBoardResultDto>>(
-        `/board-items/${itemId}/move-to-board`,
+        endpoints.boardItems.moveToBoard(itemId),
         { boardId, expectedVersion },
         { idempotencyKey: key(), ...quiet },
       );
@@ -674,8 +681,8 @@ export function createItemExtrasApi(
      * the server answers 409 `work.item.remind-too-soon` after that.
      */
     async remindOwners(itemId: string): Promise<RemindResultDto> {
-      const result = await api.post<Partial<RemindResultDto> | null>(
-        `/board-items/${itemId}/remind`,
+      const result = await api.post<RemindResponse | null>(
+        endpoints.boardItems.remind(itemId),
         {},
         { idempotencyKey: key(), ...quiet },
       );

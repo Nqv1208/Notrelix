@@ -10827,7 +10827,7 @@
         "tags": [
           "WorkManagement.BoardFields"
         ],
-        "summary": "Evaluate a draft formula against one item of the board, without saving it",
+        "summary": "Evaluate a draft formula or rollup against one item of the board, without saving it",
         "operationId": "WorkManagement.BoardFields.PreviewFormula",
         "parameters": [
           {
@@ -10851,9 +10851,23 @@
           {
             "name": "expression",
             "in": "query",
-            "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "rollupFunction",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rollupFieldId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -10863,7 +10877,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.FormulaPreviewDto"
                 }
               }
             }
@@ -32913,6 +32927,48 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.FormulaPreviewDto": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "nullable": true
+          },
+          "value": {
+            "nullable": true
+          },
+          "errorCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.FormulaPreviewInputDto"
+            },
+            "nullable": true
+          },
+          "subItemCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.FormulaPreviewInputDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "value": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.BulkUpdateBoardItems.BulkUpdateBoardItemsResult": {
         "type": "object",
         "properties": {
@@ -33850,6 +33906,11 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "previousRequestId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -34029,6 +34090,14 @@
           "spaceId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "itemKeyPrefix": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentName": {
+            "type": "string",
             "nullable": true
           }
         },

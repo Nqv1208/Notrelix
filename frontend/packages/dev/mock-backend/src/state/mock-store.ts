@@ -150,6 +150,7 @@ import {
 } from "./mock-docs-invoice";
 import {
   BOARD_STATE_BOARDS,
+  BULK_STATE_BOARDS,
   DEPARTMENT_BOARDS,
   TECH_SIDE_BOARDS,
   departmentItemId,
@@ -1682,6 +1683,9 @@ export class MockStore {
       ...DEPARTMENT_BOARDS,
       ...TECH_SIDE_BOARDS,
       ...stateBoards,
+      ...(this.config.overlays.includes("bulk-states")
+        ? BULK_STATE_BOARDS
+        : []),
     ]) {
       this.insertBoard({
         id: dept.id,
@@ -1724,6 +1728,14 @@ export class MockStore {
           ),
         })),
       });
+      if (dept.ownerColumnId)
+        this.insertColumn({
+          id: dept.ownerColumnId,
+          boardId: dept.id,
+          name: "Người thực hiện",
+          fieldType: "user",
+          position: 3,
+        });
       if (!dept.noList)
         this.insertList({
           id: dept.listId,
@@ -1815,6 +1827,16 @@ export class MockStore {
       criteria: null,
       createdBy: mockIds.users.admin,
     }).visibility = "Public";
+    // The roadmap board's menu draws a saved filter whose field was removed (WM-Filter-States): one condition on a field the board never had.
+    this.savedFilters.add({
+      boardId: mockIds.boards.roadmap,
+      name: "Việc gấp tuần này",
+      criteria: JSON.stringify({
+        v: 2,
+        filter: "c2:and~mock-roadmap-col-gone.gte.50",
+      }),
+      createdBy: mockIds.users.owner,
+    });
     // The viewer reads the ERP board, not payables: the same shared filter there, for the viewer's read-only menu.
     if (this.config.persona === "viewer") {
       this.savedFilters.add({

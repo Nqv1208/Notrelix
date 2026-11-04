@@ -669,6 +669,53 @@ export function MainTableView({
   useEffect(() => {
     if (selection.size === 0) setGoneNotice(null);
   }, [selection]);
+  // "Chọn cả nhóm": the rows of one group up to the limit; a group read in pages is read on until it holds enough.
+  const [groupPick, setGroupPick] = useState<{
+    groupId: string;
+    reading: boolean;
+  } | null>(null);
+  const loadMoreLane = table.loadMoreLane;
+  const laneLoading = table.lanePages.loading;
+  const laneFailed = table.lanePages.failed;
+  useEffect(() => {
+    if (!groupPick?.reading) return;
+    const group = groups.find(
+      (candidate) => candidate.id === groupPick.groupId,
+    );
+    if (!group) {
+      setGroupPick(null);
+      return;
+    }
+    const want = Math.min(
+      group.filteredTotal ?? group.rows.length,
+      BULK_ITEM_LIMIT,
+    );
+    if (
+      group.rows.length < want &&
+      group.hasMore &&
+      !laneFailed.has(group.id)
+    ) {
+      if (!laneLoading.has(group.id))
+        void loadMoreLane(group.id === "none" ? null : group.id);
+      return;
+    }
+    setSelection(
+      new Set(group.rows.slice(0, BULK_ITEM_LIMIT).map((row) => row.id)),
+    );
+    setGroupPick({ groupId: group.id, reading: false });
+  }, [groupPick, groups, laneFailed, laneLoading, loadMoreLane]);
+  useEffect(() => {
+    if (selection.size === 0) setGroupPick(null);
+  }, [selection]);
+  const pickedGroup = groupPick
+    ? groups.find((group) => group.id === groupPick.groupId)
+    : undefined;
+  const pickedInGroup = pickedGroup
+    ? pickedGroup.rows.filter((row) => selectedIds.has(row.id)).length
+    : 0;
+  const pickedGroupTotal = pickedGroup
+    ? (pickedGroup.filteredTotal ?? pickedGroup.rows.length)
+    : 0;
   const noteTitle = (cardId: string) => {
     const card = allCards.find((candidate) => candidate.id === cardId);
     if (card) titles.current.set(cardId, card.title);
@@ -1202,6 +1249,26 @@ export function MainTableView({
             setShowDone(true);
           }}
           onShowDone={() => setShowDone(true)}
+          onSelectGroup={(groupId) => setGroupPick({ groupId, reading: true })}
+          groupPickNote={
+            groupPick && !groupPick.reading && pickedGroupTotal > pickedInGroup
+              ? {
+                  groupId: groupPick.groupId,
+                  picked: pickedInGroup,
+                  total: pickedGroupTotal,
+                  onClear: () => {
+                    const rows = new Set(
+                      pickedGroup?.rows.map((row) => row.id) ?? [],
+                    );
+                    setSelection(
+                      (current) =>
+                        new Set([...current].filter((id) => !rows.has(id))),
+                    );
+                    setGroupPick(null);
+                  },
+                }
+              : null
+          }
           bulkSaving={bulkUpdate.isPending}
           bulkDone={doneNotice}
           goneNotice={

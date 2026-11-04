@@ -70,6 +70,8 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
     public string? Description { get; private set; }
     public ApprovalStatus Status { get; private set; }
     public Guid RequestedByUserId { get; private set; }
+    /// <summary>The Rejected or Cancelled request this one asks again (re-request); null for a first request.</summary>
+    public Guid? PreviousRequestId { get; private set; }
 
     private readonly List<ApprovalStep> _steps = new();
     public IReadOnlyCollection<ApprovalStep> Steps => _steps.AsReadOnly();
@@ -177,7 +179,7 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new ApprovalRequestCancelledDomainEvent(AccountId, WorkspaceId, Id, cancelledBy, cancelledAt));
     }
 
-    public static ApprovalRequest Create(Guid accountId, Guid workspaceId, ResourceRef target, string title, Guid requestedBy, DateTimeOffset createdAt, string? description = null)
+    public static ApprovalRequest Create(Guid accountId, Guid workspaceId, ResourceRef target, string title, Guid requestedBy, DateTimeOffset createdAt, string? description = null, Guid? previousRequestId = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
@@ -196,7 +198,8 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
             Title = title.Trim(),
             Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
             Status = ApprovalStatus.Pending,
-            RequestedByUserId = requestedBy
+            RequestedByUserId = requestedBy,
+            PreviousRequestId = previousRequestId
         };
 
         request.SetAuditOnCreate(requestedBy, createdAt);

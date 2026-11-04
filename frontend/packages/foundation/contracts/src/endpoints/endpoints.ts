@@ -332,6 +332,9 @@ export const endpoints = {
     archived: (boardId: string) => `/boards/${boardId}/items/archived`,
     restore: (itemId: string) => `/board-items/${itemId}/restore`,
     complete: (itemId: string) => `/board-items/${itemId}/complete`,
+    reopen: (itemId: string) => `/board-items/${itemId}/reopen`,
+    moveToBoard: (itemId: string) => `/board-items/${itemId}/move-to-board`,
+    remind: (itemId: string) => `/board-items/${itemId}/remind`,
     status: (itemId: string) => `/board-items/${itemId}/status`,
     fieldValues: (itemId: string) => `/board-items/${itemId}/field-values`,
     fieldValue: (itemId: string, fieldId: string) =>
@@ -366,9 +369,19 @@ export const endpoints = {
       `/boards/${boardId}/fields/${fieldId}/options`,
     option: (boardId: string, fieldId: string, optionId: string) =>
       `/boards/${boardId}/fields/${fieldId}/options/${optionId}`,
-    // WorkManagement.BoardFields.PreviewFormula: a draft formula evaluated on one item, never saved.
-    previewFormula: (boardId: string, itemId: string, expression: string) =>
-      `/boards/${boardId}/fields/preview-formula?itemId=${itemId}&expression=${encodeURIComponent(expression)}`,
+    // WorkManagement.BoardFields.PreviewFormula: a draft formula or rollup evaluated on one item, never saved.
+    previewFormula: (
+      boardId: string,
+      itemId: string,
+      draft:
+        | { expression: string }
+        | { rollupFunction: string; rollupFieldId?: string | null },
+    ) =>
+      `/boards/${boardId}/fields/preview-formula?itemId=${itemId}&${
+        "expression" in draft
+          ? `expression=${encodeURIComponent(draft.expression)}`
+          : `rollupFunction=${draft.rollupFunction}${draft.rollupFieldId ? `&rollupFieldId=${draft.rollupFieldId}` : ""}`
+      }`,
   },
   // WorkManagement.SavedFilters.*: listed and created per board, changed by filter id.
   savedFilters: {

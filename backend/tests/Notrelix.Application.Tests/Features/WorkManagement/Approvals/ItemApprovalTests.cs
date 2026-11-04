@@ -64,6 +64,33 @@ public class ItemApprovalTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
+    public async Task Request_AfterARejection_LinksToThePreviousRequest()
+    {
+        var first = await Requested();
+        first.PreviousRequestId.Should().BeNull();
+        (await Decide(_approver, first, "reject", "No")).Succeeded.Should().BeTrue();
+        RequestContextMock.Setup(c => c.UserId).Returns(TestUserId);
+
+        var again = await Request(Guid.CreateVersion7());
+
+        again.Succeeded.Should().BeTrue();
+        DbContextMock.Object.ApprovalRequests.Single(r => r.Id == again.Data!.Id).PreviousRequestId.Should().Be(first.Id);
+    }
+
+    [Fact]
+    public async Task Request_AfterAnApproval_IsNotLinked()
+    {
+        var first = await Requested();
+        (await Decide(_approver, first, "approve")).Succeeded.Should().BeTrue();
+        RequestContextMock.Setup(c => c.UserId).Returns(TestUserId);
+
+        var again = await Request(Guid.CreateVersion7());
+
+        again.Succeeded.Should().BeTrue();
+        DbContextMock.Object.ApprovalRequests.Single(r => r.Id == again.Data!.Id).PreviousRequestId.Should().BeNull();
+    }
+
+    [Fact]
     public async Task Request_NamingYourself_IsRefused()
     {
         var result = await Request(TestUserId);

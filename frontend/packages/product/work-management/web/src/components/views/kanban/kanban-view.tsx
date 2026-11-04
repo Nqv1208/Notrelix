@@ -1,3 +1,4 @@
+import { unsentCommentOf } from "../../card-detail/update-composer";
 import {
   FaceFieldsPopover,
   KanbanFaceProvider,
@@ -32,6 +33,7 @@ import {
   useUpdateCard,
   useUpdateCardUpdate,
   useUpdateFieldOption,
+  useHoldRealtimeRefetch,
   type KanbanWriteFailure,
   deletedItemOf,
 } from "@notrelix/work-management-state";
@@ -191,6 +193,9 @@ export function KanbanView({
 }: KanbanViewProps) {
   // Read once so every card judges "overdue" against the same instant.
   const [now] = useState(() => new Date());
+  // A lifted card holds realtime refetches so the lanes do not reshuffle under the pointer.
+  const [dragging, setDragging] = useState(false);
+  useHoldRealtimeRefetch(dragging);
   const cardCopy = useKanbanCardCopy();
   const toolbarCopy = useKanbanToolbarCopy();
   const laneCopy = useKanbanLaneCopy();
@@ -1188,6 +1193,7 @@ export function KanbanView({
               </>
             ) : (
               <KanbanBoard
+                onDraggingChange={setDragging}
                 lanes={kanban.lanes}
                 groupOrder={kanban.groups}
                 copy={laneCopy}
@@ -1304,7 +1310,7 @@ export function KanbanView({
           )}
         </div>
 
-        {board && cardSelection && picking.selectedIds.size > 0 ? (
+        {board && cardSelection ? (
           <KanbanBulkBar
             boardId={boardId}
             workspaceId={workspaceId}
@@ -1467,6 +1473,7 @@ export function KanbanSelectedItem({
                   : "loading"
         }
         deletedBy={deleted?.byName ?? null}
+        keptDraft={deleted || gone ? unsentCommentOf(cardId) : undefined}
         onClose={onClose}
         onRetry={refetch}
         onCloseAutoFocus={restore}
@@ -1561,12 +1568,18 @@ function KanbanSelectedItemReady({
           activityError: activity.isError && activity.data === undefined,
           updates: updates.data ?? card.updates,
           updatesLoading: updates.isLoading,
-          updatesMore: updates.hasNextPage
-            ? {
-                loading: updates.isFetchingNextPage,
-                onMore: () => void updates.fetchNextPage(),
-              }
-            : undefined,
+          // One "show more" at the foot of the feed reads the next page of the comments and of the history.
+          updatesMore:
+            updates.hasNextPage || activity.hasNextPage
+              ? {
+                  loading:
+                    updates.isFetchingNextPage || activity.isFetchingNextPage,
+                  onMore: () => {
+                    if (updates.hasNextPage) void updates.fetchNextPage();
+                    if (activity.hasNextPage) void activity.fetchNextPage();
+                  },
+                }
+              : undefined,
           ...extras.detailData,
           checklists: {
             ...checklistWrites,
@@ -1604,6 +1617,7 @@ function KanbanSelectedItemReady({
             note: approval.note,
             requestedAt: approval.requestedAt,
             decidedAt: approval.decidedAt,
+            previousRequestId: approval.previousRequestId,
           })),
           approvalAnswering: approvals.answering,
           approvalsLoading: approvals.loading,
