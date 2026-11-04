@@ -1,6 +1,14 @@
 import { useId, useState, type ReactNode } from "react";
 import { Check, Clock, X } from "lucide-react";
-import { Skeleton, Textarea, cn } from "@notrelix/ui-web";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Skeleton,
+  Textarea,
+  cn,
+} from "@notrelix/ui-web";
 import { personInitials } from "@notrelix/work-management-core";
 import type { ItemSheetApproval } from "../../card-detail/task-detail-types";
 import { describeSheetTime } from "../../card-detail/item-sheet-format";
@@ -8,6 +16,7 @@ import { fillSheetCopy } from "../../card-detail/item-sheet.copy";
 import { useItemSheetCopy } from "../../card-detail/use-item-sheet-copy";
 import { useCardPopup } from "../card-popup-context";
 import { PanelBtn, PersonMark } from "../popup-ui";
+import { approvalCandidates } from "./approval-model";
 
 // The artboard's `.btn`: 32 px, 7 px radius, 6 px between the icon and the words.
 const APPROVAL_BTN = "gap-1.5 rounded-[7px]";
@@ -81,7 +90,13 @@ export function ApprovalSection() {
       {approvals.length > 0 ? (
         <ul
           aria-label={t.list}
-          className="m-0 flex list-none flex-col gap-3 p-0"
+          className={cn(
+            "m-0 flex list-none flex-col gap-3 p-0",
+            // WM-Approval draws a result card 10 px under its heading row (the pending cards use 12).
+            (approvals[0]?.status === "approved" ||
+              approvals[0]?.status === "rejected") &&
+              "-mt-0.5",
+          )}
         >
           {approvals.map((approval, index) => (
             <ApprovalRow
@@ -107,6 +122,48 @@ export function ApprovalSection() {
         </p>
       ) : null}
     </section>
+  );
+}
+
+/** "Gửi yêu cầu duyệt mới" under a result: the same people the "⋯" menu offers, shown as a text button. */
+function AskAgain() {
+  const { board, callbacks, capabilities, copy, data, readOnly } =
+    useCardPopup();
+  if (
+    readOnly !== null ||
+    !capabilities.canEditFields ||
+    callbacks.onRequestApproval === undefined
+  )
+    return null;
+  const people = approvalCandidates(board, data.people, data.viewerUserId);
+  if (people.length === 0) return null;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <PanelBtn
+          small
+          variant="ghost"
+          className={cn(APPROVAL_BTN, "self-start px-0")}
+          aria-haspopup="menu"
+        >
+          {copy.approval.askAgain}
+        </PanelBtn>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        aria-label={copy.approval.searchLabel}
+        className="max-h-72 overflow-y-auto"
+      >
+        {people.map((person) => (
+          <DropdownMenuItem
+            key={person.id}
+            onSelect={() => callbacks.onRequestApproval?.(person.id)}
+          >
+            {person.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -156,7 +213,11 @@ function ApprovalRow({
     <li
       data-approval-status={approval.status}
       className={cn(
-        "flex flex-col gap-3 text-[13px]",
+        "flex flex-col text-[13px]",
+        // WM-Approval draws a result card with 10 px between its parts (the pending cards use 12).
+        approval.status === "approved" || approval.status === "rejected"
+          ? "gap-2.5"
+          : "gap-3",
         !first && "border-t border-line pt-3",
       )}
     >
@@ -165,7 +226,7 @@ function ApprovalRow({
           {fillSheetCopy(t.sent, { when: sent })}
         </span>
       ) : null}
-      {mayDecide ? (
+      {mayDecide && !rejecting ? (
         <div className="flex items-center gap-2.5">
           <PersonMark
             member={{
@@ -181,7 +242,7 @@ function ApprovalRow({
           </p>
         </div>
       ) : null}
-      {mayDecide && approval.note ? (
+      {mayDecide && !rejecting && approval.note ? (
         <p className="m-0 rounded-[8px] bg-background px-3 py-2.5 text-muted-foreground">
           “{approval.note}”
         </p>
@@ -217,6 +278,9 @@ function ApprovalRow({
             ) : null}
           </span>
         </Banner>
+      ) : null}
+      {approval.status === "approved" || approval.status === "rejected" ? (
+        <AskAgain />
       ) : null}
       {approval.status === "cancelled" ? (
         <p className="m-0 text-meta-foreground">
@@ -257,7 +321,7 @@ function ApprovalRow({
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor={reasonId}
-            className="text-[12.5px] font-semibold text-muted-foreground"
+            className="text-[12.5px] leading-[1.45] font-semibold text-muted-foreground"
           >
             {t.reasonLabel}
           </label>
@@ -268,12 +332,12 @@ function ApprovalRow({
             value={reason}
             placeholder={t.reasonPlaceholder}
             onChange={(event) => setReason(event.target.value)}
-            className="min-h-[72px] resize-none text-[13.5px]"
+            className="min-h-[72px] resize-none rounded-[7px] text-[13.5px] md:text-[13.5px]"
           />
-          <span className="text-[12px] text-meta-foreground">
+          <span className="text-[12px] leading-[1.45] text-meta-foreground">
             {fillSheetCopy(t.reasonNote, { name: requester })}
           </span>
-          <div className="flex flex-wrap justify-end gap-2">
+          <div className="mt-1.5 flex flex-wrap justify-end gap-2">
             <PanelBtn
               small
               className={APPROVAL_BTN}
@@ -284,7 +348,10 @@ function ApprovalRow({
             </PanelBtn>
             <PanelBtn
               small
-              className={APPROVAL_BTN}
+              className={cn(
+                APPROVAL_BTN,
+                "bg-danger font-semibold text-primary-foreground hover:bg-danger hover:brightness-95",
+              )}
               variant="danger"
               disabled={busy}
               onClick={() =>

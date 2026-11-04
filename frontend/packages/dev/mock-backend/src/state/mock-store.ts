@@ -151,6 +151,7 @@ import {
 } from "./mock-docs-invoice";
 import {
   BOARD_STATE_BOARDS,
+  BULK_STATE_BOARDS,
   DEPARTMENT_BOARDS,
   TECH_SIDE_BOARDS,
   departmentItemId,
@@ -1689,6 +1690,9 @@ export class MockStore {
       ...DEPARTMENT_BOARDS,
       ...TECH_SIDE_BOARDS,
       ...stateBoards,
+      ...(this.config.overlays.includes("bulk-states")
+        ? BULK_STATE_BOARDS
+        : []),
     ]) {
       this.insertBoard({
         id: dept.id,
@@ -1731,6 +1735,14 @@ export class MockStore {
           ),
         })),
       });
+      if (dept.ownerColumnId)
+        this.insertColumn({
+          id: dept.ownerColumnId,
+          boardId: dept.id,
+          name: "Người thực hiện",
+          fieldType: "user",
+          position: 3,
+        });
       if (!dept.noList)
         this.insertList({
           id: dept.listId,

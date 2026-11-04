@@ -51,6 +51,7 @@ public class MoveBoardItemToBoardCommandHandler : IRequestHandler<MoveBoardItemT
     private readonly IDateTimeProvider _timeProvider;
     private readonly WorkPlacementResolver _placement;
     private readonly IBoardItemKeyAllocator _keys;
+    private readonly IBoardItemKeyAliases _keyAliases;
     private readonly IBoardItemTargetAuthorizer _targetAuthorizer;
     private readonly IResourceVisibility _visibility;
     private readonly IBoardRealtimeNotifier? _realtime;
@@ -61,6 +62,7 @@ public class MoveBoardItemToBoardCommandHandler : IRequestHandler<MoveBoardItemT
         IDateTimeProvider timeProvider,
         WorkPlacementResolver placement,
         IBoardItemKeyAllocator keys,
+        IBoardItemKeyAliases keyAliases,
         IBoardItemTargetAuthorizer targetAuthorizer,
         IResourceVisibility visibility,
         IBoardRealtimeNotifier? realtime = null)
@@ -71,6 +73,7 @@ public class MoveBoardItemToBoardCommandHandler : IRequestHandler<MoveBoardItemT
         _timeProvider = timeProvider;
         _placement = placement;
         _keys = keys;
+        _keyAliases = keyAliases;
         _targetAuthorizer = targetAuthorizer;
         _visibility = visibility;
     }
@@ -165,6 +168,9 @@ public class MoveBoardItemToBoardCommandHandler : IRequestHandler<MoveBoardItemT
 
         // Keys are reserved last, after the ordering lock, as creating an item does.
         var keys = await _keys.AllocateAsync(_context, targetBoard.Id, moving.Count, ct);
+        // The key each item leaves behind keeps resolving to it (a prefix change applies to new items only).
+        foreach (var leaving in moving.Where(m => m.ItemKey is not null))
+            _keyAliases.Keep(BoardItemKeyAlias.Create(leaving.AccountId, leaving.WorkspaceId, leaving.BoardId, leaving.Id, leaving.ItemKey!));
         item.MoveToBoard(targetRef, position, keys[0].Key, keys[0].Sequence, userId, now);
         for (var i = 0; i < children.Count; i++)
             children[i].FollowParentToBoard(targetRef, keys[i + 1].Key, keys[i + 1].Sequence, userId, now);

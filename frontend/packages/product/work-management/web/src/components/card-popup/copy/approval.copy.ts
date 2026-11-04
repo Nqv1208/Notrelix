@@ -2,6 +2,7 @@
 export const en = {
   heading: "Approval",
   request: "Request approval",
+  askAgain: "Send a new approval request",
   searchLabel: "Who should approve this item",
   list: "Approval requests",
   loading: "Loading approval requests",
@@ -36,6 +37,7 @@ export const en = {
 export const vi: typeof en = {
   heading: "Phê duyệt",
   request: "Yêu cầu phê duyệt",
+  askAgain: "Gửi yêu cầu duyệt mới",
   searchLabel: "Ai sẽ duyệt công việc này",
   list: "Yêu cầu phê duyệt",
   loading: "Đang tải các yêu cầu phê duyệt",
