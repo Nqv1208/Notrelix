@@ -31,7 +31,7 @@ export function MainTableSkeleton({
         {Array.from({ length: 8 }).map((_, index) => (
           <div
             key={index}
-            className="flex h-10 items-center gap-4 border-b border-border px-3.5"
+            className="flex h-9 items-center gap-4 border-b border-border px-3.5"
           >
             <Skeleton className="size-3.75 rounded-[4px]" />
             <Skeleton className="h-3 w-14" />
