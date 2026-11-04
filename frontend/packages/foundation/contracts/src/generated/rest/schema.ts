@@ -9027,6 +9027,8 @@ export interface components {
             version?: number;
             /** Format: uuid */
             spaceId?: string | null;
+            itemKeyPrefix?: string | null;
+            departmentName?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldDto": {
             /** Format: uuid */
