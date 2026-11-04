@@ -86,6 +86,10 @@ export const en = {
   emptyTitle: "No items yet",
   emptyHint: "Drag an item here, or add a new one.",
   emptyAdd: "Add item",
+  emptyBoardHint: "Drag an item here or add a new one",
+  emptyBoardNote: "This board has no items yet",
+  emptyBoardNoteBody:
+    "Use Add item at the top right of the toolbar, or the + in a column.",
   filteredHidden_one: "{{count}} item in this column is hidden",
   filteredHidden_other: "{{count}} items in this column are hidden",
   quickDetail: "Add details",
@@ -181,6 +185,10 @@ export const vi: KanbanLaneCopy = {
   emptyTitle: "Chưa có việc nào",
   emptyHint: "Kéo việc vào đây, hoặc thêm mới.",
   emptyAdd: "Thêm công việc",
+  emptyBoardHint: "Kéo việc vào đây hoặc thêm mới",
+  emptyBoardNote: "Board chưa có công việc nào",
+  emptyBoardNoteBody:
+    "Bấm Thêm công việc ở góc phải thanh công cụ, hoặc dấu + trong từng cột.",
   filteredHidden_one: "Cột này còn {{count}} việc đang bị ẩn",
   filteredHidden_other: "Cột này còn {{count}} việc đang bị ẩn",
   quickDetail: "Thêm chi tiết",

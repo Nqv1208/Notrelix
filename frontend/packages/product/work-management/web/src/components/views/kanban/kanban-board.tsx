@@ -70,6 +70,8 @@ export interface KanbanBoardProps {
   selectedItemId?: string;
   /** A filter or search narrows the board. */
   filterActive: boolean;
+  /** The board holds no item at all (not merely a filter hiding them). */
+  boardEmpty?: boolean;
   /** "Thêm vào {lane}" is offered. */
   canAdd: boolean;
   /** Cards can be dragged between and within lanes (pointer and touch). */
@@ -185,6 +187,7 @@ export function KanbanBoard({
   timeZone,
   selectedItemId,
   filterActive,
+  boardEmpty = false,
   canAdd,
   canDrag,
   groupKind = "status",
@@ -516,6 +519,7 @@ export function KanbanBoard({
               timeZone={timeZone}
               selectedItemId={selectedItemId}
               filterActive={filterActive}
+              boardEmpty={boardEmpty}
               canAdd={canAdd}
               canDrag={canDrag}
               dropTarget={drag !== null && currentLaneKey === key}
