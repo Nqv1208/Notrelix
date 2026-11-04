@@ -509,7 +509,7 @@ function ConditionRow({
                   timeZone={timeZone}
                   timeZoneNote={timeZoneNote}
                   people={people}
-                  invalid={issue === "range"}
+                  invalid={issue !== null}
                   compact={compact}
                   onChange={onChange}
                 />
@@ -534,7 +534,10 @@ function ConditionRow({
       {issue ? (
         <p
           role="alert"
-          className={cn("pl-13 text-xs text-destructive", compact && "pl-0")}
+          className={cn(
+            "mt-1.5 pl-13 text-[12.5px] text-destructive",
+            compact && "pl-0",
+          )}
         >
           {issue === "range" ? copy.filter.rangeError : copy.filter.incomplete}
         </p>
@@ -784,7 +787,8 @@ function ValueEditor({
       onChange={(event) =>
         onChange({ ...condition, values: [event.target.value] })
       }
-      className={cn(controlClass, "w-full")}
+      aria-invalid={invalid || undefined}
+      className={cn(controlClass, "w-full", invalid && "border-destructive")}
     />
   );
 }

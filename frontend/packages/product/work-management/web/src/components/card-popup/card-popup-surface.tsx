@@ -24,12 +24,13 @@ import {
   PopupDeleted,
   PopupGone,
   PopupLoadError,
+  PopupMoved,
   PopupSkeleton,
 } from "./states/popup-states";
 import { useCardPopupCopy } from "./use-card-popup-copy";
 
 export type CardPopupStatus =
-  "loading" | "error" | "gone" | "deleted" | "ready";
+  "loading" | "error" | "gone" | "deleted" | "moved" | "ready";
 
 export interface CardPopupSurfaceProps {
   readonly status: CardPopupStatus;
@@ -47,6 +48,15 @@ export interface CardPopupSurfaceProps {
   readonly conflictBy?: string | null;
   /** Who deleted the card (status `deleted`); null: the server named no one. */
   readonly deletedBy?: string | null;
+  /** Restores the deleted card (status `deleted`); absent for a person who may not. Rejects with the refusal reason key. */
+  readonly onRestoreDeleted?: () => Promise<void>;
+  /** The board the card was moved to (status `moved`) and the way to open it there. */
+  readonly movedTo?: {
+    readonly boardTitle: string;
+    readonly onOpen?: () => void;
+  };
+  /** The comment the person had typed and not sent on a card that is gone: kept to copy. */
+  readonly keptDraft?: string;
   /** The conflict is a field the board no longer has (D12): names who changed it. */
   readonly staleSchema?: PopupStaleSchema | null;
   readonly onReloadConflict?: () => void | Promise<unknown>;
@@ -69,6 +79,9 @@ export function CardPopupSurface({
   conflict,
   conflictBy,
   deletedBy,
+  onRestoreDeleted,
+  movedTo,
+  keptDraft,
   staleSchema,
   onReloadConflict,
   overlays,
@@ -183,9 +196,24 @@ export function CardPopupSurface({
             {status === "error" ? (
               <PopupLoadError onRetry={onRetry ?? onClose} onClose={onClose} />
             ) : null}
-            {status === "gone" ? <PopupGone onClose={onClose} /> : null}
+            {status === "gone" ? (
+              <PopupGone onClose={onClose} draft={keptDraft} />
+            ) : null}
             {status === "deleted" ? (
-              <PopupDeleted by={deletedBy ?? null} onClose={onClose} />
+              <PopupDeleted
+                by={deletedBy ?? null}
+                onClose={onClose}
+                draft={keptDraft}
+                onRestore={onRestoreDeleted}
+              />
+            ) : null}
+            {status === "moved" && movedTo ? (
+              <PopupMoved
+                boardTitle={movedTo.boardTitle}
+                onOpen={movedTo.onOpen}
+                onClose={onClose}
+                draft={keptDraft}
+              />
             ) : null}
           </>
         )}

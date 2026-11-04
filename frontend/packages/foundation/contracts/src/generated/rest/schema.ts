@@ -2903,7 +2903,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Evaluate a draft formula against one item of the board, without saving it */
+        /** Evaluate a draft formula or rollup against one item of the board, without saving it */
         get: operations["WorkManagement.BoardFields.PreviewFormula"];
         put?: never;
         post?: never;
@@ -8612,6 +8612,18 @@ export interface components {
             /** Format: int32 */
             valueCount?: number;
         };
+        "Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.FormulaPreviewDto": {
+            state?: string | null;
+            value?: unknown;
+            errorCode?: string | null;
+            inputs?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.FormulaPreviewInputDto"][] | null;
+            /** Format: int32 */
+            subItemCount?: number | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.FormulaPreviewInputDto": {
+            name?: string | null;
+            value?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"];
+        };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.BulkUpdateBoardItems.BulkUpdateBoardItemsResult": {
             /** Format: int32 */
             updated?: number;
@@ -8842,6 +8854,24 @@ export interface components {
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardDependencies.BoardDependencyListDto": {
             dependencies?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardDependencies.BoardDependencyDto"][] | null;
         };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.BoardItemLinkDto": {
+            /** Format: uuid */
+            id?: string;
+            relation?: string | null;
+            item?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.LinkedItemDto"];
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.BoardItemLinkListDto": {
+            links?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.BoardItemLinkDto"][] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.LinkedItemDto": {
+            /** Format: uuid */
+            id?: string;
+            key?: string | null;
+            title?: string | null;
+            statusName?: string | null;
+            statusCategory?: string | null;
+            isArchived?: boolean;
+        };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash.BoardItemTrashEntryDto": {
             /** Format: uuid */
             id?: string;
@@ -8949,6 +8979,8 @@ export interface components {
             steps?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalStepDto"][] | null;
             /** Format: int64 */
             version?: number;
+            /** Format: uuid */
+            previousRequestId?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalStepDto": {
             /** Format: uuid */
@@ -9015,6 +9047,8 @@ export interface components {
             version?: number;
             /** Format: uuid */
             spaceId?: string | null;
+            itemKeyPrefix?: string | null;
+            departmentName?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldDto": {
             /** Format: uuid */
@@ -16047,7 +16081,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalRequestDto"][];
                 };
             };
         };
@@ -16703,7 +16737,9 @@ export interface operations {
         parameters: {
             query: {
                 itemId: string;
-                expression: string;
+                expression?: string;
+                rollupFunction?: string;
+                rollupFieldId?: string;
             };
             header?: never;
             path: {
@@ -16719,7 +16755,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.FormulaPreviewDto"];
                 };
             };
         };
@@ -18491,7 +18527,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.BoardItemLinkListDto"];
                 };
             };
         };

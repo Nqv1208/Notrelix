@@ -43,7 +43,10 @@ export type MockOverlay =
   | "missing-avatars"
   | "many-columns"
   | "many-cards"
-  | "board-states";
+  | "board-states"
+  /** BC-Bulk `bk-grp` and `bk-cap`: a board whose one group holds 301 items. */
+  | "bulk-states"
+  | "deleted-fields";
 
 export type MockLatency = "instant" | "fast" | "normal" | "slow";
 
@@ -194,6 +197,8 @@ const VALID_OVERLAYS = new Set<string>([
   "many-columns",
   "many-cards",
   "board-states",
+  "bulk-states",
+  "deleted-fields",
 ]);
 
 const VALID_FAULTS = new Set<string>([

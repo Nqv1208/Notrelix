@@ -124,6 +124,8 @@ export const en = {
     failedKept: "Not saved. What you typed is kept.",
     conflictReloaded:
       "Someone else changed this first. The latest settings are loaded, check them and make your change again.",
+    conflictReloadedBy:
+      "{{who}} changed this first. The latest settings are loaded, check them and make your change again.",
   },
   fields: {
     title: "Data fields",
@@ -167,6 +169,7 @@ export const en = {
       meta: "{{count}} items have a value",
       metaOne: "1 item has a value",
       metaNone: "no values",
+      cardMeta: "{{values}} · deleted {{date}} by {{by}}",
       deletedOn: "deleted {{date}}",
       unknownPerson: "Someone",
       left: "{{count}} days left",
@@ -175,6 +178,8 @@ export const en = {
       gone: "Past 30 days",
       restore: "Restore",
       restoring: "Restoring…",
+      noteShort:
+        "Restoring brings the field and its old values back; views, filters and forms that were removed are not applied again.",
       note: "A deleted field can be restored for 30 days; after that it can't be restored any more. Restoring brings the field and its old values back; views, filters and forms that were removed are not applied again.",
       nameTaken:
         "Couldn't restore: another field already uses the name “{{name}}”. Rename the field in use, then restore again.",
@@ -373,6 +378,13 @@ export const en = {
       "Functions: IF(condition; a; b), SUM, MIN, MAX, ROUND(number; digits), DAYS(end; start). Join text with &. Only fields of this board.",
     nodes: "{{count}} / 200 elements",
     preview: "Try it with {{key}}:",
+    previewShort: "with {{key}}",
+    previewSubItems: "{{count}} sub-items: {{values}}",
+    previewSubItemsShort: "{{count}} sub-items",
+    previewNoSubItems: "no sub-items yet",
+    previewNoSubItemsNote:
+      "Sum and Count give 0; Average, Smallest and Largest stay empty (—) because there is nothing to calculate.",
+    previewAnd: "and",
     previewEmpty: "No value",
     previewChecking: "Checking…",
     previewErrors: {
@@ -877,6 +889,8 @@ export const vi: BoardSettingsCopy = {
     failedKept: "Chưa lưu được. Nội dung bạn nhập vẫn được giữ.",
     conflictReloaded:
       "Người khác vừa thay đổi trước. Thiết lập mới nhất đã được tải, hãy xem lại rồi làm lại thay đổi.",
+    conflictReloadedBy:
+      "{{who}} vừa thay đổi trước. Thiết lập mới nhất đã được tải, hãy xem lại rồi làm lại thay đổi.",
   },
   fields: {
     title: "Trường dữ liệu",
@@ -920,6 +934,7 @@ export const vi: BoardSettingsCopy = {
       meta: "{{count}} việc có giá trị",
       metaOne: "1 việc có giá trị",
       metaNone: "không có giá trị",
+      cardMeta: "{{values}} · xoá {{date}} bởi {{by}}",
       deletedOn: "xoá {{date}}",
       unknownPerson: "Một người",
       left: "Còn {{count}} ngày",
@@ -928,6 +943,8 @@ export const vi: BoardSettingsCopy = {
       gone: "Quá 30 ngày",
       restore: "Khôi phục",
       restoring: "Đang khôi phục…",
+      noteShort:
+        "Khôi phục đưa trường và giá trị cũ về; chế độ xem, bộ lọc và biểu mẫu đã gỡ không tự áp lại.",
       note: "Trường đã xoá khôi phục được trong 30 ngày, sau đó không khôi phục được nữa. Khôi phục đưa trường và giá trị cũ về; chế độ xem, bộ lọc và biểu mẫu đã gỡ không tự áp lại.",
       nameTaken:
         "Chưa khôi phục được: tên “{{name}}” đang được một trường khác dùng. Đổi tên trường đang dùng đó rồi khôi phục lại.",
@@ -1119,6 +1136,13 @@ export const vi: BoardSettingsCopy = {
       "Hàm: IF(điều kiện; a; b), SUM, MIN, MAX, ROUND(số; chữ số), DAYS(ngày cuối; ngày đầu). Nối chữ bằng &. Chỉ dùng trường của bảng này.",
     nodes: "{{count}} / 200 phần tử",
     preview: "Xem thử với {{key}}:",
+    previewShort: "với {{key}}",
+    previewSubItems: "{{count}} việc con: {{values}}",
+    previewSubItemsShort: "{{count}} việc con",
+    previewNoSubItems: "chưa có việc con",
+    previewNoSubItemsNote:
+      "Tổng và Đếm cho 0; Trung bình, Nhỏ nhất, Lớn nhất để trống (—) vì không có gì để tính.",
+    previewAnd: "và",
     previewEmpty: "Chưa có giá trị",
     previewChecking: "Đang tính…",
     previewErrors: {

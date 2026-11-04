@@ -21,6 +21,8 @@ export type SettingsFeedback = "failed" | "conflict" | "invalid" | null;
 export interface SettingsFailure {
   readonly scope: string | null;
   readonly reason: "failed" | "conflict" | "invalid";
+  /** Who saved first, when a 412 named them. */
+  readonly byName?: string | null;
   /** Sends the same write again; absent when the write was not given as a function. */
   readonly retry?: () => void;
 }
@@ -156,6 +158,7 @@ export function BoardSettingsProvider({
       setFailure({
         scope: scope ?? null,
         reason: result.reason,
+        byName: result.conflict?.byName,
         retry:
           typeof send === "function" && result.reason !== "conflict"
             ? () => void run(send, scope)

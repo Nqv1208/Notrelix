@@ -85,6 +85,7 @@ export interface ItemSheetLink {
     readonly title: string;
     readonly statusName: string | null;
     readonly statusCategory: "todo" | "in_progress" | "review" | "done" | null;
+    readonly isArchived?: boolean;
   };
 }
 
@@ -121,6 +122,8 @@ export interface ItemSheetApproval {
   readonly decidedAt?: string | null;
   /** The approver's comment with the decision. */
   readonly decisionNote?: string | null;
+  /** The rejected or cancelled request this one asks again. */
+  readonly previousRequestId?: string | null;
 }
 
 /** Board group offered by "Chuyển nhóm"; the item's own group is excluded. */
