@@ -1,6 +1,5 @@
 import type { KanbanCardActions } from "./kanban-card-quick-actions";
 import type { KanbanCardSelection } from "./kanban-selection";
-import { useHoldRealtimeRefetch } from "@notrelix/work-management-state";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
@@ -55,6 +54,8 @@ import { KanbanEmptyState } from "./kanban-empty-state";
 import type { KanbanLaneCopy } from "./kanban-lane.copy";
 
 export interface KanbanBoardProps {
+  /** Told when a card starts or ends a drag: the host holds realtime refetches while one is lifted. */
+  onDraggingChange?: (dragging: boolean) => void;
   /** Lanes in option order, filter applied (`total` is the lane total). */
   lanes: readonly KanbanStatusLane[];
   /**
@@ -213,13 +214,15 @@ export function KanbanBoard({
   lanePaging,
   initialCollapsed,
   onCollapsedChange,
+  onDraggingChange,
 }: KanbanBoardProps) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(
     () => initialCollapsed ?? new Set(),
   );
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const [drag, setDrag] = useState<DragState | null>(null);
-  useHoldRealtimeRefetch(drag !== null);
+  const dragging = drag !== null;
+  useEffect(() => onDraggingChange?.(dragging), [dragging, onDraggingChange]);
   // The arrangement of a card just dropped, kept on screen until the lanes
   // as stored show it too: the write lands in the cache a moment after the
   // drop, and without this the card would sit back in its old place until then.
