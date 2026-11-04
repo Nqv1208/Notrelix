@@ -612,6 +612,31 @@ describe("MainTableView on the ERP board", () => {
     expect(cards.archiveCard).not.toHaveBeenCalled();
   });
 
+  it("keeps the picked rows while another row's status change reads the board again", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    await ready();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-142" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-146" }));
+    expect(screen.getByRole("toolbar")).toBeTruthy();
+    fireEvent.click(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi trạng thái của ERP-149",
+      }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: /Đang làm/ }));
+    await waitFor(() => expect(cards.updateStatus).toHaveBeenCalledOnce());
+    await waitFor(() => expect(rowsOf("Đang làm")).toBe(4));
+    expect(
+      (
+        screen.getByRole("checkbox", {
+          name: "Chọn ERP-142",
+        }) as HTMLInputElement
+      ).getAttribute("aria-checked") ?? "true",
+    ).toBe("true");
+    expect(row("ERP-142")!.getAttribute("aria-selected")).toBe("true");
+    expect(row("ERP-146")!.getAttribute("aria-selected")).toBe("true");
+  });
+
   it("sets the due date of the selected rows", async () => {
     const { cards } = renderTable(erpOwnerAccess());
     await ready();
