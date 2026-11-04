@@ -36,6 +36,8 @@ export interface DepartmentBoard {
   readonly statusColumnId: string;
   readonly statusPrefix: string;
   readonly priorityColumnId: string;
+  /** The board has a person column ("Người thực hiện"), so a pick can be assigned in bulk. */
+  readonly ownerColumnId?: string;
   /** Defaults to the whole workspace. */
   readonly visibility?: "private" | "workspace";
   /** An archived board: readable, not writable. */
@@ -248,6 +250,34 @@ export const BOARD_STATE_BOARDS: readonly DepartmentBoard[] = [
     listTitle: "Chưa có",
     noList: true,
     items: [],
+  },
+];
+
+/**
+ * The overlay `bulk-states` adds one board with 301 items in one group (BC-Bulk `bk-grp`, `bk-cap`): the group
+ * select covers 200 of them, one more pick passes the limit.
+ */
+export const BULK_STATE_BOARDS: readonly DepartmentBoard[] = [
+  {
+    id: "mock-board-it-bulk",
+    title: "Nhập liệu hàng loạt",
+    description: "Board có một nhóm rất lớn, để thử chọn nhiều việc.",
+    prefix: "NL",
+    color: "#1E6FD0",
+    spaceId: mockIds.spaces.engineering,
+    statusColumnId: "mock-itk-col-status",
+    statusPrefix: "mock-itk-status",
+    priorityColumnId: "mock-itk-col-priority",
+    ownerColumnId: "mock-itk-col-owner",
+    listId: "mock-itk-list-doing",
+    listTitle: "Đang làm",
+    items: Array.from({ length: 301 }, (_, index) => ({
+      key: `NL-${index + 1}`,
+      title: `Việc nhập liệu ${index + 1}`,
+      status: "doing" as const,
+      priority: "medium" as const,
+      due: null,
+    })),
   },
 ];
 
