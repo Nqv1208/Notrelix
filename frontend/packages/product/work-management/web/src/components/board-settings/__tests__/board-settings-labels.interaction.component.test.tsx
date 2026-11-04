@@ -220,6 +220,25 @@ describe.each([
     await waitFor(() => expect(labels.onDelete).toHaveBeenCalledWith("l-bug"));
   });
 
+  it("names who changed a label first when a delete is refused as stale", async () => {
+    const labels = panel({
+      onDelete: vi.fn().mockResolvedValue({
+        ok: false,
+        reason: "conflict",
+        conflict: { byName: "Hà Nguyễn", at: null },
+      }),
+    });
+    renderLabels(labels, copy);
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: fillCopy(t.delete, { name: "Bug" }),
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: t.deleteConfirm }));
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("Hà Nguyễn");
+  });
+
   it("says no item has the label when the count is zero, and nothing about a count when unknown", () => {
     renderLabels(
       panel({

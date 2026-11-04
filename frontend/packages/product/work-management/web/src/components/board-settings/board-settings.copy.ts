@@ -124,6 +124,8 @@ export const en = {
     failedKept: "Not saved. What you typed is kept.",
     conflictReloaded:
       "Someone else changed this first. The latest settings are loaded, check them and make your change again.",
+    conflictReloadedBy:
+      "{{who}} changed this first. The latest settings are loaded, check them and make your change again.",
   },
   fields: {
     title: "Data fields",
@@ -884,6 +886,8 @@ export const vi: BoardSettingsCopy = {
     failedKept: "Chưa lưu được. Nội dung bạn nhập vẫn được giữ.",
     conflictReloaded:
       "Người khác vừa thay đổi trước. Thiết lập mới nhất đã được tải, hãy xem lại rồi làm lại thay đổi.",
+    conflictReloadedBy:
+      "{{who}} vừa thay đổi trước. Thiết lập mới nhất đã được tải, hãy xem lại rồi làm lại thay đổi.",
   },
   fields: {
     title: "Trường dữ liệu",
