@@ -116,6 +116,10 @@ async function openBoard(page: Page, query = "") {
   // An open item sheet makes the board behind it inert, so its lanes are not in the accessibility tree.
   if (!query.includes("item="))
     await expect(page.getByRole("region", { name: "Cần làm" })).toBeVisible();
+  // The view the member's last visit saved is restored behind a skeleton card (WM-Filter-States); measure the settled page.
+  await expect(
+    page.getByRole("status", { name: "Đang khôi phục cách xem" }),
+  ).toHaveCount(0);
 }
 
 async function main(page: Page): Promise<Rect> {
@@ -444,7 +448,9 @@ test.describe("Board Kanban geometry at 1440 px (owner)", () => {
     ).toBeLessThanOrEqual(1);
   });
 
-  test("no results: the bar and the empty lanes", async ({ page }) => {
+  // Superseded: a filter that keeps nothing now shows the WM-Filter-States "Đang lọc mà không có kết quả" card
+  // (FilterNoResults), not Final-Board's one-line no-results bar; that card has its own fidelity spec.
+  test.skip("no results: the bar and the empty lanes", async ({ page }) => {
     await openBoard(page);
     await page.getByRole("searchbox").fill("zzzz");
     const bar = page.locator("[data-kanban-toolbar] [role=status]");
