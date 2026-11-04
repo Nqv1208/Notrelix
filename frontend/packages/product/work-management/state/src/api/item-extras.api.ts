@@ -189,6 +189,15 @@ export interface ItemApprovalDto {
   readonly previousRequestId: string | null;
 }
 
+type ApprovalsResponse =
+  OperationResponse<"WorkManagement.Approvals.ListForItem">;
+type LinksResponse = OperationResponse<"WorkManagement.BoardItems.ListLinks">;
+
+const isLinkRelation = (
+  relation: string | null | undefined,
+): relation is ItemLinkDto["relation"] =>
+  relation === "blocked-by" || relation === "blocks" || relation === "related";
+
 interface ItemApprovalWire {
   readonly id: string;
   readonly status?: string | null;
@@ -383,10 +392,14 @@ export function createItemExtrasApi(
       };
     },
     async getApprovals(itemId: string): Promise<ItemApprovalDto[]> {
-      const dto = await api.get<ItemApprovalWire[] | null>(
-        `/board-items/${itemId}/approval-requests`,
+      const dto = await api.get<ApprovalsResponse | null>(
+        endpoints.boardItems.approvalRequests(itemId),
       );
-      return (dto ?? []).map(toItemApproval);
+      return (dto ?? []).flatMap((wire) =>
+        wire.id && wire.requestedByUserId && wire.createdAt
+          ? [toItemApproval(wire as ItemApprovalWire)]
+          : [],
+      );
     },
     /** The named approver answers (`WorkManagement.Approvals.Decide`); the comment is optional. */
     async decideApproval(
@@ -396,7 +409,7 @@ export function createItemExtrasApi(
       comment: string | null,
     ): Promise<void> {
       await api.post<void>(
-        `/workspaces/${workspaceId}/approvals/${requestId}/decision`,
+        endpoints.approvals.decision(workspaceId, requestId),
         { decision, comment },
         { idempotencyKey: key(), ...quiet },
       );
@@ -407,7 +420,7 @@ export function createItemExtrasApi(
       expectedVersion: number,
     ): Promise<void> {
       await api.post<void>(
-        `/approvals/${requestId}/cancel`,
+        endpoints.approvals.cancel(requestId),
         { expectedVersion },
         { idempotencyKey: key(), ...quiet },
       );
@@ -419,28 +432,46 @@ export function createItemExtrasApi(
       note: string | null,
     ): Promise<void> {
       await api.post<unknown>(
-        `/board-items/${itemId}/approval-requests`,
+        endpoints.boardItems.approvalRequests(itemId),
         { approverUserId, note },
         { idempotencyKey: key(), ...quiet },
       );
     },
     async getLinks(itemId: string): Promise<ItemLinkDto[]> {
-      const dto = await api.get<{ links?: ItemLinkDto[] } | null>(
-        `/board-items/${itemId}/links`,
+      const dto = await api.get<LinksResponse | null>(
+        endpoints.boardItems.links(itemId),
       );
-      return dto?.links ?? [];
+      return (dto?.links ?? []).flatMap((link) =>
+        link.id && link.item?.id && isLinkRelation(link.relation)
+          ? [
+              {
+                id: link.id,
+                relation: link.relation,
+                item: {
+                  id: link.item.id,
+                  key: link.item.key ?? null,
+                  title: link.item.title ?? "",
+                  statusName: link.item.statusName ?? null,
+                  statusCategory: (link.item.statusCategory ??
+                    null) as ItemLinkDto["item"]["statusCategory"],
+                  isArchived: link.item.isArchived ?? false,
+                },
+              },
+            ]
+          : [],
+      );
     },
     async addLink(
       itemId: string,
       link: { itemId: string; relation: ItemLinkDto["relation"] },
     ): Promise<void> {
-      await api.post<void>(`/board-items/${itemId}/links`, link, {
+      await api.post<void>(endpoints.boardItems.links(itemId), link, {
         idempotencyKey: key(),
         ...quiet,
       });
     },
     async removeLink(itemId: string, linkId: string): Promise<void> {
-      await api.delete<void>(`/board-items/${itemId}/links/${linkId}`, quiet);
+      await api.delete<void>(endpoints.boardItems.link(itemId, linkId), quiet);
     },
     /** Timeline dependency `from -> to`: `to` waits for `from`. */
     async addDependency(from: string, to: string): Promise<void> {

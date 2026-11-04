@@ -1376,6 +1376,7 @@ export const cardsOperations = [
               title: link.card.title,
               statusName: status.name,
               statusCategory: status.category,
+              isArchived: link.card.isArchived ?? false,
             },
           };
         }),
