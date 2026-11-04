@@ -19,6 +19,7 @@ import {
   LayoutList,
   Link2,
   ListChecks,
+  SquareCheck,
   Paperclip,
 } from "lucide-react";
 import type { CardMember } from "@notrelix/work-management-core";
@@ -583,7 +584,7 @@ export function AvatarStack({
 export const SECTION_ICONS = {
   description: <AlignLeft aria-hidden="true" className="size-5" />,
   fields: <LayoutList aria-hidden="true" className="size-5" />,
-  checklist: <ListChecks aria-hidden="true" className="size-5" />,
+  checklist: <SquareCheck aria-hidden="true" className="size-5" />,
   attachments: <Paperclip aria-hidden="true" className="size-5" />,
   links: <Link2 aria-hidden="true" className="size-5" />,
 } as const;
