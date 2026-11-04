@@ -7,9 +7,10 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
-import { Button } from "@notrelix/ui-web";
+import { Button, useMediaQuery } from "@notrelix/ui-web";
 import { calendarOutlineButtonClass } from "./calendar-chrome";
 import { CalendarAgenda } from "./calendar-agenda";
+import { CalendarPhone } from "./calendar-phone";
 import { CalendarDatesDialog } from "./calendar-dates-dialog";
 import { CalendarAside } from "./calendar-aside";
 import { calendarGridLabel, calendarHeading } from "./calendar-format";
@@ -148,6 +149,8 @@ export function BoardCalendarSurface({
     null,
   );
   const root = useRef<HTMLDivElement>(null);
+  // The phone draws its own month, week strip and agenda (Final-M-Calendar).
+  const phone = useMediaQuery("(max-width: 639px)");
 
   const shownEntries = useMemo(() => {
     const base =
@@ -355,6 +358,45 @@ export function BoardCalendarSurface({
     locale,
     zoneName.toLocaleLowerCase(locale),
   );
+
+  if (phone)
+    return (
+      <div
+        data-calendar-view=""
+        className="flex h-full min-h-0 flex-col bg-background font-body"
+      >
+        <div className="flex flex-wrap items-center gap-1.5 px-4 pt-2.5 pb-1">
+          {viewBar}
+          <span className="flex-1" />
+          {canEdit ? (
+            <Button
+              size="sm"
+              className={calendarOutlineButtonClass}
+              variant="outline"
+              onClick={addItem}
+            >
+              {copy.addItem}
+            </Button>
+          ) : null}
+        </div>
+        <CalendarPhone
+          copy={copy}
+          locale={locale}
+          range={range}
+          onRangeChange={onRangeChange}
+          anchorDay={anchorDay}
+          onAnchorChange={onAnchorChange}
+          today={today}
+          entries={shownEntries}
+          undatedTotal={undatedTotal}
+          undated={undated}
+          filterActive={filterActive}
+          canEdit={canEdit}
+          onOpenItem={onOpenItem}
+          onSetDue={onSetDue}
+        />
+      </div>
+    );
 
   return (
     <div
