@@ -22,7 +22,8 @@ export interface RemindResultDto {
   readonly nextRemindAt: string;
 }
 
-type RemindResponse = OperationResponse<"WorkManagement.BoardItems.RemindOwners">;
+type RemindResponse =
+  OperationResponse<"WorkManagement.BoardItems.RemindOwners">;
 
 /** The error code the server answers when the 24 hour reminder limit is hit. */
 export const REMIND_TOO_SOON_CODE = "work.item.remind-too-soon";
