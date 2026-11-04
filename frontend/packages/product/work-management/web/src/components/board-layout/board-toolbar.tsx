@@ -1,13 +1,20 @@
 import { useContext } from "react";
-import { cn } from "@notrelix/ui-web";
+import { TABLET_SLOT, TabletPortal, cn, useIsTablet } from "@notrelix/ui-web";
 import type { BoardHeaderCopy } from "./board-header.copy";
 import { BoardHeaderCopyContext } from "./board-header-copy-context";
 import { BoardHeaderDataContext } from "./board-header-data-context";
 import {
   BoardHeaderSurface,
+  TabletAccessChip,
+  TabletAvatarStack,
   type BoardHeaderData,
 } from "./board-header-surface";
-import { ViewTabs, AddViewMenu, type ViewTabSavedView } from "./view-tabs";
+import {
+  ViewTabs,
+  TabletViewTabs,
+  AddViewMenu,
+  type ViewTabSavedView,
+} from "./view-tabs";
 import { ViewTabMenu, type ViewTabActions } from "./view-tab-menu";
 
 interface BoardToolbarProps {
@@ -62,6 +69,7 @@ export function BoardToolbar({
   onOpenArchive,
   notice,
 }: BoardToolbarProps) {
+  const tablet = useIsTablet();
   const contextCopy = useContext(BoardHeaderCopyContext);
   const contextHeader = useContext(BoardHeaderDataContext);
   const copy = copyProp ?? contextCopy;
@@ -77,6 +85,17 @@ export function BoardToolbar({
     onOpenTrash || onOpenArchive
       ? { ...headerForView, onOpenTrash, onOpenArchive }
       : headerForView;
+  const viewMenu =
+    viewActions && activeSaved ? (
+      <ViewTabMenu
+        key={activeSaved.id}
+        view={activeSaved}
+        savedViews={savedViews ?? []}
+        actions={viewActions}
+        copy={copy}
+        tablet={tablet}
+      />
+    ) : null;
   return (
     <div className="flex flex-col">
       <BoardHeaderSurface
@@ -84,35 +103,83 @@ export function BoardToolbar({
         copy={copy}
         {...headerWithTrash}
         {...(onOpenSettings ? { onOpenSettings } : {})}
+        {...(tablet
+          ? {
+              tablet: {
+                tabs: (
+                  <TabletViewTabs
+                    activeView={activeView}
+                    onViewChange={onViewChange}
+                    copy={copy}
+                    savedViews={savedViews}
+                  />
+                ),
+                // The shell owns the palette and listens for its chord.
+                onSearch: () =>
+                  window.dispatchEvent(
+                    new KeyboardEvent("keydown", {
+                      key: "k",
+                      metaKey: true,
+                      ctrlKey: true,
+                    }),
+                  ),
+              },
+            }
+          : {})}
       />
       {notice}
-      <div
-        className={cn(
-          // One height for every view, so switching views moves nothing: the
-          // mockups differ by 2 px (Final-Board's tab is content-box, the
-          // others' border-box) and the Board's 48 px is the one used.
-          "flex min-h-12 items-end gap-0.5 border-b border-line px-4 pt-2.5 lg:px-6",
-        )}
-      >
-        <div className="-mb-px min-w-0 overflow-x-auto">
-          <ViewTabs
-            activeView={activeView}
-            onViewChange={onViewChange}
+      {tablet ? (
+        // The tablet header has no tab row: the view's own toolbar row hosts the view menu, Add view and the stack.
+        <TabletPortal slot={TABLET_SLOT.toolbarLead}>
+          {header?.access && header.visibility ? (
+            <TabletAccessChip
+              access={header.access}
+              visibility={header.visibility}
+              space={header.space}
+              copy={copy}
+              onOpenShare={header.onOpenShare}
+            />
+          ) : null}
+        </TabletPortal>
+      ) : null}
+      {tablet ? (
+        <TabletPortal slot={TABLET_SLOT.toolbarTrail}>
+          {viewMenu}
+          <AddViewMenu
+            onAddView={onAddView ?? onViewChange}
             copy={copy}
-            savedViews={savedViews}
+            tablet
           />
+          {header?.access ? (
+            <TabletAvatarStack
+              access={header.access}
+              people={header?.people ?? []}
+              copy={copy}
+              onOpenShare={header?.onOpenShare}
+            />
+          ) : null}
+        </TabletPortal>
+      ) : (
+        <div
+          className={cn(
+            // One height for every view, so switching views moves nothing: the
+            // mockups differ by 2 px (Final-Board's tab is content-box, the
+            // others' border-box) and the Board's 48 px is the one used.
+            "flex min-h-12 items-end gap-0.5 border-b border-line px-4 pt-2.5 lg:px-6",
+          )}
+        >
+          <div className="-mb-px min-w-0 overflow-x-auto">
+            <ViewTabs
+              activeView={activeView}
+              onViewChange={onViewChange}
+              copy={copy}
+              savedViews={savedViews}
+            />
+          </div>
+          {viewMenu}
+          <AddViewMenu onAddView={onAddView ?? onViewChange} copy={copy} />
         </div>
-        {viewActions && activeSaved ? (
-          <ViewTabMenu
-            key={activeSaved.id}
-            view={activeSaved}
-            savedViews={savedViews ?? []}
-            actions={viewActions}
-            copy={copy}
-          />
-        ) : null}
-        <AddViewMenu onAddView={onAddView ?? onViewChange} copy={copy} />
-      </div>
+      )}
     </div>
   );
 }

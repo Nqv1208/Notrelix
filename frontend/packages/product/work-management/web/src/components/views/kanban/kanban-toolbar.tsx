@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
 import { Plus, Search } from "lucide-react";
-import { Button, useMediaQuery } from "@notrelix/ui-web";
+import {
+  Button,
+  TABLET_SLOT,
+  TabletPortal,
+  TabletSlot,
+  useMediaQuery,
+} from "@notrelix/ui-web";
 import { CompactSearch } from "../../filters/compact-search";
 import { kanbanPrimaryButtonClass } from "./kanban-chrome";
 import type { KanbanToolbarCopy } from "./kanban-toolbar.copy";
@@ -42,7 +48,12 @@ export function KanbanToolbar({
   const compact = useMediaQuery("(max-width: 639px)");
   return (
     <div data-kanban-toolbar="">
-      <div className="flex flex-wrap items-center gap-1.5 py-2.5">
+      <div className="flex flex-wrap items-center gap-1.5 py-2.5 tablet:min-h-15 tablet:gap-2 tablet:py-2">
+        {/* The tablet row starts with the access chip (the board header portals it in). */}
+        <TabletSlot
+          slot={TABLET_SLOT.toolbarLead}
+          className="hidden items-center gap-2 tablet:flex"
+        />
         {compact ? (
           <CompactSearch
             value={searchQuery}
@@ -51,7 +62,7 @@ export function KanbanToolbar({
             placeholder={copy.search.placeholder}
           />
         ) : (
-          <label className="flex h-8 w-50 max-w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring">
+          <label className="flex h-8 w-50 tablet:hidden max-w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring">
             <Search className="size-4 shrink-0" aria-hidden="true" />
             <input
               type="search"
@@ -69,16 +80,33 @@ export function KanbanToolbar({
         <span className="flex-1" />
 
         {endActions}
+        {/* The tablet row ends with the view menu, Add view and the avatar stack (the board header portals them in). */}
+        <TabletSlot
+          slot={TABLET_SLOT.toolbarTrail}
+          className="hidden items-center gap-2 tablet:flex"
+        />
 
         {canAdd ? (
-          <Button
-            size="sm"
-            className={kanbanPrimaryButtonClass}
-            onClick={onAddItem}
-          >
-            <Plus className="size-4" aria-hidden="true" />
-            {copy.addItem}
-          </Button>
+          <>
+            <Button
+              size="sm"
+              className={`${kanbanPrimaryButtonClass} tablet:hidden`}
+              onClick={onAddItem}
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              {copy.addItem}
+            </Button>
+            <TabletPortal slot={TABLET_SLOT.headerAdd}>
+              <Button
+                size="icon"
+                aria-label={copy.addItem}
+                className="size-11 shrink-0 rounded-[10px]"
+                onClick={onAddItem}
+              >
+                <Plus className="size-5" aria-hidden="true" />
+              </Button>
+            </TabletPortal>
+          </>
         ) : null}
       </div>
     </div>

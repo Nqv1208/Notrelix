@@ -127,10 +127,12 @@ export function FieldRefMenu({
           {current ? (
             <>
               {": "}
-              <b className="max-w-40 truncate font-semibold">{current.name}</b>
+              <b className="max-w-40 truncate font-semibold tablet:font-[650] tablet:text-foreground">
+                {current.name}
+              </b>
             </>
           ) : null}
-          <ChevronDown className="size-3.5" aria-hidden="true" />
+          <ChevronDown className="size-3.5 tablet:hidden" aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

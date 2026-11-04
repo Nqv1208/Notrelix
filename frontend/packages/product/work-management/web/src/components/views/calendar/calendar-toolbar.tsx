@@ -14,6 +14,9 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
+  TABLET_SLOT,
+  TabletPortal,
+  TabletSlot,
 } from "@notrelix/ui-web";
 import {
   kanbanPillClass,
@@ -197,15 +200,36 @@ export function CalendarToolbar({
       </span>
 
       {canAdd ? (
-        <Button
-          size="sm"
-          className={cn(kanbanPrimaryButtonClass, "border-primary")}
-          onClick={onAddItem}
-        >
-          <Plus className="size-4" aria-hidden="true" />
-          {copy.addItem}
-        </Button>
+        <>
+          <Button
+            size="sm"
+            className={cn(
+              kanbanPrimaryButtonClass,
+              "border-primary tablet:hidden",
+            )}
+            onClick={onAddItem}
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            {copy.addItem}
+          </Button>
+          <TabletPortal slot={TABLET_SLOT.headerAdd}>
+            <Button
+              size="icon"
+              aria-label={copy.addItem}
+              className="size-11 shrink-0 rounded-[10px]"
+              onClick={onAddItem}
+            >
+              <Plus className="size-5" aria-hidden="true" />
+            </Button>
+          </TabletPortal>
+        </>
       ) : null}
+      {/* The tablet row ends with the view menu, Add view and the avatar stack (the board header portals them in). */}
+      <span className="flex-1" />
+      <TabletSlot
+        slot={TABLET_SLOT.toolbarTrail}
+        className="hidden items-center gap-2 tablet:flex"
+      />
     </div>
   );
 }

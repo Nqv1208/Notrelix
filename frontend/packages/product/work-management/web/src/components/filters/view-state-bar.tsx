@@ -192,7 +192,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
               <span
                 data-stale={stale || undefined}
                 className={cn(
-                  "inline-flex h-6.5 max-w-full items-center gap-1 rounded-full pl-2.5 pr-1 text-[12.5px] font-semibold",
+                  "inline-flex h-6.5 max-w-full items-center gap-1 rounded-full pl-2.5 pr-1 text-[12.5px] font-semibold tablet:h-11 tablet:gap-0 tablet:rounded-[10px] tablet:pr-0 tablet:pl-3.5 tablet:text-[14px] tablet:font-medium",
                   stale
                     ? "bg-warning-subtle text-warning-subtle-foreground ring-1 ring-warning/50"
                     : "bg-state-selected text-state-selected-foreground",
@@ -201,7 +201,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
                 {stale ? (
                   <AlertCircle className="size-4" aria-hidden="true" />
                 ) : null}
-                <span className="min-w-0 truncate">{label}</span>
+                <span className="min-w-0 truncate tablet:pr-0.5">{label}</span>
                 <button
                   type="button"
                   aria-label={fillFiltersCopy(copy.filter.clearChip, {
@@ -215,9 +215,9 @@ export function ViewStateBar(props: ViewStateBarProps) {
                       ),
                     })
                   }
-                  className="grid size-4.5 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-inherit hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
+                  className="grid size-4.5 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-inherit hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring tablet:size-11 tablet:rounded-[10px]"
                 >
-                  <X className="size-3.5" aria-hidden="true" />
+                  <X className="size-3.5 tablet:size-4" aria-hidden="true" />
                 </button>
               </span>
             </li>
@@ -228,7 +228,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="h-6.5 cursor-pointer rounded-full border-0 bg-state-hover px-2.5 text-[12.5px] font-semibold text-muted-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
+              className="h-6.5 cursor-pointer rounded-full border-0 bg-state-hover px-2.5 text-[12.5px] tablet:h-11 tablet:rounded-[10px] tablet:text-[14px] font-semibold text-muted-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
             >
               {fillFiltersCopy(copy.filter.more, { count: hidden })}
             </button>

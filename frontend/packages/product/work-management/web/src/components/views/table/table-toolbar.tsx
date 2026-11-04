@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
 import { Plus, Search, Undo2, X } from "lucide-react";
-import { Button, useMediaQuery } from "@notrelix/ui-web";
+import {
+  Button,
+  TABLET_SLOT,
+  TabletPortal,
+  TabletSlot,
+  useMediaQuery,
+} from "@notrelix/ui-web";
 import { CompactSearch } from "../../filters/compact-search";
 import type {
   FieldDefinition,
@@ -41,7 +47,7 @@ export interface MainTableToolbarProps {
 }
 
 const CHIP_CLASS =
-  "inline-flex h-7 min-w-0 max-w-full items-center gap-1 rounded-[7px] bg-state-selected pr-1.5 pl-2.5 text-crumb font-semibold text-state-selected-foreground";
+  "inline-flex h-7 min-w-0 max-w-full items-center gap-1 rounded-[7px] bg-state-selected pr-1.5 pl-2.5 text-crumb font-semibold text-state-selected-foreground tablet:h-11 tablet:gap-0 tablet:rounded-[10px] tablet:pr-0 tablet:pl-3.5 tablet:text-[14px] tablet:font-medium";
 
 function RemovableChip({
   text,
@@ -55,14 +61,25 @@ function RemovableChip({
 } & React.HTMLAttributes<HTMLSpanElement>) {
   return (
     <span className={CHIP_CLASS} {...rest}>
-      <span className="min-w-0 truncate">{text}</span>
+      <span className="min-w-0 truncate tablet:pr-0.5">
+        <span className={text.includes(": ") ? "tablet:sr-only" : undefined}>
+          {text}
+        </span>
+        {/* "Trạng thái: chưa xong": the tablet chip sets the value in bold (Final-T-Table). */}
+        {text.includes(": ") ? (
+          <span aria-hidden="true" className="hidden tablet:inline">
+            {text.slice(0, text.indexOf(": ") + 2)}
+            <b className="font-[650]">{text.slice(text.indexOf(": ") + 2)}</b>
+          </span>
+        ) : null}
+      </span>
       <button
         type="button"
         aria-label={clearLabel}
         onClick={onClear}
-        className="grid size-5 shrink-0 cursor-pointer place-items-center rounded-[5px] border-0 bg-transparent p-0 text-inherit hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring"
+        className="grid size-5 shrink-0 cursor-pointer place-items-center rounded-[5px] border-0 bg-transparent p-0 text-inherit hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring tablet:size-11 tablet:rounded-[10px]"
       >
-        <X className="size-3.25" aria-hidden="true" />
+        <X className="size-3.25 tablet:size-4" aria-hidden="true" />
       </button>
     </span>
   );
@@ -97,7 +114,7 @@ export function MainTableToolbar({
   return (
     <div
       data-table-toolbar=""
-      className="flex flex-wrap items-center gap-1.5 py-2.5"
+      className="flex flex-wrap items-center gap-1.5 py-2.5 tablet:min-h-15 tablet:gap-2 tablet:py-2"
     >
       {compact ? (
         <CompactSearch
@@ -107,7 +124,7 @@ export function MainTableToolbar({
           placeholder={t.search.placeholder}
         />
       ) : (
-        <label className="flex h-8 w-50 max-w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring dark:bg-card">
+        <label className="flex h-8 w-50 tablet:hidden max-w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring dark:bg-card">
           <Search className="size-4 shrink-0" aria-hidden="true" />
           <input
             type="search"
@@ -149,7 +166,7 @@ export function MainTableToolbar({
       <span
         aria-hidden="true"
         // The personal-columns toolbar draws 8 px between boxes: 4 px of margin more beside the separator.
-        className={`h-5 w-px bg-border max-md:hidden ${columnState?.personal ? "mx-1.5" : "mx-1"}`}
+        className={`h-5 w-px bg-border max-md:hidden tablet:hidden ${columnState?.personal ? "mx-1.5" : "mx-1"}`}
       />
 
       <TableColumnsMenu
@@ -165,16 +182,33 @@ export function MainTableToolbar({
       />
 
       <span className="flex-1" />
+      {/* The tablet row ends with the view menu, Add view and the avatar stack (the board header portals them in). */}
+      <TabletSlot
+        slot={TABLET_SLOT.toolbarTrail}
+        className="hidden items-center gap-2 tablet:flex"
+      />
 
       {canAdd ? (
-        <Button
-          size="sm"
-          className={kanbanPrimaryButtonClass}
-          onClick={onAddItem}
-        >
-          <Plus className="size-4" aria-hidden="true" />
-          {t.addItem}
-        </Button>
+        <>
+          <Button
+            size="sm"
+            className={`${kanbanPrimaryButtonClass} tablet:hidden`}
+            onClick={onAddItem}
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            {t.addItem}
+          </Button>
+          <TabletPortal slot={TABLET_SLOT.headerAdd}>
+            <Button
+              size="icon"
+              aria-label={t.addItem}
+              className="size-11 shrink-0 rounded-[10px]"
+              onClick={onAddItem}
+            >
+              <Plus className="size-5" aria-hidden="true" />
+            </Button>
+          </TabletPortal>
+        </>
       ) : null}
     </div>
   );

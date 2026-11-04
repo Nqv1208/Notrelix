@@ -5,7 +5,7 @@ import {
   type ReactNode,
 } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { Button, cn } from "@notrelix/ui-web";
+import { Button, cn, TABLET_SLOT, TabletSlot } from "@notrelix/ui-web";
 import {
   kanbanPillClass,
   kanbanPrimaryButtonClass,
@@ -285,6 +285,12 @@ export function TimelineToolbar({
           {copy.addItem}
         </Button>
       ) : null}
+      {/* The tablet row ends with the view menu, Add view and the avatar stack (the board header portals them in). */}
+      <span className="flex-1" />
+      <TabletSlot
+        slot={TABLET_SLOT.toolbarTrail}
+        className="hidden items-center gap-2 tablet:flex"
+      />
     </div>
   );
 }

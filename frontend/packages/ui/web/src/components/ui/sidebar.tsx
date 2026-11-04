@@ -54,6 +54,11 @@ function useSidebar() {
   return context;
 }
 
+/** Like `useSidebar`, but `null` outside a provider (a story, a test). */
+function useOptionalSidebar() {
+  return React.useContext(SidebarContext);
+}
+
 function SidebarProvider({
   defaultOpen = true,
   defaultOpenMobile = false,
@@ -753,4 +758,5 @@ export {
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
+  useOptionalSidebar,
 };

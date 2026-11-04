@@ -4,6 +4,8 @@ import { useIsTablet } from "../../hooks/use-tablet";
 
 /** The slots the page toolbars expose in the tablet band (Final-T-*). */
 export const TABLET_SLOT = {
+  /** The header's "+" (add an item), which the open view contributes. */
+  headerAdd: "tablet-header-add",
   /** Start of a view's toolbar row (access chip). */
   toolbarLead: "tablet-toolbar-lead",
   /** End of a view's toolbar row (avatar stack). */

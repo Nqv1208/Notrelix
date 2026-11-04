@@ -8,6 +8,13 @@
 export const en = {
   /** Accessible name of the view tab list. */
   boardViews: "Views",
+  /** The 56 px board header of the tablet band (Final-T-*). */
+  tablet: {
+    collapseSidebar: "Collapse the sidebar",
+    expandSidebar: "Open the sidebar",
+    search: "Search or run a command",
+    addItem: "Add item",
+  },
   /** The live connection: shown only while it is not connected (see `BoardConnectionNotice`). */
   connection: {
     reconnecting: "Reconnecting…",
@@ -143,6 +150,13 @@ export type BoardHeaderCopy = typeof en;
 
 export const vi: BoardHeaderCopy = {
   boardViews: "Chế độ xem",
+  /** Thanh đầu 56 px của board ở tablet (Final-T-*). */
+  tablet: {
+    collapseSidebar: "Thu gọn thanh bên",
+    expandSidebar: "Mở thanh bên",
+    search: "Tìm hoặc chạy lệnh (⌘K)",
+    addItem: "Thêm công việc",
+  },
   connection: {
     reconnecting: "Đang kết nối lại…",
     lostTitle: "Mất kết nối từ {{time}}. Dữ liệu có thể đã cũ",

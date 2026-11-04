@@ -110,7 +110,7 @@ const PRIORITY_CLASS = {
   urgent: "font-semibold text-danger-text",
   high: "font-semibold text-priority-high-text",
   medium: "font-medium text-muted-foreground",
-  low: "font-normal text-meta-foreground",
+  low: "font-normal text-meta-foreground tablet:font-medium",
 } as const;
 
 /**

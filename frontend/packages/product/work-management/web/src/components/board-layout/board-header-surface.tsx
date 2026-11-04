@@ -6,6 +6,8 @@ import {
   Link2,
   Lock,
   MoreHorizontal,
+  PanelLeft,
+  Search,
   Trash2,
   type LucideIcon,
 } from "lucide-react";
@@ -17,9 +19,12 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  TABLET_SLOT,
+  TabletSlot,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
+  useOptionalSidebar,
 } from "@notrelix/ui-web";
 import { identityMarkClass } from "../shared/item-display";
 import { BOARD_BAND_BUTTON, BoardBand } from "./board-state-block";
@@ -137,9 +142,105 @@ export interface BoardHeaderData {
   readonly archived?: BoardHeaderArchived;
 }
 
+/** What the tablet band's 56 px header needs beyond the data every width has (`Final-T-*`). */
+export interface BoardHeaderTablet {
+  /** The 44 px segmented view switcher. */
+  readonly tabs: React.ReactNode;
+  /** Opens the workspace command palette ("Tìm hoặc chạy lệnh"). */
+  readonly onSearch: () => void;
+}
+
 export interface BoardHeaderSurfaceProps extends BoardHeaderData {
   readonly title: string;
   readonly copy: BoardHeaderCopy;
+  /** Present in the tablet band: the one-row header replaces the title row and the tab row. */
+  readonly tablet?: BoardHeaderTablet;
+}
+
+/** The 44 px icon button of the tablet header and toolbar. */
+export const TABLET_ICON_BUTTON =
+  "grid size-11 shrink-0 cursor-pointer place-items-center rounded-[10px] border-0 bg-transparent p-0 text-muted-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring";
+
+/** The 44 px outline button of the tablet header (Chia sẻ, search). */
+const TABLET_OUTLINE_BUTTON =
+  "flex h-11 shrink-0 cursor-pointer items-center rounded-[10px] border border-line-strong bg-popover text-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring";
+
+/** The access chip of the tablet toolbar ("Phòng Công nghệ · có 1 khách"): a 44 px outline chip that opens Share. */
+export function TabletAccessChip({
+  access,
+  visibility,
+  space,
+  copy,
+  onOpenShare,
+}: {
+  access: BoardHeaderAccess;
+  visibility: BoardHeaderVisibility;
+  space: BoardHeaderSpace | null | undefined;
+  copy: BoardHeaderCopy;
+  onOpenShare?: (() => void) | undefined;
+}) {
+  const ChipIcon: LucideIcon = visibility === "workspace" ? Building2 : Lock;
+  return (
+    <button
+      type="button"
+      data-slot="tablet-access-chip"
+      onClick={onOpenShare}
+      aria-disabled={onOpenShare ? undefined : true}
+      className="inline-flex h-11 max-w-full shrink-0 cursor-pointer items-center gap-[7px] rounded-[10px] border border-line-strong bg-popover px-3.5 text-[14px] font-medium text-muted-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default"
+    >
+      <ChipIcon aria-hidden="true" className="size-3.75 shrink-0" />
+      <span className="truncate">
+        {accessChipLabel(visibility, space, access.guestCount, copy)}
+      </span>
+    </button>
+  );
+}
+
+/** The avatar stack of the tablet toolbar (44 px, opens Share). */
+export function TabletAvatarStack({
+  access,
+  people,
+  copy,
+  onOpenShare,
+}: {
+  access: BoardHeaderAccess;
+  people: readonly BoardHeaderPerson[];
+  copy: BoardHeaderCopy;
+  onOpenShare?: (() => void) | undefined;
+}) {
+  const faces = people.slice(0, VISIBLE_FACES);
+  const overflow = Math.max(0, access.peopleCount - faces.length);
+  return (
+    <button
+      type="button"
+      data-slot="tablet-avatar-stack"
+      onClick={onOpenShare}
+      aria-disabled={onOpenShare ? undefined : true}
+      aria-label={boardAccessSentence(access, copy)}
+      className="flex h-11 shrink-0 cursor-pointer items-center rounded-[10px] border-0 bg-transparent pr-2 pl-3.5 outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default"
+    >
+      {faces.map((person) => (
+        <span
+          key={person.id}
+          aria-hidden="true"
+          className={cn(
+            "-ml-1.5 grid size-7 place-items-center rounded-full text-avatar-md ring-2 ring-background",
+            identityMarkClass(person.id),
+          )}
+        >
+          {person.initials}
+        </span>
+      ))}
+      {overflow > 0 ? (
+        <span
+          aria-hidden="true"
+          className="-ml-1.5 grid size-7 place-items-center rounded-full bg-state-hover-strong text-avatar-md text-muted-foreground ring-2 ring-background"
+        >
+          {fillBoardHeaderCopy(copy.header.moreAvatars, { count: overflow })}
+        </span>
+      ) : null}
+    </button>
+  );
 }
 
 /** Literal strings so Tailwind generates them. Never status colours. */
@@ -365,6 +466,54 @@ function SpaceCrumb({
   );
 }
 
+/** The Space's 28 px mark in a 44 px target: the tablet header's crumb (it opens the Space). */
+function TabletSpaceMark({
+  space,
+  onOpenSpace,
+}: {
+  space: BoardHeaderSpace;
+  onOpenSpace: (() => void) | undefined;
+}) {
+  const label = space.label ?? space.name;
+  const mark = (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "grid size-7 place-items-center rounded-[8px] text-[10.5px] font-bold",
+        MARK_TONE_CLASS[space.markTone],
+      )}
+    >
+      {space.initials}
+    </span>
+  );
+  if (space.href) {
+    return (
+      <a
+        href={space.href}
+        aria-label={label}
+        className={TABLET_ICON_BUTTON}
+        onClick={(event) => {
+          if (!onOpenSpace || !isPlainClick(event)) return;
+          event.preventDefault();
+          onOpenSpace();
+        }}
+      >
+        {mark}
+      </a>
+    );
+  }
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      className={TABLET_ICON_BUTTON}
+      onClick={onOpenSpace}
+    >
+      {mark}
+    </button>
+  );
+}
+
 /**
  * The board's title row: department mark, Space crumb, title, access chip,
  * avatar stack, Settings, Share and More options, then the read-only banner
@@ -391,7 +540,9 @@ export function BoardHeaderSurface({
   trashCount = 0,
   onOpenArchive,
   archived,
+  tablet,
 }: BoardHeaderSurfaceProps) {
+  const sidebar = useOptionalSidebar();
   const shareReasonId = React.useId();
   const settingsReasonId = React.useId();
   const h = copy.header;
@@ -405,235 +556,334 @@ export function BoardHeaderSurface({
   const ChipIcon: LucideIcon = visibility === "workspace" ? Building2 : Lock;
   const showsShareControl = Boolean(access);
 
+  const hasMoreMenu = Boolean(
+    onCopyLink ||
+    onLeave ||
+    (onDuplicate && canManage) ||
+    (onImport && canEditItems) ||
+    onExport ||
+    canManage ||
+    ((onOpenTrash || onOpenArchive) && canEditItems),
+  );
+  const renderMoreMenu = (trigger: React.ReactNode) => (
+    <DropdownMenu>
+      {trigger}
+      <DropdownMenuContent align="end" className="w-60">
+        {canManage ? (
+          <DropdownMenuItem
+            className="xl:hidden"
+            disabled={Boolean(settingsReason)}
+            onSelect={onOpenSettings}
+          >
+            <SettingsGlyph />
+            {h.settings}
+          </DropdownMenuItem>
+        ) : null}
+        {onCopyLink ? (
+          <DropdownMenuItem onSelect={onCopyLink}>
+            <Link2 aria-hidden="true" />
+            {h.copyLink}
+          </DropdownMenuItem>
+        ) : null}
+        {onOpenArchive && canEditItems ? (
+          <DropdownMenuItem onSelect={onOpenArchive}>
+            {h.archivedItems}
+          </DropdownMenuItem>
+        ) : null}
+        {onOpenTrash && canEditItems ? (
+          <DropdownMenuItem
+            className="gap-2.5 rounded-[7px] px-2.5 text-[13.5px] font-medium"
+            onSelect={onOpenTrash}
+            aria-label={
+              trashCount > 0
+                ? `${h.deletedItems}, ${fillBoardHeaderCopy(h.deletedItemsCount, { count: trashCount })}`
+                : undefined
+            }
+          >
+            <Trash2 aria-hidden="true" />
+            {h.deletedItems}
+            {trashCount > 0 ? (
+              <span
+                aria-hidden="true"
+                className="ml-auto grid h-[18px] min-w-[18px] place-items-center rounded-[9px] bg-state-hover-strong px-[5px] text-[11px] leading-none font-bold text-muted-foreground"
+              >
+                {trashCount}
+              </span>
+            ) : null}
+          </DropdownMenuItem>
+        ) : null}
+        {canManage && onOpenSettings ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={onOpenSettings}>
+              {h.renameBoard}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={onOpenSettings}>
+              {h.archiveBoard}
+            </DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onSelect={onOpenSettings}>
+              {h.deleteBoard}
+            </DropdownMenuItem>
+          </>
+        ) : null}
+        {onDuplicate && canManage ? (
+          <DropdownMenuItem onSelect={onDuplicate}>
+            {h.duplicateBoard}
+          </DropdownMenuItem>
+        ) : null}
+        {onImport && canEditItems ? (
+          <DropdownMenuItem onSelect={onImport}>
+            {h.importItems}
+          </DropdownMenuItem>
+        ) : null}
+        {onExport ? (
+          <DropdownMenuItem onSelect={onExport}>
+            {h.exportItems}
+          </DropdownMenuItem>
+        ) : null}
+        {onLeave ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={onLeave}>
+              {h.leaveBoard}
+            </DropdownMenuItem>
+          </>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <div className="flex flex-col">
-      <div className="flex flex-wrap items-center gap-3 px-4 pt-4 sm:px-6">
-        {space ? (
-          <span
-            aria-hidden="true"
+      {tablet ? (
+        <div
+          data-slot="tablet-board-header"
+          className="flex h-14 items-center gap-1.5 border-b border-line pr-3 pl-1.5"
+        >
+          {sidebar ? (
+            <button
+              type="button"
+              onClick={sidebar.toggleSidebar}
+              aria-expanded={sidebar.open}
+              aria-label={
+                sidebar.open
+                  ? copy.tablet.collapseSidebar
+                  : copy.tablet.expandSidebar
+              }
+              className={TABLET_ICON_BUTTON}
+            >
+              <PanelLeft aria-hidden="true" className="size-5" />
+            </button>
+          ) : null}
+          <div className="flex min-w-0 items-center gap-0.5">
+            {space ? (
+              <TabletSpaceMark space={space} onOpenSpace={onOpenSpace} />
+            ) : null}
+            {space ? (
+              <span
+                aria-hidden="true"
+                className="mx-0.5 text-[14.5px] text-meta-foreground"
+              >
+                /
+              </span>
+            ) : null}
+            <h1 className="mr-1.5 ml-0.5 truncate text-[17px] font-[650] tracking-[-0.01em] text-foreground">
+              {title}
+            </h1>
+          </div>
+          {tablet.tabs}
+          <span className="min-w-0 flex-1" />
+          <button
+            type="button"
+            onClick={tablet.onSearch}
+            aria-label={copy.tablet.search}
+            aria-keyshortcuts="Meta+K Control+K"
             className={cn(
-              "flex size-8.5 shrink-0 items-center justify-center rounded-[9px] text-metadata font-bold",
-              MARK_TONE_CLASS[space.markTone],
+              TABLET_OUTLINE_BUTTON,
+              "gap-2 pr-2.5 pl-3 text-[14px] text-meta-foreground",
             )}
           >
-            {space.initials}
-          </span>
-        ) : null}
-        <div className="flex min-w-0 flex-col">
-          {space ? (
-            <SpaceCrumb space={space} onOpenSpace={onOpenSpace} />
-          ) : null}
-          <h1 className="truncate text-board-title text-foreground">{title}</h1>
-        </div>
-
-        {access && visibility ? (
-          <ReasonHint reason={shareReason}>
-            <button
-              type="button"
-              onClick={onOpenShare}
-              aria-disabled={shareReason ? true : undefined}
-              aria-describedby={shareReason ? shareReasonId : undefined}
-              className="inline-flex h-6.5 max-w-full items-center gap-[5px] rounded-sm border border-line bg-popover px-2 text-metadata font-medium tracking-normal text-muted-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default"
+            <Search aria-hidden="true" className="size-5" />
+            <span
+              aria-hidden="true"
+              className="rounded-[5px] border border-line-strong bg-state-hover px-[5px] font-mono text-[11.5px] leading-[18px] text-muted-foreground"
             >
-              <ChipIcon aria-hidden="true" className="size-3.25 shrink-0" />
-              <span className="truncate">
-                {accessChipLabel(visibility, space, access.guestCount, copy)}
-              </span>
-            </button>
-          </ReasonHint>
-        ) : null}
-
-        {access ? (
-          <ReasonHint reason={shareReason}>
-            <button
-              type="button"
-              onClick={onOpenShare}
-              aria-disabled={shareReason ? true : undefined}
-              aria-describedby={shareReason ? shareReasonId : undefined}
-              aria-label={boardAccessSentence(access, copy)}
-              className="ml-auto flex rounded-full pl-1.5 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default"
-            >
-              {faces.map((person) => (
-                <span
-                  key={person.id}
-                  aria-hidden="true"
-                  className={cn(
-                    "-ml-1.5 grid size-6.5 place-items-center rounded-full text-avatar-md ring-2 ring-background",
-                    identityMarkClass(person.id),
-                  )}
-                >
-                  {person.initials}
-                </span>
-              ))}
-              {overflow > 0 ? (
-                <span
-                  aria-hidden="true"
-                  className="-ml-1.5 grid size-6.5 place-items-center rounded-full bg-state-hover-strong text-avatar-md text-muted-foreground ring-2 ring-background"
-                >
-                  {fillBoardHeaderCopy(h.moreAvatars, { count: overflow })}
-                </span>
-              ) : null}
-            </button>
-          </ReasonHint>
-        ) : null}
-
-        {canManage ? (
-          <>
-            <ReasonHint reason={settingsReason}>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onOpenSettings}
-                aria-disabled={settingsReason ? true : undefined}
-                aria-describedby={settingsReason ? settingsReasonId : undefined}
-                className={cn(
-                  HEADER_BUTTON_CLASS,
-                  "hidden xl:inline-flex",
-                  "aria-disabled:cursor-default aria-disabled:text-muted-foreground",
-                )}
-              >
-                <SettingsGlyph />
-                {h.settings}
-              </Button>
-            </ReasonHint>
+              ⌘K
+            </span>
+          </button>
+          <TabletSlot slot={TABLET_SLOT.headerAdd} className="contents" />
+          {canManage ? (
             <ReasonHint reason={shareReason}>
-              <Button
-                variant="outline"
-                size="sm"
+              <button
+                type="button"
                 onClick={onOpenShare}
                 aria-disabled={shareReason ? true : undefined}
                 aria-describedby={shareReason ? shareReasonId : undefined}
                 className={cn(
-                  HEADER_BUTTON_CLASS,
-                  "aria-disabled:cursor-default aria-disabled:text-muted-foreground",
+                  TABLET_OUTLINE_BUTTON,
+                  "justify-center px-3.5 text-[14.5px] font-medium aria-disabled:cursor-default aria-disabled:text-muted-foreground",
                 )}
               >
                 {h.share}
-              </Button>
+              </button>
             </ReasonHint>
-          </>
-        ) : null}
+          ) : null}
+          {hasMoreMenu
+            ? renderMoreMenu(
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={h.moreOptions}
+                    className={TABLET_ICON_BUTTON}
+                  >
+                    <MoreHorizontal aria-hidden="true" className="size-5" />
+                  </button>
+                </DropdownMenuTrigger>,
+              )
+            : null}
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-3 px-4 pt-4 sm:px-6">
+          {space ? (
+            <span
+              aria-hidden="true"
+              className={cn(
+                "flex size-8.5 shrink-0 items-center justify-center rounded-[9px] text-metadata font-bold",
+                MARK_TONE_CLASS[space.markTone],
+              )}
+            >
+              {space.initials}
+            </span>
+          ) : null}
+          <div className="flex min-w-0 flex-col">
+            {space ? (
+              <SpaceCrumb space={space} onOpenSpace={onOpenSpace} />
+            ) : null}
+            <h1 className="truncate text-board-title text-foreground">
+              {title}
+            </h1>
+          </div>
 
-        {onCopyLink ||
-        onLeave ||
-        (onDuplicate && canManage) ||
-        (onImport && canEditItems) ||
-        onExport ||
-        canManage ||
-        ((onOpenTrash || onOpenArchive) && canEditItems) ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={h.moreOptions}
-                className={cn(
-                  !access ? "ml-auto" : undefined,
-                  "rounded-[7px] text-meta-foreground hover:bg-state-hover-strong hover:text-foreground",
-                )}
+          {access && visibility ? (
+            <ReasonHint reason={shareReason}>
+              <button
+                type="button"
+                onClick={onOpenShare}
+                aria-disabled={shareReason ? true : undefined}
+                aria-describedby={shareReason ? shareReasonId : undefined}
+                className="inline-flex h-6.5 max-w-full items-center gap-[5px] rounded-sm border border-line bg-popover px-2 text-metadata font-medium tracking-normal text-muted-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default"
               >
-                <MoreHorizontal aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-60">
-              {canManage ? (
-                <DropdownMenuItem
-                  className="xl:hidden"
-                  disabled={Boolean(settingsReason)}
-                  onSelect={onOpenSettings}
+                <ChipIcon aria-hidden="true" className="size-3.25 shrink-0" />
+                <span className="truncate">
+                  {accessChipLabel(visibility, space, access.guestCount, copy)}
+                </span>
+              </button>
+            </ReasonHint>
+          ) : null}
+
+          {access ? (
+            <ReasonHint reason={shareReason}>
+              <button
+                type="button"
+                onClick={onOpenShare}
+                aria-disabled={shareReason ? true : undefined}
+                aria-describedby={shareReason ? shareReasonId : undefined}
+                aria-label={boardAccessSentence(access, copy)}
+                className="ml-auto flex rounded-full pl-1.5 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default"
+              >
+                {faces.map((person) => (
+                  <span
+                    key={person.id}
+                    aria-hidden="true"
+                    className={cn(
+                      "-ml-1.5 grid size-6.5 place-items-center rounded-full text-avatar-md ring-2 ring-background",
+                      identityMarkClass(person.id),
+                    )}
+                  >
+                    {person.initials}
+                  </span>
+                ))}
+                {overflow > 0 ? (
+                  <span
+                    aria-hidden="true"
+                    className="-ml-1.5 grid size-6.5 place-items-center rounded-full bg-state-hover-strong text-avatar-md text-muted-foreground ring-2 ring-background"
+                  >
+                    {fillBoardHeaderCopy(h.moreAvatars, { count: overflow })}
+                  </span>
+                ) : null}
+              </button>
+            </ReasonHint>
+          ) : null}
+
+          {canManage ? (
+            <>
+              <ReasonHint reason={settingsReason}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onOpenSettings}
+                  aria-disabled={settingsReason ? true : undefined}
+                  aria-describedby={
+                    settingsReason ? settingsReasonId : undefined
+                  }
+                  className={cn(
+                    HEADER_BUTTON_CLASS,
+                    "hidden xl:inline-flex",
+                    "aria-disabled:cursor-default aria-disabled:text-muted-foreground",
+                  )}
                 >
                   <SettingsGlyph />
                   {h.settings}
-                </DropdownMenuItem>
-              ) : null}
-              {onCopyLink ? (
-                <DropdownMenuItem onSelect={onCopyLink}>
-                  <Link2 aria-hidden="true" />
-                  {h.copyLink}
-                </DropdownMenuItem>
-              ) : null}
-              {onOpenArchive && canEditItems ? (
-                <DropdownMenuItem onSelect={onOpenArchive}>
-                  {h.archivedItems}
-                </DropdownMenuItem>
-              ) : null}
-              {onOpenTrash && canEditItems ? (
-                <DropdownMenuItem
-                  className="gap-2.5 rounded-[7px] px-2.5 text-[13.5px] font-medium"
-                  onSelect={onOpenTrash}
-                  aria-label={
-                    trashCount > 0
-                      ? `${h.deletedItems}, ${fillBoardHeaderCopy(h.deletedItemsCount, { count: trashCount })}`
-                      : undefined
-                  }
+                </Button>
+              </ReasonHint>
+              <ReasonHint reason={shareReason}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onOpenShare}
+                  aria-disabled={shareReason ? true : undefined}
+                  aria-describedby={shareReason ? shareReasonId : undefined}
+                  className={cn(
+                    HEADER_BUTTON_CLASS,
+                    "aria-disabled:cursor-default aria-disabled:text-muted-foreground",
+                  )}
                 >
-                  <Trash2 aria-hidden="true" />
-                  {h.deletedItems}
-                  {trashCount > 0 ? (
-                    <span
-                      aria-hidden="true"
-                      className="ml-auto grid h-[18px] min-w-[18px] place-items-center rounded-[9px] bg-state-hover-strong px-[5px] text-[11px] leading-none font-bold text-muted-foreground"
-                    >
-                      {trashCount}
-                    </span>
-                  ) : null}
-                </DropdownMenuItem>
-              ) : null}
-              {canManage && onOpenSettings ? (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={onOpenSettings}>
-                    {h.renameBoard}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={onOpenSettings}>
-                    {h.archiveBoard}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onSelect={onOpenSettings}
-                  >
-                    {h.deleteBoard}
-                  </DropdownMenuItem>
-                </>
-              ) : null}
-              {onDuplicate && canManage ? (
-                <DropdownMenuItem onSelect={onDuplicate}>
-                  {h.duplicateBoard}
-                </DropdownMenuItem>
-              ) : null}
-              {onImport && canEditItems ? (
-                <DropdownMenuItem onSelect={onImport}>
-                  {h.importItems}
-                </DropdownMenuItem>
-              ) : null}
-              {onExport ? (
-                <DropdownMenuItem onSelect={onExport}>
-                  {h.exportItems}
-                </DropdownMenuItem>
-              ) : null}
-              {onLeave ? (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={onLeave}>
-                    {h.leaveBoard}
-                  </DropdownMenuItem>
-                </>
-              ) : null}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : null}
+                  {h.share}
+                </Button>
+              </ReasonHint>
+            </>
+          ) : null}
 
-        {showsShareControl && shareReason ? (
-          <span id={shareReasonId} hidden>
-            {shareReason}
-          </span>
-        ) : null}
-        {canManage && settingsReason ? (
-          <span id={settingsReasonId} hidden>
-            {settingsReason}
-          </span>
-        ) : null}
-      </div>
+          {hasMoreMenu
+            ? renderMoreMenu(
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={h.moreOptions}
+                    className={cn(
+                      !access ? "ml-auto" : undefined,
+                      "rounded-[7px] text-meta-foreground hover:bg-state-hover-strong hover:text-foreground",
+                    )}
+                  >
+                    <MoreHorizontal aria-hidden="true" />
+                  </Button>
+                </DropdownMenuTrigger>,
+              )
+            : null}
+
+          {showsShareControl && shareReason ? (
+            <span id={shareReasonId} hidden>
+              {shareReason}
+            </span>
+          ) : null}
+          {canManage && settingsReason ? (
+            <span id={settingsReasonId} hidden>
+              {settingsReason}
+            </span>
+          ) : null}
+        </div>
+      )}
 
       {archived ? (
         <div className="mx-4 mt-3 sm:mx-6" data-slot="board-archived">
