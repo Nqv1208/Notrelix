@@ -129,10 +129,11 @@ export function createMockFetch(store: MockStore): typeof fetch {
     }
     if (fault === "409") {
       const refused = conflict("Simulated conflict");
-      // The producer names who saved first on a refused stale view or saved-filter write (changedByName).
+      // The producer names who saved first on a refused stale view, saved-filter or field value write (changedByName).
       return createMockResponse<object>(
         request.normalizedPathname.includes("/views") ||
-          request.normalizedPathname.includes("/saved-filters")
+          request.normalizedPathname.includes("/saved-filters") ||
+          request.normalizedPathname.includes("/values/")
           ? {
               ...refused,
               body: { ...refused.body, changedByName: "Hà Nguyễn" },
