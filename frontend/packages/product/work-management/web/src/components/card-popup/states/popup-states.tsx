@@ -204,24 +204,90 @@ function KeptDraft({ text }: { text: string }) {
   );
 }
 
-/** The card was deleted by someone while it was open: names who, to a person who could read its board. */
+/** The card was deleted by someone while it was open: names who, to a person who could read its board; a person who may restore it gets Restore. */
 export function PopupDeleted({
   by,
   onClose,
   draft,
+  onRestore,
 }: {
   by: string | null;
   onClose: () => void;
   draft?: string;
+  /** Rejects with the refusal reason; absent: the person may not restore (only Back to the board shows). */
+  onRestore?: () => Promise<void>;
 }) {
   const t = useCardPopupCopy().shell.deleted;
+  const [phase, setPhase] = useState<"idle" | "pending" | "failed">("idle");
+  const [refusal, setRefusal] = useState<string | null>(null);
+  const restore = () => {
+    if (!onRestore) return;
+    setPhase("pending");
+    setRefusal(null);
+    onRestore().then(
+      () => setPhase("idle"),
+      (reason: unknown) => {
+        setPhase("failed");
+        setRefusal(
+          (typeof reason === "string"
+            ? (t as Record<string, string>)[reason]
+            : undefined) ?? t.restoreFailed,
+        );
+      },
+    );
+  };
   return (
     <EmptyState
       title={fillPopupCopy(t.title, { who: by ?? t.someone })}
       body={t.body}
     >
       {draft ? <KeptDraft text={draft} /> : null}
-      <PanelBtn variant="primary" onClick={onClose}>
+      {refusal ? (
+        <p role="alert" className="m-0 text-[13px] text-danger-text">
+          {refusal}
+        </p>
+      ) : null}
+      {onRestore ? (
+        <PanelBtn
+          variant="primary"
+          disabled={phase === "pending"}
+          onClick={restore}
+        >
+          {phase === "pending" ? t.restoring : t.restore}
+        </PanelBtn>
+      ) : null}
+      <PanelBtn variant={onRestore ? undefined : "primary"} onClick={onClose}>
+        {t.close}
+      </PanelBtn>
+    </EmptyState>
+  );
+}
+
+/** The card was moved to another board the person can read: a link to the new place. */
+export function PopupMoved({
+  boardTitle,
+  onOpen,
+  onClose,
+  draft,
+}: {
+  boardTitle: string;
+  onOpen?: () => void;
+  onClose: () => void;
+  draft?: string;
+}) {
+  const t = useCardPopupCopy().shell.moved;
+  return (
+    <EmptyState
+      title={fillPopupCopy(t.title, { board: boardTitle })}
+      body={t.body}
+    >
+      {draft ? <KeptDraft text={draft} /> : null}
+      {onOpen ? (
+        <PanelBtn variant="primary" onClick={onOpen}>
+          {t.open}
+        </PanelBtn>
+      ) : null}
+      <PanelBtn variant={onOpen ? undefined : "primary"} onClick={onClose}>
         {t.close}
       </PanelBtn>
     </EmptyState>
