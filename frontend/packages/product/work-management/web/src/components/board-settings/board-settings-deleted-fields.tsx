@@ -448,66 +448,68 @@ export function DeletedFieldsList({
                   </button>
                 </span>
                 {note && note.kind !== "done" ? (
-                  <div
-                    role="alert"
-                    className="col-span-full flex items-start gap-1.5 pl-[43px] text-[12.5px] leading-normal font-medium text-danger-text"
-                  >
-                    <CircleAlert
-                      aria-hidden="true"
-                      className="mt-0.5 size-3.5 shrink-0"
-                      strokeWidth={1.8}
-                    />
-                    <span>
-                      {note.kind === "name-taken"
-                        ? fillCopy(t.nameTaken, { name: field.name })
-                        : note.kind === "expired"
-                          ? t.expired
-                          : note.kind === "forbidden"
-                            ? t.forbidden
-                            : fillCopy(t.failed, { name: field.name })}
-                    </span>
-                    <span className="ml-auto flex shrink-0 gap-2">
-                      {note.kind === "name-taken" ? (
-                        <button
-                          type="button"
-                          onClick={() => onOpenLive(field.name)}
-                          className={cn(
-                            BUTTON_CLASS.outline,
-                            "h-7 px-2.5 text-[12.5px]",
-                          )}
-                        >
-                          {t.openLive}
-                        </button>
-                      ) : null}
-                      {note.kind === "expired" ? (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setDismissed((current) =>
-                              new Set(current).add(field.id),
-                            )
-                          }
-                          className={cn(
-                            BUTTON_CLASS.outline,
-                            "h-7 px-2.5 text-[12.5px]",
-                          )}
-                        >
-                          {t.dismiss}
-                        </button>
-                      ) : null}
-                      {note.kind === "failed" ? (
-                        <button
-                          type="button"
-                          onClick={() => void restore(field)}
-                          className={cn(
-                            BUTTON_CLASS.outline,
-                            "h-7 px-2.5 text-[12.5px]",
-                          )}
-                        >
-                          {t.retry}
-                        </button>
-                      ) : null}
-                    </span>
+                  <div role="cell" className="col-span-full">
+                    <div
+                      role="alert"
+                      className="flex items-start gap-1.5 pl-[43px] text-[12.5px] leading-normal font-medium text-danger-text"
+                    >
+                      <CircleAlert
+                        aria-hidden="true"
+                        className="mt-0.5 size-3.5 shrink-0"
+                        strokeWidth={1.8}
+                      />
+                      <span>
+                        {note.kind === "name-taken"
+                          ? fillCopy(t.nameTaken, { name: field.name })
+                          : note.kind === "expired"
+                            ? t.expired
+                            : note.kind === "forbidden"
+                              ? t.forbidden
+                              : fillCopy(t.failed, { name: field.name })}
+                      </span>
+                      <span className="ml-auto flex shrink-0 gap-2">
+                        {note.kind === "name-taken" ? (
+                          <button
+                            type="button"
+                            onClick={() => onOpenLive(field.name)}
+                            className={cn(
+                              BUTTON_CLASS.outline,
+                              "h-7 px-2.5 text-[12.5px]",
+                            )}
+                          >
+                            {t.openLive}
+                          </button>
+                        ) : null}
+                        {note.kind === "expired" ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDismissed((current) =>
+                                new Set(current).add(field.id),
+                              )
+                            }
+                            className={cn(
+                              BUTTON_CLASS.outline,
+                              "h-7 px-2.5 text-[12.5px]",
+                            )}
+                          >
+                            {t.dismiss}
+                          </button>
+                        ) : null}
+                        {note.kind === "failed" ? (
+                          <button
+                            type="button"
+                            onClick={() => void restore(field)}
+                            className={cn(
+                              BUTTON_CLASS.outline,
+                              "h-7 px-2.5 text-[12.5px]",
+                            )}
+                          >
+                            {t.retry}
+                          </button>
+                        ) : null}
+                      </span>
+                    </div>
                   </div>
                 ) : null}
               </div>
