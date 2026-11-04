@@ -1815,6 +1815,16 @@ export class MockStore {
       criteria: null,
       createdBy: mockIds.users.admin,
     }).visibility = "Public";
+    // The roadmap board's menu draws a saved filter whose field was removed (WM-Filter-States): one condition on a field the board never had.
+    this.savedFilters.add({
+      boardId: mockIds.boards.roadmap,
+      name: "Việc gấp tuần này",
+      criteria: JSON.stringify({
+        v: 2,
+        filter: "c2:and~mock-roadmap-col-gone.gte.50",
+      }),
+      createdBy: mockIds.users.owner,
+    });
     // The viewer reads the ERP board, not payables: the same shared filter there, for the viewer's read-only menu.
     if (this.config.persona === "viewer") {
       this.savedFilters.add({
