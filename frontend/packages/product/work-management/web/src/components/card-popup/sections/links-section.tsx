@@ -8,6 +8,7 @@ import {
   X,
 } from "lucide-react";
 import { PopoverTrigger, cn } from "@notrelix/ui-web";
+import { personInitials } from "@notrelix/work-management-core";
 import { useCard } from "@notrelix/work-management-state";
 import type { ItemSheetLink } from "../../card-detail/task-detail-types";
 import { foldForSearch } from "../../item-page/item-pickers";
@@ -71,7 +72,7 @@ function LinkRow({
   archivedLabel?: string;
 }) {
   return (
-    <div className="mb-1.5 box-border flex min-h-12 items-center gap-2.5 rounded-[8px] border border-line bg-popover pr-1.5 pl-3 md:min-h-10">
+    <div className="mb-1 box-border flex min-h-12 items-center gap-2.5 rounded-[8px] border border-line bg-popover pr-1.5 pl-3 md:min-h-10">
       {itemKey ? (
         <span className="font-mono text-[12px] text-meta-foreground">
           {itemKey}
@@ -112,7 +113,7 @@ function Group({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mt-1 first:mt-2.5">
+    <div className="mt-2.5">
       <div className="mb-1.5 flex items-center gap-1.5 text-[12.5px] leading-[1.45] font-semibold text-muted-foreground">
         {title}
         {hint ? (
@@ -125,17 +126,24 @@ function Group({
 }
 
 function ParentRow() {
-  const { card, copy } = useCardPopup();
+  const { card, copy, board } = useCardPopup();
   const t = copy.related.links;
   const parent = useCard(card.parentItemId ?? "", card.workspaceId).card;
   if (!parent) return null;
+  // The parent is an item of this board: its status is the board's own option.
+  const option = board.fieldDefinitions
+    .find((f) => f.semanticRole === "status")
+    ?.options.find((o) => o.id === parent.statusOptionId);
+  const category = option?.category ?? parent.statusCategory ?? null;
   return (
     <Group title={t.groupParent}>
       <LinkRow
         itemKey={parent.itemKey ?? null}
         title={parent.title}
-        status={parent.statusCategory === "done" ? t.statusDone : t.statusOpen}
-        category={parent.statusCategory ?? null}
+        status={
+          option?.label ?? (category ? t.categoryNames[category] : t.statusNone)
+        }
+        category={category}
         person={parent.members[0] ?? null}
         unlinkLabel=""
       />
@@ -391,6 +399,15 @@ export function LinksSection() {
                 title={link.item.title}
                 status={link.item.statusName ?? t.statusNone}
                 category={link.item.statusCategory}
+                person={
+                  link.item.assigneeName
+                    ? {
+                        userId: link.item.assigneeId ?? link.item.assigneeName,
+                        name: link.item.assigneeName,
+                        initials: personInitials(link.item.assigneeName),
+                      }
+                    : null
+                }
                 archivedLabel={link.item.isArchived ? t.archived : undefined}
                 unlinkLabel={fillPopupCopy(t.unlinkOne, {
                   key: link.item.key ?? link.item.title,
@@ -413,7 +430,7 @@ export function LinksSection() {
               key={child.id}
               itemKey={child.itemKey ?? null}
               title={child.title}
-              status={child.done ? t.statusDone : t.statusOpen}
+              status={child.done ? t.statusDone : t.statusTodo}
               category={child.done ? "done" : "todo"}
               person={child.assignee}
               unlinkLabel=""
