@@ -56,6 +56,13 @@ const SCREENS = {
       .click();
     await expect(page.getByRole("alert").first()).toBeVisible();
   },
+  // The category of a new status (no artboard draws it): the add-status popover of the Kanban board.
+  "status-category": async (page: Page) => {
+    await page.goto(`${ROADMAP.replace("roadmap", "erp")}?view=kanban`);
+    await page.getByRole("button", { name: "Thêm trạng thái" }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page.getByRole("dialog")).toContainText("Hoàn thành");
+  },
 } as const;
 
 for (const [name, show] of Object.entries(SCREENS)) {
@@ -139,7 +146,7 @@ for (const [name, show] of Object.entries(SCREENS)) {
 
         if (width === 390) {
           const small = await page.evaluate(
-            (drawn) =>
+            ({ drawn, popoverOnly }) =>
               [
                 ...document.querySelectorAll<HTMLElement>(
                   "main :is(button, a[href], input:not([type=hidden]), select, textarea, [role=tab], [role=checkbox], [role=radio]), [role=dialog] :is(button, a[href], input:not([type=hidden]), select, textarea)",
@@ -151,6 +158,8 @@ for (const [name, show] of Object.entries(SCREENS)) {
                   return (
                     rect.width > 0 &&
                     style.visibility !== "hidden" &&
+                    // The Kanban header around the popover is a board screen of its own (`Final-M-Board`).
+                    (!popoverOnly || node.closest("[role=dialog]")) &&
                     !node.closest("[aria-hidden=true]") &&
                     (rect.width < 44 || rect.height < 44) &&
                     // The rollup artboard draws its calculation buttons 32 px high at 320 px; the drawing wins.
@@ -167,7 +176,10 @@ for (const [name, show] of Object.entries(SCREENS)) {
                   const rect = node.getBoundingClientRect();
                   return `${node.tagName.toLowerCase()}[${(node.getAttribute("aria-label") ?? node.textContent ?? "").trim().slice(0, 24)}] ${Math.round(rect.width)}x${Math.round(rect.height)}`;
                 }),
-            name === "rollup-dialog",
+            {
+              drawn: name === "rollup-dialog",
+              popoverOnly: name === "status-category",
+            },
           );
           expect(small, "controls under 44 px").toEqual([]);
         }

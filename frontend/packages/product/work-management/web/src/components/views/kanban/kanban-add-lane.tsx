@@ -51,7 +51,11 @@ export function KanbanAddLane({
           {subject === "status" ? copy.addStatus : copy.addValue}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-72 gap-0">
+      <PopoverContent
+        align="start"
+        aria-label={formCopy.titleCreate}
+        className="w-72 gap-0"
+      >
         <StatusOptionForm
           copy={formCopy}
           subject={subject}
