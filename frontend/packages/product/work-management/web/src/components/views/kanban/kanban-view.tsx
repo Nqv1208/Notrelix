@@ -7,7 +7,7 @@ import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
 import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
 import { useAddGroup } from "../../status-option/use-add-group";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { cn, useIsMobile } from "@notrelix/ui-web";
 import {
@@ -1198,6 +1198,17 @@ export function KanbanView({
           inert={boardCovered || undefined}
           aria-hidden={boardCovered || undefined}
         >
+          {laneField && !capabilities.canMoveCard ? (
+            // WM-Swimlanes "Người chỉ xem": a warning band between the header and the toolbar.
+            <div
+              role="note"
+              data-lane-viewer-note=""
+              className="mt-2.5 flex items-start gap-2 rounded-[9px] bg-warning-subtle px-3 py-[9px] text-crumb text-warning-subtle-foreground ring-1 ring-warning/50 ring-inset"
+            >
+              <Lock className="size-4 shrink-0" aria-hidden="true" />
+              <span>{filtersCopy.lane.viewerNote}</span>
+            </div>
+          ) : null}
           {toolbar}
         </div>
 
@@ -1225,11 +1236,6 @@ export function KanbanView({
               />
             ) : laneField ? (
               <>
-                {capabilities.canMoveCard ? null : (
-                  <p className="mb-2 text-compact text-muted-foreground">
-                    {filtersCopy.lane.viewerNote}
-                  </p>
-                )}
                 <KanbanSwimlaneBoard
                   initialCollapsed={collapsedSwimlanes.initial}
                   onCollapsedChange={collapsedSwimlanes.onChange}
