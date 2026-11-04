@@ -84,11 +84,17 @@ export function SortMenu({
           aria-haspopup="dialog"
         >
           <ArrowUpDown className="size-4" aria-hidden="true" />
-          {copy.sort.trigger}
+          <span
+            className={
+              summary || fallbackSummary ? "@max-[1100px]/bar:sr-only" : ""
+            }
+          >
+            {copy.sort.trigger}
+            {summary || fallbackSummary ? ": " : ""}
+          </span>
           {summary || fallbackSummary ? (
             <>
-              {": "}
-              <b className="max-w-56 truncate font-semibold">
+              <b className="max-w-56 truncate font-semibold @max-[1100px]/bar:max-w-24 @max-[820px]/bar:max-w-14">
                 {summary || fallbackSummary}
               </b>
             </>

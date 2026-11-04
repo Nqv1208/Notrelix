@@ -60,6 +60,7 @@ export interface BoardCalendarSurfaceProps {
   zoneName: string;
   dateBasis: CalendarDateBasis;
   onDateBasisChange: (basis: CalendarDateBasis) => void;
+  dateFields?: readonly { id: string; name: string }[];
   /** The dated entries the filter leaves. */
   entries: readonly CalendarEntry[];
   undatedTotal: number;
@@ -115,6 +116,7 @@ export function BoardCalendarSurface({
   zoneName,
   dateBasis,
   onDateBasisChange,
+  dateFields,
   entries,
   undatedTotal,
   undated,
@@ -151,7 +153,7 @@ export function BoardCalendarSurface({
 
   const shownEntries = useMemo(() => {
     const base =
-      dateBasis === "due"
+      dateBasis !== "span"
         ? entries.map((entry) => ({ ...entry, startDay: entry.endDay }))
         : entries;
     if (!resize) return base;
@@ -373,6 +375,7 @@ export function BoardCalendarSurface({
         }
         dateBasis={dateBasis}
         onDateBasisChange={onDateBasisChange}
+        dateFields={dateFields}
         viewBar={viewBar}
         zoneLabel={zoneLabel}
         canAdd={canEdit}
