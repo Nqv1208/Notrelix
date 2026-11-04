@@ -31,6 +31,8 @@ export interface CellWrite {
   readonly status: "pending" | "error" | "conflict" | "schema" | "reloading";
   /** What the board changed under the write (`schema`). */
   readonly schema?: StaleSchemaDetail;
+  /** Who saved first (`conflict`), when the server named them. */
+  readonly byName?: string | null;
   /** The refusal is "this field is required": nothing was stored and retrying cannot help. */
   readonly required?: boolean;
   /** The value the person wrote; shown while the write has not settled. */
@@ -547,6 +549,7 @@ export function TableFieldCell({
         >
           <span className="font-semibold text-warning-subtle-foreground">
             {fillTableCopy(f.conflictTitle, {
+              who: write?.byName ?? f.staleSomeone,
               field: field.name,
               value: fieldText(field, cell.value, members) || f.empty,
             })}
