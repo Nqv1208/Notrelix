@@ -16,6 +16,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
+  useIsTablet,
 } from "@notrelix/ui-web";
 import {
   kanbanPillClass,
@@ -113,6 +114,86 @@ export function CalendarToolbar({
       ))}
     </DropdownMenuRadioGroup>
   );
+  const touch = useIsTablet();
+  if (touch) {
+    // Final-T-Calendar: a 56 px bar of 44 px targets. The date basis moves to the
+    // tray; the view controls keep 44 px hit areas.
+    const touchButton =
+      "h-11 rounded-[10px] border-line-strong bg-popover px-3.5 text-[14.5px] font-medium text-foreground shadow-none hover:bg-state-hover-strong dark:border-line-strong dark:bg-card";
+    return (
+      <div
+        data-calendar-bar=""
+        data-touch=""
+        className="flex h-14 flex-none items-center gap-1.5 px-4 lg:col-start-1 lg:row-start-1 [&_[data-slot=button]]:min-h-11"
+      >
+        <Button variant="outline" className={touchButton} onClick={onToday}>
+          {copy.today}
+        </Button>
+        {(["previous", "next"] as const).map((key) => (
+          <Button
+            key={key}
+            variant="ghost"
+            className="size-11 rounded-[10px] p-0 text-muted-foreground [&_svg]:size-5"
+            aria-label={copy[key][range]}
+            onClick={() => onStep(key === "previous" ? -1 : 1)}
+          >
+            {key === "previous" ? (
+              <ChevronLeft aria-hidden="true" />
+            ) : (
+              <ChevronRight aria-hidden="true" />
+            )}
+          </Button>
+        ))}
+        <h2
+          aria-live="polite"
+          className="ml-1.5 min-w-0 truncate text-calendar-title leading-[1.45] text-foreground"
+        >
+          {heading}
+        </h2>
+        <div className="min-w-0 flex-1" />
+        <div
+          role="radiogroup"
+          aria-label={copy.ranges.label}
+          className="inline-flex h-12 items-center rounded-[12px] bg-state-hover-strong p-0.5"
+        >
+          {RANGES.map((value, index) => {
+            const on = value === range;
+            return (
+              <button
+                key={value}
+                ref={(element) => {
+                  rangeButtons.current[index] = element;
+                }}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                tabIndex={on ? 0 : -1}
+                className={cn(
+                  "h-11 cursor-pointer rounded-[10px] px-3.5 text-sm font-medium text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring",
+                  on &&
+                    "bg-popover font-[650] text-foreground shadow-segment dark:bg-card",
+                )}
+                onClick={() => onRangeChange(value)}
+                onKeyDown={onRangeKeyDown}
+              >
+                {copy.ranges[value]}
+              </button>
+            );
+          })}
+        </div>
+        {viewBar}
+        {canAdd ? (
+          <Button
+            className="size-11 rounded-[10px] p-0 [&_svg]:size-5"
+            aria-label={copy.addItem}
+            onClick={onAddItem}
+          >
+            <Plus aria-hidden="true" />
+          </Button>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <div className="@container/bar">
       <div
