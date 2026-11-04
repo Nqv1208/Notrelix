@@ -576,7 +576,9 @@ describe("MainTableSurface", () => {
     );
     expect(props.onGroupToggle).toHaveBeenCalledWith("status-todo");
 
-    fireEvent.click(screen.getByRole("button", { name: "Thêm vào Cần làm" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Thêm công việc vào Cần làm" }),
+    );
     const input = screen.getByRole("textbox", {
       name: "Tên việc mới trong Cần làm",
     });
@@ -597,7 +599,7 @@ describe("MainTableSurface", () => {
     });
     expect(row("ERP-151")).toBeNull();
     expect(
-      screen.queryByRole("button", { name: "Thêm vào Cần làm" }),
+      screen.queryByRole("button", { name: "Thêm công việc vào Cần làm" }),
     ).toBeNull();
     expect(
       screen
@@ -609,7 +611,7 @@ describe("MainTableSurface", () => {
   it("FUI[wm.table.main:read-only] gives a viewer no status edit, add or archive", () => {
     renderTable(erpTableReadOnlyProps());
     expect(
-      screen.queryByRole("button", { name: "Thêm vào Cần làm" }),
+      screen.queryByRole("button", { name: "Thêm công việc vào Cần làm" }),
     ).toBeNull();
     expect(screen.queryByRole("button", { name: "Thêm công việc" })).toBeNull();
     const pill = within(row("ERP-144")).getByRole("button", {

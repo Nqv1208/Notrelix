@@ -61,6 +61,11 @@ export interface TableRowModel {
   /** Checklist items done over all items; null when the item has none. */
   readonly checklist: { readonly done: number; readonly total: number } | null;
   readonly commentCount: number;
+  /** Open blockers: how many, and the first one's key when it is on this board; null when none. */
+  readonly blocker?: {
+    readonly count: number;
+    readonly key: string | null;
+  } | null;
   readonly fileCount: number;
   readonly updatedText: string;
   readonly startText: string | null;
@@ -225,6 +230,10 @@ export function buildTableRow(
         ? card.checklistProgress
         : null,
     commentCount: Math.max(card._count?.comments ?? 0, 0),
+    blocker:
+      (card.openBlockerCount ?? 0) > 0
+        ? { count: card.openBlockerCount!, key: card.openBlockerKey ?? null }
+        : null,
     fileCount: Math.max(card._count?.attachments ?? 0, 0),
     updatedText: formatUpdatedAt(
       card.updatedAt,

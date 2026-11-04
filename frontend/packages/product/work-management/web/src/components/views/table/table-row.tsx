@@ -7,6 +7,7 @@ import {
 } from "react";
 import {
   AlertCircle,
+  Ban,
   ChevronRight,
   Flag,
   MessageCircle,
@@ -279,6 +280,23 @@ export function TableRow({
                   strokeWidth={1.8}
                 />
               </button>
+            ) : null}
+            {row.blocker && !renaming ? (
+              <span
+                data-slot="table-blocked-chip"
+                className="-mr-px inline-flex h-5.5 shrink-0 items-center gap-1 rounded-[6px] bg-danger-subtle px-2 text-xs font-semibold text-danger-subtle-foreground"
+              >
+                <Ban
+                  className="size-3.25"
+                  strokeWidth={1.8}
+                  aria-hidden="true"
+                />
+                {row.blocker.key
+                  ? fillTableCopy(copy.row.blockedBy, { key: row.blocker.key })
+                  : fillTableCopy(copy.row.blockedByCount, {
+                      count: row.blocker.count,
+                    })}
+              </span>
             ) : null}
             {renaming ? (
               <AnchoredNote

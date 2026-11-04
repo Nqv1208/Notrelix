@@ -142,6 +142,14 @@ export function TableGroupHeader({
         <StatusDot category={group.category} />
         {group.name}
         <span className="font-medium text-meta-foreground">{count}</span>
+        {group.rows.length === 0 && !group.hasMore ? (
+          <span
+            data-slot="table-group-empty"
+            className="text-[13px] leading-[1.45] font-normal text-meta-foreground"
+          >
+            {group.total > 0 ? copy.group.emptyFiltered : copy.group.emptyGroup}
+          </span>
+        ) : null}
         {group.overdueCount > 0 ? (
           <span className="text-crumb font-semibold text-danger-text">
             ·{" "}
