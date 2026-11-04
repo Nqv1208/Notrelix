@@ -33,6 +33,7 @@ export const en = {
   links: "Dependencies",
   criticalPath: "Critical path",
   addItem: "Add item",
+  overflow: "More",
   /** Controls whose data does not exist yet look like the design and say so. */
   unavailable: {
     links: "No item has a dependency yet, so there is nothing to show",
@@ -221,6 +222,7 @@ export const vi: TimelineCopy = {
   links: "Phụ thuộc",
   criticalPath: "Đường găng",
   addItem: "Thêm công việc",
+  overflow: "Thêm",
   unavailable: {
     links: "Chưa có việc nào có phụ thuộc nên chưa có gì để hiện",
     criticalPath: "Đường găng cần có phụ thuộc giữa các việc",

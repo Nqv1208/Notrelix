@@ -45,9 +45,9 @@ const MOCK = {
     month: { x: 366, y: 119, width: 65, height: 28 },
     week: { x: 431, y: 119, width: 55, height: 28 },
     day: { x: 486, y: 119, width: 58, height: 28 },
-    basis: { x: 554, y: 117, width: 220, height: 32 },
-    filter: { x: 782, y: 117, width: 67, height: 32 },
-    zone: { x: 885, y: 125, width: 117, height: 17 },
+    basis: { x: 554, y: 117, width: 156, height: 32 },
+    filter: { x: 718, y: 117, width: 67, height: 32 },
+    zone: { x: 960, y: 125, width: 42, height: 17 },
     primary: { x: 1010, y: 117, width: 150, height: 32 },
   },
   frame: {
@@ -254,7 +254,7 @@ const bar = (page: Page) => ({
   heading: page.getByRole("heading", { level: 2 }).first(),
   segment: page.getByRole("radiogroup", { name: "Khoảng hiển thị" }),
   basis: page.getByRole("button", { name: /^Xếp theo/ }),
-  zone: page.getByText("Giờ Hà Nội (GMT+7)"),
+  zone: page.getByText("GMT+7", { exact: true }),
   primary: page.getByRole("button", { name: "Thêm công việc" }),
 });
 
