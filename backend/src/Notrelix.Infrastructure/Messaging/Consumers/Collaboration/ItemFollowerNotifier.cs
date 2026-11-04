@@ -13,7 +13,7 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Collaboration;
 /// a person who creates or is assigned an Item follows it, and the people who follow it are told in-app
 /// about a change. Every write is idempotent by the message identity, so a redelivery adds nothing.
 /// </summary>
-public sealed class ItemFollowerNotifier
+public class ItemFollowerNotifier
 {
     public const string BoardItemKind = "work-management.board-item";
     public const int ExcerptLength = NotificationExcerpt.Length;
@@ -21,12 +21,15 @@ public sealed class ItemFollowerNotifier
     private readonly ICollaborationDbContext _collaboration;
     private readonly INotificationDbContext _notifications;
     private readonly IResourceFollowers _followers;
+    private readonly ItemAudience _audience;
 
     public ItemFollowerNotifier(
         ICollaborationDbContext collaboration,
         INotificationDbContext notifications,
-        IResourceFollowers followers)
+        IResourceFollowers followers,
+        ItemAudience audience)
     {
+        _audience = audience;
         _collaboration = collaboration;
         _notifications = notifications;
         _followers = followers;
@@ -70,8 +73,11 @@ public sealed class ItemFollowerNotifier
         await NotifyAsync(accountId, workspaceId, itemId, actorUserId, sourceEventId, producedType, title, body, recipients, now, ct);
     }
 
-    /// <summary>One in-app notification to each listed person who turned the matching preference on.</summary>
-    public Task NotifyAsync(
+    /// <summary>
+    /// One in-app notification to each listed person who turned the matching preference on and can see the
+    /// Item's Board now.
+    /// </summary>
+    public virtual async Task NotifyAsync(
         Guid accountId,
         Guid workspaceId,
         Guid itemId,
@@ -85,7 +91,7 @@ public sealed class ItemFollowerNotifier
         CancellationToken ct) =>
         NotifyAsync(
             accountId, workspaceId, itemId, actorUserId, sourceEventId, sourceEventId.ToString(),
-            producedType, title, body, recipients, now, ct);
+            producedType, title, body, await _audience.WhoCanSeeAsync(workspaceId, itemId, recipients, ct), now, ct);
 
     /// <summary>
     /// The same, idempotent by <paramref name="deduplicationScope"/> instead of an event: a producer that has no
