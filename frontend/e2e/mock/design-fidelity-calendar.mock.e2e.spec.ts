@@ -79,7 +79,8 @@ const MOCK = {
     title: { x: 901, y: 172, width: 246, height: 20 },
     hint: { x: 901, y: 200, width: 246, height: 18 },
     item: { x: 901, y: 226, width: 246, height: 94 },
-    itemTitle: { x: 936, y: 236, width: 152, height: 55 },
+    // 144.7, not the artboard's 152: the button reads "Đặt ngày" (the board's date field), not "Đặt hạn", and is wider.
+    itemTitle: { x: 936, y: 236, width: 144.7, height: 55 },
     setDue: { x: 1096, y: 260, width: 41, height: 26 },
     legend: { x: 888, y: 343, width: 272, height: 192 },
     swatch: { x: 901, y: 387, width: 22, height: 12 },
