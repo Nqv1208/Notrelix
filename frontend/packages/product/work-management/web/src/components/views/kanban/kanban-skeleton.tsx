@@ -1,5 +1,8 @@
 import { Skeleton, cn } from "@notrelix/ui-web";
-import { kanbanColumnWidthClass } from "./kanban-layout";
+import {
+  kanbanColumnTabletWidthClass,
+  kanbanColumnWidthClass,
+} from "./kanban-layout";
 
 export function KanbanSkeleton() {
   return (
@@ -24,6 +27,7 @@ export function KanbanSkeleton() {
             className={cn(
               "flex shrink-0 flex-col gap-3 rounded-2xl border border-border bg-muted/20 p-3",
               kanbanColumnWidthClass,
+              kanbanColumnTabletWidthClass,
             )}
           >
             {/* Header skeleton */}

@@ -54,7 +54,10 @@ import {
   kanbanLaneKey,
   type KanbanMoveDirection,
 } from "./kanban-dnd";
-import { kanbanColumnWidthClass } from "./kanban-layout";
+import {
+  kanbanColumnTabletWidthClass,
+  kanbanColumnWidthClass,
+} from "./kanban-layout";
 import type { KanbanLaneCopy } from "./kanban-lane.copy";
 
 /** Lane tint by status category; lanes without a category use the neutral tint. */
@@ -412,6 +415,7 @@ export function KanbanColumn({
       className={cn(
         "flex shrink-0 flex-col gap-2 rounded-xl p-2 transition-shadow duration-150 tablet:rounded-[16px] tablet:pt-1.5",
         kanbanColumnWidthClass,
+        kanbanColumnTabletWidthClass,
         tint,
         dropTarget && "ring-2 ring-inset ring-primary",
       )}
