@@ -18,7 +18,6 @@ import {
   AlignLeft,
   LayoutList,
   Link2,
-  ListChecks,
   SquareCheck,
   Paperclip,
 } from "lucide-react";
