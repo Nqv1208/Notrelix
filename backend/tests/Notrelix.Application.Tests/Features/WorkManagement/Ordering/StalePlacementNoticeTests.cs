@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.WorkManagement.Ordering;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.Ordering;
