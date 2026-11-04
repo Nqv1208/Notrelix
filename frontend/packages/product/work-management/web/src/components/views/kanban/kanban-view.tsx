@@ -9,7 +9,13 @@ import { useAddGroup } from "../../status-option/use-add-group";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import { cn, useIsMobile, useIsTablet } from "@notrelix/ui-web";
+import {
+  TABLET_SLOT,
+  TabletSlot,
+  cn,
+  useIsMobile,
+  useIsTablet,
+} from "@notrelix/ui-web";
 import {
   useBoardLabels,
   useCardLabelWrites,
@@ -1117,6 +1123,12 @@ export function KanbanView({
                   kanban.groupByField
                     ? { fieldId: kanban.groupByField.id }
                     : undefined
+                }
+                afterGroup={
+                  <TabletSlot
+                    slot={TABLET_SLOT.toolbarStack}
+                    className="hidden items-center tablet:flex"
+                  />
                 }
                 laneFields={groupableFields(kanban.filterFields)}
                 blockedLaneFieldId={kanban.groupByField?.id}

@@ -48,7 +48,7 @@ export function KanbanToolbar({
   const compact = useMediaQuery("(max-width: 639px)");
   return (
     <div data-kanban-toolbar="">
-      <div className="flex flex-wrap items-center gap-1.5 py-2.5 tablet:min-h-15 tablet:gap-2 tablet:py-2">
+      <div className="flex flex-wrap items-center gap-1.5 py-2.5 tablet:min-h-15 tablet:flex-nowrap tablet:gap-2 tablet:overflow-x-auto tablet:py-2 tablet:[&>*]:shrink-0">
         {/* The tablet row starts with the access chip (the board header portals it in). */}
         <TabletSlot
           slot={TABLET_SLOT.toolbarLead}
@@ -77,7 +77,7 @@ export function KanbanToolbar({
 
         {viewBar}
 
-        <span className="flex-1" />
+        <span className="flex-1 tablet:hidden" />
 
         {endActions}
         {/* The tablet row ends with the view menu, Add view and the avatar stack (the board header portals them in). */}
