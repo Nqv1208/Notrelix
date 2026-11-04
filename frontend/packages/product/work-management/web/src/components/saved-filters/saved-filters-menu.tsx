@@ -29,7 +29,11 @@ import {
 /** How a write the host sent ended; the host's result is assignable to it. */
 export type SavedFilterWriteResult =
   | { readonly ok: true }
-  | { readonly ok: false; readonly reason: "forbidden" | "missing" | "failed" };
+  | {
+      readonly ok: false;
+      readonly reason: "forbidden" | "missing" | "conflict" | "failed";
+      readonly by?: string | null;
+    };
 
 /** One phrase of a filter's summary; the grouping reads apart from the conditions. */
 export interface SummaryPhrase {
@@ -594,9 +598,14 @@ function SavedFilterRow({
         aria-label={fillSavedFiltersCopy(t.apply, name)}
         aria-current={applied ? "true" : undefined}
         onClick={() => onApply(filter)}
-        className={`flex ${subtitle ? "min-h-13" : "min-h-11"} min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg border-0 bg-transparent py-1 pr-2.5 pl-2.5 text-left text-sm focus-visible:outline-2 focus-visible:outline-ring`}
+        className={`flex ${subtitle || stale > 0 ? "min-h-13" : "min-h-11"} min-w-0 flex-1 cursor-pointer ${stale > 0 ? "items-start py-2" : "items-center py-1"} gap-2.5 rounded-lg border-0 bg-transparent pr-2.5 pl-2.5 text-left text-sm focus-visible:outline-2 focus-visible:outline-ring`}
       >
-        <span className="grid h-4 w-4.5 shrink-0 place-items-center text-brand-subtle-foreground">
+        <span
+          className={cn(
+            "grid h-4 w-4.5 shrink-0 place-items-center text-brand-subtle-foreground",
+            stale > 0 && "mt-0.5",
+          )}
+        >
           {stale > 0 ? (
             <CircleAlert
               className="size-4 text-warning-text"
