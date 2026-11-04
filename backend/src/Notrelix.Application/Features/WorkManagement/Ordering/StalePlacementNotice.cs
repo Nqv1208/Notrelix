@@ -5,7 +5,7 @@ namespace Notrelix.Application.Features.WorkManagement.Ordering;
 /// 409 names who, as the 412 of an item or a view does: the display name only, none for a Workspace Guest or for a
 /// person the caller has no workspace relationship to. Best effort: any failure leaves the plain conflict.
 /// </summary>
-internal static class StalePlacementNotice
+public static class StalePlacementNotice
 {
     public static async Task<ConflictException> NameAsync(
         ConflictException stale,
