@@ -32,6 +32,7 @@ import {
   useUpdateCard,
   useUpdateCardUpdate,
   useUpdateFieldOption,
+  useHoldRealtimeRefetch,
   type KanbanWriteFailure,
   deletedItemOf,
 } from "@notrelix/work-management-state";
@@ -191,6 +192,9 @@ export function KanbanView({
 }: KanbanViewProps) {
   // Read once so every card judges "overdue" against the same instant.
   const [now] = useState(() => new Date());
+  // A lifted card holds realtime refetches so the lanes do not reshuffle under the pointer.
+  const [dragging, setDragging] = useState(false);
+  useHoldRealtimeRefetch(dragging);
   const cardCopy = useKanbanCardCopy();
   const toolbarCopy = useKanbanToolbarCopy();
   const laneCopy = useKanbanLaneCopy();
@@ -1188,6 +1192,7 @@ export function KanbanView({
               </>
             ) : (
               <KanbanBoard
+                onDraggingChange={setDragging}
                 lanes={kanban.lanes}
                 groupOrder={kanban.groups}
                 copy={laneCopy}
