@@ -6,6 +6,7 @@ import type {
 import { endpoints } from "@notrelix/contracts";
 import type {
   BoardSettingsDto,
+  FormulaPreviewDraft,
   FormulaPreviewDto,
   BoardSettingsComputedDto,
   BoardSettingsFieldDto,
@@ -214,15 +215,22 @@ function isLockedSystemField(column: OverviewField): boolean {
 }
 
 /** The key a field is listed under: its name as a lowercase slug ("due-date"), or a short id when the name has no letters. */
-function fieldKey(column: OverviewField): string {
-  const slug = (column.name ?? "")
+export function fieldKeyOf(
+  name: string | null | undefined,
+  id?: string,
+): string {
+  const slug = (name ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/đ/gi, "d")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  return slug || (column.id ?? "").slice(0, 8);
+  return slug || (id ?? "").slice(0, 8);
+}
+
+function fieldKey(column: OverviewField): string {
+  return fieldKeyOf(column.name, column.id);
 }
 
 function mapField(column: OverviewField): BoardSettingsFieldDto {
@@ -762,27 +770,33 @@ export function createBoardSettingsApi(client: NotrelixClient) {
     previewFormula: async (
       boardId: string,
       itemId: string,
-      expression: string,
+      draft: FormulaPreviewDraft,
     ): Promise<FormulaPreviewDto> => {
+      const text = (value: unknown) =>
+        value !== null && value !== undefined ? String(value) : null;
       const result = await api.get<{
         state?: string;
         value?: unknown;
         errorCode?: string | null;
-      }>(
-        endpoints.boardFields.previewFormula(boardId, itemId, expression),
-        quiet,
-      );
+        inputs?: {
+          name: string;
+          value?: { state?: string; value?: unknown };
+        }[];
+        subItemCount?: number | null;
+      }>(endpoints.boardFields.previewFormula(boardId, itemId, draft), quiet);
       const state =
         result.state === "ok" || result.state === "empty"
           ? result.state
           : "error";
       return {
         state,
-        value:
-          state === "ok" && result.value !== null && result.value !== undefined
-            ? String(result.value)
-            : null,
+        value: state === "ok" ? text(result.value) : null,
         errorCode: result.errorCode ?? null,
+        inputs: (result.inputs ?? []).map((input) => ({
+          name: input.name,
+          value: input.value?.state === "ok" ? text(input.value.value) : null,
+        })),
+        subItemCount: result.subItemCount ?? null,
       };
     },
     addOption: (

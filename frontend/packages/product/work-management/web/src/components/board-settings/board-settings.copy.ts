@@ -373,6 +373,13 @@ export const en = {
       "Functions: IF(condition; a; b), SUM, MIN, MAX, ROUND(number; digits), DAYS(end; start). Join text with &. Only fields of this board.",
     nodes: "{{count}} / 200 elements",
     preview: "Try it with {{key}}:",
+    previewShort: "with {{key}}",
+    previewSubItems: "{{count}} sub-items: {{values}}",
+    previewSubItemsShort: "{{count}} sub-items",
+    previewNoSubItems: "no sub-items yet",
+    previewNoSubItemsNote:
+      "Sum and Count give 0; Average, Smallest and Largest stay empty (—) because there is nothing to calculate.",
+    previewAnd: "and",
     previewEmpty: "No value",
     previewChecking: "Checking…",
     previewErrors: {
@@ -1119,6 +1126,13 @@ export const vi: BoardSettingsCopy = {
       "Hàm: IF(điều kiện; a; b), SUM, MIN, MAX, ROUND(số; chữ số), DAYS(ngày cuối; ngày đầu). Nối chữ bằng &. Chỉ dùng trường của bảng này.",
     nodes: "{{count}} / 200 phần tử",
     preview: "Xem thử với {{key}}:",
+    previewShort: "với {{key}}",
+    previewSubItems: "{{count}} việc con: {{values}}",
+    previewSubItemsShort: "{{count}} việc con",
+    previewNoSubItems: "chưa có việc con",
+    previewNoSubItemsNote:
+      "Tổng và Đếm cho 0; Trung bình, Nhỏ nhất, Lớn nhất để trống (—) vì không có gì để tính.",
+    previewAnd: "và",
     previewEmpty: "Chưa có giá trị",
     previewChecking: "Đang tính…",
     previewErrors: {
