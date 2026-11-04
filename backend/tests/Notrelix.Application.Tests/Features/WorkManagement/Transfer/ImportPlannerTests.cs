@@ -1,6 +1,5 @@
 using Notrelix.Application.Features.WorkManagement.Transfer;
 using Notrelix.Domain.SharedKernel.Ordering;
-using Notrelix.Domain.WorkManagement;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.Transfer;
 
@@ -72,5 +71,72 @@ public class ImportPlannerTests : WorkManagementHandlerTestBase
     {
         ImportPlanner.TryNumber(raw, out var value).Should().BeTrue();
         value.Should().Be((decimal)expected);
+    }
+
+    private static readonly Guid Ana = Guid.CreateVersion7();
+    private static readonly Guid Binh = Guid.CreateVersion7();
+
+    private ImportSchema SchemaWithPeople() => new([_title, _number, _assignee], [_group],
+        new Dictionary<string, Guid> { ["ana@example.com"] = Ana, ["binh@example.com"] = Binh });
+
+    [Fact]
+    public void Targets_APersonColumnIsImportable_OnlyWhenTheImporterMayMatchPeople()
+    {
+        ImportPlanner.Targets(SchemaWithPeople()).Single(t => t.Id == _assignee.Id.ToString()).LockedReason.Should().BeNull();
+        ImportPlanner.Targets(_schema).Single(t => t.Id == _assignee.Id.ToString()).LockedReason.Should().Be(ImportPlanner.LockedPerson);
+    }
+
+    [Fact]
+    public void Evaluate_AnEmailOfAnOfferedPerson_AssignsThemCaseInsensitively()
+    {
+        var map = new[] { new ColumnMap(0, ImportPlanner.Title), new ColumnMap(1, _assignee.Id.ToString()) };
+
+        var result = ImportPlanner.Evaluate(File(["One", " Ana@Example.com "]), SchemaWithPeople(), map, collectItems: true);
+
+        result.ErrorCount.Should().Be(0);
+        result.UnmatchedPersonRows.Should().BeEmpty();
+        result.Items.Single().Values.Single().Value.Data.Value.Should().Be($"\"{Ana}\"");
+    }
+
+    [Fact]
+    public void Evaluate_AnUnmatchedEmail_LeavesTheCellEmptyAndListsTheRow_WithoutFailingTheFile()
+    {
+        var map = new[] { new ColumnMap(0, ImportPlanner.Title), new ColumnMap(1, _assignee.Id.ToString()) };
+
+        var result = ImportPlanner.Evaluate(
+            File(["One", "ana@example.com"], ["Two", "stranger@elsewhere.com"], ["Three", "stranger@elsewhere.com"], ["Four", ""]),
+            SchemaWithPeople(), map, collectItems: true);
+
+        result.ErrorCount.Should().Be(0);
+        result.UnmatchedPersonRows.Should().Equal(2, 3);
+        result.Items.Should().HaveCount(4);
+        result.Items.Single(i => i.Row == 2).Values.Should().BeEmpty();
+        result.Items.Single(i => i.Row == 4).Values.Should().BeEmpty();
+        result.Checks.Single(c => c.Target == _assignee.Id.ToString()).Status.Should().Be("ok");
+    }
+
+    [Fact]
+    public void Evaluate_APersonColumn_IsIgnoredWhenTheImporterMayNotMatchPeople()
+    {
+        var map = new[] { new ColumnMap(0, ImportPlanner.Title), new ColumnMap(1, _assignee.Id.ToString()) };
+
+        var result = ImportPlanner.Evaluate(File(["One", "ana@example.com"]), _schema, map, collectItems: true);
+
+        result.UnmatchedPersonRows.Should().BeEmpty();
+        result.Items.Single().Values.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Evaluate_AMultiplePersonField_TakesSeveralEmails_AndListsTheRowWhenOneIsUnknown()
+    {
+        var many = BoardField.Create(TestAccountId, TestWorkspaceId, _boardId, "Reviewers", FieldType.Person,
+            FieldSettings.Create(Notrelix.Domain.SharedKernel.JsonValue.Create("{\"multiple\":true}")), FractionalIndex.Create("a3"), TestUserId, TestNow);
+        var schema = new ImportSchema([_title, many], [_group], new Dictionary<string, Guid> { ["ana@example.com"] = Ana, ["binh@example.com"] = Binh });
+        var map = new[] { new ColumnMap(0, ImportPlanner.Title), new ColumnMap(1, many.Id.ToString()) };
+
+        var result = ImportPlanner.Evaluate(File(["One", "ana@example.com; binh@example.com; nobody@x.com"]), schema, map, collectItems: true);
+
+        result.UnmatchedPersonRows.Should().Equal(1);
+        result.Items.Single().Values.Single().Value.Data.Value.Should().Be($"[\"{Ana}\",\"{Binh}\"]");
     }
 }

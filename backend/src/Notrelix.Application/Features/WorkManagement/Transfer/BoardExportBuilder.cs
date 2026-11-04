@@ -89,11 +89,13 @@ public sealed class BoardExportBuilder(
                     .OrderBy(i => i.Position).ToListAsync(ct);
                 var builtChildren = children.Count == 0 ? [] : await summaries.BuildAsync(fields, children, ct);
                 people = await PeopleAsync(built.Concat(builtChildren).ToList(), custom, ct);
+                var childById = children.ToDictionary(c => c.Id);
+                var childrenOf = builtChildren.ToLookup(c => c.ParentItemId);
                 foreach (var s in built)
                 {
                     rows.Add(RowOf(s, byId[s.Id], null));
-                    foreach (var child in builtChildren.Where(c => c.ParentItemId == s.Id))
-                        rows.Add(RowOf(child, children.First(c => c.Id == child.Id), s.ItemKey));
+                    foreach (var child in childrenOf[s.Id])
+                        rows.Add(RowOf(child, childById[child.Id], s.ItemKey));
                 }
 
                 roots += built.Count;

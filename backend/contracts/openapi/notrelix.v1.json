@@ -35706,10 +35706,19 @@
           "failureBy": {
             "type": "string",
             "nullable": true
+          },
+          "unmatchedPersonRows": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
       },
+
       "Notrelix.Application.Features.WorkManagement.Transfer.ImportPreviewDto": {
         "type": "object",
         "properties": {
@@ -35748,10 +35757,19 @@
               "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Transfer.SampleRow"
             },
             "nullable": true
+          },
+          "unmatchedPersonRows": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
       },
+
       "Notrelix.Application.Features.WorkManagement.Transfer.ImportRowError": {
         "type": "object",
         "properties": {

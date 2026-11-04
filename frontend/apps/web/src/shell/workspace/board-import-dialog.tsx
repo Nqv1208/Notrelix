@@ -135,6 +135,20 @@ export function BoardImportDialog({
       ? `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(bytes / (1024 * 1024))} MB`
       : `${Math.max(1, Math.round(bytes / 1024))} KB`;
   const numberLabel = (n: number) => new Intl.NumberFormat(locale).format(n);
+  const unmatchedNote = (rows: readonly number[] | null | undefined) =>
+    rows && rows.length > 0 ? (
+      <p
+        role="status"
+        className="m-0 rounded-[10px] border border-line px-3 py-2 text-metadata text-meta-foreground"
+      >
+        {fill(copy.peopleUnmatched, {
+          count: numberLabel(rows.length),
+          rows:
+            rows.slice(0, 8).map(numberLabel).join(", ") +
+            (rows.length > 8 ? "…" : ""),
+        })}
+      </p>
+    ) : null;
 
   // The job: polled while it waits or runs, so closing and reopening the dialog never loses it.
   const job = useQuery({
@@ -716,6 +730,7 @@ export function BoardImportDialog({
                 <span className="text-metadata">{copy.hasErrorsBody}</span>
               </div>
             )}
+            {unmatchedNote(preview?.unmatchedPersonRows)}
             {preview ? (
               <div className="overflow-x-auto rounded-[10px] border border-line">
                 <table className="w-full border-collapse text-compact">
@@ -826,6 +841,7 @@ export function BoardImportDialog({
                     })}
                   </span>
                 </div>
+                {unmatchedNote(progress?.unmatchedPersonRows)}
                 <div className="flex flex-col gap-0.5 rounded-[10px] border border-line px-3 py-2">
                   <b className="text-compact font-semibold">{copy.doneAsk}</b>
                   <span className="text-metadata text-meta-foreground">
