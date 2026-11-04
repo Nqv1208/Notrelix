@@ -44,6 +44,8 @@ export interface FieldRefMenuProps {
 }
 
 const SECTIONS = ["select", "person", "date", "checkbox"] as const;
+/** The lane menu is one flat list, people first (WM-Swimlanes "Chọn làn"). */
+const LANE_SECTIONS = ["person", "select", "date", "checkbox"] as const;
 
 const rowClass =
   "min-h-9 gap-2.5 rounded-lg px-2.5 py-1 pr-2.5 text-[13.5px] leading-[1.45] [&>[data-slot=dropdown-menu-radio-item-indicator]]:hidden";
@@ -104,8 +106,16 @@ export function FieldRefMenu({
   const shown = value ?? fallback;
   const current = fields.find((field) => field.id === shown?.fieldId);
   const Icon = kind === "group" ? Layers : Rows3;
-  const sections = SECTIONS.flatMap((group) => {
-    const inGroup = fields.filter((field) => fieldTypeKind(field) === group);
+  const isLane = kind === "lane";
+  // The lane menu names the column field last, under a rule, switched off.
+  const blockedFields = isLane
+    ? fields.filter((field) => field.id === blockedFieldId)
+    : [];
+  const offered = isLane
+    ? fields.filter((field) => field.id !== blockedFieldId)
+    : fields;
+  const sections = (isLane ? LANE_SECTIONS : SECTIONS).flatMap((group) => {
+    const inGroup = offered.filter((field) => fieldTypeKind(field) === group);
     return inGroup.length > 0 ? [[group, inGroup] as const] : [];
   });
   const bucket = shown?.bucket ?? "week";
@@ -140,8 +150,18 @@ export function FieldRefMenu({
       <DropdownMenuContent
         align="start"
         aria-label={t.label}
-        className="flex w-[min(19.375rem,calc(100vw-1.5rem))] flex-col gap-0.5 rounded-[12px] border border-line p-1.5 ring-0"
+        className={cn(
+          "flex flex-col gap-0.5 rounded-[12px] border border-line p-1.5 ring-0",
+          isLane
+            ? "w-[min(21.25rem,calc(100vw-1.5rem))] [--muted-foreground:var(--meta-foreground)]"
+            : "w-[min(19.375rem,calc(100vw-1.5rem))]",
+        )}
       >
+        {isLane ? (
+          <DropdownMenuLabel className={headingClass}>
+            {t.label}
+          </DropdownMenuLabel>
+        ) : null}
         <DropdownMenuRadioGroup
           className="flex flex-col gap-0.5"
           value={shown?.fieldId ?? ""}
@@ -162,9 +182,11 @@ export function FieldRefMenu({
           </DropdownMenuRadioItem>
           {sections.map(([group, inGroup]) => (
             <div key={group} className="flex flex-col gap-0.5">
-              <DropdownMenuLabel className={headingClass}>
-                {copy.group[group]}
-              </DropdownMenuLabel>
+              {isLane ? null : (
+                <DropdownMenuLabel className={headingClass}>
+                  {copy.group[group]}
+                </DropdownMenuLabel>
+              )}
               {inGroup.map((field) => {
                 const blocked = field.id === blockedFieldId;
                 const on = field.id === shown?.fieldId;
@@ -180,10 +202,12 @@ export function FieldRefMenu({
                       >
                         {tick(on)}
                         <span className="min-w-0 flex-1 truncate">
-                          {field.name}
+                          {isLane
+                            ? `${field.name} · ${copy.lane.by} ${copy.group.bucket[bucket].toLowerCase()}`
+                            : field.name}
                         </span>
                         <span className={hintClass}>
-                          {on
+                          {on && !isLane
                             ? `${copy.group.date} · ${copy.group.bucket[bucket].toLowerCase()}`
                             : copy.group.date}
                         </span>
@@ -266,9 +290,25 @@ export function FieldRefMenu({
           ))}
         </DropdownMenuRadioGroup>
         {kind === "lane" ? (
-          <p className="px-2.5 py-1.5 text-xs leading-[1.45] text-muted-foreground">
-            {copy.lane.note}
-          </p>
+          <>
+            {blockedFields.length > 0 ? (
+              <DropdownMenuSeparator className="mx-0 my-1 bg-line" />
+            ) : null}
+            {blockedFields.map((field) => (
+              <div
+                key={field.id}
+                aria-disabled="true"
+                className="flex min-h-9 items-center gap-2.5 rounded-lg px-2.5 py-1 text-[13.5px] leading-[1.45] text-muted-foreground"
+              >
+                <span className="w-4 shrink-0" />
+                <span className="min-w-0 flex-1 truncate">{field.name}</span>
+                <span className={hintClass}>{copy.lane.sameAsColumn}</span>
+              </div>
+            ))}
+            <p className="px-2.5 py-1 text-[13.5px] leading-[1.45] text-muted-foreground">
+              {copy.lane.note}
+            </p>
+          </>
         ) : unavailableFields && unavailableFields.length > 0 ? (
           <>
             <DropdownMenuSeparator className="mx-0 my-1 bg-line" />

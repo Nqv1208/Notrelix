@@ -338,12 +338,12 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
             <div
               key={keyOf(column.optionId)}
               data-swimlane-column=""
-              className="flex items-center gap-2 border-r border-line px-3 py-2 text-compact font-semibold last:border-r-0"
+              className="flex items-center gap-2 border-r border-line px-3 py-2 text-[12.5px] font-[650] last:border-r-0"
             >
               <span className="min-w-0 truncate">
                 {props.columnName(column)}
               </span>
-              <span className="rounded-md bg-state-hover px-1.5 text-crumb text-muted-foreground">
+              <span className="rounded-md bg-border px-1.5 text-[11.5px] leading-5 text-muted-foreground">
                 {column.cards.length}
               </span>
             </div>
@@ -361,7 +361,7 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
               className="border-b border-line last:border-b-0"
             >
               <div className="sticky top-0 z-10 bg-popover dark:bg-card">
-                <div className="flex min-h-10 items-center gap-2 border-b border-line bg-state-hover px-2.5 text-label font-semibold">
+                <div className="flex min-h-10 items-center gap-2 border-b border-line bg-state-hover px-2.5 text-[13px] font-[650]">
                   <button
                     type="button"
                     aria-expanded={!isCollapsed}
