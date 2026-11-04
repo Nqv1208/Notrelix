@@ -1,5 +1,6 @@
 import { cn } from "@notrelix/ui-web";
 import { useSettings } from "./board-settings-context";
+import { fillCopy } from "./board-settings-format";
 import { BUTTON_CLASS } from "./board-settings-parts";
 
 /**
@@ -20,7 +21,9 @@ export function WriteError({ scope, id }: { scope: string; id: string }) {
     >
       <span>
         {failure.reason === "conflict"
-          ? t.conflictReloaded
+          ? failure.byName
+            ? fillCopy(t.conflictReloadedBy, { who: failure.byName })
+            : t.conflictReloaded
           : failure.reason === "invalid"
             ? t.invalid
             : t.failedKept}

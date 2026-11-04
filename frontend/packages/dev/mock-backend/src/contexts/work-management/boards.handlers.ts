@@ -1165,6 +1165,68 @@ export const boardsOperations = [
     },
   }),
 
+  // ─── GET /boards/:boardId/fields/deleted ─────────────────────────────────
+
+  defineMockOperation<{ boardId: string }, never, unknown[]>({
+    id: "boards.columns.deleted",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.Deleted",
+    } as any,
+    method: "GET",
+    route: "/boards/:boardId/fields/deleted",
+    async handle({ params, store }) {
+      // A Manager reads the list, as on the producer.
+      if (!canManageBoard(params.boardId, store)) return forbidden();
+      return ok(
+        store.getDeletedColumns(params.boardId).map((entry) => ({
+          id: entry.column.id,
+          name: entry.column.name,
+          // The producer names the type as its `FieldType` enum: "LongText" for the mock's `long_text`.
+          fieldType: entry.column.fieldType
+            .split("_")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(""),
+          deletedAt: entry.deletedAt,
+          restorableUntil: entry.restorableUntil,
+          deletedBy: null,
+          deletedByName: entry.deletedByName,
+          valueCount: entry.valueCount,
+        })),
+      );
+    },
+  }),
+
+  // ─── POST /boards/:boardId/fields/:fieldId/restore ───────────────────────
+
+  defineMockOperation<{ boardId: string; fieldId: string }, never, void>({
+    id: "boards.columns.restore",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.Restore",
+    } as any,
+    method: "POST",
+    route: "/boards/:boardId/fields/:fieldId/restore",
+    async handle({ params, store }) {
+      if (!canManageBoard(params.boardId, store)) return forbidden();
+      const restored = store.restoreDeletedColumn(
+        params.boardId,
+        params.fieldId,
+      );
+      if (restored === "not-found") return notFound("Field not found");
+      if (restored === "name-taken")
+        return {
+          status: 409,
+          body: {
+            message: "A field with this name is in use.",
+            code: "work-management.field.name-taken",
+            errorCode: "work-management.field.name-taken",
+          },
+        };
+      return noContent();
+    },
+  }),
+
   // ─── POST /boards/:boardId/fields/:fieldId/move ─────────────────────────
 
   defineMockOperation<

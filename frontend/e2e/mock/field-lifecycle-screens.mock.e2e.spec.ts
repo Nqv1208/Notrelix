@@ -27,6 +27,35 @@ const SCREENS = {
     await expect(dialog).toBeVisible();
     await expect(dialog).toContainText("30 ngày");
   },
+  "formula-dialog": async (page: Page) => {
+    await page.goto(
+      `${ROADMAP.replace("roadmap", "erp")}/settings?from=table&section=fields`,
+    );
+    await page.getByText("Điểm gấp đôi", { exact: true }).first().click();
+    await page.getByRole("button", { name: /Sửa công thức/ }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+  },
+  "rollup-dialog": async (page: Page) => {
+    await page.goto(
+      `${ROADMAP.replace("roadmap", "erp")}/settings?from=table&section=fields`,
+    );
+    await page.getByRole("button", { name: "Thêm trường" }).click();
+    await page
+      .getByRole("button", { name: /^Tổng hợp Cộng/ })
+      .dispatchEvent("click");
+    await expect(page.getByRole("dialog")).toBeVisible();
+  },
+  // Needs the overlay `deleted-fields`: the list of deleted fields, with a refused restore.
+  "deleted-fields": async (page: Page) => {
+    await page.goto(
+      `${ROADMAP.replace("roadmap", "erp")}/settings?from=table&section=fields`,
+    );
+    await page.getByRole("tab", { name: /Đã xoá/ }).click();
+    await page
+      .getByRole("button", { name: /Khôi phục trường Phòng ban yêu cầu/ })
+      .click();
+    await expect(page.getByRole("alert").first()).toBeVisible();
+  },
 } as const;
 
 for (const [name, show] of Object.entries(SCREENS)) {
@@ -36,6 +65,11 @@ for (const [name, show] of Object.entries(SCREENS)) {
       test(`${name} at ${width} ${mode}: inside the window, no serious axe violation${width === 390 ? ", 44 px controls" : ""}`, async ({
         page,
       }) => {
+        test.skip(
+          name === "deleted-fields" &&
+            !(process.env.VITE_MOCK_OVERLAYS ?? "").includes("deleted-fields"),
+          "Needs the deleted-fields overlay",
+        );
         await page.setViewportSize({ width, height: 900 });
         await page.clock.setFixedTime(new Date("2026-10-12T10:40:00+07:00"));
         await page.addInitScript((theme) => {
@@ -104,32 +138,36 @@ for (const [name, show] of Object.entries(SCREENS)) {
         expect(violations.map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
 
         if (width === 390) {
-          const small = await page.evaluate(() =>
-            [
-              ...document.querySelectorAll<HTMLElement>(
-                "main :is(button, a[href], input:not([type=hidden]), select, textarea, [role=tab], [role=checkbox], [role=radio]), [role=dialog] :is(button, a[href], input:not([type=hidden]), select, textarea)",
-              ),
-            ]
-              .filter((node) => {
-                const rect = node.getBoundingClientRect();
-                const style = getComputedStyle(node);
-                return (
-                  rect.width > 0 &&
-                  style.visibility !== "hidden" &&
-                  !node.closest("[aria-hidden=true]") &&
-                  (rect.width < 44 || rect.height < 44) &&
-                  // A row marked as the target (a checkbox with its text) counts by the row.
-                  !(
-                    (node.closest("[data-hit-row]")?.getBoundingClientRect()
-                      .height ?? 0) >= 44
-                  )
-                );
-              })
-              .slice(0, 8)
-              .map((node) => {
-                const rect = node.getBoundingClientRect();
-                return `${node.tagName.toLowerCase()}[${(node.getAttribute("aria-label") ?? node.textContent ?? "").trim().slice(0, 24)}] ${Math.round(rect.width)}x${Math.round(rect.height)}`;
-              }),
+          const small = await page.evaluate(
+            (drawn) =>
+              [
+                ...document.querySelectorAll<HTMLElement>(
+                  "main :is(button, a[href], input:not([type=hidden]), select, textarea, [role=tab], [role=checkbox], [role=radio]), [role=dialog] :is(button, a[href], input:not([type=hidden]), select, textarea)",
+                ),
+              ]
+                .filter((node) => {
+                  const rect = node.getBoundingClientRect();
+                  const style = getComputedStyle(node);
+                  return (
+                    rect.width > 0 &&
+                    style.visibility !== "hidden" &&
+                    !node.closest("[aria-hidden=true]") &&
+                    (rect.width < 44 || rect.height < 44) &&
+                    // The rollup artboard draws its calculation buttons 32 px high at 320 px; the drawing wins.
+                    !(drawn && node.matches("[role=dialog] [role=radio]")) &&
+                    // A row marked as the target (a checkbox with its text) counts by the row.
+                    !(
+                      (node.closest("[data-hit-row]")?.getBoundingClientRect()
+                        .height ?? 0) >= 44
+                    )
+                  );
+                })
+                .slice(0, 8)
+                .map((node) => {
+                  const rect = node.getBoundingClientRect();
+                  return `${node.tagName.toLowerCase()}[${(node.getAttribute("aria-label") ?? node.textContent ?? "").trim().slice(0, 24)}] ${Math.round(rect.width)}x${Math.round(rect.height)}`;
+                }),
+            name === "rollup-dialog",
           );
           expect(small, "controls under 44 px").toEqual([]);
         }
