@@ -188,6 +188,24 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task BoardList_CarriesTheKeyPrefixAndTheNameOfAVisibleSpace()
+    {
+        var visibility = new Mock<IResourceVisibility>();
+        visibility.Setup(v => v.VisibleBoardIdsAsync(_workspaceId, _userId, It.IsAny<CancellationToken>())).ReturnsAsync([_board.Id]);
+        visibility.Setup(v => v.VisibleSpaceIdsAsync(_workspaceId, _userId, It.IsAny<CancellationToken>())).ReturnsAsync([_spaceId]);
+        visibility.Setup(v => v.SpaceNamesAsync(_workspaceId, It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, string> { [_spaceId] = "Khối Công nghệ" });
+        await using var context = _db.CreateOwnerContext(Tenant());
+
+        var result = await new Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoards.GetBoardsQueryHandler(context, visibility.Object, Request())
+            .Handle(new Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoards.GetBoardsQuery(_workspaceId), CancellationToken.None);
+
+        var listed = result.Data!.Single();
+        listed.ItemKeyPrefix.Should().Be("WEB");
+        listed.DepartmentName.Should().Be("Khối Công nghệ");
+    }
+
+    [Fact]
     public async Task FullBoard_HidesASpaceTheCallerCannotSee()
     {
         var board = await FullBoardAsync(visibleSpaces: []);
