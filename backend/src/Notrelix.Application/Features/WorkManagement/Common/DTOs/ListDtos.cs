@@ -21,7 +21,8 @@ public record ApprovalRequestDto(
     Guid RequestedByUserId,
     DateTimeOffset CreatedAt,
     List<ApprovalStepDto> Steps,
-    long Version
+    long Version,
+    Guid? PreviousRequestId = null
 );
 
 public record ApprovalStepDto(

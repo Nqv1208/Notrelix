@@ -1,3 +1,4 @@
+import { unsentCommentOf } from "../../card-detail/update-composer";
 import {
   FaceFieldsPopover,
   KanbanFaceProvider,
@@ -1472,6 +1473,7 @@ export function KanbanSelectedItem({
                   : "loading"
         }
         deletedBy={deleted?.byName ?? null}
+        keptDraft={deleted || gone ? unsentCommentOf(cardId) : undefined}
         onClose={onClose}
         onRetry={refetch}
         onCloseAutoFocus={restore}
@@ -1566,12 +1568,18 @@ function KanbanSelectedItemReady({
           activityError: activity.isError && activity.data === undefined,
           updates: updates.data ?? card.updates,
           updatesLoading: updates.isLoading,
-          updatesMore: updates.hasNextPage
-            ? {
-                loading: updates.isFetchingNextPage,
-                onMore: () => void updates.fetchNextPage(),
-              }
-            : undefined,
+          // One "show more" at the foot of the feed reads the next page of the comments and of the history.
+          updatesMore:
+            updates.hasNextPage || activity.hasNextPage
+              ? {
+                  loading:
+                    updates.isFetchingNextPage || activity.isFetchingNextPage,
+                  onMore: () => {
+                    if (updates.hasNextPage) void updates.fetchNextPage();
+                    if (activity.hasNextPage) void activity.fetchNextPage();
+                  },
+                }
+              : undefined,
           ...extras.detailData,
           checklists: {
             ...checklistWrites,
@@ -1609,6 +1617,7 @@ function KanbanSelectedItemReady({
             note: approval.note,
             requestedAt: approval.requestedAt,
             decidedAt: approval.decidedAt,
+            previousRequestId: approval.previousRequestId,
           })),
           approvalAnswering: approvals.answering,
           approvalsLoading: approvals.loading,

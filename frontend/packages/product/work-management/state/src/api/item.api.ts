@@ -26,6 +26,9 @@ import {
   mapCardDto,
 } from "./board-api-mappers";
 
+/** The largest page the history read allows. */
+export const ACTIVITY_PAGE_SIZE = 100;
+
 /** What a duplicate takes along besides name, dates and description. */
 export interface DuplicateItemOptions {
   readonly name?: string;
@@ -364,10 +367,10 @@ export function createCardApi(client: NotrelixClient) {
       return files.map((file) => mapAttachmentDtoToCardFile(file, cardId));
     },
 
-    async getCardActivity(cardId: string) {
-      // The newest page of the history (the server pages newest first; 100 is its largest page).
+    async getCardActivity(cardId: string, page = 1) {
+      // One page of the history (the server pages newest first; 100 is its largest page).
       const activity = await api.get<ActivityLogResponseApi>(
-        `${endpoints.boardItems.activity(cardId)}?page=1&pageSize=100`,
+        `${endpoints.boardItems.activity(cardId)}?page=${page}&pageSize=${ACTIVITY_PAGE_SIZE}`,
       );
       return mapActivityResponse(activity, cardId);
     },
