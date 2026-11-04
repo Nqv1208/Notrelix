@@ -7,7 +7,7 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
-import { Button } from "@notrelix/ui-web";
+import { Button, cn, useIsTablet } from "@notrelix/ui-web";
 import { calendarOutlineButtonClass } from "./calendar-chrome";
 import { CalendarAgenda } from "./calendar-agenda";
 import { CalendarDatesDialog } from "./calendar-dates-dialog";
@@ -150,6 +150,7 @@ export function BoardCalendarSurface({
     null,
   );
   const root = useRef<HTMLDivElement>(null);
+  const touch = useIsTablet();
 
   const shownEntries = useMemo(() => {
     const base =
@@ -362,7 +363,12 @@ export function BoardCalendarSurface({
     <div
       ref={root}
       data-calendar-view=""
-      className="flex h-full min-h-0 flex-col bg-background font-body select-none"
+      className={cn(
+        "flex h-full min-h-0 flex-col bg-background font-body select-none",
+        // Final-T-Calendar: the bar sits over the grid only, the tray runs the full height beside both.
+        touch &&
+          "lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:grid-rows-[3.5rem_minmax(0,1fr)]",
+      )}
     >
       <CalendarToolbar
         copy={copy}
@@ -382,11 +388,20 @@ export function BoardCalendarSurface({
         onAddItem={addItem}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-5 sm:px-6 lg:flex-row lg:overflow-visible">
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-visible",
+          // Final-T-Calendar: the grid keeps 16 px and 14 px around it, the tray is flush to its right.
+          touch ? "gap-0 lg:contents" : "gap-4 px-4 pb-5 sm:px-6",
+        )}
+      >
         <div
           role="grid"
           aria-label={gridLabel}
-          className="relative flex min-h-[520px] min-w-0 flex-1 flex-col overflow-hidden rounded-[12px] border border-border bg-popover lg:min-h-0 dark:bg-card"
+          className={cn(
+            "relative flex min-h-[520px] min-w-0 flex-1 flex-col overflow-hidden rounded-[12px] border border-border bg-popover lg:min-h-0 dark:bg-card",
+            touch && "mx-4 mb-3.5 lg:col-start-1 lg:row-start-2 lg:min-h-0",
+          )}
         >
           {range === "day" ? (
             <>
@@ -504,6 +519,7 @@ export function BoardCalendarSurface({
           onSetDue={(id) => onSetDue(id, anchorDay)}
           onDragStart={startUndatedDrag}
           onDragEnd={endDrag}
+          basis={{ dateBasis, onDateBasisChange, dateFields }}
         />
       </div>
     </div>
