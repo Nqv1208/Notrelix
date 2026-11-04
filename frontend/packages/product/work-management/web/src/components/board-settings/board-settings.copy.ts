@@ -342,6 +342,14 @@ export const en = {
     guidance: "Guidance for the person filling it in",
     guidancePlaceholder: "A sentence that helps fill this field in",
     usedIn: "Used in",
+    usedHow: {
+      column: "visible column",
+      sort: "sort",
+      group: "group by",
+      card: "shown on the card",
+      filter: "filter",
+      rule: "automation rule",
+    },
     usedNone: "Not used anywhere yet.",
     archive: "Archive field",
     archiveUnavailable:
@@ -1082,6 +1090,14 @@ export const vi: BoardSettingsCopy = {
     guidance: "Hướng dẫn cho người điền",
     guidancePlaceholder: "Một câu giúp người dùng điền trường này",
     usedIn: "Đang được dùng ở",
+    usedHow: {
+      column: "cột hiển thị",
+      sort: "sắp xếp",
+      group: "nhóm theo",
+      card: "hiện trên thẻ",
+      filter: "bộ lọc",
+      rule: "quy tắc tự động",
+    },
     usedNone: "Chưa được dùng ở đâu.",
     archive: "Lưu trữ trường",
     archiveUnavailable:
