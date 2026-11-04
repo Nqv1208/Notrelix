@@ -75,7 +75,22 @@ export interface FormulaPreviewDto {
   readonly value: string | null;
   /** The server's code for an error (`unknown-field`, `divide-by-zero`, `invalid-definition`). */
   readonly errorCode: string | null;
+  /** What the draft read: the fields a formula refers to, or the source value of up to five sub-items. */
+  readonly inputs: readonly FormulaPreviewInputDto[];
+  /** A rollup's number of sub-items; null for a formula. */
+  readonly subItemCount: number | null;
 }
+
+export interface FormulaPreviewInputDto {
+  readonly name: string;
+  /** The value as text; null when the field is empty or could not be read. */
+  readonly value: string | null;
+}
+
+/** A draft the server tries on one item: a formula, or a rollup (its field only when it aggregates one). */
+export type FormulaPreviewDraft =
+  | { readonly expression: string }
+  | { readonly rollupFunction: string; readonly rollupFieldId?: string | null };
 
 export interface BoardSettingsFieldDto {
   readonly id: string;

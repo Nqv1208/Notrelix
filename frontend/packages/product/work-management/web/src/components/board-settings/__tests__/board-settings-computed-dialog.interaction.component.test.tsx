@@ -5,6 +5,7 @@ import { en, vi as viCopy } from "../board-settings.copy";
 import {
   formulaNodeCount,
   formulaSettings,
+  previewDetail,
   rollupSettings,
 } from "../board-settings-computed-dialog";
 import type {
@@ -217,5 +218,94 @@ describe("the Rollup dialog", () => {
     ).toEqual({
       function: "count",
     });
+  });
+});
+
+describe("the preview row of a draft", () => {
+  const draft = (
+    over: Partial<Parameters<typeof previewDetail>[2]>,
+  ): Parameters<typeof previewDetail>[2] => ({
+    state: "ok",
+    value: "7",
+    errorCode: null,
+    inputs: [],
+    subItemCount: null,
+    ...over,
+  });
+
+  it("names the fields a formula read and what a rollup summed", () => {
+    const t = viCopy.computedDialog;
+    expect(
+      previewDetail(
+        t,
+        "formula",
+        draft({ inputs: [{ name: "Điểm", value: "13" }] }),
+      ),
+    ).toBe("Điểm = 13");
+    expect(
+      previewDetail(
+        t,
+        "rollup",
+        draft({
+          subItemCount: 2,
+          inputs: [
+            { name: "Điểm", value: "3" },
+            { name: "Điểm", value: "4" },
+          ],
+        }),
+      ),
+    ).toBe("2 việc con: 3 và 4");
+    expect(
+      previewDetail(
+        t,
+        "rollup",
+        draft({
+          subItemCount: 7,
+          inputs: ["1", "2", "3", "4", "5"].map((value) => ({
+            name: "Điểm",
+            value,
+          })),
+        }),
+      ),
+    ).toBe("7 việc con: 1, 2, 3, 4, 5, …");
+    expect(previewDetail(t, "rollup", draft({ subItemCount: 0 }))).toBe(
+      "chưa có việc con",
+    );
+    expect(previewDetail(t, "rollup", draft({ subItemCount: 2 }))).toBeNull();
+    expect(
+      previewDetail(t, "formula", draft({ state: "error", value: null })),
+    ).toBeNull();
+  });
+
+  it("shows a dash and the note for an item without sub-items", async () => {
+    const actions = spyActions();
+    actions.previewFormula.mockResolvedValue(
+      draft({ state: "empty", value: null, subItemCount: 0 }),
+    );
+    renderPage(actions, viCopy as typeof en, {
+      ...erpBoardSettings(),
+      previewItem: { id: "i1", key: "ERP-153" },
+    });
+    const dialog = await openDialog(viCopy as typeof en, "Tổng hợp");
+    fireEvent.click(
+      await screen.findByRole("radio", {
+        name: viCopy.computedDialog.functionNames.sum,
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        dialog.querySelector("[data-preview-state]")?.textContent,
+      ).toContain("Xem thử với ERP-153 (chưa có việc con):"),
+    );
+    expect(dialog.querySelector("[data-preview-state]")?.textContent).toContain(
+      "—",
+    );
+    expect(
+      screen.getByText(viCopy.computedDialog.previewNoSubItemsNote),
+    ).toBeTruthy();
+    expect(actions.previewFormula).toHaveBeenCalledWith(
+      "i1",
+      expect.objectContaining({ rollupFunction: "sum" }),
+    );
   });
 });
