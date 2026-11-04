@@ -18,6 +18,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const faults = process.env.VITE_MOCK_FAULTS ?? "";
+const latency = process.env.VITE_MOCK_LATENCY ?? "";
 const BOARD = "/workspaces/mock-workspace-primary/boards/mock-board-erp";
 const TOL = 1;
 
@@ -128,6 +129,80 @@ for (const dark of [false, true]) {
         "13.5px",
       );
     }
+  });
+
+  test(`the table's error and stale cells, ${mode}`, async ({ page }) => {
+    // WM-Field-Computed "Cột tính trong View Bảng": a 40 px cell with 10 px padding; the error is a 16 px mark and
+    // "Lỗi" in 12 px / 600 5 px apart (39.9 x 17.4); the stale value keeps its right-aligned text and is followed
+    // 7 px later by an 18 px ring. The cell is dimmed by italic, not opacity (the text keeps 4.5:1).
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await theme(page, dark);
+    await page.goto(`${BOARD}/settings?from=table&section=fields`);
+    await page.getByText("Điểm gấp đôi", { exact: true }).first().click();
+    await page.getByRole("button", { name: /Sửa công thức/ }).click();
+    const dlg = page.getByRole("dialog");
+    await dlg.getByRole("textbox", { name: "Công thức" }).fill("[Điểm] / 0");
+    await dlg.getByRole("button", { name: "Lưu trường" }).click();
+    await expect(dlg).toBeHidden({ timeout: 10_000 });
+    await page.getByText("Về board", { exact: true }).click();
+    const error = page.locator('[data-computed-state="error"]').first();
+    await expect(error).toBeVisible({ timeout: 10_000 });
+    const host = error.locator("xpath=..");
+    const [c, h] = await Promise.all([error.boundingBox(), host.boundingBox()]);
+    near(c!.width, 39.9, "error width");
+    near(c!.height, 17.4, "error height");
+    near(h!.x + h!.width - 10 - (c!.x + c!.width), 0, "error right padding");
+    const mark = error.locator("svg");
+    near((await mark.boundingBox())!.width, 16, "error mark");
+    expect(await error.evaluate((el) => getComputedStyle(el).fontSize)).toBe(
+      "12px",
+    );
+    expect(await error.evaluate((el) => getComputedStyle(el).fontWeight)).toBe(
+      "600",
+    );
+    // The tokens are oklch; the canvas turns the colour into the sRGB the artboard states.
+    const rgb = await error.evaluate((el) => {
+      const ctx = document.createElement("canvas").getContext("2d")!;
+      ctx.fillStyle = getComputedStyle(el).color;
+      ctx.fillRect(0, 0, 1, 1);
+      return [...ctx.getImageData(0, 0, 1, 1).data].slice(0, 3);
+    });
+    const want = dark ? [255, 107, 129] : [196, 35, 64];
+    rgb.forEach((channel, n) =>
+      expect(Math.abs(channel - want[n]!)).toBeLessThanOrEqual(3),
+    );
+  });
+
+  test(`the table's stale cell, ${mode}`, async ({ page }) => {
+    test.skip(
+      latency !== "slow",
+      "Needs VITE_MOCK_LATENCY=slow to hold the state",
+    );
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await theme(page, dark);
+    await page.goto(`${BOARD}?view=table`);
+    await page.waitForTimeout(900);
+    const row = page
+      .locator('[data-computed-state="value"]')
+      .first()
+      .locator("xpath=ancestor::*[@data-row-id][1]");
+    await row.getByRole("button", { name: /^Sửa Điểm/ }).click();
+    await page.getByRole("textbox").last().fill("7");
+    await page.keyboard.press("Enter");
+    const stale = page.locator('[data-computed-state="stale"]').first();
+    await expect(stale).toBeVisible({ timeout: 5_000 });
+    const ring = stale.locator("svg");
+    const [v, r, h] = await Promise.all([
+      stale.locator("span").first().boundingBox(),
+      ring.boundingBox(),
+      stale.locator("xpath=..").boundingBox(),
+    ]);
+    near(r!.width, 18, "ring size");
+    near(r!.x - (v!.x + v!.width), 7, "gap to the ring");
+    near(h!.x + h!.width - 10 - (r!.x + r!.width), 0, "ring right padding");
+    expect(await stale.evaluate((el) => getComputedStyle(el).fontStyle)).toBe(
+      "italic",
+    );
   });
 
   test(`the formula preview row, ${mode}`, async ({ page }) => {

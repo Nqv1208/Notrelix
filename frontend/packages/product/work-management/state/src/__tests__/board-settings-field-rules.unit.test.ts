@@ -40,6 +40,21 @@ describe("field rules in the settings JSON", () => {
   });
 });
 
+describe("the default of a text or number field", () => {
+  it("reads the typed default and leaves a select's option id out of it", () => {
+    const board = {
+      id: "b1",
+      columns: [
+        { id: "t", name: "Ghi chú", fieldType: "Text", defaultValue: '"n/a"' },
+        { id: "n", name: "Giờ", fieldType: "Number", defaultValue: "8" },
+        { id: "s", name: "Loại", fieldType: "Select", defaultValue: '"o1"' },
+      ],
+    };
+    const fields = mapBoardSettings("b1", board as never).fields;
+    expect(fields.map((f) => f.defaultText)).toEqual(["n/a", "8", ""]);
+  });
+});
+
 describe("the required refusal", () => {
   it("is told apart by its rule code", async () => {
     const { isRequiredRefusal } = await import("../queries/use-item-conflict");

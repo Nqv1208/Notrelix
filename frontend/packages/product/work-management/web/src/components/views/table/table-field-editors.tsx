@@ -78,6 +78,8 @@ export function AnchoredNote({
         </span>
       </PopoverAnchor>
       <PopoverContent
+        // The note's own alert carries the message; a nameless dialog would fail axe.
+        role="group"
         align="start"
         side="bottom"
         // The cell is 40 px and its input 28: a plain message sits 6 px under the cell, a box 2 px under its anchor.

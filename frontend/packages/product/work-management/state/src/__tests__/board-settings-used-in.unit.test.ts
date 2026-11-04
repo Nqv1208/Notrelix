@@ -32,13 +32,13 @@ describe("usedInOf", () => {
       view("Lịch", "calendar", {}),
     ];
     expect(usedInOf("f1", views)).toEqual([
-      { kind: "view", name: "Bảng", how: "" },
-      { kind: "filter", name: "Lọc", how: "" },
-      { kind: "card", name: "Kanban", how: "" },
-      { kind: "view", name: "Chia", how: "" },
+      { kind: "view", name: "Bảng", how: "column" },
+      { kind: "filter", name: "Lọc", how: "filter" },
+      { kind: "card", name: "Kanban", how: "card" },
+      { kind: "view", name: "Chia", how: "group" },
     ]);
     expect(usedInOf("other", [views[1]!])).toEqual([
-      { kind: "view", name: "Ẩn cột", how: "" },
+      { kind: "view", name: "Ẩn cột", how: "column" },
     ]);
   });
 });
