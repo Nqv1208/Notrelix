@@ -83,4 +83,22 @@ describe("the deleted fields list", () => {
       "Ngày bàn giao",
     );
   });
+
+  it.each([
+    ["Hà Nguyễn", "Hà Nguyễn vừa khôi phục trường này. Danh sách đã làm mới."],
+    [null, "Người khác vừa khôi phục trường này. Danh sách đã làm mới."],
+  ])(
+    "keeps the row with a neutral note when someone restored it first (%s)",
+    async (by, text) => {
+      renderDeleted(vi.fn().mockResolvedValue({ kind: "already-active", by }));
+      fireEvent.click(await screen.findByRole("tab", { name: /Đã xoá/ }));
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: /Khôi phục trường Ngày bàn giao/,
+        }),
+      );
+      expect((await screen.findByRole("status")).textContent).toBe(text);
+      expect(screen.queryByRole("alert")).toBeNull();
+    },
+  );
 });

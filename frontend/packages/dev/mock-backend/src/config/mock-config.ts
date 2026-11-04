@@ -44,7 +44,8 @@ export type MockOverlay =
   | "many-columns"
   | "many-cards"
   | "board-states"
-  | "deleted-fields";
+  | "deleted-fields"
+  | "field-restored-elsewhere";
 
 export type MockLatency = "instant" | "fast" | "normal" | "slow";
 
@@ -196,6 +197,7 @@ const VALID_OVERLAYS = new Set<string>([
   "many-cards",
   "board-states",
   "deleted-fields",
+  "field-restored-elsewhere",
 ]);
 
 const VALID_FAULTS = new Set<string>([

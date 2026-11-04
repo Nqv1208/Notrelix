@@ -18,7 +18,15 @@ const CARD_BUTTON =
 
 type RowNote =
   | { kind: "name-taken" | "expired" | "forbidden" | "failed" }
-  | { kind: "done"; count: number };
+  | { kind: "done"; count: number }
+  | { kind: "already-active"; by: string | null };
+
+/** The notes that refuse the restore (red); "already active" is a neutral amber fact, "done" is the toast. */
+function refusal(note: RowNote | undefined) {
+  return note && note.kind !== "done" && note.kind !== "already-active"
+    ? note
+    : null;
+}
 
 /** "dd/MM/yyyy" of an instant in the board's time zone. */
 function fullDay(iso: string, timeZone: string): string {
@@ -85,7 +93,7 @@ function DeletedFieldCards({
         const { days, gone } = windowOf(field, note);
         const busy = restoringId === field.id;
         const shortDate = fullDay(field.deletedAt, timeZone).slice(0, 5);
-        const failed = note && note.kind !== "done" ? note : null;
+        const failed = refusal(note);
         return (
           <div
             key={field.id}
@@ -136,6 +144,23 @@ function DeletedFieldCards({
                 by: field.deletedByName ?? t.unknownPerson,
               })}
             </small>
+            {note?.kind === "already-active" ? (
+              <div
+                role="status"
+                className="flex items-start gap-2 text-[13.5px] leading-normal font-medium text-warning-text"
+              >
+                <Info
+                  aria-hidden="true"
+                  className="mt-[3px] size-[13px] shrink-0"
+                  strokeWidth={1.8}
+                />
+                <span>
+                  {note.by
+                    ? fillCopy(t.already, { name: note.by })
+                    : t.alreadyNobody}
+                </span>
+              </div>
+            ) : null}
             {failed ? (
               <div
                 role="alert"
@@ -211,6 +236,10 @@ export function DeletedFieldsList({
   const t = copy.fields.deleted;
   const [notes, setNotes] = useState<Record<string, RowNote>>({});
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(new Set());
+  // A field someone else restored leaves the refreshed list; its row stays with the note that names them.
+  const [ghosts, setGhosts] = useState<
+    Record<string, { row: DeletedFieldRow; index: number }>
+  >({});
   const [last, setLast] = useState<{ name: string; count: number } | null>(
     null,
   );
@@ -228,7 +257,20 @@ export function DeletedFieldsList({
     const result = await panel.onRestore(field.id);
     if (result === "restored")
       setLast({ name: field.name, count: field.valueCount });
-    else setNotes((current) => ({ ...current, [field.id]: { kind: result } }));
+    else if (typeof result === "object") {
+      setGhosts((current) => ({
+        ...current,
+        [field.id]: {
+          row: field,
+          index: panel.fields.findIndex((row) => row.id === field.id),
+        },
+      }));
+      setNotes((current) => ({
+        ...current,
+        [field.id]: { kind: "already-active", by: result.by },
+      }));
+    } else
+      setNotes((current) => ({ ...current, [field.id]: { kind: result } }));
   }
 
   if (panel.status === "loading")
@@ -274,6 +316,9 @@ export function DeletedFieldsList({
     );
 
   const rows = panel.fields.filter((field) => !dismissed.has(field.id));
+  for (const { row, index } of Object.values(ghosts))
+    if (!rows.some((r) => r.id === row.id) && !dismissed.has(row.id))
+      rows.splice(Math.max(0, Math.min(index, rows.length)), 0, row);
   return (
     <div className="flex flex-col gap-4">
       {last ? (
@@ -361,6 +406,7 @@ export function DeletedFieldsList({
               Date.parse(field.restorableUntil) <= now ||
               notes[field.id]?.kind === "expired";
             const note = notes[field.id];
+            const refused = refusal(note);
             const busy = panel.restoringId === field.id;
             return (
               <div
@@ -370,7 +416,7 @@ export function DeletedFieldsList({
                   GRID,
                   "border-t border-line py-2.5 [&:nth-child(2)]:border-t-0",
                   !note && "min-h-[93px] [&:nth-child(2)]:min-h-[92px]",
-                  note && note.kind !== "done" && "bg-danger-subtle",
+                  refused && "bg-danger-subtle",
                   busy && "bg-state-selected",
                 )}
               >
@@ -461,7 +507,26 @@ export function DeletedFieldsList({
                     {busy ? t.restoring : t.restore}
                   </button>
                 </span>
-                {note && note.kind !== "done" ? (
+                {note?.kind === "already-active" ? (
+                  <div role="cell" className="col-span-full">
+                    <div
+                      role="status"
+                      className="flex items-start gap-2 pl-[43px] text-[12.5px] leading-normal font-medium text-warning-text"
+                    >
+                      <Info
+                        aria-hidden="true"
+                        className="mt-0.5 size-[13px] shrink-0"
+                        strokeWidth={1.8}
+                      />
+                      <span>
+                        {note.by
+                          ? fillCopy(t.already, { name: note.by })
+                          : t.alreadyNobody}
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
+                {refused ? (
                   <div role="cell" className="col-span-full">
                     <div
                       role="alert"
@@ -473,16 +538,16 @@ export function DeletedFieldsList({
                         strokeWidth={1.8}
                       />
                       <span>
-                        {note.kind === "name-taken"
+                        {refused.kind === "name-taken"
                           ? fillCopy(t.nameTaken, { name: field.name })
-                          : note.kind === "expired"
+                          : refused.kind === "expired"
                             ? t.expired
-                            : note.kind === "forbidden"
+                            : refused.kind === "forbidden"
                               ? t.forbidden
                               : fillCopy(t.failed, { name: field.name })}
                       </span>
                       <span className="ml-auto flex shrink-0 gap-2">
-                        {note.kind === "name-taken" ? (
+                        {refused.kind === "name-taken" ? (
                           <button
                             type="button"
                             onClick={() => onOpenLive(field.name)}
@@ -494,7 +559,7 @@ export function DeletedFieldsList({
                             {t.openLive}
                           </button>
                         ) : null}
-                        {note.kind === "expired" ? (
+                        {refused.kind === "expired" ? (
                           <button
                             type="button"
                             onClick={() =>
@@ -510,7 +575,7 @@ export function DeletedFieldsList({
                             {t.dismiss}
                           </button>
                         ) : null}
-                        {note.kind === "failed" ? (
+                        {refused.kind === "failed" ? (
                           <button
                             type="button"
                             onClick={() => void restore(field)}
