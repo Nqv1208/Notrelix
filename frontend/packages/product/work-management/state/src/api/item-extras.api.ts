@@ -158,6 +158,8 @@ export interface ItemLinkDto {
     readonly title: string;
     readonly statusName: string | null;
     readonly statusCategory: "todo" | "in_progress" | "review" | "done" | null;
+    /** An archived item stays linked and says so. */
+    readonly isArchived?: boolean;
   };
 }
 

@@ -6,8 +6,8 @@ using Notrelix.Application.Features.WorkManagement.ItemLinks;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks;
 
-/// <summary>The other end of a link: the item an item waits for, blocks or relates to.</summary>
-public record LinkedItemDto(Guid Id, string? Key, string Title, string? StatusName, string? StatusCategory);
+/// <summary>The other end of a link: the item an item waits for, blocks or relates to; an archived item stays linked and says so.</summary>
+public record LinkedItemDto(Guid Id, string? Key, string Title, string? StatusName, string? StatusCategory, bool IsArchived);
 
 /// <summary>One link as the viewed item sees it: <c>blocked-by</c>, <c>blocks</c> or <c>related</c>.</summary>
 public record BoardItemLinkDto(Guid Id, string Relation, LinkedItemDto Item);
@@ -88,7 +88,7 @@ public class ListBoardItemLinksQueryHandler : IRequestHandler<ListBoardItemLinks
                 return new BoardItemLinkDto(
                     e.Link.Id,
                     ItemLinkRelations.ToRelation(e.Link.LinkType, e.Link.SourceItemId == itemId),
-                    new LinkedItemDto(other.Id, other.ItemKey, other.Name, status.Name, status.Category));
+                    new LinkedItemDto(other.Id, other.ItemKey, other.Name, status.Name, status.Category, other.IsArchived));
             })
             .ToList();
 
