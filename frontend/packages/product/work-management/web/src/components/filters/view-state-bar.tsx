@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from "react";
-import { AlertCircle, Lock, RefreshCw, User, X } from "lucide-react";
+import { AlertCircle, Check, Lock, RefreshCw, User, X } from "lucide-react";
 import {
   Button,
   Tooltip,
@@ -10,6 +10,7 @@ import {
 } from "@notrelix/ui-web";
 import {
   conditionIssue,
+  isStaleCondition,
   OVERDUE_FIELD_ID,
   type FieldRef,
   type FilterField,
@@ -95,6 +96,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
   const applied = filter.conditions.filter(
     (condition) => conditionIssue(condition) === null,
   );
+  const byId = new Map(fields.map((f) => [f.id, f]));
   const shown = filter.conditions.slice(0, MAX_CHIPS);
   const hidden = filter.conditions.length - shown.length;
   const [openInner, setOpenInner] = useState(false);
@@ -117,7 +119,9 @@ export function ViewStateBar(props: ViewStateBarProps) {
           const field = fields.find((f) => f.id === condition.fieldId);
           return {
             text: describeCondition(copy, condition, field, memberName),
-            ...(known && !field ? { stale: true } : {}),
+            ...(known && (!field || isStaleCondition(condition, byId))
+              ? { stale: true }
+              : {}),
           };
         }),
       ...(groupField
@@ -175,7 +179,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
       >
         {shown.map((condition, index) => {
           const field = fields.find((f) => f.id === condition.fieldId);
-          const stale = known && !field;
+          const stale = known && (!field || isStaleCondition(condition, byId));
           const label = describeCondition(copy, condition, field, memberName);
           const original = filter.conditions.indexOf(condition);
           return (
@@ -357,7 +361,10 @@ export function ViewStateBar(props: ViewStateBarProps) {
               sideOffset={6}
               className="block min-h-13.5 w-85 max-w-85 rounded-[8px] px-2.5 py-2 text-crumb leading-[1.4] shadow-popover"
             >
-              <Lock className="mr-1.5 inline size-4" aria-hidden="true" />
+              <Lock
+                className="mr-1.5 inline size-4 align-top"
+                aria-hidden="true"
+              />
               {copy.viewer.saveDisabled}
             </TooltipContent>
           </Tooltip>
@@ -397,12 +404,22 @@ export function ViewStateNotices({
 }: ViewStateNoticesProps) {
   const stale =
     fields.length > 0 ? staleConditionCount(view.state.filter, fields) : 0;
-  if (stale === 0 && !view.saveFailed) return null;
-  const known = new Set(fields.map((f) => f.id));
+  if (!view.loaded)
+    return <RestoringSkeleton label={copy.personal.restoring} />;
+  const restored = view.restored === true && view.personal;
+  if (stale === 0 && !view.saveFailed && !restored) return null;
+  const known = new Map(fields.map((f) => [f.id, f]));
+  const goneFields = view.state.filter.conditions.filter(
+    (c) => !known.has(c.fieldId),
+  ).length;
+  const goneValues = stale - goneFields;
   const small =
     "h-7 cursor-pointer gap-1.5 rounded-[7px] px-2.5 text-[12.5px] font-medium";
   return (
     <div className="flex flex-col gap-2 pb-2">
+      {restored ? (
+        <RestoredNotice copy={copy} view={view} fields={fields} />
+      ) : null}
       {stale > 0 ? (
         <div className="flex flex-col gap-2">
           <div
@@ -411,7 +428,16 @@ export function ViewStateNotices({
           >
             <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
             <span className="min-w-0 flex-1">
-              {fillFiltersCopy(copy.stale.hint, { count: stale })}
+              {[
+                goneFields > 0
+                  ? fillFiltersCopy(copy.stale.hint, { count: goneFields })
+                  : "",
+                goneValues > 0
+                  ? fillFiltersCopy(copy.stale.valueHint, { count: goneValues })
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -422,8 +448,8 @@ export function ViewStateNotices({
               onClick={() =>
                 view.setFilter({
                   ...view.state.filter,
-                  conditions: view.state.filter.conditions.filter((c) =>
-                    known.has(c.fieldId),
+                  conditions: view.state.filter.conditions.filter(
+                    (c) => !isStaleCondition(c, known),
                   ),
                 })
               }
@@ -461,6 +487,71 @@ export function ViewStateNotices({
           </Button>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/** While the member's saved view is read back: three bars where the bar's notices will be (WM-Filter-States "Đang khôi phục"). */
+function RestoringSkeleton({ label }: { label: string }) {
+  return (
+    <div
+      role="status"
+      aria-label={label}
+      className="mb-2 flex flex-col gap-2 rounded-xl border border-line bg-card p-3"
+    >
+      <div className="h-6.5 w-3/5 animate-pulse rounded-lg bg-state-hover-strong" />
+      <div className="h-6.5 animate-pulse rounded-lg bg-state-hover-strong" />
+      <div className="h-6.5 animate-pulse rounded-lg bg-state-hover-strong" />
+    </div>
+  );
+}
+
+/** After a reload: the view the member's last visit saved is back, and "Về view chung" clears it (WM-Filter-States "Đã khôi phục"). */
+function RestoredNotice({
+  copy,
+  view,
+  fields,
+}: Pick<ViewStateNoticesProps, "copy" | "view" | "fields">) {
+  const t = copy.personal;
+  const name = (id: string | undefined) =>
+    fields.find((f) => f.id === id)?.name ?? "";
+  const { filter, sorts, group, lane } = view.state;
+  const parts = [
+    filter.conditions.length > 0
+      ? fillFiltersCopy(t.restoredFilter, { count: filter.conditions.length })
+      : "",
+    sorts.length > 0
+      ? fillFiltersCopy(t.restoredSort, { count: sorts.length })
+      : "",
+    group
+      ? fillFiltersCopy(t.restoredGroup, { field: name(group.fieldId) })
+      : "",
+    lane ? fillFiltersCopy(t.restoredLane, { field: name(lane.fieldId) }) : "",
+  ].filter(Boolean);
+  return (
+    <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-2 rounded-xl border border-line bg-card px-3.5 py-3">
+        <span role="status" className="flex items-center gap-2 text-[13px]">
+          <Check
+            className="size-4 shrink-0 text-success-text"
+            aria-hidden="true"
+          />
+          <span className="min-w-0">
+            {fillFiltersCopy(t.restored, { parts: parts.join(", ") })}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto h-7 cursor-pointer rounded-[7px] px-2.5 text-[12.5px] font-medium text-muted-foreground"
+            onClick={view.reset}
+          >
+            {t.reset}
+          </Button>
+        </span>
+      </div>
+      <p className="m-0 text-[12.5px] leading-[1.45] text-meta-foreground">
+        {t.restoredNote}
+      </p>
     </div>
   );
 }

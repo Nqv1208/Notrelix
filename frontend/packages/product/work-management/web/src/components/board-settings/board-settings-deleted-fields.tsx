@@ -204,6 +204,8 @@ export function DeletedFieldsList({
                       {field.name}
                     </b>
                     <small className="block text-xs text-meta-foreground">
+                      <span className="font-mono">{field.key}</span>
+                      {" · "}
                       {field.valueCount === 0
                         ? t.metaNone
                         : field.valueCount === 1

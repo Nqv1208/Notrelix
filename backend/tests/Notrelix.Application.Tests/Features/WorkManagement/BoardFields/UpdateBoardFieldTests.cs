@@ -32,6 +32,23 @@ public class UpdateBoardFieldTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
+    public async Task Handle_RenamingASystemField_IsRefusedWithTheStableCodeAndChangesNothing()
+    {
+        var field = BoardField.Create(TestAccountId, TestWorkspaceId, Guid.CreateVersion7(), "Due date", FieldType.Date, FieldSettings.Empty(),
+            FractionalIndex.Create("a0"), TestUserId, TestNow, isSystem: true);
+        SetupBoardFields(field);
+        var before = field.Version;
+
+        var command = new UpdateBoardFieldCommand(field.BoardId, field.Id, "Deadline", null, before);
+
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        (await act.Should().ThrowAsync<ConflictException>()).Which.Message.Should().Contain("system field");
+        field.Name.Should().Be("Due date");
+        field.Version.Should().Be(before);
+    }
+
+    [Fact]
     public async Task Handle_FieldNotFound_ThrowsNotFoundException()
     {
         var command = new UpdateBoardFieldCommand(Guid.CreateVersion7(), Guid.CreateVersion7(), null, null, 1);
