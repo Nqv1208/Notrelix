@@ -282,25 +282,27 @@ describe("the preview row of a draft", () => {
     actions.previewFormula.mockResolvedValue(
       draft({ state: "empty", value: null, subItemCount: 0 }),
     );
-    renderPage(actions, viCopy, {
+    renderPage(actions, viCopy as typeof en, {
       ...erpBoardSettings(),
       previewItem: { id: "i1", key: "ERP-153" },
     });
-    const dialog = await openDialog(viCopy, "Tổng hợp");
+    const dialog = await openDialog(viCopy as typeof en, "Tổng hợp");
     fireEvent.click(
       await screen.findByRole("radio", {
         name: viCopy.computedDialog.functionNames.sum,
       }),
     );
     await waitFor(() =>
-      expect(dialog.querySelector("[data-preview-state]")).toHaveTextContent(
-        "Xem thử với ERP-153 (chưa có việc con):",
-      ),
+      expect(
+        dialog.querySelector("[data-preview-state]")?.textContent,
+      ).toContain("Xem thử với ERP-153 (chưa có việc con):"),
     );
-    expect(dialog.querySelector("[data-preview-state]")).toHaveTextContent("—");
+    expect(dialog.querySelector("[data-preview-state]")?.textContent).toContain(
+      "—",
+    );
     expect(
       screen.getByText(viCopy.computedDialog.previewNoSubItemsNote),
-    ).toBeInTheDocument();
+    ).toBeTruthy();
     expect(actions.previewFormula).toHaveBeenCalledWith(
       "i1",
       expect.objectContaining({ rollupFunction: "sum" }),

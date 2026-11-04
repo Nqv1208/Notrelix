@@ -70,6 +70,8 @@ export interface BoardLabelsPanelProps {
 export interface DeletedFieldRow {
   readonly id: string;
   readonly name: string;
+  /** The key the field was listed under (its name as a slug). */
+  readonly key: string;
   readonly type: BoardSettingsFieldType;
   readonly deletedAt: string;
   readonly restorableUntil: string;

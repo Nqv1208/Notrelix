@@ -215,15 +215,22 @@ function isLockedSystemField(column: OverviewField): boolean {
 }
 
 /** The key a field is listed under: its name as a lowercase slug ("due-date"), or a short id when the name has no letters. */
-function fieldKey(column: OverviewField): string {
-  const slug = (column.name ?? "")
+export function fieldKeyOf(
+  name: string | null | undefined,
+  id?: string,
+): string {
+  const slug = (name ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/đ/gi, "d")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  return slug || (column.id ?? "").slice(0, 8);
+  return slug || (id ?? "").slice(0, 8);
+}
+
+function fieldKey(column: OverviewField): string {
+  return fieldKeyOf(column.name, column.id);
 }
 
 function mapField(column: OverviewField): BoardSettingsFieldDto {
