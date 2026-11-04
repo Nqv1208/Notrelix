@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { CircleAlert, CircleCheck, Info, Undo2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, CircleAlert, Info, Undo2 } from "lucide-react";
 import { cn, useMediaQuery } from "@notrelix/ui-web";
 import { useSettings } from "./board-settings-context";
 import { fillCopy, typeName } from "./board-settings-format";
@@ -10,7 +10,7 @@ import type {
 } from "./board-settings-types";
 
 const GRID =
-  "grid grid-cols-[minmax(0,1.6fr)_150px_210px_130px_150px] items-center gap-3.5 px-4 max-[1100px]:grid-cols-[minmax(0,1.5fr)_110px_130px_130px]";
+  "grid grid-cols-[minmax(0,1.6fr)_150px_210px_130px_150px] items-center gap-3.5 px-4 max-[1100px]:grid-cols-[minmax(0,1fr)_120px_130px]";
 const DAY = 86_400_000;
 /** The 50 px full-width button of a phone card. */
 const CARD_BUTTON =
@@ -215,6 +215,13 @@ export function DeletedFieldsList({
     null,
   );
 
+  // The toast leaves by itself; "Mở trường" is the one way on from it.
+  useEffect(() => {
+    if (!last) return;
+    const timer = window.setTimeout(() => setLast(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [last]);
+
   async function restore(field: DeletedFieldRow) {
     setLast(null);
     setNotes(({ [field.id]: _gone, ...rest }) => rest);
@@ -272,27 +279,28 @@ export function DeletedFieldsList({
       {last ? (
         <div
           role="status"
-          className="flex items-start gap-2.5 rounded-[10px] bg-success-subtle px-3.5 py-2.5 text-compact leading-[1.45] text-success-subtle-foreground"
+          className="fixed inset-x-4 bottom-6 z-toast flex items-center gap-3 rounded-[12px] bg-inverse-surface px-3.5 py-3 text-[14px] leading-[1.4] text-inverse-foreground shadow-[0_12px_32px_rgba(0,0,0,0.28)] md:inset-x-auto md:bottom-7 md:left-1/2 md:w-max md:max-w-[760px] md:-translate-x-1/2 md:rounded-[10px] md:py-[11px] md:text-[13.5px] md:leading-[1.45] md:whitespace-nowrap"
         >
-          <CircleCheck
+          <Check
             aria-hidden="true"
-            className="mt-0.5 size-4 shrink-0"
+            className="size-5 shrink-0 md:size-4"
             strokeWidth={1.8}
           />
-          <span className="flex min-w-0 flex-1 flex-col gap-px">
-            <b className="font-semibold text-foreground">
-              {fillCopy(t.done, { name: last.name })}
-            </b>
-            <span>
+          <span className="min-w-0 flex-1">
+            <b>{fillCopy(t.done, { name: last.name })}</b>
+            <br />
+            <span className="text-[13px] opacity-85">
               {last.count > 0
-                ? fillCopy(t.doneBody, { count: last.count })
+                ? fillCopy(phone ? t.doneBodyShort : t.doneBody, {
+                    count: last.count,
+                  })
                 : t.doneBodyNone}
             </span>
           </span>
           <button
             type="button"
             onClick={() => onOpenLive(last.name)}
-            className={BUTTON_CLASS.outline}
+            className="inline-flex h-11 cursor-pointer items-center border-0 bg-transparent px-1.5 font-semibold text-[#9CC4F7] focus-visible:outline-2 focus-visible:outline-ring md:h-auto"
           >
             {t.openField}
           </button>
@@ -335,7 +343,9 @@ export function DeletedFieldsList({
             )}
           >
             <span role="columnheader">{t.columns.name}</span>
-            <span role="columnheader">{t.columns.type}</span>
+            <span role="columnheader" className="max-[1100px]:hidden">
+              {t.columns.type}
+            </span>
             <span role="columnheader" className="max-[1100px]:hidden">
               {t.columns.by}
             </span>
@@ -377,6 +387,10 @@ export function DeletedFieldsList({
                     </b>
                     <small className="block text-xs leading-[1.45] text-meta-foreground">
                       <span className="font-mono">{field.key}</span>
+                      <span className="hidden max-[1100px]:inline">
+                        {" · "}
+                        {typeName(copy, field.type)}
+                      </span>
                       {" · "}
                       {field.valueCount === 0
                         ? t.metaNone
@@ -386,7 +400,7 @@ export function DeletedFieldsList({
                     </small>
                   </span>
                 </span>
-                <span role="cell" className="text-compact">
+                <span role="cell" className="text-compact max-[1100px]:hidden">
                   {typeName(copy, field.type)}
                 </span>
                 <span role="cell" className="text-compact max-[1100px]:hidden">
