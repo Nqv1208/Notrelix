@@ -244,10 +244,24 @@ export function KanbanView({
   // lane the card goes back to. Read by hook-level error handlers, which run
   // for every failed write (also after a later write or an unmount).
   const writeOrigins = useRef(
-    new Map<string, { title: string; lane: string }>(),
+    new Map<string, { title: string; lane: string; target?: string }>(),
   );
+  // A refused move shows on the card with a retry; the retry runs the same write again.
+  const retryWrites = useRef(new Map<string, () => void>());
+  const [failedMoves, setFailedMoves] = useState<ReadonlyMap<string, string>>(
+    new Map(),
+  );
+  const clearFailedMove = (cardId: string) =>
+    setFailedMoves((current) => {
+      if (!current.has(cardId)) return current;
+      const next = new Map(current);
+      next.delete(cardId);
+      return next;
+    });
   const laneCopyRef = useRef(laneCopy);
   laneCopyRef.current = laneCopy;
+  const cardCopyRef = useRef(cardCopy);
+  cardCopyRef.current = cardCopy;
   // Set once the board is read: who last changed a card and the lane it is in.
   const conflictRef = useRef<
     ((card: Card) => { actor: string; lane: string }) | undefined
@@ -289,6 +303,20 @@ export function KanbanView({
           });
     // One toast per card: a second failure of the same card replaces it.
     toast.error(message, { id: `kanban-write-${cardId}` });
+    if (
+      failure.kind !== "field" &&
+      origin?.target &&
+      retryWrites.current.has(cardId)
+    )
+      setFailedMoves((current) =>
+        new Map(current).set(
+          cardId,
+          fillCopy(cardCopyRef.current.moveFailed, {
+            target: origin.target ?? "",
+            lane: origin.lane,
+          }),
+        ),
+      );
   }, []);
 
   const kanban = useBoardKanban(boardId, workspaceId, {
@@ -585,13 +613,19 @@ export function KanbanView({
   }
 
   /** Remembers where the card is before a write, for its failure toast. */
-  const noteOrigin = (cardId: string) => {
+  const noteOrigin = (
+    cardId: string,
+    move?: { optionId: string; retry: () => void },
+  ) => {
     const card = allCards.find((candidate) => candidate.id === cardId);
     const lane = lanesByCard.get(cardId);
     writeOrigins.current.set(cardId, {
       title: card?.title ?? "",
       lane: lane ? laneName(lane, laneCopy, isStatusGrouping) : "",
+      target: move ? columnLabel(move.optionId) : undefined,
     });
+    if (move) retryWrites.current.set(cardId, move.retry);
+    clearFailedMove(cardId);
   };
 
   /** Writes a lane's value for a card: Status, or the grouping Select field. */
@@ -600,7 +634,10 @@ export function KanbanView({
     optionId: string,
     onSuccess?: () => void,
   ) => {
-    noteOrigin(cardId);
+    noteOrigin(cardId, {
+      optionId,
+      retry: () => writeLaneValue(cardId, optionId, onSuccess),
+    });
     if (isStatusGrouping) {
       kanban.updateStatus.mutate(
         { cardId, statusOptionId: optionId },
@@ -655,7 +692,10 @@ export function KanbanView({
     }
     if (drop.kind === "place") {
       if (!kanban.groupByField) return;
-      noteOrigin(drop.cardId);
+      noteOrigin(drop.cardId, {
+        optionId: drop.optionId,
+        retry: () => handleDrop(drop),
+      });
       kanban.dropItemInLane.mutate(
         {
           cardId: drop.cardId,
@@ -976,7 +1016,14 @@ export function KanbanView({
             cardId,
             groups: kanban.groups,
           });
-          noteOrigin(cardId);
+          noteOrigin(cardId, {
+            optionId,
+            retry: () => {
+              lanePicker?.move(cardId, optionId, position).catch(() => {
+                // The write hook has already shown the failure.
+              });
+            },
+          });
           if (drop?.kind === "place")
             return kanban.dropItemInLane.mutateAsync({
               cardId,
@@ -1033,6 +1080,12 @@ export function KanbanView({
   const cardActions: KanbanCardActions | undefined = capabilities.canEditFields
     ? {
         currentUserId,
+        failureOf: (cardId) => {
+          const message = failedMoves.get(cardId);
+          return message
+            ? { message, onRetry: () => retryWrites.current.get(cardId)?.() }
+            : undefined;
+        },
         onAssignMe:
           currentUserId && personField
             ? (card) => {
@@ -1104,7 +1157,8 @@ export function KanbanView({
             }
           : undefined,
       }
-    : undefined;
+    : // View only: no quick actions, the options button still opens the menu (BC-Kanban kbf-0).
+      { onCopyLink: handleCopyLink };
 
   const linkCandidates: ItemSheetLinkCandidate[] = kanban.groups
     .flatMap((group) => group.cards)
