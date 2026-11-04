@@ -1,5 +1,6 @@
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.WorkManagement.Approvals.Queries.ListItemApprovalRequests;
+using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 
 namespace Notrelix.API.Endpoints.WorkManagement.Approvals.Queries;
 
@@ -9,6 +10,7 @@ public static class ListItemApprovalRequestsEndpoint
     {
         group.MapResourceGet("/approval-requests", HandleAsync)
             .WithName("WorkManagement.Approvals.ListForItem")
+            .Produces<List<ApprovalRequestDto>>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.Approvals")
             .WithSummary("List the approval requests asked about a board item");
         return group;
