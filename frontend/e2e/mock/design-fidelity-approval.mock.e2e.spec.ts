@@ -104,7 +104,7 @@ async function expectHeading(card: Locator) {
   near(h.y, 17, "heading y");
   near(h.h, 20.3, "heading height");
   const c = (await card.boundingBox())!;
-  const sent = await box(card.getByText(/^Gửi /), card);
+  const sent = await box(card.getByText(/^Gửi /).first(), card);
   near(c.width - (sent.x + sent.w), 17, "sent right gap");
   expect.soft(await style(card)).toMatchObject({ r: "12px", p: "16px" });
 }
@@ -293,6 +293,27 @@ test.describe("approval block, owner, 1440 px", () => {
     await card.getByRole("button", { name: "Từ chối yêu cầu" }).click();
     await expect(card.getByText(/đã từ chối/)).toBeVisible();
     near((await box(card.getByRole("status"), card)).y, 47.3, "rejected y");
+  });
+
+  test("cards 4 and 6: Gửi yêu cầu duyệt mới sits 10 px under the banner and asks again", async ({
+    page,
+  }) => {
+    const card = await open(page, "mock-erp-item-138");
+    await card.getByRole("button", { name: "Duyệt", exact: true }).click();
+    await expect(card.getByText(/đã duyệt/)).toBeVisible();
+    const banner = await box(card.getByRole("status"), card);
+    const again = card.getByRole("button", { name: "Gửi yêu cầu duyệt mới" });
+    const k = await box(again, card);
+    near(k.x, 17, "link x");
+    near(k.y, banner.y + banner.h + 10, "link y");
+    near(k.h, 32, "link height");
+    expect.soft(await style(again)).toMatchObject({
+      fs: "13px",
+      fw: "500",
+      c: "rgb(79, 88, 102)",
+    });
+    await again.click();
+    await expect(page.getByRole("menuitem").first()).toBeVisible();
   });
 
   test("card 5, a member who is neither requester nor approver: the banner and the explanation only", async ({

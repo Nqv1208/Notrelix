@@ -1,6 +1,14 @@
 import { useId, useState, type ReactNode } from "react";
 import { Check, Clock, X } from "lucide-react";
-import { Skeleton, Textarea, cn } from "@notrelix/ui-web";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Skeleton,
+  Textarea,
+  cn,
+} from "@notrelix/ui-web";
 import { personInitials } from "@notrelix/work-management-core";
 import type { ItemSheetApproval } from "../../card-detail/task-detail-types";
 import { describeSheetTime } from "../../card-detail/item-sheet-format";
@@ -8,6 +16,7 @@ import { fillSheetCopy } from "../../card-detail/item-sheet.copy";
 import { useItemSheetCopy } from "../../card-detail/use-item-sheet-copy";
 import { useCardPopup } from "../card-popup-context";
 import { PanelBtn, PersonMark } from "../popup-ui";
+import { approvalCandidates } from "./approval-model";
 
 // The artboard's `.btn`: 32 px, 7 px radius, 6 px between the icon and the words.
 const APPROVAL_BTN = "gap-1.5 rounded-[7px]";
@@ -116,6 +125,48 @@ export function ApprovalSection() {
   );
 }
 
+/** "Gửi yêu cầu duyệt mới" under a result: the same people the "⋯" menu offers, shown as a text button. */
+function AskAgain() {
+  const { board, callbacks, capabilities, copy, data, readOnly } =
+    useCardPopup();
+  if (
+    readOnly !== null ||
+    !capabilities.canEditFields ||
+    callbacks.onRequestApproval === undefined
+  )
+    return null;
+  const people = approvalCandidates(board, data.people, data.viewerUserId);
+  if (people.length === 0) return null;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <PanelBtn
+          small
+          variant="ghost"
+          className={cn(APPROVAL_BTN, "self-start px-0")}
+          aria-haspopup="menu"
+        >
+          {copy.approval.askAgain}
+        </PanelBtn>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        aria-label={copy.approval.searchLabel}
+        className="max-h-72 overflow-y-auto"
+      >
+        {people.map((person) => (
+          <DropdownMenuItem
+            key={person.id}
+            onSelect={() => callbacks.onRequestApproval?.(person.id)}
+          >
+            {person.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 function RetryRead() {
   const { callbacks, copy } = useCardPopup();
   return callbacks.onReloadApprovals ? (
@@ -162,7 +213,11 @@ function ApprovalRow({
     <li
       data-approval-status={approval.status}
       className={cn(
-        "flex flex-col gap-3 text-[13px]",
+        "flex flex-col text-[13px]",
+        // WM-Approval draws a result card with 10 px between its parts (the pending cards use 12).
+        approval.status === "approved" || approval.status === "rejected"
+          ? "gap-2.5"
+          : "gap-3",
         !first && "border-t border-line pt-3",
       )}
     >
@@ -223,6 +278,9 @@ function ApprovalRow({
             ) : null}
           </span>
         </Banner>
+      ) : null}
+      {approval.status === "approved" || approval.status === "rejected" ? (
+        <AskAgain />
       ) : null}
       {approval.status === "cancelled" ? (
         <p className="m-0 text-meta-foreground">
