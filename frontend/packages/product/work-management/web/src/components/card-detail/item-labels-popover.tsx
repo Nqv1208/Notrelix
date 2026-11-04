@@ -81,6 +81,12 @@ export function labelCreate(
     : undefined;
 }
 
+/** Past this many labels the list windows; a row is 32 px with a 2 px gap, the list 300 px high. */
+const ROW_WINDOW_THRESHOLD = 100;
+const ROW_PITCH = 34;
+const LIST_HEIGHT = 300;
+const ROW_OVERSCAN = 8;
+
 const fold = (text: string) =>
   text
     .normalize("NFD")
@@ -163,6 +169,7 @@ export function ItemLabelsPopover({
   const [color, setColor] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [scrollTop, setScrollTop] = useState(0);
   const errorId = useId();
   if (readOnly) return <>{children}</>;
 
@@ -170,6 +177,17 @@ export function ItemLabelsPopover({
   const shown = needle
     ? labels.filter((entry) => fold(entry.name).includes(needle))
     : labels;
+  // A long list mounts only the rows in view (a row is 32 px and a 2 px gap).
+  const windowed = shown.length > ROW_WINDOW_THRESHOLD;
+  const first = windowed
+    ? Math.max(0, Math.floor(scrollTop / ROW_PITCH) - ROW_OVERSCAN)
+    : 0;
+  const last = windowed
+    ? Math.min(
+        shown.length,
+        Math.ceil((scrollTop + LIST_HEIGHT) / ROW_PITCH) + ROW_OVERSCAN,
+      )
+    : shown.length;
   const typed = (creating ? newName : query).trim();
   const picked = color ?? create?.defaultColor ?? ITEM_LABEL_COLORS.data;
   const canCreate =
@@ -291,8 +309,22 @@ export function ItemLabelsPopover({
             </div>
           </form>
         ) : (
-          <ul aria-label={label} className="flex flex-col gap-0.5">
-            {shown.map((entry) => {
+          <ul
+            aria-label={label}
+            className={cn(
+              "flex flex-col gap-0.5",
+              windowed && "max-h-[300px] overflow-y-auto",
+            )}
+            onScroll={
+              windowed
+                ? (event) => setScrollTop(event.currentTarget.scrollTop)
+                : undefined
+            }
+          >
+            {windowed ? (
+              <li aria-hidden="true" style={{ height: first * ROW_PITCH }} />
+            ) : null}
+            {shown.slice(first, last).map((entry) => {
               const selected = selectedIds.has(entry.id);
               return (
                 <li key={entry.id}>
@@ -314,6 +346,12 @@ export function ItemLabelsPopover({
                 </li>
               );
             })}
+            {windowed ? (
+              <li
+                aria-hidden="true"
+                style={{ height: (shown.length - last) * ROW_PITCH }}
+              />
+            ) : null}
             {canCreate && create ? (
               <li className="flex flex-col gap-2 rounded-md bg-state-hover p-2">
                 <button

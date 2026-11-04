@@ -197,6 +197,7 @@ export const en = {
       doneBody:
         "The old values of {{count}} items show again. Views and filters are not applied again.",
       doneBodyNone: "Views and filters are not applied again.",
+      doneBodyShort: "The old values of {{count}} items show again.",
       emptyTitle: "No field has been deleted",
       emptyBody:
         "A deleted field waits here for 30 days; restoring shows its old values again. After 30 days it can't be restored any more.",
@@ -961,6 +962,7 @@ export const vi: BoardSettingsCopy = {
       doneBody:
         "Giá trị cũ của {{count}} việc hiện lại. Chế độ xem và bộ lọc không tự áp lại.",
       doneBodyNone: "Chế độ xem và bộ lọc không tự áp lại.",
+      doneBodyShort: "Giá trị cũ của {{count}} việc hiện lại.",
       emptyTitle: "Chưa có trường nào bị xoá",
       emptyBody:
         "Khi xoá một trường, nó nằm ở đây 30 ngày; khôi phục là giá trị cũ hiện lại. Hết 30 ngày thì không khôi phục được nữa.",
