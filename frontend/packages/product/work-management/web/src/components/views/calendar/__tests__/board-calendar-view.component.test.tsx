@@ -225,7 +225,7 @@ describe("BoardCalendarView on the ERP board", () => {
     expect(screen.getAllByRole("heading", { level: 2 })[0]?.textContent).toBe(
       "Tháng 10, 2026",
     );
-    expect(screen.getByText("Giờ Hà Nội (GMT+7)")).toBeTruthy();
+    expect(screen.getByTitle("Giờ Hà Nội (GMT+7)").textContent).toBe("GMT+7");
     // 15 dated items; ERP-135 (26/09) is outside the grid and ERP-142 spans
     // 01/10 to 10/10 over two week rows.
     expect(container.querySelectorAll("[data-calendar-event]").length).toBe(15);

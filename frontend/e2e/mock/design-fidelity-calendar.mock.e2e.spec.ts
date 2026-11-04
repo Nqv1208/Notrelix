@@ -100,13 +100,16 @@ const MOCK = {
     frame: { x: 25, y: 193, width: 846, height: 684 },
     today: { x: 33, y: 198, width: 24, height: 24 },
   },
-  /** Final-Calendar range=ngay. */
+  /**
+   * Final-Calendar range=ngay, with the bar kept to one row as WM-Toolbar-Calendar draws it (the artboard's
+   * wrapped second row is gone, so every box below the bar is 40 px higher and the grid 40 px taller).
+   */
   day: {
     heading: { x: 200, y: 121, width: 177, height: 25 },
-    primary: { x: 24, y: 157, width: 150, height: 32 },
-    calendar: { x: 24, y: 199, width: 848, height: 679 },
-    overdue: { x: 25, y: 200, width: 846, height: 77 },
-    overdueItem: { x: 37, y: 234, width: 822, height: 33 },
+    primary: { x: 1010, y: 117, width: 150, height: 32 },
+    calendar: { x: 24, y: 159, width: 848, height: 719 },
+    overdue: { x: 25, y: 160, width: 846, height: 77 },
+    overdueItem: { x: 37, y: 194, width: 822, height: 33 },
     slotHeight: 44,
     timeWidth: 64,
     nowOffset: 117,
@@ -795,7 +798,7 @@ test.describe("Board Calendar geometry at 1440 px (owner)", () => {
     const heading = bar(page).heading;
     await expect(heading).toHaveText("Thứ Hai, 12/10/2026");
     expectRect(await rel(page, heading), d.heading, "day heading");
-    // The bar wraps: "Thêm công việc" goes to a second line.
+    // The bar stays on one row.
     expectRect(await rel(page, bar(page).primary), d.primary, "primary");
     expectRect(await rel(page, page.getByRole("grid")), d.calendar, "calendar");
 
