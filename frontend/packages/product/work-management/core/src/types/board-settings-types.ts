@@ -75,7 +75,22 @@ export interface FormulaPreviewDto {
   readonly value: string | null;
   /** The server's code for an error (`unknown-field`, `divide-by-zero`, `invalid-definition`). */
   readonly errorCode: string | null;
+  /** What the draft read: the fields a formula refers to, or the source value of up to five sub-items. */
+  readonly inputs: readonly FormulaPreviewInputDto[];
+  /** A rollup's number of sub-items; null for a formula. */
+  readonly subItemCount: number | null;
 }
+
+export interface FormulaPreviewInputDto {
+  readonly name: string;
+  /** The value as text; null when the field is empty or could not be read. */
+  readonly value: string | null;
+}
+
+/** A draft the server tries on one item: a formula, or a rollup (its field only when it aggregates one). */
+export type FormulaPreviewDraft =
+  | { readonly expression: string }
+  | { readonly rollupFunction: string; readonly rollupFieldId?: string | null };
 
 export interface BoardSettingsFieldDto {
   readonly id: string;
@@ -98,6 +113,8 @@ export interface BoardSettingsFieldDto {
   readonly valueCount: number;
   readonly options: readonly BoardSettingsOptionDto[];
   readonly defaultOptionId: string | null;
+  /** The text or number a Text, Long text or Number field starts with; empty when none. */
+  readonly defaultText?: string;
   readonly required: boolean;
   readonly guidance: string;
   /** The field's settings JSON as stored, merged with an edit of its rules before it is saved. */
@@ -251,6 +268,7 @@ export interface BoardSettingsGeneralPatch {
 export interface BoardSettingsFieldPatch {
   readonly name?: string;
   readonly defaultOptionId?: string | null;
+  readonly defaultText?: string;
   readonly required?: boolean;
   readonly guidance?: string;
   /** The field's settings JSON (a Formula's expression, a Rollup's function). */

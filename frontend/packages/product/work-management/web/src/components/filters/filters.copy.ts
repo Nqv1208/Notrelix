@@ -168,7 +168,14 @@ export const en = {
     saveFailed:
       "Could not save your view. You still see it on this screen, but opening it again will lose it.",
     retry: "Try again",
-    restored: "Your own view was restored",
+    restored: "Your own view was restored: {{parts}}.",
+    restoredNote:
+      "Remembered for each view of each person; \u201cBack to shared view\u201d clears your own view.",
+    restoredFilter: "Filter {{count}}",
+    restoredSort: "Sort {{count}}",
+    restoredGroup: "Group by {{field}}",
+    restoredLane: "Lanes by {{field}}",
+    restoring: "Restoring your view",
   },
   stale: {
     chip: "{{name}} · field removed",
@@ -177,6 +184,9 @@ export const en = {
     saveNew: "Save as a new filter",
     savedHint: "{{count}} ignored",
     unknownField: "Removed field",
+    valueChip: "{{name}} · option removed",
+    valueHint:
+      "The filter has {{count}} condition(s) on a label that was removed. They are ignored, so the result may be wider than you expect.",
   },
   states: {
     noResults: "No item matches the filter",
@@ -379,7 +389,14 @@ export const vi: FiltersCopy = {
     saveFailed:
       "Chưa lưu được cách xem của bạn. Bạn vẫn thấy nó trên màn hình này, nhưng mở lại sẽ mất.",
     retry: "Thử lại",
-    restored: "Đã khôi phục cách xem riêng của bạn",
+    restored: "Đã khôi phục cách xem của bạn: {{parts}}.",
+    restoredNote:
+      "Nhớ riêng cho từng view của từng người; \u201cVề view chung\u201d xoá cách xem riêng.",
+    restoredFilter: "Lọc {{count}}",
+    restoredSort: "Sắp xếp {{count}}",
+    restoredGroup: "Nhóm theo {{field}}",
+    restoredLane: "Làn theo {{field}}",
+    restoring: "Đang khôi phục cách xem",
   },
   stale: {
     chip: "{{name}} · trường đã xoá",
@@ -388,6 +405,9 @@ export const vi: FiltersCopy = {
     saveNew: "Lưu thành bộ lọc mới",
     savedHint: "{{count}} bị bỏ qua",
     unknownField: "Trường đã xoá",
+    valueChip: "{{name}} · lựa chọn đã xoá",
+    valueHint:
+      "Bộ lọc có {{count}} điều kiện dùng nhãn đã bị xoá. Điều kiện đó đang được bỏ qua nên kết quả có thể rộng hơn bạn nghĩ.",
   },
   states: {
     noResults: "Không có việc nào khớp bộ lọc",

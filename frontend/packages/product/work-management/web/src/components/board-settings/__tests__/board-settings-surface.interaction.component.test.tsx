@@ -213,6 +213,38 @@ describe.each([
     );
   });
 
+  it(`${fui("wm.board-settings:field-panel", locale)}makes a number field required only once it has a default (${locale})`, async () => {
+    const actions = spyActions();
+    renderPage(copy, {
+      fieldId: "sf-estimate",
+      actions: actions as unknown as BoardSettingsActions,
+    });
+    const panel = screen.getByRole("complementary", {
+      name: fillCopy(copy.panel.label, { name: "Ước lượng" }),
+    });
+    fireEvent.click(
+      within(panel).getByRole("switch", { name: copy.panel.required }),
+    );
+    expect(
+      within(panel).getByText(copy.panel.requiredNeedsDefault),
+    ).toBeTruthy();
+    const save = within(panel).getByRole("button", { name: copy.common.save });
+    expect((save as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(within(panel).getByLabelText(copy.panel.default), {
+      target: { value: "8" },
+    });
+    expect(
+      within(panel).queryByText(copy.panel.requiredNeedsDefault),
+    ).toBeNull();
+    fireEvent.click(save);
+    await waitFor(() =>
+      expect(actions.updateField).toHaveBeenCalledWith("sf-estimate", {
+        defaultText: "8",
+        required: true,
+      }),
+    );
+  });
+
   it(`${fui("wm.board-settings:options", locale)}adds, renames and deletes an option at once (${locale})`, async () => {
     const actions = spyActions();
     renderPage(copy, {

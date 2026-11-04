@@ -1085,4 +1085,26 @@ describe("MainTableSurface title edit in place", () => {
     ).toBeNull();
     expect(titleOf("ERP-142").getAttribute("aria-keyshortcuts")).toBeNull();
   });
+
+  it("a pick past 200 states the cap and keeps every picked row (nothing is trimmed)", () => {
+    const base = erpTableProps({ hideDone: false });
+    const group = base.groups[0]!;
+    const rows = Array.from({ length: 205 }, (_, n) => ({
+      ...group.rows[0]!,
+      id: `bulk-${n}`,
+      key: `ERP-${900 + n}`,
+    }));
+    const props = {
+      ...base,
+      groups: [
+        { ...group, rows, total: rows.length, filteredTotal: undefined },
+      ],
+      selectedIds: new Set(rows.map((r) => r.id)),
+    } as MainTableSurfaceProps;
+    renderTable(props);
+    expect(
+      screen.getByText("Đã chọn 205 việc, nhiều nhất 200 việc mỗi lần"),
+    ).toBeTruthy();
+    expect(screen.getByText(/Bỏ chọn bớt 5 việc/)).toBeTruthy();
+  });
 });

@@ -1,7 +1,7 @@
 import { useRef, type ReactNode } from "react";
 import { AlertCircle, ExternalLink, Loader2, Lock } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
-import type { StaleSchemaDetail } from "@notrelix/work-management-state";
+import type { StaleSchemaDetail } from "@notrelix/work-management-core";
 import {
   specOf,
   type ComputedValue,
@@ -130,8 +130,9 @@ function ComputedCell({
       className={cn(
         "ml-auto inline-flex min-w-0 items-center gap-1.25 text-nav font-normal tabular-nums text-foreground",
         // Dimmed by italic and the spinner, never by opacity: the text keeps its 4.5:1 contrast in both themes.
-        view.tone === "stale" && "italic",
-        view.tone === "error" && "text-caption font-semibold text-danger-text",
+        view.tone === "stale" && "gap-[7px] italic",
+        view.tone === "error" &&
+          "text-caption leading-[1.45] font-semibold text-danger-text",
         view.tone === "empty" && "text-meta-foreground",
       )}
     >
@@ -141,7 +142,7 @@ function ComputedCell({
       <span className="truncate">{view.text}</span>
       {view.tone === "stale" ? (
         <Loader2
-          className="size-3 flex-none animate-spin motion-reduce:animate-none"
+          className="size-4.5 flex-none animate-spin motion-reduce:animate-none"
           aria-hidden="true"
         />
       ) : null}
