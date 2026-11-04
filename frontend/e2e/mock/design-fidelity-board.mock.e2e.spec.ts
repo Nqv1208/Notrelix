@@ -444,7 +444,9 @@ test.describe("Board Kanban geometry at 1440 px (owner)", () => {
     ).toBeLessThanOrEqual(1);
   });
 
-  test("no results: the bar and the empty lanes", async ({ page }) => {
+  // The one-line bar is gone: WM-Filter-States draws a card in place of the columns, measured by
+  // design-fidelity-filter-states. This Final-Board drawing is superseded.
+  test.skip("no results: the bar and the empty lanes", async ({ page }) => {
     await openBoard(page);
     await page.getByRole("searchbox").fill("zzzz");
     const bar = page.locator("[data-kanban-toolbar] [role=status]");

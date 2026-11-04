@@ -102,6 +102,7 @@ export function BoardToolbar({
             savedViews={savedViews}
           />
         </div>
+        <AddViewMenu onAddView={onAddView ?? onViewChange} copy={copy} />
         {viewActions && activeSaved ? (
           <ViewTabMenu
             key={activeSaved.id}
@@ -111,7 +112,6 @@ export function BoardToolbar({
             copy={copy}
           />
         ) : null}
-        <AddViewMenu onAddView={onAddView ?? onViewChange} copy={copy} />
       </div>
     </div>
   );

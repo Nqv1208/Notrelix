@@ -9,7 +9,7 @@ import { expect, test } from "@playwright/test";
  * each row with its checkbox and text, the add button) is read live; the app's boxes must match within 1 px, with
  * the font size and weight of each. The icon glyph and the rows' hover actions (hidden until hover) are not compared.
  */
-const CANVAS = process.env.WM_CANVAS_DIR ?? "/tmp/wmv-canvas/project";
+const CANVAS = `${process.cwd()}/../docs/design/mockups/2026-10/src`;
 const FILE = "Kanban-CardPopup-Checklist-People.dc.html";
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
@@ -19,7 +19,7 @@ test.skip(
     persona !== "owner" ||
     scenario !== "default" ||
     faults !== "",
-  "Needs the owner canvas copy (WM_CANVAS_DIR) and the default owner world",
+  "Needs the default owner world",
 );
 test.use({ viewport: { width: 1440, height: 1000 } });
 
