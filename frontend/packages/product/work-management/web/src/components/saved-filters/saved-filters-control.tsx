@@ -81,7 +81,11 @@ export function SavedFiltersControl({
 
   const tell = useCallback(
     (
-      result: { ok: boolean; reason?: "forbidden" | "missing" | "failed" },
+      result: {
+        ok: boolean;
+        reason?: "forbidden" | "missing" | "conflict" | "failed";
+        by?: string | null;
+      },
       name: string,
     ) => {
       if (result.ok) return;
@@ -94,8 +98,12 @@ export function SavedFiltersControl({
         fillSavedFiltersCopy(
           result.reason === "forbidden"
             ? copy.toast.forbidden
-            : copy.toast.failed,
-          { name },
+            : result.reason === "conflict"
+              ? result.by
+                ? copy.toast.conflictBy
+                : copy.toast.conflict
+              : copy.toast.failed,
+          { name, by: result.by ?? "" },
         ),
       );
     },
@@ -143,7 +151,11 @@ export function SavedFiltersControl({
       }}
       onRename={async (saved, name) => {
         const result = await writes.rename(saved, name);
-        if (!result.ok && result.reason === "missing") tell(result, name);
+        if (
+          !result.ok &&
+          (result.reason === "missing" || result.reason === "conflict")
+        )
+          tell(result, saved.name);
         if (result.ok)
           toast.success(fillSavedFiltersCopy(copy.toast.renamed, { name }));
         return result;

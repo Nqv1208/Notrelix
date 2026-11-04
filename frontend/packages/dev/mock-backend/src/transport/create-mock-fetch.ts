@@ -95,8 +95,16 @@ export function createMockFetch(store: MockStore): typeof fetch {
     const config = store.getConfig();
 
     // ── Apply fault profile ─────────────────────────────────────────────────
+    // A key "PUT /preferences" fails only that method on any path that contains the text.
+    const methodFault = Object.entries(config.faultProfile).find(
+      ([key]) =>
+        key.includes(" ") &&
+        key.split(" ")[0] === request.method &&
+        request.normalizedPathname.includes(key.slice(key.indexOf(" ") + 1)),
+    )?.[1];
     const fault =
       config.faultProfile[request.normalizedPathname] ??
+      methodFault ??
       config.faultProfile["*"];
 
     if (fault === "network") {
@@ -107,9 +115,10 @@ export function createMockFetch(store: MockStore): typeof fetch {
     }
     if (fault === "409") {
       const refused = conflict("Simulated conflict");
-      // The producer names who saved first on a refused stale view write (changedByName).
+      // The producer names who saved first on a refused stale view or saved-filter write (changedByName).
       return createMockResponse<object>(
-        request.normalizedPathname.includes("/views")
+        request.normalizedPathname.includes("/views") ||
+          request.normalizedPathname.includes("/saved-filters")
           ? {
               ...refused,
               body: { ...refused.body, changedByName: "Hà Nguyễn" },
