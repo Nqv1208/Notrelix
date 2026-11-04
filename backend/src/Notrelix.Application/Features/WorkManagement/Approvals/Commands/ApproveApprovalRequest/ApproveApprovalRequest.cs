@@ -50,6 +50,10 @@ public class ApproveApprovalRequestCommandHandler : IRequestHandler<ApproveAppro
 
         var userId = _requestContext.UserId;
         var now = _dateTimeProvider.UtcNow;
+        // Only an assigned approver learns the current state of a request that was already decided.
+        if (approvalRequest.Status != ApprovalStatus.Pending && approvalRequest.Steps.Any(s => s.ApproverUserId == userId))
+            return Result.Failure(new ApplicationError(
+                "work.approval.already-decided", $"This approval is already {approvalRequest.Status}.", ApplicationErrorType.Conflict));
         var step = approvalRequest.Steps
             .FirstOrDefault(s => s.Status == ApprovalStatus.Pending && s.ApproverUserId == userId);
         if (step is null)

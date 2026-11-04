@@ -11,7 +11,8 @@ public sealed record ExportTable(IReadOnlyList<string> Headers, IReadOnlyList<ob
 
 /// <summary>
 /// Reads the rows of an export the way the board reads them: the same filter and sort, the same live root items
-/// (archived and deleted ones are left out). It runs under the caller's own board visibility, which the caller
+/// (archived and deleted ones are left out), each followed by its live sub-items with the key of their parent in the
+/// Parent column. It runs under the caller's own board visibility, which the caller
 /// has already checked; the board's fields are all visible to everyone who can see the board (no field has its
 /// own view right), so none is left out.
 /// </summary>
@@ -47,12 +48,27 @@ public sealed class BoardExportBuilder(
         var custom = live.Where(f => !f.IsSystem && f.Type is not (FieldType.Formula or FieldType.Rollup or FieldType.Vote)).ToList();
         var headers = new List<string>
         {
-            labels.Key, title?.Name ?? labels.Title, labels.Group, status?.Name ?? labels.Status, labels.Assignees, labels.Start, labels.Due, labels.Completed, labels.Labels, labels.Created,
+            labels.Key, title?.Name ?? labels.Title, labels.Group, status?.Name ?? labels.Status, labels.Assignees, labels.Start, labels.Due, labels.Completed, labels.Labels, labels.Created, labels.Parent,
         };
         headers.AddRange(custom.Select(f => f.Name));
 
+        var people = new Dictionary<Guid, string>();
+        object?[] RowOf(BoardItemSummaryDto s, BoardItem item, string? parentKey)
+        {
+            var row = new List<object?>
+            {
+                s.ItemKey, s.Name, groups.GetValueOrDefault(item.GroupId), OptionName(status, s.StatusOptionId),
+                string.Join("; ", s.Members.Select(m => m.Name)), s.StartedAt, s.DueAt, s.CompletedAt,
+                string.Join("; ", s.Labels.Select(l => l.Name)), new DateTimeOffset(DateTime.SpecifyKind(s.CreatedAt, DateTimeKind.Utc)), parentKey,
+            };
+            foreach (var f in custom)
+                row.Add(f.Id == priority?.Id ? OptionName(priority, s.PriorityOptionId) : Cell(f, s, people));
+            return row.ToArray();
+        }
+
         var laneKeys = lane is null ? [""] : lane.OptionOrder.Select(id => id.ToString()).Append("").ToList();
         var rows = new List<object?[]>();
+        var roots = 0;
         var total = (await pages.ReadAsync(boardId, groupIds, lane, criteriaFields, criteria, null, null, 1, ct)).Sum(p => p.FilteredTotal);
         progress?.Invoke(0, total);
         foreach (var laneKey in laneKeys)
@@ -67,22 +83,22 @@ public sealed class BoardExportBuilder(
                 var byId = loaded.ToDictionary(i => i.Id);
                 var items = page.ItemIds.Where(byId.ContainsKey).Select(id => byId[id]).ToList();
                 var built = await summaries.BuildAsync(fields, items, ct);
-                var people = await PeopleAsync(built, custom, ct);
+                var itemIds = items.Select(i => i.Id).ToList();
+                var children = await context.BoardItems.AsNoTracking()
+                    .Where(i => i.ParentItemId != null && itemIds.Contains(i.ParentItemId.Value) && i.DeletedAt == null && !i.IsArchived)
+                    .OrderBy(i => i.Position).ToListAsync(ct);
+                var builtChildren = children.Count == 0 ? [] : await summaries.BuildAsync(fields, children, ct);
+                people = await PeopleAsync(built.Concat(builtChildren).ToList(), custom, ct);
                 foreach (var s in built)
                 {
-                    var item = byId[s.Id];
-                    var row = new List<object?>
-                    {
-                        s.ItemKey, s.Name, groups.GetValueOrDefault(item.GroupId), OptionName(status, s.StatusOptionId),
-                        string.Join("; ", s.Members.Select(m => m.Name)), s.StartedAt, s.DueAt, s.CompletedAt,
-                        string.Join("; ", s.Labels.Select(l => l.Name)), new DateTimeOffset(DateTime.SpecifyKind(s.CreatedAt, DateTimeKind.Utc)),
-                    };
-                    foreach (var f in custom)
-                        row.Add(f.Id == priority?.Id ? OptionName(priority, s.PriorityOptionId) : Cell(f, s, people));
-                    rows.Add(row.ToArray());
+                    rows.Add(RowOf(s, byId[s.Id], null));
+                    foreach (var child in builtChildren.Where(c => c.ParentItemId == s.Id))
+                        rows.Add(RowOf(child, children.First(c => c.Id == child.Id), s.ItemKey));
                 }
 
-                progress?.Invoke(rows.Count, total);
+                roots += built.Count;
+
+                progress?.Invoke(roots, total);
             }
             while (cursor is not null);
         }
@@ -139,9 +155,9 @@ public sealed class BoardExportBuilder(
         }
     }
 
-    private sealed record Words(string Key, string Title, string Group, string Status, string Assignees, string Start, string Due, string Completed, string Labels, string Created);
+    private sealed record Words(string Key, string Title, string Group, string Status, string Assignees, string Start, string Due, string Completed, string Labels, string Created, string Parent);
 
     private static Words Copy(string locale) => locale == "en"
-        ? new("Key", "Title", "Group", "Status", "Assignees", "Start date", "Due date", "Completed at", "Labels", "Created at")
-        : new("Mã việc", "Tên việc", "Nhóm", "Trạng thái", "Người phụ trách", "Ngày bắt đầu", "Hạn chót", "Hoàn thành lúc", "Nhãn", "Tạo lúc");
+        ? new("Key", "Title", "Group", "Status", "Assignees", "Start date", "Due date", "Completed at", "Labels", "Created at", "Parent")
+        : new("Mã việc", "Tên việc", "Nhóm", "Trạng thái", "Người phụ trách", "Ngày bắt đầu", "Hạn chót", "Hoàn thành lúc", "Nhãn", "Tạo lúc", "Việc cha");
 }
