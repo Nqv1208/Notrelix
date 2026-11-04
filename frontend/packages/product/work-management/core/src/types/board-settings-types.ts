@@ -98,6 +98,8 @@ export interface BoardSettingsFieldDto {
   readonly valueCount: number;
   readonly options: readonly BoardSettingsOptionDto[];
   readonly defaultOptionId: string | null;
+  /** The text or number a Text, Long text or Number field starts with; empty when none. */
+  readonly defaultText?: string;
   readonly required: boolean;
   readonly guidance: string;
   /** The field's settings JSON as stored, merged with an edit of its rules before it is saved. */
@@ -251,6 +253,7 @@ export interface BoardSettingsGeneralPatch {
 export interface BoardSettingsFieldPatch {
   readonly name?: string;
   readonly defaultOptionId?: string | null;
+  readonly defaultText?: string;
   readonly required?: boolean;
   readonly guidance?: string;
   /** The field's settings JSON (a Formula's expression, a Rollup's function). */

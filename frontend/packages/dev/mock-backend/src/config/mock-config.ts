@@ -60,7 +60,8 @@ export interface MockFaultProfile {
     // A second writer got there first: a handler that takes an expected version answers 412.
     | "stale"
     | "stale-option"
-    | "stale-type";
+    | "stale-type"
+    | "required";
 }
 
 // ─── Config interface ─────────────────────────────────────────────────────────
@@ -205,6 +206,7 @@ const VALID_FAULTS = new Set<string>([
   "stale",
   "stale-option",
   "stale-type",
+  "required",
 ]);
 
 export function parseMockConfigFromEnv(

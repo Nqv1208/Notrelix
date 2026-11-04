@@ -165,6 +165,18 @@ function defaultOptionOf(value: string | null | undefined): string | null {
   }
 }
 
+/** The text or number a Text, Long text or Number field starts with, as typed. */
+function defaultTextOf(value: string | null | undefined): string {
+  try {
+    const parsed: unknown = JSON.parse(value || "null");
+    return typeof parsed === "string" || typeof parsed === "number"
+      ? String(parsed)
+      : "";
+  } catch {
+    return "";
+  }
+}
+
 /** The settings JSON with the edited rules merged in; every other setting stays as it is. */
 export function settingsWithRules(
   base: string | undefined,
@@ -238,6 +250,10 @@ function mapField(column: OverviewField): BoardSettingsFieldDto {
     valueCount: column.valueCount ?? 0,
     options,
     defaultOptionId: defaultOptionOf(column.defaultValue),
+    defaultText:
+      type === "text" || type === "longtext" || type === "number"
+        ? defaultTextOf(column.defaultValue)
+        : "",
     ...rulesOf(column.settings),
     settingsJson: column.settings ?? "{}",
     usedIn: [],
@@ -347,7 +363,7 @@ export function mapSettingsView(
 /**
  * Where a field is in use: the saved views that filter, sort or split by it, show it on a card, or (a table)
  * show it as a column. Read from the views the page already has, so it needs no extra request; `how` is left
- * for the page to word.
+ * for the page to word (`how` is a code: column, sort, group, card or filter).
  */
 export function usedInOf(
   fieldId: string,
@@ -355,19 +371,22 @@ export function usedInOf(
 ): BoardSettingsUsageDto[] {
   return views.flatMap((view): BoardSettingsUsageDto[] => {
     const config = view.viewConfig;
-    const kind: BoardSettingsUsageDto["kind"] | null = config.filters.some(
-      (filter) => filter.fieldId === fieldId,
-    )
+    const sorted = config.sortBy.some((sort) => sort.fieldId === fieldId);
+    const how = config.filters.some((filter) => filter.fieldId === fieldId)
       ? "filter"
       : (config.cardFieldIds ?? []).includes(fieldId)
         ? "card"
-        : config.sortBy.some((sort) => sort.fieldId === fieldId) ||
-            config.groupBy === fieldId ||
-            (view.viewMode === "table" &&
-              !(config.hiddenFields ?? []).includes(fieldId))
-          ? "view"
-          : null;
-    return kind ? [{ kind, name: view.name, how: "" }] : [];
+        : sorted
+          ? "sort"
+          : config.groupBy === fieldId
+            ? "group"
+            : view.viewMode === "table" &&
+                !(config.hiddenFields ?? []).includes(fieldId)
+              ? "column"
+              : null;
+    const kind: BoardSettingsUsageDto["kind"] | null =
+      how === "filter" || how === "card" ? how : how ? "view" : null;
+    return kind && how ? [{ kind, name: view.name, how }] : [];
   });
 }
 
@@ -723,6 +742,16 @@ export function createBoardSettingsApi(client: NotrelixClient) {
                           ? [changes.defaultOptionId]
                           : changes.defaultOptionId,
                       ),
+              }
+            : {}),
+          ...(changes.defaultText !== undefined
+            ? {
+                defaultValueJson:
+                  changes.defaultText.trim() === ""
+                    ? "null"
+                    : field.type === "number"
+                      ? changes.defaultText.trim()
+                      : JSON.stringify(changes.defaultText),
               }
             : {}),
         },
