@@ -57,13 +57,13 @@ test.describe("Board Calendar data (owner)", () => {
       .locator("[data-calendar-event]")
       .filter({ hasText: "Chuyển dữ liệu khách hàng" });
     await expect(bars).toHaveCount(2);
-    // Cut square at the break: the first piece ends at the week's edge.
+    // Cut square at the break: the first piece ends at the week's edge, less the 4 px bar margin.
     const first = (await bars.first().boundingBox())!;
     const week = (await page
       .locator("[data-calendar-week]")
       .first()
       .boundingBox())!;
-    expect(first.x + first.width).toBeCloseTo(week.x + week.width, 0);
+    expect(first.x + first.width).toBeCloseTo(week.x + week.width - 4, 0);
   });
 
   test("the finished items are struck through on the day they were finished", async ({
