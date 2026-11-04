@@ -8,6 +8,7 @@ import {
   groupCardsByField,
   groupCardsByStatus,
   serializeCompoundFilter,
+  dropStaleConditions,
   type BoardGroup,
   type Card,
   type DateBucket,
@@ -200,14 +201,15 @@ export function useBoardKanban(
     () => (fields ? kanbanGroupByFields(fields) : []),
     [fields],
   );
-  // The cards of a paged read hold only some of the board's labels: the filter offers the board's own list.
-  const boardLabels = useBoardLabels(boardId, workspaceId, Boolean(paging));
+  // The cards hold only some of the board's labels (a page, or none that use a label): the filter offers the
+  // board's own list, and a label of it that was deleted is told apart from one no loaded card holds.
+  const boardLabels = useBoardLabels(boardId, workspaceId);
   const pagedLabels = useMemo(
     () =>
-      paging && boardLabels.data
+      boardLabels.data
         ? boardLabels.data.map((label) => ({ id: label.id, name: label.name }))
         : undefined,
-    [paging, boardLabels.data],
+    [boardLabels.data],
   );
   const labelChoices = useMemo(
     () =>
@@ -221,11 +223,12 @@ export function useBoardKanban(
             fieldDefinitions: board.fieldDefinitions,
             members: board.members,
             labels: labelChoices,
+            labelsComplete: pagedLabels !== undefined,
             names: view.names,
             isOverdue,
           })
         : [],
-    [board, view, labelChoices, isOverdue],
+    [board, view, labelChoices, pagedLabels, isOverdue],
   );
   const memberName = useMemo(() => {
     const names = new Map<string, string>();
@@ -324,7 +327,9 @@ export function useBoardKanban(
     full: needsWholeBoard,
     filter:
       !needsWholeBoard && compoundFilter
-        ? serializeCompoundFilter(compoundFilter)
+        ? serializeCompoundFilter(
+            dropStaleConditions(compoundFilter, filterFields),
+          )
         : "",
     sort: "",
     search: debouncedQuery.trim(),
