@@ -12,6 +12,9 @@ import { expect, test, type Page } from "@playwright/test";
  * so no row can carry it), the frames `tbl320-sang`, `tbl320-dem`, `tbl320-groups-*` and `tbl320-filtered-*` are SUPERSEDED: the owner named the
  * Final-* board group the system standard, so `Final-M-Board`'s list card (measured by
  * `design-fidelity-table-phone.mock.e2e.spec.ts`) is the phone table at 320 to 390 px.
+ * The `tbl768-*` frames are SUPERSEDED by `Final-T-Table` (the tablet band 768 to 1279, measured by
+ * `design-fidelity-table-tablet.mock.e2e.spec.ts`): they draw 48 px rows, 40 px group heads and a 56 px rail where
+ * `Final-T-Table` draws 52, 44 and 64, and the owner named the Final-* group the standard.
  * Needs the default owner world and `VITE_MOCK_OVERLAYS=item-blockers` (the board read then carries each item's
  * open blockers; the plain world keeps the Final-Table rows as drawn).
  */
