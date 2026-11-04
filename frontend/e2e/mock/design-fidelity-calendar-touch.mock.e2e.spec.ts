@@ -162,11 +162,7 @@ for (const dark of [false, true]) {
 
     const card = tray.locator("[data-calendar-undated]");
     expect((await within(tray, card)).x).toBe(15);
-    expectRect(
-      await within(tray, card),
-      { x: 15, width: 227 },
-      "card",
-    );
+    expectRect(await within(tray, card), { x: 15, width: 227 }, "card");
     expect(await style(card, "border-radius")).toBe("12px");
     expect(await style(card, "padding-left")).toBe("12px");
 
