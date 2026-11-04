@@ -4,8 +4,20 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { Button, cn } from "@notrelix/ui-web";
+import { ChevronDown, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import {
+  Button,
+  cn,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@notrelix/ui-web";
+import type {
+  TimelineBarSpan,
+  TimelineGroupBy,
+} from "@notrelix/work-management-core";
 import {
   kanbanPillClass,
   kanbanPrimaryButtonClass,
@@ -18,6 +30,8 @@ import { fill, plural, type TimelineScale } from "./timeline-model";
 import type { TimelineCopy } from "./timeline.copy";
 
 const SCALES = ["day", "week", "month"] as const;
+const GROUPINGS = ["group", "status", "assignee", "none"] as const;
+const BAR_SPANS = ["start-due", "created-due"] as const;
 
 const TOGGLE_CLASS =
   "inline-flex h-[30px] shrink-0 cursor-pointer items-center gap-1.5 rounded-[7px] border border-line-strong bg-popover px-2.5 text-crumb leading-[1.45] font-medium text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring aria-disabled:cursor-default dark:bg-card";
@@ -50,6 +64,13 @@ export interface TimelineToolbarProps {
   canAdd: boolean;
   /** Without it "Thêm công việc" is inert and says where to add an item. */
   onAddItem?: () => void;
+  /** The grouping and bar span of the shared view, and how they are changed. */
+  presentation: {
+    groupBy: TimelineGroupBy;
+    barSpan: TimelineBarSpan;
+    onGroupByChange: (value: TimelineGroupBy) => void;
+    onBarSpanChange: (value: TimelineBarSpan) => void;
+  };
   /** The member's filter, personal-state chip and saved filters (`ViewStateBar`), after "Vừa khít". */
   viewBar?: ReactNode;
 }
@@ -78,6 +99,7 @@ export function TimelineToolbar({
   canAdd,
   onAddItem,
   viewBar,
+  presentation,
 }: TimelineToolbarProps) {
   const scaleButtons = useRef<Array<HTMLButtonElement | null>>([]);
 
@@ -185,28 +207,28 @@ export function TimelineToolbar({
 
       {viewBar}
 
-      <Button
-        variant="ghost"
-        size="sm"
-        className={cn(kanbanPillClass, "leading-[1.45] font-normal")}
-        aria-disabled="true"
-        title={copy.unavailable.groupBy}
-        aria-label={`${copy.groupBy.label} ${copy.groupBy.value}: ${copy.unavailable.groupBy}`}
-      >
-        {copy.groupBy.label}{" "}
-        <b className="font-semibold text-foreground">{copy.groupBy.value}</b>
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        className={cn(kanbanPillClass, "leading-[1.45] font-normal")}
-        aria-disabled="true"
-        title={copy.unavailable.barSpan}
-        aria-label={`${copy.barSpan.label} ${copy.barSpan.value}: ${copy.unavailable.barSpan}`}
-      >
-        {copy.barSpan.label}{" "}
-        <b className="font-semibold text-foreground">{copy.barSpan.value}</b>
-      </Button>
+      <PresentationPill
+        label={copy.groupBy.label}
+        value={copy.groupBy[presentation.groupBy]}
+        options={GROUPINGS.map((id) => ({ id, name: copy.groupBy[id] }))}
+        selected={presentation.groupBy}
+        onSelect={(id) =>
+          presentation.onGroupByChange(
+            GROUPINGS.find((option) => option === id) ?? "group",
+          )
+        }
+      />
+      <PresentationPill
+        label={copy.barSpan.label}
+        value={copy.barSpan[presentation.barSpan]}
+        options={BAR_SPANS.map((id) => ({ id, name: copy.barSpan[id] }))}
+        selected={presentation.barSpan}
+        onSelect={(id) =>
+          presentation.onBarSpanChange(
+            BAR_SPANS.find((option) => option === id) ?? "start-due",
+          )
+        }
+      />
 
       {/* The toggles and the undated link wrap as one group, so a narrow bar
           never leaves the link alone on a line of its own. */}
@@ -286,5 +308,49 @@ export function TimelineToolbar({
         </Button>
       ) : null}
     </div>
+  );
+}
+
+/** A "label value" pill that opens the choices as a radio list. */
+function PresentationPill({
+  label,
+  value,
+  options,
+  selected,
+  onSelect,
+}: {
+  label: string;
+  value: string;
+  options: readonly { id: string; name: string }[];
+  selected: string;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(kanbanPillClass, "leading-[1.45] font-normal")}
+        >
+          {label} <b className="font-semibold text-foreground">{value}</b>
+          <ChevronDown className="size-3.25" aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-56">
+        <DropdownMenuRadioGroup
+          value={selected}
+          onValueChange={(id) => {
+            if (id !== selected) onSelect(id);
+          }}
+        >
+          {options.map((option) => (
+            <DropdownMenuRadioItem key={option.id} value={option.id}>
+              {option.name}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

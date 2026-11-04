@@ -24,7 +24,6 @@ import type { CalendarCopy } from "./calendar.copy";
 import type { CalendarDateBasis, CalendarRange } from "./calendar-model";
 
 const RANGES = ["month", "week", "day"] as const;
-const BASES = ["span", "due"] as const;
 
 const ICON_BUTTON_CLASS =
   "size-8 rounded-[7px] border-line-strong bg-popover p-0 text-muted-foreground shadow-none hover:bg-state-hover-strong dark:border-line-strong dark:bg-card dark:hover:bg-state-hover-strong";
@@ -39,6 +38,8 @@ export interface CalendarToolbarProps {
   onStep: (direction: -1 | 1) => void;
   dateBasis: CalendarDateBasis;
   onDateBasisChange: (basis: CalendarDateBasis) => void;
+  /** The board's Date fields an item can be placed by, after "Bắt đầu → Hạn" and "Hạn". */
+  dateFields?: readonly { id: string; name: string }[];
   /** The time zone line ("Giờ Hà Nội (GMT+7)"). */
   zoneLabel: string;
   /** False for a viewer who cannot add items: the add button is not shown. */
@@ -62,11 +63,17 @@ export function CalendarToolbar({
   onStep,
   dateBasis,
   onDateBasisChange,
+  dateFields = [],
   zoneLabel,
   canAdd,
   onAddItem,
   viewBar,
 }: CalendarToolbarProps) {
+  const basisLabel =
+    dateBasis === "span" || dateBasis === "due"
+      ? copy.basis[dateBasis]
+      : (dateFields.find((field) => field.id === dateBasis)?.name ??
+        copy.basis.span);
   const rangeButtons = useRef<Array<HTMLButtonElement | null>>([]);
 
   const onRangeKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -163,9 +170,7 @@ export function CalendarToolbar({
           >
             <CalendarDays className="size-4" aria-hidden="true" />
             {copy.basis.label}{" "}
-            <b className="font-semibold text-foreground">
-              {copy.basis[dateBasis]}
-            </b>
+            <b className="font-semibold text-foreground">{basisLabel}</b>
             <ChevronDown className="size-3.25" aria-hidden="true" />
           </Button>
         </DropdownMenuTrigger>
@@ -173,13 +178,17 @@ export function CalendarToolbar({
           <DropdownMenuRadioGroup
             value={dateBasis}
             onValueChange={(value) => {
-              const basis = BASES.find((candidate) => candidate === value);
-              if (basis && basis !== dateBasis) onDateBasisChange(basis);
+              if (value !== dateBasis) onDateBasisChange(value);
             }}
           >
-            {BASES.map((value) => (
+            {(["span", "due"] as const).map((value) => (
               <DropdownMenuRadioItem key={value} value={value}>
                 {copy.basis[value]}
+              </DropdownMenuRadioItem>
+            ))}
+            {dateFields.map((field) => (
+              <DropdownMenuRadioItem key={field.id} value={field.id}>
+                {field.name}
               </DropdownMenuRadioItem>
             ))}
           </DropdownMenuRadioGroup>
