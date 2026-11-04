@@ -454,6 +454,11 @@ export function TableRow({
             >
               {row.assignee.name}
             </span>
+            {row.assignee.more > 0 ? (
+              <span className="shrink-0 text-metadata text-meta-foreground">
+                +{row.assignee.more}
+              </span>
+            ) : null}
           </>
         ) : (
           <>
@@ -604,6 +609,11 @@ export function TableRow({
                 )}
               >
                 {row.label.name}
+              </span>
+            ) : null}
+            {row.label?.more ? (
+              <span className="ml-1 shrink-0 text-metadata text-meta-foreground">
+                +{row.label.more}
               </span>
             ) : null}
           </Cell>
