@@ -341,16 +341,12 @@ describe("BoardCalendarView on the ERP board", () => {
     fireEvent.change(input, { target: { value: "Họp chốt phạm vi" } });
     fireEvent.submit(input.closest("form")!);
     await waitFor(() => expect(cards.createCard).toHaveBeenCalledTimes(1));
+    // One write: the item is born with its due day, no second date write follows.
     expect(cards.createCard.mock.calls[0]?.[1]).toMatchObject({
       title: "Họp chốt phạm vi",
+      dueDate: "2026-10-23T10:00:00.000Z",
     });
-    await waitFor(() =>
-      expect(cards.updateCard).toHaveBeenCalledWith(
-        "item-new",
-        { dueDate: "2026-10-23T10:00:00.000Z" },
-        { expectedVersion: 1 },
-      ),
-    );
+    expect(cards.updateCard).not.toHaveBeenCalled();
   });
 
   it("opens the full form with the shown day when Add item is pressed, and creates the item with that due day", async () => {

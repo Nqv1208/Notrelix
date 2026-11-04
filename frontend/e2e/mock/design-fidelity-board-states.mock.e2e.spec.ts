@@ -16,9 +16,9 @@ import { expect, test, type Page } from "@playwright/test";
  * - `VITE_MOCK_PERSONA=viewer`: Ev;
  * - `VITE_MOCK_FAULTS=/boards/mock-board-erp/full=network`: Er;
  * - `VITE_MOCK_OVERLAYS=board-states` (owner and viewer): RO (`mock-board-it-archived`), NG (`mock-board-it-no-group`, owner).
- * Not drawn by the app and written down: the artboard keeps the toolbar row above E and Er and the header and tabs
- * above NP; the app has no toolbar while the board is unreadable and none worth showing above a board without items
- * (its toolbar filters and sorts items), and answers NP with the shell only, so a missing board shows no name or tab.
+ * The toolbar row above E and Er is drawn (52 px; switched off for Er, which has no board to act on). Not drawn by the
+ * app and written down: the header and tabs above NP; the app answers NP with the shell only, so a missing board shows
+ * no name or tab.
  */
 const ARTBOARD = {
   1280: "BC-Shell-1280-768.dc.html",
@@ -145,6 +145,15 @@ async function open(page: Page, width: Width, mode: string, path: string) {
   await page.goto(path);
 }
 
+/** The toolbar row the artboard keeps above E and Er: 52 px high from 640 px up (the phone bar is drawn on its own). */
+async function expectToolbarRow(page: Page, width: Width, oneRow = true) {
+  if (width < 640) return;
+  const row = page.locator("[data-table-toolbar]").first();
+  await expect(row).toBeVisible();
+  // The live toolbar wraps "Thêm công việc" onto a second row below ~1100 px of main width (known gap, one row drawn).
+  if (oneRow) expect((await row.boundingBox())!.height).toBeCloseTo(52, 0);
+}
+
 const WIDTHS: Width[] = [1280, 768, 320];
 const MODES = ["sang", "dem"] as const;
 
@@ -172,6 +181,7 @@ test.describe("Board content states against BC-Shell", () => {
           page.locator('[data-slot="board-state-block"]'),
         ).toBeVisible();
         expectSame(await appNote(page), expected, `E ${width} ${mode}`);
+        await expectToolbarRow(page, width, false);
       });
 
       test(`Ev at ${width} px, ${mode}: an empty board for a viewer`, async ({
@@ -234,6 +244,7 @@ test.describe("Board content states against BC-Shell", () => {
           page.locator('[data-slot="board-state-block"]'),
         ).toBeVisible();
         expectSame(await appNote(page), expected, `Er ${width} ${mode}`);
+        await expectToolbarRow(page, width);
         await expect(
           page.getByRole("button", { name: "Thử lại" }),
         ).toBeVisible();
