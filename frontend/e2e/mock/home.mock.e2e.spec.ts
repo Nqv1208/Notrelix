@@ -16,8 +16,9 @@ async function addUatItem(page: Page) {
   await page.getByRole("button", { name: "Thêm công việc" }).click();
   await page.getByRole("combobox", { name: "Thêm vào board" }).click();
   await page.getByRole("option", { name: /Triển khai ERP/ }).click();
-  await page.getByLabel("Tên công việc").fill("Gửi biên bản họp UAT");
-  await page.getByRole("button", { name: "Tạo công việc" }).click();
+  await page.getByRole("button", { name: "Tiếp tục" }).click();
+  await page.getByLabel("Tên thẻ").fill("Gửi biên bản họp UAT");
+  await page.getByRole("button", { name: "Tạo thẻ" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
 }
 

@@ -1,8 +1,16 @@
-import { Filter } from "lucide-react";
+import { Filter, Plus, SquareCheckBig, TriangleAlert } from "lucide-react";
 import { Button, cn } from "@notrelix/ui-web";
 import type { MainTableCopy } from "./main-table.copy";
 import { fillTableCopy } from "./main-table.copy";
 import { useTableLayout } from "./table-layout";
+import { AddGroupPopover } from "../../status-option/add-group-popover";
+import {
+  BOARD_BAND_BUTTON,
+  BoardBand,
+  BoardStateBlock,
+} from "../../board-layout/board-state-block";
+import { kanbanPrimaryButtonClass } from "../kanban/kanban-chrome";
+import type { TableAddGroupProps } from "./table-add-group";
 
 /** The line under the table: counts, "Hiện việc đã xong" and the key hints. */
 export function TableFooter({
@@ -129,14 +137,69 @@ export function TableNoResults({
   );
 }
 
-/** The board has no group to show yet. */
-export function TableEmpty({ copy }: { copy: MainTableCopy }) {
+/** The board has no group to put an item in: a band above the grid with "Thêm nhóm" (BC-Shell NG). */
+export function TableNoGroup({
+  copy,
+  addGroup,
+}: {
+  copy: MainTableCopy;
+  addGroup?: Omit<TableAddGroupProps, "copy">;
+}) {
+  const t = copy.noGroup;
   return (
-    <TableNote>
-      <b className="text-[0.9375rem] font-semibold text-foreground">
-        {copy.empty.title}
-      </b>
-      <span>{copy.empty.description}</span>
-    </TableNote>
+    <div className="px-4 pb-3 sm:px-6" data-slot="table-no-group">
+      <BoardBand
+        tone="warning"
+        icon={<TriangleAlert />}
+        title={t.title}
+        description={t.description}
+        action={
+          addGroup?.boardGroup ? (
+            <AddGroupPopover
+              copy={addGroup.formCopy}
+              label={t.add}
+              existingTitles={addGroup.boardGroup.existingTitles}
+              pending={addGroup.boardGroup.pending}
+              onSubmit={addGroup.boardGroup.onSubmit}
+              triggerClassName={BOARD_BAND_BUTTON}
+            />
+          ) : undefined
+        }
+      />
+    </div>
+  );
+}
+
+/** The board holds no item at all: the note and, for someone who may add, "Thêm công việc" (BC-Shell E, Ev). */
+export function TableBoardEmpty({
+  copy,
+  onAdd,
+}: {
+  copy: MainTableCopy;
+  /** Absent for a viewer: the note says they can only look. */
+  onAdd?: () => void;
+}) {
+  const t = copy.empty;
+  return (
+    <BoardStateBlock
+      icon={<SquareCheckBig />}
+      title={t.title}
+      description={onAdd ? t.description : t.viewer}
+      action={
+        onAdd ? (
+          <Button
+            size="sm"
+            className={cn(
+              kanbanPrimaryButtonClass,
+              "max-sm:h-11 max-sm:px-3.5 max-sm:text-[14px]",
+            )}
+            onClick={onAdd}
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            {t.add}
+          </Button>
+        ) : undefined
+      }
+    />
   );
 }

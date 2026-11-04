@@ -149,6 +149,7 @@ import {
   INVOICE_HISTORY,
 } from "./mock-docs-invoice";
 import {
+  BOARD_STATE_BOARDS,
   DEPARTMENT_BOARDS,
   TECH_SIDE_BOARDS,
   departmentItemId,
@@ -1674,7 +1675,14 @@ export class MockStore {
   }
 
   private seedDepartmentBoards(workspaceId: string): void {
-    for (const dept of [...DEPARTMENT_BOARDS, ...TECH_SIDE_BOARDS]) {
+    const stateBoards = this.config.overlays.includes("board-states")
+      ? BOARD_STATE_BOARDS
+      : [];
+    for (const dept of [
+      ...DEPARTMENT_BOARDS,
+      ...TECH_SIDE_BOARDS,
+      ...stateBoards,
+    ]) {
       this.insertBoard({
         id: dept.id,
         workspaceId,
@@ -1682,7 +1690,7 @@ export class MockStore {
         description: dept.description,
         background: { type: "color", value: dept.color },
         visibility: dept.visibility ?? "workspace",
-        isArchived: false,
+        isArchived: dept.archived ?? false,
         createdAt: "2026-09-15T02:00:00.000Z",
         updatedAt: "2026-10-12T01:00:00.000Z",
         spaceId: dept.spaceId,
@@ -1716,14 +1724,15 @@ export class MockStore {
           ),
         })),
       });
-      this.insertList({
-        id: dept.listId,
-        boardId: dept.id,
-        title: dept.listTitle,
-        color: dept.color,
-        position: 1,
-        isCollapsed: false,
-      });
+      if (!dept.noList)
+        this.insertList({
+          id: dept.listId,
+          boardId: dept.id,
+          title: dept.listTitle,
+          color: dept.color,
+          position: 1,
+          isCollapsed: false,
+        });
       dept.items.forEach((item, index) => {
         const id = departmentItemId(item.key);
         this.insertCard({

@@ -41,6 +41,7 @@ import { fillPopupCopy, type CardPopupCopy } from "../card-popup.copy";
 import {
   useCardPopup,
   useCanEdit,
+  useChipsLookEditable,
   useStaleSchema,
 } from "../card-popup-context";
 import {
@@ -408,7 +409,9 @@ function FieldControlBody({
   const t = copy.sections.chips;
   const f = copy.sections.fields;
   const sheetCopy = useItemSheetCopy();
-  const canEdit = useCanEdit();
+  const canEditNow = useCanEdit();
+  const chipLook = useChipsLookEditable();
+  const canEdit = variant === "chip" ? chipLook : canEditNow;
   const { write, save } = useFieldWrite(field);
   const [open, setOpen] = useState(false);
   // "+ Thêm" added this field: its picker opens at once (a typed control takes the cursor itself).
@@ -708,6 +711,7 @@ function FieldControlBody({
     const text = dayText(raw);
     return (
       <PanelPopover
+        fieldSheet
         open={open}
         onOpenChange={setOpen}
         width={312}
@@ -749,6 +753,7 @@ function FieldControlBody({
       .join(", ");
     return (
       <PanelPopover
+        fieldSheet
         open={open}
         onOpenChange={setOpen}
         width={240}
@@ -842,6 +847,7 @@ function FieldControlBody({
     const current = field.options.find((o) => o.id === raw);
     return (
       <PanelPopover
+        fieldSheet
         open={open}
         onOpenChange={setOpen}
         width={220}
@@ -906,6 +912,7 @@ function FieldControlBody({
     const current = field.options.find((o) => o.id === raw);
     return (
       <PanelPopover
+        fieldSheet
         open={open}
         onOpenChange={setOpen}
         width={240}
@@ -976,6 +983,7 @@ function FieldControlBody({
       .map((o) => o.label);
     return (
       <PanelPopover
+        fieldSheet
         open={open}
         onOpenChange={setOpen}
         width={240}
@@ -1148,6 +1156,7 @@ function TypedControl({
     };
     return (
       <PanelPopover
+        fieldSheet
         open={open}
         onOpenChange={(next) => {
           if (!next && draft !== initial) setDraft(initial);

@@ -131,7 +131,12 @@ export function CardPopupSurface({
               <div className="flex min-h-0 flex-1 flex-col overflow-y-auto md:flex-row md:overflow-hidden">
                 <div
                   // 720 px when the popup is 1120 px wide; the column gives way first when the window is narrower.
-                  className="relative box-border min-w-0 pb-6 md:flex-[0_1_720px] md:overflow-y-auto"
+                  className={cn(
+                    "relative box-border min-w-0 pb-6 md:flex-[0_1_720px] md:overflow-y-auto",
+                    // A new card has no comments yet: on a phone they wait below the fold (Kanban-CardPopup-M-Create).
+                    model.mode === "create" &&
+                      "max-md:min-h-full max-md:shrink-0",
+                  )}
                   data-popup-left=""
                 >
                   {model.slots.coverBanner}

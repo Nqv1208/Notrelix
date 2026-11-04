@@ -82,11 +82,11 @@ test.describe("Board table, in-place edits (owner)", () => {
     await expect(row(page, "ERP-153")).toContainText("20/10");
   });
 
-  test("bulk: Giao cho assigns every selected row", async ({ page }) => {
+  test("bulk: Người phụ trách assigns every selected row", async ({ page }) => {
     await openTable(page);
     for (const key of ["ERP-142", "ERP-146"])
       await page.getByRole("checkbox", { name: `Chọn ${key}` }).click();
-    await page.getByRole("button", { name: /^Giao cho/ }).click();
+    await page.getByRole("button", { name: /^Người phụ trách/ }).click();
     await page.getByRole("button", { name: "Bùi Thanh Tâm" }).click();
     await expect(row(page, "ERP-142")).toContainText("Bùi Thanh Tâm");
     await expect(row(page, "ERP-146")).toContainText("Bùi Thanh Tâm");
@@ -95,12 +95,14 @@ test.describe("Board table, in-place edits (owner)", () => {
   test("bulk: Chuyển board sends the row to the other board", async ({
     page,
   }) => {
+    // ERP-147 is the mock's archived-behind-the-dialog item (the move refuses it), so the move takes ERP-149.
     await openTable(page);
-    await page.getByRole("checkbox", { name: "Chọn ERP-147" }).click();
-    await page.getByRole("button", { name: /^Chuyển board/ }).click();
+    await page.getByRole("checkbox", { name: "Chọn ERP-149" }).click();
+    await page.getByRole("button", { name: "Thêm", exact: true }).click();
+    await page.getByRole("menuitem", { name: /^Chuyển board…/ }).click();
     await page.getByRole("button", { name: "Hỗ trợ nội bộ" }).click();
     await expect(
-      page.locator("[data-row-id]").filter({ hasText: "ERP-147" }),
+      page.locator("[data-row-id]").filter({ hasText: "ERP-149" }),
     ).toHaveCount(0);
     await expect(
       page.getByText("10 công việc đang hiện · 5 ẩn bởi bộ lọc"),
@@ -146,6 +148,7 @@ test.describe("Board table, in-place edits (owner)", () => {
     await page
       .getByRole("combobox", { name: "Trường (Điều kiện 1)" })
       .selectOption({ label: "Người thực hiện" });
+    await page.getByRole("button", { name: "Giá trị (Điều kiện 1)" }).click();
     await page
       .getByRole("listbox", { name: "Giá trị (Điều kiện 1)" })
       .getByRole("option", { name: "Bùi Thanh Tâm" })

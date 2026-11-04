@@ -13,8 +13,9 @@ import { expect, test, type Page } from "@playwright/test";
  * first row is compared by size, not by y.
  *
  * Deviations, written down: the artboard draws the save form as a card that grows under the bar; the app opens it as
- * a popover anchored to the button (the shipped pattern of the toolbars). The shared row's creator ("Hà Nguyễn ·")
- * is not drawn: the list contract has no creator.
+ * a popover anchored to the button (the shipped pattern of the toolbars). The shared row's creator ("Hà Nguyễn ·") is
+ * in the list contract now and the row prefixes it; the mock world holds no filter shared by someone else, so it is
+ * not part of the boxes measured here.
  */
 const CANVAS = process.env.WM_CANVAS_DIR ?? "/tmp/wmv-canvas/project";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";

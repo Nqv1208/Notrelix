@@ -4,14 +4,17 @@ import {
   BookmarkPlus,
   Check,
   ChevronDown,
+  CircleAlert,
   Lock,
   Pencil,
+  RotateCw,
   Trash2,
   Users,
   X,
 } from "lucide-react";
 import {
   Button,
+  cn,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -32,6 +35,8 @@ export type SavedFilterWriteResult =
 export interface SummaryPhrase {
   readonly text: string;
   readonly group?: boolean;
+  /** The condition is on a field that was removed: it is ignored, and the row says so. */
+  readonly stale?: boolean;
 }
 
 export type SavedFiltersStatus = "loading" | "error" | "ready";
@@ -62,6 +67,8 @@ export interface SavedFiltersMenuProps {
   /** The "Lưu bộ lọc" form is controlled by the host so the removed-field warning can open it. */
   /** Only the icon until a filter is applied (a crowded bar, like the Calendar's); the name stays for assistive technology. */
   compact?: boolean;
+  /** A phone: the list trigger is a 36 px icon and the save trigger only anchors the form. */
+  phone?: boolean;
   saveOpen?: boolean;
   onSaveOpenChange?: (open: boolean) => void;
   /** What the bar shows now, one phrase per condition and the grouping: the save form's summary chips. */
@@ -89,6 +96,7 @@ export function SavedFiltersMenu(props: SavedFiltersMenuProps) {
           onSave={props.onSave}
           open={props.saveOpen}
           onOpenChange={props.onSaveOpenChange}
+          compact={props.phone}
         />
       ) : null}
       <SavedFiltersList {...props} copy={copy} />
@@ -102,7 +110,10 @@ function SaveFilterPopover({
   onSave,
   open: controlledOpen,
   onOpenChange,
+  compact,
 }: Pick<SavedFiltersMenuProps, "copy" | "onSave"> & {
+  /** A phone: "Lưu bộ lọc" is in the filter sheet; the trigger here only anchors the form. */
+  compact?: boolean | undefined;
   summary: readonly SummaryPhrase[];
   open?: boolean | undefined;
   onOpenChange?: ((open: boolean) => void) | undefined;
@@ -154,7 +165,12 @@ function SaveFilterPopover({
       }}
     >
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className={kanbanPillClass}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(kanbanPillClass, compact && "sr-only")}
+          {...(compact ? { tabIndex: -1, "aria-hidden": true } : {})}
+        >
           <BookmarkPlus className="size-4" aria-hidden="true" />
           {t.trigger}
         </Button>
@@ -284,6 +300,7 @@ function SavedFiltersList({
   onSetVisibility,
   onRemove,
   compact,
+  phone,
   describe,
 }: SavedFiltersMenuProps) {
   const t = copy.menu;
@@ -303,13 +320,23 @@ function SavedFiltersList({
               key={filter.id}
               copy={copy}
               filter={filter}
-              subtitle={
+              stale={
                 describe
-                  ? describe(filter.criteria)
-                      .map((phrase) => phrase.text)
-                      .join(" · ")
-                  : ""
+                  ? describe(filter.criteria).filter((phrase) => phrase.stale)
+                      .length
+                  : 0
               }
+              subtitle={[
+                // A filter shared by a colleague says who made it ("Hà Nguyễn · …").
+                ...(filter.isMine || !filter.createdByName
+                  ? []
+                  : [filter.createdByName]),
+                ...(describe
+                  ? describe(filter.criteria)
+                      .filter((phrase) => !phrase.stale)
+                      .map((phrase) => phrase.text)
+                  : []),
+              ].join(" · ")}
               applied={filter.id === appliedId}
               canEdit={canEdit}
               onApply={(filter) => {
@@ -331,7 +358,10 @@ function SavedFiltersList({
         <Button
           variant="ghost"
           size="sm"
-          className={kanbanPillClass}
+          className={cn(
+            kanbanPillClass,
+            phone && "h-9 min-w-9 justify-center px-2",
+          )}
           aria-haspopup="dialog"
         >
           <Bookmark className="size-4" aria-hidden="true" />
@@ -356,24 +386,37 @@ function SavedFiltersList({
           <div
             role="status"
             aria-label={t.loading}
-            className="flex flex-col gap-1.5 p-1"
+            className="flex flex-col gap-0.5"
           >
             <div className="h-10 rounded-md bg-state-hover-strong" />
             <div className="h-10 rounded-md bg-state-hover-strong" />
           </div>
         ) : status === "error" ? (
-          <div role="alert" className="flex flex-col items-start gap-2 p-2.5">
-            <p className="m-0 text-sm text-danger-text">{t.loadFailed}</p>
-            <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+          <div role="alert" className="flex flex-col items-start gap-0.5 pb-2">
+            <div className="flex items-start gap-2 p-2.5 text-[12.5px] text-danger-text">
+              <CircleAlert
+                aria-hidden="true"
+                className="mt-px size-4 shrink-0"
+              />
+              <p className="m-0 flex-1">{t.loadFailed}</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mx-2.5 h-7 gap-2 text-[12.5px]"
+              onClick={onRetry}
+            >
+              <RotateCw aria-hidden="true" className="size-3.5" />
               {t.retry}
             </Button>
           </div>
         ) : (
           <>
             {filters.length === 0 ? (
-              <div className="px-3 py-4 text-center">
-                <b className="block text-sm font-semibold">{t.empty}</b>
-                <span className="text-xs text-muted-foreground">
+              <div className="px-3.5 py-[18px] text-center">
+                <b className="block text-[13.5px] font-semibold">{t.empty}</b>
+                <span className="text-[12.5px] text-muted-foreground">
                   {t.emptyHint}
                 </span>
               </div>
@@ -420,6 +463,7 @@ function SavedFilterRow({
   copy,
   filter,
   subtitle,
+  stale,
   applied,
   canEdit,
   onApply,
@@ -429,7 +473,13 @@ function SavedFilterRow({
 }: Pick<
   SavedFiltersMenuProps,
   "copy" | "canEdit" | "onApply" | "onRename" | "onSetVisibility" | "onRemove"
-> & { filter: SavedFilter; subtitle: string; applied: boolean }) {
+> & {
+  filter: SavedFilter;
+  subtitle: string;
+  /** Conditions on a removed field: they are ignored when the filter is applied. */
+  stale: number;
+  applied: boolean;
+}) {
   const t = copy.row;
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState(filter.name);
@@ -517,7 +567,12 @@ function SavedFilterRow({
         className={`flex ${subtitle ? "min-h-13" : "min-h-11"} min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg border-0 bg-transparent py-1 pr-2.5 pl-2.5 text-left text-sm focus-visible:outline-2 focus-visible:outline-ring`}
       >
         <span className="grid h-4 w-4.5 shrink-0 place-items-center text-brand-subtle-foreground">
-          {applied ? (
+          {stale > 0 ? (
+            <CircleAlert
+              className="size-4 text-warning-text"
+              aria-hidden="true"
+            />
+          ) : applied ? (
             <Check className="size-4" aria-hidden="true" />
           ) : shared ? (
             <Users
@@ -532,12 +587,22 @@ function SavedFilterRow({
           <b className="block truncate text-[13.5px] font-semibold">
             {filter.name}
           </b>
+          {stale > 0 ? (
+            <small className="block text-xs leading-[1.45] text-warning-text">
+              {t.staleHint}
+            </small>
+          ) : null}
           {subtitle ? (
             <small className="block truncate text-xs leading-[1.45] text-meta-foreground">
               {subtitle}
             </small>
           ) : null}
         </span>
+        {stale > 0 ? (
+          <small className="shrink-0 text-xs leading-[1.45] whitespace-nowrap text-meta-foreground">
+            {fillSavedFiltersCopy(t.staleCount, { count: stale })}
+          </small>
+        ) : null}
         {canEdit ? null : (
           <span className="shrink-0 rounded-md bg-state-hover-strong px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
             {shared ? copy.menu.badgeShared : copy.menu.badgeMine}

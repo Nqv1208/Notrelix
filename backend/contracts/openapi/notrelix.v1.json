@@ -28454,6 +28454,11 @@
           "config": {
             "type": "string",
             "nullable": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -35370,6 +35375,10 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "createdByName": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

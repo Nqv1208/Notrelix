@@ -4,6 +4,14 @@ import { useWorkManagementServices } from "../services";
 
 /** The IANA zone the board's days are judged in: its workspace's (Hà Nội until it loads). */
 export function useBoardTimeZone(workspaceId: string): string | undefined {
+  return useBoardTimeZoneSource(workspaceId).timeZone;
+}
+
+/** The zone and whether it is the default because the workspace setting could not be read. */
+export function useBoardTimeZoneSource(workspaceId: string): {
+  timeZone: string | undefined;
+  isDefault: boolean;
+} {
   const { boardSettings } = useWorkManagementServices();
   const query = useQuery({
     queryKey: workspaceQueryKey(workspaceId, "work-management", "locale"),
@@ -11,5 +19,8 @@ export function useBoardTimeZone(workspaceId: string): string | undefined {
     enabled: Boolean(workspaceId),
     staleTime: 5 * 60_000,
   });
-  return query.data?.timeZone;
+  return {
+    timeZone: query.data?.timeZone,
+    isDefault: query.data?.isDefault === true,
+  };
 }

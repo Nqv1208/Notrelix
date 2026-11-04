@@ -7152,6 +7152,8 @@ export interface components {
             viewMode?: string | null;
             filters?: string | null;
             config?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardViews.Requests.SetBoardViewVisibilityRequest": {
             visibility?: string | null;
@@ -9476,6 +9478,7 @@ export interface components {
             isMine?: boolean;
             /** Format: int64 */
             version?: number;
+            createdByName?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Templates.DTOs.BoardTemplateDto": {
             /** Format: uuid */

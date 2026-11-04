@@ -461,7 +461,7 @@ describe("KanbanView on the ERP board", () => {
     expect(laneCount("Đang làm")).toBe("3");
   }, 20_000);
 
-  it("applies the route filter, shows the no-results bar and clears the filter with Bỏ lọc", async () => {
+  it("applies the route filter, shows the no-results card and clears the filter with Xoá bộ lọc", async () => {
     // The ERP seed dates its low-priority items up to 30/10: judge "overdue" on that day, not on the
     // day the suite runs, or the filter that is meant to match nothing starts matching on 31/10.
     vi.useFakeTimers({
@@ -470,28 +470,30 @@ describe("KanbanView on the ERP board", () => {
     });
     const onFilter = vi.fn();
     renderKanban(erpOwnerAccess(), { initialFilter: "p.low~o", onFilter });
-    await ready();
-    const bar = await waitFor(() => {
-      const found = screen
-        .getAllByRole("status")
-        .find((element) =>
-          element.textContent?.includes("Không có việc khớp bộ lọc"),
-        );
-      expect(found).toBeTruthy();
-      return found!;
-    });
-    expect(bar.textContent).toContain("Không có việc khớp bộ lọc");
-    expect(bar.textContent).toContain("16 việc của board đang bị ẩn");
+    const card = await waitFor(
+      () => {
+        const found = screen
+          .getAllByRole("status")
+          .find((element) =>
+            element.textContent?.includes("Không có việc nào khớp bộ lọc"),
+          );
+        expect(found).toBeTruthy();
+        return found!;
+      },
+      { timeout: 8000 },
+    );
+    expect(card.textContent).toContain(
+      "2 điều kiện đang áp dụng trên 16 việc.",
+    );
     expect(
-      ["Cần làm", "Đang làm", "Chờ duyệt", "Hoàn thành"].map(laneCount),
-    ).toEqual(["0", "0", "0", "0"]);
-    expect(
-      within(lane("Cần làm")).getByText("Không có việc khớp bộ lọc"),
+      within(card).getByRole("button", { name: "Sửa điều kiện" }),
     ).toBeTruthy();
-    fireEvent.click(within(bar).getByRole("button", { name: "Bỏ lọc" }));
+    fireEvent.click(within(card).getByRole("button", { name: "Xoá bộ lọc" }));
     expect(onFilter).toHaveBeenLastCalledWith(undefined, undefined);
-    await waitFor(() => expect(laneCount("Cần làm")).toBe("6"));
-  });
+    await waitFor(() => expect(laneCount("Cần làm")).toBe("6"), {
+      timeout: 8000,
+    });
+  }, 20_000);
 
   it("drops ids the board does not have from the URL filter with history replace", async () => {
     const onFilter = vi.fn();

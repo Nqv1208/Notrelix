@@ -14,6 +14,22 @@ export const en = {
     unavailable: "Searching another workspace is not available yet.",
   },
   esc: "Esc",
+  /** The phone's full-screen search (Final-M-Search). */
+  phone: {
+    placeholder: "Search items, Boards, Docs, people…",
+    cancel: "Cancel",
+    clear: "Clear search",
+    results_one: "{{count}} result",
+    results_other: "{{count}} results",
+    filters: {
+      all: "All",
+      work: "Items",
+      doc: "Docs",
+      board: "Boards",
+      person: "People",
+      command: "Commands",
+    },
+  },
   closeHint: "Close",
   filtersLabel: "Filter by type",
   filters: {
@@ -137,6 +153,21 @@ export const vi: WorkspaceCommandCopy = {
     unavailable: "Tìm ở workspace khác chưa khả dụng.",
   },
   esc: "Esc",
+  phone: {
+    placeholder: "Tìm việc, board, tài liệu, người…",
+    cancel: "Huỷ",
+    clear: "Xoá nội dung tìm",
+    results_one: "{{count}} kết quả",
+    results_other: "{{count}} kết quả",
+    filters: {
+      all: "Tất cả",
+      work: "Công việc",
+      doc: "Tài liệu",
+      board: "Board",
+      person: "Người",
+      command: "Lệnh",
+    },
+  },
   closeHint: "Đóng",
   filtersLabel: "Lọc theo loại",
   filters: {

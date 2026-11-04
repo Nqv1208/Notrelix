@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { useParams, useSearch, useNavigate } from "@tanstack/react-router";
 import { useCurrentUser } from "@notrelix/features-auth";
 import { useLocale } from "@notrelix/i18n";
@@ -9,9 +8,12 @@ import {
   BoardHeaderDataContext,
   BoardLayoutShell,
   BoardArchiveHost,
+  BoardGone,
+  ViewGoneBanner,
   BoardTrashHost,
   BoardWorkspaceViewContent,
   useBoardHeaderCopy,
+  useViewTabActions,
 } from "@notrelix/work-management-web";
 import {
   BoardViewSelectionProvider,
@@ -56,9 +58,10 @@ export function BoardPage() {
   const viewType = activeSaved?.viewMode ?? search.view;
   const view = { type: viewType, name: viewType.toUpperCase() };
 
-  const { board } = useFullBoard(boardId, workspaceId);
+  const { board, error: boardError } = useFullBoard(boardId, workspaceId);
   const headerCopy = useBoardHeaderCopy();
   const goneNotice = useRef<string | null>(null);
+  const [viewGone, setViewGone] = useState(false);
   // An address that names a saved view that is gone shows the default once, with one notice.
   useEffect(() => {
     const wanted = search.savedView;
@@ -66,20 +69,27 @@ export function BoardPage() {
     if (saved.views.some((entry) => entry.id === wanted)) return;
     if (goneNotice.current !== wanted) {
       goneNotice.current = wanted;
-      toast(headerCopy.viewGone);
+      setViewGone(true);
     }
     void navigate({
       search: (prev: BoardSearch) => ({ ...prev, savedView: undefined }),
       replace: true,
     });
-  }, [
-    headerCopy.viewGone,
-    navigate,
-    saved.isError,
-    saved.isLoading,
-    saved.views,
-    search.savedView,
-  ]);
+  }, [navigate, saved.isError, saved.isLoading, saved.views, search.savedView]);
+  // Archiving or deleting the opened view lands on the default view, with no "gone" notice.
+  const viewActions = useViewTabActions(
+    boardId,
+    workspaceId,
+    activeSaved?.id,
+    (viewId, phase) => {
+      if (phase === "start") goneNotice.current = viewId;
+      else
+        void saved.refetch().then(({ data }) => {
+          const next = data?.find((entry) => entry.isDefault);
+          showView(next?.viewMode ?? viewType, next?.id);
+        });
+    },
+  );
   const currentUser = useCurrentUser();
   const connection = useRealtimeConnection();
   const { locale } = useLocale();
@@ -115,6 +125,8 @@ export function BoardPage() {
   );
   // The count on the "Việc đã xoá" entry: only people who may edit items can read the trash.
   const myLevel = headerData.access?.myLevel;
+  // Archive, delete and the default are an Editor's change.
+  const canEditViews = myLevel === "manager" || myLevel === "editor";
   const trashCount = useBoardTrash(
     boardId,
     workspaceId,
@@ -175,6 +187,16 @@ export function BoardPage() {
     });
   };
 
+  // The toast after a move names the item on its new board; the board that blocks a move is this one.
+  const handleOpenItem = (targetBoardId: string, item: string) => {
+    if (targetBoardId === boardId) return handleSelectedItemChange(item);
+    navigate({
+      to: "/workspaces/$workspaceId/boards/$boardId",
+      params: { workspaceId, boardId: targetBoardId },
+      search: { item },
+    });
+  };
+
   // The Kanban filter (`serializeKanbanFilter` form). A user change pushes
   // history; the view's own cleanup of stale ids replaces it.
   const handleFilterChange = (
@@ -192,6 +214,21 @@ export function BoardPage() {
     navigate({ search: (prev: BoardSearch) => ({ ...prev, groupBy }) });
   };
 
+  // A board that is gone or not visible answers the same page, without its name, tabs or cards.
+  const boardKind = (boardError as { kind?: string } | null)?.kind;
+  if (boardKind === "not_found" || boardKind === "forbidden")
+    return (
+      <BoardGone
+        copy={headerCopy}
+        onHome={() =>
+          void navigate({
+            to: "/workspaces/$workspaceId/home",
+            params: { workspaceId },
+          })
+        }
+      />
+    );
+
   return (
     <BoardHeaderCopyContext.Provider value={headerCopy}>
       <BoardHeaderDataContext.Provider value={{ ...headerData, trashCount }}>
@@ -203,8 +240,17 @@ export function BoardPage() {
           onViewChange={handleViewChange}
           savedViews={saved.views}
           onAddView={(layout) => void handleAddView(layout)}
+          viewActions={canEditViews ? viewActions : undefined}
           onOpenTrash={() => setTrashOpen(true)}
           onOpenArchive={() => setArchiveOpen(true)}
+          banner={
+            viewGone ? (
+              <ViewGoneBanner
+                copy={headerCopy}
+                onClose={() => setViewGone(false)}
+              />
+            ) : undefined
+          }
           notice={
             <BoardConnectionNotice
               state={connection.state}
@@ -230,6 +276,7 @@ export function BoardPage() {
               selectedItemId={search.item}
               currentUserId={currentUser?.id ?? null}
               onSelectedItemChange={handleSelectedItemChange}
+              onOpenItem={handleOpenItem}
               filter={search.filter}
               onFilterChange={handleFilterChange}
               groupBy={search.groupBy}

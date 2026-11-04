@@ -22,7 +22,7 @@ public static class SaveBoardViewEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new SaveBoardViewCommand(boardId, Enum.Parse<ViewMode>(body.ViewMode, ignoreCase: true), body.Config ?? body.Filters), cancellationToken);
+        var result = await sender.Send(new SaveBoardViewCommand(boardId, Enum.Parse<ViewMode>(body.ViewMode, ignoreCase: true), body.Config ?? body.Filters, body.ExpectedVersion), cancellationToken);
         return result.ToApiResult();
     }
 }

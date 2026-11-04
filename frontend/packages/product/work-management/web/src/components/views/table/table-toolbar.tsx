@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Plus, Search, Undo2, X } from "lucide-react";
-import { Button } from "@notrelix/ui-web";
+import { Button, useMediaQuery } from "@notrelix/ui-web";
+import { CompactSearch } from "../../filters/compact-search";
 import type {
   FieldDefinition,
   TableDensity,
@@ -91,22 +92,33 @@ export function MainTableToolbar({
   onAddItem,
 }: MainTableToolbarProps) {
   const t = copy.toolbar;
+  // A phone: the search is an icon button, so the bar keeps Lọc, Cách xem and the saved filters on one row.
+  const compact = useMediaQuery("(max-width: 639px)");
   return (
     <div
       data-table-toolbar=""
       className="flex flex-wrap items-center gap-1.5 py-2.5"
     >
-      <label className="flex h-8 w-50 max-w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring dark:bg-card">
-        <Search className="size-4 shrink-0" aria-hidden="true" />
-        <input
-          type="search"
+      {compact ? (
+        <CompactSearch
           value={searchQuery}
-          onChange={(event) => onSearchChange(event.target.value)}
+          onChange={onSearchChange}
+          label={t.search.label}
           placeholder={t.search.placeholder}
-          aria-label={t.search.label}
-          className="min-w-0 flex-1 bg-transparent text-compact text-foreground outline-none placeholder:text-meta-foreground"
         />
-      </label>
+      ) : (
+        <label className="flex h-8 w-50 max-w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring dark:bg-card">
+          <Search className="size-4 shrink-0" aria-hidden="true" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder={t.search.placeholder}
+            aria-label={t.search.label}
+            className="min-w-0 flex-1 bg-transparent text-compact text-foreground outline-none placeholder:text-meta-foreground"
+          />
+        </label>
+      )}
 
       {hideDone ? (
         <RemovableChip

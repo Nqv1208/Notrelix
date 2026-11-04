@@ -9,7 +9,11 @@ import {
 } from "../shared/item-display";
 import { isItemDone } from "../card-detail/item-field-editors";
 import { fillPopupCopy } from "./card-popup.copy";
-import { useCanEdit, useCardPopup } from "./card-popup-context";
+import {
+  useCanEdit,
+  useCardPopup,
+  useChipsLookEditable,
+} from "./card-popup-context";
 import { AvatarStack, ChipBtn, ChipReadOnly, FieldGroup } from "./popup-ui";
 import { FieldControl } from "./sections/field-editors";
 import { faceEligibleFields, faceFieldText } from "./capabilities/face-fields";
@@ -25,7 +29,7 @@ const ADD_CIRCLE =
 function DatesChip() {
   const { card, copy, now, timeZone, openPicker } = useCardPopup();
   const t = copy.shell;
-  const canEdit = useCanEdit();
+  const canEdit = useChipsLookEditable();
   const due = card.dueAt ?? card.dueDate;
   const range = [
     card.startDate ? formatItemDate(card.startDate, now, timeZone) : null,
@@ -86,8 +90,16 @@ function DatesChip() {
 
 /** The labelled chips under the quick row, editable in place. */
 export function ChipsRow() {
-  const { board, card, copy, openPicker, slots, fields, addedFieldIds } =
-    useCardPopup();
+  const {
+    board,
+    card,
+    copy,
+    openPicker,
+    slots,
+    fields,
+    addedFieldIds,
+    readOnly,
+  } = useCardPopup();
   const t = copy.shell;
   const canEdit = useCanEdit();
   const pinnedIds = usePinnedFieldIds();
@@ -128,7 +140,10 @@ export function ChipsRow() {
   if (!showFirstRow && pinned.length === 0 && !slots.chips) return null;
 
   return (
-    <div className="box-border flex flex-col gap-3 pt-3 pr-4 pl-4 md:pr-6 md:pl-[60px]">
+    <div
+      inert={readOnly === "creating" || undefined}
+      className="box-border flex flex-col gap-3 pt-3 pr-4 pl-4 md:pr-6 md:pl-[60px]"
+    >
       {showFirstRow ? (
         <div className="flex flex-wrap items-start gap-x-3 gap-y-3 md:gap-x-4">
           {card.members.length > 0 ? (

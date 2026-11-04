@@ -85,6 +85,7 @@ import { KanbanToolbar } from "./kanban-toolbar";
 import { SavedFiltersControl } from "../../saved-filters/saved-filters-control";
 import { fillFiltersCopy } from "../../filters/filters.copy";
 import { useBoardViewState } from "../../filters/use-board-view-state";
+import { FilterNoResults } from "../../filters/filter-no-results";
 import { ViewStateBar } from "../../filters/view-state-bar";
 import {
   KanbanSwimlaneBoard,
@@ -128,6 +129,8 @@ export interface KanbanViewProps {
     id: string | undefined,
     options?: { replace?: boolean },
   ) => void;
+  /** Opens an item of any board (the toast after a move, the item that blocks a move); absent: only this board's items open, through `onSelectedItemChange`. */
+  onOpenItem?: (boardId: string, itemId: string) => void;
   /** The route `filter` parameter (`serializeKanbanFilter` form). */
   filter?: string;
   /**
@@ -180,6 +183,7 @@ export function KanbanView({
   selectedItemId,
   currentUserId,
   onSelectedItemChange,
+  onOpenItem,
   filter: filterParam,
   onFilterChange,
   groupBy: groupByParam,
@@ -217,6 +221,7 @@ export function KanbanView({
     view,
     kanbanView,
     timeZone,
+    timeZoneIsDefault,
   } = useBoardViewState({
     boardId,
     workspaceId,
@@ -311,6 +316,10 @@ export function KanbanView({
   const showStatusControls =
     capabilities.canEditFields &&
     canManageStatuses(access?.myLevel, kanbanSettings.statusManageRoles);
+  const openItem = (targetBoardId: string, itemId: string) => {
+    if (onOpenItem) onOpenItem(targetBoardId, itemId);
+    else if (targetBoardId === boardId) onSelectedItemChange?.(itemId);
+  };
   const removal = useItemRemoval({
     workspaceId,
     boardId,
@@ -321,6 +330,7 @@ export function KanbanView({
     onGone: (itemId) => {
       if (selectedItemId === itemId) onSelectedItemChange?.(undefined);
     },
+    onOpenItem: openItem,
   });
   const updateCardDetails = useUpdateCard(boardId, workspaceId);
   // Adding a lane and renaming or recolouring one write an option of the field
@@ -393,6 +403,7 @@ export function KanbanView({
   const [addRequest, setAddRequest] = useState(0);
   // The full form: from the toolbar (no lane), a lane's "+" or a lane's quick add.
   const [create, setCreate] = useState<CreateRequest | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
   const createOpen = create !== null;
   const canCreate = capabilities.canCreateCard;
   const collapsedLanes = useKanbanCollapsedLanes(
@@ -1076,14 +1087,13 @@ export function KanbanView({
             }
             searchQuery={kanban.search.query}
             onSearchChange={kanban.search.setQuery}
-            onClearFilter={() =>
-              view.setFilter({ ...view.state.filter, conditions: [] })
-            }
             viewBar={
               <ViewStateBar
                 canSave={capabilities.canEditFields}
                 copy={filtersCopy}
                 view={view}
+                filterOpen={filterOpen}
+                onFilterOpenChange={setFilterOpen}
                 fields={kanban.filterFields}
                 memberName={kanban.memberName}
                 people={kanban.filterChoices.assignees}
@@ -1093,6 +1103,7 @@ export function KanbanView({
                 }}
                 now={now}
                 timeZone={timeZone}
+                timeZoneIsDefault={timeZoneIsDefault}
                 groupFields={columnFields}
                 groupFallback={
                   kanban.groupByField
@@ -1116,11 +1127,6 @@ export function KanbanView({
             }
             canAdd={capabilities.canCreateCard}
             onAddItem={() => setCreate({ kind: "toolbar" })}
-            noResults={
-              kanban.filterActive && kanban.visibleCount === 0
-                ? { hiddenCount: kanban.totalCount }
-                : null
-            }
           />
         </div>
 
@@ -1135,7 +1141,18 @@ export function KanbanView({
             onScroll={measureEdges}
             className="h-full min-h-0 overflow-auto px-4 pt-1 pb-6 sm:px-6"
           >
-            {laneField ? (
+            {kanban.filterActive && kanban.visibleCount === 0 ? (
+              <FilterNoResults
+                copy={filtersCopy}
+                conditions={view.applied.filter.conditions.length}
+                total={kanban.totalCount}
+                onEdit={() => setFilterOpen(true)}
+                onClear={() => {
+                  view.setFilter({ ...view.state.filter, conditions: [] });
+                  if (kanban.search.query !== "") kanban.search.setQuery("");
+                }}
+              />
+            ) : laneField ? (
               <>
                 {capabilities.canMoveCard ? null : (
                   <p className="mb-2 text-compact text-muted-foreground">
@@ -1155,6 +1172,7 @@ export function KanbanView({
                   laneName={swimlaneLabel}
                   wipLimits={kanbanSettings.wipLimits}
                   selectedItemId={selectedItemId}
+                  filterActive={kanban.filterActive}
                   canDrag={capabilities.canMoveCard}
                   cardActions={cardActions}
                   cardSelection={cardSelection}
@@ -1338,6 +1356,7 @@ export function KanbanView({
         {selectedItemId ? (
           <KanbanSelectedItem
             board={board}
+            onOpenItem={openItem}
             cardId={selectedItemId}
             capabilities={capabilities}
             groups={sheetGroups}
@@ -1375,6 +1394,8 @@ export interface SelectedItemProps {
     payload: UpdateFieldValueInput,
   ) => void | Promise<unknown>;
   onDuplicate: (cardId: string) => void;
+  /** Opens an item of a board (the item a move landed on, the item that blocks one). */
+  onOpenItem?: (boardId: string, itemId: string) => void;
   /** The column picker's counts, limits and positioned move; absent: it moves to the end of a lane as a field write. */
   lanePicker?: CardPopupLanePicker;
 }
@@ -1469,6 +1490,7 @@ function KanbanSelectedItemReady({
   onCopyLink,
   onMoveToGroup,
   onUpdateFieldValue,
+  onOpenItem,
   lanePicker,
 }: Omit<SelectedItemProps, "cardId" | "onRestoreFocus"> & {
   card: CardDetail;
@@ -1512,6 +1534,7 @@ function KanbanSelectedItemReady({
     boardId: card.boardId,
     titleOf: () => card.title,
     onGone: () => onClose(),
+    onOpenItem,
   });
 
   return (

@@ -90,11 +90,14 @@ export function boardColor(background: string | null | undefined): string {
 interface WorkspaceLocale {
   readonly timeZone: string;
   readonly weekStart: "monday" | "sunday";
+  /** True when the setting could not be read and the default stands in. */
+  readonly isDefault?: boolean;
 }
 
 const DEFAULT_LOCALE: WorkspaceLocale = {
   timeZone: "Asia/Ho_Chi_Minh",
   weekStart: "monday",
+  isDefault: true,
 };
 
 function fieldType(raw: string | null | undefined): BoardSettingsFieldType {
@@ -525,6 +528,7 @@ export function createBoardSettingsApi(client: NotrelixClient) {
       .then((workspace): WorkspaceLocale => ({
         timeZone: workspace.timeZone || DEFAULT_LOCALE.timeZone,
         weekStart: workspace.weekStart === "sunday" ? "sunday" : "monday",
+        isDefault: !workspace.timeZone,
       }))
       .catch(() => DEFAULT_LOCALE);
 

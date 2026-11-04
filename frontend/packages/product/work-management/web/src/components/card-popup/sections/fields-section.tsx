@@ -8,13 +8,14 @@ import { calendarParts, pad2, toValidDate } from "../../shared/item-display";
 import { useCanEdit, useCardPopup } from "../card-popup-context";
 import {
   EmptySection,
+  LinkBtn,
   PanelPopover,
   PopSection,
   SECTION_ICONS,
   SectionHead,
   SmallBtn,
 } from "../popup-ui";
-import { PopoverTrigger } from "@notrelix/ui-web";
+import { PopoverTrigger, cn } from "@notrelix/ui-web";
 import { AddFieldPanel } from "./add-field-panel";
 import { PillBtn, PillKey, PillStatic } from "./field-pill";
 import { FieldControl } from "./field-editors";
@@ -78,6 +79,7 @@ export function FieldsSection() {
     openPicker,
     timeZone,
     startNewField,
+    readOnly,
   } = useCardPopup();
   const t = copy.sections.fields;
   const canEdit = useCanEdit();
@@ -123,10 +125,22 @@ export function FieldsSection() {
       width={340}
       trigger={
         <PopoverTrigger asChild>
-          <PillBtn aria-haspopup="dialog" dashed>
-            <Plus aria-hidden="true" className="size-4" />
-            {t.addField}
-          </PillBtn>
+          {mode === "create" ? (
+            // Kanban-CardPopup-Create folds an empty fields section to the link-coloured action.
+            <LinkBtn
+              aria-haspopup="dialog"
+              // Under rows the action starts at the rows' own edge.
+              className={rows.length > 0 ? "-ml-2.5" : undefined}
+            >
+              <Plus aria-hidden="true" className="size-[13px]" />
+              {t.addFieldCreate}
+            </LinkBtn>
+          ) : (
+            <PillBtn aria-haspopup="dialog" dashed>
+              <Plus aria-hidden="true" className="size-4" />
+              {t.addField}
+            </PillBtn>
+          )}
         </PopoverTrigger>
       }
     >
@@ -149,7 +163,12 @@ export function FieldsSection() {
   if (rows.length === 0)
     return addButton ? (
       <PopSection label={t.title} icon={SECTION_ICONS.fields}>
-        <div className="flex min-h-11 items-center max-md:pl-2.5 md:min-h-8">
+        <div
+          className={cn(
+            "flex min-h-11 items-center md:min-h-8",
+            mode !== "create" && "max-md:pl-2.5",
+          )}
+        >
           {addButton}
         </div>
       </PopSection>
@@ -164,7 +183,7 @@ export function FieldsSection() {
   return (
     <PopSection label={t.title} icon={SECTION_ICONS.fields}>
       <SectionHead title={t.title}>
-        {mode === "view" ? (
+        {readOnly === "creating" ? null : (
           <FaceFieldsButton
             boardId={board.id}
             workspaceId={board.workspaceId}
@@ -178,30 +197,53 @@ export function FieldsSection() {
               </SmallBtn>
             }
           />
-        ) : null}
+        )}
       </SectionHead>
-      <div className="mt-1 flex flex-wrap gap-1.5" data-field-pills>
-        {rows.map((field) => (
-          <span
-            key={field.id}
-            data-field-row={field.id}
-            className="inline-flex max-w-full"
-          >
-            <FieldControl field={field} variant="pill" />
-          </span>
-        ))}
-        <PillStatic title={copy.shell.createdHint}>
-          <Clock
-            aria-hidden="true"
-            className="size-[13px] text-meta-foreground"
-          />
-          <PillKey>{t.createdAt}</PillKey>
-          {mode === "create"
-            ? t.createdValue
-            : dateTimeText(card.createdAt, timeZone)}
-        </PillStatic>
-        {addButton}
-      </div>
+      {mode === "create" ? (
+        // Kanban-CardPopup-Create: label and value rows, the add action under them.
+        <div className="mt-1" data-field-rows>
+          {rows.map((field) => (
+            <div
+              key={field.id}
+              data-field-row={field.id}
+              className="flex min-h-8 items-center"
+            >
+              <span className="w-[145px] shrink-0 truncate text-[12.5px] font-semibold text-muted-foreground">
+                {field.name}
+              </span>
+              <div className="min-w-0 flex-1 pr-2">
+                <FieldControl field={field} variant="ctl" />
+              </div>
+            </div>
+          ))}
+          {addButton ? (
+            <div className="mt-1.5">{addButton}</div>
+          ) : (
+            <div aria-hidden="true" className="h-1" />
+          )}
+        </div>
+      ) : (
+        <div className="mt-1 flex flex-wrap gap-1.5" data-field-pills>
+          {rows.map((field) => (
+            <span
+              key={field.id}
+              data-field-row={field.id}
+              className="inline-flex max-w-full"
+            >
+              <FieldControl field={field} variant="pill" />
+            </span>
+          ))}
+          <PillStatic title={copy.shell.createdHint}>
+            <Clock
+              aria-hidden="true"
+              className="size-[13px] text-meta-foreground"
+            />
+            <PillKey>{t.createdAt}</PillKey>
+            {dateTimeText(card.createdAt, timeZone)}
+          </PillStatic>
+          {addButton}
+        </div>
+      )}
     </PopSection>
   );
 }

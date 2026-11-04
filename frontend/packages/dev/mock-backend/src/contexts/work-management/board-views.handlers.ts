@@ -243,10 +243,10 @@ export const boardViewsOperations = [
     },
     method: "DELETE",
     route: "/boards/:boardId/views/:viewId",
-    async handle({ params, store }) {
+    async handle({ params, query, store }) {
       const { view, refusal } = editable(store, params.boardId, params.viewId);
       if (!view) return refusal;
-      store.savedViews.remove(params.boardId, view.id);
+      store.savedViews.remove(params.boardId, view.id, query?.newDefaultViewId);
       return noContent();
     },
   }),

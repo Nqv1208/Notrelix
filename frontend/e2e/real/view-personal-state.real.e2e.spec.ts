@@ -95,7 +95,7 @@ test("tabs write the layout to the address, Back and Forward follow it, and a go
   await expect(page).toHaveURL(/view=kanban/);
 
   // An id that names no view: the default opens, with one notice.
-  const gone = "That view no longer exists. Showing the default view.";
+  const gone = "The view you opened no longer exists";
   await page.goto(
     `${boardPath}?view=table&savedView=00000000-0000-4000-8000-000000000000`,
   );
@@ -134,4 +134,63 @@ test("tabs write the layout to the address, Back and Forward follow it, and a go
     );
     await other.close();
   }
+});
+
+test("the table search reaches an item beyond the first page, answered by the server through q", async ({
+  page,
+}) => {
+  test.setTimeout(240_000);
+  await signIn(page, realUsers.workspaceAdmin);
+  const { workspace, board } = await openBoard(
+    page,
+    "Workspace 3",
+    "Engineering Tasks",
+  );
+  const lists = (
+    await apiRead<{ lists: { id: string }[] }>(page, `/boards/${board.id}/full`)
+  ).lists;
+  const stamp = Date.now().toString(36);
+  const needle = `Needle ${stamp}`;
+  // A lane is read 50 items at a time: 55 fillers come first, so the needle, created last, is beyond the first page.
+  const create = async (title: string) => {
+    const created = await apiWrite<{ id: string }>(
+      page,
+      "POST",
+      `/boards/${board.id}/items`,
+      { groupId: lists[0]!.id, title },
+    );
+    expect(created.status).toBeLessThan(300);
+    return created.data!.id;
+  };
+  // One at a time: each write takes a CSRF token that rotates the cookie the next write reads.
+  for (let i = 0; i < 55; i += 1) await create(`Filler ${stamp} ${i}`);
+  const needleId = await create(needle);
+
+  await page.goto(`/workspaces/${workspace.id}/boards/${board.id}?view=table`);
+  const box = page.getByRole("searchbox", { name: "Search the table" });
+  await expect(box).toBeVisible();
+  await expect(page.getByRole("row").nth(2)).toBeVisible();
+  await expect(page.locator(`[data-row-id="${needleId}"]`)).toHaveCount(0);
+
+  const answered = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/boards/${board.id}/full`) &&
+      new URL(response.url()).searchParams.get("q") === needle,
+  );
+  await box.fill(needle);
+  const response = await answered;
+  expect(response.status()).toBe(200);
+  const titles = (
+    (await response.json()) as {
+      lists: { boardItems: { name: string }[] }[];
+    }
+  ).lists.flatMap((list) => list.boardItems.map((item) => item.name));
+  expect(titles).toContain(needle);
+  expect(titles.some((title) => title.startsWith(`Filler ${stamp}`))).toBe(
+    false,
+  );
+  await expect(page.locator(`[data-row-id="${needleId}"]`)).toBeVisible();
+
+  await box.fill("");
+  await expect(page.locator(`[data-row-id="${needleId}"]`)).toHaveCount(0);
 });

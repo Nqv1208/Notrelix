@@ -139,7 +139,7 @@ export function MoveBoardDialog({
       phoneTitle={copy.movePhoneTitle}
       description={busy ? copy.moveBusyBody : copy.moveBody}
       phoneDescription={null}
-      hideDescription={noBoards || archived}
+      hideDescription={noBoards}
       closeLabel={copy.close}
       maxWidth="sm:max-w-140"
       initialFocus={

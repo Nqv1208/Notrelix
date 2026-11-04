@@ -38,7 +38,12 @@ export type MockBusinessState =
 export type MockDensity = "tiny" | "normal" | "large" | "stress";
 
 export type MockOverlay =
-  "long-titles" | "unicode" | "missing-avatars" | "many-columns" | "many-cards";
+  | "long-titles"
+  | "unicode"
+  | "missing-avatars"
+  | "many-columns"
+  | "many-cards"
+  | "board-states";
 
 export type MockLatency = "instant" | "fast" | "normal" | "slow";
 
@@ -186,6 +191,7 @@ const VALID_OVERLAYS = new Set<string>([
   "missing-avatars",
   "many-columns",
   "many-cards",
+  "board-states",
 ]);
 
 const VALID_FAULTS = new Set<string>([

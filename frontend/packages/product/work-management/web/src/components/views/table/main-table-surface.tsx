@@ -9,12 +9,14 @@ import {
 import { ArrowUp } from "lucide-react";
 import { BULK_ITEM_LIMIT } from "@notrelix/work-management-core";
 import { Button, cn } from "@notrelix/ui-web";
-import { fillTableCopy } from "./main-table.copy";
+import { fillTableCopy, pluralTableCopy } from "./main-table.copy";
 import { TableAddGroup, type TableAddGroupProps } from "./table-add-group";
 import {
   TableArchivedNotice,
   TableBulkBar,
+  TableBulkDone,
   TableBulkFailure,
+  TableBulkNotice,
   type TableBulkBarProps,
 } from "./table-bulk-bar";
 import { groupAccent } from "./table-chrome";
@@ -43,7 +45,12 @@ import {
 import type { TableEditors } from "./table-cell-editors";
 import type { TableFieldEditing } from "./table-field-cell";
 import { TableRow } from "./table-row";
-import { TableEmpty, TableFooter, TableNoResults } from "./table-states";
+import {
+  TableBoardEmpty,
+  TableFooter,
+  TableNoGroup,
+  TableNoResults,
+} from "./table-states";
 import { MainTableToolbar, type MainTableToolbarProps } from "./table-toolbar";
 import { TableLayoutProvider, type TableLayout } from "./table-layout";
 import { TablePhoneList } from "./table-phone-list";
@@ -79,6 +86,8 @@ export interface MainTableSurfaceProps {
   onOpenCreateDialog?: () => void;
   /** Said when "Add item" has no group to start in (a board needs one to hold an item). */
   onNoGroup?: () => void;
+  /** The board holds no group (list) to put an item in: the warning band shows, not the empty note. */
+  noBoardGroup?: boolean;
   /** The viewer may archive items. */
   canArchive: boolean;
   /** Saved column widths by column id (the view config); absent ids use the design width. */
@@ -132,6 +141,12 @@ export interface MainTableSurfaceProps {
   onShowDone: () => void;
   /** A refused or lost bulk change: the banner under the table with "Thử lại"; absent = none. */
   bulkFailure?: { detail: string; onRetry: () => void } | null;
+  /** A change is on its way: the bar shows the progress line. */
+  bulkSaving?: boolean;
+  /** What the last bulk change did; "Hoàn tác" shows when `onUndo` is given. */
+  bulkDone?: { text: string; onUndo?: () => void } | null;
+  /** Picked items another person deleted: the note over the bar; `left` are still picked. */
+  goneNotice?: { count: number; left: number; onClose: () => void } | null;
   onBulkStatus: TableBulkBarProps["onStatus"];
   onBulkDue: TableBulkBarProps["onDue"];
   onBulkArchive: TableBulkBarProps["onArchive"];
@@ -198,6 +213,7 @@ function MainTableSurfaceBody({
   canCreate,
   onOpenCreateDialog,
   onNoGroup,
+  noBoardGroup,
   canArchive,
   addGroup,
   groupMenu,
@@ -221,6 +237,9 @@ function MainTableSurfaceBody({
   onClearFilter,
   onShowDone,
   bulkFailure,
+  bulkSaving,
+  bulkDone,
+  goneNotice,
   onBulkStatus,
   onBulkDue,
   onBulkArchive,
@@ -430,6 +449,30 @@ function MainTableSurfaceBody({
     focusRow(tabStop ?? undefined);
   };
 
+  const addItem = () => {
+    if (onOpenCreateDialog) {
+      onOpenCreateDialog();
+      return;
+    }
+    const first = groups[0];
+    if (!first) {
+      onNoGroup?.();
+      return;
+    }
+    if (collapsedGroupIds.has(first.id)) onGroupToggle(first.id);
+    setAddRequest((current) => ({
+      groupId: first.id,
+      count: current.count + 1,
+    }));
+  };
+  // Not one item on the board (a filter that hides them all is "no results", not this).
+  const boardEmpty =
+    !noResults &&
+    !noBoardGroup &&
+    groups.length > 0 &&
+    shown + hidden === 0 &&
+    (paging ? paging.boardTotal === 0 : true);
+
   return (
     <section
       aria-label={fillTableCopy(copy.tableLabel, { board: boardTitle })}
@@ -452,272 +495,271 @@ function MainTableSurfaceBody({
         <MainTableToolbar
           {...toolbar}
           canAdd={toolbar.canAdd && canCreate}
-          onAddItem={() => {
-            if (onOpenCreateDialog) {
-              onOpenCreateDialog();
-              return;
-            }
-            const first = groups[0];
-            if (!first) {
-              onNoGroup?.();
-              return;
-            }
-            if (collapsedGroupIds.has(first.id)) onGroupToggle(first.id);
-            setAddRequest((current) => ({
-              groupId: first.id,
-              count: current.count + 1,
-            }));
-          }}
+          onAddItem={addItem}
         />
       </div>
 
-      <div
-        ref={gridRef}
-        data-table-scroll=""
-        onScroll={(event) => {
-          const el = event.currentTarget;
-          setDeep(el.scrollTop > el.clientHeight * 2);
-        }}
-        className={cn(
-          "mx-4 min-h-0 flex-1 overflow-auto rounded-[12px] border border-border bg-popover sm:mx-6 dark:bg-card",
-          tablet && "@container rounded-[14px]",
-          // The phone cards sit on the page, not in a frame.
-          phone &&
-            "mx-0 rounded-none border-0 bg-transparent sm:mx-0 dark:bg-transparent",
-        )}
-      >
-        {phone ? (
-          <TablePhoneList
-            copy={copy}
-            groups={groups}
-            statusOptions={statusOptions}
-            collapsedGroupIds={collapsedGroupIds}
-            canEdit={canEdit}
-            editors={editors}
-            rowActions={rowActions}
-            noResults={noResults}
-            noResultsAssignee={noResultsAssignee}
-            hideDone={toolbar.hideDone}
-            onClearFilter={onClearFilter}
-            onGroupToggle={onGroupToggle}
-            onOpenItem={onOpenItem}
-            onStatusChange={onStatusChange}
-          />
-        ) : null}
-        <div
-          hidden={phone}
-          role="table"
-          aria-label={fillTableCopy(copy.tableLabel, { board: boardTitle })}
-          aria-rowcount={paging ? rowCount : undefined}
-          style={gridStyle}
-          className="w-max min-w-full text-nav font-normal text-foreground"
-        >
-          <TableHeaderRow
-            copy={copy}
-            columns={columns}
-            widths={widths}
-            sort={toolbar.sort}
-            allChecked={allChecked}
-            canSelect={allRowIds.length > 0}
-            canEditFields={canEdit && Boolean(fieldEditing?.canEdit)}
-            refusedFieldIds={fieldEditing?.refusedFieldIds}
-            onToggleAll={onSelectAllChange}
-            onWidthPreview={(id, width) =>
-              setPreview(width === null ? null : { id, width })
-            }
-            onWidthCommit={(id, width) => onColumnWidthChange?.(id, width)}
-            onWidthReset={(id) => onColumnWidthReset?.(id)}
-          />
-          {groups.map((group, groupIndex) => {
-            const collapsed = collapsedGroupIds.has(group.id);
-            return (
-              <div role="rowgroup" aria-label={group.name} key={group.id}>
-                <TableGroupHeader
-                  copy={copy}
-                  group={group}
-                  collapsed={collapsed}
-                  onToggle={() => onGroupToggle(group.id)}
-                  onAdd={
-                    canCreate
-                      ? () => {
-                          if (collapsed) onGroupToggle(group.id);
-                          setAddRequest((current) => ({
-                            groupId: group.id,
-                            count: current.count + 1,
-                          }));
+      {(groups.length === 0 && !noResults) || noBoardGroup ? (
+        <TableNoGroup copy={copy} addGroup={addGroup} />
+      ) : null}
+      {boardEmpty ? (
+        <TableBoardEmpty copy={copy} onAdd={canCreate ? addItem : undefined} />
+      ) : (
+        <>
+          <div
+            ref={gridRef}
+            data-table-scroll=""
+            onScroll={(event) => {
+              const el = event.currentTarget;
+              setDeep(el.scrollTop > el.clientHeight * 2);
+            }}
+            className={cn(
+              "mx-4 min-h-0 flex-1 overflow-auto rounded-[12px] border border-border bg-popover sm:mx-6 dark:bg-card",
+              tablet && "@container rounded-[14px]",
+              // The phone cards sit on the page, not in a frame.
+              phone &&
+                "mx-0 rounded-none border-0 bg-transparent sm:mx-0 dark:bg-transparent",
+            )}
+          >
+            {phone ? (
+              <TablePhoneList
+                copy={copy}
+                groups={groups}
+                statusOptions={statusOptions}
+                collapsedGroupIds={collapsedGroupIds}
+                canEdit={canEdit}
+                editors={editors}
+                rowActions={rowActions}
+                noResults={noResults}
+                noResultsAssignee={noResultsAssignee}
+                hideDone={toolbar.hideDone}
+                onClearFilter={onClearFilter}
+                onGroupToggle={onGroupToggle}
+                onOpenItem={onOpenItem}
+                onStatusChange={onStatusChange}
+              />
+            ) : null}
+            <div
+              hidden={phone}
+              role="table"
+              aria-label={fillTableCopy(copy.tableLabel, { board: boardTitle })}
+              aria-rowcount={paging ? rowCount : undefined}
+              style={gridStyle}
+              className="w-max min-w-full text-nav font-normal text-foreground"
+            >
+              <TableHeaderRow
+                copy={copy}
+                columns={columns}
+                widths={widths}
+                sort={toolbar.sort}
+                allChecked={allChecked}
+                canSelect={allRowIds.length > 0}
+                canEditFields={canEdit && Boolean(fieldEditing?.canEdit)}
+                refusedFieldIds={fieldEditing?.refusedFieldIds}
+                onToggleAll={onSelectAllChange}
+                onWidthPreview={(id, width) =>
+                  setPreview(width === null ? null : { id, width })
+                }
+                onWidthCommit={(id, width) => onColumnWidthChange?.(id, width)}
+                onWidthReset={(id) => onColumnWidthReset?.(id)}
+              />
+              {groups.map((group, groupIndex) => {
+                const collapsed = collapsedGroupIds.has(group.id);
+                return (
+                  <div role="rowgroup" aria-label={group.name} key={group.id}>
+                    <TableGroupHeader
+                      copy={copy}
+                      group={group}
+                      collapsed={collapsed}
+                      onToggle={() => onGroupToggle(group.id)}
+                      onAdd={
+                        canCreate
+                          ? () => {
+                              if (collapsed) onGroupToggle(group.id);
+                              setAddRequest((current) => ({
+                                groupId: group.id,
+                                count: current.count + 1,
+                              }));
+                            }
+                          : undefined
+                      }
+                      menu={groupMenu?.(group)}
+                      boardNote={
+                        paging && groupIndex === 0
+                          ? paging.boardFiltered === null
+                            ? fillTableCopy(copy.group.boardTotal, {
+                                total: formatTableCount(paging.boardTotal),
+                              })
+                            : fillTableCopy(copy.group.boardFiltered, {
+                                shown: formatTableCount(paging.boardFiltered),
+                                total: formatTableCount(paging.boardTotal),
+                              })
+                          : undefined
+                      }
+                    />
+                    {collapsed
+                      ? null
+                      : group.rows
+                          .slice(0, shownRows(group))
+                          .map((row, rowIndex) => (
+                            <Fragment key={row.id}>
+                              <TableRow
+                                row={row}
+                                rowIndex={
+                                  paging
+                                    ? (rowOffsets.get(group.id) ?? 0) +
+                                      rowIndex +
+                                      1
+                                    : undefined
+                                }
+                                expand={
+                                  renderSubItems && row.progress
+                                    ? {
+                                        expanded: expandedIds.has(row.id),
+                                        count: row.progress.total,
+                                        onToggle: () => toggleExpanded(row.id),
+                                      }
+                                    : undefined
+                                }
+                                copy={copy}
+                                columns={columns}
+                                accent={groupAccent(group)}
+                                statusOptions={statusOptions}
+                                selected={selectedIds.has(row.id)}
+                                active={openItemId === row.id}
+                                tabStop={tabStop === row.id}
+                                canEdit={canEdit}
+                                editors={editors}
+                                fieldEditing={fieldEditing}
+                                onRename={
+                                  onRename
+                                    ? (title) => onRename(row.id, title)
+                                    : undefined
+                                }
+                                actions={
+                                  rowActions
+                                    ? {
+                                        onDuplicate: rowActions.onDuplicate
+                                          ? () =>
+                                              rowActions.onDuplicate?.(row.id)
+                                          : undefined,
+                                        onCopyLink: () =>
+                                          rowActions.onCopyLink(row.id),
+                                        onArchive: rowActions.onArchive
+                                          ? () => rowActions.onArchive?.(row.id)
+                                          : undefined,
+                                        onDelete: rowActions.onDelete
+                                          ? () => rowActions.onDelete?.(row.id)
+                                          : undefined,
+                                        onMoveToBoard: rowActions.onMoveToBoard
+                                          ? () =>
+                                              rowActions.onMoveToBoard?.(row.id)
+                                          : undefined,
+                                      }
+                                    : undefined
+                                }
+                                editing={editingId === row.id}
+                                highlightStatusId={
+                                  initialEditing?.rowId === row.id
+                                    ? initialEditing.highlightStatusId
+                                    : undefined
+                                }
+                                onSelectedChange={(selected) =>
+                                  onRowSelectedChange(row.id, selected)
+                                }
+                                onOpen={() => onOpenItem(row.id)}
+                                onEditingChange={(editing) =>
+                                  setEditingId(editing ? row.id : null)
+                                }
+                                onStatusChange={(optionId) =>
+                                  onStatusChange(row.id, optionId)
+                                }
+                                onKeyDown={(event) => {
+                                  setTabStopId(row.id);
+                                  onRowKeyDown(event, row.id);
+                                }}
+                              />
+                              {renderSubItems && expandedIds.has(row.id) ? (
+                                <div
+                                  role="row"
+                                  data-sub-items-of={row.id}
+                                  className="grid min-w-full"
+                                  style={{
+                                    gridTemplateColumns: "var(--table-grid)",
+                                  }}
+                                >
+                                  <div
+                                    role="cell"
+                                    className="box-border min-w-0 border-b border-border bg-state-hover/40 py-1 pr-3 pl-16"
+                                    style={{ gridColumn: "1 / -1" }}
+                                  >
+                                    {renderSubItems(row.id)}
+                                  </div>
+                                </div>
+                              ) : null}
+                            </Fragment>
+                          ))}
+                    {!collapsed &&
+                    paging?.failed.has(group.id) &&
+                    group.hasMore ? (
+                      <TableLoadMoreError
+                        copy={copy}
+                        next={Math.min(
+                          TABLE_GROUP_WINDOW,
+                          rowsOf(group) - group.rows.length,
+                        )}
+                        onRetry={() => paging.loadMore(group.id)}
+                      />
+                    ) : !collapsed &&
+                      (shownRows(group) < group.rows.length ||
+                        group.hasMore) ? (
+                      <TableShowMoreRow
+                        copy={copy}
+                        shown={shownRows(group)}
+                        total={Math.max(rowsOf(group), group.rows.length)}
+                        loading={paging?.loading.has(group.id) ?? false}
+                        onShowMore={() => showMore(group)}
+                      />
+                    ) : null}
+                    {collapsed || !canCreate ? null : (
+                      <TableAddRow
+                        copy={copy}
+                        group={group}
+                        openRequest={
+                          addRequest.groupId === group.id ? addRequest.count : 0
                         }
-                      : undefined
-                  }
-                  menu={groupMenu?.(group)}
-                  boardNote={
-                    paging && groupIndex === 0
-                      ? paging.boardFiltered === null
-                        ? fillTableCopy(copy.group.boardTotal, {
-                            total: formatTableCount(paging.boardTotal),
-                          })
-                        : fillTableCopy(copy.group.boardFiltered, {
-                            shown: formatTableCount(paging.boardFiltered),
-                            total: formatTableCount(paging.boardTotal),
-                          })
-                      : undefined
-                  }
-                />
-                {collapsed
-                  ? null
-                  : group.rows
-                      .slice(0, shownRows(group))
-                      .map((row, rowIndex) => (
-                        <Fragment key={row.id}>
-                          <TableRow
-                            row={row}
-                            rowIndex={
-                              paging
-                                ? (rowOffsets.get(group.id) ?? 0) + rowIndex + 1
-                                : undefined
-                            }
-                            expand={
-                              renderSubItems && row.progress
-                                ? {
-                                    expanded: expandedIds.has(row.id),
-                                    count: row.progress.total,
-                                    onToggle: () => toggleExpanded(row.id),
-                                  }
-                                : undefined
-                            }
-                            copy={copy}
-                            columns={columns}
-                            accent={groupAccent(group)}
-                            statusOptions={statusOptions}
-                            selected={selectedIds.has(row.id)}
-                            active={openItemId === row.id}
-                            tabStop={tabStop === row.id}
-                            canEdit={canEdit}
-                            editors={editors}
-                            fieldEditing={fieldEditing}
-                            onRename={
-                              onRename
-                                ? (title) => onRename(row.id, title)
-                                : undefined
-                            }
-                            actions={
-                              rowActions
-                                ? {
-                                    onDuplicate: rowActions.onDuplicate
-                                      ? () => rowActions.onDuplicate?.(row.id)
-                                      : undefined,
-                                    onCopyLink: () =>
-                                      rowActions.onCopyLink(row.id),
-                                    onArchive: rowActions.onArchive
-                                      ? () => rowActions.onArchive?.(row.id)
-                                      : undefined,
-                                    onDelete: rowActions.onDelete
-                                      ? () => rowActions.onDelete?.(row.id)
-                                      : undefined,
-                                    onMoveToBoard: rowActions.onMoveToBoard
-                                      ? () => rowActions.onMoveToBoard?.(row.id)
-                                      : undefined,
-                                  }
-                                : undefined
-                            }
-                            editing={editingId === row.id}
-                            highlightStatusId={
-                              initialEditing?.rowId === row.id
-                                ? initialEditing.highlightStatusId
-                                : undefined
-                            }
-                            onSelectedChange={(selected) =>
-                              onRowSelectedChange(row.id, selected)
-                            }
-                            onOpen={() => onOpenItem(row.id)}
-                            onEditingChange={(editing) =>
-                              setEditingId(editing ? row.id : null)
-                            }
-                            onStatusChange={(optionId) =>
-                              onStatusChange(row.id, optionId)
-                            }
-                            onKeyDown={(event) => {
-                              setTabStopId(row.id);
-                              onRowKeyDown(event, row.id);
-                            }}
-                          />
-                          {renderSubItems && expandedIds.has(row.id) ? (
-                            <div
-                              role="row"
-                              data-sub-items-of={row.id}
-                              className="grid min-w-full"
-                              style={{
-                                gridTemplateColumns: "var(--table-grid)",
-                              }}
-                            >
-                              <div
-                                role="cell"
-                                className="box-border min-w-0 border-b border-border bg-state-hover/40 py-1 pr-3 pl-16"
-                                style={{ gridColumn: "1 / -1" }}
-                              >
-                                {renderSubItems(row.id)}
-                              </div>
-                            </div>
-                          ) : null}
-                        </Fragment>
-                      ))}
-                {!collapsed && paging?.failed.has(group.id) && group.hasMore ? (
-                  <TableLoadMoreError
-                    copy={copy}
-                    next={Math.min(
-                      TABLE_GROUP_WINDOW,
-                      rowsOf(group) - group.rows.length,
+                        onCreate={(title) => onCreateItem(group.id, title)}
+                      />
                     )}
-                    onRetry={() => paging.loadMore(group.id)}
-                  />
-                ) : !collapsed &&
-                  (shownRows(group) < group.rows.length || group.hasMore) ? (
-                  <TableShowMoreRow
-                    copy={copy}
-                    shown={shownRows(group)}
-                    total={Math.max(rowsOf(group), group.rows.length)}
-                    loading={paging?.loading.has(group.id) ?? false}
-                    onShowMore={() => showMore(group)}
-                  />
-                ) : null}
-                {collapsed || !canCreate ? null : (
-                  <TableAddRow
-                    copy={copy}
-                    group={group}
-                    openRequest={
-                      addRequest.groupId === group.id ? addRequest.count : 0
-                    }
-                    onCreate={(title) => onCreateItem(group.id, title)}
-                  />
-                )}
-              </div>
-            );
-          })}
-          {addGroup && !noResults ? (
-            <TableAddGroup copy={copy} {...addGroup} />
-          ) : null}
-          {noResults ? (
-            <TableNoResults
-              copy={copy}
-              assigneeName={noResultsAssignee}
-              hidesDone={toolbar.hideDone}
-              onClear={onClearFilter}
-            />
-          ) : groups.length === 0 ? (
-            <TableEmpty copy={copy} />
-          ) : null}
-        </div>
-      </div>
+                  </div>
+                );
+              })}
+              {addGroup && !noResults ? (
+                <TableAddGroup copy={copy} {...addGroup} />
+              ) : null}
+              {noResults ? (
+                <TableNoResults
+                  copy={copy}
+                  assigneeName={noResultsAssignee}
+                  hidesDone={toolbar.hideDone}
+                  onClear={onClearFilter}
+                />
+              ) : null}
+            </div>
+          </div>
 
-      <div className="px-4 sm:px-6">
-        <TableFooter
-          copy={copy}
-          shown={shown}
-          hidden={hidden}
-          archived={archivedNotice?.count ?? 0}
-          canShowDone={canShowDone}
-          onShowDone={onShowDone}
-        />
-      </div>
+          <div className="px-4 sm:px-6">
+            <TableFooter
+              copy={copy}
+              shown={shown}
+              hidden={hidden}
+              archived={archivedNotice?.count ?? 0}
+              canShowDone={canShowDone}
+              onShowDone={onShowDone}
+            />
+          </div>
+        </>
+      )}
 
       {deep ? (
         <div className="absolute right-6 bottom-5 z-10">
@@ -732,12 +774,48 @@ function MainTableSurfaceBody({
         </div>
       ) : null}
 
-      {selectedCount > 0 ? (
+      {selectedCount > 0 || goneNotice ? (
         // The banner and the bar share one bottom anchor, so the bar never covers the banner (BC-Bulk bk-err).
         <div
           data-table-bulk-stack=""
           className="pointer-events-none absolute inset-x-3 bottom-5.5 z-20 flex flex-col items-center gap-6 max-md:bottom-3"
         >
+          {selectedCount > BULK_ITEM_LIMIT ? (
+            <div className="pointer-events-auto w-full px-1 sm:px-3">
+              <TableBulkNotice
+                tone="warning"
+                title={fillTableCopy(copy.bulk.capTitle, {
+                  count: selectedCount,
+                  max: BULK_ITEM_LIMIT,
+                })}
+                detail={fillTableCopy(copy.bulk.capBody, {
+                  over: selectedCount - BULK_ITEM_LIMIT,
+                })}
+              />
+            </div>
+          ) : null}
+          {goneNotice ? (
+            <div className="pointer-events-auto w-full px-1 sm:px-3">
+              <TableBulkNotice
+                tone="info"
+                title={pluralTableCopy(
+                  {
+                    one: copy.bulk.goneTitle_one,
+                    other: copy.bulk.goneTitle_other,
+                  },
+                  goneNotice.count,
+                )}
+                detail={fillTableCopy(copy.bulk.goneBody, {
+                  count: goneNotice.count,
+                  left: goneNotice.left,
+                })}
+                action={{
+                  label: copy.bulk.goneClose,
+                  onClick: goneNotice.onClose,
+                }}
+              />
+            </div>
+          ) : null}
           {bulkFailure ? (
             <div className="w-full px-1 sm:px-3">
               <div className="pointer-events-auto rounded-[10px] bg-background shadow-bar">
@@ -750,24 +828,33 @@ function MainTableSurfaceBody({
               </div>
             </div>
           ) : null}
-          <TableBulkBar
-            copy={copy}
-            count={selectedCount}
-            limit={{ max: BULK_ITEM_LIMIT, available: allRowIds.length }}
-            stacked
-            statusOptions={statusOptions}
-            canEdit={canEdit}
-            canArchive={canArchive}
-            onStatus={onBulkStatus}
-            onDue={onBulkDue}
-            onArchive={onBulkArchive}
-            onDelete={onBulkDelete}
-            priority={bulkPriority}
-            onClear={onClearSelection}
-            assign={bulkAssign}
-            move={bulkMove}
-          />
+          {selectedCount > 0 ? (
+            <TableBulkBar
+              copy={copy}
+              saving={bulkSaving}
+              count={selectedCount}
+              limit={{ max: BULK_ITEM_LIMIT, available: allRowIds.length }}
+              stacked
+              statusOptions={statusOptions}
+              canEdit={canEdit}
+              canArchive={canArchive}
+              onStatus={onBulkStatus}
+              onDue={onBulkDue}
+              onArchive={onBulkArchive}
+              onDelete={onBulkDelete}
+              priority={bulkPriority}
+              onClear={onClearSelection}
+              assign={bulkAssign}
+              move={bulkMove}
+            />
+          ) : null}
         </div>
+      ) : bulkDone ? (
+        <TableBulkDone
+          text={bulkDone.text}
+          undoLabel={copy.archived.undo}
+          onUndo={bulkDone.onUndo}
+        />
       ) : archivedNotice ? (
         <TableArchivedNotice
           copy={copy}
