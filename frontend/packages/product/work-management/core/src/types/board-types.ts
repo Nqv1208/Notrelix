@@ -66,6 +66,12 @@ export interface ViewConfig {
   cardFieldIds?: string[];
   /** Kanban: field ids that are hidden on the card face while the card has no value. */
   cardHideEmpty?: string[];
+  /** Calendar: `span`, `due` or the id of a Date field the items sit on (default `span`). */
+  calendarDateField?: string;
+  /** Timeline: what its rows are grouped by (default the board's groups). */
+  timelineGroupBy?: "group" | "status" | "assignee" | "none";
+  /** Timeline: where a bar starts (default the start day). */
+  timelineBarSpan?: "start-due" | "created-due";
 }
 
 export interface FilterConfig {

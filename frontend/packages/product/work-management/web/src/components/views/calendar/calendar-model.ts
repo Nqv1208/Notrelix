@@ -11,7 +11,8 @@ export type DayKey = string;
 export type CalendarRange = "month" | "week" | "day";
 
 /** How an entry is placed: over its whole start-to-due span, or on its due day. */
-export type CalendarDateBasis = "span" | "due";
+/** `span` (start to due), `due`, or the id of a Date field the items sit on. */
+export type CalendarDateBasis = string;
 
 /** The colour family of an entry: its Status bucket, or overdue. */
 export type CalendarTone = "todo" | "doing" | "review" | "done" | "overdue";

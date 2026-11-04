@@ -4,6 +4,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  MoreHorizontal,
   Plus,
 } from "lucide-react";
 import {
@@ -11,6 +12,7 @@ import {
   cn,
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
@@ -24,7 +26,6 @@ import type { CalendarCopy } from "./calendar.copy";
 import type { CalendarDateBasis, CalendarRange } from "./calendar-model";
 
 const RANGES = ["month", "week", "day"] as const;
-const BASES = ["span", "due"] as const;
 
 const ICON_BUTTON_CLASS =
   "size-8 rounded-[7px] border-line-strong bg-popover p-0 text-muted-foreground shadow-none hover:bg-state-hover-strong dark:border-line-strong dark:bg-card dark:hover:bg-state-hover-strong";
@@ -39,6 +40,8 @@ export interface CalendarToolbarProps {
   onStep: (direction: -1 | 1) => void;
   dateBasis: CalendarDateBasis;
   onDateBasisChange: (basis: CalendarDateBasis) => void;
+  /** The board's Date fields an item can be placed by, after "Bắt đầu → Hạn" and "Hạn". */
+  dateFields?: readonly { id: string; name: string }[];
   /** The time zone line ("Giờ Hà Nội (GMT+7)"). */
   zoneLabel: string;
   /** False for a viewer who cannot add items: the add button is not shown. */
@@ -62,11 +65,17 @@ export function CalendarToolbar({
   onStep,
   dateBasis,
   onDateBasisChange,
+  dateFields = [],
   zoneLabel,
   canAdd,
   onAddItem,
   viewBar,
 }: CalendarToolbarProps) {
+  const basisLabel =
+    dateBasis === "span" || dateBasis === "due"
+      ? copy.basis[dateBasis]
+      : (dateFields.find((field) => field.id === dateBasis)?.name ??
+        copy.basis.span);
   const rangeButtons = useRef<Array<HTMLButtonElement | null>>([]);
 
   const onRangeKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -85,127 +94,161 @@ export function CalendarToolbar({
     rangeButtons.current[RANGES.indexOf(next)]?.focus();
   };
 
-  return (
-    <div
-      data-calendar-bar=""
-      className="flex flex-wrap items-center gap-2 px-4 py-2.5 sm:px-6"
+  const basisMenu = (
+    <DropdownMenuRadioGroup
+      value={dateBasis}
+      onValueChange={(value) => {
+        if (value !== dateBasis) onDateBasisChange(value);
+      }}
     >
-      <Button
-        variant="outline"
-        size="sm"
-        className={calendarOutlineButtonClass}
-        onClick={onToday}
-      >
-        {copy.today}
-      </Button>
-      <Button
-        variant="outline"
-        size="icon-sm"
-        className={ICON_BUTTON_CLASS}
-        aria-label={copy.previous[range]}
-        onClick={() => onStep(-1)}
-      >
-        <ChevronLeft className="size-4" aria-hidden="true" />
-      </Button>
-      <Button
-        variant="outline"
-        size="icon-sm"
-        className={ICON_BUTTON_CLASS}
-        aria-label={copy.next[range]}
-        onClick={() => onStep(1)}
-      >
-        <ChevronRight className="size-4" aria-hidden="true" />
-      </Button>
-      <h2
-        aria-live="polite"
-        className="mx-1.5 min-w-37.5 text-calendar-title leading-[1.45] text-foreground"
-      >
-        {heading}
-      </h2>
-
+      {(["span", "due"] as const).map((value) => (
+        <DropdownMenuRadioItem key={value} value={value}>
+          {copy.basis[value]}
+        </DropdownMenuRadioItem>
+      ))}
+      {dateFields.map((field) => (
+        <DropdownMenuRadioItem key={field.id} value={field.id}>
+          {field.name}
+        </DropdownMenuRadioItem>
+      ))}
+    </DropdownMenuRadioGroup>
+  );
+  return (
+    <div className="@container/bar">
       <div
-        role="radiogroup"
-        aria-label={copy.ranges.label}
-        className="inline-flex rounded-[8px] bg-state-hover-strong p-0.5"
+        data-calendar-bar=""
+        className="flex flex-wrap items-center gap-2 px-4 py-2.5 @max-[1030px]/bar:gap-1.5 sm:px-6"
       >
-        {RANGES.map((value, index) => {
-          const on = value === range;
-          return (
-            <button
-              key={value}
-              ref={(element) => {
-                rangeButtons.current[index] = element;
-              }}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              tabIndex={on ? 0 : -1}
-              className={cn(
-                "h-7 cursor-pointer rounded-[6px] px-3 text-compact font-medium text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring",
-                on &&
-                  "bg-popover font-semibold text-foreground shadow-segment dark:bg-card",
-              )}
-              onClick={() => onRangeChange(value)}
-              onKeyDown={onRangeKeyDown}
-            >
-              {copy.ranges[value]}
-            </button>
-          );
-        })}
-      </div>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(kanbanPillClass, "leading-[1.45] font-normal")}
-          >
-            <CalendarDays className="size-4" aria-hidden="true" />
-            {copy.basis.label}{" "}
-            <b className="font-semibold text-foreground">
-              {copy.basis[dateBasis]}
-            </b>
-            <ChevronDown className="size-3.25" aria-hidden="true" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuRadioGroup
-            value={dateBasis}
-            onValueChange={(value) => {
-              const basis = BASES.find((candidate) => candidate === value);
-              if (basis && basis !== dateBasis) onDateBasisChange(basis);
-            }}
-          >
-            {BASES.map((value) => (
-              <DropdownMenuRadioItem key={value} value={value}>
-                {copy.basis[value]}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {viewBar}
-
-      {/* The zone line gives way (clipped, full text in the title) so the bar stays on one row. */}
-      <span
-        title={zoneLabel}
-        className="min-w-0 flex-1 basis-0 truncate text-right text-xs leading-[1.45] text-meta-foreground"
-      >
-        {zoneLabel}
-      </span>
-
-      {canAdd ? (
         <Button
+          variant="outline"
           size="sm"
-          className={cn(kanbanPrimaryButtonClass, "border-primary")}
-          onClick={onAddItem}
+          className={calendarOutlineButtonClass}
+          onClick={onToday}
         >
-          <Plus className="size-4" aria-hidden="true" />
-          {copy.addItem}
+          {copy.today}
         </Button>
-      ) : null}
+        <Button
+          variant="outline"
+          size="icon-sm"
+          className={ICON_BUTTON_CLASS}
+          aria-label={copy.previous[range]}
+          onClick={() => onStep(-1)}
+        >
+          <ChevronLeft className="size-4" aria-hidden="true" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon-sm"
+          className={ICON_BUTTON_CLASS}
+          aria-label={copy.next[range]}
+          onClick={() => onStep(1)}
+        >
+          <ChevronRight className="size-4" aria-hidden="true" />
+        </Button>
+        <h2
+          aria-live="polite"
+          className="mx-1.5 min-w-37.5 text-calendar-title @max-[820px]/bar:min-w-33.5 leading-[1.45] text-foreground"
+        >
+          {heading}
+        </h2>
+
+        <div
+          role="radiogroup"
+          aria-label={copy.ranges.label}
+          className="inline-flex rounded-[8px] bg-state-hover-strong p-0.5"
+        >
+          {RANGES.map((value, index) => {
+            const on = value === range;
+            return (
+              <button
+                key={value}
+                ref={(element) => {
+                  rangeButtons.current[index] = element;
+                }}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                tabIndex={on ? 0 : -1}
+                className={cn(
+                  "h-7 cursor-pointer rounded-[6px] px-3 text-compact font-medium text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring",
+                  on &&
+                    "bg-popover font-semibold text-foreground shadow-segment dark:bg-card",
+                )}
+                onClick={() => onRangeChange(value)}
+                onKeyDown={onRangeKeyDown}
+              >
+                {copy.ranges[value]}
+              </button>
+            );
+          })}
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                kanbanPillClass,
+                "leading-[1.45] font-normal @max-[1030px]/bar:hidden",
+              )}
+            >
+              <CalendarDays className="size-4" aria-hidden="true" />
+              <span className="@max-[1200px]/bar:sr-only">
+                {copy.basis.label}{" "}
+              </span>
+              <b className="font-semibold text-foreground">{basisLabel}</b>
+              <ChevronDown className="size-3.25" aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56">
+            {basisMenu}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {viewBar}
+
+        {/* Under 1000 px the date basis moves into "Thêm", as WM-Toolbar-Calendar draws. */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              className={cn(ICON_BUTTON_CLASS, "hidden @max-[1030px]/bar:grid")}
+              aria-label={copy.overflow}
+            >
+              <MoreHorizontal className="size-4" aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>{copy.basis.label}</DropdownMenuLabel>
+            {basisMenu}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* The zone line gives way (clipped, full text in the title) so the bar stays on one row. */}
+        <span
+          title={zoneLabel}
+          className="ml-auto min-w-0 truncate text-right text-xs leading-[1.45] text-meta-foreground @max-[1030px]/bar:hidden"
+        >
+          {/* WM-Toolbar-Calendar: the bar says "GMT+7"; the title keeps the full line. */}
+          {/\(([^)]+)\)/.exec(zoneLabel)?.[1] ?? zoneLabel}
+        </span>
+
+        {canAdd ? (
+          <Button
+            size="sm"
+            className={cn(
+              kanbanPrimaryButtonClass,
+              "border-primary @max-[820px]/bar:w-8 @max-[820px]/bar:px-0",
+            )}
+            onClick={onAddItem}
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            <span className="@max-[820px]/bar:sr-only">{copy.addItem}</span>
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }
