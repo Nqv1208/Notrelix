@@ -323,3 +323,144 @@ test.describe("Deleted fields (WM-DeletedFields-M), 390 px", () => {
     );
   });
 });
+
+test.describe("Deleted fields, 1024 px (the merged column) and the restored toast", () => {
+  test.skip(
+    !overlays.includes("deleted-fields") ||
+      persona !== "owner" ||
+      scenario !== "default" ||
+      faults !== "",
+    "Needs the owner world with the deleted-fields overlay",
+  );
+
+  test("at 1024 px the Deleted-by and Type columns fold into the name; the left chip and Restore keep the artboard's place from the right", async ({
+    page,
+  }) => {
+    // The workspace bar does not collapse at 1024 yet (shell), so the table is 516 px wide, not the artboard's 756.
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await open(page, false);
+    const table = page.getByRole("table", { name: "Trường đã xoá" });
+    for (const name of [/Người xoá/, /^Loại$/])
+      await expect(table.getByRole("columnheader", { name })).toBeHidden();
+    const t = (await table.boundingBox())!;
+    const right = (r: Rect) => t.width - r.x;
+    const row = page.getByRole("row").filter({ hasText: "Ngày bàn giao" });
+    await expect(row.locator("small").first()).toContainText("Ngày");
+    const chip = await rel(row.getByText(/^Còn \d+ ngày$/), table);
+    near(right(chip), 281, "left chip from the right");
+    const button = await rel(
+      row.getByRole("button", { name: /^Khôi phục/ }),
+      table,
+    );
+    near(right(button) - 83.2, 17, "restore from the right");
+    const name = await rel(row.locator("b"), table);
+    expect(name.width).toBeGreaterThan(100);
+  });
+
+  for (const dark of [false, true]) {
+    test(`the toast after a restore at 1440 px (${dark ? "dem" : "sang"})`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1440, height: 640 });
+      await open(page, dark);
+      await page
+        .getByRole("row")
+        .filter({ hasText: "Ghi chú nội bộ" })
+        .getByRole("button", { name: /^Khôi phục/ })
+        .click();
+      const toast = page
+        .getByRole("status")
+        .filter({ hasText: "Đã khôi phục" });
+      await expect(toast).toBeVisible();
+      await page.waitForTimeout(300);
+      const b = (await toast.boundingBox())!;
+      near(b.height, 61.1, "toast height");
+      near(b.x + b.width / 2, 720, "toast centre");
+      near(640 - (b.y + b.height), 28, "toast from the bottom");
+      const s = await toast.evaluate((e) => {
+        const c = getComputedStyle(e);
+        return [c.borderRadius, c.paddingTop, c.paddingLeft, c.fontSize, c.gap];
+      });
+      expect(s).toEqual(["10px", "11px", "14px", "13.5px", "12px"]);
+      const open_ = toast.getByRole("button", { name: "Mở trường" });
+      near((await open_.boundingBox())!.width, 80.8, "link width");
+    });
+  }
+
+  for (const dark of [false, true]) {
+    test(`the toast after a restore at 390 px (${dark ? "dem" : "sang"})`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await open(page, dark);
+      await page
+        .getByRole("listitem")
+        .filter({ hasText: "Ghi chú nội bộ" })
+        .getByRole("button", { name: /^Khôi phục/ })
+        .click();
+      const toast = page
+        .getByRole("status")
+        .filter({ hasText: "Đã khôi phục" });
+      await expect(toast).toBeVisible();
+      await page.waitForTimeout(300);
+      const b = (await toast.boundingBox())!;
+      near(b.x, 16, "toast x");
+      near(b.width, 358, "toast width");
+      // The artboard's title is one line; this field's longer name wraps the title (18 px more).
+      near(b.height, 68 + 14.8, "toast height");
+      near(844 - (b.y + b.height), 24, "toast from the bottom");
+      const link = (await toast
+        .getByRole("button", { name: "Mở trường" })
+        .boundingBox())!;
+      near(link.height, 44, "link height");
+      expect(
+        await toast.evaluate((e) => getComputedStyle(e).borderRadius),
+      ).toBe("12px");
+    });
+  }
+});
+
+test.describe("Deleted fields, the row being restored (WM-DeletedFields, 'Đang khôi phục một trường')", () => {
+  test.skip(
+    !overlays.includes("deleted-fields") ||
+      persona !== "owner" ||
+      scenario !== "default" ||
+      faults !== "" ||
+      process.env.VITE_MOCK_LATENCY !== "slow",
+    "Needs the owner world, the deleted-fields overlay and VITE_MOCK_LATENCY=slow",
+  );
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  for (const dark of [false, true]) {
+    test(`the row keeps 92 px, takes the selected fill, its button reads "Đang khôi phục…" at 127.5 px (${dark ? "dem" : "sang"})`, async ({
+      page,
+    }) => {
+      await open(page, dark);
+      const table = page.getByRole("table", { name: "Trường đã xoá" });
+      const row = page.getByRole("row").filter({ hasText: "Ghi chú nội bộ" });
+      const before = await rel(row, table);
+      await row.getByRole("button", { name: /^Khôi phục/ }).click();
+      const busy = row.getByRole("button", { name: /Khôi phục/ });
+      await expect(busy).toHaveText("Đang khôi phục…");
+      const r = await rel(row, table);
+      near(r.height, before.height, "row height");
+      const b = await rel(busy, table);
+      near(b.width, 127.5, "busy button width");
+      near(
+        (await table.boundingBox())!.width - (b.x + b.width),
+        17,
+        "button right",
+      );
+      expect(
+        await row.evaluate((e) => getComputedStyle(e).backgroundColor),
+      ).not.toBe("rgba(0, 0, 0, 0)");
+      // The other rows stay pressable.
+      await expect(
+        page
+          .getByRole("row")
+          .filter({ hasText: "Mã hợp đồng" })
+          .getByRole("button", { name: /^Khôi phục/ }),
+      ).toBeEnabled();
+    });
+  }
+});
