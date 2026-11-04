@@ -29,6 +29,7 @@ const sum = (read: Full, key: "itemCount" | "filteredCount") =>
   (read.lanes ?? []).reduce((total, lane) => total + lane[key], 0);
 
 test("the server filters and sorts a paged board, the table asks for it, and a refused condition falls back to the whole board", async ({
+  browser,
   page,
 }) => {
   await signIn(page, realUsers.admin);
@@ -134,4 +135,39 @@ test("the server filters and sorts a paged board, the table asks for it, and a r
   await page.getByRole("button", { name: /^Sort/ }).click();
   await page.getByRole("button", { name: "Add sort" }).click();
   await sorted;
+  await page.keyboard.press("Escape");
+
+  // Group by a field of the board: the member's own state, written to the server; an outsider's write to it is the
+  // identical NotFound.
+  await page.getByRole("button", { name: /^Group/ }).click();
+  await page.getByRole("menuitemradio", { name: /^Assignee/ }).click();
+  await expect(
+    page.getByRole("button", { name: "Group: Assignee" }),
+  ).toBeVisible();
+  // Kept on the server: it survives a reload.
+  await expect(async () => {
+    await page.reload();
+    await expect(
+      page.getByRole("button", { name: "Group: Assignee" }),
+    ).toBeVisible({ timeout: 4_000 });
+  }).toPass({ timeout: 30_000 });
+  const views = await apiRead<{ id: string }[]>(
+    page,
+    `/boards/${board}/views/saved`,
+  );
+  const stranger = await browser.newContext();
+  try {
+    const outsider = await stranger.newPage();
+    await signIn(outsider, realUsers.workspaceOwner);
+    const refused = await apiWrite(
+      outsider,
+      "PUT",
+      `/boards/${board}/preferences/${views[0]!.id}`,
+      { criteria: "{}" },
+    );
+    expect(refused.status).toBe(404);
+  } finally {
+    await stranger.close();
+  }
+  await page.getByRole("button", { name: "Back to shared view" }).click();
 });

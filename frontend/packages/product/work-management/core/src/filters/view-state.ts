@@ -426,7 +426,15 @@ export function groupCardsByField(
       const people = [...new Set(value.map(String).filter(Boolean))];
       if (people.length > 0) return people;
     }
-    return [groupKeyOf(field.field, value) ?? ""];
+    const key = groupKeyOf(field.field, value) ?? "";
+    // An option the field no longer has is a deleted option: its items fall into "No value", never out of the lanes.
+    if (
+      type === "select" &&
+      key !== "" &&
+      !field.field.options.some((option) => option.id === key)
+    )
+      return [""];
+    return [key];
   };
   const byKey = new Map<string, Card[]>();
   for (const card of cards) {
