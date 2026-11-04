@@ -1607,6 +1607,7 @@ function KanbanSelectedItemReady({
             note: approval.note,
             requestedAt: approval.requestedAt,
             decidedAt: approval.decidedAt,
+            previousRequestId: approval.previousRequestId,
           })),
           approvalAnswering: approvals.answering,
           approvalsLoading: approvals.loading,
