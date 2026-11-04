@@ -132,7 +132,8 @@ export function createMockFetch(store: MockStore): typeof fetch {
       // The producer names who saved first on a refused stale view or saved-filter write (changedByName).
       return createMockResponse<object>(
         request.normalizedPathname.includes("/views") ||
-          request.normalizedPathname.includes("/saved-filters")
+          request.normalizedPathname.includes("/saved-filters") ||
+          request.normalizedPathname.includes("/forms/")
           ? {
               ...refused,
               body: { ...refused.body, changedByName: "Hà Nguyễn" },
