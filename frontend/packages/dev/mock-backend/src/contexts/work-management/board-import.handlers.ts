@@ -48,7 +48,7 @@ export const boardImportOperations = [
         });
       if (/tep-rong/.test(fileName))
         return ok({ ...base, rejection: "no-rows", rowCount: 0, size: 4096 });
-      const jobId = crypto.randomUUID();
+      const jobId = store.nextId("import");
       files.set(jobId, { fileName, rows: 5_000 });
       return ok({
         ...base,
