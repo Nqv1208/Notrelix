@@ -4,10 +4,12 @@ import { useLocale } from "@notrelix/i18n";
 import {
   useBoardKanban,
   useBoardPlanItems,
+  useBoardView,
   useTimelineDependencies,
   useUpdateCard,
 } from "@notrelix/work-management-state";
 import {
+  resolveTimelinePresentation,
   serializeCompoundFilter,
   type Card,
   type WorkStatusCategory,
@@ -156,6 +158,8 @@ export function BoardTimelineView({
     allCards: true,
   });
   const { capabilities } = useBoardCapabilities(boardId, workspaceId);
+  const { viewConfig, updateViewConfig } = useBoardView(boardId, workspaceId);
+  const { groupBy, barSpan } = resolveTimelinePresentation(viewConfig);
   const canEdit = capabilities.canMoveCard && capabilities.canCreateCard;
   const updateCard = useUpdateCard(boardId, workspaceId);
   const dependencies = useTimelineDependencies(boardId, workspaceId);
@@ -173,13 +177,17 @@ export function BoardTimelineView({
     );
     const byId = new Map<string, Card>();
     const byGroup = new Map<string, TimelineItem[]>();
+    const groupTitles = new Map<string, string>();
     const undatedItems: TimelineUndated[] = [];
     for (const lane of kanban.lanes) {
       const tone = toneOf(lane.category);
       for (const card of lane.cards) {
         byId.set(card.id, card);
         const due = dayOf(cardDue(card), timeZone);
-        const start = dayOf(card.startDate, timeZone);
+        const start = dayOf(
+          barSpan === "created-due" ? card.createdAt : card.startDate,
+          timeZone,
+        );
         if (!due && !start) {
           undatedItems.push({
             id: card.id,
@@ -209,7 +217,24 @@ export function BoardTimelineView({
           movable: Boolean(due),
           href: buildCardLink(window.location, card.id),
         };
-        const groupId = plan?.groups[card.id] ?? card.listId;
+        const groupId =
+          groupBy === "status"
+            ? (lane.optionId ?? lane.name)
+            : groupBy === "assignee"
+              ? (person?.userId ?? "unassigned")
+              : groupBy === "none"
+                ? "all"
+                : (plan?.groups[card.id] ?? card.listId);
+        if (groupBy !== "group") {
+          groupTitles.set(
+            groupId,
+            groupBy === "status"
+              ? lane.name
+              : groupBy === "assignee"
+                ? (person?.name ?? copy.groupBy.unassigned)
+                : copy.groupBy.none,
+          );
+        }
         const list = byGroup.get(groupId) ?? [];
         list.push(item);
         byGroup.set(groupId, list);
@@ -219,7 +244,9 @@ export function BoardTimelineView({
     const markers = new Map<string, { index: number; item: TimelineItem }[]>();
     // Phases and milestones belong to nobody: any filter hides them with the
     // items it filters out.
-    for (const marker of filtered ? [] : (plan?.items ?? [])) {
+    for (const marker of filtered || groupBy !== "group"
+      ? []
+      : (plan?.items ?? [])) {
       const list = markers.get(marker.groupId) ?? [];
       list.push({
         index: marker.index,
@@ -237,19 +264,30 @@ export function BoardTimelineView({
       });
       markers.set(marker.groupId, list);
     }
-    const built: TimelineGroup[] = [...kanban.groups]
-      .sort((a, b) => a.position - b.position)
-      .map((group) => {
-        const rows = (byGroup.get(group.id) ?? []).sort((a, b) =>
-          dayKeyOf(a).localeCompare(dayKeyOf(b)),
-        );
-        for (const { index, item } of (markers.get(group.id) ?? []).sort(
-          (a, b) => a.index - b.index,
-        )) {
-          rows.splice(Math.min(index, rows.length), 0, item);
-        }
-        return { id: group.id, title: group.title, items: rows };
-      });
+    const sortByStart = (rows: TimelineItem[]) =>
+      rows.sort((a, b) => dayKeyOf(a).localeCompare(dayKeyOf(b)));
+    const built: TimelineGroup[] =
+      groupBy !== "group"
+        ? [...byGroup]
+            .map(([id, rows]) => ({
+              id,
+              title: groupTitles.get(id) ?? id,
+              items: sortByStart(rows),
+            }))
+            .sort((a, b) => a.title.localeCompare(b.title))
+        : [...kanban.groups]
+            .sort((a, b) => a.position - b.position)
+            .map((group) => {
+              const rows = (byGroup.get(group.id) ?? []).sort((a, b) =>
+                dayKeyOf(a).localeCompare(dayKeyOf(b)),
+              );
+              for (const { index, item } of (markers.get(group.id) ?? []).sort(
+                (a, b) => a.index - b.index,
+              )) {
+                rows.splice(Math.min(index, rows.length), 0, item);
+              }
+              return { id: group.id, title: group.title, items: rows };
+            });
     const shown = new Set(built.flatMap((g) => g.items.map((i) => i.id)));
     const shownLinks = (plan?.links ?? []).filter(
       (link) => shown.has(link.from) && shown.has(link.to),
@@ -270,7 +308,16 @@ export function BoardTimelineView({
       cardsById: byId,
       links: shownLinks,
     };
-  }, [kanban.lanes, kanban.groups, timeZone, plan, filtered]);
+  }, [
+    kanban.lanes,
+    kanban.groups,
+    timeZone,
+    plan,
+    filtered,
+    groupBy,
+    barSpan,
+    copy,
+  ]);
 
   const handleReschedule = (
     item: TimelineItem,
@@ -295,7 +342,7 @@ export function BoardTimelineView({
     // resize changes only the due day.
     const patch = {
       dueDate: shiftInstant(due, change.days),
-      ...(change.mode === "move" && card.startDate
+      ...(change.mode === "move" && card.startDate && barSpan === "start-due"
         ? { startDate: shiftInstant(card.startDate, change.days) }
         : {}),
     };
@@ -507,6 +554,14 @@ export function BoardTimelineView({
         onOpenItem={(id) => onSelectedItemChange?.(id)}
         onReschedule={handleReschedule}
         onAddItem={() => setCreateOpen(true)}
+        presentation={{
+          groupBy,
+          barSpan,
+          onGroupByChange: (value) =>
+            updateViewConfig({ timelineGroupBy: value }),
+          onBarSpanChange: (value) =>
+            updateViewConfig({ timelineBarSpan: value }),
+        }}
         viewBar={
           <ViewStateBar
             canSave={capabilities.canEditFields}

@@ -251,12 +251,6 @@ describe("BoardTimelineSurface", () => {
         { ...timelineScenario({ locale }), links: [] },
         {},
       );
-      const groupBy = screen.getByRole("button", {
-        name: new RegExp(`^${copy.groupBy.label}`),
-      });
-      const barSpan = screen.getByRole("button", {
-        name: new RegExp(`^${copy.barSpan.label}`),
-      });
       const links = screen.getByRole("button", {
         name: new RegExp(`^${copy.links}`),
       });
@@ -267,8 +261,6 @@ describe("BoardTimelineSurface", () => {
         name: new RegExp(`^${copy.addItem}`),
       });
       const reasons = [
-        [groupBy, copy.unavailable.groupBy],
-        [barSpan, copy.unavailable.barSpan],
         [links, copy.unavailable.links],
         [critical, copy.unavailable.criticalPath],
         [add, copy.unavailable.addItem],

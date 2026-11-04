@@ -58,4 +58,24 @@ public class ListBoardItemLinksTests : WorkManagementHandlerTestBase
         fromWaiting.Data!.Links.Should().ContainSingle().Which.Relation.Should().Be("blocked-by");
         fromBlocker.Data!.Links.Should().ContainSingle().Which.Relation.Should().Be("blocks");
     }
+
+    [Fact]
+    public async Task Handle_ArchivedOtherEnd_StaysLinkedAndSaysArchived_AndATrashedOneIsHidden()
+    {
+        var item = CreateBoardItem();
+        var archived = CreateBoardItem(boardId: item.BoardId);
+        archived.Archive(TestUserId, TestNow);
+        var trashed = CreateBoardItem(boardId: item.BoardId);
+        trashed.Delete(TestUserId, TestNow);
+        SetupBoardItems(item, archived, trashed);
+        SetupBoardItemLinks(
+            CreateBoardItemLink(sourceItemId: item.Id, targetItemId: archived.Id),
+            CreateBoardItemLink(sourceItemId: item.Id, targetItemId: trashed.Id));
+
+        var result = await _handler.Handle(new ListBoardItemLinksQuery(item.Id), CancellationToken.None);
+
+        var seen = result.Data!.Links.Should().ContainSingle().Subject;
+        seen.Item.Id.Should().Be(archived.Id);
+        seen.Item.IsArchived.Should().BeTrue();
+    }
 }

@@ -53,6 +53,7 @@ import {
 } from "./table-states";
 import { MainTableToolbar, type MainTableToolbarProps } from "./table-toolbar";
 import { TableLayoutProvider, type TableLayout } from "./table-layout";
+import { TableBulkPhoneBar } from "./table-bulk-phone";
 import { TablePhoneList } from "./table-phone-list";
 
 /** Row heights of the two densities (the mockup `--row-h`). */
@@ -147,6 +148,15 @@ export interface MainTableSurfaceProps {
   bulkDone?: { text: string; onUndo?: () => void } | null;
   /** Picked items another person deleted: the note over the bar; `left` are still picked. */
   goneNotice?: { count: number; left: number; onClose: () => void } | null;
+  /** "Chọn cả nhóm" of a group header: picks its rows up to the bulk limit; absent = no such button. */
+  onSelectGroup?: (groupId: string) => void;
+  /** The group whose pick stopped at the limit: the note under its header says how many are not picked. */
+  groupPickNote?: {
+    groupId: string;
+    picked: number;
+    total: number;
+    onClear: () => void;
+  } | null;
   onBulkStatus: TableBulkBarProps["onStatus"];
   onBulkDue: TableBulkBarProps["onDue"];
   onBulkArchive: TableBulkBarProps["onArchive"];
@@ -240,6 +250,8 @@ function MainTableSurfaceBody({
   bulkSaving,
   bulkDone,
   goneNotice,
+  onSelectGroup,
+  groupPickNote,
   onBulkStatus,
   onBulkDue,
   onBulkArchive,
@@ -514,8 +526,8 @@ function MainTableSurfaceBody({
               setDeep(el.scrollTop > el.clientHeight * 2);
             }}
             className={cn(
-              "mx-4 min-h-0 flex-1 overflow-auto rounded-[12px] border border-border bg-popover sm:mx-6 dark:bg-card",
-              tablet && "@container rounded-[14px]",
+              "@container mx-4 min-h-0 flex-1 overflow-auto rounded-[12px] border border-border bg-popover sm:mx-6 dark:bg-card",
+              tablet && "rounded-[14px]",
               // The phone cards sit on the page, not in a frame.
               phone &&
                 "mx-0 rounded-none border-0 bg-transparent sm:mx-0 dark:bg-transparent",
@@ -537,6 +549,45 @@ function MainTableSurfaceBody({
                 onGroupToggle={onGroupToggle}
                 onOpenItem={onOpenItem}
                 onStatusChange={onStatusChange}
+                selectedIds={selectedIds}
+                onRowSelectedChange={canEdit ? onRowSelectedChange : undefined}
+                onSelectGroup={onSelectGroup}
+                groupNote={
+                  groupPickNote ? (
+                    <TableBulkNotice
+                      tone="info"
+                      title={fillTableCopy(copy.bulk.groupTitle, {
+                        count: groupPickNote.picked,
+                        total: groupPickNote.total,
+                      })}
+                      detail={fillTableCopy(copy.bulk.groupBody, {
+                        max: BULK_ITEM_LIMIT,
+                        rest: Math.max(
+                          0,
+                          groupPickNote.total - groupPickNote.picked,
+                        ),
+                      })}
+                      action={{
+                        label: copy.bulk.groupClear,
+                        onClick: groupPickNote.onClear,
+                      }}
+                    />
+                  ) : null
+                }
+                topNote={
+                  selectedCount > BULK_ITEM_LIMIT ? (
+                    <TableBulkNotice
+                      tone="warning"
+                      title={fillTableCopy(copy.bulk.capTitlePhone, {
+                        count: selectedCount,
+                        max: BULK_ITEM_LIMIT,
+                      })}
+                      detail={fillTableCopy(copy.bulk.capBodyPhone, {
+                        over: selectedCount - BULK_ITEM_LIMIT,
+                      })}
+                    />
+                  ) : null
+                }
               />
             ) : null}
             <div
@@ -584,6 +635,11 @@ function MainTableSurfaceBody({
                           : undefined
                       }
                       menu={groupMenu?.(group)}
+                      onSelectGroup={
+                        canEdit && onSelectGroup
+                          ? () => onSelectGroup(group.id)
+                          : undefined
+                      }
                       boardNote={
                         paging && groupIndex === 0
                           ? paging.boardFiltered === null
@@ -597,6 +653,33 @@ function MainTableSurfaceBody({
                           : undefined
                       }
                     />
+                    {!collapsed && groupPickNote?.groupId === group.id ? (
+                      <div role="row" className="block">
+                        <div
+                          role="cell"
+                          className="sticky left-0 box-border w-[100cqw] border-b border-line-strong px-3 py-2.5"
+                        >
+                          <TableBulkNotice
+                            tone="info"
+                            title={fillTableCopy(copy.bulk.groupTitle, {
+                              count: groupPickNote.picked,
+                              total: groupPickNote.total,
+                            })}
+                            detail={fillTableCopy(copy.bulk.groupBody, {
+                              max: BULK_ITEM_LIMIT,
+                              rest: Math.max(
+                                0,
+                                groupPickNote.total - groupPickNote.picked,
+                              ),
+                            })}
+                            action={{
+                              label: copy.bulk.groupClear,
+                              onClick: groupPickNote.onClear,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
                     {collapsed
                       ? null
                       : group.rows
@@ -778,9 +861,15 @@ function MainTableSurfaceBody({
         // The banner and the bar share one bottom anchor, so the bar never covers the banner (BC-Bulk bk-err).
         <div
           data-table-bulk-stack=""
-          className="pointer-events-none absolute inset-x-3 bottom-5.5 z-20 flex flex-col items-center gap-6 max-md:bottom-3"
+          className={cn(
+            "pointer-events-none absolute z-20 flex flex-col items-center",
+            // The phone bar is a strip over the foot of the screen, notes sit on it (bk320).
+            phone
+              ? "inset-x-0 bottom-0 gap-2"
+              : "inset-x-3 bottom-5.5 gap-6 max-md:bottom-3",
+          )}
         >
-          {selectedCount > BULK_ITEM_LIMIT ? (
+          {selectedCount > BULK_ITEM_LIMIT && !phone ? (
             <div className="pointer-events-auto w-full px-1 sm:px-3">
               <TableBulkNotice
                 tone="warning"
@@ -828,12 +917,34 @@ function MainTableSurfaceBody({
               </div>
             </div>
           ) : null}
-          {selectedCount > 0 ? (
+          {selectedCount > 0 && phone ? (
+            <TableBulkPhoneBar
+              copy={copy}
+              saving={bulkSaving ?? false}
+              count={selectedCount}
+              over={selectedCount > BULK_ITEM_LIMIT}
+              statusOptions={statusOptions}
+              canEdit={canEdit}
+              canArchive={canArchive}
+              onStatus={onBulkStatus}
+              onDue={onBulkDue}
+              onArchive={onBulkArchive}
+              onDelete={onBulkDelete}
+              priority={bulkPriority}
+              onClear={onClearSelection}
+              assign={bulkAssign}
+              move={bulkMove}
+            />
+          ) : selectedCount > 0 ? (
             <TableBulkBar
               copy={copy}
               saving={bulkSaving}
               count={selectedCount}
-              limit={{ max: BULK_ITEM_LIMIT, available: allRowIds.length }}
+              limit={{
+                max: BULK_ITEM_LIMIT,
+                // The group note says how many were not picked, so the bar does not say it twice.
+                available: groupPickNote ? selectedCount : allRowIds.length,
+              }}
               stacked
               statusOptions={statusOptions}
               canEdit={canEdit}

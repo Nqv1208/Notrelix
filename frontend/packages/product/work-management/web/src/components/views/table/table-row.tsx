@@ -19,7 +19,6 @@ import {
   cn,
   ContextMenu,
   ContextMenuContent,
-  ContextMenuItem,
   ContextMenuTrigger,
   Popover,
   PopoverContent,
@@ -29,6 +28,8 @@ import {
   ITEM_LABEL_TONE_CLASS,
   identityMarkClass,
 } from "../../shared/item-display";
+import { ItemActionsMenuItems } from "../../item-actions/item-actions-menu";
+import { itemActionsCopyFor } from "../../item-actions/use-item-actions-copy";
 import { fillTableCopy, type MainTableCopy } from "./main-table.copy";
 import { STATUS_TINT_CLASS, tablePanelClass } from "./table-chrome";
 import type { TableColumnSpec } from "./table-columns";
@@ -187,6 +188,7 @@ export function TableRow({
   onStatusChange,
   onKeyDown,
 }: TableRowProps) {
+  const itemActionsCopy = itemActionsCopyFor(copy.row.pickerLocale);
   const keyLabel = row.key ?? row.title;
   const tablet = useTableLayout() === "tablet";
   const [renaming, setRenaming] = useState(false);
@@ -452,6 +454,11 @@ export function TableRow({
             >
               {row.assignee.name}
             </span>
+            {row.assignee.more > 0 ? (
+              <span className="shrink-0 text-metadata text-meta-foreground">
+                +{row.assignee.more}
+              </span>
+            ) : null}
           </>
         ) : (
           <>
@@ -602,6 +609,11 @@ export function TableRow({
                 )}
               >
                 {row.label.name}
+              </span>
+            ) : null}
+            {row.label?.more ? (
+              <span className="ml-1 shrink-0 text-metadata text-meta-foreground">
+                +{row.label.more}
               </span>
             ) : null}
           </Cell>
@@ -841,33 +853,26 @@ export function TableRow({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{rowElement}</ContextMenuTrigger>
-      <ContextMenuContent className="w-52">
-        <ContextMenuItem onSelect={onOpen}>
-          {copy.row.menu.open}
-        </ContextMenuItem>
-        {actions.onDuplicate ? (
-          <ContextMenuItem onSelect={actions.onDuplicate}>
-            {copy.row.menu.duplicate}
-          </ContextMenuItem>
-        ) : null}
-        <ContextMenuItem onSelect={actions.onCopyLink}>
-          {copy.row.menu.copyLink}
-        </ContextMenuItem>
-        {actions.onMoveToBoard ? (
-          <ContextMenuItem onSelect={actions.onMoveToBoard}>
-            {copy.row.menu.moveToBoard}
-          </ContextMenuItem>
-        ) : null}
-        {actions.onArchive ? (
-          <ContextMenuItem onSelect={actions.onArchive}>
-            {copy.row.menu.archive}
-          </ContextMenuItem>
-        ) : null}
-        {actions.onDelete ? (
-          <ContextMenuItem variant="destructive" onSelect={actions.onDelete}>
-            {copy.row.menu.delete}
-          </ContextMenuItem>
-        ) : null}
+      <ContextMenuContent className="w-72">
+        <ItemActionsMenuItems
+          kind="context"
+          copy={itemActionsCopy}
+          item={{
+            itemId: row.id,
+            itemKey: row.key,
+            archived: false,
+            completed: false,
+          }}
+          can={{ edit: canEdit, create: true, move: true, remove: true }}
+          on={{
+            copyLink: actions.onCopyLink,
+            openFull: onOpen,
+            duplicate: actions.onDuplicate,
+            moveBoard: actions.onMoveToBoard,
+            archive: actions.onArchive,
+            remove: actions.onDelete,
+          }}
+        />
       </ContextMenuContent>
     </ContextMenu>
   );
