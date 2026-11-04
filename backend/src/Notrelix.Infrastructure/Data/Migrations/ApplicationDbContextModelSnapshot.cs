@@ -7066,6 +7066,47 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("board_items", "work");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.WorkManagement.Items.BoardItemKeyAlias", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid>("BoardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<string>("ItemKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("item_key");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_board_item_key_aliases");
+
+                    b.HasIndex("ItemId")
+                        .HasDatabaseName("idx_board_item_key_aliases_item");
+
+                    b.HasIndex("BoardId", "ItemKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_board_item_key_aliases_board_key");
+
+                    b.ToTable("board_item_key_aliases", "work");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.WorkManagement.Items.BoardItemLabel", b =>
                 {
                     b.Property<Guid>("Id")
@@ -13400,6 +13441,16 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_board_items_board_groups_group_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.WorkManagement.Items.BoardItemKeyAlias", b =>
+                {
+                    b.HasOne("Notrelix.Domain.WorkManagement.Items.BoardItem", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_board_item_key_aliases_board_items_item_id");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.WorkManagement.Items.BoardItemLabel", b =>
