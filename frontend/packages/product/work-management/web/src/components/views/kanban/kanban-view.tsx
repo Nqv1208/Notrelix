@@ -1309,7 +1309,7 @@ export function KanbanView({
           )}
         </div>
 
-        {board && cardSelection && picking.selectedIds.size > 0 ? (
+        {board && cardSelection ? (
           <KanbanBulkBar
             boardId={boardId}
             workspaceId={workspaceId}

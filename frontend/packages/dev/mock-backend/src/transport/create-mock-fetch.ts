@@ -82,6 +82,20 @@ async function applyCreateScript(request: {
     await new Promise<void>((resolve) => setTimeout(resolve, 50));
 }
 
+/**
+ * A browser test can have another person delete items through `globalThis.__notrelixMockGone` (item ids):
+ * the next board read finds them gone (BC-Bulk `bk-gone`). Dev only: the mock never ships.
+ */
+type GoneScriptHost = { __notrelixMockGone?: string[] };
+
+function applyGoneScript(store: MockStore, request: { method: string }): void {
+  const host = globalThis as GoneScriptHost;
+  if (request.method !== "GET" || !host.__notrelixMockGone?.length) return;
+  const ids = host.__notrelixMockGone;
+  delete host.__notrelixMockGone;
+  for (const id of ids) store.deleteCard(id);
+}
+
 // ─── Factory ─────────────────────────────────────────────────────────────────
 
 export function createMockFetch(store: MockStore): typeof fetch {
@@ -139,6 +153,7 @@ export function createMockFetch(store: MockStore): typeof fetch {
     }
 
     await applyCreateScript(request);
+    applyGoneScript(store, request);
 
     // ── Apply latency ───────────────────────────────────────────────────────
     await applyLatency(config.latency);
