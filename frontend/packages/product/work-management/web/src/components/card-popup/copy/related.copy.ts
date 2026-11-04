@@ -81,6 +81,9 @@ export const en = {
     groupParent: "Parent",
     groupChildren: "Sub-items",
     statusNone: "No status",
+    archived: "Archived",
+    changes:
+      "{{key}} is linked another way. Adding changes the type of that link.",
     statusDone: "Done",
     statusOpen: "Open",
     popTitle: "Add link",
@@ -202,6 +205,9 @@ export const vi: RelatedCopy = {
     groupParent: "Việc cha",
     groupChildren: "Việc con",
     statusNone: "Chưa có trạng thái",
+    archived: "Đã lưu trữ",
+    changes:
+      "{{key}} đang được gắn theo cách khác. Thêm sẽ đổi loại của liên kết đó.",
     statusDone: "Hoàn thành",
     statusOpen: "Chưa xong",
     popTitle: "Thêm liên kết",

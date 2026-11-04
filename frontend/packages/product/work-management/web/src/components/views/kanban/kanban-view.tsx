@@ -1,3 +1,4 @@
+import { unsentCommentOf } from "../../card-detail/update-composer";
 import {
   FaceFieldsPopover,
   KanbanFaceProvider,
@@ -32,8 +33,11 @@ import {
   useUpdateCard,
   useUpdateCardUpdate,
   useUpdateFieldOption,
+  useHoldRealtimeRefetch,
   type KanbanWriteFailure,
+  classifyRestoreError,
   deletedItemOf,
+  useRestoreDeletedItem,
 } from "@notrelix/work-management-state";
 import {
   generatePosition,
@@ -191,6 +195,9 @@ export function KanbanView({
 }: KanbanViewProps) {
   // Read once so every card judges "overdue" against the same instant.
   const [now] = useState(() => new Date());
+  // A lifted card holds realtime refetches so the lanes do not reshuffle under the pointer.
+  const [dragging, setDragging] = useState(false);
+  useHoldRealtimeRefetch(dragging);
   const cardCopy = useKanbanCardCopy();
   const toolbarCopy = useKanbanToolbarCopy();
   const laneCopy = useKanbanLaneCopy();
@@ -1188,6 +1195,7 @@ export function KanbanView({
               </>
             ) : (
               <KanbanBoard
+                onDraggingChange={setDragging}
                 lanes={kanban.lanes}
                 groupOrder={kanban.groups}
                 copy={laneCopy}
@@ -1304,7 +1312,7 @@ export function KanbanView({
           )}
         </div>
 
-        {board && cardSelection && picking.selectedIds.size > 0 ? (
+        {board && cardSelection ? (
           <KanbanBulkBar
             boardId={boardId}
             workspaceId={workspaceId}
@@ -1405,6 +1413,20 @@ export interface SelectedItemProps {
   lanePicker?: CardPopupLanePicker;
 }
 
+/** The refusal key of the deleted notice for a failed restore. */
+function restoreReasonOf(error: unknown): string {
+  switch (classifyRestoreError(error)) {
+    case "windowClosed":
+      return "restoreWindowClosed";
+    case "parentDeleted":
+      return "restoreParentDeleted";
+    case "denied":
+      return "restoreDenied";
+    default:
+      return "restoreFailed";
+  }
+}
+
 /**
  * Resolves the selected card and hands it to the sheet. An id that fails to
  * load, or resolves to a card outside this board and workspace, is stale:
@@ -1427,21 +1449,20 @@ export function KanbanSelectedItem({
   // A card that is gone, moved to another board, or not for this viewer reads
   // the same: one generic message, nothing about what or why.
   const kind = (error as { kind?: string } | null)?.kind;
-  const gone =
-    kind === "not_found" ||
-    kind === "forbidden" ||
-    (card !== undefined &&
-      (card.boardId !== board.id || card.workspaceId !== board.workspaceId));
+  const otherWorkspace =
+    card !== undefined && card.workspaceId !== board.workspaceId;
+  // A card the person can still read on another board of this workspace was moved: it says where.
+  const moved =
+    card !== undefined && !otherWorkspace && card.boardId !== board.id;
+  const gone = kind === "not_found" || kind === "forbidden" || otherWorkspace;
   // A deleted card answers not-found with its own code to a person who reads the board: it says who deleted it.
   const deleted = deletedItemOf(error);
   const failed = Boolean(error) && !gone;
   const lastShown = useRef<CardDetail | null>(null);
-  if (card && !gone) lastShown.current = card;
-  const shown = gone
-    ? null
-    : failed && !card
-      ? null
-      : (card ?? lastShown.current);
+  if (card && !gone && !moved) lastShown.current = card;
+  const restoreDeleted = useRestoreDeletedItem(board.workspaceId, board.id);
+  const shown =
+    gone || moved ? null : failed && !card ? null : (card ?? lastShown.current);
   const restore = (event: Event) => {
     event.preventDefault();
     onRestoreFocus(lastShown.current?.id ?? cardId);
@@ -1458,15 +1479,42 @@ export function KanbanSelectedItem({
         status={
           deleted
             ? "deleted"
-            : gone
-              ? "gone"
-              : failed
-                ? "error"
-                : isLoading
-                  ? "loading"
-                  : "loading"
+            : moved
+              ? "moved"
+              : gone
+                ? "gone"
+                : failed
+                  ? "error"
+                  : isLoading
+                    ? "loading"
+                    : "loading"
         }
         deletedBy={deleted?.byName ?? null}
+        onRestoreDeleted={
+          deleted && rest.capabilities.canDelete
+            ? async () => {
+                try {
+                  await restoreDeleted.mutateAsync(cardId);
+                  await refetch();
+                } catch (failure) {
+                  throw restoreReasonOf(failure);
+                }
+              }
+            : undefined
+        }
+        movedTo={
+          moved && card
+            ? {
+                boardTitle: card.boardTitle,
+                onOpen: rest.onOpenItem
+                  ? () => rest.onOpenItem?.(card.boardId, card.id)
+                  : undefined,
+              }
+            : undefined
+        }
+        keptDraft={
+          deleted || gone || moved ? unsentCommentOf(cardId) : undefined
+        }
         onClose={onClose}
         onRetry={refetch}
         onCloseAutoFocus={restore}
@@ -1561,12 +1609,18 @@ function KanbanSelectedItemReady({
           activityError: activity.isError && activity.data === undefined,
           updates: updates.data ?? card.updates,
           updatesLoading: updates.isLoading,
-          updatesMore: updates.hasNextPage
-            ? {
-                loading: updates.isFetchingNextPage,
-                onMore: () => void updates.fetchNextPage(),
-              }
-            : undefined,
+          // One "show more" at the foot of the feed reads the next page of the comments and of the history.
+          updatesMore:
+            updates.hasNextPage || activity.hasNextPage
+              ? {
+                  loading:
+                    updates.isFetchingNextPage || activity.isFetchingNextPage,
+                  onMore: () => {
+                    if (updates.hasNextPage) void updates.fetchNextPage();
+                    if (activity.hasNextPage) void activity.fetchNextPage();
+                  },
+                }
+              : undefined,
           ...extras.detailData,
           checklists: {
             ...checklistWrites,
@@ -1604,6 +1658,7 @@ function KanbanSelectedItemReady({
             note: approval.note,
             requestedAt: approval.requestedAt,
             decidedAt: approval.decidedAt,
+            previousRequestId: approval.previousRequestId,
           })),
           approvalAnswering: approvals.answering,
           approvalsLoading: approvals.loading,

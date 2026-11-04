@@ -20,6 +20,9 @@ vi.mock("sonner", () => ({ toast: { success: vi.fn() } }));
 
 const scenario = kanbanDefaultScenario();
 const boardState = vi.hoisted(() => ({ showCards: true }));
+const restoreDeleted = vi.hoisted(() =>
+  vi.fn(async (_itemId: string) => undefined),
+);
 const fullColumns = [
   boardGroupFixture({
     id: "group-item",
@@ -154,6 +157,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useCardActivity: list,
     useCardComments: list,
     useUpdateCard: mutation,
+    useRestoreDeletedItem: () => ({ mutateAsync: restoreDeleted }),
     useCreateGroup: mutation,
     useItemLinks: () => ({
       data: undefined,
@@ -356,14 +360,41 @@ describe("KanbanView item detail through selectedItemId", () => {
     expect(screen.getByText("Could not load the card")).toBeTruthy();
   });
 
-  it("says the card is gone for a card that belongs to another board", () => {
+  it("links to the new board for a card that moved to another board of the workspace", () => {
     cardQuery.current = {
-      card: { ...existingCard(), boardId: "another-board" },
+      card: {
+        ...existingCard(),
+        boardId: "another-board",
+        boardTitle: "Infra",
+      },
       isLoading: false,
       error: null,
     };
     renderView({ selectedItemId: "card-item", onSelectedItemChange: vi.fn() });
-    expect(GONE()).toBeTruthy();
+    expect(
+      screen.getByText("This card was moved to the board “Infra”"),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Back to the board" }),
+    ).toBeTruthy();
+    expect(GONE()).toBeNull();
+  });
+
+  it("restores a deleted card from its notice for a person who may delete", async () => {
+    cardQuery.current = {
+      card: undefined,
+      isLoading: false,
+      error: Object.assign(new Error("not found"), {
+        kind: "not_found",
+        code: "work-management.item.deleted",
+        details: { deletedByName: "Ada Lovelace" },
+      }),
+    };
+    renderView({ selectedItemId: "card-item", onSelectedItemChange: vi.fn() });
+    fireEvent.click(screen.getByRole("button", { name: "Restore" }));
+    await waitFor(() =>
+      expect(restoreDeleted).toHaveBeenCalledWith("card-item"),
+    );
   });
 
   it("names who deleted the card to a person who reads its board", () => {

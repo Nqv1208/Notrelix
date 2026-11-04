@@ -9738,7 +9738,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalRequestDto"
+                  }
                 }
               }
             }
@@ -10827,7 +10830,7 @@
         "tags": [
           "WorkManagement.BoardFields"
         ],
-        "summary": "Evaluate a draft formula against one item of the board, without saving it",
+        "summary": "Evaluate a draft formula or rollup against one item of the board, without saving it",
         "operationId": "WorkManagement.BoardFields.PreviewFormula",
         "parameters": [
           {
@@ -10851,9 +10854,23 @@
           {
             "name": "expression",
             "in": "query",
-            "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "rollupFunction",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rollupFieldId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -10863,7 +10880,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.FormulaPreviewDto"
                 }
               }
             }
@@ -14044,7 +14061,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.BoardItemLinkListDto"
                 }
               }
             }
@@ -32913,6 +32930,48 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.FormulaPreviewDto": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "nullable": true
+          },
+          "value": {
+            "nullable": true
+          },
+          "errorCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.FormulaPreviewInputDto"
+            },
+            "nullable": true
+          },
+          "subItemCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.FormulaPreviewInputDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "value": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.WorkManagement.BoardItems.Commands.BulkUpdateBoardItems.BulkUpdateBoardItemsResult": {
         "type": "object",
         "properties": {
@@ -33566,6 +33625,65 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.BoardItemLinkDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "relation": {
+            "type": "string",
+            "nullable": true
+          },
+          "item": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.LinkedItemDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.BoardItemLinkListDto": {
+        "type": "object",
+        "properties": {
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.BoardItemLinkDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.LinkedItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "statusName": {
+            "type": "string",
+            "nullable": true
+          },
+          "statusCategory": {
+            "type": "string",
+            "nullable": true
+          },
+          "isArchived": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash.BoardItemTrashEntryDto": {
         "type": "object",
         "properties": {
@@ -33850,6 +33968,11 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "previousRequestId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -34029,6 +34152,14 @@
           "spaceId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "itemKeyPrefix": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentName": {
+            "type": "string",
             "nullable": true
           }
         },
