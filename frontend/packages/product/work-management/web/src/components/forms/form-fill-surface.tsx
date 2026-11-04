@@ -1,11 +1,13 @@
 import { useId, useRef, useState, type ReactNode } from "react";
 import {
+  Ban,
   CalendarDays,
   ChevronLeft,
   CircleCheck,
   Info,
   Lock,
   TriangleAlert,
+  type LucideIcon,
 } from "lucide-react";
 import { Skeleton, cn } from "@notrelix/ui-web";
 import type {
@@ -130,6 +132,7 @@ export function FormFillSurface(props: FormFillSurfaceProps) {
     return (
       <Frame {...props}>
         <Notice
+          icon={Ban}
           title={f.closedTitle}
           body={fillFormsCopy(f.closedBody, { title: form.title })}
           action={props.onBack}
@@ -180,7 +183,7 @@ function Frame({
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto bg-background text-foreground">
       <main
         aria-label={form?.title ?? copy.common.back}
-        className="mx-auto flex w-full max-w-[668px] flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8"
+        className="mx-auto flex w-full max-w-[668px] flex-col gap-4 px-4 py-6 max-sm:px-[15px] sm:px-6 sm:py-8"
       >
         {preview ? null : (
           <nav
@@ -223,26 +226,31 @@ function Notice({
   action,
   actionLabel,
   tone,
+  icon: Icon = Lock,
 }: {
   title: string;
   body: string;
   action: () => void;
   actionLabel: string;
   tone?: "danger";
+  icon?: LucideIcon;
 }) {
   return (
     <section
       role={tone === "danger" ? "alert" : "status"}
-      className="flex flex-col items-start gap-3 rounded-[12px] border border-line bg-popover p-5"
+      className="flex flex-col items-start gap-2.5 rounded-[12px] border border-line bg-popover p-6 max-sm:border-0 max-sm:bg-transparent max-sm:p-0"
     >
-      <span
-        aria-hidden="true"
-        className="grid size-10 place-items-center rounded-[12px] border border-line bg-background text-muted-foreground"
-      >
-        <Lock className="size-4" />
+      <span className="flex h-[21.3px] items-center">
+        <Icon
+          aria-hidden="true"
+          className={cn(
+            "size-4",
+            tone === "danger" ? "text-danger-text" : "text-meta-foreground",
+          )}
+        />
       </span>
-      <h1 className="m-0 text-[19px] leading-[1.35] font-[650]">{title}</h1>
-      <p className="m-0 text-item-ui text-muted-foreground">{body}</p>
+      <h1 className="m-0 text-[16px] leading-[1.45] font-[650]">{title}</h1>
+      <p className="m-0 text-[13px] text-meta-foreground">{body}</p>
       <button type="button" onClick={action} className={BUTTON_CLASS.outline}>
         {actionLabel}
       </button>
@@ -389,10 +397,10 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
       <form
         onSubmit={(event) => void submit(event)}
         noValidate
-        className="flex flex-col gap-4.5 rounded-[12px] border border-line bg-popover p-5 sm:p-7"
+        className="flex flex-col gap-4.5 rounded-[12px] border border-line bg-popover p-5 max-sm:border-0 max-sm:bg-transparent max-sm:p-0 sm:p-7"
       >
         <div className="flex flex-col gap-1">
-          <h1 className="m-0 text-[22px] leading-[1.3] font-[650] tracking-[-0.01em]">
+          <h1 className="m-0 text-[22px] leading-[1.3] font-[650] tracking-[-0.01em] max-sm:text-[16px]">
             {form.title}
           </h1>
           {form.description ? (
@@ -563,7 +571,7 @@ function Question({
           maxLength={q.maxLength ?? 2000}
           placeholder={q.placeholder ?? undefined}
           onChange={(e) => onChange(e.target.value)}
-          className={cn(TEXTAREA_CLASS, "h-21")}
+          className={cn(TEXTAREA_CLASS, "h-21 max-md:h-17.5")}
         />
       );
       break;
