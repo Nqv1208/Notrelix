@@ -5,6 +5,7 @@ import {
   useBoardLabelWrites,
   useDeletedFields,
   useBoardTemplates,
+  fieldKeyOf,
   useBoardTemplateWrites,
   useBoardSettings,
   useBoardView,
@@ -213,6 +214,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
               {
                 id: field.id,
                 name: field.name ?? "",
+                key: fieldKeyOf(field.name, field.id),
                 type: (
                   field.fieldType ?? "text"
                 ).toLowerCase() as BoardSettingsFieldType,

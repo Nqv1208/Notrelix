@@ -12,8 +12,11 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * The preview row ("Xem thử với ERP-145:", the 16 px info mark, the 14 px bold value after the text, 36.3 px
  * high at y 266.2, 518 wide) and the rollup dialog (398.4 px high without its preview row, the 34 px name input at y 93.4, the 32 px
  * calculation buttons at y 160.8, the 34 px field select, the info note) are measured too; the mock answers the
- * preview with a sample value. Not built: the "(Điểm = 13)" detail after the key and the field chips limited to
- * what the drawn list shows.
+ * preview with a sample value. The detail after the key ("(Điểm = 13)", "(2 việc con: 3 và 4)", "(chưa có việc
+ * con)") and the rollup preview row are built, and the dialog at 320 px is measured against the two "Hộp thoại ở
+ * 320px" frames (a 320 wide box with a 18 px radius, 14 px inside, 10 px between the blocks, 44 px inputs and
+ * buttons, the value before "với ERP-145" in the preview row). Not built: the field chips limited to what the drawn
+ * list shows.
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
@@ -43,6 +46,12 @@ async function theme(page: Page, dark: boolean) {
     dark ? "dark" : "light",
   );
 }
+
+/** The text a person reads in the row: hidden variants are left out. */
+const seen = (el: Locator, pattern: RegExp) =>
+  expect
+    .poll(() => el.evaluate((node) => (node as HTMLElement).innerText.trim()))
+    .toMatch(pattern);
 
 async function at(el: Locator, origin: Locator) {
   const [e, o] = await Promise.all([el.boundingBox(), origin.boundingBox()]);
@@ -213,7 +222,7 @@ for (const dark of [false, true]) {
     await page.getByRole("button", { name: /Sửa công thức/ }).click();
     const dlg = page.getByRole("dialog");
     const row = dlg.locator("[data-preview-state]");
-    await expect(row).toHaveText(/Xem thử với .+:/);
+    await seen(row, /Xem thử với ERP-\d+ \(Điểm = 13\):\s*26$/);
     await expect(row).not.toHaveAttribute("data-preview-state", "checking");
     await page.waitForTimeout(700);
     const r = await at(row, dlg);
@@ -246,8 +255,10 @@ for (const dark of [false, true]) {
     await page.waitForTimeout(700);
     const d = (await dlg.boundingBox())!;
     near(d.width, 560, "dialog width");
-    // 446.7 drawn with the rollup preview row (36.3 + the 12 gap), which is not built.
-    near(d.height, 398.4, "dialog height");
+    // "Phép đếm": 382.5 drawn, with the preview row and without the sub-items note (only a sum, average, smallest
+    // or largest shows it).
+    await expect(dlg.locator("[data-preview-state=ok]")).toBeVisible();
+    near((await dlg.boundingBox())!.height, 382.5, "dialog height");
     near((await at(dlg.getByLabel("Tên trường"), dlg)).y, 93.4, "name y");
     near((await at(dlg.getByLabel("Tên trường"), dlg)).h, 34, "name height");
     const calc = await at(dlg.getByRole("radio", { name: "Đếm" }), dlg);
@@ -258,6 +269,135 @@ for (const dark of [false, true]) {
       dlg,
     );
     near(footer.h, 32, "save height");
-    near(footer.y, 353.4, "save y");
+    near(footer.y, 337.5, "save y");
+    const prev = await at(dlg.locator("[data-preview-state]"), dlg);
+    near(prev.y, 272.2, "preview y");
+    near(prev.h, 36.3, "preview height");
+  });
+
+  test(`the rollup preview names the sub-items it summed, ${mode}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await theme(page, dark);
+    await page.goto(`${BOARD}/settings?from=table&section=fields`);
+    await page.getByRole("button", { name: "Thêm trường" }).click();
+    await page.getByRole("button", { name: /^Tổng hợp Cộng/ }).click();
+    const dlg = page.getByRole("dialog");
+    const row = dlg.locator("[data-preview-state]");
+    await seen(row, /Xem thử với ERP-\d+:\s*2$/);
+    await dlg.getByRole("radio", { name: "Tổng" }).click();
+    await dlg
+      .getByLabel("Trường số của việc con")
+      .selectOption({ label: "Điểm" });
+    await seen(row, /Xem thử với ERP-\d+ \(2 việc con: 3 và 4\):\s*7$/);
+    expect(await row.evaluate((el) => getComputedStyle(el).borderRadius)).toBe(
+      "8px",
+    );
+    // "Trường tổng hợp": 446.7 high, the preview row at y 336.4, the footer buttons at y 401.7.
+    await page.waitForTimeout(700);
+    near((await dlg.boundingBox())!.height, 446.7, "dialog height");
+    near((await at(row, dlg)).y, 336.4, "preview y");
+    near(
+      (await at(dlg.getByRole("button", { name: "Lưu trường" }), dlg)).y,
+      401.7,
+      "save y",
+    );
+    await expect(
+      dlg.getByText(/Chỉ tính các việc con trực tiếp/).last(),
+    ).toBeVisible();
+  });
+
+  test(`the formula dialog at 320 px, ${mode}`, async ({ page }) => {
+    // "Hộp thoại ở 320px": 320 wide, 18 px radius, 14 px inside (15 with the border), 10 px between the blocks.
+    await page.setViewportSize({ width: 320, height: 700 });
+    await theme(page, dark);
+    await page.goto(`${BOARD}/settings?from=table&section=fields`);
+    await page.getByText("Điểm gấp đôi", { exact: true }).first().click();
+    await page.getByRole("button", { name: /Sửa công thức/ }).click();
+    const dlg = page.getByRole("dialog");
+    await expect(dlg.locator("[data-preview-state=ok]")).toBeVisible();
+    await page.waitForTimeout(700);
+    const d = (await dlg.boundingBox())!;
+    near(d.width, 320, "dialog width");
+    expect(await dlg.evaluate((el) => getComputedStyle(el).borderRadius)).toBe(
+      "18px",
+    );
+    const title = await at(dlg.getByRole("heading"), dlg);
+    near(title.x, 46.2, "title x");
+    near(title.y, 15, "title y");
+    const mark = await at(dlg.getByText("ƒx", { exact: true }), dlg);
+    near(mark.x, 15, "ƒx x");
+    near(mark.w, 23.2, "ƒx width");
+    const name = await at(dlg.getByLabel("Tên trường"), dlg);
+    near(name.x, 15, "name x");
+    near(name.y, 68.1, "name y");
+    near(name.w, 290, "name width");
+    near(name.h, 44, "name height");
+    const code = await at(dlg.getByLabel("Công thức", { exact: true }), dlg);
+    near(code.y, 143.5, "formula y");
+    near(code.h, 64, "formula height");
+    const row = dlg.locator("[data-preview-state]");
+    const prev = await at(row, dlg);
+    near(prev.y, 217.5, "preview y");
+    near(prev.h, 36.3, "preview height");
+    near(prev.w, 290, "preview width");
+    const value = await at(row.locator("span").last(), row);
+    near(value.x, 10, "value x (it comes first)");
+    await seen(row, /^với ERP-\d+\s*26$|^26\s*với ERP-\d+$/);
+    expect(await row.locator("svg").count()).toBe(1);
+    await expect(row.locator("svg")).toBeHidden();
+    const cancel = await at(dlg.getByRole("button", { name: "Huỷ" }), dlg);
+    const save = await at(dlg.getByRole("button", { name: "Lưu trường" }), dlg);
+    near(cancel.y, 263.8, "buttons y");
+    near(cancel.h, 44, "cancel height");
+    near(cancel.w, 141, "cancel width");
+    near(save.x, 164, "save x");
+    near(save.w, 141, "save width");
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+      "no sideways scroll",
+    ).toBe(true);
+  });
+
+  test(`the rollup dialog at 320 px, ${mode}`, async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 700 });
+    await theme(page, dark);
+    await page.goto(`${BOARD}/settings?from=table&section=fields`);
+    await page.getByRole("button", { name: "Thêm trường" }).click();
+    await page.getByRole("button", { name: /^Tổng hợp Cộng/ }).click();
+    const dlg = page.getByRole("dialog");
+    await dlg.getByRole("radio", { name: "Tổng" }).click();
+    await dlg
+      .getByLabel("Trường số của việc con")
+      .selectOption({ label: "Điểm" });
+    await expect(dlg.locator("[data-preview-state=ok]")).toBeVisible();
+    await page.waitForTimeout(700);
+    near((await dlg.boundingBox())!.width, 320, "dialog width");
+    // The drawn frame has no name input; the app keeps it (a field needs a name), so the blocks are measured by
+    // their 10 px gaps and their own heights: the calculation buttons 32, the select 44, the row 36.3, the buttons 44.
+    const name = await at(dlg.getByLabel("Tên trường"), dlg);
+    near(name.h, 44, "name height");
+    const seg = await at(dlg.getByRole("radio", { name: "Tổng" }), dlg);
+    near(
+      seg.y - (name.y + name.h),
+      10 + 0,
+      "gap from the name to the calculation",
+    );
+    near(seg.h, 32, "calculation height");
+    const group = await at(dlg.getByRole("radiogroup"), dlg);
+    const select = await at(dlg.getByLabel("Trường số của việc con"), dlg);
+    near(select.y - (group.y + group.h), 10, "gap to the select");
+    near(select.h, 44, "select height");
+    const row = dlg.locator("[data-preview-state]");
+    const prev = await at(row, dlg);
+    near(prev.y - (select.y + select.h), 10, "gap to the preview");
+    near(prev.h, 36.3, "preview height");
+    await seen(row, /^(7\s*2 việc con|2 việc con\s*7)$/);
+    const save = await at(dlg.getByRole("button", { name: "Lưu trường" }), dlg);
+    near(save.y - (prev.y + prev.h), 10, "gap to the buttons");
+    near(save.h, 44, "save height");
   });
 }
