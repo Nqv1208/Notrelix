@@ -5,10 +5,33 @@ namespace Notrelix.Application.Tests.Features.WorkManagement.BoardItems;
 public class ListBoardItemLinksTests : WorkManagementHandlerTestBase
 {
     private readonly ListBoardItemLinksQueryHandler _handler;
+    private readonly Mock<IActorLookupService> _actors = new();
 
     public ListBoardItemLinksTests()
     {
-        _handler = new ListBoardItemLinksQueryHandler(DbContextMock.Object);
+        _actors.Setup(a => a.FindManyAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        SetupBoardItemMembers();
+        _handler = new ListBoardItemLinksQueryHandler(DbContextMock.Object, _actors.Object);
+    }
+
+    [Fact]
+    public async Task Handle_OtherEndCarriesItsFirstAssignee()
+    {
+        var item = CreateBoardItem();
+        var other = CreateBoardItem(boardId: item.BoardId);
+        SetupBoardItems(item, other);
+        SetupBoardItemLinks(CreateBoardItemLink(sourceItemId: item.Id, targetItemId: other.Id));
+        var assignee = Guid.CreateVersion7();
+        SetupBoardItemMembers(CreateBoardItemMember(itemId: other.Id, userId: assignee));
+        _actors.Setup(a => a.FindManyAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new ActorSnapshot(assignee, "Mai Quốc Minh", null)]);
+
+        var result = await _handler.Handle(new ListBoardItemLinksQuery(item.Id), CancellationToken.None);
+
+        var seen = result.Data!.Links.Should().ContainSingle().Subject.Item;
+        seen.AssigneeId.Should().Be(assignee);
+        seen.AssigneeName.Should().Be("Mai Quốc Minh");
     }
 
     [Fact]

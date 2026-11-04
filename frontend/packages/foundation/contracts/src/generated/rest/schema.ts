@@ -8859,6 +8859,9 @@ export interface components {
             statusName?: string | null;
             statusCategory?: string | null;
             isArchived?: boolean;
+            /** Format: uuid */
+            assigneeId?: string | null;
+            assigneeName?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash.BoardItemTrashEntryDto": {
             /** Format: uuid */

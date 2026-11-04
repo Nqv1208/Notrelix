@@ -33624,6 +33624,15 @@
           },
           "isArchived": {
             "type": "boolean"
+          },
+          "assigneeId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "assigneeName": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
