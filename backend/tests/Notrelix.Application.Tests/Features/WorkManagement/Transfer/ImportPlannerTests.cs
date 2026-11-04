@@ -1,6 +1,5 @@
 using Notrelix.Application.Features.WorkManagement.Transfer;
 using Notrelix.Domain.SharedKernel.Ordering;
-using Notrelix.Domain.WorkManagement;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.Transfer;
 
