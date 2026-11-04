@@ -41,7 +41,7 @@ export interface MainTableToolbarProps {
 }
 
 const CHIP_CLASS =
-  "inline-flex h-7 min-w-0 max-w-full items-center gap-1 rounded-[7px] bg-state-selected pr-1.5 pl-2.5 text-crumb font-semibold text-state-selected-foreground";
+  "inline-flex h-7 min-w-0 max-w-full @max-[1100px]/bar:max-w-32 @max-[820px]/bar:max-w-16 items-center gap-1 rounded-[7px] bg-state-selected pr-1.5 pl-2.5 text-crumb font-semibold text-state-selected-foreground";
 
 function RemovableChip({
   text,
@@ -95,87 +95,89 @@ export function MainTableToolbar({
   // A phone: the search is an icon button, so the bar keeps Lọc, Cách xem and the saved filters on one row.
   const compact = useMediaQuery("(max-width: 639px)");
   return (
-    <div
-      data-table-toolbar=""
-      className="flex flex-wrap items-center gap-1.5 py-2.5"
-    >
-      {compact ? (
-        <CompactSearch
-          value={searchQuery}
-          onChange={onSearchChange}
-          label={t.search.label}
-          placeholder={t.search.placeholder}
-        />
-      ) : (
-        <label className="flex h-8 w-50 max-w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring dark:bg-card">
-          <Search className="size-4 shrink-0" aria-hidden="true" />
-          <input
-            type="search"
+    <div className="@container/bar">
+      <div
+        data-table-toolbar=""
+        className="flex flex-wrap items-center gap-1.5 py-2.5"
+      >
+        {compact ? (
+          <CompactSearch
             value={searchQuery}
-            onChange={(event) => onSearchChange(event.target.value)}
+            onChange={onSearchChange}
+            label={t.search.label}
             placeholder={t.search.placeholder}
-            aria-label={t.search.label}
-            className="min-w-0 flex-1 bg-transparent text-compact text-foreground outline-none placeholder:text-meta-foreground"
           />
-        </label>
-      )}
+        ) : (
+          <label className="flex h-8 w-50 max-w-full items-center @max-[1100px]/bar:w-36 @max-[820px]/bar:w-20 gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring dark:bg-card">
+            <Search className="size-4 shrink-0" aria-hidden="true" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => onSearchChange(event.target.value)}
+              placeholder={t.search.placeholder}
+              aria-label={t.search.label}
+              className="min-w-0 flex-1 bg-transparent text-compact text-foreground outline-none placeholder:text-meta-foreground"
+            />
+          </label>
+        )}
 
-      {hideDone ? (
-        <RemovableChip
-          text={t.doneChip}
-          clearLabel={fillTableCopy(t.chipClear, { filter: t.doneChip })}
-          onClear={onShowDone}
-          data-chip="done"
+        {hideDone ? (
+          <RemovableChip
+            text={t.doneChip}
+            clearLabel={fillTableCopy(t.chipClear, { filter: t.doneChip })}
+            onClear={onShowDone}
+            data-chip="done"
+          />
+        ) : null}
+        {viewBar}
+
+        {columnState?.personal ? (
+          <button
+            type="button"
+            aria-label={t.columns.indicator}
+            title={t.columns.indicator}
+            onClick={columnState.onReset}
+            className="relative grid size-8 flex-none cursor-pointer place-items-center rounded-[7px] border border-transparent bg-state-selected p-0 text-state-selected-foreground focus-visible:outline-2 focus-visible:outline-ring max-md:size-11"
+          >
+            <Undo2 className="size-4" aria-hidden="true" />
+            <span
+              aria-hidden="true"
+              className="absolute top-1 right-1 size-2 rounded-full bg-primary ring-2 ring-state-selected"
+            />
+          </button>
+        ) : null}
+
+        <span
+          aria-hidden="true"
+          // The personal-columns toolbar draws 8 px between boxes: 4 px of margin more beside the separator.
+          className={`h-5 w-px bg-border max-md:hidden ${columnState?.personal ? "mx-1.5" : "mx-1"}`}
         />
-      ) : null}
-      {viewBar}
 
-      {columnState?.personal ? (
-        <button
-          type="button"
-          aria-label={t.columns.indicator}
-          title={t.columns.indicator}
-          onClick={columnState.onReset}
-          className="relative grid size-8 flex-none cursor-pointer place-items-center rounded-[7px] border border-transparent bg-state-selected p-0 text-state-selected-foreground focus-visible:outline-2 focus-visible:outline-ring max-md:size-11"
-        >
-          <Undo2 className="size-4" aria-hidden="true" />
-          <span
-            aria-hidden="true"
-            className="absolute top-1 right-1 size-2 rounded-full bg-primary ring-2 ring-state-selected"
-          />
-        </button>
-      ) : null}
+        <TableColumnsMenu
+          copy={copy}
+          customFields={customFields}
+          columnOrder={columnOrder}
+          onColumnOrderChange={onColumnOrderChange}
+          columnState={columnState}
+          hiddenColumnIds={hiddenColumnIds}
+          onColumnVisibleChange={onColumnVisibleChange}
+          density={density}
+          onDensityChange={onDensityChange}
+        />
 
-      <span
-        aria-hidden="true"
-        // The personal-columns toolbar draws 8 px between boxes: 4 px of margin more beside the separator.
-        className={`h-5 w-px bg-border max-md:hidden ${columnState?.personal ? "mx-1.5" : "mx-1"}`}
-      />
+        <span className="flex-1" />
 
-      <TableColumnsMenu
-        copy={copy}
-        customFields={customFields}
-        columnOrder={columnOrder}
-        onColumnOrderChange={onColumnOrderChange}
-        columnState={columnState}
-        hiddenColumnIds={hiddenColumnIds}
-        onColumnVisibleChange={onColumnVisibleChange}
-        density={density}
-        onDensityChange={onDensityChange}
-      />
-
-      <span className="flex-1" />
-
-      {canAdd ? (
-        <Button
-          size="sm"
-          className={kanbanPrimaryButtonClass}
-          onClick={onAddItem}
-        >
-          <Plus className="size-4" aria-hidden="true" />
-          {t.addItem}
-        </Button>
-      ) : null}
+        {canAdd ? (
+          <Button
+            size="sm"
+            className={kanbanPrimaryButtonClass}
+            onClick={onAddItem}
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            {t.addItem}
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }
