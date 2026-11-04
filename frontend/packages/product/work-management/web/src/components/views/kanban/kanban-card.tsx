@@ -10,7 +10,15 @@ import {
   Paperclip,
   SquareCheck,
 } from "lucide-react";
-import { cn, useMediaQuery } from "@notrelix/ui-web";
+import {
+  cn,
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuTrigger,
+  useMediaQuery,
+} from "@notrelix/ui-web";
+import { ItemActionsMenuItems } from "../../item-actions/item-actions-menu";
+import { itemActionsCopyFor } from "../../item-actions/use-item-actions-copy";
 import { CardCover } from "../../card-popup/capabilities/card-cover";
 import { ColourBlindLabelMark } from "../../card-popup/capabilities/colour-blind-label-mark";
 import { useKanbanFace } from "../../card-popup/capabilities/face-context";
@@ -619,6 +627,7 @@ export function KanbanCard({
 }) {
   const [dueOpen, setDueOpen] = useState(false);
   const touchMore = useMediaQuery(MORE_ALWAYS_QUERY);
+  const itemActionsCopy = itemActionsCopyFor(copy.locale);
   const picked = selection?.selectedIds.has(card.id) ?? false;
   const picking = (selection?.selectedIds.size ?? 0) > 0;
   const { listeners, setNodeRef, transform, transition, isDragging } =
@@ -648,7 +657,7 @@ export function KanbanCard({
     .filter(Boolean)
     .join(" ");
 
-  return (
+  const cardElement = (
     <article
       ref={setNodeRef}
       style={{
@@ -781,5 +790,38 @@ export function KanbanCard({
         reservePick={picking && !isDragging}
       />
     </article>
+  );
+  if (!actions || !hasCardMenu(actions)) return cardElement;
+  return (
+    <ContextMenu>
+      {/* A touch hold picks the card up to drag it; touch has the always-visible options button instead. */}
+      <ContextMenuTrigger
+        asChild
+        disabled={isDragging || (touchMore && !dragDisabled)}
+      >
+        {cardElement}
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-72">
+        <ItemActionsMenuItems
+          kind="context"
+          copy={itemActionsCopy}
+          item={{
+            itemId: card.id,
+            itemKey: card.itemKey,
+            archived: Boolean(card.isArchived),
+            completed: Boolean(card.completedAt),
+          }}
+          can={{ edit: true, create: true, move: true, remove: true }}
+          on={{
+            copyLink: actions.onCopyLink,
+            openFull: onOpenDetails,
+            duplicate: actions.onDuplicate,
+            moveBoard: actions.onMoveToBoard,
+            archive: actions.onArchive,
+            remove: actions.onDelete,
+          }}
+        />
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }

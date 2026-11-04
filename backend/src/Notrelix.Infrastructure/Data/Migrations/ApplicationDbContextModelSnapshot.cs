@@ -5980,6 +5980,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
+                    b.Property<Guid?>("PreviousRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("previous_request_id");
+
                     b.Property<Guid>("RequestedByUserId")
                         .HasColumnType("uuid")
                         .HasColumnName("requested_by_user_id");

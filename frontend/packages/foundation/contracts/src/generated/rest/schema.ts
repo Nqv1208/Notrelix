@@ -8961,6 +8961,8 @@ export interface components {
             steps?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalStepDto"][] | null;
             /** Format: int64 */
             version?: number;
+            /** Format: uuid */
+            previousRequestId?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalStepDto": {
             /** Format: uuid */

@@ -102,6 +102,9 @@ export function ApprovalSection() {
             <ApprovalRow
               key={approval.id}
               approval={approval}
+              previous={approvals.find(
+                (earlier) => earlier.id === approval.previousRequestId,
+              )}
               first={index === 0}
             />
           ))}
@@ -178,9 +181,12 @@ function RetryRead() {
 
 function ApprovalRow({
   approval,
+  previous,
   first,
 }: {
   approval: ItemSheetApproval;
+  /** The request this one asks again, when the history holds it. */
+  previous?: ItemSheetApproval | undefined;
   first: boolean;
 }) {
   const { data, callbacks, copy, now, timeZone } = useCardPopup();
@@ -224,6 +230,19 @@ function ApprovalRow({
       {sent && !first ? (
         <span className="self-end text-[12px] text-meta-foreground">
           {fillSheetCopy(t.sent, { when: sent })}
+        </span>
+      ) : null}
+      {previous ? (
+        <span className="text-[12px] text-meta-foreground">
+          {fillSheetCopy(t.followsUp, {
+            status:
+              t[
+                previous.status === "rejected"
+                  ? "rejectedWord"
+                  : "cancelledWord"
+              ],
+            name: previous.approverName?.trim() || t.unknownPerson,
+          })}
         </span>
       ) : null}
       {mayDecide && !rejecting ? (
