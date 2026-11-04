@@ -108,6 +108,10 @@ export const en = {
     body: "It may have been deleted or moved to another board, or you were removed from the board. No information about the card is shown.",
     close: "Back to the board",
   },
+  keptDraft: {
+    title: "Your unsent comment is kept here",
+    copy: "Copy comment",
+  },
   deleted: {
     title: "{{who}} deleted this card",
     someone: "Someone else",
@@ -262,6 +266,10 @@ export const vi: ShellCopy = {
     title: "Thẻ không còn, hoặc bạn không còn quyền xem",
     body: "Thẻ có thể đã bị xoá hay chuyển sang board khác, hoặc bạn đã được gỡ khỏi board. Không có thông tin nào của thẻ được hiển thị.",
     close: "Về board",
+  },
+  keptDraft: {
+    title: "Bình luận bạn chưa gửi vẫn còn ở đây",
+    copy: "Sao chép bình luận",
   },
   deleted: {
     title: "{{who}} đã xoá thẻ này",
