@@ -366,9 +366,19 @@ export const endpoints = {
       `/boards/${boardId}/fields/${fieldId}/options`,
     option: (boardId: string, fieldId: string, optionId: string) =>
       `/boards/${boardId}/fields/${fieldId}/options/${optionId}`,
-    // WorkManagement.BoardFields.PreviewFormula: a draft formula evaluated on one item, never saved.
-    previewFormula: (boardId: string, itemId: string, expression: string) =>
-      `/boards/${boardId}/fields/preview-formula?itemId=${itemId}&expression=${encodeURIComponent(expression)}`,
+    // WorkManagement.BoardFields.PreviewFormula: a draft formula or rollup evaluated on one item, never saved.
+    previewFormula: (
+      boardId: string,
+      itemId: string,
+      draft:
+        | { expression: string }
+        | { rollupFunction: string; rollupFieldId?: string | null },
+    ) =>
+      `/boards/${boardId}/fields/preview-formula?itemId=${itemId}&${
+        "expression" in draft
+          ? `expression=${encodeURIComponent(draft.expression)}`
+          : `rollupFunction=${draft.rollupFunction}${draft.rollupFieldId ? `&rollupFieldId=${draft.rollupFieldId}` : ""}`
+      }`,
   },
   // WorkManagement.SavedFilters.*: listed and created per board, changed by filter id.
   savedFilters: {
