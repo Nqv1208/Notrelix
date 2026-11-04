@@ -37,6 +37,11 @@ export function BoardViewSelectionProvider({
   return createElement(BoardViewSelectionContext.Provider, { value }, children);
 }
 
+/** The view the surrounding board screen shows (what the tabs picked). */
+export function useBoardViewSelection(): BoardViewSelection {
+  return useContext(BoardViewSelectionContext);
+}
+
 /** The saved view a selection names (see `BoardViewSelection`). */
 export function pickSavedView(
   views: readonly SavedBoardView[],

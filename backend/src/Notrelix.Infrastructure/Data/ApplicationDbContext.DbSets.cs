@@ -169,6 +169,7 @@ public partial class ApplicationDbContext
     public DbSet<BoardItemValue> BoardItemValues => Set<BoardItemValue>();
     public DbSet<BoardItemMember> BoardItemMembers => Set<BoardItemMember>();
     public DbSet<BoardItemReminder> BoardItemReminders => Set<BoardItemReminder>();
+    public DbSet<BoardItemKeyAlias> BoardItemKeyAliases => Set<BoardItemKeyAlias>();
     public DbSet<BoardItemVote> BoardItemVotes => Set<BoardItemVote>();
     public DbSet<BoardItemView> BoardItemViews => Set<BoardItemView>();
     public DbSet<BoardItemLabel> BoardItemLabels => Set<BoardItemLabel>();

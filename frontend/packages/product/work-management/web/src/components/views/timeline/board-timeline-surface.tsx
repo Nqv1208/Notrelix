@@ -77,6 +77,8 @@ export interface BoardTimelineSurfaceProps {
   onAddItem?: () => void;
   /** The view controls (`ViewStateBar`) the toolbar shows after "Vừa khít". */
   viewBar?: ReactNode;
+  /** The grouping and bar span the toolbar offers. */
+  presentation: TimelineToolbarProps["presentation"];
   /**
    * Creates a finish-to-start link (`to` waits for `from`). Without it the
    * chart draws no connectors.
@@ -125,6 +127,7 @@ export function BoardTimelineSurface({
   onReschedule,
   onAddItem,
   viewBar,
+  presentation,
   onCreateLink,
   onRemoveLink,
   undatedItems,
@@ -556,6 +559,7 @@ export function BoardTimelineSurface({
     canAdd: canEdit,
     onAddItem,
     viewBar,
+    presentation,
   };
 
   const gridLabel = fill(copy.gridLabel, {

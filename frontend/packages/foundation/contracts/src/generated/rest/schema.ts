@@ -8858,6 +8858,24 @@ export interface components {
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardDependencies.BoardDependencyListDto": {
             dependencies?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardDependencies.BoardDependencyDto"][] | null;
         };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.BoardItemLinkDto": {
+            /** Format: uuid */
+            id?: string;
+            relation?: string | null;
+            item?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.LinkedItemDto"];
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.BoardItemLinkListDto": {
+            links?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.BoardItemLinkDto"][] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.LinkedItemDto": {
+            /** Format: uuid */
+            id?: string;
+            key?: string | null;
+            title?: string | null;
+            statusName?: string | null;
+            statusCategory?: string | null;
+            isArchived?: boolean;
+        };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash.BoardItemTrashEntryDto": {
             /** Format: uuid */
             id?: string;
@@ -8965,6 +8983,8 @@ export interface components {
             steps?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalStepDto"][] | null;
             /** Format: int64 */
             version?: number;
+            /** Format: uuid */
+            previousRequestId?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalStepDto": {
             /** Format: uuid */
@@ -9031,6 +9051,8 @@ export interface components {
             version?: number;
             /** Format: uuid */
             spaceId?: string | null;
+            itemKeyPrefix?: string | null;
+            departmentName?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardFieldDto": {
             /** Format: uuid */
@@ -16063,7 +16085,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalRequestDto"][];
                 };
             };
         };
@@ -18509,7 +18531,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.BoardItemLinkListDto"];
                 };
             };
         };

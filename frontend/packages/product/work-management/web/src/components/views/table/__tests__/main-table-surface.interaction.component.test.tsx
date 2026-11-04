@@ -155,7 +155,7 @@ describe("MainTableSurface", () => {
     expect(assign.getAttribute("aria-disabled")).toBe("true");
     expect(assign.getAttribute("title")).toBe("Chưa khả dụng");
 
-    fireEvent.click(within(bar).getByRole("button", { name: "Lưu trữ" }));
+    fireEvent.click(within(bar).getByRole("button", { name: /^Lưu trữ/ }));
     expect(props.onBulkArchive).toHaveBeenCalledOnce();
 
     fireEvent.click(within(bar).getByRole("button", { name: "Bỏ chọn (Esc)" }));
@@ -923,17 +923,17 @@ describe("MainTableSurface in-place edits and bulk people and boards", () => {
     };
     const { props } = renderTable({ ...erpTableProps(), rowActions });
     fireEvent.contextMenu(row("ERP-144"));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Nhân bản" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Nhân bản/ }));
     expect(rowActions.onDuplicate).toHaveBeenCalledWith(
       ERP_TABLE_ITEM("ERP-144"),
     );
     fireEvent.contextMenu(row("ERP-144"));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Lưu trữ" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Lưu trữ/ }));
     expect(rowActions.onArchive).toHaveBeenCalledWith(
       ERP_TABLE_ITEM("ERP-144"),
     );
     fireEvent.contextMenu(row("ERP-144"));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Mở chi tiết" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Mở trang đầy đủ/ }));
     expect(props.onOpenItem).toHaveBeenCalledWith(ERP_TABLE_ITEM("ERP-144"));
   });
 

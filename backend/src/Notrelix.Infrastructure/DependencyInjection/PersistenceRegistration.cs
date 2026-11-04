@@ -182,6 +182,8 @@ public static class PersistenceRegistration
         services.AddSingleton<Notrelix.Application.Features.WorkManagement.Transfer.ITransferProgress, Notrelix.Infrastructure.Data.Ops.TransferProgress>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemKeyAllocator,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemKeyAllocator>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemKeyAliases,
+            Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemKeyAliases>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemReminders,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemReminders>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemViews,
