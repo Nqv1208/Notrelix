@@ -27,6 +27,32 @@ const SCREENS = {
     await expect(dialog).toBeVisible();
     await expect(dialog).toContainText("30 ngày");
   },
+  "formula-dialog": async (page: Page) => {
+    await page.goto(
+      `${ROADMAP.replace("roadmap", "erp")}/settings?from=table&section=fields`,
+    );
+    await page.getByRole("button", { name: /Sửa công thức/ }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+  },
+  "rollup-dialog": async (page: Page) => {
+    await page.goto(
+      `${ROADMAP.replace("roadmap", "erp")}/settings?from=table&section=fields`,
+    );
+    await page.getByRole("button", { name: "Thêm trường" }).click();
+    await page.getByRole("button", { name: /^Tổng hợp Cộng/ }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+  },
+  // Needs the overlay `deleted-fields`: the list of deleted fields, with a refused restore.
+  "deleted-fields": async (page: Page) => {
+    await page.goto(
+      `${ROADMAP.replace("roadmap", "erp")}/settings?from=table&section=fields`,
+    );
+    await page.getByRole("tab", { name: /Đã xoá/ }).click();
+    await page
+      .getByRole("button", { name: /Khôi phục trường Phòng ban yêu cầu/ })
+      .click();
+    await expect(page.getByRole("alert").first()).toBeVisible();
+  },
 } as const;
 
 for (const [name, show] of Object.entries(SCREENS)) {
@@ -36,6 +62,11 @@ for (const [name, show] of Object.entries(SCREENS)) {
       test(`${name} at ${width} ${mode}: inside the window, no serious axe violation${width === 390 ? ", 44 px controls" : ""}`, async ({
         page,
       }) => {
+        test.skip(
+          name === "deleted-fields" &&
+            !(process.env.VITE_MOCK_OVERLAYS ?? "").includes("deleted-fields"),
+          "Needs the deleted-fields overlay",
+        );
         await page.setViewportSize({ width, height: 900 });
         await page.clock.setFixedTime(new Date("2026-10-12T10:40:00+07:00"));
         await page.addInitScript((theme) => {
