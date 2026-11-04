@@ -107,6 +107,11 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
             RaiseDomainEvent(new ApprovalStepAssignedDomainEvent(
                 AccountId, WorkspaceId, Id, step.Id, approver, RequestedByUserId, Target, Title, Description, addedAt));
         }
+        else if (step.ApproverTeamId is { } team)
+        {
+            RaiseDomainEvent(new ApprovalTeamStepAssignedDomainEvent(
+                AccountId, WorkspaceId, Id, step.Id, team, RequestedByUserId, Target, Title, Description, addedAt));
+        }
     }
 
     // A team step is decided by a current member of that team; Application supplies the teams the decider belongs to now and an absent set fails closed.
