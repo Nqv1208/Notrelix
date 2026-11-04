@@ -14,7 +14,7 @@ import { canReadBoard } from "./boards.handlers";
 
 interface MockExportJob {
   id: string;
-  status: "queued" | "running" | "ready";
+  status: "queued" | "running" | "ready" | "expired" | "failed";
   format: string;
   scope: string;
   fileName: string;
@@ -38,7 +38,29 @@ function present(job: MockExportJob) {
   return job;
 }
 
+/**
+ * A spec can hold the job in one state (`globalThis.__mockExportStage`), with the artboard's file: 5.000 rows,
+ * 1,2 MB, made at 10:42 on 31/10/2026. Absent, the job moves by age.
+ */
+function hold(job: MockExportJob, stage: string): MockExportJob {
+  const made = "2026-10-31T10:42:00+07:00";
+  job.rowCount = 5_000;
+  job.size = 1_258_291;
+  job.createdAt = made;
+  job.status = stage as MockExportJob["status"];
+  job.processed = stage === "running" ? 2_400 : stage === "queued" ? 0 : 5_000;
+  if (stage === "ready" || stage === "expired") {
+    job.fileName = `Triển khai ERP Q4 - ${stage === "ready" ? "31" : "30"}-10-2026.xlsx`;
+    job.expiresAt = stage === "ready" ? "2026-11-01T10:42:00+07:00" : made;
+  }
+  if (stage === "failed") job.failureCode = "server";
+  return job;
+}
+
 function advance(job: MockExportJob): MockExportJob {
+  const stage = (globalThis as { __mockExportStage?: string })
+    .__mockExportStage;
+  if (stage) return hold(job, stage);
   const age = Date.now() - Date.parse(job.createdAt);
   if (age >= RUNNING_AFTER_MS) {
     job.status = "running";
@@ -64,8 +86,10 @@ export const boardExportOperations = [
     route: "/boards/:boardId/exports/summary",
     async handle({ params, store }) {
       if (!canReadBoard(params.boardId, store)) return notFound();
+      const held = (globalThis as { __mockExportViewCount?: number })
+        .__mockExportViewCount;
       return ok({
-        viewCount: VIEW_COUNT,
+        viewCount: held ?? VIEW_COUNT,
         allCount: ALL_COUNT,
         hiddenFields: ["Ngân sách"],
       });

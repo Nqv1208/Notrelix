@@ -126,6 +126,14 @@
   --text-crumb--line-height: var(--type-crumb-line-height);
   --text-crumb--font-weight: var(--type-crumb-weight);
   --text-crumb--letter-spacing: var(--type-crumb-tracking);
+  /* The board transfer dialogs (WM-Export, WM-Import) draw their own denser scale: size only, the dialog sets line height and weight. */
+  --text-frame-title: 17px;
+  --text-frame-lead: 15px;
+  --text-frame-sheet: 14.5px;
+  --text-frame-body: 13.5px;
+  --text-frame-small: 13px;
+  --text-frame-note: 12.5px;
+  --text-frame-hint: 12px;
   --text-micro: var(--type-micro-size);
   --text-micro--line-height: var(--type-micro-line-height);
   --text-micro--font-weight: var(--type-micro-weight);
