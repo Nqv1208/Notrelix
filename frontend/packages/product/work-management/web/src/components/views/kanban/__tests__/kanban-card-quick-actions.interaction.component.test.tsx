@@ -163,3 +163,26 @@ describe("KanbanCard quick actions", () => {
     expect(screen.queryByRole("button", { name: "Đặt ngày hạn" })).toBeNull();
   });
 });
+
+describe("KanbanCard right-click menu", () => {
+  it("lists the one ordered item-actions set and runs an entry on the card", () => {
+    const onCopyLink = vi.fn();
+    const onArchive = vi.fn();
+    const { card, onOpenDetails } = renderCard({ onCopyLink, onArchive });
+    fireEvent.contextMenu(screen.getByRole("article"));
+    expect(
+      screen.getAllByRole("menuitem").map((entry) => entry.textContent),
+    ).toEqual([
+      expect.stringMatching(/^Sao chép liên kết/),
+      "Mở trang đầy đủ",
+      "Lưu trữ…",
+    ]);
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: /^Sao chép liên kết/ }),
+    );
+    expect(onCopyLink).toHaveBeenCalledWith(card.id);
+    fireEvent.contextMenu(screen.getByRole("article"));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Mở trang đầy đủ" }));
+    expect(onOpenDetails).toHaveBeenCalledWith(card.id);
+  });
+});

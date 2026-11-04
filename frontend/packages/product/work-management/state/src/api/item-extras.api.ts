@@ -183,6 +183,8 @@ export interface ItemApprovalDto {
   readonly decisionNote: string | null;
   /** The request's version, sent back as the expected version when it is cancelled. */
   readonly version: number;
+  /** The rejected or cancelled request this one asks again; null for a first request. */
+  readonly previousRequestId: string | null;
 }
 
 interface ItemApprovalWire {
@@ -192,6 +194,7 @@ interface ItemApprovalWire {
   readonly requestedByUserId: string;
   readonly createdAt: string;
   readonly version: number;
+  readonly previousRequestId?: string | null;
   readonly steps?:
     | readonly {
         readonly approverUserId?: string | null;
@@ -217,6 +220,7 @@ function toItemApproval(wire: ItemApprovalWire): ItemApprovalDto {
     decidedAt: step?.decidedAt ?? null,
     decisionNote: step?.note ?? null,
     version: wire.version,
+    previousRequestId: wire.previousRequestId ?? null,
   };
 }
 

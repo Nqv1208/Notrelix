@@ -170,6 +170,25 @@ describe("ApprovalSection", () => {
     expect(within(region()).getAllByRole("listitem")).toHaveLength(2);
   });
 
+  it("says a new request asks again after the earlier one, and both stay in the history", () => {
+    show({
+      approvals: [
+        approval({ id: "ap-new", previousRequestId: "ap-old" }),
+        approval({
+          id: "ap-old",
+          status: "rejected",
+          approverName: "Sam Park",
+        }),
+      ],
+    });
+    expect(
+      within(region()).getByText(
+        "Asks again after the earlier request to Sam Park (rejected)",
+      ),
+    ).toBeTruthy();
+    expect(within(region()).getAllByRole("listitem")).toHaveLength(2);
+  });
+
   it("names why an answer was refused", () => {
     show({ approvals: [approval({})], approvalAnswerError: "conflict" });
     expect(within(region()).getByRole("alert").textContent).toContain(
