@@ -660,6 +660,21 @@ describe("MainTableSurface", () => {
     expect(onOpen).toHaveBeenCalledOnce();
   });
 
+  it("a role lowered to viewer closes the editors while the table stays open", () => {
+    const props = spied(erpTableProps({ canEdit: true }));
+    const { rerender } = renderPureUi(<MainTableSurface {...props} />);
+    const status = () =>
+      within(row("ERP-142")).getByRole("button", {
+        name: "Đổi trạng thái của ERP-142",
+      }) as HTMLButtonElement;
+    expect(status().disabled).toBe(false);
+    rerender(<MainTableSurface {...props} canEdit={false} />);
+    expect(status().disabled).toBe(true);
+    // The rows and their values stay; selecting stays too, and the bulk bar then says every action is off.
+    expect(row("ERP-142")).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: "Chọn ERP-142" })).toBeTruthy();
+  });
+
   it("tells a viewer an empty board is theirs to look at only", () => {
     renderTable({ ...erpTableEmptyProps(), canEdit: false, canCreate: false });
     expect(screen.getByText(/Bạn chỉ xem được board này/)).toBeTruthy();

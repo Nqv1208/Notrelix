@@ -36,10 +36,10 @@ export function BoardConnectionNotice({
   const t = copy.connection;
   if (state === "reconnecting")
     return (
-      <div className="flex justify-end px-4 pt-2 sm:px-6">
+      <div className="flex justify-end px-3 pt-2 max-sm:justify-start sm:px-6">
         <span
           role="status"
-          className="inline-flex h-7 items-center gap-1.5 rounded-[7px] bg-warning-subtle px-2.5 text-[13px] whitespace-nowrap text-warning-text"
+          className="inline-flex h-7 items-center gap-1.5 rounded-[7px] max-sm:h-11 bg-warning-subtle px-2.5 text-[13px] whitespace-nowrap text-warning-text"
         >
           <LoaderCircle
             aria-hidden="true"
@@ -56,7 +56,7 @@ export function BoardConnectionNotice({
     minute: "2-digit",
   });
   return (
-    <div className="px-4 pt-3 sm:px-6">
+    <div className="px-3 pt-3 sm:px-6">
       <div
         role="status"
         className={cn(
