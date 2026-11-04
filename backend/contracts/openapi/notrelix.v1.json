@@ -35774,7 +35774,6 @@
         },
         "additionalProperties": false
       },
-
       "Notrelix.Application.Features.WorkManagement.Transfer.ImportPreviewDto": {
         "type": "object",
         "properties": {
@@ -35825,7 +35824,6 @@
         },
         "additionalProperties": false
       },
-
       "Notrelix.Application.Features.WorkManagement.Transfer.ImportRowError": {
         "type": "object",
         "properties": {
