@@ -96,7 +96,8 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
             _handler = new ApproveApprovalRequestCommandHandler(
                 DbContextMock.Object,
                 RequestContextMock.Object,
-                DateTimeProviderMock.Object);
+                DateTimeProviderMock.Object,
+                new Mock<Notrelix.Application.Features.Workspaces.Public.Teams.ITeamMembershipFacts>().Object);
         }
 
         [Fact]
@@ -164,7 +165,8 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
             _handler = new RejectApprovalRequestCommandHandler(
                 DbContextMock.Object,
                 RequestContextMock.Object,
-                DateTimeProviderMock.Object);
+                DateTimeProviderMock.Object,
+                new Mock<Notrelix.Application.Features.Workspaces.Public.Teams.ITeamMembershipFacts>().Object);
         }
 
         [Fact]

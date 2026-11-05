@@ -3,6 +3,7 @@ using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Approvals.Commands.DecideApproval;
 using Notrelix.Application.Features.WorkManagement.Approvals.Commands.RequestItemApproval;
 using Notrelix.Application.Features.WorkManagement.Approvals.Queries.ListItemApprovalRequests;
+using Notrelix.Application.Features.Workspaces.Public.Teams;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.Approvals;
 
@@ -13,6 +14,7 @@ namespace Notrelix.Application.Tests.Features.WorkManagement.Approvals;
 public class ItemApprovalTests : WorkManagementHandlerTestBase
 {
     private readonly Mock<IResourceVisibility> _visibility = new();
+    private readonly Mock<ITeamMembershipFacts> _teams = new();
     private readonly Board _board;
     private readonly BoardItem _item;
     private readonly Guid _approver = Guid.CreateVersion7();
@@ -46,7 +48,7 @@ public class ItemApprovalTests : WorkManagementHandlerTestBase
     private Task<Result> Decide(Guid caller, ApprovalRequest request, string decision, string? comment = null)
     {
         RequestContextMock.Setup(c => c.UserId).Returns(caller);
-        return new DecideApprovalCommandHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, _visibility.Object)
+        return new DecideApprovalCommandHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, _visibility.Object, _teams.Object)
             .Handle(new DecideApprovalCommand(TestWorkspaceId, request.Id, decision, comment), CancellationToken.None);
     }
 
@@ -214,5 +216,97 @@ public class ItemApprovalTests : WorkManagementHandlerTestBase
         result.Data!.Should().HaveCount(2);
         result.Data.Single(r => r.Status == "Approved").Steps.Should().ContainSingle(s => s.ApproverUserId == _approver && s.Note == "Fine");
         result.Data.Single(r => r.Status == "Pending").Steps.Should().ContainSingle(s => s.ApproverUserId == other);
+    }
+
+    private ApprovalRequest TeamRequested(Guid teamId)
+    {
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), _item.Id, TestWorkspaceId);
+        var request = ApprovalRequest.Create(TestAccountId, TestWorkspaceId, target, "Team review", TestUserId, TestNow);
+        request.AddStep(1, TestUserId, TestNow, approverTeamId: teamId);
+        SetupApprovalRequests(request);
+        return request;
+    }
+
+    private void MemberOf(Guid user, params Guid[] currentTeams) =>
+        _teams.Setup(t => t.CurrentTeamIdsAsync(TestWorkspaceId, user, It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, Guid _, IReadOnlyCollection<Guid> asked, CancellationToken _) => asked.Where(currentTeams.Contains).ToList());
+
+    [Fact]
+    public async Task TeamStep_ADecisionByACurrentTeamMember_ApprovesAndRecordsWhoDecided()
+    {
+        var team = Guid.CreateVersion7();
+        var member = Guid.CreateVersion7();
+        var request = TeamRequested(team);
+        MemberOf(member, team);
+
+        var result = await Decide(member, request, "approve", "Looks fine");
+
+        result.Succeeded.Should().BeTrue();
+        request.Status.Should().Be(ApprovalStatus.Approved);
+        var step = request.Steps.Single();
+        step.Status.Should().Be(ApprovalStatus.Approved);
+        step.DecidedByUserId.Should().Be(member);
+        request.UpdatedBy.Should().Be(member);
+    }
+
+    [Fact]
+    public async Task TeamStep_ARejectionByACurrentTeamMember_RecordsWhoDecided()
+    {
+        var team = Guid.CreateVersion7();
+        var member = Guid.CreateVersion7();
+        var request = TeamRequested(team);
+        MemberOf(member, team);
+
+        (await Decide(member, request, "reject", "No")).Succeeded.Should().BeTrue();
+
+        request.Status.Should().Be(ApprovalStatus.Rejected);
+        request.Steps.Single().DecidedByUserId.Should().Be(member);
+    }
+
+    [Fact]
+    public async Task TeamStep_ANonMember_IsRefusedAndNothingChanges()
+    {
+        var request = TeamRequested(Guid.CreateVersion7());
+        var outsider = Guid.CreateVersion7();
+        MemberOf(outsider);
+        var version = request.Version;
+
+        await FluentActions.Awaiting(() => Decide(outsider, request, "approve")).Should().ThrowAsync<ForbiddenException>();
+
+        request.Status.Should().Be(ApprovalStatus.Pending);
+        request.Steps.Single().DecidedByUserId.Should().BeNull();
+        request.Version.Should().Be(version);
+    }
+
+    [Fact]
+    public async Task TeamStep_AMemberRemovedBeforeDeciding_HasNoRightToDecide()
+    {
+        var team = Guid.CreateVersion7();
+        var member = Guid.CreateVersion7();
+        var request = TeamRequested(team);
+        MemberOf(member, team);
+        MemberOf(member); // removed from the team (or the Workspace) before the decision
+
+        await FluentActions.Awaiting(() => Decide(member, request, "approve")).Should().ThrowAsync<ForbiddenException>();
+
+        request.Status.Should().Be(ApprovalStatus.Pending);
+    }
+
+    [Fact]
+    public async Task TeamStep_ASecondMemberAfterTheFirstDecided_GetsTheAlreadyDecidedConflict()
+    {
+        var team = Guid.CreateVersion7();
+        var first = Guid.CreateVersion7();
+        var second = Guid.CreateVersion7();
+        var request = TeamRequested(team);
+        MemberOf(first, team);
+        MemberOf(second, team);
+        (await Decide(first, request, "approve")).Succeeded.Should().BeTrue();
+
+        var result = await Decide(second, request, "approve");
+
+        result.Succeeded.Should().BeFalse();
+        result.TypedErrors.Should().ContainSingle(e => e.Code == "work.approval.already-decided");
+        request.Steps.Single().DecidedByUserId.Should().Be(first);
     }
 }

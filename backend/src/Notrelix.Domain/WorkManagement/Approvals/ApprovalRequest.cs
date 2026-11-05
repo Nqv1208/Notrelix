@@ -9,6 +9,8 @@ public class ApprovalStep : Entity
     public ApprovalStatus Status { get; private set; }
     public int Position { get; private set; }
     public DateTimeOffset? DecidedAt { get; private set; }
+    /// <summary>The person who decided the step: the named approver, or the team member who decided a team step.</summary>
+    public Guid? DecidedByUserId { get; private set; }
     public string? Note { get; private set; }
 
     private ApprovalStep() : base() { }
@@ -36,7 +38,7 @@ public class ApprovalStep : Entity
         };
     }
 
-    internal void Approve(DateTimeOffset decidedAt, string? note = null)
+    internal void Approve(DateTimeOffset decidedAt, string? note, Guid decidedBy)
     {
         if (Status != ApprovalStatus.Pending)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_Step_CannotApproveUnlessPending, "Only pending steps can be approved.");
@@ -45,10 +47,11 @@ public class ApprovalStep : Entity
 
         Status = ApprovalStatus.Approved;
         DecidedAt = decidedAt;
+        DecidedByUserId = decidedBy;
         Note = note;
     }
 
-    internal void Reject(DateTimeOffset decidedAt, string? note = null)
+    internal void Reject(DateTimeOffset decidedAt, string? note, Guid decidedBy)
     {
         if (Status != ApprovalStatus.Pending)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_Step_CannotRejectUnlessPending, "Only pending steps can be rejected.");
@@ -57,6 +60,7 @@ public class ApprovalStep : Entity
 
         Status = ApprovalStatus.Rejected;
         DecidedAt = decidedAt;
+        DecidedByUserId = decidedBy;
         Note = note;
     }
 }
@@ -105,7 +109,17 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
         }
     }
 
-    public void Approve(Guid stepId, Guid decidedBy, DateTimeOffset decidedAt, string? note = null)
+    // A team step is decided by a current member of that team; Application supplies the teams the decider belongs to now and an absent set fails closed.
+    private static void EnsureMayDecide(ApprovalStep step, Guid decidedBy, IReadOnlyCollection<Guid>? deciderTeamIds)
+    {
+        var allowed = step.ApproverTeamId is { } team
+            ? deciderTeamIds is not null && deciderTeamIds.Contains(team)
+            : step.ApproverUserId == decidedBy;
+        if (!allowed)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepNotAssignedToYou, "This step is not assigned to you.");
+    }
+
+    public void Approve(Guid stepId, Guid decidedBy, DateTimeOffset decidedAt, string? note = null, IReadOnlyCollection<Guid>? deciderTeamIds = null)
     {
         EnsureNotDeleted();
         Guard.NotEmpty(decidedBy);
@@ -120,13 +134,10 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (step.ApprovalRequestId != Id)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepNotFound, $"Approval step '{stepId}' does not belong to this request.");
 
-        if (step.ApproverUserId.HasValue && step.ApproverUserId.Value != decidedBy)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepNotAssignedToYou, "This step is not assigned to you.");
-        if (step.ApproverTeamId.HasValue)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_TeamDecisionNotSupported, "Team-assigned approval steps require team membership resolution, which is not yet supported.");
+        EnsureMayDecide(step, decidedBy, deciderTeamIds);
 
         var pending = PrepareAuditUpdate(decidedBy, decidedAt);
-        step.Approve(decidedAt, note);
+        step.Approve(decidedAt, note, decidedBy);
 
         if (_steps.All(s => s.Status == ApprovalStatus.Approved))
         {
@@ -137,7 +148,7 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
         IncrementVersion();
     }
 
-    public void Reject(Guid stepId, Guid decidedBy, DateTimeOffset decidedAt, string? note = null)
+    public void Reject(Guid stepId, Guid decidedBy, DateTimeOffset decidedAt, string? note = null, IReadOnlyCollection<Guid>? deciderTeamIds = null)
     {
         EnsureNotDeleted();
         Guard.NotEmpty(decidedBy);
@@ -152,13 +163,10 @@ public class ApprovalRequest : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (step.ApprovalRequestId != Id)
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepNotFound, $"Approval step '{stepId}' does not belong to this request.");
 
-        if (step.ApproverUserId.HasValue && step.ApproverUserId.Value != decidedBy)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_StepNotAssignedToYou, "This step is not assigned to you.");
-        if (step.ApproverTeamId.HasValue)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Approval_TeamDecisionNotSupported, "Team-assigned approval steps require team membership resolution, which is not yet supported.");
+        EnsureMayDecide(step, decidedBy, deciderTeamIds);
 
         var pending = PrepareAuditUpdate(decidedBy, decidedAt);
-        step.Reject(decidedAt, note);
+        step.Reject(decidedAt, note, decidedBy);
         Status = ApprovalStatus.Rejected;
         ApplyAuditUpdate(pending);
         IncrementVersion();

@@ -181,7 +181,7 @@ export const en = {
     type_Checkbox: "Checkbox",
     type_Link: "Link",
     type_Person: "Person",
-    locked_person: "Cannot be imported from a file yet",
+    locked_person: "Only workspace Owners and Admins can import people",
     locked_computed: "Calculated, cannot be imported",
     locked_vote: "Cast by the voter, cannot be imported",
     missingTitle: "No column for the item title",
@@ -227,6 +227,8 @@ export const en = {
     failedTitle: "No items were imported",
     failedHasErrors:
       "The server refused at row {{row}}: {{column}} {{value}} {{reason}} No item was created; the board is unchanged.",
+    peopleUnmatched:
+      "Some people were not matched: {{count}} rows ({{rows}}). Those cells stay empty. A person is matched only by the exact e-mail of a member who can be assigned on this board.",
     failedRetryNote:
       "Importing the same file again does not create twice: the request uses the same key.",
     chooseFixed: "Choose the fixed file",
@@ -478,7 +480,7 @@ export const vi: BoardLifecycleCopy = {
     type_Checkbox: "Hộp chọn",
     type_Link: "Liên kết",
     type_Person: "Người",
-    locked_person: "Chưa nhập được từ tệp",
+    locked_person: "Chỉ chủ sở hữu và quản trị viên nhập được người",
     locked_computed: "Tự tính, không nhập được",
     locked_vote: "Do người bình chọn, không nhập được",
     missingTitle: "Thiếu cột cho Tên việc",
@@ -523,6 +525,8 @@ export const vi: BoardLifecycleCopy = {
     failedTitle: "Chưa nhập việc nào",
     failedHasErrors:
       "Máy chủ từ chối ở dòng {{row}}: {{column}} {{value}} {{reason}}. Không việc nào được tạo, board không đổi.",
+    peopleUnmatched:
+      "Có người chưa khớp: {{count}} dòng ({{rows}}). Ô đó để trống. Chỉ khớp theo đúng e-mail của thành viên có thể được giao việc trên board này.",
     failedRetryNote:
       "Nhập lại với cùng tệp cũng không tạo hai lần: yêu cầu dùng cùng khoá.",
     chooseFixed: "Chọn tệp đã sửa",
