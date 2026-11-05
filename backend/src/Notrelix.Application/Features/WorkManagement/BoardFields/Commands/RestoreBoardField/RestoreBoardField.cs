@@ -9,37 +9,48 @@ public static class BoardFieldTrashPolicy
     public static readonly TimeSpan RestoreWindow = TimeSpan.FromDays(30);
 }
 
+/// <summary>
+/// The answer to a restore. <paramref name="AlreadyActive"/> means the field was not deleted (someone restored it first);
+/// <paramref name="RestoredByName"/> is then the display name of the field's last writer, which is who restored it
+/// (a restore stamps the audit), and null for a Guest or a viewer with no workspace relationship to that person.
+/// </summary>
+public sealed record RestoredBoardFieldDto(bool AlreadyActive, string? RestoredByName);
+
 [IdempotencyOperation("work-management.board-fields.restore-board-field.v1")]
-public record RestoreBoardFieldCommand(Guid BoardId, Guid FieldId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
+public record RestoreBoardFieldCommand(Guid BoardId, Guid FieldId) : ICommand<Result<RestoredBoardFieldDto>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     // Restoring undoes a delete, which is Board management (Manager); the board is the resource because the field is hidden while deleted.
     public PermissionAction Action => PermissionAction.ManageBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
 }
 
-public class RestoreBoardFieldCommandHandler : IRequestHandler<RestoreBoardFieldCommand, Result>
+public class RestoreBoardFieldCommandHandler : IRequestHandler<RestoreBoardFieldCommand, Result<RestoredBoardFieldDto>>
 {
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IActorLookupService _actorLookup;
+    private readonly IWorkspaceAccessResolver _workspaceAccess;
     private readonly IBoardRealtimeNotifier? _realtime;
 
-    public RestoreBoardFieldCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IBoardRealtimeNotifier? realtime = null)
+    public RestoreBoardFieldCommandHandler(IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IActorLookupService actorLookup, IWorkspaceAccessResolver workspaceAccess, IBoardRealtimeNotifier? realtime = null)
     {
+        _actorLookup = actorLookup;
+        _workspaceAccess = workspaceAccess;
         _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public async Task<Result> Handle(RestoreBoardFieldCommand request, CancellationToken ct)
+    public async Task<Result<RestoredBoardFieldDto>> Handle(RestoreBoardFieldCommand request, CancellationToken ct)
     {
         var response = await HandleCore(request, ct);
         if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
         return response;
     }
 
-    private async Task<Result> HandleCore(RestoreBoardFieldCommand request, CancellationToken ct)
+    private async Task<Result<RestoredBoardFieldDto>> HandleCore(RestoreBoardFieldCommand request, CancellationToken ct)
     {
         // The global filter hides soft-deleted rows and bypassing it drops its tenant predicate, so the scope is re-applied.
         var accountId = _requestContext.RequireAccountId();
@@ -48,7 +59,11 @@ public class RestoreBoardFieldCommandHandler : IRequestHandler<RestoreBoardField
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(f => f.Id == request.FieldId && f.BoardId == request.BoardId && f.AccountId == accountId && f.WorkspaceId == workspaceId, ct);
         if (field is null) throw new NotFoundException(nameof(BoardField), request.FieldId);
-        if (!field.IsDeleted) return Result.Success();
+        if (!field.IsDeleted)
+        {
+            var by = await ActorNotice.NameAsync(_actorLookup, _workspaceAccess, workspaceId, _requestContext.UserId, field.UpdatedBy, ct);
+            return Result<RestoredBoardFieldDto>.Success(new RestoredBoardFieldDto(true, by));
+        }
 
         var now = _dateTimeProvider.UtcNow;
         if (field.DeletedAt is { } deletedAt && now - deletedAt > BoardFieldTrashPolicy.RestoreWindow)
@@ -56,6 +71,6 @@ public class RestoreBoardFieldCommandHandler : IRequestHandler<RestoreBoardField
 
         await FieldNameGuard.EnsureNameFreeAsync(_context, field.BoardId, field.Id, field.Name, ct);
         field.Restore(_requestContext.UserId, now);
-        return Result.Success();
+        return Result<RestoredBoardFieldDto>.Success(new RestoredBoardFieldDto(false, null));
     }
 }

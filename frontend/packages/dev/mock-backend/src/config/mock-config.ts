@@ -46,7 +46,8 @@ export type MockOverlay =
   | "board-states"
   /** BC-Bulk `bk-grp` and `bk-cap`: a board whose one group holds 301 items. */
   | "bulk-states"
-  | "deleted-fields";
+  | "deleted-fields"
+  | "field-restored-elsewhere";
 
 export type MockLatency = "instant" | "fast" | "normal" | "slow";
 
@@ -199,6 +200,7 @@ const VALID_OVERLAYS = new Set<string>([
   "board-states",
   "bulk-states",
   "deleted-fields",
+  "field-restored-elsewhere",
 ]);
 
 const VALID_FAULTS = new Set<string>([

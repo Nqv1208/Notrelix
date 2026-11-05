@@ -79,8 +79,19 @@ export interface DeletedFieldRow {
   readonly valueCount: number;
 }
 
+/** The field was already active: someone restored it first; `by` is their display name, null for a Guest or a stranger. */
+export interface DeletedFieldAlreadyActive {
+  readonly kind: "already-active";
+  readonly by: string | null;
+}
+
 export type DeletedFieldRestore =
-  "restored" | "name-taken" | "expired" | "forbidden" | "failed";
+  | "restored"
+  | "name-taken"
+  | "expired"
+  | "forbidden"
+  | "failed"
+  | DeletedFieldAlreadyActive;
 
 /** The board's deleted fields and the way back (a Manager restores). */
 export interface DeletedFieldsPanelProps {

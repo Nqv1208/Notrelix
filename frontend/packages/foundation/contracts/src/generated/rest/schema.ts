@@ -8597,6 +8597,10 @@ export interface components {
             /** Format: int64 */
             version?: number;
         };
+        "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RestoreBoardField.RestoredBoardFieldDto": {
+            alreadyActive?: boolean;
+            restoredByName?: string | null;
+        };
         "Notrelix.Application.Features.WorkManagement.BoardFields.Queries.ListDeletedBoardFields.DeletedBoardFieldDto": {
             /** Format: uuid */
             id?: string;
@@ -16648,7 +16652,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RestoreBoardField.RestoredBoardFieldDto"];
                 };
             };
             /** @description Idempotency key reused with a different payload */

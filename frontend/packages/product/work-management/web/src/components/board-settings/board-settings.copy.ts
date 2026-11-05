@@ -188,7 +188,8 @@ export const en = {
       expired:
         "It was deleted more than 30 days ago and can't be restored any more.",
       dismiss: "Remove from the list",
-      already: "{{name}} was restored by someone else. The list is refreshed.",
+      already: "{{name}} just restored this field. The list is refreshed.",
+      alreadyNobody: "Someone just restored this field. The list is refreshed.",
       forbidden:
         "You can see this list but can't restore the field. Ask a Board manager to restore it.",
       failed: "Couldn't restore the field {{name}}. Nothing changed.",
@@ -953,7 +954,9 @@ export const vi: BoardSettingsCopy = {
       openField: "Mở trường",
       expired: "Đã quá 30 ngày nên không khôi phục được nữa.",
       dismiss: "Bỏ khỏi danh sách",
-      already: "{{name}} đã được người khác khôi phục. Danh sách đã làm mới.",
+      already: "{{name}} vừa khôi phục trường này. Danh sách đã làm mới.",
+      alreadyNobody:
+        "Người khác vừa khôi phục trường này. Danh sách đã làm mới.",
       forbidden:
         "Bạn xem được danh sách này nhưng chưa khôi phục được trường. Nhờ người quản lý board khôi phục.",
       failed: "Chưa khôi phục được trường {{name}}. Không có gì thay đổi.",

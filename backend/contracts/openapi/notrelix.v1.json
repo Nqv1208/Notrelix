@@ -10676,7 +10676,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RestoreBoardField.RestoredBoardFieldDto"
                 }
               }
             }
@@ -32887,6 +32887,19 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RestoreBoardField.RestoredBoardFieldDto": {
+        "type": "object",
+        "properties": {
+          "alreadyActive": {
+            "type": "boolean"
+          },
+          "restoredByName": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

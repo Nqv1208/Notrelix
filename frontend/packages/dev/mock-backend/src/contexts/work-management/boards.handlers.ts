@@ -1199,7 +1199,11 @@ export const boardsOperations = [
 
   // ─── POST /boards/:boardId/fields/:fieldId/restore ───────────────────────
 
-  defineMockOperation<{ boardId: string; fieldId: string }, never, void>({
+  defineMockOperation<
+    { boardId: string; fieldId: string },
+    never,
+    { alreadyActive: boolean; restoredByName: string | null }
+  >({
     id: "boards.columns.restore",
     contract: {
       kind: "openapi",
@@ -1223,7 +1227,13 @@ export const boardsOperations = [
             errorCode: "work-management.field.name-taken",
           },
         };
-      return noContent();
+      return {
+        status: 200,
+        body: {
+          alreadyActive: restored === "already-active",
+          restoredByName: restored === "already-active" ? "Hà Nguyễn" : null,
+        },
+      };
     },
   }),
 
