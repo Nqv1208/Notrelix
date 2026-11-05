@@ -1031,7 +1031,9 @@ describe("MainTableView on the ERP board", () => {
   it("adds an item into a group through the status write", async () => {
     const { cards } = renderTable(erpOwnerAccess());
     await ready();
-    fireEvent.click(screen.getByRole("button", { name: "Thêm vào Đang làm" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Thêm công việc vào Đang làm" }),
+    );
     const input = screen.getByRole("textbox", {
       name: "Tên việc mới trong Đang làm",
     });

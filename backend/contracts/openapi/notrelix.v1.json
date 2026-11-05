@@ -34795,6 +34795,10 @@
           "updatedByName": {
             "type": "string",
             "nullable": true
+          },
+          "openBlockerKey": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
