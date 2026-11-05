@@ -29,6 +29,7 @@ export {
 } from "./components/board-layout/board-notices";
 export { BoardHeaderDataContext } from "./components/board-layout/board-header-data-context";
 export * from "./components/board-lifecycle/retired-boards-surface";
+export { useFilterChipLabels } from "./components/filters/filter-chip-labels";
 export { retiredBoardsCatalog } from "./components/board-lifecycle/retired-boards.catalog";
 export { useRetiredBoardsCopy } from "./components/board-lifecycle/use-retired-boards-copy";
 export { boardHeaderCatalog } from "./components/board-layout/board-header.catalog";

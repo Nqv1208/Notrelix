@@ -40,6 +40,8 @@ export async function compareDialog(
   items: readonly ArtboardText[],
   skip: readonly string[] = [],
   tolerance = 1,
+  /** Artboard texts below `afterY` sit `dy` lower in the app (a box the artboard draws shorter than its content). */
+  shift?: { afterY: number; dy: number },
 ): Promise<Deviation[]> {
   const leaves = await dialog.evaluate((root) => {
     const o = root.getBoundingClientRect();
@@ -74,8 +76,12 @@ export async function compareDialog(
   });
   const free = leaves.map((l) => ({ ...l, t: squash(l.t) }));
   const found: Deviation[] = [];
-  for (const want of items) {
-    if (skip.includes(want.t)) continue;
+  for (const drawn of items) {
+    if (skip.includes(drawn.t)) continue;
+    const want =
+      shift && drawn.y > shift.afterY
+        ? { ...drawn, y: drawn.y + shift.dy }
+        : drawn;
     const text = squash(want.t);
     const candidates = free.filter((l) => l.t === text);
     if (candidates.length === 0) {

@@ -1,8 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, CircleAlert, FileSpreadsheet, Lock, X } from "lucide-react";
+import {
+  Check,
+  CircleAlert,
+  FileSpreadsheet,
+  Lock,
+  Upload,
+} from "lucide-react";
 import { endpoints } from "@notrelix/contracts";
 import type { OperationResponse } from "@notrelix/contracts";
 import { useLocale } from "@notrelix/i18n";
@@ -13,12 +19,6 @@ import {
   useBoardLifecycleCopy,
 } from "@notrelix/work-management-web";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
   Select,
   SelectContent,
   SelectItem,
@@ -26,6 +26,12 @@ import {
   SelectValue,
   cn,
 } from "@notrelix/ui-web";
+import {
+  FrameBody,
+  FrameDialog,
+  FrameFooter,
+  FrameHeader,
+} from "./lifecycle-dialog-frame";
 
 type Upload = OperationResponse<"WorkManagement.Imports.Upload", 200>;
 type Preview = OperationResponse<"WorkManagement.Imports.Preview", 200>;
@@ -36,9 +42,9 @@ type ColumnMap = { column: number; target: string };
 
 const SKIP = "$skip";
 const BUTTON =
-  "inline-flex h-8 items-center justify-center rounded-[7px] border px-3 text-compact font-medium outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-60 max-sm:h-11";
+  "inline-flex h-8 flex-none items-center justify-center gap-1.5 whitespace-nowrap rounded-[7px] border px-3 text-frame-small font-medium outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed max-sm:h-11 max-sm:min-w-[120px] max-sm:flex-1";
 const GHOST = `${BUTTON} border-line-strong bg-popover text-foreground hover:bg-state-hover-strong`;
-const PRIMARY = `${BUTTON} border-primary bg-primary font-semibold text-primary-foreground hover:opacity-90`;
+const PRIMARY = `${BUTTON} border-primary bg-primary font-semibold text-primary-foreground hover:opacity-90 disabled:border-line-strong disabled:bg-state-hover-strong disabled:font-medium disabled:text-meta-foreground disabled:hover:opacity-100`;
 const REJECTIONS: Record<string, string> = {
   "unsupported-type": "reject_unsupportedType",
   "too-large": "reject_tooLarge",
@@ -91,6 +97,8 @@ export function BoardImportDialog({
     code: string;
     file: string;
     rows: number;
+    columns: number;
+    size: number;
   } | null>(null);
   const [reading, setReading] = useState<{ file: string; done: number } | null>(
     null,
@@ -207,6 +215,8 @@ export function BoardImportDialog({
           code: result.rejection ?? "malformed",
           file: file.name,
           rows: result.rowCount ?? 0,
+          columns: result.columnCount ?? 0,
+          size: result.size ?? file.size,
         });
         setUpload(null);
         return;
@@ -230,6 +240,8 @@ export function BoardImportDialog({
               : "malformed",
         file: file.name,
         rows: 0,
+        columns: 0,
+        size: file.size,
       });
       if (code === 403 || code === 404) setDenied(true);
     } finally {
@@ -376,72 +388,82 @@ export function BoardImportDialog({
       </div>
     ) : null;
 
-  const sheetClass =
-    "gap-3 sm:max-w-[880px] max-sm:top-auto max-sm:bottom-0 max-sm:max-h-[calc(100dvh-24px)] max-sm:max-w-full max-sm:translate-y-0 max-sm:rounded-b-none max-sm:overflow-y-auto";
+  const readsRows =
+    rejection?.code === "too-many-rows" || rejection?.code === "no-rows";
+  const rejectionKey = REJECTIONS[rejection?.code ?? ""] ?? "reject_malformed";
 
   return (
-    <Dialog
+    <FrameDialog
       open={open}
+      wide
       onOpenChange={(next) => (next || sending ? undefined : onClose())}
     >
-      <DialogContent showCloseButton={false} className={sheetClass}>
-        <DialogHeader>
-          <div className="flex items-start gap-3">
-            <div className="flex-1">
-              <DialogTitle>{copy.title}</DialogTitle>
-              <DialogDescription>
-                {fill(copy.intro, { name: boardName })}
-              </DialogDescription>
-            </div>
-            <button
-              type="button"
-              aria-label={copy.close}
-              title={copy.close}
-              onClick={onClose}
-              disabled={sending}
-              className="inline-flex size-8 items-center justify-center rounded-[7px] text-meta-foreground hover:bg-state-hover-strong max-sm:size-11"
-            >
-              <X aria-hidden="true" className="size-4" />
-            </button>
-          </div>
-        </DialogHeader>
+      <FrameHeader
+        title={copy.title}
+        description={fill(copy.intro, { name: boardName })}
+        onClose={onClose}
+        closeLabel={copy.close}
+        closeDisabled={sending}
+      />
+      <FrameBody className="max-sm:max-h-[calc(100dvh-180px)] max-sm:overflow-y-auto">
         <ol
           aria-label={copy.stepsLabel}
-          className="m-0 flex list-none gap-3 p-0 text-compact"
+          className="m-0 flex list-none flex-wrap items-center gap-2 p-0 pb-1 pt-0.5"
         >
           {steps.map((label, i) => (
-            <li
-              key={label}
-              aria-current={step === i + 1 ? "step" : undefined}
-              className={cn(
-                "flex items-center gap-1.5",
-                step === i + 1
-                  ? "font-semibold text-foreground"
-                  : "text-meta-foreground",
-              )}
-            >
-              <span
+            <Fragment key={label}>
+              {i > 0 ? (
+                <li aria-hidden="true" className="h-px w-6 bg-line-strong" />
+              ) : null}
+              <li
+                aria-current={step === i + 1 ? "step" : undefined}
                 className={cn(
-                  "inline-flex size-5 items-center justify-center rounded-full text-metadata",
-                  step > i + 1
-                    ? "bg-success-subtle text-success-text"
-                    : step === i + 1
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-state-hover-strong",
+                  "inline-flex items-center gap-2 text-frame-small",
+                  step === i + 1
+                    ? "font-semibold text-foreground"
+                    : step > i + 1
+                      ? "font-medium text-meta-foreground"
+                      : "font-medium text-meta-foreground",
                 )}
               >
-                {step > i + 1 ? (
-                  <Check aria-hidden="true" className="size-3" />
-                ) : (
-                  i + 1
-                )}
-              </span>
-              <span className="max-sm:hidden">{label}</span>
-              <span className="sm:hidden">{step === i + 1 ? label : ""}</span>
-            </li>
+                <span
+                  className={cn(
+                    "grid size-[22px] place-items-center rounded-full text-frame-hint font-bold",
+                    step > i + 1
+                      ? "bg-success-subtle text-success-text"
+                      : step === i + 1
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-state-hover-strong text-meta-foreground",
+                  )}
+                >
+                  {step > i + 1 ? (
+                    <Check aria-hidden="true" className="size-3" />
+                  ) : (
+                    i + 1
+                  )}
+                </span>
+                {label}
+              </li>
+            </Fragment>
           ))}
         </ol>
 
+        {step === 1 && readsRows && rejection ? (
+          <FileCard
+            bad
+            name={rejection.file}
+            meta={fill(copy.fileMeta, {
+              rows: numberLabel(rejection.rows),
+              columns: rejection.columns,
+              size: sizeLabel(rejection.size),
+            })}
+            action={
+              <button type="button" className={GHOST} onClick={reset}>
+                {copy.changeFile}
+              </button>
+            }
+          />
+        ) : null}
         {summary}
 
         {denied ? (
@@ -452,41 +474,43 @@ export function BoardImportDialog({
 
         {step === 1 ? (
           <>
-            {rejection ? (
-              <div
-                role="alert"
-                className="flex flex-col gap-1 rounded-[10px] bg-danger-subtle px-3 py-2.5 text-danger-subtle-foreground"
-              >
-                <b className="text-compact font-semibold">
-                  {fill(
-                    c[
-                      `${REJECTIONS[rejection.code] ?? "reject_malformed"}_title`
-                    ] ?? "",
-                    { file: rejection.file, rows: numberLabel(rejection.rows) },
-                  )}
-                </b>
-                <span className="text-metadata">
-                  {c[REJECTIONS[rejection.code] ?? "reject_malformed"]}
-                </span>
-              </div>
+            {rejection && readsRows ? (
+              <Note
+                tone="err"
+                title={fill(c[`${rejectionKey}_title`] ?? "", {
+                  file: rejection.file,
+                  rows: numberLabel(rejection.rows),
+                })}
+                body={c[rejectionKey] ?? ""}
+              />
             ) : null}
             {reading ? (
-              <div
-                role="status"
-                className="flex flex-col gap-1.5 rounded-[10px] border border-line px-3 py-3"
-              >
-                <b className="text-compact font-semibold">{reading.file}</b>
-                <div className="h-1.5 overflow-hidden rounded-full bg-state-hover-strong">
+              <>
+                <FileCard
+                  name={reading.file}
+                  meta={fill(copy.readingMeta, { percent: reading.done })}
+                />
+                <div
+                  role="progressbar"
+                  aria-label={copy.reading}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={reading.done}
+                  className="h-2 w-full overflow-hidden rounded-[4px] bg-state-hover-strong"
+                >
                   <div
-                    className="h-full rounded-full bg-primary"
+                    className="h-full rounded-[4px] bg-primary"
                     style={{ width: `${reading.done}%` }}
                   />
                 </div>
-                <span className="text-metadata text-meta-foreground">
-                  {copy.reading} · {copy.readingBody}
+                <span
+                  role="status"
+                  className="text-frame-hint text-meta-foreground"
+                >
+                  {copy.readingBody}
                 </span>
-              </div>
-            ) : (
+              </>
+            ) : readsRows ? null : (
               <div
                 onDragOver={(event) => {
                   event.preventDefault();
@@ -498,21 +522,51 @@ export function BoardImportDialog({
                   setDragging(false);
                   void choose(event.dataTransfer.files[0]);
                 }}
+                role={rejection ? "alert" : undefined}
                 className={cn(
-                  "flex flex-col items-center gap-2 rounded-[10px] border border-dashed px-4 py-8 text-center",
-                  dragging
-                    ? "border-primary bg-state-hover-strong"
-                    : "border-line-strong",
+                  "flex flex-col items-center gap-2 rounded-xl border-[1.5px] border-dashed px-5 py-[34px] text-center",
+                  rejection
+                    ? "border-danger bg-danger-subtle"
+                    : dragging
+                      ? "border-primary bg-state-hover-strong"
+                      : "border-line-strong bg-popover",
                 )}
               >
-                <FileSpreadsheet
-                  aria-hidden="true"
-                  className="size-6 text-meta-foreground"
-                />
-                <b className="text-compact font-semibold">{copy.dropTitle}</b>
-                <span className="text-metadata text-meta-foreground">
-                  {copy.dropOr}
-                </span>
+                {rejection ? (
+                  <CircleAlert
+                    aria-hidden="true"
+                    className="size-5 text-danger-text"
+                  />
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    className="grid size-11 place-items-center rounded-xl bg-info-subtle text-info-subtle-foreground"
+                  >
+                    <Upload className="size-5" />
+                  </span>
+                )}
+                <b
+                  className={cn(
+                    "text-frame-lead font-bold",
+                    rejection && "text-danger-text",
+                  )}
+                >
+                  {rejection
+                    ? fill(c[`${rejectionKey}_title`] ?? "", {
+                        file: rejection.file,
+                        rows: numberLabel(rejection.rows),
+                      })
+                    : copy.dropTitle}
+                </b>
+                {rejection ? (
+                  <span className="text-frame-body text-foreground">
+                    {c[rejectionKey]}
+                  </span>
+                ) : (
+                  <span className="text-frame-note text-meta-foreground">
+                    {copy.dropOr}
+                  </span>
+                )}
                 <input
                   ref={fileInput}
                   type="file"
@@ -524,14 +578,17 @@ export function BoardImportDialog({
                 />
                 <button
                   type="button"
-                  className={GHOST}
+                  className={rejection ? GHOST : PRIMARY}
                   onClick={() => fileInput.current?.click()}
                 >
+                  <Upload aria-hidden="true" className="size-4" />
                   {rejection ? copy.chooseOther : copy.choose}
                 </button>
-                <span className="text-metadata text-meta-foreground">
-                  {copy.dropHint}
-                </span>
+                {rejection ? null : (
+                  <span className="text-frame-hint text-meta-foreground">
+                    {copy.dropHint}
+                  </span>
+                )}
               </div>
             )}
           </>
@@ -930,154 +987,202 @@ export function BoardImportDialog({
             <span className="text-metadata">{copy.lostBody}</span>
           </div>
         ) : null}
-
-        <DialogFooter className="max-sm:flex-col-reverse">
-          {step === 1 ? (
-            <>
-              <button type="button" className={GHOST} onClick={onClose}>
-                {copy.cancel}
-              </button>
-              <button type="button" className={PRIMARY} disabled>
-                {copy.next}
-              </button>
-            </>
-          ) : step === 2 ? (
-            <>
-              <button type="button" className={GHOST} onClick={reset}>
-                {copy.back}
-              </button>
-              <button
-                type="button"
-                className={PRIMARY}
-                disabled={!mapOk}
-                aria-disabled={!mapOk}
-                onClick={() => setStep(3)}
-              >
-                {copy.next}
-              </button>
-            </>
-          ) : step === 3 ? (
-            <>
-              <button
-                type="button"
-                className={GHOST}
-                onClick={() => setStep(2)}
-              >
-                {copy.back}
-              </button>
-              {preview && !clean ? (
-                <>
-                  <button
-                    type="button"
-                    className={GHOST}
-                    onClick={() =>
-                      void api.api
-                        .post<Preview>(
-                          endpoints.boards.importPreview(
-                            boardId,
-                            upload?.jobId ?? "",
-                          ),
-                          { mapping, allErrors: true },
-                          { skipGlobalErrorToast: true },
-                        )
-                        .then((all) => download(all.errors ?? []))
-                        .catch(() => download(preview.errors ?? []))
-                    }
-                  >
-                    {copy.downloadReport}
-                  </button>
-                  <button type="button" className={GHOST} onClick={reset}>
-                    {copy.chooseOther}
-                  </button>
-                </>
-              ) : null}
-              <button
-                type="button"
-                className={PRIMARY}
-                disabled={!clean || sending}
-                aria-disabled={!clean || sending}
-                onClick={() => void send()}
-              >
-                {sending
-                  ? copy.working
-                  : pluralLifecycle(
-                      c as Record<string, string>,
-                      "submit",
-                      rowCount,
-                    )}
-              </button>
-            </>
-          ) : succeeded ? (
-            <>
-              <button
-                type="button"
-                className={GHOST}
-                onClick={() => {
-                  onClose();
-                  void navigate({
-                    to: "/workspaces/$workspaceId/boards/$boardId",
-                    params: { workspaceId, boardId },
-                    search: {
-                      view: "table",
-                      filter: undefined,
-                      sort: "$created.desc",
-                    },
-                  } as never);
-                }}
-              >
-                {copy.doneOpen}
-              </button>
-              <button type="button" className={PRIMARY} onClick={onClose}>
-                {copy.finish}
-              </button>
-            </>
-          ) : failed ? (
-            <>
-              {progress?.failureCode === "has-errors" && failedErrors.data ? (
+      </FrameBody>
+      <FrameFooter>
+        {step === 1 ? (
+          <>
+            <button type="button" className={GHOST} onClick={onClose}>
+              {copy.cancel}
+            </button>
+            <button type="button" className={PRIMARY} disabled>
+              {copy.next}
+            </button>
+          </>
+        ) : step === 2 ? (
+          <>
+            <button type="button" className={GHOST} onClick={reset}>
+              {copy.back}
+            </button>
+            <button
+              type="button"
+              className={PRIMARY}
+              disabled={!mapOk}
+              aria-disabled={!mapOk}
+              onClick={() => setStep(3)}
+            >
+              {copy.next}
+            </button>
+          </>
+        ) : step === 3 ? (
+          <>
+            <button type="button" className={GHOST} onClick={() => setStep(2)}>
+              {copy.back}
+            </button>
+            {preview && !clean ? (
+              <>
                 <button
                   type="button"
                   className={GHOST}
-                  onClick={() => download(failedErrors.data?.errors ?? [])}
+                  onClick={() =>
+                    void api.api
+                      .post<Preview>(
+                        endpoints.boards.importPreview(
+                          boardId,
+                          upload?.jobId ?? "",
+                        ),
+                        { mapping, allErrors: true },
+                        { skipGlobalErrorToast: true },
+                      )
+                      .then((all) => download(all.errors ?? []))
+                      .catch(() => download(preview.errors ?? []))
+                  }
                 >
                   {copy.downloadReport}
                 </button>
-              ) : null}
-              <button type="button" className={GHOST} onClick={onClose}>
-                {copy.close}
-              </button>
-              <button type="button" className={PRIMARY} onClick={reset}>
-                {progress?.failureCode === "has-errors"
-                  ? copy.chooseFixed
-                  : copy.chooseOther}
-              </button>
-            </>
-          ) : (
-            <>
-              <button type="button" className={GHOST} onClick={onClose}>
-                {copy.close}
-              </button>
-              {lost ? (
-                <button
-                  type="button"
-                  className={PRIMARY}
-                  onClick={() => void send()}
-                >
-                  {copy.retry}
+                <button type="button" className={GHOST} onClick={reset}>
+                  {copy.chooseOther}
                 </button>
-              ) : (
-                <button
-                  type="button"
-                  className={PRIMARY}
-                  disabled
-                  aria-disabled
-                >
-                  {copy.working}
-                </button>
-              )}
-            </>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+              </>
+            ) : null}
+            <button
+              type="button"
+              className={PRIMARY}
+              disabled={!clean || sending}
+              aria-disabled={!clean || sending}
+              onClick={() => void send()}
+            >
+              {sending
+                ? copy.working
+                : pluralLifecycle(
+                    c as Record<string, string>,
+                    "submit",
+                    rowCount,
+                  )}
+            </button>
+          </>
+        ) : succeeded ? (
+          <>
+            <button
+              type="button"
+              className={GHOST}
+              onClick={() => {
+                onClose();
+                void navigate({
+                  to: "/workspaces/$workspaceId/boards/$boardId",
+                  params: { workspaceId, boardId },
+                  search: {
+                    view: "table",
+                    filter: undefined,
+                    sort: "$created.desc",
+                  },
+                } as never);
+              }}
+            >
+              {copy.doneOpen}
+            </button>
+            <button type="button" className={PRIMARY} onClick={onClose}>
+              {copy.finish}
+            </button>
+          </>
+        ) : failed ? (
+          <>
+            {progress?.failureCode === "has-errors" && failedErrors.data ? (
+              <button
+                type="button"
+                className={GHOST}
+                onClick={() => download(failedErrors.data?.errors ?? [])}
+              >
+                {copy.downloadReport}
+              </button>
+            ) : null}
+            <button type="button" className={GHOST} onClick={onClose}>
+              {copy.close}
+            </button>
+            <button type="button" className={PRIMARY} onClick={reset}>
+              {progress?.failureCode === "has-errors"
+                ? copy.chooseFixed
+                : copy.chooseOther}
+            </button>
+          </>
+        ) : (
+          <>
+            <button type="button" className={GHOST} onClick={onClose}>
+              {copy.close}
+            </button>
+            {lost ? (
+              <button
+                type="button"
+                className={PRIMARY}
+                onClick={() => void send()}
+              >
+                {copy.retry}
+              </button>
+            ) : (
+              <button type="button" className={PRIMARY} disabled aria-disabled>
+                {copy.working}
+              </button>
+            )}
+          </>
+        )}
+      </FrameFooter>
+    </FrameDialog>
+  );
+}
+
+function FileCard({
+  name,
+  meta,
+  action,
+  bad,
+}: {
+  name: string;
+  meta: string;
+  action?: ReactNode;
+  bad?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-[10px] border border-line bg-popover px-3.5 py-2.5">
+      <span
+        className={cn(
+          "grid h-10 w-9 flex-none place-items-center rounded-[7px]",
+          bad
+            ? "bg-danger-subtle text-danger-text"
+            : "bg-success-subtle text-success-text",
+        )}
+      >
+        <FileSpreadsheet aria-hidden="true" className="size-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <b className="block truncate text-frame-body font-semibold">{name}</b>
+        <small className="block text-frame-note text-meta-foreground">
+          {meta}
+        </small>
+      </span>
+      {action}
+    </div>
+  );
+}
+
+function Note({
+  tone,
+  title,
+  body,
+}: {
+  tone: "err";
+  title: string;
+  body: string;
+}) {
+  return (
+    <div
+      role="alert"
+      data-tone={tone}
+      className="flex items-start gap-2.5 rounded-[10px] bg-danger-subtle px-3.5 py-2.5 text-frame-small leading-[1.4] text-danger-subtle-foreground"
+    >
+      <CircleAlert aria-hidden="true" className="mt-0.5 size-4 flex-none" />
+      <span className="flex min-w-0 flex-1 flex-col gap-px">
+        <b className="font-semibold">{title}</b>
+        <span>{body}</span>
+      </span>
+    </div>
   );
 }
