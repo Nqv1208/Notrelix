@@ -12,4 +12,12 @@ public interface ITeamMembershipFacts
     /// </summary>
     Task<IReadOnlyCollection<Guid>> CurrentTeamIdsAsync(
         Guid workspaceId, Guid userId, IReadOnlyCollection<Guid> teamIds, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The people who belong to the Team right now: active members of an active Team of this Workspace who are
+    /// still active Workspace members. An unknown or inactive Team yields nobody, so the answer fails closed
+    /// and never reaches outside the Workspace.
+    /// </summary>
+    Task<IReadOnlyCollection<Guid>> CurrentMemberIdsAsync(
+        Guid workspaceId, Guid teamId, CancellationToken cancellationToken);
 }

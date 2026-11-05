@@ -66,6 +66,7 @@ public sealed class DueDateNotificationsIntegrationTests
                 sp => sp.GetRequiredService<Notrelix.Infrastructure.Data.ApplicationDbContext>());
             services.AddScoped<Notrelix.Application.Features.Collaboration.Public.Watchers.IResourceFollowers,
                 Notrelix.Infrastructure.CrossContext.Collaboration.Watchers.PostgresResourceFollowers>();
+            services.AddScoped<ItemAudience>();
             services.AddScoped<ItemFollowerNotifier>();
             services.AddScoped<DueDateNotificationSweeper>();
         });

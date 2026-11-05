@@ -20,4 +20,20 @@ public sealed class TeamMembershipFacts(IWorkspaceDbContext context) : ITeamMemb
             .Distinct()
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyCollection<Guid>> CurrentMemberIdsAsync(
+        Guid workspaceId, Guid teamId, CancellationToken cancellationToken)
+    {
+        var teamIsActive = await context.Teams.AsNoTracking()
+            .AnyAsync(t => t.Id == teamId && t.WorkspaceId == workspaceId && t.Status == TeamStatus.Active, cancellationToken);
+        if (!teamIsActive) return [];
+
+        return await context.TeamMembers.AsNoTracking()
+            .Where(m => m.WorkspaceId == workspaceId && m.TeamId == teamId && m.Status == TeamMemberStatus.Active)
+            .Join(
+                context.WorkspaceMembers.Where(w => w.WorkspaceId == workspaceId && w.Status == WorkspaceMemberStatus.Active),
+                m => m.UserId, w => w.UserId, (m, _) => m.UserId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+    }
 }

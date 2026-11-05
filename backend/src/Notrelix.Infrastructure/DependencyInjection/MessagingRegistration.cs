@@ -11,6 +11,7 @@ public static class MessagingRegistration
         this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Collaboration.ItemFollowerNotifier>();
+        services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Collaboration.ItemAudience>();
         services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Collaboration.ItemActivityRecorder>();
         services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Integrations.WebhookEventFanOut>();
 
