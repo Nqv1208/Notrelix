@@ -605,4 +605,25 @@ describe("KanbanCard row 2 (checklist, files, blocked, crowding)", () => {
     ).toContain("99+");
     expect(article.querySelector("[data-blocked]")).toBeNull();
   });
+
+  it("names a child archived with its parent and mutes the title", () => {
+    const { article } = renderCard({ isArchived: true, parentItemId: "p-1" });
+    expect(
+      article.querySelector("[data-archived-with-parent]")!.textContent,
+    ).toBe(VI.archivedWithParent);
+    expect(article.querySelector("h3")!.className).toContain(
+      "text-muted-foreground",
+    );
+  });
+
+  it("shows the done chip instead of a due date", () => {
+    const { article } = renderCard({
+      statusCategory: "done",
+      dueAt: dueOn(10, 20),
+    });
+    expect(article.querySelector("[data-completed]")!.textContent).toBe(
+      VI.completed,
+    );
+    expect(article.querySelector("[data-due]")).toBeNull();
+  });
 });

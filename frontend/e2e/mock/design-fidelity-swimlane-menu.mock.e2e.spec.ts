@@ -66,12 +66,14 @@ for (const [mode, dark] of [
   ["dem", true],
 ] as const) {
   test(`Chọn làn ${mode}: the lane menu`, async ({ page, browser }) => {
-    if (dark) {
-      test.skip(true, "WM-Swimlanes draws the light menu only");
-    }
     const art = await browser.newPage();
     await art.setViewportSize({ width: 1500, height: 900 });
     await art.goto(pathToFileURL(`${dir}/${FILE}`).href);
+    // The artboard draws the light menu; its own dark rules (mode-dem) give the dark one.
+    if (dark)
+      await art.evaluate(() =>
+        document.querySelector(".nx")!.classList.add("mode-dem"),
+      );
     const want = (await art.evaluate((fn) => {
       const m = [...document.querySelectorAll("*")].find(
         (e) =>
@@ -83,13 +85,17 @@ for (const [mode, dark] of [
     }, READ)) as Facts;
     await art.close();
 
-    await page.addInitScript(() => {
-      try {
-        window.localStorage.setItem("notrelix-locale", "vi");
-      } catch {
-        // Private mode: the defaults apply.
-      }
-    });
+    await page.addInitScript(
+      (mode) => {
+        try {
+          window.localStorage.setItem("notrelix-locale", "vi");
+          window.localStorage.setItem("notrelix-theme-mode", mode);
+        } catch {
+          // Private mode: the defaults apply.
+        }
+      },
+      dark ? "dark" : "light",
+    );
     await page.goto(
       "/workspaces/mock-workspace-primary/boards/mock-board-erp?view=kanban",
     );

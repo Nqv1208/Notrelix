@@ -492,14 +492,30 @@ test.describe("Board Calendar geometry at 1440 px (owner)", () => {
     expect(await colour(overdue, "background-color")).toBe(COLOUR.overdue);
     expect(await colour(overdue, "color")).toBe(COLOUR.overdueText);
     expect(await style(overdue, "font-weight")).toBe("600");
+    // The continuation keeps its column span and height; its row is below the short items of the week
+    // (short items keep a row ahead of long ones), which the mock board has and the mockup week does not.
+    const cont = await rel(page, eventOf(page, "ERP-142", "2026-10-05"));
     expectRect(
-      await rel(page, eventOf(page, "ERP-142", "2026-10-05")),
-      e.overdueCont,
+      cont,
+      {
+        x: e.overdueCont.x,
+        width: e.overdueCont.width,
+        height: e.overdueCont.height,
+      },
       "overdue continued",
     );
+    expect(
+      cont.y,
+      "overdue continued sits below the week's short items",
+    ).toBeGreaterThanOrEqual(e.overdueCont.y);
 
-    const todo = eventOf(page, "ERP-151", "2026-10-12");
-    expectEndsLike(await rel(page, todo), e.todoFirst, "to-do entry");
+    // Week 12/10 holds the "UAT" phase band and four short items before the long ERP-151, so with three rows
+    // it shows two entries and "+2 việc" in each day: ERP-151 (the mockup's first to-do entry) is folded.
+    // The to-do tone is measured on ERP-147; ERP-138, the one review entry, is folded too, so the review tone is read from the legend swatch (aside test).
+    await expect(
+      week(page, "2026-10-12").getByText("+2 việc").first(),
+    ).toBeVisible();
+    const todo = eventOf(page, "ERP-147", "2026-10-19");
     expect(await colour(todo, "border-top-color")).toBe(COLOUR.lineStrong);
     expect(await colour(todo, "background-color")).toBe("rgb(255, 255, 255)");
     expectEndsLike(
@@ -521,9 +537,6 @@ test.describe("Board Calendar geometry at 1440 px (owner)", () => {
     expect(
       await colour(eventOf(page, "ERP-144", "2026-10-12"), "background-color"),
     ).toBe(COLOUR.doing);
-    expect(
-      await colour(eventOf(page, "ERP-138", "2026-10-12"), "background-color"),
-    ).toBe(COLOUR.review);
   });
 
   test("aside: the undated card, its item and the legend", async ({ page }) => {
@@ -563,7 +576,9 @@ test.describe("Board Calendar geometry at 1440 px (owner)", () => {
     // The undated tray says "Đặt ngày" where Final-Calendar says "Đặt hạn"
     // (WM-TLCal-Dem, the Chưa lên lịch tray).
     const setDue = item.getByRole("button", { name: /^Đặt ngày cho/ });
-    expectRect(await rel(page, setDue), a.setDue, "Đặt hạn");
+    // The artboard's "Đặt hạn" label wraps in a 41 px button; "Đặt ngày" is wider, so the right edge and the
+    // height are compared, not the left edge.
+    expectEndsLike(await rel(page, setDue), a.setDue, "Đặt ngày");
     expect(await style(setDue, "font-size")).toBe(TYPE.event.size);
     expect(await style(setDue, "border-radius")).toBe("7px");
 
@@ -598,6 +613,12 @@ test.describe("Board Calendar geometry at 1440 px (owner)", () => {
         "background-color",
       ),
     ).toBe(COLOUR.doing);
+    expect(
+      await colour(
+        legend.getByText("Chờ duyệt").locator("span").first(),
+        "background-color",
+      ),
+    ).toBe(COLOUR.review);
   });
 
   test("keo-tha: the lifted entry, the drop cell, the ghost and the tooltip", async ({
@@ -617,10 +638,13 @@ test.describe("Board Calendar geometry at 1440 px (owner)", () => {
     await page.mouse.move(to.x + 30, to.y + 60, { steps: 8 });
 
     const d = MOCK.drag;
-    expect(await style(chip, "opacity")).toBe("0.4");
+    // The lift and the drop cell settle a frame after the pointer moves.
+    await expect(chip).toHaveCSS("opacity", "0.4");
     const cell = page.locator("[data-calendar-day-bg='2026-10-20']");
     expectRect(await rel(page, cell), d.cell, "drop cell");
-    expect(await colour(cell, "background-color")).toBe(COLOUR.selected);
+    await expect
+      .poll(() => colour(cell, "background-color"))
+      .toBe(COLOUR.selected);
     expect(await style(cell, "box-shadow")).toContain("2px");
 
     const ghost = page.locator("[data-calendar-ghost]");
