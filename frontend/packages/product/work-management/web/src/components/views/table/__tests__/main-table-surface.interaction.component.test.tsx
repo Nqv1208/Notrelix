@@ -155,7 +155,7 @@ describe("MainTableSurface", () => {
     expect(assign.getAttribute("aria-disabled")).toBe("true");
     expect(assign.getAttribute("title")).toBe("Chưa khả dụng");
 
-    fireEvent.click(within(bar).getByRole("button", { name: "Lưu trữ" }));
+    fireEvent.click(within(bar).getByRole("button", { name: /^Lưu trữ/ }));
     expect(props.onBulkArchive).toHaveBeenCalledOnce();
 
     fireEvent.click(within(bar).getByRole("button", { name: "Bỏ chọn (Esc)" }));
@@ -662,6 +662,21 @@ describe("MainTableSurface", () => {
     expect(onOpen).toHaveBeenCalledOnce();
   });
 
+  it("a role lowered to viewer closes the editors while the table stays open", () => {
+    const props = spied(erpTableProps({ canEdit: true }));
+    const { rerender } = renderPureUi(<MainTableSurface {...props} />);
+    const status = () =>
+      within(row("ERP-142")).getByRole("button", {
+        name: "Đổi trạng thái của ERP-142",
+      }) as HTMLButtonElement;
+    expect(status().disabled).toBe(false);
+    rerender(<MainTableSurface {...props} canEdit={false} />);
+    expect(status().disabled).toBe(true);
+    // The rows and their values stay; selecting stays too, and the bulk bar then says every action is off.
+    expect(row("ERP-142")).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: "Chọn ERP-142" })).toBeTruthy();
+  });
+
   it("tells a viewer an empty board is theirs to look at only", () => {
     renderTable({ ...erpTableEmptyProps(), canEdit: false, canCreate: false });
     expect(screen.getByText(/Bạn chỉ xem được board này/)).toBeTruthy();
@@ -925,17 +940,17 @@ describe("MainTableSurface in-place edits and bulk people and boards", () => {
     };
     const { props } = renderTable({ ...erpTableProps(), rowActions });
     fireEvent.contextMenu(row("ERP-144"));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Nhân bản" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Nhân bản/ }));
     expect(rowActions.onDuplicate).toHaveBeenCalledWith(
       ERP_TABLE_ITEM("ERP-144"),
     );
     fireEvent.contextMenu(row("ERP-144"));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Lưu trữ" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Lưu trữ/ }));
     expect(rowActions.onArchive).toHaveBeenCalledWith(
       ERP_TABLE_ITEM("ERP-144"),
     );
     fireEvent.contextMenu(row("ERP-144"));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Mở chi tiết" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Mở trang đầy đủ/ }));
     expect(props.onOpenItem).toHaveBeenCalledWith(ERP_TABLE_ITEM("ERP-144"));
   });
 

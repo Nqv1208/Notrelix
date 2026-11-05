@@ -1,3 +1,4 @@
+import { unsentCommentOf } from "../../card-detail/update-composer";
 import {
   FaceFieldsPopover,
   KanbanFaceProvider,
@@ -7,7 +8,7 @@ import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
 import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
 import { useAddGroup } from "../../status-option/use-add-group";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { toast } from "sonner";
 import { cn, useIsMobile } from "@notrelix/ui-web";
 import {
@@ -34,7 +35,9 @@ import {
   useUpdateFieldOption,
   useHoldRealtimeRefetch,
   type KanbanWriteFailure,
+  classifyRestoreError,
   deletedItemOf,
+  useRestoreDeletedItem,
 } from "@notrelix/work-management-state";
 import {
   generatePosition,
@@ -509,6 +512,7 @@ export function KanbanView({
   }, [lanesReady, measureEdges, kanban.lanes.length]);
 
   if (kanban.isLoading) return <KanbanSkeleton />;
+  const boardEmpty = !kanban.filterActive && kanban.totalCount === 0;
   if (kanban.error || !board) return <KanbanUnavailableState />;
 
   const lanesByCard = new Map<string, KanbanStatusLane>();
@@ -1200,6 +1204,7 @@ export function KanbanView({
                 now={now}
                 selectedItemId={selectedItemId}
                 filterActive={kanban.filterActive}
+                boardEmpty={boardEmpty}
                 canAdd={
                   capabilities.canCreateCard &&
                   !(kanban.filterActive && kanban.visibleCount === 0)
@@ -1262,6 +1267,21 @@ export function KanbanView({
                 onCollapsedChange={collapsedLanes.onChange}
               />
             )}
+            {boardEmpty && !laneField ? (
+              <div
+                role="status"
+                data-kanban-empty-note=""
+                className="mt-3.5 flex items-start gap-2.5 rounded-[10px] bg-brand-subtle px-3.5 py-2.5 text-[13px] leading-[1.4] text-brand-subtle-foreground dark:bg-[rgba(90,169,255,0.16)] dark:text-[#7dbbff]"
+              >
+                <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                <span className="flex min-w-0 flex-1 flex-col gap-px">
+                  <b className="font-semibold text-foreground">
+                    {laneCopy.emptyBoardNote}
+                  </b>
+                  <span>{laneCopy.emptyBoardNoteBody}</span>
+                </span>
+              </div>
+            ) : null}
           </div>
           {(["left", "right"] as const).map((side) =>
             edges[side] ? (
@@ -1309,7 +1329,7 @@ export function KanbanView({
           )}
         </div>
 
-        {board && cardSelection && picking.selectedIds.size > 0 ? (
+        {board && cardSelection ? (
           <KanbanBulkBar
             boardId={boardId}
             workspaceId={workspaceId}
@@ -1410,6 +1430,20 @@ export interface SelectedItemProps {
   lanePicker?: CardPopupLanePicker;
 }
 
+/** The refusal key of the deleted notice for a failed restore. */
+function restoreReasonOf(error: unknown): string {
+  switch (classifyRestoreError(error)) {
+    case "windowClosed":
+      return "restoreWindowClosed";
+    case "parentDeleted":
+      return "restoreParentDeleted";
+    case "denied":
+      return "restoreDenied";
+    default:
+      return "restoreFailed";
+  }
+}
+
 /**
  * Resolves the selected card and hands it to the sheet. An id that fails to
  * load, or resolves to a card outside this board and workspace, is stale:
@@ -1432,21 +1466,20 @@ export function KanbanSelectedItem({
   // A card that is gone, moved to another board, or not for this viewer reads
   // the same: one generic message, nothing about what or why.
   const kind = (error as { kind?: string } | null)?.kind;
-  const gone =
-    kind === "not_found" ||
-    kind === "forbidden" ||
-    (card !== undefined &&
-      (card.boardId !== board.id || card.workspaceId !== board.workspaceId));
+  const otherWorkspace =
+    card !== undefined && card.workspaceId !== board.workspaceId;
+  // A card the person can still read on another board of this workspace was moved: it says where.
+  const moved =
+    card !== undefined && !otherWorkspace && card.boardId !== board.id;
+  const gone = kind === "not_found" || kind === "forbidden" || otherWorkspace;
   // A deleted card answers not-found with its own code to a person who reads the board: it says who deleted it.
   const deleted = deletedItemOf(error);
   const failed = Boolean(error) && !gone;
   const lastShown = useRef<CardDetail | null>(null);
-  if (card && !gone) lastShown.current = card;
-  const shown = gone
-    ? null
-    : failed && !card
-      ? null
-      : (card ?? lastShown.current);
+  if (card && !gone && !moved) lastShown.current = card;
+  const restoreDeleted = useRestoreDeletedItem(board.workspaceId, board.id);
+  const shown =
+    gone || moved ? null : failed && !card ? null : (card ?? lastShown.current);
   const restore = (event: Event) => {
     event.preventDefault();
     onRestoreFocus(lastShown.current?.id ?? cardId);
@@ -1463,15 +1496,42 @@ export function KanbanSelectedItem({
         status={
           deleted
             ? "deleted"
-            : gone
-              ? "gone"
-              : failed
-                ? "error"
-                : isLoading
-                  ? "loading"
-                  : "loading"
+            : moved
+              ? "moved"
+              : gone
+                ? "gone"
+                : failed
+                  ? "error"
+                  : isLoading
+                    ? "loading"
+                    : "loading"
         }
         deletedBy={deleted?.byName ?? null}
+        onRestoreDeleted={
+          deleted && rest.capabilities.canDelete
+            ? async () => {
+                try {
+                  await restoreDeleted.mutateAsync(cardId);
+                  await refetch();
+                } catch (failure) {
+                  throw restoreReasonOf(failure);
+                }
+              }
+            : undefined
+        }
+        movedTo={
+          moved && card
+            ? {
+                boardTitle: card.boardTitle,
+                onOpen: rest.onOpenItem
+                  ? () => rest.onOpenItem?.(card.boardId, card.id)
+                  : undefined,
+              }
+            : undefined
+        }
+        keptDraft={
+          deleted || gone || moved ? unsentCommentOf(cardId) : undefined
+        }
         onClose={onClose}
         onRetry={refetch}
         onCloseAutoFocus={restore}
@@ -1566,12 +1626,18 @@ function KanbanSelectedItemReady({
           activityError: activity.isError && activity.data === undefined,
           updates: updates.data ?? card.updates,
           updatesLoading: updates.isLoading,
-          updatesMore: updates.hasNextPage
-            ? {
-                loading: updates.isFetchingNextPage,
-                onMore: () => void updates.fetchNextPage(),
-              }
-            : undefined,
+          // One "show more" at the foot of the feed reads the next page of the comments and of the history.
+          updatesMore:
+            updates.hasNextPage || activity.hasNextPage
+              ? {
+                  loading:
+                    updates.isFetchingNextPage || activity.isFetchingNextPage,
+                  onMore: () => {
+                    if (updates.hasNextPage) void updates.fetchNextPage();
+                    if (activity.hasNextPage) void activity.fetchNextPage();
+                  },
+                }
+              : undefined,
           ...extras.detailData,
           checklists: {
             ...checklistWrites,
@@ -1609,6 +1675,7 @@ function KanbanSelectedItemReady({
             note: approval.note,
             requestedAt: approval.requestedAt,
             decidedAt: approval.decidedAt,
+            previousRequestId: approval.previousRequestId,
           })),
           approvalAnswering: approvals.answering,
           approvalsLoading: approvals.loading,

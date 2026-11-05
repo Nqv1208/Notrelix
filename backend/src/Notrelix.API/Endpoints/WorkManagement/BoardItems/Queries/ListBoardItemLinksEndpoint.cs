@@ -9,6 +9,7 @@ public static class ListBoardItemLinksEndpoint
     {
         group.MapResourceGet("/links", HandleAsync)
             .WithName("WorkManagement.BoardItems.ListLinks")
+            .Produces<BoardItemLinkListDto>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("List links for a board item");
         return group;

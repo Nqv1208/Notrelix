@@ -108,10 +108,28 @@ export const en = {
     body: "It may have been deleted or moved to another board, or you were removed from the board. No information about the card is shown.",
     close: "Back to the board",
   },
+  keptDraft: {
+    title: "Your unsent comment is kept here",
+    copy: "Copy comment",
+  },
   deleted: {
     title: "{{who}} deleted this card",
     someone: "Someone else",
-    body: "It is no longer on the board, so changes to it cannot be saved.",
+    body: "It is no longer on the board, so changes to it cannot be saved. It stays in Deleted items for 30 days.",
+    close: "Back to the board",
+    restore: "Restore",
+    restoring: "Restoring…",
+    restoreDenied: "You are not allowed to restore it.",
+    restoreWindowClosed:
+      "It has been more than 30 days, so it can no longer be restored.",
+    restoreParentDeleted:
+      "Its parent card is still deleted. Restore that one first.",
+    restoreFailed: "Could not restore it. Try again.",
+  },
+  moved: {
+    title: "This card was moved to the board “{{board}}”",
+    body: "You can read it, so you can open it on the new board.",
+    open: "Open on the new board",
     close: "Back to the board",
   },
   conflict: {
@@ -263,10 +281,27 @@ export const vi: ShellCopy = {
     body: "Thẻ có thể đã bị xoá hay chuyển sang board khác, hoặc bạn đã được gỡ khỏi board. Không có thông tin nào của thẻ được hiển thị.",
     close: "Về board",
   },
+  keptDraft: {
+    title: "Bình luận bạn chưa gửi vẫn còn ở đây",
+    copy: "Sao chép bình luận",
+  },
   deleted: {
     title: "{{who}} đã xoá thẻ này",
     someone: "Một người khác",
-    body: "Thẻ không còn trên board nên không thể lưu thay đổi cho thẻ này.",
+    body: "Thẻ không còn trên board nên không thể lưu thay đổi cho thẻ này. Thẻ nằm trong Việc đã xoá 30 ngày.",
+    close: "Về board",
+    restore: "Khôi phục",
+    restoring: "Đang khôi phục…",
+    restoreDenied: "Bạn không có quyền khôi phục.",
+    restoreWindowClosed: "Đã quá 30 ngày nên không khôi phục được nữa.",
+    restoreParentDeleted:
+      "Thẻ cha vẫn đang bị xoá. Hãy khôi phục thẻ cha trước.",
+    restoreFailed: "Không khôi phục được. Hãy thử lại.",
+  },
+  moved: {
+    title: "Thẻ này đã được chuyển sang board “{{board}}”",
+    body: "Bạn xem được nên có thể mở ở board mới.",
+    open: "Mở ở board mới",
     close: "Về board",
   },
   conflict: {

@@ -179,7 +179,7 @@ export function TableColumnsMenu({
         >
           <Columns3 className="size-4" aria-hidden="true" />
           {t.columns.label}{" "}
-          <b className="font-semibold leading-[1.45] text-foreground">
+          <b className="font-semibold leading-[1.45] text-foreground @max-[820px]/bar:sr-only">
             {shown}/{ordered.length}
           </b>
         </Button>

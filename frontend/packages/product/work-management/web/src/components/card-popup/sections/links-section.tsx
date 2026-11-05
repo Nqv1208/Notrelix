@@ -58,6 +58,7 @@ function LinkRow({
   person,
   unlinkLabel,
   onUnlink,
+  archivedLabel,
 }: {
   itemKey: string | null;
   title: string;
@@ -66,6 +67,8 @@ function LinkRow({
   person?: { userId: string; name: string; initials: string } | null;
   unlinkLabel: string;
   onUnlink?: () => void;
+  /** An archived item stays linked: its row carries this mark. */
+  archivedLabel?: string;
 }) {
   return (
     <div className="mb-1.5 box-border flex min-h-12 items-center gap-2.5 rounded-[8px] border border-line bg-popover pr-1.5 pl-3 md:min-h-10">
@@ -79,6 +82,11 @@ function LinkRow({
         <Dot category={category} />
         {status}
       </span>
+      {archivedLabel ? (
+        <span className="rounded-[6px] bg-state-hover-strong px-1.5 text-[12px] leading-[18px] whitespace-nowrap text-muted-foreground">
+          {archivedLabel}
+        </span>
+      ) : null}
       {person ? <PersonMark member={person} size={20} /> : null}
       {onUnlink ? (
         <IconBtn
@@ -169,6 +177,12 @@ export function AddLinkPanel({ onClose }: { onClose: () => void }) {
   const taken =
     chosen &&
     links.some((l) => l.relation === relation && l.item.id === chosen.id);
+  // Another relation for an item that is already linked turns that link into the new kind (it keeps its place).
+  const changing =
+    chosen &&
+    !loop &&
+    !taken &&
+    links.some((l) => l.relation !== relation && l.item.id === chosen.id);
   const error = chosen
     ? loop
       ? fillPopupCopy(loop, { key: keyOf(chosen) })
@@ -283,6 +297,14 @@ export function AddLinkPanel({ onClose }: { onClose: () => void }) {
           <span>{error}</span>
         </p>
       ) : null}
+      {changing && chosen ? (
+        <p
+          role="status"
+          className="mx-0.5 mt-2 mb-0 text-[12.5px] leading-[1.45] text-muted-foreground"
+        >
+          {fillPopupCopy(t.changes, { key: keyOf(chosen) })}
+        </p>
+      ) : null}
       <p className="mx-0.5 mt-2 mb-0 text-[12.5px] leading-[1.45] text-meta-foreground">
         {fillPopupCopy(t.boardOnly, { board: board.title })}
       </p>
@@ -369,6 +391,7 @@ export function LinksSection() {
                 title={link.item.title}
                 status={link.item.statusName ?? t.statusNone}
                 category={link.item.statusCategory}
+                archivedLabel={link.item.isArchived ? t.archived : undefined}
                 unlinkLabel={fillPopupCopy(t.unlinkOne, {
                   key: link.item.key ?? link.item.title,
                 })}

@@ -123,3 +123,20 @@ export function useBoardArchive(
     unarchivingId: unarchive.isPending ? unarchive.variables : undefined,
   };
 }
+
+/** Brings one deleted item back from the card that says it was deleted; the card and the board refetch on settle. */
+export function useRestoreDeletedItem(workspaceId: string, boardId: string) {
+  const { itemExtras } = useWorkManagementServices();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (itemId: string) => itemExtras.restoreDeleted(itemId),
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: wmQueryKeys.fullBoard(workspaceId, boardId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: workspaceQueryKey(workspaceId, "work-management"),
+      });
+    },
+  });
+}

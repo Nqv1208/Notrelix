@@ -151,6 +151,7 @@ import {
 } from "./mock-docs-invoice";
 import {
   BOARD_STATE_BOARDS,
+  BULK_STATE_BOARDS,
   DEPARTMENT_BOARDS,
   TECH_SIDE_BOARDS,
   departmentItemId,
@@ -1692,6 +1693,9 @@ export class MockStore {
       ...DEPARTMENT_BOARDS,
       ...TECH_SIDE_BOARDS,
       ...stateBoards,
+      ...(this.config.overlays.includes("bulk-states")
+        ? BULK_STATE_BOARDS
+        : []),
     ]) {
       this.insertBoard({
         id: dept.id,
@@ -1734,6 +1738,14 @@ export class MockStore {
           ),
         })),
       });
+      if (dept.ownerColumnId)
+        this.insertColumn({
+          id: dept.ownerColumnId,
+          boardId: dept.id,
+          name: "Người thực hiện",
+          fieldType: "user",
+          position: 3,
+        });
       if (!dept.noList)
         this.insertList({
           id: dept.listId,
@@ -4650,7 +4662,8 @@ export class MockStore {
       if (link.from !== cardId && link.to !== cardId) continue;
       const otherId = link.from === cardId ? link.to : link.from;
       const other = this.cardsById.get(otherId);
-      if (!other || other.isArchived) continue;
+      // An archived item stays linked (its row says so); a trashed one is gone from the map.
+      if (!other) continue;
       out.push({
         id: link.id,
         relation:
@@ -4679,13 +4692,19 @@ export class MockStore {
     const from = relation === "blocked-by" ? other.id : card.id;
     const to = relation === "blocked-by" ? card.id : other.id;
     const kind = relation === "related" ? "related" : "dependency";
-    const exists = this.itemLinks.some(
+    // An unordered pair is linked once: the same relation again is a no-op, another relation changes the link's kind.
+    const current = this.itemLinks.find(
       (link) =>
-        link.kind === kind &&
-        ((link.from === from && link.to === to) ||
-          (kind === "related" && link.from === to && link.to === from)),
+        (link.from === from && link.to === to) ||
+        (link.from === to && link.to === from),
     );
-    if (exists) return "invalid";
+    if (current) {
+      const same =
+        current.kind === kind &&
+        (kind === "related" || (current.from === from && current.to === to));
+      if (!same) Object.assign(current, { from, to, kind });
+      return "ok";
+    }
     this.itemLinks.push({
       id: this.nextId("link"),
       boardId: card.boardId,
