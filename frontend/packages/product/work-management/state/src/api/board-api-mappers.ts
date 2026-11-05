@@ -728,6 +728,9 @@ function mapCardSummaryDto(
     openBlockerCount: legacy
       ? 0
       : ((dto as GeneratedItemSummary).openBlockerCount ?? 0),
+    openBlockerKey: legacy
+      ? null
+      : ((dto as GeneratedItemSummary).openBlockerKey ?? null),
     ...readCardSettings(dto),
     updatedBy: legacy
       ? null

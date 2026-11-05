@@ -43,7 +43,9 @@ public record BoardItemSummaryDto(
     int ReminderOffsetMinutes = 1440,
     // Who last changed the Item (a user id); the client names them when a competing write is refused.
     Guid? UpdatedBy = null,
-    string? UpdatedByName = null
+    string? UpdatedByName = null,
+    // Key of the first open blocker on this Board (lowest key); null when none, or when every open blocker is on another Board.
+    string? OpenBlockerKey = null
 );
 
 /// <summary>
