@@ -220,6 +220,19 @@ export function projectItemMembers(card: MockCardRecord, store: MockStore) {
   });
 }
 
+/** The open blockers of an item; the mock links are same-board, so each is named like the server does. */
+function projectOpenBlockers(card: MockCardRecord, store: MockStore) {
+  if (!store.readsBlockers()) return {};
+  const open = store
+    .getItemLinks(card.id)
+    .filter((link) => link.relation === "blocked-by" && !link.card.completedAt);
+  const keys = open
+    .map((link) => link.card.itemKey)
+    .filter((key): key is string => Boolean(key))
+    .sort();
+  return { openBlockerCount: open.length, openBlockerKey: keys[0] ?? null };
+}
+
 function projectItemSummary(
   card: MockCardRecord,
   index: number,
@@ -248,6 +261,7 @@ function projectItemSummary(
     updatedAt: card.updatedAt,
     version: card.version ?? 1,
     ...projectItemReadValues(card, store),
+    ...projectOpenBlockers(card, store),
     // The stored custom values and the Formula results, evaluated on each read.
     ...projectCardSettings(store, card.id),
     fieldValues: {

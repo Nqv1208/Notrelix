@@ -56,4 +56,39 @@ public class GetFullBoardOpenBlockerTests : WorkManagementHandlerTestBase
         cards.Single(c => c.Id == free.Id).OpenBlockerCount.Should().Be(0, "a reference link does not block");
         cards.Single(c => c.Id == open.Id).OpenBlockerCount.Should().Be(0);
     }
+
+    private static void Key(BoardItem item, string key) =>
+        typeof(BoardItem).GetProperty(nameof(BoardItem.ItemKey))!.SetValue(item, key);
+
+    [Fact]
+    public async Task Projection_NamesTheOpenBlockerOnlyWhenItIsOnTheSameBoard()
+    {
+        var board = CreateBoard();
+        var group = BoardGroup.Create(
+            TestAccountId, TestWorkspaceId, board.Id, "Todo", Color.Create("#808080"),
+            FractionalIndex.Create("a0"), TestUserId, TestNow);
+        var blocked = CreateBoardItem(boardId: board.Id, groupId: group.Id);
+        var sameBoard = CreateBoardItem(boardId: board.Id, groupId: group.Id);
+        var otherBoard = CreateBoardItem(boardId: Guid.CreateVersion7(), groupId: Guid.CreateVersion7());
+        var onlyOther = CreateBoardItem(boardId: board.Id, groupId: group.Id);
+        Key(sameBoard, "ERP-140");
+        Key(otherBoard, "HR-7");
+        SetupBoards(board);
+        SetupBoardGroups(group);
+        SetupBoardItems(blocked, sameBoard, otherBoard, onlyOther);
+        SetupBoardItemLinks(
+            Link(blocked.Id, sameBoard.Id, BoardItemLinkType.Dependency),
+            Link(blocked.Id, otherBoard.Id, BoardItemLinkType.Dependency),
+            Link(onlyOther.Id, otherBoard.Id, BoardItemLinkType.Dependency));
+
+        var result = await _handler.Handle(new GetFullBoardQuery(board.Id), CancellationToken.None);
+
+        var cards = result.Data!.Lists.Single().BoardItems;
+        var named = cards.Single(c => c.Id == blocked.Id);
+        named.OpenBlockerCount.Should().Be(2);
+        named.OpenBlockerKey.Should().Be("ERP-140");
+        var hidden = cards.Single(c => c.Id == onlyOther.Id);
+        hidden.OpenBlockerCount.Should().Be(1, "the count stays");
+        hidden.OpenBlockerKey.Should().BeNull("a blocker on another board is never named");
+    }
 }
