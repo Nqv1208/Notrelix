@@ -21,6 +21,7 @@ import { itemStatesOperations } from "./item-states.handlers";
 import { templatesOperations } from "./templates.handlers";
 import { itemCapabilitiesOperations } from "./item-capabilities.handlers";
 import { boardExportOperations } from "./board-export.handlers";
+import { boardImportOperations } from "./board-import.handlers";
 
 export {
   workspaceAutomationsOperations,
@@ -52,4 +53,5 @@ export const workManagementOperations = [
   ...templatesOperations,
   ...itemCapabilitiesOperations,
   ...boardExportOperations,
+  ...boardImportOperations,
 ];

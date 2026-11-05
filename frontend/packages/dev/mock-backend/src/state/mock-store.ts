@@ -4642,6 +4642,11 @@ export class MockStore {
 
   // ── Links, files and followers of an item ──
 
+  /** The overlay `item-blockers`: the board read carries each item's open blockers (the table's "Bị chặn bởi" chip). */
+  readsBlockers(): boolean {
+    return this.config.overlays.includes("item-blockers");
+  }
+
   /** The links of an item as the Detail page groups them. */
   getItemLinks(cardId: string): {
     id: string;
