@@ -36,6 +36,7 @@ public static class MapBoardFieldEndpoints
         group.MapResourcePost("/{fieldId:guid}/restore", HandleRestoreBoardField)
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.Restore")
+            .Produces<RestoredBoardFieldDto>(StatusCodes.Status200OK, "application/json")
             .WithSummary("Restore a field deleted in the last 30 days");
         group.MapResourceGet("/deleted", HandleListDeletedBoardFields)
             .WithName("WorkManagement.BoardFields.Deleted")
@@ -137,8 +138,8 @@ public static class MapBoardFieldEndpoints
         ISender sender,
         CancellationToken cancellationToken)
     {
-        await sender.Send(new RestoreBoardFieldCommand(boardId, fieldId), cancellationToken);
-        return Results.NoContent();
+        var result = await sender.Send(new RestoreBoardFieldCommand(boardId, fieldId), cancellationToken);
+        return Results.Ok(result.Data);
     }
 
     private static async Task<IResult> HandleListDeletedBoardFields(

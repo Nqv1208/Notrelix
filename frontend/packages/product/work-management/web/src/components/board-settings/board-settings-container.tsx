@@ -230,8 +230,10 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       onReload: () => void deletedList.refetch(),
       onRestore: async (fieldId) => {
         try {
-          await deletedList.restore(fieldId);
-          return "restored";
+          const answer = await deletedList.restore(fieldId);
+          return answer?.alreadyActive
+            ? { kind: "already-active", by: answer.restoredByName ?? null }
+            : "restored";
         } catch (error) {
           const failure = error as { code?: string; status?: number } | null;
           if (failure?.code === "work-management.field.name-taken")

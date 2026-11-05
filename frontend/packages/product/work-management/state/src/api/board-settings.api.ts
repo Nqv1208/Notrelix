@@ -38,6 +38,11 @@ export type DeletedBoardField = OperationResponse<
   "WorkManagement.BoardFields.Deleted",
   200
 >[number];
+/** The answer to a restore: `alreadyActive` when someone restored the field first, with their display name. */
+export type RestoredBoardField = OperationResponse<
+  "WorkManagement.BoardFields.Restore",
+  200
+>;
 type OverviewField = NonNullable<Overview["columns"]>[number];
 type OverviewGroup = NonNullable<Overview["lists"]>[number];
 
@@ -676,7 +681,7 @@ export function createBoardSettingsApi(client: NotrelixClient) {
       ),
     /** Brings a deleted field and its values back; refused after 30 days or when its name is taken. */
     restoreDeletedField: (boardId: string, fieldId: string) =>
-      api.post<void>(
+      api.post<RestoredBoardField>(
         endpoints.boardFields.restore(boardId, fieldId),
         {},
         {

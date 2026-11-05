@@ -1339,7 +1339,10 @@ export class MockStore {
         ],
       }),
     });
-    if (this.config.overlays.includes("deleted-fields"))
+    if (
+      this.config.overlays.includes("deleted-fields") ||
+      this.config.overlays.includes("field-restored-elsewhere")
+    )
       this.seedDeletedFields(boardId);
     this.settings.set(
       boardId,
@@ -2746,10 +2749,22 @@ export class MockStore {
   restoreDeletedColumn(
     boardId: string,
     columnId: string,
-  ): "restored" | "not-found" | "name-taken" {
+  ): "restored" | "not-found" | "name-taken" | "already-active" {
     const kept = this.deletedColumnsByBoardId.get(boardId) ?? [];
     const found = kept.find((entry) => entry.column.id === columnId);
     if (!found) return "not-found";
+    // The overlay `field-restored-elsewhere`: another person restores "Ngày bàn giao" first, so this restore finds it live.
+    if (
+      this.config.overlays.includes("field-restored-elsewhere") &&
+      columnId === "mock-deleted-handover"
+    ) {
+      this.deletedColumnsByBoardId.set(
+        boardId,
+        kept.filter((entry) => entry !== found),
+      );
+      this.insertColumn(found.column);
+      return "already-active";
+    }
     const taken = this.getColumns(boardId).some(
       (live) => live.name.toLowerCase() === found.column.name.toLowerCase(),
     );
