@@ -8,7 +8,7 @@ import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
 import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
 import { useAddGroup } from "../../status-option/use-add-group";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { toast } from "sonner";
 import { cn, useIsMobile } from "@notrelix/ui-web";
 import {
@@ -512,6 +512,7 @@ export function KanbanView({
   }, [lanesReady, measureEdges, kanban.lanes.length]);
 
   if (kanban.isLoading) return <KanbanSkeleton />;
+  const boardEmpty = !kanban.filterActive && kanban.totalCount === 0;
   if (kanban.error || !board) return <KanbanUnavailableState />;
 
   const lanesByCard = new Map<string, KanbanStatusLane>();
@@ -1203,6 +1204,7 @@ export function KanbanView({
                 now={now}
                 selectedItemId={selectedItemId}
                 filterActive={kanban.filterActive}
+                boardEmpty={boardEmpty}
                 canAdd={
                   capabilities.canCreateCard &&
                   !(kanban.filterActive && kanban.visibleCount === 0)
@@ -1265,6 +1267,21 @@ export function KanbanView({
                 onCollapsedChange={collapsedLanes.onChange}
               />
             )}
+            {boardEmpty && !laneField ? (
+              <div
+                role="status"
+                data-kanban-empty-note=""
+                className="mt-3.5 flex items-start gap-2.5 rounded-[10px] bg-brand-subtle px-3.5 py-2.5 text-[13px] leading-[1.4] text-brand-subtle-foreground dark:bg-[rgba(90,169,255,0.16)] dark:text-[#7dbbff]"
+              >
+                <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                <span className="flex min-w-0 flex-1 flex-col gap-px">
+                  <b className="font-semibold text-foreground">
+                    {laneCopy.emptyBoardNote}
+                  </b>
+                  <span>{laneCopy.emptyBoardNoteBody}</span>
+                </span>
+              </div>
+            ) : null}
           </div>
           {(["left", "right"] as const).map((side) =>
             edges[side] ? (
