@@ -115,7 +115,7 @@ export function FieldsSection({
     <>
       <section
         aria-labelledby="bs-fields-h"
-        className="min-w-0 flex-1 overflow-auto px-6 pt-5 pb-6"
+        className="min-w-0 flex-1 overflow-auto px-6 pt-5 pb-6 max-md:px-4"
       >
         <SectionHeader
           id="bs-fields-h"
@@ -156,7 +156,7 @@ export function FieldsSection({
           <div
             role="tablist"
             aria-label={t.tabs.label}
-            className="mt-4 flex gap-1 border-b border-line"
+            className="mt-4 flex gap-1 border-b border-line max-md:gap-2 max-md:border-b-0"
           >
             {(["live", "deleted"] as const).map((key) => (
               <button
@@ -168,12 +168,13 @@ export function FieldsSection({
                 aria-controls="bs-fields-panel"
                 onClick={() => setTab(key)}
                 className={cn(
-                  "-mb-px inline-flex h-[38px] items-center gap-2 whitespace-nowrap border-0 max-md:h-11 border-b-2 border-transparent bg-transparent px-3 text-[13.5px] font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
-                  tab === key && "border-primary font-semibold text-foreground",
+                  "-mb-px inline-flex h-10 items-center gap-2 whitespace-nowrap border-0 border-b-2 border-transparent bg-transparent px-3 text-[13.5px] font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring max-md:mb-0 max-md:h-11 max-md:gap-1.5 max-md:rounded-[12px] max-md:border max-md:border-line-strong max-md:bg-popover max-md:px-3.5 max-md:text-[14px] max-md:text-foreground",
+                  tab === key &&
+                    "border-primary font-semibold text-foreground max-md:border-foreground max-md:bg-foreground max-md:text-background",
                 )}
               >
                 {t.tabs[key]}
-                <span className="text-xs font-medium text-meta-foreground">
+                <span className="text-xs leading-[1.45] font-medium text-meta-foreground max-md:text-[14px] max-md:leading-[1.45] max-md:font-bold max-md:text-inherit">
                   {key === "live"
                     ? liveCount
                     : deleted.status === "ready"
@@ -190,7 +191,7 @@ export function FieldsSection({
           aria-labelledby={hasDeleted ? `bs-fields-tab-${tab}` : undefined}
         >
           {deleted && tab === "deleted" ? (
-            <div className="mt-4">
+            <div className="mt-4 max-md:mt-3.5">
               <DeletedFieldsList
                 panel={deleted}
                 onOpenLive={(name) => {

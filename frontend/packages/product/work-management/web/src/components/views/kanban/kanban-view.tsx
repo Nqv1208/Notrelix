@@ -33,6 +33,7 @@ import {
   useUpdateCard,
   useUpdateCardUpdate,
   useUpdateFieldOption,
+  useHoldRealtimeRefetch,
   type KanbanWriteFailure,
   classifyRestoreError,
   deletedItemOf,
@@ -194,6 +195,9 @@ export function KanbanView({
 }: KanbanViewProps) {
   // Read once so every card judges "overdue" against the same instant.
   const [now] = useState(() => new Date());
+  // A lifted card holds realtime refetches so the lanes do not reshuffle under the pointer.
+  const [dragging, setDragging] = useState(false);
+  useHoldRealtimeRefetch(dragging);
   const cardCopy = useKanbanCardCopy();
   const toolbarCopy = useKanbanToolbarCopy();
   const laneCopy = useKanbanLaneCopy();
@@ -411,6 +415,9 @@ export function KanbanView({
   const canCreate = capabilities.canCreateCard;
   const collapsedLanes = useKanbanCollapsedLanes(
     kanbanCollapsedLanesKey(workspaceId, savedViewId ?? boardId),
+  );
+  const collapsedSwimlanes = useKanbanCollapsedLanes(
+    `${kanbanCollapsedLanesKey(workspaceId, savedViewId ?? boardId)}.swimlanes`,
   );
 
   // C opens the full form, N the quick add of the first open lane; neither
@@ -1163,6 +1170,8 @@ export function KanbanView({
                   </p>
                 )}
                 <KanbanSwimlaneBoard
+                  initialCollapsed={collapsedSwimlanes.initial}
+                  onCollapsedChange={collapsedSwimlanes.onChange}
                   copy={filtersCopy}
                   cardCopy={cardCopy}
                   now={now}
@@ -1186,6 +1195,7 @@ export function KanbanView({
               </>
             ) : (
               <KanbanBoard
+                onDraggingChange={setDragging}
                 lanes={kanban.lanes}
                 groupOrder={kanban.groups}
                 copy={laneCopy}

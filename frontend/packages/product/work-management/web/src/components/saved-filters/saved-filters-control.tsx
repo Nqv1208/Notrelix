@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import {
   useSavedFilters,
@@ -71,6 +71,8 @@ export function SavedFiltersControl({
   const query = useSavedFilters(boardId, workspaceId);
   const writes = useSavedFilterWrites(boardId, workspaceId);
   const filters = query.data ?? [];
+  // A write that found the filter gone: the list is read again and the menu says so (not a toast that vanishes).
+  const [gone, setGone] = useState(false);
   const applied = filters.find((saved) => isApplied(saved, filter, groupBy));
   const currentCriteria: SavedFilterCriteria = {
     ...(filter ? { filter } : {}),
@@ -79,22 +81,33 @@ export function SavedFiltersControl({
 
   const tell = useCallback(
     (
-      result: { ok: boolean; reason?: "forbidden" | "missing" | "failed" },
+      result: {
+        ok: boolean;
+        reason?: "forbidden" | "missing" | "conflict" | "failed";
+        by?: string | null;
+      },
       name: string,
     ) => {
       if (result.ok) return;
+      if (result.reason === "missing") {
+        setGone(true);
+        void query.refetch();
+        return;
+      }
       toast.error(
         fillSavedFiltersCopy(
           result.reason === "forbidden"
             ? copy.toast.forbidden
-            : result.reason === "missing"
-              ? copy.menu.gone
+            : result.reason === "conflict"
+              ? result.by
+                ? copy.toast.conflictBy
+                : copy.toast.conflict
               : copy.toast.failed,
-          { name },
+          { name, by: result.by ?? "" },
         ),
       );
     },
-    [copy],
+    [copy, query],
   );
 
   return (
@@ -120,6 +133,8 @@ export function SavedFiltersControl({
       onApply={(saved) => onApply(saved.criteria)}
       onClearApplied={() => onApply({})}
       onRetry={() => void query.refetch()}
+      gone={gone}
+      onGoneSeen={() => setGone(false)}
       onSave={async ({ name, visibility }) => {
         const result = await writes.create(name, currentCriteria, visibility);
         if (result.ok) {
@@ -136,6 +151,11 @@ export function SavedFiltersControl({
       }}
       onRename={async (saved, name) => {
         const result = await writes.rename(saved, name);
+        if (
+          !result.ok &&
+          (result.reason === "missing" || result.reason === "conflict")
+        )
+          tell(result, saved.name);
         if (result.ok)
           toast.success(fillSavedFiltersCopy(copy.toast.renamed, { name }));
         return result;

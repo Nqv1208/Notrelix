@@ -387,4 +387,26 @@ describe("SavedFiltersMenu stale row", () => {
     expect(row.textContent).toContain("1 bị bỏ qua");
     expect(row.textContent).not.toContain("Ngân sách");
   });
+
+  it("says a filter is gone inside the menu, above the refreshed list, and reports when the menu closes", () => {
+    for (const locale of LOCALES) {
+      const copy = savedFiltersCopyFixture(locale);
+      const onGoneSeen = vi.fn();
+      const { view } = renderMenu(savedFiltersDefaultScenario(locale), {
+        gone: true,
+        onGoneSeen,
+      });
+      openList(locale);
+      const alert = screen.getByRole("alert");
+      expect(alert.textContent).toContain(copy.menu.gone);
+      expect(
+        screen.getByRole("button", {
+          name: rowName(copy.row.apply, SAVED_FILTER_URGENT.name),
+        }),
+      ).toBeTruthy();
+      fireEvent.keyDown(alert, { key: "Escape" });
+      expect(onGoneSeen).toHaveBeenCalled();
+      view.unmount();
+    }
+  });
 });

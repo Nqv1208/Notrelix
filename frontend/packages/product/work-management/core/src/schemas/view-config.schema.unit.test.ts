@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_KANBAN_LANE_CARD_LIMIT,
   normalizeStatusManageRoles,
+  resolveCalendarDateField,
+  resolveTimelinePresentation,
   resolveKanbanSettings,
   viewConfigSchema,
 } from "./view-config.schema";
@@ -89,6 +91,30 @@ describe("resolveKanbanSettings", () => {
     ).toEqual(["manager"]);
     expect(resolveKanbanSettings({ keyboardMove: false }).keyboardMove).toBe(
       false,
+    );
+  });
+});
+
+describe("Calendar and Timeline presentation keys", () => {
+  it("gives the defaults for a config saved before the keys", () => {
+    expect(resolveCalendarDateField({})).toBe("span");
+    expect(resolveTimelinePresentation({})).toEqual({
+      groupBy: "group",
+      barSpan: "start-due",
+    });
+  });
+
+  it("keeps a saved date field and a saved grouping, and drops bad values", () => {
+    expect(resolveCalendarDateField({ calendarDateField: "f-1" })).toBe("f-1");
+    expect(
+      resolveTimelinePresentation({
+        timelineGroupBy: "assignee",
+        timelineBarSpan: "created-due",
+      }),
+    ).toEqual({ groupBy: "assignee", barSpan: "created-due" });
+    expect(resolveCalendarDateField({ calendarDateField: 3 })).toBe("span");
+    expect(resolveTimelinePresentation({ timelineGroupBy: "x" }).groupBy).toBe(
+      "group",
     );
   });
 });

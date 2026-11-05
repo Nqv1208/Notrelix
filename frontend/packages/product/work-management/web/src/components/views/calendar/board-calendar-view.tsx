@@ -4,10 +4,12 @@ import { useLocale } from "@notrelix/i18n";
 import {
   useBoardKanban,
   useBoardPlanItems,
+  useBoardView,
   useCreateDatedItem,
   useUpdateCard,
 } from "@notrelix/work-management-state";
 import {
+  resolveCalendarDateField,
   serializeCompoundFilter,
   type Card,
 } from "@notrelix/work-management-core";
@@ -115,7 +117,10 @@ export function BoardCalendarView({
   const timeZone = timeZoneProp ?? runtimeZone();
 
   const [range, setRange] = useState<CalendarRange>("month");
-  const [dateBasis, setDateBasis] = useState<CalendarDateBasis>("span");
+  // The basis is the shared view's (`calendarDateField`); a member who cannot
+  // edit the view picks one for this visit only.
+  const { viewConfig, updateViewConfig } = useBoardView(boardId, workspaceId);
+  const [localBasis, setLocalBasis] = useState<CalendarDateBasis | null>(null);
   const todayParts = calendarParts(now, timeZone);
   const today = toDayKey(todayParts.year, todayParts.month, todayParts.day);
   const nowMinutes = todayParts.hour * 60 + todayParts.minute;
@@ -157,6 +162,28 @@ export function BoardCalendarView({
   const canEdit = capabilities.canMoveCard && capabilities.canCreateCard;
 
   const { board } = kanban;
+  const dateFields = useMemo(
+    () =>
+      kanban.filterFields
+        .filter((entry) => !entry.builtin && entry.field.fieldType === "date")
+        .map((entry) => ({ id: entry.field.id, name: entry.field.name })),
+    [kanban.filterFields],
+  );
+  const savedBasis = resolveCalendarDateField(viewConfig);
+  const wanted = localBasis ?? savedBasis;
+  // A saved field that was deleted, or is no longer a Date field, falls back.
+  const dateBasis: CalendarDateBasis =
+    wanted === "span" ||
+    wanted === "due" ||
+    dateFields.some((field) => field.id === wanted)
+      ? wanted
+      : "span";
+  const setDateBasis = (basis: CalendarDateBasis) => {
+    if (capabilities.canEditFields) {
+      setLocalBasis(null);
+      updateViewConfig({ calendarDateField: basis });
+    } else setLocalBasis(basis);
+  };
 
   // Phases and milestones belong to nobody: any filter hides them with the
   // items it filters out, as Final-Calendar's empty state shows.
@@ -171,8 +198,10 @@ export function BoardCalendarView({
         copy,
         timeZone,
         planItems: shownPlanItems,
+        dateFieldId:
+          dateBasis === "span" || dateBasis === "due" ? undefined : dateBasis,
       }),
-    [kanban.lanes, today, copy, timeZone, shownPlanItems],
+    [kanban.lanes, today, copy, timeZone, shownPlanItems, dateBasis],
   );
   // A refused write keeps the new dates on screen until it is retried or the
   // item is reloaded: never a silent revert.
@@ -437,6 +466,7 @@ export function BoardCalendarView({
         zoneName={zoneName}
         dateBasis={dateBasis}
         onDateBasisChange={setDateBasis}
+        dateFields={dateFields}
         entries={shownEntries}
         undatedTotal={undatedTotal}
         undated={built.undated}

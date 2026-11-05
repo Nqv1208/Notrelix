@@ -45,7 +45,8 @@ export type MockOverlay =
   | "many-cards"
   | "board-states"
   /** BC-Bulk `bk-grp` and `bk-cap`: a board whose one group holds 301 items. */
-  | "bulk-states";
+  | "bulk-states"
+  | "deleted-fields";
 
 export type MockLatency = "instant" | "fast" | "normal" | "slow";
 
@@ -55,12 +56,15 @@ export interface MockFaultProfile {
     | "network"
     | "401"
     | "409"
+    // The target is gone, or its owner took it back: the identical NotFound.
+    | "404"
     | "500"
     | "validation"
     // A second writer got there first: a handler that takes an expected version answers 412.
     | "stale"
     | "stale-option"
-    | "stale-type";
+    | "stale-type"
+    | "required";
 }
 
 // ─── Config interface ─────────────────────────────────────────────────────────
@@ -194,17 +198,20 @@ const VALID_OVERLAYS = new Set<string>([
   "many-cards",
   "board-states",
   "bulk-states",
+  "deleted-fields",
 ]);
 
 const VALID_FAULTS = new Set<string>([
   "network",
   "401",
   "409",
+  "404",
   "500",
   "validation",
   "stale",
   "stale-option",
   "stale-type",
+  "required",
 ]);
 
 export function parseMockConfigFromEnv(

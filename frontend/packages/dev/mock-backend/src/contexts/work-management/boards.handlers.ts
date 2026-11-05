@@ -1069,7 +1069,13 @@ export const boardsOperations = [
   defineMockOperation<
     { boardId: string },
     never,
-    { state: string; value: unknown; errorCode: string | null }
+    {
+      state: string;
+      value: unknown;
+      errorCode: string | null;
+      inputs: { name: string; value: { state: string; value: unknown } }[];
+      subItemCount: number | null;
+    }
   >({
     id: "boards.fields.previewFormula",
     contract: {
@@ -1080,31 +1086,63 @@ export const boardsOperations = [
     route: "/boards/:boardId/fields/preview-formula",
     async handle({ params, request, store }) {
       if (!store.getBoard(params.boardId)) return notFound("Board not found");
-      const expression = (
-        new URL(request.url).searchParams.get("expression") ?? ""
-      ).trim();
-      // The mock does not read fields: plain arithmetic is evaluated, any other formula answers a fixed sample value.
-      if (expression === "")
-        return ok({ state: "empty", value: null, errorCode: null });
-      if (/^[\d\s+\-*/().]+$/.test(expression)) {
+      const query = new URL(request.url).searchParams;
+      const expression = (query.get("expression") ?? "").trim();
+      const result = (
+        state: string,
+        value: unknown,
+        errorCode: string | null = null,
+        inputs: { name: string; value: unknown }[] = [],
+        subItemCount: number | null = null,
+      ) =>
+        ok({
+          state,
+          value,
+          errorCode,
+          inputs: inputs.map((input) => ({
+            name: input.name,
+            value: { state: "ok", value: input.value },
+          })),
+          subItemCount,
+        });
+      // The mock does not read fields or sub-items: every field a formula names reads 13, and an item has two
+      // sub-items worth 3 and 4 (the numbers of the mockups); any other formula answers a fixed sample value.
+      const rollupFunction = query.get("rollupFunction");
+      if (rollupFunction) {
+        const values = [3, 4];
+        const sample: Record<string, number> = {
+          count: 2,
+          sum: 7,
+          avg: 3.5,
+          min: 3,
+          max: 4,
+        };
+        return result(
+          "ok",
+          sample[rollupFunction] ?? 0,
+          null,
+          rollupFunction === "count"
+            ? []
+            : values.map((value) => ({ name: "Điểm", value })),
+          2,
+        );
+      }
+      if (expression === "") return result("empty", null);
+      const names = [...expression.matchAll(/\[([^\]]+)\]/g)].map(
+        (match) => match[1] ?? "",
+      );
+      const inputs = [...new Set(names)].map((name) => ({ name, value: 13 }));
+      const arithmetic = expression.replace(/\[[^\]]+\]/g, "13");
+      if (/^[\d\s+\-*/().]+$/.test(arithmetic)) {
         try {
-          const value = Function(`"use strict";return (${expression})`)();
-          if (Number.isFinite(value))
-            return ok({ state: "ok", value, errorCode: null });
-          return ok({
-            state: "error",
-            value: null,
-            errorCode: "divide-by-zero",
-          });
+          const value = Function(`"use strict";return (${arithmetic})`)();
+          if (Number.isFinite(value)) return result("ok", value, null, inputs);
+          return result("error", null, "divide-by-zero");
         } catch {
-          return ok({
-            state: "error",
-            value: null,
-            errorCode: "invalid-definition",
-          });
+          return result("error", null, "invalid-definition");
         }
       }
-      return ok({ state: "ok", value: 12, errorCode: null });
+      return result("ok", 12, null, inputs);
     },
   }),
 
@@ -1124,6 +1162,68 @@ export const boardsOperations = [
       const deleted = store.deleteColumn(params.columnId);
       if (!deleted) return notFound("Column not found");
       return ok<void>(undefined);
+    },
+  }),
+
+  // ─── GET /boards/:boardId/fields/deleted ─────────────────────────────────
+
+  defineMockOperation<{ boardId: string }, never, unknown[]>({
+    id: "boards.columns.deleted",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.Deleted",
+    } as any,
+    method: "GET",
+    route: "/boards/:boardId/fields/deleted",
+    async handle({ params, store }) {
+      // A Manager reads the list, as on the producer.
+      if (!canManageBoard(params.boardId, store)) return forbidden();
+      return ok(
+        store.getDeletedColumns(params.boardId).map((entry) => ({
+          id: entry.column.id,
+          name: entry.column.name,
+          // The producer names the type as its `FieldType` enum: "LongText" for the mock's `long_text`.
+          fieldType: entry.column.fieldType
+            .split("_")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(""),
+          deletedAt: entry.deletedAt,
+          restorableUntil: entry.restorableUntil,
+          deletedBy: null,
+          deletedByName: entry.deletedByName,
+          valueCount: entry.valueCount,
+        })),
+      );
+    },
+  }),
+
+  // ─── POST /boards/:boardId/fields/:fieldId/restore ───────────────────────
+
+  defineMockOperation<{ boardId: string; fieldId: string }, never, void>({
+    id: "boards.columns.restore",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.Restore",
+    } as any,
+    method: "POST",
+    route: "/boards/:boardId/fields/:fieldId/restore",
+    async handle({ params, store }) {
+      if (!canManageBoard(params.boardId, store)) return forbidden();
+      const restored = store.restoreDeletedColumn(
+        params.boardId,
+        params.fieldId,
+      );
+      if (restored === "not-found") return notFound("Field not found");
+      if (restored === "name-taken")
+        return {
+          status: 409,
+          body: {
+            message: "A field with this name is in use.",
+            code: "work-management.field.name-taken",
+            errorCode: "work-management.field.name-taken",
+          },
+        };
+      return noContent();
     },
   }),
 

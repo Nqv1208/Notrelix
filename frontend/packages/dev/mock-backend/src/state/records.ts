@@ -175,6 +175,15 @@ export interface MockColumnRecord {
   version?: number;
 }
 
+/** A field deleted from a board, kept for 30 days (`WorkManagement.BoardFields.Deleted`). */
+export interface MockDeletedColumnRecord {
+  column: MockColumnRecord;
+  deletedAt: string;
+  restorableUntil: string;
+  deletedByName: string;
+  valueCount: number;
+}
+
 /** A board member (`WorkManagement.Boards.GetMembers` / `/full` members). */
 export interface MockBoardMemberRecord {
   boardId: string;
