@@ -113,6 +113,8 @@ export interface KanbanColumnProps {
   selectedItemId?: string;
   /** A filter or search narrows the board: empty lanes say so. */
   filterActive: boolean;
+  /** The whole board has no item: a lane shows the plain two-line hint. */
+  boardEmpty?: boolean;
   canAdd: boolean;
   canDrag: boolean;
   /** The dragged card is over this lane: it is where the card would land. */
@@ -177,6 +179,7 @@ export function KanbanColumn({
   timeZone,
   selectedItemId,
   filterActive,
+  boardEmpty = false,
   canAdd,
   canDrag,
   dropTarget = false,
@@ -756,6 +759,15 @@ export function KanbanColumn({
               lane.total,
             )}
           </div>
+        ) : boardEmpty ? (
+          <p
+            data-lane-empty="board"
+            className="m-0 rounded-[11px] border-[1.5px] border-dashed border-line-strong px-3 py-4 text-center text-[12px] leading-[1.45] text-muted-foreground"
+          >
+            {copy.emptyTitle}
+            <br />
+            {copy.emptyBoardHint}
+          </p>
         ) : (
           <div
             data-lane-empty="empty"

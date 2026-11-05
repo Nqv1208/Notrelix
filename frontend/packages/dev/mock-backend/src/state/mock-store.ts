@@ -23,6 +23,7 @@ import type {
   MockPageRecord,
   MockBoardViewRecord,
   MockColumnRecord,
+  MockDeletedColumnRecord,
   MockFieldOptionRecord,
   MockLabelRecord,
   MockChecklistRecord,
@@ -287,6 +288,10 @@ export class MockStore {
   private pagesById = new Map<string, MockPageRecord>();
   private boardViewsByBoardId = new Map<string, MockBoardViewRecord>();
   private columnsById = new Map<string, MockColumnRecord>();
+  private deletedColumnsByBoardId = new Map<
+    string,
+    MockDeletedColumnRecord[]
+  >();
   private labelsById = new Map<string, MockLabelRecord>();
   private checklistsById = new Map<string, MockChecklistRecord>();
   private checklistItemsById = new Map<string, MockChecklistItemRecord>();
@@ -1338,6 +1343,11 @@ export class MockStore {
         ],
       }),
     });
+    if (
+      this.config.overlays.includes("deleted-fields") ||
+      this.config.overlays.includes("field-restored-elsewhere")
+    )
+      this.seedDeletedFields(boardId);
     this.settings.set(
       boardId,
       erpSettingsRegistry({
@@ -1860,6 +1870,38 @@ export class MockStore {
         joinedAt: "2026-09-15T02:00:00.000Z",
       })) as MockBoardMemberRecord[],
     );
+    // The saved-filter menu's rows on the payables board: the owner's own, and one a colleague shared.
+    this.savedFilters.add({
+      boardId: mockIds.boards.payables,
+      name: "Việc gấp tuần này",
+      criteria: null,
+      createdBy: mockIds.users.owner,
+    });
+    this.savedFilters.add({
+      boardId: mockIds.boards.payables,
+      name: "Sprint hiện tại",
+      criteria: null,
+      createdBy: mockIds.users.admin,
+    }).visibility = "Public";
+    // The roadmap board's menu draws a saved filter whose field was removed (WM-Filter-States): one condition on a field the board never had.
+    this.savedFilters.add({
+      boardId: mockIds.boards.roadmap,
+      name: "Việc gấp tuần này",
+      criteria: JSON.stringify({
+        v: 2,
+        filter: "c2:and~mock-roadmap-col-gone.gte.50",
+      }),
+      createdBy: mockIds.users.owner,
+    });
+    // The viewer reads the ERP board, not payables: the same shared filter there, for the viewer's read-only menu.
+    if (this.config.persona === "viewer") {
+      this.savedFilters.add({
+        boardId: mockIds.boards.erp,
+        name: "Sprint hiện tại",
+        criteria: null,
+        createdBy: mockIds.users.admin,
+      }).visibility = "Public";
+    }
   }
 
   /** Members of a board, in seeded order. */
@@ -2667,9 +2709,118 @@ export class MockStore {
   deleteColumn(columnId: string): boolean {
     const col = this.columnsById.get(columnId);
     if (!col) return false;
+    this.keepDeletedColumn(col);
     this.removeIndex(this.columnIdsByBoardId, col.boardId, col.id);
     this.columnsById.delete(columnId);
     return true;
+  }
+
+  /**
+   * The overlay `deleted-fields`: the four fields `WM-DeletedFields` draws, deleted on the dates it names and read on
+   * 31 Oct 10:40 (the page clock of its spec). "Phòng ban yêu cầu" shares its name with a live field, so its restore
+   * is refused with the name-taken answer.
+   */
+  private seedDeletedFields(boardId: string): void {
+    const kept: [string, string, string, string, string, number][] = [
+      [
+        "mock-deleted-requester",
+        "Phòng ban yêu cầu",
+        "select",
+        "2026-10-27T04:40:00.000Z",
+        "Hà Nguyễn",
+        12,
+      ],
+      [
+        "mock-deleted-handover",
+        "Ngày bàn giao",
+        "date",
+        "2026-10-24T04:40:00.000Z",
+        "Trần Minh Quân",
+        16,
+      ],
+      [
+        "mock-deleted-note",
+        "Ghi chú nội bộ",
+        "long_text",
+        "2026-10-20T04:40:00.000Z",
+        "Hà Nguyễn",
+        41,
+      ],
+      [
+        "mock-deleted-contract",
+        "Mã hợp đồng",
+        "text",
+        "2026-10-02T04:40:00.000Z",
+        "Lê Hoàng Phúc",
+        9,
+      ],
+    ];
+    const restorable: Record<string, string> = {
+      "mock-deleted-requester": "2026-11-26T04:40:00.000Z",
+      "mock-deleted-handover": "2026-11-23T04:40:00.000Z",
+      "mock-deleted-note": "2026-11-19T04:40:00.000Z",
+      "mock-deleted-contract": "2026-11-01T04:40:00.000Z",
+    };
+    this.deletedColumnsByBoardId.set(
+      boardId,
+      kept.map(([id, name, fieldType, deletedAt, by, valueCount]) => ({
+        column: { id, boardId, name, fieldType, position: 99, version: 1 },
+        deletedAt,
+        // 30 days after the deletion, as the producer keeps it.
+        restorableUntil: restorable[id] ?? deletedAt,
+        deletedByName: by,
+        valueCount,
+      })),
+    );
+  }
+
+  /** Keeps a field leaving the schema for 30 days, the way the producer's soft delete does. */
+  private keepDeletedColumn(col: MockColumnRecord): void {
+    const kept = this.deletedColumnsByBoardId.get(col.boardId) ?? [];
+    kept.unshift({
+      column: col,
+      deletedAt: this.clock.isoNow(),
+      restorableUntil: this.clock.offsetDays(30),
+      deletedByName: "Nguyễn Thu Hà",
+      valueCount: 0,
+    });
+    this.deletedColumnsByBoardId.set(col.boardId, kept);
+  }
+
+  getDeletedColumns(boardId: string): MockDeletedColumnRecord[] {
+    return this.deletedColumnsByBoardId.get(boardId) ?? [];
+  }
+
+  /** Brings a deleted field back; "name-taken" when a live field has its name. */
+  restoreDeletedColumn(
+    boardId: string,
+    columnId: string,
+  ): "restored" | "not-found" | "name-taken" | "already-active" {
+    const kept = this.deletedColumnsByBoardId.get(boardId) ?? [];
+    const found = kept.find((entry) => entry.column.id === columnId);
+    if (!found) return "not-found";
+    // The overlay `field-restored-elsewhere`: another person restores "Ngày bàn giao" first, so this restore finds it live.
+    if (
+      this.config.overlays.includes("field-restored-elsewhere") &&
+      columnId === "mock-deleted-handover"
+    ) {
+      this.deletedColumnsByBoardId.set(
+        boardId,
+        kept.filter((entry) => entry !== found),
+      );
+      this.insertColumn(found.column);
+      return "already-active";
+    }
+    const taken = this.getColumns(boardId).some(
+      (live) => live.name.toLowerCase() === found.column.name.toLowerCase(),
+    );
+    if (taken) return "name-taken";
+    this.deletedColumnsByBoardId.set(
+      boardId,
+      kept.filter((entry) => entry !== found),
+    );
+    this.insertColumn(found.column);
+    return "restored";
   }
 
   /**

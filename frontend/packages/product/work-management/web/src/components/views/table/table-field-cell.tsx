@@ -1,7 +1,7 @@
 import { useRef, type ReactNode } from "react";
 import { AlertCircle, ExternalLink, Loader2, Lock } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
-import type { StaleSchemaDetail } from "@notrelix/work-management-state";
+import type { StaleSchemaDetail } from "@notrelix/work-management-core";
 import {
   specOf,
   type ComputedValue,
@@ -31,6 +31,8 @@ export interface CellWrite {
   readonly status: "pending" | "error" | "conflict" | "schema" | "reloading";
   /** What the board changed under the write (`schema`). */
   readonly schema?: StaleSchemaDetail;
+  /** Who saved first (`conflict`), when the server named them. */
+  readonly byName?: string | null;
   /** The refusal is "this field is required": nothing was stored and retrying cannot help. */
   readonly required?: boolean;
   /** The value the person wrote; shown while the write has not settled. */
@@ -130,8 +132,9 @@ function ComputedCell({
       className={cn(
         "ml-auto inline-flex min-w-0 items-center gap-1.25 text-nav font-normal tabular-nums text-foreground",
         // Dimmed by italic and the spinner, never by opacity: the text keeps its 4.5:1 contrast in both themes.
-        view.tone === "stale" && "italic",
-        view.tone === "error" && "text-caption font-semibold text-danger-text",
+        view.tone === "stale" && "gap-[7px] italic",
+        view.tone === "error" &&
+          "text-caption leading-[1.45] font-semibold text-danger-text",
         view.tone === "empty" && "text-meta-foreground",
       )}
     >
@@ -141,7 +144,7 @@ function ComputedCell({
       <span className="truncate">{view.text}</span>
       {view.tone === "stale" ? (
         <Loader2
-          className="size-3 flex-none animate-spin motion-reduce:animate-none"
+          className="size-4.5 flex-none animate-spin motion-reduce:animate-none"
           aria-hidden="true"
         />
       ) : null}
@@ -538,14 +541,16 @@ export function TableFieldCell({
       className="ring-1 ring-warning-text"
       focusRef={useNew}
       onEscape={onUseTheirs}
+      noteClassName="w-[316px] px-3"
       note={
         <div
           role="alertdialog"
           aria-label={f.conflictLabel}
-          className="flex flex-col gap-2"
+          className="flex flex-col gap-2 text-[12.5px] leading-[1.45]"
         >
           <span className="font-semibold text-warning-subtle-foreground">
             {fillTableCopy(f.conflictTitle, {
+              who: write?.byName ?? f.staleSomeone,
               field: field.name,
               value: fieldText(field, cell.value, members) || f.empty,
             })}
@@ -555,7 +560,7 @@ export function TableFieldCell({
             <button
               type="button"
               onClick={onKeepMine}
-              className="h-7 cursor-pointer rounded-md border border-line-strong bg-popover px-2.5 text-crumb font-medium whitespace-nowrap hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring dark:bg-card"
+              className="h-[26px] cursor-pointer rounded-[7px] border border-line-strong bg-popover px-2 text-[12px] font-medium whitespace-nowrap hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring dark:bg-card"
             >
               {f.conflictMine}
             </button>
@@ -563,7 +568,7 @@ export function TableFieldCell({
               ref={useNew}
               type="button"
               onClick={onUseTheirs}
-              className="h-7 cursor-pointer rounded-md border-0 bg-primary px-2.5 text-crumb font-semibold whitespace-nowrap text-primary-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              className="h-[26px] cursor-pointer rounded-[7px] border-0 bg-primary px-2 text-[12px] font-semibold whitespace-nowrap text-primary-foreground focus-visible:outline-2 focus-visible:outline-ring"
             >
               {fillTableCopy(f.conflictTheirs, {
                 value: fieldText(field, cell.value, members) || f.empty,

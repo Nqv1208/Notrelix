@@ -6,6 +6,7 @@ import type {
 import { endpoints } from "@notrelix/contracts";
 import type {
   BoardSettingsDto,
+  FormulaPreviewDraft,
   FormulaPreviewDto,
   BoardSettingsComputedDto,
   BoardSettingsFieldDto,
@@ -37,6 +38,11 @@ export type DeletedBoardField = OperationResponse<
   "WorkManagement.BoardFields.Deleted",
   200
 >[number];
+/** The answer to a restore: `alreadyActive` when someone restored the field first, with their display name. */
+export type RestoredBoardField = OperationResponse<
+  "WorkManagement.BoardFields.Restore",
+  200
+>;
 type OverviewField = NonNullable<Overview["columns"]>[number];
 type OverviewGroup = NonNullable<Overview["lists"]>[number];
 
@@ -165,6 +171,18 @@ function defaultOptionOf(value: string | null | undefined): string | null {
   }
 }
 
+/** The text or number a Text, Long text or Number field starts with, as typed. */
+function defaultTextOf(value: string | null | undefined): string {
+  try {
+    const parsed: unknown = JSON.parse(value || "null");
+    return typeof parsed === "string" || typeof parsed === "number"
+      ? String(parsed)
+      : "";
+  } catch {
+    return "";
+  }
+}
+
 /** The settings JSON with the edited rules merged in; every other setting stays as it is. */
 export function settingsWithRules(
   base: string | undefined,
@@ -202,15 +220,22 @@ function isLockedSystemField(column: OverviewField): boolean {
 }
 
 /** The key a field is listed under: its name as a lowercase slug ("due-date"), or a short id when the name has no letters. */
-function fieldKey(column: OverviewField): string {
-  const slug = (column.name ?? "")
+export function fieldKeyOf(
+  name: string | null | undefined,
+  id?: string,
+): string {
+  const slug = (name ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/đ/gi, "d")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  return slug || (column.id ?? "").slice(0, 8);
+  return slug || (id ?? "").slice(0, 8);
+}
+
+function fieldKey(column: OverviewField): string {
+  return fieldKeyOf(column.name, column.id);
 }
 
 function mapField(column: OverviewField): BoardSettingsFieldDto {
@@ -238,6 +263,10 @@ function mapField(column: OverviewField): BoardSettingsFieldDto {
     valueCount: column.valueCount ?? 0,
     options,
     defaultOptionId: defaultOptionOf(column.defaultValue),
+    defaultText:
+      type === "text" || type === "longtext" || type === "number"
+        ? defaultTextOf(column.defaultValue)
+        : "",
     ...rulesOf(column.settings),
     settingsJson: column.settings ?? "{}",
     usedIn: [],
@@ -347,7 +376,7 @@ export function mapSettingsView(
 /**
  * Where a field is in use: the saved views that filter, sort or split by it, show it on a card, or (a table)
  * show it as a column. Read from the views the page already has, so it needs no extra request; `how` is left
- * for the page to word.
+ * for the page to word (`how` is a code: column, sort, group, card or filter).
  */
 export function usedInOf(
   fieldId: string,
@@ -355,19 +384,22 @@ export function usedInOf(
 ): BoardSettingsUsageDto[] {
   return views.flatMap((view): BoardSettingsUsageDto[] => {
     const config = view.viewConfig;
-    const kind: BoardSettingsUsageDto["kind"] | null = config.filters.some(
-      (filter) => filter.fieldId === fieldId,
-    )
+    const sorted = config.sortBy.some((sort) => sort.fieldId === fieldId);
+    const how = config.filters.some((filter) => filter.fieldId === fieldId)
       ? "filter"
       : (config.cardFieldIds ?? []).includes(fieldId)
         ? "card"
-        : config.sortBy.some((sort) => sort.fieldId === fieldId) ||
-            config.groupBy === fieldId ||
-            (view.viewMode === "table" &&
-              !(config.hiddenFields ?? []).includes(fieldId))
-          ? "view"
-          : null;
-    return kind ? [{ kind, name: view.name, how: "" }] : [];
+        : sorted
+          ? "sort"
+          : config.groupBy === fieldId
+            ? "group"
+            : view.viewMode === "table" &&
+                !(config.hiddenFields ?? []).includes(fieldId)
+              ? "column"
+              : null;
+    const kind: BoardSettingsUsageDto["kind"] | null =
+      how === "filter" || how === "card" ? how : how ? "view" : null;
+    return kind && how ? [{ kind, name: view.name, how }] : [];
   });
 }
 
@@ -649,7 +681,7 @@ export function createBoardSettingsApi(client: NotrelixClient) {
       ),
     /** Brings a deleted field and its values back; refused after 30 days or when its name is taken. */
     restoreDeletedField: (boardId: string, fieldId: string) =>
-      api.post<void>(
+      api.post<RestoredBoardField>(
         endpoints.boardFields.restore(boardId, fieldId),
         {},
         {
@@ -725,6 +757,16 @@ export function createBoardSettingsApi(client: NotrelixClient) {
                       ),
               }
             : {}),
+          ...(changes.defaultText !== undefined
+            ? {
+                defaultValueJson:
+                  changes.defaultText.trim() === ""
+                    ? "null"
+                    : field.type === "number"
+                      ? changes.defaultText.trim()
+                      : JSON.stringify(changes.defaultText),
+              }
+            : {}),
         },
         quiet,
       );
@@ -733,27 +775,33 @@ export function createBoardSettingsApi(client: NotrelixClient) {
     previewFormula: async (
       boardId: string,
       itemId: string,
-      expression: string,
+      draft: FormulaPreviewDraft,
     ): Promise<FormulaPreviewDto> => {
+      const text = (value: unknown) =>
+        value !== null && value !== undefined ? String(value) : null;
       const result = await api.get<{
         state?: string;
         value?: unknown;
         errorCode?: string | null;
-      }>(
-        endpoints.boardFields.previewFormula(boardId, itemId, expression),
-        quiet,
-      );
+        inputs?: {
+          name: string;
+          value?: { state?: string; value?: unknown };
+        }[];
+        subItemCount?: number | null;
+      }>(endpoints.boardFields.previewFormula(boardId, itemId, draft), quiet);
       const state =
         result.state === "ok" || result.state === "empty"
           ? result.state
           : "error";
       return {
         state,
-        value:
-          state === "ok" && result.value !== null && result.value !== undefined
-            ? String(result.value)
-            : null,
+        value: state === "ok" ? text(result.value) : null,
         errorCode: result.errorCode ?? null,
+        inputs: (result.inputs ?? []).map((input) => ({
+          name: input.name,
+          value: input.value?.state === "ok" ? text(input.value.value) : null,
+        })),
+        subItemCount: result.subItemCount ?? null,
       };
     },
     addOption: (

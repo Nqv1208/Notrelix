@@ -149,12 +149,13 @@ describe("a custom field cell of the table", () => {
     const onKeepMine = vi.fn();
     const onUseTheirs = vi.fn();
     cell("field-points", 21, {
-      write: { status: "conflict", value: 13 },
+      write: { status: "conflict", value: 13, byName: "Lê An" },
       onKeepMine,
       onUseTheirs,
     });
     const dialog = screen.getByRole("alertdialog", { name: "Value conflict" });
-    expect(dialog.textContent).toContain("was just changed to 21");
+    expect(dialog.textContent).toContain("Lê An just changed");
+    expect(dialog.textContent).toContain("to 21");
     expect(dialog.textContent).toContain("Your value: 13");
     fireEvent.click(screen.getByRole("button", { name: "Keep my value" }));
     expect(onKeepMine).toHaveBeenCalledTimes(1);
