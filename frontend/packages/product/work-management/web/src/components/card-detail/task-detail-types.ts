@@ -86,6 +86,9 @@ export interface ItemSheetLink {
     readonly statusName: string | null;
     readonly statusCategory: "todo" | "in_progress" | "review" | "done" | null;
     readonly isArchived?: boolean;
+    /** Its first assignee, when it has one. */
+    readonly assigneeId?: string | null;
+    readonly assigneeName?: string | null;
   };
 }
 

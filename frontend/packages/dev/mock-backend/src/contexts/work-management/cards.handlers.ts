@@ -1401,6 +1401,10 @@ export const cardsOperations = [
               statusName: status.name,
               statusCategory: status.category,
               isArchived: link.card.isArchived ?? false,
+              assigneeId: link.card.assigneeUserIds?.[0] ?? null,
+              assigneeName:
+                store.getUser(link.card.assigneeUserIds?.[0] ?? "")?.name ??
+                null,
             },
           };
         }),

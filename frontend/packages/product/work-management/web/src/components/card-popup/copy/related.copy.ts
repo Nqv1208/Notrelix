@@ -85,7 +85,13 @@ export const en = {
     changes:
       "{{key}} is linked another way. Adding changes the type of that link.",
     statusDone: "Done",
-    statusOpen: "Open",
+    statusTodo: "To do",
+    categoryNames: {
+      todo: "To do",
+      in_progress: "In progress",
+      review: "In review",
+      done: "Done",
+    },
     popTitle: "Add link",
     type: "Link type",
     findLabel: "Item on this board",
@@ -209,7 +215,13 @@ export const vi: RelatedCopy = {
     changes:
       "{{key}} đang được gắn theo cách khác. Thêm sẽ đổi loại của liên kết đó.",
     statusDone: "Hoàn thành",
-    statusOpen: "Chưa xong",
+    statusTodo: "Cần làm",
+    categoryNames: {
+      todo: "Cần làm",
+      in_progress: "Đang làm",
+      review: "Chờ duyệt",
+      done: "Hoàn thành",
+    },
     popTitle: "Thêm liên kết",
     type: "Loại liên kết",
     findLabel: "Việc trong board",

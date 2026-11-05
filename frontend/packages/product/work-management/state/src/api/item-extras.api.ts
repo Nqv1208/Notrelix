@@ -160,6 +160,9 @@ export interface ItemLinkDto {
     readonly statusCategory: "todo" | "in_progress" | "review" | "done" | null;
     /** An archived item stays linked and says so. */
     readonly isArchived?: boolean;
+    /** Its first assignee, when it has one. */
+    readonly assigneeId?: string | null;
+    readonly assigneeName?: string | null;
   };
 }
 
@@ -455,6 +458,8 @@ export function createItemExtrasApi(
                   statusCategory: (link.item.statusCategory ??
                     null) as ItemLinkDto["item"]["statusCategory"],
                   isArchived: link.item.isArchived ?? false,
+                  assigneeId: link.item.assigneeId ?? null,
+                  assigneeName: link.item.assigneeName ?? null,
                 },
               },
             ]

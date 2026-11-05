@@ -134,7 +134,11 @@ import {
   ERP_AUTOMATION_RULES,
 } from "./mock-erp-automations";
 import { MockOnboarding } from "./mock-onboarding";
-import { ERP_STATE_ITEMS, erpLongChildTitles } from "./mock-item-states";
+import {
+  ERP_LINK_ITEMS,
+  ERP_STATE_ITEMS,
+  erpLongChildTitles,
+} from "./mock-item-states";
 import { MockBoardSharing, seedErpSharing } from "./mock-board-sharing";
 import { MockBoardSavedViews } from "./mock-board-saved-views";
 import { MockBoardSavedFilters } from "./mock-board-saved-filters";
@@ -1507,6 +1511,47 @@ export class MockStore {
         }
       }
     }
+    // Links popup set (a spec's init script): ERP-144 blocks ERP-148, waits for ERP-139, is a sub-item of ERP-120.
+    const popupLinks: MockItemLinkRecord[] = [];
+    if ((globalThis as { __mockLinksSet?: boolean }).__mockLinksSet) {
+      for (const item of ERP_LINK_ITEMS) {
+        const id = erpItemId(item.key);
+        this.insertCard({
+          id,
+          boardId,
+          listId: erpGroupId("test"),
+          title: item.title,
+          position: 200 + this.cardsById.size,
+          createdAt: "2026-09-21T02:00:00.000Z",
+          updatedAt: "2026-10-12T01:40:00.000Z",
+          itemKey: item.key,
+          parentItemId: item.parentKey ? erpItemId(item.parentKey) : null,
+          dueAt: null,
+          startedAt: null,
+          completedAt: null,
+          assigneeUserIds: [erpAssigneeId(item.assignee)],
+          childProgress: null,
+          unlisted: true,
+        });
+        this.updateFieldValue(
+          id,
+          ERP_STATUS_COLUMN_ID,
+          erpStatusOptionId(item.status),
+        );
+        if (item.link) {
+          const popup = erpItemId("ERP-144");
+          popupLinks.push({
+            id: `link-popup-${item.key}`,
+            boardId,
+            from: item.link === "blocks" ? popup : id,
+            to: item.link === "blocks" ? id : popup,
+            kind: "dependency",
+          });
+        }
+      }
+      const popupCard = this.cardsById.get(erpItemId("ERP-144"));
+      if (popupCard) popupCard.parentItemId = erpItemId("ERP-120");
+    }
     // The many-cards overlay: 127 more archived items, so the archive holds 128 and reads in pages of 50.
     if (this.config.overlays.includes("many-cards")) {
       for (let n = 1; n <= 127; n += 1) {
@@ -1572,6 +1617,7 @@ export class MockStore {
         kind: "related" as const,
       })),
     ];
+    this.itemLinks.push(...popupLinks);
     for (const entry of ERP_HISTORY) {
       this.recordActivity(
         erpItemId(entry.itemKey),
