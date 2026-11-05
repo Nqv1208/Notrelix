@@ -511,7 +511,78 @@ export function KanbanView({
     return () => observer?.disconnect();
   }, [lanesReady, measureEdges, kanban.lanes.length]);
 
-  if (kanban.isLoading) return <KanbanSkeleton />;
+  const columnFields = groupableFields(kanban.filterFields).filter((field) =>
+    kanban.groupByFields.some((candidate) => candidate.id === field.id),
+  );
+  const toolbar = (
+    <KanbanToolbar
+      copy={toolbarCopy}
+      endActions={
+        <FaceFieldsPopover
+          fields={faceFieldDefinitions}
+          value={{
+            cardFieldIds: kanbanSettings.cardFieldIds ?? [],
+            cardHideEmpty: kanbanSettings.cardHideEmpty ?? [],
+          }}
+          canEdit={capabilities.canEditFields}
+          onChange={(next) => updateViewConfig(next)}
+        />
+      }
+      searchQuery={kanban.search.query}
+      onSearchChange={kanban.search.setQuery}
+      viewBar={
+        <ViewStateBar
+          canSave={capabilities.canEditFields}
+          copy={filtersCopy}
+          view={view}
+          filterOpen={filterOpen}
+          onFilterOpenChange={setFilterOpen}
+          fields={kanban.filterFields}
+          memberName={kanban.memberName}
+          people={kanban.filterChoices.assignees}
+          counts={{
+            shown: kanban.visibleCount,
+            total: kanban.totalCount,
+          }}
+          now={now}
+          timeZone={timeZone}
+          timeZoneIsDefault={timeZoneIsDefault}
+          groupFields={columnFields}
+          groupFallback={
+            kanban.groupByField
+              ? { fieldId: kanban.groupByField.id }
+              : undefined
+          }
+          laneFields={groupableFields(kanban.filterFields)}
+          blockedLaneFieldId={kanban.groupByField?.id}
+          savedFilters={(save) => (
+            <SavedFiltersControl
+              workspaceId={workspaceId}
+              boardId={boardId}
+              filter={serializeCompoundFilter(view.applied.filter)}
+              groupBy={view.state.group?.fieldId ?? null}
+              canEdit={capabilities.canEditFields}
+              onApply={view.applyCriteria}
+              {...save}
+            />
+          )}
+        />
+      }
+      canAdd={capabilities.canCreateCard}
+      onAddItem={() => setCreate({ kind: "toolbar" })}
+    />
+  );
+  // While the board loads the header, tabs and toolbar stay and the lanes are skeletons.
+  if (kanban.isLoading)
+    return (
+      <div
+        data-kanban-board=""
+        className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background font-body select-none"
+      >
+        <div className="px-4 sm:px-6">{toolbar}</div>
+        <KanbanSkeleton />
+      </div>
+    );
   const boardEmpty = !kanban.filterActive && kanban.totalCount === 0;
   if (kanban.error || !board) return <KanbanUnavailableState />;
 
@@ -622,9 +693,6 @@ export function KanbanView({
 
   // Swimlanes: rows of a second field under the columns. The lane field can
   // never be the column field.
-  const columnFields = groupableFields(kanban.filterFields).filter((field) =>
-    kanban.groupByFields.some((candidate) => candidate.id === field.id),
-  );
   const laneRef = view.applied.lane;
   const laneField: FilterField | undefined =
     laneRef && laneRef.fieldId !== kanban.groupByField?.id
@@ -1083,62 +1151,7 @@ export function KanbanView({
           inert={boardCovered || undefined}
           aria-hidden={boardCovered || undefined}
         >
-          <KanbanToolbar
-            copy={toolbarCopy}
-            endActions={
-              <FaceFieldsPopover
-                fields={faceFieldDefinitions}
-                value={{
-                  cardFieldIds: kanbanSettings.cardFieldIds ?? [],
-                  cardHideEmpty: kanbanSettings.cardHideEmpty ?? [],
-                }}
-                canEdit={capabilities.canEditFields}
-                onChange={(next) => updateViewConfig(next)}
-              />
-            }
-            searchQuery={kanban.search.query}
-            onSearchChange={kanban.search.setQuery}
-            viewBar={
-              <ViewStateBar
-                canSave={capabilities.canEditFields}
-                copy={filtersCopy}
-                view={view}
-                filterOpen={filterOpen}
-                onFilterOpenChange={setFilterOpen}
-                fields={kanban.filterFields}
-                memberName={kanban.memberName}
-                people={kanban.filterChoices.assignees}
-                counts={{
-                  shown: kanban.visibleCount,
-                  total: kanban.totalCount,
-                }}
-                now={now}
-                timeZone={timeZone}
-                timeZoneIsDefault={timeZoneIsDefault}
-                groupFields={columnFields}
-                groupFallback={
-                  kanban.groupByField
-                    ? { fieldId: kanban.groupByField.id }
-                    : undefined
-                }
-                laneFields={groupableFields(kanban.filterFields)}
-                blockedLaneFieldId={kanban.groupByField?.id}
-                savedFilters={(save) => (
-                  <SavedFiltersControl
-                    workspaceId={workspaceId}
-                    boardId={boardId}
-                    filter={serializeCompoundFilter(view.applied.filter)}
-                    groupBy={view.state.group?.fieldId ?? null}
-                    canEdit={capabilities.canEditFields}
-                    onApply={view.applyCriteria}
-                    {...save}
-                  />
-                )}
-              />
-            }
-            canAdd={capabilities.canCreateCard}
-            onAddItem={() => setCreate({ kind: "toolbar" })}
-          />
+          {toolbar}
         </div>
 
         <div
