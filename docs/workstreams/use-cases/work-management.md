@@ -47,16 +47,16 @@ The product doc also owns approvals, labels, templates, import, export, search a
 
 | Letter | Capability | Team id | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|---|
-| A | Board lifecycle | WM-001 | 27 | 3 | 0 | 2 | 21 | 1 | 0 |
-| B | BoardItem lifecycle | WM-002 | 36 | 2 | 0 | 6 | 28 | 0 | 0 |
-| C | BoardField definitions | WM-003 | 22 | 1 | 1 | 4 | 16 | 0 | 0 |
-| D | Field values | WM-004 | 12 | 0 | 0 | 0 | 12 | 0 | 0 |
+| A | Board lifecycle | WM-001 | 27 | 2 | 0 | 2 | 5 | 18 | 0 |
+| B | BoardItem lifecycle | WM-002 | 36 | 2 | 0 | 0 | 24 | 10 | 0 |
+| C | BoardField definitions | WM-003 | 22 | 1 | 1 | 4 | 14 | 2 | 0 |
+| D | Field values | WM-004 | 12 | 0 | 0 | 0 | 7 | 5 | 0 |
 | E | Groups and grouping | WM-005 | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
 | F | Ordering | WM-006 | 4 | 0 | 0 | 0 | 4 | 0 | 0 |
 | G | Checklists | WM-007 | 2 | 0 | 0 | 0 | 2 | 0 | 0 |
-| H | Query, filter and sort foundation | WM-008 | 19 | 0 | 0 | 0 | 19 | 0 | 0 |
-| I | Table view | WM-009 | 3 | 0 | 0 | 0 | 3 | 0 | 0 |
-| J | Kanban view | WM-010 | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
+| H | Query, filter and sort foundation | WM-008 | 19 | 0 | 0 | 0 | 11 | 8 | 0 |
+| I | Table view | WM-009 | 3 | 0 | 0 | 0 | 2 | 1 | 0 |
+| J | Kanban view | WM-010 | 6 | 0 | 0 | 0 | 5 | 1 | 0 |
 | K | Calendar view | WM-011 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
 | L | Timeline view | WM-012 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
 | M | Dashboard projection | WM-013 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
@@ -67,7 +67,7 @@ The product doc also owns approvals, labels, templates, import, export, search a
 | R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 1 | 7 | 0 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | T | Performance and hardening | WM-020 | 5 | 3 | 0 | 1 | 1 | 0 | 0 |
-| | Total | | 171 | 11 | 1 | 15 | 142 | 1 | 1 |
+| | Total | | 171 | 10 | 1 | 9 | 105 | 45 | 1 |
 
 Counts cover the 171 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 179 use cases, all of the prior catalog. Seven of the 171 are enterprise-baseline additions.
 
