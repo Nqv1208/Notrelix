@@ -36,6 +36,7 @@ public static class MapBoardFieldEndpoints
         group.MapResourcePost("/{fieldId:guid}/restore", HandleRestoreBoardField)
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.Restore")
+            .Produces<RestoredBoardFieldDto>(StatusCodes.Status200OK, "application/json")
             .WithSummary("Restore a field deleted in the last 30 days");
         group.MapResourceGet("/deleted", HandleListDeletedBoardFields)
             .WithName("WorkManagement.BoardFields.Deleted")
@@ -48,8 +49,8 @@ public static class MapBoardFieldEndpoints
 
         group.MapResourceGet("/preview-formula", HandlePreviewFormula)
             .WithName("WorkManagement.BoardFields.PreviewFormula")
-            .Produces<ComputedValueDto>(StatusCodes.Status200OK, "application/json")
-            .WithSummary("Evaluate a draft formula against one item of the board, without saving it");
+            .Produces<FormulaPreviewDto>(StatusCodes.Status200OK, "application/json")
+            .WithSummary("Evaluate a draft formula or rollup against one item of the board, without saving it");
 
         group.MapFieldOptionEndpoints();
 
@@ -113,10 +114,12 @@ public static class MapBoardFieldEndpoints
     private static async Task<IResult> HandlePreviewFormula(
         Guid boardId,
         Guid itemId,
-        string expression,
+        string? expression,
+        string? rollupFunction,
+        Guid? rollupFieldId,
         ISender sender,
         CancellationToken cancellationToken) =>
-        Results.Ok(await sender.Send(new PreviewFormulaQuery(boardId, itemId, expression), cancellationToken));
+        Results.Ok(await sender.Send(new PreviewFormulaQuery(boardId, itemId, expression, rollupFunction, rollupFieldId), cancellationToken));
 
     private static async Task<IResult> HandleDeleteBoardField(
         Guid boardId,
@@ -135,8 +138,8 @@ public static class MapBoardFieldEndpoints
         ISender sender,
         CancellationToken cancellationToken)
     {
-        await sender.Send(new RestoreBoardFieldCommand(boardId, fieldId), cancellationToken);
-        return Results.NoContent();
+        var result = await sender.Send(new RestoreBoardFieldCommand(boardId, fieldId), cancellationToken);
+        return Results.Ok(result.Data);
     }
 
     private static async Task<IResult> HandleListDeletedBoardFields(

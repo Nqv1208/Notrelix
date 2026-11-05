@@ -83,6 +83,23 @@ function row(patch: Partial<Card>, copy = mainTableCopy("vi")) {
 }
 
 describe("buildTableRow", () => {
+  it("counts the labels and assignees past the first one", () => {
+    const labels = ["a", "b", "c"].map((name) => ({
+      id: name,
+      name,
+      color: "#1E6FD0",
+    }));
+    const members = ["u1", "u2"].map((id) => ({
+      id,
+      userId: id,
+      name: id,
+      initials: id,
+    }));
+    const built = row({ labels, members } as Partial<Card>);
+    expect(built.label?.more).toBe(2);
+    expect(built.assignee?.more).toBe(1);
+  });
+
   it("states the due date as overdue days, today or the date", () => {
     expect(row({ dueAt: "2026-10-10T10:00:00.000Z" }).due).toEqual({
       kind: "overdue",
@@ -153,7 +170,7 @@ describe("buildTableRow", () => {
   it("takes the label tone from the label", () => {
     expect(
       row({ labels: [{ id: "l1", name: "Bảo mật", color: "#C8143F" }] }).label,
-    ).toEqual({ name: "Bảo mật", tone: "security" });
+    ).toEqual({ name: "Bảo mật", tone: "security", more: 0 });
     expect(row({}).label).toBeNull();
   });
 });

@@ -338,13 +338,16 @@ public class ApprovalRequestCommandTests : WorkManagementHandlerTestBase
         [InlineData(ApprovalStatus.Approved)]
         [InlineData(ApprovalStatus.Rejected)]
         [InlineData(ApprovalStatus.Cancelled)]
-        public async Task Handle_DecidedRequest_ThrowsBusinessRuleException(ApprovalStatus status)
+        public async Task Handle_DecidedRequest_ReturnsConflictNamingTheState(ApprovalStatus status)
         {
             var approvalRequest = CreateApprovalRequest(status: status);
             SetupApprovalRequests(approvalRequest);
 
-            await _handler.Invoking(h => h.Handle(new CancelApprovalRequestCommand(approvalRequest.Id, 1), CancellationToken.None))
-                .Should().ThrowAsync<Domain.Common.Exceptions.BusinessRuleException>();
+            var result = await _handler.Handle(new CancelApprovalRequestCommand(approvalRequest.Id, 1), CancellationToken.None);
+
+            result.Succeeded.Should().BeFalse();
+            result.TypedErrors.Should().ContainSingle(e => e.Code == "work.approval.already-decided" && e.Message.Contains(status.ToString()));
+            approvalRequest.Status.Should().Be(status);
         }
 
         [Fact]

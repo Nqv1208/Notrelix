@@ -40,7 +40,7 @@ public class GetBoardsBySlugQueryHandler : IRequestHandler<GetBoardsBySlugQuery,
         // principal without membership in the resolved Workspace sees nothing.
         var visible = await _visibility.VisibleBoardIdsAsync(workspace.Id, _requestContext.UserId, ct);
         var spaces = (await _visibility.VisibleSpaceIdsAsync(workspace.Id, _requestContext.UserId, ct)).ToHashSet();
-        var result = await BoardListProjection.LoadAsync(_context, workspace.Id, visible, spaces, ct);
+        var result = await BoardListProjection.LoadAsync(_context, workspace.Id, visible, spaces, await _visibility.SpaceNamesAsync(workspace.Id, spaces, ct), ct);
 
         return Result<List<BoardDto>>.Success(result);
     }

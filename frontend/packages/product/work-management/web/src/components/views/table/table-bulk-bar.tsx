@@ -566,7 +566,7 @@ export function TableBulkDone({
       role="status"
       aria-live="polite"
       data-table-bulk-done=""
-      className="absolute inset-x-3 bottom-5.5 z-20 mx-auto flex w-fit max-w-full items-center gap-3 rounded-[10px] bg-inverse-surface py-2.5 pr-3 pl-3.5 text-[13px] leading-[1.45] text-inverse-foreground shadow-bar max-md:bottom-3"
+      className="absolute inset-x-3 bottom-5.5 z-20 mx-auto flex w-fit max-w-full items-center gap-3 rounded-[10px] bg-inverse-surface py-2.5 pr-3 pl-3.5 text-[13px] leading-[1.45] text-inverse-foreground shadow-bar max-md:bottom-4"
     >
       <Check className="size-4 shrink-0" aria-hidden="true" />
       <span>{text}</span>
@@ -574,7 +574,7 @@ export function TableBulkDone({
         <button
           type="button"
           onClick={onUndo}
-          className="h-7 cursor-pointer rounded-[6px] border-0 bg-transparent px-1.5 text-[13px] font-semibold text-inverse-foreground hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-inverse-foreground"
+          className="h-7 cursor-pointer rounded-[6px] border-0 bg-transparent px-1.5 text-[13px] max-md:h-11 font-semibold text-inverse-foreground hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-inverse-foreground"
         >
           {undoLabel}
         </button>
