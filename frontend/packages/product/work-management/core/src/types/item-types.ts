@@ -107,6 +107,8 @@ export interface Card {
   checklistProgress?: { done: number; total: number } | null;
   /** Live, not-completed items that block this one; the card shows "Bị chặn" when above 0. */
   openBlockerCount?: number;
+  /** Key of the first open blocker on this board; absent when none is on this board (the count still shows). */
+  openBlockerKey?: string | null;
   /** Child item progress; a card shows it only when `total > 0`. */
   childProgress?: { done: number; total: number } | null;
   /** The item cover; null or absent when it has none. */

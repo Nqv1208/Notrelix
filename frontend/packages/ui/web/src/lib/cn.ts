@@ -67,6 +67,13 @@ export const TEXT_ROLES = [
   "avatar-xs",
   "calendar-title",
   "hint",
+  "frame-title",
+  "frame-lead",
+  "frame-sheet",
+  "frame-body",
+  "frame-small",
+  "frame-note",
+  "frame-hint",
 ] as const;
 
 /**

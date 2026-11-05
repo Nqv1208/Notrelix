@@ -343,7 +343,10 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
       "columns after the separator",
     ).toBeLessThanOrEqual(1);
 
-    const add = page.getByRole("button", { name: "Thêm công việc" });
+    const add = page.getByRole("button", {
+      name: "Thêm công việc",
+      exact: true,
+    });
     expectRect(await rel(page, add), t.primary, "Thêm công việc");
     expect(await style(add, "font-weight")).toBe("600");
     expect(await colour(add, "background-color")).toBe(COLOUR.accent);
@@ -417,7 +420,9 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     expect(await style(warn, "font-weight")).toBe("600");
     expect(await colour(warn, "color")).toBe(COLOUR.danger);
 
-    const add = first.getByRole("button", { name: "Thêm vào Cần làm" });
+    const add = first.getByRole("button", {
+      name: "Thêm công việc vào Cần làm",
+    });
     const addRow = add.locator("xpath=ancestor::*[@role='row'][1]");
     expectRect(
       await rel(page, addRow),
@@ -719,7 +724,7 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     const add = await rel(
       page,
       page
-        .getByRole("button", { name: "Thêm vào Cần làm" })
+        .getByRole("button", { name: "Thêm công việc vào Cần làm" })
         .locator("xpath=ancestor::*[@role='row'][1]"),
     );
     expect(Math.abs(add.y - 427.4)).toBeLessThanOrEqual(1);

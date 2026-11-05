@@ -9271,6 +9271,7 @@ export interface components {
             /** Format: uuid */
             updatedBy?: string | null;
             updatedByName?: string | null;
+            openBlockerKey?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto": {
             /** Format: int64 */
@@ -9600,6 +9601,7 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
             failureBy?: string | null;
+            unmatchedPersonRows?: number[] | null;
         };
         "Notrelix.Application.Features.WorkManagement.Transfer.ImportPreviewDto": {
             /** Format: int32 */
@@ -9612,6 +9614,7 @@ export interface components {
             errorRows?: number;
             errors?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.ImportRowError"][] | null;
             sample?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Transfer.SampleRow"][] | null;
+            unmatchedPersonRows?: number[] | null;
         };
         "Notrelix.Application.Features.WorkManagement.Transfer.ImportRowError": {
             /** Format: int32 */

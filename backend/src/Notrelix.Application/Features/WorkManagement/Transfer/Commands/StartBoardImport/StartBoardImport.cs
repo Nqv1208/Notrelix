@@ -22,7 +22,8 @@ public class StartBoardImportCommandHandler(
     IStorageService storage,
     IRequestRollbackCompensations compensations,
     ICurrentRequestContext me,
-    IDateTimeProvider clock) : IRequestHandler<StartBoardImportCommand, ImportUploadDto>
+    IDateTimeProvider clock,
+    ImportPeopleDirectory directory) : IRequestHandler<StartBoardImportCommand, ImportUploadDto>
 {
     public async Task<ImportUploadDto> Handle(StartBoardImportCommand request, CancellationToken ct)
     {
@@ -43,7 +44,8 @@ public class StartBoardImportCommandHandler(
         if (data.TotalRows > TabularReader.MaxRows)
             return Refuse(name, bytes.Length, "too-many-rows", data.Format, data.TotalRows, data.Headers.Count);
 
-        var schema = await ImportJobs.SchemaAsync(context, request.BoardId, ct);
+        var people = await directory.ResolveAsync(me.RequireWorkspaceId(), request.BoardId, me.UserId, data, ct);
+        var schema = await ImportJobs.SchemaAsync(context, request.BoardId, ct, people);
         var targets = ImportPlanner.Targets(schema);
         var accountId = me.RequireAccountId();
         var workspaceId = me.RequireWorkspaceId();
