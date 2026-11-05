@@ -17,6 +17,8 @@ export interface ViewStateControl {
   readonly applied: ViewState;
   /** True once the saved criteria were read (or there is no saved view to read them from). */
   readonly loaded: boolean;
+  /** The view on screen is the one the member's last visit saved, read back and not yet changed. */
+  readonly restored?: boolean;
   /** The member has a view of their own: any filter, sort, grouping or swimlane. */
   readonly personal: boolean;
   setFilter(filter: CompoundFilter): void;

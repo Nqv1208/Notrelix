@@ -1,7 +1,8 @@
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   bulkFailedItemId,
-  useBoardCardTitle,
+  useBoardCardReader,
   useBulkUpdateItems,
   useMoveItemToBoard,
   useWorkspaceBoards,
@@ -18,7 +19,7 @@ import type { TaskDetailCapabilities } from "../../card-detail/task-detail-types
 import { fillTableCopy, pluralTableCopy } from "../table/main-table.copy";
 import { useMainTableCopy } from "../table/use-main-table-copy";
 import { tableStatusOptions } from "../table/table-model";
-import { TableBulkBar } from "../table/table-bulk-bar";
+import { TableBulkBar, TableBulkDone } from "../table/table-bulk-bar";
 
 /** "YYYY-MM-DD" as an instant at 17:00 of that local day. */
 function dueInstant(day: string): string {
@@ -49,7 +50,18 @@ export function KanbanBulkBar({
 }) {
   const copy = useMainTableCopy();
   const bulk = useBulkUpdateItems(boardId, workspaceId);
-  const titleOf = useBoardCardTitle(boardId, workspaceId);
+  const readCard = useBoardCardReader(boardId, workspaceId);
+  const titleOf = (id: string) => readCard(id)?.title;
+  // What the last change did, for a few seconds, with "Hoàn tác" where one request takes it back (BC-Bulk `bk-ok`).
+  const [done, setDone] = useState<{
+    text: string;
+    onUndo?: () => void;
+  } | null>(null);
+  useEffect(() => {
+    if (!done) return;
+    const timer = setTimeout(() => setDone(null), 6000);
+    return () => clearTimeout(timer);
+  }, [done]);
   const moveItem = useMoveItemToBoard(boardId, workspaceId, {
     onError: () => toast.error(copy.failed.bulk, { id: "kanban-bulk-move" }),
   });
@@ -58,13 +70,71 @@ export function KanbanBulkBar({
   const statusField = findStatusField(board.fieldDefinitions);
   const ids = [...selectedIds];
 
-  const write = (change: BulkItemChange, done?: string) =>
+  // The change that puts the picked cards back, when they all held the same value before it.
+  const inverseOf = (change: BulkItemChange): BulkItemChange | null => {
+    const cards = ids.map(readCard);
+    if (cards.some((card) => !card)) return null;
+    const same = <T,>(
+      read: (card: NonNullable<(typeof cards)[number]>) => T,
+    ) => {
+      const first = read(cards[0]!);
+      return cards.every((card) => read(card!) === first) ? first : undefined;
+    };
+    if (change.type === "set-status") {
+      const prev = same((card) => card.statusOptionId ?? null);
+      return prev ? { type: "set-status", statusOptionId: prev } : null;
+    }
+    if (change.type === "set-due-date" || change.type === "clear-due-date") {
+      const prev = same((card) => card.dueAt ?? card.dueDate ?? null);
+      if (prev === undefined) return null;
+      return prev
+        ? { type: "set-due-date", dueDate: prev }
+        : { type: "clear-due-date" };
+    }
+    return null;
+  };
+  const doneText = (change: BulkItemChange, count: number): string | null => {
+    const b = copy.bulk;
+    return change.type === "set-status"
+      ? pluralTableCopy(
+          { one: b.doneStatus_one, other: b.doneStatus_other },
+          count,
+        )
+      : change.type === "set-due-date" || change.type === "clear-due-date"
+        ? pluralTableCopy({ one: b.doneDue_one, other: b.doneDue_other }, count)
+        : change.type === "set-priority"
+          ? pluralTableCopy(
+              { one: b.donePriority_one, other: b.donePriority_other },
+              count,
+            )
+          : null;
+  };
+  const write = (change: BulkItemChange, done?: string) => {
+    const picked = [...ids];
+    const inverse = inverseOf(change);
     bulk.mutate(
-      { itemIds: ids, change },
+      { itemIds: picked, change },
       {
         // The pick is spent only once the server took the change; a refusal keeps it and names the item.
         onSuccess: () => {
           if (done) toast.success(done, { id: "kanban-bulk" });
+          const text = doneText(change, picked.length);
+          if (text)
+            setDone({
+              text,
+              onUndo: inverse
+                ? () => {
+                    setDone(null);
+                    bulk.mutate(
+                      { itemIds: picked, change: inverse },
+                      {
+                        onError: () =>
+                          toast.error(copy.failed.bulk, { id: "kanban-bulk" }),
+                      },
+                    );
+                  }
+                : undefined,
+            });
           onClear();
         },
         onError: (error) => {
@@ -79,6 +149,7 @@ export function KanbanBulkBar({
         },
       },
     );
+  };
   const settle = write;
 
   const moveTargets = (workspaceBoards.data ?? [])
@@ -89,6 +160,15 @@ export function KanbanBulkBar({
         candidate.canAddItems !== false,
     )
     .map((candidate) => ({ id: candidate.id, title: candidate.title }));
+
+  if (ids.length === 0)
+    return done ? (
+      <TableBulkDone
+        text={done.text}
+        undoLabel={copy.archived.undo}
+        onUndo={done.onUndo}
+      />
+    ) : null;
 
   return (
     <TableBulkBar

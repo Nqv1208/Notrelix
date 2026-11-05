@@ -28,6 +28,18 @@ export class MockRealtimeTransport implements RealtimeTransport {
   >();
   private subscriptionCounter = 0;
 
+  constructor() {
+    // A browser test drives the connection through `globalThis.__notrelixMockRealtime.simulateState("reconnecting")`.
+    (
+      globalThis as { __notrelixMockRealtime?: MockRealtimeTransport }
+    ).__notrelixMockRealtime = this;
+  }
+
+  /** Test/dev helper: the connection state the app shows (reconnecting, offline, connected). */
+  simulateState(next: RealtimeConnectionState): void {
+    this.setState(next);
+  }
+
   async connect(_context: RealtimeConnectContext): Promise<void> {
     this.setState("connecting");
     // Deterministic in-memory transition to connected — no network

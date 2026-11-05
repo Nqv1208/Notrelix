@@ -69,6 +69,10 @@ export const en = {
     restoreFailed: "Could not restore filter {{name}}",
     failed: "Could not change filter {{name}}. Try again.",
     forbidden: "You do not have the right to change filter {{name}}.",
+    conflict:
+      "Someone just changed filter {{name}}. The list is up to date; try again.",
+    conflictBy:
+      "{{by}} just changed filter {{name}}. The list is up to date; try again.",
   },
 };
 
@@ -139,6 +143,10 @@ export const vi: SavedFiltersCopy = {
     restoreFailed: "Chưa khôi phục được bộ lọc {{name}}",
     failed: "Chưa đổi được bộ lọc {{name}}. Hãy thử lại.",
     forbidden: "Bạn không có quyền đổi bộ lọc {{name}}.",
+    conflict:
+      "Có người vừa đổi bộ lọc {{name}}. Danh sách đã được cập nhật, hãy thử lại.",
+    conflictBy:
+      "{{by}} vừa đổi bộ lọc {{name}}. Danh sách đã được cập nhật, hãy thử lại.",
   },
 };
 
