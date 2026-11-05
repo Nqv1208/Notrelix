@@ -12,7 +12,8 @@
  * What the name holds picks the story: `cot-loi` has a column that cannot map (and a value not in the options),
  * `thieu-ten` has no column for the title, `co-loi` previews with 12 errors in 9 rows; at confirm `dang-tao` stays
  * at 3.200 of 5.000, `gan-xong` at 4.900, `bi-tu-choi` is refused at row 3.480, `luu-tru` finds the board archived,
- * `mat-mang` loses the connection; any other name is checked clean and done at once.
+ * `mat-mang` loses the connection; any other name is checked clean and done at once. `gon` shows only four of the
+ * columns (title, due, priority, estimate), the short list the phone sheet is drawn with.
  *
  * `globalThis.__mockImportHold` keeps an upload open (the dialog reading the file) for a spec to measure.
  */
@@ -26,6 +27,7 @@ import {
 import { canReadBoard } from "./boards.handlers";
 
 const MB = 1024 * 1024;
+const SHOWN = new Set([0, 2, 3, 4]);
 const files = new Map<string, { fileName: string; rows: number }>();
 
 const COLUMNS = [
@@ -197,6 +199,7 @@ export const boardImportOperations = [
       const part = request.formData?.get("file");
       const fileName = part && typeof part !== "string" ? part.name : "tep";
       const base = { fileName, format: "xlsx", columnCount: 12 };
+      const short = /gon/.test(fileName);
       if (/\.pdf$/i.test(fileName))
         return ok({ ...base, rejection: "unsupported-type", size: 380 * 1024 });
       if (/day-du/.test(fileName))
@@ -215,13 +218,17 @@ export const boardImportOperations = [
         jobId,
         rowCount: 5_000,
         size: Math.round(1.8 * MB),
-        columns: COLUMNS.map((col) =>
-          col.index === 4 && /cot-loi/.test(fileName)
-            ? { ...col, examples: ["8", "ba ngày", "2,5"] }
-            : col,
+        columns: COLUMNS.filter((col) => !short || SHOWN.has(col.index)).map(
+          (col) =>
+            col.index === 4 && /cot-loi/.test(fileName)
+              ? { ...col, examples: ["8", "ba ngày", "2,5"] }
+              : col,
         ),
         targets: targets(),
-        suggested: /thieu-ten/.test(fileName) ? SUGGESTED.slice(1) : SUGGESTED,
+        suggested: (/thieu-ten/.test(fileName)
+          ? SUGGESTED.slice(1)
+          : SUGGESTED
+        ).filter((m) => !short || SHOWN.has(m.column)),
       });
     },
   }),

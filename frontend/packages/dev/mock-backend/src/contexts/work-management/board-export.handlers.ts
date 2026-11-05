@@ -24,26 +24,27 @@ interface MockExportJob {
   expiresAt: string | null;
   failureCode: string | null;
   createdAt: string;
-  /** Reads since the job was created: the mock clock is fixed, so progress counts reads, not time. */
-  reads: number;
 }
 
 /** The mock world's board is smaller than the artboard's; these are the artboard's counts. */
 const VIEW_COUNT = 37;
 const ALL_COUNT = 212;
-/** A job is queued, then running, then ready, by how often it is read, so a spec can hold each state for a moment. */
-const RUNNING_AFTER_READS = 1;
-const READY_AFTER_READS = 3;
+/**
+ * A job is queued, then running, then ready, by how often it was read (the dialog polls twice a second; the mock
+ * clock stands still), so a spec can hold each state for a moment.
+ */
+const RUNNING_AFTER_READS = 3;
+const READY_AFTER_READS = 9;
 const jobs = new Map<string, MockExportJob[]>();
+const reads = new Map<string, number>();
 
 function present(job: MockExportJob) {
-  const { reads: _reads, ...shown } = job;
-  return shown;
+  return job;
 }
 
 /**
  * A spec can hold the job in one state (`globalThis.__mockExportStage`), with the artboard's file: 5.000 rows,
- * 1,2 MB, made at 10:42 on 31/10/2026. Absent, the job moves by reads.
+ * 1,2 MB, made at 10:42 on 31/10/2026. Absent, the job moves by age.
  */
 function hold(job: MockExportJob, stage: string): MockExportJob {
   const made = "2026-10-31T10:42:00+07:00";
@@ -60,20 +61,24 @@ function hold(job: MockExportJob, stage: string): MockExportJob {
   return job;
 }
 
-function advance(job: MockExportJob, expiresAt: string): MockExportJob {
+function advance(
+  job: MockExportJob,
+  store: { getClock(): { offsetDays(days: number): string } },
+): MockExportJob {
   const stage = (globalThis as { __mockExportStage?: string })
     .__mockExportStage;
   if (stage) return hold(job, stage);
-  job.reads += 1;
-  if (job.reads >= RUNNING_AFTER_READS) {
+  const read = (reads.get(job.id) ?? 0) + 1;
+  reads.set(job.id, read);
+  if (read >= RUNNING_AFTER_READS) {
     job.status = "running";
     job.processed = Math.round(job.rowCount * 0.48);
   }
-  if (job.reads >= READY_AFTER_READS) {
+  if (read >= READY_AFTER_READS) {
     job.status = "ready";
     job.processed = job.rowCount;
     job.size = job.rowCount * 118;
-    job.expiresAt = expiresAt;
+    job.expiresAt = store.getClock().offsetDays(1);
   }
   return job;
 }
@@ -107,9 +112,7 @@ export const boardExportOperations = [
     async handle({ params, store }) {
       if (!canReadBoard(params.boardId, store)) return notFound();
       return ok(
-        (jobs.get(params.boardId) ?? []).map((j) =>
-          present(advance(j, store.getClock().offsetDays(1))),
-        ),
+        (jobs.get(params.boardId) ?? []).map((j) => present(advance(j, store))),
       );
     },
   }),
@@ -138,8 +141,7 @@ export const boardExportOperations = [
         size: 0,
         expiresAt: null,
         failureCode: null,
-        createdAt: store.now(),
-        reads: 0,
+        createdAt: store.getClock().isoNow(),
       };
       jobs.set(params.boardId, [job, ...(jobs.get(params.boardId) ?? [])]);
       return created(present(job));
@@ -154,9 +156,7 @@ export const boardExportOperations = [
     async handle({ params, store }) {
       if (!canReadBoard(params.boardId, store)) return notFound();
       const job = jobs.get(params.boardId)?.find((j) => j.id === params.jobId);
-      return job
-        ? ok(present(advance(job, store.getClock().offsetDays(1))))
-        : notFound();
+      return job ? ok(present(advance(job, store))) : notFound();
     },
   }),
 ];
