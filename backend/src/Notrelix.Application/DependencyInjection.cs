@@ -101,6 +101,7 @@ public static class DependencyInjection
             (IIdempotencyExecutionContextWriter)sp.GetRequiredService<IIdempotencyExecutionContext>());
 
         services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Members.IWorkspaceMemberFacts, Notrelix.Application.Features.Workspaces.Members.Services.WorkspaceMemberFacts>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Teams.ITeamMembershipFacts, Notrelix.Application.Features.Workspaces.Teams.Services.TeamMembershipFacts>();
         services.AddScoped<Notrelix.Application.Features.Governance.Roles.CustomRoleChangeRecorder>();
         services.AddScoped<Notrelix.Application.Common.Realtime.IAccessChangeSignal, Notrelix.Application.Common.Realtime.AccessChangeSignal>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Public.BoardRealtime.IBoardRealtimeNotifier, Notrelix.Application.Features.WorkManagement.Realtime.BoardRealtimeNotifier>();
@@ -157,6 +158,7 @@ public static class DependencyInjection
         services.AddScoped<IBoardItemTargetAuthorizer, BoardItemTargetAuthorizer>();
         services.AddScoped<IBoardItemSummaryBuilder, BoardItemSummaryBuilder>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Transfer.BoardExportBuilder>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Transfer.ImportPeopleDirectory>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceTargetAuthorizer,
             Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceTargetAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceContentReader,

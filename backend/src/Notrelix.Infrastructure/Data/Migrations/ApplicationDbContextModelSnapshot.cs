@@ -6047,6 +6047,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("decided_at");
 
+                    b.Property<Guid?>("DecidedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("decided_by_user_id");
+
                     b.Property<string>("Note")
                         .HasColumnType("text")
                         .HasColumnName("note");
