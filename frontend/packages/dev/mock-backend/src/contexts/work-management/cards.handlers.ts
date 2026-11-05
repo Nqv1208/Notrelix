@@ -904,6 +904,30 @@ export const cardsOperations = [
             toType: "text",
           },
         } as any;
+      // A required field refuses a clear (WM-008): nothing is stored.
+      const cleared =
+        data.value === null ||
+        data.value === "" ||
+        (Array.isArray(data.value) && data.value.length === 0);
+      // The `required` fault stands for a field a manager made required before this client loaded the board.
+      const requiredFault =
+        store.getConfig().faultProfile[
+          `/board-items/${params.id}/values/${(params as any).fieldId}`
+        ] === "required";
+      if (
+        cleared &&
+        (requiredFault || /"required"\s*:\s*true/.test(target?.settings ?? ""))
+      )
+        return {
+          status: 422,
+          body: {
+            type: "https://notrelix.dev/problems/work-management.business-rule",
+            title: "Business rule violated",
+            status: 422,
+            detail: "The field is required.",
+            ruleCode: "WorkManagement_FieldValue_Required",
+          },
+        } as any;
       // A Formula is evaluated by the backend and never written.
       if (target?.fieldType === "formula")
         return badRequest({ value: ["Cannot write a computed field."] });

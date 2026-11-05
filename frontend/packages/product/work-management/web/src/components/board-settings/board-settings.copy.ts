@@ -124,6 +124,8 @@ export const en = {
     failedKept: "Not saved. What you typed is kept.",
     conflictReloaded:
       "Someone else changed this first. The latest settings are loaded, check them and make your change again.",
+    conflictReloadedBy:
+      "{{who}} changed this first. The latest settings are loaded, check them and make your change again.",
   },
   fields: {
     title: "Data fields",
@@ -167,6 +169,7 @@ export const en = {
       meta: "{{count}} items have a value",
       metaOne: "1 item has a value",
       metaNone: "no values",
+      cardMeta: "{{values}} · deleted {{date}} by {{by}}",
       deletedOn: "deleted {{date}}",
       unknownPerson: "Someone",
       left: "{{count}} days left",
@@ -175,6 +178,8 @@ export const en = {
       gone: "Past 30 days",
       restore: "Restore",
       restoring: "Restoring…",
+      noteShort:
+        "Restoring brings the field and its old values back; views, filters and forms that were removed are not applied again.",
       note: "A deleted field can be restored for 30 days; after that it can't be restored any more. Restoring brings the field and its old values back; views, filters and forms that were removed are not applied again.",
       nameTaken:
         "Couldn't restore: another field already uses the name “{{name}}”. Rename the field in use, then restore again.",
@@ -183,7 +188,8 @@ export const en = {
       expired:
         "It was deleted more than 30 days ago and can't be restored any more.",
       dismiss: "Remove from the list",
-      already: "{{name}} was restored by someone else. The list is refreshed.",
+      already: "{{name}} just restored this field. The list is refreshed.",
+      alreadyNobody: "Someone just restored this field. The list is refreshed.",
       forbidden:
         "You can see this list but can't restore the field. Ask a Board manager to restore it.",
       failed: "Couldn't restore the field {{name}}. Nothing changed.",
@@ -192,6 +198,7 @@ export const en = {
       doneBody:
         "The old values of {{count}} items show again. Views and filters are not applied again.",
       doneBodyNone: "Views and filters are not applied again.",
+      doneBodyShort: "The old values of {{count}} items show again.",
       emptyTitle: "No field has been deleted",
       emptyBody:
         "A deleted field waits here for 30 days; restoring shows its old values again. After 30 days it can't be restored any more.",
@@ -342,6 +349,14 @@ export const en = {
     guidance: "Guidance for the person filling it in",
     guidancePlaceholder: "A sentence that helps fill this field in",
     usedIn: "Used in",
+    usedHow: {
+      column: "visible column",
+      sort: "sort",
+      group: "group by",
+      card: "shown on the card",
+      filter: "filter",
+      rule: "automation rule",
+    },
     usedNone: "Not used anywhere yet.",
     archive: "Archive field",
     archiveUnavailable:
@@ -365,6 +380,13 @@ export const en = {
       "Functions: IF(condition; a; b), SUM, MIN, MAX, ROUND(number; digits), DAYS(end; start). Join text with &. Only fields of this board.",
     nodes: "{{count}} / 200 elements",
     preview: "Try it with {{key}}:",
+    previewShort: "with {{key}}",
+    previewSubItems: "{{count}} sub-items: {{values}}",
+    previewSubItemsShort: "{{count}} sub-items",
+    previewNoSubItems: "no sub-items yet",
+    previewNoSubItemsNote:
+      "Sum and Count give 0; Average, Smallest and Largest stay empty (—) because there is nothing to calculate.",
+    previewAnd: "and",
     previewEmpty: "No value",
     previewChecking: "Checking…",
     previewErrors: {
@@ -869,6 +891,8 @@ export const vi: BoardSettingsCopy = {
     failedKept: "Chưa lưu được. Nội dung bạn nhập vẫn được giữ.",
     conflictReloaded:
       "Người khác vừa thay đổi trước. Thiết lập mới nhất đã được tải, hãy xem lại rồi làm lại thay đổi.",
+    conflictReloadedBy:
+      "{{who}} vừa thay đổi trước. Thiết lập mới nhất đã được tải, hãy xem lại rồi làm lại thay đổi.",
   },
   fields: {
     title: "Trường dữ liệu",
@@ -912,6 +936,7 @@ export const vi: BoardSettingsCopy = {
       meta: "{{count}} việc có giá trị",
       metaOne: "1 việc có giá trị",
       metaNone: "không có giá trị",
+      cardMeta: "{{values}} · xoá {{date}} bởi {{by}}",
       deletedOn: "xoá {{date}}",
       unknownPerson: "Một người",
       left: "Còn {{count}} ngày",
@@ -920,6 +945,8 @@ export const vi: BoardSettingsCopy = {
       gone: "Quá 30 ngày",
       restore: "Khôi phục",
       restoring: "Đang khôi phục…",
+      noteShort:
+        "Khôi phục đưa trường và giá trị cũ về; chế độ xem, bộ lọc và biểu mẫu đã gỡ không tự áp lại.",
       note: "Trường đã xoá khôi phục được trong 30 ngày, sau đó không khôi phục được nữa. Khôi phục đưa trường và giá trị cũ về; chế độ xem, bộ lọc và biểu mẫu đã gỡ không tự áp lại.",
       nameTaken:
         "Chưa khôi phục được: tên “{{name}}” đang được một trường khác dùng. Đổi tên trường đang dùng đó rồi khôi phục lại.",
@@ -927,7 +954,9 @@ export const vi: BoardSettingsCopy = {
       openField: "Mở trường",
       expired: "Đã quá 30 ngày nên không khôi phục được nữa.",
       dismiss: "Bỏ khỏi danh sách",
-      already: "{{name}} đã được người khác khôi phục. Danh sách đã làm mới.",
+      already: "{{name}} vừa khôi phục trường này. Danh sách đã làm mới.",
+      alreadyNobody:
+        "Người khác vừa khôi phục trường này. Danh sách đã làm mới.",
       forbidden:
         "Bạn xem được danh sách này nhưng chưa khôi phục được trường. Nhờ người quản lý board khôi phục.",
       failed: "Chưa khôi phục được trường {{name}}. Không có gì thay đổi.",
@@ -936,6 +965,7 @@ export const vi: BoardSettingsCopy = {
       doneBody:
         "Giá trị cũ của {{count}} việc hiện lại. Chế độ xem và bộ lọc không tự áp lại.",
       doneBodyNone: "Chế độ xem và bộ lọc không tự áp lại.",
+      doneBodyShort: "Giá trị cũ của {{count}} việc hiện lại.",
       emptyTitle: "Chưa có trường nào bị xoá",
       emptyBody:
         "Khi xoá một trường, nó nằm ở đây 30 ngày; khôi phục là giá trị cũ hiện lại. Hết 30 ngày thì không khôi phục được nữa.",
@@ -1082,6 +1112,14 @@ export const vi: BoardSettingsCopy = {
     guidance: "Hướng dẫn cho người điền",
     guidancePlaceholder: "Một câu giúp người dùng điền trường này",
     usedIn: "Đang được dùng ở",
+    usedHow: {
+      column: "cột hiển thị",
+      sort: "sắp xếp",
+      group: "nhóm theo",
+      card: "hiện trên thẻ",
+      filter: "bộ lọc",
+      rule: "quy tắc tự động",
+    },
     usedNone: "Chưa được dùng ở đâu.",
     archive: "Lưu trữ trường",
     archiveUnavailable:
@@ -1103,6 +1141,13 @@ export const vi: BoardSettingsCopy = {
       "Hàm: IF(điều kiện; a; b), SUM, MIN, MAX, ROUND(số; chữ số), DAYS(ngày cuối; ngày đầu). Nối chữ bằng &. Chỉ dùng trường của bảng này.",
     nodes: "{{count}} / 200 phần tử",
     preview: "Xem thử với {{key}}:",
+    previewShort: "với {{key}}",
+    previewSubItems: "{{count}} việc con: {{values}}",
+    previewSubItemsShort: "{{count}} việc con",
+    previewNoSubItems: "chưa có việc con",
+    previewNoSubItemsNote:
+      "Tổng và Đếm cho 0; Trung bình, Nhỏ nhất, Lớn nhất để trống (—) vì không có gì để tính.",
+    previewAnd: "và",
     previewEmpty: "Chưa có giá trị",
     previewChecking: "Đang tính…",
     previewErrors: {

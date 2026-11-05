@@ -8,7 +8,7 @@ import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
 import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
 import { useAddGroup } from "../../status-option/use-add-group";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { toast } from "sonner";
 import { cn, useIsMobile } from "@notrelix/ui-web";
 import {
@@ -33,6 +33,7 @@ import {
   useUpdateCard,
   useUpdateCardUpdate,
   useUpdateFieldOption,
+  useHoldRealtimeRefetch,
   type KanbanWriteFailure,
   classifyRestoreError,
   deletedItemOf,
@@ -194,6 +195,9 @@ export function KanbanView({
 }: KanbanViewProps) {
   // Read once so every card judges "overdue" against the same instant.
   const [now] = useState(() => new Date());
+  // A lifted card holds realtime refetches so the lanes do not reshuffle under the pointer.
+  const [dragging, setDragging] = useState(false);
+  useHoldRealtimeRefetch(dragging);
   const cardCopy = useKanbanCardCopy();
   const toolbarCopy = useKanbanToolbarCopy();
   const laneCopy = useKanbanLaneCopy();
@@ -412,6 +416,9 @@ export function KanbanView({
   const collapsedLanes = useKanbanCollapsedLanes(
     kanbanCollapsedLanesKey(workspaceId, savedViewId ?? boardId),
   );
+  const collapsedSwimlanes = useKanbanCollapsedLanes(
+    `${kanbanCollapsedLanesKey(workspaceId, savedViewId ?? boardId)}.swimlanes`,
+  );
 
   // C opens the full form, N the quick add of the first open lane; neither
   // fires while typing, with a modifier, or while a dialog is already open.
@@ -505,6 +512,7 @@ export function KanbanView({
   }, [lanesReady, measureEdges, kanban.lanes.length]);
 
   if (kanban.isLoading) return <KanbanSkeleton />;
+  const boardEmpty = !kanban.filterActive && kanban.totalCount === 0;
   if (kanban.error || !board) return <KanbanUnavailableState />;
 
   const lanesByCard = new Map<string, KanbanStatusLane>();
@@ -1163,6 +1171,8 @@ export function KanbanView({
                   </p>
                 )}
                 <KanbanSwimlaneBoard
+                  initialCollapsed={collapsedSwimlanes.initial}
+                  onCollapsedChange={collapsedSwimlanes.onChange}
                   copy={filtersCopy}
                   cardCopy={cardCopy}
                   now={now}
@@ -1186,6 +1196,7 @@ export function KanbanView({
               </>
             ) : (
               <KanbanBoard
+                onDraggingChange={setDragging}
                 lanes={kanban.lanes}
                 groupOrder={kanban.groups}
                 copy={laneCopy}
@@ -1193,6 +1204,7 @@ export function KanbanView({
                 now={now}
                 selectedItemId={selectedItemId}
                 filterActive={kanban.filterActive}
+                boardEmpty={boardEmpty}
                 canAdd={
                   capabilities.canCreateCard &&
                   !(kanban.filterActive && kanban.visibleCount === 0)
@@ -1255,6 +1267,21 @@ export function KanbanView({
                 onCollapsedChange={collapsedLanes.onChange}
               />
             )}
+            {boardEmpty && !laneField ? (
+              <div
+                role="status"
+                data-kanban-empty-note=""
+                className="mt-3.5 flex items-start gap-2.5 rounded-[10px] bg-brand-subtle px-3.5 py-2.5 text-[13px] leading-[1.4] text-brand-subtle-foreground dark:bg-[rgba(90,169,255,0.16)] dark:text-[#7dbbff]"
+              >
+                <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                <span className="flex min-w-0 flex-1 flex-col gap-px">
+                  <b className="font-semibold text-foreground">
+                    {laneCopy.emptyBoardNote}
+                  </b>
+                  <span>{laneCopy.emptyBoardNoteBody}</span>
+                </span>
+              </div>
+            ) : null}
           </div>
           {(["left", "right"] as const).map((side) =>
             edges[side] ? (

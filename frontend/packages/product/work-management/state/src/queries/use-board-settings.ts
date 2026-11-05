@@ -4,6 +4,7 @@ import { workspaceQueryKey } from "@notrelix/query";
 import type {
   BoardSettingsDto,
   BoardSettingsWriteResult,
+  FormulaPreviewDraft,
 } from "@notrelix/work-management-core";
 import type { BoardSettingsApi } from "../api/board-settings.api";
 import { useWorkManagementServices } from "../services";
@@ -144,10 +145,8 @@ export function useBoardSettings(boardId: string, workspaceId: string) {
 
   /** What a draft formula shows on `itemId`; null when the server could not be asked. */
   const previewFormula = useCallback(
-    (itemId: string, expression: string) =>
-      boardSettings
-        .previewFormula(boardId, itemId, expression)
-        .catch(() => null),
+    (itemId: string, draft: FormulaPreviewDraft) =>
+      boardSettings.previewFormula(boardId, itemId, draft).catch(() => null),
     [boardId, boardSettings],
   );
 

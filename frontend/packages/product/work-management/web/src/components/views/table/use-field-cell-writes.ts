@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
+  changedByNameOf,
   isRequiredRefusal,
   staleSchemaOf,
 } from "@notrelix/work-management-state";
@@ -68,7 +69,13 @@ export function useFieldCellWrites(send: Send, reload: () => Promise<unknown>) {
               ? { status: "schema", value, schema }
               : isRequiredRefusal(error)
                 ? { status: "error", value, required: true }
-                : { status: isConflict(error) ? "conflict" : "error", value },
+                : isConflict(error)
+                  ? {
+                      status: "conflict",
+                      value,
+                      byName: changedByNameOf(error),
+                    }
+                  : { status: "error", value },
           );
         },
       );
