@@ -133,6 +133,7 @@ export function createMockFetch(store: MockStore): typeof fetch {
       return createMockResponse<object>(
         request.normalizedPathname.includes("/views") ||
           request.normalizedPathname.includes("/saved-filters") ||
+          request.normalizedPathname.includes("/forms/") ||
           request.normalizedPathname.includes("/values/")
           ? {
               ...refused,

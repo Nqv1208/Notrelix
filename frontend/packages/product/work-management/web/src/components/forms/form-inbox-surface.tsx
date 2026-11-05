@@ -1,14 +1,12 @@
 import { Fragment, useId, useState, type ReactElement } from "react";
-import { ChevronLeft, SquareCheck, Trash2, TriangleAlert } from "lucide-react";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  ChevronLeft,
+  CircleAlert,
+  SquareCheck,
+  Trash2,
+  TriangleAlert,
+} from "lucide-react";
+import {
   Button,
   Dialog,
   DialogContent,
@@ -149,7 +147,7 @@ export function FormInboxSurface(props: FormInboxSurfaceProps) {
           className="flex flex-col gap-2"
         >
           {[0, 1, 2].map((n) => (
-            <Skeleton key={n} className="h-14 rounded-[10px]" />
+            <Skeleton key={n} className="h-11 rounded-[10px]" />
           ))}
         </div>
       </Shell>
@@ -237,15 +235,6 @@ export function FormInboxSurface(props: FormInboxSurfaceProps) {
           </div>
         ) : null}
 
-        {props.conflict ? (
-          <div
-            role="alert"
-            className="border-b border-line bg-warning-subtle px-4 py-2.5 text-item-small"
-          >
-            <b>{t.conflictTitle}</b> {t.conflictBody}
-          </div>
-        ) : null}
-
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
           <div
             role="tabpanel"
@@ -259,11 +248,11 @@ export function FormInboxSurface(props: FormInboxSurfaceProps) {
                 className="flex flex-col gap-2 p-3"
               >
                 {[0, 1, 2].map((n) => (
-                  <Skeleton key={n} className="h-14 rounded-[10px]" />
+                  <Skeleton key={n} className="h-11 rounded-[10px]" />
                 ))}
               </div>
             ) : status === "error" ? (
-              <div className="p-3">
+              <div className="m-3 rounded-[12px] border border-line bg-popover p-3.5">
                 <FormAlert
                   message={t.loadError}
                   onRetry={props.onReload}
@@ -271,11 +260,11 @@ export function FormInboxSurface(props: FormInboxSurfaceProps) {
                 />
               </div>
             ) : inTab.length === 0 ? (
-              <div className="m-3 rounded-[10px] border border-dashed border-line-strong px-4 py-5 text-center">
+              <div className="m-3 rounded-[10px] border border-dashed border-line-strong bg-popover px-4 py-5 text-center text-[14px] leading-[1.45]">
                 <b className="block text-item-ui font-semibold">
                   {t.empty[props.tab]}
                 </b>
-                <span className="text-item-small text-meta-foreground">
+                <span className="text-crumb text-meta-foreground">
                   {t.empty[`${props.tab}Body` as `${FormSubmissionStatus}Body`]}
                 </span>
               </div>
@@ -288,14 +277,33 @@ export function FormInboxSurface(props: FormInboxSurfaceProps) {
             {selected ? (
               <ResponseDetail {...props} form={form} response={selected} />
             ) : (
-              <p className="m-0 text-item-small text-meta-foreground">
-                {t.pick}
-              </p>
+              <div className="flex flex-col gap-3.5">
+                {props.conflict ? <ConflictNotice copy={copy} /> : null}
+                <p className="m-0 text-item-small text-meta-foreground">
+                  {t.pick}
+                </p>
+              </div>
             )}
           </div>
         </div>
       </section>
     </Shell>
+  );
+}
+
+/** The warning a decision on a response that someone else already handled leaves (the drawn warn `.alert`). */
+function ConflictNotice({ copy }: { copy: FormsCopy }) {
+  const t = copy.inbox;
+  return (
+    <div
+      role="alert"
+      className="flex items-start gap-2 text-crumb text-warning-text"
+    >
+      <CircleAlert aria-hidden="true" className="size-4 shrink-0" />
+      <span className="flex-1">
+        <b>{t.conflictTitle}</b> {t.conflictBody}
+      </span>
+    </div>
   );
 }
 
@@ -535,12 +543,52 @@ function ResponseDetail(
         </p>
       ) : null}
 
+      {props.conflict ? (
+        <div className="-mb-3.5">
+          <ConflictNotice copy={copy} />
+        </div>
+      ) : null}
+
       {props.failed ? (
         <FormAlert
           message={t.actionFailed}
           onRetry={props.failed.retry}
           retryLabel={copy.common.retry}
         />
+      ) : null}
+
+      {confirmRemove ? (
+        <div
+          role="alertdialog"
+          aria-label={t.removeAria}
+          className="flex flex-col gap-2.5 rounded-[12px] border border-line bg-popover p-3.5"
+        >
+          <div className="flex items-start gap-2 text-crumb text-danger-text">
+            <CircleAlert aria-hidden="true" className="size-4 shrink-0" />
+            <span className="flex-1">
+              {t.removeAsk.split("{{name}}")[0]}
+              <b>{by}</b>
+              {t.removeAsk.split("{{name}}")[1]}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              autoFocus
+              onClick={() => setConfirmRemove(false)}
+              className={cn(BUTTON_CLASS.outline, "h-7 px-2.5 text-crumb")}
+            >
+              {copy.common.keep}
+            </button>
+            <button
+              type="button"
+              onClick={() => void props.onRemove(response)}
+              className={cn(BUTTON_CLASS.danger, "h-7 px-2.5 text-crumb")}
+            >
+              {t.removeConfirm}
+            </button>
+          </div>
+        </div>
       ) : null}
 
       {response.status === "new" ? (
@@ -600,23 +648,6 @@ function ResponseDetail(
           )}
         </div>
       )}
-
-      <AlertDialog open={confirmRemove} onOpenChange={setConfirmRemove}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t.removeAria}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {fillFormsCopy(t.removeAsk, { name: by })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{copy.common.keep}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void props.onRemove(response)}>
-              {t.removeConfirm}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <Dialog open={rejecting} onOpenChange={setRejecting}>
         <DialogContent className="gap-3 sm:max-w-[460px]">
