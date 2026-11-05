@@ -45,9 +45,9 @@ const MOCK = {
     month: { x: 366, y: 119, width: 65, height: 28 },
     week: { x: 431, y: 119, width: 55, height: 28 },
     day: { x: 486, y: 119, width: 58, height: 28 },
-    basis: { x: 554, y: 117, width: 220, height: 32 },
-    filter: { x: 782, y: 117, width: 67, height: 32 },
-    zone: { x: 885, y: 125, width: 117, height: 17 },
+    basis: { x: 554, y: 117, width: 156, height: 32 },
+    filter: { x: 718, y: 117, width: 67, height: 32 },
+    zone: { x: 960, y: 125, width: 42, height: 17 },
     primary: { x: 1010, y: 117, width: 150, height: 32 },
   },
   frame: {
@@ -79,7 +79,8 @@ const MOCK = {
     title: { x: 901, y: 172, width: 246, height: 20 },
     hint: { x: 901, y: 200, width: 246, height: 18 },
     item: { x: 901, y: 226, width: 246, height: 94 },
-    itemTitle: { x: 936, y: 236, width: 152, height: 55 },
+    // 144.7, not the artboard's 152: the button reads "Đặt ngày" (the board's date field), not "Đặt hạn", and is wider.
+    itemTitle: { x: 936, y: 236, width: 144.7, height: 55 },
     setDue: { x: 1096, y: 260, width: 41, height: 26 },
     legend: { x: 888, y: 343, width: 272, height: 192 },
     swatch: { x: 901, y: 387, width: 22, height: 12 },
@@ -100,13 +101,16 @@ const MOCK = {
     frame: { x: 25, y: 193, width: 846, height: 684 },
     today: { x: 33, y: 198, width: 24, height: 24 },
   },
-  /** Final-Calendar range=ngay. */
+  /**
+   * Final-Calendar range=ngay, with the bar kept to one row as WM-Toolbar-Calendar draws it (the artboard's
+   * wrapped second row is gone, so every box below the bar is 40 px higher and the grid 40 px taller).
+   */
   day: {
     heading: { x: 200, y: 121, width: 177, height: 25 },
-    primary: { x: 24, y: 157, width: 150, height: 32 },
-    calendar: { x: 24, y: 199, width: 848, height: 679 },
-    overdue: { x: 25, y: 200, width: 846, height: 77 },
-    overdueItem: { x: 37, y: 234, width: 822, height: 33 },
+    primary: { x: 1010, y: 117, width: 150, height: 32 },
+    calendar: { x: 24, y: 159, width: 848, height: 719 },
+    overdue: { x: 25, y: 160, width: 846, height: 77 },
+    overdueItem: { x: 37, y: 194, width: 822, height: 33 },
     slotHeight: 44,
     timeWidth: 64,
     nowOffset: 117,
@@ -254,7 +258,7 @@ const bar = (page: Page) => ({
   heading: page.getByRole("heading", { level: 2 }).first(),
   segment: page.getByRole("radiogroup", { name: "Khoảng hiển thị" }),
   basis: page.getByRole("button", { name: /^Xếp theo/ }),
-  zone: page.getByText("Giờ Hà Nội (GMT+7)"),
+  zone: page.getByText("GMT+7", { exact: true }),
   primary: page.getByRole("button", { name: "Thêm công việc" }),
 });
 
@@ -795,7 +799,7 @@ test.describe("Board Calendar geometry at 1440 px (owner)", () => {
     const heading = bar(page).heading;
     await expect(heading).toHaveText("Thứ Hai, 12/10/2026");
     expectRect(await rel(page, heading), d.heading, "day heading");
-    // The bar wraps: "Thêm công việc" goes to a second line.
+    // The bar stays on one row.
     expectRect(await rel(page, bar(page).primary), d.primary, "primary");
     expectRect(await rel(page, page.getByRole("grid")), d.calendar, "calendar");
 

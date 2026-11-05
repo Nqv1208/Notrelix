@@ -83,6 +83,10 @@ export interface KanbanSwimlaneBoardProps {
   onOpenDetails: (cardId: string) => void;
   onDrop: (drop: SwimlaneDrop) => void;
   onRefused: (refusal: SwimlaneRefusal) => void;
+  /** The swimlanes collapsed when the board opens (the member's own preference). */
+  initialCollapsed?: ReadonlySet<string> | undefined;
+  /** The collapsed swimlanes changed: the container remembers them per member and view. */
+  onCollapsedChange?: ((collapsed: ReadonlySet<string>) => void) | undefined;
 }
 
 const collision: CollisionDetection = (args) => {
@@ -100,7 +104,7 @@ const collision: CollisionDetection = (args) => {
 export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
   const { copy, columns, swimlanes, laneField } = props;
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(
-    () => new Set(),
+    () => new Set(props.initialCollapsed),
   );
   // The card being dragged and the lane it was picked up from: a card of
   // several people shows in each person's lane (Q13), so the card alone does
@@ -323,7 +327,7 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
     >
       <div
         data-kanban-swimlanes=""
-        className="min-w-min overflow-hidden rounded-xl border border-line bg-popover dark:bg-card"
+        className="min-w-min overflow-clip rounded-xl border border-line bg-popover dark:bg-card"
       >
         <div
           data-swimlane-header=""
@@ -356,51 +360,54 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
               aria-label={name}
               className="border-b border-line last:border-b-0"
             >
-              <div className="flex min-h-10 items-center gap-2 border-b border-line bg-state-hover px-2.5 text-label font-semibold">
-                <button
-                  type="button"
-                  aria-expanded={!isCollapsed}
-                  aria-label={fillFiltersCopy(
-                    isCollapsed ? copy.lane.expand : copy.lane.collapse,
-                    { name },
-                  )}
-                  onClick={() =>
-                    setCollapsed((current) => {
-                      const next = new Set(current);
-                      if (next.has(laneKey)) next.delete(laneKey);
-                      else next.add(laneKey);
-                      return next;
-                    })
-                  }
-                  className="flex min-h-8 cursor-pointer items-center gap-2 rounded-md border-0 bg-transparent px-1 text-inherit focus-visible:outline-2 focus-visible:outline-ring"
-                >
+              <div className="sticky top-0 z-10 bg-popover dark:bg-card">
+                <div className="flex min-h-10 items-center gap-2 border-b border-line bg-state-hover px-2.5 text-label font-semibold">
+                  <button
+                    type="button"
+                    aria-expanded={!isCollapsed}
+                    aria-label={fillFiltersCopy(
+                      isCollapsed ? copy.lane.expand : copy.lane.collapse,
+                      { name },
+                    )}
+                    onClick={() =>
+                      setCollapsed((current) => {
+                        const next = new Set(current);
+                        if (next.has(laneKey)) next.delete(laneKey);
+                        else next.add(laneKey);
+                        props.onCollapsedChange?.(next);
+                        return next;
+                      })
+                    }
+                    className="flex min-h-8 cursor-pointer items-center gap-2 rounded-md border-0 bg-transparent px-1 text-inherit focus-visible:outline-2 focus-visible:outline-ring"
+                  >
+                    {isCollapsed ? (
+                      <ChevronRight className="size-4" aria-hidden="true" />
+                    ) : (
+                      <ChevronDown className="size-4" aria-hidden="true" />
+                    )}
+                    <span>{name}</span>
+                    <span className="rounded-md bg-background px-1.5 text-crumb text-muted-foreground">
+                      {lane.cards.length}
+                    </span>
+                  </button>
                   {isCollapsed ? (
-                    <ChevronRight className="size-4" aria-hidden="true" />
-                  ) : (
-                    <ChevronDown className="size-4" aria-hidden="true" />
-                  )}
-                  <span>{name}</span>
-                  <span className="rounded-md bg-background px-1.5 text-crumb text-muted-foreground">
-                    {lane.cards.length}
-                  </span>
-                </button>
-                {isCollapsed ? (
-                  <span className="ml-3 flex flex-wrap gap-x-3 text-crumb font-medium text-muted-foreground">
-                    {columns.flatMap((column) => {
-                      const n = lane.cards.filter(
-                        (card) => columnOf.get(card.id) === column.optionId,
-                      ).length;
-                      return n > 0
-                        ? [
-                            <span key={keyOf(column.optionId)}>
-                              {props.columnName(column)}{" "}
-                              <b className="text-foreground">{n}</b>
-                            </span>,
-                          ]
-                        : [];
-                    })}
-                  </span>
-                ) : null}
+                    <span className="ml-3 flex flex-wrap gap-x-3 text-crumb font-medium text-muted-foreground">
+                      {columns.flatMap((column) => {
+                        const n = lane.cards.filter(
+                          (card) => columnOf.get(card.id) === column.optionId,
+                        ).length;
+                        return n > 0
+                          ? [
+                              <span key={keyOf(column.optionId)}>
+                                {props.columnName(column)}{" "}
+                                <b className="text-foreground">{n}</b>
+                              </span>,
+                            ]
+                          : [];
+                      })}
+                    </span>
+                  ) : null}
+                </div>
               </div>
               {isCollapsed ? null : props.filterActive &&
                 lane.cards.length === 0 ? (
