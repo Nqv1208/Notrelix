@@ -9274,6 +9274,7 @@ export interface components {
             /** Format: uuid */
             updatedBy?: string | null;
             updatedByName?: string | null;
+            openBlockerKey?: string | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto": {
             /** Format: int64 */

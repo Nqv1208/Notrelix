@@ -338,12 +338,12 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
             <div
               key={keyOf(column.optionId)}
               data-swimlane-column=""
-              className="flex items-center gap-2 border-r border-line px-3 py-2 text-compact font-semibold last:border-r-0"
+              className="flex items-center gap-2 border-r border-line px-3 py-2 text-[12.5px] font-[650] last:border-r-0"
             >
               <span className="min-w-0 truncate">
                 {props.columnName(column)}
               </span>
-              <span className="rounded-md bg-state-hover px-1.5 text-crumb text-muted-foreground">
+              <span className="rounded-md bg-border px-1.5 text-[11.5px] leading-5 text-muted-foreground">
                 {column.cards.length}
               </span>
             </div>
@@ -361,7 +361,7 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
               className="border-b border-line last:border-b-0"
             >
               <div className="sticky top-0 z-10 bg-popover dark:bg-card">
-                <div className="flex min-h-10 items-center gap-2 border-b border-line bg-state-hover px-2.5 text-label font-semibold">
+                <div className="flex min-h-10 items-center gap-2 border-b border-line bg-state-hover px-2.5 text-[13px] font-[650]">
                   <button
                     type="button"
                     aria-expanded={!isCollapsed}
@@ -525,9 +525,8 @@ function hintFor(
     fromLane: string;
     toLane: string;
   },
-): string {
+): CellHint {
   const lines: string[] = [];
-  if (plan.columnChanged && plan.laneChanged) lines.push(copy.lane.drop.both);
   if (plan.columnChanged)
     lines.push(
       fillFiltersCopy(copy.lane.drop.column, {
@@ -543,7 +542,10 @@ function hintFor(
         to: names.toLane,
       }),
     );
-  return lines.join(" · ");
+  return {
+    title: plan.columnChanged && plan.laneChanged ? copy.lane.drop.both : null,
+    lines,
+  };
 }
 
 function refusalText(
@@ -552,12 +554,23 @@ function refusalText(
   field: string,
   column: string,
   limit: number | undefined,
-): string {
-  return `${copy.lane.refused}. ${fillFiltersCopy(copy.lane.refusal[reason], {
-    field,
-    column,
-    limit: limit ?? "",
-  })}`;
+): CellHint {
+  return {
+    title: copy.lane.refused,
+    lines: [
+      fillFiltersCopy(copy.lane.refusal[reason], {
+        field,
+        column,
+        limit: limit ?? "",
+      }),
+    ],
+  };
+}
+
+/** What the cell under the dragged card says (WM-Swimlanes): a bold title, then one line per change or the reason. */
+interface CellHint {
+  readonly title: string | null;
+  readonly lines: readonly string[];
 }
 
 function Cell({
@@ -571,7 +584,7 @@ function Cell({
   lane: string;
   column: string;
   state: "idle" | "drop" | "refuse";
-  hint: string | null;
+  hint: CellHint | null;
   empty: string;
   children: React.ReactNode;
 }) {
@@ -592,19 +605,28 @@ function Cell({
       )}
     >
       {hint ? (
+        // Drawn over the cell's top, on the cards: left, right and top 8 px, 8 x 10 padding, 8 px radius.
         <div
           role={state === "refuse" ? "alert" : "status"}
           className={cn(
-            "rounded-lg px-2.5 py-2 text-crumb leading-snug text-white shadow-card-hover",
-            state === "refuse" ? "bg-destructive" : "bg-foreground",
+            "absolute inset-x-2 top-2 z-[2] rounded-[8px] px-2.5 py-2 text-crumb leading-[1.4] shadow-popover",
+            state === "refuse"
+              ? "bg-destructive text-white"
+              : "bg-inverse-surface text-inverse-foreground",
           )}
         >
           {state === "refuse" ? (
-            <Ban className="mr-1 inline size-3.5" aria-hidden="true" />
+            <Ban className="mr-1 inline size-4" aria-hidden="true" />
           ) : (
-            <ArrowRight className="mr-1 inline size-3.5" aria-hidden="true" />
+            <ArrowRight className="mr-1 inline size-4" aria-hidden="true" />
           )}
-          {hint}
+          {hint.title ? <b className="font-[650]">{hint.title}</b> : null}
+          {hint.lines.map((line, index) => (
+            <span key={line}>
+              {index > 0 || hint.title ? <br /> : null}
+              {line}
+            </span>
+          ))}
         </div>
       ) : null}
       {children}

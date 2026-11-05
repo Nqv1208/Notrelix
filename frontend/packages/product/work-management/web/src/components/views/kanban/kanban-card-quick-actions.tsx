@@ -28,6 +28,12 @@ import type { KanbanCardCopy } from "./kanban-card.copy";
  * viewer may do it: a read-only board passes none, and a board that cannot
  * name the signed-in member passes no `onAssignMe`.
  */
+/** A refused move shown on the card itself. */
+export interface KanbanCardFailure {
+  readonly message: string;
+  readonly onRetry: () => void;
+}
+
 export interface KanbanCardActions {
   /** The signed-in member, read from the host's session. */
   readonly currentUserId?: string | null;
@@ -41,6 +47,8 @@ export interface KanbanCardActions {
   readonly onMoveToBoard?: (cardId: string) => void;
   /** "Chuyển sang": the columns and the one write that moves the card to one of them. */
   readonly move?: KanbanCardMove;
+  /** The refused move of a card, when its last write failed; absent: none. */
+  readonly failureOf?: (cardId: string) => KanbanCardFailure | undefined;
 }
 
 /** `YYYY-MM-DD` of the day the card is due (the backend keeps UTC days). */

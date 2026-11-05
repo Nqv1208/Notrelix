@@ -85,16 +85,24 @@ public sealed class BoardItemSummaryBuilder : IBoardItemSummaryBuilder
             .Where(link => link.Target.Kind == dependencyKind)
             .ToList();
         var blockerIds = blockerLinks.Select(link => link.Target.ResourceId).Distinct().ToList();
-        var openBlockerIds = (await _context.BoardItems
+        var openBlockers = (await _context.BoardItems
                 .AsNoTracking()
                 .Where(item => blockerIds.Contains(item.Id) && item.DeletedAt == null && item.CompletedAt == null)
-                .Select(item => item.Id)
+                .Select(item => new { item.Id, item.BoardId, item.ItemKey })
                 .ToListAsync(cancellationToken))
-            .ToHashSet();
-        var openBlockerCountByCardId = blockerLinks
-            .Where(link => openBlockerIds.Contains(link.Target.ResourceId))
+            .ToDictionary(item => item.Id);
+        var boardIdByCardId = cards.ToDictionary(card => card.Id, card => card.BoardId);
+        var openBlockerLinks = blockerLinks.Where(link => openBlockers.ContainsKey(link.Target.ResourceId)).ToList();
+        var openBlockerCountByCardId = openBlockerLinks
             .GroupBy(link => link.SourceItemId)
             .ToDictionary(group => group.Key, group => group.Count());
+        // A key names an Item the reader sees on this Board only; a blocker on another Board counts but is not named.
+        var openBlockerKeyByCardId = openBlockerLinks
+            .Where(link => openBlockers[link.Target.ResourceId].BoardId == boardIdByCardId[link.SourceItemId])
+            .Select(link => (link.SourceItemId, Key: openBlockers[link.Target.ResourceId].ItemKey))
+            .Where(blocker => !string.IsNullOrEmpty(blocker.Key))
+            .GroupBy(blocker => blocker.SourceItemId)
+            .ToDictionary(group => group.Key, group => group.Select(blocker => blocker.Key!).OrderBy(key => key, StringComparer.Ordinal).First());
 
         var collaborationCounts = await _collabReadPort.GetCountsAsync(cardIds, cancellationToken);
         var readValues = await BoardItemReadValues.LoadAsync(_context, fields, cardIds, cancellationToken);
@@ -154,7 +162,8 @@ public sealed class BoardItemSummaryBuilder : IBoardItemSummaryBuilder
                 card.RepeatRule,
                 card.ReminderOffsetMinutes ?? ItemReminder.DefaultMinutes,
                 card.UpdatedBy,
-                card.UpdatedBy.HasValue && memberActorMap.TryGetValue(card.UpdatedBy.Value, out var editor) ? editor.Name : null
+                card.UpdatedBy.HasValue && memberActorMap.TryGetValue(card.UpdatedBy.Value, out var editor) ? editor.Name : null,
+                openBlockerKeyByCardId.GetValueOrDefault(card.Id)
             );
         })
         .ToList();

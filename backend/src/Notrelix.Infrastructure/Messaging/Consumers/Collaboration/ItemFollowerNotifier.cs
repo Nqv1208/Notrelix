@@ -89,7 +89,7 @@ public class ItemFollowerNotifier
         IReadOnlyCollection<Guid> recipients,
         DateTimeOffset now,
         CancellationToken ct) =>
-        NotifyAsync(
+        await NotifyAsync(
             accountId, workspaceId, itemId, actorUserId, sourceEventId, sourceEventId.ToString(),
             producedType, title, body, await _audience.WhoCanSeeAsync(workspaceId, itemId, recipients, ct), now, ct);
 

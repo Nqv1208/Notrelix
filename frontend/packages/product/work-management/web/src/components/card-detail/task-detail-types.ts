@@ -1,5 +1,5 @@
 import type { ItemPageCopy } from "../item-page/item-page.copy";
-import type { ItemChecklistsModel } from "../checklists/item-checklists";
+import type { ItemChecklistsModel } from "../checklists/item-checklists.model";
 import type {
   ItemPagePeople,
   ItemPageUpload,
