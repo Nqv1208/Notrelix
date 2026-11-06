@@ -1,13 +1,11 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.RestoreBoard;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.ListDeletedBoards;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.BoardGroups;
-using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.WorkManagement.Labels;
@@ -16,7 +14,6 @@ using Notrelix.Domain.Workspaces.Spaces;
 using Notrelix.Infrastructure.BackgroundJobs;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Integration.Tests.Containers;
-using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Identity.Services;
 
 namespace Notrelix.Integration.Tests.Workspaces.OrgTree;
