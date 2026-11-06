@@ -348,6 +348,8 @@ export const endpoints = {
     reopen: (itemId: string) => `/board-items/${itemId}/reopen`,
     moveToBoard: (itemId: string) => `/board-items/${itemId}/move-to-board`,
     remind: (itemId: string) => `/board-items/${itemId}/remind`,
+    // Collaboration.Watchers.GetBoardItemFollowing / FollowBoardItem / UnfollowBoardItem.
+    following: (itemId: string) => `/board-items/${itemId}/following`,
     status: (itemId: string) => `/board-items/${itemId}/status`,
     fieldValues: (itemId: string) => `/board-items/${itemId}/field-values`,
     fieldValue: (itemId: string, fieldId: string) =>

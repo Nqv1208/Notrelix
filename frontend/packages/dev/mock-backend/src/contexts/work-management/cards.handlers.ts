@@ -137,6 +137,16 @@ function commentDtos(store: MockStore, cardId: string): CommentDtoApi[] {
   });
 }
 
+/**
+ * Test hook of the card popup feed, set by a spec's init script (`globalThis.__mockFeed`): "empty" answers
+ * no comments and no history, "hold" never answers either read (the loading blocks stay), "fail" fails the
+ * history read with a 500.
+ */
+function feedHook(): "empty" | "hold" | "fail" | undefined {
+  return (globalThis as { __mockFeed?: "empty" | "hold" | "fail" }).__mockFeed;
+}
+const heldForever = () => new Promise<never>(() => undefined);
+
 /** The pages linked to each item, per store. */
 const pageLinks = new WeakMap<MockStore, Map<string, Set<string>>>();
 function linksOf(store: MockStore, itemId: string): Set<string> {
@@ -1498,6 +1508,12 @@ export const cardsOperations = [
     async handle({ params, store }) {
       const c = store.getCard(params.id);
       if (!c) return notFound("Card not found");
+      const hook = feedHook();
+      if (hook === "hold") return heldForever();
+      if (hook === "fail")
+        return { status: 500, body: { message: "History unavailable" } };
+      if (hook === "empty")
+        return ok({ data: [], total: 0, page: 1, pageSize: 20 });
       const data = store.getActivity(params.id).map((entry) => ({
         id: entry.id,
         actorName: entry.actorId
@@ -1868,6 +1884,8 @@ export const cardsOperations = [
     route: "/board-items/:cardId/comments",
     async handle({ params, store }) {
       if (!store.getCard(params.cardId)) return notFound("Card not found");
+      if (feedHook() === "hold") return heldForever();
+      if (feedHook() === "empty") return ok<CommentDtoApi[]>([]);
       return ok<CommentDtoApi[]>(commentDtos(store, params.cardId));
     },
   }),
@@ -1889,6 +1907,8 @@ export const cardsOperations = [
     route: "/board-items/:cardId/comments/page",
     async handle({ params, store }) {
       if (!store.getCard(params.cardId)) return notFound("Card not found");
+      if (feedHook() === "hold") return heldForever();
+      if (feedHook() === "empty") return ok({ items: [], nextCursor: null });
       return ok({
         items: commentDtos(store, params.cardId),
         nextCursor: null,

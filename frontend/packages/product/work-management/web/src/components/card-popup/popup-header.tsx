@@ -321,6 +321,7 @@ export function PopupHeader({ onClose }: { onClose: () => void }) {
                 itemKey: card.itemKey,
                 archived: card.isArchived,
                 completed: Boolean(card.completedAt),
+                following: data.following,
               }}
               can={{
                 edit: capabilities.canEditFields && !frozen,
@@ -331,6 +332,7 @@ export function PopupHeader({ onClose }: { onClose: () => void }) {
               on={{
                 copyLink: callbacks.onCopyLink,
                 remind: frozen ? undefined : callbacks.onRemind,
+                follow: (_, next) => callbacks.onToggleWatch(next),
                 complete: callbacks.onComplete,
                 reopen: callbacks.onReopen,
                 duplicate: callbacks.onDuplicate,

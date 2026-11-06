@@ -10,7 +10,8 @@ public static class GetBoardItemFollowingEndpoint
         group.MapResourceGet("/", HandleAsync)
             .WithName("Collaboration.Watchers.GetBoardItemFollowing")
             .WithTags("Collaboration.Watchers")
-            .WithSummary("Whether the caller follows a board item, and who does");
+            .WithSummary("Whether the caller follows a board item, and who does")
+            .Produces<BoardItemFollowingDto>(StatusCodes.Status200OK, "application/json");
         return group;
     }
 

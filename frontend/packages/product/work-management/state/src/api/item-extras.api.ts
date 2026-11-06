@@ -25,6 +25,9 @@ export interface RemindResultDto {
 type RemindResponse =
   OperationResponse<"WorkManagement.BoardItems.RemindOwners">;
 
+type FollowingResponse =
+  OperationResponse<"Collaboration.Watchers.GetBoardItemFollowing">;
+
 /** The error code the server answers when the 24 hour reminder limit is hit. */
 export const REMIND_TOO_SOON_CODE = "work.item.remind-too-soon";
 
@@ -166,7 +169,7 @@ export interface ItemLinkDto {
   };
 }
 
-/** Who follows an item (gap `CTR-GAP-WS-ITEM-SHEET`). */
+/** Who follows an item (`Collaboration.Watchers.GetBoardItemFollowing`). */
 export interface ItemFollowingDto {
   readonly following: boolean;
   readonly followers: readonly { userId: string; name: string }[];
@@ -386,12 +389,17 @@ export function createItemExtrasApi(
       return (dto?.items ?? []).map(toChildItem);
     },
     async getFollowing(itemId: string): Promise<ItemFollowingDto> {
-      const dto = await api.get<Partial<ItemFollowingDto> | null>(
-        `/board-items/${itemId}/following`,
+      const dto = await api.get<FollowingResponse | null>(
+        endpoints.boardItems.following(itemId),
       );
       return {
         following: dto?.following === true,
-        followers: dto?.followers ?? [],
+        followers: (dto?.followers ?? [])
+          .filter((person) => Boolean(person.userId))
+          .map((person) => ({
+            userId: person.userId ?? "",
+            name: person.name ?? "",
+          })),
       };
     },
     async getApprovals(itemId: string): Promise<ItemApprovalDto[]> {
@@ -615,11 +623,12 @@ export function createItemExtrasApi(
       const options = { idempotencyKey: key(), ...quiet };
       if (following)
         await api.put<void>(
-          `/board-items/${itemId}/following`,
+          endpoints.boardItems.following(itemId),
           undefined,
           options,
         );
-      else await api.delete<void>(`/board-items/${itemId}/following`, options);
+      else
+        await api.delete<void>(endpoints.boardItems.following(itemId), options);
     },
     /**
      * `WorkManagement.BoardItems.MoveToBoard`: the item lands in the target

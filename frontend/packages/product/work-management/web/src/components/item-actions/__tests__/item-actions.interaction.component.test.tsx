@@ -71,6 +71,59 @@ describe("ItemActionsMenuItems", () => {
     expect(on.duplicate).toHaveBeenCalledWith("i1");
   });
 
+  it("FUI[wm.watch:menu] draws Follow after complete, flips to Unfollow with the auto-follow rule, and sends the next state", () => {
+    const follow = vi.fn();
+    renderMenu(
+      {
+        item: {
+          itemId: "i1",
+          itemKey: "ERP-142",
+          archived: false,
+          completed: false,
+          following: false,
+        },
+        on: { complete: noop, remind: noop, follow },
+      },
+      viCopy,
+    );
+    const names = screen
+      .getAllByRole("menuitem")
+      .map((item) => item.querySelector("span > span")?.textContent);
+    expect(names).toEqual([viCopy.complete, viCopy.follow, viCopy.remind]);
+    const entry = screen.getByRole("menuitem", {
+      name: new RegExp(viCopy.follow),
+    });
+    expect(entry.textContent).toContain(viCopy.followHint);
+    fireEvent.click(entry);
+    expect(follow).toHaveBeenCalledWith("i1", true);
+  });
+
+  it("FUI[wm.watch:menu-on] an item the person follows offers Unfollow and explains who follows on their own", () => {
+    const follow = vi.fn();
+    renderMenu({
+      item: {
+        itemId: "i1",
+        archived: false,
+        completed: false,
+        following: true,
+      },
+      on: { follow },
+    });
+    const entry = screen.getByRole("menuitem", {
+      name: new RegExp(en.unfollow),
+    });
+    expect(entry.textContent).toContain(en.unfollowHint);
+    fireEvent.click(entry);
+    expect(follow).toHaveBeenCalledWith("i1", false);
+  });
+
+  it("FUI[wm.watch:menu-unknown] leaves Follow out while the following state is not known", () => {
+    renderMenu({ on: { follow: vi.fn(), complete: noop } });
+    expect(
+      screen.queryByRole("menuitem", { name: new RegExp(en.follow) }),
+    ).toBeNull();
+  });
+
   it("FUI[wm.item-lifecycle:menu-viewer] keeps a locked entry visible, disabled, with its reason read through aria-describedby", () => {
     renderMenu({
       can: { edit: false, create: false, move: false, remove: false },

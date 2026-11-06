@@ -128,6 +128,23 @@ export const en = {
     delete: "Delete",
     movedFrom: "from {{from}} to {{to}}",
     mentionLabel: "Mention someone",
+    edited: "edited",
+    save: "Save",
+    deleteQuestion: "Delete this comment? It can't be restored.",
+    deleteQuestionReplies_one:
+      "Delete this comment? It can't be restored. Its reply stays, under “Comment deleted”.",
+    deleteQuestionReplies_other:
+      "Delete this comment? It can't be restored. Its {{count}} replies stay, under “Comment deleted”.",
+    deleteConfirm: "Delete",
+    deleted: "Comment deleted",
+    emptyTitle: "No comments yet",
+    emptyBody: "Write the first comment, type @ to mention someone.",
+    emptyBodyReadOnly: "Comments and the card's activity show here.",
+    errorTitle: "Couldn't load the activity",
+    errorBody: "Check your connection and try again.",
+    errorBodyComments:
+      "Check your connection and try again. The comments below are as saved.",
+    retry: "Try again",
   },
 };
 export type RelatedCopy = typeof en;
@@ -259,5 +276,22 @@ export const vi: RelatedCopy = {
     delete: "Xoá",
     movedFrom: "từ {{from}} sang {{to}}",
     mentionLabel: "Nhắc ai đó",
+    edited: "đã sửa",
+    save: "Lưu",
+    deleteQuestion: "Xoá bình luận này? Không khôi phục được.",
+    deleteQuestionReplies_one:
+      "Xoá bình luận này? Không khôi phục được. Câu trả lời vẫn giữ, nằm dưới dòng “Bình luận đã xoá”.",
+    deleteQuestionReplies_other:
+      "Xoá bình luận này? Không khôi phục được. {{count}} câu trả lời vẫn giữ, nằm dưới dòng “Bình luận đã xoá”.",
+    deleteConfirm: "Xoá",
+    deleted: "Bình luận đã xoá",
+    emptyTitle: "Chưa có bình luận nào",
+    emptyBody: "Viết bình luận đầu tiên, gõ @ để nhắc ai đó.",
+    emptyBodyReadOnly: "Bình luận và hoạt động của thẻ hiện ở đây.",
+    errorTitle: "Không tải được hoạt động",
+    errorBody: "Kiểm tra kết nối rồi thử lại.",
+    errorBodyComments:
+      "Kiểm tra kết nối rồi thử lại. Bình luận bên dưới vẫn đúng như đã lưu.",
+    retry: "Thử lại",
   },
 };

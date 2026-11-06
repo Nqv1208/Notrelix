@@ -2641,7 +2641,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Watchers.Queries.GetBoardItemFollowing.BoardItemFollowingDto"
                 }
               }
             }
@@ -31415,6 +31415,36 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Preferences.DTOs.NotificationPreferenceRowDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Collaboration.Watchers.Queries.GetBoardItemFollowing.BoardItemFollowerDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Collaboration.Watchers.Queries.GetBoardItemFollowing.BoardItemFollowingDto": {
+        "type": "object",
+        "properties": {
+          "following": {
+            "type": "boolean"
+          },
+          "followers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Watchers.Queries.GetBoardItemFollowing.BoardItemFollowerDto"
             },
             "nullable": true
           }
