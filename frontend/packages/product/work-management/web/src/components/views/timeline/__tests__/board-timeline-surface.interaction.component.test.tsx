@@ -459,17 +459,17 @@ describe("BoardTimelineSurface", () => {
     });
   });
 
-  it("FUI[wm.timeline.board:dragging] draws the keo-gian preview: handle, ghost, tip and the pushed item", () => {
+  it("FUI[wm.timeline.board:dragging] draws the keo-gian preview: handle, ghost and tip, and moves no waiting item (D76.9)", () => {
     const { container } = renderTimeline(
       timelineScenario({ state: "keo-gian" }),
     );
     expect(container.querySelectorAll('[data-tl="handle"]')).toHaveLength(1);
-    expect(container.querySelectorAll('[data-tl="ghost"]')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-tl="ghost"]')).toHaveLength(1);
     expect(container.querySelector('[data-tl="tip"]')?.textContent).toBe(
-      "Hạn: 21/10 → 23/10Đào tạo phòng Kế toán tự lùi 2 ngày, sang 24/10",
+      "Hạn: 21/10 → 23/10",
     );
     expect(dueOf(container, "erp-147")).toBe("23/10");
-    expect(dueOf(container, "phase-training")).toBe("25/10");
+    expect(dueOf(container, "phase-training")).toBe("23/10");
   });
 
   it("FUI[wm.timeline.board:read-only] gives a viewer no add, no handle, no drag and no keyboard move", () => {

@@ -41,6 +41,7 @@ public class UpdateBoardViewConfigCommandHandler : IRequestHandler<UpdateBoardVi
 
         BoardViewAccess.EnsureCanEdit(view, _currentUser.UserId);
         var config = BoardViewConfig.Create(JsonValue.Create(request.ConfigJson));
+        await BoardViewFieldReferences.EnsureCalendarDateFieldAsync(_context, request.BoardId, config, view.Config, cancellationToken);
         var before = view.Version;
         view.UpdateConfig(config, _currentUser.UserId, _dateTimeProvider.UtcNow);
 

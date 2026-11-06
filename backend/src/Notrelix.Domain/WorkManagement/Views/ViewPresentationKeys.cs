@@ -8,8 +8,10 @@ namespace Notrelix.Domain.WorkManagement.Views;
 /// Calendar places items by: <c>span</c>, <c>due</c> or a field id),
 /// <c>timelineGroupBy</c> (<c>group</c>, <c>status</c>, <c>assignee</c> or
 /// <c>none</c>) and <c>timelineBarSpan</c> (<c>start-due</c> or
-/// <c>created-due</c>). Absent or null means the default. A field id is not
-/// checked against the board: a view ignores an id that names no Date field.
+/// <c>created-due</c>). Absent or null means the default. Here only the shape is
+/// checked; the view write checks that a field id names an active Date field of
+/// the board (<c>BoardViewFieldReferences</c>), and a view reads an id that no
+/// longer does as the default.
 /// </summary>
 public static class ViewPresentationKeys
 {

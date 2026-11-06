@@ -44,6 +44,8 @@ import {
   diffDays,
   formatDayMonth,
   toDayKey,
+  calendarDateFields,
+  resolveCalendarDateBasis,
   type CalendarDateBasis,
   type CalendarEntry,
   type CalendarRange,
@@ -163,21 +165,14 @@ export function BoardCalendarView({
 
   const { board } = kanban;
   const dateFields = useMemo(
-    () =>
-      kanban.filterFields
-        .filter((entry) => !entry.builtin && entry.field.fieldType === "date")
-        .map((entry) => ({ id: entry.field.id, name: entry.field.name })),
+    () => calendarDateFields(kanban.filterFields),
     [kanban.filterFields],
   );
   const savedBasis = resolveCalendarDateField(viewConfig);
-  const wanted = localBasis ?? savedBasis;
-  // A saved field that was deleted, or is no longer a Date field, falls back.
-  const dateBasis: CalendarDateBasis =
-    wanted === "span" ||
-    wanted === "due" ||
-    dateFields.some((field) => field.id === wanted)
-      ? wanted
-      : "span";
+  const dateBasis = resolveCalendarDateBasis(
+    localBasis ?? savedBasis,
+    dateFields,
+  );
   const setDateBasis = (basis: CalendarDateBasis) => {
     if (capabilities.canEditFields) {
       setLocalBasis(null);

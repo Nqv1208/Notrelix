@@ -142,4 +142,36 @@ public class UpdateBoardItemTests : WorkManagementHandlerTestBase
             .Validate(new UpdateBoardItemCommand(Guid.CreateVersion7(), new string('x', length), null, null, 1))
             .IsValid.Should().Be(valid);
     }
+
+    /// <summary>
+    /// UC-WM-L01, D76.9: a dependency line never reschedules. Moving the item another item waits on past that
+    /// item's start writes the moved item only; the waiting item keeps its dates and its version.
+    /// </summary>
+    [Fact]
+    public async Task Handle_MovingAnItemOthersWaitOn_NeverReschedulesTheWaitingItem()
+    {
+        var before = CreateBoardItem();
+        var waiting = CreateBoardItem(boardId: before.BoardId);
+        var day = new DateTimeOffset(2025, 3, 1, 0, 0, 0, TimeSpan.Zero);
+        before.SetTimeline(day, day.AddDays(2), TestUserId, TestNow);
+        waiting.SetTimeline(day.AddDays(3), day.AddDays(5), TestUserId, TestNow);
+        var waitingVersion = waiting.Version;
+        var dependency = BoardItemLink.Create(
+            TestAccountId, TestWorkspaceId, Guid.CreateVersion7(), waiting.Id,
+            ResourceRef.Create(ResourceKind.Create("work-management.board-item"), before.Id, TestWorkspaceId),
+            BoardItemLinkType.Dependency, TestUserId, TestNow);
+        SetupBoardItems(before, waiting);
+        SetupBoardItemLinks(dependency);
+
+        var result = await _handler.Handle(
+            new UpdateBoardItemCommand(before.Id, null, day.AddDays(8).UtcDateTime, day.AddDays(6).UtcDateTime, before.Version),
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        before.StartedAt.Should().Be(day.AddDays(6));
+        before.DueAt.Should().Be(day.AddDays(8));
+        waiting.StartedAt.Should().Be(day.AddDays(3));
+        waiting.DueAt.Should().Be(day.AddDays(5));
+        waiting.Version.Should().Be(waitingVersion);
+    }
 }
