@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Bộ lọc đã lưu: menu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--side:#EFF1F4;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--sel:#EEF4FD;--danger:#C42340;--danger-soft:#FCEBEE;--ok:#1E7A4C;--ok-soft:#E5F4EC;--warn-text:#8A5A00;--warn-soft:#FDF3DC;--pop-shadow:0 12px 32px rgba(15,23,42,.16);font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn{height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.txt{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.sm{height:28px;padding:0 10px;font-size:12.5px}
+.inp{height:34px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);padding:0 10px;font:inherit;font-size:13.5px;color:var(--text);box-sizing:border-box}
+.inp.focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.inp.err{border-color:var(--danger)}
+.chip{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.c-gray{background:#EEF0F4;color:#4B5263}.c-blue{background:#E6F0FB;color:#245BA6}.c-amber{background:#FBF1D6;color:#7A5810}.c-green{background:#E5F4EC;color:#1E6A44}.c-violet{background:#F0E9FB;color:#6A3DB3}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.cap{font-size:12px;font-weight:600;color:var(--meta);margin:0}
+.state{font-size:12px;font-weight:600;color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:3px 10px;align-self:flex-start}
+h1{margin:0;font-size:22px;line-height:1.3;font-weight:650;letter-spacing:-0.01em}
+h2{margin:0;font-size:16px;font-weight:650}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.dlg{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--pop-shadow);padding:22px;display:flex;flex-direction:column;gap:16px;box-sizing:border-box}
+.tpl{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:10px;border:1px solid var(--line2);background:var(--panel);text-align:left;font:inherit;color:var(--text);cursor:pointer;box-sizing:border-box;min-width:0}
+.tpl[aria-checked="true"]{border-color:var(--accent);background:var(--sel);box-shadow:0 0 0 1px var(--accent)}
+.tpl b{font-size:13.5px;font-weight:600}
+.tpl span.d{font-size:12px;color:var(--meta)}
+.tpl .row{display:flex;gap:4px;flex-wrap:wrap}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.lbl{font-size:12.5px;font-weight:600;color:var(--muted)}
+.nav{height:34px;display:flex;align-items:center;gap:9px;padding:0 10px;border-radius:7px;color:var(--muted);font-size:13.5px;font-weight:500}
+.nav.on{background:var(--panel);box-shadow:0 0 0 1px var(--line);font-weight:600;color:var(--text)}
+.nav small{margin-left:auto;font-size:12px;color:var(--meta)}
+.iconbtn{width:30px;height:30px;border-radius:7px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) 120px 200px;align-items:center;gap:10px;min-height:52px;padding:0 14px;border-top:1px solid var(--line)}
+.chk{width:16px;height:16px;border-radius:4px;background:var(--accent);display:grid;place-items:center;flex:none}
+.bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel)}
+.pill{height:30px;padding:0 10px;border-radius:999px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);font:inherit;font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.pill.on{background:var(--accent-soft);border-color:#B9D3F4;color:var(--accent-text)}
+.fchip{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 4px 0 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent-text);font-size:12.5px;font-weight:600}
+.fchip i{width:18px;height:18px;border-radius:999px;display:grid;place-items:center}
+.menu{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--pop-shadow);padding:6px;display:flex;flex-direction:column;gap:2px;box-sizing:border-box}
+.mh{font-size:12px;font-weight:600;color:var(--meta);padding:8px 10px 4px}
+.mrow{display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:44px;padding:4px 8px 4px 10px;border-radius:8px}
+.mrow.hov{background:var(--hover)}
+.mrow.cur{background:var(--sel)}
+.mrow b{font-size:13.5px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow small{font-size:12px;color:var(--meta);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acts{display:flex;gap:2px;align-items:center}
+.sep{height:1px;background:var(--line);margin:4px 0}
+.radio{width:16px;height:16px;border-radius:999px;border:1.5px solid var(--line2);display:grid;place-items:center;flex:none;box-sizing:border-box}
+.radio.on{border-color:var(--accent)}
+.radio.on:after{content:"";width:8px;height:8px;border-radius:999px;background:var(--accent)}
+.toast{display:flex;align-items:center;gap:12px;background:#161A21;color:#fff;border-radius:10px;padding:10px 12px 10px 14px;font-size:13px;box-shadow:var(--pop-shadow)}
+.toast button{background:transparent;border:0;color:#9CC4F7;font:inherit;font-weight:600;cursor:pointer;padding:0 4px}
+.tile{display:flex;flex-direction:column;gap:10px}
+</style>
+</helmet>
+<div class="nx" style="width: 1440px; height: 1000px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 6px"><h1>Bộ lọc đã lưu · menu ngay trên thanh lọc của mọi view</h1><p style="margin: 0; color: var(--meta); font-size: 13.5px; max-width: 92ch">Thanh lọc của Bảng, Kanban, Lịch và Dòng thời gian thêm hai nút: "Lưu bộ lọc" (hiện khi đang có bộ lọc) và menu "Bộ lọc đã lưu". Chọn một bộ lọc chỉ áp dụng lên thanh lọc của bạn, không đổi view mặc định dùng chung của board. Rê chuột vào dòng hiện ba thao tác: đổi tên, chia sẻ hoặc chuyển về riêng tôi, xoá. Không hiện phím tắt trên nút.</p></div>
+<div style="display: flex; gap: 32px; align-items: flex-start">
+<section class="card" aria-label="Thanh lọc với menu bộ lọc đã lưu" style="width: 1000px; flex: none; overflow: hidden; min-height: 620px; position: relative">
+<div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line)"><b style="font-size: 15px; font-weight: 650">Triển khai ERP</b><span class="chip c-blue">Kanban</span><span style="flex: 1"></span><span style="font-size: 12.5px; color: var(--meta)">7 / 24 việc</span></div>
+<div class="bar"><span style="position: relative; display: inline-flex; align-items: center; height: 30px; border: 1px solid var(--line2); border-radius: 999px; padding: 0 10px; gap: 6px; color: var(--meta); font-size: 12.5px; width: 180px; box-sizing: border-box"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>Tìm việc</span><button class="pill on"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>Lọc · 2</button><span class="fchip">Ưu tiên: Cao <i aria-hidden="true"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></i></span><span class="fchip">Quá hạn <i aria-hidden="true"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></i></span><span style="flex: 1"></span><button class="pill"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v17l-6-4-6 4z"/></svg>Lưu bộ lọc</button><button class="pill on" aria-haspopup="menu" aria-expanded="true">Việc gấp tuần này<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></div>
+<div style="position: absolute; right: 14px; top: 104px"><div class="menu" role="menu" aria-label="Bộ lọc đã lưu" style="width: 380px">
+<div class="mh">Của tôi · chỉ mình bạn thấy</div>
+<div class="mrow cur" role="menuitem"><span style="color: var(--accent-text); display: grid; place-items: center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span><span style="min-width: 0"><b>Việc gấp tuần này</b><small>Ưu tiên Cao · Quá hạn · Nhóm theo Người phụ trách</small></span><span style="display: flex; align-items: center; gap: 4px"><span class="acts"><button class="iconbtn" aria-label="Đổi tên Việc gấp tuần này"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1L19 8l-3-3L5 16z"/></svg></button><button class="iconbtn" aria-label="Chia sẻ Việc gấp tuần này với board"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 5a3 3 0 0 1 0 6M18 15c2 .5 3 2 3 5"/></svg></button><button class="iconbtn" aria-label="Xoá Việc gấp tuần này"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button></span></span></div>
+<div class="mrow hov" role="menuitem"><span style="color: var(--meta); display: grid; place-items: center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span style="min-width: 0"><b>Chờ tôi duyệt</b><small>Trạng thái Đang xem xét · Sắp xếp theo hạn</small></span><span style="display: flex; align-items: center; gap: 4px"><span class="acts"><button class="iconbtn" aria-label="Đổi tên Chờ tôi duyệt"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1L19 8l-3-3L5 16z"/></svg></button><button class="iconbtn" aria-label="Chia sẻ Chờ tôi duyệt với board"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 5a3 3 0 0 1 0 6M18 15c2 .5 3 2 3 5"/></svg></button><button class="iconbtn" aria-label="Xoá Chờ tôi duyệt"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button></span></span></div>
+<div class="sep"></div>
+<div class="mh">Chia sẻ với board · mọi người trong board thấy</div>
+<div class="mrow" role="menuitem"><span style="color: var(--meta); display: grid; place-items: center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 5a3 3 0 0 1 0 6M18 15c2 .5 3 2 3 5"/></svg></span><span style="min-width: 0"><b>Sprint hiện tại</b><small>Hà Nguyễn · Trạng thái Đang làm · Nhóm theo Trạng thái</small></span><span style="display: flex; align-items: center; gap: 4px"><span class="acts"><button class="iconbtn" aria-label="Đổi tên Sprint hiện tại"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1L19 8l-3-3L5 16z"/></svg></button><button class="iconbtn" aria-label="Xoá Sprint hiện tại"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button></span></span></div>
+<div class="mrow" role="menuitem"><span style="color: var(--meta); display: grid; place-items: center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 5a3 3 0 0 1 0 6M18 15c2 .5 3 2 3 5"/></svg></span><span style="min-width: 0"><b>Lỗi chưa gán người</b><small>Linh Phạm · Nhãn Lỗi · Chưa có người phụ trách</small></span><span style="display: flex; align-items: center; gap: 4px"><span class="acts"><button class="iconbtn" aria-label="Đổi tên Lỗi chưa gán người"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1L19 8l-3-3L5 16z"/></svg></button><button class="iconbtn" aria-label="Xoá Lỗi chưa gán người"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button></span></span></div>
+<div class="sep"></div>
+<button class="btn txt" style="justify-content: flex-start; height: 34px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>Bỏ bộ lọc đang áp dụng</button>
+</div></div>
+<div style="padding: 20px 16px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; width: 560px; opacity: .55"><div class="card" style="height: 92px"></div><div class="card" style="height: 92px"></div><div class="card" style="height: 92px"></div></div>
+</section>
+<div style="width: 360px; flex: none; display: flex; flex-direction: column; gap: 14px">
+<span class="state">Đang áp dụng · nút ghi tên bộ lọc</span>
+<div class="card" style="padding: 12px 14px; font-size: 13px; color: var(--muted)">Dòng được chọn có dấu tích và nền xanh nhạt. Muốn thôi áp dụng thì "Bỏ bộ lọc đang áp dụng" hoặc xoá từng chip. Chip vẫn sửa tay được; sửa xong nút "Lưu bộ lọc" hiện lại.</div>
+<span class="state" style="background: var(--hover2); color: var(--muted)">Dòng bộ lọc chia sẻ của người khác</span>
+<div class="card" style="padding: 12px 14px; font-size: 13px; color: var(--muted)">Người có quyền sửa view đổi tên và xoá được bộ lọc chia sẻ. Chỉ người tạo mới chuyển nó về riêng tư, nên bộ lọc của người khác không có nút khoá.</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hệ sinh thái Notrelix</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.pg{font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F7F8FA;color:#161A21;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;padding:48px 56px 64px;box-sizing:border-box}
+h1{margin:0;font-size:30px;font-weight:650;letter-spacing:-0.015em;line-height:1.2}
+.lede{margin:8px 0 0;color:#4F5866;font-size:15px;max-width:72ch}
+h2{margin:40px 0 6px;font-size:18px;font-weight:650}
+.note{margin:0 0 16px;color:#4F5866;max-width:72ch}
+.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.layers{display:flex;flex-direction:column;gap:8px}
+.layer{display:flex;flex-wrap:wrap;border-radius:12px;overflow:hidden;border:1px solid #E1E5EA;background:#fff}
+.layer .lb{flex:0 0 190px;padding:14px 16px;background:#EFF1F4;font-weight:600;font-size:13.5px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box}
+.layer .lb small{font-weight:400;color:#4F5866;font-size:12px}
+.layer .items{flex:1 1 400px;display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:9px;border:1px solid #E1E5EA;background:#F7F8FA;font-size:13px;font-weight:500}
+.mk{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;color:#fff;flex:none;font-size:10.5px;font-weight:700}
+.mk .i{width:13px;height:13px;stroke-width:2.2}
+.scroll{overflow-x:auto}
+.tbl{background:#fff;border:1px solid #E1E5EA;border-radius:14px;overflow:hidden;min-width:960px}
+.tr{display:grid;grid-template-columns:230px minmax(0,1.2fr) minmax(0,1.2fr) 150px 110px;gap:16px;align-items:start;padding:14px 18px;border-top:1px solid #E1E5EA}
+.tr:first-child{border-top:0}
+.tr.th{background:#EFF1F4;font-size:12px;font-weight:600;color:#4F5866;padding-top:10px;padding-bottom:10px}
+.cap{display:flex;gap:10px;align-items:flex-start}
+.cap b{display:block;font-size:14px;font-weight:600}
+.cap small{display:block;font-size:12px;color:#5F6875}
+.cap .mk{width:30px;height:30px;border-radius:8px}
+.cell{font-size:13px;color:#2B313B}
+.surf{display:flex;gap:6px;flex-wrap:wrap}
+.tag{height:24px;display:inline-flex;align-items:center;padding:0 8px;border-radius:6px;background:#EFF1F4;font-size:12px;color:#3E4757;font-weight:500}
+.ph{height:24px;display:inline-flex;align-items:center;padding:0 9px;border-radius:999px;font-size:12px;font-weight:600}
+.p1{background:#E7F0FC;color:#0F56AE}
+.p2{background:#E4F0EB;color:#245849}
+.p3{background:#FBF0D3;color:#6E4F0A}
+.p4{background:#EFF1F4;color:#3E4757}
+.road{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));border:1px solid #E1E5EA;border-radius:14px;overflow:hidden;background:#fff}
+.step{padding:16px 18px;border-left:1px solid #E1E5EA;display:flex;flex-direction:column;gap:6px}
+.step:first-child{border-left:0}
+.step .n{font-size:12px;font-weight:600;color:#5F6875}
+.step b{font-size:15px;font-weight:650}
+.step ul{margin:4px 0 0;padding-left:18px;color:#2B313B;font-size:13px}
+.step li{margin-bottom:3px}
+</style>
+</helmet>
+<div class="pg" style="width:100%;min-height:1100px">
+  <h1>Hệ sinh thái Notrelix</h1>
+  <p class="lede">Một khung giao diện chung, nhiều năng lực độc lập. Người dùng chỉ học cách điều hướng một lần, mọi năng lực mới cắm vào cùng một khung với cùng ngôn ngữ, phím tắt và quyền truy cập.</p>
+
+  <h2>Ba tầng</h2>
+  <p class="note">Tầng trên không phụ thuộc vào năng lực cụ thể nào. Mỗi năng lực có màu nhận diện lấy từ một điểm của logo.</p>
+  <div class="layers">
+    <div class="layer"><div class="lb">Khung chung<small>Giống nhau ở mọi màn hình</small></div><div class="items">
+      <span class="pill">Chuyển công ty, phòng ban</span><span class="pill">Tìm kiếm và lệnh ⌘K</span><span class="pill">Hộp thư thông báo</span><span class="pill">Ghim, gần đây</span><span class="pill">Tài khoản, giao diện, ngôn ngữ</span>
+    </div></div>
+    <div class="layer"><div class="lb">Năng lực<small>Cắm vào khung chung</small></div><div class="items">
+      <span class="pill"><span class="mk" style="background:#1666CC"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M15 4v10"></path></svg></span>Công việc</span>
+      <span class="pill"><span class="mk" style="background:#2D6A59"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></svg></span>Tài liệu</span>
+      <span class="pill"><span class="mk" style="background:#B5461D"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path></svg></span>Trao đổi</span>
+      <span class="pill"><span class="mk" style="background:#8A6400"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></span>Tự động hoá</span>
+      <span class="pill"><span class="mk" style="background:#C8143F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span>Báo cáo</span>
+      <span class="pill"><span class="mk" style="background:#3E4757"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"></path></svg></span>Quản trị</span>
+    </div></div>
+    <div class="layer"><div class="lb">Nền tảng<small>Người dùng không thấy trực tiếp</small></div><div class="items">
+      <span class="pill">Công ty và phòng ban</span><span class="pill">Phân quyền theo phòng ban</span><span class="pill">Đồng bộ thời gian thực</span><span class="pill">Tích hợp bên ngoài</span><span class="pill">Gói dịch vụ</span>
+    </div></div>
+  </div>
+
+  <h2>Từng năng lực</h2>
+  <p class="note">Mỗi năng lực sở hữu dữ liệu của riêng nó và chỉ liên kết với năng lực khác qua tham chiếu, không sao chép.</p>
+  <div class="scroll">
+    <div class="tbl" role="table" aria-label="Năng lực của Notrelix">
+      <div class="tr th" role="row"><span role="columnheader">Năng lực</span><span role="columnheader">Người dùng làm gì</span><span role="columnheader">Kết nối với</span><span role="columnheader">Bề mặt</span><span role="columnheader">Giai đoạn đề xuất</span></div>
+      <sc-for list="{{caps}}" as="c" hint-placeholder-count="7">
+        <div class="tr" role="row">
+          <div class="cap" role="cell"><span class="mk" style="background:{{c.color}}">{{c.ab}}</span><span><b>{{c.name}}</b><small>{{c.owner}}</small></span></div>
+          <div class="cell" role="cell">{{c.does}}</div>
+          <div class="cell" role="cell">{{c.links}}</div>
+          <div class="surf" role="cell"><sc-for list="{{c.surf}}" as="s" hint-placeholder-count="2"><span class="tag">{{s}}</span></sc-for></div>
+          <div role="cell"><span class="ph {{c.phCls}}">{{c.phase}}</span></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <h2>Thứ tự triển khai đề xuất</h2>
+  <div class="road">
+    <div class="step"><span class="n">Bước 1</span><b>Nền móng giao diện</b><ul><li>Chốt hướng A, B hoặc C</li><li>Bộ màu, chữ, khoảng cách thành token</li><li>Bộ dữ liệu mẫu “Minh An Group”</li><li>Khung chung và tiếng Việt đầy đủ</li></ul></div>
+    <div class="step"><span class="n">Bước 2</span><b>Công việc và Tài liệu</b><ul><li>Board: bảng, Kanban, lịch, dòng thời gian</li><li>Chi tiết công việc</li><li>Trình soạn thảo, bình luận lề</li></ul></div>
+    <div class="step"><span class="n">Bước 3</span><b>Phòng ban và quyền</b><ul><li>Trang phòng ban, nhóm</li><li>Chia sẻ, khách bên ngoài</li><li>Hộp thư, nhắc tên</li></ul></div>
+    <div class="step"><span class="n">Bước 4</span><b>Mở rộng</b><ul><li>Tự động hoá, báo cáo</li><li>Ứng dụng di động</li><li>Tích hợp bên ngoài</li></ul></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      caps: [
+        { name: 'Không gian và phòng ban', ab: 'KG', color: '#3E4757', owner: 'Workspaces', does: 'Tổ chức công ty thành phòng ban, nhóm; mời và quản lý thành viên.', links: 'Là phạm vi cho mọi board, tài liệu và quyền.', surf: ['Web', 'Di động'], phase: 'Bước 1', phCls: 'p1' },
+        { name: 'Công việc', ab: 'CV', color: '#1666CC', owner: 'Work Management', does: 'Board với nhiều chế độ xem trên cùng một dữ liệu: bảng, Kanban, lịch, dòng thời gian.', links: 'Tài liệu nhúng công việc; tự động hoá phản ứng khi công việc đổi.', surf: ['Web', 'Di động'], phase: 'Bước 2', phCls: 'p2' },
+        { name: 'Tài liệu', ab: 'TL', color: '#2D6A59', owner: 'Documents', does: 'Viết quy trình, biên bản, kế hoạch; cộng tác cùng lúc.', links: 'Nhúng và tạo công việc từ đoạn văn.', surf: ['Web', 'Đọc trên di động'], phase: 'Bước 2', phCls: 'p2' },
+        { name: 'Trao đổi', ab: 'TR', color: '#B5461D', owner: 'Collaboration', does: 'Bình luận, nhắc tên, hộp thư thông báo.', links: 'Gắn vào công việc và tài liệu, không tách thành kênh chat riêng.', surf: ['Web', 'Di động'], phase: 'Bước 3', phCls: 'p3' },
+        { name: 'Quản trị và quyền', ab: 'QT', color: '#3E4757', owner: 'Governance', does: 'Ai được xem, sửa, chia sẻ; khách bên ngoài; nhật ký.', links: 'Áp dụng cho mọi năng lực, kiểm tra ở máy chủ.', surf: ['Web'], phase: 'Bước 3', phCls: 'p3' },
+        { name: 'Tự động hoá', ab: 'TĐ', color: '#8A6400', owner: 'Automation', does: 'Quy tắc “khi… thì…”: giao việc, nhắc hạn, chuyển trạng thái.', links: 'Đọc sự kiện từ Công việc, gửi qua Trao đổi.', surf: ['Web'], phase: 'Bước 4', phCls: 'p4' },
+        { name: 'Báo cáo', ab: 'BC', color: '#C8143F', owner: 'Analytics', does: 'Tiến độ phòng ban, khối lượng theo người, quá hạn.', links: 'Chỉ đọc, không sửa dữ liệu nguồn.', surf: ['Web'], phase: 'Bước 4', phCls: 'p4' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

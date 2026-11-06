@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Board core · Bản đồ phủ trạng thái</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+
+body{margin:0}
+.nx{--bg:#F7F8FA;--side:#EFF1F4;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E1E5EA;--line2:#D2D7DE;--ctl:#7C8592;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--sel:#EEF4FD;--grp:#F3F5F8;--st-todo:#7A8391;--st-doing:#1E7BE0;--st-review:#D99A00;--st-done:#2E8B57;--danger:#C42340;--danger-soft:#FDECEF;--warn-text:#8A5A00;--warn-soft:#FFF4D6;--ok:#1E7A4C;--ok-soft:#E5F4EC;--high:#B4500B;--toast:#161A21;--toast-err:#7A1B2D;--scrim:rgba(15,23,42,.38);--lane-todo:#ECEEF2;--lane-doing:#E6EFFB;--lane-review:#FDF3DC;--lane-done:#E5F3EA;--shadow:0 12px 32px rgba(15,23,42,.16);--cs:0 1px 2px rgba(20,26,36,.08);font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--side:#13181E;--panel:#1A2028;--hover:#1C232C;--hover2:#232A34;--line:#232B35;--line2:#2E3743;--ctl:#7B8695;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--sel:#172334;--grp:#12171D;--st-todo:#8C95A3;--st-doing:#5AA9FF;--st-review:#F2C14E;--st-done:#56C98A;--danger:#FF6B81;--danger-soft:rgba(255,107,129,.14);--warn-text:#F2C14E;--warn-soft:rgba(242,193,78,.14);--ok:#56C98A;--ok-soft:rgba(86,201,138,.14);--high:#FFA060;--toast:#2A323D;--toast-err:#6A2230;--scrim:rgba(0,0,0,.6);--lane-todo:#151B23;--lane-doing:#13203A;--lane-review:#272012;--lane-done:#12251C;--shadow:0 12px 32px rgba(0,0,0,.5);--cs:0 1px 2px rgba(0,0,0,.4)}
+.nx,.nx *{box-sizing:border-box}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.s{width:13px;height:13px}.i.l{width:20px;height:20px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.rf{box-shadow:inset 0 0 0 2px var(--accent)}
+.ff{outline:2px solid var(--accent);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.artb{width:1440px;padding:40px;display:flex;flex-direction:column;gap:28px;background:var(--bg)}
+.artb h1{margin:0;font-size:24px;font-weight:650;letter-spacing:-.01em}
+.artb h2{margin:0;font-size:17px;font-weight:650}
+.artb .sub{margin:4px 0 0;color:var(--muted);font-size:13.5px;max-width:130ch}
+.sec{display:flex;flex-direction:column;gap:14px}
+.grid{display:flex;flex-wrap:wrap;gap:28px 32px;align-items:flex-start}
+.cl{display:flex;flex-direction:column;gap:8px;min-width:0}
+.cap{font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;max-width:100%}
+.cap b{color:var(--text);font-weight:600;font-size:13px}
+.tg{font-size:11.5px;font-weight:600;color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:1px 9px}
+.pr{display:flex;gap:16px;align-items:flex-start}
+.pr.col{flex-direction:column}
+.fr{position:relative;border:1px solid var(--line2);border-radius:10px;overflow:hidden;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+.notes{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 22px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 32px;font-size:13px;color:var(--muted)}
+.notes h3{margin:0 0 6px;font-size:13.5px;color:var(--text);font-weight:650}
+.notes ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+.notes b{color:var(--text);font-weight:600}
+.btn{height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font-size:13px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;flex:none}
+.btn.l{height:36px;padding:0 14px}
+.btn.ph{height:44px;min-width:44px;padding:0 14px;font-size:14px}
+.btn.tb{height:44px;padding:0 14px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.dng{background:var(--danger);border-color:var(--danger);color:#fff;font-weight:600}
+.mode-dem .btn.dng{color:#1A0A0E}
+.btn.txt{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.lnk{border-color:transparent;background:transparent;color:var(--accent-text);font-weight:600;padding:0 8px}
+.btn[aria-disabled=true],.btn.dis{background:var(--hover2);border-color:var(--line2);color:var(--meta);cursor:not-allowed;font-weight:500}
+.btn.pri.dis{background:var(--hover2);color:var(--meta)}
+.ibtn{width:32px;height:32px;border-radius:7px;border:1px solid transparent;background:transparent;color:var(--muted);display:grid;place-items:center;padding:0;position:relative;flex:none}
+.ibtn.bd{border-color:var(--line2);background:var(--panel)}
+.ibtn.ph{width:44px;height:44px}.ibtn.tb{width:44px;height:44px}
+.ibtn.pri2{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.ibtn.pri2.dis{background:var(--hover2);border-color:var(--line2);color:var(--meta)}
+.ibtn.on{background:var(--accent-soft);color:var(--accent-text)}
+.ibtn .dot8{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.ibtn .cnt{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:8px;background:var(--accent);color:var(--accent-ink);font-size:10.5px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+.pill{height:32px;padding:0 10px;border-radius:7px;border:0;background:transparent;color:var(--muted);font-size:13px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:none}
+.pill b{color:var(--text);font-weight:600}
+.pill.on{background:var(--accent-soft);color:var(--accent-text)}.pill.on b{color:var(--accent-text)}
+.pill.tb{height:44px;padding:0 12px;border:1px solid var(--line2);background:var(--panel)}
+.pill.tb.on{border-color:transparent;background:var(--accent-soft)}
+.pill .n{min-width:18px;height:18px;border-radius:9px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:700;display:inline-grid;place-items:center;padding:0 5px}
+.chip{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600;white-space:nowrap}
+.c-gray{background:#EEF0F4;color:#3E4757}.c-blue{background:#E1EEFC;color:#124C8E}.c-red{background:#FDE5EA;color:#9E1736}.c-green{background:#E1F0EA;color:#1F5B46}.c-amber{background:#FBF0D3;color:#6E4F0A}.c-violet{background:#EEE7FB;color:#5532A8}
+.mode-dem .c-gray{background:#232B35;color:#C3CBD6}.mode-dem .c-blue{background:#16284A;color:#9CC4F7}.mode-dem .c-red{background:#3A1A22;color:#FFA3B1}.mode-dem .c-green{background:#14302A;color:#7FD6B0}.mode-dem .c-amber{background:#30281A;color:#F2C14E}.mode-dem .c-violet{background:#271E40;color:#C3A8FF}
+.av{border-radius:50%;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none;box-shadow:0 0 0 2px var(--panel)}
+.av.more{background:var(--hover2);color:var(--muted)}
+.stack{display:inline-flex}.stack .av+.av{margin-left:-6px}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block}
+.dot.todo{box-shadow:inset 0 0 0 2px var(--st-todo)}.dot.doing{background:var(--st-doing)}.dot.review{background:var(--st-review)}.dot.done{background:var(--st-done)}
+.stc{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;white-space:nowrap}
+.hdr{display:flex;align-items:center;gap:12px;padding:16px 24px 0}
+.hdr .cn{width:32px;height:32px;border-radius:9px;background:#1666CC;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;flex:none}
+.hdr small{display:block;color:var(--meta);font-size:12px;line-height:1.2}
+.hdr h3{margin:0;font-size:20px;font-weight:650;line-height:1.25}
+.hdr .sp{flex:1;min-width:0}
+.tabs{display:flex;align-items:flex-end;gap:2px;padding:10px 24px 0;border-bottom:1px solid var(--line)}
+.tab{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 12px;border:0;background:transparent;color:var(--muted);font-size:13.5px;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;flex:none}
+.tab.on{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
+.tab.ph{height:44px}
+.bar{display:flex;align-items:center;gap:6px;padding:10px 24px;min-height:52px}
+.bar>*{flex:none}.bar .grow{flex:1 1 0;min-width:0}
+.seg{display:inline-flex;padding:2px;border-radius:8px;background:var(--hover2)}
+.fchip{height:28px;padding:0 6px 0 10px;border-radius:7px;background:var(--accent-soft);color:var(--accent-text);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.sep{width:1px;height:20px;background:var(--line);margin:0 4px;flex:none}
+.sx{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.sx .sp2{animation:none}
+.bn{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.4}
+.bn>.i{margin-top:2px}
+.bn-t{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.bn-t b{font-weight:600}.bn-b{color:inherit;opacity:1}
+.bn-a{display:flex;gap:6px;align-items:center;flex:none;flex-wrap:wrap}
+.bn.info{background:var(--accent-soft);color:var(--accent-text)}.bn.info b{color:var(--text)}
+.bn.warn{background:var(--warn-soft);color:var(--warn-text)}.bn.warn b{color:var(--text)}
+.bn.err{background:var(--danger-soft);color:var(--danger)}.bn.err b{color:var(--text)}
+.bn.ok{background:var(--ok-soft);color:var(--ok)}.bn.ok b{color:var(--text)}
+.bn .btn{background:var(--panel)}
+.fr[data-ph] .bn{flex-wrap:wrap}.fr[data-ph] .bn-a{width:100%}.fr[data-ph] .bn-a .btn{flex:1}
+.toast{display:inline-flex;align-items:center;gap:12px;background:var(--toast);color:#F2F4F7;border-radius:10px;padding:10px 12px 10px 14px;font-size:13px;box-shadow:var(--shadow);max-width:100%}
+.toast.err{background:var(--toast-err)}
+.toast .tt{min-width:0}
+.tact{background:transparent;border:0;color:#9CC4F7;font-weight:600;padding:0 6px;height:28px;border-radius:6px;white-space:nowrap}
+.tact.ph{height:44px;min-width:44px}
+.toast.err .tact{color:#FFD0D8}
+.menu{background:var(--panel);border:1px solid var(--line2);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column;gap:2px}
+.mi{display:flex;align-items:center;gap:10px;min-height:36px;padding:6px 10px;border-radius:7px;color:var(--text);font-size:13.5px;border:0;background:transparent;text-align:left;width:100%}
+.mi.ph{min-height:44px}
+.mi small{display:block;color:var(--meta);font-size:12px;line-height:1.3}
+.mi.dis{color:var(--meta)}
+.mi.act{background:var(--hover2)}
+.mi .v{margin-left:auto;color:var(--meta);font-size:12.5px}
+.mi .ic{color:var(--muted)}
+.mi.dng{color:var(--danger)}
+.msep{height:1px;background:var(--line);margin:4px 0}
+.mh{padding:6px 10px 2px;font-size:12px;font-weight:600;color:var(--meta)}
+.scrim{position:absolute;inset:0;background:var(--scrim)}
+.dlg{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}
+.dlg-h{display:flex;align-items:center;gap:10px;padding:16px 20px 8px}
+.dlg-h h4{margin:0;font-size:17px;font-weight:650;flex:1;min-width:0}
+.dlg-b{padding:8px 20px 16px;display:flex;flex-direction:column;gap:14px;font-size:13.5px}
+.dlg-f{display:flex;gap:8px;align-items:center;justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--line);background:var(--panel)}
+.fld{display:flex;flex-direction:column;gap:5px;min-width:0}
+.flab{font-size:12.5px;font-weight:600;color:var(--muted)}
+.req{color:var(--danger)}
+.hint{font-size:12px;color:var(--meta)}
+.ferr{display:flex;gap:5px;align-items:flex-start;font-size:12.5px;color:var(--danger);font-weight:500}
+.ferr .i{margin-top:2px}
+.inp,.sel,.txa{height:36px;width:100%;border:1px solid var(--ctl);border-radius:7px;background:var(--panel);padding:0 10px;font-size:13.5px;color:var(--text);font-family:inherit}
+.txa{height:auto;min-height:72px;padding:8px 10px;line-height:1.45}
+.inp.ph,.sel.ph{height:44px;font-size:15px}
+.sel{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left}
+.sel .mu{color:var(--meta)}
+.sel.ph{height:44px}
+.inp.err,.sel.err,.txa.err{border-color:var(--danger);box-shadow:inset 0 0 0 1px var(--danger)}
+.inp.foc,.sel.foc,.txa.foc{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.inp[disabled],.sel[aria-disabled=true]{background:var(--hover2);color:var(--meta);border-color:var(--line2)}
+.cbx{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--ctl);background:var(--panel);display:grid;place-items:center;color:var(--accent-ink);padding:0;flex:none;position:relative}
+.cbx.on{background:var(--accent);border-color:var(--accent)}
+.cbx .indet{width:8px;height:2px;background:var(--accent);border-radius:1px}
+.cbx.ph::after,.cbx.hit::after{content:"";position:absolute;inset:-13px}
+.cbx.hit::after{inset:-9px}
+.tgl{width:36px;height:20px;border-radius:10px;background:var(--ctl);position:relative;border:0;padding:0;flex:none}
+.tgl::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff}
+.tgl.on{background:var(--accent)}.tgl.on::after{left:18px}
+.sk{background:var(--hover2);border-radius:4px;display:block;height:10px}
+.card{background:var(--panel);border-radius:11px;padding:11px 12px 10px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--cs);position:relative;min-width:0}
+.card.sel{box-shadow:inset 0 0 0 2px var(--accent),var(--cs)}
+.card.ghost{background:transparent;box-shadow:none;border:1.5px dashed var(--line2)}
+.ct{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--meta);min-height:22px}
+.ct .gap{flex:1}
+.ctt{margin:0;font-size:13.5px;font-weight:500;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cm{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--meta);min-height:24px}
+.cm .stack{margin-left:auto}
+.due{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 6px;border-radius:6px;font-size:12px;font-weight:500;color:var(--muted)}
+.due.over{background:var(--danger-soft);color:var(--danger);font-weight:600}.due.today{background:var(--warn-soft);color:var(--warn-text);font-weight:600}
+.lane{border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.lane.todo{background:var(--lane-todo)}.lane.doing{background:var(--lane-doing)}.lane.review{background:var(--lane-review)}.lane.done{background:var(--lane-done)}
+.lh{display:flex;align-items:center;gap:6px;min-height:32px;padding:0 0 0 6px;font-weight:600;font-size:13.5px}
+.lh .n{min-width:22px;height:22px;border-radius:11px;background:var(--panel);color:var(--muted);font-size:12px;font-weight:600;display:inline-grid;place-items:center;padding:0 7px}
+.lh .sp{flex:1}
+.tr{display:grid;align-items:center}
+.th{background:var(--grp);color:var(--meta);font-size:12px;font-weight:600;border-bottom:1px solid var(--line2);height:36px}
+.td{padding:0 10px;min-width:0;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row{border-bottom:1px solid var(--line);background:var(--panel);min-height:36px}
+.row.sel{background:var(--sel)}
+.gh{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;background:var(--grp);border-bottom:1px solid var(--line);font-weight:600;font-size:13.5px}
+.gh .cn2{color:var(--meta);font-weight:500;font-size:13px}
+.k{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--meta)}
+.rail{width:56px;flex:none;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 0}
+.rail .dm{width:32px;height:32px;border-radius:9px;background:#1666CC;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
+.rail .ri{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
+.rail .ri.on{background:var(--accent-soft);color:var(--accent-text)}
+.tbl{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+.cardp{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.kbdnote{font-size:12.5px;color:var(--muted)}
+.ann{font-size:12px;color:var(--meta)}
+.n320{width:320px}
+
+.bulk{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:2px;padding:6px 6px 6px 14px;border-radius:12px;background:var(--toast);color:#F2F4F7;box-shadow:0 12px 32px rgba(15,23,42,.3);white-space:nowrap}
+.bulk b{font-weight:600;margin-right:6px}
+.bb{height:32px;padding:0 10px;border-radius:8px;border:0;background:transparent;color:#F2F4F7;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.bb.ph{height:44px;min-width:44px}
+.bb.dng{color:#FFB3C0}
+.bb.dis{color:#B4BDCA;cursor:not-allowed}
+.sepb{width:1px;height:18px;background:rgba(255,255,255,.22);margin:0 4px}
+
+.tgl.ph{width:52px;height:44px;background:transparent;border-radius:8px}
+.tgl.ph::before{content:"";position:absolute;left:8px;top:12px;width:36px;height:20px;border-radius:10px;background:var(--ctl)}
+.tgl.ph::after{left:10px;top:14px}
+.tgl.ph.on{background:transparent}.tgl.ph.on::before{background:var(--accent)}.tgl.ph.on::after{left:26px}
+
+</style>
+</helmet>
+<div class="nx artb" data-art="BC-Index" style="width:1440px"><header><h1>Board core · Bản đồ phủ trạng thái</h1><p class="sub">Mỗi dòng là một nhóm trạng thái của bề mặt S1 đến S15 trong brief 01, kèm artboard đã duyệt hoặc artboard mới của hàng này. Các artboard mới có tiền tố BC-. Các nhóm “Có nhưng lỗi thời” giữ nguyên artboard cũ và có bản vẽ lại bên cạnh.</p></header><section class="sec nx" data-key="" data-frame="index-sang" data-w="1440" style="padding:0"><style>.idx{border-collapse:collapse;width:100%;font-size:13px}.idx th{text-align:left;font-weight:600;color:var(--meta);font-size:12px;padding:8px 10px;border-bottom:1px solid var(--line2);background:var(--grp)}.idx td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}.idx td.n{font-family:"IBM Plex Mono",monospace;font-size:12px;white-space:nowrap}.idx td.m{color:var(--muted)}</style><h2>Bản đồ phủ: mỗi trạng thái trong brief nằm ở artboard nào</h2><div style="display:flex;gap:12px;flex-wrap:wrap"><span class="chip c-green" >Đã có: 16</span><span class="chip c-amber" >Vẽ lại: 7</span><span class="chip c-blue" >Vẽ mới: 38</span><span class="sub" style="margin:0">Tổng 61 nhóm trạng thái, mỗi nhóm đủ các bề rộng và hai giao diện sáng và Đêm trong brief.</span></div><div style="overflow-x:auto" data-scroll="1"><table class="idx"><thead><tr><th>Bề mặt</th><th>Trạng thái</th><th>Bề rộng (px)</th><th>Artboard</th><th>Tình trạng</th><th>Ghi chú</th></tr></thead><tbody><tr><td class="n">S1</td><td>Sẵn sàng (R)</td><td class="m">1440 1280 768 320</td><td>Final-Table, Final-Board, Final-T-Table, Final-M-Board (cũ); BC-Shell-*</td><td><span class="chip c-amber" >Có nhưng lỗi thời, đã vẽ lại</span></td><td class="m">Cũ không có thanh một hàng có chỉ báo cách xem riêng, không có hàng gọn 320 và rail 768 đúng bề rộng</td></tr><tr><td class="n">S1</td><td>Đang tải: khung xương tiêu đề (L)</td><td class="m">1440 1280 768 320</td><td>BC-Shell-*</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S1</td><td>Lỗi đọc board (Er)</td><td class="m">1440 1280 768 320</td><td>BC-Shell-*</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m">WM-Table-Columns có lỗi cả bảng nhưng không phải cấp board</td></tr><tr><td class="n">S1</td><td>Không có quyền hoặc không tồn tại (NP)</td><td class="m">1440 1280 768 320</td><td>BC-Shell-*; BC-Realtime-* (mất quyền khi đang mở)</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m">Một trang chung, không tên board</td></tr><tr><td class="n">S1</td><td>Board đã lưu trữ (RO)</td><td class="m">1440 1280 768 320</td><td>BC-Shell-*</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S1</td><td>Board trống: người thêm được việc / người chỉ xem (E)</td><td class="m">1440 1280 768 320</td><td>BC-Shell-*; BC-Kanban (Kanban trống)</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S1</td><td>Chưa có nhóm (AC-5), view không còn (AC-10)</td><td class="m">1440 1280 768 320</td><td>BC-Shell-*</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S2</td><td>Thanh một hàng L1, L2, L3 cho Bảng</td><td class="m">1440 1280 1024</td><td>WM-Toolbar-Table, -Rule, -Overflow (cũ); BC-Toolbar</td><td><span class="chip c-amber" >Có nhưng lỗi thời, đã vẽ lại</span></td><td class="m">Cũ thiếu chỉ báo “Cách xem riêng · Về view chung” (AC-11)</td></tr><tr><td class="n">S2</td><td>Thanh một hàng L1, L2, L3 cho Kanban</td><td class="m">1440 1280 1024</td><td>BC-Toolbar</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m">Bộ Thanh công cụ cũ chỉ có Bảng, Lịch, Dòng thời gian</td></tr><tr><td class="n">S2</td><td>Thanh ở 768 (Lọc có số đếm, Sắp xếp, Thêm, điều khiển 44 px)</td><td class="m">768</td><td>BC-Toolbar</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S2</td><td>Thanh ở 320 (Hiển thị) và tờ kéo</td><td class="m">320</td><td>BC-Toolbar (thanh); WM-Filter-320 (tờ)</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m">Tờ đã có và đã duyệt</td></tr><tr><td class="n">S2</td><td>Đang lưu, lưu lỗi, chỉ xem, view chung đổi, trường đã xoá</td><td class="m">1440 1280 768 320</td><td>BC-Toolbar</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S3</td><td>Đang tải (L), sẵn sàng (R), lỗi (Er) của bảng</td><td class="m">1440 1280</td><td>WM-Table-Columns, Final-Table</td><td><span class="chip c-green" >Đã có và còn đúng</span></td><td class="m"></td></tr><tr><td class="n">S3</td><td>Bảng trống (E)</td><td class="m">1440 1280 768 320</td><td>BC-Shell-*</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S3</td><td>Không có kết quả lọc (E-filtered)</td><td class="m">1440 1280 320</td><td>BC-Table</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m">Nhóm hiện 0, có “Xoá bộ lọc”</td></tr><tr><td class="n">S3</td><td>Chỉ xem (RO) và ô khoá</td><td class="m">1440</td><td>WM-Field-Editors, WM-Table-Columns; BC-Shell (banner lưu trữ)</td><td><span class="chip c-green" >Đã có và còn đúng</span></td><td class="m"></td></tr><tr><td class="n">S3</td><td>Ô đang lưu (S)</td><td class="m">1440</td><td>WM-Field-Editors, WM-Table-Settings</td><td><span class="chip c-green" >Đã có và còn đúng</span></td><td class="m"></td></tr><tr><td class="n">S3</td><td>Xung đột ô (C)</td><td class="m">1440</td><td>WM-Field-Editors (cũ); BC-Notices</td><td><span class="chip c-amber" >Có nhưng lỗi thời, đã vẽ lại</span></td><td class="m">Cũ chưa nêu tên người đổi (Q12)</td></tr><tr><td class="n">S3</td><td>Nhóm thu gọn, nhóm 0 việc</td><td class="m">1440 1280 320</td><td>BC-Table</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S3</td><td>Nhóm 200 việc dựng cửa sổ, hàng tải thêm, tải thêm lỗi</td><td class="m">1440 1280 768 320</td><td>BC-Large</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S3</td><td>Bố cục 768 và 320</td><td class="m">768 320</td><td>BC-Table</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S4</td><td>Mặt hàng: mặc định, rê chuột, focus, đã chọn</td><td class="m">1440</td><td>Final-Table (một phần); BC-Table</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S4</td><td>Mặt hàng: hoàn thành, lưu trữ cùng việc cha, bị chặn, quá hạn</td><td class="m">1440</td><td>BC-Table</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S4</td><td>Đang sửa, đang lưu, lỗi tại ô, 12 kiểu trường, ƒx chỉ đọc</td><td class="m">1440</td><td>WM-Field-Editors, WM-Field-Computed, WM-Field-Sheet</td><td><span class="chip c-green" >Đã có và còn đúng</span></td><td class="m"></td></tr><tr><td class="n">S5</td><td>Kanban đang tải (L), lỗi (Er)</td><td class="m">1440 1280 320</td><td>BC-Kanban</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S5</td><td>Kanban sẵn sàng (R)</td><td class="m">1440 1280</td><td>Final-Board, Kanban-Board, WM-Swimlanes</td><td><span class="chip c-green" >Đã có và còn đúng</span></td><td class="m"></td></tr><tr><td class="n">S5</td><td>Cột trống, trống do lọc, cảnh báo WIP, vùng thả, từ chối thả kèm lý do</td><td class="m">1440 1280</td><td>Kanban-Card-States, WM-Swimlanes</td><td><span class="chip c-green" >Đã có và còn đúng</span></td><td class="m"></td></tr><tr><td class="n">S5</td><td>Cột và làn thu gọn</td><td class="m">1440 1280</td><td>WM-Swimlanes</td><td><span class="chip c-green" >Đã có và còn đúng</span></td><td class="m"></td></tr><tr><td class="n">S5</td><td>Board Kanban trống</td><td class="m">1440 1280 320</td><td>BC-Kanban</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S5</td><td>Cột 200 thẻ dựng cửa sổ</td><td class="m">1440 1280 768 320</td><td>BC-Large</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S5</td><td>Bố cục 768 (cột 280) và 320 (một cột một lúc, làn thành nhóm)</td><td class="m">768 320</td><td>BC-Kanban</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S5</td><td>Nhóm theo người phụ trách, việc nhiều người (Q13)</td><td class="m">1440 1280</td><td>BC-Kanban</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m">“Còn ở N làn khác”</td></tr><tr><td class="n">S5</td><td>Nhóm “Không có giá trị” (AC-149)</td><td class="m">1440 1280</td><td>BC-Kanban</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S6</td><td>Mặc định, rê chuột, focus, đã chọn, đang kéo, đang lưu</td><td class="m">1440 320</td><td>Kanban-Card-States, WM-Card-Face</td><td><span class="chip c-green" >Đã có và còn đúng</span></td><td class="m"></td></tr><tr><td class="n">S6</td><td>Quá hạn, hôm nay, hoàn thành, chặn, tiêu đề dài, nhiều nhãn, đếm 99+, trường tuỳ chỉnh</td><td class="m">1440 320</td><td>Kanban-Card-States, WM-Card-Face, WM-Card-Compact</td><td><span class="chip c-green" >Đã có và còn đúng</span></td><td class="m"></td></tr><tr><td class="n">S6</td><td>Chỉ xem, lưu trữ cùng việc cha, lưu lỗi trả về cột cũ</td><td class="m">1440</td><td>BC-Kanban</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S7</td><td>Menu thao tác ở bốn nơi, mục khoá kèm lý do, lỗi, đang xử lý</td><td class="m">1440 320</td><td>WM-Actions-Menu</td><td><span class="chip c-green" >Đã có và còn đúng</span></td><td class="m">Tờ 320 px 44 px đã có</td></tr><tr><td class="n">S7</td><td>Xác nhận xoá (nêu số việc con), nhân bản, chuyển board, nhắc</td><td class="m">1440 320</td><td>WM-Actions-Trash, -Duplicate, -Move, -Remind</td><td><span class="chip c-green" >Đã có và còn đúng</span></td><td class="m"></td></tr><tr><td class="n">S7</td><td>Xác nhận lưu trữ (R, S, Er)</td><td class="m">1440 1280 768 320</td><td>BC-Actions</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m">Brief F9 yêu cầu nêu số việc con và liên kết</td></tr><tr><td class="n">S7</td><td>Việc bị xoá khi menu đang mở (nêu tên; khách: “Một người khác”)</td><td class="m">1440 320</td><td>BC-Actions</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m">AC-53, Q12, AC-141</td></tr><tr><td class="n">S8</td><td>Thanh hàng loạt Bảng, Kanban, đang áp dụng, lỗi, vượt 200, chọn cả nhóm, việc bị xoá, thành công, menu Thêm, người chỉ xem</td><td class="m">1440 1280</td><td>Final-Table (thanh cũ); BC-Bulk</td><td><span class="chip c-amber" >Có nhưng lỗi thời, đã vẽ lại</span></td><td class="m">Thanh cũ có bộ hành động khác D32/D43 và chưa có các trạng thái</td></tr><tr><td class="n">S8</td><td>Thanh cố định 320 và tờ Hành động</td><td class="m">320</td><td>BC-Bulk</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S9</td><td>Đang tải, lỗi đọc, không có quyền, đủ nội dung, mục gập</td><td class="m">1440 768 320</td><td>Final-Detail, Final-States, WM-Sheet-Full, Final-T-Detail, Final-M-Detail</td><td><span class="chip c-green" >Đã có và còn đúng</span></td><td class="m"></td></tr><tr><td class="n">S9</td><td>Đang lưu trường, chỉ xem</td><td class="m">1440 320</td><td>WM-Field-Sheet, WM-Field-Editors; BC-Notices (chỉ xem do đổi quyền)</td><td><span class="chip c-green" >Đã có và còn đúng</span></td><td class="m"></td></tr><tr><td class="n">S9</td><td>Đọc lại lỗi (dữ liệu cũ, Thử lại)</td><td class="m">1440 320</td><td>BC-Notices</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S9</td><td>Xung đột mô tả và trường (nêu tên, khách “Một người khác”)</td><td class="m">1440 768 320</td><td>BC-Notices</td><td><span class="chip c-amber" >Có nhưng lỗi thời, đã vẽ lại</span></td><td class="m">WM-Field-Sheet cũ chưa nêu tên</td></tr><tr><td class="n">S9</td><td>Việc bị xoá, lưu trữ, chuyển board khi đang mở</td><td class="m">1440 768 320</td><td>BC-Notices</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S9</td><td>Sheet phủ 60% ở 768</td><td class="m">768</td><td>BC-Notices</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S10</td><td>Trang việc: cùng nội dung và thông báo, một cột ở 768 và 320</td><td class="m">1440 1280 768 320</td><td>Final-Detail, Final-T-Detail, Final-M-Detail; BC-Notices</td><td><span class="chip c-green" >Đã có và còn đúng</span></td><td class="m">Thông báo dùng chung với S9</td></tr><tr><td class="n">S11</td><td>Hộp thoại mặc định, đặt sẵn theo cột, thêm nhanh, việc con, nhiều trường, tạo tiếp</td><td class="m">1440 1280 768</td><td>Kanban-CreateTask (cũ); BC-Create-Main-States</td><td><span class="chip c-amber" >Có nhưng lỗi thời, đã vẽ lại</span></td><td class="m">Cũ không có trường tuỳ chỉnh, việc con, tạo tiếp</td></tr><tr><td class="n">S11</td><td>Kiểm tra, đang tạo, lỗi, kết quả một phần, đóng khi đã nhập, chặn, mất quyền, xung đột</td><td class="m">1440 1280 768</td><td>BC-Create-Main-States</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S11</td><td>Tờ 320: mặc định, bàn phím mở, lỗi, một phần, đóng khi đã nhập, đang tạo, 60 trường</td><td class="m">320</td><td>BC-Create-320-Pickers</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S11</td><td>Bộ chọn người và nhãn (200 nhãn, 1.000 người), khách (Q7)</td><td class="m">1440 320</td><td>BC-Create-320-Pickers</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S12</td><td>Dòng điều kiện, sắp xếp, nhóm, làn, bộ lọc đã lưu, lỗi lưu, trường đã xoá</td><td class="m">1440 1280 768 320</td><td>WM-Filter-Builder, -SortGroup, -States, -320, WM-SavedFilter-*, WM-Swimlanes</td><td><span class="chip c-green" >Đã có và còn đúng</span></td><td class="m"></td></tr><tr><td class="n">S12</td><td>Chưa có điều kiện, dòng chưa đủ, chỉ xem</td><td class="m">1440 1280 768 320</td><td>BC-Filter-Gaps</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S13</td><td>Đã kết nối, đang kết nối lại, mất kết nối, board vừa cập nhật, việc bị xoá, quyền giảm, mất quyền</td><td class="m">1440 1280 768 320</td><td>BC-Realtime-*</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">S14</td><td>Việc đã xoá: đang tải, sẵn sàng, trống, lỗi, chỉ xem, đang khôi phục</td><td class="m">1440 320</td><td>WM-Actions-Trash</td><td><span class="chip c-green" >Đã có và còn đúng</span></td><td class="m"></td></tr><tr><td class="n">S14</td><td>Việc đã xoá: số việc con, từ chối khi việc cha còn xoá hoặc quá 30 ngày</td><td class="m">1440 320</td><td>BC-Archive-Trash</td><td><span class="chip c-amber" >Có nhưng lỗi thời, đã vẽ lại</span></td><td class="m">Q10, AC-56</td></tr><tr><td class="n">S14</td><td>Việc đã lưu trữ: sẵn sàng, đang tải, trống, lỗi, đang bỏ lưu trữ, tìm không thấy</td><td class="m">1440 320</td><td>BC-Archive-Trash</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m">Q6, AC-150</td></tr><tr><td class="n">S15</td><td>Khung xương, nhóm 200 việc, tổng nhóm so với tổng lọc, hàng Hiện thêm, tải thêm lỗi, Lên đầu</td><td class="m">1440 1280 768 320</td><td>BC-Large</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m"></td></tr><tr><td class="n">Q5</td><td>Cột riêng và Lưu vào view chung (R, chỉ xem, đang lưu, lỗi, xung đột, đã lưu)</td><td class="m">1440</td><td>BC-View-Personal</td><td><span class="chip c-blue" >Chưa có, vẽ mới</span></td><td class="m">Cột 320 px không có (hàng thành thẻ)</td></tr></tbody></table></div></section></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
