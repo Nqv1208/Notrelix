@@ -84,9 +84,12 @@ export function SortMenu({
           aria-haspopup="dialog"
         >
           <ArrowUpDown className="size-4" aria-hidden="true" />
+          {/* The tablet chip is the icon and the value (Final-T-Table); the label stays for assistive tech. */}
           <span
             className={
-              summary || fallbackSummary ? "@max-[1100px]/bar:sr-only" : ""
+              summary || fallbackSummary
+                ? "tablet:sr-only untablet:@max-[1100px]/bar:sr-only"
+                : undefined
             }
           >
             {copy.sort.trigger}
@@ -94,7 +97,7 @@ export function SortMenu({
           </span>
           {summary || fallbackSummary ? (
             <>
-              <b className="max-w-56 truncate font-semibold @max-[1100px]/bar:max-w-24 @max-[820px]/bar:max-w-14">
+              <b className="max-w-56 truncate font-semibold tablet:font-[650] tablet:text-foreground untablet:@max-[1100px]/bar:max-w-24 untablet:@max-[820px]/bar:max-w-14">
                 {summary || fallbackSummary}
               </b>
             </>

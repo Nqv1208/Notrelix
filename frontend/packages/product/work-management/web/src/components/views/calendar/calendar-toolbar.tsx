@@ -16,6 +16,9 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
+  TABLET_SLOT,
+  TabletPortal,
+  TabletSlot,
   useIsTablet,
 } from "@notrelix/ui-web";
 import {
@@ -182,15 +185,24 @@ export function CalendarToolbar({
           })}
         </div>
         {viewBar}
+        {/* Final-T-Calendar draws the add button in the page bar, beside "Chia sẻ". */}
         {canAdd ? (
-          <Button
-            className="size-11 rounded-[10px] p-0 [&_svg]:size-5"
-            aria-label={copy.addItem}
-            onClick={onAddItem}
-          >
-            <Plus aria-hidden="true" />
-          </Button>
+          <TabletPortal slot={TABLET_SLOT.headerAdd}>
+            <Button
+              size="icon"
+              aria-label={copy.addItem}
+              className="size-11 shrink-0 rounded-[10px]"
+              onClick={onAddItem}
+            >
+              <Plus className="size-5" aria-hidden="true" />
+            </Button>
+          </TabletPortal>
         ) : null}
+        {/* The tablet board header has no tab row: the view menu, Add view and the avatar stack are portalled here. */}
+        <TabletSlot
+          slot={TABLET_SLOT.toolbarTrail}
+          className="flex items-center gap-2"
+        />
       </div>
     );
   }
@@ -198,7 +210,7 @@ export function CalendarToolbar({
     <div className="@container/bar">
       <div
         data-calendar-bar=""
-        className="flex flex-wrap items-center gap-2 px-4 py-2.5 @max-[1030px]/bar:gap-1.5 sm:px-6"
+        className="flex flex-wrap items-center gap-2 px-4 py-2.5 untablet:@max-[1030px]/bar:gap-1.5 sm:px-6"
       >
         <Button
           variant="outline"
@@ -228,7 +240,7 @@ export function CalendarToolbar({
         </Button>
         <h2
           aria-live="polite"
-          className="mx-1.5 min-w-37.5 text-calendar-title @max-[820px]/bar:min-w-33.5 leading-[1.45] text-foreground"
+          className="mx-1.5 min-w-37.5 text-calendar-title untablet:@max-[820px]/bar:min-w-33.5 leading-[1.45] text-foreground"
         >
           {heading}
         </h2>
@@ -271,11 +283,11 @@ export function CalendarToolbar({
               size="sm"
               className={cn(
                 kanbanPillClass,
-                "leading-[1.45] font-normal @max-[1030px]/bar:hidden",
+                "leading-[1.45] font-normal untablet:@max-[1030px]/bar:hidden",
               )}
             >
               <CalendarDays className="size-4" aria-hidden="true" />
-              <span className="@max-[1200px]/bar:sr-only">
+              <span className="untablet:@max-[1200px]/bar:sr-only">
                 {copy.basis.label}{" "}
               </span>
               <b className="font-semibold text-foreground">{basisLabel}</b>
@@ -295,7 +307,10 @@ export function CalendarToolbar({
             <Button
               variant="outline"
               size="icon-sm"
-              className={cn(ICON_BUTTON_CLASS, "hidden @max-[1030px]/bar:grid")}
+              className={cn(
+                ICON_BUTTON_CLASS,
+                "hidden untablet:@max-[1030px]/bar:grid",
+              )}
               aria-label={copy.overflow}
             >
               <MoreHorizontal className="size-4" aria-hidden="true" />
@@ -310,7 +325,7 @@ export function CalendarToolbar({
         {/* The zone line gives way (clipped, full text in the title) so the bar stays on one row. */}
         <span
           title={zoneLabel}
-          className="ml-auto min-w-0 truncate text-right text-xs leading-[1.45] text-meta-foreground @max-[1030px]/bar:hidden"
+          className="ml-auto min-w-0 truncate text-right text-xs leading-[1.45] text-meta-foreground untablet:@max-[1030px]/bar:hidden"
         >
           {/* WM-Toolbar-Calendar: the bar says "GMT+7"; the title keeps the full line. */}
           {/\(([^)]+)\)/.exec(zoneLabel)?.[1] ?? zoneLabel}
@@ -321,12 +336,14 @@ export function CalendarToolbar({
             size="sm"
             className={cn(
               kanbanPrimaryButtonClass,
-              "border-primary @max-[820px]/bar:w-8 @max-[820px]/bar:px-0",
+              "border-primary untablet:@max-[820px]/bar:w-8 untablet:@max-[820px]/bar:px-0",
             )}
             onClick={onAddItem}
           >
             <Plus className="size-4" aria-hidden="true" />
-            <span className="@max-[820px]/bar:sr-only">{copy.addItem}</span>
+            <span className="untablet:@max-[820px]/bar:sr-only">
+              {copy.addItem}
+            </span>
           </Button>
         ) : null}
       </div>

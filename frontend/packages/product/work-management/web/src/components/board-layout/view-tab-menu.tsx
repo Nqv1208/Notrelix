@@ -56,11 +56,14 @@ export function ViewTabMenu({
   savedViews,
   actions,
   copy,
+  tablet = false,
 }: {
   view: ViewTabSavedView;
   savedViews: readonly ViewTabSavedView[];
   actions: ViewTabActions;
   copy: BoardHeaderCopy;
+  /** The 44 px button of the tablet toolbar. */
+  tablet?: boolean;
 }) {
   const t = copy.viewMenu;
   const [confirm, setConfirm] = useState<Confirm | null>(null);
@@ -103,7 +106,11 @@ export function ViewTabMenu({
             variant="ghost"
             size="icon-sm"
             aria-label={fillBoardHeaderCopy(t.open, { name: view.name })}
-            className="-mb-px h-9 w-10 rounded-none text-muted-foreground hover:text-foreground max-md:h-11 max-md:w-11"
+            className={
+              tablet
+                ? "size-11 rounded-[10px] text-muted-foreground hover:text-foreground"
+                : "-mb-px h-9 w-10 rounded-none text-muted-foreground hover:text-foreground max-md:h-11 max-md:w-11"
+            }
           >
             <MoreHorizontal aria-hidden="true" />
           </Button>

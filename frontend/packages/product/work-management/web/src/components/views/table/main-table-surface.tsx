@@ -5,11 +5,16 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
+  type ReactNode,
 } from "react";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, ChevronRight } from "lucide-react";
 import { BULK_ITEM_LIMIT } from "@notrelix/work-management-core";
 import { Button, cn } from "@notrelix/ui-web";
-import { fillTableCopy, pluralTableCopy } from "./main-table.copy";
+import {
+  fillTableCopy,
+  pluralTableCopy,
+  type MainTableCopy,
+} from "./main-table.copy";
 import { TableAddGroup, type TableAddGroupProps } from "./table-add-group";
 import {
   TableArchivedNotice,
@@ -456,6 +461,29 @@ function MainTableSurfaceBody({
   }
   // Deep in the table the way back to the top is one control away.
   const [deep, setDeep] = useState(false);
+  // Tablet: columns still hidden to the right of the scrolled grid (the fade and "Xem các cột tiếp theo").
+  const [moreRight, setMoreRight] = useState(false);
+  const syncMoreRight = (el: HTMLElement) =>
+    setMoreRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  const showNextColumns = () => {
+    const el = gridRef.current;
+    if (!el) return;
+    el.scrollBy({
+      left: el.clientWidth * 0.6,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+  };
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!tablet || !el) return;
+    syncMoreRight(el);
+    const observer = new ResizeObserver(() => syncMoreRight(el));
+    observer.observe(el);
+    if (el.firstElementChild) observer.observe(el.firstElementChild);
+    return () => observer.disconnect();
+  });
   const jumpToTop = () => {
     gridRef.current?.scrollTo({ top: 0 });
     focusRow(tabStop ?? undefined);
@@ -503,7 +531,7 @@ function MainTableSurfaceBody({
       }}
       className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background font-body"
     >
-      <div className="px-4 sm:px-6">
+      <div className={tablet ? "px-4" : "px-4 sm:px-6"}>
         <MainTableToolbar
           {...toolbar}
           canAdd={toolbar.canAdd && canCreate}
@@ -517,17 +545,36 @@ function MainTableSurfaceBody({
       {boardEmpty ? (
         <TableBoardEmpty copy={copy} onAdd={canCreate ? addItem : undefined} />
       ) : (
-        <>
+        <TableFrame
+          tablet={tablet}
+          moreRight={moreRight}
+          onNext={showNextColumns}
+          copy={copy}
+          footer={
+            <TableFooter
+              copy={copy}
+              shown={shown}
+              hidden={hidden}
+              archived={archivedNotice?.count ?? 0}
+              canShowDone={canShowDone}
+              onShowDone={onShowDone}
+              tablet={tablet}
+            />
+          }
+        >
           <div
             ref={gridRef}
             data-table-scroll=""
             onScroll={(event) => {
               const el = event.currentTarget;
               setDeep(el.scrollTop > el.clientHeight * 2);
+              syncMoreRight(el);
             }}
             className={cn(
               "@container mx-4 min-h-0 flex-1 overflow-auto rounded-[12px] border border-border bg-popover sm:mx-6 dark:bg-card",
-              tablet && "rounded-[14px]",
+              // The tablet frame (`TableFrame`) carries the border, the radius and the footer.
+              tablet &&
+                "mx-0 rounded-none border-0 bg-transparent sm:mx-0 dark:bg-transparent",
               // The phone cards sit on the page, not in a frame.
               phone &&
                 "mx-0 rounded-none border-0 bg-transparent sm:mx-0 dark:bg-transparent",
@@ -830,18 +877,7 @@ function MainTableSurfaceBody({
               ) : null}
             </div>
           </div>
-
-          <div className="px-4 sm:px-6">
-            <TableFooter
-              copy={copy}
-              shown={shown}
-              hidden={hidden}
-              archived={archivedNotice?.count ?? 0}
-              canShowDone={canShowDone}
-              onShowDone={onShowDone}
-            />
-          </div>
-        </>
+        </TableFrame>
       )}
 
       {deep ? (
@@ -975,5 +1011,63 @@ function MainTableSurfaceBody({
         />
       ) : null}
     </section>
+  );
+}
+
+/**
+ * The frame of the grid: on desktop and phone the grid sits in its own bordered box and the footer under it; on the
+ * tablet (`Final-T-Table`) one 14 px box holds the grid, a 72 px fade with the 44 px "next columns" button over its
+ * right edge while columns are hidden there, and the 56 px footer.
+ */
+function TableFrame({
+  tablet,
+  moreRight,
+  onNext,
+  copy,
+  footer,
+  children,
+}: {
+  tablet: boolean;
+  moreRight: boolean;
+  onNext: () => void;
+  copy: MainTableCopy;
+  footer: ReactNode;
+  children: ReactNode;
+}) {
+  if (!tablet) {
+    return (
+      <>
+        {children}
+        <div className="px-4 sm:px-6">{footer}</div>
+      </>
+    );
+  }
+  return (
+    <div
+      data-slot="tablet-table-box"
+      className="relative mx-4 mb-5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[14px] border border-line bg-popover dark:bg-card"
+    >
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        {children}
+        {moreRight ? (
+          <>
+            <span
+              aria-hidden="true"
+              data-slot="tablet-table-fade"
+              className="pointer-events-none absolute inset-y-0 right-0 z-8 w-18 bg-linear-to-r from-transparent to-popover to-80% dark:to-card"
+            />
+            <button
+              type="button"
+              aria-label={copy.header.nextColumns}
+              onClick={onNext}
+              className="absolute top-0 right-0.5 z-9 grid size-11 cursor-pointer place-items-center rounded-[10px] border-0 bg-transparent p-0 text-muted-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              <ChevronRight aria-hidden="true" className="size-5" />
+            </button>
+          </>
+        ) : null}
+      </div>
+      {footer}
+    </div>
   );
 }

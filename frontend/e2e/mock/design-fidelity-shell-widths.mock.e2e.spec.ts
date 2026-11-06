@@ -52,6 +52,10 @@ for (const width of [1280, 768, 320] as const) {
       page,
     }) => {
       test.skip(scenario !== "default", "Needs the default world data");
+      test.skip(
+        width === 768,
+        "The tablet band (768 to 1279 px) draws the Final-T-* header: its view tabs are the 44 px segmented control, measured by design-fidelity-tablet-table",
+      );
       await page.setViewportSize({ width, height: 900 });
       const expected = await artboardTabs(page, width, mode);
       expect(expected.length).toBeGreaterThanOrEqual(4);

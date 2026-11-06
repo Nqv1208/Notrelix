@@ -161,6 +161,7 @@ export const en = {
   },
   header: {
     selectAll: "Select all",
+    nextColumns: "Show the next columns",
     resize: "Resize column {{name}}",
     sortedAscending: "sorted ascending",
     sortedDescending: "sorted descending",
@@ -333,6 +334,9 @@ export const en = {
     summary: "{{shown}} items shown · {{hidden}} hidden by filters",
     archived: "{{count}} just archived",
     showDone: "Show finished items",
+    tabletShown: "{{shown}} items shown",
+    tabletHidden: "{{hidden}} items hidden by filters",
+    tabletHiddenDone: "{{hidden}} finished items hidden by filters",
   },
   bulk: {
     label: "Actions for {{count}} selected items",
@@ -603,6 +607,7 @@ export const vi: MainTableCopy = {
   },
   header: {
     selectAll: "Chọn tất cả",
+    nextColumns: "Xem các cột tiếp theo",
     resize: "Đổi độ rộng cột {{name}}",
     sortedAscending: "sắp xếp tăng dần",
     sortedDescending: "sắp xếp giảm dần",
@@ -769,6 +774,9 @@ export const vi: MainTableCopy = {
     summary: "{{shown}} công việc đang hiện · {{hidden}} ẩn bởi bộ lọc",
     archived: "{{count}} vừa lưu trữ",
     showDone: "Hiện việc đã xong",
+    tabletShown: "{{shown}} việc đang hiện",
+    tabletHidden: "{{hidden}} việc ẩn bởi bộ lọc",
+    tabletHiddenDone: "{{hidden}} việc đã xong ẩn bởi bộ lọc",
   },
   bulk: {
     label: "Thao tác với {{count}} công việc đã chọn",

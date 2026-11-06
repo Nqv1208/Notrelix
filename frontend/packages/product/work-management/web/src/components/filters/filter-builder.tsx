@@ -174,8 +174,8 @@ export function FilterBuilder(props: FilterBuilderProps) {
           <span
             className={
               activeCount > 0
-                ? "@max-[820px]/bar:sr-only"
-                : "@max-[1030px]/bar:sr-only"
+                ? "untablet:@max-[820px]/bar:sr-only"
+                : "untablet:@max-[1030px]/bar:sr-only"
             }
           >
             {copy.filter.trigger}

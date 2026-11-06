@@ -133,18 +133,18 @@ export function FieldRefMenu({
           className={cn(kanbanPillClass, value && current && activePillClass)}
         >
           <Icon className="size-4" aria-hidden="true" />
-          <span className={current ? "@max-[1100px]/bar:sr-only" : ""}>
+          <span className={current ? "untablet:@max-[1100px]/bar:sr-only" : ""}>
             {t.trigger}
             {current ? ": " : ""}
           </span>
           {current ? (
             <>
-              <b className="max-w-40 truncate font-semibold @max-[1100px]/bar:max-w-24 @max-[820px]/bar:max-w-14">
+              <b className="max-w-40 truncate font-semibold tablet:font-[650] tablet:text-foreground untablet:@max-[1100px]/bar:max-w-24 untablet:@max-[820px]/bar:max-w-14">
                 {current.name}
               </b>
             </>
           ) : null}
-          <ChevronDown className="size-3.5" aria-hidden="true" />
+          <ChevronDown className="size-3.5 tablet:hidden" aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

@@ -175,13 +175,16 @@ export function TableColumnsMenu({
           variant="ghost"
           size="sm"
           aria-label={triggerLabel}
-          className={kanbanPillClass}
+          className={`${kanbanPillClass} tablet:size-11 tablet:justify-center tablet:px-0`}
         >
           <Columns3 className="size-4" aria-hidden="true" />
-          {t.columns.label}{" "}
-          <b className="font-semibold leading-[1.45] text-foreground @max-[820px]/bar:sr-only">
-            {shown}/{ordered.length}
-          </b>
+          {/* The tablet button is the icon alone (44 px); the name and count stay for assistive tech. */}
+          <span className="tablet:sr-only">
+            {t.columns.label}{" "}
+            <b className="font-semibold leading-[1.45] text-foreground untablet:@max-[820px]/bar:sr-only">
+              {shown}/{ordered.length}
+            </b>
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent

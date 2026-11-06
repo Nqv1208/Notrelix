@@ -10,7 +10,7 @@ import { useAddGroup } from "../../status-option/use-add-group";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Info, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { cn, useIsMobile } from "@notrelix/ui-web";
+import { cn, useIsMobile, useIsTablet } from "@notrelix/ui-web";
 import {
   useBoardLabels,
   useCardLabelWrites,
@@ -413,6 +413,7 @@ export function KanbanView({
   // Below the tablet width the sheet covers the board: the board behind is
   // taken out of the tab order and the accessibility tree while it is open.
   const isNarrow = useIsMobile();
+  const tablet = useIsTablet();
   const boardCovered = Boolean(selectedItemId) && isNarrow;
 
   const { board } = kanban;
@@ -1201,7 +1202,7 @@ export function KanbanView({
         className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background font-body select-none focus:outline-hidden"
       >
         <div
-          className="px-4 sm:px-6"
+          className={tablet ? "px-4" : "px-4 sm:px-6"}
           inert={boardCovered || undefined}
           aria-hidden={boardCovered || undefined}
         >
@@ -1228,7 +1229,10 @@ export function KanbanView({
             ref={scrollerRef}
             data-kanban-scroller=""
             onScroll={measureEdges}
-            className="h-full min-h-0 overflow-auto px-4 pt-1 pb-6 sm:px-6"
+            className={cn(
+              "h-full min-h-0 overflow-auto px-4 pt-1 pb-6",
+              !tablet && "sm:px-6",
+            )}
           >
             {kanban.filterActive && kanban.visibleCount === 0 ? (
               <FilterNoResults

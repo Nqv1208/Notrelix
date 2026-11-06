@@ -20,6 +20,7 @@ export function TableFooter({
   archived = 0,
   canShowDone,
   onShowDone,
+  tablet = false,
 }: {
   copy: MainTableCopy;
   shown: number;
@@ -29,8 +30,42 @@ export function TableFooter({
   /** Finished items are hidden: offer to show them. */
   canShowDone: boolean;
   onShowDone: () => void;
+  /** The 56 px footer inside the tablet box (`Final-T-Table`). */
+  tablet?: boolean;
 }) {
   const f = copy.footer;
+  if (tablet) {
+    return (
+      <div
+        data-slot="tablet-table-footer"
+        className="flex h-14 flex-none items-center gap-1.5 border-t border-line pr-1.5 pl-4 text-[14px] text-muted-foreground"
+      >
+        {hidden > 0 ? (
+          <span>
+            {fillTableCopy(canShowDone ? f.tabletHiddenDone : f.tabletHidden, {
+              hidden,
+            })}
+            {archived > 0
+              ? ` · ${fillTableCopy(f.archived, { count: archived })}`
+              : ""}
+          </span>
+        ) : null}
+        {canShowDone ? (
+          <button
+            type="button"
+            onClick={onShowDone}
+            className="h-11 cursor-pointer rounded-[10px] border-0 bg-transparent px-3 text-[14px] font-semibold text-state-selected-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            {f.showDone}
+          </button>
+        ) : null}
+        <span className="flex-1" />
+        <span className="pr-2.5 text-[13.5px] whitespace-nowrap text-meta-foreground">
+          {fillTableCopy(f.tabletShown, { shown })}
+        </span>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-wrap items-center gap-4 pt-2.5 pb-3.5 text-crumb text-meta-foreground">
       <span>
