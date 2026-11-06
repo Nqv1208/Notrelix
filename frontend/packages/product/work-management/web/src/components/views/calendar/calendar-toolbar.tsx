@@ -17,6 +17,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
   TABLET_SLOT,
+  TabletPortal,
   TabletSlot,
   useIsTablet,
 } from "@notrelix/ui-web";
@@ -184,14 +185,18 @@ export function CalendarToolbar({
           })}
         </div>
         {viewBar}
+        {/* Final-T-Calendar draws the add button in the page bar, beside "Chia sẻ". */}
         {canAdd ? (
-          <Button
-            className="size-11 rounded-[10px] p-0 [&_svg]:size-5"
-            aria-label={copy.addItem}
-            onClick={onAddItem}
-          >
-            <Plus aria-hidden="true" />
-          </Button>
+          <TabletPortal slot={TABLET_SLOT.headerAdd}>
+            <Button
+              size="icon"
+              aria-label={copy.addItem}
+              className="size-11 shrink-0 rounded-[10px]"
+              onClick={onAddItem}
+            >
+              <Plus className="size-5" aria-hidden="true" />
+            </Button>
+          </TabletPortal>
         ) : null}
         {/* The tablet board header has no tab row: the view menu, Add view and the avatar stack are portalled here. */}
         <TabletSlot
