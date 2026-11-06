@@ -193,6 +193,11 @@ export interface MainTableSurfaceProps {
    * card list. Desktop when absent.
    */
   layout?: TableLayout;
+  /**
+   * The tablet split (`Final-T-Table` chia-doi): the open item's pane sits beside the table, so the box loses its
+   * margin, side borders and radius and the fade narrows to 36 px.
+   */
+  split?: boolean;
 }
 
 /**
@@ -221,6 +226,7 @@ function MainTableSurfaceBody({
   selectedIds,
   collapsedGroupIds,
   openItemId,
+  split = false,
   canEdit,
   editors,
   fieldEditing,
@@ -547,6 +553,7 @@ function MainTableSurfaceBody({
       ) : (
         <TableFrame
           tablet={tablet}
+          split={split}
           moreRight={moreRight}
           onNext={showNextColumns}
           copy={copy}
@@ -1021,6 +1028,7 @@ function MainTableSurfaceBody({
  */
 function TableFrame({
   tablet,
+  split,
   moreRight,
   onNext,
   copy,
@@ -1028,6 +1036,7 @@ function TableFrame({
   children,
 }: {
   tablet: boolean;
+  split: boolean;
   moreRight: boolean;
   onNext: () => void;
   copy: MainTableCopy;
@@ -1045,7 +1054,10 @@ function TableFrame({
   return (
     <div
       data-slot="tablet-table-box"
-      className="relative mx-4 mb-5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[14px] border border-line bg-popover dark:bg-card"
+      className={cn(
+        "relative flex min-h-0 flex-1 flex-col overflow-hidden border-line bg-popover dark:bg-card",
+        split ? "border-t" : "mx-4 mb-5 rounded-[14px] border",
+      )}
     >
       <div className="relative flex min-h-0 flex-1 flex-col">
         {children}
@@ -1054,7 +1066,10 @@ function TableFrame({
             <span
               aria-hidden="true"
               data-slot="tablet-table-fade"
-              className="pointer-events-none absolute inset-y-0 right-0 z-8 w-18 bg-linear-to-r from-transparent to-popover to-80% dark:to-card"
+              className={cn(
+                "pointer-events-none absolute inset-y-0 right-0 z-8 bg-linear-to-r from-transparent to-popover to-80% dark:to-card",
+                split ? "w-9" : "w-18",
+              )}
             />
             <button
               type="button"

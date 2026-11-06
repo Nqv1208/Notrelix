@@ -462,6 +462,8 @@ export function CheckboxEditor({
         className={cn(
           box,
           "cursor-pointer focus-visible:outline-2 focus-visible:outline-ring",
+          // On the tablet the 16 px box takes a 44 px touch area around it; the drawing does not move.
+          "tablet:relative tablet:after:absolute tablet:after:-inset-4 tablet:after:content-['']",
         )}
       >
         {mark}

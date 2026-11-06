@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ClipboardEvent, DragEvent, ReactNode } from "react";
 import { X } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, cn } from "@notrelix/ui-web";
 import {
@@ -62,6 +62,12 @@ export interface CardPopupSurfaceProps {
   readonly onReloadConflict?: () => void | Promise<unknown>;
   /** Dialogs of the host that must sit inside the popup (the draft confirm). */
   readonly overlays?: ReactNode;
+  /**
+   * `modal` (the default): a dialog over the page. `pane`: a region beside the
+   * view that opened it (the tablet Table's split, `Final-T-Table` chia-doi),
+   * one column, no backdrop or focus trap; Escape still closes it.
+   */
+  readonly presentation?: "modal" | "pane";
 }
 
 /**
@@ -85,7 +91,9 @@ export function CardPopupSurface({
   staleSchema,
   onReloadConflict,
   overlays,
+  presentation = "modal",
 }: CardPopupSurfaceProps) {
+  const pane = presentation === "pane";
   const fallbackCopy = useCardPopupCopy();
   const t = (model?.copy ?? fallbackCopy).shell;
   const ready = status === "ready" && model;
@@ -96,6 +104,144 @@ export function CardPopupSurface({
     model.capabilities.canEditFields &&
     model.callbacks.onAddFile,
   );
+
+  // Files dropped or pasted anywhere on the card are attached, like "Chọn tệp" in the attach panel.
+  const fileDrop = {
+    onDragOver: (event: DragEvent<HTMLElement>) => {
+      if (canAttach && event.dataTransfer.types.includes("Files"))
+        event.preventDefault();
+    },
+    onDrop: (event: DragEvent<HTMLElement>) => {
+      if (!canAttach || event.dataTransfer.files.length === 0) return;
+      event.preventDefault();
+      for (const dropped of Array.from(event.dataTransfer.files))
+        model?.callbacks.onAddFile?.(dropped);
+    },
+    onPaste: (event: ClipboardEvent<HTMLElement>) => {
+      if (!canAttach || event.clipboardData.files.length === 0) return;
+      event.preventDefault();
+      for (const pasted of Array.from(event.clipboardData.files))
+        model?.callbacks.onAddFile?.(pasted);
+    },
+  };
+  const label = ready ? model.card.title || t.dialogLabel : t.dialogLabel;
+
+  const body = (
+    <>
+      {ready ? (
+        <CardPopupProvider value={model}>
+          <StaleSchemaProvider value={staleSchema ?? null}>
+            <PopupHeader onClose={onClose} />
+            <div
+              className={cn(
+                "flex min-h-0 flex-1 flex-col overflow-y-auto",
+                !pane && "md:flex-row md:overflow-hidden",
+              )}
+            >
+              <div
+                // 720 px when the popup is 1120 px wide; the column gives way first when the window is narrower.
+                className={cn(
+                  "relative box-border min-w-0 pb-6",
+                  !pane && "md:flex-[0_1_720px] md:overflow-y-auto",
+                  // A new card has no comments yet: on a phone they wait below the fold (Kanban-CardPopup-M-Create).
+                  model.mode === "create" &&
+                    "max-md:min-h-full max-md:shrink-0",
+                )}
+                data-popup-left=""
+              >
+                {model.slots.coverBanner}
+                <PopupBanners
+                  conflict={conflict}
+                  conflictBy={conflictBy}
+                  staleSchema={staleSchema}
+                  onReload={onReloadConflict}
+                />
+                <PopupTitleRow />
+                <PopupQuickRow />
+                <ChipsRow />
+                <DescriptionSection />
+                <FieldsSection />
+                <ChecklistsSection />
+                <AttachmentsSection />
+                <LinksSection />
+              </div>
+              <aside
+                aria-label={model.copy.shell.comments}
+                className={cn(
+                  "relative box-border flex min-w-0 flex-col border-t border-line bg-background px-4 pt-4 pb-6",
+                  pane
+                    ? "md:px-5"
+                    : "md:min-w-[300px] md:flex-[0_1_400px] md:overflow-y-auto md:border-t-0 md:border-l md:px-5",
+                  // Kanban-CardPopup-Create draws a 12 px rhythm in its comments column; an open card keeps 14.
+                  model.mode === "create" ? "gap-3" : "gap-3.5",
+                )}
+              >
+                <ApprovalSection />
+                <CommentsColumn />
+              </aside>
+            </div>
+            <CommentsBar />
+            {footer}
+            {overlays}
+          </StaleSchemaProvider>
+        </CardPopupProvider>
+      ) : (
+        <>
+          <div className="flex h-14 flex-none items-center justify-end border-b border-line pr-3 pl-4">
+            <IconBtn aria-label={t.close} onClick={onClose}>
+              <X aria-hidden="true" className="size-4" />
+            </IconBtn>
+          </div>
+          {status === "loading" ? <PopupSkeleton /> : null}
+          {status === "error" ? (
+            <PopupLoadError onRetry={onRetry ?? onClose} onClose={onClose} />
+          ) : null}
+          {status === "gone" ? (
+            <PopupGone onClose={onClose} draft={keptDraft} />
+          ) : null}
+          {status === "deleted" ? (
+            <PopupDeleted
+              by={deletedBy ?? null}
+              onClose={onClose}
+              draft={keptDraft}
+              onRestore={onRestoreDeleted}
+            />
+          ) : null}
+          {status === "moved" && movedTo ? (
+            <PopupMoved
+              boardTitle={movedTo.boardTitle}
+              onOpen={movedTo.onOpen}
+              onClose={onClose}
+              draft={keptDraft}
+            />
+          ) : null}
+        </>
+      )}
+    </>
+  );
+
+  if (pane)
+    return (
+      <section
+        role="region"
+        aria-label={label}
+        data-popup-pane=""
+        // An inline editor closes itself on Escape; otherwise Escape closes the pane.
+        onKeyDown={(event) => {
+          if (event.key !== "Escape" || event.defaultPrevented) return;
+          if (
+            (event.target as HTMLElement | null)?.closest?.("[data-popup-esc]")
+          )
+            return;
+          event.preventDefault();
+          onClose();
+        }}
+        {...fileDrop}
+        className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-popover text-[14px] text-foreground"
+      >
+        {body}
+      </section>
+    );
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -110,23 +256,7 @@ export function CardPopupSurface({
           )
             event.preventDefault();
         }}
-        // Files dropped or pasted anywhere on the card are attached, like "Chọn tệp" in the attach panel.
-        onDragOver={(event) => {
-          if (canAttach && event.dataTransfer.types.includes("Files"))
-            event.preventDefault();
-        }}
-        onDrop={(event) => {
-          if (!canAttach || event.dataTransfer.files.length === 0) return;
-          event.preventDefault();
-          for (const dropped of Array.from(event.dataTransfer.files))
-            model?.callbacks.onAddFile?.(dropped);
-        }}
-        onPaste={(event) => {
-          if (!canAttach || event.clipboardData.files.length === 0) return;
-          event.preventDefault();
-          for (const pasted of Array.from(event.clipboardData.files))
-            model?.callbacks.onAddFile?.(pasted);
-        }}
+        {...fileDrop}
         overlayClassName="bg-black/40 backdrop-blur-none"
         className={cn(
           "fixed top-3 left-0 flex h-[calc(100dvh-12px)] max-h-none w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-t-[16px] rounded-b-none bg-popover p-0 text-[14px] text-foreground ring-0",
@@ -134,89 +264,8 @@ export function CardPopupSurface({
           "sm:max-w-none",
         )}
       >
-        <DialogTitle className="sr-only">
-          {ready ? model.card.title || t.dialogLabel : t.dialogLabel}
-        </DialogTitle>
-        {ready ? (
-          <CardPopupProvider value={model}>
-            <StaleSchemaProvider value={staleSchema ?? null}>
-              <PopupHeader onClose={onClose} />
-              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto md:flex-row md:overflow-hidden">
-                <div
-                  // 720 px when the popup is 1120 px wide; the column gives way first when the window is narrower.
-                  className={cn(
-                    "relative box-border min-w-0 pb-6 md:flex-[0_1_720px] md:overflow-y-auto",
-                    // A new card has no comments yet: on a phone they wait below the fold (Kanban-CardPopup-M-Create).
-                    model.mode === "create" &&
-                      "max-md:min-h-full max-md:shrink-0",
-                  )}
-                  data-popup-left=""
-                >
-                  {model.slots.coverBanner}
-                  <PopupBanners
-                    conflict={conflict}
-                    conflictBy={conflictBy}
-                    staleSchema={staleSchema}
-                    onReload={onReloadConflict}
-                  />
-                  <PopupTitleRow />
-                  <PopupQuickRow />
-                  <ChipsRow />
-                  <DescriptionSection />
-                  <FieldsSection />
-                  <ChecklistsSection />
-                  <AttachmentsSection />
-                  <LinksSection />
-                </div>
-                <aside
-                  aria-label={model.copy.shell.comments}
-                  className={cn(
-                    "relative box-border flex min-w-0 flex-col border-t border-line bg-background px-4 pt-4 pb-6 md:min-w-[300px] md:flex-[0_1_400px] md:px-5 md:overflow-y-auto md:border-t-0 md:border-l",
-                    // Kanban-CardPopup-Create draws a 12 px rhythm in its comments column; an open card keeps 14.
-                    model.mode === "create" ? "gap-3" : "gap-3.5",
-                  )}
-                >
-                  <ApprovalSection />
-                  <CommentsColumn />
-                </aside>
-              </div>
-              <CommentsBar />
-              {footer}
-              {overlays}
-            </StaleSchemaProvider>
-          </CardPopupProvider>
-        ) : (
-          <>
-            <div className="flex h-14 flex-none items-center justify-end border-b border-line pr-3 pl-4">
-              <IconBtn aria-label={t.close} onClick={onClose}>
-                <X aria-hidden="true" className="size-4" />
-              </IconBtn>
-            </div>
-            {status === "loading" ? <PopupSkeleton /> : null}
-            {status === "error" ? (
-              <PopupLoadError onRetry={onRetry ?? onClose} onClose={onClose} />
-            ) : null}
-            {status === "gone" ? (
-              <PopupGone onClose={onClose} draft={keptDraft} />
-            ) : null}
-            {status === "deleted" ? (
-              <PopupDeleted
-                by={deletedBy ?? null}
-                onClose={onClose}
-                draft={keptDraft}
-                onRestore={onRestoreDeleted}
-              />
-            ) : null}
-            {status === "moved" && movedTo ? (
-              <PopupMoved
-                boardTitle={movedTo.boardTitle}
-                onOpen={movedTo.onOpen}
-                onClose={onClose}
-                draft={keptDraft}
-              />
-            ) : null}
-          </>
-        )}
+        <DialogTitle className="sr-only">{label}</DialogTitle>
+        {body}
       </DialogContent>
     </Dialog>
   );

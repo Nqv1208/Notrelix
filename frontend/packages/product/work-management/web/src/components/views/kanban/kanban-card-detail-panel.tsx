@@ -45,6 +45,8 @@ interface KanbanCardDetailPanelProps {
   /** The column picker's counts, limits and positioned move. */
   lanePicker?: CardPopupLanePicker;
   slots?: CardPopupSlots;
+  /** A dialog over the page (the default) or a pane beside the view. */
+  presentation?: "modal" | "pane";
 }
 
 /**
@@ -64,6 +66,7 @@ export function KanbanCardDetailPanel({
   groupField,
   lanePicker,
   slots,
+  presentation,
 }: KanbanCardDetailPanelProps) {
   const [openedAt] = useState(() => new Date());
   const pickerActions = usePickerActions(card);
@@ -107,6 +110,7 @@ export function KanbanCardDetailPanel({
       }}
       onClose={callbacks.onClose}
       onCloseAutoFocus={onCloseAutoFocus}
+      presentation={presentation}
     />
   );
 }
