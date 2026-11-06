@@ -33927,6 +33927,9 @@
           "boardVersion": {
             "type": "integer",
             "format": "int64"
+          },
+          "isPrivate": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

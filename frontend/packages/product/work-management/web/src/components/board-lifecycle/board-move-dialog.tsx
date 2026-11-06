@@ -4,6 +4,8 @@ import {
   CircleAlert,
   CircleCheck,
   Home,
+  Info,
+  Loader2,
   Lock,
   RotateCw,
   TriangleAlert,
@@ -46,6 +48,8 @@ export interface BoardMoveImpact {
   readonly strandedOverdue: number;
   readonly keptNames: readonly string[];
   readonly keptCount: number;
+  /** The board is Private: only its own entries reach it, so the move changes where it sits and nobody's access. */
+  readonly isPrivate?: boolean;
 }
 
 /** One place the board can go: a Space, or the top of the workspace (`id` null). */
@@ -75,6 +79,19 @@ export interface BoardMoveDialogProps {
   readonly pending: boolean;
   /** The move was refused or did not reach the server: nothing changed. */
   readonly error: string | null;
+  /**
+   * WM-MoveBoard frames 6 and 9: someone else moved the board first (named when the server says who; the impact is
+   * read again for the new place, "Xem lại" goes back to picking), or the person may not move it (only Đóng).
+   */
+  readonly notice?:
+    | {
+        readonly kind: "moved-by";
+        readonly by: string | null;
+        readonly place: string;
+      }
+    | { readonly kind: "denied" }
+    | null;
+  readonly onReview?: () => void;
   readonly onClose: () => void;
   readonly onSubmit: (
     target: string | null,
@@ -121,6 +138,8 @@ function Title({ children, sub }: { children: ReactNode; sub?: ReactNode }) {
  */
 export function BoardMoveDialog(props: BoardMoveDialogProps) {
   const { copy, picked, impact, impactState, pending, error } = props;
+  const notice = props.notice ?? null;
+  const denied = notice?.kind === "denied";
   // `null`: nobody has been unchecked yet, so everyone who would be left behind is added.
   const [unchecked, setUnchecked] = useState<ReadonlySet<string>>(new Set());
   const stranded = impact?.stranded ?? [];
@@ -190,6 +209,62 @@ export function BoardMoveDialog(props: BoardMoveDialogProps) {
           data-f="mb"
           className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-5 pt-2 pb-4 text-[13.5px] max-md:px-4 max-md:text-[14.5px] [&>*]:shrink-0"
         >
+          {notice?.kind === "moved-by" ? (
+            <div
+              data-f="mnotice"
+              role="alert"
+              className="flex items-start gap-2.5 rounded-[10px] bg-warning-subtle px-3.5 py-2.5 text-[13px] leading-[1.4] text-warning-text"
+            >
+              <TriangleAlert
+                aria-hidden="true"
+                className="mt-0.5 size-4 shrink-0"
+                strokeWidth={1.8}
+              />
+              <span className="flex min-w-0 flex-1 flex-col gap-px">
+                <b className="font-semibold text-foreground">
+                  {fill(copy.movedByTitle, {
+                    who: notice.by ?? copy.movedBySomeone,
+                    place: notice.place,
+                  })}
+                </b>
+                <span>{copy.movedByBody}</span>
+              </span>
+              {props.onReview ? (
+                <button
+                  data-f="mreview"
+                  type="button"
+                  onClick={props.onReview}
+                  // The artboard's small button: 28 px, 12.5 px text.
+                  className={cn(
+                    BTN,
+                    FOCUS,
+                    "h-7 shrink-0 px-2.5 text-[12.5px] max-md:h-11 max-md:min-w-0 max-md:flex-none",
+                  )}
+                >
+                  {copy.review}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+          {denied ? (
+            <div
+              data-f="mdenied"
+              role="status"
+              className="flex items-start gap-2.5 rounded-[10px] bg-brand-subtle px-3.5 py-2.5 text-[13px] leading-[1.4] text-brand-subtle-foreground"
+            >
+              <Info
+                aria-hidden="true"
+                className="mt-0.5 size-4 shrink-0"
+                strokeWidth={1.8}
+              />
+              <span className="flex min-w-0 flex-1 flex-col gap-px">
+                <b className="font-semibold text-foreground">
+                  {copy.deniedTitle}
+                </b>
+                <span>{copy.deniedBody}</span>
+              </span>
+            </div>
+          ) : null}
           {error ? (
             <div
               data-f="merr"
@@ -218,7 +293,7 @@ export function BoardMoveDialog(props: BoardMoveDialogProps) {
           >
             {props.places.map((place) => {
               const checked = picked === place.id;
-              const disabled = place.state !== "open" || pending;
+              const disabled = place.state !== "open" || pending || denied;
               const sub =
                 place.id === null
                   ? fill(copy.rootSub, { workspace: props.workspaceName })
@@ -372,28 +447,63 @@ export function BoardMoveDialog(props: BoardMoveDialogProps) {
               )}
             </div>
           ) : null}
+          {pending ? (
+            // WM-MoveBoard frame 7: the move is on its way and cannot be taken back.
+            <div data-f="mpending" role="status">
+              <Section
+                tone="neutral"
+                icon={
+                  <Loader2
+                    aria-hidden="true"
+                    className="size-4 motion-safe:animate-spin"
+                    strokeWidth={1.8}
+                  />
+                }
+                title={
+                  stranded.length > 0 && chosen.length > 0
+                    ? pluralLifecycle(copy, "pendingAdding", chosen.length)
+                    : copy.pendingPlain
+                }
+                body={copy.pendingNote}
+              />
+            </div>
+          ) : null}
         </div>
 
         <div
           data-f="mf"
           className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-line bg-popover px-5 py-3 max-md:px-4 max-md:pb-4"
         >
-          {(picked === undefined || impactState === "loading") && !error ? (
+          {(picked === undefined || impactState === "loading") &&
+          !error &&
+          !denied &&
+          !pending ? (
             <span className="min-w-0 flex-1 text-[12.5px] leading-[1.4] text-meta-foreground max-md:basis-full">
               {picked === undefined ? copy.pickHint : copy.loading}
             </span>
           ) : null}
-          {pending ? null : (
+          {denied ? (
             <button
-              data-f="mcancel"
+              data-f="mdone"
               type="button"
               onClick={props.onClose}
               className={cn(BTN, FOCUS)}
             >
+              {copy.close}
+            </button>
+          ) : null}
+          {denied ? null : (
+            <button
+              data-f="mcancel"
+              type="button"
+              aria-disabled={pending || undefined}
+              onClick={pending ? undefined : props.onClose}
+              className={cn(BTN, FOCUS, pending && "text-meta-foreground")}
+            >
               {copy.cancel}
             </button>
           )}
-          {strandedHere ? (
+          {strandedHere && !denied ? (
             <button
               data-f="mwithout"
               type="button"
@@ -403,42 +513,44 @@ export function BoardMoveDialog(props: BoardMoveDialogProps) {
               {copy.moveWithout}
             </button>
           ) : null}
-          <button
-            data-f="mgo"
-            type="button"
-            aria-disabled={
-              error
-                ? undefined
-                : ready && (!strandedHere || chosen.length > 0)
+          {denied ? null : (
+            <button
+              data-f="mgo"
+              type="button"
+              aria-disabled={
+                error
                   ? undefined
-                  : true
-            }
-            onClick={
-              error
-                ? () => send(chosen)
-                : ready && (!strandedHere || chosen.length > 0)
-                  ? () => send(strandedHere ? chosen : [])
-                  : undefined
-            }
-            className={cn(BTN, BTN_PRIMARY, FOCUS)}
-          >
-            {error ? (
-              <RotateCw
-                aria-hidden="true"
-                className="size-4"
-                strokeWidth={1.8}
-              />
-            ) : null}
-            {pending
-              ? copy.moving
-              : error
-                ? copy.retry
-                : strandedHere
-                  ? pluralLifecycle(copy, "moveAdding", chosen.length)
-                  : picked === undefined || impactState === "loading"
-                    ? copy.confirm
-                    : fill(copy.confirmTo, { name: target })}
-          </button>
+                  : ready && (!strandedHere || chosen.length > 0)
+                    ? undefined
+                    : true
+              }
+              onClick={
+                error
+                  ? () => send(chosen)
+                  : ready && (!strandedHere || chosen.length > 0)
+                    ? () => send(strandedHere ? chosen : [])
+                    : undefined
+              }
+              className={cn(BTN, BTN_PRIMARY, FOCUS)}
+            >
+              {error ? (
+                <RotateCw
+                  aria-hidden="true"
+                  className="size-4"
+                  strokeWidth={1.8}
+                />
+              ) : null}
+              {pending
+                ? copy.moving
+                : error
+                  ? copy.retry
+                  : strandedHere
+                    ? pluralLifecycle(copy, "moveAdding", chosen.length)
+                    : picked === undefined || impactState === "loading"
+                      ? copy.confirm
+                      : fill(copy.confirmTo, { name: target })}
+            </button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
@@ -532,10 +644,13 @@ function ImpactSections({
   unchecked: ReadonlySet<string>;
   setUnchecked: (next: ReadonlySet<string>) => void;
 }) {
-  const loses = impact.everyoneLoses || (impact.losingCount ?? 0) > 0;
-  const gains = impact.everyoneGains || impact.gainingCount > 0;
+  // WM-MoveBoard frame 5: a Private board keeps everyone's access; only where it sits changes.
+  const isPrivate = impact.isPrivate === true;
+  const loses =
+    !isPrivate && (impact.everyoneLoses || (impact.losingCount ?? 0) > 0);
+  const gains = !isPrivate && (impact.everyoneGains || impact.gainingCount > 0);
   const showRows = loses || gains;
-  const stranded = impact.strandedCount > 0;
+  const stranded = !isPrivate && impact.strandedCount > 0;
   const kept =
     impact.keptNames.length === 0
       ? null
@@ -550,7 +665,26 @@ function ImpactSections({
       data-f="sections"
       className="flex flex-col gap-3 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-1 motion-safe:duration-150"
     >
-      {!showRows ? (
+      {isPrivate ? (
+        <div
+          data-f="mprivate"
+          role="status"
+          className="flex items-start gap-2.5 rounded-[10px] bg-brand-subtle px-3.5 py-2.5 text-[13px] leading-[1.4] text-brand-subtle-foreground"
+        >
+          <Lock
+            aria-hidden="true"
+            className="mt-0.5 size-4 shrink-0"
+            strokeWidth={1.8}
+          />
+          <span className="flex min-w-0 flex-1 flex-col gap-px">
+            <b className="text-[13.5px] leading-[1.4] font-semibold text-foreground">
+              {copy.privateTitle}
+            </b>
+            <span>{fill(copy.privateBody, { from: fromName })}</span>
+          </span>
+        </div>
+      ) : null}
+      {!showRows && !isPrivate ? (
         <Section
           tone="ok"
           icon={<CircleCheck className="size-4" strokeWidth={1.8} />}

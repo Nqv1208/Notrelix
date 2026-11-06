@@ -8,11 +8,13 @@ using Notrelix.Application.Features.Documents.Pages.Queries.SearchPages;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.MoveBoardToSpace;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard;
+using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMoveImpact;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoards;
 using Notrelix.Application.Features.WorkManagement.Templates.Commands.CreateBoardFromTemplate;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.ArchiveSpace;
 using Notrelix.Domain.Documents;
 using Notrelix.Domain.Governance.Permissions;
+using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Templates;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Spaces;
@@ -152,6 +154,27 @@ public sealed class SpacePlacementIntegrationTests : IAsyncLifetime
 
         await MoveBoardAsync(owner, board, null, null);
         (await SpaceOfBoardAsync(board)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task MoveImpact_OfAPrivateBoard_SaysSo_AndChangesNobodysAccess()
+    {
+        // WM-MoveBoard frame 5: a Private board is reached only through its own entries, so the move changes where
+        // it sits and nobody's access; the impact says so for the dialog's band.
+        var s = await SeedAsync();
+        var privateBoard = await _host.SeedBoardAsync(s.Stack, "Payroll", BoardVisibility.Private, spaceId: s.Accounting);
+        var sharedBoard = await _host.SeedBoardAsync(s.Stack, "Campaign plan", spaceId: s.Accounting);
+        using var owner = _host.CreateProvider(s.Stack.AccountId, s.Stack.OwnerId);
+
+        var ofPrivate = await OrgTreeTestHost.QueryAsync(owner, new GetBoardMoveImpactQuery(privateBoard, s.Marketing));
+        ofPrivate.IsPrivate.Should().BeTrue();
+        ofPrivate.LosingCount.Should().Be(0);
+        ofPrivate.GainingCount.Should().Be(0);
+        ofPrivate.EveryoneGains.Should().BeFalse();
+        ofPrivate.EveryoneLoses.Should().BeFalse();
+
+        var ofShared = await OrgTreeTestHost.QueryAsync(owner, new GetBoardMoveImpactQuery(sharedBoard, s.Marketing));
+        ofShared.IsPrivate.Should().BeFalse();
     }
 
     [Fact]
