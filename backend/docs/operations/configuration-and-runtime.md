@@ -318,6 +318,26 @@ object storage are reclaimed by the attachment orphan sweep once no row referenc
 | `Interval` | `01:00:00` (1 hour) | Time between passes. Range 10 seconds to 1 day. |
 | `BatchSize` | 10 | Workspaces purged per pass, each in its own transaction. Range 1 to 1000. |
 
+`WorkManagement:Boards:Purge` (Infrastructure, `DeletedBoardPurgeOptions`, validated on start by
+`DeletedBoardPurgeOptionsValidator`) configures the purge of deleted boards (`DeletedBoardPurgeService`, a hosted
+service; the window is the Domain constant of 30 days after the delete, `Board.RestoreWindow`, and restore after it is
+refused with `WorkManagement_Board_RestoreWindowElapsed` whether or not the purge runs). It is off by default: the
+first release keeps every deleted board until an owner turns the purge on. Each pass claims, under the system context
+with the RLS worker scope, one board deleted more than 30 days ago with `FOR UPDATE SKIP LOCKED` and, in one
+transaction, removes every row of a `work` table that names the board in a uuid `board_id` or `*_board_id` column,
+every row (outside the retained schemas) whose cascading or blocking foreign key points at a removed row, children
+before parents by the live foreign keys (a cycle or a multi-column blocking key stops the pass), then the board row,
+and writes an audit fact `PurgeBoard` (actor type System, Critical). Rows of other contexts that name the board without
+a foreign key (comments, activity, reporting projections, automation rules, field permissions) follow their own
+retention. A failure rolls the board back and the next pass retries; a purged board is gone, so a second pass finds
+nothing.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `false` | When false nothing is purged. |
+| `Interval` | `01:00:00` (1 hour) | Time between passes. Range 10 seconds to 1 day. |
+| `BatchSize` | 20 | Boards purged per pass, each in its own transaction. Range 1 to 1000. |
+
 `Collaboration:DueDateNotifications` (Infrastructure, `DueDateNotificationOptions`, validated on start by
 `DueDateNotificationOptionsValidator`) configures the due-date notifications (`DueDateNotificationService`, a hosted
 service): an assignee of an open, unarchived Item gets one in-app notification that it is due tomorrow and one that it

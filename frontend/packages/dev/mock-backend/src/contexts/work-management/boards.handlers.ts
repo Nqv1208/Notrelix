@@ -582,6 +582,46 @@ export function keepViewConfig(boardId: string, config: string): void {
   }
 }
 
+type RetiredBoardApi =
+  OperationResponse<"WorkManagement.Boards.ListDeleted">[number];
+
+const RESTORE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+
+interface MockDeletedBoardSeed {
+  readonly id: string;
+  readonly title: string;
+  readonly spaceId?: string | null;
+  readonly daysAgo: number;
+  /** Deleted by someone else: listed only to whoever manages it. */
+  readonly byOther?: boolean;
+}
+
+function seedDeletedBoardsFromHook(store: MockStore, workspaceId: string) {
+  const seeds = (globalThis as { __mockDeletedBoards?: MockDeletedBoardSeed[] })
+    .__mockDeletedBoards;
+  if (!Array.isArray(seeds)) return;
+  for (const seed of seeds) {
+    if (store.getDeletedBoard(seed.id) || store.getBoard(seed.id)) continue;
+    const at = store.getClock().offsetDays(-seed.daysAgo);
+    store.seedDeletedBoard(
+      {
+        id: seed.id,
+        workspaceId,
+        title: seed.title,
+        background: { type: "color", value: "#0079BF" },
+        visibility: "workspace",
+        isArchived: false,
+        createdAt: at,
+        updatedAt: at,
+        version: 2,
+        spaceId: seed.spaceId ?? null,
+      } as MockBoardRecord,
+      at,
+      seed.byOther ? "mock-user-someone-else" : store.getCurrentUser().id,
+    );
+  }
+}
+
 export const boardsOperations = [
   // ─── GET /workspaces/:workspaceId/boards ──────────────────────────────────
 
@@ -718,6 +758,135 @@ export const boardsOperations = [
       if (!canManageBoard(board.id, store)) return forbidden();
       store.deleteBoard(board.id);
       return ok<void>(undefined);
+    },
+  }),
+
+  // ─── GET /workspaces/:workspaceId/boards/archived ─────────────────────────
+  // The archived boards the caller can read (the archived tab of the same page).
+
+  defineMockOperation<{ workspaceId: string }, never, RetiredBoardApi[]>({
+    id: "boards.listArchived",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Boards.ListArchived",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/boards/archived",
+    async handle({ params, store }) {
+      const rows = store
+        .getBoards(params.workspaceId)
+        .filter(
+          (board) =>
+            board.isArchived && projectBoardAccess(board, store) !== null,
+        )
+        .map((board) => ({
+          id: board.id,
+          workspaceId: board.workspaceId,
+          title: board.title,
+          background: board.background.value,
+          visibility: board.visibility,
+          version: board.version ?? 1,
+          spaceId: visibleSpaceId(store, params.workspaceId, board.spaceId),
+          itemKeyPrefix: board.itemKeyPrefix ?? null,
+          retiredAt: board.updatedAt ?? board.createdAt,
+          restorableUntil: null,
+        }));
+      return ok(rows as RetiredBoardApi[]);
+    },
+  }),
+
+  // ─── GET /workspaces/:workspaceId/boards/deleted (UC-WM-A07) ──────────────
+  // The boards deleted in the last 30 days that the caller can restore: the deleter, and whoever
+  // manages the board (a workspace Owner, a Space manager, a board Owner or Admin). `?spaceId=`
+  // narrows to one Space. Test hook: `globalThis.__mockDeletedBoards` seeds deleted boards
+  // ({ id, title, spaceId?, daysAgo, byOther? }) once per page load.
+
+  defineMockOperation<{ workspaceId: string }, never, RetiredBoardApi[]>({
+    id: "boards.listDeleted",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Boards.ListDeleted",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/boards/deleted",
+    async handle({ params, query, store }) {
+      seedDeletedBoardsFromHook(store, params.workspaceId);
+      const me = store.getCurrentUser().id;
+      const now = Date.parse(store.getClock().isoNow());
+      const spaceFilter = query.spaceId ?? null;
+      const rows = store
+        .getDeletedBoards(params.workspaceId)
+        .filter(
+          (entry) =>
+            now - Date.parse(entry.deletedAt) <= RESTORE_WINDOW_MS &&
+            (!spaceFilter || entry.board.spaceId === spaceFilter) &&
+            (entry.deletedBy === me ||
+              projectBoardAccess(entry.board, store)?.myLevel === "manager"),
+        )
+        .map((entry) => ({
+          id: entry.board.id,
+          workspaceId: entry.board.workspaceId,
+          title: entry.board.title,
+          background: entry.board.background.value,
+          visibility: entry.board.visibility,
+          version: entry.board.version ?? 1,
+          spaceId: visibleSpaceId(
+            store,
+            params.workspaceId,
+            entry.board.spaceId,
+          ),
+          itemKeyPrefix: entry.board.itemKeyPrefix ?? null,
+          retiredAt: entry.deletedAt,
+          restorableUntil: store
+            .getClock()
+            .offsetSeconds(
+              (Date.parse(entry.deletedAt) + RESTORE_WINDOW_MS - now) / 1000,
+            ),
+        }));
+      return ok(rows as RetiredBoardApi[]);
+    },
+  }),
+
+  // ─── POST /boards/:id/restore (UC-WM-A07) ──────────────────────────────────
+  // Test hook: `globalThis.__mockBoardRestoreWindowElapsed` refuses with the window rule code.
+
+  defineMockOperation<{ id: string }, { expectedVersion?: number }, void>({
+    id: "boards.restore",
+    contract: { kind: "openapi", operationId: "WorkManagement.Boards.Restore" },
+    method: "POST",
+    route: "/boards/:id/restore",
+    async handle({ params, body, store }) {
+      // Restoring an active board is a no-op.
+      if (store.getBoard(params.id)) return noContent();
+      const entry = store.getDeletedBoard(params.id);
+      if (!entry) return notFound("Board not found");
+      const me = store.getCurrentUser().id;
+      if (
+        entry.deletedBy !== me &&
+        projectBoardAccess(entry.board, store)?.myLevel !== "manager"
+      )
+        return notFound("Board not found");
+      if (
+        body?.expectedVersion !== undefined &&
+        body.expectedVersion !== (entry.board.version ?? 1)
+      )
+        return preconditionFailed();
+      const now = Date.parse(store.getClock().isoNow());
+      if (
+        (globalThis as { __mockBoardRestoreWindowElapsed?: boolean })
+          .__mockBoardRestoreWindowElapsed === true ||
+        now - Date.parse(entry.deletedAt) > RESTORE_WINDOW_MS
+      )
+        return {
+          status: 422,
+          body: {
+            message: "The 30-day window to restore this board has passed.",
+            errorCode: "WorkManagement_Board_RestoreWindowElapsed",
+            ruleCode: "WorkManagement_Board_RestoreWindowElapsed",
+          },
+        } as never;
+      store.restoreDeletedBoard(entry.board.id);
+      return noContent();
     },
   }),
 

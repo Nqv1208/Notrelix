@@ -630,10 +630,10 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         endpoints.boards.archivedByWorkspaceId(workspaceId),
         quiet,
       ),
-    /** The boards deleted in the last 30 days that the person can restore. */
-    listDeletedBoards: (workspaceId: string) =>
+    /** The boards deleted in the last 30 days that the person can restore, optionally those of one Space. */
+    listDeletedBoards: (workspaceId: string, spaceId?: string | null) =>
       api.get<RetiredBoard[]>(
-        endpoints.boards.deletedByWorkspaceId(workspaceId),
+        endpoints.boards.deletedByWorkspaceId(workspaceId, spaceId),
         quiet,
       ),
     unarchiveBoardById: (boardId: string, expectedVersion: number) => {
