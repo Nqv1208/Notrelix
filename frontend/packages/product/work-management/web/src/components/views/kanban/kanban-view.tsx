@@ -537,9 +537,23 @@ export function KanbanView({
         .map((entry) => entry.field),
     [kanban.filterFields],
   );
+  // Cards archived from the bulk bar leave the board while their undo window
+  // runs (`KanbanBulkBar`), as the Table's rows do.
+  const [archivingIds, setArchivingIds] = useState<readonly string[]>([]);
+  const shownLanes = useMemo<KanbanStatusLane[]>(() => {
+    if (archivingIds.length === 0) return kanban.lanes;
+    const hidden = new Set(archivingIds);
+    return kanban.lanes.map((lane) => {
+      const cards = lane.cards.filter((card) => !hidden.has(card.id));
+      const removed = lane.cards.length - cards.length;
+      return removed === 0
+        ? lane
+        : { ...lane, cards, total: lane.total - removed };
+    });
+  }, [kanban.lanes, archivingIds]);
   const orderedCardIds = useMemo(
-    () => kanban.lanes.flatMap((lane) => lane.cards.map((card) => card.id)),
-    [kanban.lanes],
+    () => shownLanes.flatMap((lane) => lane.cards.map((card) => card.id)),
+    [shownLanes],
   );
   const picking = useKanbanSelection(orderedCardIds);
   const lanesReady = !kanban.isLoading && Boolean(board);
@@ -764,7 +778,7 @@ export function KanbanView({
       : undefined;
   const swimlanes: KanbanStatusLane[] = laneField
     ? groupCardsByField(
-        kanban.lanes.flatMap((lane) => lane.cards),
+        shownLanes.flatMap((lane) => lane.cards),
         laneField,
         laneRef?.bucket,
         { person: kanban.memberName, bucket: kanbanView.bucketLabel },
@@ -1276,7 +1290,7 @@ export function KanbanView({
                   copy={filtersCopy}
                   cardCopy={cardCopy}
                   now={now}
-                  columns={kanban.lanes}
+                  columns={shownLanes}
                   swimlanes={swimlanes}
                   laneField={laneField}
                   columnName={(column) =>
@@ -1297,7 +1311,7 @@ export function KanbanView({
             ) : (
               <KanbanBoard
                 onDraggingChange={setDragging}
-                lanes={kanban.lanes}
+                lanes={shownLanes}
                 groupOrder={kanban.groups}
                 copy={laneCopy}
                 cardCopy={cardCopy}
@@ -1437,6 +1451,7 @@ export function KanbanView({
             capabilities={capabilities}
             selectedIds={picking.selectedIds}
             onClear={picking.clear}
+            onPendingArchiveChange={setArchivingIds}
           />
         ) : null}
 

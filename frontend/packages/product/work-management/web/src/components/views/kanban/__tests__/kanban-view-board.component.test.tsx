@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "@notrelix/i18n";
 import {
+  act,
   fireEvent,
   renderPureUi,
   screen,
@@ -34,6 +35,7 @@ import { kanbanLaneCatalog } from "../kanban-lane.catalog";
 import { kanbanToolbarCatalog } from "../kanban-toolbar.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
 import { KanbanView, type KanbanViewProps } from "../kanban-view";
+import { ARCHIVE_UNDO_MS } from "../../table/use-archive-undo-window";
 
 const toast = vi.hoisted(() => ({
   success: vi.fn(),
@@ -144,6 +146,24 @@ function fakeServices(
       };
     }),
     duplicateCard: vi.fn(async () => undefined),
+    // The bulk bar's one request; an archive takes the items off the board.
+    bulkUpdate: vi.fn(
+      async (
+        _boardId: string,
+        itemIds: readonly string[],
+        change: { type: string },
+      ) => {
+        if (change.type === "archive")
+          board = {
+            ...board,
+            groups: board.groups.map((group) => ({
+              ...group,
+              cards: group.cards.filter((item) => !itemIds.includes(item.id)),
+            })),
+          };
+        return itemIds.length;
+      },
+    ),
   };
   const services = {
     boards: {
@@ -923,4 +943,77 @@ describe("KanbanView settings of the view", () => {
       ).toBeTruthy(),
     );
   });
+});
+
+describe("KanbanView bulk archive (UC-WM-J01)", () => {
+  const ERP_151 = "Cấu hình quyền truy cập theo phòng ban cho phân hệ Kế toán";
+  const ERP_149 = "Viết tài liệu quy trình nhập hoá đơn đầu vào";
+  const pick = (title: string) =>
+    fireEvent.click(screen.getByRole("checkbox", { name: `Chọn ${title}` }));
+  const cardShown = (title: string) =>
+    screen.queryByRole("checkbox", { name: `Chọn ${title}` }) !== null;
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("archives the picked cards in one request after the Table's undo window, not before", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { cards } = renderKanban(erpOwnerAccess());
+    await ready();
+    const before = Number(laneCount("Cần làm"));
+    pick(ERP_151);
+    pick(ERP_149);
+    fireEvent.click(screen.getByRole("button", { name: "Lưu trữ" }));
+
+    // The cards leave the board at once; the write waits for the window.
+    expect(cardShown(ERP_151)).toBe(false);
+    expect(cardShown(ERP_149)).toBe(false);
+    expect(Number(laneCount("Cần làm"))).toBe(before - 2);
+    expect(screen.getByText("Đã lưu trữ 2 việc")).toBeTruthy();
+    expect(cards.bulkUpdate).not.toHaveBeenCalled();
+
+    await act(async () => {
+      vi.advanceTimersByTime(ARCHIVE_UNDO_MS + 50);
+    });
+    await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(1));
+    expect(cards.bulkUpdate).toHaveBeenCalledWith(
+      expect.any(String),
+      [erpItemId("ERP-151"), erpItemId("ERP-149")],
+      { type: "archive" },
+      expect.any(Object),
+      expect.anything(),
+    );
+    expect(cards.archiveCard).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.queryByText("Đã lưu trữ 2 việc")).toBeNull(),
+    );
+    expect(cardShown(ERP_151)).toBe(false);
+  }, 20_000);
+
+  it("brings the cards back and sends nothing when the archive is undone", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { cards } = renderKanban(erpOwnerAccess());
+    await ready();
+    pick(ERP_151);
+    fireEvent.click(screen.getByRole("button", { name: "Lưu trữ" }));
+    expect(cardShown(ERP_151)).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Hoàn tác" }));
+    expect(cardShown(ERP_151)).toBe(true);
+    await act(async () => {
+      vi.advanceTimersByTime(ARCHIVE_UNDO_MS + 50);
+    });
+    expect(cards.bulkUpdate).not.toHaveBeenCalled();
+    expect(cards.archiveCard).not.toHaveBeenCalled();
+  }, 20_000);
+
+  it("sends the archive at once when the notice is closed", async () => {
+    const { cards } = renderKanban(erpOwnerAccess());
+    await ready();
+    pick(ERP_151);
+    fireEvent.click(screen.getByRole("button", { name: "Lưu trữ" }));
+    expect(cards.bulkUpdate).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Đóng thông báo" }));
+    await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(1));
+  }, 20_000);
 });

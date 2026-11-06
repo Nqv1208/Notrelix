@@ -117,5 +117,58 @@ test.describe("Kanban pick box and bar", () => {
       await expect(box).toHaveAttribute("aria-checked", "false");
       await expect(bar).toBeHidden();
     });
+
+    // UC-WM-J01: the bar's Lưu trữ waits for the Table's undo window. The notice is the Table's
+    // (`TableArchivedNotice`, measured in the Table specs); here it must take the bar's place, 22 px above the edge.
+    test(`archive waits for the undo window and Hoàn tác brings the cards back, ${mode}`, async ({
+      page,
+    }) => {
+      await page.addInitScript((theme) => {
+        try {
+          window.localStorage.setItem("notrelix-locale", "vi");
+          window.localStorage.setItem("notrelix-theme-mode", theme);
+        } catch {
+          // Private mode: the defaults apply.
+        }
+      }, mode);
+      const archives: string[] = [];
+      page.on("request", (request) => {
+        if (request.method() === "POST" && /\/items\/bulk$/.test(request.url()))
+          archives.push(request.postData() ?? "");
+      });
+      await page.goto(BOARD);
+      const lane = page.getByRole("region", { name: "Cần làm" });
+      await expect(lane).toBeVisible();
+      const cards = lane.getByRole("article");
+      const before = await cards.count();
+      const firstKey =
+        (await cards.nth(0).innerText()).match(/ERP-\d+/)?.[0] ?? "";
+      await cards.nth(0).getByRole("checkbox").click();
+      await cards.nth(1).getByRole("checkbox").click();
+      const bar = page.getByRole("toolbar", {
+        name: /^Thao tác với 2 công việc đã chọn/,
+      });
+      await bar.getByRole("button", { name: "Lưu trữ", exact: true }).click();
+
+      const notice = page.locator("[data-table-archived]");
+      await expect(notice).toBeVisible();
+      await expect(notice).toContainText("Đã lưu trữ 2 việc");
+      await expect(cards).toHaveCount(before - 2);
+      const r = (await notice.boundingBox())!;
+      near(r.height, 44, "notice.h");
+      near(
+        r.y + r.height,
+        page.viewportSize()!.height - 22,
+        "notice sits where the bar sat",
+      );
+      expect(archives).toHaveLength(0);
+
+      await notice.getByRole("button", { name: "Hoàn tác" }).click();
+      await expect(notice).toBeHidden();
+      await expect(cards).toHaveCount(before);
+      await expect(cards.nth(0)).toContainText(firstKey);
+      await page.waitForTimeout(6500);
+      expect(archives).toHaveLength(0);
+    });
   }
 });

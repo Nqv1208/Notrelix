@@ -19,7 +19,12 @@ import type { TaskDetailCapabilities } from "../../card-detail/task-detail-types
 import { fillTableCopy, pluralTableCopy } from "../table/main-table.copy";
 import { useMainTableCopy } from "../table/use-main-table-copy";
 import { tableStatusOptions } from "../table/table-model";
-import { TableBulkBar, TableBulkDone } from "../table/table-bulk-bar";
+import {
+  TableArchivedNotice,
+  TableBulkBar,
+  TableBulkDone,
+} from "../table/table-bulk-bar";
+import { useArchiveUndoWindow } from "../table/use-archive-undo-window";
 
 /** "YYYY-MM-DD" as an instant at 17:00 of that local day. */
 function dueInstant(day: string): string {
@@ -31,7 +36,9 @@ function dueInstant(day: string): string {
  * the board. Status, assignee, due date and priority go as one request (all
  * or none); archive and delete go the same way; moving to another board
  * writes each card. The board is read again after each write, so a refusal
- * leaves exactly what the server holds.
+ * leaves exactly what the server holds. Archive waits for the Table's undo
+ * window: the cards leave the board at once (`onPendingArchiveChange`) and
+ * the one request goes out when the window ends.
  */
 export function KanbanBulkBar({
   boardId,
@@ -40,6 +47,7 @@ export function KanbanBulkBar({
   capabilities,
   selectedIds,
   onClear,
+  onPendingArchiveChange,
 }: {
   boardId: string;
   workspaceId: string;
@@ -47,6 +55,8 @@ export function KanbanBulkBar({
   capabilities: TaskDetailCapabilities;
   selectedIds: ReadonlySet<string>;
   onClear: () => void;
+  /** The cards waiting in the undo window, which the board hides meanwhile. */
+  onPendingArchiveChange?: (ids: readonly string[]) => void;
 }) {
   const copy = useMainTableCopy();
   const bulk = useBulkUpdateItems(boardId, workspaceId);
@@ -62,6 +72,28 @@ export function KanbanBulkBar({
     const timer = setTimeout(() => setDone(null), 6000);
     return () => clearTimeout(timer);
   }, [done]);
+  const archiveWindow = useArchiveUndoWindow((itemIds, settled) => {
+    bulk.mutate(
+      { itemIds, change: { type: "archive" } },
+      {
+        onError: (error) => {
+          const failed = bulkFailedItemId(error);
+          const title = failed ? titleOf(failed) : undefined;
+          toast.error(
+            title
+              ? fillTableCopy(copy.failed.bulkItem, { title })
+              : copy.failed.bulk,
+            { id: "kanban-bulk" },
+          );
+        },
+        onSettled: settled,
+      },
+    );
+  });
+  const pendingArchive = archiveWindow.pendingIds;
+  useEffect(() => {
+    onPendingArchiveChange?.(pendingArchive);
+  }, [pendingArchive, onPendingArchiveChange]);
   const moveItem = useMoveItemToBoard(boardId, workspaceId, {
     onError: () => toast.error(copy.failed.bulk, { id: "kanban-bulk-move" }),
   });
@@ -162,7 +194,14 @@ export function KanbanBulkBar({
     .map((candidate) => ({ id: candidate.id, title: candidate.title }));
 
   if (ids.length === 0)
-    return done ? (
+    return pendingArchive.length > 0 ? (
+      <TableArchivedNotice
+        copy={copy}
+        count={pendingArchive.length}
+        onUndo={archiveWindow.undo}
+        onClose={archiveWindow.flush}
+      />
+    ) : done ? (
       <TableBulkDone
         text={done.text}
         undoLabel={copy.archived.undo}
@@ -195,15 +234,11 @@ export function KanbanBulkBar({
             : { type: "clear-due-date" },
         )
       }
-      onArchive={() =>
-        settle(
-          { type: "archive" },
-          pluralTableCopy(
-            { one: copy.archived.done_one, other: copy.archived.done_other },
-            ids.length,
-          ),
-        )
-      }
+      onArchive={() => {
+        setDone(null);
+        archiveWindow.start(ids);
+        onClear();
+      }}
       {...(capabilities.canDelete
         ? { onDelete: () => settle({ type: "delete" }) }
         : {})}

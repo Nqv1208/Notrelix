@@ -83,14 +83,14 @@ import { useStatusOptionFormCopy } from "../../status-option/use-status-option-f
 import type { TableGroupMenuModel } from "./table-group-menu";
 import { useMainTableCopy } from "./use-main-table-copy";
 import { useFieldCellWrites } from "./use-field-cell-writes";
+import { useArchiveUndoWindow } from "./use-archive-undo-window";
 
 type ParamChange = (
   value: string | undefined,
   options?: { replace?: boolean },
 ) => void;
 
-/** How long "Hoàn tác" is offered before the archive is sent. */
-export const ARCHIVE_UNDO_MS = 6000;
+export { ARCHIVE_UNDO_MS } from "./use-archive-undo-window";
 
 export interface MainTableViewProps {
   boardId: string;
@@ -384,58 +384,32 @@ export function MainTableView({
 
   const { board } = table;
 
-  // Archive waits for the undo window: the rows leave the table at once, the
-  // write goes out when the window ends, on the next archive, on close, or
-  // when the table goes away.
-  const [pendingArchive, setPendingArchive] = useState<readonly string[]>([]);
-  const pendingRef = useRef<{ ids: string[]; timer: number } | null>(null);
+  // Archive waits for the undo window (`useArchiveUndoWindow`): the rows
+  // leave the table at once and the write goes out when the window ends.
   const archiveMutate = archiveCard.mutate;
-  const flushArchive = useCallback(() => {
-    const pending = pendingRef.current;
-    if (!pending) return;
-    window.clearTimeout(pending.timer);
-    pendingRef.current = null;
-    if (pending.ids.length > 1) {
+  const {
+    pendingIds: pendingArchive,
+    start: startArchive,
+    undo: undoArchive,
+    flush: flushArchive,
+  } = useArchiveUndoWindow((ids, done) => {
+    if (ids.length > 1) {
       // Several rows go in one request; they stay hidden until it answers.
       bulkMutate(
-        { itemIds: pending.ids, change: { type: "archive" } },
+        { itemIds: ids, change: { type: "archive" } },
         {
           onError: () =>
             toast.error(copy.failed.bulk, {
               id: `table-bulk-${++toastAttempt.current}`,
             }),
-          onSettled: () =>
-            setPendingArchive((current) =>
-              current === pending.ids ? [] : current,
-            ),
+          onSettled: done,
         },
       );
       return;
     }
-    for (const id of pending.ids) archiveMutate({ cardId: id });
-    setPendingArchive([]);
-  }, [archiveMutate, bulkMutate, copy]);
-  useEffect(() => {
-    window.addEventListener("pagehide", flushArchive);
-    return () => {
-      window.removeEventListener("pagehide", flushArchive);
-      flushArchive();
-    };
-  }, [flushArchive]);
-  const startArchive = (ids: string[]) => {
-    flushArchive();
-    if (ids.length === 0) return;
-    const timer = window.setTimeout(flushArchive, ARCHIVE_UNDO_MS);
-    pendingRef.current = { ids, timer };
-    setPendingArchive(ids);
-  };
-  const undoArchive = () => {
-    const pending = pendingRef.current;
-    if (!pending) return;
-    window.clearTimeout(pending.timer);
-    pendingRef.current = null;
-    setPendingArchive([]);
-  };
+    for (const id of ids) archiveMutate({ cardId: id });
+    done();
+  });
 
   const statusField = table.statusField;
   const statusOptions = useMemo<TableStatusOption[]>(
