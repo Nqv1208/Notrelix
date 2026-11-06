@@ -357,6 +357,105 @@ function Banner({
   );
 }
 
+/**
+ * BC-Notices: the card was deleted while it was open. The notice sits at the top of the card, which stays readable
+ * under it (the last read, nothing saves); Khôi phục for a person who may restore, Về board for everyone.
+ */
+export function PopupDeletedNotice({
+  by,
+  onClose,
+  onRestore,
+  draft,
+}: {
+  by: string | null;
+  onClose: () => void;
+  onRestore?: () => Promise<void>;
+  /** The comment the person had typed and not sent: kept to copy. */
+  draft?: string;
+}) {
+  const t = useCardPopupCopy().shell.deleted;
+  const [phase, setPhase] = useState<"idle" | "pending" | "failed">("idle");
+  const [refusal, setRefusal] = useState<string | null>(null);
+  const restore = () => {
+    if (!onRestore) return;
+    setPhase("pending");
+    setRefusal(null);
+    onRestore().then(
+      () => setPhase("idle"),
+      (reason: unknown) => {
+        setPhase("failed");
+        setRefusal(
+          (typeof reason === "string"
+            ? (t as Record<string, string>)[reason]
+            : undefined) ?? t.restoreFailed,
+        );
+      },
+    );
+  };
+  return (
+    <Banner
+      tone="danger"
+      title={fillPopupCopy(t.title, { who: by ?? t.someone })}
+      body={t.bannerBody}
+      action={
+        <div className="flex gap-2" data-popup-notice-actions="">
+          {onRestore ? (
+            <PanelBtn disabled={phase === "pending"} onClick={restore}>
+              {phase === "pending" ? t.restoring : t.restore}
+            </PanelBtn>
+          ) : null}
+          <PanelBtn onClick={onClose}>{t.close}</PanelBtn>
+        </div>
+      }
+    >
+      {refusal ? (
+        <p role="alert" className="m-0 mt-1 text-[13px] text-danger-text">
+          {refusal}
+        </p>
+      ) : null}
+      {draft ? (
+        <div className="mt-2">
+          <KeptDraft text={draft} />
+        </div>
+      ) : null}
+    </Banner>
+  );
+}
+
+/** BC-Notices: the card moved to another board the person can read, over the last read of the card. */
+export function PopupMovedNotice({
+  boardTitle,
+  onOpen,
+  onClose,
+  draft,
+}: {
+  boardTitle: string;
+  onOpen?: () => void;
+  onClose: () => void;
+  draft?: string;
+}) {
+  const t = useCardPopupCopy().shell.moved;
+  return (
+    <Banner
+      tone="info"
+      title={fillPopupCopy(t.title, { board: boardTitle })}
+      body={t.body}
+      action={
+        <div className="flex gap-2" data-popup-notice-actions="">
+          {onOpen ? <PanelBtn onClick={onOpen}>{t.open}</PanelBtn> : null}
+          <PanelBtn onClick={onClose}>{t.close}</PanelBtn>
+        </div>
+      }
+    >
+      {draft ? (
+        <div className="mt-2">
+          <KeptDraft text={draft} />
+        </div>
+      ) : null}
+    </Banner>
+  );
+}
+
 const SCHEMA_BTN =
   "h-11 rounded-[7px] px-3.5 text-[13px] font-medium md:h-11 md:text-[13px]";
 

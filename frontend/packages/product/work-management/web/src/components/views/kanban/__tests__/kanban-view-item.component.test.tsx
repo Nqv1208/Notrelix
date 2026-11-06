@@ -5,7 +5,13 @@ import {
   type WorkManagementServices,
 } from "@notrelix/work-management-state";
 import { I18nProvider } from "@notrelix/i18n";
-import { fireEvent, renderPureUi, screen, waitFor } from "@notrelix/testing";
+import {
+  fireEvent,
+  renderPureUi,
+  screen,
+  waitFor,
+  within,
+} from "@notrelix/testing";
 import {
   itemCapabilitiesStub,
   boardGroupFixture,
@@ -395,6 +401,53 @@ describe("KanbanView item detail through selectedItemId", () => {
     await waitFor(() =>
       expect(restoreDeleted).toHaveBeenCalledWith("card-item"),
     );
+  });
+
+  it("keeps the card's last read under the deleted notice when it is deleted while open (BC-Notices)", () => {
+    cardQuery.current = { card: existingCard(), isLoading: false, error: null };
+    const { rerender } = renderView({
+      selectedItemId: "card-item",
+      onSelectedItemChange: vi.fn(),
+    });
+    cardQuery.current = {
+      card: existingCard(),
+      isLoading: false,
+      error: Object.assign(new Error("not found"), {
+        kind: "not_found",
+        code: "work-management.item.deleted",
+        details: { deletedByName: "Ada Lovelace" },
+      }),
+    };
+    rerender(
+      scoped(
+        view({ selectedItemId: "card-item", onSelectedItemChange: vi.fn() }),
+      ),
+    );
+    const dialog = screen.getByRole("dialog", { name: "Item card" });
+    // The notice sits over the card, which still reads and takes no edit.
+    expect(
+      within(dialog).getByText("Ada Lovelace deleted this card"),
+    ).toBeTruthy();
+    expect(
+      within(dialog).getByText("It stays in Deleted items for 30 days."),
+    ).toBeTruthy();
+    const title = within(dialog).getByRole("textbox", {
+      name: "Card title",
+    }) as HTMLTextAreaElement;
+    expect(title.value).toBe("Item card");
+    expect(title.readOnly || title.disabled).toBe(true);
+    // The composer is closed in the column and in the bar under it.
+    expect(
+      within(dialog).getAllByText(
+        "This card is no longer on this board, so comments are closed",
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(
+      within(dialog).getByRole("button", { name: "Restore" }),
+    ).toBeTruthy();
+    expect(
+      within(dialog).getByRole("button", { name: "Back to the board" }),
+    ).toBeTruthy();
   });
 
   it("names who deleted the card to a person who reads its board", () => {
