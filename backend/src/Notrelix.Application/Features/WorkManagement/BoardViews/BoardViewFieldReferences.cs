@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
-using Notrelix.Domain.WorkManagement.Views;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardViews;
 
