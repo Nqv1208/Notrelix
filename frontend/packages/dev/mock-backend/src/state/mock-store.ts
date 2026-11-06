@@ -275,6 +275,11 @@ export class MockStore {
   private membershipsById = new Map<string, MockMembershipRecord>();
   private viewsById = new Map<string, MockWorkspaceViewRecord>();
   private boardsById = new Map<string, MockBoardRecord>();
+  /** Deleted boards inside their 30-day window (UC-WM-A07), with when and by whom. */
+  private deletedBoardsById = new Map<
+    string,
+    { board: MockBoardRecord; deletedAt: string; deletedBy: string }
+  >();
   /** Settings registry of the boards (the gap `CTR-GAP-WM-BOARD-SETTINGS`). */
   readonly settings = new MockBoardSettingsState(this);
   private listsById = new Map<string, MockListRecord>();
@@ -2072,6 +2077,7 @@ export class MockStore {
     this.membershipsById.clear();
     this.viewsById.clear();
     this.boardsById.clear();
+    this.deletedBoardsById.clear();
     this.settings.clear();
     this.listsById.clear();
     this.cardsById.clear();
@@ -4978,7 +4984,11 @@ export class MockStore {
     return true;
   }
 
-  /** Settings write: removes a board with its lists, items and fields. */
+  /**
+   * Settings write: removes a board with its lists, items and fields. The board itself is kept in
+   * the deleted list (restorable for 30 days); its children are not kept by the mock, so a restored
+   * board comes back empty.
+   */
   deleteBoard(boardId: string): boolean {
     const board = this.boardsById.get(boardId);
     if (!board) return false;
@@ -4986,7 +4996,51 @@ export class MockStore {
     for (const column of this.getColumns(boardId)) this.deleteColumn(column.id);
     this.removeIndex(this.boardIdsByWorkspaceId, board.workspaceId, boardId);
     this.boardsById.delete(boardId);
+    this.deletedBoardsById.set(boardId, {
+      board: { ...board, version: (board.version ?? 1) + 1 },
+      deletedAt: this.clock.isoNow(),
+      deletedBy: this.getCurrentUser().id,
+    });
     return true;
+  }
+
+  /** Puts a deleted board straight into the deleted list (test hooks seed it). */
+  seedDeletedBoard(
+    board: MockBoardRecord,
+    deletedAt: string,
+    deletedBy: string,
+  ): void {
+    this.deletedBoardsById.set(board.id, { board, deletedAt, deletedBy });
+  }
+
+  /** The deleted boards of a workspace, newest first. */
+  getDeletedBoards(workspaceId: string): {
+    board: MockBoardRecord;
+    deletedAt: string;
+    deletedBy: string;
+  }[] {
+    return Array.from(this.deletedBoardsById.values())
+      .filter((entry) => entry.board.workspaceId === workspaceId)
+      .sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
+  }
+
+  getDeletedBoard(boardId: string) {
+    return this.deletedBoardsById.get(boardId) ?? null;
+  }
+
+  /** Restore: the board is active again, one version later. */
+  restoreDeletedBoard(boardId: string): MockBoardRecord | null {
+    const entry = this.deletedBoardsById.get(boardId);
+    if (!entry) return null;
+    this.deletedBoardsById.delete(boardId);
+    const board = {
+      ...entry.board,
+      version: (entry.board.version ?? 1) + 1,
+      updatedAt: this.clock.isoNow(),
+    };
+    this.boardsById.set(boardId, board);
+    this.addIndex(this.boardIdsByWorkspaceId, board.workspaceId, boardId);
+    return board;
   }
 
   /** Settings write: replaces the options of a select field (keeps order given). */

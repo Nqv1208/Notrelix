@@ -3851,7 +3851,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get the boards deleted in the last 30 days that the caller can restore */
+        /** Get the boards deleted in the last 30 days that the caller can restore, optionally those of one Space */
         get: operations["WorkManagement.Boards.ListDeleted"];
         put?: never;
         post?: never;
@@ -19241,7 +19241,9 @@ export interface operations {
     };
     "WorkManagement.Boards.ListDeleted": {
         parameters: {
-            query?: never;
+            query?: {
+                spaceId?: string;
+            };
             header?: never;
             path: {
                 workspaceId: string;

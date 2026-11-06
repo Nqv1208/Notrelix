@@ -38,6 +38,8 @@ export const libraryRoute = createRoute({
 
 const archivedBoardsSearchSchema = z.object({
   tab: z.enum(["archived", "deleted"]).optional(),
+  // The deleted list narrowed to the boards of one Space.
+  spaceId: z.string().optional(),
 });
 
 /** Archived boards (unarchive) and deleted boards inside their 30-day window (restore). */
@@ -46,8 +48,8 @@ export const archivedBoardsRoute = createRoute({
   path: "/archived-boards",
   validateSearch: (search) => archivedBoardsSearchSchema.parse(search),
   component: function ArchivedBoardsRouteComponent() {
-    const { tab } = archivedBoardsRoute.useSearch();
-    return <ArchivedBoardsPage tab={tab} />;
+    const { tab, spaceId } = archivedBoardsRoute.useSearch();
+    return <ArchivedBoardsPage tab={tab} spaceId={spaceId} />;
   },
 });
 

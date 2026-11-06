@@ -15341,13 +15341,21 @@
           "WorkManagement.Boards",
           "WorkManagement.Boards"
         ],
-        "summary": "Get the boards deleted in the last 30 days that the caller can restore",
+        "summary": "Get the boards deleted in the last 30 days that the caller can restore, optionally those of one Space",
         "operationId": "WorkManagement.Boards.ListDeleted",
         "parameters": [
           {
             "name": "workspaceId",
             "in": "path",
             "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "spaceId",
+            "in": "query",
             "schema": {
               "type": "string",
               "format": "uuid"

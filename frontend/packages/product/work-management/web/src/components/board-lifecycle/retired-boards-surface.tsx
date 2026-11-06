@@ -39,6 +39,14 @@ export interface RetiredBoardsSurfaceProps {
   /** Archived: Unarchive. Deleted: Restore. Absent: the action is not offered. */
   readonly onAct?: (id: string) => void;
   readonly onOpen?: (id: string) => void;
+  /**
+   * The deleted list narrowed to one Space (a Space manager arriving from that Space): its name when the
+   * person may see it, and the way back to every board they can restore.
+   */
+  readonly spaceScope?: {
+    readonly name: string | null;
+    readonly onShowAll: () => void;
+  } | null;
 }
 
 const BUTTON =
@@ -58,6 +66,7 @@ export function RetiredBoardsSurface({
   formatDate,
   onAct,
   onOpen,
+  spaceScope,
 }: RetiredBoardsSurfaceProps) {
   const headingId = useId();
   const tabs: readonly RetiredBoardsTab[] = ["archived", "deleted"];
@@ -104,6 +113,27 @@ export function RetiredBoardsSurface({
         role="tabpanel"
         aria-labelledby={`${headingId}-${tab}`}
       >
+        {tab === "deleted" && spaceScope ? (
+          <p
+            data-testid="retired-boards-space-scope"
+            className="mb-3 flex flex-wrap items-center gap-2 text-compact text-muted-foreground"
+          >
+            <span>
+              {spaceScope.name
+                ? fillRetiredBoardsCopy(copy.spaceScope, {
+                    space: spaceScope.name,
+                  })
+                : copy.spaceScopeUnnamed}
+            </span>
+            <button
+              type="button"
+              onClick={spaceScope.onShowAll}
+              className={BUTTON}
+            >
+              {copy.showAll}
+            </button>
+          </p>
+        ) : null}
         {loading ? (
           <p
             role="status"
