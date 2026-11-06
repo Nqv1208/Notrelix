@@ -116,6 +116,10 @@ async function openBoard(page: Page, query = "") {
   // An open item sheet makes the board behind it inert, so its lanes are not in the accessibility tree.
   if (!query.includes("item="))
     await expect(page.getByRole("region", { name: "Cần làm" })).toBeVisible();
+  // The view the member's last visit saved is restored behind a skeleton card (WM-Filter-States); measure the settled page.
+  await expect(
+    page.getByRole("status", { name: "Đang khôi phục cách xem" }),
+  ).toHaveCount(0);
 }
 
 async function main(page: Page): Promise<Rect> {

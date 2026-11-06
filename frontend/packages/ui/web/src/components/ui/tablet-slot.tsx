@@ -8,8 +8,10 @@ export const TABLET_SLOT = {
   headerAdd: "tablet-header-add",
   /** Start of a view's toolbar row (access chip). */
   toolbarLead: "tablet-toolbar-lead",
-  /** End of a view's toolbar row (avatar stack). */
+  /** End of a view's toolbar row (view menu, Add view, and the avatar stack unless the view hosts it in `toolbarStack`). */
   toolbarTrail: "tablet-toolbar-trail",
+  /** Where a view that draws the avatar stack right after its filter chips (Final-T-Board) hosts it. */
+  toolbarStack: "tablet-toolbar-stack",
 } as const;
 
 export type TabletSlotId = (typeof TABLET_SLOT)[keyof typeof TABLET_SLOT];

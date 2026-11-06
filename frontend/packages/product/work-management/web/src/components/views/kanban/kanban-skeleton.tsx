@@ -1,5 +1,8 @@
 import { cn } from "@notrelix/ui-web";
-import { kanbanColumnWidthClass } from "./kanban-layout";
+import {
+  kanbanColumnTabletWidthClass,
+  kanbanColumnWidthClass,
+} from "./kanban-layout";
 
 /** Lane tints of the four skeleton lanes, as the status categories draw them. */
 const LANE_TINTS = [
@@ -42,6 +45,7 @@ export function KanbanSkeleton() {
           className={cn(
             "flex h-fit shrink-0 flex-col gap-2 rounded-xl p-2",
             kanbanColumnWidthClass,
+            kanbanColumnTabletWidthClass,
             tint,
           )}
         >

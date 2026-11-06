@@ -208,6 +208,24 @@ export const en = {
     reschedule: "Alt and arrow keys move the due date",
   },
   separator: " · ",
+  phone: {
+    weekdaysShort: {
+      mon: "Mo",
+      tue: "Tu",
+      wed: "We",
+      thu: "Th",
+      fri: "Fr",
+      sat: "Sa",
+      sun: "Su",
+    },
+    items_one: "{{count}} item",
+    items_other: "{{count}} items",
+    undatedOpen: "See",
+    rangeMenu: "Choose the range shown",
+    overdueLink: "{{key}} · {{title}} · {{days}} overdue",
+    overdueMore: "Overdue: {{count}} items",
+    nothingOn: "Nothing on this day",
+  },
 };
 
 export type CalendarCopy = typeof en;
@@ -395,6 +413,24 @@ export const vi: CalendarCopy = {
     reschedule: "Alt cùng phím mũi tên để dời hạn",
   },
   separator: " · ",
+  phone: {
+    weekdaysShort: {
+      mon: "T2",
+      tue: "T3",
+      wed: "T4",
+      thu: "T5",
+      fri: "T6",
+      sat: "T7",
+      sun: "CN",
+    },
+    items_one: "{{count}} mục",
+    items_other: "{{count}} mục",
+    undatedOpen: "Xem",
+    rangeMenu: "Chọn cách xem lịch",
+    overdueLink: "{{key}} · {{title}} · quá hạn {{days}}",
+    overdueMore: "Quá hạn: {{count}} việc",
+    nothingOn: "Không có việc nào trong ngày này",
+  },
 };
 
 export function calendarCopy(locale: "vi" | "en"): CalendarCopy {

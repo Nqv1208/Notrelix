@@ -79,6 +79,16 @@ export function BoardToolbar({
   const activeLayout =
     savedViews?.find((view) => view.id === activeView)?.viewMode ?? activeView;
   const activeSaved = savedViews?.find((view) => view.id === activeView);
+  const kanbanTablet =
+    tablet && (activeSaved?.viewMode ?? activeView) === "kanban";
+  const stack = header?.access ? (
+    <TabletAvatarStack
+      access={header.access}
+      people={header.people ?? []}
+      copy={copy}
+      onOpenShare={header.onOpenShare}
+    />
+  ) : null;
   const headerForView =
     activeLayout === "kanban" ? header : { ...header, onCopyLink: undefined };
   const headerWithTrash =
@@ -142,6 +152,10 @@ export function BoardToolbar({
           ) : null}
         </TabletPortal>
       ) : null}
+      {kanbanTablet && header?.access ? (
+        // Final-T-Board draws the stack right after the filter chips; the Kanban toolbar mounts this slot there.
+        <TabletPortal slot={TABLET_SLOT.toolbarStack}>{stack}</TabletPortal>
+      ) : null}
       {tablet ? (
         <TabletPortal slot={TABLET_SLOT.toolbarTrail}>
           {viewMenu}
@@ -150,14 +164,7 @@ export function BoardToolbar({
             copy={copy}
             tablet
           />
-          {header?.access ? (
-            <TabletAvatarStack
-              access={header.access}
-              people={header?.people ?? []}
-              copy={copy}
-              onOpenShare={header?.onOpenShare}
-            />
-          ) : null}
+          {header?.access && !kanbanTablet ? stack : null}
         </TabletPortal>
       ) : (
         <div

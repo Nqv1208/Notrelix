@@ -82,6 +82,8 @@ export interface ViewStateBarProps {
   /** The filter dialog is controlled so "Sửa điều kiện" can open it. */
   filterOpen?: boolean;
   onFilterOpenChange?: (open: boolean) => void;
+  /** Rendered right after the group control, before the swimlane control (the tablet Kanban's avatar stack). */
+  afterGroup?: ReactNode;
 }
 
 /**
@@ -316,6 +318,7 @@ export function ViewStateBar(props: ViewStateBarProps) {
           onChange={view.setGroup}
         />
       ) : null}
+      {!compact ? props.afterGroup : null}
       {!compact && props.laneFields ? (
         <FieldRefMenu
           copy={copy}

@@ -26,7 +26,10 @@ import {
   type AddGroupDraft,
 } from "../../status-option/add-group-popover";
 import { cn } from "@notrelix/ui-web";
-import { kanbanColumnWidthClass } from "./kanban-layout";
+import {
+  kanbanColumnTabletWidthClass,
+  kanbanColumnWidthClass,
+} from "./kanban-layout";
 import { KanbanAddLane } from "./kanban-add-lane";
 import { fillCopy, pluralCopy, type KanbanCardCopy } from "./kanban-card.copy";
 import { KanbanCardOverlay } from "./kanban-card";
@@ -631,6 +634,7 @@ export function KanbanBoard({
                 triggerClassName={cn(
                   "flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border-0 bg-transparent px-4 text-compact font-medium text-muted-foreground transition-colors hover:bg-state-hover hover:text-foreground aria-expanded:bg-state-hover aria-expanded:text-foreground",
                   kanbanColumnWidthClass,
+                  kanbanColumnTabletWidthClass,
                 )}
               />
             </div>
