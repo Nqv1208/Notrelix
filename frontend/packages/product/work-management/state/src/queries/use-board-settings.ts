@@ -131,6 +131,9 @@ export function useBoardSettings(boardId: string, workspaceId: string) {
             ...ruleCodeOf(caught),
           };
         }
+        // What was written to is gone (someone else deleted it): read the settings again so the
+        // page shows that, instead of offering to retry a write that cannot land.
+        if (errorKind(caught) === "not_found") void refresh();
         return { ok: false, reason: "failed" };
       }
     },
