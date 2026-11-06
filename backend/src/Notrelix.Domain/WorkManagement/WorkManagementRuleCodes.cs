@@ -134,6 +134,7 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Kanban_SwimlaneFieldIdCannotBeEmpty = "WorkManagement_Kanban_SwimlaneFieldIdCannotBeEmpty";
     public const string WorkManagement_Kanban_WipLimitOutOfRange = "WorkManagement_Kanban_WipLimitOutOfRange";
     public const string WorkManagement_Kanban_WipLimitsInvalid = "WorkManagement_Kanban_WipLimitsInvalid";
+    public const string WorkManagement_View_PresentationConfigInvalid = "WorkManagement_View_PresentationConfigInvalid";
 
     // ── Form ──────────────────────────────────────────────────────────────
     public const string WorkManagement_Form_CannotPublishClosed = "WorkManagement_Form_CannotPublishClosed";
@@ -182,7 +183,6 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Approval_DuplicateStepPosition = "WorkManagement_Approval_DuplicateStepPosition";
     public const string WorkManagement_Approval_DuplicateApprover = "WorkManagement_Approval_DuplicateApprover";
     public const string WorkManagement_Approval_StepNotAssignedToYou = "WorkManagement_Approval_StepNotAssignedToYou";
-    public const string WorkManagement_Approval_TeamDecisionNotSupported = "WorkManagement_Approval_TeamDecisionNotSupported";
 
     // ── Template ──────────────────────────────────────────────────────────
     public const string WorkManagement_BoardTemplate_TooManyItems = "WorkManagement_BoardTemplate_TooManyItems";

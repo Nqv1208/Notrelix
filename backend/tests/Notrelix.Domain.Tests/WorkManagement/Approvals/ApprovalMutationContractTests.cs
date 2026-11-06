@@ -98,7 +98,7 @@ public class ApprovalMutationContractTests
     }
 
     [Fact]
-    public void Approve_ShouldThrow_WhenTeamStepAndDecidedByIsUserId()
+    public void Approve_ShouldThrow_WhenTeamStepAndDeciderTeamsNotGiven()
     {
         var teamId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -109,11 +109,11 @@ public class ApprovalMutationContractTests
         var stepId = request.Steps.First().Id;
         Action act = () => request.Approve(stepId, userId, Now);
 
-        act.Should().Throw<BusinessRuleException>().WithMessage("*Team membership resolution*");
+        act.Should().Throw<BusinessRuleException>().WithMessage("*not assigned to you*");
     }
 
     [Fact]
-    public void Reject_ShouldThrow_WhenTeamStepAndDecidedByIsUserId()
+    public void Reject_ShouldThrow_WhenTeamStepAndDeciderTeamsNotGiven()
     {
         var teamId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -124,7 +124,7 @@ public class ApprovalMutationContractTests
         var stepId = request.Steps.First().Id;
         Action act = () => request.Reject(stepId, userId, Now);
 
-        act.Should().Throw<BusinessRuleException>().WithMessage("*Team membership resolution*");
+        act.Should().Throw<BusinessRuleException>().WithMessage("*not assigned to you*");
     }
 
     [Fact]

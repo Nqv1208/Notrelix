@@ -152,8 +152,8 @@ export function CalendarEvent({
     TONE_CLASS[entry.tone],
     (entry.kind !== "item" || entry.tone === "overdue") && "font-semibold",
     lifting && "opacity-40",
-    clipStart && "ml-0 rounded-l-none",
-    clipEnd && "mr-0 rounded-r-none",
+    clipStart && "rounded-l-none",
+    clipEnd && "rounded-r-none",
   );
   const dot = (
     <CalendarDot

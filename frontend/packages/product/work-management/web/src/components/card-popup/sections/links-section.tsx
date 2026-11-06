@@ -8,6 +8,7 @@ import {
   X,
 } from "lucide-react";
 import { PopoverTrigger, cn } from "@notrelix/ui-web";
+import { personInitials } from "@notrelix/work-management-core";
 import { useCard } from "@notrelix/work-management-state";
 import type { ItemSheetLink } from "../../card-detail/task-detail-types";
 import { foldForSearch } from "../../item-page/item-pickers";
@@ -58,6 +59,7 @@ function LinkRow({
   person,
   unlinkLabel,
   onUnlink,
+  archivedLabel,
 }: {
   itemKey: string | null;
   title: string;
@@ -66,9 +68,11 @@ function LinkRow({
   person?: { userId: string; name: string; initials: string } | null;
   unlinkLabel: string;
   onUnlink?: () => void;
+  /** An archived item stays linked: its row carries this mark. */
+  archivedLabel?: string;
 }) {
   return (
-    <div className="mb-1.5 box-border flex min-h-12 items-center gap-2.5 rounded-[8px] border border-line bg-popover pr-1.5 pl-3 md:min-h-10">
+    <div className="mb-1 box-border flex min-h-12 items-center gap-2.5 rounded-[8px] border border-line bg-popover pr-1.5 pl-3 md:min-h-10">
       {itemKey ? (
         <span className="font-mono text-[12px] text-meta-foreground">
           {itemKey}
@@ -79,6 +83,11 @@ function LinkRow({
         <Dot category={category} />
         {status}
       </span>
+      {archivedLabel ? (
+        <span className="rounded-[6px] bg-state-hover-strong px-1.5 text-[12px] leading-[18px] whitespace-nowrap text-muted-foreground">
+          {archivedLabel}
+        </span>
+      ) : null}
       {person ? <PersonMark member={person} size={20} /> : null}
       {onUnlink ? (
         <IconBtn
@@ -104,7 +113,7 @@ function Group({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mt-1 first:mt-2.5">
+    <div className="mt-2.5">
       <div className="mb-1.5 flex items-center gap-1.5 text-[12.5px] leading-[1.45] font-semibold text-muted-foreground">
         {title}
         {hint ? (
@@ -117,17 +126,24 @@ function Group({
 }
 
 function ParentRow() {
-  const { card, copy } = useCardPopup();
+  const { card, copy, board } = useCardPopup();
   const t = copy.related.links;
   const parent = useCard(card.parentItemId ?? "", card.workspaceId).card;
   if (!parent) return null;
+  // The parent is an item of this board: its status is the board's own option.
+  const option = board.fieldDefinitions
+    .find((f) => f.semanticRole === "status")
+    ?.options.find((o) => o.id === parent.statusOptionId);
+  const category = option?.category ?? parent.statusCategory ?? null;
   return (
     <Group title={t.groupParent}>
       <LinkRow
         itemKey={parent.itemKey ?? null}
         title={parent.title}
-        status={parent.statusCategory === "done" ? t.statusDone : t.statusOpen}
-        category={parent.statusCategory ?? null}
+        status={
+          option?.label ?? (category ? t.categoryNames[category] : t.statusNone)
+        }
+        category={category}
         person={parent.members[0] ?? null}
         unlinkLabel=""
       />
@@ -169,6 +185,12 @@ export function AddLinkPanel({ onClose }: { onClose: () => void }) {
   const taken =
     chosen &&
     links.some((l) => l.relation === relation && l.item.id === chosen.id);
+  // Another relation for an item that is already linked turns that link into the new kind (it keeps its place).
+  const changing =
+    chosen &&
+    !loop &&
+    !taken &&
+    links.some((l) => l.relation !== relation && l.item.id === chosen.id);
   const error = chosen
     ? loop
       ? fillPopupCopy(loop, { key: keyOf(chosen) })
@@ -283,6 +305,14 @@ export function AddLinkPanel({ onClose }: { onClose: () => void }) {
           <span>{error}</span>
         </p>
       ) : null}
+      {changing && chosen ? (
+        <p
+          role="status"
+          className="mx-0.5 mt-2 mb-0 text-[12.5px] leading-[1.45] text-muted-foreground"
+        >
+          {fillPopupCopy(t.changes, { key: keyOf(chosen) })}
+        </p>
+      ) : null}
       <p className="mx-0.5 mt-2 mb-0 text-[12.5px] leading-[1.45] text-meta-foreground">
         {fillPopupCopy(t.boardOnly, { board: board.title })}
       </p>
@@ -369,6 +399,16 @@ export function LinksSection() {
                 title={link.item.title}
                 status={link.item.statusName ?? t.statusNone}
                 category={link.item.statusCategory}
+                person={
+                  link.item.assigneeName
+                    ? {
+                        userId: link.item.assigneeId ?? link.item.assigneeName,
+                        name: link.item.assigneeName,
+                        initials: personInitials(link.item.assigneeName),
+                      }
+                    : null
+                }
+                archivedLabel={link.item.isArchived ? t.archived : undefined}
                 unlinkLabel={fillPopupCopy(t.unlinkOne, {
                   key: link.item.key ?? link.item.title,
                 })}
@@ -390,7 +430,7 @@ export function LinksSection() {
               key={child.id}
               itemKey={child.itemKey ?? null}
               title={child.title}
-              status={child.done ? t.statusDone : t.statusOpen}
+              status={child.done ? t.statusDone : t.statusTodo}
               category={child.done ? "done" : "todo"}
               person={child.assignee}
               unlinkLabel=""

@@ -18,7 +18,7 @@ import {
 } from "@notrelix/work-management-core";
 import { findItemFields } from "../../card-detail/item-field-editors";
 import { withBoardPriority } from "../../shared/item-priority";
-import type { ItemChecklistsModel } from "../../checklists/item-checklists";
+import type { ItemChecklistsModel } from "../../checklists/item-checklists.model";
 import type {
   ItemSheetLink,
   ItemSheetLinkCandidate,

@@ -142,7 +142,22 @@ export function TablePhoneList({
   onGroupToggle,
   onOpenItem,
   onStatusChange,
+  selectedIds,
+  onRowSelectedChange,
+  topNote,
+  onSelectGroup,
+  groupNote,
 }: {
+  /** "Chọn cả nhóm": picks a group's rows up to the bulk limit; absent: no button. */
+  onSelectGroup?: (groupId: string) => void;
+  /** The note over the list for a group pick that stopped at the limit. */
+  groupNote?: ReactNode;
+  /** Picked rows; while any is picked the check circle of every row is a pick box. */
+  selectedIds?: ReadonlySet<string>;
+  /** Picks or drops a row; absent: rows cannot be picked. */
+  onRowSelectedChange?: (id: string, selected: boolean) => void;
+  /** What shows over the first group (the limit note while the pick is past it). */
+  topNote?: ReactNode;
   copy: MainTableCopy;
   groups: readonly TableGroupModel[];
   statusOptions: readonly TableStatusOption[];
@@ -182,6 +197,7 @@ export function TablePhoneList({
   };
   const keyOf = (row: TableRowModel) => row.key ?? row.title;
   const canTick = canEdit && Boolean(doneOption);
+  const picking = (selectedIds?.size ?? 0) > 0;
 
   const actions: TableRowActions | undefined = rowActions
     ? {
@@ -315,6 +331,16 @@ export function TablePhoneList({
       );
     return (
       <div className="flex shrink-0 flex-col">
+        {canEdit && onRowSelectedChange ? (
+          <SheetRow
+            icon={<Check className="size-4" />}
+            label={t.select}
+            onClick={() => {
+              close();
+              onRowSelectedChange(row.id, true);
+            }}
+          />
+        ) : null}
         {canEdit ? (
           <>
             <p className="m-0 px-5 pt-1.5 pb-1 text-compact font-semibold text-meta-foreground">
@@ -468,6 +494,13 @@ export function TablePhoneList({
       data-slot="table-phone-list"
       className="flex flex-col gap-3.5 px-4 pt-1 pb-6"
     >
+      {topNote || groupNote ? (
+        // BC-Bulk `bk320-cap`: the notes sit over the first group, 12 px from the edges.
+        <div className="-mx-1 flex flex-col gap-2 pt-1 pb-1">
+          {topNote}
+          {groupNote}
+        </div>
+      ) : null}
       {noResults ? (
         <TableNoResults
           copy={copy}
@@ -498,8 +531,22 @@ export function TablePhoneList({
                 <span className="text-[15px] font-medium text-meta-foreground">
                   {count}
                 </span>
+                {onSelectGroup && canEdit && group.rows.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => onSelectGroup(group.id)}
+                    className="-my-0.5 ml-auto inline-flex h-11 cursor-pointer items-center rounded-[10px] border-0 bg-transparent px-2.5 text-compact font-medium text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                  >
+                    {copy.group.selectAll}
+                  </button>
+                ) : null}
                 {group.overdueCount > 0 ? (
-                  <span className="ml-auto text-compact font-semibold text-danger-text">
+                  <span
+                    className={cn(
+                      "text-compact font-semibold text-danger-text",
+                      !(onSelectGroup && canEdit) && "ml-auto",
+                    )}
+                  >
                     {pluralTableCopy(
                       { one: t.overdueGroup_one, other: t.overdueGroup_other },
                       group.overdueCount,
@@ -530,42 +577,73 @@ export function TablePhoneList({
               <ul className="m-0 list-none overflow-hidden rounded-[14px] border border-border bg-popover p-0 dark:bg-card">
                 {group.rows.slice(0, visible).map((row) => {
                   const done = row.status?.category === "done";
+                  const picked = selectedIds?.has(row.id) ?? false;
                   return (
                     <li
                       key={row.id}
                       data-row-id={row.id}
-                      className="flex items-start border-t border-border py-1.5 pl-0.5 first:border-t-0"
+                      className={cn(
+                        "flex items-start border-t border-border py-1.5 pl-0.5 first:border-t-0",
+                        picked && "bg-state-selected",
+                      )}
                     >
-                      <button
-                        type="button"
-                        disabled={!canTick}
-                        title={
-                          canEdit && !doneOption ? t.noDoneStatus : undefined
-                        }
-                        aria-label={fillTableCopy(
-                          done ? t.markOpen : t.markDone,
-                          { key: keyOf(row) },
-                        )}
-                        onClick={() => {
-                          const next = done ? openOption : doneOption;
-                          if (next) onStatusChange(row.id, next.id);
-                        }}
-                        className="grid size-11 flex-none cursor-pointer place-items-center rounded-[12px] border-0 bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-default disabled:opacity-60"
-                      >
-                        <span
-                          aria-hidden="true"
-                          className={cn(
-                            "box-border grid size-5.5 place-items-center rounded-full border-[1.75px]",
-                            done
-                              ? "border-work-status-done bg-work-status-done text-primary-foreground"
-                              : "border-line-strong",
-                          )}
+                      {picking && onRowSelectedChange ? (
+                        <button
+                          type="button"
+                          role="checkbox"
+                          aria-checked={picked}
+                          aria-label={fillTableCopy(copy.row.select, {
+                            key: keyOf(row),
+                          })}
+                          onClick={() => onRowSelectedChange(row.id, !picked)}
+                          className="grid size-11 flex-none cursor-pointer place-items-center rounded-[8px] border-0 bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-ring"
                         >
-                          {done ? (
-                            <Check className="size-3.5" strokeWidth={3} />
-                          ) : null}
-                        </span>
-                      </button>
+                          <span
+                            aria-hidden="true"
+                            className={cn(
+                              "box-border grid size-5.5 place-items-center rounded-[6px] border-[1.75px]",
+                              picked
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-line-strong bg-background",
+                            )}
+                          >
+                            {picked ? (
+                              <Check className="size-3.5" strokeWidth={3} />
+                            ) : null}
+                          </span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={!canTick}
+                          title={
+                            canEdit && !doneOption ? t.noDoneStatus : undefined
+                          }
+                          aria-label={fillTableCopy(
+                            done ? t.markOpen : t.markDone,
+                            { key: keyOf(row) },
+                          )}
+                          onClick={() => {
+                            const next = done ? openOption : doneOption;
+                            if (next) onStatusChange(row.id, next.id);
+                          }}
+                          className="grid size-11 flex-none cursor-pointer place-items-center rounded-[12px] border-0 bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-default disabled:opacity-60"
+                        >
+                          <span
+                            aria-hidden="true"
+                            className={cn(
+                              "box-border grid size-5.5 place-items-center rounded-full border-[1.75px]",
+                              done
+                                ? "border-work-status-done bg-work-status-done text-primary-foreground"
+                                : "border-line-strong",
+                            )}
+                          >
+                            {done ? (
+                              <Check className="size-3.5" strokeWidth={3} />
+                            ) : null}
+                          </span>
+                        </button>
+                      )}
                       <button
                         type="button"
                         data-row-open=""

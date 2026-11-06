@@ -22,6 +22,9 @@ export interface RemindResultDto {
   readonly nextRemindAt: string;
 }
 
+type RemindResponse =
+  OperationResponse<"WorkManagement.BoardItems.RemindOwners">;
+
 /** The error code the server answers when the 24 hour reminder limit is hit. */
 export const REMIND_TOO_SOON_CODE = "work.item.remind-too-soon";
 
@@ -155,6 +158,11 @@ export interface ItemLinkDto {
     readonly title: string;
     readonly statusName: string | null;
     readonly statusCategory: "todo" | "in_progress" | "review" | "done" | null;
+    /** An archived item stays linked and says so. */
+    readonly isArchived?: boolean;
+    /** Its first assignee, when it has one. */
+    readonly assigneeId?: string | null;
+    readonly assigneeName?: string | null;
   };
 }
 
@@ -180,7 +188,18 @@ export interface ItemApprovalDto {
   readonly decisionNote: string | null;
   /** The request's version, sent back as the expected version when it is cancelled. */
   readonly version: number;
+  /** The rejected or cancelled request this one asks again; null for a first request. */
+  readonly previousRequestId: string | null;
 }
+
+type ApprovalsResponse =
+  OperationResponse<"WorkManagement.Approvals.ListForItem">;
+type LinksResponse = OperationResponse<"WorkManagement.BoardItems.ListLinks">;
+
+const isLinkRelation = (
+  relation: string | null | undefined,
+): relation is ItemLinkDto["relation"] =>
+  relation === "blocked-by" || relation === "blocks" || relation === "related";
 
 interface ItemApprovalWire {
   readonly id: string;
@@ -189,6 +208,7 @@ interface ItemApprovalWire {
   readonly requestedByUserId: string;
   readonly createdAt: string;
   readonly version: number;
+  readonly previousRequestId?: string | null;
   readonly steps?:
     | readonly {
         readonly approverUserId?: string | null;
@@ -214,6 +234,7 @@ function toItemApproval(wire: ItemApprovalWire): ItemApprovalDto {
     decidedAt: step?.decidedAt ?? null,
     decisionNote: step?.note ?? null,
     version: wire.version,
+    previousRequestId: wire.previousRequestId ?? null,
   };
 }
 
@@ -374,10 +395,14 @@ export function createItemExtrasApi(
       };
     },
     async getApprovals(itemId: string): Promise<ItemApprovalDto[]> {
-      const dto = await api.get<ItemApprovalWire[] | null>(
-        `/board-items/${itemId}/approval-requests`,
+      const dto = await api.get<ApprovalsResponse | null>(
+        endpoints.boardItems.approvalRequests(itemId),
       );
-      return (dto ?? []).map(toItemApproval);
+      return (dto ?? []).flatMap((wire) =>
+        wire.id && wire.requestedByUserId && wire.createdAt
+          ? [toItemApproval(wire as ItemApprovalWire)]
+          : [],
+      );
     },
     /** The named approver answers (`WorkManagement.Approvals.Decide`); the comment is optional. */
     async decideApproval(
@@ -387,7 +412,7 @@ export function createItemExtrasApi(
       comment: string | null,
     ): Promise<void> {
       await api.post<void>(
-        `/workspaces/${workspaceId}/approvals/${requestId}/decision`,
+        endpoints.approvals.decision(workspaceId, requestId),
         { decision, comment },
         { idempotencyKey: key(), ...quiet },
       );
@@ -398,7 +423,7 @@ export function createItemExtrasApi(
       expectedVersion: number,
     ): Promise<void> {
       await api.post<void>(
-        `/approvals/${requestId}/cancel`,
+        endpoints.approvals.cancel(requestId),
         { expectedVersion },
         { idempotencyKey: key(), ...quiet },
       );
@@ -410,28 +435,48 @@ export function createItemExtrasApi(
       note: string | null,
     ): Promise<void> {
       await api.post<unknown>(
-        `/board-items/${itemId}/approval-requests`,
+        endpoints.boardItems.approvalRequests(itemId),
         { approverUserId, note },
         { idempotencyKey: key(), ...quiet },
       );
     },
     async getLinks(itemId: string): Promise<ItemLinkDto[]> {
-      const dto = await api.get<{ links?: ItemLinkDto[] } | null>(
-        `/board-items/${itemId}/links`,
+      const dto = await api.get<LinksResponse | null>(
+        endpoints.boardItems.links(itemId),
       );
-      return dto?.links ?? [];
+      return (dto?.links ?? []).flatMap((link) =>
+        link.id && link.item?.id && isLinkRelation(link.relation)
+          ? [
+              {
+                id: link.id,
+                relation: link.relation,
+                item: {
+                  id: link.item.id,
+                  key: link.item.key ?? null,
+                  title: link.item.title ?? "",
+                  statusName: link.item.statusName ?? null,
+                  statusCategory: (link.item.statusCategory ??
+                    null) as ItemLinkDto["item"]["statusCategory"],
+                  isArchived: link.item.isArchived ?? false,
+                  assigneeId: link.item.assigneeId ?? null,
+                  assigneeName: link.item.assigneeName ?? null,
+                },
+              },
+            ]
+          : [],
+      );
     },
     async addLink(
       itemId: string,
       link: { itemId: string; relation: ItemLinkDto["relation"] },
     ): Promise<void> {
-      await api.post<void>(`/board-items/${itemId}/links`, link, {
+      await api.post<void>(endpoints.boardItems.links(itemId), link, {
         idempotencyKey: key(),
         ...quiet,
       });
     },
     async removeLink(itemId: string, linkId: string): Promise<void> {
-      await api.delete<void>(`/board-items/${itemId}/links/${linkId}`, quiet);
+      await api.delete<void>(endpoints.boardItems.link(itemId, linkId), quiet);
     },
     /** Timeline dependency `from -> to`: `to` waits for `from`. */
     async addDependency(from: string, to: string): Promise<void> {
@@ -492,7 +537,7 @@ export function createItemExtrasApi(
     ): Promise<ItemVersionDto> {
       return versionOf(
         await api.post<VersionBody>(
-          `/board-items/${itemId}/reopen?expectedVersion=${expectedVersion}`,
+          `${endpoints.boardItems.reopen(itemId)}?expectedVersion=${expectedVersion}`,
           {},
           { idempotencyKey: key(), ...quiet },
         ),
@@ -587,7 +632,7 @@ export function createItemExtrasApi(
       expectedVersion: number,
     ): Promise<MoveToBoardResultDto> {
       const result = await api.post<Partial<MoveToBoardResultDto>>(
-        `/board-items/${itemId}/move-to-board`,
+        endpoints.boardItems.moveToBoard(itemId),
         { boardId, expectedVersion },
         { idempotencyKey: key(), ...quiet },
       );
@@ -674,8 +719,8 @@ export function createItemExtrasApi(
      * the server answers 409 `work.item.remind-too-soon` after that.
      */
     async remindOwners(itemId: string): Promise<RemindResultDto> {
-      const result = await api.post<Partial<RemindResultDto> | null>(
-        `/board-items/${itemId}/remind`,
+      const result = await api.post<RemindResponse | null>(
+        endpoints.boardItems.remind(itemId),
         {},
         { idempotencyKey: key(), ...quiet },
       );

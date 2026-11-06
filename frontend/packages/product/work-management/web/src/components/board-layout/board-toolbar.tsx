@@ -176,8 +176,8 @@ export function BoardToolbar({
               savedViews={savedViews}
             />
           </div>
-          {viewMenu}
           <AddViewMenu onAddView={onAddView ?? onViewChange} copy={copy} />
+          {viewMenu}
         </div>
       )}
     </div>

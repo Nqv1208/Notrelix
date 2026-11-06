@@ -51,6 +51,10 @@ export const en = {
   moveCurrent: "Current",
   moveDenied: "You can read this board but not move cards",
   close: "Close",
+  archivedWithParent: "Archived with parent",
+  completed: "Done",
+  retry: "Retry",
+  moveFailed: "Couldn't move to {{target}}. Back in {{lane}}.",
 };
 
 export type KanbanCardCopy = typeof en;
@@ -96,6 +100,10 @@ export const vi: KanbanCardCopy = {
   moveCurrent: "Hiện tại",
   moveDenied: "Bạn chỉ được xem board này, không chuyển thẻ được",
   close: "Đóng",
+  archivedWithParent: "Lưu trữ cùng việc cha",
+  completed: "Hoàn thành",
+  retry: "Thử lại",
+  moveFailed: "Không chuyển được sang {{target}}. Đã trả về {{lane}}.",
 };
 
 export function kanbanCardCopy(locale: "vi" | "en"): KanbanCardCopy {

@@ -101,6 +101,7 @@ function fakeServices(
           title: "Phê duyệt phân quyền",
           statusName: "Đang làm",
           statusCategory: "in_progress" as const,
+          isArchived: true,
         },
       },
     ]),
@@ -759,13 +760,14 @@ describe("KanbanView on the ERP board", () => {
       { name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP" },
       { timeout: 5000 },
     );
-    fireEvent.click(
-      await within(dialog).findByRole(
-        "button",
-        { name: "Gỡ liên kết ERP-143" },
-        { timeout: 8000 },
-      ),
+    const unlink = await within(dialog).findByRole(
+      "button",
+      { name: "Gỡ liên kết ERP-143" },
+      { timeout: 8000 },
     );
+    // An archived item stays linked and its row says so.
+    expect(within(dialog).getByText("Đã lưu trữ")).toBeTruthy();
+    fireEvent.click(unlink);
     await waitFor(() =>
       expect(itemExtras.removeLink).toHaveBeenCalledWith(
         erpItemId("ERP-142"),

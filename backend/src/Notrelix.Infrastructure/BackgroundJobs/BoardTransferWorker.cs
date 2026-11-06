@@ -30,6 +30,7 @@ internal sealed class BoardTransferRunner(
     IBoardItemKeyAllocator keys,
     IWorkOrderingScopeLock orderingLock,
     BoardExportBuilder exports,
+    ImportPeopleDirectory importPeople,
     IResourceVisibility visibility,
     IWorkspaceAccessResolver access,
     IActorLookupService actors,
@@ -87,9 +88,11 @@ internal sealed class BoardTransferRunner(
             else
             {
                 var data = await ImportJobsRead(options, ct);
+                var people = await importPeople.ResolveAsync(job.WorkspaceId, job.BoardId, job.UserId, data, ct);
                 var schema = new ImportSchema(
                     await context.BoardFields.AsNoTracking().Include(f => f.Options).Where(f => f.BoardId == job.BoardId && f.DeletedAt == null).ToListAsync(ct),
-                    await context.BoardGroups.AsNoTracking().Where(g => g.BoardId == job.BoardId && g.DeletedAt == null).ToListAsync(ct));
+                    await context.BoardGroups.AsNoTracking().Where(g => g.BoardId == job.BoardId && g.DeletedAt == null).ToListAsync(ct),
+                    people);
                 var evaluation = ImportPlanner.Evaluate(data, schema, options.Mapping ?? [], collectItems: true);
                 if (evaluation.ErrorCount > 0)
                 {
@@ -98,7 +101,7 @@ internal sealed class BoardTransferRunner(
                 }
                 else
                 {
-                    outcome = await CreateItemsAsync(job, options, board, schema, evaluation.Items, ct);
+                    outcome = await CreateItemsAsync(job, options, board, schema, evaluation.Items, ct) with { UnmatchedPersonRows = evaluation.UnmatchedPersonRows };
                     job.Status = TransferStatus.Succeeded;
                     job.Succeeded = outcome.Created;
                 }

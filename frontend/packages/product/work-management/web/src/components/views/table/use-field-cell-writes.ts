@@ -70,7 +70,11 @@ export function useFieldCellWrites(send: Send, reload: () => Promise<unknown>) {
               : isRequiredRefusal(error)
                 ? { status: "error", value, required: true }
                 : isConflict(error)
-                  ? { status: "conflict", value, byName: changedByNameOf(error) }
+                  ? {
+                      status: "conflict",
+                      value,
+                      byName: changedByNameOf(error),
+                    }
                   : { status: "error", value },
           );
         },

@@ -12,13 +12,14 @@ public sealed record ImportUploadDto(
 
 public sealed record ImportPreviewDto(
     int RowCount, bool MissingTitle, IReadOnlyList<ColumnCheck> Checks, int ErrorCount, int ErrorRows,
-    IReadOnlyList<ImportRowError> Errors, IReadOnlyList<SampleRow> Sample);
+    IReadOnlyList<ImportRowError> Errors, IReadOnlyList<SampleRow> Sample, IReadOnlyList<int> UnmatchedPersonRows);
 
 /// <param name="Status">uploaded, queued, running, succeeded or failed.</param>
 /// <param name="Phase">While running: reading (checking the file) or creating.</param>
 public sealed record ImportJobDto(
     Guid Id, string Status, string? Phase, int Total, int Processed, int Created, int ErrorCount, int ErrorRows,
-    string? FirstKey, string? LastKey, string? FailureCode, string FileName, DateTimeOffset CreatedAt, string? FailureBy = null);
+    string? FirstKey, string? LastKey, string? FailureCode, string FileName, DateTimeOffset CreatedAt, string? FailureBy = null,
+    IReadOnlyList<int>? UnmatchedPersonRows = null);
 
 public sealed record ImportErrorsDto(IReadOnlyList<ImportRowError> Errors, bool Truncated, IReadOnlyList<string> Headers, string FileName);
 
@@ -36,12 +37,13 @@ internal static class ImportJobs
         return job;
     }
 
-    public static async Task<ImportSchema> SchemaAsync(IWorkManagementDbContext context, Guid boardId, CancellationToken ct)
+    public static async Task<ImportSchema> SchemaAsync(
+        IWorkManagementDbContext context, Guid boardId, CancellationToken ct, IReadOnlyDictionary<string, Guid>? people = null)
     {
         var fields = await context.BoardFields.AsNoTracking().Include(f => f.Options)
             .Where(f => f.BoardId == boardId && f.DeletedAt == null).ToListAsync(ct);
         var groups = await context.BoardGroups.AsNoTracking().Where(g => g.BoardId == boardId && g.DeletedAt == null).ToListAsync(ct);
-        return new ImportSchema(fields, groups);
+        return new ImportSchema(fields, groups, people);
     }
 
     public static async Task<TabularData> ReadAsync(IStorageService storage, ImportOptions options, CancellationToken ct)
@@ -60,7 +62,7 @@ internal static class ImportJobs
         return new ImportJobDto(
             job.Id, job.Status, live?.Phase, job.Total, live?.Processed ?? (job.Status == TransferStatus.Succeeded ? job.Total : 0),
             outcome?.Created ?? 0, outcome?.ErrorCount ?? 0, outcome?.ErrorRows ?? 0, outcome?.FirstKey, outcome?.LastKey,
-            outcome?.FailureCode, options.FileName, job.CreatedAt, outcome?.FailureBy);
+            outcome?.FailureCode, options.FileName, job.CreatedAt, outcome?.FailureBy, outcome?.UnmatchedPersonRows);
     }
 
     public static void RequireTitle(IReadOnlyList<ColumnMap> mapping, ImportSchema schema)

@@ -1,5 +1,5 @@
 import type { ItemPageCopy } from "../item-page/item-page.copy";
-import type { ItemChecklistsModel } from "../checklists/item-checklists";
+import type { ItemChecklistsModel } from "../checklists/item-checklists.model";
 import type {
   ItemPagePeople,
   ItemPageUpload,
@@ -85,6 +85,10 @@ export interface ItemSheetLink {
     readonly title: string;
     readonly statusName: string | null;
     readonly statusCategory: "todo" | "in_progress" | "review" | "done" | null;
+    readonly isArchived?: boolean;
+    /** Its first assignee, when it has one. */
+    readonly assigneeId?: string | null;
+    readonly assigneeName?: string | null;
   };
 }
 
@@ -121,6 +125,8 @@ export interface ItemSheetApproval {
   readonly decidedAt?: string | null;
   /** The approver's comment with the decision. */
   readonly decisionNote?: string | null;
+  /** The rejected or cancelled request this one asks again. */
+  readonly previousRequestId?: string | null;
 }
 
 /** Board group offered by "Chuyển nhóm"; the item's own group is excluded. */

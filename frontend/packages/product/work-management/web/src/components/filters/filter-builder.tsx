@@ -171,8 +171,17 @@ export function FilterBuilder(props: FilterBuilderProps) {
           aria-haspopup="dialog"
         >
           <Filter className="size-4" aria-hidden="true" />
-          {copy.filter.trigger}
-          {activeCount > 0 ? ` · ${activeCount}` : ""}
+          <span
+            className={
+              activeCount > 0
+                ? "untablet:@max-[820px]/bar:sr-only"
+                : "untablet:@max-[1030px]/bar:sr-only"
+            }
+          >
+            {copy.filter.trigger}
+            {activeCount > 0 ? " · " : ""}
+          </span>
+          {activeCount > 0 ? activeCount : ""}
         </Button>
       </PopoverTrigger>
       <PopoverContent

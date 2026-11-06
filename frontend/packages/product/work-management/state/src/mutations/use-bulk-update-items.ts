@@ -93,14 +93,20 @@ export function bulkFailedItemId(error: unknown): string | undefined {
   return typeof id === "string" ? id : undefined;
 }
 
-/** The title the board read shows for an item, to name the one a refused bulk request points at. */
-export function useBoardCardTitle(boardId: string, workspaceId: string) {
+/** The card the board read shows for an item (to name a refused one, or to read what a change would overwrite). */
+export function useBoardCardReader(boardId: string, workspaceId: string) {
   const queryClient = useQueryClient();
-  return (itemId: string): string | undefined =>
+  return (itemId: string) =>
     findBoardCard(
       queryClient.getQueryData<FullBoardResponse>(
         wmQueryKeys.fullBoard(workspaceId, boardId),
       ),
       itemId,
-    )?.title;
+    );
+}
+
+/** The title the board read shows for an item, to name the one a refused bulk request points at. */
+export function useBoardCardTitle(boardId: string, workspaceId: string) {
+  const read = useBoardCardReader(boardId, workspaceId);
+  return (itemId: string): string | undefined => read(itemId)?.title;
 }

@@ -20,6 +20,7 @@ import {
 } from "@notrelix/work-management-core";
 import { kanbanPillClass } from "../views/kanban/kanban-chrome";
 import { describeCondition, staleConditionCount } from "./condition-label";
+import { usePublishFilterChipLabels } from "./filter-chip-labels";
 import { FilterBuilder } from "./filter-builder";
 import { FieldRefMenu } from "./field-ref-menu";
 import { fillFiltersCopy, type FiltersCopy } from "./filters.copy";
@@ -95,6 +96,16 @@ export function ViewStateBar(props: ViewStateBarProps) {
   const known = fields.length > 0;
   const applied = filter.conditions.filter(
     (condition) => conditionIssue(condition) === null,
+  );
+  usePublishFilterChipLabels(
+    applied.map((condition) =>
+      describeCondition(
+        copy,
+        condition,
+        fields.find((f) => f.id === condition.fieldId),
+        memberName,
+      ),
+    ),
   );
   const byId = new Map(fields.map((f) => [f.id, f]));
   const shown = filter.conditions.slice(0, MAX_CHIPS);

@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.Collaboration.Public.Notifications;
 using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
+using Notrelix.Application.Features.Workspaces.Public.Teams;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyWorkExtended;
 using Notrelix.Domain.SharedKernel.Ordering;
@@ -14,6 +15,7 @@ public class MyWorkAndHomeFeedTests : WorkManagementHandlerTestBase
     private readonly Mock<INotificationInbox> _inbox = new();
     private readonly Mock<IWorkManagementCollaborationReadPort> _collaboration = new();
     private readonly InMemoryBoardItemReminders _reminders = new();
+    private readonly Mock<ITeamMembershipFacts> _teams = new();
 
     public MyWorkAndHomeFeedTests()
     {
@@ -27,10 +29,10 @@ public class MyWorkAndHomeFeedTests : WorkManagementHandlerTestBase
     }
 
     private GetMyWorkExtendedQueryHandler MyWork() =>
-        new(DbContextMock.Object, RequestContextMock.Object, _visibility, _actors.Object, _collaboration.Object, _reminders);
+        new(DbContextMock.Object, RequestContextMock.Object, _visibility, _actors.Object, _collaboration.Object, _reminders, _teams.Object);
 
     private GetHomeFeedQueryHandler Home() =>
-        new(DbContextMock.Object, RequestContextMock.Object, _visibility, _inbox.Object, _actors.Object);
+        new(DbContextMock.Object, RequestContextMock.Object, _visibility, _inbox.Object, _actors.Object, _teams.Object);
 
     private BoardField StatusFieldFor(Guid boardId)
     {
@@ -237,5 +239,71 @@ public class MyWorkAndHomeFeedTests : WorkManagementHandlerTestBase
         var result = await MyWork().Handle(new GetMyWorkExtendedQuery(TestWorkspaceId), CancellationToken.None);
 
         result.Data!.Waiting.Select(w => w.ItemId).Should().Equal(soon.Id, late.Id, undated.Id);
+    }
+
+    private ApprovalRequest TeamAsk(BoardItem item, Guid teamId)
+    {
+        var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), item.Id, TestWorkspaceId);
+        var request = ApprovalRequest.Create(TestAccountId, TestWorkspaceId, target, "Team review", Guid.CreateVersion7(), TestNow);
+        request.AddStep(1, TestUserId, TestNow, approverTeamId: teamId);
+        SetupApprovalRequests(request);
+        return request;
+    }
+
+    private async Task<int> PendingForCallerAsync(params Guid[] callerTeams)
+    {
+        _teams
+            .Setup(t => t.CurrentTeamIdsAsync(TestWorkspaceId, TestUserId, It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, Guid _, IReadOnlyCollection<Guid> asked, CancellationToken _) => asked.Where(callerTeams.Contains).ToList());
+        _inbox
+            .Setup(i => i.RecentUnreadMentionsAsync(TestWorkspaceId, TestUserId, It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UnreadMentionNotification>());
+        var result = await Home().Handle(new GetHomeFeedQuery(TestWorkspaceId), CancellationToken.None);
+        return result.Data!.Summary.ApprovalsPending;
+    }
+
+    [Fact]
+    public async Task HomeFeed_ACurrentTeamMember_SeesTheRequestAskedOfTheirTeam()
+    {
+        var board = CreateBoard();
+        _visibility.Boards.Add(board.Id);
+        var item = CreateBoardItem(boardId: board.Id);
+        SetupBoardItems(item);
+        var team = Guid.CreateVersion7();
+        TeamAsk(item, team);
+
+        (await PendingForCallerAsync(team)).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task HomeFeed_ANonMemberOrAFailedMembershipRead_SeesNothingForTheTeam()
+    {
+        var board = CreateBoard();
+        _visibility.Boards.Add(board.Id);
+        var item = CreateBoardItem(boardId: board.Id);
+        SetupBoardItems(item);
+        TeamAsk(item, Guid.CreateVersion7());
+
+        (await PendingForCallerAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task MyWork_ACurrentTeamMember_ListsTheItemTheirTeamIsAskedToApprove()
+    {
+        var board = CreateBoard();
+        SetupBoards(board);
+        _visibility.Boards.Add(board.Id);
+        SetupBoardFields(StatusFieldFor(board.Id));
+        var item = CreateBoardItem(boardId: board.Id);
+        SetupBoardItems(item);
+        var team = Guid.CreateVersion7();
+        TeamAsk(item, team);
+        _teams
+            .Setup(t => t.CurrentTeamIdsAsync(TestWorkspaceId, TestUserId, It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([team]);
+
+        var result = await MyWork().Handle(new GetMyWorkExtendedQuery(TestWorkspaceId), CancellationToken.None);
+
+        result.Data!.Items.Should().Contain(i => i.Id == item.Id);
     }
 }

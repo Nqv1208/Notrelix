@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Approvals.Services;
+using Notrelix.Application.Features.Workspaces.Public.Teams;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Common;
 using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
@@ -77,7 +78,8 @@ public class GetMyWorkExtendedQueryHandler(
     IResourceVisibility visibility,
     IActorLookupService actors,
     IWorkManagementCollaborationReadPort collaboration,
-    IBoardItemReminders reminders) : IRequestHandler<GetMyWorkExtendedQuery, Result<MyWorkExtendedDto>>
+    IBoardItemReminders reminders,
+    ITeamMembershipFacts teams) : IRequestHandler<GetMyWorkExtendedQuery, Result<MyWorkExtendedDto>>
 {
     public async Task<Result<MyWorkExtendedDto>> Handle(GetMyWorkExtendedQuery request, CancellationToken cancellationToken)
     {
@@ -142,7 +144,7 @@ public class GetMyWorkExtendedQueryHandler(
 
         // The Items the caller is asked to approve; those not already listed are added as approver-only rows.
         var approvals = (await PendingApprovals.ListAsync(
-                context, request.WorkspaceId, userId, visibleBoardIds, cancellationToken))
+                context, request.WorkspaceId, userId, visibleBoardIds, teams, cancellationToken))
             .GroupBy(a => a.ItemId)
             .ToDictionary(g => g.Key, g => g.First());
         var listedIds = open.Concat(followedOnly).Select(i => i.Id).ToHashSet();

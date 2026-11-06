@@ -480,6 +480,16 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "ApprovalTeamRequestedNotificationConsumer",
+                EventName = "work-management.approval-team-requested",
+                EventVersion = 1,
+                EndpointName = "notrelix-collab-approval-team-requested-notification-v1",
+                BoundedContext = "Collaboration",
+                Description = "Tells the current members of an approver Team they were asked to decide an approval request",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "ApprovalDecidedNotificationConsumer",
                 EventName = "work-management.approval-decided",
                 EventVersion = 1,

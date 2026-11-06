@@ -7,7 +7,7 @@ import {
   personInitials,
   type Checklist,
 } from "@notrelix/work-management-core";
-import type { ItemChecklistsModel } from "../../checklists/item-checklists";
+import type { ItemChecklistsModel } from "../../checklists/item-checklists.model";
 import { useChecklistCopy } from "../../checklists/use-checklist-copy";
 import { fillSheetCopy } from "../../card-detail/item-sheet.copy";
 import { fillPopupCopy } from "../card-popup.copy";

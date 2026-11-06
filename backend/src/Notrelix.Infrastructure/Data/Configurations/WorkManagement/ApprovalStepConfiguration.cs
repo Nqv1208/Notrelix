@@ -17,6 +17,7 @@ public class ApprovalStepConfiguration : IEntityTypeConfiguration<ApprovalStep>
         builder.Property(x => x.Status).HasColumnName("status").IsRequired();
         builder.Property(x => x.Position).HasColumnName("position");
         builder.Property(x => x.DecidedAt).HasColumnName("decided_at");
+        builder.Property(x => x.DecidedByUserId).HasColumnName("decided_by_user_id");
         builder.Property(x => x.Note).HasColumnName("note");
 
         builder.HasOne<ApprovalRequest>()
