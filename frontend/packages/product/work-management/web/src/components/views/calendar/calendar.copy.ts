@@ -70,6 +70,7 @@ export const en = {
     label: "{{zone}} ({{offset}})",
   },
   addItem: "Add item",
+  overflow: "More",
   weekdays: {
     mon: "Mon",
     tue: "Tue",
@@ -282,6 +283,7 @@ export const vi: CalendarCopy = {
     label: "{{zone}} ({{offset}})",
   },
   addItem: "Thêm công việc",
+  overflow: "Thêm",
   weekdays: {
     mon: "Thứ 2",
     tue: "Thứ 3",

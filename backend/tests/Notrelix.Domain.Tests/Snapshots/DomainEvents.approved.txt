@@ -670,6 +670,13 @@ work-management.approval-step-assigned|1|Notrelix.Domain.WorkManagement.Approval
 work-management.approval-step-assigned|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalStepAssignedDomainEvent|Workspace|StepId|System.Guid|False
 work-management.approval-step-assigned|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalStepAssignedDomainEvent|Workspace|Target|Notrelix.Domain.SharedKernel.ResourceRef|False
 work-management.approval-step-assigned|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalStepAssignedDomainEvent|Workspace|Title|System.String|False
+work-management.approval-team-step-assigned|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalTeamStepAssignedDomainEvent|Workspace|ApproverTeamId|System.Guid|False
+work-management.approval-team-step-assigned|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalTeamStepAssignedDomainEvent|Workspace|Note|System.String|True
+work-management.approval-team-step-assigned|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalTeamStepAssignedDomainEvent|Workspace|RequestId|System.Guid|False
+work-management.approval-team-step-assigned|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalTeamStepAssignedDomainEvent|Workspace|RequestedBy|System.Guid|False
+work-management.approval-team-step-assigned|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalTeamStepAssignedDomainEvent|Workspace|StepId|System.Guid|False
+work-management.approval-team-step-assigned|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalTeamStepAssignedDomainEvent|Workspace|Target|Notrelix.Domain.SharedKernel.ResourceRef|False
+work-management.approval-team-step-assigned|1|Notrelix.Domain.WorkManagement.Approvals.Events.ApprovalTeamStepAssignedDomainEvent|Workspace|Title|System.String|False
 work-management.board-archived|1|Notrelix.Domain.WorkManagement.Boards.Events.BoardArchivedDomainEvent|Workspace|ArchivedBy|System.Guid|False
 work-management.board-archived|1|Notrelix.Domain.WorkManagement.Boards.Events.BoardArchivedDomainEvent|Workspace|BoardId|System.Guid|False
 work-management.board-background-updated|1|Notrelix.Domain.WorkManagement.Boards.Events.BoardBackgroundUpdatedDomainEvent|Workspace|BoardId|System.Guid|False

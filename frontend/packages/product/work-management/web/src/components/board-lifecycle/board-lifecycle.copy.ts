@@ -129,6 +129,7 @@ export const en = {
     reading: "Reading the file",
     readingBody:
       "No items are created yet. Reading is only to map columns and check.",
+    readingMeta: "Reading… {{percent}}%",
     fileMeta: "{{rows}} rows · {{columns}} columns · {{size}}",
     changeFile: "Change file",
     chooseOther: "Choose another file",
@@ -142,9 +143,9 @@ export const en = {
     reject_tooLarge_title: "The file {{file}} is too large",
     reject_tooLarge:
       "The largest file is 10 MB. Nothing was read from this file.",
-    reject_noRows_title: "The file has no data rows",
+    reject_noRows_title: "The file has only the column names",
     reject_noRows:
-      "Add at least one row under the column names and choose again.",
+      "There are no data rows to import. Add data to the file and choose again.",
     reject_tooManyRows_title:
       "The file has {{rows}} rows, over the 5,000 row limit",
     reject_tooManyRows:
@@ -171,6 +172,8 @@ export const en = {
     checkIncompatible: "Cannot map",
     incompatibleBody:
       "The column holds text (for example “{{example}}”) but the field {{field}} is {{type}}. Choose another field, or skip this column.",
+    incompatibleShort:
+      "The column holds text (for example “{{example}}”) but the field is {{type}}. Choose another field or skip the column.",
     type_Text: "Text",
     type_LongText: "Long text",
     type_Number: "Number",
@@ -181,7 +184,7 @@ export const en = {
     type_Checkbox: "Checkbox",
     type_Link: "Link",
     type_Person: "Person",
-    locked_person: "Cannot be imported from a file yet",
+    locked_person: "Only workspace Owners and Admins can import people",
     locked_computed: "Calculated, cannot be imported",
     locked_vote: "Cast by the voter, cannot be imported",
     missingTitle: "No column for the item title",
@@ -191,6 +194,16 @@ export const en = {
     mapProblem_other: "{{count}} columns cannot be mapped",
     mapProblemBody:
       "Fix it before the Check step. Continue opens when no column reports an error.",
+    firstErrors: "First errors",
+    previewLabel: "Preview of the rows",
+    checkSkipped: "Skipped",
+    creatingLabel: "Items created so far",
+    mapAllOk: "Every column is mapped",
+    mapAllOkBody: "Each column has a field. Skip any column you do not need.",
+    mapUnknownNote:
+      "“{{column}}” has {{count}} values not in the options ({{values}}). Unknown values are reported in the Check step; no new option is added.",
+    mapRequiredWhy:
+      "The item title is required. Choose a column for the title.",
     checkingTitle: "Checking the file",
     allValid: "All {{rows}} rows are valid",
     allValidBody:
@@ -204,7 +217,8 @@ export const en = {
     colReason: "Reason",
     previewNote: "Showing {{shown}} of {{rows}} rows.",
     rowLabel: "Row {{row}}",
-    moreErrors: "and {{count}} more errors in other rows, in the error report.",
+    moreErrors:
+      "and {{count}} more errors in {{rows}} other rows, in the error report.",
     reportNote: "The report gives the row, column and reason for every error.",
     downloadReport: "Download error report (CSV)",
     empty: "(empty)",
@@ -219,7 +233,7 @@ export const en = {
     queued: "Waiting in line…",
     done: "Imported {{count}} items into {{name}}",
     doneBody:
-      "The items sit in the default group. New keys run from {{first}} to {{last}}.",
+      "The items sit in the default group; people and due dates come from the file. New keys start at {{first}}.",
     doneAsk: "Want to see them now?",
     doneAskBody: "Open the board in Table view with the newest items first.",
     doneOpen: "See imported items",
@@ -227,6 +241,8 @@ export const en = {
     failedTitle: "No items were imported",
     failedHasErrors:
       "The server refused at row {{row}}: {{column}} {{value}} {{reason}} No item was created; the board is unchanged.",
+    peopleUnmatched:
+      "Some people were not matched: {{count}} rows ({{rows}}). Those cells stay empty. A person is matched only by the exact e-mail of a member who can be assigned on this board.",
     failedRetryNote:
       "Importing the same file again does not create twice: the request uses the same key.",
     chooseFixed: "Choose the fixed file",
@@ -294,13 +310,32 @@ export const en = {
     expiredBody: "Files are kept 24 hours. Export again for a new file.",
     failedTitle: "The file could not be made",
     failedBody:
-      "There is no file to download and the board is unchanged. Trying again does not make two files.",
+      "The server did not finish the file. There is no file to download and the board is unchanged. Trying again does not make two files.",
     failedNoAccess:
       "You can no longer see this board so the file could not be made.",
     retry: "Try again",
     denied: "Guests cannot export. You may not export this board.",
     recent: "Recent files",
     working: "Sending…",
+    preparingTitle: "Preparing the file",
+    summaryLabel: "Format · Items to export",
+    summaryViewShort: "Current view",
+    summaryAllShort: "All items of the board",
+    summaryLine: "{{format}} · {{scope}} · {{count}} items",
+    queuedBanner: "Waiting in line to make the file",
+    queuedBody:
+      "You can close the dialog; a ready file is announced by a notification and sits under Export.",
+    queuedButton: "Waiting in line…",
+    runningLine: "Making the file: {{done}} of {{total}} rows",
+    runningNote: "You can close the dialog, the file is still made.",
+    readyTitle: "Your export is ready",
+    readyBannerTitle: "The file is ready",
+    readyBannerBody:
+      "It has {{rows}} rows. The download link expires after 24 hours.",
+    readyMeta: "{{format}} · {{size}} · made at {{time}}",
+    expiredTitle: "The export expired",
+    expiredBannerBody:
+      "The download link is valid for 24 hours. The board is unchanged; export again for a new file.",
   },
 };
 
@@ -429,6 +464,7 @@ export const vi: BoardLifecycleCopy = {
     dropHint: "Dòng đầu là tên cột. Tối đa 5.000 dòng.",
     reading: "Đang đọc tệp",
     readingBody: "Chưa tạo việc nào. Đọc tệp chỉ để ghép cột và kiểm tra.",
+    readingMeta: "Đang đọc… {{percent}}%",
     fileMeta: "{{rows}} dòng · {{columns}} cột · {{size}}",
     changeFile: "Đổi tệp",
     chooseOther: "Chọn tệp khác",
@@ -441,8 +477,9 @@ export const vi: BoardLifecycleCopy = {
       "Chỉ nhận tệp CSV hoặc XLSX. Chưa đọc gì từ tệp này.",
     reject_tooLarge_title: "Tệp {{file}} quá lớn",
     reject_tooLarge: "Tệp lớn nhất là 10 MB. Chưa đọc gì từ tệp này.",
-    reject_noRows_title: "Tệp không có dòng dữ liệu",
-    reject_noRows: "Thêm ít nhất một dòng dưới dòng tên cột rồi chọn lại.",
+    reject_noRows_title: "Tệp chỉ có dòng tên cột",
+    reject_noRows:
+      "Không có dòng dữ liệu nào để nhập. Thêm dữ liệu vào tệp rồi chọn lại.",
     reject_tooManyRows_title: "Tệp có {{rows}} dòng, vượt giới hạn 5.000 dòng",
     reject_tooManyRows:
       "Chưa nhập gì. Tách tệp thành nhiều phần dưới 5.000 dòng rồi nhập từng phần.",
@@ -468,6 +505,8 @@ export const vi: BoardLifecycleCopy = {
     checkIncompatible: "Không ghép được",
     incompatibleBody:
       "Cột có chữ (ví dụ “{{example}}”) nhưng trường {{field}} là {{type}}. Chọn trường khác, hoặc bỏ qua cột này.",
+    incompatibleShort:
+      "Cột có chữ (ví dụ “{{example}}”) nhưng trường là {{type}}. Chọn trường khác hoặc bỏ qua cột.",
     type_Text: "Văn bản",
     type_LongText: "Văn bản dài",
     type_Number: "Số",
@@ -478,7 +517,7 @@ export const vi: BoardLifecycleCopy = {
     type_Checkbox: "Hộp chọn",
     type_Link: "Liên kết",
     type_Person: "Người",
-    locked_person: "Chưa nhập được từ tệp",
+    locked_person: "Chỉ chủ sở hữu và quản trị viên nhập được người",
     locked_computed: "Tự tính, không nhập được",
     locked_vote: "Do người bình chọn, không nhập được",
     missingTitle: "Thiếu cột cho Tên việc",
@@ -487,6 +526,15 @@ export const vi: BoardLifecycleCopy = {
     mapProblem_other: "{{count}} cột chưa ghép được",
     mapProblemBody:
       "Sửa trước khi sang bước Kiểm tra. Nút Tiếp tục mở khi không còn cột nào báo lỗi.",
+    firstErrors: "Lỗi đầu tiên",
+    previewLabel: "Xem trước các dòng",
+    checkSkipped: "Bỏ qua",
+    creatingLabel: "Số việc đã tạo",
+    mapAllOk: "Mọi cột đã ghép được",
+    mapAllOkBody: "Mỗi cột đã có trường. Bỏ qua cột nào bạn không cần nhập.",
+    mapUnknownNote:
+      "“{{column}}” có {{count}} giá trị chưa có trong lựa chọn ({{values}}). Giá trị lạ sẽ được báo ở bước Kiểm tra, chưa thêm lựa chọn mới.",
+    mapRequiredWhy: "Tên việc là bắt buộc. Chọn một cột cho Tên việc.",
     checkingTitle: "Đang kiểm tra tệp",
     allValid: "{{rows}} dòng đều hợp lệ",
     allValidBody:
@@ -500,7 +548,8 @@ export const vi: BoardLifecycleCopy = {
     colReason: "Lý do",
     previewNote: "Xem trước {{shown}} trong {{rows}} dòng.",
     rowLabel: "Dòng {{row}}",
-    moreErrors: "và {{count}} lỗi nữa ở các dòng khác, có trong báo cáo lỗi.",
+    moreErrors:
+      "và {{count}} lỗi nữa ở {{rows}} dòng khác, có trong báo cáo lỗi.",
     reportNote: "Báo cáo nêu số dòng, cột và lý do cho từng lỗi.",
     downloadReport: "Tải báo cáo lỗi (CSV)",
     empty: "(trống)",
@@ -515,14 +564,16 @@ export const vi: BoardLifecycleCopy = {
     queued: "Đang xếp hàng…",
     done: "Đã nhập {{count}} việc vào {{name}}",
     doneBody:
-      "Việc nằm ở nhóm mặc định. Mã việc mới từ {{first}} đến {{last}}.",
+      "Việc nằm ở nhóm mặc định, người phụ trách và hạn lấy từ tệp. Mã việc mới từ {{first}}.",
     doneAsk: "Muốn xem ngay?",
     doneAskBody: "Mở board ở chế độ Bảng, sắp xếp việc mới nhất lên đầu.",
     doneOpen: "Xem việc đã nhập",
     finish: "Xong",
     failedTitle: "Chưa nhập việc nào",
     failedHasErrors:
-      "Máy chủ từ chối ở dòng {{row}}: {{column}} {{value}} {{reason}}. Không việc nào được tạo, board không đổi.",
+      "Máy chủ từ chối ở dòng {{row}}: {{column}} {{value}} {{reason}} Không việc nào được tạo, board không đổi.",
+    peopleUnmatched:
+      "Có người chưa khớp: {{count}} dòng ({{rows}}). Ô đó để trống. Chỉ khớp theo đúng e-mail của thành viên có thể được giao việc trên board này.",
     failedRetryNote:
       "Nhập lại với cùng tệp cũng không tạo hai lần: yêu cầu dùng cùng khoá.",
     chooseFixed: "Chọn tệp đã sửa",
@@ -589,12 +640,30 @@ export const vi: BoardLifecycleCopy = {
     expiredBody: "Tệp chỉ giữ 24 giờ. Xuất lại để lấy tệp mới.",
     failedTitle: "Chưa tạo được tệp",
     failedBody:
-      "Chưa có tệp nào để tải và board không đổi. Thử lại không tạo hai tệp.",
+      "Máy chủ không tạo xong tệp. Chưa có tệp nào để tải và board không đổi. Thử lại không tạo hai tệp.",
     failedNoAccess: "Bạn không còn quyền xem board này nên không tạo được tệp.",
     retry: "Thử lại",
     denied: "Khách không xuất được. Bạn không có quyền xuất board này.",
     recent: "Tệp gần đây",
     working: "Đang gửi…",
+    preparingTitle: "Đang chuẩn bị tệp",
+    summaryLabel: "Định dạng · Việc cần xuất",
+    summaryViewShort: "Chế độ xem hiện tại",
+    summaryAllShort: "Tất cả việc của board",
+    summaryLine: "{{format}} · {{scope}} · {{count}} việc",
+    queuedBanner: "Đang xếp hàng để tạo tệp",
+    queuedBody:
+      "Có thể đóng hộp thoại; tệp sẵn sàng sẽ báo bằng thông báo và nằm ở nút Xuất.",
+    queuedButton: "Đang xếp hàng…",
+    runningLine: "Đang tạo tệp: {{done}} trên {{total}} dòng",
+    runningNote: "Bạn có thể đóng hộp thoại, tệp vẫn được tạo.",
+    readyTitle: "Tệp xuất đã sẵn sàng",
+    readyBannerTitle: "Tệp đã sẵn sàng",
+    readyBannerBody: "Có {{rows}} dòng. Liên kết tải hết hạn sau 24 giờ.",
+    readyMeta: "{{format}} · {{size}} · tạo lúc {{time}}",
+    expiredTitle: "Tệp xuất đã hết hạn",
+    expiredBannerBody:
+      "Liên kết tải chỉ có hiệu lực 24 giờ. Việc trên board không đổi; xuất lại để lấy tệp mới.",
   },
 };
 

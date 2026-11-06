@@ -47,7 +47,7 @@ export interface MainTableToolbarProps {
 }
 
 const CHIP_CLASS =
-  "inline-flex h-7 min-w-0 max-w-full items-center gap-1 rounded-[7px] bg-state-selected pr-1.5 pl-2.5 text-crumb font-semibold text-state-selected-foreground tablet:h-11 tablet:gap-0 tablet:rounded-[10px] tablet:pr-0 tablet:pl-3.5 tablet:text-[14px] tablet:font-medium";
+  "inline-flex h-7 min-w-0 max-w-full untablet:@max-[1100px]/bar:max-w-32 untablet:@max-[820px]/bar:max-w-16 items-center gap-1 rounded-[7px] bg-state-selected pr-1.5 pl-2.5 text-crumb font-semibold text-state-selected-foreground tablet:h-11 tablet:gap-0 tablet:rounded-[10px] tablet:pr-0 tablet:pl-3.5 tablet:text-[14px] tablet:font-medium";
 
 function RemovableChip({
   text,
@@ -112,104 +112,106 @@ export function MainTableToolbar({
   // A phone: the search is an icon button, so the bar keeps Lọc, Cách xem and the saved filters on one row.
   const compact = useMediaQuery("(max-width: 639px)");
   return (
-    <div
-      data-table-toolbar=""
-      className="flex flex-wrap items-center gap-1.5 py-2.5 tablet:min-h-15 tablet:gap-2 tablet:py-2"
-    >
-      {compact ? (
-        <CompactSearch
-          value={searchQuery}
-          onChange={onSearchChange}
-          label={t.search.label}
-          placeholder={t.search.placeholder}
-        />
-      ) : (
-        <label className="flex h-8 w-50 tablet:hidden max-w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring dark:bg-card">
-          <Search className="size-4 shrink-0" aria-hidden="true" />
-          <input
-            type="search"
+    <div className="@container/bar">
+      <div
+        data-table-toolbar=""
+        className="flex flex-wrap items-center gap-1.5 py-2.5 tablet:min-h-15 tablet:gap-2 tablet:py-2"
+      >
+        {compact ? (
+          <CompactSearch
             value={searchQuery}
-            onChange={(event) => onSearchChange(event.target.value)}
+            onChange={onSearchChange}
+            label={t.search.label}
             placeholder={t.search.placeholder}
-            aria-label={t.search.label}
-            className="min-w-0 flex-1 bg-transparent text-compact text-foreground outline-none placeholder:text-meta-foreground"
           />
-        </label>
-      )}
+        ) : (
+          <label className="flex h-8 w-50 tablet:hidden max-w-full items-center untablet:@max-[1100px]/bar:w-36 untablet:@max-[820px]/bar:w-20 gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-meta-foreground focus-within:ring-2 focus-within:ring-focus-ring dark:bg-card">
+            <Search className="size-4 shrink-0" aria-hidden="true" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => onSearchChange(event.target.value)}
+              placeholder={t.search.placeholder}
+              aria-label={t.search.label}
+              className="min-w-0 flex-1 bg-transparent text-compact text-foreground outline-none placeholder:text-meta-foreground"
+            />
+          </label>
+        )}
 
-      {hideDone ? (
-        <RemovableChip
-          text={t.doneChip}
-          clearLabel={fillTableCopy(t.chipClear, { filter: t.doneChip })}
-          onClear={onShowDone}
-          data-chip="done"
-        />
-      ) : null}
-      {viewBar}
-
-      {columnState?.personal ? (
-        <button
-          type="button"
-          aria-label={t.columns.indicator}
-          title={t.columns.indicator}
-          onClick={columnState.onReset}
-          className="relative grid size-8 flex-none cursor-pointer place-items-center rounded-[7px] border border-transparent bg-state-selected p-0 text-state-selected-foreground focus-visible:outline-2 focus-visible:outline-ring max-md:size-11"
-        >
-          <Undo2 className="size-4" aria-hidden="true" />
-          <span
-            aria-hidden="true"
-            className="absolute top-1 right-1 size-2 rounded-full bg-primary ring-2 ring-state-selected"
+        {hideDone ? (
+          <RemovableChip
+            text={t.doneChip}
+            clearLabel={fillTableCopy(t.chipClear, { filter: t.doneChip })}
+            onClear={onShowDone}
+            data-chip="done"
           />
-        </button>
-      ) : null}
+        ) : null}
+        {viewBar}
 
-      <span
-        aria-hidden="true"
-        // The personal-columns toolbar draws 8 px between boxes: 4 px of margin more beside the separator.
-        className={`h-5 w-px bg-border max-md:hidden tablet:hidden ${columnState?.personal ? "mx-1.5" : "mx-1"}`}
-      />
-
-      <TableColumnsMenu
-        copy={copy}
-        customFields={customFields}
-        columnOrder={columnOrder}
-        onColumnOrderChange={onColumnOrderChange}
-        columnState={columnState}
-        hiddenColumnIds={hiddenColumnIds}
-        onColumnVisibleChange={onColumnVisibleChange}
-        density={density}
-        onDensityChange={onDensityChange}
-      />
-
-      <span className="flex-1" />
-      {/* The tablet row ends with the view menu, Add view and the avatar stack (the board header portals them in). */}
-      <TabletSlot
-        slot={TABLET_SLOT.toolbarTrail}
-        className="hidden items-center gap-2 tablet:flex"
-      />
-
-      {canAdd ? (
-        <>
-          <Button
-            size="sm"
-            className={`${kanbanPrimaryButtonClass} tablet:hidden`}
-            onClick={onAddItem}
+        {columnState?.personal ? (
+          <button
+            type="button"
+            aria-label={t.columns.indicator}
+            title={t.columns.indicator}
+            onClick={columnState.onReset}
+            className="relative grid size-8 flex-none cursor-pointer place-items-center rounded-[7px] border border-transparent bg-state-selected p-0 text-state-selected-foreground focus-visible:outline-2 focus-visible:outline-ring max-md:size-11"
           >
-            <Plus className="size-4" aria-hidden="true" />
-            {t.addItem}
-          </Button>
-          <TabletPortal slot={TABLET_SLOT.headerAdd}>
+            <Undo2 className="size-4" aria-hidden="true" />
+            <span
+              aria-hidden="true"
+              className="absolute top-1 right-1 size-2 rounded-full bg-primary ring-2 ring-state-selected"
+            />
+          </button>
+        ) : null}
+
+        <span
+          aria-hidden="true"
+          // The personal-columns toolbar draws 8 px between boxes: 4 px of margin more beside the separator.
+          className={`h-5 w-px bg-border max-md:hidden tablet:hidden ${columnState?.personal ? "mx-1.5" : "mx-1"}`}
+        />
+
+        <TableColumnsMenu
+          copy={copy}
+          customFields={customFields}
+          columnOrder={columnOrder}
+          onColumnOrderChange={onColumnOrderChange}
+          columnState={columnState}
+          hiddenColumnIds={hiddenColumnIds}
+          onColumnVisibleChange={onColumnVisibleChange}
+          density={density}
+          onDensityChange={onDensityChange}
+        />
+
+        <span className="flex-1" />
+        {/* The tablet row ends with the view menu, Add view and the avatar stack (the board header portals them in). */}
+        <TabletSlot
+          slot={TABLET_SLOT.toolbarTrail}
+          className="hidden items-center gap-2 tablet:flex"
+        />
+
+        {canAdd ? (
+          <>
             <Button
-              size="icon"
-              aria-label={t.addItem}
-              className="size-11 shrink-0 rounded-[10px]"
+              size="sm"
+              className={`${kanbanPrimaryButtonClass} tablet:hidden`}
               onClick={onAddItem}
             >
-              <Plus className="size-5" aria-hidden="true" />
+              <Plus className="size-4" aria-hidden="true" />
+              {t.addItem}
             </Button>
-          </TabletPortal>
-        </>
-      ) : null}
+            <TabletPortal slot={TABLET_SLOT.headerAdd}>
+              <Button
+                size="icon"
+                aria-label={t.addItem}
+                className="size-11 shrink-0 rounded-[10px]"
+                onClick={onAddItem}
+              >
+                <Plus className="size-5" aria-hidden="true" />
+              </Button>
+            </TabletPortal>
+          </>
+        ) : null}
+      </div>
     </div>
   );
 }

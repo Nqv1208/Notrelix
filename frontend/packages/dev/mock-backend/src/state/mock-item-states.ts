@@ -112,3 +112,56 @@ export function erpLongChildTitles(): string[] {
   }
   return titles;
 }
+
+/**
+ * Items the Links section of the card popup (Kanban-CardPopup-Links) draws around ERP-144: what it blocks, what blocks
+ * it, its parent and two sub-items. Seeded only when `globalThis.__mockLinksSet` is set (a spec's init script), so
+ * the lanes, counts and links of every other mockup keep their numbers. They are unlisted like the States items.
+ */
+export interface ErpLinkItem {
+  readonly key: string;
+  readonly title: string;
+  readonly status: "todo" | "doing" | "review";
+  readonly assignee: "MQ" | "NA" | "HP" | "KL";
+  /** The item the card is a sub-item of; the parent of ERP-144 is set apart. */
+  readonly parentKey?: string;
+  /** How ERP-144 sees it: it blocks it, or it blocks ERP-144. */
+  readonly link?: "blocks" | "blocked-by";
+}
+
+export const ERP_LINK_ITEMS: readonly ErpLinkItem[] = [
+  {
+    key: "ERP-148",
+    title: "Chạy thử công nợ tháng 9",
+    status: "review",
+    assignee: "MQ",
+    link: "blocks",
+  },
+  {
+    key: "ERP-139",
+    title: "Cấu hình quyền truy cập theo phòng ban",
+    status: "doing",
+    assignee: "NA",
+    link: "blocked-by",
+  },
+  {
+    key: "ERP-120",
+    title: "Triển khai phân hệ Kế toán",
+    status: "doing",
+    assignee: "MQ",
+  },
+  {
+    key: "ERP-155",
+    title: "Kiểm thử công nợ phải thu",
+    status: "todo",
+    assignee: "HP",
+    parentKey: "ERP-144",
+  },
+  {
+    key: "ERP-156",
+    title: "Kiểm thử công nợ phải trả",
+    status: "todo",
+    assignee: "KL",
+    parentKey: "ERP-144",
+  },
+];

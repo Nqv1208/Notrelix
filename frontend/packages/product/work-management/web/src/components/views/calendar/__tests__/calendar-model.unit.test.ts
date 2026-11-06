@@ -132,7 +132,7 @@ describe("layoutWeek", () => {
     ).toHaveLength(0);
   });
 
-  it("orders by start column, longer span first, then board order", () => {
+  it("orders by start column, shorter span first, then board order", () => {
     const layout = layoutWeek(
       week,
       [
@@ -143,9 +143,9 @@ describe("layoutWeek", () => {
       null,
     );
     expect(layout.placements.map((placement) => placement.entry.id)).toEqual([
-      "span",
       "single-1",
       "single-2",
+      "span",
     ]);
     expect(layout.placements.map((placement) => placement.row)).toEqual([
       0, 1, 2,

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { TriangleAlert } from "lucide-react";
+import { CircleAlert, RotateCw } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import type { FormStatus } from "@notrelix/work-management-core";
 import { BUTTON_CLASS } from "../board-settings/board-settings-parts";
@@ -50,7 +50,7 @@ export function Chip({
   );
 }
 
-/** A failure with its retry: what did not happen and that nothing was lost. */
+/** A failure with its retry: what did not happen and that nothing was lost (the drawn `.alert` and small button). */
 export function FormAlert({
   message,
   onRetry,
@@ -65,18 +65,19 @@ export function FormAlert({
   return (
     <div role="alert" className={cn("flex flex-col gap-2", className)}>
       <div className="flex items-start gap-2 text-crumb text-danger-text">
-        <TriangleAlert
-          aria-hidden="true"
-          className="mt-0.5 size-3.5 shrink-0"
-        />
+        <CircleAlert aria-hidden="true" className="size-4 shrink-0" />
         <span className="flex-1">{message}</span>
       </div>
       {onRetry ? (
         <button
           type="button"
           onClick={onRetry}
-          className={cn(BUTTON_CLASS.outline, "h-7 self-start")}
+          className={cn(
+            BUTTON_CLASS.outline,
+            "h-7 self-start px-2.5 text-crumb max-md:h-11",
+          )}
         >
+          <RotateCw aria-hidden="true" />
           {retryLabel}
         </button>
       ) : null}

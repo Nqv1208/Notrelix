@@ -181,7 +181,7 @@ export function TableColumnsMenu({
           {/* The tablet button is the icon alone (44 px); the name and count stay for assistive tech. */}
           <span className="tablet:sr-only">
             {t.columns.label}{" "}
-            <b className="font-semibold leading-[1.45] text-foreground">
+            <b className="font-semibold leading-[1.45] text-foreground untablet:@max-[820px]/bar:sr-only">
               {shown}/{ordered.length}
             </b>
           </span>

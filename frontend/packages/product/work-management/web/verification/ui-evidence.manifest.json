@@ -289,11 +289,6 @@
         "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
       },
       {
-        "path": "src/components/checklists/item-checklists.tsx",
-        "category": "container",
-        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
-      },
-      {
         "path": "src/components/comment-thread/reaction-bar.tsx",
         "category": "container",
         "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."

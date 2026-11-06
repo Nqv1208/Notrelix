@@ -20,6 +20,8 @@ public class ApprovalRequestConfiguration : IEntityTypeConfiguration<ApprovalReq
         builder.Property(x => x.Status).HasColumnName("status").IsRequired();
         builder.Property(x => x.RequestedByUserId).HasColumnName("requested_by_user_id").IsRequired();
 
+        builder.Property(x => x.PreviousRequestId).HasColumnName("previous_request_id");
+
         builder.OwnsOne(x => x.Target, target =>
         {
             target.Property(t => t.Kind).HasColumnName("target_type").HasConversion<ResourceKindConverter>().IsRequired().HasMaxLength(128);

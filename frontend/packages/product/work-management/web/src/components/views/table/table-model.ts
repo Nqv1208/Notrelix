@@ -52,6 +52,8 @@ export interface TableRowModel {
   readonly label: {
     readonly name: string;
     readonly tone: ItemLabelTone;
+    /** Labels past the first one: the chip reads "+N". */
+    readonly more?: number;
   } | null;
   readonly progress: {
     readonly done: number;
@@ -213,7 +215,11 @@ export function buildTableRow(
     startAt: card.startDate ?? null,
     priority: card.priority ?? null,
     label: label?.name
-      ? { name: label.name, tone: itemLabelTone(label) }
+      ? {
+          name: label.name,
+          tone: itemLabelTone(label),
+          more: Math.max((card.labels?.length ?? 0) - 1, 0),
+        }
       : null,
     progress: progress
       ? {

@@ -197,7 +197,7 @@ function locators(page: Page): Record<string, Locator> {
     add: head.getByRole("button", { name: "Thêm công việc" }),
     share: head.getByRole("button", { name: "Chia sẻ" }),
     more: head.getByRole("button", { name: "Thêm tuỳ chọn" }),
-    toolbar: toolbar.locator("xpath=.."),
+    toolbar: toolbar.locator("xpath=../.."),
     fchip: toolbar.locator("[data-chip=done]"),
     fchipX: toolbar.locator("[data-chip=done] button"),
     filter: toolbar.getByRole("button", { name: /^Lọc/ }),

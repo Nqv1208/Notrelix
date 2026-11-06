@@ -190,6 +190,14 @@ public static class ProblemDetailsMapper
             problemDetails.Extensions["ruleCode"] = ruleCode;
         }
 
+        if (exception is AppConflictException { Extensions.Count: > 0 } lost)
+        {
+            foreach (var (key, value) in lost.Extensions)
+            {
+                problemDetails.Extensions[key] = value;
+            }
+        }
+
         if (exception is Notrelix.Application.Common.Exceptions.PreconditionFailedException { Extensions.Count: > 0 } stale)
         {
             foreach (var (key, value) in stale.Extensions)
