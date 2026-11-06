@@ -1,6 +1,6 @@
 # Notrelix mockups, October 2026 (reference copy)
 
-Source canvas: https://claude.ai/artifact/18L4jUXGfdXh7Wn9YQvA2x, version 46.
+Source canvas: https://claude.ai/artifact/18L4jUXGfdXh7Wn9YQvA2x, version 46; the other artboards of the canvas added from version 1793934513-82f7 (2026-11-06).
 
 **Reference only. Product docs and code are authoritative; these files never ship.** They exist so the built UI can be compared with the approved design. Mockup world data (Minh An Group, Nguyễn Thu Hà, ...) may appear only in `src/verification/*` fixtures and stories of the product, never in product code.
 
@@ -12,7 +12,7 @@ render.py        renders one screen state to static HTML
 decisions.md     shared review decisions from the design review
 briefs/          the design briefs the screens were produced from
   mobile.md  tablet.md  group4.md
-src/             the 44 Final-*.dc.html screen sources and the 3 state boards below, copied unchanged
+src/             every artboard of the canvas (191 .dc.html: the Final-* screens, the BC-*, WM-*, Kanban-*, Gov-Roles-* and Acc-Admin-* state boards), copied unchanged
 ```
 
 ## Render a state

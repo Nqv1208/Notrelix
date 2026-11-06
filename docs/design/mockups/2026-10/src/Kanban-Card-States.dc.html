@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Kanban · Các trạng thái của thẻ</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.nx{--bg:#F7F8FA;--side:#EFF1F4;--panel:#FFFFFF;--hover:#E6E9EE;--line:#E1E5EA;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--st-todo:#7A8391;--st-doing:#1E7BE0;--st-review:#D99A00;--st-done:#2E8B57;--danger:#C42340;--danger-soft:#FDECEF;--warn-text:#8A5A00;--warn-soft:#FFF4D6;--high:#B4500B;--kbd:#EEF0F3;--rail:#16202E;--rail-ink:#AFBACB;--scrim:rgba(15,23,42,.14);--modal-scrim:rgba(15,23,42,.38);--lane-todo:#ECEEF2;--lane-doing:#E6EFFB;--lane-review:#FDF3DC;--lane-done:#E5F3EA;--card-shadow:0 1px 2px rgba(20,26,36,.08);--card-shadow-h:0 3px 10px rgba(20,26,36,.12);--sheet-shadow:-18px 0 40px rgba(15,23,42,.14);font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--side:#13181E;--panel:#1A2028;--hover:#232A34;--line:#232B35;--line2:#2E3743;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--st-todo:#8C95A3;--st-doing:#5AA9FF;--st-review:#F2C14E;--st-done:#56C98A;--danger:#FF6B81;--danger-soft:rgba(255,107,129,.12);--warn-text:#F2C14E;--warn-soft:rgba(242,193,78,.12);--high:#FFA060;--kbd:#232B35;--rail:#05070A;--rail-ink:#8C97A8;--scrim:rgba(0,0,0,.42);--modal-scrim:rgba(0,0,0,.6);--lane-todo:#151B23;--lane-doing:#13203A;--lane-review:#272012;--lane-done:#12251C;--card-shadow:0 1px 2px rgba(0,0,0,.4);--card-shadow-h:0 4px 14px rgba(0,0,0,.5);--sheet-shadow:-18px 0 40px rgba(0,0,0,.5)}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.kbd{font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--kbd);border:1px solid var(--line2);border-radius:4px;padding:0 5px;color:var(--muted);line-height:18px}
+
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.s{width:13px;height:13px}
+.kbd{font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--kbd);border:1px solid var(--line2);border-radius:4px;padding:0 5px;color:var(--muted);line-height:18px}
+button:focus-visible,a:focus-visible,article:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1360px;margin:0 auto;padding:40px 40px 56px;box-sizing:border-box}
+h1{margin:0;font-size:26px;font-weight:650;letter-spacing:-0.01em}
+h2{margin:36px 0 14px;font-size:16px;font-weight:650}
+.sub{margin:4px 0 0;color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr));gap:20px 20px}
+.cell{display:flex;flex-direction:column;gap:8px;min-width:0}
+.cell .cap{font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:baseline}
+.cell .cap b{color:var(--text);font-weight:600;font-size:13px}
+.bg{border-radius:14px;padding:12px;box-sizing:border-box}
+.bg.todo{background:var(--lane-todo)}.bg.doing{background:var(--lane-doing)}.bg.review{background:var(--lane-review)}.bg.done{background:var(--lane-done)}
+.av{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none}
+.stack{display:flex;margin-left:auto}
+.stack .av{margin-left:-6px;box-shadow:0 0 0 2px var(--panel)}
+.stack .av:first-child{margin-left:0}
+.stack .av.more{background:var(--hover);color:var(--muted)}
+.card{background:var(--panel);border-radius:11px;padding:11px 12px 10px;display:flex;flex-direction:column;gap:8px;cursor:pointer;box-shadow:var(--card-shadow);position:relative}
+.card.hov{box-shadow:var(--card-shadow-h)}
+.card.foc{outline:2px solid var(--accent);outline-offset:2px}
+.card.sel{box-shadow:inset 0 0 0 2px var(--accent),var(--card-shadow-h)}
+.card.drag{transform:rotate(2.5deg);box-shadow:0 14px 32px rgba(15,23,42,.24);cursor:grabbing}
+.card.ghost{background:transparent;box-shadow:none;border:1.5px dashed var(--line2);min-height:92px;cursor:default}
+.card.ghost>*{visibility:hidden}
+.card.done .card-t{color:var(--muted)}
+.card.pend{opacity:.72}
+.card-top{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--meta);min-height:22px}
+.card-top .mono{font-size:11.5px}
+.card-top .gap{flex:1}
+.tag{height:20px;padding:0 7px;border-radius:5px;font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;white-space:nowrap}
+.t-data{background:#E1EEFC;color:#124C8E}.t-sec{background:#FDE5EA;color:#9E1736}.t-train{background:#E1F0EA;color:#2C5E4F}.t-rep{background:#FBF0D3;color:#6E4F0A}.t-doc{background:#ECEEF2;color:#3E4757}.t-test{background:#EEE7FB;color:#5532A8}
+.prio{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:600}
+.prio.urgent{color:var(--danger)}.prio.high{color:var(--high)}
+.card-t{margin:0;font-size:13.5px;font-weight:500;line-height:1.4;text-wrap:pretty;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.prog{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--meta);font-variant-numeric:tabular-nums}
+.prog .track{flex:1;height:5px;border-radius:3px;background:var(--hover);overflow:hidden;display:block}
+.prog .track span{display:block;height:100%;border-radius:3px;background:var(--accent)}
+.card-m{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--meta);min-height:24px}
+.due{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 6px;border-radius:6px;font-size:12px;font-weight:500;color:var(--muted);margin-left:-6px}
+.due.over{background:var(--danger-soft);color:var(--danger);font-weight:600;margin-left:0}
+.due.today{background:var(--warn-soft);color:var(--warn-text);font-weight:600;margin-left:0}
+.cnt{display:inline-flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
+.qact{position:absolute;top:6px;right:6px;display:flex;gap:2px;background:var(--panel);border-radius:8px;box-shadow:0 1px 6px rgba(20,26,36,.18);padding:2px}
+.qact button{width:28px;height:28px;border:0;background:transparent;color:var(--muted);border-radius:6px;display:grid;place-items:center;cursor:pointer;padding:0}
+.qact button:hover{background:var(--hover);color:var(--text)}
+.lock{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--meta)}
+.col-h{display:flex;align-items:center;gap:6px;min-height:32px;padding:0 0 0 6px;font-weight:600;font-size:13.5px}
+.col-h .n{min-width:22px;height:22px;border-radius:11px;background:var(--panel);color:var(--muted);font-size:12px;font-weight:600;display:inline-grid;place-items:center;padding:0 7px;font-variant-numeric:tabular-nums}
+.col-h .n.full{background:var(--warn-soft);color:var(--warn-text)}
+.col-h .n.over{background:var(--danger-soft);color:var(--danger)}
+.col-h .sp{flex:1}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block}
+.dot.todo{box-shadow:inset 0 0 0 2px var(--st-todo)}.dot.doing{background:var(--st-doing)}.dot.review{background:var(--st-review)}.dot.done{background:var(--st-done)}
+.wip-note{margin:2px 0 0;padding:0 6px;font-size:12px;display:flex;align-items:center;gap:5px;font-weight:500;color:var(--warn-text)}
+.wip-note.over{color:var(--danger)}
+.lane-empty{margin:0;padding:18px 12px;border:1.5px dashed var(--line2);border-radius:11px;font-size:12.5px;color:var(--meta);text-align:center}
+.lane-empty b{display:block;color:var(--muted);font-weight:600;font-size:13px;margin-bottom:2px}
+.lane-empty.hit{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-text)}
+.ibtn{width:28px;height:28px;border:0;background:transparent;color:var(--meta);border-radius:6px;display:grid;place-items:center;cursor:pointer}
+</style>
+</helmet>
+<div class="nx mode-{{mode}}" style="width:100%;min-height:1960px;background:var(--bg)">
+<div class="wrap">
+  <h1>Thẻ và cột Kanban · các trạng thái</h1>
+  <p class="sub">Thẻ rộng 232px trong cột 256px. Mọi trạng thái đều có chữ hoặc biểu tượng đi kèm, không chỉ dựa vào màu.</p>
+
+  <h2>Thẻ</h2>
+  <div class="grid">
+    <sc-for list="{{cards}}" as="v" hint-placeholder-count="8">
+    <div class="cell">
+      <div class="cap"><b>{{v.name}}</b><span>{{v.note}}</span></div>
+      <div class="bg {{v.lane}}">
+        <article class="card {{v.cls}}" tabindex="0" aria-label="{{v.key}} {{v.title}}">
+          <sc-if value="{{v.quick}}" hint-placeholder-val="{{ false }}"><span class="qact"><button type="button" aria-label="Giao cho tôi"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></button><button type="button" aria-label="Đặt ngày hạn"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg></button><button type="button" aria-label="Thêm tuỳ chọn"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></button></span></sc-if>
+          <div class="card-top"><sc-for list="{{v.labels}}" as="l" hint-placeholder-count="1"><span class="tag {{l.cls}}">{{l.t}}</span></sc-for><span class="gap"></span><sc-if value="{{v.prio}}" hint-placeholder-val="{{ false }}"><span class="prio {{v.prioCls}}"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"></path></svg>{{v.prio}}</span></sc-if><span class="mono">{{v.key}}</span></div>
+          <h3 class="card-t">{{v.title}}</h3>
+          <sc-if value="{{v.pct}}" hint-placeholder-val="{{ false }}"><div class="prog"><span class="track"><span style="width:{{v.pct}}"></span></span>{{v.sub}}</div></sc-if>
+          <div class="card-m">
+            <sc-if value="{{v.due}}" hint-placeholder-val="{{ false }}"><span class="due {{v.dueCls}}"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>{{v.due}}</span></sc-if>
+            <sc-if value="{{v.cm}}" hint-placeholder-val="{{ false }}"><span class="cnt"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"></path></svg>{{v.cm}}</span></sc-if>
+            <sc-if value="{{v.note2}}" hint-placeholder-val="{{ false }}"><span class="lock"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"></path></svg>{{v.note2}}</span></sc-if>
+            <span class="stack" aria-label="{{v.whoText}}"><sc-for list="{{v.people}}" as="p" hint-placeholder-count="1"><span class="av {{p.cls}}" style="background:{{p.color}}">{{p.i}}</span></sc-for></span>
+          </div>
+        </article>
+      </div>
+    </div>
+    </sc-for>
+  </div>
+
+  <h2>Tiêu đề cột và cột trống</h2>
+  <div class="grid">
+    <sc-for list="{{lanes}}" as="h" hint-placeholder-count="6">
+    <div class="cell">
+      <div class="cap"><b>{{h.name}}</b><span>{{h.note}}</span></div>
+      <div class="bg {{h.lane}}">
+        <div class="col-h"><span class="dot {{h.lane}}"></span>{{h.title}}<span class="n {{h.nCls}}">{{h.n}}</span><span class="sp"></span><button class="ibtn" type="button" aria-label="Thêm công việc vào {{h.title}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button><button class="ibtn" type="button" aria-label="Thu gọn cột {{h.title}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"></path></svg></button></div>
+        <sc-if value="{{h.wip}}" hint-placeholder-val="{{ false }}"><p class="wip-note {{h.wipCls}}"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20z"></path><path d="M12 10v4M12 17.5v.01"></path></svg>{{h.wip}}</p></sc-if>
+        <sc-if value="{{h.empty}}" hint-placeholder-val="{{ false }}"><p class="lane-empty {{h.emptyCls}}"><b>{{h.empty}}</b>{{h.emptyNote}}</p></sc-if>
+      </div>
+    </div>
+    </sc-for>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["sang","dem"],"default":"sang","section":"Giao diện"},"$preview":{"width":1440,"height":1960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const P = { MQ: '#1E6FD0', HP: '#B4500B', NA: '#7C4DDB', KL: '#9A6A12', VT: '#0E7490', TT: '#475569' };
+    const NAME = { MQ: 'Mai Quốc Minh', HP: 'Lê Hoàng Phúc', NA: 'Nguyễn Anh', KL: 'Đỗ Khánh Linh', VT: 'Võ Thanh Tùng', TT: 'Trần Thu Trang' };
+    const T = { 'Dữ liệu': 't-data', 'Bảo mật': 't-sec', 'Đào tạo': 't-train', 'Báo cáo': 't-rep', 'Tài liệu': 't-doc', 'Kiểm thử': 't-test', 'Hạ tầng': 't-doc' };
+    const c = (o) => {
+      const who = o.who || [];
+      const people = who.slice(0, 2).map((k) => ({ i: k, color: P[k], cls: '' }));
+      if (who.length > 2) people.push({ i: '+' + (who.length - 2), color: '', cls: 'more' });
+      return Object.assign({ lane: 'doing', prio: '', prioCls: '', due: '', dueCls: '', pct: '', sub: '', cm: '', cls: '', quick: false, note2: '', key: 'ERP-144', title: 'Kiểm thử phân hệ công nợ với số liệu tháng 9', labels: ['Kiểm thử'], who: ['HP'] }, o, {
+        labels: (o.labels || ['Kiểm thử']).map((t) => ({ t, cls: T[t] || 't-doc' })),
+        people,
+        whoText: who.length ? 'Người làm: ' + who.map((k) => NAME[k]).join(', ') : 'Chưa giao cho ai'
+      });
+    };
+    const base = { prio: 'Cao', prioCls: 'high', due: '16/10', who: ['HP'], pct: '67%', sub: '6/9', cm: '2' };
+    const cards = [
+      c(Object.assign({}, base, { name: 'Mặc định', note: 'Đủ thông tin' })),
+      c(Object.assign({}, base, { name: 'Rê chuột', note: 'Đổ bóng đậm hơn, hiện thao tác nhanh', cls: 'hov', quick: true })),
+      c(Object.assign({}, base, { name: 'Tiêu điểm bàn phím', note: 'Viền 2px, Enter mở chi tiết', cls: 'foc' })),
+      c(Object.assign({}, base, { name: 'Đang mở chi tiết', note: 'Viền nhấn trong thẻ', cls: 'sel' })),
+      c(Object.assign({}, base, { name: 'Đang kéo', note: 'Bản sao nghiêng 2,5 độ', cls: 'drag' })),
+      c(Object.assign({}, base, { name: 'Chỗ thả', note: 'Thẻ gốc để lại khung nét đứt', cls: 'ghost' })),
+      c(Object.assign({}, base, { name: 'Quá hạn', note: 'Nền đỏ nhạt, chữ nói rõ số ngày', due: 'Quá hạn 2 ngày', dueCls: 'over', prio: 'Khẩn', prioCls: 'urgent', key: 'ERP-142', title: 'Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP', labels: ['Dữ liệu'], who: ['MQ'], pct: '60%', sub: '3/5' })),
+      c(Object.assign({}, base, { name: 'Hạn hôm nay', note: 'Nền vàng nhạt', due: 'Hôm nay', dueCls: 'today' })),
+      c({ name: 'Tối giản', note: 'Chưa có nhãn, hạn, người làm: không để lại khoảng trống', key: 'ERP-153', title: 'Liên hệ nhà cung cấp máy quét mã vạch', labels: [], who: [] }),
+      c({ name: 'Nhiều nhãn, nhiều người', note: 'Tối đa 2 nhãn và 2 avatar, phần còn lại gộp thành +N', key: 'ERP-151', title: 'Cấu hình quyền truy cập theo phòng ban cho phân hệ Kế toán', labels: ['Bảo mật', 'Tài liệu'], who: ['NA', 'KL', 'TT', 'HP'], due: '18/10', prio: 'Cao', prioCls: 'high', pct: '0%', sub: '0/4', cm: '3', lane: 'todo' }),
+      c({ name: 'Đã hoàn thành', note: 'Chữ nhạt, bỏ hạn và ưu tiên', lane: 'done', key: 'ERP-131', title: 'Sao lưu cơ sở dữ liệu tự động hằng đêm', labels: ['Hạ tầng'], who: ['VT'], cls: 'done', cm: '1' }),
+      c({ name: 'Đang lưu', note: 'Vừa tạo hoặc vừa kéo, chờ máy chủ xác nhận', cls: 'pend', note2: 'Đang lưu', key: 'ERP-152', title: 'Chốt lịch đào tạo kế toán trưởng', labels: ['Đào tạo'], who: ['HP'], lane: 'todo', pct: '', sub: '', cm: '', due: '16/10', prio: '' })
+    ];
+    const lanes = [
+      { name: 'Có giới hạn, còn chỗ', note: '', lane: 'doing', title: 'Đang làm', n: '3 / 5', nCls: '', wip: '', wipCls: '', empty: '', emptyNote: '', emptyCls: '' },
+      { name: 'Đã đủ giới hạn', note: 'Vàng nhạt kèm chữ', lane: 'review', title: 'Chờ duyệt', n: '3 / 3', nCls: 'full', wip: 'Đã đủ giới hạn 3 việc', wipCls: '', empty: '', emptyNote: '', emptyCls: '' },
+      { name: 'Vượt giới hạn', note: 'Vẫn cho thả, chỉ cảnh báo', lane: 'review', title: 'Chờ duyệt', n: '4 / 3', nCls: 'over', wip: 'Vượt giới hạn 1 việc', wipCls: 'over', empty: '', emptyNote: '', emptyCls: '' },
+      { name: 'Cột trống', note: 'Có lối thêm việc', lane: 'todo', title: 'Tạm hoãn', n: '0', nCls: '', wip: '', wipCls: '', empty: 'Chưa có việc nào', emptyNote: 'Kéo việc vào đây hoặc thêm mới', emptyCls: '' },
+      { name: 'Trống do bộ lọc', note: 'Nói rõ việc bị ẩn', lane: 'todo', title: 'Cần làm', n: '0 của 6', nCls: '', wip: '', wipCls: '', empty: 'Không có việc khớp bộ lọc', emptyNote: 'Cột này còn 6 việc đang bị ẩn', emptyCls: '' },
+      { name: 'Đang kéo thẻ qua cột', note: 'Cột trống thành vùng thả', lane: 'todo', title: 'Tạm hoãn', n: '0', nCls: '', wip: '', wipCls: '', empty: 'Thả vào Tạm hoãn', emptyNote: 'ERP-142 sẽ chuyển sang trạng thái này', emptyCls: 'hit' }
+    ];
+    return { mode: this.props.mode ?? 'sang', cards, lanes };
+  }
+}
+</script>
+</body>
+</html>

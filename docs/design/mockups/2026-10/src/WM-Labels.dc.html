@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Nhãn — quản lý và tạo nhanh</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--side:#EFF1F4;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--sel:#EEF4FD;--danger:#C42340;--danger-soft:#FCEBEE;--ok:#1E7A4C;--ok-soft:#E5F4EC;--warn-text:#8A5A00;--warn-soft:#FDF3DC;--pop-shadow:0 12px 32px rgba(15,23,42,.16);font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn{height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.dng{background:var(--danger);border-color:var(--danger);color:#fff;font-weight:600}
+.btn.txt{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.sm{height:28px;padding:0 10px;font-size:12.5px}
+.iconbtn{width:30px;height:30px;border-radius:7px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.inp{height:34px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);padding:0 10px;font:inherit;font-size:13.5px;color:var(--text);box-sizing:border-box}
+.inp.focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.inp.err{border-color:var(--danger)}
+.chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600;white-space:nowrap}
+.c-blue{background:#E6F0FB;color:#245BA6}.c-teal{background:#E2F3EE;color:#24685A}.c-violet{background:#F0E9FB;color:#6A3DB3}.c-amber{background:#FBF1D6;color:#7A5810}.c-rose{background:#FBE5EA;color:#A3283F}.c-gray{background:#EEF0F4;color:#4B5263}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.cap{font-size:12px;font-weight:600;color:var(--meta);margin:0}
+.state{font-size:12px;font-weight:600;color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:3px 10px;align-self:flex-start}
+h1{margin:0;font-size:22px;line-height:1.3;font-weight:650;letter-spacing:-0.01em}
+h2{margin:0;font-size:16px;font-weight:650}
+.av{width:26px;height:26px;border-radius:999px;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</helmet>
+<div class="nx" style="width: 1440px; height: 1000px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 24px">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <h1>Nhãn · quản lý trong Thiết lập board và tạo nhanh khi gắn</h1>
+    <p style="margin: 0; color: var(--meta); font-size: 13.5px; max-width: 80ch">Board "Triển khai ERP" · Minh An Group. Thêm, đổi tên, đổi màu, xoá nhãn ở Thiết lập board › Nhãn. Khi gắn nhãn cho một việc mà gõ tên chưa có, ô chọn đề nghị tạo luôn. Người có quyền sửa board (biên tập viên, quản lý) mới tạo, sửa, xoá nhãn.</p>
+  </div>
+  <div style="display: flex; gap: 32px; align-items: flex-start">
+    <section class="card" aria-label="Thiết lập board, mục Nhãn" style="flex: 1; min-width: 0; display: flex; overflow: hidden">
+      <nav aria-label="Mục thiết lập" style="width: 196px; flex: none; padding: 16px 12px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; background: var(--bg)">
+        <a href="#" style="height: 34px; display: flex; align-items: center; padding: 0 10px; border-radius: 7px; color: var(--muted); font-size: 13.5px; font-weight: 500">Chung</a>
+        <a href="#" style="height: 34px; display: flex; align-items: center; padding: 0 10px; border-radius: 7px; color: var(--muted); font-size: 13.5px; font-weight: 500">Trường</a>
+        <a href="#" style="height: 34px; display: flex; align-items: center; padding: 0 10px; border-radius: 7px; color: var(--muted); font-size: 13.5px; font-weight: 500">Nhóm việc</a>
+        <a href="#" aria-current="page" style="height: 34px; display: flex; align-items: center; padding: 0 10px; border-radius: 7px; background: var(--panel); box-shadow: 0 0 0 1px var(--line); font-size: 13.5px; font-weight: 600">Nhãn</a>
+        <a href="#" style="height: 34px; display: flex; align-items: center; padding: 0 10px; border-radius: 7px; color: var(--muted); font-size: 13.5px; font-weight: 500">Tự động hoá</a>
+        <a href="#" style="height: 34px; display: flex; align-items: center; padding: 0 10px; border-radius: 7px; color: var(--muted); font-size: 13.5px; font-weight: 500">Quyền truy cập</a>
+      </nav>
+      <div style="flex: 1; min-width: 0; padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; align-items: flex-start; gap: 12px">
+          <div style="flex: 1"><h2>Nhãn</h2><p style="margin: 2px 0 0; color: var(--meta); font-size: 13px">6 nhãn · dùng chung cho mọi việc trong board</p></div>
+        </div>
+        <div class="card" style="padding: 14px; display: flex; flex-direction: column; gap: 12px; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft)">
+          <p class="cap">Nhãn mới · ô thêm mở rộng tại chỗ</p>
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+            <label for="nl" style="font-size: 12.5px; font-weight: 600; color: var(--muted); width: 64px">Tên</label>
+            <input id="nl" class="inp focus" value="Hạ tầng" style="width: 260px">
+            <span id="cl" style="font-size: 12.5px; font-weight: 600; color: var(--muted)">Màu</span>
+            <div role="radiogroup" aria-labelledby="cl" style="display: flex; gap: 6px">
+              <button role="radio" aria-checked="false" aria-label="Lam" class="c-blue" style="width: 26px; height: 26px; border-radius: 6px; border: 0; cursor: pointer"></button>
+              <button role="radio" aria-checked="true" aria-label="Ngọc" class="c-teal" style="width: 26px; height: 26px; border-radius: 6px; border: 0; cursor: pointer; outline: 2px solid var(--accent); outline-offset: 2px"></button>
+              <button role="radio" aria-checked="false" aria-label="Tím" class="c-violet" style="width: 26px; height: 26px; border-radius: 6px; border: 0; cursor: pointer"></button>
+              <button role="radio" aria-checked="false" aria-label="Vàng" class="c-amber" style="width: 26px; height: 26px; border-radius: 6px; border: 0; cursor: pointer"></button>
+              <button role="radio" aria-checked="false" aria-label="Hồng" class="c-rose" style="width: 26px; height: 26px; border-radius: 6px; border: 0; cursor: pointer"></button>
+              <button role="radio" aria-checked="false" aria-label="Xám" class="c-gray" style="width: 26px; height: 26px; border-radius: 6px; border: 0; cursor: pointer"></button>
+            </div>
+            <span class="chip c-teal">Hạ tầng</span>
+            <span style="margin-left: auto; display: flex; gap: 8px"><button class="btn txt">Huỷ</button><button class="btn pri">Thêm nhãn</button></span>
+          </div>
+        </div>
+        <div class="card" style="overflow: hidden">
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) 140px 120px; align-items: center; gap: 10px; min-height: 34px; padding: 0 12px; background: var(--bg); font-size: 12px; font-weight: 600; color: var(--meta)"><span>Nhãn</span><span>Đang gắn</span><span></span></div>
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) 140px 120px; align-items: center; gap: 10px; min-height: 46px; padding: 0 12px; border-top: 1px solid var(--line)"><span><span class="chip c-blue">Dữ liệu</span></span><span style="color: var(--meta); font-size: 12.5px">12 việc</span><span style="display: flex; justify-content: flex-end"><button class="iconbtn" aria-label="Sửa nhãn Dữ liệu"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button class="iconbtn" aria-label="Xoá nhãn Dữ liệu"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button></span></div>
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) 140px 120px; align-items: center; gap: 10px; min-height: 52px; padding: 0 12px; border-top: 1px solid var(--line); background: var(--sel); box-shadow: inset 0 0 0 1.5px var(--accent)"><span style="display: flex; align-items: center; gap: 8px"><label for="ed" class="sr">Tên nhãn</label><input id="ed" class="inp focus" value="Kiểm thử UAT" style="width: 220px"><button class="c-violet" aria-label="Đổi màu, đang là Tím" style="width: 26px; height: 26px; border-radius: 6px; border: 0; cursor: pointer"></button></span><span style="color: var(--meta); font-size: 12.5px">7 việc</span><span style="display: flex; justify-content: flex-end; gap: 6px"><button class="btn sm txt">Huỷ</button><button class="btn sm pri">Lưu</button></span></div>
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) 140px 120px; align-items: center; gap: 10px; min-height: 46px; padding: 0 12px; border-top: 1px solid var(--line)"><span><span class="chip c-amber">Báo cáo</span></span><span style="color: var(--meta); font-size: 12.5px">3 việc</span><span style="display: flex; justify-content: flex-end"><button class="iconbtn" aria-label="Sửa nhãn Báo cáo"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button class="iconbtn" aria-label="Xoá nhãn Báo cáo"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button></span></div>
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) 140px 120px; align-items: center; gap: 10px; min-height: 46px; padding: 0 12px; border-top: 1px solid var(--line)"><span><span class="chip c-teal">Đào tạo</span></span><span style="color: var(--meta); font-size: 12.5px">5 việc</span><span style="display: flex; justify-content: flex-end"><button class="iconbtn" aria-label="Sửa nhãn Đào tạo"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button class="iconbtn" aria-label="Xoá nhãn Đào tạo"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button></span></div>
+          <div style="border-top: 1px solid var(--line); background: var(--danger-soft); padding: 10px 12px; display: flex; flex-direction: column; gap: 10px">
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) 140px 120px; align-items: center; gap: 10px"><span><span class="chip c-rose">Bảo mật</span></span><span style="color: var(--meta); font-size: 12.5px">4 việc</span><span></span></div>
+            <div role="alertdialog" aria-labelledby="dq" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 10px; background: var(--panel); border: 1px solid #F1C4CD">
+              <p id="dq" style="margin: 0; flex: 1; font-size: 13px">Xoá nhãn <b>Bảo mật</b>? 4 việc sẽ mất nhãn này. Không hoàn tác được.</p>
+              <button class="btn sm">Giữ lại</button><button class="btn sm dng">Xoá nhãn</button>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) 140px 120px; align-items: center; gap: 10px; min-height: 46px; padding: 0 12px; border-top: 1px solid var(--line)"><span><span class="chip c-gray">Tài liệu</span></span><span style="color: var(--meta); font-size: 12.5px">0 việc</span><span style="display: flex; justify-content: flex-end"><button class="iconbtn" aria-label="Sửa nhãn Tài liệu"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button class="iconbtn" aria-label="Xoá nhãn Tài liệu"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button></span></div>
+        </div>
+      </div>
+    </section>
+    <div style="width: 380px; flex: none; display: flex; flex-direction: column; gap: 20px">
+      <span class="state">Gắn nhãn trên việc · gõ tên chưa có</span>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 13px"><span style="color: var(--meta); width: 72px">Nhãn</span><span class="chip c-blue">Dữ liệu</span><button class="btn sm" aria-expanded="true" aria-haspopup="listbox" style="border-style: dashed; color: var(--muted)">Thêm nhãn</button></div>
+      <div class="card" style="box-shadow: var(--pop-shadow); padding: 8px; display: flex; flex-direction: column; gap: 4px">
+        <label for="ls" class="sr">Tìm hoặc tạo nhãn</label>
+        <input id="ls" class="inp focus" value="Hạ tầng">
+        <p style="margin: 6px 10px 2px; font-size: 12px; color: var(--meta)">Chưa có nhãn "Hạ tầng"</p>
+        <button class="btn txt" style="justify-content: flex-start; background: var(--hover); color: var(--text); height: 36px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Tạo nhãn <b>"Hạ tầng"</b><span class="chip c-teal" style="margin-left: auto">Hạ tầng</span></button>
+        <div role="separator" style="height: 1px; background: var(--line); margin: 4px 0"></div>
+        <div role="listbox" aria-label="Nhãn của board" aria-multiselectable="true" style="display: flex; flex-direction: column; gap: 2px">
+          <button role="option" aria-selected="true" class="btn txt" style="justify-content: flex-start; height: 34px; color: var(--text)"><span style="width: 16px; height: 16px; border-radius: 4px; background: var(--accent); display: grid; place-items: center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span><span class="chip c-blue">Dữ liệu</span></button>
+          <button role="option" aria-selected="false" class="btn txt" style="justify-content: flex-start; height: 34px; color: var(--text)"><span style="width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--line2); box-sizing: border-box"></span><span class="chip c-violet">Kiểm thử UAT</span></button>
+          <button role="option" aria-selected="false" class="btn txt" style="justify-content: flex-start; height: 34px; color: var(--text)"><span style="width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--line2); box-sizing: border-box"></span><span class="chip c-amber">Báo cáo</span></button>
+        </div>
+        <div role="separator" style="height: 1px; background: var(--line); margin: 4px 0"></div>
+        <a href="#" style="font-size: 12.5px; padding: 6px 10px; color: var(--accent-text); font-weight: 500">Quản lý nhãn trong Thiết lập board</a>
+      </div>
+      <span class="state" style="background: var(--hover2); color: var(--muted)">Người chỉ bình luận hoặc chỉ xem</span>
+      <div class="card" style="padding: 12px 14px; font-size: 13px; color: var(--muted)">Ô nhãn chỉ hiển thị, không mở bộ chọn: không gắn, bỏ hay tạo nhãn được.</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
