@@ -1517,6 +1517,8 @@ export interface SelectedItemProps {
   onOpenItem?: (boardId: string, itemId: string) => void;
   /** The column picker's counts, limits and positioned move; absent: it moves to the end of a lane as a field write. */
   lanePicker?: CardPopupLanePicker;
+  /** A dialog over the page (the default) or a pane beside the view (the tablet Table's split). */
+  presentation?: "modal" | "pane";
 }
 
 /** The refusal key of the deleted notice for a failed restore. */
@@ -1546,6 +1548,7 @@ export function KanbanSelectedItem({
   cardId,
   onClose,
   onRestoreFocus,
+  presentation,
   ...rest
 }: SelectedItemProps) {
   const { card, error, isLoading, refetch } = useCard(
@@ -1624,6 +1627,7 @@ export function KanbanSelectedItem({
         onClose={onClose}
         onRetry={refetch}
         onCloseAutoFocus={restore}
+        presentation={presentation}
       />
     );
   return (
@@ -1632,6 +1636,7 @@ export function KanbanSelectedItem({
       card={withValues}
       onClose={onClose}
       onCloseAutoFocus={restore}
+      presentation={presentation}
       {...rest}
     />
   );
@@ -1651,6 +1656,7 @@ function KanbanSelectedItemReady({
   onUpdateFieldValue,
   onOpenItem,
   lanePicker,
+  presentation,
 }: Omit<SelectedItemProps, "cardId" | "onRestoreFocus"> & {
   card: CardDetail;
   onCloseAutoFocus: (event: Event) => void;
@@ -1705,6 +1711,7 @@ function KanbanSelectedItemReady({
         groups={groups}
         groupField={groupField}
         lanePicker={lanePicker}
+        presentation={presentation}
         onCloseAutoFocus={onCloseAutoFocus}
         detailData={{
           files: files.data ?? card.files,

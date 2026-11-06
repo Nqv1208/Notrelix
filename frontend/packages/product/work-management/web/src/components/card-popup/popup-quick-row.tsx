@@ -56,7 +56,7 @@ export function PopupQuickRow() {
   if (!canEdit && !creating) return null;
   const close = () => openPicker(null);
   return (
-    <div className="box-border flex flex-wrap gap-2 pt-2 pr-4 pl-4 md:h-11 md:pt-1 md:flex-nowrap md:pr-6 md:pl-[60px]">
+    <div className="box-border flex flex-wrap gap-2 pt-2 pr-4 pl-4 md:h-11 md:pt-1 md:flex-nowrap md:pr-6 md:pl-[60px] in-data-popup-pane:h-auto! in-data-popup-pane:flex-wrap!">
       <fieldset disabled={creating} className="contents">
         <AddMenu />
         <PickerButton

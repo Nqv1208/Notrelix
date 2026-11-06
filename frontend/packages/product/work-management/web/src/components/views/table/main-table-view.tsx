@@ -12,7 +12,7 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
-import { useIsMobile } from "@notrelix/ui-web";
+import { cn, useIsMobile } from "@notrelix/ui-web";
 import {
   useArchiveCard,
   useBulkUpdateItems,
@@ -379,6 +379,8 @@ export function MainTableView({
   const isNarrow = useIsMobile();
   const layout = useViewportTableLayout();
   const boardCovered = Boolean(selectedItemId) && isNarrow;
+  // On the tablet the open item is a pane beside the table (`Final-T-Table` chia-doi), not a dialog over it.
+  const split = layout === "tablet" && Boolean(selectedItemId);
 
   const { board } = table;
 
@@ -1031,10 +1033,13 @@ export function MainTableView({
       ref={tableRef}
       data-main-table=""
       tabIndex={-1}
-      className="relative h-full min-h-0 focus:outline-hidden"
+      className={cn(
+        "relative h-full min-h-0 focus:outline-hidden",
+        split && "flex",
+      )}
     >
       <div
-        className="h-full"
+        className={cn("h-full", split && "min-w-0 flex-1")}
         inert={boardCovered || undefined}
         aria-hidden={boardCovered || undefined}
       >
@@ -1165,6 +1170,7 @@ export function MainTableView({
           selectedIds={selectedIds}
           collapsedGroupIds={collapsed}
           openItemId={selectedItemId}
+          split={split}
           canEdit={capabilities.canEditFields}
           editors={editors}
           fieldEditing={fieldEditing}
@@ -1380,7 +1386,33 @@ export function MainTableView({
           onOpenItem={(id) => onSelectedItemChange?.(id)}
         />
       ) : null}
-      {selectedItemId ? (
+      {selectedItemId && split ? (
+        <>
+          <span aria-hidden="true" className="w-px flex-none bg-line-strong" />
+          <div
+            data-slot="table-split-pane"
+            className="h-full w-[46%] min-w-0 flex-none"
+          >
+            <KanbanSelectedItem
+              presentation="pane"
+              board={board}
+              onOpenItem={openItem}
+              cardId={selectedItemId}
+              capabilities={capabilities}
+              groups={sheetGroups}
+              groupField={table.groupByField}
+              onClose={() =>
+                onSelectedItemChange?.(undefined, { replace: true })
+              }
+              onRestoreFocus={restoreFocus}
+              onCopyLink={handleCopyLink}
+              onMoveToGroup={handleMoveToGroup}
+              onUpdateFieldValue={handleSheetFieldValue}
+              onDuplicate={removal.requestDuplicate}
+            />
+          </div>
+        </>
+      ) : selectedItemId ? (
         <KanbanSelectedItem
           board={board}
           onOpenItem={openItem}
