@@ -832,6 +832,28 @@ export const boardsOperations = [
       const target = body?.spaceId ?? null;
       const denied = targetSpaceDenied(store, board.workspaceId, target);
       if (denied) return denied;
+      // WM-MoveBoard frame 6 (a spec's init script sets `__mockMoveRace`): someone else moved the Board to
+      // Marketing just before, so this write is stale and the answer names them, like the producer's 412.
+      const race = globalThis as {
+        __mockMoveRace?: boolean;
+        __mockMoveDenied?: boolean;
+        __mockMoveHold?: boolean;
+      };
+      // WM-MoveBoard frame 9: the person may not move it (ManageBoard or CreateBoard on the target refused).
+      if (race.__mockMoveDenied) return forbidden();
+      // WM-MoveBoard frame 7: the request stays on its way until the spec clears the flag.
+      while (race.__mockMoveHold)
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      if (race.__mockMoveRace) {
+        race.__mockMoveRace = false;
+        const current = board.version ?? 1;
+        store.placeBoard(board.id, mockIds.spaces.marketing, current);
+        const stale = preconditionFailed();
+        return {
+          ...stale,
+          body: { ...stale.body, changedByName: "Hà Nguyễn" },
+        };
+      }
       switch (store.placeBoard(board.id, target, body?.expectedVersion)) {
         case "ok":
           return noContent();
@@ -868,17 +890,23 @@ export const boardsOperations = [
       const fromEngineering = board.spaceId === mockIds.spaces.engineering;
       const toAccounting = target === mockIds.spaces.accounting;
       const toMarketing = target === mockIds.spaces.marketing;
-      const carries = fromEngineering && (toAccounting || toMarketing);
+      // WM-MoveBoard frame 5 (a spec's init script sets `__mockMovePrivate`, or the Board is Private): a Private
+      // Board keeps everyone's access, like the producer's placement reach.
+      const isPrivate =
+        (globalThis as { __mockMovePrivate?: boolean }).__mockMovePrivate ===
+          true || board.visibility === "private";
+      const carries =
+        !isPrivate && fromEngineering && (toAccounting || toMarketing);
       return ok({
         boardId: board.id,
         targetSpaceId: target,
         targetSpaceName: target ? store.spaces.getSpace(target)?.name : null,
         unchanged: (board.spaceId ?? null) === target,
         losingCount: carries ? 22 : 0,
-        gainingCount: toAccounting ? 18 : toMarketing ? 12 : 0,
+        gainingCount: isPrivate ? 0 : toAccounting ? 18 : toMarketing ? 12 : 0,
         everyoneGains: false,
         everyoneLoses: false,
-        targetPeople: toAccounting ? 18 : toMarketing ? 12 : 0,
+        targetPeople: isPrivate ? 0 : toAccounting ? 18 : toMarketing ? 12 : 0,
         stranded:
           carries && toAccounting
             ? [
@@ -917,6 +945,7 @@ export const boardsOperations = [
         keptCount: carries ? 5 : 0,
         keptTeamCount: 0,
         boardVersion: board.version ?? 0,
+        isPrivate,
       });
     },
   }),

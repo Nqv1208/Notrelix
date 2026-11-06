@@ -8963,6 +8963,7 @@ export interface components {
             keptTeamCount?: number;
             /** Format: int64 */
             boardVersion?: number;
+            isPrivate?: boolean;
         };
         "Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardMoveImpact.BoardMoveStrandedPersonDto": {
             /** Format: uuid */
