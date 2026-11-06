@@ -10,9 +10,40 @@ export type DayKey = string;
 
 export type CalendarRange = "month" | "week" | "day";
 
-/** How an entry is placed: over its whole start-to-due span, or on its due day. */
 /** `span` (start to due), `due`, or the id of a Date field the items sit on. */
 export type CalendarDateBasis = string;
+
+/**
+ * The fields a Calendar can place items by: the board's own Date fields only. Every board also has the item's
+ * start and due days (`span`, `due`), so a board with no Date field still has a basis; the Calendar never reads
+ * dates from a Text or any other field (product section 52).
+ */
+export function calendarDateFields(
+  fields: readonly {
+    readonly builtin?: boolean;
+    readonly field: {
+      readonly id: string;
+      readonly name: string;
+      readonly fieldType: string;
+    };
+  }[],
+): { id: string; name: string }[] {
+  return fields
+    .filter((entry) => !entry.builtin && entry.field.fieldType === "date")
+    .map((entry) => ({ id: entry.field.id, name: entry.field.name }));
+}
+
+/** The basis to draw: a saved field that was deleted, or is no longer a Date field, falls back to `span`. */
+export function resolveCalendarDateBasis(
+  wanted: CalendarDateBasis,
+  dateFields: readonly { id: string }[],
+): CalendarDateBasis {
+  return wanted === "span" ||
+    wanted === "due" ||
+    dateFields.some((field) => field.id === wanted)
+    ? wanted
+    : "span";
+}
 
 /** The colour family of an entry: its Status bucket, or overdue. */
 export type CalendarTone = "todo" | "doing" | "review" | "done" | "overdue";

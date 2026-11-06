@@ -47,6 +47,7 @@ public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewComm
 
         var configData = JsonValue.Create(request.ConfigJson);
         var config = BoardViewConfig.Create(configData);
+        await BoardViewFieldReferences.EnsureCalendarDateFieldAsync(_context, request.BoardId, config, previous: null, cancellationToken);
         var visibility = BoardViewVisibility.Board;
         if (!string.IsNullOrWhiteSpace(request.Visibility) && !Enum.TryParse(request.Visibility, true, out visibility))
             throw new ArgumentException($"Invalid view visibility: {request.Visibility}");

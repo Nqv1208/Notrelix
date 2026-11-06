@@ -72,6 +72,7 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
             if (request.ExpectedVersion != view.Version)
                 throw new PreconditionFailedException(
                     "The view was modified by another request. Reload and retry.", "common.precondition-failed", request.ExpectedVersion, view.Version);
+            await BoardViewFieldReferences.EnsureCalendarDateFieldAsync(_context, request.BoardId, config, view.Config, ct);
             var before = view.Version;
             view.UpdateConfig(config, _requestContext.UserId, now);
             // A save that changed nothing bumps no version and tells no one.
@@ -79,6 +80,7 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
         }
         else
         {
+            await BoardViewFieldReferences.EnsureCalendarDateFieldAsync(_context, request.BoardId, config, previous: null, ct);
             view = BoardView.Create(
                 _requestContext.RequireAccountId(),
                 board.WorkspaceId,

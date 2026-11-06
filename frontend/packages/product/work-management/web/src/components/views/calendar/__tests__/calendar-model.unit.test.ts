@@ -4,10 +4,12 @@ import {
   addMonths,
   agendaHours,
   buildAgenda,
+  calendarDateFields,
   diffDays,
   layoutWeek,
   monthWeeks,
   nowLineOffset,
+  resolveCalendarDateBasis,
   rescheduledDays,
   startOfWeek,
   stepAnchor,
@@ -249,5 +251,40 @@ describe("rescheduledDays", () => {
         "2026-10-14",
       ),
     ).toEqual({ startDay: "2026-10-14", endDay: "2026-10-14", shift: -2 });
+  });
+});
+
+describe("the Calendar date basis (UC-WM-H01, UC-WM-K01)", () => {
+  const fields = [
+    { builtin: true, field: { id: "due", name: "Hạn", fieldType: "date" } },
+    { field: { id: "f-text", name: "Hạn (chữ)", fieldType: "text" } },
+    { field: { id: "f-long", name: "Ghi chú", fieldType: "longText" } },
+    { field: { id: "f-num", name: "Số ngày", fieldType: "number" } },
+    { field: { id: "f-date", name: "Ngày bàn giao", fieldType: "date" } },
+  ];
+
+  it("offers only the board's own Date fields, never a Text field", () => {
+    expect(calendarDateFields(fields)).toEqual([
+      { id: "f-date", name: "Ngày bàn giao" },
+    ]);
+  });
+
+  it("still has the item's own dates on a board with no Date field", () => {
+    const none = calendarDateFields(fields.slice(0, 4));
+    expect(none).toEqual([]);
+    expect(resolveCalendarDateBasis("span", none)).toBe("span");
+    expect(resolveCalendarDateBasis("due", none)).toBe("due");
+  });
+
+  it("keeps a chosen Date field", () => {
+    expect(resolveCalendarDateBasis("f-date", calendarDateFields(fields))).toBe(
+      "f-date",
+    );
+  });
+
+  it("never places items by a Text field or a field that is gone: it draws start to due", () => {
+    const dates = calendarDateFields(fields);
+    expect(resolveCalendarDateBasis("f-text", dates)).toBe("span");
+    expect(resolveCalendarDateBasis("deleted-field", dates)).toBe("span");
   });
 });
