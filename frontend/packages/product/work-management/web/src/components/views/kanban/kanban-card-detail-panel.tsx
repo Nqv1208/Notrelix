@@ -14,6 +14,7 @@ import { CardPopupSurface } from "../../card-popup/card-popup-surface";
 import { useCardPopupModel } from "../../card-popup/use-card-popup-model";
 import type {
   CardPopupLanePicker,
+  CardPopupReadOnly,
   CardPopupSlots,
 } from "../../card-popup/card-popup-context";
 import { withBoardPriority } from "../../shared/item-priority";
@@ -47,6 +48,8 @@ interface KanbanCardDetailPanelProps {
   slots?: CardPopupSlots;
   /** A dialog over the page (the default) or a pane beside the view. */
   presentation?: "modal" | "pane";
+  /** Forces the read-only reason (the card was deleted or moved while open: `gone`). */
+  readOnly?: CardPopupReadOnly;
 }
 
 /**
@@ -67,6 +70,7 @@ export function KanbanCardDetailPanel({
   lanePicker,
   slots,
   presentation,
+  readOnly,
 }: KanbanCardDetailPanelProps) {
   const [openedAt] = useState(() => new Date());
   const pickerActions = usePickerActions(card);
@@ -81,6 +85,7 @@ export function KanbanCardDetailPanel({
     groupField,
     now: now ?? openedAt,
     slots,
+    readOnly,
     actions: lanePicker ? { ...pickerActions, lanePicker } : pickerActions,
   });
   const { refetch } = useCard(card.id, card.workspaceId);

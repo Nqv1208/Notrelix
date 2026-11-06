@@ -278,7 +278,8 @@ function Composer() {
     useCardPopup();
   const t = copy.related.comments;
   const [open, setOpen] = useState(false);
-  const disabled = !canWriteComment(capabilities);
+  // A card deleted or moved while open takes no comment: the unsent text stays in the notice to copy.
+  const disabled = !canWriteComment(capabilities) || readOnly === "gone";
   const draft = useCommentDraft({
     cardId: card.id,
     disabled,
@@ -330,7 +331,9 @@ function Composer() {
           ? t.readOnlyArchived
           : readOnly === "item-archived"
             ? t.readOnlyItemArchived
-            : t.readOnlyPermission}
+            : readOnly === "gone"
+              ? t.readOnlyGone
+              : t.readOnlyPermission}
       </div>
     );
   if (!open)

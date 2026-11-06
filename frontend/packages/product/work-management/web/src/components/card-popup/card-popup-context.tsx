@@ -23,6 +23,8 @@ export type CardPopupReadOnly =
   | "item-archived"
   /** A create is on its way: every field is read-only until it answers. */
   | "creating"
+  /** Deleted or moved to another board while open: the last read stays under the notice, nothing saves. */
+  | "gone"
   | null;
 
 /** The state of one field's save: the chip row and the sections show it in place. */

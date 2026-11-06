@@ -7,7 +7,14 @@ import { useItemPageCopy } from "../../item-page/use-item-page-copy";
 import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
 import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
 import { useAddGroup } from "../../status-option/use-add-group";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { ChevronLeft, ChevronRight, Info, Lock } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -77,6 +84,10 @@ import { useKanbanSelection } from "./kanban-selection";
 import { prefersReducedMotion } from "./kanban-chrome";
 import type { KanbanCardActions } from "./kanban-card-quick-actions";
 import { CardPopupSurface } from "../../card-popup/card-popup-surface";
+import {
+  PopupDeletedNotice,
+  PopupMovedNotice,
+} from "../../card-popup/states/popup-states";
 import { approvalFailure } from "../../card-popup/approval/approval-model";
 import { KanbanCardDetailPanel } from "./kanban-card-detail-panel";
 import { fillCopy } from "./kanban-card.copy";
@@ -1582,6 +1593,55 @@ export function KanbanSelectedItem({
     [shown, board.fieldDefinitions],
   );
 
+  // BC-Notices: a card deleted or moved while it was open keeps its last read under the notice (nothing saves);
+  // a card the person may no longer read keeps the one generic message.
+  const covered =
+    (deleted || moved) && lastShown.current
+      ? withReservedFieldValues(lastShown.current, board.fieldDefinitions)
+      : null;
+  if (covered)
+    return (
+      <KanbanSelectedItemReady
+        board={board}
+        card={covered}
+        onClose={onClose}
+        onCloseAutoFocus={restore}
+        presentation={presentation}
+        {...rest}
+        notice={
+          deleted ? (
+            <PopupDeletedNotice
+              by={deleted.byName ?? null}
+              draft={unsentCommentOf(cardId) || undefined}
+              onClose={onClose}
+              onRestore={
+                rest.capabilities.canDelete
+                  ? async () => {
+                      try {
+                        await restoreDeleted.mutateAsync(cardId);
+                        await refetch();
+                      } catch (failure) {
+                        throw restoreReasonOf(failure);
+                      }
+                    }
+                  : undefined
+              }
+            />
+          ) : (
+            <PopupMovedNotice
+              boardTitle={card?.boardTitle ?? ""}
+              draft={unsentCommentOf(cardId) || undefined}
+              onOpen={
+                rest.onOpenItem && card
+                  ? () => rest.onOpenItem?.(card.boardId, card.id)
+                  : undefined
+              }
+              onClose={onClose}
+            />
+          )
+        }
+      />
+    );
   if (!withValues)
     return (
       <CardPopupSurface
@@ -1657,9 +1717,12 @@ function KanbanSelectedItemReady({
   onOpenItem,
   lanePicker,
   presentation,
+  notice,
 }: Omit<SelectedItemProps, "cardId" | "onRestoreFocus"> & {
   card: CardDetail;
   onCloseAutoFocus: (event: Event) => void;
+  /** The deleted or moved notice over the card's last read: the card reads and nothing saves. */
+  notice?: ReactNode;
 }) {
   // An item inside an archived group stays readable and takes no write.
   const capabilities = useItemCapabilities(
@@ -1712,6 +1775,8 @@ function KanbanSelectedItemReady({
         groupField={groupField}
         lanePicker={lanePicker}
         presentation={presentation}
+        readOnly={notice ? "gone" : undefined}
+        slots={notice ? { coverBanner: notice } : undefined}
         onCloseAutoFocus={onCloseAutoFocus}
         detailData={{
           files: files.data ?? card.files,
