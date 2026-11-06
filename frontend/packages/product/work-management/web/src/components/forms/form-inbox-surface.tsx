@@ -7,7 +7,6 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import {
-  Button,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -650,14 +649,21 @@ function ResponseDetail(
       )}
 
       <Dialog open={rejecting} onOpenChange={setRejecting}>
-        <DialogContent className="gap-3 sm:max-w-[460px]">
-          <DialogHeader>
-            <DialogTitle>{t.rejectTitle}</DialogTitle>
+        {/* WM-Forms-Inbox (and WM-Forms-Dem): a 480 px card, 21 px padding, a 16 px title, a 70 px reason box, the hint
+            under it and two 32 px buttons, Từ chối in the danger colour; Escape or Giữ lại closes it. */}
+        <DialogContent
+          showCloseButton={false}
+          className="gap-0 rounded-[14px] bg-popover p-[21px] sm:max-w-[480px]"
+        >
+          <DialogHeader className="gap-0">
+            <DialogTitle className="text-[16px] leading-[1.45] font-[650]">
+              {t.rejectTitle}
+            </DialogTitle>
             <DialogDescription className="sr-only">
               {t.reasonHint}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-1.5">
+          <div className="mt-[14px] flex flex-col gap-1.5">
             <label
               htmlFor={`${id}-r`}
               className="text-crumb font-semibold text-muted-foreground"
@@ -669,23 +675,31 @@ function ResponseDetail(
               value={reason}
               maxLength={REJECT_REASON_MAX}
               onChange={(e) => setReason(e.target.value)}
-              className={TEXTAREA_CLASS}
+              className={cn(TEXTAREA_CLASS, "h-[70px] max-md:h-[70px]")}
             />
             <span className={HINT_CLASS}>
               {fillFormsCopy(t.reasonHint, { max: REJECT_REASON_MAX })}
             </span>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button
+          <div className="mt-[14px] flex justify-end gap-2">
+            <button
               type="button"
-              variant="outline"
+              className={BUTTON_CLASS.outline}
               onClick={() => setRejecting(false)}
             >
               {copy.common.keep}
-            </Button>
-            <Button type="button" onClick={() => void reject()}>
+            </button>
+            <button
+              type="button"
+              // The forms list's danger fill (`bg-danger-text`), as the artboards draw the destructive button.
+              className={cn(
+                BUTTON_CLASS.danger,
+                "border-danger-text bg-danger-text text-primary-foreground",
+              )}
+              onClick={() => void reject()}
+            >
               {t.rejectConfirm}
-            </Button>
+            </button>
           </div>
         </DialogContent>
       </Dialog>
