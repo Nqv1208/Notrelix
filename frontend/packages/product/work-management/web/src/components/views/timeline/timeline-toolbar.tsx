@@ -44,7 +44,7 @@ const GROUPINGS = ["group", "status", "assignee", "none"] as const;
 const BAR_SPANS = ["start-due", "created-due"] as const;
 
 const TOGGLE_CLASS =
-  "inline-flex h-[30px] shrink-0 cursor-pointer items-center gap-1.5 untablet:@max-[820px]/bar:size-8 untablet:@max-[820px]/bar:justify-center untablet:@max-[820px]/bar:px-0 rounded-[7px] border border-line-strong bg-popover px-2.5 text-crumb leading-[1.45] font-medium text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring aria-disabled:cursor-default dark:bg-card";
+  "inline-flex h-[30px] shrink-0 cursor-pointer items-center gap-1.5 @max-[820px]/bar:size-8 @max-[820px]/bar:justify-center @max-[820px]/bar:px-0 rounded-[7px] border border-line-strong bg-popover px-2.5 text-crumb leading-[1.45] font-medium text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring aria-disabled:cursor-default dark:bg-card";
 const TOGGLE_ON_CLASS =
   "border-transparent bg-state-selected font-semibold text-state-selected-foreground dark:bg-state-selected";
 
@@ -139,7 +139,7 @@ export function TimelineToolbar({
     <div className="@container/bar">
       <div
         data-tl="bar"
-        className="flex flex-wrap items-center gap-2 px-4 py-2.5 untablet:@max-[1030px]/bar:gap-1.5 sm:px-6"
+        className="flex flex-wrap items-center gap-2 px-4 py-2.5 @max-[1030px]/bar:gap-1.5 sm:px-6"
       >
         <Button
           variant={atToday ? "outline" : "default"}
@@ -210,17 +210,17 @@ export function TimelineToolbar({
             size="sm"
             className={cn(
               timelineOutlineButtonClass,
-              "untablet:@max-[820px]/bar:w-8 untablet:@max-[820px]/bar:px-0!",
+              "@max-[820px]/bar:w-8 @max-[820px]/bar:px-0!",
             )}
             title={`${fit.tip}. ${fit.note}`}
             aria-label={copy.fit.label}
             onClick={fit.onFit}
           >
             <ArrowLeftRight
-              className="hidden size-4 untablet:@max-[820px]/bar:block"
+              className="hidden size-4 @max-[820px]/bar:block"
               aria-hidden="true"
             />
-            <span className="untablet:@max-[820px]/bar:sr-only">
+            <span className="@max-[820px]/bar:sr-only">
               {copy.fit.label}
             </span>
           </Button>
@@ -295,10 +295,10 @@ export function TimelineToolbar({
               onClick={links.available ? links.onToggle : undefined}
             >
               <Link2
-                className="hidden size-4 untablet:@max-[820px]/bar:block"
+                className="hidden size-4 @max-[820px]/bar:block"
                 aria-hidden="true"
               />
-              <span className="untablet:@max-[820px]/bar:sr-only">
+              <span className="@max-[820px]/bar:sr-only">
                 {copy.links}
               </span>
             </button>
@@ -325,10 +325,10 @@ export function TimelineToolbar({
               }
             >
               <ArrowDownUp
-                className="hidden size-4 untablet:@max-[820px]/bar:block"
+                className="hidden size-4 @max-[820px]/bar:block"
                 aria-hidden="true"
               />
-              <span className="untablet:@max-[820px]/bar:sr-only">
+              <span className="@max-[820px]/bar:sr-only">
                 {copy.criticalPath}
               </span>
             </button>
@@ -340,20 +340,20 @@ export function TimelineToolbar({
             <a
               href={undatedHref ?? "#"}
               aria-expanded={trayOpen}
-              className="inline-flex items-center gap-1 text-crumb leading-[1.45] font-semibold text-state-selected-foreground no-underline untablet:@max-[1030px]/bar:h-8 untablet:@max-[1030px]/bar:rounded-[7px] untablet:@max-[1030px]/bar:bg-state-selected untablet:@max-[1030px]/bar:px-2.5"
+              className="inline-flex items-center gap-1 text-crumb leading-[1.45] font-semibold text-state-selected-foreground no-underline @max-[1030px]/bar:h-8 @max-[1030px]/bar:rounded-[7px] @max-[1030px]/bar:bg-state-selected @max-[1030px]/bar:px-2.5"
               onClick={openUndated}
             >
               <CalendarDays
-                className="hidden size-4 untablet:@max-[1030px]/bar:block"
+                className="hidden size-4 @max-[1030px]/bar:block"
                 aria-hidden="true"
               />
               <span
-                className="hidden untablet:@max-[1030px]/bar:inline"
+                className="hidden @max-[1030px]/bar:inline"
                 aria-hidden="true"
               >
                 {undatedCount}
               </span>
-              <span className="untablet:@max-[1030px]/bar:sr-only">
+              <span className="@max-[1030px]/bar:sr-only">
                 {fill(
                   plural(copy.undated_one, copy.undated_other, undatedCount),
                   { count: undatedCount },
@@ -368,7 +368,7 @@ export function TimelineToolbar({
             size="sm"
             className={cn(
               kanbanPrimaryButtonClass,
-              "border-primary untablet:@max-[820px]/bar:w-8 untablet:@max-[820px]/bar:px-0",
+              "border-primary @max-[820px]/bar:w-8 @max-[820px]/bar:px-0",
             )}
             aria-disabled={onAddItem ? undefined : "true"}
             title={onAddItem ? undefined : copy.unavailable.addItem}
@@ -380,7 +380,7 @@ export function TimelineToolbar({
             onClick={onAddItem}
           >
             <Plus className="size-4" aria-hidden="true" />
-            <span className="untablet:@max-[820px]/bar:sr-only">
+            <span className="@max-[820px]/bar:sr-only">
               {copy.addItem}
             </span>
           </Button>
