@@ -220,7 +220,9 @@ export function TimelineToolbar({
               className="hidden size-4 untablet:@max-[820px]/bar:block"
               aria-hidden="true"
             />
-            <span className="untablet:@max-[820px]/bar:sr-only">{copy.fit.label}</span>
+            <span className="untablet:@max-[820px]/bar:sr-only">
+              {copy.fit.label}
+            </span>
           </Button>
         ) : null}
 
@@ -296,7 +298,9 @@ export function TimelineToolbar({
                 className="hidden size-4 untablet:@max-[820px]/bar:block"
                 aria-hidden="true"
               />
-              <span className="untablet:@max-[820px]/bar:sr-only">{copy.links}</span>
+              <span className="untablet:@max-[820px]/bar:sr-only">
+                {copy.links}
+              </span>
             </button>
             <button
               type="button"
@@ -376,7 +380,9 @@ export function TimelineToolbar({
             onClick={onAddItem}
           >
             <Plus className="size-4" aria-hidden="true" />
-            <span className="untablet:@max-[820px]/bar:sr-only">{copy.addItem}</span>
+            <span className="untablet:@max-[820px]/bar:sr-only">
+              {copy.addItem}
+            </span>
           </Button>
         ) : null}
         {/* The tablet row ends with the view menu, Add view and the avatar stack (the board header portals them in). */}

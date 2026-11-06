@@ -307,7 +307,10 @@ export function CalendarToolbar({
             <Button
               variant="outline"
               size="icon-sm"
-              className={cn(ICON_BUTTON_CLASS, "hidden untablet:@max-[1030px]/bar:grid")}
+              className={cn(
+                ICON_BUTTON_CLASS,
+                "hidden untablet:@max-[1030px]/bar:grid",
+              )}
               aria-label={copy.overflow}
             >
               <MoreHorizontal className="size-4" aria-hidden="true" />
@@ -338,7 +341,9 @@ export function CalendarToolbar({
             onClick={onAddItem}
           >
             <Plus className="size-4" aria-hidden="true" />
-            <span className="untablet:@max-[820px]/bar:sr-only">{copy.addItem}</span>
+            <span className="untablet:@max-[820px]/bar:sr-only">
+              {copy.addItem}
+            </span>
           </Button>
         ) : null}
       </div>
