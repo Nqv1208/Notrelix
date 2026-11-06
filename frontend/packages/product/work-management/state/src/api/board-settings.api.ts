@@ -204,14 +204,29 @@ export function settingsWithRules(
   return JSON.stringify(merged);
 }
 
+const ordinal = (left: string, right: string) =>
+  left < right ? -1 : left > right ? 1 : 0;
+
+/** Rows in their ordering-key order, compared by code unit as the server's ordinal collation does ("Z" before "a"). */
 function byPosition<T extends { position?: string | null }>(
   rows: readonly T[],
 ): T[] {
-  return [...rows].sort((a, b) => {
-    const left = a.position ?? "";
-    const right = b.position ?? "";
-    return left < right ? -1 : left > right ? 1 : 0;
-  });
+  return [...rows].sort((a, b) => ordinal(a.position ?? "", b.position ?? ""));
+}
+
+/**
+ * The board's groups in key order; equal keys (never two live groups on the server, which holds the
+ * key unique) fall back to the id, so every reader of the same groups sees one order whatever order
+ * the response listed them in (UC-WM-F02).
+ */
+function groupsByPosition<
+  T extends { position?: string | null; id?: string | null },
+>(rows: readonly T[]): T[] {
+  return [...rows].sort(
+    (a, b) =>
+      ordinal(a.position ?? "", b.position ?? "") ||
+      ordinal(a.id ?? "", b.id ?? ""),
+  );
 }
 
 /** A system field the page lists as locked, except Status, whose options are the board's to edit. */
@@ -427,10 +442,10 @@ export function mapBoardSettings(
   const columns = byPosition(
     (board.columns ?? []).filter((column) => column.isDeleted !== true),
   );
-  const groups = byPosition(
+  const groups = groupsByPosition(
     (board.lists ?? []).filter((group) => group.isArchived !== true),
   ).map(mapGroup);
-  const archivedGroups = byPosition(
+  const archivedGroups = groupsByPosition(
     (board.lists ?? []).filter((group) => group.isArchived === true),
   ).map(mapGroup);
   const fields = columns
