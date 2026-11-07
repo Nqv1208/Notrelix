@@ -5475,6 +5475,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ResolveBoardItemKey.ResolveBoardItemKeyQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ResolveBoardItemKey.ResolveBoardItemKeyQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.WorkManagement.BoardPreferences.Commands.CreateOrUpdateBoardPreference.CreateOrUpdateBoardPreferenceCommand",
     "kind": "Command",
     "principalMarkers": [

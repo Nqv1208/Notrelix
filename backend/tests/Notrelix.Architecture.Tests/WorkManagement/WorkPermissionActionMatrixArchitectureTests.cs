@@ -107,6 +107,7 @@ public sealed class WorkPermissionActionMatrixArchitectureTests
         ["BoardItems.ListBoardItemViewersQuery"] = PermissionAction.ViewBoard,
         ["BoardItems.ListBoardDependenciesQuery"] = PermissionAction.ViewBoard,
         ["BoardItems.ListArchivedBoardItemsQuery"] = PermissionAction.UpdateItem,
+        ["BoardItems.ResolveBoardItemKeyQuery"] = PermissionAction.ViewBoard,
         ["BoardItems.ListBoardLaneItemsQuery"] = PermissionAction.ViewBoard,
         ["BoardItems.SetBoardItemCoverCommand"] = PermissionAction.UpdateItem,
         ["BoardItems.SetBoardItemVoteCommand"] = PermissionAction.CreateComment,

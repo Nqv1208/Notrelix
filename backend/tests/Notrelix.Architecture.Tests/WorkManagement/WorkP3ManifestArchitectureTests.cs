@@ -156,6 +156,7 @@ public sealed class WorkP3ManifestArchitectureTests
         ["BoardItems.ListBoardItemViewersQuery"] = new(Disposition.Keep, "-"),
         ["BoardItems.ListBoardDependenciesQuery"] = new(Disposition.Keep, "-"),
         ["BoardItems.ListArchivedBoardItemsQuery"] = new(Disposition.Keep, "-"),
+        ["BoardItems.ResolveBoardItemKeyQuery"] = new(Disposition.Keep, "-"),
         ["BoardItems.ListBoardLaneItemsQuery"] = new(Disposition.Keep, "-"),
         ["BoardItems.SetBoardItemCoverCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
         ["BoardItems.SetBoardItemVoteCommand"] = new(Disposition.Keep, "-"),

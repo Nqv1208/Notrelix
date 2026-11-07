@@ -3188,6 +3188,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/items/by-key/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Open an item by its key on this board, or by the old key it kept after moving to another board */
+        get: operations["WorkManagement.BoardItems.ResolveKey"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/board-items/{itemId}": {
         parameters: {
             query?: never;
@@ -8936,6 +8953,14 @@ export interface components {
             itemCount?: number;
             /** Format: int32 */
             filteredCount?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ResolveBoardItemKey.ResolvedBoardItemKeyDto": {
+            /** Format: uuid */
+            itemId?: string;
+            /** Format: uuid */
+            boardId?: string;
+            itemKey?: string | null;
+            moved?: boolean;
         };
         "Notrelix.Application.Features.WorkManagement.Boards.Commands.DuplicateBoard.DuplicateBoardResult": {
             /** Format: uuid */
@@ -17536,6 +17561,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems.ArchivedBoardItemPageDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.BoardItems.ResolveKey": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ResolveBoardItemKey.ResolvedBoardItemKeyDto"];
                 };
             };
         };

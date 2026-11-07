@@ -12286,6 +12286,55 @@
         ]
       }
     },
+    "/api/v1/boards/{boardId}/items/by-key/{key}": {
+      "get": {
+        "tags": [
+          "WorkManagement.BoardItems",
+          "WorkManagement.BoardItems"
+        ],
+        "summary": "Open an item by its key on this board, or by the old key it kept after moving to another board",
+        "operationId": "WorkManagement.BoardItems.ResolveKey",
+        "parameters": [
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ResolveBoardItemKey.ResolvedBoardItemKeyDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/board-items/{itemId}": {
       "get": {
         "tags": [
@@ -33857,6 +33906,27 @@
           "filteredCount": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ResolveBoardItemKey.ResolvedBoardItemKeyDto": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "boardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "itemKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "moved": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
