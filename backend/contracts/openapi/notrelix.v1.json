@@ -11964,7 +11964,7 @@
           "WorkManagement.BoardItems",
           "WorkManagement.BoardItems"
         ],
-        "summary": "Get one page of a status lane's items under a filter and sort",
+        "summary": "Get one page of a lane's items under a filter, sort and grouping",
         "operationId": "WorkManagement.BoardItems.ListLane",
         "parameters": [
           {
@@ -12015,6 +12015,20 @@
           },
           {
             "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "qMembers",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "groupBy",
             "in": "query",
             "schema": {
               "type": "string"
@@ -15664,6 +15678,20 @@
           },
           {
             "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "qMembers",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "groupBy",
             "in": "query",
             "schema": {
               "type": "string"

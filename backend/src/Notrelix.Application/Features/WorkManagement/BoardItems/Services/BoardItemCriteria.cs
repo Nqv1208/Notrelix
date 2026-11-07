@@ -19,13 +19,43 @@ public sealed record BoardItemCriteria(bool MatchAll, IReadOnlyList<CriteriaCond
 
     public static readonly BoardItemCriteria None = new(true, [], []);
 
+    public const int MaxSearchMembers = 200;
+
     public bool HasFilter => Conditions.Count > 0;
 
-    /// <param name="search">Keeps the Items whose title or key holds the text, ignoring case and accents; it narrows the filtered counts, not the lane's own size.</param>
-    public static BoardItemCriteria Parse(string? filter, string? sort, string? search = null)
+    /// <summary>
+    /// People whose name holds the search text, as the client resolved them from the board's people (names live in
+    /// another context): an Item one of them is assigned to also matches the search. Ignored without a search.
+    /// </summary>
+    public IReadOnlyList<Guid> SearchMembers { get; init; } = [];
+
+    /// <param name="search">Keeps the Items whose title, key or a live label's name holds the text, ignoring case and accents, or that are assigned to one of <paramref name="searchMembers"/>; it narrows the filtered counts, not the lane's own size.</param>
+    /// <param name="searchMembers">Comma-separated user ids whose name holds the search text.</param>
+    public static BoardItemCriteria Parse(string? filter, string? sort, string? search = null, string? searchMembers = null)
     {
         var term = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
         if (term is { Length: > MaxSearchLength }) throw Refuse("q", "The search text is too long.");
+        var members = term is null ? [] : ParseMembers(searchMembers);
+        return ParseCriteria(filter, sort, term) with { SearchMembers = members };
+    }
+
+    private static List<Guid> ParseMembers(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return [];
+        var parts = raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length > MaxSearchMembers) throw Refuse("qMembers", $"A search names at most {MaxSearchMembers} people.");
+        var ids = new List<Guid>(parts.Length);
+        foreach (var part in parts)
+        {
+            if (!Guid.TryParse(part, out var id)) throw Refuse("qMembers", "A person id is not valid.");
+            if (!ids.Contains(id)) ids.Add(id);
+        }
+
+        return ids;
+    }
+
+    private static BoardItemCriteria ParseCriteria(string? filter, string? sort, string? term)
+    {
         if (string.IsNullOrWhiteSpace(filter) && string.IsNullOrWhiteSpace(sort)) return term is null ? None : None with { Search = term };
         if ((filter?.Length ?? 0) > MaxLength) throw Refuse("filter", "The filter is too long.");
         if ((sort?.Length ?? 0) > MaxLength) throw Refuse("sort", "The sort is too long.");
@@ -101,8 +131,9 @@ public sealed record CriteriaField(
     Guid Id, FieldType Type, bool IsDueField, bool MirrorsDue, PersonSource PersonSource, IReadOnlyList<Guid> OptionOrder);
 
 /// <summary>
-/// One lane's page of Item ids with its sizes before and after the filter. A lane is what a Status field groups the
-/// board into: one per option, and the empty lane ("" key) for Items whose status is none or no longer an option.
+/// One lane's page of Item ids with its sizes before and after the filter. A lane is what the lane field (the Status
+/// field, or the Select field the view groups by) groups the board into: one per option, and the empty lane ("" key)
+/// for Items whose value is none or no longer an option.
 /// </summary>
 /// <param name="NextCursor">Where the lane's next page starts; null when this page holds the rest.</param>
 public sealed record BoardItemLanePage(string LaneKey, IReadOnlyList<Guid> ItemIds, int Total, int FilteredTotal, string? NextCursor);
@@ -114,7 +145,7 @@ public sealed record BoardItemLanePage(string LaneKey, IReadOnlyList<Guid> ItemI
 /// </summary>
 public interface IBoardItemPageReader
 {
-    /// <param name="laneField">The Status field the board is laid out by; null puts every Item in the one empty lane.</param>
+    /// <param name="laneField">The Status or Select field the board is laid out by; null puts every Item in the one empty lane.</param>
     /// <param name="onlyLane">A single lane to read; null reads every lane (an option per lane, then the empty lane).</param>
     Task<IReadOnlyList<BoardItemLanePage>> ReadAsync(
         Guid boardId,

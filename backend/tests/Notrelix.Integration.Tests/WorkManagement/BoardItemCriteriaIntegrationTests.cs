@@ -230,6 +230,35 @@ public sealed class BoardItemCriteriaIntegrationTests : IAsyncLifetime
         Names(await ReadAsync(null, search: "nothing here")).Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task Search_AlsoKeepsTheItemsWhoseLabelHoldsTheText_OrAssignedToThePeopleNamed()
+    {
+        Names(await ReadAsync(null, search: "bug")).Should().Equal("Alpha", "Delta");
+        var assigned = BoardItemCriteria.Parse(null, null, "someone", _other.ToString());
+        Names(await ReadAsyncCore(assigned, PersonSource.Stored, null, null, 50, lanes: false)).Should().Equal("Beta", "Delta");
+        // Without a search the people named do not narrow anything.
+        var none = BoardItemCriteria.Parse(null, null, null, _other.ToString());
+        Names(await ReadAsyncCore(none, PersonSource.Stored, null, null, 50, lanes: false)).Should().Equal("Alpha", "Beta", "Gamma", "Delta");
+    }
+
+    [Fact]
+    public async Task Lanes_ByASelectField_PutEachItemInItsOption_InOptionOrder_ThenTheEmptyLane()
+    {
+        var lanes = await ReadAsyncCore(BoardItemCriteria.Parse(Filter(Cond("Done", "is_true", "")), null), PersonSource.Stored, null, null, 50, lanes: true, laneField: _pick);
+
+        lanes.Select(l => l.LaneKey).Should().Equal(Opt(_pick, "Cao").ToString(), Opt(_pick, "Thấp").ToString(), "");
+        lanes[0].ItemIds.Select(i => _names[i]).Should().Equal("Alpha", "Delta");
+        (lanes[0].Total, lanes[0].FilteredTotal).Should().Be((2, 2));
+        (lanes[1].Total, lanes[1].FilteredTotal).Should().Be((1, 0));
+        (lanes[2].Total, lanes[2].FilteredTotal).Should().Be((1, 0), "an Item with no Pick sits in the empty lane");
+
+        var first = (await ReadAsyncCore(BoardItemCriteria.Parse(null, null), PersonSource.Stored, Opt(_pick, "Cao").ToString(), null, 1, lanes: true, laneField: _pick)).Single();
+        first.ItemIds.Select(i => _names[i]).Should().Equal("Alpha");
+        var second = (await ReadAsyncCore(BoardItemCriteria.Parse(null, null), PersonSource.Stored, Opt(_pick, "Cao").ToString(), first.NextCursor, 1, lanes: true, laneField: _pick)).Single();
+        second.ItemIds.Select(i => _names[i]).Should().Equal("Delta");
+        second.NextCursor.Should().BeNull();
+    }
+
     [Theory]
     [InlineData("Points.asc", "Alpha,Delta,Beta,Gamma")]
     [InlineData("Points.desc", "Gamma,Beta,Alpha,Delta")]
@@ -304,7 +333,7 @@ public sealed class BoardItemCriteriaIntegrationTests : IAsyncLifetime
         string? filter, string? sort = null, string? search = null, string? onlyLane = null, string? cursor = null, int limit = 50, PersonSource owner = PersonSource.Stored, bool lanes = true) =>
         ReadAsyncCore(BoardItemCriteria.Parse(filter, sort, search), owner, onlyLane, cursor, limit, lanes);
 
-    private async Task<IReadOnlyList<BoardItemLanePage>> ReadAsyncCore(BoardItemCriteria criteria, PersonSource owner, string? onlyLane, string? cursor, int limit, bool lanes)
+    private async Task<IReadOnlyList<BoardItemLanePage>> ReadAsyncCore(BoardItemCriteria criteria, PersonSource owner, string? onlyLane, string? cursor, int limit, bool lanes, BoardField? laneField = null)
     {
         await using var context = _db.CreateOwnerContext(Tenant());
         var all = new[] { _status, _note, _points, _due, _done, _pick, _tags, _owner };
@@ -312,7 +341,7 @@ public sealed class BoardItemCriteriaIntegrationTests : IAsyncLifetime
             f.Id, f.Type, f == _due, false, f == _owner ? owner : PersonSource.Stored,
             f.Options.OrderBy(o => o.Position).Select(o => o.Id).ToList())).ToList();
         return await new PostgresBoardItemPageReader(context).ReadAsync(
-            _board.Id, [_group.Id], lanes ? fields.First(f => f.Id == _status.Id) : null, fields, criteria, onlyLane, cursor, limit, CancellationToken.None);
+            _board.Id, [_group.Id], lanes ? fields.First(f => f.Id == (laneField ?? _status).Id) : null, fields, criteria, onlyLane, cursor, limit, CancellationToken.None);
     }
 
     private async Task<IReadOnlyList<BoardItemLanePage>> ReadAsync(string? filter, string? sort = null, string? search = null, PersonSource owner = PersonSource.Stored) =>
