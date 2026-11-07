@@ -3110,7 +3110,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get one page of a status lane's items under a filter and sort */
+        /** Get one page of a lane's items under a filter, sort and grouping */
         get: operations["WorkManagement.BoardItems.ListLane"];
         put?: never;
         post?: never;
@@ -17377,6 +17377,8 @@ export interface operations {
                 filter?: string;
                 sort?: string;
                 q?: string;
+                qMembers?: string;
+                groupBy?: string;
             };
             header?: never;
             path: {
@@ -19389,6 +19391,8 @@ export interface operations {
                 filter?: string;
                 sort?: string;
                 q?: string;
+                qMembers?: string;
+                groupBy?: string;
             };
             header?: never;
             path: {

@@ -51,6 +51,9 @@ function normalise(text: string): string {
     .trim();
 }
 
+/** The board search box's reading of text: no case, no diacritics, single spaces. */
+export const normaliseSearchText = normalise;
+
 function searchText(card: Card): string {
   return normalise(
     [
