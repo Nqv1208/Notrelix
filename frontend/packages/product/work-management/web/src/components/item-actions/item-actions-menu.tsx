@@ -7,6 +7,8 @@ import {
   CircleCheck,
   Copy,
   ExternalLink,
+  Eye,
+  EyeOff,
   Link2,
   RotateCcw,
   Trash2,
@@ -24,6 +26,8 @@ export interface ItemActionsState {
   readonly itemKey?: string | null;
   readonly archived: boolean;
   readonly completed: boolean;
+  /** Whether the person follows the item; `null` or absent leaves Follow out. */
+  readonly following?: boolean | null;
 }
 
 export interface ItemActionsPermissions {
@@ -44,6 +48,8 @@ export interface ItemActionsHandlers {
   readonly complete?: (itemId: string) => void;
   readonly reopen?: (itemId: string) => void;
   readonly remind?: (itemId: string) => void;
+  /** Follow (`true`) or stop following (`false`). */
+  readonly follow?: (itemId: string, following: boolean) => void;
   readonly duplicate?: (itemId: string) => void;
   readonly moveBoard?: (itemId: string) => void;
   readonly archive?: (itemId: string) => void;
@@ -107,7 +113,7 @@ function Entry({
 /**
  * The one actions menu of an item, in the same order on the card, the side
  * sheet, the item page and the table row: copy link, open page, complete or
- * reopen, remind, duplicate, move board, archive or unarchive, delete. An
+ * reopen, follow, remind, duplicate, move board, archive or unarchive, delete. An
  * entry the person cannot use, or that does not apply to the item's state,
  * stays visible, disabled, with the reason written under it.
  */
@@ -126,8 +132,15 @@ export function ItemActionsMenuItems({
 }) {
   const { itemId, archived, completed } = item;
   const first = on.copyLink || on.openFull;
+  const following = item.following;
+  const canFollow = Boolean(on.follow) && typeof following === "boolean";
   const middle =
-    on.complete || on.reopen || on.remind || on.duplicate || on.moveBoard;
+    on.complete ||
+    on.reopen ||
+    canFollow ||
+    on.remind ||
+    on.duplicate ||
+    on.moveBoard;
   const last = on.archive || on.unarchive || on.remove;
   const Separator =
     kind === "context" ? ContextMenuSeparator : DropdownMenuSeparator;
@@ -173,6 +186,21 @@ export function ItemActionsMenuItems({
                 : undefined
           }
           onSelect={() => on.complete?.(itemId)}
+        />
+      ) : null}
+      {canFollow ? (
+        <Entry
+          kind={kind}
+          icon={
+            following ? (
+              <EyeOff className="size-4" />
+            ) : (
+              <Eye className="size-4" />
+            )
+          }
+          label={following ? copy.unfollow : copy.follow}
+          hint={following ? copy.unfollowHint : copy.followHint}
+          onSelect={() => on.follow?.(itemId, !following)}
         />
       ) : null}
       {on.remind ? (

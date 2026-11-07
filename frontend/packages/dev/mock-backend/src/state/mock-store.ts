@@ -3830,8 +3830,7 @@ export class MockStore {
   deleteCardComment(commentId: string): boolean {
     const cmt = this.commentsById.get(commentId);
     if (!cmt) return false;
-    for (const reply of this.getCardComments(cmt.cardId))
-      if (reply.parentId === cmt.id) this.deleteCardComment(reply.id);
+    // As the server does: the replies stay, the deleted comment is no longer listed (COL-006).
     this.removeIndex(this.commentIdsByCardId, cmt.cardId, cmt.id);
     this.commentsById.delete(commentId);
     return true;

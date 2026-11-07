@@ -172,8 +172,9 @@ export function CardPopupSurface({
                   pane
                     ? "md:px-5"
                     : "md:min-w-[300px] md:flex-[0_1_400px] md:overflow-y-auto md:border-t-0 md:border-l md:px-5",
-                  // Kanban-CardPopup-Create draws a 12 px rhythm in its comments column; an open card keeps 14.
-                  model.mode === "create" ? "gap-3" : "gap-3.5",
+                  // Every card popup artboard draws a 12 px rhythm in the comments column (`.pop-r{gap:12px}`
+                  // overrides the base 14), the open card as the create card.
+                  "gap-3",
                 )}
               >
                 <ApprovalSection />

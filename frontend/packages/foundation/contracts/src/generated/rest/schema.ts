@@ -8120,6 +8120,15 @@ export interface components {
             version?: number;
             rows?: components["schemas"]["Notrelix.Application.Features.Collaboration.Preferences.DTOs.NotificationPreferenceRowDto"][] | null;
         };
+        "Notrelix.Application.Features.Collaboration.Watchers.Queries.GetBoardItemFollowing.BoardItemFollowerDto": {
+            /** Format: uuid */
+            userId?: string;
+            name?: string | null;
+        };
+        "Notrelix.Application.Features.Collaboration.Watchers.Queries.GetBoardItemFollowing.BoardItemFollowingDto": {
+            following?: boolean;
+            followers?: components["schemas"]["Notrelix.Application.Features.Collaboration.Watchers.Queries.GetBoardItemFollowing.BoardItemFollowerDto"][] | null;
+        };
         "Notrelix.Application.Features.Documents.DTOs.BlockDto": {
             /** Format: uuid */
             id?: string;
@@ -11640,7 +11649,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Collaboration.Watchers.Queries.GetBoardItemFollowing.BoardItemFollowingDto"];
                 };
             };
         };
