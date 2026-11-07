@@ -130,7 +130,10 @@ function RuleEditor({
     setBusy(true);
     const result = await panel.actions.setEnabled(rule.id, next);
     setBusy(false);
-    setFeedback(result.ok ? null : result.reason);
+    // A rule write has no board limit; anything else is told as a failure.
+    setFeedback(
+      result.ok ? null : result.reason === "limit" ? "failed" : result.reason,
+    );
   }
 
   const tagTone = on ? "ok" : blocked ? "err" : "neutral";

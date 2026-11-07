@@ -38,7 +38,7 @@ public sealed class WorkP3ManifestArchitectureTests
     /// <summary>Modules outside P3 (Views/Forms/Approvals and other P4 surfaces).</summary>
     private static readonly HashSet<string> OutOfScopeModules = new(StringComparer.Ordinal)
     {
-        "Approvals", "BoardPreferences", "BoardViews", "Forms", "ItemLinks", "Relations", "Templates", "Transfer", "Views",
+        "Approvals", "BoardPreferences", "BoardViews", "Forms", "ItemLinks", "Limits", "Relations", "Templates", "Transfer", "Views",
     };
 
     /// <summary>

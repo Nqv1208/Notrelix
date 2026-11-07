@@ -65,3 +65,21 @@ describe("the required refusal", () => {
     expect(isRequiredRefusal(null)).toBe(false);
   });
 });
+
+describe("a write over a published board limit (D78.8)", () => {
+  it("reads the limit and its max off the 409, and nothing else is one", async () => {
+    const { limitOf } = await import("../queries/use-board-settings");
+    expect(
+      limitOf({
+        kind: "conflict",
+        code: "work-management.limit.fields-per-board",
+        details: { limit: "fields", current: 200, max: 200 },
+      }),
+    ).toEqual({ name: "fields", max: 200 });
+    expect(
+      limitOf({ kind: "conflict", code: "work-management.limit.new" }),
+    ).toEqual({ name: "other", max: null });
+    expect(limitOf({ kind: "conflict", code: "common.conflict" })).toBeNull();
+    expect(limitOf(null)).toBeNull();
+  });
+});

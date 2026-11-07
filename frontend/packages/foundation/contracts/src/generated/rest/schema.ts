@@ -4783,6 +4783,26 @@ export interface paths {
         patch: operations["WorkManagement.Labels.Update"];
         trace?: never;
     };
+    "/api/v1/work-management/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the published board limits
+         * @description Active items per board, fields, groups and views per board, and items per bulk edit. A write over one is refused with 409 and a work-management.limit.* error code carrying limit, current and max.
+         */
+        get: operations["WorkManagement.Limits.Get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/relations": {
         parameters: {
             query?: never;
@@ -9522,6 +9542,18 @@ export interface components {
             /** Format: int64 */
             version?: number;
             createdByName?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Limits.WorkLimitsDto": {
+            /** Format: int32 */
+            activeItemsPerBoard?: number;
+            /** Format: int32 */
+            fieldsPerBoard?: number;
+            /** Format: int32 */
+            groupsPerBoard?: number;
+            /** Format: int32 */
+            viewsPerBoard?: number;
+            /** Format: int32 */
+            itemsPerBulkEdit?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Templates.DTOs.BoardTemplateDto": {
             /** Format: uuid */
@@ -21963,6 +21995,35 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "WorkManagement.Limits.Get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Limits.WorkLimitsDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
             };
         };
     };

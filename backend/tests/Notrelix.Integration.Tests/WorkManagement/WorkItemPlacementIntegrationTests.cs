@@ -13,6 +13,7 @@ using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.CreateBoa
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.DuplicateBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UnlinkPageFromBoardItem;
 using Notrelix.Domain.WorkManagement.Checklists;
+using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.MoveBoardItem;
@@ -218,6 +219,45 @@ public sealed class WorkItemPlacementIntegrationTests : IAsyncLifetime
         var left = await read.BoardItemLinks.Where(l => l.SourceItemId == a).ToListAsync();
         left.Should().HaveCount(2);
         left.Select(l => l.Target.ResourceId).Should().BeEquivalentTo([b, kept]);
+    }
+
+    [Fact]
+    public async Task The201stField_IsRefusedNamingTheLimit_AndNothingIsStored()
+    {
+        // D78.8, UC-WM-T03: under the field ordering lock the board's 200 fields are counted and the next is refused.
+        var keys = FractionalIndexGenerator.GenerateNKeysBetween(null, null, Notrelix.Application.Features.WorkManagement.Limits.WorkLimits.FieldsPerBoard);
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
+        {
+            seed.BoardFields.AddRange(keys.Select((key, i) => BoardField.Create(
+                _accountId, _workspaceId, _boardId, $"Field {i}", FieldType.Text, FieldSettings.Empty(), key, _userId, Now)));
+            await seed.SaveChangesAsync();
+        }
+
+        var act = () => CreateFieldAsync("One too many");
+
+        var refused = (await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ConflictException>()).Which;
+        refused.ErrorCode.Should().Be("work-management.limit.fields-per-board");
+        refused.Extensions["current"].Should().Be(200);
+        refused.Extensions["max"].Should().Be(200);
+        (await FieldOrderAsync()).Should().HaveCount(200, "a refused create stores nothing");
+    }
+
+    [Fact]
+    public async Task The51stGroup_IsRefusedNamingTheLimit_AndNothingIsStored()
+    {
+        var keys = FractionalIndexGenerator.GenerateNKeysBetween(FractionalIndex.Create("a1"), null, 48);
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
+        {
+            seed.BoardGroups.AddRange(keys.Select((key, i) => BoardGroup.Create(
+                _accountId, _workspaceId, _boardId, $"Group {i}", Color.Create("#808080"), key, _userId, Now)));
+            await seed.SaveChangesAsync();
+        }
+
+        var act = () => CreateGroupAsync("One too many");
+
+        (await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ConflictException>())
+            .Which.ErrorCode.Should().Be("work-management.limit.groups-per-board");
+        (await GroupOrderAsync()).Should().HaveCount(50, "the seeded Todo and Done plus 48, and nothing more");
     }
 
     [Fact]

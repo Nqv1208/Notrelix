@@ -20130,6 +20130,46 @@
         ]
       }
     },
+    "/api/v1/work-management/limits": {
+      "get": {
+        "tags": [
+          "WorkManagement.Limits"
+        ],
+        "summary": "Get the published board limits",
+        "description": "Active items per board, fields, groups and views per board, and items per bulk edit. A write over one is refused with 409 and a work-management.limit.* error code carrying limit, current and max.",
+        "operationId": "WorkManagement.Limits.Get",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Limits.WorkLimitsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/boards/{boardId}/relations": {
       "post": {
         "tags": [
@@ -35547,6 +35587,32 @@
           "createdByName": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Limits.WorkLimitsDto": {
+        "type": "object",
+        "properties": {
+          "activeItemsPerBoard": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fieldsPerBoard": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "groupsPerBoard": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "viewsPerBoard": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "itemsPerBulkEdit": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

@@ -62,6 +62,9 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
             token => BoardFieldSiblings.LoadAsync(_context, board.Id, token),
             ct);
 
+        // Under the field ordering lock the placement just took, so two creates cannot both take the last place (D78.8).
+        await Limits.WorkLimits.EnsureFieldRoomAsync(_context, board.Id, 1, ct);
+
         var settings = request.Settings is not null
             ? FieldSettings.Create(JsonValue.Create(await ComputedFieldGuard.NormalizeAsync(_context, board.Id, null, type, request.Settings, ct))!)
             : type == FieldType.Status

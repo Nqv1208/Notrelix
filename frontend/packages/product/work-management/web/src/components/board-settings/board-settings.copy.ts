@@ -126,6 +126,20 @@ export const en = {
       "Someone else changed this first. The latest settings are loaded, check them and make your change again.",
     conflictReloadedBy:
       "{{who}} changed this first. The latest settings are loaded, check them and make your change again.",
+    limit: {
+      fields:
+        "This board already has {{max}} fields, the most a board can hold. Delete a field you no longer use, then add this one.",
+      groups:
+        "This board already has {{max}} groups, the most a board can hold. Delete a group you no longer use, then add this one.",
+      views:
+        "This board already has {{max}} views, the most a board can hold. Delete a view you no longer use, then add this one.",
+      items:
+        "This board already holds {{max}} active items, the most a board can hold. Archive or delete some items first.",
+      bulkItems:
+        "One change can cover at most {{max}} items. Select fewer items and try again.",
+      other:
+        "This board has reached one of its limits ({{max}}). Remove something you no longer use first.",
+    } as Record<string, string>,
   },
   fields: {
     title: "Data fields",
@@ -899,6 +913,20 @@ export const vi: BoardSettingsCopy = {
       "Người khác vừa thay đổi trước. Thiết lập mới nhất đã được tải, hãy xem lại rồi làm lại thay đổi.",
     conflictReloadedBy:
       "{{who}} vừa thay đổi trước. Thiết lập mới nhất đã được tải, hãy xem lại rồi làm lại thay đổi.",
+    limit: {
+      fields:
+        "Board này đã có {{max}} trường, mức tối đa một board giữ được. Hãy xoá một trường không còn dùng rồi thêm trường này.",
+      groups:
+        "Board này đã có {{max}} nhóm, mức tối đa một board giữ được. Hãy xoá một nhóm không còn dùng rồi thêm nhóm này.",
+      views:
+        "Board này đã có {{max}} chế độ xem, mức tối đa một board giữ được. Hãy xoá một chế độ xem không còn dùng rồi thêm cái này.",
+      items:
+        "Board này đã có {{max}} công việc đang hoạt động, mức tối đa một board giữ được. Hãy lưu trữ hoặc xoá bớt công việc trước.",
+      bulkItems:
+        "Một lần đổi chỉ áp dụng cho tối đa {{max}} công việc. Hãy chọn ít hơn rồi thử lại.",
+      other:
+        "Board này đã chạm một giới hạn ({{max}}). Hãy bỏ bớt thứ không còn dùng trước.",
+    },
   },
   fields: {
     title: "Trường dữ liệu",

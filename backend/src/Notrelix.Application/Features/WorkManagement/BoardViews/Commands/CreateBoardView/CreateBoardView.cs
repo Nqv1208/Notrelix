@@ -45,6 +45,8 @@ public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewComm
             throw new ArgumentException($"Invalid view mode: {request.ViewMode}");
         }
 
+        await Limits.WorkLimits.EnsureViewRoomAsync(_context, request.BoardId, 1, cancellationToken);
+
         var configData = JsonValue.Create(request.ConfigJson);
         var config = BoardViewConfig.Create(configData);
         await BoardViewFieldReferences.EnsureCalendarDateFieldAsync(_context, request.BoardId, config, previous: null, cancellationToken);

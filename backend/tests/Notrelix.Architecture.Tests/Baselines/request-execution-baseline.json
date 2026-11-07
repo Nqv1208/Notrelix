@@ -7525,6 +7525,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.WorkManagement.Limits.GetWorkLimitsQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IGlobalRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": false,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.Limits.GetWorkLimitsQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.WorkManagement.Relations.Commands.CreateBoardRelation.CreateBoardRelationCommand",
     "kind": "Command",
     "principalMarkers": [

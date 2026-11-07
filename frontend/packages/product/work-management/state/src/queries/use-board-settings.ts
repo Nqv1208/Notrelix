@@ -48,6 +48,21 @@ export function conflictOf(error: unknown): {
   };
 }
 
+/** The published board limit a 409 named (D78.8): `work-management.limit.*` with limit and max. */
+export function limitOf(
+  error: unknown,
+): { name: string; max: number | null } | null {
+  const code = (error as { code?: unknown } | null)?.code;
+  if (typeof code !== "string" || !code.startsWith("work-management.limit."))
+    return null;
+  const body = (error as { details?: unknown } | null)?.details as
+    Record<string, unknown> | null | undefined;
+  return {
+    name: typeof body?.limit === "string" ? body.limit : "other",
+    max: typeof body?.max === "number" ? body.max : null,
+  };
+}
+
 function invalidField(error: unknown): string | undefined {
   if (typeof error !== "object" || error === null) return undefined;
   const errors = (error as { validationErrors?: Record<string, string[]> })
@@ -116,6 +131,11 @@ export function useBoardSettings(boardId: string, workspaceId: string) {
         await refresh();
         return { ok: true };
       } catch (caught) {
+        // A limit is a 409 too, but nothing changed under the person: say the limit, do not reload.
+        const limit = limitOf(caught);
+        if (limit) {
+          return { ok: false, reason: "limit", limit, ...ruleCodeOf(caught) };
+        }
         if (errorKind(caught) === "conflict") {
           return {
             ok: false,

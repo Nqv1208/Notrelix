@@ -33,6 +33,9 @@ public class ConfirmBoardImportCommandHandler(
         var evaluation = ImportPlanner.Evaluate(data, schema, request.Mapping, collectItems: false);
         if (evaluation.ErrorCount > 0)
             throw new Notrelix.Application.Common.Exceptions.ValidationException([new ValidationFailure("file", "has-errors")]);
+        // A file that would take the board over its active-item limit is refused before it is queued (D78.8); the
+        // run checks again under the key reservation, so a board filled in the meantime still refuses it whole.
+        await Limits.WorkLimits.EnsureItemRoomAsync(context, request.BoardId, data.Rows.Count, ct);
 
         job.OptionsJson = TransferJson.Write(options with { Mapping = request.Mapping });
         job.Status = TransferStatus.Queued;
