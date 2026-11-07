@@ -397,7 +397,20 @@ export function BoardCalendarSurface({
           canEdit={canEdit}
           onOpenItem={onOpenItem}
           onSetDue={onSetDue}
+          onEditDates={
+            canEdit && onChangeDates ? (entry) => setDatesFor(entry) : undefined
+          }
         />
+        {datesFor && onChangeDates ? (
+          <CalendarDatesDialog
+            copy={copy}
+            entry={datesFor}
+            onSave={(startDay, dueDay) =>
+              onChangeDates(datesFor, { startDay, dueDay })
+            }
+            onClose={() => setDatesFor(null)}
+          />
+        ) : null}
       </div>
     );
 

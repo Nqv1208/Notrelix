@@ -6,8 +6,12 @@ import {
   ChevronRight,
   ChevronUp,
 } from "lucide-react";
-import { cn } from "@notrelix/ui-web";
+import { cn, useMediaQuery } from "@notrelix/ui-web";
 import { CalendarAside } from "./calendar-aside";
+import {
+  CalendarNarrowAgenda,
+  CalendarUndatedSheet,
+} from "./calendar-phone-narrow";
 import { entryLabel } from "./calendar-event";
 import {
   addDays,
@@ -107,12 +111,20 @@ export interface CalendarPhoneProps {
   canEdit: boolean;
   onOpenItem: (id: string) => void;
   onSetDue: (id: string, day: DayKey) => void;
+  /** "Đổi ngày…" of a 320 px agenda row: the container opens the dates dialog. */
+  onEditDates?: ((entry: CalendarEntry) => void) | undefined;
 }
+
+/** Below this width the Calendar is `WM-TLCal-320`'s agenda (no grid), above it `Final-M-Calendar`. */
+export const NARROW_PHONE_QUERY = "(max-width: 359px)";
 
 /**
  * The Calendar at phone width (`Final-M-Calendar`): the month as dots and range bars, or one week as a strip,
  * the selected day's agenda, and the bar that opens the undated items. Dragging, resizing and quick create stay
  * on the wide layouts; a day opens its agenda, and the day that is already open opens its week.
+ *
+ * Under 360 px (`WM-TLCal-320`, frames 3 and 4) there is no grid: the period's entries are listed under their day
+ * with "Đổi ngày…" on each row, and the undated bar opens a sheet from the bottom instead of the inline panel.
  */
 export function CalendarPhone({
   copy,
@@ -129,8 +141,10 @@ export function CalendarPhone({
   canEdit,
   onOpenItem,
   onSetDue,
+  onEditDates,
 }: CalendarPhoneProps) {
   const [undatedOpen, setUndatedOpen] = useState(false);
+  const narrow = useMediaQuery(NARROW_PHONE_QUERY);
   const month = range === "month";
   const t = copy.phone;
   const heading = month
@@ -210,7 +224,7 @@ export function CalendarPhone({
         >
           <ChevronLeft className="size-5" aria-hidden="true" />
         </button>
-        <h2 className="m-0 px-0.5 text-[16px] tabular-nums leading-[1.45] font-[650] text-foreground">
+        <h2 className="m-0 px-0.5 text-[16px] tabular-nums leading-[1.45] font-[650] whitespace-nowrap text-foreground">
           {heading}
         </h2>
         <button
@@ -224,21 +238,25 @@ export function CalendarPhone({
         <span className="flex-1" />
         <button
           type="button"
-          aria-pressed={month}
-          onClick={() => onRangeChange("month")}
+          aria-pressed={narrow ? undefined : month}
+          aria-label={narrow ? t.rangeToggle : undefined}
+          onClick={() =>
+            onRangeChange(narrow ? (month ? "week" : "month") : "month")
+          }
           className={cn(
-            "inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-[12px] border px-3.5 text-[14px]",
+            "inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-[12px] border text-[14px]",
+            narrow ? "px-2.5" : "px-3.5",
             month
               ? "border-foreground bg-foreground font-semibold text-background"
               : "border-line-strong bg-popover font-medium text-foreground dark:bg-card",
           )}
         >
           <CalendarDays className="size-3.5" aria-hidden="true" />
-          {copy.ranges.month}
+          {narrow && !month ? copy.ranges.week : copy.ranges.month}
         </button>
       </div>
 
-      {month ? (
+      {narrow ? null : month ? (
         <div role="grid" aria-label={heading} className="shrink-0 px-3">
           <div role="row" className="grid h-5.5 grid-cols-7">
             {WEEKDAYS.map((key) => t.weekdaysShort[key]).map((label) => (
@@ -356,7 +374,7 @@ export function CalendarPhone({
         </>
       )}
 
-      {month ? (
+      {month && !narrow ? (
         <p className="m-0 flex shrink-0 flex-wrap gap-x-2.5 gap-y-1 px-4 py-1 text-[12px] leading-[1.45] text-meta-foreground">
           {LEGEND.map((tone) => (
             <span key={tone} className="inline-flex items-center gap-1.5">
@@ -371,75 +389,105 @@ export function CalendarPhone({
         </p>
       ) : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4">
-        <h3 className="m-0 flex h-11 items-center gap-2 text-[15px] leading-[1.45] font-[650] text-foreground">
-          {`${weekdayName(selected, locale)} ${formatDayMonth(selected)}`}
-          {selected === today ? (
-            <span className="inline-flex h-5.5 items-center rounded-[6px] bg-state-selected px-2 text-[12px] font-semibold text-state-selected-foreground">
-              {copy.todayMarker}
+      {narrow ? (
+        <div data-phone-agenda="" className="min-h-0 flex-1 overflow-y-auto">
+          <CalendarNarrowAgenda
+            copy={copy}
+            locale={locale}
+            range={range}
+            anchorDay={anchorDay}
+            entries={entries}
+            canEdit={canEdit}
+            onOpenItem={onOpenItem}
+            onEditDates={onEditDates}
+          />
+        </div>
+      ) : null}
+      {narrow ? (
+        <CalendarUndatedSheet
+          copy={copy}
+          open={undatedOpen}
+          onOpenChange={setUndatedOpen}
+          undatedTotal={undatedTotal}
+          undated={undated}
+          filterActive={filterActive}
+          canEdit={canEdit}
+          onSetDue={(id) => onSetDue(id, anchorDay)}
+        />
+      ) : null}
+      {narrow ? null : (
+        <div className="min-h-0 flex-1 overflow-y-auto px-4">
+          <h3 className="m-0 flex h-11 items-center gap-2 text-[15px] leading-[1.45] font-[650] text-foreground">
+            {`${weekdayName(selected, locale)} ${formatDayMonth(selected)}`}
+            {selected === today ? (
+              <span className="inline-flex h-5.5 items-center rounded-[6px] bg-state-selected px-2 text-[12px] font-semibold text-state-selected-foreground">
+                {copy.todayMarker}
+              </span>
+            ) : null}
+            <span className="text-[13px] font-medium text-meta-foreground">
+              {fill(onDay.length === 1 ? t.items_one : t.items_other, {
+                count: onDay.length,
+              })}
             </span>
-          ) : null}
-          <span className="text-[13px] font-medium text-meta-foreground">
-            {fill(onDay.length === 1 ? t.items_one : t.items_other, {
-              count: onDay.length,
-            })}
-          </span>
-        </h3>
-        {onDay.length === 0 ? (
-          <p className="m-0 py-4 text-[14px] text-meta-foreground">
-            {t.nothingOn}
-          </p>
-        ) : (
-          <ul className="m-0 mb-4 list-none overflow-hidden rounded-[14px] border border-line bg-popover p-0 dark:bg-card">
-            {onDay.map((entry) => (
-              <li
-                key={entry.id}
-                className="border-b border-line last:border-b-0"
-              >
-                <button
-                  type="button"
-                  data-calendar-event={entry.id}
-                  aria-label={entryLabel(entry)}
-                  onClick={() => onOpenItem(entry.id)}
-                  className="flex w-full cursor-pointer items-start gap-0 border-0 bg-transparent p-0 text-left"
+          </h3>
+          {onDay.length === 0 ? (
+            <p className="m-0 py-4 text-[14px] text-meta-foreground">
+              {t.nothingOn}
+            </p>
+          ) : (
+            <ul className="m-0 mb-4 list-none overflow-hidden rounded-[14px] border border-line bg-popover p-0 dark:bg-card">
+              {onDay.map((entry) => (
+                <li
+                  key={entry.id}
+                  className="border-b border-line last:border-b-0"
                 >
-                  <span className="w-17 shrink-0 px-3 pt-2 text-[13px] font-semibold text-meta-foreground">
-                    {entry.dueMinutes !== null && entry.dueMinutes !== undefined
-                      ? `${String(Math.floor(entry.dueMinutes / 60)).padStart(2, "0")}:${String(entry.dueMinutes % 60).padStart(2, "0")}`
-                      : copy.agenda.allDay}
-                  </span>
-                  <span className="min-w-0 flex-1 py-2 pr-3 text-[15px] leading-[1.45] font-medium text-foreground">
-                    {entry.itemKey ? (
-                      <span className="mr-1.5 font-mono text-[12px] text-meta-foreground">
-                        {entry.itemKey}
-                      </span>
-                    ) : null}
-                    {entry.title}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {undatedOpen ? (
-          <div className="pb-4">
-            <CalendarAside
-              copy={copy}
-              undatedTotal={undatedTotal}
-              undated={undated}
-              filterActive={filterActive}
-              canEdit={canEdit}
-              onSetDue={(id) => onSetDue(id, anchorDay)}
-              onDragStart={() => {}}
-              onDragEnd={() => {}}
-            />
-          </div>
-        ) : null}
-      </div>
+                  <button
+                    type="button"
+                    data-calendar-event={entry.id}
+                    aria-label={entryLabel(entry)}
+                    onClick={() => onOpenItem(entry.id)}
+                    className="flex w-full cursor-pointer items-start gap-0 border-0 bg-transparent p-0 text-left"
+                  >
+                    <span className="w-17 shrink-0 px-3 pt-2 text-[13px] font-semibold text-meta-foreground">
+                      {entry.dueMinutes !== null &&
+                      entry.dueMinutes !== undefined
+                        ? `${String(Math.floor(entry.dueMinutes / 60)).padStart(2, "0")}:${String(entry.dueMinutes % 60).padStart(2, "0")}`
+                        : copy.agenda.allDay}
+                    </span>
+                    <span className="min-w-0 flex-1 py-2 pr-3 text-[15px] leading-[1.45] font-medium text-foreground">
+                      {entry.itemKey ? (
+                        <span className="mr-1.5 font-mono text-[12px] text-meta-foreground">
+                          {entry.itemKey}
+                        </span>
+                      ) : null}
+                      {entry.title}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {undatedOpen && !narrow ? (
+            <div className="pb-4">
+              <CalendarAside
+                copy={copy}
+                undatedTotal={undatedTotal}
+                undated={undated}
+                filterActive={filterActive}
+                canEdit={canEdit}
+                onSetDue={(id) => onSetDue(id, anchorDay)}
+                onDragStart={() => {}}
+                onDragEnd={() => {}}
+              />
+            </div>
+          ) : null}
+        </div>
+      )}
 
       <button
         type="button"
         aria-expanded={undatedOpen}
+        aria-haspopup={narrow ? "dialog" : undefined}
         onClick={() => setUndatedOpen((open) => !open)}
         className="flex h-12 shrink-0 cursor-pointer items-center gap-2.5 border-0 border-t border-line bg-popover px-4 text-left text-[14px] text-foreground dark:bg-card"
       >

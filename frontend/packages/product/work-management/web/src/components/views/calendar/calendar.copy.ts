@@ -225,6 +225,17 @@ export const en = {
     overdueLink: "{{key}} · {{title}} · {{days}} overdue",
     overdueMore: "Overdue: {{count}} items",
     nothingOn: "Nothing on this day",
+    span: "{{from}} to {{to}} · {{days}} days",
+    changeDates: "Change dates…",
+    changeDatesLabel: "Change the dates of {{key}}",
+    nothingInRange: "Nothing scheduled in this range",
+    rangeToggle: "Show the week or the month",
+    trayTitle: "Unscheduled",
+    trayReadOnly:
+      "You can only view this board, so you cannot schedule these items.",
+    trayLocked:
+      "{{key}} {{title}}, unscheduled, view only so it cannot be scheduled",
+    trayEmpty: "Every item has a date",
   },
 };
 
@@ -430,6 +441,16 @@ export const vi: CalendarCopy = {
     overdueLink: "{{key}} · {{title}} · quá hạn {{days}}",
     overdueMore: "Quá hạn: {{count}} việc",
     nothingOn: "Không có việc nào trong ngày này",
+    span: "{{from}} đến {{to}} · {{days}} ngày",
+    changeDates: "Đổi ngày…",
+    changeDatesLabel: "Đổi ngày của {{key}}",
+    nothingInRange: "Không có việc nào trong khoảng này",
+    rangeToggle: "Xem theo tuần hoặc tháng",
+    trayTitle: "Chưa lên lịch",
+    trayReadOnly: "Bạn chỉ có quyền xem nên không thể đặt lịch.",
+    trayLocked:
+      "{{key}} {{title}}, chưa lên lịch, chỉ xem nên không đặt lịch được",
+    trayEmpty: "Mọi việc đều có ngày",
   },
 };
 
