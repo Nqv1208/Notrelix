@@ -13,6 +13,7 @@ import {
   validationError,
   forbidden,
   conflict,
+  serverError,
 } from "../../transport/create-response";
 import {
   buildHomeFeed,
@@ -198,6 +199,18 @@ export const workFeedOperations = [
     route: "/workspaces/:workspaceId/my-work/extended",
     async handle({ params, store }) {
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      // Test hooks (UC-WM-H18 loading and error states): `globalThis.__mockMyWorkHold` keeps the read open while
+      // it is true; `globalThis.__mockMyWorkFailures` answers that many reads with a 500, then reads normally.
+      const hook = globalThis as {
+        __mockMyWorkHold?: boolean;
+        __mockMyWorkFailures?: number;
+      };
+      while (hook.__mockMyWorkHold)
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      if ((hook.__mockMyWorkFailures ?? 0) > 0) {
+        hook.__mockMyWorkFailures = (hook.__mockMyWorkFailures ?? 0) - 1;
+        return serverError("Mock My Work read failure");
+      }
       return ok(
         withPriorityOption(buildMyWorkExtended(store, params.workspaceId)),
       );
