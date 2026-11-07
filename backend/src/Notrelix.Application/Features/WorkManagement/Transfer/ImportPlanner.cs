@@ -71,7 +71,7 @@ public static class ImportPlanner
                 FieldType.Vote => LockedVote,
                 _ => f.IsSystem && f.Type is not (FieldType.Status or FieldType.Date or FieldType.Person) ? LockedPerson : null,
             };
-            targets.Add(new ImportTarget(f.Id.ToString(), f.Name, f.Type.ToString(), false, locked));
+            targets.Add(new ImportTarget(f.Id.ToString(), f.Name, f.Type.ToString(), f.IsRequired, locked));
         }
 
         return targets;
@@ -116,6 +116,12 @@ public static class ImportPlanner
             map = map.Select(m => m.Target == titleField.Id.ToString() ? m with { Target = Title } : m).ToList();
 
         var defaultGroup = schema.Groups.Where(g => !g.IsArchived && g.DeletedAt is null).OrderBy(g => g.Position).FirstOrDefault();
+        // An imported item is created like any other (WM-008, D78.7): a field the row leaves empty gets the field's
+        // default, and a required field with neither a value nor a default fails the row naming the field.
+        var creationFields = schema.Fields
+            .Where(f => !f.IsSystem && f.Type is not (FieldType.Formula or FieldType.Rollup))
+            .OrderBy(f => f.Position)
+            .ToList();
         var errors = new List<ImportRowError>();
         var errorCount = 0;
         var errorRows = new HashSet<int>();
@@ -178,6 +184,17 @@ public static class ImportPlanner
                 try { FieldValueValidator.Validate(value!, field.Type, field.Settings); }
                 catch (Notrelix.Domain.Common.Exceptions.BusinessRuleException) { Fail(m, raw, "invalid-value"); continue; }
                 values.Add((field, value!));
+            }
+
+            foreach (var field in creationFields)
+            {
+                if (values.Any(v => v.Item1.Id == field.Id)) continue;
+                if (field.DefaultValue is { IsEmpty: false } fallback) values.Add((field, fallback));
+                else if (field.IsRequired && field.Type != FieldType.Checkbox)
+                {
+                    var column = map.FirstOrDefault(m => m.Target == field.Id.ToString());
+                    rowErrors.Add(new ImportRowError(row.Number, column is null ? field.Name : data.Headers[column.Column], field.Id.ToString(), null, "required"));
+                }
             }
 
             if (defaultGroup is null) rowErrors.Add(new ImportRowError(row.Number, "", Group, null, "no-group"));

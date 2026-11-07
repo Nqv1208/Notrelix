@@ -26,7 +26,10 @@ public static class BoardItemKeyAllocation
 {
     /// <summary>
     /// Allocates keys for Items being created on the Board. An archived Board
-    /// rejects Item creation; a missing or deleted Board is not found.
+    /// rejects Item creation; a missing or deleted Board is not found. Every Item
+    /// create reserves its key here, so this is also where the active-item limit
+    /// of the Board is held (D78.8): the reservation's row lock serializes the
+    /// creates, so the count cannot be raced past the limit.
     /// </summary>
     public static async Task<IReadOnlyList<BoardItemKey>> AllocateAsync(
         this IBoardItemKeyAllocator allocator,
@@ -39,7 +42,11 @@ public static class BoardItemKeyAllocation
         if (count == 0) return [];
 
         var keys = await allocator.TryAllocateAsync(boardId, count, cancellationToken);
-        if (keys is not null) return keys;
+        if (keys is not null)
+        {
+            await Limits.WorkLimits.EnsureItemRoomAsync(context, boardId, count, cancellationToken);
+            return keys;
+        }
 
         if (await context.Boards.AsNoTracking().AnyAsync(board => board.Id == boardId && board.IsArchived, cancellationToken))
         {

@@ -38,7 +38,7 @@ public sealed class WorkP3ManifestArchitectureTests
     /// <summary>Modules outside P3 (Views/Forms/Approvals and other P4 surfaces).</summary>
     private static readonly HashSet<string> OutOfScopeModules = new(StringComparer.Ordinal)
     {
-        "Approvals", "BoardPreferences", "BoardViews", "Forms", "ItemLinks", "Relations", "Templates", "Transfer", "Views",
+        "Approvals", "BoardPreferences", "BoardViews", "Forms", "ItemLinks", "Limits", "Relations", "Templates", "Transfer", "Views",
     };
 
     /// <summary>
@@ -156,6 +156,7 @@ public sealed class WorkP3ManifestArchitectureTests
         ["BoardItems.ListBoardItemViewersQuery"] = new(Disposition.Keep, "-"),
         ["BoardItems.ListBoardDependenciesQuery"] = new(Disposition.Keep, "-"),
         ["BoardItems.ListArchivedBoardItemsQuery"] = new(Disposition.Keep, "-"),
+        ["BoardItems.ResolveBoardItemKeyQuery"] = new(Disposition.Keep, "-"),
         ["BoardItems.ListBoardLaneItemsQuery"] = new(Disposition.Keep, "-"),
         ["BoardItems.SetBoardItemCoverCommand"] = new(Disposition.Keep, "-", VersionedTarget: true),
         ["BoardItems.SetBoardItemVoteCommand"] = new(Disposition.Keep, "-"),

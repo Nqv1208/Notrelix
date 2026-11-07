@@ -17,14 +17,20 @@ public class ClearFieldValueCommandHandler : IRequestHandler<ClearFieldValueComm
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _timeProvider;
     private readonly IBoardRealtimeNotifier? _realtime;
+    private readonly IActorLookupService? _actors;
+    private readonly ICurrentRequestContext? _requestContext;
 
     public ClearFieldValueCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider timeProvider,
-        IBoardRealtimeNotifier? realtime = null)
+        IBoardRealtimeNotifier? realtime = null,
+        IActorLookupService? actors = null,
+        ICurrentRequestContext? requestContext = null)
     {
         _realtime = realtime;
+        _actors = actors;
+        _requestContext = requestContext;
         _context = context;
         _currentUser = currentUser;
         _timeProvider = timeProvider;
@@ -50,7 +56,11 @@ public class ClearFieldValueCommandHandler : IRequestHandler<ClearFieldValueComm
         var field = await _context.BoardFields
             .Include(f => f.Options)
             .FirstOrDefaultAsync(f => f.Id == request.FieldId && f.BoardId == item.BoardId, ct);
-        if (field is null) throw new NotFoundException(nameof(BoardField), request.FieldId);
+        // A field deleted since the client loaded the board answers the stale-schema precondition naming it (UC-WM-D12).
+        if (field is null)
+            throw _requestContext is null
+                ? new NotFoundException(nameof(BoardField), request.FieldId)
+                : await Notrelix.Application.Features.WorkManagement.BoardFields.StaleFieldGuard.MissingAsync(_context, _actors, _requestContext, item.BoardId, request.FieldId, ct);
 
         BoardItemFieldWrites.EnsureNotClearingRequired(field, FieldValue.Empty());
         var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, item.BoardId, ct);

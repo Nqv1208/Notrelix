@@ -3188,6 +3188,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/items/by-key/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Open an item by its key on this board, or by the old key it kept after moving to another board */
+        get: operations["WorkManagement.BoardItems.ResolveKey"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/board-items/{itemId}": {
         parameters: {
             query?: never;
@@ -4781,6 +4798,26 @@ export interface paths {
         head?: never;
         /** Update label name or color */
         patch: operations["WorkManagement.Labels.Update"];
+        trace?: never;
+    };
+    "/api/v1/work-management/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the published board limits
+         * @description Active items per board, fields, groups and views per board, and items per bulk edit. A write over one is refused with 409 and a work-management.limit.* error code carrying limit, current and max.
+         */
+        get: operations["WorkManagement.Limits.Get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/boards/{boardId}/relations": {
@@ -8926,6 +8963,14 @@ export interface components {
             /** Format: int32 */
             filteredCount?: number;
         };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ResolveBoardItemKey.ResolvedBoardItemKeyDto": {
+            /** Format: uuid */
+            itemId?: string;
+            /** Format: uuid */
+            boardId?: string;
+            itemKey?: string | null;
+            moved?: boolean;
+        };
         "Notrelix.Application.Features.WorkManagement.Boards.Commands.DuplicateBoard.DuplicateBoardResult": {
             /** Format: uuid */
             id?: string;
@@ -9531,6 +9576,18 @@ export interface components {
             /** Format: int64 */
             version?: number;
             createdByName?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Limits.WorkLimitsDto": {
+            /** Format: int32 */
+            activeItemsPerBoard?: number;
+            /** Format: int32 */
+            fieldsPerBoard?: number;
+            /** Format: int32 */
+            groupsPerBoard?: number;
+            /** Format: int32 */
+            viewsPerBoard?: number;
+            /** Format: int32 */
+            itemsPerBulkEdit?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Templates.DTOs.BoardTemplateDto": {
             /** Format: uuid */
@@ -17517,6 +17574,29 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.BoardItems.ResolveKey": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ResolveBoardItemKey.ResolvedBoardItemKeyDto"];
+                };
+            };
+        };
+    };
     "WorkManagement.BoardItems.Get": {
         parameters: {
             query?: never;
@@ -21972,6 +22052,35 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "WorkManagement.Limits.Get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Limits.WorkLimitsDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
             };
         };
     };

@@ -5,4 +5,7 @@ public interface IBoardItemKeyAliases
 {
     /// <summary>Stages the alias in the current unit of work.</summary>
     void Keep(BoardItemKeyAlias alias);
+
+    /// <summary>The Item that held <paramref name="itemKey"/> on <paramref name="boardId"/> before it moved away, or null.</summary>
+    Task<Guid?> FindItemAsync(Guid boardId, string itemKey, CancellationToken cancellationToken);
 }

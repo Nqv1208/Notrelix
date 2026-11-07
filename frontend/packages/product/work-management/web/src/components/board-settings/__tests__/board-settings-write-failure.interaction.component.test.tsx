@@ -135,6 +135,38 @@ describe("a failed settings write", () => {
     await waitFor(() => expect(actions.updateGroup).toHaveBeenCalledTimes(2));
   });
 
+  it("names the field limit when the board is full, without Retry or a reload (D78.8)", async () => {
+    const actions = spyActions();
+    actions.createField!.mockResolvedValueOnce({
+      ok: false,
+      reason: "limit",
+      limit: { name: "fields", max: 200 },
+      code: "work-management.limit.fields-per-board",
+    });
+    const { onReload } = renderPage(actions);
+    fireEvent.click(screen.getByRole("button", { name: copy.fields.add }));
+    const picker = await screen.findByRole("dialog", {
+      name: copy.picker.label,
+    });
+    fireEvent.change(within(picker).getByLabelText(copy.picker.search), {
+      target: { value: copy.picker.names.date },
+    });
+    fireEvent.click(
+      within(picker).getByRole("button", {
+        name: new RegExp(copy.picker.names.date),
+      }),
+    );
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain(
+      fillCopy(copy.feedback.limit.fields!, { max: 200 }),
+    );
+    expect(
+      within(alert).queryByRole("button", { name: copy.feedback.retry }),
+    ).toBeNull();
+    expect(onReload).not.toHaveBeenCalled();
+  });
+
   it("reloads the latest settings on a version conflict and says so", async () => {
     const actions = spyActions();
     actions.updateField!.mockResolvedValueOnce({

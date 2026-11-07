@@ -80,6 +80,7 @@ public class SaveBoardViewCommandHandler : IRequestHandler<SaveBoardViewCommand,
         }
         else
         {
+            await Limits.WorkLimits.EnsureViewRoomAsync(_context, request.BoardId, 1, ct);
             await BoardViewFieldReferences.EnsureCalendarDateFieldAsync(_context, request.BoardId, config, previous: null, ct);
             view = BoardView.Create(
                 _requestContext.RequireAccountId(),

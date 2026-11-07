@@ -71,6 +71,9 @@ internal sealed class BoardTransferRunner(
     }
 
     // ----- import -----
+    /// <summary>The import would take the board over its published active-item limit (D78.8).</summary>
+    public const string ItemsLimitFailure = "items-limit";
+
     private async Task RunImportAsync(TransferJob job, CancellationToken ct)
     {
         var options = job.Options<ImportOptions>();
@@ -101,9 +104,18 @@ internal sealed class BoardTransferRunner(
                 }
                 else
                 {
-                    outcome = await CreateItemsAsync(job, options, board, schema, evaluation.Items, ct) with { UnmatchedPersonRows = evaluation.UnmatchedPersonRows };
-                    job.Status = TransferStatus.Succeeded;
-                    job.Succeeded = outcome.Created;
+                    try
+                    {
+                        outcome = await CreateItemsAsync(job, options, board, schema, evaluation.Items, ct) with { UnmatchedPersonRows = evaluation.UnmatchedPersonRows };
+                        job.Status = TransferStatus.Succeeded;
+                        job.Succeeded = outcome.Created;
+                    }
+                    catch (Notrelix.Application.Common.Exceptions.ConflictException limit)
+                        when (limit.ErrorCode == Notrelix.Application.Features.WorkManagement.Limits.WorkLimits.ItemsCode)
+                    {
+                        // The board filled up since the import was confirmed: nothing is created (D78.8).
+                        outcome = Failure(ItemsLimitFailure);
+                    }
                 }
             }
 

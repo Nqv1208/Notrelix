@@ -5,6 +5,7 @@ using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBo
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateFieldOption;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ClearFieldValue;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValues;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.WorkManagement;
 using Notrelix.Domain.SharedKernel.Ordering;
@@ -380,6 +381,49 @@ public sealed class FieldValuesAndLifecyclePipelineIntegrationTests : IAsyncLife
 
         (await StoredValueAsync(created.Id, scene.FieldId)).Should().Contain(scene.Options[1].ToString(), "the default is applied when the item is created");
         (await StoredValueAsync(scene.ItemId, scene.FieldId)).Should().BeNull("existing items are not rewritten by a default");
+    }
+
+    [Fact]
+    public async Task AStaleClientsClearAndBatchWrite_OfADeletedField_AreRefusedNamingTheField_AndStoreNothing()
+    {
+        // UC-WM-D12: every value write path, not only the single write, answers the stale-schema precondition.
+        var scene = await SeedAsync(FieldType.Text);
+        using var owner = Provider(scene.Stack);
+        await WriteAsync(owner, scene, "kept");
+        await OrgTreeTestHost.SendAsync(owner, new DeleteBoardFieldCommand(scene.BoardId, scene.FieldId, await FieldVersionAsync(scene.FieldId)));
+        var read = await VersionAsync(scene.ItemId);
+
+        var clear = () => OrgTreeTestHost.SendAsync(owner, new ClearFieldValueCommand(scene.ItemId, scene.FieldId, read));
+        var batch = () => OrgTreeTestHost.SendAsync(owner, new UpdateBoardItemFieldValuesCommand(
+            scene.ItemId, new Dictionary<Guid, object?> { [scene.FieldId] = "late" }, read));
+
+        foreach (var stale in new[] { clear, batch })
+        {
+            var error = (await stale.Should().ThrowAsync<PreconditionFailed>()).Which;
+            error.ErrorCode.Should().Be("work-management.field.deleted");
+            error.Extensions["fieldName"].Should().Be("Note");
+        }
+
+        (await StoredValueAsync(scene.ItemId, scene.FieldId)).Should().Contain("kept", "a refused stale write changes nothing");
+        (await VersionAsync(scene.ItemId)).Should().Be(read);
+    }
+
+    [Fact]
+    public async Task ABatchValueNamingAnOptionThatWasRemoved_AnswersPreconditionNamingTheOption_AndStoresNothing()
+    {
+        var scene = await SeedAsync(FieldType.Select);
+        using var owner = Provider(scene.Stack);
+        var removed = Guid.CreateVersion7();
+        var read = await VersionAsync(scene.ItemId);
+
+        var stale = () => OrgTreeTestHost.SendAsync(owner, new UpdateBoardItemFieldValuesCommand(
+            scene.ItemId, new Dictionary<Guid, object?> { [scene.FieldId] = removed.ToString() }, read));
+
+        var error = (await stale.Should().ThrowAsync<PreconditionFailed>()).Which;
+        error.ErrorCode.Should().Be("work-management.field.option-removed");
+        error.Extensions["optionId"].Should().Be(removed);
+        (await StoredValueAsync(scene.ItemId, scene.FieldId)).Should().BeNull();
+        (await VersionAsync(scene.ItemId)).Should().Be(read);
     }
 
     [Fact]

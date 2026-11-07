@@ -15,14 +15,17 @@ import type {
   BoardSettingsWriteResult,
 } from "./board-settings-types";
 
-export type SettingsFeedback = "failed" | "conflict" | "invalid" | null;
+export type SettingsFeedback =
+  "failed" | "conflict" | "invalid" | "limit" | null;
 
 /** The last write that did not go through; `scope` ties it to the control that shows it inline. */
 export interface SettingsFailure {
   readonly scope: string | null;
-  readonly reason: "failed" | "conflict" | "invalid";
+  readonly reason: "failed" | "conflict" | "invalid" | "limit";
   /** Who saved first, when a 412 named them. */
   readonly byName?: string | null;
+  /** The board limit the write would go over (D78.8). */
+  readonly limit?: { readonly name: string; readonly max: number | null };
   /** Sends the same write again; absent when the write was not given as a function. */
   readonly retry?: () => void;
 }
@@ -159,8 +162,12 @@ export function BoardSettingsProvider({
         scope: scope ?? null,
         reason: result.reason,
         byName: result.conflict?.byName,
+        limit: result.limit,
+        // The same write over a limit is refused again: no Retry until something is removed.
         retry:
-          typeof send === "function" && result.reason !== "conflict"
+          typeof send === "function" &&
+          result.reason !== "conflict" &&
+          result.reason !== "limit"
             ? () => void run(send, scope)
             : undefined,
       });
