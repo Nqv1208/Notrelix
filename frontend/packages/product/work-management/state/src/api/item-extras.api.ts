@@ -16,6 +16,35 @@ export interface LinkedPagesDto {
   readonly hiddenCount: number;
 }
 
+/**
+ * The linked pages as the item shows them. Only a page the server names (an id
+ * and a title) is listed; a page the caller may not read arrives only as a count
+ * and is never given a title here, so the item shows it as an unavailable row.
+ */
+export function toLinkedPages(
+  dto:
+    | OperationResponse<"WorkManagement.BoardItems.ListLinkedPages">
+    | null
+    | undefined,
+): LinkedPagesDto {
+  const pages = (dto?.pages ?? []).flatMap((page): LinkedPageDto[] =>
+    page.pageId
+      ? [
+          {
+            pageId: page.pageId,
+            title: page.title ?? "",
+            linkedAt: page.linkedAt ?? "",
+          },
+        ]
+      : [],
+  );
+  const hidden = dto?.hiddenCount ?? 0;
+  return {
+    pages,
+    hiddenCount: Number.isFinite(hidden) && hidden > 0 ? Math.floor(hidden) : 0,
+  };
+}
+
 /** What a reminder reached: who, how many, and when the next one is possible. */
 export interface RemindResultDto {
   readonly recipients: number;
@@ -27,6 +56,8 @@ type RemindResponse =
 
 type FollowingResponse =
   OperationResponse<"Collaboration.Watchers.GetBoardItemFollowing">;
+type LinkedPagesResponse =
+  OperationResponse<"WorkManagement.BoardItems.ListLinkedPages">;
 
 /** The error code the server answers when the 24 hour reminder limit is hit. */
 export const REMIND_TOO_SOON_CODE = "work.item.remind-too-soon";
@@ -51,7 +82,20 @@ const MAX_MEMBER_PAGES = 100;
 /** A member of the board (`WorkManagement.Boards.GetOverview`). */
 interface BoardMember {
   readonly userId?: string;
+  readonly name?: string | null;
   readonly role?: string | null;
+}
+
+/** A read the server refused to this person (a Workspace Guest may not list the workspace members). */
+function isRefusedRead(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const { kind, status } = error as { kind?: unknown; status?: unknown };
+  return (
+    kind === "forbidden" ||
+    kind === "not_found" ||
+    status === 403 ||
+    status === 404
+  );
 }
 
 /** What a board role lets the person do, or null for a role this page does not know. */
@@ -574,7 +618,7 @@ export function createItemExtrasApi(
       boardId: string,
       workspaceId: string,
     ): Promise<PeopleDirectoryDto> {
-      const readMembers = async (): Promise<WorkspaceMember[]> => {
+      const readMembers = async (): Promise<WorkspaceMember[] | null> => {
         const rows: WorkspaceMember[] = [];
         let cursor: string | null = null;
         for (let pages = 0; pages < MAX_MEMBER_PAGES; pages += 1) {
@@ -582,10 +626,16 @@ export function createItemExtrasApi(
             limit: String(MEMBERS_PAGE_SIZE),
           });
           if (cursor) query.set("cursor", cursor);
-          const page: WorkspaceMembersPage | null =
-            await api.get<WorkspaceMembersPage | null>(
+          let page: WorkspaceMembersPage | null;
+          try {
+            page = await api.get<WorkspaceMembersPage | null>(
               `${endpoints.workspaces.members(workspaceId)}?${query}`,
             );
+          } catch (error) {
+            // A Guest does not enumerate the workspace (GOV-009): the board's own members are the list.
+            if (pages === 0 && isRefusedRead(error)) return null;
+            throw error;
+          }
           rows.push(...(page?.items ?? []));
           cursor = page?.nextCursor ?? null;
           if (!cursor) break;
@@ -604,6 +654,21 @@ export function createItemExtrasApi(
           boardLevel(member.role),
         ]),
       );
+      if (members === null)
+        return {
+          people: (board.members ?? [])
+            .filter((member) => Boolean(member.userId))
+            .map((member) => ({
+              userId: member.userId ?? "",
+              name: member.name ?? "",
+              department: null,
+              openCount: 0,
+              onBoard: true,
+              level: boardLevel(member.role),
+            })),
+          teams: [],
+          canInvite: false,
+        };
       return {
         people: members
           .filter((member) => member.status?.toLowerCase() !== "suspended")
@@ -753,11 +818,11 @@ export function createItemExtrasApi(
     },
     /** `WorkManagement.BoardItems.ListLinkedPages`: pages the caller may open, plus how many are hidden. */
     async getLinkedPages(itemId: string): Promise<LinkedPagesDto> {
-      const dto = await api.get<Partial<LinkedPagesDto> | null>(
-        `/board-items/${itemId}/linked-pages`,
+      const dto = await api.get<LinkedPagesResponse | null>(
+        endpoints.boardItems.linkedPages(itemId),
         quiet,
       );
-      return { pages: dto?.pages ?? [], hiddenCount: dto?.hiddenCount ?? 0 };
+      return toLinkedPages(dto);
     },
     /**
      * `Documents.Pages.ListWorkspacePages`: the pages of the workspace the
@@ -789,14 +854,14 @@ export function createItemExtrasApi(
     /** `WorkManagement.BoardItems.LinkPage`: linking a page twice changes nothing. */
     async linkPage(itemId: string, pageId: string): Promise<void> {
       await api.post<void>(
-        `/board-items/${itemId}/link-page`,
+        endpoints.boardItems.linkPage(itemId),
         { pageId },
         { idempotencyKey: key(), ...quiet },
       );
     },
     /** `WorkManagement.BoardItems.UnlinkPage`: removes this page's link only. */
     async unlinkPage(itemId: string, pageId: string): Promise<void> {
-      await api.delete<void>(`/board-items/${itemId}/link-page/${pageId}`, {
+      await api.delete<void>(endpoints.boardItems.unlinkPage(itemId, pageId), {
         idempotencyKey: key(),
         ...quiet,
       });

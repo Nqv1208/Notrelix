@@ -150,6 +150,9 @@ export type InboxTypeDto =
   | "followed_assignee"
   | "automation"
   | "due_tomorrow"
+  | "due_reminder"
+  | "nudge"
+  | "form_response"
   | "system";
 
 export interface InboxTargetDto {
@@ -520,6 +523,9 @@ const INBOX_TYPES: Readonly<Record<string, InboxTypeDto>> = {
   "work.item.automation": "automation",
   "work.item.due-tomorrow": "due_tomorrow",
   "work.item.overdue": "overdue",
+  "work.item.due-reminder": "due_reminder",
+  "work.item.reminder": "nudge",
+  "work.form.submission-created": "form_response",
   "approval.requested": "approval_requested",
   "approval.approved": "approval_approved",
   "approval.rejected": "approval_rejected",
@@ -577,7 +583,12 @@ export function toInboxDto(
       done: view === "done",
       snoozedUntil: entry.snoozedUntil ?? null,
       target: {
-        kind: entry.target?.kind === "doc" ? "doc" : "item",
+        kind:
+          entry.target?.kind === "doc"
+            ? "doc"
+            : entry.target?.kind === "board"
+              ? "board"
+              : "item",
         id: entry.target?.id ?? null,
         key: entry.target?.key ?? null,
         title: entry.target?.title ?? "",

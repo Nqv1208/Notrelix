@@ -111,6 +111,58 @@ describe("unknown and automation notifications", () => {
     expect(row?.segments.map((s) => s.text).join("")).toBe("Your plan changed");
   });
 
+  it("draws a nudge, a due reminder and a new form response (UC-WM-R07, D78.2)", () => {
+    const dto = toInboxDto("w1", {
+      items: [
+        {
+          id: "n10",
+          type: "work.item.reminder",
+          createdAt: "2026-10-12T03:28:00.000Z",
+          unread: true,
+          actor: { id: "u2", name: "Lê An" },
+          target: { kind: "item", id: "i1", title: "Thiết lập SSO" },
+        },
+        {
+          id: "n11",
+          type: "work.item.due-reminder",
+          createdAt: "2026-10-12T03:28:00.000Z",
+          unread: true,
+          target: { kind: "item", id: "i1", title: "Thiết lập SSO" },
+        },
+        {
+          id: "n12",
+          type: "work.form.submission-created",
+          createdAt: "2026-10-12T03:28:00.000Z",
+          unread: true,
+          excerpt: "Đăng ký tuyển dụng",
+          target: {
+            kind: "board",
+            id: "b9",
+            boardId: "b9",
+            title: "Tuyển dụng",
+          },
+        },
+      ],
+    } as never);
+    expect(dto.items.map((item) => item.type)).toEqual([
+      "nudge",
+      "due_reminder",
+      "form_response",
+    ]);
+    expect(dto.items[2]?.target).toMatchObject({
+      kind: "board",
+      boardId: "b9",
+    });
+    const text = toInboxEntries(dto.items, deps).map((row) =>
+      row.segments.map((s) => s.text).join(""),
+    );
+    expect(text).toEqual([
+      "Lê An hỏi bạn tiến độ của Thiết lập SSO",
+      "Thiết lập SSO sắp đến hạn",
+      "Có phản hồi mới cho Đăng ký tuyển dụng trong Tuyển dụng",
+    ]);
+  });
+
   it("draws an automation message about an item", () => {
     const dto = toInboxDto("w1", {
       items: [

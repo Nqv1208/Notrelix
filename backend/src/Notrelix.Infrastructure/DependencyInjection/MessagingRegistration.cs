@@ -30,6 +30,7 @@ public static class MessagingRegistration
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.WorkManagement.BoardItemLabelEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.WorkManagement.BoardItemChecklistEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.WorkManagement.ApprovalEventMapper>();
+        services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.WorkManagement.FormSubmissionEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Integrations.IntegrationConnectionEventMapper>();
         services.AddScoped<IIntegrationEventMapper, CompositeIntegrationEventMapper>();
 

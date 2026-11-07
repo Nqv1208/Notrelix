@@ -59,7 +59,12 @@ export function InboxPage() {
               })
             : target.kind === "doc" && target.id
               ? navigation.getHref({ section: "doc", docId: target.id })
-              : null,
+              : target.kind === "board" && target.boardId
+                ? navigation.getHref({
+                    section: "board",
+                    boardId: target.boardId,
+                  })
+                : null,
         weekday: (iso) => {
           const text = formatters.date(iso, { weekday: "long" });
           return text.charAt(0).toLowerCase() + text.slice(1);

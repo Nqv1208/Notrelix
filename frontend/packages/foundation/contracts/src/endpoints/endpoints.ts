@@ -330,6 +330,10 @@ export const endpoints = {
     detail: (itemId: string) => `/board-items/${itemId}`,
     move: (itemId: string) => `/board-items/${itemId}/move`,
     linkPage: (itemId: string) => `/board-items/${itemId}/link-page`,
+    // WorkManagement.BoardItems.UnlinkPage / ListLinkedPages: one page's link, and the pages the caller may see.
+    unlinkPage: (itemId: string, pageId: string) =>
+      `/board-items/${itemId}/link-page/${pageId}`,
+    linkedPages: (itemId: string) => `/board-items/${itemId}/linked-pages`,
     duplicate: (itemId: string) => `/board-items/${itemId}/duplicate`,
     archive: (itemId: string) => `/board-items/${itemId}/archive`,
     unarchive: (itemId: string) => `/board-items/${itemId}/unarchive`,

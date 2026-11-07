@@ -60,6 +60,7 @@ public class GetWorkspaceInboxQueryHandler(
 {
     private const string BoardItemKind = "work-management.board-item";
     private const string PageKind = "documents.page";
+    private const string BoardKind = "work-management.board";
 
     /// <summary>The notification type Collaboration stores for "someone asked you to approve an item".</summary>
     private const string ApprovalRequestedType = "approval.requested";
@@ -92,11 +93,30 @@ public class GetWorkspaceInboxQueryHandler(
             .Select(n => n.ResourceId!.Value)
             .Distinct()
             .ToList();
+        var boardIds = scanned
+            .Where(n => n.ResourceKind == BoardKind && n.ResourceId is not null)
+            .Select(n => n.ResourceId!.Value)
+            .Distinct()
+            .ToList();
         var readable = new Dictionary<Guid, (Guid BoardId, string? Key, string Name)>();
-        if (itemIds.Count > 0)
+        // A notification about a Board itself (a new response to one of its forms) names the Board when the caller
+        // may still read it; otherwise it is not shown.
+        var readableBoards = new Dictionary<Guid, string>();
+        if (itemIds.Count > 0 || boardIds.Count > 0)
         {
             var visibleBoardIds = await visibility.VisibleBoardIdsAsync(request.WorkspaceId, userId, cancellationToken);
-            if (visibleBoardIds.Count > 0)
+            var shownBoardIds = boardIds.Where(visibleBoardIds.Contains).ToList();
+            if (shownBoardIds.Count > 0)
+            {
+                readableBoards = (await context.Boards
+                        .AsNoTracking()
+                        .Where(b => shownBoardIds.Contains(b.Id) && b.WorkspaceId == request.WorkspaceId && b.DeletedAt == null)
+                        .Select(b => new { b.Id, b.Title })
+                        .ToListAsync(cancellationToken))
+                    .ToDictionary(b => b.Id, b => b.Title);
+            }
+
+            if (itemIds.Count > 0 && visibleBoardIds.Count > 0)
             {
                 readable = (await context.BoardItems
                         .AsNoTracking()
@@ -130,7 +150,8 @@ public class GetWorkspaceInboxQueryHandler(
             .Where(n => n.ResourceId is null
                         || (n.ResourceKind == BoardItemKind && readable.ContainsKey(n.ResourceId.Value))
                         || (n.ResourceKind == PageKind && readablePages.ContainsKey(n.ResourceId.Value))
-                        || (n.ResourceKind != BoardItemKind && n.ResourceKind != PageKind))
+                        || (n.ResourceKind == BoardKind && readableBoards.ContainsKey(n.ResourceId.Value))
+                        || (n.ResourceKind != BoardItemKind && n.ResourceKind != PageKind && n.ResourceKind != BoardKind))
             .ToList();
         var page = shown.Take(limit).ToList();
 
@@ -174,6 +195,10 @@ public class GetWorkspaceInboxQueryHandler(
             else if (n.ResourceKind == PageKind && n.ResourceId is { } pageId && readablePages.TryGetValue(pageId, out var pageTitle))
             {
                 target = new InboxTargetDto("doc", pageId, null, null, pageTitle);
+            }
+            else if (n.ResourceKind == BoardKind && n.ResourceId is { } boardId && readableBoards.TryGetValue(boardId, out var boardName))
+            {
+                target = new InboxTargetDto("board", boardId, boardId, null, boardName);
             }
 
             return new InboxEntryDto(

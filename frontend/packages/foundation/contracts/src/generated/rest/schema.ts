@@ -8888,6 +8888,18 @@ export interface components {
             assigneeId?: string | null;
             assigneeName?: string | null;
         };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemPageLinks.BoardItemPageLinkListDto": {
+            pages?: components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemPageLinks.LinkedPageDto"][] | null;
+            /** Format: int32 */
+            hiddenCount?: number;
+        };
+        "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemPageLinks.LinkedPageDto": {
+            /** Format: uuid */
+            pageId?: string;
+            title?: string | null;
+            /** Format: date-time */
+            linkedAt?: string;
+        };
         "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash.BoardItemTrashEntryDto": {
             /** Format: uuid */
             id?: string;
@@ -18040,7 +18052,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemPageLinks.BoardItemPageLinkListDto"];
                 };
             };
         };
