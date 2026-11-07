@@ -1,7 +1,7 @@
 import { useItemRemoval } from "../../item-lifecycle/use-item-removal";
 import {
   tableCollapsedGroupsKey,
-  useKanbanCollapsedLanes,
+  useCollapsedSet,
 } from "../kanban/use-kanban-collapsed-lanes";
 import {
   useCallback,
@@ -25,6 +25,7 @@ import {
   useRemoveFieldOption,
   useUpdateCard,
   useWorkspaceBoards,
+  useBoardView,
   assigneeRefusalOf,
   changedByNameOf,
   isVersionConflict,
@@ -216,11 +217,10 @@ export function MainTableView({
   const [selection, setSelection] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
-  const collapsedGroups = useKanbanCollapsedLanes(
-    tableCollapsedGroupsKey(workspaceId, boardId),
-  );
-  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(
-    () => collapsedGroups.initial,
+  // Collapsed groups are the member's own, per workspace and Table view, kept on this device (D38).
+  const { viewId: tableViewId } = useBoardView(boardId, workspaceId);
+  const [collapsed, setCollapsed] = useCollapsedSet(
+    tableCollapsedGroupsKey(workspaceId, tableViewId ?? boardId),
   );
 
   // The route gives Share only to people who may grant board access.
@@ -1218,7 +1218,6 @@ export function MainTableView({
             if (next.has(groupId)) next.delete(groupId);
             else next.add(groupId);
             setCollapsed(next);
-            collapsedGroups.onChange(next);
           }}
           onOpenItem={(id) => onSelectedItemChange?.(id)}
           onStatusChange={writeStatus}

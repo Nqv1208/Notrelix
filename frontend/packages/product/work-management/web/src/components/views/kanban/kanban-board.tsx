@@ -225,6 +225,12 @@ export function KanbanBoard({
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(
     () => initialCollapsed ?? new Set(),
   );
+  // The remembered set is read again when the view's key changes (the saved view arrives after the first paint).
+  const [seenInitial, setSeenInitial] = useState(initialCollapsed);
+  if (seenInitial !== initialCollapsed) {
+    setSeenInitial(initialCollapsed);
+    setCollapsed(initialCollapsed ?? new Set());
+  }
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const [drag, setDrag] = useState<DragState | null>(null);
   const dragging = drag !== null;

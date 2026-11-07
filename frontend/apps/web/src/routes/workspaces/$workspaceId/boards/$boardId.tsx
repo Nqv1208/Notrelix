@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useSearch, useNavigate } from "@tanstack/react-router";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useCurrentUser } from "@notrelix/features-auth";
 import { useLocale } from "@notrelix/i18n";
 import {
@@ -76,6 +76,27 @@ export function BoardPage() {
       replace: true,
     });
   }, [navigate, saved.isError, saved.isLoading, saved.views, search.savedView]);
+  // An address that names a layout that does not exist (`?view=gantt`) shows the board's default view, with the
+  // same one notice; the address is rewritten to that view, so Back does not return to the unknown name.
+  const unknownView = search.unknownView;
+  useEffect(() => {
+    if (unknownView === undefined || saved.isLoading) return;
+    const fallback = saved.views.find((entry) => entry.isDefault);
+    const key = `view:${unknownView}`;
+    if (goneNotice.current !== key) {
+      goneNotice.current = key;
+      setViewGone(true);
+    }
+    void navigate({
+      search: (prev: BoardSearch) => ({
+        ...prev,
+        view: fallback?.viewMode ?? "kanban",
+        savedView: fallback?.id,
+        unknownView: undefined,
+      }),
+      replace: true,
+    });
+  }, [navigate, unknownView, saved.isLoading, saved.views]);
   // Archiving or deleting the opened view lands on the default view, with no "gone" notice.
   const viewActions = useViewTabActions(
     boardId,

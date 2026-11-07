@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, CloudOff } from "lucide-react";
 import { Skeleton, cn, useIsMobile, useIsTablet } from "@notrelix/ui-web";
 import { describeMyWorkDue } from "../../core/model/my-work";
 import type { MyWorkWindow } from "../../core/model/my-work";
@@ -146,25 +146,43 @@ function clockTime(time: number): string {
 
 const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
-function RowsSkeleton({ rows = 4 }: { rows?: number }) {
+/**
+ * The loading rows (undrawn state, built from the row grid): one group heading and rows of the list's own
+ * height. On touch the row keeps the mark, the two text lines and the due, as the touch rows do, so nothing
+ * runs past a 390 px screen.
+ */
+function RowsSkeleton({
+  rows = 4,
+  touch = null,
+}: {
+  rows?: number;
+  touch?: "tablet" | "phone" | null;
+}) {
   return (
-    <section aria-busy="true" aria-hidden="true">
+    <section aria-hidden="true" data-f="skeleton">
       <Skeleton className="mb-2 h-5 w-24 rounded-md" />
       <ul className="m-0 list-none rounded-[12px] border border-border bg-popover p-0 dark:bg-card">
         {Array.from({ length: rows }, (_, index) => (
           <li
             key={index}
             data-f="row"
-            className="box-border grid min-h-[60px] grid-cols-[18px_22px_minmax(0,1fr)_112px_112px] items-center gap-x-2.5 border-t border-border px-3.5 py-[9px] first:border-t-0"
+            className={cn(
+              "box-border grid min-h-[60px] items-center gap-x-2.5 border-t border-border px-3.5 py-[9px] first:border-t-0",
+              touch === null
+                ? "grid-cols-[18px_22px_minmax(0,1fr)_112px_112px]"
+                : "grid-cols-[22px_minmax(0,1fr)_64px]",
+            )}
           >
-            <span />
+            {touch === null ? <span /> : null}
             <Skeleton className="size-5 rounded-full" />
             <div>
               <Skeleton className="h-3 w-3/5 rounded-md" />
               <Skeleton className="mt-2 h-2.5 w-2/5 rounded-md" />
             </div>
-            <Skeleton className="h-[26px] w-24 rounded-full" />
-            <Skeleton className="h-3 w-16 rounded-md" />
+            {touch === null ? (
+              <Skeleton className="h-[26px] w-24 rounded-full" />
+            ) : null}
+            <Skeleton className="h-3 w-16 justify-self-end rounded-md" />
           </li>
         ))}
       </ul>
@@ -659,6 +677,9 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
         >
           {state.status === "loading" ? (
             <div
+              role="status"
+              aria-busy="true"
+              aria-label={copy.list.loading}
               data-f="scroll"
               className={cn(
                 "flex min-h-0 flex-1 flex-col overflow-auto",
@@ -669,20 +690,36 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
                     : "gap-[18px] pt-[18px] pb-6 [scrollbar-width:none]",
               )}
             >
-              <RowsSkeleton rows={3} />
-              <RowsSkeleton rows={2} />
+              <RowsSkeleton rows={3} touch={touch} />
+              <RowsSkeleton rows={2} touch={touch} />
             </div>
           ) : state.status === "error" ? (
+            // Undrawn state, the board's load-error block (BC-Shell Er): a 44 px icon tile, a title, one line
+            // and Thử lại, centred on the page; the bar above stays so the person keeps their place.
             <div
               role="alert"
-              className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-[12px] border border-border bg-popover px-3.5 py-3 dark:bg-card"
+              data-f="error"
+              className="box-border flex flex-col items-center gap-1.5 px-6 py-10 text-center"
             >
-              <p className="m-0 text-compact text-muted-foreground">
-                {copy.list.error}
-              </p>
+              <span
+                aria-hidden="true"
+                className="grid size-11 place-items-center rounded-[12px] bg-state-hover-strong text-meta-foreground"
+              >
+                <CloudOff className="size-5" />
+              </span>
+              <b className="text-[16px] leading-[1.45] font-[650] text-foreground">
+                {copy.list.errorTitle}
+              </b>
+              <span className="max-w-[46ch] text-[13.5px] leading-[1.45] text-muted-foreground">
+                {copy.list.errorBody}
+              </span>
               <button
                 type="button"
-                className={SMALL_OUTLINE_CLASS}
+                className={cn(
+                  SMALL_OUTLINE_CLASS,
+                  "mt-1.5",
+                  touch !== null && "h-11 px-4 text-[14px]",
+                )}
                 onClick={props.onRetry}
               >
                 {copy.list.retry}
