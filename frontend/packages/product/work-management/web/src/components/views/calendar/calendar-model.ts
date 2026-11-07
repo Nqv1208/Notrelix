@@ -91,6 +91,8 @@ export interface CalendarUndated {
   readonly title: string;
   /** The assignee's name, or `null` for an unassigned item. */
   readonly assigneeName?: string | null;
+  /** The status tone of its lane (an undated item is never overdue). */
+  readonly tone?: Exclude<CalendarTone, "overdue">;
 }
 
 const DAY_MS = 86_400_000;
