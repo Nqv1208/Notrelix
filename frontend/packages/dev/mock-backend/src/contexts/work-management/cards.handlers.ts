@@ -476,7 +476,14 @@ export const cardsOperations = [
             ]
           : [];
       });
-      return ok({ pages, hiddenCount: 0 });
+      // Test hook: `globalThis.__mockHiddenLinkedPages` counts pages linked here that the viewer may not read
+      // (the producer counts them and never names them, UC-WM-R05).
+      const hidden = (globalThis as { __mockHiddenLinkedPages?: number })
+        .__mockHiddenLinkedPages;
+      return ok({
+        pages,
+        hiddenCount: typeof hidden === "number" ? hidden : 0,
+      });
     },
   }),
 
@@ -535,6 +542,35 @@ export const cardsOperations = [
           : data.description;
       const tooLong = titleTooLong(data.title);
       if (tooLong) return tooLong;
+      // Test hook (UC-WM-B33): `globalThis.__mockItemSavedFirst[itemId]` stands for another member who saved the
+      // item first. Their title or due date is stored, and this write is refused as stale once, naming them.
+      const races = (
+        globalThis as {
+          __mockItemSavedFirst?: Record<
+            string,
+            { title?: string; dueDate?: string | null; byName?: string }
+          >;
+        }
+      ).__mockItemSavedFirst;
+      const race = races?.[params.id];
+      if (races && race) {
+        delete races[params.id];
+        store.updateCard(params.id, {
+          ...(race.title !== undefined ? { title: race.title } : {}),
+          ...(race.dueDate !== undefined ? { dueAt: race.dueDate } : {}),
+        });
+        return {
+          status: 412,
+          body: {
+            type: "https://notrelix.dev/problems/common.precondition-failed",
+            title: "Precondition failed",
+            status: 412,
+            detail: "The item changed since this client loaded it.",
+            errorCode: "common.precondition-failed",
+            changedByName: race.byName ?? null,
+          },
+        } as any;
+      }
       // Only the fields the request names change: a spread of `undefined`
       // would wipe the title of a date-only patch.
       const updated = store.updateCard(params.id, {

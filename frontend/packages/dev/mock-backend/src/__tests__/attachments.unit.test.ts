@@ -223,6 +223,13 @@ describe("mock attachments: Collaboration.Attachments.UploadFile / GetContent", 
         commenter.cards.uploadCardFile(ITEM, pdf(), { idempotencyKey: "k" }),
       ),
     ).toMatchObject({ status: 403 });
+    // UC-WM-R04: a Viewer is refused an upload as the producer refuses it (UpdateItem).
+    const viewer = clientFor("viewer");
+    expect(
+      await failure(
+        viewer.cards.uploadCardFile(ITEM, pdf(), { idempotencyKey: "k" }),
+      ),
+    ).toMatchObject({ status: 403 });
     const owner = clientFor();
     expect(
       await failure(

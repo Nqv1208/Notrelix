@@ -8,6 +8,10 @@ import {
   type FieldDefinition,
 } from "@notrelix/work-management-core";
 import { fillTableCopy, type MainTableCopy } from "./main-table.copy";
+import type {
+  SystemCellColumn,
+  SystemCellConflict,
+} from "./table-cell-editors";
 import {
   AnchoredNote,
   CheckboxEditor,
@@ -58,6 +62,21 @@ export interface TableFieldEditing {
   readonly onUseTheirs: (rowId: string, fieldId: string) => void;
   /** Reload the board's fields after a stale write; the unsaved value is dropped. */
   readonly onReloadSchema: (rowId: string, fieldId: string) => void;
+  /**
+   * A title or due date write refused because someone else saved the item first: the built-in cell shows the
+   * same in-cell choice (UC-WM-B33). Absent = no conflict is open.
+   */
+  readonly systemConflictOf?: (
+    rowId: string,
+    column: SystemCellColumn,
+  ) => SystemCellConflict | undefined;
+  /** "Giữ giá trị của tôi" on a built-in cell: read the item again, then write the kept value on the newest version. */
+  readonly onSystemKeepMine?: (rowId: string, column: SystemCellColumn) => void;
+  /** "Dùng giá trị mới" on a built-in cell: drop the written value; the row already shows theirs. */
+  readonly onSystemUseTheirs?: (
+    rowId: string,
+    column: SystemCellColumn,
+  ) => void;
 }
 
 export interface TableFieldCellProps {
@@ -175,7 +194,6 @@ export function TableFieldCell({
 }: TableFieldCellProps) {
   const f = copy.fields;
   const spec = specOf(field);
-  const useNew = useRef<HTMLButtonElement>(null);
   if (spec.computed)
     return <ComputedCell field={field} computed={cell.computed} copy={f} />;
 
@@ -536,6 +554,49 @@ export function TableFieldCell({
       </>
     );
   return (
+    <CellConflictNote
+      copy={copy}
+      who={write?.byName ?? null}
+      field={field.name}
+      theirs={fieldText(field, cell.value, members) || f.empty}
+      mine={valueLabel}
+      onKeepMine={onKeepMine}
+      onUseTheirs={onUseTheirs}
+    >
+      {editor}
+    </CellConflictNote>
+  );
+}
+
+/**
+ * The in-cell version conflict (`WM-Table-Columns` slice 3, "Xung đột phiên bản trong ô"): who changed the cell
+ * first and to what, the value this person wrote, "Giữ giá trị của tôi" (the caller reads the item again, then
+ * writes on the newest version) and "Dùng giá trị mới" (drops the written value; it takes the focus). Shared by the
+ * custom field cells and the built-in title and due date cells.
+ */
+export function CellConflictNote({
+  copy,
+  who,
+  field,
+  theirs,
+  mine,
+  onKeepMine,
+  onUseTheirs,
+  children,
+}: {
+  copy: MainTableCopy;
+  /** Who saved first, as the server named them; null reads "Một người khác". */
+  who: string | null;
+  field: string;
+  theirs: string;
+  mine: string;
+  onKeepMine: () => void;
+  onUseTheirs: () => void;
+  children: ReactNode;
+}) {
+  const f = copy.fields;
+  const useNew = useRef<HTMLButtonElement>(null);
+  return (
     <AnchoredNote
       tone="warning"
       className="ring-1 ring-warning-text"
@@ -550,12 +611,12 @@ export function TableFieldCell({
         >
           <span className="font-semibold text-warning-subtle-foreground">
             {fillTableCopy(f.conflictTitle, {
-              who: write?.byName ?? f.staleSomeone,
-              field: field.name,
-              value: fieldText(field, cell.value, members) || f.empty,
+              who: who ?? f.staleSomeone,
+              field,
+              value: theirs,
             })}
           </span>
-          <span>{fillTableCopy(f.conflictYours, { value: valueLabel })}</span>
+          <span>{fillTableCopy(f.conflictYours, { value: mine })}</span>
           <span className="flex gap-2">
             <button
               type="button"
@@ -570,15 +631,13 @@ export function TableFieldCell({
               onClick={onUseTheirs}
               className="h-[26px] cursor-pointer rounded-[7px] border-0 bg-primary px-2 text-[12px] font-semibold whitespace-nowrap text-primary-foreground focus-visible:outline-2 focus-visible:outline-ring"
             >
-              {fillTableCopy(f.conflictTheirs, {
-                value: fieldText(field, cell.value, members) || f.empty,
-              })}
+              {fillTableCopy(f.conflictTheirs, { value: theirs })}
             </button>
           </span>
         </div>
       }
     >
-      {editor}
+      {children}
     </AnchoredNote>
   );
 }

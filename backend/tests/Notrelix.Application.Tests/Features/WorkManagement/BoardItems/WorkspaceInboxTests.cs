@@ -57,6 +57,30 @@ public class WorkspaceInboxTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
+    public async Task Inbox_NamesTheReadableBoardOfANewFormResponse_AndDropsOneOnABoardTheCallerCannotRead()
+    {
+        // UC-WM-R07 (D78.2): "new submission on a form I manage" points at the Board; losing the Board hides it.
+        var board = CreateBoard();
+        var hiddenBoard = CreateBoard();
+        _visibility.Boards.Add(board.Id);
+        SetupBoards(board, hiddenBoard);
+        _inbox
+            .Setup(i => i.ListAsync(TestWorkspaceId, TestUserId, InboxView.Inbox, null, null, GetWorkspaceInboxQuery.ScanLimit, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<InboxNotification>
+            {
+                new(Guid.CreateVersion7(), "work.form.submission-created", null, DateTimeOffset.UtcNow, "FormSubmission", "Intake", "work-management.board", board.Id, true),
+                new(Guid.CreateVersion7(), "work.form.submission-created", null, DateTimeOffset.UtcNow, "FormSubmission", "Secret", "work-management.board", hiddenBoard.Id, true),
+            });
+
+        var result = await Handler().Handle(new GetWorkspaceInboxQuery(TestWorkspaceId, false, null, null), CancellationToken.None);
+
+        var entry = result.Data!.Items.Should().ContainSingle().Subject;
+        entry.Type.Should().Be("work.form.submission-created");
+        entry.Excerpt.Should().Be("Intake");
+        entry.Target.Should().BeEquivalentTo(new InboxTargetDto("board", board.Id, board.Id, null, board.Title));
+    }
+
+    [Fact]
     public async Task Inbox_ShowsNotificationsOfReadableItemsWithTheirTarget_AndDropsAnUnreadableOne()
     {
         var board = CreateBoard();

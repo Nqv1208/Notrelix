@@ -51,6 +51,17 @@ export interface TableEditors {
   readonly onPriority: (rowId: string, optionId: string) => void;
 }
 
+/** The built-in cells that carry the in-cell conflict choice. */
+export type SystemCellColumn = "title" | "due";
+
+/** An open conflict on a built-in cell: what this person wrote, and who saved first. */
+export interface SystemCellConflict {
+  /** The written value as the cell names it (the title, or the due date text). */
+  readonly mine: string;
+  /** Who saved first, when the server named them. */
+  readonly byName: string | null;
+}
+
 /** "YYYY-MM-DD" of a calendar pick, in the viewer's own day. */
 export function dayOf(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
