@@ -84,6 +84,8 @@ import { useStatusOptionFormCopy } from "../../status-option/use-status-option-f
 import type { TableGroupMenuModel } from "./table-group-menu";
 import { useMainTableCopy } from "./use-main-table-copy";
 import { useFieldCellWrites } from "./use-field-cell-writes";
+import { useSystemCellConflicts } from "./use-system-cell-conflicts";
+import { itemDueState } from "../../shared/item-display";
 import { useArchiveUndoWindow } from "./use-archive-undo-window";
 
 type ParamChange = (
@@ -705,6 +707,8 @@ export function MainTableView({
     [table.groups],
   );
 
+  // A title or due date write lost to someone else's save keeps the typed value in the cell's choice (UC-WM-B33).
+  const cellConflicts = useSystemCellConflicts(table.refetch);
   const sendCellValue = cellFieldValue.mutateAsync;
   const cellWrites = useFieldCellWrites(
     useCallback(
@@ -854,15 +858,23 @@ export function MainTableView({
     cardId: string,
     day: string | null,
     time?: string,
-  ) => {
+  ): Promise<boolean> => {
     noteTitle(cardId);
+    const dueDate = day ? dueInstant(day, time) : null;
     try {
-      await updateCard.mutateAsync({
-        cardId,
-        patch: { dueDate: day ? dueInstant(day, time) : null },
-      });
+      await updateCard.mutateAsync({ cardId, patch: { dueDate } });
       return true;
     } catch (error) {
+      if (isVersionConflict(error)) {
+        cellConflicts.open(cardId, "due", {
+          mine: dueDate
+            ? (itemDueState(dueDate, new Date(), timeZone)?.text ?? "")
+            : "",
+          byName: changedByNameOf(error) ?? table.lastEditorOf(cardId) ?? null,
+          resend: () => writeDue(cardId, day, time),
+        });
+        return true;
+      }
       // A due day before the start is said in the picker, not as a generic toast.
       const hasStart = allCards.some(
         (candidate) => candidate.id === cardId && candidate.startDate,
@@ -871,6 +883,29 @@ export function MainTableView({
       reportCardWriteFailure(error, cardId);
       return true;
     }
+  };
+  const writeTitle = async (
+    cardId: string,
+    title: string,
+  ): Promise<boolean> => {
+    noteTitle(cardId);
+    try {
+      await updateCard.mutateAsync({ cardId, patch: { title } });
+    } catch (error) {
+      // A refused title is told under the editor, with the typed text kept; the row is already back.
+      if (isRefusedValue(error)) return false;
+      // Someone saved first: the cell keeps the typed title in its choice instead of a toast.
+      if (isVersionConflict(error)) {
+        cellConflicts.open(cardId, "title", {
+          mine: title,
+          byName: changedByNameOf(error) ?? table.lastEditorOf(cardId) ?? null,
+          resend: () => writeTitle(cardId, title),
+        });
+        return true;
+      }
+      reportCardWriteFailure(error, cardId);
+    }
+    return true;
   };
   const editors: TableEditors | undefined = itemFields.person
     ? {
@@ -905,6 +940,9 @@ export function MainTableView({
     onKeepMine: cellWrites.keepMine,
     onUseTheirs: cellWrites.takeTheirs,
     onReloadSchema: cellWrites.reloadSchema,
+    systemConflictOf: cellConflicts.conflictOf,
+    onSystemKeepMine: cellConflicts.keepMine,
+    onSystemUseTheirs: cellConflicts.takeTheirs,
   };
   const moveTargets = (workspaceBoards.data ?? [])
     .filter(
@@ -1150,17 +1188,7 @@ export function MainTableView({
           fieldEditing={fieldEditing}
           onRename={
             capabilities.canEditFields
-              ? async (cardId, title) => {
-                  noteTitle(cardId);
-                  try {
-                    await updateCard.mutateAsync({ cardId, patch: { title } });
-                  } catch (error) {
-                    // A refused title is told under the editor, with the typed text kept; the row is already back.
-                    if (isRefusedValue(error)) return false;
-                    reportCardWriteFailure(error, cardId);
-                  }
-                  return true;
-                }
+              ? (cardId, title) => writeTitle(cardId, title)
               : undefined
           }
           canCreate={capabilities.canCreateCard}

@@ -4,6 +4,7 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
+  type ReactNode,
 } from "react";
 import {
   AlertCircle,
@@ -34,6 +35,8 @@ import { itemActionsCopyFor } from "../../item-actions/use-item-actions-copy";
 import { fillTableCopy, type MainTableCopy } from "./main-table.copy";
 import { STATUS_TINT_CLASS, tablePanelClass } from "./table-chrome";
 import type { TableColumnSpec } from "./table-columns";
+import { CellConflictNote } from "./table-field-cell";
+import type { SystemCellColumn } from "./table-cell-editors";
 import type { TableRowModel, TableStatusOption } from "./table-model";
 import {
   AssigneeEditor,
@@ -241,6 +244,30 @@ export function TableRow({
     });
   };
 
+  // A title or due date write lost to someone else's save: the cell offers "keep mine" or "use theirs" (UC-WM-B33).
+  const withConflict = (
+    column: SystemCellColumn,
+    field: string,
+    theirs: string,
+    node: ReactNode,
+  ) => {
+    const conflict = fieldEditing?.systemConflictOf?.(row.id, column);
+    if (!conflict) return node;
+    return (
+      <CellConflictNote
+        copy={copy}
+        who={conflict.byName}
+        field={field}
+        theirs={theirs || copy.fields.empty}
+        mine={conflict.mine || copy.fields.empty}
+        onKeepMine={() => fieldEditing?.onSystemKeepMine?.(row.id, column)}
+        onUseTheirs={() => fieldEditing?.onSystemUseTheirs?.(row.id, column)}
+      >
+        {node}
+      </CellConflictNote>
+    );
+  };
+
   const render = (column: TableColumnSpec) => {
     switch (column.id) {
       case "key":
@@ -356,42 +383,47 @@ export function TableRow({
                 />
               </AnchoredNote>
             ) : (
-              <button
-                ref={titleButton}
-                type="button"
-                // A double click renames, so an editor's single click waits
-                // out the second click before it opens the item.
-                onClick={() => {
-                  if (!onRename) return onOpen();
-                  if (openTimer.current) clearTimeout(openTimer.current);
-                  openTimer.current = setTimeout(onOpen, 220);
-                }}
-                onDoubleClick={startRename}
-                onKeyDown={(event) => {
-                  if (!onRename) return;
-                  if (event.key === "F2" || event.key === "Enter") {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    startRename();
+              withConflict(
+                "title",
+                copy.columns.title,
+                row.title,
+                <button
+                  ref={titleButton}
+                  type="button"
+                  // A double click renames, so an editor's single click waits
+                  // out the second click before it opens the item.
+                  onClick={() => {
+                    if (!onRename) return onOpen();
+                    if (openTimer.current) clearTimeout(openTimer.current);
+                    openTimer.current = setTimeout(onOpen, 220);
+                  }}
+                  onDoubleClick={startRename}
+                  onKeyDown={(event) => {
+                    if (!onRename) return;
+                    if (event.key === "F2" || event.key === "Enter") {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      startRename();
+                    }
+                  }}
+                  aria-keyshortcuts={onRename ? "F2 Enter" : undefined}
+                  title={row.title}
+                  data-row-open=""
+                  className={
+                    tablet
+                      ? // The whole cell is the target: the key and the title wrap under it, two lines at most.
+                        "line-clamp-2 min-w-0 flex-1 text-left text-[14.5px] leading-[1.38] font-medium text-pretty text-foreground after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:rounded-[8px] focus-visible:after:outline-2 focus-visible:after:-outline-offset-3 focus-visible:after:outline-ring"
+                      : "min-w-0 truncate text-left text-nav font-medium text-foreground max-md:min-h-11 focus-visible:outline-2 focus-visible:outline-ring"
                   }
-                }}
-                aria-keyshortcuts={onRename ? "F2 Enter" : undefined}
-                title={row.title}
-                data-row-open=""
-                className={
-                  tablet
-                    ? // The whole cell is the target: the key and the title wrap under it, two lines at most.
-                      "line-clamp-2 min-w-0 flex-1 text-left text-[14.5px] leading-[1.38] font-medium text-pretty text-foreground after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:rounded-[8px] focus-visible:after:outline-2 focus-visible:after:-outline-offset-3 focus-visible:after:outline-ring"
-                    : "min-w-0 truncate text-left text-nav font-medium text-foreground max-md:min-h-11 focus-visible:outline-2 focus-visible:outline-ring"
-                }
-              >
-                {tablet && row.key ? (
-                  <span className="mr-1.5 font-mono text-[12.5px] font-medium text-meta-foreground">
-                    {row.key}
-                  </span>
-                ) : null}
-                {row.title}
-              </button>
+                >
+                  {tablet && row.key ? (
+                    <span className="mr-1.5 font-mono text-[12.5px] font-medium text-meta-foreground">
+                      {row.key}
+                    </span>
+                  ) : null}
+                  {row.title}
+                </button>,
+              )
             )}
           </Cell>
         );
@@ -550,23 +582,28 @@ export function TableRow({
         );
         return (
           <Cell key="due" selected={selected}>
-            {canEdit && editors ? (
-              <DueEditor
-                copy={copy}
-                dueAt={row.dueAt}
-                itemKey={row.key ?? undefined}
-                startAt={row.startAt}
-                label={fillTableCopy(copy.row.changeDue, { key: keyLabel })}
-                onPick={(day, time) =>
-                  time
-                    ? editors.onDue(row.id, day, time)
-                    : editors.onDue(row.id, day)
-                }
-              >
-                {due}
-              </DueEditor>
-            ) : (
-              due
+            {withConflict(
+              "due",
+              copy.columns.due,
+              row.due.text,
+              canEdit && editors ? (
+                <DueEditor
+                  copy={copy}
+                  dueAt={row.dueAt}
+                  itemKey={row.key ?? undefined}
+                  startAt={row.startAt}
+                  label={fillTableCopy(copy.row.changeDue, { key: keyLabel })}
+                  onPick={(day, time) =>
+                    time
+                      ? editors.onDue(row.id, day, time)
+                      : editors.onDue(row.id, day)
+                  }
+                >
+                  {due}
+                </DueEditor>
+              ) : (
+                due
+              ),
             )}
           </Cell>
         );

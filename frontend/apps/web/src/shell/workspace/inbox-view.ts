@@ -145,6 +145,9 @@ const KIND: Record<InboxEntryDto["type"], InboxKind> = {
   followed_assignee: "change",
   automation: "system",
   due_tomorrow: "overdue",
+  due_reminder: "overdue",
+  nudge: "assign",
+  form_response: "assign",
   system: "system",
 };
 
@@ -266,6 +269,31 @@ export function toInboxEntries(
           ["title"],
         );
         context = { department, label: keyLabel };
+        break;
+      case "due_reminder":
+        segments = sentence(copy, copy.feed.dueSoon, { title: target.title }, [
+          "title",
+        ]);
+        context = { department, label: keyLabel };
+        break;
+      case "nudge":
+        segments = sentence(
+          copy,
+          copy.feed.nudge,
+          { actor: actorName, title: target.title },
+          ["actor", "title"],
+        );
+        context = { department, label: keyLabel };
+        break;
+      case "form_response":
+        // The producer names the form (the excerpt) and the Board (the target); never an answer.
+        segments = sentence(
+          copy,
+          entry.excerpt ? copy.feed.formResponse : copy.feed.formResponsePlain,
+          { form: entry.excerpt ?? "", title: target.title },
+          ["form", "title"],
+        );
+        context = null;
         break;
       case "system":
         // A type this page does not know: its own text when it has one.

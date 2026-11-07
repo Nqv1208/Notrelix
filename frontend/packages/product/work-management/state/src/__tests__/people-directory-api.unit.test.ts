@@ -23,6 +23,42 @@ function apiOver(pages: Record<string, unknown>) {
 }
 
 describe("The people directory of an item", () => {
+  it("lists only the board's members to a Guest, who may not list the workspace (UC-WM-R03)", async () => {
+    const get = vi.fn(async (url: string) => {
+      if (url.includes("/boards/"))
+        return {
+          members: [
+            { userId: "u1", name: "Ada", role: "Editor" },
+            { userId: "u5", name: "Em", role: "Viewer" },
+          ],
+        };
+      throw Object.assign(new Error("Forbidden"), {
+        kind: "forbidden",
+        status: 403,
+      });
+    });
+    const { people } = await createItemExtrasApi({
+      api: { get },
+    } as unknown as NotrelixClient).getPeopleDirectory("b-1", "ws-1");
+
+    expect(people.map((p) => [p.name, p.onBoard, p.level])).toEqual([
+      ["Ada", true, "editor"],
+      ["Em", true, "viewer"],
+    ]);
+  });
+
+  it("still fails on a members read that broke for another reason", async () => {
+    const get = vi.fn(async (url: string) => {
+      if (url.includes("/boards/")) return { members: [] };
+      throw Object.assign(new Error("Server"), { kind: "server", status: 500 });
+    });
+    await expect(
+      createItemExtrasApi({
+        api: { get },
+      } as unknown as NotrelixClient).getPeopleDirectory("b-1", "ws-1"),
+    ).rejects.toThrow("Server");
+  });
+
   it("joins every page of the workspace members (the producer lists them as a cursor page)", async () => {
     const { get, directory } = apiOver({
       first: {

@@ -162,6 +162,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.FirstWorkItemFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.ItemNotifications.IWorkItemNotificationFacts,
             global::Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement.WorkItemNotificationFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.FormNotifications.IFormNotificationFacts,
+            global::Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement.FormNotificationFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.ItemActivity.IWorkItemActivityFacts,
             global::Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement.WorkItemActivityFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Automation.Public.ActivityAttribution.IAutomationActivityFacts,
