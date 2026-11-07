@@ -580,9 +580,8 @@ export function layoutTimeline(input: LayoutInput): TimelineLayout {
     for (const work of members) rows.push({ type: "task", work });
   }
 
-  // The dragged span, and the items that wait for it (they move back so they
-  // still start after it ends).
-  const moved = new Map<string, number>();
+  // The dragged span only: a dependency line never reschedules the items
+  // that wait for it (owner decision D76.9), so the preview moves nothing else.
   if (drag) {
     const target = byId.get(drag.id);
     if (target && target.s0 !== null) {
@@ -591,28 +590,6 @@ export function layoutTimeline(input: LayoutInput): TimelineLayout {
         target.ee = target.d0 + drag.days;
       } else {
         target.ee = Math.max(target.s0, target.d0 + drag.days);
-      }
-      moved.set(target.item.id, 0);
-      const queue = [target];
-      while (queue.length > 0) {
-        const current = queue.shift();
-        if (!current) break;
-        for (const link of links) {
-          if (link.from !== current.item.id) continue;
-          const dependent = byId.get(link.to);
-          if (
-            !dependent ||
-            dependent.s0 === null ||
-            moved.has(dependent.item.id)
-          )
-            continue;
-          const shift = Math.max(0, current.ee + 1 - dependent.s0);
-          if (shift === 0) continue;
-          dependent.es = dependent.s0 + shift;
-          dependent.ee = dependent.d0 + shift;
-          moved.set(dependent.item.id, shift);
-          queue.push(dependent);
-        }
       }
     }
   }
@@ -907,7 +884,6 @@ export function layoutTimeline(input: LayoutInput): TimelineLayout {
     }
     const w = row.work;
     const { item } = w;
-    const shift = moved.get(item.id) ?? 0;
     const dragged = drag?.id === item.id;
     const effectiveStart = w.es ?? w.d0;
     const changed = w.ee !== w.d0 || (w.s0 !== null && effectiveStart !== w.s0);
@@ -948,7 +924,7 @@ export function layoutTimeline(input: LayoutInput): TimelineLayout {
         tip = {
           x: X(w.d0 + 1) - 60,
           text: fill(copy.tip.resize, { from: fmtDay(w.d0), to: fmtDay(w.ee) }),
-          note: cascadeNote(works, moved, item.id, copy),
+          note: "",
         };
       } else {
         ghost = { x: X(effectiveStart), width: w.w + 2 };
@@ -959,11 +935,9 @@ export function layoutTimeline(input: LayoutInput): TimelineLayout {
             from: rangeOf(w.s0, w.d0),
             to: rangeOf(effectiveStart, w.ee),
           }),
-          note: cascadeNote(works, moved, item.id, copy),
+          note: "",
         };
       }
-    } else if (shift > 0 && w.s0 !== null) {
-      ghost = { x: X(effectiveStart), width: w.w + 2 };
     }
 
     out.push({
@@ -1184,23 +1158,6 @@ function lateNote<T extends { textLeft: number; text: string }>(
     textLeft: fit?.left ?? late.textLeft,
     textMax: fit?.maxWidth ?? 0,
   };
-}
-
-function cascadeNote(
-  works: readonly Work[],
-  moved: ReadonlyMap<string, number>,
-  draggedId: string,
-  copy: TimelineCopy,
-): string {
-  const first = works.find(
-    (work) => work.item.id !== draggedId && (moved.get(work.item.id) ?? 0) > 0,
-  );
-  if (!first) return "";
-  return fill(copy.tip.cascade, {
-    title: first.item.title,
-    days: moved.get(first.item.id) ?? 0,
-    date: fmtDay(first.es ?? first.ee),
-  });
 }
 
 /**

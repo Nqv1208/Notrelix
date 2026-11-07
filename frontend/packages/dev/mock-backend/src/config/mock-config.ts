@@ -38,13 +38,35 @@ export type MockBusinessState =
 export type MockDensity = "tiny" | "normal" | "large" | "stress";
 
 export type MockOverlay =
-  "long-titles" | "unicode" | "missing-avatars" | "many-columns" | "many-cards";
+  | "long-titles"
+  | "unicode"
+  | "missing-avatars"
+  | "many-columns"
+  | "many-cards"
+  | "board-states"
+  /** BC-Bulk `bk-grp` and `bk-cap`: a board whose one group holds 301 items. */
+  | "bulk-states"
+  | "deleted-fields"
+  | "field-restored-elsewhere"
+  | "item-blockers";
 
 export type MockLatency = "instant" | "fast" | "normal" | "slow";
 
 export interface MockFaultProfile {
   /** Key: normalized pathname or "*" for all routes. Value: fault type. */
-  [pathOrStar: string]: "network" | "401" | "409" | "500" | "validation";
+  [pathOrStar: string]:
+    | "network"
+    | "401"
+    | "409"
+    // The target is gone, or its owner took it back: the identical NotFound.
+    | "404"
+    | "500"
+    | "validation"
+    // A second writer got there first: a handler that takes an expected version answers 412.
+    | "stale"
+    | "stale-option"
+    | "stale-type"
+    | "required";
 }
 
 // ─── Config interface ─────────────────────────────────────────────────────────
@@ -176,14 +198,24 @@ const VALID_OVERLAYS = new Set<string>([
   "missing-avatars",
   "many-columns",
   "many-cards",
+  "board-states",
+  "bulk-states",
+  "deleted-fields",
+  "field-restored-elsewhere",
+  "item-blockers",
 ]);
 
 const VALID_FAULTS = new Set<string>([
   "network",
   "401",
   "409",
+  "404",
   "500",
   "validation",
+  "stale",
+  "stale-option",
+  "stale-type",
+  "required",
 ]);
 
 export function parseMockConfigFromEnv(

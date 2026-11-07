@@ -39,10 +39,18 @@ export interface RetiredBoardsSurfaceProps {
   /** Archived: Unarchive. Deleted: Restore. Absent: the action is not offered. */
   readonly onAct?: (id: string) => void;
   readonly onOpen?: (id: string) => void;
+  /**
+   * The deleted list narrowed to one Space (a Space manager arriving from that Space): its name when the
+   * person may see it, and the way back to every board they can restore.
+   */
+  readonly spaceScope?: {
+    readonly name: string | null;
+    readonly onShowAll: () => void;
+  } | null;
 }
 
 const BUTTON =
-  "inline-flex h-8 items-center rounded-[7px] border border-line bg-popover px-3 text-item-small font-medium text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-default disabled:opacity-60";
+  "inline-flex h-8 items-center rounded-[7px] max-sm:h-11 border border-line bg-popover px-3 text-item-small font-medium text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-default disabled:opacity-60";
 
 /** The archived and deleted boards of a workspace, with Unarchive and Restore. */
 export function RetiredBoardsSurface({
@@ -58,6 +66,7 @@ export function RetiredBoardsSurface({
   formatDate,
   onAct,
   onOpen,
+  spaceScope,
 }: RetiredBoardsSurfaceProps) {
   const headingId = useId();
   const tabs: readonly RetiredBoardsTab[] = ["archived", "deleted"];
@@ -88,7 +97,7 @@ export function RetiredBoardsSurface({
             aria-controls={`${headingId}-panel`}
             onClick={() => onTab(id)}
             className={cn(
-              "-mb-px h-9 border-b-2 px-3 text-item-small font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+              "-mb-px h-9 border-b-2 px-3 max-sm:h-11 text-item-small font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
               tab === id
                 ? "border-foreground text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground",
@@ -104,6 +113,27 @@ export function RetiredBoardsSurface({
         role="tabpanel"
         aria-labelledby={`${headingId}-${tab}`}
       >
+        {tab === "deleted" && spaceScope ? (
+          <p
+            data-testid="retired-boards-space-scope"
+            className="mb-3 flex flex-wrap items-center gap-2 text-compact text-muted-foreground"
+          >
+            <span>
+              {spaceScope.name
+                ? fillRetiredBoardsCopy(copy.spaceScope, {
+                    space: spaceScope.name,
+                  })
+                : copy.spaceScopeUnnamed}
+            </span>
+            <button
+              type="button"
+              onClick={spaceScope.onShowAll}
+              className={BUTTON}
+            >
+              {copy.showAll}
+            </button>
+          </p>
+        ) : null}
         {loading ? (
           <p
             role="status"

@@ -66,6 +66,14 @@ public static class BackgroundJobsRegistration
         services.AddScoped<DeletedWorkspacePurger>();
         services.AddHostedService<DeletedWorkspacePurgeService>();
 
+        // Work Management: purge the boards deleted more than 30 days ago (restore is over by then). Off by default.
+        services.AddOptions<DeletedBoardPurgeOptions>()
+            .Bind(configuration.GetSection(DeletedBoardPurgeOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<DeletedBoardPurgeOptions>, DeletedBoardPurgeOptionsValidator>();
+        services.AddScoped<DeletedBoardPurger>();
+        services.AddHostedService<DeletedBoardPurgeService>();
+
         // Collaboration: tell assignees about Items due tomorrow and overdue Items, once per Item and due day.
         services.AddOptions<DueDateNotificationOptions>()
             .Bind(configuration.GetSection(DueDateNotificationOptions.SectionName))

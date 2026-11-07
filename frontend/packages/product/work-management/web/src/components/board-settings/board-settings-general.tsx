@@ -71,6 +71,7 @@ export function GeneralSection({
     zone: useId(),
     week: useId(),
     del: useId(),
+    zoneNote: useId(),
   };
   const [title, setTitle] = useState(general.title);
   const [description, setDescription] = useState(general.description);
@@ -82,6 +83,7 @@ export function GeneralSection({
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [confirmName, setConfirmName] = useState("");
   const [lifecycleBusy, setLifecycleBusy] = useState(false);
+  const departmentName = general.department?.name ?? space?.name;
   const impact = settings.impact;
   const effectCounts = impact
     ? {
@@ -285,7 +287,7 @@ export function GeneralSection({
           <div className={ROW_CLASS}>
             <label htmlFor={ids.desc} className={LABEL_CLASS}>
               {t.description}
-              <small className="block text-metadata font-normal text-meta-foreground">
+              <small className="block text-metadata leading-[1.45] font-normal text-meta-foreground">
                 {t.descriptionHint}
               </small>
             </label>
@@ -317,7 +319,7 @@ export function GeneralSection({
                   type="button"
                   aria-disabled="true"
                   aria-label={t.changeIcon}
-                  className="grid size-[30px] cursor-default place-items-center rounded-lg border-0 text-white"
+                  className="grid size-[30px] cursor-default place-items-center rounded-[8px] border-0 text-white max-sm:size-11"
                   style={{ backgroundColor: color }}
                 >
                   <SquareKanban aria-hidden="true" className="size-3.5" />
@@ -331,7 +333,7 @@ export function GeneralSection({
                   aria-pressed={option.toLowerCase() === color.toLowerCase()}
                   aria-label={t.colors[option]}
                   onClick={() => setColor(option)}
-                  className="size-[22px] shrink-0 cursor-pointer rounded-[6px] border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-pressed:shadow-[0_0_0_2px_var(--popover),0_0_0_4px_var(--foreground)]"
+                  className="size-[22px] shrink-0 cursor-pointer rounded-[6px] max-sm:size-11 border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-pressed:shadow-[0_0_0_2px_var(--popover),0_0_0_4px_var(--foreground)]"
                   style={{ backgroundColor: option }}
                 />
               ))}
@@ -358,10 +360,8 @@ export function GeneralSection({
                       {space.mark.initials}
                     </span>
                   ) : null}
-                  {general.department
-                    ? fillCopy(t.departmentName, {
-                        name: general.department.name,
-                      })
+                  {departmentName !== undefined
+                    ? fillCopy(t.departmentName, { name: departmentName })
                     : t.departmentNone}
                 </span>
                 {onMove ? (
@@ -392,7 +392,7 @@ export function GeneralSection({
           <div className={ROW_CLASS}>
             <label htmlFor={ids.key} className={LABEL_CLASS}>
               {t.key}
-              <small className="block text-metadata font-normal text-meta-foreground">
+              <small className="block text-metadata leading-[1.45] font-normal text-meta-foreground">
                 {t.keyHint}
               </small>
             </label>
@@ -424,49 +424,74 @@ export function GeneralSection({
               </span>
             </div>
           </div>
-          {unavailable.locale ? null : (
-            <>
-              <div className={ROW_CLASS}>
-                <label htmlFor={ids.zone} className={LABEL_CLASS}>
-                  {t.timeZone}
-                  <small className="block text-metadata font-normal text-meta-foreground">
-                    {t.timeZoneHint}
-                  </small>
-                </label>
-                <Select value={timeZone} onValueChange={setTimeZone}>
-                  <SelectTrigger id={ids.zone} className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ZONES.map((zone) => (
-                      <SelectItem key={zone} value={zone}>
-                        {t.timeZones[zone]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className={ROW_CLASS}>
-                <label htmlFor={ids.week} className={LABEL_CLASS}>
-                  {t.weekStart}
-                </label>
-                <Select
-                  value={weekStart}
-                  onValueChange={(value) =>
-                    setWeekStart(value as "monday" | "sunday")
-                  }
-                >
-                  <SelectTrigger id={ids.week} className="w-[200px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monday">{t.weekDays.monday}</SelectItem>
-                    <SelectItem value="sunday">{t.weekDays.sunday}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </>
-          )}
+          <div className={ROW_CLASS}>
+            <label htmlFor={ids.zone} className={LABEL_CLASS}>
+              {t.timeZone}
+              <small className="block text-metadata leading-[1.45] font-normal text-meta-foreground">
+                {t.timeZoneHint}
+              </small>
+            </label>
+            {unavailable.locale ? (
+              <input
+                id={ids.zone}
+                readOnly
+                value={
+                  t.timeZones[timeZone as keyof typeof t.timeZones] ?? timeZone
+                }
+                title={t.localeInherited}
+                aria-describedby={ids.zoneNote}
+                className={INPUT_CLASS}
+              />
+            ) : (
+              <Select value={timeZone} onValueChange={setTimeZone}>
+                <SelectTrigger id={ids.zone} className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ZONES.map((zone) => (
+                    <SelectItem key={zone} value={zone}>
+                      {t.timeZones[zone]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+          <div className={ROW_CLASS}>
+            <label htmlFor={ids.week} className={LABEL_CLASS}>
+              {t.weekStart}
+            </label>
+            {unavailable.locale ? (
+              <input
+                id={ids.week}
+                readOnly
+                value={t.weekDays[weekStart]}
+                title={t.localeInherited}
+                aria-describedby={ids.zoneNote}
+                className={cn(INPUT_CLASS, "w-[200px]")}
+              />
+            ) : (
+              <Select
+                value={weekStart}
+                onValueChange={(value) =>
+                  setWeekStart(value as "monday" | "sunday")
+                }
+              >
+                <SelectTrigger id={ids.week} className="w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monday">{t.weekDays.monday}</SelectItem>
+                  <SelectItem value="sunday">{t.weekDays.sunday}</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+          {unavailable.locale ? (
+            <span id={ids.zoneNote} className="sr-only">
+              {t.localeInherited}
+            </span>
+          ) : null}
         </div>
 
         <section
@@ -479,7 +504,7 @@ export function GeneralSection({
           >
             {t.danger}
           </h3>
-          <div className="px-4 pt-1">
+          <div className="px-4 pt-1 empty:hidden">
             <WriteError scope="lifecycle" id="bs-lifecycle-error" />
           </div>
           <div className="flex items-center gap-4 px-4 py-3">

@@ -141,7 +141,10 @@ async function loneControls(page: Page): Promise<string[]> {
         primary,
       });
     };
-    const children = Array.from(bar.children);
+    // A hidden child (the tablet slot outside the tablet band) is not a control: the last shown one is.
+    const children = Array.from(bar.children).filter(
+      (child) => child.getBoundingClientRect().width > 0,
+    );
     const visit = (child: Element, last: boolean) => {
       const kind = child.getAttribute("data-tl");
       if (kind === "toggles")

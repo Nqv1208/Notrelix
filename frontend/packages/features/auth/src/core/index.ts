@@ -9,8 +9,6 @@ export type {
   User,
   LoginRequestApi,
   LoginResponseApi,
-  RegisterRequestApi,
-  RegisterResponseApi,
   LogoutRequest,
   RefreshRequest,
   ForgotPasswordRequest,
@@ -24,14 +22,12 @@ export type { AuthApiClient, AuthEndpoints } from "./api/auth.service";
 // Schemas
 export {
   loginSchema,
-  registerSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
   AUTH_ERROR_KEYS,
   PASSWORD_MIN_LENGTH,
 } from "./schemas";
 export type { LoginRequest } from "./schemas/login.schema";
-export type { RegisterRequest } from "./schemas/register.schema";
 export type { ForgotPasswordRequest as ForgotPasswordFormRequest } from "./schemas/forgot-password.schema";
 export type { ResetPasswordRequest as ResetPasswordFormRequest } from "./schemas/reset-password.schema";
 

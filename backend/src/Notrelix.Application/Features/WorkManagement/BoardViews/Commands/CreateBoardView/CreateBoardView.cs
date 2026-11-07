@@ -47,6 +47,7 @@ public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewComm
 
         var configData = JsonValue.Create(request.ConfigJson);
         var config = BoardViewConfig.Create(configData);
+        await BoardViewFieldReferences.EnsureCalendarDateFieldAsync(_context, request.BoardId, config, previous: null, cancellationToken);
         var visibility = BoardViewVisibility.Board;
         if (!string.IsNullOrWhiteSpace(request.Visibility) && !Enum.TryParse(request.Visibility, true, out visibility))
             throw new ArgumentException($"Invalid view visibility: {request.Visibility}");
@@ -55,7 +56,8 @@ public class CreateBoardViewCommandHandler : IRequestHandler<CreateBoardViewComm
         _context.BoardViews.Add(view);
 
         var response = BoardViewDto.From(view);
-        if (_realtime is not null && _events is not null)
+        // A private view is its creator's alone: the board's topic reaches every member, so it carries nothing of it.
+        if (_realtime is not null && _events is not null && view.Visibility == BoardViewVisibility.Board)
             _events.Add(_realtime.Map(request, response, view.Version));
         return response;
     }

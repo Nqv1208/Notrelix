@@ -1,6 +1,5 @@
 import type { KanbanCardActions } from "./kanban-card-quick-actions";
 import type { KanbanCardSelection } from "./kanban-selection";
-import { useHoldRealtimeRefetch } from "@notrelix/work-management-state";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
@@ -27,7 +26,10 @@ import {
   type AddGroupDraft,
 } from "../../status-option/add-group-popover";
 import { cn } from "@notrelix/ui-web";
-import { kanbanColumnWidthClass } from "./kanban-layout";
+import {
+  kanbanColumnTabletWidthClass,
+  kanbanColumnWidthClass,
+} from "./kanban-layout";
 import { KanbanAddLane } from "./kanban-add-lane";
 import { fillCopy, pluralCopy, type KanbanCardCopy } from "./kanban-card.copy";
 import { KanbanCardOverlay } from "./kanban-card";
@@ -55,6 +57,8 @@ import { KanbanEmptyState } from "./kanban-empty-state";
 import type { KanbanLaneCopy } from "./kanban-lane.copy";
 
 export interface KanbanBoardProps {
+  /** Told when a card starts or ends a drag: the host holds realtime refetches while one is lifted. */
+  onDraggingChange?: (dragging: boolean) => void;
   /** Lanes in option order, filter applied (`total` is the lane total). */
   lanes: readonly KanbanStatusLane[];
   /**
@@ -70,6 +74,8 @@ export interface KanbanBoardProps {
   selectedItemId?: string;
   /** A filter or search narrows the board. */
   filterActive: boolean;
+  /** The board holds no item at all (not merely a filter hiding them). */
+  boardEmpty?: boolean;
   /** "Thêm vào {lane}" is offered. */
   canAdd: boolean;
   /** Cards can be dragged between and within lanes (pointer and touch). */
@@ -185,6 +191,7 @@ export function KanbanBoard({
   timeZone,
   selectedItemId,
   filterActive,
+  boardEmpty = false,
   canAdd,
   canDrag,
   groupKind = "status",
@@ -213,13 +220,15 @@ export function KanbanBoard({
   lanePaging,
   initialCollapsed,
   onCollapsedChange,
+  onDraggingChange,
 }: KanbanBoardProps) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(
     () => initialCollapsed ?? new Set(),
   );
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const [drag, setDrag] = useState<DragState | null>(null);
-  useHoldRealtimeRefetch(drag !== null);
+  const dragging = drag !== null;
+  useEffect(() => onDraggingChange?.(dragging), [dragging, onDraggingChange]);
   // The arrangement of a card just dropped, kept on screen until the lanes
   // as stored show it too: the write lands in the cache a moment after the
   // drop, and without this the card would sit back in its old place until then.
@@ -516,6 +525,7 @@ export function KanbanBoard({
               timeZone={timeZone}
               selectedItemId={selectedItemId}
               filterActive={filterActive}
+              boardEmpty={boardEmpty}
               canAdd={canAdd}
               canDrag={canDrag}
               dropTarget={drag !== null && currentLaneKey === key}
@@ -624,6 +634,7 @@ export function KanbanBoard({
                 triggerClassName={cn(
                   "flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border-0 bg-transparent px-4 text-compact font-medium text-muted-foreground transition-colors hover:bg-state-hover hover:text-foreground aria-expanded:bg-state-hover aria-expanded:text-foreground",
                   kanbanColumnWidthClass,
+                  kanbanColumnTabletWidthClass,
                 )}
               />
             </div>

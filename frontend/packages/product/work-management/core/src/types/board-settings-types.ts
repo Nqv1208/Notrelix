@@ -68,6 +68,30 @@ export interface BoardSettingsUsageDto {
   readonly how: string;
 }
 
+/** What a draft formula shows on one item: a value, nothing, or the reason it cannot be computed. */
+export interface FormulaPreviewDto {
+  readonly state: "ok" | "empty" | "error";
+  /** The value as text; null unless `state` is `ok`. */
+  readonly value: string | null;
+  /** The server's code for an error (`unknown-field`, `divide-by-zero`, `invalid-definition`). */
+  readonly errorCode: string | null;
+  /** What the draft read: the fields a formula refers to, or the source value of up to five sub-items. */
+  readonly inputs: readonly FormulaPreviewInputDto[];
+  /** A rollup's number of sub-items; null for a formula. */
+  readonly subItemCount: number | null;
+}
+
+export interface FormulaPreviewInputDto {
+  readonly name: string;
+  /** The value as text; null when the field is empty or could not be read. */
+  readonly value: string | null;
+}
+
+/** A draft the server tries on one item: a formula, or a rollup (its field only when it aggregates one). */
+export type FormulaPreviewDraft =
+  | { readonly expression: string }
+  | { readonly rollupFunction: string; readonly rollupFieldId?: string | null };
+
 export interface BoardSettingsFieldDto {
   readonly id: string;
   /** Version of the field, sent back by a write on it. */
@@ -82,13 +106,19 @@ export interface BoardSettingsFieldDto {
   /** The field splits the Kanban: drawn as a chip. */
   readonly accent: boolean;
   readonly unit: string | null;
+  /** A People field holds several people (settings.multiple), not one. */
+  readonly multiple?: boolean;
   /** The field is a stored column (it has values and options to edit). */
   readonly hasColumn: boolean;
   readonly valueCount: number;
   readonly options: readonly BoardSettingsOptionDto[];
   readonly defaultOptionId: string | null;
+  /** The text or number a Text, Long text or Number field starts with; empty when none. */
+  readonly defaultText?: string;
   readonly required: boolean;
   readonly guidance: string;
+  /** The field's settings JSON as stored, merged with an edit of its rules before it is saved. */
+  readonly settingsJson?: string;
   readonly usedIn: readonly BoardSettingsUsageDto[];
   /** What a Formula or Rollup computes; the expression shows field names. */
   readonly computed?: BoardSettingsComputedDto;
@@ -203,6 +233,8 @@ export interface BoardSettingsDto {
   /** Version of this read: a write may send it back to detect a conflict. */
   readonly version: number;
   readonly itemCount: number;
+  /** An item a draft formula can be tried on ("Xem thử với ERP-145"); none on an empty board. */
+  readonly previewItem?: { readonly id: string; readonly key: string };
   readonly general: BoardSettingsGeneralDto;
   readonly fields: readonly BoardSettingsFieldDto[];
   /**
@@ -214,6 +246,8 @@ export interface BoardSettingsDto {
   readonly systemFields: readonly BoardSettingsSystemFieldDto[];
   readonly archivedFields: readonly BoardSettingsArchivedFieldDto[];
   readonly views: readonly BoardSettingsViewDto[];
+  /** Views taken out of the tab strip; Restore brings one back. */
+  readonly archivedViews?: readonly BoardSettingsViewDto[];
   readonly groups: readonly BoardSettingsGroupDto[];
   /** Groups taken out of every view; their items stay in them, read-only, until the group is unarchived. */
   readonly archivedGroups: readonly BoardSettingsGroupDto[];
@@ -234,6 +268,7 @@ export interface BoardSettingsGeneralPatch {
 export interface BoardSettingsFieldPatch {
   readonly name?: string;
   readonly defaultOptionId?: string | null;
+  readonly defaultText?: string;
   readonly required?: boolean;
   readonly guidance?: string;
   /** The field's settings JSON (a Formula's expression, a Rollup's function). */

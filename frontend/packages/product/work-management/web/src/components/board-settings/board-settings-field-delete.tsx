@@ -12,8 +12,8 @@ import { fillCopy, plural } from "./board-settings-format";
 import { BUTTON_CLASS } from "./board-settings-parts";
 
 /**
- * The confirmation before a board Manager deletes a field for good: the field
- * and the values items hold in it go, so the dialog says how many values that is.
+ * The confirmation before a board Manager deletes a field: it leaves every view and
+ * can be restored for 30 days with its values, so the dialog says how many values stay with it.
  */
 export function FieldDeleteDialog({
   field,

@@ -12,7 +12,10 @@ import {
 import { useBoardKanban, type UseBoardKanbanOptions } from "./use-board-kanban";
 import { useBoardPreference } from "../queries/use-board-preference";
 import { useBoardView } from "./use-board-view";
-import { isVersionConflict } from "../queries/use-item-conflict";
+import {
+  changedByNameOf,
+  isVersionConflict,
+} from "../queries/use-item-conflict";
 import { useBoardReadNeed } from "../queries/board-read";
 
 /**
@@ -168,7 +171,10 @@ export function useBoardTable(
   const [savingToView, setSavingToView] = useState(false);
   const [saveToViewFailed, setSaveToViewFailed] = useState(false);
   // Someone else saved the shared view first: saving again overwrites their change.
-  const [saveToViewConflict, setSaveToViewConflict] = useState(false);
+  // `null`: no conflict; `byName` is who saved first, null when the server named no one.
+  const [saveToViewConflict, setSaveToViewConflict] = useState<{
+    readonly byName: string | null;
+  } | null>(null);
   const [savedToView, setSavedToView] = useState(false);
   useEffect(() => {
     if (!savedToView) return;
@@ -180,7 +186,7 @@ export function useBoardTable(
   const saveColumnsToView = useCallback(() => {
     setSavingToView(true);
     setSaveToViewFailed(false);
-    setSaveToViewConflict(false);
+    setSaveToViewConflict(null);
     setSavedToView(false);
     updateViewConfig(
       {
@@ -196,7 +202,8 @@ export function useBoardTable(
         },
         onError: (error) => {
           setSavingToView(false);
-          if (isVersionConflict(error)) setSaveToViewConflict(true);
+          if (isVersionConflict(error))
+            setSaveToViewConflict({ byName: changedByNameOf(error) });
           else setSaveToViewFailed(true);
         },
       },
@@ -230,7 +237,8 @@ export function useBoardTable(
     saveColumnsToView,
     savingColumnsToView: savingToView,
     saveColumnsToViewFailed: saveToViewFailed,
-    saveColumnsToViewConflict: saveToViewConflict,
+    saveColumnsToViewConflict: saveToViewConflict !== null,
+    saveColumnsToViewConflictBy: saveToViewConflict?.byName ?? null,
     columnsSavedToView: savedToView,
     columnsSaveFailed: preference.columnsFailed,
     retryColumnsSave: preference.retryColumns,

@@ -247,6 +247,75 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Grant_ChangingTheLevelOfAnExistingGrant_NeedsItsCurrentVersion_AStaleOrMissingOneChangesNothing()
+    {
+        var (accountId, ownerId, _, pageId, memberId) = await SeedPageStackAsync();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        var viewer = (await SendAsync<Result<ResourcePermissionDto>>(provider,
+            new GrantResourcePermissionCommand("documents.page", pageId, "User", memberId, "Viewer"))).Data;
+
+        // No version, and a version that is not the stored one: refused with the conflict code, the row stays Viewer.
+        foreach (long? named in new long?[] { null, viewer.Version + 5 })
+        {
+            var stale = () => SendAsync<Result<ResourcePermissionDto>>(provider,
+                new GrantResourcePermissionCommand("documents.page", pageId, "User", memberId, "Editor", ExpectedVersion: named));
+            (await stale.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.PreconditionFailedException>())
+                .Which.Message.Should().Contain("changed since it was read");
+        }
+
+        // The same level again is a no-op whatever version it names: no version moves.
+        var again = (await SendAsync<Result<ResourcePermissionDto>>(provider,
+            new GrantResourcePermissionCommand("documents.page", pageId, "User", memberId, "Viewer", ExpectedVersion: 999))).Data;
+        again.Version.Should().Be(viewer.Version);
+
+        // The right version changes the level; the version that was just replaced is stale for a second writer.
+        var editor = (await SendAsync<Result<ResourcePermissionDto>>(provider,
+            new GrantResourcePermissionCommand("documents.page", pageId, "User", memberId, "Editor", ExpectedVersion: viewer.Version))).Data;
+        editor.Level.Should().Be("Editor");
+        editor.Version.Should().BeGreaterThan(viewer.Version);
+        var lost = () => SendAsync<Result<ResourcePermissionDto>>(provider,
+            new GrantResourcePermissionCommand("documents.page", pageId, "User", memberId, "Commenter", ExpectedVersion: viewer.Version));
+        await lost.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.PreconditionFailedException>();
+
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
+        var row = await verify.ResourcePermissions.IgnoreQueryFilters().SingleAsync(p => p.Id == viewer.Id);
+        row.Level.ToString().Should().Be("Editor");
+        row.Version.Should().Be(editor.Version);
+    }
+
+    [Fact]
+    public async Task Revoke_OfAnEntryThatIsAlreadyRevoked_Succeeds_AndChangesAndAuditsNothingMore()
+    {
+        var (accountId, ownerId, workspaceId, pageId, memberId) = await SeedPageStackAsync();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        var granted = (await SendAsync<Result<ResourcePermissionDto>>(provider,
+            new GrantResourcePermissionCommand("documents.page", pageId, "User", memberId, "Viewer"))).Data;
+        (await SendAsync<Result>(provider,
+            new RevokeResourcePermissionCommand("documents.page", pageId, granted.Id))).Succeeded.Should().BeTrue();
+
+        await using var before = _db.CreateOwnerContext(SystemTenant());
+        var revokedRow = await before.ResourcePermissions.IgnoreQueryFilters().SingleAsync(p => p.Id == granted.Id);
+        var revokedAt = revokedRow.DeletedAt;
+        var versionAfterFirst = revokedRow.Version;
+        var auditsAfterFirst = await before.EnterpriseAuditLogs
+            .CountAsync(a => a.WorkspaceId == workspaceId && a.Action == "RevokeResourcePermission");
+
+        // A retry, or a second manager removing the same entry, is a success that writes nothing.
+        (await SendAsync<Result>(provider,
+            new RevokeResourcePermissionCommand("documents.page", pageId, granted.Id))).Succeeded.Should().BeTrue();
+
+        await using var after = _db.CreateOwnerContext(SystemTenant());
+        var row = await after.ResourcePermissions.IgnoreQueryFilters().SingleAsync(p => p.Id == granted.Id);
+        row.DeletedAt.Should().Be(revokedAt);
+        row.Version.Should().Be(versionAfterFirst);
+        (await after.EnterpriseAuditLogs
+                .CountAsync(a => a.WorkspaceId == workspaceId && a.Action == "RevokeResourcePermission"))
+            .Should().Be(auditsAfterFirst);
+    }
+
+    [Fact]
     public async Task Grant_OnPage_ExpiredDates_AreRejectedByValidation()
     {
         var (accountId, ownerId, _, pageId, _) = await SeedPageStackAsync();

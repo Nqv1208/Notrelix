@@ -23,6 +23,7 @@ import type {
   MockPageRecord,
   MockBoardViewRecord,
   MockColumnRecord,
+  MockDeletedColumnRecord,
   MockFieldOptionRecord,
   MockLabelRecord,
   MockChecklistRecord,
@@ -133,7 +134,11 @@ import {
   ERP_AUTOMATION_RULES,
 } from "./mock-erp-automations";
 import { MockOnboarding } from "./mock-onboarding";
-import { ERP_STATE_ITEMS, erpLongChildTitles } from "./mock-item-states";
+import {
+  ERP_LINK_ITEMS,
+  ERP_STATE_ITEMS,
+  erpLongChildTitles,
+} from "./mock-item-states";
 import { MockBoardSharing, seedErpSharing } from "./mock-board-sharing";
 import { MockBoardSavedViews } from "./mock-board-saved-views";
 import { MockBoardSavedFilters } from "./mock-board-saved-filters";
@@ -149,6 +154,8 @@ import {
   INVOICE_HISTORY,
 } from "./mock-docs-invoice";
 import {
+  BOARD_STATE_BOARDS,
+  BULK_STATE_BOARDS,
   DEPARTMENT_BOARDS,
   TECH_SIDE_BOARDS,
   departmentItemId,
@@ -268,6 +275,11 @@ export class MockStore {
   private membershipsById = new Map<string, MockMembershipRecord>();
   private viewsById = new Map<string, MockWorkspaceViewRecord>();
   private boardsById = new Map<string, MockBoardRecord>();
+  /** Deleted boards inside their 30-day window (UC-WM-A07), with when and by whom. */
+  private deletedBoardsById = new Map<
+    string,
+    { board: MockBoardRecord; deletedAt: string; deletedBy: string }
+  >();
   /** Settings registry of the boards (the gap `CTR-GAP-WM-BOARD-SETTINGS`). */
   readonly settings = new MockBoardSettingsState(this);
   private listsById = new Map<string, MockListRecord>();
@@ -281,6 +293,10 @@ export class MockStore {
   private pagesById = new Map<string, MockPageRecord>();
   private boardViewsByBoardId = new Map<string, MockBoardViewRecord>();
   private columnsById = new Map<string, MockColumnRecord>();
+  private deletedColumnsByBoardId = new Map<
+    string,
+    MockDeletedColumnRecord[]
+  >();
   private labelsById = new Map<string, MockLabelRecord>();
   private checklistsById = new Map<string, MockChecklistRecord>();
   private checklistItemsById = new Map<string, MockChecklistItemRecord>();
@@ -1179,6 +1195,10 @@ export class MockStore {
       boardId,
       name: "Ưu tiên",
       fieldType: "select",
+      // The rules the Final-Settings artboard draws on this field: required, guidance, a default option.
+      settings:
+        '{"required":true,"guidance":"Chỉ chọn Khẩn khi việc chặn ngày go-live 01/11."}',
+      defaultValue: '"mock-erp-priority-medium"',
       position: 2,
       options: ERP_PRIORITY_OPTIONS.map((option) => ({ ...option })),
     });
@@ -1285,9 +1305,33 @@ export class MockStore {
         boardId,
         name: field.name,
         fieldType: field.fieldType,
-        position: 14 + index,
+        position: 16 + index,
       }),
     );
+    // A multi-select and a person field with no value: the table's cell editors for them (`WM-Field-Editors`).
+    this.insertColumn({
+      id: "mock-erp-col-related-modules",
+      boardId,
+      name: "Phân hệ liên quan",
+      fieldType: "multi_select",
+      position: 14,
+      options: ERP_MODULE_OPTIONS.map(
+        (option, index): MockFieldOptionRecord => ({
+          id: `${option.id}-related`,
+          name: option.name,
+          color: "#64748B",
+          position: `a${String(index).padStart(4, "0")}`,
+        }),
+      ),
+    });
+    this.insertColumn({
+      id: "mock-erp-col-reviewer",
+      boardId,
+      name: "Người nghiệm thu",
+      fieldType: "person",
+      settings: JSON.stringify({ multiple: true }),
+      position: 15,
+    });
     this.boardViewsByBoardId.set(boardId, {
       boardId,
       viewMode: "kanban",
@@ -1304,6 +1348,11 @@ export class MockStore {
         ],
       }),
     });
+    if (
+      this.config.overlays.includes("deleted-fields") ||
+      this.config.overlays.includes("field-restored-elsewhere")
+    )
+      this.seedDeletedFields(boardId);
     this.settings.set(
       boardId,
       erpSettingsRegistry({
@@ -1458,6 +1507,83 @@ export class MockStore {
             erpStatusOptionId(done ? "done" : "todo"),
           );
         });
+      if (item.deleted) {
+        this.deleteCard(id);
+        const trashed = this.trashedCardsById.get(id);
+        if (trashed) {
+          trashed.deletedAt = item.deleted.at;
+          trashed.deletedBy = item.deleted.byUserId;
+        }
+      }
+    }
+    // Links popup set (a spec's init script): ERP-144 blocks ERP-148, waits for ERP-139, is a sub-item of ERP-120.
+    const popupLinks: MockItemLinkRecord[] = [];
+    if ((globalThis as { __mockLinksSet?: boolean }).__mockLinksSet) {
+      for (const item of ERP_LINK_ITEMS) {
+        const id = erpItemId(item.key);
+        this.insertCard({
+          id,
+          boardId,
+          listId: erpGroupId("test"),
+          title: item.title,
+          position: 200 + this.cardsById.size,
+          createdAt: "2026-09-21T02:00:00.000Z",
+          updatedAt: "2026-10-12T01:40:00.000Z",
+          itemKey: item.key,
+          parentItemId: item.parentKey ? erpItemId(item.parentKey) : null,
+          dueAt: null,
+          startedAt: null,
+          completedAt: null,
+          assigneeUserIds: [erpAssigneeId(item.assignee)],
+          childProgress: null,
+          unlisted: true,
+        });
+        this.updateFieldValue(
+          id,
+          ERP_STATUS_COLUMN_ID,
+          erpStatusOptionId(item.status),
+        );
+        if (item.link) {
+          const popup = erpItemId("ERP-144");
+          popupLinks.push({
+            id: `link-popup-${item.key}`,
+            boardId,
+            from: item.link === "blocks" ? popup : id,
+            to: item.link === "blocks" ? id : popup,
+            kind: "dependency",
+          });
+        }
+      }
+      const popupCard = this.cardsById.get(erpItemId("ERP-144"));
+      if (popupCard) popupCard.parentItemId = erpItemId("ERP-120");
+    }
+    // The many-cards overlay: 127 more archived items, so the archive holds 128 and reads in pages of 50.
+    if (this.config.overlays.includes("many-cards")) {
+      for (let n = 1; n <= 127; n += 1) {
+        const minute = 180 - n; // minutes after 00:00 UTC on 7 Oct, newest first
+        const at = `2026-10-07T${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}:00.000Z`;
+        this.insertCard({
+          id: erpItemId(`ERP-${400 + n}`),
+          boardId,
+          listId: erpGroupId("prep"),
+          title: `Việc đã lưu trữ số ${n}`,
+          position: 1000 + n,
+          createdAt: "2026-09-14T02:00:00.000Z",
+          updatedAt: at,
+          itemKey: `ERP-${400 + n}`,
+          description: "",
+          parentItemId: null,
+          dueAt: null,
+          startedAt: null,
+          completedAt: null,
+          assigneeUserIds: [],
+          childProgress: null,
+          unlisted: true,
+          isArchived: true,
+          archivedAt: at,
+          archivedByUserId: ERP_PEOPLE.HA.id,
+        });
+      }
     }
     const planId = (ref: string) =>
       ref.startsWith("ERP-") ? erpItemId(ref) : ref;
@@ -1496,6 +1622,7 @@ export class MockStore {
         kind: "related" as const,
       })),
     ];
+    this.itemLinks.push(...popupLinks);
     for (const entry of ERP_HISTORY) {
       this.recordActivity(
         erpItemId(entry.itemKey),
@@ -1610,7 +1737,17 @@ export class MockStore {
   }
 
   private seedDepartmentBoards(workspaceId: string): void {
-    for (const dept of [...DEPARTMENT_BOARDS, ...TECH_SIDE_BOARDS]) {
+    const stateBoards = this.config.overlays.includes("board-states")
+      ? BOARD_STATE_BOARDS
+      : [];
+    for (const dept of [
+      ...DEPARTMENT_BOARDS,
+      ...TECH_SIDE_BOARDS,
+      ...stateBoards,
+      ...(this.config.overlays.includes("bulk-states")
+        ? BULK_STATE_BOARDS
+        : []),
+    ]) {
       this.insertBoard({
         id: dept.id,
         workspaceId,
@@ -1618,7 +1755,7 @@ export class MockStore {
         description: dept.description,
         background: { type: "color", value: dept.color },
         visibility: dept.visibility ?? "workspace",
-        isArchived: false,
+        isArchived: dept.archived ?? false,
         createdAt: "2026-09-15T02:00:00.000Z",
         updatedAt: "2026-10-12T01:00:00.000Z",
         spaceId: dept.spaceId,
@@ -1652,14 +1789,23 @@ export class MockStore {
           ),
         })),
       });
-      this.insertList({
-        id: dept.listId,
-        boardId: dept.id,
-        title: dept.listTitle,
-        color: dept.color,
-        position: 1,
-        isCollapsed: false,
-      });
+      if (dept.ownerColumnId)
+        this.insertColumn({
+          id: dept.ownerColumnId,
+          boardId: dept.id,
+          name: "Người thực hiện",
+          fieldType: "user",
+          position: 3,
+        });
+      if (!dept.noList)
+        this.insertList({
+          id: dept.listId,
+          boardId: dept.id,
+          title: dept.listTitle,
+          color: dept.color,
+          position: 1,
+          isCollapsed: false,
+        });
       dept.items.forEach((item, index) => {
         const id = departmentItemId(item.key);
         this.insertCard({
@@ -1729,6 +1875,38 @@ export class MockStore {
         joinedAt: "2026-09-15T02:00:00.000Z",
       })) as MockBoardMemberRecord[],
     );
+    // The saved-filter menu's rows on the payables board: the owner's own, and one a colleague shared.
+    this.savedFilters.add({
+      boardId: mockIds.boards.payables,
+      name: "Việc gấp tuần này",
+      criteria: null,
+      createdBy: mockIds.users.owner,
+    });
+    this.savedFilters.add({
+      boardId: mockIds.boards.payables,
+      name: "Sprint hiện tại",
+      criteria: null,
+      createdBy: mockIds.users.admin,
+    }).visibility = "Public";
+    // The roadmap board's menu draws a saved filter whose field was removed (WM-Filter-States): one condition on a field the board never had.
+    this.savedFilters.add({
+      boardId: mockIds.boards.roadmap,
+      name: "Việc gấp tuần này",
+      criteria: JSON.stringify({
+        v: 2,
+        filter: "c2:and~mock-roadmap-col-gone.gte.50",
+      }),
+      createdBy: mockIds.users.owner,
+    });
+    // The viewer reads the ERP board, not payables: the same shared filter there, for the viewer's read-only menu.
+    if (this.config.persona === "viewer") {
+      this.savedFilters.add({
+        boardId: mockIds.boards.erp,
+        name: "Sprint hiện tại",
+        criteria: null,
+        createdBy: mockIds.users.admin,
+      }).visibility = "Public";
+    }
   }
 
   /** Members of a board, in seeded order. */
@@ -1899,6 +2077,7 @@ export class MockStore {
     this.membershipsById.clear();
     this.viewsById.clear();
     this.boardsById.clear();
+    this.deletedBoardsById.clear();
     this.settings.clear();
     this.listsById.clear();
     this.cardsById.clear();
@@ -2323,6 +2502,7 @@ export class MockStore {
       name?: string;
       fieldType?: string;
       settings?: string;
+      defaultValue?: string;
       isHidden?: boolean;
     },
   ): boolean {
@@ -2333,6 +2513,12 @@ export class MockStore {
       name: patch.name ?? col.name,
       fieldType: patch.fieldType ?? col.fieldType,
       settings: patch.settings !== undefined ? patch.settings : col.settings,
+      defaultValue:
+        patch.defaultValue !== undefined
+          ? patch.defaultValue === "null"
+            ? undefined
+            : patch.defaultValue
+          : col.defaultValue,
       isHidden: patch.isHidden !== undefined ? patch.isHidden : col.isHidden,
     };
     this.columnsById.set(columnId, updated);
@@ -2529,9 +2715,118 @@ export class MockStore {
   deleteColumn(columnId: string): boolean {
     const col = this.columnsById.get(columnId);
     if (!col) return false;
+    this.keepDeletedColumn(col);
     this.removeIndex(this.columnIdsByBoardId, col.boardId, col.id);
     this.columnsById.delete(columnId);
     return true;
+  }
+
+  /**
+   * The overlay `deleted-fields`: the four fields `WM-DeletedFields` draws, deleted on the dates it names and read on
+   * 31 Oct 10:40 (the page clock of its spec). "Phòng ban yêu cầu" shares its name with a live field, so its restore
+   * is refused with the name-taken answer.
+   */
+  private seedDeletedFields(boardId: string): void {
+    const kept: [string, string, string, string, string, number][] = [
+      [
+        "mock-deleted-requester",
+        "Phòng ban yêu cầu",
+        "select",
+        "2026-10-27T04:40:00.000Z",
+        "Hà Nguyễn",
+        12,
+      ],
+      [
+        "mock-deleted-handover",
+        "Ngày bàn giao",
+        "date",
+        "2026-10-24T04:40:00.000Z",
+        "Trần Minh Quân",
+        16,
+      ],
+      [
+        "mock-deleted-note",
+        "Ghi chú nội bộ",
+        "long_text",
+        "2026-10-20T04:40:00.000Z",
+        "Hà Nguyễn",
+        41,
+      ],
+      [
+        "mock-deleted-contract",
+        "Mã hợp đồng",
+        "text",
+        "2026-10-02T04:40:00.000Z",
+        "Lê Hoàng Phúc",
+        9,
+      ],
+    ];
+    const restorable: Record<string, string> = {
+      "mock-deleted-requester": "2026-11-26T04:40:00.000Z",
+      "mock-deleted-handover": "2026-11-23T04:40:00.000Z",
+      "mock-deleted-note": "2026-11-19T04:40:00.000Z",
+      "mock-deleted-contract": "2026-11-01T04:40:00.000Z",
+    };
+    this.deletedColumnsByBoardId.set(
+      boardId,
+      kept.map(([id, name, fieldType, deletedAt, by, valueCount]) => ({
+        column: { id, boardId, name, fieldType, position: 99, version: 1 },
+        deletedAt,
+        // 30 days after the deletion, as the producer keeps it.
+        restorableUntil: restorable[id] ?? deletedAt,
+        deletedByName: by,
+        valueCount,
+      })),
+    );
+  }
+
+  /** Keeps a field leaving the schema for 30 days, the way the producer's soft delete does. */
+  private keepDeletedColumn(col: MockColumnRecord): void {
+    const kept = this.deletedColumnsByBoardId.get(col.boardId) ?? [];
+    kept.unshift({
+      column: col,
+      deletedAt: this.clock.isoNow(),
+      restorableUntil: this.clock.offsetDays(30),
+      deletedByName: "Nguyễn Thu Hà",
+      valueCount: 0,
+    });
+    this.deletedColumnsByBoardId.set(col.boardId, kept);
+  }
+
+  getDeletedColumns(boardId: string): MockDeletedColumnRecord[] {
+    return this.deletedColumnsByBoardId.get(boardId) ?? [];
+  }
+
+  /** Brings a deleted field back; "name-taken" when a live field has its name. */
+  restoreDeletedColumn(
+    boardId: string,
+    columnId: string,
+  ): "restored" | "not-found" | "name-taken" | "already-active" {
+    const kept = this.deletedColumnsByBoardId.get(boardId) ?? [];
+    const found = kept.find((entry) => entry.column.id === columnId);
+    if (!found) return "not-found";
+    // The overlay `field-restored-elsewhere`: another person restores "Ngày bàn giao" first, so this restore finds it live.
+    if (
+      this.config.overlays.includes("field-restored-elsewhere") &&
+      columnId === "mock-deleted-handover"
+    ) {
+      this.deletedColumnsByBoardId.set(
+        boardId,
+        kept.filter((entry) => entry !== found),
+      );
+      this.insertColumn(found.column);
+      return "already-active";
+    }
+    const taken = this.getColumns(boardId).some(
+      (live) => live.name.toLowerCase() === found.column.name.toLowerCase(),
+    );
+    if (taken) return "name-taken";
+    this.deletedColumnsByBoardId.set(
+      boardId,
+      kept.filter((entry) => entry !== found),
+    );
+    this.insertColumn(found.column);
+    return "restored";
   }
 
   /**
@@ -2615,6 +2910,7 @@ export class MockStore {
       ...lbl,
       name: patch.name ?? lbl.name,
       color: patch.color ?? lbl.color,
+      version: (lbl.version ?? 1) + 1,
     };
     this.labelsById.set(labelId, updated);
     return true;
@@ -2974,6 +3270,20 @@ export class MockStore {
     return [...this.trashedCardsById.values()]
       .filter((entry) => entry.card.boardId === boardId)
       .sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
+  }
+
+  /** The board's archived root items, newest first. */
+  getArchivedCards(boardId: string): MockCardRecord[] {
+    return [...this.cardsById.values()]
+      .filter(
+        (card) =>
+          card.boardId === boardId && card.isArchived && !card.parentItemId,
+      )
+      .sort(
+        (a, b) =>
+          (b.archivedAt ?? "").localeCompare(a.archivedAt ?? "") ||
+          b.id.localeCompare(a.id),
+      );
   }
 
   /** Brings a deleted card back to its list; false when it is not in the trash. */
@@ -3520,8 +3830,7 @@ export class MockStore {
   deleteCardComment(commentId: string): boolean {
     const cmt = this.commentsById.get(commentId);
     if (!cmt) return false;
-    for (const reply of this.getCardComments(cmt.cardId))
-      if (reply.parentId === cmt.id) this.deleteCardComment(reply.id);
+    // As the server does: the replies stay, the deleted comment is no longer listed (COL-006).
     this.removeIndex(this.commentIdsByCardId, cmt.cardId, cmt.id);
     this.commentsById.delete(commentId);
     return true;
@@ -4384,6 +4693,11 @@ export class MockStore {
 
   // ── Links, files and followers of an item ──
 
+  /** The overlay `item-blockers`: the board read carries each item's open blockers (the table's "Bị chặn bởi" chip). */
+  readsBlockers(): boolean {
+    return this.config.overlays.includes("item-blockers");
+  }
+
   /** The links of an item as the Detail page groups them. */
   getItemLinks(cardId: string): {
     id: string;
@@ -4399,7 +4713,8 @@ export class MockStore {
       if (link.from !== cardId && link.to !== cardId) continue;
       const otherId = link.from === cardId ? link.to : link.from;
       const other = this.cardsById.get(otherId);
-      if (!other || other.isArchived) continue;
+      // An archived item stays linked (its row says so); a trashed one is gone from the map.
+      if (!other) continue;
       out.push({
         id: link.id,
         relation:
@@ -4428,13 +4743,19 @@ export class MockStore {
     const from = relation === "blocked-by" ? other.id : card.id;
     const to = relation === "blocked-by" ? card.id : other.id;
     const kind = relation === "related" ? "related" : "dependency";
-    const exists = this.itemLinks.some(
+    // An unordered pair is linked once: the same relation again is a no-op, another relation changes the link's kind.
+    const current = this.itemLinks.find(
       (link) =>
-        link.kind === kind &&
-        ((link.from === from && link.to === to) ||
-          (kind === "related" && link.from === to && link.to === from)),
+        (link.from === from && link.to === to) ||
+        (link.from === to && link.to === from),
     );
-    if (exists) return "invalid";
+    if (current) {
+      const same =
+        current.kind === kind &&
+        (kind === "related" || (current.from === from && current.to === to));
+      if (!same) Object.assign(current, { from, to, kind });
+      return "ok";
+    }
     this.itemLinks.push({
       id: this.nextId("link"),
       boardId: card.boardId,
@@ -4662,7 +4983,11 @@ export class MockStore {
     return true;
   }
 
-  /** Settings write: removes a board with its lists, items and fields. */
+  /**
+   * Settings write: removes a board with its lists, items and fields. The board itself is kept in
+   * the deleted list (restorable for 30 days); its children are not kept by the mock, so a restored
+   * board comes back empty.
+   */
   deleteBoard(boardId: string): boolean {
     const board = this.boardsById.get(boardId);
     if (!board) return false;
@@ -4670,7 +4995,51 @@ export class MockStore {
     for (const column of this.getColumns(boardId)) this.deleteColumn(column.id);
     this.removeIndex(this.boardIdsByWorkspaceId, board.workspaceId, boardId);
     this.boardsById.delete(boardId);
+    this.deletedBoardsById.set(boardId, {
+      board: { ...board, version: (board.version ?? 1) + 1 },
+      deletedAt: this.clock.isoNow(),
+      deletedBy: this.getCurrentUser().id,
+    });
     return true;
+  }
+
+  /** Puts a deleted board straight into the deleted list (test hooks seed it). */
+  seedDeletedBoard(
+    board: MockBoardRecord,
+    deletedAt: string,
+    deletedBy: string,
+  ): void {
+    this.deletedBoardsById.set(board.id, { board, deletedAt, deletedBy });
+  }
+
+  /** The deleted boards of a workspace, newest first. */
+  getDeletedBoards(workspaceId: string): {
+    board: MockBoardRecord;
+    deletedAt: string;
+    deletedBy: string;
+  }[] {
+    return Array.from(this.deletedBoardsById.values())
+      .filter((entry) => entry.board.workspaceId === workspaceId)
+      .sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
+  }
+
+  getDeletedBoard(boardId: string) {
+    return this.deletedBoardsById.get(boardId) ?? null;
+  }
+
+  /** Restore: the board is active again, one version later. */
+  restoreDeletedBoard(boardId: string): MockBoardRecord | null {
+    const entry = this.deletedBoardsById.get(boardId);
+    if (!entry) return null;
+    this.deletedBoardsById.delete(boardId);
+    const board = {
+      ...entry.board,
+      version: (entry.board.version ?? 1) + 1,
+      updatedAt: this.clock.isoNow(),
+    };
+    this.boardsById.set(boardId, board);
+    this.addIndex(this.boardIdsByWorkspaceId, board.workspaceId, boardId);
+    return board;
   }
 
   /** Settings write: replaces the options of a select field (keeps order given). */

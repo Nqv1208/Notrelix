@@ -44,10 +44,11 @@
  */
 
 import { projectComputedValues } from "../../state/mock-computed-values";
-import type {
-  CardDtoApi,
-  ChecklistDtoApi,
-  CommentDtoApi,
+import {
+  ITEM_TITLE_MAX_LENGTH,
+  type CardDtoApi,
+  type ChecklistDtoApi,
+  type CommentDtoApi,
 } from "@notrelix/work-management-core";
 import { defineMockOperation } from "../../operations/types";
 import type { MockHttpResult } from "../../transport/create-response";
@@ -136,6 +137,16 @@ function commentDtos(store: MockStore, cardId: string): CommentDtoApi[] {
   });
 }
 
+/**
+ * Test hook of the card popup feed, set by a spec's init script (`globalThis.__mockFeed`): "empty" answers
+ * no comments and no history, "hold" never answers either read (the loading blocks stay), "fail" fails the
+ * history read with a 500.
+ */
+function feedHook(): "empty" | "hold" | "fail" | undefined {
+  return (globalThis as { __mockFeed?: "empty" | "hold" | "fail" }).__mockFeed;
+}
+const heldForever = () => new Promise<never>(() => undefined);
+
 /** The pages linked to each item, per store. */
 const pageLinks = new WeakMap<MockStore, Map<string, Set<string>>>();
 function linksOf(store: MockStore, itemId: string): Set<string> {
@@ -152,6 +163,15 @@ function badRequest(errors: Record<string, string[]>) {
     status: 400,
     body: { message: "Validation failed", code: "VALIDATION_ERROR", errors },
   };
+}
+
+/** The 400 the real API gives a title over the Domain limit; absent when the title fits. */
+function titleTooLong(title: string | undefined) {
+  return title !== undefined && title.length > ITEM_TITLE_MAX_LENGTH
+    ? badRequest({
+        title: [`A title takes at most ${ITEM_TITLE_MAX_LENGTH} characters.`],
+      })
+    : null;
 }
 
 const MOCK_IMAGE_SVG =
@@ -380,6 +400,8 @@ export const cardsOperations = [
       };
       const list = store.getList(data.groupId || "fallback");
       if (!list) return notFound("List not found");
+      const tooLong = titleTooLong(data.title);
+      if (tooLong) return tooLong;
       const created = store.createCardByListId(data.groupId || "fallback", {
         title: data.title,
         position: data.position,
@@ -511,6 +533,8 @@ export const cardsOperations = [
         data.descriptionMd !== undefined
           ? data.descriptionMd
           : data.description;
+      const tooLong = titleTooLong(data.title);
+      if (tooLong) return tooLong;
       // Only the fields the request names change: a spread of `undefined`
       // would wipe the title of a date-only patch.
       const updated = store.updateCard(params.id, {
@@ -711,6 +735,26 @@ export const cardsOperations = [
         !canWriteBoardItems(targetBoardId, store)
       )
         return forbidden();
+      // Same refusals as the server. Only ERP-146 refuses for dependencies: the
+      // other seeded chain items are moved by the happy-path journeys.
+      // ERP-147 stands for an item someone archived after the dialog opened (the menu locks archived items).
+      if (item.isArchived || item.itemKey === "ERP-147")
+        return attachmentProblem(
+          409,
+          "work-management.item.archived",
+          "The item is archived.",
+        );
+      if (
+        item.itemKey === "ERP-146" &&
+        store
+          .getItemLinks(params.id)
+          .some((link) => link.relation !== "related")
+      )
+        return attachmentProblem(
+          409,
+          "work-management.item.has-dependencies",
+          "The item has dependencies.",
+        );
       const moved = store.moveItemToBoard(params.id, targetBoardId);
       if (moved.result === "not-found") return notFound("Card not found");
       if (moved.result !== "ok")
@@ -732,14 +776,20 @@ export const cardsOperations = [
     { boardId: string },
     never,
     {
-      id: string;
-      name: string;
-      itemKey: string | null;
-      groupId: string;
-      deletedAt: string;
-      deletedBy: string | null;
-      restorableUntil: string;
-    }[]
+      items: {
+        id: string;
+        name: string;
+        itemKey: string | null;
+        groupId: string;
+        deletedAt: string;
+        deletedBy: string | null;
+        deletedByName: string | null;
+        subItemCount: number;
+        restorableUntil: string;
+      }[];
+      nextCursor: string | null;
+      total: number;
+    }
   >({
     id: "wm.boardItems.trash",
     contract: {
@@ -748,23 +798,37 @@ export const cardsOperations = [
     },
     method: "GET",
     route: "/boards/:boardId/items/trash",
-    async handle({ params, store }) {
+    async handle({ params, store, request }) {
       if (!canWriteBoardItems(params.boardId, store)) return forbidden();
-      return ok(
-        store
-          .getTrashedCards(params.boardId)
-          .map(({ card, deletedAt, deletedBy }) => ({
-            id: card.id,
-            name: card.title,
-            itemKey: card.itemKey ?? null,
-            groupId: card.listId,
-            deletedAt,
-            deletedBy,
-            restorableUntil: isoOfMs(
-              Date.parse(deletedAt) + 30 * 24 * 60 * 60 * 1000,
-            ),
-          })),
-      );
+      const url = new URL(request.url);
+      const term = (url.searchParams.get("q") ?? "").trim().toLowerCase();
+      const all = store
+        .getTrashedCards(params.boardId)
+        .filter(
+          ({ card }) =>
+            !term ||
+            card.title.toLowerCase().includes(term) ||
+            (card.itemKey ?? "").toLowerCase().includes(term),
+        );
+      const start = Number(url.searchParams.get("cursor") ?? 0) || 0;
+      const page = all.slice(start, start + 50);
+      return ok({
+        items: page.map(({ card, deletedAt, deletedBy }) => ({
+          id: card.id,
+          name: card.title,
+          itemKey: card.itemKey ?? null,
+          groupId: card.listId,
+          deletedAt,
+          deletedBy,
+          deletedByName: store.getUser(deletedBy)?.name ?? null,
+          subItemCount: store.getChildCards(card.id).length,
+          restorableUntil: isoOfMs(
+            Date.parse(deletedAt) + 30 * 24 * 60 * 60 * 1000,
+          ),
+        })),
+        nextCursor: start + 50 < all.length ? String(start + 50) : null,
+        total: all.length,
+      });
     },
   }),
 
@@ -781,6 +845,22 @@ export const cardsOperations = [
     async handle({ params, store, request }) {
       const missingKey = missingIdempotencyKey(request);
       if (missingKey) return missingKey;
+      // The mock world's ERP-121 stands for a sub-item whose parent is still in Deleted items (the BC-Archive-Trash refusal row).
+      if (
+        store
+          .getTrashedCards("mock-board-erp")
+          .some(
+            ({ card }) => card.id === params.id && card.itemKey === "ERP-121",
+          )
+      )
+        return {
+          status: 409,
+          body: {
+            message: "The parent item is still deleted.",
+            code: "CONFLICT",
+            errorCode: "work-management.item.restore-parent-deleted",
+          },
+        };
       const restored = store.restoreDeletedCard(params.id);
       if (!restored) return notFound("Card not found");
       return noContent();
@@ -808,6 +888,56 @@ export const cardsOperations = [
             .getColumns(store.getCard(params.id)!.boardId)
             .find((column) => column.id === (params as any).fieldId)
         : undefined;
+      // The `stale*` faults stand for a second manager who changed the board's fields first (D12).
+      const staleKind: string | undefined = (<Record<string, string>>{
+        stale: "work-management.field.deleted",
+        "stale-option": "work-management.field.option-removed",
+        "stale-type": "work-management.field.type-changed",
+      })[
+        (store.getConfig().faultProfile[
+          `/board-items/${params.id}/values/${(params as any).fieldId}`
+        ] ?? "") as string
+      ];
+      if (staleKind)
+        return {
+          status: 412,
+          body: {
+            type: "https://notrelix.dev/problems/common.precondition-failed",
+            title: "Precondition failed",
+            status: 412,
+            detail: "The field changed since this client loaded the board.",
+            errorCode: staleKind,
+            fieldName: (target as any)?.name ?? (target as any)?.title ?? "",
+            changedByName: "Hà Nguyễn",
+            optionLabel: "Khẩn",
+            fromType: "number",
+            toType: "text",
+          },
+        } as any;
+      // A required field refuses a clear (WM-008): nothing is stored.
+      const cleared =
+        data.value === null ||
+        data.value === "" ||
+        (Array.isArray(data.value) && data.value.length === 0);
+      // The `required` fault stands for a field a manager made required before this client loaded the board.
+      const requiredFault =
+        store.getConfig().faultProfile[
+          `/board-items/${params.id}/values/${(params as any).fieldId}`
+        ] === "required";
+      if (
+        cleared &&
+        (requiredFault || /"required"\s*:\s*true/.test(target?.settings ?? ""))
+      )
+        return {
+          status: 422,
+          body: {
+            type: "https://notrelix.dev/problems/work-management.business-rule",
+            title: "Business rule violated",
+            status: 422,
+            detail: "The field is required.",
+            ruleCode: "WorkManagement_FieldValue_Required",
+          },
+        } as any;
       // A Formula is evaluated by the backend and never written.
       if (target?.fieldType === "formula")
         return badRequest({ value: ["Cannot write a computed field."] });
@@ -1280,6 +1410,11 @@ export const cardsOperations = [
               title: link.card.title,
               statusName: status.name,
               statusCategory: status.category,
+              isArchived: link.card.isArchived ?? false,
+              assigneeId: link.card.assigneeUserIds?.[0] ?? null,
+              assigneeName:
+                store.getUser(link.card.assigneeUserIds?.[0] ?? "")?.name ??
+                null,
             },
           };
         }),
@@ -1350,6 +1485,8 @@ export const cardsOperations = [
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
       const title = body?.title?.trim();
       if (!title) return badRequest({ title: ["The title is required."] });
+      const tooLong = titleTooLong(title);
+      if (tooLong) return tooLong;
       const child = store.createChildItem(params.id, title);
       return child
         ? ok(childItemDto(store, child))
@@ -1371,6 +1508,12 @@ export const cardsOperations = [
     async handle({ params, store }) {
       const c = store.getCard(params.id);
       if (!c) return notFound("Card not found");
+      const hook = feedHook();
+      if (hook === "hold") return heldForever();
+      if (hook === "fail")
+        return { status: 500, body: { message: "History unavailable" } };
+      if (hook === "empty")
+        return ok({ data: [], total: 0, page: 1, pageSize: 20 });
       const data = store.getActivity(params.id).map((entry) => ({
         id: entry.id,
         actorName: entry.actorId
@@ -1741,6 +1884,8 @@ export const cardsOperations = [
     route: "/board-items/:cardId/comments",
     async handle({ params, store }) {
       if (!store.getCard(params.cardId)) return notFound("Card not found");
+      if (feedHook() === "hold") return heldForever();
+      if (feedHook() === "empty") return ok<CommentDtoApi[]>([]);
       return ok<CommentDtoApi[]>(commentDtos(store, params.cardId));
     },
   }),
@@ -1762,6 +1907,8 @@ export const cardsOperations = [
     route: "/board-items/:cardId/comments/page",
     async handle({ params, store }) {
       if (!store.getCard(params.cardId)) return notFound("Card not found");
+      if (feedHook() === "hold") return heldForever();
+      if (feedHook() === "empty") return ok({ items: [], nextCursor: null });
       return ok({
         items: commentDtos(store, params.cardId),
         nextCursor: null,

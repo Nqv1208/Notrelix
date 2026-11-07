@@ -30,11 +30,14 @@ import {
   PopoverAnchor,
   PopoverContent,
   Skeleton,
+  useIsMobile,
 } from "@notrelix/ui-web";
 import {
   fillBoardShareCopy as fill,
   type BoardShareCopy,
 } from "./board-share.copy";
+import { BoardShareSheet } from "./board-share-sheet";
+import { MARK_TONE, PERSON_TONE } from "./board-share-tones";
 import type {
   BoardShareView,
   ShareImpactPerson,
@@ -54,23 +57,6 @@ import type {
  * them (permission menu, switch to Private, history) are drawn only when a
  * host gives the handler.
  */
-
-const PERSON_TONE: Record<SharePersonView["tone"], string> = {
-  blue: "bg-identity-blue text-identity-blue-foreground",
-  coral: "bg-identity-coral text-identity-coral-foreground",
-  gold: "bg-identity-gold text-identity-gold-foreground",
-  sage: "bg-identity-sage text-identity-sage-foreground",
-  ember: "bg-identity-ember text-identity-ember-foreground",
-};
-
-const MARK_TONE: Record<string, string> = {
-  blue: "bg-mark-blue text-mark-blue-foreground",
-  gold: "bg-mark-gold text-mark-gold-foreground",
-  coral: "bg-mark-coral text-mark-coral-foreground",
-  sage: "bg-mark-sage text-mark-sage-foreground",
-  crimson: "bg-mark-crimson text-mark-crimson-foreground",
-  violet: "bg-mark-violet text-mark-violet-foreground",
-};
 
 const FOCUS = "outline-none focus-visible:ring-2 focus-visible:ring-focus-ring";
 const BTN =
@@ -119,7 +105,10 @@ export interface BoardShareDialogSurfaceProps {
   readonly open: boolean;
   readonly view: BoardShareView;
   readonly onClose: () => void;
-  readonly onCopyLink: () => void;
+  /** Copies the link; `silent` leaves the confirmation to the caller (the phone sheet draws its own toast). */
+  readonly onCopyLink: (options?: {
+    readonly silent?: boolean;
+  }) => Promise<boolean> | void;
   /** Change a person's permission; absent: the level buttons are inert. */
   readonly onChangeLevel?: (rowId: string, level: ShareLevel) => void;
   readonly onRemove?: (rowId: string) => void;
@@ -140,7 +129,7 @@ export interface BoardShareDialogSurfaceProps {
   readonly onInvite?: (
     userId: string,
     level: ShareLevel,
-  ) => Promise<void> | void;
+  ) => Promise<boolean | void> | boolean | void;
   /** The history; absent: its link is inert. */
   readonly log?: readonly ShareLogEntry[] | null;
   /** People the switch to Private would cut off (stories). */
@@ -190,12 +179,15 @@ function Strong({ text }: { text: string }) {
 
 export function BoardShareDialogSurface(props: BoardShareDialogSurfaceProps) {
   const { copy, view, open } = props;
+  const phone = useIsMobile();
   const [screen, setScreen] = useState(props.initialView ?? "share");
   const [menuFor, setMenuFor] = useState<string | null>(
     props.initialLevelMenu ?? null,
   );
   const [managerToken, setManagerToken] = useState(0);
   const title = fill(copy.title, { name: view.boardTitle });
+  // Under 768 px the dialog is the bottom sheet of Final-M-Share, a layout of its own.
+  if (phone) return <BoardShareSheet {...props} />;
   const closeButton = (label: string) => (
     <button
       data-f="ib"
@@ -354,7 +346,7 @@ function ShareBody({
             onInvite={onInvite}
             managerToken={managerToken}
           />
-        ) : (
+        ) : view.canManage ? (
           <div data-f="add" className="flex gap-2 max-md:flex-wrap">
             <label
               data-f="in"
@@ -402,7 +394,7 @@ function ShareBody({
               {copy.add.invite}
             </button>
           </div>
-        )}
+        ) : null}
 
         <div>
           <div
@@ -472,35 +464,39 @@ function ShareBody({
                 </span>
               ) : null}
             </span>
-            <button
-              data-f="lvl-plain"
-              type="button"
-              aria-haspopup="listbox"
-              aria-expanded="false"
-              aria-disabled={
-                onChangeGeneral && general.kind !== "private" ? undefined : true
-              }
-              title={onChangeGeneral ? undefined : g.changeUnavailable}
-              onClick={
-                onChangeGeneral && general.kind !== "private"
-                  ? () => {
-                      onChangeGeneral("private");
-                      setScreen("private");
-                    }
-                  : undefined
-              }
-              className={cn(
-                "ml-auto box-border inline-flex h-[30px] max-md:h-11 items-center gap-1.5 rounded-[9px] border border-transparent bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:border-line-strong aria-disabled:cursor-default dark:bg-card",
-                FOCUS,
-              )}
-            >
-              {g.change}
-              <ChevronDown
-                aria-hidden="true"
-                className="size-[13px] text-meta-foreground"
-                strokeWidth={1.8}
-              />
-            </button>
+            {view.canManage ? (
+              <button
+                data-f="lvl-plain"
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-disabled={
+                  onChangeGeneral && general.kind !== "private"
+                    ? undefined
+                    : true
+                }
+                title={onChangeGeneral ? undefined : g.changeUnavailable}
+                onClick={
+                  onChangeGeneral && general.kind !== "private"
+                    ? () => {
+                        onChangeGeneral("private");
+                        setScreen("private");
+                      }
+                    : undefined
+                }
+                className={cn(
+                  "ml-auto box-border inline-flex h-[30px] max-md:h-11 items-center gap-1.5 rounded-[9px] border border-transparent bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:border-line-strong aria-disabled:cursor-default dark:bg-card",
+                  FOCUS,
+                )}
+              >
+                {g.change}
+                <ChevronDown
+                  aria-hidden="true"
+                  className="size-[13px] text-meta-foreground"
+                  strokeWidth={1.8}
+                />
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -740,23 +736,23 @@ function ShareBody({
           >
             {copy.footer.log}
           </button>
-        ) : (
+        ) : view.canManage ? (
           <InertHint reason={copy.footer.logUnavailable}>
             <button
               data-f="logl"
               type="button"
               aria-disabled="true"
-              className="cursor-default rounded-sm border-0 bg-transparent p-0 text-crumb leading-[1.45] font-medium text-state-selected-foreground"
+              className="cursor-default rounded-sm border-0 bg-transparent p-0 text-crumb leading-[1.45] font-medium text-state-selected-foreground max-md:inline-flex max-md:min-h-11 max-md:items-center"
             >
               {copy.footer.log}
             </button>
           </InertHint>
-        )}
+        ) : null}
         <span className="flex-1" />
         <button
           data-f="btn"
           type="button"
-          onClick={onCopyLink}
+          onClick={() => void onCopyLink()}
           className={cn(BTN, FOCUS)}
         >
           <Link2 aria-hidden="true" className="size-4" strokeWidth={1.8} />
@@ -784,7 +780,10 @@ function AddPeople({
 }: {
   copy: BoardShareCopy;
   candidates: readonly ShareCandidate[];
-  onInvite: (userId: string, level: ShareLevel) => Promise<void> | void;
+  onInvite: (
+    userId: string,
+    level: ShareLevel,
+  ) => Promise<boolean | void> | boolean | void;
   /** Bumped by "Add a Manager": the field takes the Manager level and focus. */
   managerToken: number;
 }) {

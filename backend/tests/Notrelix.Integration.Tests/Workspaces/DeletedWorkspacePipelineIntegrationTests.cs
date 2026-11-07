@@ -1,7 +1,9 @@
+using Notrelix.Application.Features.WorkManagement.Boards.Queries.AuthorizeBoardRealtimeSubscription;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoards;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.DeleteWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWorkspace;
+using Notrelix.Application.Features.Workspaces.Workspaces.Queries.AuthorizeWorkspaceRealtimeSubscription;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspace;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Integration.Tests.Containers;
@@ -45,6 +47,7 @@ public sealed class DeletedWorkspacePipelineIntegrationTests : IAsyncLifetime
 
         (await OrgTreeTestHost.QueryAsync(asMember, new GetBoardsQuery(stack.WorkspaceId))).Should().ContainSingle();
         (await OrgTreeTestHost.QueryAsync(asMember, new GetBoardQuery(board))).Id.Should().Be(board);
+        (await OrgTreeTestHost.QueryAsync(asMember, new AuthorizeWorkspaceRealtimeSubscriptionQuery(stack.WorkspaceId))).WorkspaceId.Should().Be(stack.WorkspaceId);
 
         await OrgTreeTestHost.SendAsync(asOwner, new DeleteWorkspaceCommand(stack.WorkspaceId, await VersionAsync(stack)));
 
@@ -53,6 +56,8 @@ public sealed class DeletedWorkspacePipelineIntegrationTests : IAsyncLifetime
             await AssertNotFoundAsync(provider, new GetWorkspaceQuery(stack.WorkspaceId), $"{name} reads the workspace");
             await AssertNotFoundAsync(provider, new GetBoardsQuery(stack.WorkspaceId), $"{name} lists boards");
             await AssertNotFoundAsync(provider, new GetBoardQuery(board), $"{name} reads a board inside it");
+            await AssertNotFoundAsync(provider, new AuthorizeWorkspaceRealtimeSubscriptionQuery(stack.WorkspaceId), $"{name} subscribes to the workspace stream");
+            await AssertNotFoundAsync(provider, new AuthorizeBoardRealtimeSubscriptionQuery(board), $"{name} subscribes to a board stream inside it");
             await AssertNotFoundAsync(provider, new DeleteWorkspaceCommand(stack.WorkspaceId, await VersionAsync(stack)), $"{name} deletes it again");
         }
 
@@ -65,6 +70,7 @@ public sealed class DeletedWorkspacePipelineIntegrationTests : IAsyncLifetime
 
         (await OrgTreeTestHost.QueryAsync(asMember, new GetWorkspaceQuery(stack.WorkspaceId))).Id.Should().Be(stack.WorkspaceId);
         (await OrgTreeTestHost.QueryAsync(asMember, new GetBoardQuery(board))).Id.Should().Be(board);
+        (await OrgTreeTestHost.QueryAsync(asMember, new AuthorizeWorkspaceRealtimeSubscriptionQuery(stack.WorkspaceId))).WorkspaceId.Should().Be(stack.WorkspaceId);
     }
 
     [Fact]

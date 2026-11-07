@@ -16,10 +16,11 @@ public static class ListBoardViewsEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid boardId,
+        bool? archived,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new ListBoardViewsQuery(boardId), cancellationToken);
+        var result = await sender.Send(new ListBoardViewsQuery(boardId, archived == true), cancellationToken);
         return result.ToApiResult();
     }
 }

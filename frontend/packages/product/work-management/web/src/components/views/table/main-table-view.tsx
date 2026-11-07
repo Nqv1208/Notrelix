@@ -3,9 +3,16 @@ import {
   tableCollapsedGroupsKey,
   useKanbanCollapsedLanes,
 } from "../kanban/use-kanban-collapsed-lanes";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
-import { useIsMobile } from "@notrelix/ui-web";
+import { cn, useIsMobile } from "@notrelix/ui-web";
 import {
   useArchiveCard,
   useBulkUpdateItems,
@@ -18,6 +25,7 @@ import {
   useRemoveFieldOption,
   useUpdateCard,
   useWorkspaceBoards,
+  assigneeRefusalOf,
   changedByNameOf,
   isVersionConflict,
   type KanbanWriteFailure,
@@ -54,7 +62,8 @@ import { buildCardLink } from "../kanban/kanban-view-helpers";
 import { useKanbanLaneCopy } from "../kanban/use-kanban-lane-copy";
 import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
 import { MainTableError } from "./main-table-error";
-import { fillTableCopy } from "./main-table.copy";
+import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
+import { fillTableCopy, pluralTableCopy } from "./main-table.copy";
 import { MainTableSkeleton } from "./main-table-skeleton";
 import { MainTableSurface } from "./main-table-surface";
 import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
@@ -74,14 +83,14 @@ import { useStatusOptionFormCopy } from "../../status-option/use-status-option-f
 import type { TableGroupMenuModel } from "./table-group-menu";
 import { useMainTableCopy } from "./use-main-table-copy";
 import { useFieldCellWrites } from "./use-field-cell-writes";
+import { useArchiveUndoWindow } from "./use-archive-undo-window";
 
 type ParamChange = (
   value: string | undefined,
   options?: { replace?: boolean },
 ) => void;
 
-/** How long "Hoàn tác" is offered before the archive is sent. */
-export const ARCHIVE_UNDO_MS = 6000;
+export { ARCHIVE_UNDO_MS } from "./use-archive-undo-window";
 
 export interface MainTableViewProps {
   boardId: string;
@@ -94,6 +103,8 @@ export interface MainTableViewProps {
     id: string | undefined,
     options?: { replace?: boolean },
   ) => void;
+  /** Opens an item of any board (the toast after a move, the item that blocks a move); absent: only this board's items open, through `onSelectedItemChange`. */
+  onOpenItem?: (boardId: string, itemId: string) => void;
   /** The route `filter` parameter (`serializeKanbanFilter` form). */
   filter?: string;
   /** Writes the route `filter` parameter; without it the view keeps the filter. */
@@ -126,6 +137,12 @@ function isRefusedRange(error: unknown, hasStart: boolean): boolean {
   );
 }
 
+/** The server refused the write as invalid (a 400): the person fixes the value, a toast cannot help. */
+function isRefusedValue(error: unknown): boolean {
+  const e = error as { status?: unknown; kind?: unknown } | null;
+  return e?.status === 400 || e?.kind === "validation";
+}
+
 /** "YYYY-MM-DD" as an instant at `time` ("HH:MM", 17:00 by default) of that local day. */
 function dueInstant(day: string, time = "17:00"): string {
   return new Date(`${day}T${time}:00`).toISOString();
@@ -145,6 +162,7 @@ export function MainTableView({
   selectedItemId,
   currentUserId,
   onSelectedItemChange,
+  onOpenItem,
   filter: filterParam,
   onFilterChange,
   groupBy: groupByParam,
@@ -182,6 +200,8 @@ export function MainTableView({
     copy: filtersCopy,
     view,
     kanbanView,
+    timeZone,
+    timeZoneIsDefault,
   } = useBoardViewState({
     boardId,
     workspaceId,
@@ -203,6 +223,8 @@ export function MainTableView({
     () => collapsedGroups.initial,
   );
 
+  // The route gives Share only to people who may grant board access.
+  const openShare = useContext(BoardHeaderDataContext)?.onOpenShare;
   const titles = useRef(new Map<string, string>());
   // Each failure toast takes its own id: reusing one id swallows the next result toast.
   const toastAttempt = useRef(0);
@@ -226,6 +248,26 @@ export function MainTableView({
         );
         return;
       }
+      // The server named why this person cannot be given the work: say it, and offer Share to who may grant access.
+      const refusal = assigneeRefusalOf(failure.error);
+      if (refusal) {
+        toast.error(
+          fillTableCopy(
+            refusal === "viewer"
+              ? copy.failed.assigneeViewer
+              : copy.failed.assigneeNotShared,
+            { title },
+          ),
+          {
+            id: `table-write-${failure.cardId ?? "create"}-${++toastAttempt.current}`,
+            action:
+              refusal === "board-not-shared" && openShare
+                ? { label: copy.failed.shareBoard, onClick: openShare }
+                : undefined,
+          },
+        );
+        return;
+      }
       const message =
         failure.kind === "create"
           ? copy.failed.create
@@ -236,7 +278,7 @@ export function MainTableView({
         id: `table-write-${failure.cardId ?? "create"}-${++toastAttempt.current}`,
       });
     },
-    [copy],
+    [copy, openShare],
   );
 
   const table = useBoardTable(boardId, workspaceId, {
@@ -300,6 +342,10 @@ export function MainTableView({
         { id: `table-write-${cardId}` },
       ),
   });
+  const openItem = (targetBoardId: string, itemId: string) => {
+    if (onOpenItem) onOpenItem(targetBoardId, itemId);
+    else if (targetBoardId === boardId) onSelectedItemChange?.(itemId);
+  };
   const removal = useItemRemoval({
     workspaceId,
     boardId,
@@ -311,6 +357,7 @@ export function MainTableView({
       if (selectedItemId === itemId)
         onSelectedItemChange?.(undefined, { replace: true });
     },
+    onOpenItem: openItem,
   });
   const bulkUpdate = useBulkUpdateItems(boardId, workspaceId);
   const [bulkFailure, setBulkFailure] = useState<{
@@ -332,61 +379,37 @@ export function MainTableView({
   const isNarrow = useIsMobile();
   const layout = useViewportTableLayout();
   const boardCovered = Boolean(selectedItemId) && isNarrow;
+  // On the tablet the open item is a pane beside the table (`Final-T-Table` chia-doi), not a dialog over it.
+  const split = layout === "tablet" && Boolean(selectedItemId);
 
   const { board } = table;
 
-  // Archive waits for the undo window: the rows leave the table at once, the
-  // write goes out when the window ends, on the next archive, on close, or
-  // when the table goes away.
-  const [pendingArchive, setPendingArchive] = useState<readonly string[]>([]);
-  const pendingRef = useRef<{ ids: string[]; timer: number } | null>(null);
+  // Archive waits for the undo window (`useArchiveUndoWindow`): the rows
+  // leave the table at once and the write goes out when the window ends.
   const archiveMutate = archiveCard.mutate;
-  const flushArchive = useCallback(() => {
-    const pending = pendingRef.current;
-    if (!pending) return;
-    window.clearTimeout(pending.timer);
-    pendingRef.current = null;
-    if (pending.ids.length > 1) {
+  const {
+    pendingIds: pendingArchive,
+    start: startArchive,
+    undo: undoArchive,
+    flush: flushArchive,
+  } = useArchiveUndoWindow((ids, done) => {
+    if (ids.length > 1) {
       // Several rows go in one request; they stay hidden until it answers.
       bulkMutate(
-        { itemIds: pending.ids, change: { type: "archive" } },
+        { itemIds: ids, change: { type: "archive" } },
         {
           onError: () =>
             toast.error(copy.failed.bulk, {
               id: `table-bulk-${++toastAttempt.current}`,
             }),
-          onSettled: () =>
-            setPendingArchive((current) =>
-              current === pending.ids ? [] : current,
-            ),
+          onSettled: done,
         },
       );
       return;
     }
-    for (const id of pending.ids) archiveMutate({ cardId: id });
-    setPendingArchive([]);
-  }, [archiveMutate, bulkMutate, copy]);
-  useEffect(() => {
-    window.addEventListener("pagehide", flushArchive);
-    return () => {
-      window.removeEventListener("pagehide", flushArchive);
-      flushArchive();
-    };
-  }, [flushArchive]);
-  const startArchive = (ids: string[]) => {
-    flushArchive();
-    if (ids.length === 0) return;
-    const timer = window.setTimeout(flushArchive, ARCHIVE_UNDO_MS);
-    pendingRef.current = { ids, timer };
-    setPendingArchive(ids);
-  };
-  const undoArchive = () => {
-    const pending = pendingRef.current;
-    if (!pending) return;
-    window.clearTimeout(pending.timer);
-    pendingRef.current = null;
-    setPendingArchive([]);
-  };
+    for (const id of ids) archiveMutate({ cardId: id });
+    done();
+  });
 
   const statusField = table.statusField;
   const statusOptions = useMemo<TableStatusOption[]>(
@@ -593,6 +616,82 @@ export function MainTableView({
     () => new Set([...selection].filter((id) => visibleIds.has(id))),
     [selection, visibleIds],
   );
+  // Items picked and then deleted by someone else: the board reloads without them, they leave the pick and the bar says so.
+  const [goneNotice, setGoneNotice] = useState<{
+    count: number;
+    left: number;
+  } | null>(null);
+  // What the last bulk change did, for a few seconds.
+  const [doneNotice, setDoneNotice] = useState<{
+    text: string;
+    onUndo?: () => void;
+  } | null>(null);
+  useEffect(() => {
+    if (!doneNotice) return;
+    const timer = setTimeout(() => setDoneNotice(null), 6000);
+    return () => clearTimeout(timer);
+  }, [doneNotice]);
+  const boardLoaded = !table.isLoading && groups.every((g) => !g.hasMore);
+  useEffect(() => {
+    if (!boardLoaded) return;
+    const present = new Set(allCards.map((card) => card.id));
+    const gone = [...selection].filter((id) => !present.has(id));
+    if (gone.length === 0) return;
+    setSelection(
+      (current) => new Set([...current].filter((id) => present.has(id))),
+    );
+    setGoneNotice({ count: gone.length, left: selection.size - gone.length });
+  }, [allCards, boardLoaded, selection]);
+  useEffect(() => {
+    if (selection.size === 0) setGoneNotice(null);
+  }, [selection]);
+  // "Chọn cả nhóm": the rows of one group up to the limit; a group read in pages is read on until it holds enough.
+  const [groupPick, setGroupPick] = useState<{
+    groupId: string;
+    reading: boolean;
+  } | null>(null);
+  const loadMoreLane = table.loadMoreLane;
+  const laneLoading = table.lanePages.loading;
+  const laneFailed = table.lanePages.failed;
+  useEffect(() => {
+    if (!groupPick?.reading) return;
+    const group = groups.find(
+      (candidate) => candidate.id === groupPick.groupId,
+    );
+    if (!group) {
+      setGroupPick(null);
+      return;
+    }
+    const want = Math.min(
+      group.filteredTotal ?? group.rows.length,
+      BULK_ITEM_LIMIT,
+    );
+    if (
+      group.rows.length < want &&
+      group.hasMore &&
+      !laneFailed.has(group.id)
+    ) {
+      if (!laneLoading.has(group.id))
+        void loadMoreLane(group.id === "none" ? null : group.id);
+      return;
+    }
+    setSelection(
+      new Set(group.rows.slice(0, BULK_ITEM_LIMIT).map((row) => row.id)),
+    );
+    setGroupPick({ groupId: group.id, reading: false });
+  }, [groupPick, groups, laneFailed, laneLoading, loadMoreLane]);
+  useEffect(() => {
+    if (selection.size === 0) setGroupPick(null);
+  }, [selection]);
+  const pickedGroup = groupPick
+    ? groups.find((group) => group.id === groupPick.groupId)
+    : undefined;
+  const pickedInGroup = pickedGroup
+    ? pickedGroup.rows.filter((row) => selectedIds.has(row.id)).length
+    : 0;
+  const pickedGroupTotal = pickedGroup
+    ? (pickedGroup.filteredTotal ?? pickedGroup.rows.length)
+    : 0;
   const noteTitle = (cardId: string) => {
     const card = allCards.find((candidate) => candidate.id === cardId);
     if (card) titles.current.set(cardId, card.title);
@@ -627,7 +726,8 @@ export function MainTableView({
   }, []);
 
   if (table.isLoading) return <MainTableSkeleton copy={copy} />;
-  if (table.error || !board) return <MainTableError copy={copy} />;
+  if (table.error || !board)
+    return <MainTableError copy={copy} onRetry={() => void table.refetch()} />;
 
   const writeStatus = (cardId: string, statusOptionId: string) => {
     noteTitle(cardId);
@@ -639,16 +739,82 @@ export function MainTableView({
     for (const id of selectedList) write(id);
     setSelection(new Set());
   };
+  // The change that takes a status or due-date edit back, when every picked item held the same value before it; otherwise none.
+  const inverseBulkChange = (
+    change: BulkItemChange,
+    ids: readonly string[],
+  ): BulkItemChange | null => {
+    const rows = groups.flatMap((group) => group.rows);
+    const picked = ids.map((id) => rows.find((row) => row.id === id));
+    if (picked.some((row) => !row)) return null;
+    const same = <T,>(
+      read: (row: (typeof rows)[number]) => T,
+    ): T | undefined => {
+      const first = read(picked[0]!);
+      return picked.every((row) => read(row!) === first) ? first : undefined;
+    };
+    if (change.type === "set-status") {
+      const prev = same((row) => row.status?.id ?? null);
+      return prev ? { type: "set-status", statusOptionId: prev } : null;
+    }
+    if (change.type === "set-due-date" || change.type === "clear-due-date") {
+      const prev = same((row) => row.dueAt);
+      if (prev === undefined) return null;
+      return prev
+        ? { type: "set-due-date", dueDate: prev }
+        : { type: "clear-due-date" };
+    }
+    return null;
+  };
+  // After the server took a status, due-date or priority change: the count, and "Hoàn tác" where the inverse is one request.
+  const announceBulk = (
+    change: BulkItemChange,
+    ids: readonly string[],
+    inverse: BulkItemChange | null,
+  ) => {
+    const b = copy.bulk;
+    const text =
+      change.type === "set-status"
+        ? pluralTableCopy(
+            { one: b.doneStatus_one, other: b.doneStatus_other },
+            ids.length,
+          )
+        : change.type === "set-due-date" || change.type === "clear-due-date"
+          ? pluralTableCopy(
+              { one: b.doneDue_one, other: b.doneDue_other },
+              ids.length,
+            )
+          : change.type === "set-priority"
+            ? pluralTableCopy(
+                { one: b.donePriority_one, other: b.donePriority_other },
+                ids.length,
+              )
+            : null;
+    if (!text) return;
+    setDoneNotice({
+      text,
+      onUndo: inverse
+        ? () => {
+            setDoneNotice(null);
+            bulkMutate({ itemIds: [...ids], change: inverse });
+          }
+        : undefined,
+    });
+  };
   // Status, due date and assignee of the selected rows: one request, all or none.
   const bulkWrite = (change: BulkItemChange) => {
     for (const id of selectedList) noteTitle(id);
     const picked = [...selectedList].sort().join();
+    const inverse = inverseBulkChange(change, selectedList);
     setBulkFailure(null);
     // The selection is spent only once the server took the change; a refusal keeps it, names the item and offers a retry.
     bulkMutate(
       { itemIds: selectedList, change },
       {
-        onSuccess: () => setSelection(new Set()),
+        onSuccess: () => {
+          setSelection(new Set());
+          announceBulk(change, selectedList, inverse);
+        },
         onError: (error) => {
           const failed = bulkFailedItemId(error);
           const title = failed ? titles.current.get(failed) : undefined;
@@ -730,6 +896,7 @@ export function MainTableView({
     canEdit: capabilities.canEditFields,
     members,
     writeOf: cellWrites.writeOf,
+    refusedFieldIds: cellWrites.refusedFieldIds,
     onWrite: (cardId, fieldDefinitionId, value, stale) => {
       noteTitle(cardId);
       cellWrites.write(cardId, fieldDefinitionId, value, stale);
@@ -737,6 +904,7 @@ export function MainTableView({
     onRetry: cellWrites.retry,
     onKeepMine: cellWrites.keepMine,
     onUseTheirs: cellWrites.takeTheirs,
+    onReloadSchema: cellWrites.reloadSchema,
   };
   const moveTargets = (workspaceBoards.data ?? [])
     .filter(
@@ -839,16 +1007,20 @@ export function MainTableView({
       ref={tableRef}
       data-main-table=""
       tabIndex={-1}
-      className="relative h-full min-h-0 focus:outline-hidden"
+      className={cn(
+        "relative h-full min-h-0 focus:outline-hidden",
+        split && "flex",
+      )}
     >
       <div
-        className="h-full"
+        className={cn("h-full", split && "min-w-0 flex-1")}
         inert={boardCovered || undefined}
         aria-hidden={boardCovered || undefined}
       >
         <MainTableSurface
           layout={layout}
           onNoGroup={noGroupNotice.noGroup}
+          noBoardGroup={table.groups.length === 0}
           renderSubItems={(rowId) => (
             <TableSubItems
               itemId={rowId}
@@ -879,6 +1051,8 @@ export function MainTableView({
                   total: table.totalCount,
                 }}
                 now={now}
+                timeZone={timeZone}
+                timeZoneIsDefault={timeZoneIsDefault}
                 sort
                 sortFallback={sharedSortSummary}
                 groupFields={groupableFields(table.filterFields)}
@@ -914,6 +1088,7 @@ export function MainTableView({
               onRetrySave: table.retryColumnsSave,
               saveToViewFailed: table.saveColumnsToViewFailed,
               saveToViewConflict: table.saveColumnsToViewConflict,
+              saveToViewConflictBy: table.saveColumnsToViewConflictBy,
               savedToView: table.columnsSavedToView,
             },
             hiddenColumnIds: table.hiddenColumnIds,
@@ -969,19 +1144,22 @@ export function MainTableView({
           selectedIds={selectedIds}
           collapsedGroupIds={collapsed}
           openItemId={selectedItemId}
+          split={split}
           canEdit={capabilities.canEditFields}
           editors={editors}
           fieldEditing={fieldEditing}
           onRename={
             capabilities.canEditFields
-              ? (cardId, title) => {
+              ? async (cardId, title) => {
                   noteTitle(cardId);
-                  updateCard.mutate(
-                    { cardId, patch: { title } },
-                    {
-                      onError: (error) => reportCardWriteFailure(error, cardId),
-                    },
-                  );
+                  try {
+                    await updateCard.mutateAsync({ cardId, patch: { title } });
+                  } catch (error) {
+                    // A refused title is told under the editor, with the typed text kept; the row is already back.
+                    if (isRefusedValue(error)) return false;
+                    reportCardWriteFailure(error, cardId);
+                  }
+                  return true;
                 }
               : undefined
           }
@@ -1051,6 +1229,33 @@ export function MainTableView({
             setShowDone(true);
           }}
           onShowDone={() => setShowDone(true)}
+          onSelectGroup={(groupId) => setGroupPick({ groupId, reading: true })}
+          groupPickNote={
+            groupPick && !groupPick.reading && pickedGroupTotal > pickedInGroup
+              ? {
+                  groupId: groupPick.groupId,
+                  picked: pickedInGroup,
+                  total: pickedGroupTotal,
+                  onClear: () => {
+                    const rows = new Set(
+                      pickedGroup?.rows.map((row) => row.id) ?? [],
+                    );
+                    setSelection(
+                      (current) =>
+                        new Set([...current].filter((id) => !rows.has(id))),
+                    );
+                    setGroupPick(null);
+                  },
+                }
+              : null
+          }
+          bulkSaving={bulkUpdate.isPending}
+          bulkDone={doneNotice}
+          goneNotice={
+            goneNotice
+              ? { ...goneNotice, onClose: () => setGoneNotice(null) }
+              : null
+          }
           bulkFailure={
             failure
               ? {
@@ -1155,9 +1360,36 @@ export function MainTableView({
           onOpenItem={(id) => onSelectedItemChange?.(id)}
         />
       ) : null}
-      {selectedItemId ? (
+      {selectedItemId && split ? (
+        <>
+          <span aria-hidden="true" className="w-px flex-none bg-line-strong" />
+          <div
+            data-slot="table-split-pane"
+            className="h-full w-[46%] min-w-0 flex-none"
+          >
+            <KanbanSelectedItem
+              presentation="pane"
+              board={board}
+              onOpenItem={openItem}
+              cardId={selectedItemId}
+              capabilities={capabilities}
+              groups={sheetGroups}
+              groupField={table.groupByField}
+              onClose={() =>
+                onSelectedItemChange?.(undefined, { replace: true })
+              }
+              onRestoreFocus={restoreFocus}
+              onCopyLink={handleCopyLink}
+              onMoveToGroup={handleMoveToGroup}
+              onUpdateFieldValue={handleSheetFieldValue}
+              onDuplicate={removal.requestDuplicate}
+            />
+          </div>
+        </>
+      ) : selectedItemId ? (
         <KanbanSelectedItem
           board={board}
+          onOpenItem={openItem}
           cardId={selectedItemId}
           capabilities={capabilities}
           groups={sheetGroups}

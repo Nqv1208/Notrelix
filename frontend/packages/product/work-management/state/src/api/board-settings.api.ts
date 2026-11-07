@@ -6,12 +6,15 @@ import type {
 import { endpoints } from "@notrelix/contracts";
 import type {
   BoardSettingsDto,
+  FormulaPreviewDraft,
+  FormulaPreviewDto,
   BoardSettingsComputedDto,
   BoardSettingsFieldDto,
   BoardSettingsFieldPatch,
   BoardSettingsFieldType,
   BoardSettingsGeneralPatch,
   BoardSettingsGroupDto,
+  BoardSettingsUsageDto,
   BoardSettingsSystemFieldDto,
   BoardSettingsUnavailable,
   BoardSettingsViewDto,
@@ -35,6 +38,11 @@ export type DeletedBoardField = OperationResponse<
   "WorkManagement.BoardFields.Deleted",
   200
 >[number];
+/** The answer to a restore: `alreadyActive` when someone restored the field first, with their display name. */
+export type RestoredBoardField = OperationResponse<
+  "WorkManagement.BoardFields.Restore",
+  200
+>;
 type OverviewField = NonNullable<Overview["columns"]>[number];
 type OverviewGroup = NonNullable<Overview["lists"]>[number];
 
@@ -59,7 +67,6 @@ const UNAVAILABLE: BoardSettingsUnavailable = {
   locale: true,
   fieldArchive: true,
   fieldDelete: false,
-  fieldRules: true,
   views: false,
   viewSplit: true,
   automations: true,
@@ -68,15 +75,35 @@ const UNAVAILABLE: BoardSettingsUnavailable = {
 
 const DEFAULT_COLOR = "#1E6FD0";
 
+/**
+ * A new board stores its background as `{"type":"color","value":"#..."}`; the General page saves the
+ * bare hex. Either reads back as the colour, anything else as the default.
+ */
+export function boardColor(background: string | null | undefined): string {
+  const text = (background ?? "").trim();
+  if (/^#[0-9a-f]{6}$/i.test(text)) return text;
+  try {
+    const value: unknown = (JSON.parse(text) as { value?: unknown }).value;
+    if (typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value))
+      return value;
+  } catch {
+    // Not JSON: the default applies.
+  }
+  return DEFAULT_COLOR;
+}
+
 /** What a board inherits from its workspace (`Workspaces.Settings.GetWorkspaceSettings`). */
 interface WorkspaceLocale {
   readonly timeZone: string;
   readonly weekStart: "monday" | "sunday";
+  /** True when the setting could not be read and the default stands in. */
+  readonly isDefault?: boolean;
 }
 
 const DEFAULT_LOCALE: WorkspaceLocale = {
   timeZone: "Asia/Ho_Chi_Minh",
   weekStart: "monday",
+  isDefault: true,
 };
 
 function fieldType(raw: string | null | undefined): BoardSettingsFieldType {
@@ -100,14 +127,106 @@ function unitOf(settings: string | null | undefined): string | null {
   return null;
 }
 
+function multipleOf(settings: string | null | undefined): boolean {
+  if (!settings) return false;
+  try {
+    const parsed: unknown = JSON.parse(settings);
+    return (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      (parsed as { multiple?: unknown }).multiple === true
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** The rules a board owner sets on a field live in its settings JSON: `required` (bool) and `guidance` (text). */
+function rulesOf(settings: string | null | undefined): {
+  required: boolean;
+  guidance: string;
+} {
+  try {
+    const parsed = JSON.parse(settings || "{}") as {
+      required?: unknown;
+      guidance?: unknown;
+    };
+    return {
+      required: parsed.required === true,
+      guidance: typeof parsed.guidance === "string" ? parsed.guidance : "",
+    };
+  } catch {
+    return { required: false, guidance: "" };
+  }
+}
+
+/** The option a select-like field starts with: its `defaultValue` is an option id, or a list of one. */
+function defaultOptionOf(value: string | null | undefined): string | null {
+  try {
+    const parsed: unknown = JSON.parse(value || "null");
+    const id = Array.isArray(parsed) ? parsed[0] : parsed;
+    return typeof id === "string" ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The text or number a Text, Long text or Number field starts with, as typed. */
+function defaultTextOf(value: string | null | undefined): string {
+  try {
+    const parsed: unknown = JSON.parse(value || "null");
+    return typeof parsed === "string" || typeof parsed === "number"
+      ? String(parsed)
+      : "";
+  } catch {
+    return "";
+  }
+}
+
+/** The settings JSON with the edited rules merged in; every other setting stays as it is. */
+export function settingsWithRules(
+  base: string | undefined,
+  changes: BoardSettingsFieldPatch,
+): string | undefined {
+  if (changes.required === undefined && changes.guidance === undefined)
+    return changes.settings;
+  const merged: Record<string, unknown> = JSON.parse(
+    changes.settings ?? (base || "{}"),
+  ) as Record<string, unknown>;
+  if (changes.required !== undefined) {
+    if (changes.required) merged.required = true;
+    else delete merged.required;
+  }
+  if (changes.guidance !== undefined) {
+    if (changes.guidance.trim() !== "") merged.guidance = changes.guidance;
+    else delete merged.guidance;
+  }
+  return JSON.stringify(merged);
+}
+
+const ordinal = (left: string, right: string) =>
+  left < right ? -1 : left > right ? 1 : 0;
+
+/** Rows in their ordering-key order, compared by code unit as the server's ordinal collation does ("Z" before "a"). */
 function byPosition<T extends { position?: string | null }>(
   rows: readonly T[],
 ): T[] {
-  return [...rows].sort((a, b) => {
-    const left = a.position ?? "";
-    const right = b.position ?? "";
-    return left < right ? -1 : left > right ? 1 : 0;
-  });
+  return [...rows].sort((a, b) => ordinal(a.position ?? "", b.position ?? ""));
+}
+
+/**
+ * The board's groups in key order; equal keys (never two live groups on the server, which holds the
+ * key unique) fall back to the id, so every reader of the same groups sees one order whatever order
+ * the response listed them in (UC-WM-F02).
+ */
+function groupsByPosition<
+  T extends { position?: string | null; id?: string | null },
+>(rows: readonly T[]): T[] {
+  return [...rows].sort(
+    (a, b) =>
+      ordinal(a.position ?? "", b.position ?? "") ||
+      ordinal(a.id ?? "", b.id ?? ""),
+  );
 }
 
 /** A system field the page lists as locked, except Status, whose options are the board's to edit. */
@@ -116,15 +235,22 @@ function isLockedSystemField(column: OverviewField): boolean {
 }
 
 /** The key a field is listed under: its name as a lowercase slug ("due-date"), or a short id when the name has no letters. */
-function fieldKey(column: OverviewField): string {
-  const slug = (column.name ?? "")
+export function fieldKeyOf(
+  name: string | null | undefined,
+  id?: string,
+): string {
+  const slug = (name ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/đ/gi, "d")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  return slug || (column.id ?? "").slice(0, 8);
+  return slug || (id ?? "").slice(0, 8);
+}
+
+function fieldKey(column: OverviewField): string {
+  return fieldKeyOf(column.name, column.id);
 }
 
 function mapField(column: OverviewField): BoardSettingsFieldDto {
@@ -145,12 +271,19 @@ function mapField(column: OverviewField): BoardSettingsFieldDto {
     usage: "",
     accent: type === "status",
     unit: unitOf(column.settings),
+    ...(type === "person" && multipleOf(column.settings)
+      ? { multiple: true }
+      : {}),
     hasColumn: type === "status" || type === "select" || type === "multiselect",
     valueCount: column.valueCount ?? 0,
     options,
-    defaultOptionId: null,
-    required: false,
-    guidance: "",
+    defaultOptionId: defaultOptionOf(column.defaultValue),
+    defaultText:
+      type === "text" || type === "longtext" || type === "number"
+        ? defaultTextOf(column.defaultValue)
+        : "",
+    ...rulesOf(column.settings),
+    settingsJson: column.settings ?? "{}",
     usedIn: [],
     ...computedOf(type, column.settings),
   };
@@ -255,33 +388,81 @@ export function mapSettingsView(
   };
 }
 
+/**
+ * Where a field is in use: the saved views that filter, sort or split by it, show it on a card, or (a table)
+ * show it as a column. Read from the views the page already has, so it needs no extra request; `how` is left
+ * for the page to word (`how` is a code: column, sort, group, card or filter).
+ */
+export function usedInOf(
+  fieldId: string,
+  views: readonly SavedBoardView[],
+): BoardSettingsUsageDto[] {
+  return views.flatMap((view): BoardSettingsUsageDto[] => {
+    const config = view.viewConfig;
+    const sorted = config.sortBy.some((sort) => sort.fieldId === fieldId);
+    const how = config.filters.some((filter) => filter.fieldId === fieldId)
+      ? "filter"
+      : (config.cardFieldIds ?? []).includes(fieldId)
+        ? "card"
+        : sorted
+          ? "sort"
+          : config.groupBy === fieldId
+            ? "group"
+            : view.viewMode === "table" &&
+                !(config.hiddenFields ?? []).includes(fieldId)
+              ? "column"
+              : null;
+    const kind: BoardSettingsUsageDto["kind"] | null =
+      how === "filter" || how === "card" ? how : how ? "view" : null;
+    return kind && how ? [{ kind, name: view.name, how }] : [];
+  });
+}
+
+/** The first item the board read carries: the one a draft formula is tried on. */
+function previewItemOf(
+  board: Overview,
+): { previewItem: { id: string; key: string } } | Record<string, never> {
+  for (const group of board.lists ?? []) {
+    const item = (group.boardItems ?? []).find((entry) => entry.id);
+    if (item?.id) {
+      return { previewItem: { id: item.id, key: item.itemKey ?? "" } };
+    }
+  }
+  return {};
+}
+
 /** The settings page model of a board read. */
 export function mapBoardSettings(
   boardId: string,
   board: Overview,
   inherited: WorkspaceLocale = DEFAULT_LOCALE,
   savedViews: readonly SavedBoardView[] = [],
+  archivedViews: readonly SavedBoardView[] = [],
 ): BoardSettingsDto {
   const columns = byPosition(
     (board.columns ?? []).filter((column) => column.isDeleted !== true),
   );
-  const groups = byPosition(
+  const groups = groupsByPosition(
     (board.lists ?? []).filter((group) => group.isArchived !== true),
   ).map(mapGroup);
-  const archivedGroups = byPosition(
+  const archivedGroups = groupsByPosition(
     (board.lists ?? []).filter((group) => group.isArchived === true),
   ).map(mapGroup);
   const fields = columns
     .filter((column) => !isLockedSystemField(column))
-    .map(mapField);
+    .map((column) => ({
+      ...mapField(column),
+      usedIn: usedInOf(column.id ?? "", savedViews),
+    }));
   return {
     boardId,
     version: board.version ?? 0,
     itemCount: groups.reduce((sum, group) => sum + group.itemCount, 0),
+    ...previewItemOf(board),
     general: {
       title: board.title ?? "",
       description: board.description ?? "",
-      color: board.background || DEFAULT_COLOR,
+      color: boardColor(board.background),
       icon: "",
       sampleItemKey: null,
       itemKeyPrefix: board.itemKeyPrefix ?? "",
@@ -296,6 +477,7 @@ export function mapBoardSettings(
     systemFields: columns.filter(isLockedSystemField).map(mapSystemField),
     archivedFields: [],
     views: savedViews.map((view) => mapSettingsView(view, fields)),
+    archivedViews: archivedViews.map((view) => mapSettingsView(view, fields)),
     groups,
     archivedGroups,
     automations: [],
@@ -365,7 +547,22 @@ export function createBoardSettingsApi(client: NotrelixClient) {
   const optionVersion = (s: BoardSettingsDto, fieldId: string) =>
     fieldOf(s, fieldId).version ?? 0;
 
+  const workspaceLocale = (workspaceId: string): Promise<WorkspaceLocale> =>
+    api
+      .get<{ timeZone?: string | null; weekStart?: string | null }>(
+        endpoints.workspaces.settings(workspaceId),
+        quiet,
+      )
+      .then((workspace): WorkspaceLocale => ({
+        timeZone: workspace.timeZone || DEFAULT_LOCALE.timeZone,
+        weekStart: workspace.weekStart === "sunday" ? "sunday" : "monday",
+        isDefault: !workspace.timeZone,
+      }))
+      .catch(() => DEFAULT_LOCALE);
+
   return {
+    /** The workspace's locale a board inherits (its time zone judges the days). */
+    workspaceLocale,
     async get(boardId: string): Promise<BoardSettingsDto> {
       const board = await api.get<Overview>(
         endpoints.boards.full(boardId),
@@ -373,18 +570,12 @@ export function createBoardSettingsApi(client: NotrelixClient) {
       );
       // The workspace's locale is context, not the page's own data: without it the defaults show.
       const inherited = board.workspaceId
-        ? await api
-            .get<{ timeZone?: string | null; weekStart?: string | null }>(
-              endpoints.workspaces.settings(board.workspaceId),
-              quiet,
-            )
-            .then((workspace): WorkspaceLocale => ({
-              timeZone: workspace.timeZone || DEFAULT_LOCALE.timeZone,
-              weekStart: workspace.weekStart === "sunday" ? "sunday" : "monday",
-            }))
-            .catch(() => DEFAULT_LOCALE)
+        ? await workspaceLocale(board.workspaceId)
         : DEFAULT_LOCALE;
       const savedViews = await boardApi.listSavedViews(boardId).catch(() => []);
+      const archivedViews = await boardApi
+        .listSavedViews(boardId, true)
+        .catch(() => []);
       // Only a manager reads the impact; the settings page is a manager's page, and without it the
       // confirmations name the effect without counts.
       const impact = await api
@@ -400,7 +591,13 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         }))
         .catch(() => undefined);
       return {
-        ...mapBoardSettings(boardId, board, inherited, savedViews),
+        ...mapBoardSettings(
+          boardId,
+          board,
+          inherited,
+          savedViews,
+          archivedViews,
+        ),
         ...(impact ? { impact } : {}),
       };
     },
@@ -448,10 +645,10 @@ export function createBoardSettingsApi(client: NotrelixClient) {
         endpoints.boards.archivedByWorkspaceId(workspaceId),
         quiet,
       ),
-    /** The boards deleted in the last 30 days that the person can restore. */
-    listDeletedBoards: (workspaceId: string) =>
+    /** The boards deleted in the last 30 days that the person can restore, optionally those of one Space. */
+    listDeletedBoards: (workspaceId: string, spaceId?: string | null) =>
       api.get<RetiredBoard[]>(
-        endpoints.boards.deletedByWorkspaceId(workspaceId),
+        endpoints.boards.deletedByWorkspaceId(workspaceId, spaceId),
         quiet,
       ),
     unarchiveBoardById: (boardId: string, expectedVersion: number) => {
@@ -488,7 +685,7 @@ export function createBoardSettingsApi(client: NotrelixClient) {
     ) =>
       api.post<unknown>(
         endpoints.boardFields.create(s.boardId),
-        { name, type, ...(settings ? { settings } : {}) },
+        { name, type, ...(settings ? { settingsJson: settings } : {}) },
         quiet,
       ),
     /** The fields deleted in the last 30 days, newest first (a Manager reads it). */
@@ -499,7 +696,7 @@ export function createBoardSettingsApi(client: NotrelixClient) {
       ),
     /** Brings a deleted field and its values back; refused after 30 days or when its name is taken. */
     restoreDeletedField: (boardId: string, fieldId: string) =>
-      api.post<void>(
+      api.post<RestoredBoardField>(
         endpoints.boardFields.restore(boardId, fieldId),
         {},
         {
@@ -507,8 +704,12 @@ export function createBoardSettingsApi(client: NotrelixClient) {
           idempotencyKey: crypto.randomUUID(),
         },
       ),
+    // `DELETE /boards/{id}/fields/{fieldId}?expectedVersion=n`: a soft delete a Manager can restore for 30 days.
     deleteField: (s: BoardSettingsDto, fieldId: string) =>
-      api.delete<void>(endpoints.boardFields.detail(s.boardId, fieldId), quiet),
+      api.delete<void>(
+        `${endpoints.boardFields.detail(s.boardId, fieldId)}?expectedVersion=${fieldOf(s, fieldId).version ?? 0}`,
+        quiet,
+      ),
     reorderFields: async (s: BoardSettingsDto, ids: readonly string[]) => {
       const moved = movedId(
         s.fields.map((field) => field.id),
@@ -550,16 +751,74 @@ export function createBoardSettingsApi(client: NotrelixClient) {
       s: BoardSettingsDto,
       fieldId: string,
       changes: BoardSettingsFieldPatch,
-    ) =>
-      api.patch<void>(
+    ) => {
+      const field = fieldOf(s, fieldId);
+      const settings = settingsWithRules(field.settingsJson, changes);
+      return api.patch<void>(
         endpoints.boardFields.detail(s.boardId, fieldId),
         {
-          expectedVersion: fieldOf(s, fieldId).version ?? 0,
+          expectedVersion: field.version ?? 0,
           name: changes.name,
-          ...(changes.settings ? { settings: changes.settings } : {}),
+          ...(settings ? { settingsJson: settings } : {}),
+          ...(changes.defaultOptionId !== undefined
+            ? {
+                defaultValueJson:
+                  changes.defaultOptionId === null
+                    ? "null"
+                    : JSON.stringify(
+                        field.type === "multiselect"
+                          ? [changes.defaultOptionId]
+                          : changes.defaultOptionId,
+                      ),
+              }
+            : {}),
+          ...(changes.defaultText !== undefined
+            ? {
+                defaultValueJson:
+                  changes.defaultText.trim() === ""
+                    ? "null"
+                    : field.type === "number"
+                      ? changes.defaultText.trim()
+                      : JSON.stringify(changes.defaultText),
+              }
+            : {}),
         },
         quiet,
-      ),
+      );
+    },
+    /** What a draft formula shows on one item; nothing is saved. */
+    previewFormula: async (
+      boardId: string,
+      itemId: string,
+      draft: FormulaPreviewDraft,
+    ): Promise<FormulaPreviewDto> => {
+      const text = (value: unknown) =>
+        value !== null && value !== undefined ? String(value) : null;
+      const result = await api.get<{
+        state?: string;
+        value?: unknown;
+        errorCode?: string | null;
+        inputs?: {
+          name: string;
+          value?: { state?: string; value?: unknown };
+        }[];
+        subItemCount?: number | null;
+      }>(endpoints.boardFields.previewFormula(boardId, itemId, draft), quiet);
+      const state =
+        result.state === "ok" || result.state === "empty"
+          ? result.state
+          : "error";
+      return {
+        state,
+        value: state === "ok" ? text(result.value) : null,
+        errorCode: result.errorCode ?? null,
+        inputs: (result.inputs ?? []).map((input) => ({
+          name: input.name,
+          value: input.value?.state === "ok" ? text(input.value.value) : null,
+        })),
+        subItemCount: result.subItemCount ?? null,
+      };
+    },
     addOption: (
       s: BoardSettingsDto,
       fieldId: string,
@@ -669,6 +928,16 @@ export function createBoardSettingsApi(client: NotrelixClient) {
     },
     setDefaultView: (s: BoardSettingsDto, viewId: string) =>
       boardApi.setDefaultSavedView(s.boardId, viewId, viewVersion(s, viewId)),
+    /** Takes the view out of the tab strip; the default view hands over to the oldest shared one. */
+    archiveView: (s: BoardSettingsDto, viewId: string) =>
+      boardApi.archiveSavedView(s.boardId, viewId, viewVersion(s, viewId)),
+    unarchiveView: (s: BoardSettingsDto, viewId: string) => {
+      const version = s.archivedViews?.find(
+        (view) => view.id === viewId,
+      )?.version;
+      if (!version) throw new Error(`Unknown archived view ${viewId}`);
+      return boardApi.unarchiveSavedView(s.boardId, viewId, version);
+    },
     /** The default view cannot leave without a next one: the server takes `newDefaultViewId`, else the oldest shared view. */
     deleteView: (
       s: BoardSettingsDto,

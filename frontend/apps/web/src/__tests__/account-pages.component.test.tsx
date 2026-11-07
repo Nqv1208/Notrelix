@@ -36,6 +36,7 @@ vi.mock("@notrelix/runtime-web", () => ({
       },
       endpoints: {
         auth: {
+          bootstrap: "/auth/bootstrap",
           profile: "/auth/me",
           securitySummary: "/auth/security/summary",
           securityActivity: "/auth/security/activity",
@@ -64,7 +65,12 @@ vi.mock("@notrelix/runtime-web", () => ({
           defaultWorkspace: "/account/default-workspace",
           leaveWorkspace: (id: string) => `/account/workspaces/${id}`,
         },
+        accounts: {
+          deletedWorkspaces: (id: string) =>
+            `/accounts/${id}/workspaces/deleted`,
+        },
         workspaces: {
+          restore: (id: string) => `/workspaces/${id}/restore`,
           detail: (id: string) => `/workspaces/${id}`,
           myJobTitle: (id: string) => `/workspaces/${id}/members/me/job-title`,
           myMembership: (id: string) => `/workspaces/${id}/members/me`,
@@ -91,6 +97,11 @@ vi.mock("@tanstack/react-router", async (importOriginal) => ({
   }),
 }));
 
+vi.mock("@/shell/guards/auth-guard", () => ({
+  AuthGuard: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+import { AccountOutsideWorkspacePage } from "../routes/account/workspaces";
 import { AccountAppearancePage } from "../routes/workspaces/$workspaceId/account/appearance";
 import { AccountNotificationsPage } from "../routes/workspaces/$workspaceId/account/notifications";
 import { AccountSecurityPage } from "../routes/workspaces/$workspaceId/account/security";
@@ -1413,5 +1424,37 @@ describe("AccountWorkspacesPage container", () => {
       expect(text()).toContain("You are the only owner of this workspace."),
     );
     expect(runtime.navigate).not.toHaveBeenCalled();
+  });
+});
+
+describe("AccountOutsideWorkspacePage container", () => {
+  it("lets a person with no workspace reach Recently deleted and restore one", async () => {
+    const post = vi.fn(() => null);
+    runtime.get = reads({
+      "/account/workspaces": [],
+      "/auth/me": { name: "Hà", email: "ha@example.com" },
+      "/auth/bootstrap": { accountId: "acc-1" },
+      "/accounts/acc-1/workspaces/deleted": [
+        {
+          id: "w-9",
+          name: "Minh An Group",
+          deletedAt: new Date(Date.now() - 86_400_000).toISOString(),
+          purgeAfter: new Date(Date.now() + 29 * 86_400_000).toISOString(),
+          version: 7,
+        },
+      ],
+    });
+    runtime.post = post;
+    await mount(<AccountOutsideWorkspacePage />, "en");
+    await until(() => expect(text()).toContain("Recently deleted"));
+    // The frame offers the one page that needs no workspace.
+    expect(host?.querySelectorAll("nav[aria-label] a")).toHaveLength(1);
+    expect(text()).toContain("Minh An Group");
+    await clickButton("Restore");
+    await until(() =>
+      expect(post).toHaveBeenCalledWith("/workspaces/w-9/restore", {
+        expectedVersion: 7,
+      }),
+    );
   });
 });

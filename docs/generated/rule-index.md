@@ -31,7 +31,7 @@ review_on:
 > This file is generated discovery evidence.
 > Rule meaning remains owned by the canonical source document in which the rule is declared.
 
-Rule count: 2691
+Rule count: 2706
 
 ## Namespace summary
 
@@ -54,9 +54,10 @@ Rule count: 2691
 | `COL` | 30 |
 | `DCT` | 31 |
 | `DEC` | 26 |
+| `DEL` | 16 |
 | `DEL-CHG` | 40 |
 | `DEL-CON` | 40 |
-| `DEL-DEV` | 41 |
+| `DEL-DEV` | 40 |
 | `DEL-DONE` | 44 |
 | `DEL-MIG` | 46 |
 | `DEL-OWN` | 40 |
@@ -895,6 +896,22 @@ Rule count: 2691
 | `DEC-024` | `DEC` | Feature size does not determine ADR need | [`docs/decisions/README.md`](../decisions/README.md) |
 | `DEC-025` | `DEC` | Durable incident learning is rehomed | [`docs/decisions/README.md`](../decisions/README.md) |
 | `DEC-026` | `DEC` | Decision acceptance and implementation evidence are independent facts | [`docs/decisions/README.md`](../decisions/README.md) |
+| `DEL-001` | `DEL` | Four roles, one decision each | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
+| `DEL-002` | `DEL` | A use case moves through the catalog states | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
+| `DEL-003` | `DEL` | DONE has four lines | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
+| `DEL-004` | `DEL` | Evidence is proportionate and named | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
+| `DEL-005` | `DEL` | The pull request sets DONE; the lead merges | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
+| `DEL-006` | `DEL` | A lane owns one capability group and ships one pull request | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
+| `DEL-007` | `DEL` | Lane limits | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
+| `DEL-008` | `DEL` | Report daily against the plan | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
+| `DEL-009` | `DEL` | A release has six stages | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
+| `DEL-010` | `DEL` | Scope changes are the owner's | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
+| `DEL-011` | `DEL` | A release candidate takes fixes only | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
+| `DEL-012` | `DEL` | The owner accepts a version by journeys | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
+| `DEL-013` | `DEL` | Defects have four severities | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
+| `DEL-014` | `DEL` | Release readiness | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
+| `DEL-015` | `DEL` | Entitlement and later-context defaults | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
+| `DEL-016` | `DEL` | Commits and pull requests | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
 | `DEL-CHG-001` | `DEL-CHG` | Analyze consumers before changing a contract | [`docs/delivery/change-classification.md`](../delivery/change-classification.md) |
 | `DEL-CHG-002` | `DEL-CHG` | Delivery obligations are cumulative | [`docs/delivery/change-classification.md`](../delivery/change-classification.md) |
 | `DEL-CHG-003` | `DEL-CHG` | Local implementation preserves all external and persisted semantics | [`docs/delivery/change-classification.md`](../delivery/change-classification.md) |
@@ -981,7 +998,6 @@ Rule count: 2691
 | `DEL-DEV-004` | `DEL-DEV` | Container path does not hide required architecture | [`docs/delivery/local-development.md`](../delivery/local-development.md) |
 | `DEL-DEV-005` | `DEL-DEV` | Local secret files are untracked | [`docs/delivery/local-development.md`](../delivery/local-development.md) |
 | `DEL-DEV-006` | `DEL-DEV` | Example configuration never contains reusable production-like secrets | [`docs/delivery/local-development.md`](../delivery/local-development.md) |
-| `DEL-DEV-007` | `DEL-DEV` | Onboarding drift is fixed at the source, not duplicated | [`docs/delivery/local-development.md`](../delivery/local-development.md) |
 | `DEL-DEV-008` | `DEL-DEV` | This handbook does not duplicate the entire environment schema | [`docs/delivery/local-development.md`](../delivery/local-development.md) |
 | `DEL-DEV-009` | `DEL-DEV` | Start command is idempotent enough for daily use | [`docs/delivery/local-development.md`](../delivery/local-development.md) |
 | `DEL-DEV-010` | `DEL-DEV` | Destructive local commands are unmistakably local/destructive | [`docs/delivery/local-development.md`](../delivery/local-development.md) |

@@ -45,6 +45,18 @@ public class GlobalExceptionHandlerTests
     }
 
     [Fact]
+    public async Task RevocationStoreUnavailable_ShouldReturn503WithStableCodeAndRetryAfter()
+    {
+        await _handler.TryHandleAsync(_context, new RevocationStoreUnavailableException(new InvalidOperationException("redis")), default);
+
+        var pd = await ReadProblemDetailsAsync(_context);
+        pd.Status.Should().Be(StatusCodes.Status503ServiceUnavailable);
+        pd.Extensions!["errorCode"].ToString().Should().Be("auth.revocation_unavailable");
+        _context.Response.Headers.RetryAfter.ToString().Should().Be("5");
+        pd.Detail.Should().NotContain("redis");
+    }
+
+    [Fact]
     public async Task ValidationException_ShouldReturn400WithErrorCodeAndErrors()
     {
         var exception = new ValidationException(new[]

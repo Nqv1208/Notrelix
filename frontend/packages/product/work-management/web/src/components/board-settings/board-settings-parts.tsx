@@ -193,7 +193,7 @@ export function SectionHeader({
         </p>
       </div>
       <span className="flex-1" />
-      <div className="flex shrink-0 items-center gap-2">{actions}</div>
+      <div className="flex shrink-0 items-center gap-3">{actions}</div>
     </div>
   );
 }
@@ -259,7 +259,7 @@ export function SwitchControl({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={cn(
-        "relative h-5 w-[34px] shrink-0 cursor-pointer rounded-full border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50",
+        "relative h-5 w-[34px] shrink-0 cursor-pointer max-md:before:absolute max-md:before:-inset-3 max-md:before:content-[''] rounded-full border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50",
         checked ? "bg-primary" : "bg-line-strong",
         "after:absolute after:top-0.5 after:size-4 after:rounded-full after:bg-white after:shadow-[0_1px_2px_rgb(0_0_0/0.2)] after:transition-[left] after:content-['']",
         checked ? "after:left-4" : "after:left-0.5",

@@ -2641,7 +2641,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Watchers.Queries.GetBoardItemFollowing.BoardItemFollowingDto"
                 }
               }
             }
@@ -5588,6 +5588,7 @@
           "Identity.Auth"
         ],
         "summary": "Register a new account",
+        "description": "Answers 200 with no body for a new and for an existing address alike, and sets no session: a new person confirms the email from the mail and signs in; the owner of an existing address gets a notice mail. Nothing in the answer says whether the address was registered.",
         "operationId": "Identity.Auth.Register",
         "requestBody": {
           "content": {
@@ -5601,27 +5602,10 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Notrelix.API.Contracts.Identity.AuthSessionResponse"
-                }
-              }
-            }
+            "description": "OK"
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -9754,7 +9738,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalRequestDto"
+                  }
                 }
               }
             }
@@ -10689,7 +10676,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RestoreBoardField.RestoredBoardFieldDto"
                 }
               }
             }
@@ -10826,6 +10813,77 @@
           },
           "503": {
             "description": "Operation still being processed; retry after the indicated delay"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/boards/{boardId}/fields/preview-formula": {
+      "get": {
+        "tags": [
+          "WorkManagement.BoardFields"
+        ],
+        "summary": "Evaluate a draft formula or rollup against one item of the board, without saving it",
+        "operationId": "WorkManagement.BoardFields.PreviewFormula",
+        "parameters": [
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "expression",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rollupFunction",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rollupFieldId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.FormulaPreviewDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -11954,6 +12012,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -12112,6 +12177,28 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -12120,10 +12207,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash.BoardItemTrashEntryDto"
-                  }
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash.BoardItemTrashPageDto"
                 }
               }
             }
@@ -12163,6 +12247,21 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -12171,10 +12270,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems.ArchivedBoardItemEntryDto"
-                  }
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems.ArchivedBoardItemPageDto"
                 }
               }
             }
@@ -13965,7 +14061,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.BoardItemLinkListDto"
                 }
               }
             }
@@ -15245,13 +15341,21 @@
           "WorkManagement.Boards",
           "WorkManagement.Boards"
         ],
-        "summary": "Get the boards deleted in the last 30 days that the caller can restore",
+        "summary": "Get the boards deleted in the last 30 days that the caller can restore, optionally those of one Space",
         "operationId": "WorkManagement.Boards.ListDeleted",
         "parameters": [
           {
             "name": "workspaceId",
             "in": "path",
             "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "spaceId",
+            "in": "query",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -15504,6 +15608,13 @@
           },
           {
             "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
             "in": "query",
             "schema": {
               "type": "string"
@@ -16833,6 +16944,13 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "archived",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -27754,6 +27872,10 @@
           "expectedVersion": {
             "type": "integer",
             "format": "int64"
+          },
+          "defaultValueJson": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -28356,6 +28478,11 @@
           },
           "config": {
             "type": "string",
+            "nullable": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
             "nullable": true
           }
         },
@@ -31302,6 +31429,36 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.Collaboration.Watchers.Queries.GetBoardItemFollowing.BoardItemFollowerDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Collaboration.Watchers.Queries.GetBoardItemFollowing.BoardItemFollowingDto": {
+        "type": "object",
+        "properties": {
+          "following": {
+            "type": "boolean"
+          },
+          "followers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Watchers.Queries.GetBoardItemFollowing.BoardItemFollowerDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.Documents.DTOs.BlockDto": {
         "type": "object",
         "properties": {
@@ -32162,7 +32319,6 @@
           "accountId",
           "id",
           "name",
-          "role",
           "slug"
         ],
         "type": "object",
@@ -32176,10 +32332,6 @@
             "nullable": true
           },
           "slug": {
-            "type": "string",
-            "nullable": true
-          },
-          "role": {
             "type": "string",
             "nullable": true
           },
@@ -32777,6 +32929,19 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RestoreBoardField.RestoredBoardFieldDto": {
+        "type": "object",
+        "properties": {
+          "alreadyActive": {
+            "type": "boolean"
+          },
+          "restoredByName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.WorkManagement.BoardFields.Queries.ListDeletedBoardFields.DeletedBoardFieldDto": {
         "type": "object",
         "properties": {
@@ -32812,6 +32977,48 @@
           "valueCount": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.FormulaPreviewDto": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "nullable": true
+          },
+          "value": {
+            "nullable": true
+          },
+          "errorCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.FormulaPreviewInputDto"
+            },
+            "nullable": true
+          },
+          "subItemCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula.FormulaPreviewInputDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "value": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.ComputedValueDto"
           }
         },
         "additionalProperties": false
@@ -33406,9 +33613,38 @@
             "format": "uuid",
             "nullable": true
           },
+          "archivedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "subItemCount": {
+            "type": "integer",
+            "format": "int32"
+          },
           "version": {
             "type": "integer",
             "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems.ArchivedBoardItemPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems.ArchivedBoardItemEntryDto"
+            },
+            "nullable": true
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -33435,6 +33671,74 @@
             "items": {
               "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardDependencies.BoardDependencyDto"
             },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.BoardItemLinkDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "relation": {
+            "type": "string",
+            "nullable": true
+          },
+          "item": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.LinkedItemDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.BoardItemLinkListDto": {
+        "type": "object",
+        "properties": {
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.BoardItemLinkDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks.LinkedItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "statusName": {
+            "type": "string",
+            "nullable": true
+          },
+          "statusCategory": {
+            "type": "string",
+            "nullable": true
+          },
+          "isArchived": {
+            "type": "boolean"
+          },
+          "assigneeId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "assigneeName": {
+            "type": "string",
             "nullable": true
           }
         },
@@ -33468,9 +33772,38 @@
             "format": "uuid",
             "nullable": true
           },
+          "deletedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "subItemCount": {
+            "type": "integer",
+            "format": "int32"
+          },
           "restorableUntil": {
             "type": "string",
             "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash.BoardItemTrashPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash.BoardItemTrashEntryDto"
+            },
+            "nullable": true
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -33632,6 +33965,9 @@
           "boardVersion": {
             "type": "integer",
             "format": "int64"
+          },
+          "isPrivate": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -33695,6 +34031,11 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "previousRequestId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -33874,6 +34215,14 @@
           "spaceId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "itemKeyPrefix": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentName": {
+            "type": "string",
             "nullable": true
           }
         },
@@ -34494,6 +34843,10 @@
             "nullable": true
           },
           "updatedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "openBlockerKey": {
             "type": "string",
             "nullable": true
           }
@@ -35220,6 +35573,10 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "createdByName": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -35472,6 +35829,14 @@
           "failureBy": {
             "type": "string",
             "nullable": true
+          },
+          "unmatchedPersonRows": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -35512,6 +35877,14 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Transfer.SampleRow"
+            },
+            "nullable": true
+          },
+          "unmatchedPersonRows": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
             },
             "nullable": true
           }
@@ -35842,6 +36215,10 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          },
+          "invitedBy": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "additionalProperties": false

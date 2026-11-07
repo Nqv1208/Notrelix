@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Common.Idempotency;
+using Notrelix.Application.Features.WorkManagement.Boards.Services;
 using Notrelix.Application.Features.WorkManagement.Ordering;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.ArchiveBoardItem;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.AssignBoardItemMember;
@@ -13,6 +14,8 @@ using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoa
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemStatus;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListArchivedBoardItems;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks;
+using Notrelix.Application.Features.WorkManagement.ItemLinks.Commands.CreateBoardItemLink;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.SharedKernel;
@@ -148,6 +151,28 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Rename_ALongTitleToAShorterOne_IsAccepted_AndOneOverTheDomainLimitIsRefusedUnchanged()
+    {
+        var scene = await SeedAsync();
+        using var owner = Provider(scene.Stack);
+        var long300 = new string('a', 300);
+        var read = await VersionAsync(scene.Items[0]);
+
+        // Create takes up to the Domain limit, so rename must take the same titles.
+        await OrgTreeTestHost.SendAsync(owner, Rename(scene.Items[0], long300, read));
+        var afterLong = await VersionAsync(scene.Items[0]);
+        await OrgTreeTestHost.SendAsync(owner, Rename(scene.Items[0], new string('b', 250), afterLong));
+        var afterShorter = await VersionAsync(scene.Items[0]);
+        var tooLong = () => OrgTreeTestHost.SendAsync(owner, Rename(scene.Items[0], new string('c', BoardItem.NameMaxLength + 1), afterShorter));
+
+        (await ItemAsync(scene.Items[0])).Name.Should().Be(new string('b', 250));
+        // This host has no request validators, so the Domain guard is what answers; the API answers both with a 400.
+        await tooLong.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>("a title over the Domain limit is refused");
+        (await ItemAsync(scene.Items[0])).Name.Should().Be(new string('b', 250));
+        (await VersionAsync(scene.Items[0])).Should().Be(afterShorter, "the refusal changed nothing");
+    }
+
+    [Fact]
     public async Task Rename_ByAMemberWhoCannotReadThePrivateBoard_AnswersLikeAMissingItem()
     {
         var scene = await SeedAsync(BoardVisibility.Private);
@@ -174,7 +199,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         await ForEachOutsiderAsync(scene.Stack, async provider =>
         {
             var act = () => OrgTreeTestHost.SendAsync(provider, Rename(scene.Items[0], "Hijacked", version));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
 
         (await ItemAsync(scene.Items[0])).Name.Should().Be("Task 0");
@@ -250,7 +275,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         {
             var act = () => OrgTreeTestHost.SendAsync(provider,
                 new UpdateBoardItemStatusCommand(scene.Items[0], scene.DoneOptionId.ToString(), version));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
 
         (await ItemAsync(scene.Items[0])).CompletedAt.Should().BeNull();
@@ -307,7 +332,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         {
             var act = () => OrgTreeTestHost.SendAsync(provider,
                 new SetBoardItemDueDateCommand(scene.Items[0], new DateTime(2026, 11, 20, 0, 0, 0, DateTimeKind.Utc), null, version));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
 
         (await ItemAsync(scene.Items[0])).DueAt.Should().BeNull();
@@ -444,7 +469,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         await ForEachOutsiderAsync(scene.Stack, async outsider =>
         {
             var act = () => OrgTreeTestHost.SendAsync(outsider, new MoveBoardItemCommand(scene.Items[0], scene.OtherGroupId, version));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
 
         (await ItemAsync(scene.Items[0])).GroupId.Should().NotBe(scene.OtherGroupId);
@@ -582,7 +607,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         await ForEachOutsiderAsync(scene.Stack, async outsider =>
         {
             var act = () => OrgTreeTestHost.SendAsync(outsider, Lane(scene.Items[0]));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
 
         (await StoredValueAsync(scene.Items[0], scene.PriorityFieldId)).Should().BeNull();
@@ -643,7 +668,8 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         var notShared = () => OrgTreeTestHost.SendAsync(owner, new AssignBoardItemMemberCommand(scene.Items[0], cannotSee, version));
         var foreign = () => OrgTreeTestHost.SendAsync(owner, new AssignBoardItemMemberCommand(scene.Items[0], otherWorkspace.OwnerId, version));
 
-        await notShared.Should().ThrowAsync<AppForbidden>("the person cannot see the Private board, so the owner must share it first");
+        (await notShared.Should().ThrowAsync<AppForbidden>("the person cannot see the Private board, so the owner must share it first"))
+            .Which.Code.Should().Be(BoardAssigneeGuard.BoardNotSharedCode, "the page names the reason and offers the share action from this code");
         await foreign.Should().ThrowAsync<AppForbidden>("only people of the same Workspace can be assigned");
         (await AssigneesAsync(scene.Items[0])).Should().BeEmpty();
         (await VersionAsync(scene.Items[0])).Should().Be(version);
@@ -660,7 +686,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         {
             var act = () => OrgTreeTestHost.SendAsync(provider,
                 new AssignBoardItemMemberCommand(scene.Items[0], assignee, version));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
 
         (await AssigneesAsync(scene.Items[0])).Should().BeEmpty();
@@ -719,7 +745,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         {
             var act = () => OrgTreeTestHost.SendAsync(provider,
                 new UpdateBoardItemFieldValueCommand(scene.Items[0], scene.PriorityFieldId, scene.HighOptionId.ToString(), version));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
 
         (await StoredValueAsync(scene.Items[0], scene.PriorityFieldId)).Should().BeNull();
@@ -822,7 +848,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         _host.Now = OrgTreeTestHost.BaseTime.AddDays(31);
         using (var owner = Provider(scene.Stack))
             await OrgTreeTestHost.SendAsync(owner, new DeleteBoardItemCommand(scene.Items[2], await VersionAsync(scene.Items[2])));
-        var trashed = await QueryListAsync<BoardItemTrashEntryDto>(Provider(scene.Stack), new ListBoardItemTrashQuery(scene.BoardId));
+        var trashed = (await OrgTreeTestHost.SendAsync(Provider(scene.Stack), new ListBoardItemTrashQuery(scene.BoardId)) as BoardItemTrashPageDto)!.Items;
 
         trashed.Select(e => e.Name).Should().Equal(["Task 2", "Task 1"], "newest first, and Task 0 is past the thirty-day window");
         trashed.Should().OnlyContain(e => e.RestorableUntil > _host.Now);
@@ -837,7 +863,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         await ForEachOutsiderAsync(scene.Stack, async provider =>
         {
             var act = () => OrgTreeTestHost.SendAsync(provider, new ListBoardItemTrashQuery(scene.BoardId));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
     }
 
@@ -850,7 +876,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         using var owner = Provider(scene.Stack);
         foreach (var id in scene.Items)
             await OrgTreeTestHost.SendAsync(owner, new ArchiveBoardItemCommand(id, await VersionAsync(id)));
-        (await QueryListAsync<ArchivedBoardItemEntryDto>(owner, new ListArchivedBoardItemsQuery(scene.BoardId))).Should().HaveCount(2);
+        ((await OrgTreeTestHost.SendAsync(owner, new ListArchivedBoardItemsQuery(scene.BoardId)) as ArchivedBoardItemPageDto)!.Items).Should().HaveCount(2);
 
         var archivedVersion = await VersionAsync(scene.Items[0]);
         var key = $"unarchive-{Guid.NewGuid():N}";
@@ -864,7 +890,7 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
 
         replay.Should().BeEquivalentTo(first);
         (await VersionAsync(scene.Items[0])).Should().Be(afterFirst, "the replay unarchived nothing a second time");
-        (await QueryListAsync<ArchivedBoardItemEntryDto>(owner, new ListArchivedBoardItemsQuery(scene.BoardId)))
+        ((await OrgTreeTestHost.SendAsync(owner, new ListArchivedBoardItemsQuery(scene.BoardId)) as ArchivedBoardItemPageDto)!.Items)
             .Select(e => e.Id).Should().Equal(scene.Items[1]);
     }
 
@@ -883,8 +909,125 @@ public sealed class WorkItemWritesPipelineIntegrationTests : IAsyncLifetime
         await ForEachOutsiderAsync(scene.Stack, async provider =>
         {
             var act = () => OrgTreeTestHost.SendAsync(provider, new ListArchivedBoardItemsQuery(scene.BoardId));
-            await act.Should().ThrowAsync<Exception>().Where(e => e is AppForbidden || e is AppNotFound);
+            await act.Should().ThrowAsync<AppNotFound>("a person with no role in the Workspace gets the answer a missing item gets, never Forbidden");
         });
+    }
+
+    // ---- UC-WM-B10 and UC-WM-B13 pages, UC-WM-B12 sub-item restore -------------------------------------
+
+    [Fact]
+    public async Task TrashAndArchive_ArePagedByCursor_CountTheSubItemsAndNameWhoDidIt_AndTheArchiveSearchesNameAndKey()
+    {
+        var scene = await SeedAsync(itemCount: 3);
+        var child = await AddSubItemAsync(scene, scene.Items[0], "Child");
+        using (var owner = Provider(scene.Stack))
+            await OrgTreeTestHost.SendAsync(owner, new ArchiveBoardItemCommand(scene.Items[0], await VersionAsync(scene.Items[0])));
+        _host.Now = OrgTreeTestHost.BaseTime.AddMinutes(1);
+        using (var owner = Provider(scene.Stack))
+            await OrgTreeTestHost.SendAsync(owner, new ArchiveBoardItemCommand(scene.Items[1], await VersionAsync(scene.Items[1])));
+        _host.Now = OrgTreeTestHost.BaseTime.AddMinutes(2);
+        using (var owner = Provider(scene.Stack))
+            await OrgTreeTestHost.SendAsync(owner, new ArchiveBoardItemCommand(scene.Items[2], await VersionAsync(scene.Items[2])));
+
+        using var reader = Provider(scene.Stack);
+        var first = (ArchivedBoardItemPageDto)(await OrgTreeTestHost.SendAsync(reader, new ListArchivedBoardItemsQuery(scene.BoardId, Limit: 2)))!;
+        first.Items.Select(e => e.Name).Should().Equal(["Task 2", "Task 1"], "newest first");
+        first.Total.Should().Be(3);
+        first.NextCursor.Should().NotBeNull();
+        first.Items.Should().OnlyContain(e => e.ArchivedByName != null, "the person who archived is named");
+        var second = (ArchivedBoardItemPageDto)(await OrgTreeTestHost.SendAsync(reader, new ListArchivedBoardItemsQuery(scene.BoardId, Limit: 2, Cursor: first.NextCursor)))!;
+        second.Items.Should().ContainSingle().Which.Name.Should().Be("Task 0");
+        second.Items[0].SubItemCount.Should().Be(1, "the sub-item comes back with its parent");
+        second.NextCursor.Should().BeNull("the page holds the rest");
+        var found = (ArchivedBoardItemPageDto)(await OrgTreeTestHost.SendAsync(reader, new ListArchivedBoardItemsQuery(scene.BoardId, Search: "task 1")))!;
+        found.Items.Should().ContainSingle().Which.Name.Should().Be("Task 1");
+        found.Total.Should().Be(1, "the count follows the search");
+        var bad = () => OrgTreeTestHost.SendAsync(reader, new ListArchivedBoardItemsQuery(scene.BoardId, Cursor: "not-a-cursor"));
+        await bad.Should().ThrowAsync<Exception>("a cursor nobody issued is refused");
+
+        // The same two reads for the trash: the parent goes with its sub-item, so the sub-item is not a row of its own.
+        _host.Now = OrgTreeTestHost.BaseTime.AddDays(1);
+        using (var owner = Provider(scene.Stack))
+        {
+            foreach (var id in scene.Items)
+            {
+                await OrgTreeTestHost.SendAsync(owner, new UnarchiveBoardItemCommand(id, await VersionAsync(id)));
+                _host.Now = _host.Now.AddMinutes(1);
+                await OrgTreeTestHost.SendAsync(owner, new DeleteBoardItemCommand(id, await VersionAsync(id)));
+                _host.Now = _host.Now.AddMinutes(1);
+            }
+        }
+
+        var firstTrash = (BoardItemTrashPageDto)(await OrgTreeTestHost.SendAsync(reader, new ListBoardItemTrashQuery(scene.BoardId, Limit: 2)))!;
+        firstTrash.Items.Select(e => e.Name).Should().Equal(["Task 2", "Task 1"]);
+        firstTrash.Total.Should().Be(3);
+        firstTrash.Items.Should().OnlyContain(e => e.DeletedByName != null);
+        var lastTrash = (BoardItemTrashPageDto)(await OrgTreeTestHost.SendAsync(reader, new ListBoardItemTrashQuery(scene.BoardId, Limit: 2, Cursor: firstTrash.NextCursor)))!;
+        lastTrash.Items.Should().ContainSingle().Which.SubItemCount.Should().Be(1);
+        lastTrash.NextCursor.Should().BeNull();
+        var foundTrash = (BoardItemTrashPageDto)(await OrgTreeTestHost.SendAsync(reader, new ListBoardItemTrashQuery(scene.BoardId, Search: "TASK 1")))!;
+        foundTrash.Items.Should().ContainSingle().Which.Name.Should().Be("Task 1");
+        foundTrash.Total.Should().Be(1, "the count follows the search");
+        _ = child;
+    }
+
+    [Fact]
+    public async Task RestoreOfASubItem_WhileItsParentIsStillDeleted_IsRefusedAndChangesNothing_ThenComesBackWithTheParent()
+    {
+        var scene = await SeedAsync();
+        var child = await AddSubItemAsync(scene, scene.Items[0], "Child");
+        using var owner = Provider(scene.Stack);
+        await OrgTreeTestHost.SendAsync(owner, new DeleteBoardItemCommand(scene.Items[0], await VersionAsync(scene.Items[0])));
+        (await IsDeletedAsync(child)).Should().BeTrue("the sub-item went with its parent");
+
+        var act = () => OrgTreeTestHost.SendAsync(owner, new RestoreBoardItemCommand(child));
+        (await act.Should().ThrowAsync<Conflict>()).Which.ErrorCode.Should().Be("work-management.item.restore-parent-deleted");
+        (await IsDeletedAsync(child)).Should().BeTrue("a refused restore changes nothing");
+
+        await OrgTreeTestHost.SendAsync(owner, new RestoreBoardItemCommand(scene.Items[0]));
+        (await IsDeletedAsync(child)).Should().BeFalse("the sub-item comes back with its parent");
+    }
+
+    private async Task<Guid> AddSubItemAsync(Scene scene, Guid parentId, string name)
+    {
+        var parent = await ItemAsync(parentId);
+        var child = BoardItem.CreateSubItem(parent, name, FractionalIndex.Create("a0"), scene.Stack.OwnerId, OrgTreeTestHost.BaseTime);
+        await _host.WithSystemContextAsync(c =>
+        {
+            c.BoardItems.Add(child);
+            return Task.CompletedTask;
+        });
+        return child.Id;
+    }
+
+    // ---- UC-WM-B35 a target lost while the link is being written ---------------------------------------------
+
+    [Fact]
+    public async Task LinkWrite_RacingTheDeleteOfItsTarget_LeavesNoLinkShown_AndNoFailureOtherThanNotFound()
+    {
+        const int rounds = 4; // the seed holds ten items at most
+        var scene = await SeedAsync(itemCount: rounds * 2);
+        using var owner = Provider(scene.Stack);
+
+        for (var round = 0; round < rounds; round++)
+        {
+            var source = scene.Items[round * 2];
+            var target = scene.Items[round * 2 + 1];
+            var version = await VersionAsync(target);
+
+            // Two transactions at once: the link to the target, and the delete of the target.
+            var link = Task.Run(async () =>
+            {
+                try { await OrgTreeTestHost.SendAsync(owner, new CreateBoardItemLinkCommand(source, target, "blocked-by")); return true; }
+                catch (AppNotFound) { return false; }
+            });
+            var delete = Task.Run(() => OrgTreeTestHost.SendAsync(owner, new DeleteBoardItemCommand(target, version)));
+            await Task.WhenAll(link, delete);
+
+            (await IsDeletedAsync(target)).Should().BeTrue("the delete wins whichever way the race goes");
+            var shown = (Notrelix.Application.Common.Models.Result<BoardItemLinkListDto>)(await OrgTreeTestHost.SendAsync(owner, new ListBoardItemLinksQuery(source)))!;
+            shown.Data!.Links.Should().BeEmpty("a link that won the race is hidden while its target is in the trash, so none dangles on screen");
+        }
     }
 
     // ---- scene and helpers ---------------------------------------------------------------------------------

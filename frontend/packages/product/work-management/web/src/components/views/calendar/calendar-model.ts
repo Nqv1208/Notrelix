@@ -10,8 +10,40 @@ export type DayKey = string;
 
 export type CalendarRange = "month" | "week" | "day";
 
-/** How an entry is placed: over its whole start-to-due span, or on its due day. */
-export type CalendarDateBasis = "span" | "due";
+/** `span` (start to due), `due`, or the id of a Date field the items sit on. */
+export type CalendarDateBasis = string;
+
+/**
+ * The fields a Calendar can place items by: the board's own Date fields only. Every board also has the item's
+ * start and due days (`span`, `due`), so a board with no Date field still has a basis; the Calendar never reads
+ * dates from a Text or any other field (product section 52).
+ */
+export function calendarDateFields(
+  fields: readonly {
+    readonly builtin?: boolean;
+    readonly field: {
+      readonly id: string;
+      readonly name: string;
+      readonly fieldType: string;
+    };
+  }[],
+): { id: string; name: string }[] {
+  return fields
+    .filter((entry) => !entry.builtin && entry.field.fieldType === "date")
+    .map((entry) => ({ id: entry.field.id, name: entry.field.name }));
+}
+
+/** The basis to draw: a saved field that was deleted, or is no longer a Date field, falls back to `span`. */
+export function resolveCalendarDateBasis(
+  wanted: CalendarDateBasis,
+  dateFields: readonly { id: string }[],
+): CalendarDateBasis {
+  return wanted === "span" ||
+    wanted === "due" ||
+    dateFields.some((field) => field.id === wanted)
+    ? wanted
+    : "span";
+}
 
 /** The colour family of an entry: its Status bucket, or overdue. */
 export type CalendarTone = "todo" | "doing" | "review" | "done" | "overdue";
@@ -212,8 +244,9 @@ function overlaps(entry: CalendarEntry, from: DayKey, to: DayKey): boolean {
 
 /**
  * Places the entries that touch the week `days` on the grid: start column
- * first, longer spans first, then input order (so equal entries keep the
- * order of the board). Each placement takes the first row whose columns are
+ * first, shorter spans first (a short entry keeps a visible row instead of
+ * being folded into "+N" behind a long one that starts the same day), then
+ * input order (so equal entries keep the order of the board). Each placement takes the first row whose columns are
  * free, like a dense grid. With `maxRows` set, rows that do not fit collapse
  * into one "+N" per column: the last visible row of such a column is given
  * up for the counter, so the number always names the hidden entries.
@@ -240,7 +273,14 @@ export function layoutWeek(
         span: diffDays(from, to) + 1,
       };
     })
-    .sort((a, b) => a.col - b.col || b.span - a.span || a.order - b.order);
+    .sort(
+      (a, b) =>
+        a.col - b.col ||
+        // Phases and milestones keep the top rows, longest first.
+        Number(b.entry.kind !== "item") - Number(a.entry.kind !== "item") ||
+        (a.entry.kind === "item" ? a.span - b.span : b.span - a.span) ||
+        a.order - b.order,
+    );
 
   const taken: boolean[][] = [];
   const placed: CalendarPlacement[] = touching.map(({ entry, col, span }) => {

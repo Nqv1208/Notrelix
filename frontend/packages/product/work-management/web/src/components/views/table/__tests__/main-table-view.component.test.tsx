@@ -33,6 +33,7 @@ import {
 import { kanbanLaneCatalog } from "../../kanban/kanban-lane.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
 import { statusOptionFormCatalog } from "../../../status-option/status-option-form.catalog";
+import { BoardHeaderDataContext } from "../../../board-layout/board-header-data-context";
 import { mainTableCatalog } from "../main-table.catalog";
 import { ARCHIVE_UNDO_MS, MainTableView } from "../main-table-view";
 
@@ -446,6 +447,26 @@ describe("MainTableView on the ERP board", () => {
     ).toBeTruthy();
   });
 
+  it("tells a refused title (400) under the editor, keeps the typed text and shows no toast", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.updateCard.mockRejectedValueOnce(
+      Object.assign(new Error("Value exceeds maximum length of 500."), {
+        status: 400,
+      }),
+    );
+    await renameErp149("Tên quá dài");
+    const note = await screen.findByRole("alert");
+    expect(note.textContent).toMatch(/Tên tối đa 500 ký tự/);
+    expect(
+      (
+        screen.getByRole("textbox", {
+          name: "Sửa tên ERP-149",
+        }) as HTMLInputElement
+      ).value,
+    ).toBe("Tên quá dài");
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
   it("tells the person when a due date lost the race and names who won", async () => {
     const { cards } = renderTable(erpOwnerAccess(), {}, true);
     cards.updateCard.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));
@@ -485,6 +506,59 @@ describe("MainTableView on the ERP board", () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(2));
     for (const call of toast.error.mock.calls)
       expect(call[0]).toMatch(/^Lê Hoàng Phúc vừa sửa “Viết tài liệu/);
+  });
+
+  it("tells the person why an assignee was refused and offers Share to who may grant access", async () => {
+    const onOpenShare = vi.fn();
+    const fake = fakeServices(erpOwnerAccess(), true);
+    fake.cards.updateFieldValue.mockRejectedValue({
+      status: 403,
+      code: "work-management.assignee.board-not-shared",
+    });
+    renderPureUi(
+      <Providers services={fake.services}>
+        <BoardHeaderDataContext.Provider value={{ onOpenShare }}>
+          <RoutedView />
+        </BoardHeaderDataContext.Provider>
+      </Providers>,
+    );
+    await ready();
+    fireEvent.click(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi người phụ trách của ERP-149",
+      }),
+    );
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /Trần Minh Quân/ })[0]!,
+    );
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+    expect(toast.error.mock.calls[0]?.[0]).toMatch(
+      /^Chưa giao “Viết tài liệu.*người này chưa xem được board\. Hãy chia sẻ board với họ trước\.$/,
+    );
+    const action = toast.error.mock.calls[0]?.[1]?.action;
+    expect(action?.label).toBe("Chia sẻ board");
+    action?.onClick();
+    expect(onOpenShare).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives no Share action when the person cannot grant access, and names a viewer refusal", async () => {
+    const { cards } = renderTable(erpOwnerAccess(), {}, true);
+    cards.updateFieldValue.mockRejectedValue({
+      status: 400,
+      ruleCode: "WorkManagement_BoardItem_AssigneeIsViewer",
+    });
+    await ready();
+    fireEvent.click(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi người phụ trách của ERP-149",
+      }),
+    );
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /Trần Minh Quân/ })[0]!,
+    );
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+    expect(toast.error.mock.calls[0]?.[0]).toMatch(/người này chỉ xem board/);
+    expect(toast.error.mock.calls[0]?.[1]?.action).toBeUndefined();
   });
 
   // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
@@ -538,11 +612,36 @@ describe("MainTableView on the ERP board", () => {
     expect(cards.archiveCard).not.toHaveBeenCalled();
   });
 
+  it("keeps the picked rows while another row's status change reads the board again", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    await ready();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-142" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-146" }));
+    expect(screen.getByRole("toolbar")).toBeTruthy();
+    fireEvent.click(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi trạng thái của ERP-149",
+      }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: /Đang làm/ }));
+    await waitFor(() => expect(cards.updateStatus).toHaveBeenCalledOnce());
+    await waitFor(() => expect(rowsOf("Đang làm")).toBe(4));
+    expect(
+      (
+        screen.getByRole("checkbox", {
+          name: "Chọn ERP-142",
+        }) as HTMLInputElement
+      ).getAttribute("aria-checked") ?? "true",
+    ).toBe("true");
+    expect(row("ERP-142")!.getAttribute("aria-selected")).toBe("true");
+    expect(row("ERP-146")!.getAttribute("aria-selected")).toBe("true");
+  });
+
   it("sets the due date of the selected rows", async () => {
     const { cards } = renderTable(erpOwnerAccess());
     await ready();
     fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-151" }));
-    fireEvent.click(screen.getByRole("button", { name: "Đặt hạn" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hạn" }));
     fireEvent.change(screen.getByLabelText("Hạn"), {
       target: { value: "2026-11-03" },
     });
@@ -590,12 +689,37 @@ describe("MainTableView on the ERP board", () => {
     expect(cards.updateStatus).not.toHaveBeenCalled();
   }, 20_000);
 
+  it("announces a bulk status change and takes it back when every row held the same status", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    await ready();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-151" }));
+    const bar = screen.getByRole("toolbar");
+    fireEvent.keyDown(within(bar).getByRole("button", { name: /Trạng thái/ }), {
+      key: "Enter",
+    });
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: /Hoàn thành/ }),
+    );
+    const done = await screen.findByText("Đã đổi trạng thái cho 1 việc");
+    expect(done.closest("[data-table-bulk-done]")).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Hoàn tác" }));
+    await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(2));
+    const undo = cards.bulkUpdate.mock.calls[1] as unknown as [
+      string,
+      string[],
+      { type: string; statusOptionId: string },
+    ];
+    expect(undo[1]).toEqual([erpItemId("ERP-151")]);
+    expect(undo[2].type).toBe("set-status");
+    expect(undo[2].statusOptionId).not.toBe(ERP_STATUS_OPTION_IDS.done);
+  }, 20_000);
+
   it("says nothing was changed when the batch is refused", async () => {
     const { cards } = renderTable(erpOwnerAccess());
     cards.bulkUpdate.mockRejectedValueOnce(new Error("rejected"));
     await ready();
     fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-151" }));
-    fireEvent.click(screen.getByRole("button", { name: "Đặt hạn" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hạn" }));
     fireEvent.change(screen.getByLabelText("Hạn"), {
       target: { value: "2026-11-03" },
     });
@@ -609,7 +733,7 @@ describe("MainTableView on the ERP board", () => {
   // The popover closes on Apply, so a second press is the same pick made again.
   async function applyDueDate() {
     if (!screen.queryByLabelText("Hạn"))
-      fireEvent.click(screen.getByRole("button", { name: "Đặt hạn" }));
+      fireEvent.click(screen.getByRole("button", { name: "Hạn" }));
     fireEvent.change(screen.getByLabelText("Hạn"), {
       target: { value: "2026-11-03" },
     });
@@ -669,7 +793,7 @@ describe("MainTableView on the ERP board", () => {
     );
     await ready();
     fireEvent.click(screen.getByRole("checkbox", { name: "Chọn ERP-151" }));
-    fireEvent.click(screen.getByRole("button", { name: "Đặt hạn" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hạn" }));
     fireEvent.change(screen.getByLabelText("Hạn"), {
       target: { value: "2026-11-03" },
     });
@@ -707,13 +831,10 @@ describe("MainTableView on the ERP board", () => {
     fireEvent.click(
       within(dialog).getByRole("button", { name: "Thêm cách sắp xếp" }),
     );
-    const field = within(dialog).getByLabelText(
-      "Trường sắp xếp 1",
-    ) as HTMLSelectElement;
-    const priority = within(field).getByRole("option", {
-      name: "Ưu tiên",
-    }) as HTMLOptionElement;
-    fireEvent.change(field, { target: { value: priority.value } });
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Trường sắp xếp 1" }),
+    );
+    fireEvent.click(await screen.findByRole("option", { name: /^Ưu tiên/ }));
     await waitFor(() =>
       expect(
         screen
@@ -722,6 +843,31 @@ describe("MainTableView on the ERP board", () => {
       ).toBe("ascending"),
     );
     expect(boards.updateSavedViewConfig).not.toHaveBeenCalled();
+  });
+
+  it("moves a sort level down with the arrow keys on its grip", async () => {
+    renderTable(erpOwnerAccess());
+    await ready();
+    fireEvent.click(screen.getByRole("button", { name: /^Sắp xếp/ }));
+    const dialog = await screen.findByRole("dialog", { name: "Sắp xếp" });
+    const add = within(dialog).getByRole("button", {
+      name: "Thêm cách sắp xếp",
+    });
+    fireEvent.click(add);
+    fireEvent.click(add);
+    const first = () =>
+      within(dialog).getByRole("button", { name: "Trường sắp xếp 1" })
+        .textContent;
+    const before = first();
+    fireEvent.keyDown(
+      within(dialog).getByRole("button", { name: "Đổi thứ tự cách sắp xếp 1" }),
+      { key: "ArrowDown" },
+    );
+    await waitFor(() => expect(first()).not.toBe(before));
+    expect(
+      within(dialog).getByRole("button", { name: "Trường sắp xếp 2" })
+        .textContent,
+    ).toBe(before);
   });
 
   it("resizes a column as the member's own state and drops it again on reset", async () => {
@@ -885,7 +1031,9 @@ describe("MainTableView on the ERP board", () => {
   it("adds an item into a group through the status write", async () => {
     const { cards } = renderTable(erpOwnerAccess());
     await ready();
-    fireEvent.click(screen.getByRole("button", { name: "Thêm vào Đang làm" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Thêm công việc vào Đang làm" }),
+    );
     const input = screen.getByRole("textbox", {
       name: "Tên việc mới trong Đang làm",
     });

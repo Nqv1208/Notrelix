@@ -343,7 +343,10 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
       "columns after the separator",
     ).toBeLessThanOrEqual(1);
 
-    const add = page.getByRole("button", { name: "Thêm công việc" });
+    const add = page.getByRole("button", {
+      name: "Thêm công việc",
+      exact: true,
+    });
     expectRect(await rel(page, add), t.primary, "Thêm công việc");
     expect(await style(add, "font-weight")).toBe("600");
     expect(await colour(add, "background-color")).toBe(COLOUR.accent);
@@ -417,7 +420,9 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     expect(await style(warn, "font-weight")).toBe("600");
     expect(await colour(warn, "color")).toBe(COLOUR.danger);
 
-    const add = first.getByRole("button", { name: "Thêm vào Cần làm" });
+    const add = first.getByRole("button", {
+      name: "Thêm công việc vào Cần làm",
+    });
     const addRow = add.locator("xpath=ancestor::*[@role='row'][1]");
     expectRect(
       await rel(page, addRow),
@@ -648,44 +653,10 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     expect(
       Math.abs(VIEWPORT.height - (box.y + box.height) - b.gapFromBottom),
     ).toBeLessThanOrEqual(1);
-    // The mockup's bar has Trạng thái, Giao cho, Đặt hạn, Chuyển board and
-    // Lưu trữ; Ưu tiên and Xoá are added to it, each a button plus the 4 px gap.
-    let added = 0;
-    for (const name of ["Ưu tiên", "Xoá"]) {
-      const extra = await bar.getByRole("button", { name }).boundingBox();
-      added += (extra?.width ?? 0) + 4;
-    }
-    expect(Math.abs(box.width - added - b.width)).toBeLessThanOrEqual(1);
+    // The bar's buttons, menu and states are measured against BC-Bulk in design-fidelity-bulk-states.
     expect(await style(bar, "border-radius")).toBe(b.radius);
     expect(await colour(bar, "background-color")).toBe(COLOUR.bulk);
     expect(await colour(bar, "color")).toBe("rgb(242, 244, 247)");
-    expect(await style(bar.locator("b"), "font-size")).toBe(
-      TYPE.bulk.countSize,
-    );
-    expect(await style(bar.locator("b"), "font-weight")).toBe("600");
-
-    const statusButton = bar.getByRole("button", { name: "Trạng thái" });
-    expectRect(
-      await rel(page, statusButton),
-      { width: b.status.width, height: 32 },
-      "Trạng thái",
-    );
-    expect(await style(statusButton, "border-radius")).toBe(b.status.radius);
-    expect(await style(statusButton, "font-size")).toBe(TYPE.bulk.size);
-    expect(await style(statusButton, "font-weight")).toBe(TYPE.bulk.weight);
-    expectRect(
-      await rel(page, bar.getByRole("button", { name: /Chuyển board/ })),
-      b.move,
-      "Chuyển board",
-    );
-    const archive = bar.getByRole("button", { name: "Lưu trữ" });
-    expectRect(await rel(page, archive), b.archive, "Lưu trữ");
-    expect(await colour(archive, "color")).toBe("rgb(255, 154, 170)");
-    expectRect(
-      await rel(page, bar.getByRole("button", { name: "Bỏ chọn (Esc)" })),
-      b.close,
-      "close",
-    );
   });
 
   test("status list opens under the pill at the mockup position", async ({
@@ -753,7 +724,7 @@ test.describe("Board table geometry at 1440 px (owner)", () => {
     const add = await rel(
       page,
       page
-        .getByRole("button", { name: "Thêm vào Cần làm" })
+        .getByRole("button", { name: "Thêm công việc vào Cần làm" })
         .locator("xpath=ancestor::*[@role='row'][1]"),
     );
     expect(Math.abs(add.y - 427.4)).toBeLessThanOrEqual(1);

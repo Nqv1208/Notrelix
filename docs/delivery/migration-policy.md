@@ -975,7 +975,7 @@ migration changes require review/integration proof
 model drift should not be suppressed
 ```
 
-Current CI includes Infrastructure/Integration tests and migration smoke evidence.
+Current CI (`ci.yml`) runs Infrastructure and Integration tests; migration smoke and `scripts/ci/check-migration-discipline.py` are not PR gates and run locally.
 
 # 108. Stop conditions
 

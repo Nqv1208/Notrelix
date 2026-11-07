@@ -1,6 +1,13 @@
-import { useState } from "react";
-import { AtSign, Lock, MessageCircle, MessageSquareOff } from "lucide-react";
-import { Skeleton, Textarea } from "@notrelix/ui-web";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  AtSign,
+  CloudOff,
+  Lock,
+  MessageCircle,
+  MessageSquareOff,
+  RotateCw,
+} from "lucide-react";
+import { Textarea, cn } from "@notrelix/ui-web";
 import {
   personInitials,
   type CardActivity,
@@ -65,32 +72,44 @@ function CommentEntry({
   update,
   replies,
   names,
+  deleted = false,
 }: {
   update: CardUpdate;
   replies: readonly CardUpdate[];
   names: readonly string[];
+  /** The comment was deleted: its replies stay under a placeholder (COL-006). */
+  deleted?: boolean;
 }) {
-  const { card, callbacks, capabilities } = useCardPopup();
+  const { card, callbacks, capabilities, copy } = useCardPopup();
   const sheet = useItemSheetCopy();
   const [replying, setReplying] = useState(false);
   const [showAll, setShowAll] = useState(false);
-  const canReply = canWriteComment(capabilities);
+  const canReply = canWriteComment(capabilities) && !deleted;
   const shown = showAll ? replies : replies.slice(0, VISIBLE_REPLIES);
   const more = replies.length - shown.length;
   return (
     <>
-      <Bubble
-        update={update}
-        names={names}
-        canReply={canReply}
-        onReply={() => setReplying(true)}
-      />
+      {deleted ? (
+        <DeletedBubble />
+      ) : (
+        <Bubble
+          update={update}
+          names={names}
+          canReply={canReply}
+          replyCount={replies.length}
+          onReply={() => setReplying(true)}
+        />
+      )}
       {replies.length > 0 || replying ? (
         <div
           role="group"
-          aria-label={fillSheetCopy(sheet.thread.replies, {
-            name: update.author.name,
-          })}
+          aria-label={
+            deleted
+              ? copy.related.comments.deleted
+              : fillSheetCopy(sheet.thread.replies, {
+                  name: update.author.name,
+                })
+          }
           className="ml-10 flex flex-col gap-3.5"
         >
           {shown.map((reply) => (
@@ -99,6 +118,7 @@ function CommentEntry({
               update={reply}
               names={names}
               canReply={canReply}
+              replyCount={0}
               onReply={() => setReplying(true)}
             />
           ))}
@@ -135,15 +155,34 @@ function CommentEntry({
   );
 }
 
+/** Where a deleted comment that still has replies stood: no author, no text, no actions. */
+function DeletedBubble() {
+  const { copy } = useCardPopup();
+  return (
+    <div className="flex gap-2.5" data-comment-deleted="">
+      <span
+        aria-hidden="true"
+        className="box-border size-8 shrink-0 rounded-full border border-dashed border-line-strong"
+      />
+      <p className="m-0 box-border min-w-0 flex-1 rounded-[10px] border border-dashed border-line-strong px-3 py-2.5 text-[13.5px] leading-[1.45] text-meta-foreground">
+        {copy.related.comments.deleted}
+      </p>
+    </div>
+  );
+}
+
 function Bubble({
   update,
   names,
   canReply,
+  replyCount,
   onReply,
 }: {
   update: CardUpdate;
   names: readonly string[];
   canReply: boolean;
+  /** Replies that stay when this comment is deleted, named in the confirm. */
+  replyCount: number;
   onReply: () => void;
 }) {
   const { data, callbacks, capabilities, copy, now, timeZone } = useCardPopup();
@@ -161,8 +200,35 @@ function Bubble({
     canReply || canWriteComment(capabilities)
       ? callbacks.onToggleReaction
       : undefined;
+  const [confirming, setConfirming] = useState(false);
+  const keepRef = useRef<HTMLButtonElement>(null);
+  const deleteRef = useRef<HTMLButtonElement>(null);
+  const editRef = useRef<HTMLButtonElement>(null);
+  const wasEditing = useRef(false);
+  useEffect(() => {
+    // The confirm opens on its safe choice.
+    if (confirming) keepRef.current?.focus();
+  }, [confirming]);
+  useEffect(() => {
+    // Leaving the edit hands focus back to Edit.
+    if (wasEditing.current && !edit.editing) editRef.current?.focus();
+    wasEditing.current = edit.editing;
+  }, [edit.editing]);
+  const closeConfirm = () => {
+    setConfirming(false);
+    requestAnimationFrame(() => deleteRef.current?.focus());
+  };
+  const question =
+    replyCount === 0
+      ? t.deleteQuestion
+      : fillSheetCopy(
+          replyCount === 1
+            ? t.deleteQuestionReplies_one
+            : t.deleteQuestionReplies_other,
+          { count: replyCount },
+        );
   return (
-    <div className="flex gap-2.5">
+    <div className="flex gap-2.5" data-comment={update.id}>
       <PersonMark member={update.author} size={32} />
       <div className="min-w-0 flex-1 text-[13.5px]">
         <div>
@@ -170,21 +236,55 @@ function Bubble({
           <time dateTime={update.createdAt} className={FEED_LINK}>
             {describeSheetTime(update.createdAt, now, sheet, timeZone)}
           </time>
+          {update.updatedAt ? (
+            <span
+              data-comment-edited=""
+              className="text-[12.5px] text-meta-foreground"
+            >
+              {" · "}
+              {t.edited}
+            </span>
+          ) : null}
         </div>
         {edit.editing ? (
-          <div className="mt-1.5 flex flex-col gap-2">
-            <Textarea
-              value={edit.body}
-              aria-label={sheet.comment.editLabel}
-              onChange={(e) => edit.setBody(e.target.value)}
-              className="min-h-16 resize-none text-[14px]"
-            />
+          <div
+            className="mt-1.5 flex flex-col gap-2"
+            data-comment-editing=""
+            data-popup-esc=""
+          >
+            <div className="rounded-[10px] border border-primary bg-popover ring-[3px] ring-brand-subtle">
+              <Textarea
+                autoFocus
+                value={edit.body}
+                aria-label={sheet.comment.editLabel}
+                onChange={(e) => edit.setBody(e.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    event.stopPropagation();
+                    edit.cancel();
+                  } else if (
+                    event.key === "Enter" &&
+                    (event.metaKey || event.ctrlKey) &&
+                    edit.canSave
+                  ) {
+                    event.preventDefault();
+                    edit.save();
+                  }
+                }}
+                className="min-h-16 resize-none border-0 bg-transparent px-3 py-2.5 text-[14px] leading-[1.5] shadow-none focus-visible:ring-0"
+              />
+            </div>
             <div className="flex justify-end gap-1.5">
               <PanelBtn small variant="ghost" onClick={edit.cancel}>
-                {sheet.comment.cancel}
+                {t.cancel}
               </PanelBtn>
-              <PanelBtn small variant="primary" onClick={edit.save}>
-                {sheet.comment.save}
+              <PanelBtn
+                small
+                variant="primary"
+                disabled={!edit.canSave}
+                onClick={edit.save}
+              >
+                {t.save}
               </PanelBtn>
             </div>
           </div>
@@ -193,6 +293,47 @@ function Bubble({
             <Mentions body={update.body} names={names} />
           </div>
         )}
+        {confirming ? (
+          <div
+            role="group"
+            aria-label={t.delete}
+            data-comment-confirm=""
+            data-popup-esc=""
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.stopPropagation();
+                closeConfirm();
+              }
+            }}
+            className="mt-1.5 flex flex-col gap-2 rounded-[10px] bg-danger-subtle px-3 py-2.5 dark:bg-danger-text/12"
+          >
+            <p className="m-0 text-[13px] leading-[1.45] text-foreground">
+              {question}
+            </p>
+            <div className="flex justify-end gap-1.5">
+              <PanelBtn
+                ref={keepRef}
+                small
+                variant="ghost"
+                onClick={closeConfirm}
+              >
+                {t.cancel}
+              </PanelBtn>
+              <PanelBtn
+                small
+                variant="danger"
+                // WM-Comments draws the destructive button filled (`.btn.dng`).
+                className="border-danger-text bg-danger-text font-semibold text-danger-foreground hover:bg-danger-text hover:brightness-95"
+                onClick={() => {
+                  setConfirming(false);
+                  callbacks.onDeleteUpdate(update.id);
+                }}
+              >
+                {t.deleteConfirm}
+              </PanelBtn>
+            </div>
+          </div>
+        ) : null}
         {(update.reactions?.length ?? 0) > 0 ||
         react ||
         (!edit.editing && (own || canReply)) ? (
@@ -208,18 +349,24 @@ function Bubble({
             ) : null}
             {!edit.editing && own ? (
               <button
+                ref={editRef}
                 type="button"
                 className={TEXT_ACTION}
-                onClick={edit.start}
+                onClick={() => {
+                  setConfirming(false);
+                  edit.start();
+                }}
               >
                 {t.edit}
               </button>
             ) : null}
             {!edit.editing && own ? (
               <button
+                ref={deleteRef}
                 type="button"
                 className={TEXT_ACTION}
-                onClick={() => callbacks.onDeleteUpdate(update.id)}
+                aria-expanded={confirming}
+                onClick={() => setConfirming(true)}
               >
                 {t.delete}
               </button>
@@ -278,7 +425,8 @@ function Composer() {
     useCardPopup();
   const t = copy.related.comments;
   const [open, setOpen] = useState(false);
-  const disabled = !canWriteComment(capabilities);
+  // A card deleted or moved while open takes no comment: the unsent text stays in the notice to copy.
+  const disabled = !canWriteComment(capabilities) || readOnly === "gone";
   const draft = useCommentDraft({
     cardId: card.id,
     disabled,
@@ -314,7 +462,7 @@ function Composer() {
     return (
       <div
         aria-disabled="true"
-        className="box-border flex h-11 w-full items-center rounded-[10px] border border-dashed border-line-strong bg-state-hover-strong px-3.5 text-[14px] text-meta-foreground"
+        className="box-border flex h-11 w-full shrink-0 items-center rounded-[10px] border border-dashed border-line-strong bg-state-hover-strong px-3.5 text-[14px] text-meta-foreground"
       >
         {t.composerPlaceholder}
       </div>
@@ -323,14 +471,16 @@ function Composer() {
     return (
       <div
         aria-disabled="true"
-        className="box-border flex h-11 w-full items-center gap-1.5 rounded-[10px] border border-dashed border-line-strong bg-state-hover-strong px-3.5 text-[14px] text-meta-foreground"
+        className="box-border flex h-11 w-full shrink-0 items-center gap-1.5 rounded-[10px] border border-dashed border-line-strong bg-state-hover-strong px-3.5 text-[14px] text-meta-foreground"
       >
         <Lock aria-hidden="true" className="size-4 shrink-0" />
         {capabilities.frozen || readOnly === "archived"
           ? t.readOnlyArchived
           : readOnly === "item-archived"
             ? t.readOnlyItemArchived
-            : t.readOnlyPermission}
+            : readOnly === "gone"
+              ? t.readOnlyGone
+              : t.readOnlyPermission}
       </div>
     );
   if (!open)
@@ -338,13 +488,13 @@ function Composer() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="box-border flex h-11 w-full items-center rounded-[10px] border border-line-strong bg-popover px-3.5 text-left text-[14px] text-meta-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        className="box-border flex h-11 w-full shrink-0 items-center rounded-[10px] border border-line-strong bg-popover px-3.5 text-left text-[14px] text-meta-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
         {t.composerPlaceholder}
       </button>
     );
   return (
-    <div className="relative rounded-[10px] border border-primary bg-popover ring-[3px] ring-brand-subtle">
+    <div className="relative shrink-0 rounded-[10px] border border-primary bg-popover ring-[3px] ring-brand-subtle">
       {mention.listOpen ? (
         <MentionList
           candidates={mention.candidates}
@@ -415,24 +565,110 @@ function Composer() {
   );
 }
 
+/** A grey block of the feed while it loads: the shape of what comes, not moving (Kanban-CardPopup-States-1, 1). */
+function Block({ className }: { className: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      data-feed-block=""
+      className={cn("block shrink-0 bg-state-hover-strong", className)}
+    />
+  );
+}
+
+/** The feed while it loads: a comment and a history line drawn as grey blocks. */
+function FeedSkeleton({ label }: { label: string }) {
+  return (
+    <div
+      role="status"
+      aria-label={label}
+      data-feed-skeleton=""
+      className="mt-1 flex flex-col gap-3.5"
+    >
+      <div className="flex gap-2.5">
+        <Block className="size-8 rounded-full" />
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <Block className="h-3.5 w-[150px] max-w-full rounded-[6px]" />
+          <Block className="h-[60px] w-full rounded-[10px]" />
+        </div>
+      </div>
+      <div className="flex gap-2.5">
+        <Block className="size-8 rounded-full" />
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <Block className="h-3.5 w-[190px] max-w-full rounded-[6px]" />
+          <Block className="h-3.5 w-4/5 rounded-[6px]" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** The column's empty and error block, in the shape of the create card's empty comments. */
+function FeedNotice({
+  icon,
+  title,
+  body,
+  action,
+  tone = "neutral",
+  alert = false,
+}: {
+  icon: ReactNode;
+  title: string;
+  body: string;
+  action?: ReactNode;
+  tone?: "neutral" | "danger";
+  alert?: boolean;
+}) {
+  return (
+    <div
+      role={alert ? "alert" : undefined}
+      data-feed-notice={tone}
+      className="flex flex-col items-center gap-2 px-3 py-8 text-center text-[13.5px] text-muted-foreground"
+    >
+      <span
+        className={cn(
+          "grid size-11 place-items-center rounded-full",
+          tone === "danger"
+            ? "bg-danger-subtle text-danger-text dark:bg-danger-text/12"
+            : "bg-state-hover-strong text-meta-foreground",
+        )}
+      >
+        {icon}
+      </span>
+      <b className="text-[14px] leading-[1.45] text-foreground">{title}</b>
+      <span className="leading-[1.45]">{body}</span>
+      {action ? <span className="mt-1">{action}</span> : null}
+    </div>
+  );
+}
+
 /** The right column: comment composer, the comments and the recorded activity, newest first. */
 export function CommentsColumn() {
-  const { card, data, callbacks, copy, mode } = useCardPopup();
+  const { card, data, callbacks, capabilities, copy, mode, readOnly } =
+    useCardPopup();
   const t = copy.related.comments;
-  const sheet = useItemSheetCopy();
   const [details, setDetails] = useState(false);
   const create = mode === "create";
-  const { top, repliesOf } = splitThreads(data.updates);
+  const { top, repliesOf, orphans } = splitThreads(data.updates);
   const names = (data.people?.people ?? card.members).map((p) => p.name);
   const feed = [
     ...top.map((update) => ({
       at: update.createdAt,
       update,
+      deleted: false,
+      event: null as CardActivity | null,
+    })),
+    // Replies whose comment was deleted stay together under its placeholder, at the first reply's time.
+    ...orphans.map((thread) => ({
+      at: thread.replies[0]!.createdAt,
+      update: { ...thread.replies[0]!, id: thread.parentId } as CardUpdate,
+      deleted: true,
       event: null as CardActivity | null,
     })),
     ...data.activity.map((event) => ({
       at: event.createdAt,
       update: null as CardUpdate | null,
+      deleted: false,
       event,
     })),
   ].sort((a, b) => b.at.localeCompare(a.at));
@@ -440,11 +676,17 @@ export function CommentsColumn() {
 
   return (
     <>
-      <div className="flex items-center gap-2.5">
+      <div className="flex shrink-0 items-center gap-2.5">
         <span className="text-muted-foreground">
           <MessageCircle aria-hidden="true" className="size-5" />
         </span>
-        <h3 className="m-0 flex-1 text-[16px] leading-[1.45] font-[650]">
+        <h3
+          className={cn(
+            "m-0 flex-1 leading-[1.45] font-[650]",
+            // Kanban-CardPopup-Create draws the comments title at 15 px; an open card keeps 16.
+            create ? "text-[15px] max-md:text-[16px]" : "text-[16px]",
+          )}
+        >
           {copy.shell.comments}
         </h3>
         <SmallBtn
@@ -468,29 +710,38 @@ export function CommentsColumn() {
           <span className="leading-[1.45]">{t.createBody}</span>
         </div>
       ) : loading && feed.length === 0 ? (
-        <div
-          role="status"
-          aria-label={t.loading}
-          className="flex flex-col gap-3.5"
-        >
-          <Skeleton className="h-16 rounded-[10px]" />
-          <Skeleton className="h-10 rounded-[10px]" />
-        </div>
+        <FeedSkeleton label={t.loading} />
       ) : (
-        <div className="mt-1 flex flex-col gap-3.5">
+        <div className="mt-1 flex flex-col gap-3.5" data-comment-feed="">
           {data.activityError ? (
-            <p
-              role="alert"
-              className="m-0 flex items-center gap-2 text-[13px] text-muted-foreground"
-            >
-              <span className="flex-1">{sheet.activityEvents.loadError}</span>
-              <SmallBtn onClick={callbacks.onRefreshActivity}>
-                {sheet.activityEvents.retry}
-              </SmallBtn>
-            </p>
+            <FeedNotice
+              alert
+              tone="danger"
+              icon={<CloudOff aria-hidden="true" className="size-5" />}
+              title={t.errorTitle}
+              body={feed.length > 0 ? t.errorBodyComments : t.errorBody}
+              action={
+                <PanelBtn
+                  variant="primary"
+                  className="max-md:h-11"
+                  onClick={callbacks.onRefreshActivity}
+                >
+                  <RotateCw aria-hidden="true" className="size-4" />
+                  {t.retry}
+                </PanelBtn>
+              }
+            />
           ) : null}
           {feed.length === 0 && !data.activityError ? (
-            <p className="m-0 text-[13.5px] text-meta-foreground">{t.empty}</p>
+            <FeedNotice
+              icon={<MessageCircle aria-hidden="true" className="size-5" />}
+              title={t.emptyTitle}
+              body={
+                canWriteComment(capabilities) && !readOnly
+                  ? t.emptyBody
+                  : t.emptyBodyReadOnly
+              }
+            />
           ) : null}
           {feed.map((entry) =>
             entry.update ? (
@@ -499,6 +750,7 @@ export function CommentsColumn() {
                 update={entry.update}
                 replies={repliesOf(entry.update.id)}
                 names={names}
+                deleted={entry.deleted}
               />
             ) : (
               <EventEntry

@@ -91,10 +91,16 @@ export function FieldPanel({
   const t = copy.panel;
   const nameId = useId();
   const guidanceId = useId();
+  const defaultTextId = useId();
+  const isTextual =
+    field.type === "text" ||
+    field.type === "longtext" ||
+    field.type === "number";
   const [name, setName] = useState(field.name);
   const [defaultId, setDefaultId] = useState<string | null>(
     field.defaultOptionId,
   );
+  const [defaultText, setDefaultText] = useState(field.defaultText ?? "");
   const [required, setRequired] = useState(field.required);
   const [guidance, setGuidance] = useState(field.guidance);
   const [nameTaken, setNameTaken] = useState(false);
@@ -110,11 +116,13 @@ export function FieldPanel({
     if (conflict) return;
     setName(field.name);
     setDefaultId(field.defaultOptionId);
+    setDefaultText(field.defaultText ?? "");
     setRequired(field.required);
     setGuidance(field.guidance);
   }, [
     field.name,
     field.defaultOptionId,
+    field.defaultText,
     field.required,
     field.guidance,
     conflict,
@@ -203,12 +211,14 @@ export function FieldPanel({
   const dirty =
     trimmed !== field.name ||
     defaultId !== field.defaultOptionId ||
+    (isTextual && defaultText !== (field.defaultText ?? "")) ||
     required !== field.required ||
     guidance !== field.guidance;
 
   function reset() {
     setName(field.name);
     setDefaultId(field.defaultOptionId);
+    setDefaultText(field.defaultText ?? "");
     setRequired(field.required);
     setGuidance(field.guidance);
     setNameTaken(false);
@@ -225,6 +235,9 @@ export function FieldPanel({
           ...(defaultId !== field.defaultOptionId
             ? { defaultOptionId: defaultId }
             : {}),
+          ...(isTextual && defaultText !== (field.defaultText ?? "")
+            ? { defaultText }
+            : {}),
           ...(required !== field.required ? { required } : {}),
           ...(guidance !== field.guidance ? { guidance } : {}),
         }),
@@ -234,6 +247,11 @@ export function FieldPanel({
     setNameTaken(!result.ok && result.field === "name");
   }
 
+  // Quick add must never be blocked: a field is required only with a default, or when empty is already safe (a checkbox).
+  const needsDefault =
+    required &&
+    (isTextual ? defaultText.trim() === "" : defaultId === null) &&
+    field.type !== "checkbox";
   const Icon = fieldIcon(field.type, field.key);
   const hasOptions = field.hasColumn && field.options.length > 0;
   const canArchive = field.type !== "status";
@@ -241,7 +259,7 @@ export function FieldPanel({
   return (
     <aside
       aria-label={fillCopy(t.label, { name: field.name })}
-      className="flex min-h-0 w-[400px] shrink-0 flex-col border-l border-line bg-popover max-xl:absolute max-xl:inset-y-0 max-xl:right-0 max-xl:z-10 max-xl:shadow-pop max-md:inset-0 max-md:w-full max-md:border-l-0 max-md:shadow-none"
+      className="flex min-h-0 w-[401px] shrink-0 flex-col border-l border-line bg-popover max-xl:absolute max-xl:inset-y-0 max-xl:right-0 max-xl:z-10 max-xl:shadow-pop max-md:inset-0 max-md:w-full max-md:border-l-0 max-md:shadow-none"
     >
       <div className="flex items-center gap-2.5 border-b border-line px-[18px] py-3.5">
         <TypeMark icon={Icon} size="md" className="rounded-[8px]" />
@@ -379,7 +397,7 @@ export function FieldPanel({
                   value={defaultId}
                   onChange={setDefaultId}
                 />
-                <Callout icon={Info}>
+                <Callout icon={Info} className="rounded-[8px]">
                   <span>
                     {fillCopy(t.defaultHint, { count: field.valueCount })}
                   </span>
@@ -389,12 +407,32 @@ export function FieldPanel({
           </>
         ) : null}
 
+        {rules && isTextual ? (
+          <FormGroup label={t.default} htmlFor={defaultTextId}>
+            <input
+              id={defaultTextId}
+              value={defaultText}
+              inputMode={field.type === "number" ? "decimal" : undefined}
+              placeholder={t.defaultNone}
+              onChange={(event) => setDefaultText(event.target.value)}
+              className={INPUT_CLASS}
+            />
+            <Callout icon={Info} className="rounded-[8px]">
+              <span>
+                {fillCopy(t.defaultHint, { count: field.valueCount })}
+              </span>
+            </Callout>
+          </FormGroup>
+        ) : null}
+
         {rules ? (
           <>
             <div className="flex items-center gap-2.5 text-item-small">
               <span className="flex-1">
-                <span id={`${nameId}-req`}>{t.required}</span>
-                <small className="block text-metadata text-meta-foreground">
+                <span id={`${nameId}-req`} className="block leading-[1.45]">
+                  {t.required}
+                </span>
+                <small className="block text-metadata leading-[1.45] text-meta-foreground">
                   {t.requiredHint}
                 </small>
               </span>
@@ -404,6 +442,15 @@ export function FieldPanel({
                 label={t.required}
               />
             </div>
+            {needsDefault ? (
+              <p
+                role="alert"
+                className="m-0 flex items-start gap-1.5 text-metadata leading-[1.45] font-medium text-danger-text"
+              >
+                <Info aria-hidden="true" className="size-3.5 shrink-0" />
+                {t.requiredNeedsDefault}
+              </p>
+            ) : null}
 
             <FormGroup label={t.guidance} htmlFor={guidanceId}>
               <textarea
@@ -412,7 +459,7 @@ export function FieldPanel({
                 rows={2}
                 placeholder={t.guidancePlaceholder}
                 onChange={(event) => setGuidance(event.target.value)}
-                className={TEXTAREA_CLASS}
+                className={cn(TEXTAREA_CLASS, "min-h-[58px]")}
               />
             </FormGroup>
           </>
@@ -485,7 +532,9 @@ export function FieldPanel({
           </button>
           <button
             type="button"
-            disabled={trimmed === "" || saving || conflict !== null}
+            disabled={
+              trimmed === "" || saving || conflict !== null || needsDefault
+            }
             onClick={() => void save()}
             className={BUTTON_CLASS.primary}
           >
@@ -498,6 +547,8 @@ export function FieldPanel({
 }
 
 function UsageRow({ usage }: { usage: BoardSettingsUsageDto }) {
+  const { copy } = useSettings();
+  const words: Record<string, string> = copy.panel.usedHow;
   const Icon =
     usage.kind === "rule"
       ? Zap
@@ -514,7 +565,7 @@ function UsageRow({ usage }: { usage: BoardSettingsUsageDto }) {
       />
       <span className="min-w-0 truncate">{usage.name}</span>
       <span className="ml-auto shrink-0 text-metadata text-meta-foreground">
-        {usage.how}
+        {words[usage.how] ?? usage.how}
       </span>
     </li>
   );
@@ -539,7 +590,10 @@ function DefaultSelect({
     >
       <SelectTrigger
         aria-label={copy.panel.default}
-        className={cn(INPUT_CLASS, "justify-between shadow-none")}
+        className={cn(
+          INPUT_CLASS,
+          "data-[size=default]:h-[34px] justify-between shadow-none",
+        )}
       >
         <SelectValue>
           {selected ? (

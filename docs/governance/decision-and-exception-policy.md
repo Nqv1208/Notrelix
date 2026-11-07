@@ -534,7 +534,7 @@ The ADR ID MUST match:
 Example:
 
 ```text
-backend/docs/decisions/ADR-005-message-consumer-identity.md
+ADR-005-short-decision-name.md
 
 ID:
 ADR-005
@@ -644,7 +644,7 @@ State:
 Use:
 
 ```text
-docs/delivery/change-impact-and-migration.md
+docs/delivery/migration-policy.md
 ```
 
 for the full migration policy.

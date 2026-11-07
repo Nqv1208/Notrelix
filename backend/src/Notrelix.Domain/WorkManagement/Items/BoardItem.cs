@@ -45,6 +45,9 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     public const int DescriptionMaxLength = 20000;
 
+    /// <summary>The longest item title; create, rename, sub-item and duplicate all take it from here.</summary>
+    public const int NameMaxLength = 500;
+
     /// <summary>Cover colour token (<see cref="ItemCover.Colors"/>); null when the cover is an image or there is none.</summary>
     public string? CoverColor { get; private set; }
 
@@ -155,7 +158,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(boardId);
         Guard.NotEmpty(groupId);
         Guard.NotNullOrWhiteSpace(name);
-        Guard.MaxLength(name, 500);
+        Guard.MaxLength(name, NameMaxLength);
         Guard.NotNull(position);
         Guard.NotEmpty(accountId);
         Guard.NotNegative(itemLevel);
@@ -189,7 +192,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotArchived();
         Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(name);
-        Guard.MaxLength(name, 500);
+        Guard.MaxLength(name, NameMaxLength);
 
         var normalizedName = name.Trim();
         if (Name == normalizedName) return;
@@ -413,6 +416,16 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
             var allowedIds = field.Options.Select(option => option.Id).ToHashSet();
             if (!selectedIds.All(allowedIds.Contains))
                 throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidMultiSelectValue, $"Value contains an option that is not valid for field '{field.Name}'.");
+        }
+
+        if (!newValue.IsEmpty && field.Type == FieldType.Person && JsonDocument.Parse(newValue.Data.Value).RootElement.ValueKind == JsonValueKind.Array)
+        {
+            // A multiple People field is a set: canonical sorted distinct ids, so the same set is a no-op and an empty list clears.
+            var people = JsonSerializer.Deserialize<string[]>(newValue.Data.Value)!
+                .Select(Guid.Parse).Distinct().OrderBy(id => id).ToList();
+            newValue = people.Count == 0
+                ? FieldValue.Empty()
+                : FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(people)));
         }
 
         var existingValue = _fieldValues.FirstOrDefault(fv => fv.FieldId == field.Id);

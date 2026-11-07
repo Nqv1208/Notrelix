@@ -20,6 +20,10 @@
 @import "@fontsource/ibm-plex-mono/500.css";
 
 @custom-variant dark (&:is(.dark *));
+/* The tablet band of `useIsTablet` (768-1279 px): the Final-T-* drawings. */
+@custom-variant tablet (@media (min-width: 768px) and (max-width: 1279px));
+/* Everything but the tablet band: the one-row toolbars shrink by their container there, the tablet shell has its own layout. */
+@custom-variant untablet (@media not all and (min-width: 768px) and (max-width: 1279px));
 
 @source not "../**/*.test.{ts,tsx}";
 @source not "../**/*.spec.{ts,tsx}";
@@ -126,6 +130,15 @@
   --text-crumb--line-height: var(--type-crumb-line-height);
   --text-crumb--font-weight: var(--type-crumb-weight);
   --text-crumb--letter-spacing: var(--type-crumb-tracking);
+  /* The board transfer dialogs (WM-Export, WM-Import) draw their own denser scale: size only, the dialog sets line height and weight. */
+  --text-frame-title: 17px;
+  --text-frame-lead: 15px;
+  --text-frame-sheet: 14.5px;
+  --text-frame-body: 13.5px;
+  --text-frame-small: 13px;
+  --text-frame-note: 12.5px;
+  --text-frame-hint: 12px;
+  --text-frame-cap: 11.5px;
   --text-micro: var(--type-micro-size);
   --text-micro--line-height: var(--type-micro-line-height);
   --text-micro--font-weight: var(--type-micro-weight);
@@ -485,7 +498,7 @@
   --color-timeline-milestone: var(--timeline-milestone);
   --color-timeline-tip-note: var(--timeline-tip-note);
 
-  /* Document page (Final-Docs): page sheet, body ink, comment highlight, notice and status chip tints. */
+  /* Document page (Final-Docs-2): page sheet, body ink, comment highlight, notice and status chip tints. */
   --color-doc-page: var(--doc-page);
   --color-doc-panel: var(--doc-panel);
   --color-doc-file-word: var(--doc-file-word);

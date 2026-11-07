@@ -80,11 +80,12 @@ describe("MFB-FZ-00: Mock Configuration and Env Parsing", () => {
     expect(
       parseMockConfigFromEnv({
         VITE_MOCK_FAULTS:
-          "/board-items/mock-erp-item-149/status=500, /boards/x/full=network",
+          "/board-items/mock-erp-item-149/status=500, /boards/x/full=network, /resources/k/x/permissions=stale",
       }).faultProfile,
     ).toEqual({
       "/board-items/mock-erp-item-149/status": "500",
       "/boards/x/full": "network",
+      "/resources/k/x/permissions": "stale",
     });
     expect(() =>
       parseMockConfigFromEnv({ VITE_MOCK_FAULTS: "/a=teapot" }),

@@ -19,7 +19,7 @@ export function kanbanToolbarCopyFixture(
 
 export type KanbanToolbarScenario = Omit<
   KanbanToolbarProps,
-  "onSearchChange" | "onClearFilter" | "onAddItem"
+  "onSearchChange" | "onAddItem"
 >;
 
 export function kanbanToolbarDefaultScenario(
@@ -30,7 +30,6 @@ export function kanbanToolbarDefaultScenario(
     searchQuery: "",
     viewBar: erpViewBar({ locale, view: "kanban" }),
     canAdd: true,
-    noResults: null,
   };
 }
 
@@ -88,7 +87,6 @@ export function kanbanToolbarNoResultsScenario(
       },
       counts: { shown: 0, total: 16 },
     }),
-    noResults: { hiddenCount: 16 },
   };
 }
 

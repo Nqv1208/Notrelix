@@ -16,13 +16,20 @@ export { itemLifecycleCatalog } from "./components/item-lifecycle/item-lifecycle
 export { itemActionsCatalog } from "./components/item-actions/item-actions.catalog";
 export * from "./components/board-layout/board-toolbar";
 export * from "./components/board-layout/view-tabs";
+export * from "./components/board-layout/view-tab-menu";
+export * from "./components/board-layout/use-view-tab-actions";
 export * from "./components/board-layout/board-header-surface";
 export {
   BoardConnectionNotice,
   type BoardConnectionState,
 } from "./components/board-layout/board-connection-notice";
+export {
+  BoardGone,
+  ViewGoneBanner,
+} from "./components/board-layout/board-notices";
 export { BoardHeaderDataContext } from "./components/board-layout/board-header-data-context";
 export * from "./components/board-lifecycle/retired-boards-surface";
+export { useFilterChipLabels } from "./components/filters/filter-chip-labels";
 export { retiredBoardsCatalog } from "./components/board-lifecycle/retired-boards.catalog";
 export { useRetiredBoardsCopy } from "./components/board-lifecycle/use-retired-boards-copy";
 export { boardHeaderCatalog } from "./components/board-layout/board-header.catalog";
@@ -45,9 +52,11 @@ export {
 } from "./components/board-lifecycle/board-lifecycle.copy";
 export { useBoardLifecycleCopy } from "./components/board-lifecycle/use-board-lifecycle-copy";
 export {
-  BoardMoveImpactPanel,
+  BoardMoveDialog,
+  type BoardMoveDialogProps,
   type BoardMoveImpact,
-} from "./components/board-lifecycle/board-move-impact";
+  type MovePlaceView,
+} from "./components/board-lifecycle/board-move-dialog";
 export { boardShareCatalog } from "./components/board-share/board-share.catalog";
 export {
   boardShareCopy,

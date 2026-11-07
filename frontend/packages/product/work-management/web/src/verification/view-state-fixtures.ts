@@ -81,6 +81,7 @@ export function viewFields(locale: "vi" | "en" = "vi"): FilterField[] {
       { id: "label-security", name: "Bảo mật" },
       { id: "label-doc", name: "Tài liệu" },
     ],
+    labelsComplete: true,
     names: {
       title: copy.field.title,
       label: copy.field.label,
@@ -135,6 +136,8 @@ export interface ViewBarOptions {
   saved?: ReactNode;
   canSave?: boolean;
   onSaveAsNew?: () => void;
+  timeZone?: string;
+  timeZoneIsDefault?: boolean;
 }
 
 /** The view bar of the ERP board as a toolbar slot. */
@@ -167,5 +170,7 @@ export function erpViewBar(options: ViewBarOptions = {}): ReactNode {
     savedFilters: options.saved,
     ...(options.canSave === undefined ? {} : { canSave: options.canSave }),
     onSaveAsNew: options.onSaveAsNew,
+    ...(options.timeZone ? { timeZone: options.timeZone } : {}),
+    ...(options.timeZoneIsDefault ? { timeZoneIsDefault: true } : {}),
   });
 }

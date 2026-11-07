@@ -42,6 +42,9 @@ public interface IResourceVisibility
     /// still authorizes every operation.
     /// </summary>
     Task<IReadOnlyList<SpaceAccessEntry>> VisibleSpacesAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>The names of the given Spaces of the Workspace (non-deleted ones only). Callers pass ids they already filtered by visibility; an id the caller may not see is never disclosed through this.</summary>
+    Task<IReadOnlyDictionary<Guid, string>> SpaceNamesAsync(Guid workspaceId, IReadOnlyCollection<Guid> spaceIds, CancellationToken cancellationToken);
 }
 
 public sealed record SpaceAccessEntry(Guid SpaceId, string Level);

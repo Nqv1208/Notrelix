@@ -4,7 +4,6 @@ using Notrelix.Application.Common.Data;
 using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
-using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Rls;
@@ -74,21 +73,6 @@ public class RegistrationProvisioningTransactionEvidenceTests : IAsyncLifetime
         return hasher.Object;
     }
 
-    private static IAuthSessionIssuer StubSessionIssuer()
-    {
-        var issuer = new Mock<IAuthSessionIssuer>();
-        issuer
-            .Setup(x => x.IssueAsync(It.IsAny<User>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((User u, DateTimeOffset at, CancellationToken _) => new AuthResult
-            {
-                AccessToken = "access-token",
-                RefreshToken = "refresh-token",
-                ExpiresAt = at.UtcDateTime,
-                WorkspaceProvisioning = "pending"
-            });
-        return issuer.Object;
-    }
-
     private static IDateTimeProvider FixedClock(DateTimeOffset time)
     {
         var clock = new Mock<IDateTimeProvider>();
@@ -123,9 +107,9 @@ public class RegistrationProvisioningTransactionEvidenceTests : IAsyncLifetime
                         context,
                         new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context))),
                     StubHasher(),
-                    StubSessionIssuer(),
                     FixedClock(time),
-                    new Notrelix.Application.Common.Messaging.IntegrationEventCollector());
+                    new Notrelix.Application.Common.Messaging.IntegrationEventCollector(),
+                    Mock.Of<Notrelix.Application.Common.RateLimiting.IRateLimitService>());
                 var result = await handler.Handle(NewRegister(), ct);
                 result.Succeeded.Should().BeTrue();
                 return null;
@@ -163,9 +147,9 @@ public class RegistrationProvisioningTransactionEvidenceTests : IAsyncLifetime
                     context,
                     failing.Object,
                     StubHasher(),
-                    StubSessionIssuer(),
                     FixedClock(time),
-                    new Notrelix.Application.Common.Messaging.IntegrationEventCollector());
+                    new Notrelix.Application.Common.Messaging.IntegrationEventCollector(),
+                    Mock.Of<Notrelix.Application.Common.RateLimiting.IRateLimitService>());
                 await handler.Handle(NewRegister(), ct);
                 return null;
             },
@@ -199,9 +183,9 @@ public class RegistrationProvisioningTransactionEvidenceTests : IAsyncLifetime
                         context,
                         new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context))),
                     StubHasher(),
-                    StubSessionIssuer(),
                     FixedClock(time),
-                    new Notrelix.Application.Common.Messaging.IntegrationEventCollector());
+                    new Notrelix.Application.Common.Messaging.IntegrationEventCollector(),
+                    Mock.Of<Notrelix.Application.Common.RateLimiting.IRateLimitService>());
                 await handler.Handle(NewRegister(), ct);
                 throw new InvalidOperationException("later request failure after Accounts mutation");
             },

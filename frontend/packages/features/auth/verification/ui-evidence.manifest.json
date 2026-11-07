@@ -29,9 +29,9 @@
         "reason": "Vendor brand mark (Microsoft four squares, fixed brand colours) rendered inside the sign-in surface; covered by its stories and exempt from the token gate through VENDOR_MARK_FILES."
       },
       {
-        "path": "src/web/components/register-form.tsx",
+        "path": "src/web/containers/register-flow.tsx",
         "category": "container",
-        "reason": "Container composing AuthRegisterFormSurface with account-scoped session actions."
+        "reason": "Container sending the registration and holding the neutral check-your-email step, composing AuthRegisterFormSurface."
       },
       {
         "path": "src/web/containers/forgot-flow.tsx",
@@ -622,17 +622,22 @@
               "theme": "light"
             }
           ]
+        },
+        {
+          "id": "auth-auth-form-surfaces--register-sent",
+          "state": "Success",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
         }
       ],
       "stateCoverage": {
-        "required": ["Default", "Loading", "Error"],
+        "required": ["Default", "Loading", "Error", "Success"],
         "delegated": [],
         "notApplicable": [
-          {
-            "state": "Success",
-            "reason": "A successful registration navigates into the product; there is no inline success presentation.",
-            "authority": "frontend-ui-readiness.spec.md §9.3"
-          },
           {
             "state": "EdgeData",
             "reason": "Register inputs are standard profile fields; the forgot-password EdgeData story exercises long-text and Unicode edges on shared controls.",
@@ -651,6 +656,10 @@
       "interactionCases": [
         {
           "id": "submit",
+          "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "sent",
           "testFile": "src/web/components/__tests__/auth-form-surfaces.interaction.component.test.tsx"
         }
       ]

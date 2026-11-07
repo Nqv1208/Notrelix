@@ -15,10 +15,10 @@ evidence:
   - PRODUCT.md
   - docs/product/product-model.md
   - docs/product/product-experience.md
-  - docs/product/contexts/workspaces.md
-  - docs/product/contexts/governance.md
-  - docs/product/contexts/work-management.md
-  - docs/product/contexts/collaboration.md
+  - docs/product/workspaces.md
+  - docs/product/governance.md
+  - docs/product/work-management.md
+  - docs/product/collaboration.md
   - docs/architecture/data-ownership-and-consistency.md
   - docs/architecture/events-realtime-and-delivery-boundary.md
   - backend/src/Notrelix.Domain/Documents/
@@ -871,13 +871,13 @@ Stop rather than guess if:
 PRODUCT.md
 docs/product/product-model.md
 docs/product/product-experience.md
-docs/product/contexts/workspaces.md
-docs/product/contexts/governance.md
-docs/product/contexts/work-management.md
-docs/product/contexts/collaboration.md
-docs/product/contexts/automation.md
-docs/product/contexts/integrations.md
-docs/product/contexts/analytics.md
+docs/product/workspaces.md
+docs/product/governance.md
+docs/product/work-management.md
+docs/product/collaboration.md
+docs/product/automation.md
+docs/product/integrations.md
+docs/product/analytics.md
 docs/architecture/data-ownership-and-consistency.md
 docs/architecture/events-realtime-and-delivery-boundary.md
 docs/architecture/contract-boundaries.md

@@ -36,13 +36,56 @@ export const en = {
     gainingBody:
       "People in {{target}} reach it by their role there: Admin is Manager, Member is Editor, Viewer is Viewer.",
     kept: "Access given on the board itself stays",
-    keptBody: "{{names}}. Their items stay as they are.",
+    keptBody:
+      "{{names}}. Items of people who lose access stay as they are; only they can't open them.",
     keptMore: "{{names}} and {{count}} more",
     noChange: "Nobody gains or loses access.",
+    title: "Move board to a department",
+    intro:
+      "“{{name}}” is in {{from}}. Changing where it sits changes who can open it.",
+    placeLabel: "Where the board sits",
+    currentSub: "The board is here",
+    currentChip: "Here",
+    blockedSub: "Needs the Create board permission in this department",
+    rootTitle: "Not in any department",
+    rootSub: "Placed at the top of workspace {{workspace}}",
+    peopleIn: "{{count}} people in the department",
+    pickHint: "Pick where it goes to see who gains and loses access.",
+    confirm: "Move board",
+    confirmTo: "Move to {{name}}",
+    failedTitle: "The board was not moved",
+    networkFailed:
+      "Connection lost. Nothing changed: the place and access stay as they were. Trying again does not move it twice.",
+    addPerson: "Add {{name}} to the board",
+    close: "Close",
+    cancel: "Cancel",
     moveWithout: "Move without adding anyone",
     moveAdding_one: "Add {{count}} person, then move",
     moveAdding_other: "Add {{count}} people, then move",
     moving: "Moving…",
+    pendingAdding_one: "Adding {{count}} person and moving the board…",
+    pendingAdding_other: "Adding {{count}} people and moving the board…",
+    pendingPlain: "Moving the board…",
+    privateTitle: "The board is Private, so everyone keeps their access",
+    privateBody:
+      "Only where the board sits changes. People in {{from}} could not open this board before either.",
+    doneAdded_one: "{{count}} person was added to the board.",
+    doneAdded_other: "{{count}} people were added to the board.",
+    doneLost_one: "{{count}} person no longer sees the board.",
+    doneLost_other: "{{count}} people no longer see the board.",
+    undo: "Undo",
+    undone: "{{name}} is back in {{place}}.",
+    undoFailed:
+      "Could not move it back. Try the move again from the board menu.",
+    pendingNote: "The request was sent, so it cannot be cancelled.",
+    movedByTitle: "{{who}} just moved this board to {{place}}",
+    movedBySomeone: "Someone else",
+    movedByBody:
+      "Who gains and loses access was worked out again for the new place. Review it, then move on if you still need to.",
+    review: "Review",
+    deniedTitle: "You cannot move this board yet",
+    deniedBody:
+      "It takes Manage board on the board and Create board in the target department. Ask a board manager or a department admin.",
     moved: "{{name}} was moved.",
     movedAdded_one: "{{name}} was moved and {{count}} person was added.",
     movedAdded_other: "{{name}} was moved and {{count}} people were added.",
@@ -109,6 +152,7 @@ export const en = {
     reading: "Reading the file",
     readingBody:
       "No items are created yet. Reading is only to map columns and check.",
+    readingMeta: "Reading… {{percent}}%",
     fileMeta: "{{rows}} rows · {{columns}} columns · {{size}}",
     changeFile: "Change file",
     chooseOther: "Choose another file",
@@ -122,9 +166,9 @@ export const en = {
     reject_tooLarge_title: "The file {{file}} is too large",
     reject_tooLarge:
       "The largest file is 10 MB. Nothing was read from this file.",
-    reject_noRows_title: "The file has no data rows",
+    reject_noRows_title: "The file has only the column names",
     reject_noRows:
-      "Add at least one row under the column names and choose again.",
+      "There are no data rows to import. Add data to the file and choose again.",
     reject_tooManyRows_title:
       "The file has {{rows}} rows, over the 5,000 row limit",
     reject_tooManyRows:
@@ -151,6 +195,8 @@ export const en = {
     checkIncompatible: "Cannot map",
     incompatibleBody:
       "The column holds text (for example “{{example}}”) but the field {{field}} is {{type}}. Choose another field, or skip this column.",
+    incompatibleShort:
+      "The column holds text (for example “{{example}}”) but the field is {{type}}. Choose another field or skip the column.",
     type_Text: "Text",
     type_LongText: "Long text",
     type_Number: "Number",
@@ -161,7 +207,7 @@ export const en = {
     type_Checkbox: "Checkbox",
     type_Link: "Link",
     type_Person: "Person",
-    locked_person: "Cannot be imported from a file yet",
+    locked_person: "Only workspace Owners and Admins can import people",
     locked_computed: "Calculated, cannot be imported",
     locked_vote: "Cast by the voter, cannot be imported",
     missingTitle: "No column for the item title",
@@ -171,6 +217,16 @@ export const en = {
     mapProblem_other: "{{count}} columns cannot be mapped",
     mapProblemBody:
       "Fix it before the Check step. Continue opens when no column reports an error.",
+    firstErrors: "First errors",
+    previewLabel: "Preview of the rows",
+    checkSkipped: "Skipped",
+    creatingLabel: "Items created so far",
+    mapAllOk: "Every column is mapped",
+    mapAllOkBody: "Each column has a field. Skip any column you do not need.",
+    mapUnknownNote:
+      "“{{column}}” has {{count}} values not in the options ({{values}}). Unknown values are reported in the Check step; no new option is added.",
+    mapRequiredWhy:
+      "The item title is required. Choose a column for the title.",
     checkingTitle: "Checking the file",
     allValid: "All {{rows}} rows are valid",
     allValidBody:
@@ -184,7 +240,8 @@ export const en = {
     colReason: "Reason",
     previewNote: "Showing {{shown}} of {{rows}} rows.",
     rowLabel: "Row {{row}}",
-    moreErrors: "and {{count}} more errors in other rows, in the error report.",
+    moreErrors:
+      "and {{count}} more errors in {{rows}} other rows, in the error report.",
     reportNote: "The report gives the row, column and reason for every error.",
     downloadReport: "Download error report (CSV)",
     empty: "(empty)",
@@ -199,7 +256,7 @@ export const en = {
     queued: "Waiting in line…",
     done: "Imported {{count}} items into {{name}}",
     doneBody:
-      "The items sit in the default group. New keys run from {{first}} to {{last}}.",
+      "The items sit in the default group; people and due dates come from the file. New keys start at {{first}}.",
     doneAsk: "Want to see them now?",
     doneAskBody: "Open the board in Table view with the newest items first.",
     doneOpen: "See imported items",
@@ -207,6 +264,8 @@ export const en = {
     failedTitle: "No items were imported",
     failedHasErrors:
       "The server refused at row {{row}}: {{column}} {{value}} {{reason}} No item was created; the board is unchanged.",
+    peopleUnmatched:
+      "Some people were not matched: {{count}} rows ({{rows}}). Those cells stay empty. A person is matched only by the exact e-mail of a member who can be assigned on this board.",
     failedRetryNote:
       "Importing the same file again does not create twice: the request uses the same key.",
     chooseFixed: "Choose the fixed file",
@@ -274,13 +333,32 @@ export const en = {
     expiredBody: "Files are kept 24 hours. Export again for a new file.",
     failedTitle: "The file could not be made",
     failedBody:
-      "There is no file to download and the board is unchanged. Trying again does not make two files.",
+      "The server did not finish the file. There is no file to download and the board is unchanged. Trying again does not make two files.",
     failedNoAccess:
       "You can no longer see this board so the file could not be made.",
     retry: "Try again",
     denied: "Guests cannot export. You may not export this board.",
     recent: "Recent files",
     working: "Sending…",
+    preparingTitle: "Preparing the file",
+    summaryLabel: "Format · Items to export",
+    summaryViewShort: "Current view",
+    summaryAllShort: "All items of the board",
+    summaryLine: "{{format}} · {{scope}} · {{count}} items",
+    queuedBanner: "Waiting in line to make the file",
+    queuedBody:
+      "You can close the dialog; a ready file is announced by a notification and sits under Export.",
+    queuedButton: "Waiting in line…",
+    runningLine: "Making the file: {{done}} of {{total}} rows",
+    runningNote: "You can close the dialog, the file is still made.",
+    readyTitle: "Your export is ready",
+    readyBannerTitle: "The file is ready",
+    readyBannerBody:
+      "It has {{rows}} rows. The download link expires after 24 hours.",
+    readyMeta: "{{format}} · {{size}} · made at {{time}}",
+    expiredTitle: "The export expired",
+    expiredBannerBody:
+      "The download link is valid for 24 hours. The board is unchanged; export again for a new file.",
   },
 };
 
@@ -320,13 +398,54 @@ export const vi: BoardLifecycleCopy = {
     gainingBody:
       "Người trong {{target}} vào được theo vai trò ở đó: Quản trị là Quản lý, Thành viên là Sửa, Người xem là Xem.",
     kept: "Giữ nguyên quyền riêng",
-    keptBody: "{{names}}. Việc của họ vẫn còn nguyên.",
+    keptBody:
+      "{{names}}. Việc của người mất quyền vẫn còn nguyên, chỉ họ không mở được.",
     keptMore: "{{names}} và {{count}} người nữa",
     noChange: "Không ai được hay mất quyền.",
+    title: "Chuyển board vào phòng ban",
+    intro: "“{{name}}” đang ở {{from}}. Đổi nơi đặt sẽ đổi ai vào được board.",
+    placeLabel: "Nơi đặt board",
+    currentSub: "Board đang ở đây",
+    currentChip: "Đang ở đây",
+    blockedSub: "Cần quyền Tạo board ở phòng này",
+    rootTitle: "Không thuộc phòng ban nào",
+    rootSub: "Đặt ở gốc workspace {{workspace}}",
+    peopleIn: "{{count}} người trong phòng",
+    pickHint: "Chọn nơi đặt để xem ai được và mất quyền.",
+    confirm: "Chuyển board",
+    confirmTo: "Chuyển sang {{name}}",
+    failedTitle: "Chưa chuyển được board",
+    networkFailed:
+      "Mất kết nối. Chưa có gì thay đổi: nơi đặt và quyền giữ nguyên. Thử lại không chuyển hai lần.",
+    addPerson: "Thêm {{name}} vào board",
+    close: "Đóng",
+    cancel: "Huỷ",
     moveWithout: "Chuyển, không thêm ai",
     moveAdding_one: "Thêm {{count}} người rồi chuyển",
     moveAdding_other: "Thêm {{count}} người rồi chuyển",
     moving: "Đang chuyển…",
+    pendingAdding_one: "Đang thêm {{count}} người và chuyển board…",
+    pendingAdding_other: "Đang thêm {{count}} người và chuyển board…",
+    pendingPlain: "Đang chuyển board…",
+    privateTitle: "Board đang Riêng tư nên quyền của mọi người giữ nguyên",
+    privateBody:
+      "Chỉ nơi đặt board đổi. Người trong {{from}} vốn đã không vào được board này.",
+    doneAdded_one: "{{count}} người đã được thêm vào board.",
+    doneAdded_other: "{{count}} người đã được thêm vào board.",
+    doneLost_one: "{{count}} người không còn thấy board.",
+    doneLost_other: "{{count}} người không còn thấy board.",
+    undo: "Hoàn tác",
+    undone: "{{name}} đã về lại {{place}}.",
+    undoFailed: "Không chuyển lại được. Hãy chuyển lại từ menu board.",
+    pendingNote: "Yêu cầu đã gửi nên không huỷ được.",
+    movedByTitle: "{{who}} vừa chuyển board này sang {{place}}",
+    movedBySomeone: "Một người khác",
+    movedByBody:
+      "Danh sách người được và mất quyền đã tính lại theo nơi đặt mới. Xem lại rồi chuyển tiếp nếu vẫn cần.",
+    review: "Xem lại",
+    deniedTitle: "Bạn chưa chuyển được board này",
+    deniedBody:
+      "Cần quyền Quản lý board, và quyền Tạo board ở phòng đích. Nhờ người quản lý board hoặc quản trị phòng.",
     moved: "Đã chuyển {{name}}.",
     movedAdded_one: "Đã chuyển {{name}} và thêm {{count}} người.",
     movedAdded_other: "Đã chuyển {{name}} và thêm {{count}} người.",
@@ -390,6 +509,7 @@ export const vi: BoardLifecycleCopy = {
     dropHint: "Dòng đầu là tên cột. Tối đa 5.000 dòng.",
     reading: "Đang đọc tệp",
     readingBody: "Chưa tạo việc nào. Đọc tệp chỉ để ghép cột và kiểm tra.",
+    readingMeta: "Đang đọc… {{percent}}%",
     fileMeta: "{{rows}} dòng · {{columns}} cột · {{size}}",
     changeFile: "Đổi tệp",
     chooseOther: "Chọn tệp khác",
@@ -402,8 +522,9 @@ export const vi: BoardLifecycleCopy = {
       "Chỉ nhận tệp CSV hoặc XLSX. Chưa đọc gì từ tệp này.",
     reject_tooLarge_title: "Tệp {{file}} quá lớn",
     reject_tooLarge: "Tệp lớn nhất là 10 MB. Chưa đọc gì từ tệp này.",
-    reject_noRows_title: "Tệp không có dòng dữ liệu",
-    reject_noRows: "Thêm ít nhất một dòng dưới dòng tên cột rồi chọn lại.",
+    reject_noRows_title: "Tệp chỉ có dòng tên cột",
+    reject_noRows:
+      "Không có dòng dữ liệu nào để nhập. Thêm dữ liệu vào tệp rồi chọn lại.",
     reject_tooManyRows_title: "Tệp có {{rows}} dòng, vượt giới hạn 5.000 dòng",
     reject_tooManyRows:
       "Chưa nhập gì. Tách tệp thành nhiều phần dưới 5.000 dòng rồi nhập từng phần.",
@@ -429,6 +550,8 @@ export const vi: BoardLifecycleCopy = {
     checkIncompatible: "Không ghép được",
     incompatibleBody:
       "Cột có chữ (ví dụ “{{example}}”) nhưng trường {{field}} là {{type}}. Chọn trường khác, hoặc bỏ qua cột này.",
+    incompatibleShort:
+      "Cột có chữ (ví dụ “{{example}}”) nhưng trường là {{type}}. Chọn trường khác hoặc bỏ qua cột.",
     type_Text: "Văn bản",
     type_LongText: "Văn bản dài",
     type_Number: "Số",
@@ -439,7 +562,7 @@ export const vi: BoardLifecycleCopy = {
     type_Checkbox: "Hộp chọn",
     type_Link: "Liên kết",
     type_Person: "Người",
-    locked_person: "Chưa nhập được từ tệp",
+    locked_person: "Chỉ chủ sở hữu và quản trị viên nhập được người",
     locked_computed: "Tự tính, không nhập được",
     locked_vote: "Do người bình chọn, không nhập được",
     missingTitle: "Thiếu cột cho Tên việc",
@@ -448,6 +571,15 @@ export const vi: BoardLifecycleCopy = {
     mapProblem_other: "{{count}} cột chưa ghép được",
     mapProblemBody:
       "Sửa trước khi sang bước Kiểm tra. Nút Tiếp tục mở khi không còn cột nào báo lỗi.",
+    firstErrors: "Lỗi đầu tiên",
+    previewLabel: "Xem trước các dòng",
+    checkSkipped: "Bỏ qua",
+    creatingLabel: "Số việc đã tạo",
+    mapAllOk: "Mọi cột đã ghép được",
+    mapAllOkBody: "Mỗi cột đã có trường. Bỏ qua cột nào bạn không cần nhập.",
+    mapUnknownNote:
+      "“{{column}}” có {{count}} giá trị chưa có trong lựa chọn ({{values}}). Giá trị lạ sẽ được báo ở bước Kiểm tra, chưa thêm lựa chọn mới.",
+    mapRequiredWhy: "Tên việc là bắt buộc. Chọn một cột cho Tên việc.",
     checkingTitle: "Đang kiểm tra tệp",
     allValid: "{{rows}} dòng đều hợp lệ",
     allValidBody:
@@ -461,7 +593,8 @@ export const vi: BoardLifecycleCopy = {
     colReason: "Lý do",
     previewNote: "Xem trước {{shown}} trong {{rows}} dòng.",
     rowLabel: "Dòng {{row}}",
-    moreErrors: "và {{count}} lỗi nữa ở các dòng khác, có trong báo cáo lỗi.",
+    moreErrors:
+      "và {{count}} lỗi nữa ở {{rows}} dòng khác, có trong báo cáo lỗi.",
     reportNote: "Báo cáo nêu số dòng, cột và lý do cho từng lỗi.",
     downloadReport: "Tải báo cáo lỗi (CSV)",
     empty: "(trống)",
@@ -476,14 +609,16 @@ export const vi: BoardLifecycleCopy = {
     queued: "Đang xếp hàng…",
     done: "Đã nhập {{count}} việc vào {{name}}",
     doneBody:
-      "Việc nằm ở nhóm mặc định. Mã việc mới từ {{first}} đến {{last}}.",
+      "Việc nằm ở nhóm mặc định, người phụ trách và hạn lấy từ tệp. Mã việc mới từ {{first}}.",
     doneAsk: "Muốn xem ngay?",
     doneAskBody: "Mở board ở chế độ Bảng, sắp xếp việc mới nhất lên đầu.",
     doneOpen: "Xem việc đã nhập",
     finish: "Xong",
     failedTitle: "Chưa nhập việc nào",
     failedHasErrors:
-      "Máy chủ từ chối ở dòng {{row}}: {{column}} {{value}} {{reason}}. Không việc nào được tạo, board không đổi.",
+      "Máy chủ từ chối ở dòng {{row}}: {{column}} {{value}} {{reason}} Không việc nào được tạo, board không đổi.",
+    peopleUnmatched:
+      "Có người chưa khớp: {{count}} dòng ({{rows}}). Ô đó để trống. Chỉ khớp theo đúng e-mail của thành viên có thể được giao việc trên board này.",
     failedRetryNote:
       "Nhập lại với cùng tệp cũng không tạo hai lần: yêu cầu dùng cùng khoá.",
     chooseFixed: "Chọn tệp đã sửa",
@@ -550,12 +685,30 @@ export const vi: BoardLifecycleCopy = {
     expiredBody: "Tệp chỉ giữ 24 giờ. Xuất lại để lấy tệp mới.",
     failedTitle: "Chưa tạo được tệp",
     failedBody:
-      "Chưa có tệp nào để tải và board không đổi. Thử lại không tạo hai tệp.",
+      "Máy chủ không tạo xong tệp. Chưa có tệp nào để tải và board không đổi. Thử lại không tạo hai tệp.",
     failedNoAccess: "Bạn không còn quyền xem board này nên không tạo được tệp.",
     retry: "Thử lại",
     denied: "Khách không xuất được. Bạn không có quyền xuất board này.",
     recent: "Tệp gần đây",
     working: "Đang gửi…",
+    preparingTitle: "Đang chuẩn bị tệp",
+    summaryLabel: "Định dạng · Việc cần xuất",
+    summaryViewShort: "Chế độ xem hiện tại",
+    summaryAllShort: "Tất cả việc của board",
+    summaryLine: "{{format}} · {{scope}} · {{count}} việc",
+    queuedBanner: "Đang xếp hàng để tạo tệp",
+    queuedBody:
+      "Có thể đóng hộp thoại; tệp sẵn sàng sẽ báo bằng thông báo và nằm ở nút Xuất.",
+    queuedButton: "Đang xếp hàng…",
+    runningLine: "Đang tạo tệp: {{done}} trên {{total}} dòng",
+    runningNote: "Bạn có thể đóng hộp thoại, tệp vẫn được tạo.",
+    readyTitle: "Tệp xuất đã sẵn sàng",
+    readyBannerTitle: "Tệp đã sẵn sàng",
+    readyBannerBody: "Có {{rows}} dòng. Liên kết tải hết hạn sau 24 giờ.",
+    readyMeta: "{{format}} · {{size}} · tạo lúc {{time}}",
+    expiredTitle: "Tệp xuất đã hết hạn",
+    expiredBannerBody:
+      "Liên kết tải chỉ có hiệu lực 24 giờ. Việc trên board không đổi; xuất lại để lấy tệp mới.",
   },
 };
 

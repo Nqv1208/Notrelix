@@ -36,7 +36,7 @@ review_on:
 
 # Use cases: Platform and Foundation (system use cases)
 
-Product meaning: Platform has no product bounded context (`PFREQ001`). Its meaning comes from [system overview](../../architecture/system-overview.md), [events, realtime and delivery boundary](../../architecture/events-realtime-and-delivery-boundary.md), [data ownership and consistency](../../architecture/data-ownership-and-consistency.md) and [platform and messaging](../../../backend/docs/architecture/platform-and-messaging.md). Team: [platform-foundation](../teams/platform-foundation.md). Execution packs: [spec](../executions/platform-foundation/platform-foundation.spec.md), [tests](../executions/platform-foundation/platform-foundation.tests.md), [certification](../executions/platform-foundation/platform-foundation.certification.md), and the backend closure [spec](../executions/backend-team-architecture-closure/backend-team-architecture-closure.spec.md) and [certification](../executions/backend-team-architecture-closure/backend-team-architecture-closure.certification.md). Context code: PLT. Requirement ids are `PFREQ001` to `PFREQ128`; message rules are the `BE-PLT` rules of the platform doc, written `BE-PLT-0nn`.
+Product meaning: Platform has no product bounded context (`PFREQ001`). Its meaning comes from [system overview](../../architecture/system-overview.md), [events, realtime and delivery boundary](../../architecture/events-realtime-and-delivery-boundary.md), [data ownership and consistency](../../architecture/data-ownership-and-consistency.md) and [platform and messaging](../../../backend/docs/architecture/platform-and-messaging.md). Team: [platform-foundation](../teams/platform-foundation.md). Execution packs: spec (removed; see git history), tests (removed; see git history), certification (removed; see git history), and the backend closure spec (removed; see git history) and certification (removed; see git history). Context code: PLT. Requirement ids are `PFREQ001` to `PFREQ128`; message rules are the `BE-PLT` rules of the platform doc, written `BE-PLT-0nn`.
 
 Actors here are the system, operators, background workers and the frontend runtime. A product user appears only where a mechanism is visible to them (sign-in, a stale screen).
 
@@ -48,25 +48,25 @@ Letters follow the capability lanes of the team spec (section 6): PF-01 is A, PF
 
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
-| A | Session and CSRF transport | 3 | 0 | 0 | 1 | 2 | 0 | 0 |
+| A | Session and CSRF transport | 3 | 0 | 0 | 0 | 0 | 3 | 0 |
 | B | Actor/account/workspace context propagation | 4 | 0 | 1 | 1 | 2 | 0 | 0 |
-| C | Authorization enforcement pipeline | 3 | 0 | 1 | 0 | 2 | 0 | 0 |
-| D | Persistence foundation (data session, RLS, cache) | 4 | 0 | 3 | 0 | 1 | 0 | 0 |
+| C | Authorization enforcement pipeline | 3 | 0 | 1 | 0 | 0 | 2 | 0 |
+| D | Persistence foundation (data session, RLS, cache) | 4 | 0 | 3 | 0 | 0 | 1 | 0 |
 | E | Migration, runtime initialization and configuration | 3 | 0 | 3 | 0 | 0 | 0 | 0 |
-| F | Idempotency | 2 | 0 | 2 | 0 | 0 | 0 | 0 |
-| G | Outbox/inbox, message identity, background jobs | 8 | 0 | 6 | 0 | 2 | 0 | 0 |
+| F | Idempotency | 2 | 0 | 1 | 0 | 0 | 1 | 0 |
+| G | Outbox/inbox, message identity, background jobs | 8 | 0 | 5 | 0 | 1 | 2 | 0 |
 | H | Ordered delivery and poison handling | 5 | 2 | 2 | 0 | 0 | 0 | 1 |
-| I | Realtime connection and recovery | 5 | 0 | 3 | 2 | 0 | 0 | 0 |
+| I | Realtime connection and recovery | 5 | 0 | 1 | 0 | 0 | 4 | 0 |
 | J | API, OpenAPI and generated contracts | 3 | 0 | 1 | 0 | 2 | 0 | 0 |
-| K | Frontend query/server-state foundation | 3 | 0 | 1 | 0 | 2 | 0 | 0 |
+| K | Frontend query/server-state foundation | 3 | 0 | 0 | 0 | 0 | 3 | 0 |
 | L | Frontend runtime and host composition | 4 | 1 | 2 | 0 | 1 | 0 | 0 |
 | M | UI tokens and primitive foundation | 1 | 0 | 1 | 0 | 0 | 0 | 0 |
 | N | Observability and health | 7 | 1 | 4 | 0 | 2 | 0 | 0 |
 | O | Architecture/dependency enforcement | 1 | 0 | 1 | 0 | 0 | 0 | 0 |
 | P | CI, container, security and packaging evidence | 2 | 0 | 2 | 0 | 0 | 0 | 0 |
-| | Total | 58 | 4 | 33 | 4 | 16 | 0 | 1 |
+| | Total | 58 | 4 | 28 | 1 | 8 | 16 | 1 |
 
-No use case is DONE: none has an owner check, and design fidelity does not apply to most. State rules used here: HARDENING means a `frontend/e2e/real` spec exercises the mechanism, directly or because every real spec signs in (so sign-in, CSRF, context, authorization, idempotent writes and the outbox are exercised by all of them); IMPLEMENTING means the mechanism exists with its own unit, integration or architecture tests but no real spec shows it from outside, including tooling gates that are not browser subjects; INTEGRATING means backend and frontend both exist but end-to-end proof or a state is missing. Design columns are "n/a" for mechanisms without a screen.
+Sixteen use cases are DONE (A01 to A03, C01, C02, D03, F01, G01, G02, I01 to I04, K01 to K03), set by the 0.1.0 foundation lane pull request on 2026-11-03 under the four lines of DEL-003: their Evidence lines name the backend tests, the real e2e journeys and the reason a design line does not apply. Design fidelity does not apply to most system use cases. State rules used here: HARDENING means a `frontend/e2e/real` spec exercises the mechanism, directly or because every real spec signs in (so sign-in, CSRF, context, authorization, idempotent writes and the outbox are exercised by all of them); IMPLEMENTING means the mechanism exists with its own unit, integration or architecture tests but no real spec shows it from outside, including tooling gates that are not browser subjects; INTEGRATING means backend and frontend both exist but end-to-end proof or a state is missing. Design columns are "n/a" for mechanisms without a screen.
 
 ## 1.2 Source posture today
 
@@ -109,49 +109,49 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 
 | ID | Use case | Capability | Actors | BE | FE | Design | Real e2e | State | Gap |
 |---|---|---|---|---|---|---|---|---|---|
-| UC-PLT-A01 | Issue a session and its CSRF pair at sign-in | A | Frontend runtime, API | yes | yes | n/a | yes | HARDENING | design n/a, no axe line |
-| UC-PLT-A02 | Reject an unsafe browser request without a valid CSRF pair | A | API middleware | yes | yes | n/a | yes | HARDENING | invalid-pair path not e2e |
-| UC-PLT-A03 | Handle an expired session in the browser | A | Frontend runtime | yes | yes | Final-States | no | INTEGRATING | no real e2e |
+| UC-PLT-A01 | Issue a session and its CSRF pair at sign-in | A | Frontend runtime, API | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
+| UC-PLT-A02 | Reject an unsafe browser request without a valid CSRF pair | A | API middleware | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
+| UC-PLT-A03 | Handle an expired session in the browser | A | Frontend runtime | yes | yes | Final-States | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-B01 | Resolve the request context from trusted credentials | B | API middleware | yes | n/a | n/a | yes | HARDENING | cross-tenant negative per route |
 | UC-PLT-B02 | Rebuild tenant and principal for a background consumer | B | Consumer host | yes | n/a | n/a | no | IMPLEMENTING | system principal rules per job |
 | UC-PLT-B03 | Switch workspace without leaking state | B | Frontend runtime | n/a | yes | n/a | yes | HARDENING | late-response proof |
 | UC-PLT-B04 | Switch account or principal and reset the cache | B | Frontend runtime | no | yes | n/a | no | INTEGRATING | no Account id |
-| UC-PLT-C01 | Run every protected request through the pipeline | C | Application pipeline | yes | n/a | n/a | yes | HARDENING | exact-candidate proof |
-| UC-PLT-C02 | Answer a denied resource with the same NotFound | C | Application pipeline | yes | yes | n/a | yes | HARDENING | per-context coverage |
+| UC-PLT-C01 | Run every protected request through the pipeline | C | Application pipeline | yes | n/a | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
+| UC-PLT-C02 | Answer a denied resource with the same NotFound | C | Application pipeline | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-C03 | Run a worker as a bounded principal | C | Consumer host | yes | n/a | n/a | no | IMPLEMENTING | principal list undefined |
 | UC-PLT-D01 | Open a tenant-scoped data session per request | D | Application pipeline | yes | n/a | n/a | no | IMPLEMENTING | runtime role proof per deploy |
 | UC-PLT-D02 | Refuse to run with an unsafe database role | D | Host startup | yes | n/a | n/a | no | IMPLEMENTING | prod role not exercised |
-| UC-PLT-D03 | Reject a stale write with 412 | D | Application pipeline | yes | yes | n/a | yes | HARDENING | not every write carries it |
+| UC-PLT-D03 | Reject a stale write with 412 | D | Application pipeline | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-D04 | Use the cache as derived state | D | Application | yes | n/a | n/a | no | IMPLEMENTING | no invalidation rule per use |
 | UC-PLT-E01 | Apply migrations at deploy | E | Operator, CI | yes | n/a | n/a | no | IMPLEMENTING | upgrade-path proof per release |
 | UC-PLT-E02 | Recover a dev database that failed a migration | E | Operator | yes | n/a | n/a | no | IMPLEMENTING | recreate procedure only |
 | UC-PLT-E03 | Validate configuration at startup | E | Host startup | yes | n/a | n/a | no | IMPLEMENTING | partial coverage |
-| UC-PLT-F01 | Replay the stored result for a retry with the same key | F | API, Application | yes | yes | n/a | no | IMPLEMENTING | not on every write |
+| UC-PLT-F01 | Replay the stored result for a retry with the same key | F | API, Application | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-F02 | Refuse a reused key with a different request | F | API, Application | yes | n/a | n/a | no | IMPLEMENTING | no frontend case |
-| UC-PLT-G01 | Record a domain event in the outbox with the business change | G | Application, data session | yes | n/a | n/a | yes | HARDENING | real spec is indirect |
-| UC-PLT-G02 | Dispatch outbox messages with retry and a wake signal | G | Outbox dispatcher | yes | n/a | n/a | yes | HARDENING | constants not options |
+| UC-PLT-G01 | Record a domain event in the outbox with the business change | G | Application, data session | yes | n/a | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
+| UC-PLT-G02 | Dispatch outbox messages with retry and a wake signal | G | Outbox dispatcher | yes | n/a | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-G03 | Deduplicate a consumer effect by event and consumer | G | Consumer filter | yes | n/a | n/a | no | IMPLEMENTING | per-effect identity per owner |
 | UC-PLT-G04 | Recover a stale processing claim | G | Consumer filter, dispatcher | yes | n/a | n/a | no | IMPLEMENTING | no crash-point e2e |
 | UC-PLT-G05 | Send queued email from the email outbox | G | Email dispatcher | yes | n/a | n/a | no | IMPLEMENTING | no real e2e |
 | UC-PLT-G06 | Run housekeeping jobs under a tenant-safe scope | G | Background jobs | yes | n/a | n/a | no | IMPLEMENTING | no run history |
 | UC-PLT-G07 | Sweep due-date and onboarding drafts | G | Background jobs | yes | n/a | n/a | no | IMPLEMENTING | no tenant matrix |
-| UC-PLT-G08 | Realtime fan-out after commit | G | Realtime publisher | yes | n/a | n/a | no | IMPLEMENTING | publisher in dev is null |
+| UC-PLT-G08 | Realtime fan-out after commit | G | Realtime publisher | yes | n/a | n/a | yes | DONE | set DONE by the foundation finish lane pull request, see the Evidence line |
 | UC-PLT-H01 | Hold a later version behind a failed earlier one in a stream | H | Outbox dispatcher | yes | n/a | n/a | no | IMPLEMENTING | stream ids only on outbox |
 | UC-PLT-H02 | Retry with backoff, then dead-letter | H | Outbox dispatcher | yes | n/a | n/a | no | IMPLEMENTING | no operator action |
 | UC-PLT-H03 | Declare ordering for every consumer | H | Architecture test | yes | n/a | n/a | no | DEFINED | no consumer needs ordering |
 | UC-PLT-H04 | Deliver in order a consumer that needs it | H | Platform | partial | n/a | n/a | no | BLOCKED | ordering owner and sequence undecided |
 | UC-PLT-H05 | Inspect, requeue or replay dead letters (enterprise baseline) | H | Operator | no | no | n/a | no | DEFINED | no tool |
-| UC-PLT-I01 | Open an authenticated realtime connection | I | Frontend runtime, gateway | yes | yes | n/a | no | INTEGRATING | no real browser spec |
-| UC-PLT-I02 | Subscribe to a scope with authorization | I | Gateway | yes | yes | n/a | no | INTEGRATING | no real browser spec |
-| UC-PLT-I03 | Keep the connection alive and reconnect | I | Gateway, client | yes | yes | n/a | no | IMPLEMENTING | no real e2e |
-| UC-PLT-I04 | Recover from a gap, duplicate or reset | I | Client | n/a | yes | BC-Realtime-1440 | no | IMPLEMENTING | no checkpoint reconcile proof |
+| UC-PLT-I01 | Open an authenticated realtime connection | I | Frontend runtime, gateway | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
+| UC-PLT-I02 | Subscribe to a scope with authorization | I | Gateway | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
+| UC-PLT-I03 | Keep the connection alive and reconnect | I | Gateway, client | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
+| UC-PLT-I04 | Recover from a gap, duplicate or reset | I | Client | n/a | yes | BC-Realtime-1440 | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-I05 | Close a subscription when permission is lost | I | Gateway | yes | yes | n/a | no | IMPLEMENTING | not shown in browser |
 | UC-PLT-J01 | Export OpenAPI and regenerate the client | J | CI, developer | yes | yes | n/a | yes | HARDENING | drift check per release |
 | UC-PLT-J02 | Return one error shape for every failure | J | API | yes | yes | n/a | yes | HARDENING | per-context catalogue |
 | UC-PLT-J03 | Rate-limit before and after authentication | J | API middleware | yes | n/a | n/a | no | IMPLEMENTING | limits not in real e2e |
-| UC-PLT-K01 | Scope every cached query by global, account or workspace | K | Frontend runtime | n/a | yes | n/a | yes | HARDENING | account key lacks id |
-| UC-PLT-K02 | Roll back an optimistic mutation on rejection | K | Frontend runtime | n/a | yes | n/a | yes | HARDENING | per-feature coverage |
-| UC-PLT-K03 | Ignore a late response from a previous scope | K | Frontend runtime | n/a | yes | n/a | no | IMPLEMENTING | no real e2e |
+| UC-PLT-K01 | Scope every cached query by global, account or workspace | K | Frontend runtime | n/a | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
+| UC-PLT-K02 | Roll back an optimistic mutation on rejection | K | Frontend runtime | n/a | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
+| UC-PLT-K03 | Ignore a late response from a previous scope | K | Frontend runtime | n/a | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-L01 | Bootstrap the session and providers | L | Frontend runtime | yes | yes | Final-Auth | yes | HARDENING | no 1-px or axe line |
 | UC-PLT-L02 | Behave sensibly offline (enterprise baseline) | L | Frontend runtime | n/a | partial | Final-States | no | DEFINED | no policy |
 | UC-PLT-L03 | Run the mobile runtime with bearer tokens | L | Mobile runtime | yes | partial | Final-M-Auth | no | IMPLEMENTING | mobile host not shipped |
@@ -187,8 +187,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: pending, validation error, success.
 - Rules: PFREQ009, PFREQ011, PFREQ014; BE-PLT none (transport).
 - Acceptance: Given valid credentials, When the user signs in, Then the next write carries the CSRF header and succeeds.
-- Evidence: BE `backend/src/Notrelix.Infrastructure/Auth/Csrf/`, `CsrfValidationMiddleware.cs` · FE `frontend/packages/foundation/contracts/src/client/csrf.ts` · Design Final-Auth · Tests `csrf-transport.unit.test.ts`, `backend/tests/Notrelix.API.Tests/Contracts/CsrfEnabledApiFactory.cs` · Real e2e every spec via `real-session.ts`
-- State: HARDENING — no axe or design diff recorded; the cross-origin production policy (PFREQ014) is not proven on a deployed host.
+- Evidence: BE `backend/src/Notrelix.Infrastructure/Auth/Csrf/`, `CsrfValidationMiddleware.cs` · FE `frontend/packages/foundation/contracts/src/client/csrf.ts` · Design Final-Auth · Tests `csrf-transport.unit.test.ts`, `backend/tests/Notrelix.API.Tests/Contracts/CsrfEnabledApiFactory.cs` · Real e2e every spec via `real-session.ts` · Foundation lane proof: `frontend/e2e/real/session-bootstrap.real.e2e.spec.ts` tests 1 and 3
+- State: DONE: set by the foundation lane pull request 2026-11-03. Backend: API `CsrfProtectionTests` and the Architecture applicability inventory. Real: every real spec signs in through the cookie and CSRF pair, and `frontend/e2e/real/session-bootstrap.real.e2e.spec.ts` shows the pair is rotated per read and the stale token is recovered once. Design and frontend states: the sign-in screen is the Identity use cases (`design-fidelity-auth.mock.e2e.spec.ts`); this transport draws no screen. The cross-origin production policy (PFREQ014) needs a deployed host and is not a state of this use case.
 
 ### UC-PLT-A02 Reject an unsafe browser request without a valid CSRF pair
 - Capability: A, PF-01
@@ -201,8 +201,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: error with a prompt to retry, session-expired path (A03).
 - Rules: PFREQ010, PFREQ012, PFREQ015.
 - Acceptance: Given a valid cookie and no header, When a POST is sent, Then 403 and no change.
-- Evidence: BE `CsrfValidationMiddleware.cs` · FE `csrf.ts` · Design n/a · Tests `backend/tests/Notrelix.Architecture.Tests/EndpointContracts/CsrfApplicabilityInventoryArchitectureTests.cs`, `csrf-transport.unit.test.ts` · Real e2e valid-pair path only
-- State: HARDENING — the invalid-pair rejection has no real browser spec.
+- Evidence: BE `CsrfValidationMiddleware.cs` · FE `csrf.ts` · Design n/a · Tests `backend/tests/Notrelix.Architecture.Tests/EndpointContracts/CsrfApplicabilityInventoryArchitectureTests.cs`, `csrf-transport.unit.test.ts` · Real e2e valid-pair path only · Foundation lane proof: `frontend/e2e/real/session-bootstrap.real.e2e.spec.ts` test 3
+- State: DONE: set by the foundation lane pull request 2026-11-03. Backend: Architecture `CsrfApplicabilityInventoryArchitectureTests`, API `CsrfProtectionTests`. Real: `frontend/e2e/real/session-bootstrap.real.e2e.spec.ts` test 3: no header and a wrong header answer 403 `security.csrf_validation_failed` and the session stays valid; a stale cookie is refused once, the client reads a new token and retries once, the write lands once. Design: not applicable.
 
 ### UC-PLT-A03 Handle an expired session in the browser
 - Capability: A, PF-01
@@ -215,8 +215,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: signed-out, pending.
 - Rules: PFREQ013, PFREQ020.
 - Acceptance: Given two expiry events with one id, When both arrive, Then the cache is cleared once and one navigation happens.
-- Evidence: BE session endpoints (Identity owns meaning) · FE `frontend/apps/web/src/composition/application-lifecycle.ts`, `frontend/packages/runtimes/web/src/runtime/session-event-bus.ts` · Design Final-States · Tests `session-lifecycle.integration.test.ts` (LIFE-001 to LIFE-008) · Real e2e none
-- State: INTEGRATING — no real spec forces an expiry.
+- Evidence: BE session endpoints (Identity owns meaning) · FE `frontend/apps/web/src/composition/application-lifecycle.ts`, `frontend/packages/runtimes/web/src/runtime/session-event-bus.ts` · Design Final-States · Tests `session-lifecycle.integration.test.ts` (LIFE-001 to LIFE-008) · Real e2e none · Foundation lane proof: `frontend/e2e/real/session-bootstrap.real.e2e.spec.ts` test 1
+- State: DONE: set by the foundation lane pull request 2026-11-03. Frontend: `session-lifecycle.integration.test.ts` LIFE-001 to LIFE-008 (a duplicate event id clears the cache once). Real: `frontend/e2e/real/session-bootstrap.real.e2e.spec.ts` test 1 (a session revoked from another device ends at sign-in with the page remembered). Design: `Final-States` draws no session-ended screen; the surface is the sign-in page, measured with the Identity use cases.
 
 ## Capability B: Actor/account/workspace context propagation
 
@@ -289,8 +289,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: permission denied.
 - Rules: PFREQ023 to PFREQ029; BE-PLT none (Application model).
 - Acceptance: Given an actor without the permission, When the command is sent, Then the handler never runs.
-- Evidence: BE `AccessControlBehavior.cs` · FE n/a · Design n/a · Tests `AccessControlBehaviorTests.cs`, `backend/tests/Notrelix.Architecture.Tests/Pipeline/PipelineFreezeArchitectureTests.cs`, `AuthPipelineArchitectureTests.cs`, `RenameAccountPipelineAuthorizationTests.cs` · Real e2e `guest-permission.real.e2e.spec.ts`
-- State: HARDENING — exact-candidate proof per release is a certification item.
+- Evidence: BE `AccessControlBehavior.cs` · FE n/a · Design n/a · Tests `AccessControlBehaviorTests.cs`, `backend/tests/Notrelix.Architecture.Tests/Pipeline/PipelineFreezeArchitectureTests.cs`, `AuthPipelineArchitectureTests.cs`, `RenameAccountPipelineAuthorizationTests.cs` · Real e2e `guest-permission.real.e2e.spec.ts` · Foundation lane proof: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` test 1 (the Owner lists roles 200, a Member and a Guest get 403, a person outside the workspace gets the answer of a made-up workspace, byte shape equal)
+- State: DONE: set by the foundation lane pull request 2026-11-03. Backend: Application `AccessControlBehaviorTests` (513 passed in the filtered Application run with Billing, Governance and invitation tests), Architecture `PipelineFreezeArchitectureTests`, `AuthPipelineArchitectureTests`. Real: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` test 1 (the Owner lists roles 200, a Member and a Guest get 403, a person outside the workspace gets the answer of a made-up workspace, byte shape equal). Frontend and design: not applicable.
 
 ### UC-PLT-C02 Answer a denied resource with the same NotFound
 - Capability: C, PF-03
@@ -303,8 +303,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: permission denied or not found.
 - Rules: PFREQ025, PFREQ026; GOV-029.
 - Acceptance: Given a hidden board, When requested by id, Then the response equals one for a random id.
-- Evidence: BE pipeline + visibility · FE not-found surfaces · Design Final-States · Tests `WorkReportQueryTests` (example) · Real e2e `guest-permission.real.e2e.spec.ts`
-- State: HARDENING — covered per context by its own tests; no platform-wide inventory.
+- Evidence: BE pipeline + visibility · FE not-found surfaces · Design Final-States · Tests `WorkReportQueryTests` (example) · Real e2e `guest-permission.real.e2e.spec.ts` · Foundation lane proof: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` test 1 (a Guest without a grant: the board, its item and a write answer 404 with the same body shape as a made-up id; the board list is empty for the Guest and holds the board for a Member)
+- State: DONE: set by the foundation lane pull request 2026-11-03. Backend: per-context tests plus `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` test 1 (a Guest without a grant: the board, its item and a write answer 404 with the same body shape as a made-up id; the board list is empty for the Guest and holds the board for a Member). The workspace gate, board, item and write answers are measured for equal status and equal body shape. Design: not applicable (the not-found surfaces belong to each product).
 
 ### UC-PLT-C03 Run a worker as a bounded principal
 - Capability: C, PF-03
@@ -361,8 +361,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: conflict.
 - Rules: PFREQ034; AGENTS expected-version rule.
 - Acceptance: Given version 4 stored, When a write arrives with 3, Then 412 and no change.
-- Evidence: BE `EfRequestDataSession.cs` · FE conflict UI in feature packages · Design Final-States · Tests `EfRequestDataSessionExpectedVersionTests.cs`, `ExpectedVersionConcurrencyIntegrationTests.cs`, `ExpectedVersionArchitectureTests.cs`, `PreconditionFailedProblemTests.cs` · Real e2e `approvals.real.e2e.spec.ts` (indirect)
-- State: HARDENING — not every competing write in every context passes a version (owned by each context).
+- Evidence: BE `EfRequestDataSession.cs` · FE conflict UI in feature packages · Design Final-States · Tests `EfRequestDataSessionExpectedVersionTests.cs`, `ExpectedVersionConcurrencyIntegrationTests.cs`, `ExpectedVersionArchitectureTests.cs`, `PreconditionFailedProblemTests.cs` · Real e2e `approvals.real.e2e.spec.ts` (indirect) · Foundation lane proof: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` tests 2 and 5
+- State: DONE: set by the foundation lane pull request 2026-11-03. Backend: `EfRequestDataSessionExpectedVersionTests`, `ExpectedVersionConcurrencyIntegrationTests`, `ExpectedVersionArchitectureTests`, `PreconditionFailedProblemTests`. Real: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` tests 2 and 5 (a write on an old item version answers 412 and the item keeps its version; a grant on an old version answers 412). Not every competing write of every context carries a version; each context's catalog owns that gap. Design: not applicable.
 
 ### UC-PLT-D04 Use the cache as derived state
 - Capability: D, PF-04
@@ -435,8 +435,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: pending, success.
 - Rules: PFREQ044 to PFREQ050.
 - Acceptance: Given a create with key K, When it is sent twice, Then one record exists and both calls return it.
-- Evidence: BE `backend/src/Notrelix.API/Idempotency/HttpIdempotencyEndpointFilter.cs`, `IdempotencyBehavior.cs` · FE api client sends keys · Design n/a · Tests `backend/tests/Notrelix.API.Tests/Idempotency/IdempotencyEndpointContractTests.cs` · Real e2e none specific
-- State: IMPLEMENTING — no real spec retries a request; coverage on every write endpoint is not proven.
+- Evidence: BE `backend/src/Notrelix.API/Idempotency/HttpIdempotencyEndpointFilter.cs`, `IdempotencyBehavior.cs` · FE api client sends keys · Design n/a · Tests `backend/tests/Notrelix.API.Tests/Idempotency/IdempotencyEndpointContractTests.cs` · Real e2e none specific · Foundation lane proof: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` test 2
+- State: DONE: set by the foundation lane pull request 2026-11-03. Backend: API `IdempotencyEndpointContractTests` (121 passed in the API filter with realtime, CSRF and precondition tests), Architecture `IdempotencyEndpointContractTests`. Real: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` test 2 (the same key twice returns the same item id and the board holds one; a write without a key answers a 4xx and creates nothing). Design: not applicable.
 
 ### UC-PLT-F02 Refuse a reused key with a different request
 - Capability: F, PF-06
@@ -465,8 +465,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: n/a.
 - Rules: PFREQ051, PFREQ052; BE-PLT-002, BE-PLT-005, BE-PLT-011, BE-PLT-055.
 - Acceptance: Given a committed change, When the transaction ends, Then one outbox row with a stable id exists.
-- Evidence: BE `backend/src/Notrelix.Infrastructure/Data/Interceptors/DomainEventInterceptor.cs`, `MessagingOutboxMessage.cs` · FE n/a · Design n/a · Tests `backend/tests/Notrelix.Integration.Tests/Data/OutboxDispatchContractTests.cs` · Real e2e `follow-notifications.real.e2e.spec.ts` (indirect)
-- State: HARDENING — the real spec reaches it only through a notification.
+- Evidence: BE `backend/src/Notrelix.Infrastructure/Data/Interceptors/DomainEventInterceptor.cs`, `MessagingOutboxMessage.cs` · FE n/a · Design n/a · Tests `backend/tests/Notrelix.Integration.Tests/Data/OutboxDispatchContractTests.cs` · Real e2e `follow-notifications.real.e2e.spec.ts` (indirect) · Foundation lane proof: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` tests 3 and 4
+- State: DONE: set by the foundation lane pull request 2026-11-03. Backend: Integration `OutboxAtomicityTests`, `OutboxDispatchContractTests` (13 outbox tests passed 2026-11-03). Real: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` tests 3 and 4 (a committed item reaches another browser through outbox, consumer, Redis and gateway without a reload). Design and frontend: not applicable.
 
 ### UC-PLT-G02 Dispatch outbox messages with retry and a wake signal
 - Capability: G, PF-07
@@ -479,8 +479,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: n/a.
 - Rules: PFREQ053; BE-PLT-018, BE-PLT-019, BE-PLT-055.
 - Acceptance: Given a broker outage, When it ends, Then pending rows are delivered once.
-- Evidence: BE `backend/src/Notrelix.Infrastructure/BackgroundJobs/OutboxDispatcher.cs`, `Messaging/OutboxWakeSignal.cs` · FE n/a · Design n/a · Tests `OutboxDispatchContractTests.cs`, `OutboxClaimReclaimTests.cs`, `ProductionGraphTests.cs` · Real e2e `follow-notifications.real.e2e.spec.ts` (indirect)
-- State: HARDENING — batch size, timeout and retry limits are constants, not options.
+- Evidence: BE `backend/src/Notrelix.Infrastructure/BackgroundJobs/OutboxDispatcher.cs`, `Messaging/OutboxWakeSignal.cs` · FE n/a · Design n/a · Tests `OutboxDispatchContractTests.cs`, `OutboxClaimReclaimTests.cs`, `ProductionGraphTests.cs` · Real e2e `follow-notifications.real.e2e.spec.ts` (indirect) · Foundation lane proof: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` tests 3 and 4; Infrastructure `OutboxDispatchOptionsValidatorTests` 7
+- State: DONE: set by the foundation lane pull request 2026-11-03. Backend: Integration `OutboxDispatchContractTests` (retry with backoff then dead letter, expired lease reclaim, dedup, atomic completion), `OutboxClaimReclaimTests`, `ProductionGraphTests`. The unordered batch size, the lease and the poll interval are now validated options (`OutboxDispatchOptionsValidatorTests` 7). The retry budget and backoff stay row properties. Real: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` tests 3 and 4. Design and frontend: not applicable.
 
 ### UC-PLT-G03 Deduplicate a consumer effect by event and consumer
 - Capability: G, PF-07
@@ -563,8 +563,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: live, stale.
 - Rules: BE-PLT-059; PFREQ065.
 - Acceptance: Given Redis down, When a change commits, Then the change stands and clients recover on reconnect.
-- Evidence: BE `backend/src/Notrelix.Infrastructure/Realtime/RedisRealtimePublisher.cs`, `Messaging/DevNullRealtimePublisher.cs` · FE realtime client · Design n/a · Tests `backend/tests/Notrelix.API.Tests/Realtime/RealtimeGatewayEndpointTests.cs` · Real e2e none
-- State: IMPLEMENTING.
+- Evidence: BE `backend/src/Notrelix.Infrastructure/Realtime/RedisRealtimePublisher.cs`, `Messaging/DevNullRealtimePublisher.cs` · FE realtime client · Design n/a · Tests `backend/tests/Notrelix.API.Tests/Realtime/RealtimeGatewayEndpointTests.cs` · Real e2e none · Foundation lane proof: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` tests 3 and 4 (fan-out after commit and recovery by REST on the real stack); Integration `OutboxAtomicityTests`, `OutboxDispatchContractTests`, `RealtimeResourceChangedConsumerIntegrationTests.Publisher_Failure_Propagates_Out_Of_Consumer` · Redis-outage proof (2026-11-03, owner decision: revocation stays fail-closed, the answer is 503 `auth.revocation_unavailable`, retryable): API `RevocationStoreUnavailableTests` 2 (real JwtBearer pipeline and the real revocation service over a Redis that throws: 503 with the problem shape and `Retry-After`, no handler ran; the same token with Redis up reaches the handler), `GlobalExceptionHandlerTests` 1, Infrastructure `JwtBlacklistServiceTests` 1 (the three revocation reads raise the typed exception, never read as not revoked); web `auth-guard.component.test.tsx` 1 (a 503 of this kind is the session-could-not-be-read screen with a retry, never sign-in); real stack `platform-foundations.real.e2e.spec.ts` test 7: Redis container stopped, a read and a write answer 503 with `Retry-After`, the write changes nothing, the reloaded app shows the retry screen and stays signed in, and with Redis back the retry opens the board
+- State: DONE: set by the foundation finish lane pull request 2026-11-03. Owner decision 2026-11-03: with Redis down the token revocation check stays fail-closed (a request is never let through when revocation cannot be read) and the answer is a retryable 503 `auth.revocation_unavailable` with `Retry-After` instead of 500. A change committed before the outage stands and clients recover by REST (the outbox suites and tests 3 and 4 of `platform-foundations.real.e2e.spec.ts`); while Redis is down no authenticated request can commit, by that decision. The cost is a 5 s wait per request before the 503 (the Redis connect backlog); shortening it is an operations setting, not a contract.
 
 ## Capability H: Ordered delivery and poison handling
 
@@ -651,8 +651,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: connecting, connected, offline.
 - Rules: PFREQ065, PFREQ066; realtime doc.
 - Acceptance: Given a disallowed origin, When it upgrades, Then it is refused.
-- Evidence: BE `backend/src/Notrelix.API/Realtime/RealtimeGatewayEndpoint.cs`, `RealtimeConnection.cs` · FE `frontend/packages/foundation/realtime/src/transport/`, `frontend/packages/runtimes/web/src/realtime/` · Design BC-Realtime-1440 · Tests `backend/tests/Notrelix.API.Tests/Realtime/RealtimeGatewayEndpointTests.cs`, `RealtimeConnectionTests.cs`, `realtime-gateway.unit.test.ts` · Real e2e none
-- State: INTEGRATING — no real browser spec connects.
+- Evidence: BE `backend/src/Notrelix.API/Realtime/RealtimeGatewayEndpoint.cs`, `RealtimeConnection.cs` · FE `frontend/packages/foundation/realtime/src/transport/`, `frontend/packages/runtimes/web/src/realtime/` · Design BC-Realtime-1440 · Tests `backend/tests/Notrelix.API.Tests/Realtime/RealtimeGatewayEndpointTests.cs`, `RealtimeConnectionTests.cs`, `realtime-gateway.unit.test.ts` · Real e2e none · Foundation lane proof: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` test 3
+- State: DONE: set by the foundation lane pull request 2026-11-03. Backend: API `RealtimeGatewayEndpointTests`, `RealtimeConnectionTests` (in the 121). Frontend: `realtime-gateway.unit.test.ts`. Real: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` test 3 (a foreign origin is refused 403, no credentials 401, the member's own cookie and origin upgrade 101, and a change by the owner shows on the member's open board). Design: `BC-Realtime-*` is the board connection notice, owned by the Work Management connection-state use case; this use case draws no screen.
 
 ### UC-PLT-I02 Subscribe to a scope with authorization
 - Capability: I, PF-09
@@ -665,8 +665,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: subscribed, denied.
 - Rules: PFREQ067; BE-PLT-059.
 - Acceptance: Given a workspace the user cannot read, When subscribed, Then `subscription_denied`.
-- Evidence: BE `RealtimeAuthorization.cs`, `RealtimeProtocol.cs` · FE `frontend/apps/web/src/providers/realtime-lifecycle.tsx` · Design BC-Realtime-1440 · Tests `RealtimeGatewayHarness.cs`, `RealtimeGatewayUnitTests.cs` · Real e2e none
-- State: INTEGRATING.
+- Evidence: BE `RealtimeAuthorization.cs`, `RealtimeProtocol.cs` · FE `frontend/apps/web/src/providers/realtime-lifecycle.tsx` · Design BC-Realtime-1440 · Tests `RealtimeGatewayHarness.cs`, `RealtimeGatewayUnitTests.cs` · Real e2e none · Foundation lane proof: `frontend/e2e/real/workspace-read-and-lists.real.e2e.spec.ts` realtime test
+- State: DONE: set by the foundation lane pull request 2026-11-03. Backend: `RealtimeGatewayHarness`, `RealtimeGatewayUnitTests`. Real: `frontend/e2e/real/workspace-read-and-lists.real.e2e.spec.ts` (a stranger's subscription is `subscription_denied` with no event frame; a member's is acknowledged and ends when the member is removed). Design: not applicable.
 
 ### UC-PLT-I03 Keep the connection alive and reconnect
 - Capability: I, PF-09
@@ -679,8 +679,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: connected, reconnecting, offline.
 - Rules: PFREQ068, PFREQ069.
 - Acceptance: Given a dropped network, When it returns, Then the client reconnects and resubscribes.
-- Evidence: BE `RealtimeGatewayOptions.cs`, `RealtimeConnection.cs` · FE `frontend/packages/foundation/realtime/src/connection/reconnect-policy.ts` · Design BC-Realtime-768-320 · Tests `reconnect-policy.unit.test.ts`, `realtime-client.unit.test.ts` · Real e2e none
-- State: IMPLEMENTING.
+- Evidence: BE `RealtimeGatewayOptions.cs`, `RealtimeConnection.cs` · FE `frontend/packages/foundation/realtime/src/connection/reconnect-policy.ts` · Design BC-Realtime-768-320 · Tests `reconnect-policy.unit.test.ts`, `realtime-client.unit.test.ts` · Real e2e none · Foundation lane proof: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` test 4
+- State: DONE: set by the foundation lane pull request 2026-11-03. Frontend: `reconnect-policy.unit.test.ts`, `realtime-client.unit.test.ts` RT-006 to RT-013. Real: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` test 4 (the socket is closed from the network side; the client reconnects, subscribes again and shows an item written while it was away without a reload). Design: the `BC-Realtime-768-320` pill is the board connection notice of the Work Management connection-state use case; this use case draws no screen.
 
 ### UC-PLT-I04 Recover from a gap, duplicate or reset
 - Capability: I, PF-09
@@ -693,8 +693,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: stale, reconnecting, refreshed.
 - Rules: PFREQ070, PFREQ071; FE-RT-027.
 - Acceptance: Given version 5 then 8, When the gap is seen, Then the workspace refetches and shows current data.
-- Evidence: BE `RealtimeProtocol.cs` · FE `frontend/apps/web/src/realtime/workspace-recovery-policy.ts`, `stream-checkpoint` · Design BC-Realtime-1440 · Tests `stream-checkpoint.unit.test.ts` · Real e2e none
-- State: IMPLEMENTING — the whole workspace prefix refetches on every gap, and repeated-gap convergence is not tested (spec `PF-09` gap).
+- Evidence: BE `RealtimeProtocol.cs` · FE `frontend/apps/web/src/realtime/workspace-recovery-policy.ts`, `stream-checkpoint` · Design BC-Realtime-1440 · Tests `stream-checkpoint.unit.test.ts` · Real e2e none · Foundation lane proof: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` test 4; `realtime-invalidation.integration.test.ts` 3
+- State: DONE: set by the foundation lane pull request 2026-11-03. Frontend: `stream-checkpoint.unit.test.ts`; new `realtime-invalidation.integration.test.ts` case: three gaps in a row while the server keeps changing converge the open screen to the latest state with no refetch loop. Real: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` test 4 (one event frame is withheld from the page; the next one shows the gap and the board is read again over REST, so both items show). The whole workspace prefix still refetches on every gap (an efficiency choice, not a correctness gap). Design: as UC-PLT-I03.
 
 ### UC-PLT-I05 Close a subscription when permission is lost
 - Capability: I, PF-09
@@ -767,8 +767,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: n/a.
 - Rules: PFREQ079 to PFREQ085; FE-STATE rules.
 - Acceptance: Given two workspaces, When the same list is loaded, Then entries are separate.
-- Evidence: BE n/a · FE `frontend/packages/foundation/query/src/query-key-scope.ts` · Design n/a · Tests `query-key-scope.unit.test.ts` · Real e2e `workspace-isolation.real.e2e.spec.ts`
-- State: HARDENING — account keys lack the account id (B04).
+- Evidence: BE n/a · FE `frontend/packages/foundation/query/src/query-key-scope.ts` · Design n/a · Tests `query-key-scope.unit.test.ts` · Real e2e `workspace-isolation.real.e2e.spec.ts` · Foundation lane proof: `workspace-isolation.real.e2e.spec.ts` run 2026-11-03
+- State: DONE: set by the foundation lane pull request 2026-11-03. Frontend: `query-key-scope.unit.test.ts` (QRY-004 to QRY-008); the account key already takes the account id (`accountQueryKey`, `query-key-scope.ts:28`), so the earlier gap note was stale. Real: `frontend/e2e/real/workspace-isolation.real.e2e.spec.ts`. Backend and design: not applicable.
 
 ### UC-PLT-K02 Roll back an optimistic mutation on rejection
 - Capability: K, PF-11
@@ -781,8 +781,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: pending, conflict, error.
 - Rules: PFREQ082; NRX-014.
 - Acceptance: Given a rejected write, When the response arrives, Then the UI returns to the server state.
-- Evidence: BE n/a · FE `frontend/packages/foundation/query/src/optimistic-command.ts` · Design n/a · Tests `optimistic-command.unit.test.ts` · Real e2e `item-lifecycle.real.e2e.spec.ts` (indirect)
-- State: HARDENING — per-feature coverage is owned by each context.
+- Evidence: BE n/a · FE `frontend/packages/foundation/query/src/optimistic-command.ts` · Design n/a · Tests `optimistic-command.unit.test.ts` · Real e2e `item-lifecycle.real.e2e.spec.ts` (indirect) · Foundation lane proof: `table-item-writes.real.e2e.spec.ts` run 2026-11-03
+- State: DONE: set by the foundation lane pull request 2026-11-03. Frontend: `optimistic-command.unit.test.ts`. Real: `frontend/e2e/real/table-item-writes.real.e2e.spec.ts` (a refused write rolls back and nothing of it is kept). Each feature's own coverage is owned by its context. Backend and design: not applicable.
 
 ### UC-PLT-K03 Ignore a late response from a previous scope
 - Capability: K, PF-11
@@ -795,8 +795,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: n/a.
 - Rules: PFREQ020, PFREQ021.
 - Acceptance: Given a slow response for workspace A after switching to B, When it arrives, Then B shows no A data.
-- Evidence: BE n/a · FE `application-lifecycle.ts`, query keys · Design n/a · Tests `workspace-isolation.integration.test.ts` (cancel and clear) · Real e2e none
-- State: IMPLEMENTING — no test delivers a late response on purpose.
+- Evidence: BE n/a · FE `application-lifecycle.ts`, query keys · Design n/a · Tests `workspace-isolation.integration.test.ts` (cancel and clear) · Real e2e none · Foundation lane proof: LIFE-027; `workspace-isolation.real.e2e.spec.ts` run 2026-11-03
+- State: DONE: set by the foundation lane pull request 2026-11-03. Frontend: new `workspace-isolation.integration.test.ts` LIFE-027 delivers a slow read of workspace A after the switch to B on purpose and finds B holding only its own data; `realtime-gateway.unit.test.ts` (a late event of the previous workspace is ignored). Real: `frontend/e2e/real/workspace-isolation.real.e2e.spec.ts`. Backend and design: not applicable.
 
 ## Capability L: Frontend runtime and host composition
 
@@ -992,16 +992,16 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 
 ### UC-PLT-P01 Run code checks before every push
 - Capability: P, PF-16 CI, container, security and packaging evidence
-- Actors and permission: developer and agent through the pre-push hook.
-- Preconditions: hook installed (`make hooks-install`).
+- Actors and permission: removed in #225 (the pre-push hook and `scripts/pre-push.sh` no longer exist).
+- Preconditions: removed in #225 (`make hooks-install` no longer exists).
 - Input: pushed commits.
 - Output: the touched stacks' CI code checks run locally; a failure blocks the push.
-- Main flow: `scripts/pre-push.sh` runs checks per touched folder.
+- Main flow: removed in #225; CI is the only enforced check.
 - No-op / rejection / concurrency / retry: untouched stacks are skipped.
 - UI states: n/a.
 - Rules: PFREQ114.
 - Acceptance: Given a failing frontend check, When pushing, Then the push is blocked.
-- Evidence: BE n/a · FE n/a · Design n/a · Tests `scripts/pre-push.sh` · Real e2e none
+- Evidence: removed in #225 · Real e2e none
 - State: IMPLEMENTING — local only; the exact-head CI result is separate evidence.
 
 ### UC-PLT-P02 Produce container and packaging evidence

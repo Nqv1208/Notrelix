@@ -21,8 +21,8 @@ evidence:
   - PRODUCT.md
   - docs/product/product-model.md
   - docs/product/product-experience.md
-  - docs/product/contexts/workspaces.md
-  - docs/product/contexts/governance.md
+  - docs/product/workspaces.md
+  - docs/product/governance.md
   - docs/architecture/bounded-context-map.md
   - docs/architecture/data-ownership-and-consistency.md
   - docs/architecture/events-realtime-and-delivery-boundary.md
@@ -188,7 +188,7 @@ as the only runtime truth.
 
 # 6. WM-002 — One work model, many views
 
-Table, Kanban, Calendar, Timeline, Form, Dashboard, and future view types operate over shared work state.
+Table, Kanban, Calendar, Timeline, Form, and future view types operate over shared work state.
 
 No view owns a duplicate authoritative Item store.
 
@@ -542,6 +542,7 @@ Decided 2026-10-27 (matches the Detail mockup, whose item opens on a written des
 - an Item's own facts — name, description, start and due date — may be given when it is created, so it never exists half-filled; people, labels, status and priority are other facts and are written through their own routes after the create;
 - a due or start date is removed with an explicit clear; a date that is merely absent from a request means "unchanged";
 - no event is published for a description change until a consumer needs one.
+- when two members save the description, the second save is refused as stale and changes nothing; that person's text stays in the editor and the notice names who saved first and offers two choices: view the new version (their text is dropped) or keep mine (it is saved over theirs on purpose, with the version just read).
 
 ---
 
@@ -550,6 +551,8 @@ Decided 2026-10-27 (matches the Detail mockup, whose item opens on a written des
 If an Item has a primary name/title, its semantics should be stable enough for cross-view identity and user recognition.
 
 It is not the durable technical ID.
+
+An Item title is 1 to 500 characters after trim. One limit holds on create, rename, sub-item create and duplicate (`BoardItem.NameMaxLength`); a title over it is refused with the limit named, and the typed text stays.
 
 ---
 
@@ -1057,6 +1060,7 @@ related    undirected, no workflow meaning
 Decided 2026-10-12 (UI mockup review).
 
 - assigning a User who cannot `ViewBoard` on the Item's Board is rejected on every write path (UI, API, Automation, Import, WM-030); assignee pickers show such people as unavailable, with an invite action for principals who may grant access;
+- a refused assignment says why: the person cannot see the Board yet (share the Board first) or only views it (make them a member first); the refusal for "cannot see the Board" carries the stable code `work-management.assignee.board-not-shared`, and principals who may grant access are offered Share from the message;
 - losing access later (Board made Private, Space role removed, entry expired) does not unassign: the Item keeps its value and the assignee simply cannot open it;
 - access-changing flows warn about open Items assigned to people who will lose access and offer to grant them access first (GOV-025).
 
@@ -1176,6 +1180,8 @@ child Items whose Work Status is in the done category / non-archived child Items
 ```
 
 shown as a count ("3/5") and a percentage. It is read-only, recomputed when a child changes status or is added, archived or removed, and never stored as an independently editable value. An Item without child Items has no derived progress.
+
+No other source feeds it. A checklist keeps its own count ("2 of 4") beside the Item and never becomes the parent's progress, and a status category is a status, not a percentage. This is the one precedence on every surface (board read, item read, table, card), decided 2026-11-03.
 
 ---
 
@@ -1718,6 +1724,8 @@ Dependent:
 
 must be migrated/rejected explicitly.
 
+Deleting a field is a soft delete: the field leaves every view and keeps its values for 30 days, a Board manager restores it from the Deleted fields list with its values, and after 30 days a restore is refused with the reason. Nothing is purged in the first release (no data is destroyed; the purge job needs an owner decision), and a write to a field deleted since the client loaded the board answers a precondition failure that names the field and who deleted it, and stores nothing.
+
 ---
 
 # 125. Deletion — View
@@ -2047,15 +2055,11 @@ for unauthorized users.
 
 # 154. Default View
 
-If the product defines a default, the invariant should be deterministic:
+A Board has exactly one default View, and it is shared: a private View is never the default (D76.9).
 
-```text
-at most one
-or
-exactly one active default
-```
+Deleting or archiving the default View names the View that takes its place; when none is named, the oldest shared View takes it, in the same write. The only shared View of a Board cannot be deleted or archived. Setting the current default again changes nothing. A write on a View names the version the caller read: a stale one changes nothing and answers a conflict, and the shared View's save without a version is refused the same way.
 
-with safe fallback on deletion.
+A private View is its creator's alone: another member's list, read or action on it answers the same NotFound as an unknown id, and the Board's realtime topic never carries it (D77.4).
 
 ---
 
@@ -2441,14 +2445,14 @@ Stop rather than guess if:
 PRODUCT.md
 docs/product/product-model.md
 docs/product/product-experience.md
-docs/product/contexts/workspaces.md
-docs/product/contexts/governance.md
-docs/product/contexts/documents.md
-docs/product/contexts/collaboration.md
-docs/product/contexts/automation.md
-docs/product/contexts/integrations.md
-docs/product/contexts/billing.md
-docs/product/contexts/analytics.md
+docs/product/workspaces.md
+docs/product/governance.md
+docs/product/documents.md
+docs/product/collaboration.md
+docs/product/automation.md
+docs/product/integrations.md
+docs/product/billing.md
+docs/product/analytics.md
 
 docs/architecture/data-ownership-and-consistency.md
 docs/architecture/events-realtime-and-delivery-boundary.md

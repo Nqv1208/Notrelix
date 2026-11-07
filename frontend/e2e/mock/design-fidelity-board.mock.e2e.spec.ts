@@ -20,6 +20,9 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * width because the Vietnamese label is the same; a chip whose text differs
  * is checked by height only).
  *
+ * An item opens as a centred popup (`CardPopupSurface`), not the 561 px side sheet of Final-Board `detail=side`; the
+ * popup is measured by `design-fidelity-card-popup` and `-menus`, so the old side-sheet test is gone.
+ *
  * The page clock is fixed to the fixtures' 12/10/2026 10:40. The viewer
  * checks run when the server was started with VITE_MOCK_PERSONA=viewer.
  */
@@ -28,7 +31,6 @@ const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const faults = process.env.VITE_MOCK_FAULTS ?? "";
 const BOARD = "/workspaces/mock-workspace-primary/boards/mock-board-erp";
 const NOW = new Date("2026-10-12T10:40:00+07:00");
-const ERP_142 = "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP";
 
 interface Rect {
   readonly x: number;
@@ -87,15 +89,6 @@ const MOCK = {
   add: { width: 240, height: 34, radius: 9 },
   banner: { x: 24, y: 73, height: 37, radius: 9 },
   noResults: { x: 24, y: 161, height: 54, radius: 10 },
-  /** Final-Board detail=side, in viewport coordinates (the sheet hugs the right edge). */
-  sheet: {
-    width: 561,
-    headerHeight: 49,
-    titleY: 67,
-    titleWidth: 516,
-    status: { x: 902, y: 116, width: 120, height: 30 },
-    composerHeight: 67,
-  },
 } as const;
 
 const TYPE = {
@@ -108,8 +101,6 @@ const TYPE = {
   cardTitle: { size: "13.5px", weight: "500" },
   tag: { size: "11.5px", weight: "600" },
   key: { size: "12px" },
-  sheetTitle: { size: "20px", weight: "650" },
-  sheetSection: { size: "13px", weight: "600" },
 } as const;
 
 async function openBoard(page: Page, query = "") {
@@ -122,7 +113,13 @@ async function openBoard(page: Page, query = "") {
     }
   });
   await page.goto(`${BOARD}${query}`);
-  await expect(page.getByRole("region", { name: "Cần làm" })).toBeVisible();
+  // An open item sheet makes the board behind it inert, so its lanes are not in the accessibility tree.
+  if (!query.includes("item="))
+    await expect(page.getByRole("region", { name: "Cần làm" })).toBeVisible();
+  // The view the member's last visit saved is restored behind a skeleton card (WM-Filter-States); measure the settled page.
+  await expect(
+    page.getByRole("status", { name: "Đang khôi phục cách xem" }),
+  ).toHaveCount(0);
 }
 
 async function main(page: Page): Promise<Rect> {
@@ -271,7 +268,7 @@ test.describe("Board Kanban geometry at 1440 px (owner)", () => {
     expectRect(await rel(page, filter), b.filter, "Lọc");
     expect(await style(filter, "font-size")).toBe(TYPE.control.size);
 
-    const group = page.getByRole("button", { name: /^Nhóm theo/ });
+    const group = page.getByRole("button", { name: /^Nhóm/ });
     expectRect(await rel(page, group), b.group, "Nhóm theo");
     expect(await style(group, "font-size")).toBe(TYPE.control.size);
     expect(
@@ -451,7 +448,9 @@ test.describe("Board Kanban geometry at 1440 px (owner)", () => {
     ).toBeLessThanOrEqual(1);
   });
 
-  test("no results: the bar and the empty lanes", async ({ page }) => {
+  // The one-line bar is gone: WM-Filter-States draws a card in place of the columns, measured by
+  // design-fidelity-filter-states. This Final-Board drawing is superseded.
+  test.skip("no results: the bar and the empty lanes", async ({ page }) => {
     await openBoard(page);
     await page.getByRole("searchbox").fill("zzzz");
     const bar = page.locator("[data-kanban-toolbar] [role=status]");
@@ -473,66 +472,6 @@ test.describe("Board Kanban geometry at 1440 px (owner)", () => {
           (16 + 32 + 8 + (await rel(page, empty)).height),
       ),
     ).toBeLessThanOrEqual(1);
-  });
-
-  test("item sheet: full height at the right edge, header, title, pills and composer", async ({
-    page,
-  }) => {
-    await openBoard(page, "?item=mock-erp-item-142");
-    const sheet = page.getByRole("dialog", { name: ERP_142 });
-    await expect(sheet).toBeVisible();
-    const s = MOCK.sheet;
-    const box = (await sheet.boundingBox())!;
-    const frame = (await sheet.locator("xpath=..").boundingBox())!;
-    expect(Math.abs(frame.x + frame.width - 1440)).toBeLessThanOrEqual(1);
-    expect(Math.abs(frame.width - s.width)).toBeLessThanOrEqual(1);
-    expect(frame.y).toBeCloseTo(0, 0);
-    expect(Math.abs(frame.height - 900)).toBeLessThanOrEqual(1);
-    expect(box.x).toBeGreaterThanOrEqual(frame.x);
-
-    const header = sheet.locator("header");
-    expect(
-      Math.abs((await header.boundingBox())!.height - s.headerHeight),
-    ).toBeLessThanOrEqual(1);
-    expect(await style(header, "padding-left")).toBe("18px");
-    expect(await style(header, "column-gap")).toBe("6px");
-    const icon = sheet.getByRole("button", { name: /^Đóng/ });
-    expect((await icon.boundingBox())!.width).toBeCloseTo(32, 0);
-    expect(await style(icon, "border-radius")).toBe("7px");
-
-    // The sheet now also holds section headings (Việc con, Tệp, Liên kết; the
-    // WM-Sheet-Full artboard): the title is the first level-2 heading.
-    const title = sheet.getByRole("heading", { level: 2 }).first();
-    const titleBox = (await title.boundingBox())!;
-    expect(Math.abs(titleBox.y - s.titleY)).toBeLessThanOrEqual(1);
-    expect(Math.abs(titleBox.width - s.titleWidth)).toBeLessThanOrEqual(1);
-    expect(await style(title, "font-size")).toBe(TYPE.sheetTitle.size);
-    expect(await style(title, "font-weight")).toBe(TYPE.sheetTitle.weight);
-
-    const status = sheet.getByRole("button", { name: /^Trạng thái:/ });
-    const statusBox = (await status.boundingBox())!;
-    expect(Math.abs(statusBox.x - s.status.x)).toBeLessThanOrEqual(1);
-    expect(Math.abs(statusBox.y - s.status.y)).toBeLessThanOrEqual(1);
-    expect(Math.abs(statusBox.height - s.status.height)).toBeLessThanOrEqual(1);
-    expect(Math.abs(statusBox.width - s.status.width)).toBeLessThanOrEqual(2);
-    expect(await style(status, "border-radius")).toBe("8px");
-    expect(await style(status, "font-size")).toBe(TYPE.control.size);
-    expect(await style(status, "padding-left")).toBe("10px");
-    expect(await style(status, "column-gap")).toBe("7px");
-
-    const section = sheet.getByRole("heading", { name: "Mô tả", level: 3 });
-    expect(await style(section, "font-size")).toBe(TYPE.sheetSection.size);
-    expect(await style(section, "font-weight")).toBe(TYPE.sheetSection.weight);
-
-    const composer = sheet.locator(":scope > div").last();
-    const composerBox = (await composer.boundingBox())!;
-    expect(Math.abs(composerBox.height - s.composerHeight)).toBeLessThanOrEqual(
-      1,
-    );
-    expect(
-      Math.abs(composerBox.y + composerBox.height - 900),
-    ).toBeLessThanOrEqual(1);
-    expect(await style(composer, "padding-left")).toBe("18px");
   });
 });
 

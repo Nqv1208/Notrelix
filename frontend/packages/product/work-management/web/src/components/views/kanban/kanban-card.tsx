@@ -2,14 +2,25 @@ import { useId, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+  Archive,
   Ban,
   Calendar,
+  Check,
   ListChecks,
   MessageCircle,
   Paperclip,
   SquareCheck,
+  TriangleAlert,
 } from "lucide-react";
-import { cn } from "@notrelix/ui-web";
+import {
+  cn,
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuTrigger,
+  useMediaQuery,
+} from "@notrelix/ui-web";
+import { ItemActionsMenuItems } from "../../item-actions/item-actions-menu";
+import { itemActionsCopyFor } from "../../item-actions/use-item-actions-copy";
 import { CardCover } from "../../card-popup/capabilities/card-cover";
 import { ColourBlindLabelMark } from "../../card-popup/capabilities/colour-blind-label-mark";
 import { useKanbanFace } from "../../card-popup/capabilities/face-context";
@@ -23,13 +34,15 @@ import {
 } from "./kanban-card.copy";
 import {
   KanbanCardQuickActions,
+  MORE_ALWAYS_QUERY,
+  hasCardMenu,
   isAssignedTo,
   type KanbanCardActions,
+  type KanbanCardFailure,
 } from "./kanban-card-quick-actions";
 import { prefersReducedMotion } from "./kanban-chrome";
 import { KANBAN_CARD_TYPE } from "./kanban-collision";
 import type { KanbanCardSelection } from "./kanban-selection";
-import { TableCheckbox } from "../table/table-parts";
 import type { KanbanMoveDirection } from "./kanban-dnd";
 import {
   PRIORITY_TONE_CLASS,
@@ -82,6 +95,7 @@ function cardParts(
 ) {
   const reference = now ?? fallbackNow;
   const isDone = card.statusCategory === "done" || Boolean(card.completedAt);
+  const archivedChild = card.isArchived && Boolean(card.parentItemId);
   const due = isDone
     ? null
     : itemDueState(card.dueAt ?? card.dueDate, reference, timeZone);
@@ -166,6 +180,7 @@ function cardParts(
 
   return {
     isDone,
+    archivedChild,
     due,
     dueText,
     label,
@@ -187,7 +202,12 @@ function cardParts(
     crowded,
     dueRange,
     dueLabel,
-    hasTop: shownLabels.length > 0 || itemKey !== null || priority !== null,
+    hasTop:
+      shownLabels.length > 0 ||
+      itemKey !== null ||
+      priority !== null ||
+      isDone ||
+      archivedChild,
     hasMeta:
       dueText !== null ||
       checklist !== null ||
@@ -209,14 +229,24 @@ function KanbanCardContent({
   copy,
   parts,
   idPrefix,
+  reserveMore = false,
+  reservePick = false,
+  failure,
 }: {
   card: Card;
   copy: KanbanCardCopy;
   parts: ReturnType<typeof cardParts>;
   idPrefix: string;
+  /** The last move of this card was refused: the card is back, and says so with a retry (BC-Kanban kbf-3). */
+  failure?: KanbanCardFailure;
+  /** The options button is always on the card (touch): the top row stops short of it. */
+  reserveMore?: boolean;
+  /** Cards are being picked: the pick box sits at the start of the top row, which starts after it (BC-Bulk). */
+  reservePick?: boolean;
 }) {
   const {
     isDone,
+    archivedChild,
     due,
     dueText,
     shownLabels,
@@ -266,11 +296,32 @@ function KanbanCardContent({
           />
         )
       ) : null}
-      {hasTop ? (
+      {hasTop || reserveMore || reservePick ? (
         <div
           id={`${idPrefix}-top`}
-          className="flex min-h-[22px] min-w-0 items-center gap-1.5 text-metadata text-meta-foreground"
+          className={cn(
+            "flex min-h-[22px] min-w-0 items-center gap-1.5 text-metadata text-meta-foreground",
+            reserveMore && "pr-[37px]",
+            reservePick && "pl-[26px]",
+          )}
         >
+          {archivedChild ? (
+            <span
+              data-archived-with-parent=""
+              className="inline-flex h-[22px] items-center gap-1 rounded-md bg-state-hover-strong px-2 text-metadata font-semibold whitespace-nowrap text-muted-foreground"
+            >
+              <Archive className="size-3.25" aria-hidden="true" />
+              {copy.archivedWithParent}
+            </span>
+          ) : isDone ? (
+            <span
+              data-completed=""
+              className="inline-flex items-center gap-1.5 text-metadata leading-[1.45] font-medium whitespace-nowrap text-meta-foreground"
+            >
+              <SquareCheck className="size-3.25" aria-hidden="true" />
+              {copy.completed}
+            </span>
+          ) : null}
           {shownLabels.map((label, index) => {
             const tone = itemLabelTone(label);
             return (
@@ -333,13 +384,38 @@ function KanbanCardContent({
           "line-clamp-3 break-words text-nav leading-[1.4]",
           fullCover
             ? "relative text-primary-foreground"
-            : isDone
+            : isDone || archivedChild
               ? "text-muted-foreground"
               : "text-foreground",
         )}
       >
         {card.title}
       </h3>
+
+      {failure ? (
+        <>
+          <div
+            role="alert"
+            data-card-failure=""
+            className="flex items-start gap-[5px] text-[12.5px] font-medium text-danger-text"
+          >
+            <TriangleAlert
+              className="mt-0.5 size-3.25 shrink-0"
+              aria-hidden="true"
+            />
+            {failure.message}
+          </div>
+          <div>
+            <button
+              type="button"
+              onClick={failure.onRetry}
+              className="relative z-20 inline-flex h-7 cursor-pointer items-center justify-center rounded-[7px] border border-line-strong bg-popover px-3 text-[13px] font-medium whitespace-nowrap text-foreground hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring dark:bg-card"
+            >
+              {copy.retry}
+            </button>
+          </div>
+        </>
+      ) : null}
 
       {faceFields.length > 0 ? (
         <div
@@ -606,6 +682,8 @@ export function KanbanCard({
   selection?: KanbanCardSelection;
 }) {
   const [dueOpen, setDueOpen] = useState(false);
+  const touchMore = useMediaQuery(MORE_ALWAYS_QUERY);
+  const itemActionsCopy = itemActionsCopyFor(copy.locale);
   const picked = selection?.selectedIds.has(card.id) ?? false;
   const picking = (selection?.selectedIds.size ?? 0) > 0;
   const { listeners, setNodeRef, transform, transition, isDragging } =
@@ -635,7 +713,7 @@ export function KanbanCard({
     .filter(Boolean)
     .join(" ");
 
-  return (
+  const cardElement = (
     <article
       ref={setNodeRef}
       style={{
@@ -725,20 +803,30 @@ export function KanbanCard({
         }}
       />
       {selection && !isDragging ? (
-        <span
+        // BC-Bulk: an 18 px box, 5 px radius, at the start of the top row; it shows on hover or focus until a card is picked.
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={picked}
+          aria-label={fillCopy(copy.selectCard, { title: card.title })}
+          onClick={(event) => {
+            event.stopPropagation();
+            selection.onToggle(card.id, { range: event.shiftKey });
+          }}
           className={cn(
-            "absolute top-2 left-2 z-20 grid place-items-center rounded-[5px] bg-popover/90 p-0.5 dark:bg-card/90",
+            "absolute top-[13px] left-3 z-20 grid size-[18px] cursor-pointer place-items-center rounded-[5px] border-0 p-0 text-primary-foreground before:absolute before:-inset-2 before:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+            picked
+              ? "bg-primary"
+              : "bg-popover shadow-[inset_0_0_0_1.5px_var(--color-line-strong)] dark:bg-card",
             !picked &&
               !picking &&
-              "opacity-0 focus-within:opacity-100 group-hover:opacity-100",
+              "opacity-0 focus-visible:opacity-100 group-hover:opacity-100",
           )}
         >
-          <TableCheckbox
-            checked={picked}
-            label={fillCopy(copy.selectCard, { title: card.title })}
-            onChange={() => selection.onToggle(card.id)}
-          />
-        </span>
+          {picked ? (
+            <Check aria-hidden="true" className="size-3" strokeWidth={3} />
+          ) : null}
+        </button>
       ) : null}
       {actions && !isDragging ? (
         <KanbanCardQuickActions
@@ -754,7 +842,43 @@ export function KanbanCard({
         copy={copy}
         parts={parts}
         idPrefix={descriptionId}
+        reserveMore={touchMore && actions !== undefined && hasCardMenu(actions)}
+        reservePick={picking && !isDragging}
+        failure={actions?.failureOf?.(card.id)}
       />
     </article>
+  );
+  if (!actions || !hasCardMenu(actions)) return cardElement;
+  return (
+    <ContextMenu>
+      {/* A touch hold picks the card up to drag it; touch has the always-visible options button instead. */}
+      <ContextMenuTrigger
+        asChild
+        disabled={isDragging || (touchMore && !dragDisabled)}
+      >
+        {cardElement}
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-72">
+        <ItemActionsMenuItems
+          kind="context"
+          copy={itemActionsCopy}
+          item={{
+            itemId: card.id,
+            itemKey: card.itemKey,
+            archived: Boolean(card.isArchived),
+            completed: Boolean(card.completedAt),
+          }}
+          can={{ edit: true, create: true, move: true, remove: true }}
+          on={{
+            copyLink: actions.onCopyLink,
+            openFull: onOpenDetails,
+            duplicate: actions.onDuplicate,
+            moveBoard: actions.onMoveToBoard,
+            archive: actions.onArchive,
+            remove: actions.onDelete,
+          }}
+        />
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }

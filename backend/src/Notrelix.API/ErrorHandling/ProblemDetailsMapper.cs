@@ -96,6 +96,13 @@ public static class ProblemDetailsMapper
                 exception.Message,
                 null
             ),
+            Notrelix.Application.Common.Exceptions.RevocationStoreUnavailableException => (
+                StatusCodes.Status503ServiceUnavailable,
+                ErrorCodes.RevocationUnavailable,
+                "Service unavailable",
+                "Your session could not be verified right now. Retry shortly.",
+                null
+            ),
             // Request-contract security violations (scoped request without an
             // authorization declaration, tenant context gaps) get their own
             // diagnosable category instead of a generic 500.
@@ -181,6 +188,14 @@ public static class ProblemDetailsMapper
         if (exception is Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: var ruleCode })
         {
             problemDetails.Extensions["ruleCode"] = ruleCode;
+        }
+
+        if (exception is AppConflictException { Extensions.Count: > 0 } lost)
+        {
+            foreach (var (key, value) in lost.Extensions)
+            {
+                problemDetails.Extensions[key] = value;
+            }
         }
 
         if (exception is Notrelix.Application.Common.Exceptions.PreconditionFailedException { Extensions.Count: > 0 } stale)

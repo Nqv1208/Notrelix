@@ -420,13 +420,103 @@ test.describe("Board share at smaller windows (owner)", () => {
 });
 
 /**
- * Final-M-Share (390 x 844) `chia-se`, light and dark: the share dialog is a bottom sheet from 88 px
- * under the top to the window's bottom edge, with a grab handle, a 52 px header and a 50 px add field.
- * Numbers are read from the artboard rendered in Chromium, relative to the sheet's top-left. Still
- * different from the artboard: the "Quyền khi thêm" row (the app keeps its level button and Mời on one
- * row), the department row as a chevron card, the person rows and the stacked footer (the app keeps
- * its three footer buttons); those are not measured.
+ * Final-M-Share (390 x 844), light (sang) and dark (dem), every drawn frame: `chia-se`, `doi-quyen` (the level
+ * sheet), `rieng-tu`, `nhat-ky` and `da-sao-chep` (the copied toast). Each row is one box of the artboard rendered
+ * with `render.py` in Chromium and read with the box dump: [x, y, width, height, font size, font weight, radius,
+ * background, colour, border colour] relative to the sheet's top-left (the toast against the window). The mock
+ * world carries the mockup's people, so the boxes are the artboard's own; the rows marked `data` compare x and
+ * width only (the artboard's expiry text and a guest's level are not in the product: D76.4, GOV-030), `tone`
+ * skips the colour (an avatar tone comes from the person), and the colours of the warning card and the "outside"
+ * badge are skipped in dark because the mockup draws them with an alpha the design tokens do not carry. The
+ * "Mời" button is not drawn at 390: a person picked in the search is added at once.
  */
+type Measure = readonly [
+  number,
+  number,
+  number,
+  number,
+  string,
+  string,
+  string,
+  string,
+  string,
+  string,
+];
+interface FrameRow {
+  readonly sel: string;
+  readonly kind: string;
+  readonly sang: Measure;
+  readonly dem: Measure;
+}
+// prettier-ignore
+const SHEET_FRAMES: Record<string, { readonly rows: readonly FrameRow[] }> = {"chia-se": {"rows": [{"sel": "[data-f=\"dlg\"]", "kind": "", "sang": [0, 0, 390, 756, "15px", "400", "14px 14px 0px 0px", "rgb(247, 248, 250)", "rgb(22, 26, 33)", ""], "dem": [0, 0, 390, 756, "15px", "400", "14px 14px 0px 0px", "rgb(14, 17, 22)", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"grab\"]", "kind": "", "sang": [177, 6, 36, 5, "15px", "400", "3px", "rgb(210, 215, 222)", "rgb(22, 26, 33)", ""], "dem": [177, 6, 36, 5, "15px", "400", "3px", "rgb(46, 55, 67)", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"dh\"]", "kind": "", "sang": [0, 13, 390, 52, "15px", "400", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [0, 13, 390, 52, "15px", "400", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"dt\"]", "kind": "", "sang": [20, 26.67, 314, 24.64, "17px", "650", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [20, 26.67, 314, 24.64, "17px", "650", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"ib\"]", "kind": "", "sang": [338, 17, 44, 44, "15px", "400", "12px", "transparent", "rgb(22, 26, 33)", ""], "dem": [338, 17, 44, 44, "15px", "400", "12px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"in\"]", "kind": "", "sang": [16, 71, 358, 50, "16px", "400", "12px", "rgb(255, 255, 255)", "rgb(22, 26, 33)", "rgb(210, 215, 222)"], "dem": [16, 71, 358, 50, "16px", "400", "12px", "rgb(21, 26, 33)", "rgb(230, 233, 238)", "rgb(46, 55, 67)"]}, {"sel": "#board-share-add-level", "kind": "", "sang": [20, 137.58, 97.88, 18.84, "13px", "400", "0px", "transparent", "rgb(95, 104, 117)", ""], "dem": [20, 137.58, 97.88, 18.84, "13px", "400", "0px", "transparent", "rgb(143, 153, 167)", ""]}, {"sel": "[data-f=\"lvl\"]", "kind": "", "sang": [125.88, 125, 106.48, 44, "14px", "600", "10px", "transparent", "rgb(15, 86, 174)", ""], "dem": [125.88, 125, 106.48, 44, "14px", "600", "10px", "transparent", "rgb(125, 187, 255)", ""]}, {"sel": "#board-share-acc", "kind": "", "sang": [20, 191, 350, 18.84, "13px", "600", "0px", "transparent", "rgb(95, 104, 117)", ""], "dem": [20, 191, 350, 18.84, "13px", "600", "0px", "transparent", "rgb(143, 153, 167)", ""]}, {"sel": "[data-f=\"ga\"]", "kind": "", "sang": [16, 217.84, 358, 133.75, "15px", "400", "14px", "rgb(255, 255, 255)", "rgb(22, 26, 33)", "rgb(230, 233, 238)"], "dem": [16, 217.84, 358, 133.75, "15px", "400", "14px", "rgb(21, 26, 33)", "rgb(230, 233, 238)", "rgb(35, 43, 53)"]}, {"sel": "[data-f=\"gaic\"]", "kind": "", "sang": [31, 266.72, 36, 36, "12px", "700", "10px", "rgb(30, 111, 208)", "rgb(255, 255, 255)", ""], "dem": [31, 266.72, 36, 36, "12px", "700", "10px", "rgb(30, 111, 208)", "rgb(255, 255, 255)", ""]}, {"sel": "[data-f=\"gat\"]", "kind": "", "sang": [79, 230.84, 252, 21.75, "15px", "600", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [79, 230.84, 252, 21.75, "15px", "600", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"map\"]", "kind": "", "sang": [79, 258.59, 252, 80, "15px", "400", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [79, 258.59, 252, 80, "15px", "400", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"mapc\"]:nth-child(1)", "kind": "", "sang": [79, 258.59, 128.31, 24, "12.5px", "400", "6px", "rgb(230, 233, 238)", "rgb(79, 88, 102)", ""], "dem": [79, 258.59, 128.31, 24, "12.5px", "400", "6px", "rgb(35, 42, 52)", "rgb(170, 179, 192)", ""]}, {"sel": "[data-f=\"mapc\"]:nth-child(3)", "kind": "", "sang": [79, 314.59, 124.17, 24, "12.5px", "400", "6px", "rgb(230, 233, 238)", "rgb(79, 88, 102)", ""], "dem": [79, 314.59, 124.17, 24, "12.5px", "400", "6px", "rgb(35, 42, 52)", "rgb(170, 179, 192)", ""]}, {"sel": "#board-share-people", "kind": "", "sang": [20, 373.59, 350, 18.84, "13px", "600", "0px", "transparent", "rgb(95, 104, 117)", ""], "dem": [20, 373.59, 350, 18.84, "13px", "600", "0px", "transparent", "rgb(143, 153, 167)", ""]}, {"sel": "[data-f=\"pl\"]", "kind": "data", "sang": [16, 400.44, 358, 416.13, "15px", "400", "14px", "rgb(255, 255, 255)", "rgb(22, 26, 33)", "rgb(230, 233, 238)"], "dem": [16, 400.44, 358, 416.13, "15px", "400", "14px", "rgb(21, 26, 33)", "rgb(230, 233, 238)", "rgb(35, 43, 53)"]}, {"sel": "[data-f=\"pr\"]:nth-child(1)", "kind": "", "sang": [17, 401.44, 356, 76, "15px", "400", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [17, 401.44, 356, 76, "15px", "400", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"pr\"]:nth-child(1) [data-f=\"av\"]", "kind": "tone", "sang": [31, 421.44, 36, 36, "12px", "700", "50%", "rgb(180, 80, 11)", "rgb(255, 255, 255)", ""], "dem": [31, 421.44, 36, 36, "12px", "700", "50%", "rgb(180, 80, 11)", "rgb(255, 255, 255)", ""]}, {"sel": "[data-f=\"pr\"]:nth-child(1) [data-f=\"wname\"]", "kind": "", "sang": [79, 410.88, 204.44, 20.25, "15px", "600", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [79, 410.88, 204.44, 20.25, "15px", "600", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"pr\"]:nth-child(1) [data-f=\"wsub\"]", "kind": "", "sang": [79, 432.13, 204.44, 35.88, "13px", "400", "0px", "transparent", "rgb(95, 104, 117)", ""], "dem": [79, 432.13, 204.44, 35.88, "13px", "400", "0px", "transparent", "rgb(143, 153, 167)", ""]}, {"sel": "[data-f=\"pr\"]:nth-child(1) [data-f=\"from\"]", "kind": "", "sang": [295.44, 429.28, 73.56, 20.3, "14px", "400", "0px", "transparent", "rgb(95, 104, 117)", ""], "dem": [295.44, 429.28, 73.56, 20.3, "14px", "400", "0px", "transparent", "rgb(143, 153, 167)", ""]}, {"sel": "[data-f=\"pr\"]:nth-child(2)", "kind": "", "sang": [17, 477.44, 356, 77, "15px", "400", "0px", "transparent", "rgb(22, 26, 33)", "rgb(230, 233, 238)"], "dem": [17, 477.44, 356, 77, "15px", "400", "0px", "transparent", "rgb(230, 233, 238)", "rgb(35, 43, 53)"]}, {"sel": "[data-f=\"pr\"]:nth-child(2) [data-f=\"tm\"]", "kind": "", "sang": [31, 498.44, 36, 36, "12px", "400", "10px", "rgb(230, 233, 238)", "rgb(79, 88, 102)", ""], "dem": [31, 498.44, 36, 36, "12px", "400", "10px", "rgb(35, 42, 52)", "rgb(170, 179, 192)", ""]}, {"sel": "[data-f=\"pr\"]:nth-child(2) [data-f=\"lvl-plain\"]", "kind": "", "sang": [305.98, 494.44, 63.02, 44, "14px", "600", "10px", "transparent", "rgb(15, 86, 174)", ""], "dem": [305.98, 494.44, 63.02, 44, "14px", "600", "10px", "transparent", "rgb(125, 187, 255)", ""]}, {"sel": "[data-f=\"pr\"]:nth-child(3) [data-f=\"lvl-plain\"]", "kind": "data", "sang": [273.72, 578.97, 95.28, 44, "14px", "600", "10px", "transparent", "rgb(15, 86, 174)", ""], "dem": [273.72, 578.97, 95.28, 44, "14px", "600", "10px", "transparent", "rgb(125, 187, 255)", ""]}, {"sel": "[data-f=\"pr\"]:nth-child(4) [data-f=\"badge\"]", "kind": "data", "sang": [79, 676.75, 95.61, 16.55, "12px", "600", "5px", "rgb(253, 236, 239)", "rgb(196, 35, 64)", ""], "dem": [79, 676.75, 95.61, 16.55, "12px", "600", "5px", "rgb(255, 106, 128)", "rgb(255, 107, 129)", ""]}, {"sel": "[data-f=\"pr\"]:nth-child(5) [data-f=\"from\"]", "kind": "data", "sang": [295.44, 767.41, 73.56, 20.3, "14px", "400", "0px", "transparent", "rgb(95, 104, 117)", ""], "dem": [295.44, 767.41, 73.56, 20.3, "14px", "400", "0px", "transparent", "rgb(143, 153, 167)", ""]}, {"sel": "[data-f=\"lk\"]", "kind": "data", "sang": [16, 838.56, 358, 117.11, "15px", "400", "14px", "rgb(255, 255, 255)", "rgb(22, 26, 33)", "rgb(230, 233, 238)"], "dem": [16, 838.56, 358, 117.11, "15px", "400", "14px", "rgb(21, 26, 33)", "rgb(230, 233, 238)", "rgb(35, 43, 53)"]}, {"sel": "[data-f=\"lkic\"]", "kind": "data", "sang": [31, 853.56, 36, 36, "15px", "400", "10px", "rgb(247, 248, 250)", "rgb(79, 88, 102)", "rgb(230, 233, 238)"], "dem": [31, 853.56, 36, 36, "15px", "400", "10px", "rgb(14, 17, 22)", "rgb(170, 179, 192)", "rgb(35, 43, 53)"]}, {"sel": "[data-f=\"lkt\"]", "kind": "data", "sang": [79, 853.56, 280, 21.75, "15px", "600", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [79, 853.56, 280, 21.75, "15px", "600", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"lks\"]", "kind": "data", "sang": [79, 877.31, 280, 36.91, "13px", "400", "0px", "transparent", "rgb(95, 104, 117)", ""], "dem": [79, 877.31, 280, 36.91, "13px", "400", "0px", "transparent", "rgb(143, 153, 167)", ""]}, {"sel": "[data-f=\"off\"]", "kind": "data", "sang": [79, 922.22, 280, 18.45, "13px", "500", "0px", "transparent", "rgb(79, 88, 102)", ""], "dem": [79, 922.22, 280, 18.45, "13px", "500", "0px", "transparent", "rgb(170, 179, 192)", ""]}, {"sel": "[data-f=\"df\"]", "kind": "", "sang": [0, 607, 390, 149, "15px", "400", "0px", "rgb(247, 248, 250)", "rgb(22, 26, 33)", "rgb(230, 233, 238)"], "dem": [0, 607, 390, 149, "15px", "400", "0px", "rgb(14, 17, 22)", "rgb(230, 233, 238)", "rgb(35, 43, 53)"]}, {"sel": "[data-f=\"btn-pri\"]", "kind": "", "sang": [16, 620, 358, 50, "15px", "600", "12px", "rgb(22, 102, 204)", "rgb(255, 255, 255)", "rgb(22, 102, 204)"], "dem": [16, 620, 358, 50, "15px", "600", "12px", "rgb(90, 169, 255)", "rgb(4, 17, 31)", "rgb(90, 169, 255)"]}, {"sel": "[data-f=\"logl\"]", "kind": "", "sang": [16, 678, 358, 44, "15px", "600", "12px", "transparent", "rgb(15, 86, 174)", "transparent"], "dem": [16, 678, 358, 44, "15px", "600", "12px", "transparent", "rgb(125, 187, 255)", "transparent"]}]}, "rieng-tu": {"rows": [{"sel": "[data-f=\"dlg\"]", "kind": "", "sang": [0, 0, 390, 756, "15px", "400", "14px 14px 0px 0px", "rgb(247, 248, 250)", "rgb(22, 26, 33)", ""], "dem": [0, 0, 390, 756, "15px", "400", "14px 14px 0px 0px", "rgb(14, 17, 22)", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"grab\"]", "kind": "", "sang": [177, 6, 36, 5, "15px", "400", "3px", "rgb(210, 215, 222)", "rgb(22, 26, 33)", ""], "dem": [177, 6, 36, 5, "15px", "400", "3px", "rgb(46, 55, 67)", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"dh\"]", "kind": "", "sang": [0, 13, 390, 52, "15px", "400", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [0, 13, 390, 52, "15px", "400", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"dt\"]", "kind": "", "sang": [54, 26.67, 280, 24.64, "17px", "650", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [54, 26.67, 280, 24.64, "17px", "650", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"ib\"]", "kind": "", "sang": [338, 17, 44, 44, "15px", "400", "12px", "transparent", "rgb(22, 26, 33)", ""], "dem": [338, 17, 44, 44, "15px", "400", "12px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"dh\"] button:first-child", "kind": "", "sang": [6, 17, 44, 44, "15px", "400", "12px", "transparent", "rgb(22, 26, 33)", ""], "dem": [6, 17, 44, 44, "15px", "400", "12px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"pdesc\"]", "kind": "", "sang": [20, 71, 350, 60.89, "14px", "400", "0px", "transparent", "rgb(79, 88, 102)", ""], "dem": [20, 71, 350, 60.89, "14px", "400", "0px", "transparent", "rgb(170, 179, 192)", ""]}, {"sel": "[data-f=\"warn\"]", "kind": "", "sang": [16, 145.89, 358, 86.89, "14px", "400", "12px", "rgb(255, 244, 214)", "rgb(138, 90, 0)", "rgb(235, 203, 122)"], "dem": [16, 145.89, 358, 86.89, "14px", "400", "12px", "rgb(239, 189, 74)", "rgb(242, 193, 78)", "rgb(242, 192, 77)"]}, {"sel": "[data-f=\"warn\"] b", "kind": "", "sang": [61, 159.89, 295.22, 38.3, "14px", "650", "0px", "transparent", "rgb(138, 90, 0)", ""], "dem": [61, 159.89, 295.22, 38.3, "14px", "650", "0px", "transparent", "rgb(242, 193, 78)", ""]}, {"sel": "[data-f=\"plegend\"]", "kind": "", "sang": [20, 246.78, 215.81, 18.84, "13px", "600", "0px", "transparent", "rgb(95, 104, 117)", ""], "dem": [20, 246.78, 215.81, 18.84, "13px", "600", "0px", "transparent", "rgb(143, 153, 167)", ""]}, {"sel": "[data-f=\"imp-list\"]", "kind": "", "sang": [16, 273.63, 358, 172, "15px", "400", "14px", "rgb(255, 255, 255)", "rgb(22, 26, 33)", "rgb(230, 233, 238)"], "dem": [16, 273.63, 358, 172, "15px", "400", "14px", "rgb(21, 26, 33)", "rgb(230, 233, 238)", "rgb(35, 43, 53)"]}, {"sel": "[data-f=\"ck\"]:nth-child(1)", "kind": "", "sang": [17, 274.63, 356, 56, "15px", "400", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [17, 274.63, 356, 56, "15px", "400", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"ck\"]:nth-child(1) [data-f=\"hit\"]", "kind": "", "sang": [21, 280.63, 44, 44, "15px", "400", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [21, 280.63, 44, 44, "15px", "400", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"ck\"]:nth-child(1) [data-f=\"av\"]", "kind": "tone", "sang": [75, 284.63, 36, 36, "12px", "700", "50%", "rgb(30, 111, 208)", "rgb(255, 255, 255)", ""], "dem": [75, 284.63, 36, 36, "12px", "700", "50%", "rgb(30, 111, 208)", "rgb(255, 255, 255)", ""]}, {"sel": "[data-f=\"ck\"]:nth-child(1) b", "kind": "", "sang": [121, 282.33, 238, 21.75, "15px", "600", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [121, 282.33, 238, 21.75, "15px", "600", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"ck\"]:nth-child(1) small", "kind": "", "sang": [121, 304.08, 238, 18.84, "13px", "400", "0px", "transparent", "rgb(196, 35, 64)", ""], "dem": [121, 304.08, 238, 18.84, "13px", "400", "0px", "transparent", "rgb(255, 107, 129)", ""]}, {"sel": "[data-f=\"ck\"]:nth-child(2)", "kind": "", "sang": [17, 330.63, 356, 57, "15px", "400", "0px", "transparent", "rgb(22, 26, 33)", "rgb(230, 233, 238)"], "dem": [17, 330.63, 356, 57, "15px", "400", "0px", "transparent", "rgb(230, 233, 238)", "rgb(35, 43, 53)"]}, {"sel": "[data-f=\"ck\"]:nth-child(3)", "kind": "", "sang": [17, 387.63, 356, 57, "15px", "400", "0px", "transparent", "rgb(22, 26, 33)", "rgb(230, 233, 238)"], "dem": [17, 387.63, 356, 57, "15px", "400", "0px", "transparent", "rgb(230, 233, 238)", "rgb(35, 43, 53)"]}, {"sel": "[data-f=\"pkeep\"]", "kind": "", "sang": [20, 459.63, 350, 63, "14px", "400", "0px", "transparent", "rgb(79, 88, 102)", ""], "dem": [20, 459.63, 350, 63, "14px", "400", "0px", "transparent", "rgb(170, 179, 192)", ""]}, {"sel": "[data-f=\"pnote\"]", "kind": "", "sang": [20, 530.63, 350, 58.5, "13px", "400", "0px", "transparent", "rgb(95, 104, 117)", ""], "dem": [20, 530.63, 350, 58.5, "13px", "400", "0px", "transparent", "rgb(143, 153, 167)", ""]}, {"sel": "[data-f=\"df\"]", "kind": "", "sang": [0, 607, 390, 149, "15px", "400", "0px", "rgb(247, 248, 250)", "rgb(22, 26, 33)", "rgb(230, 233, 238)"], "dem": [0, 607, 390, 149, "15px", "400", "0px", "rgb(14, 17, 22)", "rgb(230, 233, 238)", "rgb(35, 43, 53)"]}, {"sel": "[data-f=\"btn-pri\"]", "kind": "", "sang": [16, 620, 358, 50, "15px", "600", "12px", "rgb(22, 102, 204)", "rgb(255, 255, 255)", "rgb(22, 102, 204)"], "dem": [16, 620, 358, 50, "15px", "600", "12px", "rgb(90, 169, 255)", "rgb(4, 17, 31)", "rgb(90, 169, 255)"]}, {"sel": "[data-f=\"btn-cancel\"]", "kind": "", "sang": [16, 678, 96, 44, "15px", "500", "12px", "rgb(255, 255, 255)", "rgb(22, 26, 33)", "rgb(210, 215, 222)"], "dem": [16, 678, 96, 44, "15px", "500", "12px", "rgb(21, 26, 33)", "rgb(230, 233, 238)", "rgb(46, 55, 67)"]}, {"sel": "[data-f=\"btn-switch\"]", "kind": "", "sang": [122, 678, 252, 44, "15px", "500", "12px", "rgb(255, 255, 255)", "rgb(22, 26, 33)", "rgb(210, 215, 222)"], "dem": [122, 678, 252, 44, "15px", "500", "12px", "rgb(21, 26, 33)", "rgb(230, 233, 238)", "rgb(46, 55, 67)"]}]}, "nhat-ky": {"rows": [{"sel": "[data-f=\"dlg\"]", "kind": "", "sang": [0, 0, 390, 756, "15px", "400", "14px 14px 0px 0px", "rgb(247, 248, 250)", "rgb(22, 26, 33)", ""], "dem": [0, 0, 390, 756, "15px", "400", "14px 14px 0px 0px", "rgb(14, 17, 22)", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"grab\"]", "kind": "", "sang": [177, 6, 36, 5, "15px", "400", "3px", "rgb(210, 215, 222)", "rgb(22, 26, 33)", ""], "dem": [177, 6, 36, 5, "15px", "400", "3px", "rgb(46, 55, 67)", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"dh\"]", "kind": "", "sang": [0, 13, 390, 52, "15px", "400", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [0, 13, 390, 52, "15px", "400", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"dt\"]", "kind": "", "sang": [54, 26.67, 280, 24.64, "17px", "650", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [54, 26.67, 280, 24.64, "17px", "650", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"ib\"]", "kind": "", "sang": [338, 17, 44, 44, "15px", "400", "12px", "transparent", "rgb(22, 26, 33)", ""], "dem": [338, 17, 44, 44, "15px", "400", "12px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"dh\"] button:first-child", "kind": "", "sang": [6, 17, 44, 44, "15px", "400", "12px", "transparent", "rgb(22, 26, 33)", ""], "dem": [6, 17, 44, 44, "15px", "400", "12px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"lsub\"]", "kind": "", "sang": [20, 71, 350, 18.84, "13px", "400", "0px", "transparent", "rgb(95, 104, 117)", ""], "dem": [20, 71, 350, 18.84, "13px", "400", "0px", "transparent", "rgb(143, 153, 167)", ""]}, {"sel": "[data-f=\"log\"]", "kind": "data", "sang": [16, 103.84, 358, 439.36, "15px", "400", "14px", "rgb(255, 255, 255)", "rgb(22, 26, 33)", "rgb(230, 233, 238)"], "dem": [16, 103.84, 358, 439.36, "15px", "400", "14px", "rgb(21, 26, 33)", "rgb(230, 233, 238)", "rgb(35, 43, 53)"]}, {"sel": "[data-f=\"le\"]:nth-child(1)", "kind": "data", "sang": [31, 104.84, 328, 107.39, "14px", "400", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [31, 104.84, 328, 107.39, "14px", "400", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"le\"]:nth-child(1) [data-f=\"av\"]", "kind": "tone", "sang": [31, 116.84, 32, 32, "11.5px", "700", "50%", "rgb(78, 133, 116)", "rgb(255, 255, 255)", ""], "dem": [31, 116.84, 32, 32, "11.5px", "700", "50%", "rgb(78, 133, 116)", "rgb(255, 255, 255)", ""]}, {"sel": "[data-f=\"le\"]:nth-child(2)", "kind": "data", "sang": [31, 212.23, 328, 87.67, "14px", "400", "0px", "transparent", "rgb(22, 26, 33)", "rgb(230, 233, 238)"], "dem": [31, 212.23, 328, 87.67, "14px", "400", "0px", "transparent", "rgb(230, 233, 238)", "rgb(35, 43, 53)"]}]}, "da-sao-chep": {"rows": [{"sel": "[data-f=\"toast\"]", "kind": "", "sang": [16, 622.22, 358, 61.78, "14px", "500", "12px", "rgb(22, 26, 33)", "rgb(255, 255, 255)", ""], "dem": [16, 622.22, 358, 61.78, "14px", "500", "12px", "rgb(230, 233, 238)", "rgb(14, 17, 22)", ""]}, {"sel": "[data-f=\"toast\"] span", "kind": "", "sang": [60, 634.22, 300, 37.78, "14px", "500", "0px", "transparent", "rgb(255, 255, 255)", ""], "dem": [60, 634.22, 300, 37.78, "14px", "500", "0px", "transparent", "rgb(14, 17, 22)", ""]}, {"sel": "[data-f=\"toast\"] svg", "kind": "tone", "sang": [30, 643.11, 20, 20, "14px", "500", "0px", "transparent", "rgb(127, 214, 163)", ""], "dem": [30, 643.11, 20, 20, "14px", "500", "0px", "transparent", "rgb(31, 122, 74)", ""]}, {"sel": "[data-f=\"dh\"]", "kind": "", "sang": [0, 101, 390, 52, "15px", "400", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [0, 101, 390, 52, "15px", "400", "0px", "transparent", "rgb(230, 233, 238)", ""]}]}, "doi-quyen": {"rows": [{"sel": "[data-f=\"lsheet\"]", "kind": "data", "sang": [0, 0, 390, 480, "15px", "400", "14px 14px 0px 0px", "rgb(255, 255, 255)", "rgb(22, 26, 33)", ""], "dem": [0, 0, 390, 480, "15px", "400", "14px 14px 0px 0px", "rgb(21, 26, 33)", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"lsheet\"] > div:first-child", "kind": "", "sang": [177, 6, 36, 5, "15px", "400", "3px", "rgb(210, 215, 222)", "rgb(22, 26, 33)", ""], "dem": [177, 6, 36, 5, "15px", "400", "3px", "rgb(46, 55, 67)", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"lsheet\"] > div:nth-child(2)", "kind": "", "sang": [0, 13, 390, 52, "15px", "400", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [0, 13, 390, 52, "15px", "400", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"lt\"]", "kind": "", "sang": [20, 16.75, 310, 24.64, "17px", "650", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [20, 16.75, 310, 24.64, "17px", "650", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[data-f=\"lsheet\"] [data-f=\"ib\"]", "kind": "", "sang": [338, 17, 44, 44, "15px", "400", "12px", "transparent", "rgb(22, 26, 33)", ""], "dem": [338, 17, 44, 44, "15px", "400", "12px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[role=\"radiogroup\"]", "kind": "", "sang": [0, 65, 390, 248, "15px", "400", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [0, 65, 390, 248, "15px", "400", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[role=\"radio\"]:nth-child(1)", "kind": "", "sang": [0, 65, 390, 62, "15px", "400", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [0, 65, 390, 62, "15px", "400", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[role=\"radio\"]:nth-child(1) b", "kind": "tone", "sang": [20, 76.16, 314, 21.75, "15px", "600", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [20, 76.16, 314, 21.75, "15px", "600", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[role=\"radio\"]:nth-child(1) small", "kind": "", "sang": [20, 97.91, 314, 17.94, "13px", "400", "0px", "transparent", "rgb(95, 104, 117)", ""], "dem": [20, 97.91, 314, 17.94, "13px", "400", "0px", "transparent", "rgb(143, 153, 167)", ""]}, {"sel": "[role=\"radio\"]:nth-child(2)", "kind": "", "sang": [0, 127, 390, 62, "15px", "400", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [0, 127, 390, 62, "15px", "400", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[role=\"radio\"]:nth-child(3)", "kind": "", "sang": [0, 189, 390, 62, "15px", "400", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [0, 189, 390, 62, "15px", "400", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[role=\"radio\"]:nth-child(4)", "kind": "", "sang": [0, 251, 390, 62, "15px", "400", "0px", "transparent", "rgb(22, 26, 33)", ""], "dem": [0, 251, 390, 62, "15px", "400", "0px", "transparent", "rgb(230, 233, 238)", ""]}, {"sel": "[role=\"radio\"]:nth-child(4) b", "kind": "data", "sang": [20, 253.19, 314, 21.75, "15px", "600", "0px", "transparent", "rgb(79, 88, 102)", ""], "dem": [20, 253.19, 314, 21.75, "15px", "600", "0px", "transparent", "rgb(170, 179, 192)", ""]}, {"sel": "[role=\"separator\"]", "kind": "", "sang": [20, 319, 350, 1, "15px", "400", "0px", "rgb(230, 233, 238)", "rgb(22, 26, 33)", ""], "dem": [20, 319, 350, 1, "15px", "400", "0px", "rgb(35, 43, 53)", "rgb(230, 233, 238)", ""]}]}};
+
+const FRAME_ROOT: Record<string, string> = {
+  "chia-se": '[data-f="dlg"]',
+  "rieng-tu": '[data-f="dlg"]',
+  "nhat-ky": '[data-f="dlg"]',
+  "doi-quyen": '[data-f="lsheet"]',
+  "da-sao-chep": "html",
+};
+
+const DARK_COLOUR_SKIP = new Set([
+  '[data-f="warn"]',
+  '[data-f="warn"] b',
+  '[data-f="pr"]:nth-child(4) [data-f="badge"]',
+]);
+
+async function openFrame(page: Page, state: string, dark: boolean) {
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await openShare(page, dark);
+  if (state === "rieng-tu") await f(page, "ga").first().click();
+  if (state === "nhat-ky") await f(page, "logl").click();
+  if (state === "doi-quyen") await f(page, "lvl-plain").nth(2).click();
+  if (state === "da-sao-chep") await f(page, "btn-pri").click();
+  await page.waitForTimeout(500);
+}
+
+async function measureAll(
+  page: Page,
+  root: string,
+  selectors: readonly string[],
+): Promise<(Measure | null)[]> {
+  return page.evaluate(
+    ({ root, selectors }) => {
+      const origin = document.querySelector(root)!.getBoundingClientRect();
+      const rgb = (value: string) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = 1;
+        const context = canvas.getContext("2d", { willReadFrequently: true })!;
+        context.clearRect(0, 0, 1, 1);
+        context.fillStyle = "#000";
+        context.fillStyle = value;
+        context.fillRect(0, 0, 1, 1);
+        const [r, g, b, a] = context.getImageData(0, 0, 1, 1).data;
+        return a === 0 ? "transparent" : `rgb(${r}, ${g}, ${b})`;
+      };
+      return selectors.map((selector) => {
+        const element = document.querySelector(selector);
+        if (!element) return null;
+        const box = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return [
+          box.x - origin.x,
+          box.y - origin.y,
+          box.width,
+          box.height,
+          style.fontSize,
+          style.fontWeight,
+          style.borderRadius,
+          rgb(style.backgroundColor),
+          rgb(style.color),
+          style.borderTopWidth === "0px" ? "" : rgb(style.borderTopColor),
+        ] as const;
+      });
+    },
+    { root, selectors },
+  );
+}
+
 test.describe("Board share at 390 px (Final-M-Share, owner)", () => {
   test.skip(
     persona !== "owner" || scenario !== "default" || faults !== "",
@@ -434,57 +524,61 @@ test.describe("Board share at 390 px (Final-M-Share, owner)", () => {
   );
   test.use({ viewport: { width: 390, height: 844 } });
 
-  for (const dark of [false, true]) {
-    test(`the bottom sheet, grab handle, header and add field (${dark ? "dem" : "sang"})`, async ({
-      page,
-    }) => {
-      await openShare(page, dark);
-      const sheet = f(page, "dlg");
-      expectRect(
-        await box(sheet),
-        { x: 0, y: 88, width: 390, height: 756 },
-        "sheet",
-      );
-      expect(await style(sheet, "border-radius")).toBe("14px 14px 0px 0px");
-
-      expectRect(
-        await rel(page, f(page, "grab")),
-        { x: 177, y: 6, width: 36, height: 5 },
-        "grab handle",
-      );
-      expect(await style(f(page, "grab"), "border-radius")).toBe("3px");
-
-      expectRect(
-        await rel(page, f(page, "dh")),
-        { x: 0, y: 13, width: 390, height: 52 },
-        "header",
-      );
-      const title = f(page, "dt");
-      expectRect(await rel(page, title), { x: 20, y: 26.7 }, "title");
-      expect(await style(title, "font-size")).toBe("17px");
-      expect(await style(title, "font-weight")).toBe("650");
-      const close = page.getByRole("button", { name: "Đóng" }).first();
-      expectRect(
-        await rel(page, close),
-        { x: 338, y: 17, width: 44, height: 44 },
-        "close",
-      );
-
-      const field = f(page, "in");
-      expectRect(
-        await rel(page, field),
-        { x: 16, y: 71, width: 358, height: 50 },
-        "add field",
-      );
-      expect(await style(field, "border-radius")).toBe("12px");
-      // The level and the invite buttons are touch targets.
-      for (const name of ["lvl", "invite"]) {
-        expect((await box(f(page, name))).height).toBeGreaterThanOrEqual(43.5);
-      }
-      const overflow = await page.evaluate(
-        () => document.documentElement.scrollWidth - window.innerWidth,
-      );
-      expect(overflow).toBeLessThanOrEqual(0);
-    });
+  for (const state of Object.keys(SHEET_FRAMES)) {
+    for (const dark of [false, true]) {
+      const mode = dark ? "dem" : "sang";
+      test(`${state} (${mode}) matches the artboard within 1 px`, async ({
+        page,
+      }) => {
+        await openFrame(page, state, dark);
+        const { rows } = SHEET_FRAMES[state]!;
+        const actual = await measureAll(
+          page,
+          FRAME_ROOT[state]!,
+          rows.map((row) => row.sel),
+        );
+        const wrong: string[] = [];
+        rows.forEach((row, index) => {
+          const want = row[mode];
+          const got = actual[index];
+          if (!got) {
+            wrong.push(`${row.sel}: missing`);
+            return;
+          }
+          const keys = row.kind === "data" ? [0, 2] : [0, 1, 2, 3];
+          for (const key of keys) {
+            if (Math.abs((got[key] as number) - (want[key] as number)) > 1)
+              wrong.push(
+                `${row.sel}: box[${key}] ${(got[key] as number).toFixed(1)} vs ${want[key]}`,
+              );
+          }
+          if (got[4] !== want[4] || got[5] !== want[5])
+            wrong.push(
+              `${row.sel}: font ${got[4]}/${got[5]} vs ${want[4]}/${want[5]}`,
+            );
+          const round = want[6] === "50%" && parseFloat(got[6]) > 1e6;
+          if (got[6] !== want[6] && !round)
+            wrong.push(`${row.sel}: radius ${got[6]} vs ${want[6]}`);
+          if (row.kind === "tone") return;
+          if (dark && DARK_COLOUR_SKIP.has(row.sel)) return;
+          // The toast's text is the page background token (247, 248, 250), the mockup's white.
+          const soft = state === "da-sao-chep" && !dark;
+          for (const key of [7, 8, 9]) {
+            if (key === 8 && soft) continue;
+            // The mockup's amber border (235, 203, 122) has no design token: the card uses warning-text at 40%.
+            if (key === 9 && row.sel === '[data-f="warn"]') continue;
+            if (got[key] !== want[key])
+              wrong.push(
+                `${row.sel}: colour[${key}] ${got[key]} vs ${want[key]}`,
+              );
+          }
+        });
+        expect(wrong, wrong.join("\n")).toEqual([]);
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - window.innerWidth,
+        );
+        expect(overflow).toBeLessThanOrEqual(0);
+      });
+    }
   }
 });

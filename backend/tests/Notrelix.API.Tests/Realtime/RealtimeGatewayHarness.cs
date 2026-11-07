@@ -25,7 +25,8 @@ internal sealed class RealtimeGatewayHarness : IAsyncDisposable
         RealtimeGatewayOptions? options = null,
         FakeAuthorizer? authorizer = null,
         FakeCredentials? credentials = null,
-        DateTimeOffset? credentialExpiresAt = null)
+        DateTimeOffset? credentialExpiresAt = null,
+        Notrelix.Application.Common.Realtime.Gateway.IRealtimeAccessSignalSource? accessSource = null)
     {
         Options = options ?? FastOptions();
         Authorizer = authorizer ?? new FakeAuthorizer();
@@ -44,7 +45,7 @@ internal sealed class RealtimeGatewayHarness : IAsyncDisposable
             UserId, "user@example.com", "User", "jti-1", null, DateTimeOffset.UtcNow, credentialExpiresAt, Guid.NewGuid());
         Connection = new RealtimeConnection(
             server, principal, Options, Authorizer, Credentials, Source,
-            Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
+            Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance, accessSource: accessSource);
         _run = Task.Run(() => Connection.RunAsync(CancellationToken.None));
     }
 

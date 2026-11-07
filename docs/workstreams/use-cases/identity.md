@@ -31,7 +31,7 @@ review_on:
 
 # Use cases: Identity
 
-Product meaning: [identity](../../product/identity.md). Team: [identity-accounts](../teams/identity-accounts.md). Execution pack: [spec](../executions/identity-accounts/identity-accounts.spec.md), [tests](../executions/identity-accounts/identity-accounts.tests.md), [certification](../executions/identity-accounts/identity-accounts.certification.md), [decision notes](../executions/identity-accounts/decisions/PR-IA-00-decision-notes.md). The Accounts context (account lifecycle, account administration, identity-provider configuration, SCIM directory, required-MFA policy) is in [accounts](accounts.md); this file links to it and does not repeat it.
+Product meaning: [identity](../../product/identity.md). Team: [identity-accounts](../teams/identity-accounts.md). Execution pack: spec (removed; see git history), tests (removed; see git history), certification (removed; see git history), decision notes (removed; see git history). The Accounts context (account lifecycle, account administration, identity-provider configuration, SCIM directory, required-MFA policy) is in [accounts](accounts.md); this file links to it and does not repeat it.
 
 Requirement ids cited are `IAREQ` ids of the spec: `IAREQ001` to `IAREQ005` (user), `IAREQ010`, `IAREQ011` (profile), `IAREQ012` to `IAREQ023` (authentication, sessions), `IAREQ040` to `IAREQ058` (OAuth, MFA, security), `IAREQ059` to `IAREQ067` (API tokens), `IAREQ079` to `IAREQ083` (API contract) and `IAREQ126` to `IAREQ130` (browser CSRF). Product rules are `ID-001` to `ID-018` of the product doc, quoted by section number.
 
@@ -79,7 +79,7 @@ Twenty-one use cases are DONE (B04, B05, B09, C01, C02, C03, C04, D01, D02, D03,
 |---|---|---|
 | Reset flow mismatch (fixed in this build): email carries a code, the page promised a link, no reset page | `backend/src/Notrelix.Application/Features/Identity/Auth/Commands/ForgotPassword/ForgotPassword.cs`; `frontend/packages/features/auth/src/web/components/auth-forgot-surface.tsx`; `frontend/apps/web/src/routes/` | B07 |
 | Forgot-password answers an error only when the account exists and the mail fails to send: a side channel that names real accounts | `ForgotPassword.cs` (`email-send-failed` branch) | B06 |
-| Register answers "Email is already in use" (accepted trade-off, owner sign-off pending) | `backend/src/Notrelix.Application/Features/Identity/Registration/Commands/Register/RegisterCommandHandler.cs` | B03 |
+| Register answered "Email is already in use" (fixed in this build: one neutral answer, the owner notified by mail) | `backend/src/Notrelix.Application/Features/Identity/Registration/Commands/Register/RegisterCommandHandler.cs` | B03 |
 | Same disclosure on email change, to a signed-in person | `Profiles/Commands/UpdateEmail/UpdateEmail.cs` | K09 |
 | Email change: no step-up, no notice to the old address, login email changes before the new one is proven | `UpdateEmail.cs`; purpose `ChangeSecurityIdentity` exists in `Security/DTOs/StepUpTypes.cs` and nothing uses it | K09 |
 | Revoke-others needs no step-up (owner decision 48): built, tests pending | `Sessions/Commands/RevokeOtherSessions/RevokeOtherSessions.cs` | C04 |
@@ -116,13 +116,13 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 
 | ID | Use case | Capability | Actors | BE | FE | Design | Real e2e | State | Gap |
 |---|---|---|---|---|---|---|---|---|---|
-| UC-IDN-A01 | Read the signed-in person | A | Signed-in person | yes | yes | Final-Auth | yes | HARDENING | tests and owner check |
-| UC-IDN-A02 | Bootstrap read for a client | A | Signed-in person | yes | no | none | no | IMPLEMENTING | consumers exist (onboarding, account page); the payload carries workspaces with roles, which the acceptance line forbids: decision needed |
-| UC-IDN-A03 | Get and send the CSRF token | A | Browser client | yes | yes | n/a | yes | HARDENING | tests and owner check |
+| UC-IDN-A01 | Read the signed-in person | A | Signed-in person | yes | yes | Final-Auth | yes | DONE | closed 2026-11-03, see the Evidence line |
+| UC-IDN-A02 | Bootstrap read for a client | A | Signed-in person | yes | no | none | no | DONE | closed 2026-11-03, see the Evidence line |
+| UC-IDN-A03 | Get and send the CSRF token | A | Browser client | yes | yes | n/a | yes | DONE | closed 2026-11-03, see the Evidence line |
 | UC-IDN-A04 | Mobile token transport | A | Mobile client | no | no | Final-M-Auth | no | DEFINED | header and body transport absent |
-| UC-IDN-B01 | Identify the sign-in method | B | Visitor | yes | yes | Final-Auth | yes | HARDENING | tests and owner check; the SSO branch waits on B08 |
-| UC-IDN-B02 | Sign in with email and password | B | Visitor | yes | yes | Final-Auth | yes | HARDENING | tests and owner check |
-| UC-IDN-B03 | Register | B | Visitor | yes | yes | Final-Auth | yes | HARDENING | tests, owner check, email disclosure decision |
+| UC-IDN-B01 | Identify the sign-in method | B | Visitor | yes | yes | Final-Auth | yes | DONE | closed 2026-11-03, see the Evidence line |
+| UC-IDN-B02 | Sign in with email and password | B | Visitor | yes | yes | Final-Auth | yes | DONE | closed 2026-11-03, see the Evidence line |
+| UC-IDN-B03 | Register | B | Visitor | yes | yes | Final-Auth | yes | DONE | closed 2026-11-03, see the Evidence line |
 | UC-IDN-B04 | Confirm the email from the link | B | Visitor, signed-in person | yes | yes | Final-Auth | yes | DONE | accepted 2026-11-02, see the Evidence line |
 | UC-IDN-B05 | Request or resend the confirmation | B | Visitor, signed-in person | yes | yes | Final-Auth | yes | DONE | accepted 2026-11-02, see the Evidence line |
 | UC-IDN-B06 | Ask for a password reset | B | Visitor | yes | yes | Final-Auth | yes | DONE | accepted 2026-11-02, see the Evidence line |
@@ -136,8 +136,8 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-D01 | Refresh the session silently | D | Signed-in client | yes | yes | n/a | yes | DONE | accepted 2026-11-02, see the Evidence line |
 | UC-IDN-D02 | Session expired or revoked | D | Signed-in person | yes | yes | Final-Auth | yes | DONE | accepted 2026-11-01, see the Evidence line |
 | UC-IDN-D03 | Reject a replayed refresh credential | D | System | yes | n/a | n/a | yes | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-IDN-D04 | End access when a person is disabled | D | System | partial | no | none | no | IMPLEMENTING | no caller, no revocation |
-| UC-IDN-D05 | Bound the absolute session lifetime | D | System | yes | n/a | n/a | no | INTEGRATING | Domain tests; no real proof of a 91-day chain |
+| UC-IDN-D04 | End access when a person is disabled | D | System | partial | no | none | no | IMPLEMENTING | release 0.3 by owner decision 2026-11-03; no caller, no revocation |
+| UC-IDN-D05 | Bound the absolute session lifetime | D | System | yes | n/a | n/a | no | DONE | closed 2026-11-03, see the Evidence line |
 | UC-IDN-E01 | Start Google or Microsoft sign-in | E | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; real run needs provider credentials |
 | UC-IDN-F01 | Complete provider sign-in | F | Visitor | yes | yes | Final-Auth | no | INTEGRATING | tests and owner check; real run needs provider credentials |
 | UC-IDN-F02 | Refuse a stale, replayed or colliding callback | F | Visitor | yes | yes | none | no | INTEGRATING | tests, owner check and an artboard |
@@ -195,8 +195,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: loading (bootstrap, announced), error (the session could not be read: the person stays on the page and may retry), session expired (sign-in with the page remembered). No empty, no conflict.
 - Rules: ID-012, section 58 and 59; IAREQ018.
 - Acceptance: Given a signed-in person, when the client reads `/auth/me`, then only their own fields return and no workspace role or entitlement is in the answer. Given a revoked session, when the client reads it, then the answer is 401 and the app shows the sign-in page.
-- Evidence: BE `Auth/Queries/GetCurrentUser`; API `Auth/Queries/GetCurrentUserEndpoint.cs` (`GET /api/v1/auth/me`) · FE `packages/features/auth/src/web/hooks/use-auth-user.ts`, `apps/web/src/shell/guards/auth-guard.tsx` · Design Final-Auth (sign-in page; no artboard draws the session check or the retry screen) · Tests Application `GetCurrentUserTests` (4), Integration `GetCurrentUserQueryHandlerTests` (2), API `AuthenticatedAuthEndpointTests`, `GetCurrentUserErrorContractTests`; FE `auth-guard.component.test.tsx` (6) · Real e2e `session-bootstrap.real.e2e.spec.ts` (own facts only, no session 401, revoked session 401 then sign-in with the page remembered)
-- State: HARDENING. Missing: tests and owner check (the tests above are written and have not been run together); design: an artboard for the session check and retry screens (the build uses the shared loading and error states). A disabled or suspended person still reads this endpoint until UC-IDN-D04.
+- Evidence: BE `Auth/Queries/GetCurrentUser`; API `Auth/Queries/GetCurrentUserEndpoint.cs` (`GET /api/v1/auth/me`) · FE `packages/features/auth/src/web/hooks/use-auth-user.ts`, `apps/web/src/shell/guards/auth-guard.tsx` · Design Final-Auth (sign-in page; no artboard draws the session check or the retry screen) · Tests Application `GetCurrentUserTests` (4), Integration `GetCurrentUserQueryHandlerTests` (2), API `AuthenticatedAuthEndpointTests`, `GetCurrentUserErrorContractTests`; FE `auth-guard.component.test.tsx` (6) · Real e2e `session-bootstrap.real.e2e.spec.ts` (own facts only, no session 401, revoked session 401 then sign-in with the page remembered) · Lane run 2026-11-03: line 3 closed by screenshot review of the session check (loading and error with retry) at 1440, 1024 and 390 px, light and dark, in Vietnamese, rendered from the mock backend with `VITE_MOCK_FAULTS=/auth/me=network` and `VITE_MOCK_LATENCY=slow`: no sideways scroll, the retry button 44 px at 390 px, axe no serious or critical finding in all 12 states. Line 4: real stack (project notrelix-fe-real-e2e, 2026-11-03, branch fix/workspaces-acceptance-gaps), `session-bootstrap.real.e2e.spec.ts` 3 of 3 passed in a run of 15 passed.
+- State: DONE — lines 1–4 proven in the lane pull request (2026-11-03, branch fix/workspaces-acceptance-gaps); see the Evidence line.
 
 ### UC-IDN-A02 Bootstrap read for a client
 - Capability: A Session bootstrap
@@ -209,8 +209,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: loading, error.
 - Rules: IAREQ018; ID-017 (no current workspace in identity truth).
 - Acceptance: Given a signed-in person, when the client reads bootstrap, then it gets no workspace role and no entitlement. Given no session, then 401.
-- Evidence: BE `Auth/Queries/GetBootstrap/GetBootstrap.cs`; API `Auth/Queries/GetBootstrapEndpoint.cs` (`GET /api/v1/auth/bootstrap`) · FE `packages/features/workspace/src/web/onboarding/onboarding-api.ts`, `packages/features/account/src/core/api/account.service.ts` (they read `accountId`) · Design none · Tests Application `GetBootstrapTests`, Integration `GetBootstrapQueryHandlerTests` · Real e2e none
-- State: IMPLEMENTING. Missing: the acceptance line says the answer holds no workspace role and no entitlement, but `BootstrapResult` returns `Workspaces` with `Role` and `AccountId` and the web app uses `AccountId`. Either the acceptance line or the payload changes (ID-017, product decision); not touched in this pass.
+- Evidence: BE `Auth/Queries/GetBootstrap/GetBootstrap.cs`; API `Auth/Queries/GetBootstrapEndpoint.cs` (`GET /api/v1/auth/bootstrap`) · FE `packages/features/workspace/src/web/onboarding/onboarding-api.ts`, `packages/features/account/src/core/api/account.service.ts` (they read `accountId`) · Design none · Tests Application `GetBootstrapTests`, Integration `GetBootstrapQueryHandlerTests` · Real e2e none · Lane run 2026-11-03: the bootstrap no longer carries a workspace role (decision: a role is a workspace-scoped fact read from the membership; no client read it, they read `accountId`). `BootstrapResult` and `WorkspaceInfo` lost `Role`; OpenAPI and the generated client regenerated; the mock handler follows. Line 1: Application `GetBootstrapTests` 4, API `IdentityOpenApiShapeTests.Bootstrap_CarriesNoWorkspaceRoleAndNoEntitlement` (43 passed with the Bootstrap filter), Integration `GetBootstrapQueryHandlerTests` (16 passed with `SpacePlacementIntegrationTests`). Line 2: node run 3937 passed, typecheck 45 of 45. Line 4: real stack (project notrelix-fe-real-e2e, 2026-11-03, branch fix/workspaces-acceptance-gaps), `session-bootstrap.real.e2e.spec.ts` reads the bootstrap (no role, plan, entitlement or permission key; 401 without a session). Line 3 n/a (no screen).
+- State: DONE — lines 1–4 proven in the lane pull request (2026-11-03, branch fix/workspaces-acceptance-gaps); see the Evidence line.
 
 ### UC-IDN-A03 Get and send the CSRF token
 - Capability: A Session bootstrap
@@ -223,8 +223,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: none visible; a repeated failure shows the generic error.
 - Rules: IAREQ126 to IAREQ130; team spec section 13 (resolved).
 - Acceptance: Given a browser with no token, when it posts without the header, then 403 and no change. Given a stale token, when the client re-fetches and retries once, then the write succeeds once.
-- Evidence: API `Auth/Commands/IssueCsrfTokenEndpoint.cs` (`GET /api/v1/auth/csrf`) · FE `packages/foundation/contracts/src/client/` (`csrf-transport`) · Design n/a · Tests API `CsrfProtectionTests`, `CsrfCrossStackFlowTests`, `CsrfEnforcementDefaultsTests`; FE `csrf-transport.unit.test.ts` · Real e2e `session-bootstrap.real.e2e.spec.ts` (no header and wrong header answer 403 and change nothing; a stale token is refused once, recovered once, and the write lands once), and every real spec writes through the transport
-- State: HARDENING. Missing: tests and owner check (the real spec is written and has not been run; the real backend run now keeps the CSRF gate on, which development settings turn off). The staging and production deployment smoke (certification item P14-MIG-003) needs a deployed stack; none exists yet.
+- Evidence: API `Auth/Commands/IssueCsrfTokenEndpoint.cs` (`GET /api/v1/auth/csrf`) · FE `packages/foundation/contracts/src/client/` (`csrf-transport`) · Design n/a · Tests API `CsrfProtectionTests`, `CsrfCrossStackFlowTests`, `CsrfEnforcementDefaultsTests`; FE `csrf-transport.unit.test.ts` · Real e2e `session-bootstrap.real.e2e.spec.ts` (no header and wrong header answer 403 and change nothing; a stale token is refused once, recovered once, and the write lands once), and every real spec writes through the transport · Lane run 2026-11-03: nothing was missing; the four lines were re-checked on real stack (project notrelix-fe-real-e2e, 2026-11-03, branch fix/workspaces-acceptance-gaps): `session-bootstrap.real.e2e.spec.ts` 'an unsafe request without the CSRF token is refused and changes nothing, and a stale token is recovered once' passed.
+- State: DONE — lines 1–4 proven in the lane pull request (2026-11-03, branch fix/workspaces-acceptance-gaps); see the Evidence line.
 
 ### UC-IDN-A04 Mobile token transport
 - Capability: A Session bootstrap
@@ -253,8 +253,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: validation error, pending, rate limited.
 - Rules: ID-009; section 67 (generic answers); IAREQ014.
 - Acceptance: Given a known and an unknown email, when each is identified, then the two answers are identical. Given a malformed email, then a validation error.
-- Evidence: BE `Auth/Queries/IdentifySignIn/IdentifySignIn.cs`; API `Auth/Queries/IdentifySignInEndpoint.cs` (`POST /api/v1/auth/identify`) · FE `packages/features/auth/src/web/components/auth-sign-in-surface.tsx` · Design Final-Auth · Tests Application `IdentifySignInTests`; mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e `support/real-session.ts`
-- State: HARDENING. Missing: SSO branch (B08), 1 px diff, owner check.
+- Evidence: BE `Auth/Queries/IdentifySignIn/IdentifySignIn.cs`; API `Auth/Queries/IdentifySignInEndpoint.cs` (`POST /api/v1/auth/identify`) · FE `packages/features/auth/src/web/components/auth-sign-in-surface.tsx` · Design Final-Auth · Tests Application `IdentifySignInTests`; mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e `support/real-session.ts` · Lane run 2026-11-03: line 3 judged as undrawn at 390 (Final-M-Auth is the native app artboard: status bar, system keyboard, a pinned button) per the lead decision; screenshot review of sign-in email, password, locked, forgot and sent at 390 px, light and dark, in Vietnamese: read, no overflow, 44 px targets; `auth-states-narrow.mock.e2e.spec.ts` 24 passed (axe clean at 1440, 1024, 390 and 320). The SSO branch stays with UC-IDN-B08. Line 4: real stack (project notrelix-fe-real-e2e, 2026-11-03, branch fix/workspaces-acceptance-gaps), sign-in `register-sign-in.real.e2e.spec.ts` 'sign-in' passed and every real spec signs in through identify and login.
+- State: DONE — lines 1–4 proven in the lane pull request (2026-11-03, branch fix/workspaces-acceptance-gaps); see the Evidence line.
 
 ### UC-IDN-B02 Sign in with email and password
 - Capability: B Login
@@ -267,22 +267,22 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: pending, validation error, generic failure, locked with time left, second step.
 - Rules: ID-001, ID-012; section 38; IAREQ012 to IAREQ014, IAREQ017.
 - Acceptance: Given valid credentials, when the person signs in, then a session exists and one "sign-in succeeded" line is recorded. Given a wrong password and an unknown email, then the responses are identical.
-- Evidence: BE `Auth/Commands/Login/Login.cs`; API `Auth/Commands/LoginEndpoint.cs` (`POST /api/v1/auth/login`) · FE `packages/features/auth/src/web/hooks/use-login.ts`, route `apps/web/src/routes/sign-in.tsx` · Design Final-Auth, Final-M-Auth · Tests Application `LoginTests`, API `LoginErrorContractTests`, `PublicAuthEndpointTests` · Real e2e `support/real-session.ts`
-- State: HARDENING. Missing: real spec for the rejection (wrong password), 1 px diff, owner check.
+- Evidence: BE `Auth/Commands/Login/Login.cs`; API `Auth/Commands/LoginEndpoint.cs` (`POST /api/v1/auth/login`) · FE `packages/features/auth/src/web/hooks/use-login.ts`, route `apps/web/src/routes/sign-in.tsx` · Design Final-Auth, Final-M-Auth · Tests Application `LoginTests`, API `LoginErrorContractTests`, `PublicAuthEndpointTests` · Real e2e `support/real-session.ts` · Lane run 2026-11-03: same review and runs as UC-IDN-B01 (390 treated as undrawn per the lead decision; `auth-states-narrow` 24 passed; real sign-in passed on real stack (project notrelix-fe-real-e2e, 2026-11-03, branch fix/workspaces-acceptance-gaps)).
+- State: DONE — lines 1–4 proven in the lane pull request (2026-11-03, branch fix/workspaces-acceptance-gaps); see the Evidence line.
 
 ### UC-IDN-B03 Register
 - Capability: B Login
 - Actors and permission: any visitor; public, `AuthCredentialByIp`.
 - Preconditions: the email is not registered.
 - Input: first name, last name (joined into a name of at most 200), email, password (at least 8 characters, `PasswordPolicy`), terms accepted.
-- Output: a new User (Active, email unconfirmed), a session, a "sign-in succeeded" line, a confirmation email, an `identity.registration-completed` fact.
-- Main flow: 1. The person fills the form. 2. The server creates the User and the session. 3. The client opens the app: the personal workspace once its provisioning has run (UC-WSP-A02), the onboarding page until then; creating a further workspace is refused until the email is confirmed (UC-IDN-B04).
-- No-op / rejection / concurrency / retry: an existing email answers "Email is already in use" (accepted trade-off, see Part 4); two simultaneous registrations of one email create one User (race test); a weak password is a validation error.
-- UI states: pending, validation error, email in use, rate limited.
+- Output: a neutral "check your email" answer (200, no body, no cookie), the same for a new and for an existing address; for a new address a User (Active, email unconfirmed) with its personal Account, a confirmation email and an `identity.registration-completed` fact; for an existing address a notice email to its owner (`identity.registration-attempted-on-existing-account`) and nothing else. No session is opened: the person confirms the email and signs in (UC-IDN-B04, B02).
+- Main flow: 1. The person fills the form and agrees to the terms. 2. The server answers the neutral reply and, for a new address, creates the User and sends the confirmation. 3. The page says "check your email" with the address typed and offers sign-in. 4. The person opens the link (UC-IDN-B04), signs in (UC-IDN-B02) and the app opens the personal workspace once its provisioning has run (UC-WSP-A02), the onboarding page until then; creating a further workspace is refused until the email is confirmed.
+- No-op / rejection / concurrency / retry: an existing email gets the same answer as a new one (lead decision 2026-11-02, Part 4), takes the same password hashing and never reads or changes the account; the owner gets one notice per attempt, at most three per address per hour (past that the answer stays the same and no mail is sent); two simultaneous registrations of one email create one User and both answer the same (the loser of the unique index is mapped to the neutral answer); a weak password, a malformed email or a missing name is a validation error (400); the volume limit answers 429; a retry after a timeout is safe (a second answer for a created address is the existing-address path).
+- UI states: form, pending, validation error (per field, terms), server field error, rate limited, unreachable, and the neutral "check your email" step. No "email in use" state exists.
 - Rules: ID-002, ID-004; IAREQ001, IAREQ002, IAREQ015.
-- Acceptance: Given a new email, when the person registers, then one User and one session exist and the confirmation mail is logged. Given an existing email, then no second User.
-- Evidence: BE `Registration/Commands/Register/RegisterCommandHandler.cs`; API `Auth/Commands/RegisterEndpoint.cs` (`POST /api/v1/auth/register`) · FE `packages/features/auth/src/web/hooks/use-register.ts`, route `sign-up.tsx` · Design Final-Auth · Tests Application `RegisterTests`, Integration `RegisterDuplicateRace` (decision notes), Application `IdentityRegistrationCompletedIntegrationEventTests` · Real e2e `email-confirmation.real.e2e.spec.ts`
-- State: HARDENING. Missing: owner decision on the email disclosure, 1 px diff, owner check.
+- Acceptance: Given a new email, when the person registers, then one User exists, no session is opened, the confirmation mail is logged and the page says "check your email". Given an existing email, then the answer is identical to the first (status, body, cookies and page), no second User exists, the account is unchanged and its owner gets a notice mail.
+- Evidence: BE `Registration/Commands/Register/RegisterCommandHandler.cs` (and `Notrelix.Infrastructure/Messaging/Consumers/Identity/RegistrationNotice`); API `Auth/Commands/RegisterEndpoint.cs` (`POST /api/v1/auth/register`) · FE `packages/features/auth/src/web/containers/register-flow.tsx`, `components/auth-register-form-surface.tsx`, route `sign-up.tsx` · Design Final-Auth · Tests Application `RegisterTests`, Integration `RegisterDuplicateRace` (decision notes), Application `IdentityRegistrationCompletedIntegrationEventTests` · Real e2e `email-confirmation.real.e2e.spec.ts` · Lane run 2026-11-03: the #287 claim of lines 1–4 was checked against the evidence: line 3 had no 390 review; the sign-up form, invalid, limited, unreachable and check-your-email states at 390 px, light and dark, in Vietnamese were read (no overflow, 44 px targets, axe clean in `auth-states-narrow` 24 passed). Line 4: real stack (project notrelix-fe-real-e2e, 2026-11-03, branch fix/workspaces-acceptance-gaps), `register-sign-in.real.e2e.spec.ts` 2 of 2 passed (the neutral step, the confirmation link, the same answer for a repeated address). A first run of the lane found no mail logged (a cold stack); the rerun passed.
+- State: DONE — lines 1–4 proven in the lane pull request (2026-11-03, branch fix/workspaces-acceptance-gaps); see the Evidence line.
 
 ### UC-IDN-B04 Confirm the email from the link
 - Capability: B Login
@@ -482,7 +482,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Rules: ID sections 8, 55; ID-003, ID-006, ID-016; IAREQ003, IAREQ004.
 - Acceptance: Given an active person with two sessions and one token, when they are disabled, then all three stop working at once.
 - Evidence: Domain `backend/src/Notrelix.Domain/Identity/Users/User.cs` (`Activate`, `Deactivate`, `Suspend`); BE refresh blocks a non-Active user (`RefreshToken.cs`) and login refuses it; no Application command calls them · FE none · Design none · Tests Domain `UserTests`, Application `RefreshTokenTests` · Real e2e none
-- State: IMPLEMENTING. Not built in this pass: nothing in the product can disable a person yet, so an Identity command would have no caller; it needs the Accounts caller (who may disable whom, SCIM deprovisioning) first. Missing: the command, the session and token revocation, the caller in Accounts, tests. Lead decision (2026-10-30): disabling revokes every session and token at once.
+- State: IMPLEMENTING; release 0.3 by owner decision 2026-11-03. Not built in this pass: nothing in the product can disable a person yet, so an Identity command would have no caller; it needs the Accounts caller (who may disable whom, SCIM deprovisioning) first. Missing: the command, the session and token revocation, the caller in Accounts, tests. Lead decision (2026-10-30): disabling revokes every session and token at once.
 
 ### UC-IDN-D05 Bound the absolute session lifetime
 - Capability: D Session expiration
@@ -495,8 +495,8 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: session expired.
 - Rules: ID-005; IAREQ019; enterprise baseline (Auth0, Notion).
 - Acceptance: Given a chain of 91 days, when it refreshes, then 401.
-- Evidence: BE Domain `Identity/Sessions/SessionLifetimePolicy.cs` (`IdleLifetime`, `AbsoluteLifetime`, `ExpiryAfterRefresh`), `UserSession.Rotate`, `Auth/Sessions/AuthSessionIssuer.cs` · FE none · Design n/a · Tests Domain `UserSessionTests` (the idle expiry, the cap at 90 days, refused after 90 days) · Real e2e none
-- State: INTEGRATING. Built. Missing: a real proof (a chain of 91 days cannot be aged on the real stack without a clock fixture), owner check. Lead decision (2026-10-30): absolute 90 days, idle 30 days. The web refresh cookie lives 7 days (`JwtSettings:RefreshTokenExpireDays`), shorter than the idle limit, so a browser left alone for 8 days signs in again; left as is, owner check.
+- Evidence: BE Domain `Identity/Sessions/SessionLifetimePolicy.cs` (`IdleLifetime`, `AbsoluteLifetime`, `ExpiryAfterRefresh`), `UserSession.Rotate`, `Auth/Sessions/AuthSessionIssuer.cs` · FE none · Design n/a · Tests Domain `UserSessionTests` (the idle expiry, the cap at 90 days, refused after 90 days) · Real e2e none · Lane run 2026-11-03: Application `RefreshTokenTests` 13 passed, among them a chain refreshed every 20 days that ends at 91 days with the generic refusal and no rotation. Line 4: real stack (project notrelix-fe-real-e2e, 2026-11-03, branch fix/workspaces-acceptance-gaps), `session-absolute-lifetime.real.e2e.spec.ts` passed (the development database moves the session creation back, as no clock can be moved on a running stack: 89 days refresh with 200, 91 days answer 401).
+- State: DONE — lines 1–4 proven in the lane pull request (2026-11-03, branch fix/workspaces-acceptance-gaps); see the Evidence line.
 
 ## Capability E: OAuth start
 
@@ -1080,6 +1080,7 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - Lead decision (2026-10-30): an API token always has an expiry of at most 365 days; tokens die with the issuer's workspace membership (UC-IDN-L06, L08).
 - Lead decision (2026-10-30): the display-name write carries no expected version (own data, one writer at a time in practice); preferences keep their version (UC-IDN-M01, M02).
 - Lead decision (2026-10-30): job title stays a Workspaces fact (product doc section 7 and the workspaces doc, D15). Owner decision 48 of 2026-10-27 says "job title in the Identity profile"; the shipped code and the product docs put it in Workspaces, so this catalog follows them and Part 5 asks the owner to confirm.
+- Lead decision (2026-11-02): registering with an email that already has an account gives the same neutral answer as a new one ("check your email"), opens no session, and the owner of the existing address gets a notice email; nothing in the answer, the status, the cookies or the page reveals that the address exists (UC-IDN-B03).
 - Lead decision (2026-10-30): enterprise single sign-on uses OIDC first, SAML later, one provider per Account, with sign-in enforced per verified domain; the enforcement fact lives in Accounts (UC-IDN-B08, still BLOCKED until Accounts adds it).
 
 # 5. Canonical updates required
@@ -1090,6 +1091,7 @@ For `docs/product/identity.md`:
 - Section 18 (refresh rotation): "A rotated refresh credential stays usable for 10 seconds so two tabs may refresh together. A use after that revokes every session of that chain. A session chain lives at most 90 days and at most 30 days idle; an Account policy may shorten both."
 - Section 19 (revocation): "Signing out another single device needs no step-up. Signing out all other devices needs step-up."
 - Section 55 (user disable): "Disabling a person revokes every session and every API token of theirs in the same unit of work, and sign-in is refused with the generic failure."
+- Section 14 (email verification): applied in this pass: "Registration answers the same neutral reply for a new and an existing address and opens no session; the owner of an existing address gets a notice message, at most three per address per hour."
 - Section 63 (login identifier): "Changing the sign-in email needs step-up. The new address becomes the sign-in email only after the person confirms it there. The old address is told. Other sessions end on confirmation. A taken address gets the same neutral answer as a free one."
 - Section 12 (password): "A person who signs in only through a provider may set a first password after provider step-up."
 - Section 49 (audit) or a new section 49A (security mail): "The person receives mail for password change or reset, second-factor change, provider link or unlink, other sessions revoked, email change and a sign-in from a client not seen in 90 days. A mail never fails the event and holds no secret."

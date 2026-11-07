@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
@@ -24,9 +25,11 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
     private readonly IBoardRealtimeNotifier? _realtime;
     private readonly IActorLookupService? _actors;
     private readonly ICurrentRequestContext? _requestContext;
+    private readonly IResourceVisibility? _visibility;
 
-    public UpdateBoardItemFieldValueCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, IBoardRealtimeNotifier? realtime = null, IActorLookupService? actors = null, ICurrentRequestContext? requestContext = null)
+    public UpdateBoardItemFieldValueCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, IBoardRealtimeNotifier? realtime = null, IActorLookupService? actors = null, ICurrentRequestContext? requestContext = null, IResourceVisibility? visibility = null)
     {
+        _visibility = visibility;
         _actors = actors;
         _requestContext = requestContext;
         _realtime = realtime;
@@ -63,15 +66,37 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
                 ? new NotFoundException("BoardField", request.FieldId)
                 : await BoardFields.StaleFieldGuard.MissingAsync(_context, _actors, _requestContext, item.BoardId, request.FieldId, cancellationToken);
 
-        // A person field names who the work is for: a board Viewer is not offered there.
-        if (field.Type == FieldType.Person && request.Value is not null
-            && Guid.TryParse(System.Text.Json.JsonSerializer.Serialize(request.Value).Trim('"'), out var named))
-            await BoardAssigneeGuard.EnsureNotViewerAsync(_context, item.BoardId, named, cancellationToken);
+        // A person field names who the work is for. The value is validated first (shape, size, at most 50 people),
+        // so only a well-formed set reaches the checks: each person must be able to view the board (share it
+        // first) and a board Viewer is not offered there.
+        if (field.Type == FieldType.Person && request.Value is not null)
+        {
+            FieldValueValidator.Validate(FieldValue.Create(JsonValue.Create(System.Text.Json.JsonSerializer.Serialize(request.Value))), field.Type, field.Settings);
+            var named = new HashSet<Guid>();
+            using (var doc = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(request.Value)))
+            {
+                var root = doc.RootElement;
+                if (root.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    foreach (var e in root.EnumerateArray()) named.Add(Guid.Parse(e.GetString()!));
+                else if (root.ValueKind == System.Text.Json.JsonValueKind.String)
+                    named.Add(Guid.Parse(root.GetString()!));
+            }
+            if (named.Count > 0)
+            {
+                if (_visibility is not null && _requestContext is not null)
+                    foreach (var userId in named)
+                        if (!(await _visibility.VisibleBoardIdsAsync(item.WorkspaceId, userId, cancellationToken)).Contains(item.BoardId))
+                            throw new ForbiddenException("Người này chưa xem được board của việc, nên chưa thể chọn. Hãy chia sẻ board với họ trước.", BoardAssigneeGuard.BoardNotSharedCode);
+                await BoardAssigneeGuard.EnsureNoneViewerAsync(_context, item.BoardId, named, cancellationToken);
+            }
+        }
 
         var now = _timeProvider.UtcNow;
         var jsonString = System.Text.Json.JsonSerializer.Serialize(request.Value);
         var fieldValue = FieldValue.Create(JsonValue.Create(jsonString));
 
+        BoardFields.StaleFieldGuard.EnsureOptionsExist(field, fieldValue);
+        BoardItemFieldWrites.EnsureNotClearingRequired(field, fieldValue);
         var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, item.BoardId, cancellationToken);
         BoardItemFieldWrites.Write(item, field, fieldValue, statusField, _currentUser.UserId, now);
 

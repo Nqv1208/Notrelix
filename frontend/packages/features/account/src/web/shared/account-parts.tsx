@@ -16,7 +16,7 @@ export const BTN =
 export const BTN_PRIMARY =
   "inline-flex h-8 max-sm:min-h-11 items-center gap-1.5 rounded-[7px] border border-primary bg-primary px-3 text-compact leading-[1.45] font-semibold whitespace-nowrap text-primary-foreground hover:bg-primary/90 disabled:cursor-default disabled:opacity-60";
 export const BTN_SM =
-  "inline-flex h-7 max-sm:min-h-11 items-center gap-1.5 rounded-[7px] border border-line-strong bg-popover px-2.5 text-crumb leading-[1.45] font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong disabled:cursor-default disabled:opacity-60 dark:bg-card";
+  "inline-flex h-7 max-sm:min-h-11 max-sm:min-w-11 max-sm:justify-center items-center gap-1.5 rounded-[7px] border border-line-strong bg-popover px-2.5 text-crumb leading-[1.45] font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong disabled:cursor-default disabled:opacity-60 dark:bg-card";
 export const BTN_DANGER =
   "inline-flex h-8 max-sm:min-h-11 items-center gap-1.5 rounded-[7px] border border-danger-text bg-danger-text px-3 text-compact leading-[1.45] font-semibold whitespace-nowrap text-danger-foreground hover:bg-danger-text/90 disabled:cursor-default disabled:opacity-60";
 /** Final-Account `.lnkb`: a text button, 12.5 px semibold. */

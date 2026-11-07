@@ -4,6 +4,7 @@ import { workspaceQueryKey } from "@notrelix/query";
 import type {
   BoardSettingsDto,
   BoardSettingsWriteResult,
+  FormulaPreviewDraft,
 } from "@notrelix/work-management-core";
 import type { BoardSettingsApi } from "../api/board-settings.api";
 import { useWorkManagementServices } from "../services";
@@ -130,6 +131,9 @@ export function useBoardSettings(boardId: string, workspaceId: string) {
             ...ruleCodeOf(caught),
           };
         }
+        // What was written to is gone (someone else deleted it): read the settings again so the
+        // page shows that, instead of offering to retry a write that cannot land.
+        if (errorKind(caught) === "not_found") void refresh();
         return { ok: false, reason: "failed" };
       }
     },
@@ -142,8 +146,16 @@ export function useBoardSettings(boardId: string, workspaceId: string) {
     [boardId, boardSettings],
   );
 
+  /** What a draft formula shows on `itemId`; null when the server could not be asked. */
+  const previewFormula = useCallback(
+    (itemId: string, draft: FormulaPreviewDraft) =>
+      boardSettings.previewFormula(boardId, itemId, draft).catch(() => null),
+    [boardId, boardSettings],
+  );
+
   return {
     readLatest,
+    previewFormula,
     settings: query.data ?? null,
     isLoading: query.isLoading,
     isError: query.isError && !forbidden && !notFound,

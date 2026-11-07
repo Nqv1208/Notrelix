@@ -4,10 +4,12 @@ import { useLocale } from "@notrelix/i18n";
 import {
   useBoardKanban,
   useBoardPlanItems,
+  useBoardView,
   useCreateDatedItem,
   useUpdateCard,
 } from "@notrelix/work-management-state";
 import {
+  resolveCalendarDateField,
   serializeCompoundFilter,
   type Card,
 } from "@notrelix/work-management-core";
@@ -42,6 +44,8 @@ import {
   diffDays,
   formatDayMonth,
   toDayKey,
+  calendarDateFields,
+  resolveCalendarDateBasis,
   type CalendarDateBasis,
   type CalendarEntry,
   type CalendarRange,
@@ -74,6 +78,8 @@ export interface BoardCalendarViewProps {
     id: string | undefined,
     options?: { replace?: boolean },
   ) => void;
+  /** Opens an item of any board (a link or a dependency of the open item); absent: only this board's items open. */
+  onOpenItem?: (boardId: string, itemId: string) => void;
   /** The route `filter` parameter (`serializeKanbanFilter` form), shared with the Kanban. */
   filter?: string;
   /**
@@ -100,6 +106,7 @@ export function BoardCalendarView({
   selectedItemId,
   currentUserId,
   onSelectedItemChange,
+  onOpenItem,
   filter: filterParam,
   onFilterChange,
   timeZone: timeZoneProp,
@@ -112,7 +119,10 @@ export function BoardCalendarView({
   const timeZone = timeZoneProp ?? runtimeZone();
 
   const [range, setRange] = useState<CalendarRange>("month");
-  const [dateBasis, setDateBasis] = useState<CalendarDateBasis>("span");
+  // The basis is the shared view's (`calendarDateField`); a member who cannot
+  // edit the view picks one for this visit only.
+  const { viewConfig, updateViewConfig } = useBoardView(boardId, workspaceId);
+  const [localBasis, setLocalBasis] = useState<CalendarDateBasis | null>(null);
   const todayParts = calendarParts(now, timeZone);
   const today = toDayKey(todayParts.year, todayParts.month, todayParts.day);
   const nowMinutes = todayParts.hour * 60 + todayParts.minute;
@@ -154,6 +164,21 @@ export function BoardCalendarView({
   const canEdit = capabilities.canMoveCard && capabilities.canCreateCard;
 
   const { board } = kanban;
+  const dateFields = useMemo(
+    () => calendarDateFields(kanban.filterFields),
+    [kanban.filterFields],
+  );
+  const savedBasis = resolveCalendarDateField(viewConfig);
+  const dateBasis = resolveCalendarDateBasis(
+    localBasis ?? savedBasis,
+    dateFields,
+  );
+  const setDateBasis = (basis: CalendarDateBasis) => {
+    if (capabilities.canEditFields) {
+      setLocalBasis(null);
+      updateViewConfig({ calendarDateField: basis });
+    } else setLocalBasis(basis);
+  };
 
   // Phases and milestones belong to nobody: any filter hides them with the
   // items it filters out, as Final-Calendar's empty state shows.
@@ -168,8 +193,10 @@ export function BoardCalendarView({
         copy,
         timeZone,
         planItems: shownPlanItems,
+        dateFieldId:
+          dateBasis === "span" || dateBasis === "due" ? undefined : dateBasis,
       }),
-    [kanban.lanes, today, copy, timeZone, shownPlanItems],
+    [kanban.lanes, today, copy, timeZone, shownPlanItems, dateBasis],
   );
   // A refused write keeps the new dates on screen until it is retried or the
   // item is reloaded: never a silent revert.
@@ -434,6 +461,7 @@ export function BoardCalendarView({
         zoneName={zoneName}
         dateBasis={dateBasis}
         onDateBasisChange={setDateBasis}
+        dateFields={dateFields}
         entries={shownEntries}
         undatedTotal={undatedTotal}
         undated={built.undated}
@@ -493,6 +521,10 @@ export function BoardCalendarView({
       {selectedItemId && board ? (
         <KanbanSelectedItem
           board={board}
+          onOpenItem={(targetBoardId, itemId) => {
+            if (onOpenItem) onOpenItem(targetBoardId, itemId);
+            else if (targetBoardId === boardId) onSelectedItemChange?.(itemId);
+          }}
           cardId={selectedItemId}
           capabilities={capabilities}
           groups={sheetGroups}

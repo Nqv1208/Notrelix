@@ -9,6 +9,7 @@ namespace Notrelix.Application.EventMappers.WorkManagement;
 /// </summary>
 public sealed class ApprovalEventMapper :
     IntegrationEventMapperBase<ApprovalStepAssignedDomainEvent, ApprovalRequestedIntegrationEvent>,
+    IIntegrationEventMapper<ApprovalTeamStepAssignedDomainEvent, ApprovalTeamRequestedIntegrationEvent>,
     IIntegrationEventMapper<ApprovalRequestApprovedDomainEvent, ApprovalDecidedIntegrationEvent>,
     IIntegrationEventMapper<ApprovalRequestRejectedDomainEvent, ApprovalDecidedIntegrationEvent>
 {
@@ -21,6 +22,22 @@ public sealed class ApprovalEventMapper :
             TargetKind: domainEvent.Target.Kind.Value,
             TargetId: domainEvent.Target.ResourceId,
             ApproverUserId: domainEvent.ApproverUserId,
+            RequestedBy: domainEvent.RequestedBy,
+            Title: domainEvent.Title,
+            Note: domainEvent.Note,
+            CorrelationId: domainEvent.EventId,
+            SourceEventId: domainEvent.EventId,
+            OccurredAt: domainEvent.OccurredAt);
+
+    public ApprovalTeamRequestedIntegrationEvent? Map(ApprovalTeamStepAssignedDomainEvent domainEvent) =>
+        new(
+            EventId: Guid.CreateVersion7(),
+            AccountIdValue: domainEvent.AccountId,
+            WorkspaceIdValue: domainEvent.WorkspaceId,
+            RequestId: domainEvent.RequestId,
+            TargetKind: domainEvent.Target.Kind.Value,
+            TargetId: domainEvent.Target.ResourceId,
+            ApproverTeamId: domainEvent.ApproverTeamId,
             RequestedBy: domainEvent.RequestedBy,
             Title: domainEvent.Title,
             Note: domainEvent.Note,
@@ -58,6 +75,7 @@ public sealed class ApprovalEventMapper :
         IIntegrationEvent? mapped = domainEvent switch
         {
             ApprovalStepAssignedDomainEvent assigned => Map(assigned),
+            ApprovalTeamStepAssignedDomainEvent teamAssigned => Map(teamAssigned),
             ApprovalRequestApprovedDomainEvent approved => Map(approved),
             ApprovalRequestRejectedDomainEvent rejected => Map(rejected),
             _ => null,

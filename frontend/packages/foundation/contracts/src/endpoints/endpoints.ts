@@ -204,8 +204,8 @@ export const endpoints = {
     // WorkManagement.Boards.ListArchived / ListDeleted: boards that left the working set.
     archivedByWorkspaceId: (workspaceId: string) =>
       `/workspaces/${workspaceId}/boards/archived`,
-    deletedByWorkspaceId: (workspaceId: string) =>
-      `/workspaces/${workspaceId}/boards/deleted`,
+    deletedByWorkspaceId: (workspaceId: string, spaceId?: string | null) =>
+      `/workspaces/${workspaceId}/boards/deleted${spaceId ? `?spaceId=${encodeURIComponent(spaceId)}` : ""}`,
     detail: (boardId: string) => `/boards/${boardId}`,
     // WorkManagement.Boards.Archive / Unarchive / Restore carry the board version the person saw.
     archive: (boardId: string) => `/boards/${boardId}/archive`,
@@ -318,6 +318,12 @@ export const endpoints = {
     archive: (groupId: string) => `/board-groups/${groupId}/archive`,
     unarchive: (groupId: string) => `/board-groups/${groupId}/unarchive`,
   },
+  // WorkManagement.Approvals.Decide / Cancel: answering and withdrawing an approval request.
+  approvals: {
+    decision: (workspaceId: string, requestId: string) =>
+      `/workspaces/${workspaceId}/approvals/${requestId}/decision`,
+    cancel: (requestId: string) => `/approvals/${requestId}/cancel`,
+  },
   boardItems: {
     create: (boardId: string) => `/boards/${boardId}/items`,
     bulk: (boardId: string) => `/boards/${boardId}/items/bulk`,
@@ -326,7 +332,24 @@ export const endpoints = {
     linkPage: (itemId: string) => `/board-items/${itemId}/link-page`,
     duplicate: (itemId: string) => `/board-items/${itemId}/duplicate`,
     archive: (itemId: string) => `/board-items/${itemId}/archive`,
+    unarchive: (itemId: string) => `/board-items/${itemId}/unarchive`,
+    // WorkManagement.BoardItems.Trash / .Archived: the board's deleted and archived items, a page at a time.
+    trash: (boardId: string) => `/boards/${boardId}/items/trash`,
+    archived: (boardId: string) => `/boards/${boardId}/items/archived`,
+    restore: (itemId: string) => `/board-items/${itemId}/restore`,
+    // WorkManagement.BoardItems.ListLinks / CreateLink / DeleteLink: the links of an item, seen from the item.
+    links: (itemId: string) => `/board-items/${itemId}/links`,
+    link: (itemId: string, linkId: string) =>
+      `/board-items/${itemId}/links/${linkId}`,
+    // WorkManagement.Approvals.ListForItem / RequestForItem.
+    approvalRequests: (itemId: string) =>
+      `/board-items/${itemId}/approval-requests`,
     complete: (itemId: string) => `/board-items/${itemId}/complete`,
+    reopen: (itemId: string) => `/board-items/${itemId}/reopen`,
+    moveToBoard: (itemId: string) => `/board-items/${itemId}/move-to-board`,
+    remind: (itemId: string) => `/board-items/${itemId}/remind`,
+    // Collaboration.Watchers.GetBoardItemFollowing / FollowBoardItem / UnfollowBoardItem.
+    following: (itemId: string) => `/board-items/${itemId}/following`,
     status: (itemId: string) => `/board-items/${itemId}/status`,
     fieldValues: (itemId: string) => `/board-items/${itemId}/field-values`,
     fieldValue: (itemId: string, fieldId: string) =>
@@ -361,6 +384,19 @@ export const endpoints = {
       `/boards/${boardId}/fields/${fieldId}/options`,
     option: (boardId: string, fieldId: string, optionId: string) =>
       `/boards/${boardId}/fields/${fieldId}/options/${optionId}`,
+    // WorkManagement.BoardFields.PreviewFormula: a draft formula or rollup evaluated on one item, never saved.
+    previewFormula: (
+      boardId: string,
+      itemId: string,
+      draft:
+        | { expression: string }
+        | { rollupFunction: string; rollupFieldId?: string | null },
+    ) =>
+      `/boards/${boardId}/fields/preview-formula?itemId=${itemId}&${
+        "expression" in draft
+          ? `expression=${encodeURIComponent(draft.expression)}`
+          : `rollupFunction=${draft.rollupFunction}${draft.rollupFieldId ? `&rollupFieldId=${draft.rollupFieldId}` : ""}`
+      }`,
   },
   // WorkManagement.SavedFilters.*: listed and created per board, changed by filter id.
   savedFilters: {

@@ -54,7 +54,10 @@ import {
   kanbanLaneKey,
   type KanbanMoveDirection,
 } from "./kanban-dnd";
-import { kanbanColumnWidthClass } from "./kanban-layout";
+import {
+  kanbanColumnTabletWidthClass,
+  kanbanColumnWidthClass,
+} from "./kanban-layout";
 import type { KanbanLaneCopy } from "./kanban-lane.copy";
 
 /** Lane tint by status category; lanes without a category use the neutral tint. */
@@ -113,6 +116,8 @@ export interface KanbanColumnProps {
   selectedItemId?: string;
   /** A filter or search narrows the board: empty lanes say so. */
   filterActive: boolean;
+  /** The whole board has no item: a lane shows the plain two-line hint. */
+  boardEmpty?: boolean;
   canAdd: boolean;
   canDrag: boolean;
   /** The dragged card is over this lane: it is where the card would land. */
@@ -177,6 +182,7 @@ export function KanbanColumn({
   timeZone,
   selectedItemId,
   filterActive,
+  boardEmpty = false,
   canAdd,
   canDrag,
   dropTarget = false,
@@ -410,8 +416,9 @@ export function KanbanColumn({
       data-lane-count={count}
       data-drop-target={dropTarget ? "" : undefined}
       className={cn(
-        "flex shrink-0 flex-col gap-2 rounded-xl p-2 transition-shadow duration-150",
+        "flex shrink-0 flex-col gap-2 rounded-xl p-2 transition-shadow duration-150 tablet:rounded-[16px] tablet:pt-1.5",
         kanbanColumnWidthClass,
+        kanbanColumnTabletWidthClass,
         tint,
         dropTarget && "ring-2 ring-inset ring-primary",
       )}
@@ -426,13 +433,16 @@ export function KanbanColumn({
         }}
       >
         <PopoverAnchor asChild>
-          <div className="flex min-h-8 items-center gap-1.5 pr-0 pl-1.5">
+          <div className="flex min-h-8 items-center gap-1.5 pr-0 pl-1.5 tablet:min-h-11 tablet:gap-2.25 tablet:pl-2">
             <span
               aria-hidden="true"
-              className={cn("size-2.25 shrink-0 rounded-full", dot)}
+              className={cn(
+                "size-2.25 shrink-0 rounded-full tablet:size-2.5",
+                dot,
+              )}
               style={dotStyle}
             />
-            <h2 className="min-w-0 truncate text-nav font-semibold text-foreground">
+            <h2 className="min-w-0 truncate text-nav font-semibold text-foreground tablet:text-[15px] tablet:leading-[1.45] tablet:font-[650]">
               {name}
             </h2>
             <span
@@ -444,7 +454,7 @@ export function KanbanColumn({
                   : fillCopy(copy.wipLimitTitle, { limit: wipLimit })
               }
               className={cn(
-                "grid h-5.5 min-w-5.5 shrink-0 place-items-center rounded-[11px] px-1.5 text-caption font-semibold tabular-nums",
+                "grid h-5.5 min-w-5.5 shrink-0 place-items-center rounded-[11px] px-1.5 text-caption font-semibold tabular-nums tablet:h-6 tablet:min-w-6 tablet:rounded-[12px] tablet:text-[12.5px]",
                 wipState === "over"
                   ? "bg-danger-subtle text-danger-subtle-foreground"
                   : wipState === "full"
@@ -464,7 +474,7 @@ export function KanbanColumn({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className="ml-auto size-7 rounded-[7px] text-meta-foreground hover:bg-state-hover-strong"
+                className="ml-auto size-7 rounded-[7px] text-meta-foreground hover:bg-state-hover-strong tablet:hidden"
                 aria-label={fillCopy(copy.addToLane, { lane: name })}
                 onClick={onRequestCreate}
               >
@@ -475,7 +485,7 @@ export function KanbanColumn({
               variant="ghost"
               size="icon-sm"
               className={cn(
-                "size-7 rounded-[7px] text-meta-foreground hover:bg-state-hover-strong",
+                "size-7 rounded-[7px] text-meta-foreground hover:bg-state-hover-strong tablet:hidden",
                 !(canAdd && onRequestCreate) && "ml-auto",
               )}
               aria-label={fillCopy(copy.collapseLane, { lane: name })}
@@ -488,10 +498,13 @@ export function KanbanColumn({
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  className="size-7 rounded-[7px] text-meta-foreground hover:bg-state-hover-strong"
+                  className="size-7 rounded-[7px] text-meta-foreground hover:bg-state-hover-strong tablet:ml-auto tablet:size-11 tablet:rounded-[10px]"
                   aria-label={fillCopy(copy.laneOptions, { lane: name })}
                 >
-                  <MoreHorizontal aria-hidden="true" className="size-4" />
+                  <MoreHorizontal
+                    aria-hidden="true"
+                    className="size-4 tablet:size-5"
+                  />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -756,6 +769,15 @@ export function KanbanColumn({
               lane.total,
             )}
           </div>
+        ) : boardEmpty ? (
+          <p
+            data-lane-empty="board"
+            className="m-0 rounded-[11px] border-[1.5px] border-dashed border-line-strong px-3 py-4 text-center text-[12px] leading-[1.45] text-muted-foreground"
+          >
+            {copy.emptyTitle}
+            <br />
+            {copy.emptyBoardHint}
+          </p>
         ) : (
           <div
             data-lane-empty="empty"
@@ -854,7 +876,12 @@ export function KanbanColumn({
           laneName={name}
           copy={copy}
           openRequest={openAddRequest}
-          onSubmit={onCreateItem}
+          onSubmit={(title) => {
+            // The new item lands at the bottom: open the lane so it is in view.
+            setExpanded(true);
+            setPageShown((shown) => Math.max(shown, loaded + 1));
+            return onCreateItem(title);
+          }}
           onExpand={onExpandCreate}
         />
       ) : null}

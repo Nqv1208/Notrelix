@@ -18,7 +18,7 @@ Example:
 New Work Management public event
 
 Product meaning
-→ docs/product/contexts/work-management.md
+→ docs/product/work-management.md
 
 Cross-stack event compatibility
 → docs/architecture/events-realtime-and-delivery-boundary.md
@@ -29,10 +29,10 @@ Backend event/outbox implementation
 → backend/docs/architecture/platform-and-messaging.md
 
 Automation consumer semantics
-→ docs/product/contexts/automation.md
+→ docs/product/automation.md
 
 Migration/rollout if breaking
-→ docs/delivery/change-impact-and-migration.md
+→ docs/delivery/migration-policy.md
 ```
 
 Those files own different questions.
@@ -48,7 +48,7 @@ Start by identifying the **kind of question** you are trying to answer.
 | Question | First owner |
 |---|---|
 | What is Notrelix? | [`PRODUCT.md`](PRODUCT.md) |
-| What does this business concept mean? | `docs/product/contexts/<owner>.md` |
+| What does this business concept mean? | `docs/product/<owner>.md` |
 | What repository-wide invariant applies? | [`RULE.md`](RULE.md) |
 | How should a Coding Agent execute this task? | [`AGENTS.md`](AGENTS.md) |
 | What is true in the repository right now? | [`CONTEXT.md`](CONTEXT.md) |
@@ -59,8 +59,11 @@ Start by identifying the **kind of question** you are trying to answer.
 | How should a frontend concern be implemented? | `frontend/docs/architecture/<concern>.md` |
 | Why was a consequential design chosen? | relevant ADR registry |
 | What exact project/package inventory exists? | executable manifest/generated evidence |
-| How must a breaking change migrate? | `docs/delivery/change-impact-and-migration.md` |
+| How must a breaking change migrate? | `docs/delivery/migration-policy.md` |
 | How is documentation authority governed? | `docs/governance/documentation-authority.md` |
+| What is the live delivery state of a use case? | `docs/workstreams/use-cases/<context>.md` (non-normative evidence) |
+| When is a use case DONE and how is a release accepted? | `docs/delivery/product-delivery-lifecycle.md` |
+| Which release holds a use case? | `docs/workstreams/product-roadmap.md` (plan) |
 
 ---
 
@@ -133,7 +136,7 @@ Read:
 
 ```text
 PRODUCT.md
-docs/product/contexts/accounts.md
+docs/product/accounts.md
 ```
 
 Use for:
@@ -147,7 +150,7 @@ Use for:
 Also read when relevant:
 
 ```text
-docs/product/contexts/billing.md
+docs/product/billing.md
 docs/product/governance.md
 backend/docs/architecture/security-tenancy-authorization.md
 ```
@@ -160,7 +163,7 @@ Read:
 
 ```text
 PRODUCT.md
-docs/product/contexts/identity.md
+docs/product/identity.md
 ```
 
 Use for:
@@ -251,7 +254,7 @@ Read:
 
 ```text
 PRODUCT.md
-docs/product/contexts/work-management.md
+docs/product/work-management.md
 ```
 
 Use for:
@@ -307,7 +310,7 @@ Read:
 
 ```text
 PRODUCT.md
-docs/product/contexts/documents.md
+docs/product/documents.md
 ```
 
 Use for:
@@ -321,7 +324,7 @@ Use for:
 Cross-capability collaboration:
 
 ```text
-docs/product/contexts/collaboration.md
+docs/product/collaboration.md
 ```
 
 Frontend implementation may involve Documents product packages but package shape does not redefine product semantics.
@@ -334,7 +337,7 @@ Read:
 
 ```text
 PRODUCT.md
-docs/product/contexts/collaboration.md
+docs/product/collaboration.md
 ```
 
 Use for:
@@ -371,7 +374,7 @@ Read:
 
 ```text
 PRODUCT.md
-docs/product/contexts/automation.md
+docs/product/automation.md
 ```
 
 Use for:
@@ -407,7 +410,7 @@ Read:
 
 ```text
 PRODUCT.md
-docs/product/contexts/integrations.md
+docs/product/integrations.md
 ```
 
 Use for:
@@ -446,7 +449,7 @@ Read:
 
 ```text
 PRODUCT.md
-docs/product/contexts/billing.md
+docs/product/billing.md
 ```
 
 Use for:
@@ -464,7 +467,7 @@ Do not infer Billing semantics from provider statuses alone.
 Provider implementation may also require:
 
 ```text
-docs/product/contexts/integrations.md
+docs/product/integrations.md
 backend/docs/architecture/infrastructure-and-data.md
 ```
 
@@ -476,7 +479,7 @@ Read:
 
 ```text
 PRODUCT.md
-docs/product/contexts/analytics.md
+docs/product/analytics.md
 ```
 
 Use for:
@@ -575,7 +578,7 @@ docs/architecture/bounded-context-map.md
 Then read the owning:
 
 ```text
-docs/product/contexts/<context>.md
+docs/product/<context>.md
 ```
 
 Use for:
@@ -914,7 +917,7 @@ owning product context
 For integration providers:
 
 ```text
-docs/product/contexts/integrations.md
+docs/product/integrations.md
 ```
 
 For secrets/security:
@@ -1007,7 +1010,7 @@ Business authorization remains Application-owned.
 Read:
 
 ```text
-docs/product/contexts/identity.md
+docs/product/identity.md
 backend/docs/architecture/security-tenancy-authorization.md
 backend/docs/architecture/api-and-contracts.md
 ```
@@ -1071,7 +1074,7 @@ backend/docs/operations/migrations-and-data-change.md
 Also read:
 
 ```text
-docs/delivery/change-impact-and-migration.md
+docs/delivery/migration-policy.md
 backend/docs/architecture/infrastructure-and-data.md
 ```
 
@@ -1747,7 +1750,7 @@ operational change
 Read:
 
 ```text
-docs/delivery/change-impact-and-migration.md
+docs/delivery/migration-policy.md
 ```
 
 Also read the affected contract/product/data owners.
@@ -1792,10 +1795,26 @@ Use for:
 Read:
 
 ```text
-docs/delivery/release-rollout-and-recovery.md
+docs/delivery/release-and-rollout.md
 ```
 
 Also read migration/operations docs.
+
+---
+
+## 11.5 Use-case acceptance, release scope, release acceptance
+
+Read:
+
+```text
+docs/delivery/product-delivery-lifecycle.md
+```
+
+For what each release holds and in what order (a plan, not authority):
+
+```text
+docs/workstreams/product-roadmap.md
+```
 
 ---
 
@@ -2205,7 +2224,7 @@ Read:
 
 ```text
 PRODUCT.md
-docs/product/contexts/work-management.md
+docs/product/work-management.md
 
 RULE.md
     NRX-001
@@ -2228,8 +2247,8 @@ docs/quality/performance-and-scalability.md
 If automation/analytics consume it:
 
 ```text
-docs/product/contexts/automation.md
-docs/product/contexts/analytics.md
+docs/product/automation.md
+docs/product/analytics.md
 ```
 
 ---
@@ -2269,7 +2288,7 @@ backend/docs/architecture/domain-modeling.md
 backend/docs/architecture/infrastructure-and-data.md
 backend/docs/operations/migrations-and-data-change.md
 
-docs/delivery/change-impact-and-migration.md
+docs/delivery/migration-policy.md
 ```
 
 If cross-context references exist, read those product contexts too.
@@ -2288,7 +2307,7 @@ docs/architecture/contract-boundaries.md
 backend/docs/architecture/api-and-contracts.md
 frontend/docs/architecture/api-and-contracts.md
 
-docs/delivery/change-impact-and-migration.md
+docs/delivery/migration-policy.md
 ```
 
 Then inspect:
@@ -2319,7 +2338,7 @@ backend/docs/architecture/domain-modeling.md
 backend/docs/architecture/platform-and-messaging.md
 
 affected consumer product contexts
-docs/delivery/change-impact-and-migration.md
+docs/delivery/migration-policy.md
 ```
 
 ---
@@ -2329,7 +2348,7 @@ docs/delivery/change-impact-and-migration.md
 Read:
 
 ```text
-docs/product/contexts/integrations.md
+docs/product/integrations.md
 affected source product context
 
 RULE.md
@@ -2341,7 +2360,7 @@ backend/docs/architecture/infrastructure-and-data.md
 backend/docs/architecture/platform-and-messaging.md
 backend/docs/architecture/security-tenancy-authorization.md
 
-docs/delivery/change-impact-and-migration.md
+docs/delivery/migration-policy.md
 ```
 
 ---
@@ -2351,7 +2370,7 @@ docs/delivery/change-impact-and-migration.md
 Read:
 
 ```text
-docs/product/contexts/billing.md
+docs/product/billing.md
 affected product context
 
 RULE.md
@@ -2369,7 +2388,7 @@ frontend/docs/architecture/ui-and-design-system.md
 If provider-facing:
 
 ```text
-docs/product/contexts/integrations.md
+docs/product/integrations.md
 ```
 
 ---
@@ -2474,7 +2493,7 @@ docs/architecture/capability-extraction-strategy.md
 docs/architecture/contract-boundaries.md
 docs/architecture/data-ownership-and-consistency.md
 
-docs/delivery/change-impact-and-migration.md
+docs/delivery/migration-policy.md
 docs/infrastructure/deployment-runtime.md
 docs/operations/observability.md
 docs/operations/recovery-and-data-safety.md
@@ -2630,10 +2649,10 @@ Makefile
 scripts/docs/**
 ```
 
-During migration, current legacy checker may still be:
+The documentation gate is:
 
 ```text
-scripts/check-documentation.mjs
+make docs-check
 ```
 
 Use the actual checked-in script/Makefile as execution evidence.
@@ -2663,7 +2682,7 @@ provider synchronization
 Read:
 
 ```text
-docs/delivery/change-impact-and-migration.md
+docs/delivery/migration-policy.md
 ```
 
 Then the relevant producer/consumer/data owner.
@@ -2696,7 +2715,7 @@ logging/secrets
 Primary product owners:
 
 ```text
-docs/product/contexts/identity.md
+docs/product/identity.md
 docs/product/workspaces.md
 docs/product/governance.md
 ```
@@ -2909,7 +2928,7 @@ Use this as the fastest high-level lookup after understanding the authority mode
 | Task | Primary owner |
 |---|---|
 | Product model | `PRODUCT.md` |
-| Product context semantic | `docs/product/contexts/<context>.md` |
+| Product context semantic | `docs/product/<context>.md` |
 | Repository invariant | `RULE.md` |
 | Product design | `DESIGN.md` |
 | Current repository fact | `CONTEXT.md` |
@@ -2944,9 +2963,10 @@ Use this as the fastest high-level lookup after understanding the authority mode
 | Accessibility standard | `docs/quality/accessibility-standard.md` |
 | Performance/scalability | `docs/quality/performance-and-scalability.md` |
 | Change classification | `docs/delivery/change-classification.md` |
-| Migration/change impact | `docs/delivery/change-impact-and-migration.md` |
+| Migration/change impact | `docs/delivery/migration-policy.md` |
 | Definition of done | `docs/delivery/definition-of-done.md` |
-| Release/rollout | `docs/delivery/release-rollout-and-recovery.md` |
+| Release/rollout | `docs/delivery/release-and-rollout.md` |
+| Product delivery lifecycle/acceptance | `docs/delivery/product-delivery-lifecycle.md` |
 | Observability | `docs/operations/observability.md` |
 | Incident readiness | `docs/operations/incident-readiness.md` |
 | Recovery/data safety | `docs/operations/recovery-and-data-safety.md` |

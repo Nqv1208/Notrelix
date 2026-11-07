@@ -28,7 +28,11 @@ test.describe("tablet sidebar (Final-T-* shell)", () => {
     page,
   }) => {
     await page.goto(board);
-    const toggle = page.getByRole("button", { name: "Thu gọn thanh bên" });
+    // The sidebar's edge toggle; the tablet board header carries a second one (Final-T-Board) that drives the same state.
+    const edge = page.locator("[data-slot=sidebar-edge-toggle]");
+    const toggle = edge.and(
+      page.getByRole("button", { name: "Thu gọn thanh bên" }),
+    );
     await expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(await sidebarWidth(page)).toBe(248);
     const home = page.getByRole("link", { name: "Trang chủ" });
@@ -37,7 +41,9 @@ test.describe("tablet sidebar (Final-T-* shell)", () => {
     ).toBe(44);
 
     await toggle.click();
-    const reopen = page.getByRole("button", { name: "Mở rộng thanh bên" });
+    const reopen = edge.and(
+      page.getByRole("button", { name: "Mở rộng thanh bên" }),
+    );
     await expect(reopen).toHaveAttribute("aria-expanded", "false");
     await expect.poll(() => sidebarWidth(page)).toBe(64);
     // Counts stay visible as badges and the links keep their names.
@@ -45,7 +51,7 @@ test.describe("tablet sidebar (Final-T-* shell)", () => {
 
     await page.reload();
     await expect(
-      page.getByRole("button", { name: "Mở rộng thanh bên" }),
+      edge.and(page.getByRole("button", { name: "Mở rộng thanh bên" })),
     ).toBeVisible();
     expect(await sidebarWidth(page)).toBe(64);
   });

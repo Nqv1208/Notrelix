@@ -24,6 +24,7 @@ historical decisions, and operational runbooks.
 
 ## Operations
 
+- [Access facts query evidence](operations/access-facts-query-evidence.md)
 - [Configuration and runtime](operations/configuration-and-runtime.md)
 - [Migrations and data change](operations/migrations-and-data-change.md)
 

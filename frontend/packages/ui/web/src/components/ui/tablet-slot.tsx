@@ -4,10 +4,14 @@ import { useIsTablet } from "../../hooks/use-tablet";
 
 /** The slots the page toolbars expose in the tablet band (Final-T-*). */
 export const TABLET_SLOT = {
+  /** The header's "+" (add an item), which the open view contributes. */
+  headerAdd: "tablet-header-add",
   /** Start of a view's toolbar row (access chip). */
   toolbarLead: "tablet-toolbar-lead",
-  /** End of a view's toolbar row (avatar stack). */
+  /** End of a view's toolbar row (view menu, Add view, and the avatar stack unless the view hosts it in `toolbarStack`). */
   toolbarTrail: "tablet-toolbar-trail",
+  /** Where a view that draws the avatar stack right after its filter chips (Final-T-Board) hosts it. */
+  toolbarStack: "tablet-toolbar-stack",
 } as const;
 
 export type TabletSlotId = (typeof TABLET_SLOT)[keyof typeof TABLET_SLOT];
@@ -31,18 +35,12 @@ function useSlotElement(slot: TabletSlotId, enabled: boolean) {
       return;
     }
     const find = () => document.getElementById(slot);
-    const now = find();
-    if (now) {
-      setElement(now);
-      return;
-    }
-    // The slot may mount after its content (data loaded later): wait for it.
+    setElement(find());
+    // The slot may mount after its content (data loaded later), or be replaced when its toolbar
+    // remounts (a loading toolbar giving way to the loaded one): follow the current element.
     const observer = new MutationObserver(() => {
       const found = find();
-      if (found) {
-        setElement(found);
-        observer.disconnect();
-      }
+      setElement((current) => (current === found ? current : found));
     });
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();

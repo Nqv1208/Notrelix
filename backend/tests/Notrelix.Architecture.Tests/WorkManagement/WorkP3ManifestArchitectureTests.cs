@@ -3,7 +3,7 @@ namespace Notrelix.Architecture.Tests.WorkManagement;
 
 /// <summary>
 /// WM-V3-INV-001 — executable P3 source manifest for the Work Management
-/// transactional core (docs/workstreams/executions/work-management/work-management.plan.md).
+/// transactional core (see docs/workstreams/use-cases/work-management.md).
 ///
 /// The manifest is closed-world: every MediatR request under
 /// Features.WorkManagement is classified, every request that declares
@@ -171,6 +171,7 @@ public sealed class WorkP3ManifestArchitectureTests
         ["Boards.DuplicateBoardCommand"] = new(Disposition.Keep, "-"),
 
         // Schema read boundary
+        ["BoardFields.PreviewFormulaQuery"] = new(Disposition.Keep, "-"),
         ["BoardSchema.GetBoardSchemaQuery"] = new(Disposition.Harden, "APP-BOUNDARY-002, CONC-002"),
 
         // Labels (Work-owned item metadata, WMREQ023)
@@ -251,6 +252,8 @@ public sealed class WorkP3ManifestArchitectureTests
     /// </summary>
     private static readonly HashSet<string> NonP3PositionWriters = new(StringComparer.Ordinal)
     {
+        // Builds a throwaway field to evaluate a draft formula; it stores no position.
+        "Notrelix.Application/Features/WorkManagement/BoardFields/Queries/PreviewFormula/PreviewFormula.cs",
         "Notrelix.Application/Features/WorkManagement/Forms/Commands/AddFormQuestion/AddFormQuestion.cs",
         "Notrelix.Application/Features/WorkManagement/Forms/Commands/UpdateFormQuestion/UpdateFormQuestion.cs",
         "Notrelix.Infrastructure/Data/Converters/ValueConverters.cs",

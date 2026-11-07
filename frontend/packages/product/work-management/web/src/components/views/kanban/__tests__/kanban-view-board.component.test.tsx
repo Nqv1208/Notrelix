@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "@notrelix/i18n";
 import {
+  act,
   fireEvent,
   renderPureUi,
   screen,
@@ -34,6 +35,7 @@ import { kanbanLaneCatalog } from "../kanban-lane.catalog";
 import { kanbanToolbarCatalog } from "../kanban-toolbar.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
 import { KanbanView, type KanbanViewProps } from "../kanban-view";
+import { ARCHIVE_UNDO_MS } from "../../table/use-archive-undo-window";
 
 const toast = vi.hoisted(() => ({
   success: vi.fn(),
@@ -101,6 +103,7 @@ function fakeServices(
           title: "Phê duyệt phân quyền",
           statusName: "Đang làm",
           statusCategory: "in_progress" as const,
+          isArchived: true,
         },
       },
     ]),
@@ -143,6 +146,24 @@ function fakeServices(
       };
     }),
     duplicateCard: vi.fn(async () => undefined),
+    // The bulk bar's one request; an archive takes the items off the board.
+    bulkUpdate: vi.fn(
+      async (
+        _boardId: string,
+        itemIds: readonly string[],
+        change: { type: string },
+      ) => {
+        if (change.type === "archive")
+          board = {
+            ...board,
+            groups: board.groups.map((group) => ({
+              ...group,
+              cards: group.cards.filter((item) => !itemIds.includes(item.id)),
+            })),
+          };
+        return itemIds.length;
+      },
+    ),
   };
   const services = {
     boards: {
@@ -414,6 +435,17 @@ describe("KanbanView on the ERP board", () => {
     expect(
       screen.getByRole("combobox", { name: "Vị trí trong cột" }),
     ).toBeTruthy();
+    // The current column draws a check and no count; the others keep their count.
+    const rows = within(
+      screen.getByRole("listbox", { name: "Chuyển sang cột" }),
+    ).getAllByRole("option");
+    const current = rows.find(
+      (row) => row.getAttribute("aria-selected") === "true",
+    )!;
+    expect(current.querySelector("small")).toBeNull();
+    expect(current.querySelector("svg")).not.toBeNull();
+    for (const row of rows.filter((entry) => entry !== current))
+      expect(row.querySelector("small")).not.toBeNull();
   }, 20_000);
 
   // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
@@ -450,7 +482,7 @@ describe("KanbanView on the ERP board", () => {
     expect(laneCount("Đang làm")).toBe("3");
   }, 20_000);
 
-  it("applies the route filter, shows the no-results bar and clears the filter with Bỏ lọc", async () => {
+  it("applies the route filter, shows the no-results card and clears the filter with Xoá bộ lọc", async () => {
     // The ERP seed dates its low-priority items up to 30/10: judge "overdue" on that day, not on the
     // day the suite runs, or the filter that is meant to match nothing starts matching on 31/10.
     vi.useFakeTimers({
@@ -459,28 +491,30 @@ describe("KanbanView on the ERP board", () => {
     });
     const onFilter = vi.fn();
     renderKanban(erpOwnerAccess(), { initialFilter: "p.low~o", onFilter });
-    await ready();
-    const bar = await waitFor(() => {
-      const found = screen
-        .getAllByRole("status")
-        .find((element) =>
-          element.textContent?.includes("Không có việc khớp bộ lọc"),
-        );
-      expect(found).toBeTruthy();
-      return found!;
-    });
-    expect(bar.textContent).toContain("Không có việc khớp bộ lọc");
-    expect(bar.textContent).toContain("16 việc của board đang bị ẩn");
+    const card = await waitFor(
+      () => {
+        const found = screen
+          .getAllByRole("status")
+          .find((element) =>
+            element.textContent?.includes("Không có việc nào khớp bộ lọc"),
+          );
+        expect(found).toBeTruthy();
+        return found!;
+      },
+      { timeout: 8000 },
+    );
+    expect(card.textContent).toContain(
+      "2 điều kiện đang áp dụng trên 16 việc.",
+    );
     expect(
-      ["Cần làm", "Đang làm", "Chờ duyệt", "Hoàn thành"].map(laneCount),
-    ).toEqual(["0", "0", "0", "0"]);
-    expect(
-      within(lane("Cần làm")).getByText("Không có việc khớp bộ lọc"),
+      within(card).getByRole("button", { name: "Sửa điều kiện" }),
     ).toBeTruthy();
-    fireEvent.click(within(bar).getByRole("button", { name: "Bỏ lọc" }));
+    fireEvent.click(within(card).getByRole("button", { name: "Xoá bộ lọc" }));
     expect(onFilter).toHaveBeenLastCalledWith(undefined, undefined);
-    await waitFor(() => expect(laneCount("Cần làm")).toBe("6"));
-  });
+    await waitFor(() => expect(laneCount("Cần làm")).toBe("6"), {
+      timeout: 8000,
+    });
+  }, 20_000);
 
   it("drops ids the board does not have from the URL filter with history replace", async () => {
     const onFilter = vi.fn();
@@ -746,13 +780,14 @@ describe("KanbanView on the ERP board", () => {
       { name: "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP" },
       { timeout: 5000 },
     );
-    fireEvent.click(
-      await within(dialog).findByRole(
-        "button",
-        { name: "Gỡ liên kết ERP-143" },
-        { timeout: 8000 },
-      ),
+    const unlink = await within(dialog).findByRole(
+      "button",
+      { name: "Gỡ liên kết ERP-143" },
+      { timeout: 8000 },
     );
+    // An archived item stays linked and its row says so.
+    expect(within(dialog).getByText("Đã lưu trữ")).toBeTruthy();
+    fireEvent.click(unlink);
     await waitFor(() =>
       expect(itemExtras.removeLink).toHaveBeenCalledWith(
         erpItemId("ERP-142"),
@@ -908,4 +943,77 @@ describe("KanbanView settings of the view", () => {
       ).toBeTruthy(),
     );
   });
+});
+
+describe("KanbanView bulk archive (UC-WM-J01)", () => {
+  const ERP_151 = "Cấu hình quyền truy cập theo phòng ban cho phân hệ Kế toán";
+  const ERP_149 = "Viết tài liệu quy trình nhập hoá đơn đầu vào";
+  const pick = (title: string) =>
+    fireEvent.click(screen.getByRole("checkbox", { name: `Chọn ${title}` }));
+  const cardShown = (title: string) =>
+    screen.queryByRole("checkbox", { name: `Chọn ${title}` }) !== null;
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("archives the picked cards in one request after the Table's undo window, not before", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { cards } = renderKanban(erpOwnerAccess());
+    await ready();
+    const before = Number(laneCount("Cần làm"));
+    pick(ERP_151);
+    pick(ERP_149);
+    fireEvent.click(screen.getByRole("button", { name: "Lưu trữ" }));
+
+    // The cards leave the board at once; the write waits for the window.
+    expect(cardShown(ERP_151)).toBe(false);
+    expect(cardShown(ERP_149)).toBe(false);
+    expect(Number(laneCount("Cần làm"))).toBe(before - 2);
+    expect(screen.getByText("Đã lưu trữ 2 việc")).toBeTruthy();
+    expect(cards.bulkUpdate).not.toHaveBeenCalled();
+
+    await act(async () => {
+      vi.advanceTimersByTime(ARCHIVE_UNDO_MS + 50);
+    });
+    await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(1));
+    expect(cards.bulkUpdate).toHaveBeenCalledWith(
+      expect.any(String),
+      [erpItemId("ERP-151"), erpItemId("ERP-149")],
+      { type: "archive" },
+      expect.any(Object),
+      expect.anything(),
+    );
+    expect(cards.archiveCard).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.queryByText("Đã lưu trữ 2 việc")).toBeNull(),
+    );
+    expect(cardShown(ERP_151)).toBe(false);
+  }, 20_000);
+
+  it("brings the cards back and sends nothing when the archive is undone", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { cards } = renderKanban(erpOwnerAccess());
+    await ready();
+    pick(ERP_151);
+    fireEvent.click(screen.getByRole("button", { name: "Lưu trữ" }));
+    expect(cardShown(ERP_151)).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Hoàn tác" }));
+    expect(cardShown(ERP_151)).toBe(true);
+    await act(async () => {
+      vi.advanceTimersByTime(ARCHIVE_UNDO_MS + 50);
+    });
+    expect(cards.bulkUpdate).not.toHaveBeenCalled();
+    expect(cards.archiveCard).not.toHaveBeenCalled();
+  }, 20_000);
+
+  it("sends the archive at once when the notice is closed", async () => {
+    const { cards } = renderKanban(erpOwnerAccess());
+    await ready();
+    pick(ERP_151);
+    fireEvent.click(screen.getByRole("button", { name: "Lưu trữ" }));
+    expect(cards.bulkUpdate).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Đóng thông báo" }));
+    await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(1));
+  }, 20_000);
 });

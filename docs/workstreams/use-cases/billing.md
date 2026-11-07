@@ -29,7 +29,7 @@ review_on:
 
 # Use cases: Billing
 
-Context code `BIL`. Product meaning: [billing](../../product/billing.md). Team spec: [billing-entitlements](../teams/billing-entitlements.md). Execution pack: [spec](../executions/billing-entitlements/billing-entitlements.spec.md), [certification](../executions/billing-entitlements/billing-entitlements.certification.md), [tests](../executions/billing-entitlements/billing-entitlements.tests.md). Router and rules: [README](README.md). Delivery context: [capability-delivery-map](../capability-delivery-map.md), [cross-team-dependencies](../cross-team-dependencies.md).
+Context code `BIL`. Product meaning: [billing](../../product/billing.md). Team spec: [billing-entitlements](../teams/billing-entitlements.md). Execution pack: spec (removed; see git history), certification (removed; see git history), tests (removed; see git history). Router and rules: [README](README.md). Delivery context: [capability-delivery-map](../capability-delivery-map.md), [cross-team-dependencies](../cross-team-dependencies.md).
 
 Two numbering systems meet in this file. `BIL-001` to `BIL-033` in the product doc are rules (cited as "product BIL-008"). `BIL-001` to `BIL-024` in the team spec are capabilities; this catalog calls them by letter (Part 2). `BILREQnnn` are execution-pack requirements.
 
@@ -52,7 +52,7 @@ Letter maps to the team spec capability. Total use cases: **99**.
 | C | BIL-003 Subscription transition policy | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
 | D | BIL-004 Entitlement model | 3 | 1 | 0 | 2 | 0 | 0 | 0 |
 | E | BIL-005 Entitlement evaluation | 4 | 2 | 0 | 0 | 2 | 0 | 0 |
-| F | BIL-006 Product entitlement contract | 4 | 2 | 1 | 1 | 0 | 0 | 0 |
+| F | BIL-006 Product entitlement contract | 4 | 2 | 1 | 0 | 1 | 0 | 0 |
 | G | BIL-007 Usage event/record contract | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | H | BIL-008 Usage aggregation | 4 | 3 | 1 | 0 | 0 | 0 | 0 |
 | I | BIL-009 Usage limit enforcement handoff | 5 | 1 | 1 | 3 | 0 | 0 | 0 |
@@ -147,7 +147,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 | UC-BIL-E02 | See what billing grants, with limit and use | E | Workspace Owner and Admin | Yes | Real | tong-quan | feature-availability, billing-plan | HARDENING | Four capabilities read one by one (bounded) |
 | UC-BIL-E03 | Fail closed when the decision cannot be made | E | System | Part | No | No | No | DEFINED | No fault-injection test |
 | UC-BIL-E04 | Give a stable reason for every denial | E | System; consumers and UI | No | No | No | No | DEFINED | Fact record is `IsAvailable/Limit/Used/Remaining` only |
-| UC-BIL-F01 | Admit a member or guest seat when an invitation is accepted | F | Invited person (server-side gate in Workspaces) | Yes | Mock | het-cho | No | INTEGRATING | Gate injected as optional (`= null`), fail open if unregistered |
+| UC-BIL-F01 | Admit a member or guest seat when an invitation is accepted | F | Invited person (server-side gate in Workspaces) | Yes | Mock | het-cho | Yes | DONE | set DONE by the foundation finish lane pull request, see the Evidence line |
 | UC-BIL-F02 | Require an active subscription for a protected request | F | System (access-facts provider) | Yes | No | No | No | IMPLEMENTING | No product request uses the marker today |
 | UC-BIL-F03 | Stop an upload that exceeds storage | F | Member uploading a file (server-side) | Part | No | No | No | DEFINED | Storage is displayed but never enforced |
 | UC-BIL-F04 | Count seats the same way on every way of joining | F | System | No | No | No | No | DEFINED | Direct-add and other join paths are unchecked (only invitation acceptance calls the gate) |
@@ -532,8 +532,8 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - UI states: Seat-limit dialog (UC-BIL-T02), error.
 - Rules: Product §81, §84, §91; owner decision 46; spec BILREQ090, BILREQ035.
 - Acceptance: Given Free with 10 members, when an eleventh accepts, then acceptance is refused. Given an existing member of another workspace of the account, then admitted.
-- Evidence: BE `Features/Billing/Entitlements/Services/BillingSeatGate.cs`, call in `Features/Workspaces/Invitations/Services/InvitationAcceptanceService.cs` · FE `frontend/packages/features/workspace/src/web/billing/``billing-dialogs.tsx` · Design `Final-Billing.dc.html` `het-cho` · Tests `backend/tests/Notrelix.Application.Tests/Features/Billing/``BillingPlanTests.cs`, `backend/tests/Notrelix.Integration.Tests/Auth/InvitationTokenFlowHttpTests.cs` · Real e2e none
-- State: INTEGRATING — Gate injected as optional (`= null`), fail open if unregistered; only this one path checks seats; no real e2e; no concurrent last-seat test.
+- Evidence: BE `Features/Billing/Entitlements/Services/BillingSeatGate.cs`, call in `Features/Workspaces/Invitations/Services/InvitationAcceptanceService.cs` · FE `frontend/packages/features/workspace/src/web/billing/``billing-dialogs.tsx` · Design `Final-Billing.dc.html` `het-cho` · Tests `backend/tests/Notrelix.Application.Tests/Features/Billing/``BillingPlanTests.cs`, `backend/tests/Notrelix.Integration.Tests/Auth/InvitationTokenFlowHttpTests.cs` · Real e2e `frontend/e2e/real/seat-limit.real.e2e.spec.ts` 1 (real stack: the owner and nine invited people hold the ten seats of the Free plan; the eleventh accepts in the pending-invitations menu and is refused with the seat message, still ten members and the invitation Pending, an API retry answers 4xx; a person already seated is admitted to a second workspace of the account at the limit; a repeated accept takes no second seat) · Design 1 px `frontend/e2e/mock/design-fidelity-seat-limit.mock.e2e.spec.ts` 6 (`het-cho` at 1440, light and dark: box geometry within 1 px, fonts and radii exact, ten pixel surfaces per mode; the dialog was corrected to the artboard in input height and weight, role select radius and type, and the dark panel, buttons and alert) · Foundation lane proof: Integration `BillingSeatAdmissionIntegrationTests` 2 (the Free plan refuses an eleventh member; a person already seated in another workspace of the account is admitted; two people admitted at once leave one admitted and the account at ten, red without the lock, green with it)
+- State: DONE: set by the foundation finish lane pull request 2026-11-03. Built: the gate is a required constructor argument on invitation accept, direct add, member activate and custom-role assign; two Integration tests on PostgreSQL prove the limit, the existing-seat rule and the concurrent last seat, and admission is serialised per account with `pg_advisory_xact_lock` inside the request transaction (the race was real: two admitted at the last seat without it); a real-stack journey at the limit shows the refusal in the browser and through the API without a production backdoor (ten registered people); the `het-cho` artboard state is held to 1 px in light and dark. A retry of an accepted invitation takes no second seat (the invitation is no longer pending).
 
 ### UC-BIL-F02 Require an active subscription for a protected request
 - Capability: F. BIL-006 Product entitlement contract

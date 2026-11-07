@@ -27,4 +27,27 @@ public class IdentifySignInTests
     [Fact]
     public void Validator_AcceptsAnEmail() =>
         new IdentifySignInQueryValidator().Validate(new IdentifySignInQuery("a@b.co")).IsValid.Should().BeTrue();
+
+    [Fact]
+    public void Validator_TakesAnEmailOfExactly256Characters_AndRejectsOneMore()
+    {
+        var domain = "@example.com";
+        var atLimit = new string('a', 256 - domain.Length) + domain;
+        var validator = new IdentifySignInQueryValidator();
+
+        atLimit.Length.Should().Be(256);
+        validator.Validate(new IdentifySignInQuery(atLimit)).IsValid.Should().BeTrue();
+        validator.Validate(new IdentifySignInQuery("a" + atLimit)).IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Retrying_AnswersTheSameAgain_AndTreatsCaseAndPaddingAlike()
+    {
+        var first = await _handler.Handle(new IdentifySignInQuery("Known@Example.com"), CancellationToken.None);
+        var again = await _handler.Handle(new IdentifySignInQuery("Known@Example.com"), CancellationToken.None);
+        var padded = await _handler.Handle(new IdentifySignInQuery("  known@example.com "), CancellationToken.None);
+
+        again.Data.Should().Be(first.Data);
+        padded.Data.Should().Be(first.Data);
+    }
 }

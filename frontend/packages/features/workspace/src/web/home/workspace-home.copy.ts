@@ -59,6 +59,10 @@ export const en = {
       "No workspace template yet. Open a board, go to Board settings, then Board templates to save one.",
     templateCopies:
       "Copies the fields, statuses, groups, labels and views of the template. The new board is not linked to it.",
+    templatesLoading: "Loading the starters and templates…",
+    templatesFailed:
+      "The starters and templates could not be loaded. You can still create a blank board.",
+    templatesRetry: "Try again",
   },
   work: {
     weekdays: {
@@ -284,6 +288,21 @@ export const en = {
     requestChanges: "Request changes",
     doneNote:
       "Done items are hidden after 30 days. They can still be found on the Board of the item.",
+    touch: {
+      filter: "Filter",
+      groupBy: "Group by",
+      more: "Actions for {{name}}",
+      open: "Open item",
+      done: "Mark done",
+      tabApprove: "To approve",
+      tabFollow: "Following",
+      inCharge: "{{name}} in charge",
+      filterTitle: "Filter my work",
+      filterClose: "Done",
+      filterClear: "Clear filters",
+      groupValue: { due: "Due date", board: "Board", status: "Status" },
+      foot: "Only items on boards you can open.",
+    },
     bulk: {
       label: "Actions for {{count}} selected items",
       selected: "{{count}} selected",
@@ -435,6 +454,9 @@ export const vi: WorkspaceHomeCopy = {
       "Workspace chưa có mẫu nào. Mở một board, vào Thiết lập board › Mẫu board để lưu một mẫu.",
     templateCopies:
       "Sao chép trường, trạng thái, nhóm việc, nhãn và view của mẫu. Board mới không liên kết với mẫu.",
+    templatesLoading: "Đang tải các mẫu có sẵn và mẫu của workspace…",
+    templatesFailed: "Không tải được các mẫu. Bạn vẫn tạo được board trống.",
+    templatesRetry: "Thử lại",
   },
   work: {
     weekdays: {
@@ -662,6 +684,21 @@ export const vi: WorkspaceHomeCopy = {
     requestChanges: "Yêu cầu sửa",
     doneNote:
       "Ẩn việc đã xong sau 30 ngày. Sau đó vẫn tìm được trên board của việc.",
+    touch: {
+      filter: "Lọc",
+      groupBy: "Nhóm theo",
+      more: "Thao tác cho {{name}}",
+      open: "Mở việc",
+      done: "Đánh dấu xong",
+      tabApprove: "Cần duyệt",
+      tabFollow: "Theo dõi",
+      inCharge: "{{name}} phụ trách",
+      filterTitle: "Lọc việc của tôi",
+      filterClose: "Xong",
+      filterClear: "Bỏ lọc",
+      groupValue: { due: "Hạn chót", board: "Board", status: "Trạng thái" },
+      foot: "Chỉ gồm việc ở các board bạn mở được.",
+    },
     bulk: {
       label: "Thao tác với {{count}} việc đã chọn",
       selected: "{{count}} đã chọn",

@@ -71,6 +71,9 @@ public class RawSqlArchitectureTests
         // Deleted workspace purge: DELETE ... WHERE workspace_id for each table the catalog lists, the
         // identifier quoted by format('%I'), under the system context; the claim is FOR UPDATE SKIP LOCKED.
         "src/Notrelix.Infrastructure/BackgroundJobs/DeletedWorkspacePurge.cs",
+        // Deleted board purge: DELETE ... WHERE for each table the catalog plan lists, the identifiers quoted by
+        // format('%I') and the board id a parameter, under the system context; the claim is FOR UPDATE SKIP LOCKED.
+        "src/Notrelix.Infrastructure/BackgroundJobs/DeletedBoardPurge.cs",
         // Reserves a Board's Item keys with one row-locking UPDATE ... RETURNING
         // on work.boards inside the request transaction (EF cannot express it
         // without loading and versioning the Board aggregate).
@@ -82,6 +85,10 @@ public class RawSqlArchitectureTests
         // serializing one Workspace's Space hierarchy writes (create/move/rename/
         // restore) so ancestry, sibling and closure reads cannot interleave.
         "src/Notrelix.Infrastructure/Workspaces/Spaces/SpaceStore.cs",
+        // Billing seat admission: transaction-scoped advisory lock (pg_advisory_xact_lock) keyed by a hash
+        // of the account id (a parameterized key, no user input) serializing the last-seat check and the
+        // membership insert of one account inside the request transaction.
+        "src/Notrelix.Infrastructure/Billing/BillingUsageReader.cs",
     };
 
     [Fact]

@@ -364,3 +364,49 @@ describe("SavedFiltersMenu", () => {
     expect(savedFiltersCopyFixture("vi").save.trigger).toBe("Lưu bộ lọc");
   });
 });
+
+describe("SavedFiltersMenu stale row", () => {
+  it("marks a filter with a condition on a removed field: warning, why, and how many are ignored", () => {
+    const scenario = savedFiltersDefaultScenario("vi");
+    renderMenu(scenario, {
+      describe: (criteria) =>
+        criteria === scenario.filters[0]?.criteria
+          ? [{ text: "Ngân sách ≥ 50 triệu", stale: true }]
+          : [{ text: "Ưu tiên: Cao" }],
+    });
+    openList("vi");
+    const first = scenario.filters[0]!;
+    const row = screen
+      .getByRole("button", {
+        name: rowName("Áp dụng bộ lọc {{name}}", first.name),
+      })
+      .closest("li")!;
+    expect(row.textContent).toContain(
+      "Điều kiện dùng trường đã bị xoá, sẽ bị bỏ qua",
+    );
+    expect(row.textContent).toContain("1 bị bỏ qua");
+    expect(row.textContent).not.toContain("Ngân sách");
+  });
+
+  it("says a filter is gone inside the menu, above the refreshed list, and reports when the menu closes", () => {
+    for (const locale of LOCALES) {
+      const copy = savedFiltersCopyFixture(locale);
+      const onGoneSeen = vi.fn();
+      const { view } = renderMenu(savedFiltersDefaultScenario(locale), {
+        gone: true,
+        onGoneSeen,
+      });
+      openList(locale);
+      const alert = screen.getByRole("alert");
+      expect(alert.textContent).toContain(copy.menu.gone);
+      expect(
+        screen.getByRole("button", {
+          name: rowName(copy.row.apply, SAVED_FILTER_URGENT.name),
+        }),
+      ).toBeTruthy();
+      fireEvent.keyDown(alert, { key: "Escape" });
+      expect(onGoneSeen).toHaveBeenCalled();
+      view.unmount();
+    }
+  });
+});

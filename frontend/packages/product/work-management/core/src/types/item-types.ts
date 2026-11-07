@@ -107,6 +107,8 @@ export interface Card {
   checklistProgress?: { done: number; total: number } | null;
   /** Live, not-completed items that block this one; the card shows "Bị chặn" when above 0. */
   openBlockerCount?: number;
+  /** Key of the first open blocker on this board; absent when none is on this board (the count still shows). */
+  openBlockerKey?: string | null;
   /** Child item progress; a card shows it only when `total > 0`. */
   childProgress?: { done: number; total: number } | null;
   /** The item cover; null or absent when it has none. */
@@ -376,4 +378,16 @@ export interface AttachmentDtoApi {
   uploadedBy: string;
   uploadedByName?: string | null;
   createdAt: string;
+}
+
+/** The schema change a stale write ran into and who made it: a field the board no longer has, an option it no longer lists, or a field whose type changed. */
+export interface StaleSchemaDetail {
+  readonly kind: "field-deleted" | "option-removed" | "type-changed";
+  readonly fieldName: string;
+  readonly byName: string | null;
+  /** The option the write chose and the field no longer lists (`option-removed`). */
+  readonly optionLabel?: string;
+  /** The field's type before and after the change (`type-changed`). */
+  readonly fromType?: string;
+  readonly toType?: string;
 }

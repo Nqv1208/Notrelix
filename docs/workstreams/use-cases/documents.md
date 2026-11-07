@@ -35,7 +35,7 @@ review_on:
 
 # Use cases: Documents
 
-Product meaning: [documents](../../product/documents.md). Team: [documents-collaboration](../teams/documents-collaboration.md). Execution pack: [spec](../executions/documents-collaboration/documents-collaboration.spec.md), [tests](../executions/documents-collaboration/documents-collaboration.tests.md), [certification](../executions/documents-collaboration/documents-collaboration.certification.md). Permission and role meaning: [governance](../../product/governance.md). Comments, mentions delivery, attachments, presence and notifications are Collaboration use cases: see [collaboration.md](collaboration.md). Board items and the links from items to pages are Work Management use cases: see [work-management.md](work-management.md).
+Product meaning: [documents](../../product/documents.md). Team: [documents-collaboration](../teams/documents-collaboration.md). Execution pack: spec (removed; see git history), tests (removed; see git history), certification (removed; see git history). Permission and role meaning: [governance](../../product/governance.md). Comments, mentions delivery, attachments, presence and notifications are Collaboration use cases: see [collaboration.md](collaboration.md). Board items and the links from items to pages are Work Management use cases: see [work-management.md](work-management.md).
 
 Id note: the product doc has rules `DCT-001` to `DCT-031`, and the team spec reuses `DCT-001` to `DCT-012` as capability numbers. In this file "product rule DCT-n" always means the product rule and "capability n" means the team capability. Requirement ids `DCREQ001` to `DCREQ191` are cited from the pack, not restated.
 
@@ -115,7 +115,7 @@ Table-stakes use cases added from this comparison: UC-DCT-A12, A14 (subtree and 
 
 # 2. Index
 
-Capability letters: see section 1.1. Columns BE and FE say whether code exists: `yes` (route or screen exists and is used), `partial` (part exists or is a stub), `none`. Design names the canvas artboard (the canvas is [claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x](https://claude.ai/artifact/18L4jUXGfdXh7Wn9YQvA2x)); `none` means no artboard draws it. The Docs artboards are Final-Docs-2, Final-Docs-2-Dem (night), Final-Docs-2-320, Final-Docs-2-320-Sheet, Final-Docs-2-Notes (measures), Final-M-Docs, Final-Share, Final-M-Share and Final-Command; Final-Docs is superseded (decision 75). Real e2e is `real` when a `frontend/e2e/real` spec drives the use case.
+Capability letters: see section 1.1. Columns BE and FE say whether code exists: `yes` (route or screen exists and is used), `partial` (part exists or is a stub), `none`. Design names the canvas artboard (the canvas is [claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x](https://claude.ai/artifact/18L4jUXGfdXh7Wn9YQvA2x)); `none` means no artboard draws it. The Docs artboards are Final-Docs-2, Final-Docs-2-Dem (night), Final-Docs-2-320, Final-Docs-2-320-Sheet, Final-Docs-2-Notes (measures), Final-M-Docs, Final-Share, Final-M-Share and Final-Command; Final-Docs is superseded by Final-Docs-2 (decision 75) and was removed from the canvas on 2026-11-03. Real e2e is `real` when a `frontend/e2e/real` spec drives the use case.
 
 | ID | Use case | Capability | Actors | BE | FE | Design | Real e2e | State | Gap |
 |---|---|---|---|---|---|---|---|---|---|
@@ -1083,7 +1083,7 @@ Team capability 8 (team id DCT-008). Requirements `DCREQ027` to `DCREQ031`. Deci
 - Rules: product doc sections 99, 102; decision 75.
 - Acceptance: Given 320 px, When the page opens, Then no horizontal page scroll and the sheet reaches Links, Contents and Comments.
 - Evidence: BE none · FE `doc-side-panel-surface.tsx`, `doc-page-bar-surface.tsx`, `use-doc-panel-open.ts` · Design Final-Docs-2-320, Final-Docs-2-320-Sheet, Final-M-Docs, Final-Docs-2-Notes · Tests `use-doc-panel-open.component.test.tsx`, `doc-page-surfaces.interaction.component.test.tsx`, `design-fidelity-docs.mock.e2e.spec.ts`, `docs-page.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — real e2e at 320, 1-px diff, closable right panel on desktop remembered per viewer (decision 5).
+- State: INTEGRATING — real e2e at 320, 1-px diff, closable right panel on desktop remembered per viewer (decision 5). Design 2026-11-03: `design-fidelity-docs` measures the normal state (light and dark) against Final-Docs-2 and Final-Docs-2-Dem; the other states (hidden rail, menus, comments, contents, share, versions, save error) keep numbers from the retired Final-Docs because Final-Docs-2 draws only the normal state. Gap against the app, left as measured: light test 31 boxes off (paragraph style select 36 px high where the board draws 30, body blocks from the first heading 4 px up growing to 28.6 px at the callout, live-table status pill 79.1 wide against 86.9, locked-row colours), dark test 6 (separator, select and status pill backgrounds, locked-row ink); the older failures of the other tests (File menu, slash menu, mention list, comments, contents, versions find no matching element in the current page) are unchanged.
 
 ### UC-DCT-H08 Edit with keyboard and screen reader
 - Capability: H Editor state reconciliation
@@ -1467,7 +1467,7 @@ Owner decisions come from the lead's decision record of 2026-10-26 (item 75 date
 - Product decision (owner, 2026-10-26): item 26, block wire decoding is owned by docs-core and shared by web and mobile; missing, forbidden and other-workspace pages show one identical "no access" state on mobile (UC-DCT-H06, E09).
 - Product decision (owner, 2026-10-26): item 33, command search items, docs and boards the caller may open, caps 6, 5 and 5; docs by title only for now (UC-DCT-G03).
 - Product decision (owner, 2026-10-26): item 42, mentions list only people who can view the resource; a mention of someone who cannot view it is kept as text and sends nothing (UC-DCT-E08).
-- Product decision (owner, 2026-10-29): item 75, the shipped Docs code is the product of record and Final-Docs is superseded; mobile Docs at 320 follows Final-M-Docs (Back button, overflow menu, bottom sheet for Links, Contents, Comments; no extra tab bar; the global bottom bar hidden); control borders keep the system `--line2` token; the approved canvas v98 has Final-Docs-2, -Dem, -320, -320-Sheet, -Notes; at 320 Share, Approve, Contents and History live in the More sheet and the side sheet is at most 85 percent of the viewport height (UC-DCT-H07).
+- Product decision (owner, 2026-10-29): item 75, the shipped Docs code is the product of record and Final-Docs is superseded by Final-Docs-2 (removed from the canvas on 2026-11-03); mobile Docs at 320 follows Final-M-Docs (Back button, overflow menu, bottom sheet for Links, Contents, Comments; no extra tab bar; the global bottom bar hidden); control borders keep the system `--line2` token; the approved canvas v98 has Final-Docs-2, -Dem, -320, -320-Sheet, -Notes; at 320 Share, Approve, Contents and History live in the More sheet and the side sheet is at most 85 percent of the viewport height (UC-DCT-H07).
 
 ## 4.2 Lead decisions
 

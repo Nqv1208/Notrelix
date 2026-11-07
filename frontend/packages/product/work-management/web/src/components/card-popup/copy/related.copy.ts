@@ -35,6 +35,9 @@ export const en = {
     loading: "Loading attachments",
     addedBy: "Added {{date}} · {{size}} · {{author}}",
     linkMeta: "{{host}} · added {{date}} · {{author}}",
+    queuedFile: "{{size}} · uploaded after the card is created",
+    queuedLink: "{{host}} · attached when created",
+    removeQueued: "Remove {{name}}",
     pageMeta: "Document page · linked {{date}}",
     pageKind: "Document",
     linkKind: "Link",
@@ -78,8 +81,17 @@ export const en = {
     groupParent: "Parent",
     groupChildren: "Sub-items",
     statusNone: "No status",
+    archived: "Archived",
+    changes:
+      "{{key}} is linked another way. Adding changes the type of that link.",
     statusDone: "Done",
-    statusOpen: "Open",
+    statusTodo: "To do",
+    categoryNames: {
+      todo: "To do",
+      in_progress: "In progress",
+      review: "In review",
+      done: "Done",
+    },
     popTitle: "Add link",
     type: "Link type",
     findLabel: "Item on this board",
@@ -104,6 +116,8 @@ export const en = {
     readOnlyPermission: "You can only view, not comment",
     readOnlyArchived: "This board is archived, so comments are closed",
     readOnlyItemArchived: "This card is archived, so comments are closed",
+    readOnlyGone:
+      "This card is no longer on this board, so comments are closed",
     createTitle: "Comments open after the card is created",
     createBody:
       "Once it is created you can comment, @mention assignees and follow activity right here.",
@@ -114,6 +128,23 @@ export const en = {
     delete: "Delete",
     movedFrom: "from {{from}} to {{to}}",
     mentionLabel: "Mention someone",
+    edited: "edited",
+    save: "Save",
+    deleteQuestion: "Delete this comment? It can't be restored.",
+    deleteQuestionReplies_one:
+      "Delete this comment? It can't be restored. Its reply stays, under “Comment deleted”.",
+    deleteQuestionReplies_other:
+      "Delete this comment? It can't be restored. Its {{count}} replies stay, under “Comment deleted”.",
+    deleteConfirm: "Delete",
+    deleted: "Comment deleted",
+    emptyTitle: "No comments yet",
+    emptyBody: "Write the first comment, type @ to mention someone.",
+    emptyBodyReadOnly: "Comments and the card's activity show here.",
+    errorTitle: "Couldn't load the activity",
+    errorBody: "Check your connection and try again.",
+    errorBodyComments:
+      "Check your connection and try again. The comments below are as saved.",
+    retry: "Try again",
   },
 };
 export type RelatedCopy = typeof en;
@@ -153,6 +184,9 @@ export const vi: RelatedCopy = {
     loading: "Đang tải đính kèm",
     addedBy: "Đã thêm {{date}} · {{size}} · {{author}}",
     linkMeta: "{{host}} · đã thêm {{date}} · {{author}}",
+    queuedFile: "{{size}} · tải lên sau khi thẻ được tạo",
+    queuedLink: "{{host}} · đính kèm khi tạo",
+    removeQueued: "Bỏ {{name}}",
     pageMeta: "Trang tài liệu · gắn {{date}}",
     pageKind: "Tài liệu",
     linkKind: "Liên kết",
@@ -196,8 +230,17 @@ export const vi: RelatedCopy = {
     groupParent: "Việc cha",
     groupChildren: "Việc con",
     statusNone: "Chưa có trạng thái",
+    archived: "Đã lưu trữ",
+    changes:
+      "{{key}} đang được gắn theo cách khác. Thêm sẽ đổi loại của liên kết đó.",
     statusDone: "Hoàn thành",
-    statusOpen: "Chưa xong",
+    statusTodo: "Cần làm",
+    categoryNames: {
+      todo: "Cần làm",
+      in_progress: "Đang làm",
+      review: "Chờ duyệt",
+      done: "Hoàn thành",
+    },
     popTitle: "Thêm liên kết",
     type: "Loại liên kết",
     findLabel: "Việc trong board",
@@ -222,6 +265,7 @@ export const vi: RelatedCopy = {
     readOnlyPermission: "Bạn chỉ có quyền xem, chưa viết được bình luận",
     readOnlyArchived: "Board đã lưu trữ nên bình luận đã đóng",
     readOnlyItemArchived: "Thẻ đã lưu trữ nên bình luận đã đóng",
+    readOnlyGone: "Thẻ không còn trên board này nên bình luận đã đóng",
     createTitle: "Bình luận mở sau khi tạo thẻ",
     createBody:
       "Tạo thẻ xong, bạn viết bình luận, nhắc @ người làm và xem hoạt động ngay tại đây.",
@@ -232,5 +276,22 @@ export const vi: RelatedCopy = {
     delete: "Xoá",
     movedFrom: "từ {{from}} sang {{to}}",
     mentionLabel: "Nhắc ai đó",
+    edited: "đã sửa",
+    save: "Lưu",
+    deleteQuestion: "Xoá bình luận này? Không khôi phục được.",
+    deleteQuestionReplies_one:
+      "Xoá bình luận này? Không khôi phục được. Câu trả lời vẫn giữ, nằm dưới dòng “Bình luận đã xoá”.",
+    deleteQuestionReplies_other:
+      "Xoá bình luận này? Không khôi phục được. {{count}} câu trả lời vẫn giữ, nằm dưới dòng “Bình luận đã xoá”.",
+    deleteConfirm: "Xoá",
+    deleted: "Bình luận đã xoá",
+    emptyTitle: "Chưa có bình luận nào",
+    emptyBody: "Viết bình luận đầu tiên, gõ @ để nhắc ai đó.",
+    emptyBodyReadOnly: "Bình luận và hoạt động của thẻ hiện ở đây.",
+    errorTitle: "Không tải được hoạt động",
+    errorBody: "Kiểm tra kết nối rồi thử lại.",
+    errorBodyComments:
+      "Kiểm tra kết nối rồi thử lại. Bình luận bên dưới vẫn đúng như đã lưu.",
+    retry: "Thử lại",
   },
 };

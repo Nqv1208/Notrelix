@@ -4,14 +4,17 @@ import {
   BookmarkPlus,
   Check,
   ChevronDown,
+  CircleAlert,
   Lock,
   Pencil,
+  RotateCw,
   Trash2,
   Users,
   X,
 } from "lucide-react";
 import {
   Button,
+  cn,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -26,7 +29,19 @@ import {
 /** How a write the host sent ended; the host's result is assignable to it. */
 export type SavedFilterWriteResult =
   | { readonly ok: true }
-  | { readonly ok: false; readonly reason: "forbidden" | "missing" | "failed" };
+  | {
+      readonly ok: false;
+      readonly reason: "forbidden" | "missing" | "conflict" | "failed";
+      readonly by?: string | null;
+    };
+
+/** One phrase of a filter's summary; the grouping reads apart from the conditions. */
+export interface SummaryPhrase {
+  readonly text: string;
+  readonly group?: boolean;
+  /** The condition is on a field that was removed: it is ignored, and the row says so. */
+  readonly stale?: boolean;
+}
 
 export type SavedFiltersStatus = "loading" | "error" | "ready";
 
@@ -43,6 +58,10 @@ export interface SavedFiltersMenuProps {
   onApply: (filter: SavedFilter) => void;
   onClearApplied: () => void;
   onRetry: () => void;
+  /** A write found the filter gone (or no longer visible): the menu says so above the refreshed list. */
+  gone?: boolean;
+  /** The menu closed: the notice has been seen. */
+  onGoneSeen?: () => void;
   onSave: (input: {
     name: string;
     visibility: "board" | "me";
@@ -56,12 +75,18 @@ export interface SavedFiltersMenuProps {
   /** The "Lưu bộ lọc" form is controlled by the host so the removed-field warning can open it. */
   /** Only the icon until a filter is applied (a crowded bar, like the Calendar's); the name stays for assistive technology. */
   compact?: boolean;
+  /** A phone: the list trigger is a 36 px icon and the save trigger only anchors the form. */
+  phone?: boolean;
   saveOpen?: boolean;
   onSaveOpenChange?: (open: boolean) => void;
+  /** What the bar shows now, one phrase per condition and the grouping: the save form's summary chips. */
+  summary?: readonly SummaryPhrase[];
+  /** The phrases of a saved filter's criteria: the subtitle of its row. */
+  describe?: (criteria: SavedFilter["criteria"]) => readonly SummaryPhrase[];
 }
 
 const iconButtonClass =
-  "grid size-7 shrink-0 cursor-pointer place-items-center rounded-md border-0 bg-transparent text-muted-foreground hover:bg-state-hover-strong hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring";
+  "grid size-7.5 shrink-0 cursor-pointer place-items-center rounded-md border-0 bg-transparent text-muted-foreground hover:bg-state-hover-strong hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring";
 
 /**
  * The filter bar's saved-filter controls (pure surface): "Lưu bộ lọc" (a form
@@ -75,9 +100,11 @@ export function SavedFiltersMenu(props: SavedFiltersMenuProps) {
       {canEdit && canSaveCurrent ? (
         <SaveFilterPopover
           copy={copy}
+          summary={props.summary ?? []}
           onSave={props.onSave}
           open={props.saveOpen}
           onOpenChange={props.onSaveOpenChange}
+          compact={props.phone}
         />
       ) : null}
       <SavedFiltersList {...props} copy={copy} />
@@ -87,10 +114,15 @@ export function SavedFiltersMenu(props: SavedFiltersMenuProps) {
 
 function SaveFilterPopover({
   copy,
+  summary,
   onSave,
   open: controlledOpen,
   onOpenChange,
+  compact,
 }: Pick<SavedFiltersMenuProps, "copy" | "onSave"> & {
+  /** A phone: "Lưu bộ lọc" is in the filter sheet; the trigger here only anchors the form. */
+  compact?: boolean | undefined;
+  summary: readonly SummaryPhrase[];
   open?: boolean | undefined;
   onOpenChange?: ((open: boolean) => void) | undefined;
 }) {
@@ -141,21 +173,51 @@ function SaveFilterPopover({
       }}
     >
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className={kanbanPillClass}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(kanbanPillClass, compact && "sr-only")}
+          {...(compact ? { tabIndex: -1, "aria-hidden": true } : {})}
+        >
           <BookmarkPlus className="size-4" aria-hidden="true" />
           {t.trigger}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-80 p-3">
+      <PopoverContent
+        align="start"
+        className="w-117.5 max-w-[calc(100vw-2rem)] rounded-xl border border-brand p-3.5 leading-[1.45] shadow-[0_0_0_3px_var(--state-selected)]"
+      >
         <form
           onSubmit={(event) => void submit(event)}
           aria-label={t.title}
           className="flex flex-col gap-3"
         >
+          <p className="m-0 text-xs leading-[1.45] font-semibold text-meta-foreground">
+            {t.title}
+          </p>
+          {summary.length > 0 ? (
+            <ul
+              aria-label={t.summaryLabel}
+              className="m-0 flex list-none flex-wrap gap-1.5 p-0"
+            >
+              {summary.map((phrase, index) => (
+                <li
+                  key={`${phrase.text}-${index}`}
+                  className={
+                    phrase.group
+                      ? "inline-flex h-5 items-center rounded-md bg-state-hover-strong px-1.75 text-[11.5px] font-semibold text-muted-foreground"
+                      : "inline-flex h-5 items-center rounded-md bg-state-selected px-1.75 text-[11.5px] font-semibold text-state-selected-foreground"
+                  }
+                >
+                  {phrase.text}
+                </li>
+              ))}
+            </ul>
+          ) : null}
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor={`${groupName}-name`}
-              className="text-xs font-semibold text-muted-foreground"
+              className="text-[12.5px] font-semibold text-muted-foreground"
             >
               {t.name}
             </label>
@@ -172,31 +234,31 @@ function SaveFilterPopover({
                 setName(event.target.value);
                 setError(null);
               }}
-              className="box-border h-8 w-full rounded-md border border-line-strong bg-popover px-2 text-sm outline-none placeholder:text-meta-foreground focus-visible:ring-2 focus-visible:ring-focus-ring aria-invalid:border-danger"
+              className="box-border h-8.5 w-full rounded-[7px] border border-line-strong bg-popover px-2.5 text-[13.5px] outline-none placeholder:text-meta-foreground focus-visible:border-brand focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand aria-invalid:border-danger"
             />
           </div>
           <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
-            <legend className="mb-1 p-0 text-xs font-semibold text-muted-foreground">
-              {t.visibilityLabel}
-            </legend>
+            <legend className="sr-only">{t.visibilityLabel}</legend>
             {(
               [
                 ["me", t.personal, t.personalHint],
                 ["board", t.shared, t.sharedHint],
               ] as const
             ).map(([value, label, hint]) => (
-              <label key={value} className="flex items-start gap-2 text-sm">
+              <label key={value} className="flex items-start gap-2.5 text-sm">
                 <input
                   type="radio"
                   name={`${groupName}-visibility`}
                   value={value}
                   checked={visibility === value}
                   onChange={() => setVisibility(value)}
-                  className="mt-1 accent-[var(--brand)]"
+                  className="mt-0.5 box-border size-4 shrink-0 cursor-pointer appearance-none rounded-full border-[1.5px] border-line-strong checked:border-brand checked:bg-[radial-gradient(circle,var(--brand)_0_4px,transparent_4.5px)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand"
                 />
                 <span className="flex flex-col">
-                  <span className="font-semibold">{label}</span>
-                  <span className="text-xs text-muted-foreground">{hint}</span>
+                  <span className="text-[13.5px] font-semibold">{label}</span>
+                  <span className="text-[12.5px] text-meta-foreground">
+                    {hint}
+                  </span>
                 </span>
               </label>
             ))}
@@ -246,16 +308,24 @@ function SavedFiltersList({
   onSetVisibility,
   onRemove,
   compact,
+  phone,
+  describe,
+  gone,
+  onGoneSeen,
 }: SavedFiltersMenuProps) {
   const t = copy.menu;
-  const [open, setOpen] = useState(false);
+  const [open, setOpenInner] = useState(false);
+  const setOpen = (next: boolean) => {
+    setOpenInner(next);
+    if (!next) onGoneSeen?.();
+  };
   const applied = filters.find((filter) => filter.id === appliedId);
   const mine = filters.filter((filter) => filter.visibility === "me");
   const shared = filters.filter((filter) => filter.visibility === "board");
   const section = (heading: string, rows: readonly SavedFilter[]) =>
     rows.length === 0 ? null : (
       <section aria-label={heading} className="flex flex-col gap-0.5">
-        <h3 className="m-0 px-2 pt-2 pb-1 text-xs font-semibold text-muted-foreground">
+        <h3 className="m-0 px-2.5 pt-2 pb-1 text-xs leading-[1.45] font-semibold text-meta-foreground">
           {heading}
         </h3>
         <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
@@ -264,6 +334,23 @@ function SavedFiltersList({
               key={filter.id}
               copy={copy}
               filter={filter}
+              stale={
+                describe
+                  ? describe(filter.criteria).filter((phrase) => phrase.stale)
+                      .length
+                  : 0
+              }
+              subtitle={[
+                // A filter shared by a colleague says who made it ("Hà Nguyễn · …").
+                ...(filter.isMine || !filter.createdByName
+                  ? []
+                  : [filter.createdByName]),
+                ...(describe
+                  ? describe(filter.criteria)
+                      .filter((phrase) => !phrase.stale)
+                      .map((phrase) => phrase.text)
+                  : []),
+              ].join(" · ")}
               applied={filter.id === appliedId}
               canEdit={canEdit}
               onApply={(filter) => {
@@ -285,7 +372,10 @@ function SavedFiltersList({
         <Button
           variant="ghost"
           size="sm"
-          className={kanbanPillClass}
+          className={cn(
+            kanbanPillClass,
+            phone && "h-9 min-w-9 justify-center px-2",
+          )}
           aria-haspopup="dialog"
         >
           <Bookmark className="size-4" aria-hidden="true" />
@@ -304,50 +394,81 @@ function SavedFiltersList({
       <PopoverContent
         align="start"
         aria-label={t.label}
-        className="w-96 max-w-[calc(100vw-2rem)] p-1.5"
+        className="w-95 max-w-[calc(100vw-2rem)] gap-0.5 rounded-xl border border-line p-1.5 leading-[1.45]"
       >
         {status === "loading" ? (
           <div
             role="status"
             aria-label={t.loading}
-            className="flex flex-col gap-1.5 p-1"
+            className="flex flex-col gap-0.5"
           >
             <div className="h-10 rounded-md bg-state-hover-strong" />
             <div className="h-10 rounded-md bg-state-hover-strong" />
           </div>
         ) : status === "error" ? (
-          <div role="alert" className="flex flex-col items-start gap-2 p-2.5">
-            <p className="m-0 text-sm text-danger-text">{t.loadFailed}</p>
-            <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+          <div role="alert" className="flex flex-col items-start gap-0.5 pb-2">
+            <div className="flex items-start gap-2 p-2.5 text-[12.5px] text-danger-text">
+              <CircleAlert
+                aria-hidden="true"
+                className="mt-px size-4 shrink-0"
+              />
+              <p className="m-0 flex-1">{t.loadFailed}</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mx-2.5 h-7 gap-2 text-[12.5px]"
+              onClick={onRetry}
+            >
+              <RotateCw aria-hidden="true" className="size-3.5" />
               {t.retry}
             </Button>
           </div>
         ) : (
           <>
-            {filters.length === 0 ? (
-              <div className="px-3 py-4 text-center">
-                <b className="block text-sm font-semibold">{t.empty}</b>
-                <span className="text-xs text-muted-foreground">
+            {gone ? (
+              <div
+                role="alert"
+                className="flex items-start gap-2 p-2.5 text-[12.5px] text-danger-text"
+              >
+                <CircleAlert
+                  aria-hidden="true"
+                  className="mt-px size-4 shrink-0"
+                />
+                <p className="m-0 flex-1">{t.gone}</p>
+              </div>
+            ) : null}
+            {filters.length === 0 && gone ? null : filters.length === 0 ? (
+              <div className="px-3.5 py-[18px] text-center">
+                <b className="block text-[13.5px] font-semibold">{t.empty}</b>
+                <span className="text-[12.5px] text-muted-foreground">
                   {t.emptyHint}
                 </span>
               </div>
             ) : (
               <>
                 {section(t.mine, mine)}
+                {mine.length > 0 && shared.length > 0 ? (
+                  <div role="separator" className="my-1 h-px bg-line" />
+                ) : null}
                 {section(t.shared, shared)}
               </>
             )}
             {!canEdit ? (
-              <p className="m-0 px-2.5 pt-1.5 pb-2 text-xs text-muted-foreground">
+              <p className="m-0 px-2.5 pt-2 pb-2.5 text-[12.5px] leading-[1.45] text-meta-foreground">
                 {t.readOnly}
               </p>
+            ) : null}
+            {applied ? (
+              <div role="separator" className="my-1 h-px bg-line" />
             ) : null}
             {applied ? (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="mt-1 w-full justify-start"
+                className="h-8.5 w-full justify-start px-3 text-[13px] font-medium text-muted-foreground"
                 onClick={() => {
                   setOpen(false);
                   onClearApplied();
@@ -367,6 +488,8 @@ function SavedFiltersList({
 function SavedFilterRow({
   copy,
   filter,
+  subtitle,
+  stale,
   applied,
   canEdit,
   onApply,
@@ -376,7 +499,13 @@ function SavedFilterRow({
 }: Pick<
   SavedFiltersMenuProps,
   "copy" | "canEdit" | "onApply" | "onRename" | "onSetVisibility" | "onRemove"
-> & { filter: SavedFilter; applied: boolean }) {
+> & {
+  filter: SavedFilter;
+  subtitle: string;
+  /** Conditions on a removed field: they are ignored when the filter is applied. */
+  stale: number;
+  applied: boolean;
+}) {
   const t = copy.row;
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState(filter.name);
@@ -398,8 +527,8 @@ function SavedFilterRow({
 
   if (renaming) {
     return (
-      <li className="rounded-md bg-state-selected p-1.5">
-        <div className="flex items-center gap-1.5">
+      <li className="rounded-lg bg-state-selected py-2.5 pr-2 pl-2.5">
+        <div className="flex items-center gap-2.5">
           <input
             type="text"
             autoFocus
@@ -421,19 +550,27 @@ function SavedFilterRow({
                 setRenaming(false);
               }
             }}
-            className="box-border h-8 min-w-0 flex-1 rounded-md border border-line-strong bg-popover px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-invalid:border-danger"
+            className="box-border h-8 min-w-0 flex-1 rounded-md border border-line-strong bg-popover px-2.5 text-[13.5px] outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-invalid:border-danger"
           />
-          <Button type="button" size="sm" onClick={() => void commitRename()}>
-            {t.renameSave}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setRenaming(false)}
-          >
-            {t.renameCancel}
-          </Button>
+          <span className="flex items-center gap-0.5">
+            <Button
+              type="button"
+              size="sm"
+              className="h-7 px-2.5 text-[12.5px]"
+              onClick={() => void commitRename()}
+            >
+              {t.renameSave}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2.5 text-[12.5px]"
+              onClick={() => setRenaming(false)}
+            >
+              {t.renameCancel}
+            </Button>
+          </span>
         </div>
         {error ? (
           <p
@@ -452,8 +589,8 @@ function SavedFilterRow({
     <li
       className={
         applied
-          ? "flex items-center gap-1 rounded-md bg-state-selected pr-1"
-          : "flex items-center gap-1 rounded-md pr-1 hover:bg-state-hover"
+          ? "flex items-center rounded-lg bg-state-selected pr-2"
+          : "flex items-center rounded-lg pr-2 hover:bg-state-hover"
       }
     >
       <button
@@ -461,10 +598,20 @@ function SavedFilterRow({
         aria-label={fillSavedFiltersCopy(t.apply, name)}
         aria-current={applied ? "true" : undefined}
         onClick={() => onApply(filter)}
-        className="flex min-h-10 min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md border-0 bg-transparent px-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-ring"
+        className={`flex ${subtitle || stale > 0 ? "min-h-13" : "min-h-11"} min-w-0 flex-1 cursor-pointer ${stale > 0 ? "items-start py-2" : "items-center py-1"} gap-2.5 rounded-lg border-0 bg-transparent pr-2.5 pl-2.5 text-left text-sm focus-visible:outline-2 focus-visible:outline-ring`}
       >
-        <span className="grid size-4 shrink-0 place-items-center text-brand-subtle-foreground">
-          {applied ? (
+        <span
+          className={cn(
+            "grid h-4 w-4.5 shrink-0 place-items-center text-brand-subtle-foreground",
+            stale > 0 && "mt-0.5",
+          )}
+        >
+          {stale > 0 ? (
+            <CircleAlert
+              className="size-4 text-warning-text"
+              aria-hidden="true"
+            />
+          ) : applied ? (
             <Check className="size-4" aria-hidden="true" />
           ) : shared ? (
             <Users
@@ -475,15 +622,41 @@ function SavedFilterRow({
             <Lock className="size-4 text-muted-foreground" aria-hidden="true" />
           )}
         </span>
-        <span className="min-w-0 flex-1 truncate font-semibold">
-          {filter.name}
+        <span className="min-w-0 flex-1">
+          <b className="block truncate text-[13.5px] font-semibold">
+            {filter.name}
+          </b>
+          {stale > 0 ? (
+            <small className="block text-xs leading-[1.45] text-warning-text">
+              {t.staleHint}
+            </small>
+          ) : null}
+          {subtitle ? (
+            <small className="block truncate text-xs leading-[1.45] text-meta-foreground">
+              {subtitle}
+            </small>
+          ) : null}
         </span>
-        <span className="shrink-0 rounded-md bg-state-hover-strong px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
-          {shared ? copy.menu.badgeShared : copy.menu.badgeMine}
-        </span>
+        {stale > 0 ? (
+          <small className="shrink-0 text-xs leading-[1.45] whitespace-nowrap text-meta-foreground">
+            {fillSavedFiltersCopy(t.staleCount, { count: stale })}
+          </small>
+        ) : null}
+        {canEdit ? null : (
+          <span
+            className={cn(
+              "inline-flex h-5 shrink-0 items-center rounded-md px-1.75 text-[11.5px] font-semibold whitespace-nowrap",
+              shared
+                ? "bg-state-selected text-state-selected-foreground"
+                : "bg-state-hover-strong text-muted-foreground",
+            )}
+          >
+            {shared ? copy.menu.badgeShared : copy.menu.badgeMine}
+          </span>
+        )}
       </button>
       {canEdit ? (
-        <span className="flex shrink-0 items-center">
+        <span className="flex shrink-0 items-center gap-0.5">
           <button
             type="button"
             className={iconButtonClass}

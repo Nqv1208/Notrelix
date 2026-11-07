@@ -18,6 +18,7 @@ export interface MockSavedView {
   visibility: MockSavedViewVisibility;
   createdBy: string | null;
   version: number;
+  isArchived?: boolean;
 }
 
 const TYPE_NAME: Record<string, string> = {
@@ -64,16 +65,19 @@ export class MockBoardSavedViews {
     return views;
   }
 
-  /** The views `userId` sees: the default first, then oldest first. */
-  list(boardId: string, userId: string): MockSavedView[] {
+  /** The views `userId` sees: the default first, then oldest first; the archived ones only when asked for. */
+  list(boardId: string, userId: string, archived = false): MockSavedView[] {
     return this.all(boardId)
+      .filter((v) => (v.isArchived === true) === archived)
       .filter((v) => v.visibility === "Board" || v.createdBy === userId)
       .sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
   }
 
   /** The default shared view (the legacy save's target). */
   defaultShared(boardId: string): MockSavedView | undefined {
-    const shared = this.all(boardId).filter((v) => v.visibility === "Board");
+    const shared = this.all(boardId).filter(
+      (v) => v.visibility === "Board" && !v.isArchived,
+    );
     return shared.find((v) => v.isDefault) ?? shared[0];
   }
 
@@ -95,10 +99,35 @@ export class MockBoardSavedViews {
     return created;
   }
 
-  remove(boardId: string, viewId: string): void {
+  /** Deletes a view; the default hands over to `nextId`, else the oldest shared live view (as the producer does). */
+  remove(boardId: string, viewId: string, nextId?: string): void {
     const views = this.all(boardId);
     const index = views.findIndex((v) => v.id === viewId);
-    if (index >= 0) views.splice(index, 1);
+    if (index < 0) return;
+    const [removed] = views.splice(index, 1);
+    if (!removed?.isDefault) return;
+    const live = views.filter((v) => !v.isArchived && v.visibility === "Board");
+    const next = live.find((v) => v.id === nextId) ?? live[0];
+    if (next) next.isDefault = true;
+  }
+
+  /** Archives a view; the default hands over to `nextId`, else the oldest shared live view. */
+  archive(boardId: string, view: MockSavedView, nextId?: string): void {
+    if (view.isDefault) {
+      const live = this.all(boardId).filter(
+        (v) => v.id !== view.id && !v.isArchived && v.visibility === "Board",
+      );
+      const next = live.find((v) => v.id === nextId) ?? live[0];
+      view.isDefault = false;
+      if (next) next.isDefault = true;
+    }
+    view.isArchived = true;
+    view.version += 1;
+  }
+
+  unarchive(view: MockSavedView): void {
+    view.isArchived = false;
+    view.version += 1;
   }
 
   setDefault(boardId: string, viewId: string): void {
