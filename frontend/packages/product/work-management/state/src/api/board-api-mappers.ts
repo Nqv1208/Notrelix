@@ -35,7 +35,6 @@ import type {
   FieldSemanticRole,
   FullBoardDtoApi,
   FullBoardResponse,
-  KanbanStatusLane,
   LanePaging,
   ListDtoApi,
   WorkStatusCategory,
@@ -50,7 +49,7 @@ import {
 import {
   findPriorityField,
   findStatusField,
-  groupCardsByStatus,
+  countCardsByLane,
   inferStatusCategory,
   NO_STATUS_LANE,
   isPriorityFieldName,
@@ -160,7 +159,7 @@ export function mapFullBoardDto(
   context: {
     workspaceId: string;
     /** The filter and sort a paged read was made under. */
-    criteria?: { filter: string; sort: string; search?: string };
+    criteria?: BoardPaging["criteria"];
   },
 ): FullBoardResponse {
   const boardId = dto.id ?? "";
@@ -212,7 +211,10 @@ export function mapFullBoardDto(
           paging: mapBoardPaging(
             dto as GeneratedFullBoardDto,
             lanes,
-            groupCardsByStatus({ fieldDefinitions, groups: mappedGroups }),
+            countCardsByLane(
+              { fieldDefinitions, groups: mappedGroups },
+              context.criteria?.groupBy,
+            ),
             context.criteria ?? { filter: "", sort: "" },
           ),
         }
@@ -224,12 +226,9 @@ export function mapFullBoardDto(
 function mapBoardPaging(
   dto: GeneratedFullBoardDto,
   lanes: NonNullable<GeneratedFullBoardDto["lanes"]>,
-  grouped: readonly KanbanStatusLane[],
-  criteria: { filter: string; sort: string; search?: string },
+  loadedBy: ReadonlyMap<string, number>,
+  criteria: BoardPaging["criteria"],
 ): BoardPaging {
-  const loadedBy = new Map(
-    grouped.map((lane) => [lane.optionId ?? NO_STATUS_LANE, lane.cards.length]),
-  );
   const byLane: Record<string, LanePaging> = {};
   for (const lane of lanes) {
     const key = lane.optionId ?? NO_STATUS_LANE;

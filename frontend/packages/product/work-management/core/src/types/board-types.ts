@@ -105,7 +105,7 @@ export interface LanePaging {
  * of the whole board.
  */
 export interface BoardPaging {
-  /** By Status option id; the lane of items without a status is `none`. */
+  /** By option id of the lane field (Status, or `criteria.groupBy`); the lane of items without a value is `none`. */
   readonly lanes: Readonly<Record<string, LanePaging>>;
   /** Live root items of the board before the filter. */
   readonly totalItems: number;
@@ -117,6 +117,10 @@ export interface BoardPaging {
     readonly sort: string;
     /** The title or key text the lanes were read under; absent: none. */
     readonly search?: string;
+    /** People whose name holds the search text (their items match it too), comma-separated ids; absent: none. */
+    readonly searchMembers?: string;
+    /** The Select field the lanes are of (lane keys are its option ids); absent: the Status field. */
+    readonly groupBy?: string;
   };
 }
 

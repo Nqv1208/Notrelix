@@ -56,7 +56,7 @@ public sealed class PostgresBoardItemPageReader(ApplicationDbContext context) : 
         // whether it passes the filter and its sort keys; the lane sizes and the wanted window come from that.
         var builder = new Builder(fields);
         var filter = builder.Filter(criteria);
-        var search = builder.Search(criteria.Search);
+        var search = builder.Search(criteria.Search, criteria.SearchMembers);
         if (search is not null) filter = filter is null ? search : $"({search}) AND COALESCE(({filter}), false)";
         var lane = builder.Lane(laneField);
         var keyColumns = builder.SortKeys(criteria);
@@ -141,24 +141,42 @@ public sealed class PostgresBoardItemPageReader(ApplicationDbContext context) : 
         private static Application.Common.Exceptions.ValidationException Refuse(string property, string message) =>
             BoardItemCriteria.Refuse(property, message);
 
-        /// <summary>The lane key of an Item: its Status option when that is still an option of the field, else the empty lane.</summary>
+        /// <summary>
+        /// The lane key of an Item: the option the lane field (a Status or Select field) holds when that is still one of
+        /// its options, else the empty lane. A value stored as a list reads its first option, as the client does.
+        /// </summary>
         public string Lane(CriteriaField? laneField)
         {
             if (laneField is null) return "''::text";
             var fp = Add(laneField.Id, NpgsqlDbType.Uuid);
             var options = Add(laneField.OptionOrder.Select(option => option.ToString()).ToArray(), NpgsqlDbType.Array | NpgsqlDbType.Text);
-            var stored = $"(SELECT v.value #>> ARRAY[]::text[] FROM work.board_item_values v WHERE v.item_id = i.id AND v.field_id = {fp})";
+            var stored = $"(SELECT CASE WHEN jsonb_typeof(v.value) = 'array' THEN v.value ->> 0 ELSE v.value #>> ARRAY[]::text[] END FROM work.board_item_values v WHERE v.item_id = i.id AND v.field_id = {fp})";
             return $"(CASE WHEN {stored} = ANY({options}) THEN {stored} ELSE '' END)";
         }
 
         // ---- filter ----
 
-        /// <summary>The text search: the title or the key holds the text, ignoring case and accents.</summary>
-        public string? Search(string? term)
+        /// <summary>
+        /// The text search, as the board search box reads a card: the title, the key or the name of a live label holds
+        /// the text, ignoring case and accents, or the Item is assigned to one of the people whose name holds it.
+        /// </summary>
+        public string? Search(string? term, IReadOnlyList<Guid> members)
         {
             if (string.IsNullOrEmpty(term)) return null;
             var needle = Fold(Add(term, NpgsqlDbType.Text));
-            return $"strpos({Fold("i.name")}, {needle}) > 0 OR strpos({Fold("COALESCE(i.item_key, '')")}, {needle}) > 0";
+            var parts = new List<string>
+            {
+                $"strpos({Fold("i.name")}, {needle}) > 0",
+                $"strpos({Fold("COALESCE(i.item_key, '')")}, {needle}) > 0",
+                $"EXISTS (SELECT 1 FROM work.board_item_labels il JOIN work.labels lb ON lb.id = il.label_id WHERE il.item_id = i.id AND lb.deleted_at IS NULL AND strpos({Fold("lb.name")}, {needle}) > 0)",
+            };
+            if (members.Count > 0)
+            {
+                var people = Add(members.ToArray(), NpgsqlDbType.Array | NpgsqlDbType.Uuid);
+                parts.Add($"EXISTS (SELECT 1 FROM work.board_item_members m WHERE m.item_id = i.id AND m.user_id = ANY({people}))");
+            }
+
+            return string.Join(" OR ", parts);
         }
 
         public string? Filter(BoardItemCriteria criteria)
