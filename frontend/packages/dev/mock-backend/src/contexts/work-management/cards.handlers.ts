@@ -57,6 +57,7 @@ import {
   noContent,
   notFound,
   ok,
+  serverError,
 } from "../../transport/create-response";
 import { preconditionFailed } from "../workspace/space-target";
 import {
@@ -535,6 +536,16 @@ export const cardsOperations = [
           : data.description;
       const tooLong = titleTooLong(data.title);
       if (tooLong) return tooLong;
+      // Test hook (WM-TLCal-320 Lịch 320): `globalThis.__mockItemDateFailures` refuses that many date writes
+      // with a 500, so the Calendar shows "Chưa lưu được ngày" and its Thử lại; the next write saves.
+      const hook = globalThis as { __mockItemDateFailures?: number };
+      if (
+        (data.dueDate !== undefined || data.startDate !== undefined) &&
+        (hook.__mockItemDateFailures ?? 0) > 0
+      ) {
+        hook.__mockItemDateFailures = (hook.__mockItemDateFailures ?? 0) - 1;
+        return serverError("Mock date write failure");
+      }
       // Only the fields the request names change: a spread of `undefined`
       // would wipe the title of a date-only patch.
       const updated = store.updateCard(params.id, {
