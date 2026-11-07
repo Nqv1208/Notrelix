@@ -20,7 +20,12 @@ import { TimelineChart, type TimelineChartLink } from "./timeline-chart";
 import { TimelineLinkDialog } from "./timeline-link-dialog";
 import { TimelineTray, type TimelineUndated } from "./timeline-tray";
 import { TimelineList } from "./timeline-list";
-import { TimelineLinkSheet, TimelinePhoneList } from "./timeline-phone";
+import {
+  TimelineLinkSheet,
+  TimelinePhoneList,
+  TimelineUndatedBar,
+  TimelineUndatedSheet,
+} from "./timeline-phone";
 import { TimelineToolbar, type TimelineToolbarProps } from "./timeline-toolbar";
 import {
   buildHeader,
@@ -609,15 +614,19 @@ export function BoardTimelineSurface({
           />
         </div>
         {undatedItems ? (
-          <TimelineTray
+          <TimelineUndatedBar
+            copy={copy}
+            count={undatedItems.length}
+            onOpen={() => setTrayOpen(true)}
+          />
+        ) : null}
+        {undatedItems && trayOpen ? (
+          <TimelineUndatedSheet
             copy={copy}
             items={undatedItems}
-            open={trayOpen}
-            onToggle={() => setTrayOpen((open) => !open)}
             canEdit={canEdit && Boolean(onSchedule)}
             onSchedule={(id, day) => onSchedule?.(id, day)}
-            onDragStart={() => undefined}
-            onDragEnd={() => undefined}
+            onClose={() => setTrayOpen(false)}
           />
         ) : null}
         {linkFor && onCreateLink ? (

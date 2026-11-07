@@ -2,7 +2,7 @@ import { useState, type DragEvent } from "react";
 import { ChevronUp, Lock } from "lucide-react";
 import { Button, cn } from "@notrelix/ui-web";
 import type { DayKey } from "../calendar/calendar-model";
-import { fill } from "./timeline-model";
+import { fill, type TimelineTone } from "./timeline-model";
 import type { TimelineCopy } from "./timeline.copy";
 
 /** An item with no start and no due day. */
@@ -10,6 +10,8 @@ export interface TimelineUndated {
   readonly id: string;
   readonly itemKey?: string | null;
   readonly title: string;
+  /** The status glyph the phone sheet draws before the key. */
+  readonly tone?: TimelineTone;
 }
 
 export interface TimelineTrayProps {
