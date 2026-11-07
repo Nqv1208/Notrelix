@@ -1,5 +1,5 @@
-import { useId } from "react";
-import { CircleAlert, Link2, X } from "lucide-react";
+import { useId, useState } from "react";
+import { ChevronUp, CircleAlert, Link2, Lock, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ import {
   type TimelineTone,
 } from "./timeline-model";
 import type { TimelineCopy } from "./timeline.copy";
+import type { TimelineUndated } from "./timeline-tray";
 
 /** "dd/MM" of a day, as the rows of `WM-TLCal-320` write it. */
 function dayMonth(day: DayKey | null): string {
@@ -401,5 +402,191 @@ export function TimelineLinkSheet({
         ) : null}
       </DialogContent>
     </Dialog>
+  );
+}
+
+export interface TimelineUndatedSheetProps {
+  copy: TimelineCopy;
+  items: readonly TimelineUndated[];
+  /** False: the read-only notice and locked chips, as drawn. */
+  canEdit: boolean;
+  onSchedule: (id: string, day: DayKey) => void;
+  onClose: () => void;
+}
+
+/**
+ * "Chưa lên lịch" as the bottom sheet of `WM-TLCal-320` (frame "Khay 320"):
+ * grab, title and count, then one 34 px chip per undated item. A viewer sees
+ * the lock notice and locked chips; an editor gets a 44 px "Đặt ngày" on each
+ * chip (not drawn: the notice names it) that asks for the one day.
+ */
+export function TimelineUndatedSheet({
+  copy,
+  items,
+  canEdit,
+  onSchedule,
+  onClose,
+}: TimelineUndatedSheetProps) {
+  const text = copy.tray;
+  const [picking, setPicking] = useState<string | null>(null);
+  return (
+    <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
+      <DialogContent
+        showCloseButton={false}
+        overlayClassName="bg-modal-scrim backdrop-blur-none"
+        aria-label={copy.phone.undatedSheet}
+        aria-labelledby={undefined}
+        data-tl="undated-sheet"
+        className="top-auto right-0 bottom-0 left-0 box-border flex max-h-[85dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-2.5 overflow-y-auto rounded-none rounded-t-[14px] border border-line bg-popover px-4 pt-2.5 pb-4 text-foreground shadow-popover ring-0 sm:max-w-none dark:bg-card data-open:zoom-in-100 data-closed:zoom-out-100 [&>*]:shrink-0"
+      >
+        <span
+          data-tl="grab"
+          aria-hidden="true"
+          className="h-1 w-9 shrink-0 self-center rounded-[2px] bg-line-strong"
+        />
+        <div className="flex items-center gap-2">
+          <DialogTitle className="m-0 flex-1 text-[14px] leading-[1.45] font-bold">
+            {text.title}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            {fill(copy.phone.undated, { count: items.length })}
+          </DialogDescription>
+          <span
+            data-tl="undated-count"
+            className="rounded-full bg-state-hover-strong px-[7px] text-[12px] leading-[1.45] font-semibold text-muted-foreground"
+          >
+            {items.length}
+          </span>
+        </div>
+        {!canEdit ? (
+          <div
+            role="note"
+            data-tl="undated-note"
+            className="flex items-start gap-2 rounded-[8px] bg-warning-subtle px-3 py-2.5 text-[12.5px] leading-[1.45] text-warning-text"
+          >
+            <Lock
+              className="size-4 shrink-0"
+              strokeWidth={1.8}
+              aria-hidden="true"
+            />
+            <span className="min-w-0 flex-1 text-foreground">
+              {copy.phone.trayReadOnly}
+            </span>
+          </div>
+        ) : null}
+        {items.length === 0 ? (
+          <p className="m-0 text-compact text-meta-foreground">{text.empty}</p>
+        ) : (
+          <div data-tl="undated-list" className="flex flex-col gap-2">
+            {items.map((item) => {
+              const name = item.itemKey ?? item.title;
+              const chip = (
+                <>
+                  <TimelineStatusGlyph tone={item.tone ?? "todo"} />
+                  {item.itemKey ? (
+                    <span className="shrink-0 font-mono text-[11.5px] text-meta-foreground">
+                      {item.itemKey}
+                    </span>
+                  ) : null}
+                  <span className="min-w-0 flex-1 truncate">{item.title}</span>
+                </>
+              );
+              if (!canEdit)
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    data-tl="undated-chip"
+                    aria-disabled="true"
+                    aria-label={fill(copy.phone.readOnlyChip, {
+                      key: item.itemKey ?? "",
+                      title: item.title,
+                    }).trim()}
+                    className="box-border flex h-[34px] w-full min-w-0 cursor-default items-center gap-2 rounded-[8px] border border-line-strong bg-state-hover px-2.5 text-left text-[12.5px] font-medium text-muted-foreground"
+                  >
+                    {chip}
+                    <Lock
+                      className="size-3 shrink-0"
+                      strokeWidth={1.8}
+                      aria-hidden="true"
+                    />
+                  </button>
+                );
+              return (
+                <div
+                  key={item.id}
+                  data-tl="undated-chip"
+                  className="box-border flex min-h-11 w-full min-w-0 items-center gap-2 rounded-[8px] border border-line-strong bg-popover pl-2.5 text-[12.5px] font-medium text-foreground dark:bg-card"
+                >
+                  {chip}
+                  {picking === item.id ? (
+                    <input
+                      type="date"
+                      autoFocus
+                      aria-label={fill(text.setDateLabel, { key: name })}
+                      className="mr-1 h-9 w-[132px] shrink-0 rounded-[6px] border border-line-strong bg-transparent px-1 text-crumb"
+                      onChange={(event) => {
+                        if (!event.target.value) return;
+                        setPicking(null);
+                        onSchedule(item.id, event.target.value as DayKey);
+                      }}
+                      onBlur={() => setPicking(null)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Escape") {
+                          event.stopPropagation();
+                          setPicking(null);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      data-tl="undated-set"
+                      aria-label={fill(text.setDateLabel, { key: name })}
+                      onClick={() => setPicking(item.id)}
+                      className="h-11 shrink-0 cursor-pointer rounded-[8px] border-0 bg-transparent px-3 text-[13px] font-semibold text-link focus-visible:outline-2 focus-visible:outline-ring"
+                    >
+                      {text.setDate}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export interface TimelineUndatedBarProps {
+  copy: TimelineCopy;
+  count: number;
+  onOpen: () => void;
+}
+
+/** The 44 px "Chưa lên lịch n" foot of the phone list; it opens the sheet. */
+export function TimelineUndatedBar({
+  copy,
+  count,
+  onOpen,
+}: TimelineUndatedBarProps) {
+  return (
+    <div className="border-t border-line bg-popover px-2 dark:bg-card">
+      <button
+        type="button"
+        data-tl="undated-bar"
+        aria-haspopup="dialog"
+        aria-label={fill(copy.phone.undated, { count })}
+        onClick={onOpen}
+        className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-[8px] border-0 bg-transparent px-2 text-compact font-semibold text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+      >
+        <ChevronUp className="size-4" aria-hidden="true" />
+        {copy.tray.title}
+        <span className="rounded-full bg-state-hover-strong px-[7px] text-[12px] text-muted-foreground">
+          {count}
+        </span>
+      </button>
+    </div>
   );
 }
