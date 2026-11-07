@@ -13,7 +13,9 @@
  * `thieu-ten` has no column for the title, `co-loi` previews with 12 errors in 9 rows; at confirm `dang-tao` stays
  * at 3.200 of 5.000, `gan-xong` at 4.900, `bi-tu-choi` is refused at row 3.480, `luu-tru` finds the board archived,
  * `mat-mang` loses the connection; any other name is checked clean and done at once. `gon` shows only four of the
- * columns (title, due, priority, estimate), the short list the phone sheet is drawn with.
+ * columns (title, due, priority, estimate), the short list the phone sheet is drawn with. People (UC-WM-B29, no
+ * artboard): `nguoi-chua-khop` leaves the person cells of ten rows unmatched (check and result list them),
+ * `nguoi-khoa` imports as someone who is not an Owner or Admin, so the person field is locked.
  *
  * `globalThis.__mockImportHold` keeps an upload open (the dialog reading the file) for a spec to measure.
  */
@@ -27,6 +29,10 @@ import {
 import { canReadBoard } from "./boards.handlers";
 
 const MB = 1024 * 1024;
+/** Rows whose person cell matched no member (`nguoi-chua-khop`): more than eight, so the note is cut short. */
+const UNMATCHED = [3, 7, 12, 40, 41, 42, 43, 44, 45, 46];
+const unmatched = (name: string) =>
+  /nguoi-chua-khop/.test(name) ? UNMATCHED : [];
 const SHOWN = new Set([0, 2, 3, 4]);
 const files = new Map<string, { fileName: string; rows: number }>();
 
@@ -143,11 +149,16 @@ const sampleRows = (bad: boolean) =>
           : r,
   );
 
-function targets() {
+function targets(personLocked = false) {
   return [
     { id: "$title", name: "Tên việc", type: "Text", required: true },
     { id: "$group", name: "Nhóm", type: "Group", required: false },
-    { id: "assignee", name: "Người phụ trách", type: "Person" },
+    {
+      id: "assignee",
+      name: "Người phụ trách",
+      type: "Person",
+      ...(personLocked ? { lockedReason: "person" } : {}),
+    },
     { id: "due", name: "Hạn chót", type: "Date" },
     { id: "priority", name: "Mức ưu tiên", type: "Select" },
     { id: "estimate", name: "Ước lượng (giờ)", type: "Number" },
@@ -183,6 +194,7 @@ function job(id: string, file: { fileName: string; rows: number }) {
     created: file.rows,
     firstKey: "ERP-213",
     lastKey: "ERP-5212",
+    unmatchedPersonRows: unmatched(name),
   };
 }
 
@@ -224,11 +236,15 @@ export const boardImportOperations = [
               ? { ...col, examples: ["8", "ba ngày", "2,5"] }
               : col,
         ),
-        targets: targets(),
+        targets: targets(/nguoi-khoa/.test(fileName)),
         suggested: (/thieu-ten/.test(fileName)
           ? SUGGESTED.slice(1)
           : SUGGESTED
-        ).filter((m) => !short || SHOWN.has(m.column)),
+        ).filter(
+          (m) =>
+            (!short || SHOWN.has(m.column)) &&
+            !(/nguoi-khoa/.test(fileName) && m.target === "assignee"),
+        ),
       });
     },
   }),
@@ -277,7 +293,7 @@ export const boardImportOperations = [
         errorRows: bad ? 9 : 0,
         errors: bad ? ERRORS.slice(0, 3) : [],
         sample: sampleRows(bad),
-        unmatchedPersonRows: [],
+        unmatchedPersonRows: unmatched(named),
       });
     },
   }),
