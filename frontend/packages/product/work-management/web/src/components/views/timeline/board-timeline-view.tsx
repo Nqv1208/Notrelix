@@ -193,6 +193,7 @@ export function BoardTimelineView({
             id: card.id,
             itemKey: card.itemKey,
             title: card.title,
+            tone,
           });
           continue;
         }

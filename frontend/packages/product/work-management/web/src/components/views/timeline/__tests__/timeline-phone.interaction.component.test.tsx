@@ -4,7 +4,12 @@ import {
   timelineMockupGroups,
   timelineMockupLinks,
 } from "../../../../verification/timeline-fixtures";
-import { TimelineLinkSheet, TimelinePhoneList } from "../timeline-phone";
+import {
+  TimelineLinkSheet,
+  TimelinePhoneList,
+  TimelineUndatedBar,
+  TimelineUndatedSheet,
+} from "../timeline-phone";
 import { timelineCopy } from "../timeline.copy";
 
 const copy = timelineCopy("vi");
@@ -132,5 +137,85 @@ describe("TimelineLinkSheet (WM-TLCal-320)", () => {
     const { onClose } = renderSheet("erp-151");
     fireEvent.click(screen.getByRole("button", { name: "Đóng" }));
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+const undated = [
+  {
+    id: "erp-155",
+    itemKey: "ERP-155",
+    title: "Lập kế hoạch cắt chuyển hệ thống",
+    tone: "todo" as const,
+  },
+  {
+    id: "erp-161",
+    itemKey: "ERP-161",
+    title: "Soạn tài liệu hướng dẫn kho",
+    tone: "doing" as const,
+  },
+];
+
+describe("TimelineUndatedSheet (WM-TLCal-320, Khay 320)", () => {
+  const renderUndated = (canEdit: boolean) => {
+    const onSchedule = vi.fn();
+    const onClose = vi.fn();
+    renderPureUi(
+      <TimelineUndatedSheet
+        copy={copy}
+        items={undated}
+        canEdit={canEdit}
+        onSchedule={onSchedule}
+        onClose={onClose}
+      />,
+    );
+    return { onSchedule, onClose };
+  };
+
+  it("is a dialog named Việc chưa lên lịch, with the title and the count", () => {
+    renderUndated(false);
+    const sheet = screen.getByRole("dialog", { name: "Việc chưa lên lịch" });
+    expect(within(sheet).getByText("Chưa lên lịch")).toBeTruthy();
+    expect(within(sheet).getByText("2")).toBeTruthy();
+  });
+
+  it("shows a viewer the lock notice and locked chips that schedule nothing", () => {
+    const { onSchedule } = renderUndated(false);
+    expect(screen.getByRole("note").textContent).toContain(
+      "Bạn chỉ có quyền xem nên không thể đặt lịch.",
+    );
+    const chip = screen.getByRole("button", {
+      name: "ERP-155 Lập kế hoạch cắt chuyển hệ thống, chưa lên lịch, chỉ xem nên không đặt lịch được",
+    });
+    expect(chip.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(chip);
+    expect(onSchedule).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: /^Đặt ngày cho / })).toBeNull();
+  });
+
+  it("gives an editor Đặt ngày on each chip, which sets the one day", () => {
+    const { onSchedule } = renderUndated(true);
+    expect(screen.queryByRole("note")).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Đặt ngày cho ERP-161" }),
+    );
+    fireEvent.change(screen.getByLabelText("Đặt ngày cho ERP-161"), {
+      target: { value: "2026-10-20" },
+    });
+    expect(onSchedule).toHaveBeenCalledWith("erp-161", "2026-10-20");
+  });
+
+  it("closes on Escape", () => {
+    const { onClose } = renderUndated(false);
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe("TimelineUndatedBar (WM-TLCal-320)", () => {
+  it("is a 44 px button with the count that opens the sheet", () => {
+    const onOpen = vi.fn();
+    renderPureUi(<TimelineUndatedBar copy={copy} count={3} onOpen={onOpen} />);
+    fireEvent.click(screen.getByRole("button", { name: "Chưa lên lịch (3)" }));
+    expect(onOpen).toHaveBeenCalled();
   });
 });
