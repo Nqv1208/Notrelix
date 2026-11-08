@@ -8,7 +8,7 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBo
 /// <summary>An Item of a lane page with the group it sits in (the board read nests Items by group).</summary>
 public record BoardLaneItemDto(Guid GroupId, BoardItemSummaryDto Item);
 
-/// <summary>One page of a Status lane's Items under a filter and sort, with the lane's size before and after the filter.</summary>
+/// <summary>One page of a lane's Items (a Status or Select option) under a filter and sort, with the lane's size before and after the filter.</summary>
 public record BoardLaneItemPageDto(
     Guid? OptionId,
     List<BoardLaneItemDto> Items,
@@ -19,11 +19,13 @@ public record BoardLaneItemPageDto(
     // Items in the lane that pass the filter.
     int FilteredCount);
 
-/// <param name="Lane">A Status option id, or "none" for the lane of Items with no status.</param>
+/// <param name="Lane">An option id of the lane field, or "none" for the lane of Items with no value.</param>
 /// <param name="Cursor">The previous page's NextCursor; none reads the first page.</param>
 /// <param name="Limit">Page size, 50 when absent, clamped to 1..200.</param>
-/// <param name="Search">Keeps the items whose title or key holds the text.</param>
-public record ListBoardLaneItemsQuery(Guid BoardId, string Lane, string? Cursor = null, int? Limit = null, string? Filter = null, string? Sort = null, string? Search = null)
+/// <param name="Search">Keeps the items whose title, key or label holds the text, or assigned to one of <paramref name="SearchMembers"/>.</param>
+/// <param name="SearchMembers">Comma-separated user ids whose name holds the search text.</param>
+/// <param name="GroupBy">The Status or Select field the lanes are of; none: the Status field.</param>
+public record ListBoardLaneItemsQuery(Guid BoardId, string Lane, string? Cursor = null, int? Limit = null, string? Filter = null, string? Sort = null, string? Search = null, string? SearchMembers = null, string? GroupBy = null)
     : IQuery<BoardLaneItemPageDto>, IRequirePermission, IAuthenticatedRequest, IResourceScopedRequest, IReadRequest
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
@@ -48,12 +50,12 @@ public class ListBoardLaneItemsQueryHandler : IRequestHandler<ListBoardLaneItems
 
     public async Task<BoardLaneItemPageDto> Handle(ListBoardLaneItemsQuery request, CancellationToken cancellationToken)
     {
-        var criteria = BoardItemCriteria.Parse(request.Filter, request.Sort, request.Search);
+        var criteria = BoardItemCriteria.Parse(request.Filter, request.Sort, request.Search, request.SearchMembers);
         var limit = PageCursor.ClampLimit(request.Limit);
         Guid? optionId = null;
         if (request.Lane != "none")
         {
-            if (!Guid.TryParse(request.Lane, out var parsed)) throw BoardItemCriteria.Refuse("lane", "The lane is not a status option or 'none'.");
+            if (!Guid.TryParse(request.Lane, out var parsed)) throw BoardItemCriteria.Refuse("lane", "The lane is not an option or 'none'.");
             optionId = parsed;
         }
 
@@ -67,10 +69,10 @@ public class ListBoardLaneItemsQueryHandler : IRequestHandler<ListBoardLaneItems
             .Include(field => field.Options)
             .Where(field => field.BoardId == request.BoardId)
             .ToListAsync(cancellationToken);
-        var laneField = GetFullBoardQueryHandler.LaneFieldOf(fields);
+        var laneField = GetFullBoardQueryHandler.LaneFieldOf(fields, request.GroupBy);
         if (optionId is not null && laneField?.OptionOrder.Contains(optionId.Value) != true)
         {
-            throw new NotFoundException("StatusLane", optionId.Value);
+            throw new NotFoundException(laneField?.Type == FieldType.Select ? "SelectLane" : "StatusLane", optionId.Value);
         }
 
         var page = (await _pageReader.ReadAsync(

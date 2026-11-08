@@ -47,15 +47,43 @@ export const defaultTableViewConfig: ViewConfig = {
 };
 
 /** The query string of a paged read: the filter and sort only when set, the rest as given. */
+/** What a paged read is read under, in the web client's own wire forms. */
+interface PageCriteria {
+  filter: string;
+  sort: string;
+  /** Keeps the items whose title, key or label holds the text. */
+  search?: string;
+  /** People whose name holds the search text (comma-separated ids): their items match it too. */
+  searchMembers?: string;
+  /** The Select field the lanes are of; absent: the Status field. */
+  groupBy?: string;
+}
+
 function criteriaQuery(
-  criteria: { filter: string; sort: string; search?: string },
+  criteria: PageCriteria,
   rest: Record<string, string>,
 ): string {
   const params = new URLSearchParams(rest);
   if (criteria.filter) params.set("filter", criteria.filter);
   if (criteria.sort) params.set("sort", criteria.sort);
   if (criteria.search) params.set("q", criteria.search);
+  if (criteria.search && criteria.searchMembers)
+    params.set("qMembers", criteria.searchMembers);
+  if (criteria.groupBy) params.set("groupBy", criteria.groupBy);
   return params.toString();
+}
+
+/** The criteria the paging keeps: only what was sent. */
+function keptCriteria(criteria: PageCriteria) {
+  return {
+    filter: criteria.filter,
+    sort: criteria.sort,
+    ...(criteria.search ? { search: criteria.search } : {}),
+    ...(criteria.search && criteria.searchMembers
+      ? { searchMembers: criteria.searchMembers }
+      : {}),
+    ...(criteria.groupBy ? { groupBy: criteria.groupBy } : {}),
+  };
 }
 
 type SaveBoardViewOp = "WorkManagement.BoardViews.Save";
@@ -80,7 +108,7 @@ export function createBoardApi(client: NotrelixClient) {
       boardId: string,
       context: {
         workspaceId: string;
-        page?: { size: number; filter: string; sort: string; search?: string };
+        page?: PageCriteria & { size: number };
       },
     ): Promise<FullBoardResponse> {
       const query = context.page
@@ -91,29 +119,17 @@ export function createBoardApi(client: NotrelixClient) {
       );
       return mapFullBoardDto(board, {
         workspaceId: context.workspaceId,
-        ...(context.page
-          ? {
-              criteria: {
-                filter: context.page.filter,
-                sort: context.page.sort,
-                ...(context.page.search ? { search: context.page.search } : {}),
-              },
-            }
-          : {}),
+        ...(context.page ? { criteria: keptCriteria(context.page) } : {}),
       });
     },
 
-    /** The next page of one Status lane (`none`: the lane without a status), under the criteria the board was read with. */
+    /** The next page of one lane (`none`: the lane without a value), under the criteria the board was read with. */
     async getLanePage(
       boardId: string,
       lane: string,
-      input: {
+      input: PageCriteria & {
         cursor: string;
         limit: number;
-        filter: string;
-        sort: string;
-        /** Keeps the items whose title or key holds the text. */
-        search?: string;
         board: Board;
         fieldDefinitions: FieldDefinition[];
       },
