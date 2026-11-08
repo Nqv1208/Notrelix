@@ -245,6 +245,29 @@ describe.each([
     );
   });
 
+  it(`${fui("wm.board-settings:field-panel", locale)}changes a field default alone and sends nothing for the same default (${locale})`, async () => {
+    const actions = spyActions();
+    renderPage(copy, {
+      fieldId: "sf-estimate",
+      actions: actions as unknown as BoardSettingsActions,
+    });
+    const panel = screen.getByRole("complementary", {
+      name: fillCopy(copy.panel.label, { name: "Ước lượng" }),
+    });
+    const save = within(panel).getByRole("button", { name: copy.common.save });
+    fireEvent.click(save);
+    expect(actions.updateField).not.toHaveBeenCalled();
+    fireEvent.change(within(panel).getByLabelText(copy.panel.default), {
+      target: { value: "13" },
+    });
+    fireEvent.click(save);
+    await waitFor(() =>
+      expect(actions.updateField).toHaveBeenCalledWith("sf-estimate", {
+        defaultText: "13",
+      }),
+    );
+  });
+
   it(`${fui("wm.board-settings:options", locale)}adds, renames and deletes an option at once (${locale})`, async () => {
     const actions = spyActions();
     renderPage(copy, {
