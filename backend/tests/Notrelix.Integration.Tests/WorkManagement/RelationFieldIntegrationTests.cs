@@ -95,7 +95,7 @@ public sealed class RelationFieldIntegrationTests : IAsyncLifetime
         var otherBoard = await _host.SeedBoardAsync(otherStack, "Other workspace", BoardVisibility.Workspace);
 
         Func<Task> act = () => OrgTreeTestHost.SendAsync(owner, new CreateBoardFieldCommand(
-            scene.SourceBoardId, "Linked", "Relation", $"{{\"targetBoardId\":\"{otherBoard}\"}}"));
+            scene.SourceBoardId, "Linked elsewhere", "Relation", $"{{\"targetBoardId\":\"{otherBoard}\"}}"));
 
         await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
     }
