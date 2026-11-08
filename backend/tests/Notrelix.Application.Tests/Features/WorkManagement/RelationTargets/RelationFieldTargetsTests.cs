@@ -1,4 +1,3 @@
-using Moq;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.RelationTargets;
 using Notrelix.Domain.WorkManagement;

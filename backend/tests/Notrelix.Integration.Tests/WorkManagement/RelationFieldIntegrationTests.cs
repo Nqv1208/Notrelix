@@ -1,12 +1,15 @@
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
+using Notrelix.Application.Features.WorkManagement.Ordering;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
+using Notrelix.Infrastructure.Data;
+using Notrelix.Infrastructure.Data.WorkManagement;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Integration.Tests.Workspaces.OrgTree;
 
@@ -33,11 +36,18 @@ public sealed class RelationFieldIntegrationTests : IAsyncLifetime
 
     public Task DisposeAsync() => Task.CompletedTask;
 
+    private ServiceProvider Provider(OrgStack stack) =>
+        _host.CreateProvider(stack.AccountId, stack.OwnerId, services =>
+        {
+            services.AddScoped<IWorkOrderingScopeLock>(sp => new PostgresWorkOrderingScopeLock(sp.GetRequiredService<ApplicationDbContext>()));
+            services.AddScoped<WorkPlacementResolver>();
+        });
+
     [Fact]
     public async Task ALinkToALiveItemOfTheTargetBoard_IsStored()
     {
         var scene = await SeedAsync();
-        using var owner = _host.CreateProvider(scene.Stack.AccountId, scene.Stack.OwnerId);
+        using var owner = Provider(scene.Stack);
 
         await OrgTreeTestHost.SendAsync(owner, new UpdateBoardItemFieldValueCommand(scene.SourceItemId, scene.FieldId, new[] { scene.TargetItemId }, await VersionAsync(scene.SourceItemId)));
 
@@ -48,7 +58,7 @@ public sealed class RelationFieldIntegrationTests : IAsyncLifetime
     public async Task ALinkToAnItemOfAnotherBoard_IsRefusedAndStoresNothing()
     {
         var scene = await SeedAsync();
-        using var owner = _host.CreateProvider(scene.Stack.AccountId, scene.Stack.OwnerId);
+        using var owner = Provider(scene.Stack);
         var foreign = await SeedItemAsync(scene.Stack, scene.OtherBoardId, "Elsewhere");
 
         var version = await VersionAsync(scene.SourceItemId);
@@ -62,7 +72,7 @@ public sealed class RelationFieldIntegrationTests : IAsyncLifetime
     public async Task ALinkToATrashedItem_IsRefused()
     {
         var scene = await SeedAsync();
-        using var owner = _host.CreateProvider(scene.Stack.AccountId, scene.Stack.OwnerId);
+        using var owner = Provider(scene.Stack);
         await _host.WithSystemContextAsync(c =>
         {
             var item = c.BoardItems.Single(i => i.Id == scene.TargetItemId);
@@ -80,7 +90,7 @@ public sealed class RelationFieldIntegrationTests : IAsyncLifetime
     public async Task AFieldWhoseTargetIsInAnotherWorkspace_IsRefused()
     {
         var scene = await SeedAsync();
-        using var owner = _host.CreateProvider(scene.Stack.AccountId, scene.Stack.OwnerId);
+        using var owner = Provider(scene.Stack);
         var otherStack = await _host.SeedWorkspaceAsync();
         var otherBoard = await _host.SeedBoardAsync(otherStack, "Other workspace", BoardVisibility.Workspace);
 
