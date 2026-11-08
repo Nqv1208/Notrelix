@@ -100,6 +100,8 @@ public class GetMyWorkExtendedQueryHandler(
                   && board.WorkspaceId == request.WorkspaceId
                   && item.DeletedAt == null
                   && !item.IsArchived
+                  // An Item in an archived group leaves My Work with its group and comes back with it.
+                  && !context.BoardGroups.Any(g => g.Id == item.GroupId && g.IsArchived)
                   && board.DeletedAt == null
                   && !board.IsArchived
                   && visibleBoardIds.Contains(board.Id)
@@ -132,6 +134,7 @@ public class GetMyWorkExtendedQueryHandler(
                           && item.WorkspaceId == request.WorkspaceId
                           && item.DeletedAt == null
                           && !item.IsArchived
+                          && !context.BoardGroups.Any(g => g.Id == item.GroupId && g.IsArchived)
                           && item.CompletedAt == null
                           && board.DeletedAt == null
                           && !board.IsArchived
@@ -152,7 +155,8 @@ public class GetMyWorkExtendedQueryHandler(
         var approverOnly = approvalOnlyIds.Count == 0
             ? []
             : await context.BoardItems.AsNoTracking()
-                .Where(i => approvalOnlyIds.Contains(i.Id) && i.DeletedAt == null && !i.IsArchived)
+                .Where(i => approvalOnlyIds.Contains(i.Id) && i.DeletedAt == null && !i.IsArchived
+                            && !context.BoardGroups.Any(g => g.Id == i.GroupId && g.IsArchived))
                 .ToListAsync(cancellationToken);
         followedOnly = followedOnly.Concat(approverOnly).ToList();
 
@@ -270,6 +274,7 @@ public class GetMyWorkExtendedQueryHandler(
                       && board.WorkspaceId == workspaceId
                       && item.DeletedAt == null
                       && !item.IsArchived
+                      && !context.BoardGroups.Any(g => g.Id == item.GroupId && g.IsArchived)
                       && item.CompletedAt == null
                       && board.DeletedAt == null
                       && !board.IsArchived

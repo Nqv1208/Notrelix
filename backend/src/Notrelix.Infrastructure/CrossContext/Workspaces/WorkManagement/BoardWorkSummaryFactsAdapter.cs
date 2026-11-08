@@ -43,7 +43,9 @@ public sealed class BoardWorkSummaryFactsAdapter : IBoardWorkSummaryFacts
         var ids = boards.Select(b => b.Id).ToList();
         var liveItems = _context.BoardItems
             .AsNoTracking()
-            .Where(i => ids.Contains(i.BoardId) && i.DeletedAt == null && !i.IsArchived);
+            // An Item in an archived group is out of the figures until the group comes back.
+            .Where(i => ids.Contains(i.BoardId) && i.DeletedAt == null && !i.IsArchived
+                        && !_context.BoardGroups.Any(g => g.Id == i.GroupId && g.IsArchived));
 
         var itemFigures = (await liveItems
             .GroupBy(i => i.BoardId)
@@ -173,6 +175,7 @@ public sealed class BoardWorkSummaryFactsAdapter : IBoardWorkSummaryFacts
             where m.WorkspaceId == workspaceId
                 && boardIds.Contains(i.BoardId)
                 && i.DeletedAt == null && !i.IsArchived && i.CompletedAt == null
+                && !_context.BoardGroups.Any(g => g.Id == i.GroupId && g.IsArchived)
             group i by m.UserId into g
             select new
             {

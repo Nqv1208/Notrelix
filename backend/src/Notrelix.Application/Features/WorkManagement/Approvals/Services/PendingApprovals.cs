@@ -54,6 +54,8 @@ public static class PendingApprovals
                                              && (s.ApproverUserId == userId || (s.ApproverTeamId != null && mine.Contains(s.ApproverTeamId.Value))))
                       && item.WorkspaceId == workspaceId
                       && item.DeletedAt == null
+                      // An Item in an archived group leaves the approvals list with its group.
+                      && !context.BoardGroups.Any(g => g.Id == item.GroupId && g.IsArchived)
                       && visibleBoardIds.Contains(item.BoardId)
                 orderby request.CreatedAt descending, request.Id
                 select new

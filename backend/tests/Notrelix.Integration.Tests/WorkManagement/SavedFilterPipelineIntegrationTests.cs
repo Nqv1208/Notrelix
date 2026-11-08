@@ -110,6 +110,31 @@ public sealed class SavedFilterPipelineIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task PersonalFilter_OfSomeoneElse_IsNotFound_ForAViewerLevelMember()
+    {
+        // H09: a viewer-level member is told NotFound, not Forbidden, for a personal filter that is not theirs.
+        var viewerId = await AddMemberAsync(WorkspaceRole.Guest);
+        var id = await CreateAsync(_ownerId, "Riêng cho viewer");
+        var version = await VersionAsync(id);
+
+        foreach (var command in new object[]
+                 {
+                     new RenameSavedFilterCommand(id, "Viewer đổi tên", version),
+                     new UpdateSavedFilterVisibilityCommand(id, SavedFilterVisibility.Public, version),
+                     new DeleteSavedFilterCommand(id, version),
+                 })
+        {
+            using var provider = CreateProvider(_accountId, viewerId);
+            using var scope = provider.CreateScope();
+            BindIdempotencyKey(scope);
+            var act = () => Send<Result>(scope, command);
+            await act.Should().ThrowAsync<NotFound>(command.GetType().Name);
+        }
+
+        (await VersionAsync(id)).Should().Be(version, "a refused change leaves the filter untouched");
+    }
+
+    [Fact]
     public async Task SharedFilter_IsVisibleToBoardViewers_AndEditableByEditors_ButOnlyTheCreatorUnshares()
     {
         var id = await CreateAsync(_ownerId, "Chung");
@@ -166,17 +191,19 @@ public sealed class SavedFilterPipelineIntegrationTests : IAsyncLifetime
         return await ctx.SavedFilters.IgnoreQueryFilters().Where(f => f.Id == id).Select(f => f.Version).SingleAsync();
     }
 
-    private async Task<Guid> AddMemberAsync()
+    private Task<Guid> AddMemberAsync() => AddMemberAsync(WorkspaceRole.Member);
+
+    private async Task<Guid> AddMemberAsync(WorkspaceRole role)
     {
         var now = DateTimeOffset.UtcNow;
         var user = User.Create($"wm-{Guid.NewGuid():N}@example.com", "Other", "hashed", now, true);
         user.ConfirmEmail(user.Id, now);
         await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Users.Add(user);
-        seed.WorkspaceMembers.Add(WorkspaceMember.Create(_accountId, _workspaceId, user.Id, WorkspaceRole.Member, _ownerId, now));
+        seed.WorkspaceMembers.Add(WorkspaceMember.Create(_accountId, _workspaceId, user.Id, role, _ownerId, now));
         await seed.SaveChangesAsync();
         await using var grant = _db.CreateOwnerContext(SystemTenant());
-        await new AccessGrantProjectionService(grant).SyncWorkspaceMemberGrantAsync(_accountId, _workspaceId, user.Id, WorkspaceRole.Member, now, CancellationToken.None);
+        await new AccessGrantProjectionService(grant).SyncWorkspaceMemberGrantAsync(_accountId, _workspaceId, user.Id, role, now, CancellationToken.None);
         await grant.SaveChangesAsync();
         return user.Id;
     }

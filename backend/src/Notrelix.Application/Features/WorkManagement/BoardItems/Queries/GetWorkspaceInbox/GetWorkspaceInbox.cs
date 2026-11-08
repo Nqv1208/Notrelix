@@ -123,6 +123,8 @@ public class GetWorkspaceInboxQueryHandler(
                         .Where(i => itemIds.Contains(i.Id)
                                     && i.WorkspaceId == request.WorkspaceId
                                     && i.DeletedAt == null
+                                    // An Item in an archived group is out of the inbox until the group comes back.
+                                    && !context.BoardGroups.Any(g => g.Id == i.GroupId && g.IsArchived)
                                     && visibleBoardIds.Contains(i.BoardId))
                         .Select(i => new { i.Id, i.BoardId, i.ItemKey, i.Name })
                         .ToListAsync(cancellationToken))

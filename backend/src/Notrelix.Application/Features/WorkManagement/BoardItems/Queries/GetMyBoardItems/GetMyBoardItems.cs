@@ -62,6 +62,8 @@ public class GetMyBoardItemsQueryHandler(
                   && board.WorkspaceId == request.WorkspaceId
                   && item.DeletedAt == null
                   && !item.IsArchived
+                  // An Item in an archived group leaves My Work with its group and comes back with it.
+                  && !context.BoardGroups.Any(g => g.Id == item.GroupId && g.IsArchived)
                   && item.CompletedAt == null
                   && board.DeletedAt == null
                   && !board.IsArchived
