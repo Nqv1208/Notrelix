@@ -28,6 +28,11 @@ export interface TaskDetailCapabilities {
    */
   readonly canComment?: boolean;
   /**
+   * Moderating others' comments: a Board manager may delete a comment they did
+   * not write. Only shapes the control; the server decides the delete.
+   */
+  readonly canModerateComments?: boolean;
+  /**
    * The board, or the item's group, is archived: the server refuses every write
    * on it except a person's own preference and follow, so remind is off while a
    * plain viewer, who cannot remind either, keeps follow.
@@ -48,6 +53,22 @@ export function canChangeOwnComment(
     canWriteComment(capabilities) &&
     Boolean(viewerUserId) &&
     authorUserId === viewerUserId
+  );
+}
+
+/**
+ * Delete on a comment: its author, or a moderator (a Board manager) while the
+ * viewer can write comments. Edit stays with the author alone.
+ */
+export function canDeleteComment(
+  capabilities: TaskDetailCapabilities,
+  authorUserId: string,
+  viewerUserId?: string | null,
+): boolean {
+  if (canChangeOwnComment(capabilities, authorUserId, viewerUserId))
+    return true;
+  return (
+    canWriteComment(capabilities) && capabilities.canModerateComments === true
   );
 }
 
@@ -147,6 +168,8 @@ export interface ItemSheetMark {
 export interface TaskDetailData {
   readonly updates: readonly CardUpdate[];
   readonly updatesLoading: boolean;
+  /** The comments could not be read and there is nothing to show instead. */
+  readonly updatesError?: boolean;
   /** More comments wait on the server: "Show more" reads the next page. */
   readonly updatesMore?: {
     readonly loading: boolean;
@@ -296,6 +319,8 @@ export interface TaskDetailCallbacks {
   /** Deletes a stored file; resolves false when it did not go through. */
   readonly onDeleteFile?: (file: CardFile) => Promise<boolean>;
   readonly onRefreshActivity: () => void;
+  /** Reads the comments again after their read failed. */
+  readonly onRefreshUpdates?: () => void;
   /**
    * Posts a comment. `onSuccess` clears the composer; `onSettled` runs after
    * success or failure so the composer can be used again (a failed post keeps

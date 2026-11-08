@@ -144,6 +144,8 @@ export const en = {
     errorBody: "Check your connection and try again.",
     errorBodyComments:
       "Check your connection and try again. The comments below are as saved.",
+    updatesErrorTitle: "Couldn't load the comments",
+    updatesErrorBody: "Check your connection and try again.",
     retry: "Try again",
   },
 };
@@ -292,6 +294,8 @@ export const vi: RelatedCopy = {
     errorBody: "Kiểm tra kết nối rồi thử lại.",
     errorBodyComments:
       "Kiểm tra kết nối rồi thử lại. Bình luận bên dưới vẫn đúng như đã lưu.",
+    updatesErrorTitle: "Không tải được bình luận",
+    updatesErrorBody: "Kiểm tra kết nối rồi thử lại.",
     retry: "Thử lại",
   },
 };

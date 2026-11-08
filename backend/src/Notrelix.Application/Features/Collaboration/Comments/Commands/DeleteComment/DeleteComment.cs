@@ -6,7 +6,7 @@ namespace Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteCo
 
 public record DeleteCommentCommand(Guid CommentId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
 {
-    // A coarse workspace-member gate: who may change the comment is decided in the handler from its target.
+    // A coarse workspace-member gate: the author, or a moderator of the target, is decided in the handler from its target.
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("collaboration.comment"), CommentId);
 }
@@ -38,7 +38,7 @@ public class DeleteCommentCommandHandler : IRequestHandler<DeleteCommentCommand,
     {
         var comment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == request.CommentId, ct);
         if (comment is null) throw CommentAccessRules.NotFound(request.CommentId);
-        await CommentAccessRules.RequireAuthorAsync(comment, _currentUser.UserId, _access, ct);
+        await CommentAccessRules.RequireAuthorOrModeratorAsync(comment, _currentUser.UserId, _access, ct);
         comment.Delete(_currentUser.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
