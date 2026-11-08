@@ -195,6 +195,59 @@ public sealed class BoardChildAccessIntegrationTests : IAsyncLifetime
         }
     }
 
+    [Fact]
+    public async Task MentionOfAMemberWithoutBoardAccess_KeepsTheCommentText_ButCreatesNoMention_WhileABoardViewerIsMentioned()
+    {
+        // UC-WM-R03 (D42): a mention of someone who cannot view the Item's Board notifies no one; the Mention row is
+        // the only source of the "mention.created" fact, so no row means no Inbox notification.
+        var stack = await _host.SeedWorkspaceAsync();
+        var outsider = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Outsider");
+        var viewer = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Viewer");
+        var guest = await _host.AddMemberAsync(stack, WorkspaceRole.Guest, "Guest");
+        var board = await _host.SeedBoardAsync(stack, "Salaries", BoardVisibility.Private);
+        var item = await _host.SeedAssignedItemAsync(stack, board, stack.OwnerId, "Raise for Q4");
+        await _host.SeedResourcePermissionAsync(stack, BoardKind, board, PermissionSubjectType.User, viewer, PermissionLevel.Viewer);
+
+        using var provider = CreateProvider(stack.AccountId, stack.OwnerId);
+        await OrgTreeTestHost.SendIdempotentAsync(
+            provider, CreateCommentCommand.ForBoardItem(item, "@Outsider @Viewer @Guest please check", null, [outsider, viewer, guest]));
+
+        var comment = await _host.ReadAsync(c => c.Comments.Where(x => x.WorkspaceId == stack.WorkspaceId).Select(x => x.Content).SingleAsync());
+        comment.Should().Contain("@Outsider", "the text of a mention without access stays in the comment");
+        var mentioned = await _host.ReadAsync(c => c.PageMentions
+            .Where(m => m.WorkspaceId == stack.WorkspaceId)
+            .Select(m => m.MentionedId)
+            .ToListAsync());
+        mentioned.Should().Equal([viewer], "only the person who can view the Board is mentioned; the outsider and the Guest are not");
+    }
+
+    [Fact]
+    public async Task BoardViewer_IsRefusedAnUploadAndALink_ButListsTheFiles()
+    {
+        // UC-WM-R04: upload and link need UpdateItem (Editor and above); viewing the list needs ViewBoard.
+        var stack = await _host.SeedWorkspaceAsync();
+        var viewer = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Viewer");
+        var board = await _host.SeedBoardAsync(stack, "Roadmap", BoardVisibility.Private);
+        var item = await _host.SeedAssignedItemAsync(stack, board, stack.OwnerId, "Ship it");
+        await _host.SeedResourcePermissionAsync(stack, BoardKind, board, PermissionSubjectType.User, viewer, PermissionLevel.Viewer);
+
+        using var provider = CreateProvider(stack.AccountId, viewer);
+
+        await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider,
+                new Notrelix.Application.Features.Collaboration.Attachments.Commands.UploadBoardItemAttachment.UploadBoardItemAttachmentCommand(
+                    item, "plan.png", new MemoryStream([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]))))
+            .Should().ThrowAsync<AppForbidden>("a board Viewer cannot upload a file");
+        await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider,
+                new Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment.CreateBoardItemAttachmentCommand(
+                    item, "Spec", "https://example.com/spec", null, null, null)))
+            .Should().ThrowAsync<AppForbidden>("a board Viewer cannot add a link");
+        await OrgTreeTestHost.QueryAsync(provider,
+            new Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardItemAttachments.GetBoardItemAttachmentsQuery(item));
+
+        var stored = await _host.ReadAsync(c => c.Attachments.CountAsync(a => a.WorkspaceId == stack.WorkspaceId));
+        stored.Should().Be(0, "nothing was stored for the refused writes");
+    }
+
     /// <summary>The org-tree host plus the read ports the Item handlers need.</summary>
     private ServiceProvider CreateProvider(Guid accountId, Guid userId) =>
         _host.CreateProvider(accountId, userId, services =>

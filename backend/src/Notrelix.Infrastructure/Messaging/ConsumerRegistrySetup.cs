@@ -498,6 +498,16 @@ public static class ConsumerRegistrySetup
                 Description = "Tells a requester their approval request was decided",
                 Maturity = ConsumerMaturity.Implemented
             },
+            new ConsumerDefinition
+            {
+                ConsumerName = "FormSubmissionNotificationConsumer",
+                EventName = "work-management.form-submission-created",
+                EventVersion = 1,
+                EndpointName = "notrelix-collab-form-submission-notification-v1",
+                BoundedContext = "Collaboration",
+                Description = "Tells the people who manage a form that it got a new response",
+                Maturity = ConsumerMaturity.Implemented
+            },
 
             // ── Billing (1) ──────────────────────────────────────────────
             new ConsumerDefinition

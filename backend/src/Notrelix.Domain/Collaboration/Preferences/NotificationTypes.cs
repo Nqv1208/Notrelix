@@ -68,13 +68,20 @@ public static class NotificationTypes
     public const string ExportReadyProducedType = "work.export.ready";
 
     /// <summary>
+    /// Someone answered a form the person manages (D78.2); maps to <see cref="Assigned"/>, the "work for me"
+    /// type, until the owner names a type of its own.
+    /// </summary>
+    public const string FormSubmissionCreatedProducedType = "work.form.submission-created";
+
+    /// <summary>
     /// Maps the type literal a producer stores on a notification to the preference type, or null when the
     /// literal has no preference type.
     /// </summary>
     public static string? FromProducedType(string? producedType) => producedType switch
     {
         MentionProducedType => Mention,
-        ItemAssignedProducedType or AutomationProducedType or ItemReminderProducedType or ExportReadyProducedType => Assigned,
+        ItemAssignedProducedType or AutomationProducedType or ItemReminderProducedType or ExportReadyProducedType
+            or FormSubmissionCreatedProducedType => Assigned,
         ItemDueTomorrowProducedType or ItemOverdueProducedType or ItemDueReminderProducedType => Overdue,
         ApprovalRequestedProducedType or ApprovalApprovedProducedType or ApprovalRejectedProducedType => Approval,
         ItemAssigneeAddedProducedType or ItemStatusChangedProducedType or ItemCommentedProducedType => Watching,

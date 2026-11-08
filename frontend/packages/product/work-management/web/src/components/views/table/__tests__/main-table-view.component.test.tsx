@@ -422,13 +422,43 @@ describe("MainTableView on the ERP board", () => {
     fireEvent.keyDown(input, { key: "Enter" });
   };
 
-  it("tells the person when a rename lost the race and names who won", async () => {
+  it("offers the in-cell choice when a rename lost the race, naming who won (UC-WM-B33)", async () => {
     const { cards } = renderTable(erpOwnerAccess());
     cards.updateCard.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));
     await renameErp149("Tên của tôi");
-    await waitFor(() => expect(toast.error).toHaveBeenCalled());
-    expect(toast.error.mock.calls[0]?.[0]).toMatch(
-      /^Lê Hoàng Phúc vừa sửa “Viết tài liệu quy trình nhập hoá đơn đầu vào” trước bạn/,
+    const choice = await screen.findByRole("alertdialog", {
+      name: "Xung đột giá trị",
+    });
+    expect(choice.textContent).toMatch(
+      /^Lê Hoàng Phúc vừa đổi Tên công việc thành Viết tài liệu quy trình/,
+    );
+    expect(choice.textContent).toContain("Giá trị của bạn: Tên của tôi");
+    expect(toast.error).not.toHaveBeenCalled();
+    // "Dùng giá trị mới" drops the typed title and sends nothing more.
+    fireEvent.click(
+      within(choice).getByRole("button", { name: /Dùng giá trị mới/ }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("alertdialog", { name: "Xung đột giá trị" }),
+      ).toBeNull(),
+    );
+    expect(cards.updateCard).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the typed title on Keep mine: it writes it again after reading the board", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.updateCard.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));
+    await renameErp149("Tên của tôi");
+    const choice = await screen.findByRole("alertdialog", {
+      name: "Xung đột giá trị",
+    });
+    fireEvent.click(
+      within(choice).getByRole("button", { name: "Giữ giá trị của tôi" }),
+    );
+    await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(2));
+    expect(JSON.stringify(cards.updateCard.mock.calls[1])).toContain(
+      "Tên của tôi",
     );
   });
 
@@ -467,7 +497,7 @@ describe("MainTableView on the ERP board", () => {
     expect(toast.error).not.toHaveBeenCalled();
   });
 
-  it("tells the person when a due date lost the race and names who won", async () => {
+  it("offers the in-cell choice when a due date lost the race, naming who won", async () => {
     const { cards } = renderTable(erpOwnerAccess(), {}, true);
     cards.updateCard.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));
     await ready();
@@ -477,10 +507,11 @@ describe("MainTableView on the ERP board", () => {
       }),
     );
     fireEvent.click(screen.getByRole("grid").querySelectorAll("button")[15]!);
-    await waitFor(() => expect(toast.error).toHaveBeenCalled());
-    expect(toast.error.mock.calls[0]?.[0]).toMatch(
-      /^Lê Hoàng Phúc vừa sửa “Viết tài liệu quy trình nhập hoá đơn đầu vào” trước bạn/,
-    );
+    const choice = await screen.findByRole("alertdialog", {
+      name: "Xung đột giá trị",
+    });
+    expect(choice.textContent).toMatch(/^Lê Hoàng Phúc vừa đổi Hạn thành/);
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
   it("tells the person when an assignee or a priority lost the race and names who won", async () => {
