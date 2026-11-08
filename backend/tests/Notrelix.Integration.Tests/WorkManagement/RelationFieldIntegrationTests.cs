@@ -1,15 +1,12 @@
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
-using Notrelix.Domain.WorkManagement;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
-using Microsoft.EntityFrameworkCore;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Integration.Tests.Workspaces.OrgTree;
 

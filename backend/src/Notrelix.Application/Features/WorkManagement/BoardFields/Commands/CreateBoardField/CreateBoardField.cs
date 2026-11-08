@@ -2,7 +2,6 @@ using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 
 using Notrelix.Application.Features.WorkManagement.Ordering;
-using Notrelix.Domain.WorkManagement.Fields;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 

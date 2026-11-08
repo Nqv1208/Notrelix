@@ -1,10 +1,7 @@
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardPeople;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
-using Notrelix.Application.Features.Governance.Authorization;
 using Notrelix.Domain.Governance.Permissions;
-using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.Boards;
 

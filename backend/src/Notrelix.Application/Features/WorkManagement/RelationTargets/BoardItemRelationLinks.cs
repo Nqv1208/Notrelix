@@ -2,7 +2,6 @@ using System.Text.Json;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
-using Notrelix.Domain.WorkManagement.Fields;
 
 namespace Notrelix.Application.Features.WorkManagement.RelationTargets;
 

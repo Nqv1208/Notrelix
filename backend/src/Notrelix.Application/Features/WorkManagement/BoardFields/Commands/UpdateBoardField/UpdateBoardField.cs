@@ -1,6 +1,5 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
-using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Formulas;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;

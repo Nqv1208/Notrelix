@@ -4,7 +4,6 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Boards.Services;
 using Notrelix.Application.Features.WorkManagement.RelationTargets;
-using Notrelix.Domain.WorkManagement;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 

@@ -1,9 +1,7 @@
-using FluentAssertions;
 using Moq;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.RelationTargets;
 using Notrelix.Domain.WorkManagement;
-using Notrelix.Domain.WorkManagement.Boards;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.RelationTargets;
 
