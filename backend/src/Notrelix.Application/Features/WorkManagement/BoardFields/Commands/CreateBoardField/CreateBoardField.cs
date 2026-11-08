@@ -19,14 +19,17 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly WorkPlacementResolver _placement;
     private readonly IBoardRealtimeNotifier? _realtime;
+    private readonly Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility? _visibility;
 
     public CreateBoardFieldCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         WorkPlacementResolver placement,
-        IBoardRealtimeNotifier? realtime = null)
+        IBoardRealtimeNotifier? realtime = null,
+        Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility? visibility = null)
     {
+        _visibility = visibility;
         _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
@@ -70,6 +73,10 @@ public class CreateBoardFieldCommandHandler : IRequestHandler<CreateBoardFieldCo
             : type == FieldType.Status
                 ? FieldSettings.Create(JsonValue.Create("{\"transitions\":{}}")!)
                 : FieldSettings.Empty();
+
+        // A Relation field must name a target board of this account and Workspace that the writer can read.
+        if (type == FieldType.Relation && RelationFieldSettings.TargetBoardId(settings.Data.Value) is Guid targetBoardId)
+            await RelationTargets.RelationFieldTargets.EnsureTargetBoardAsync(_context, _visibility, board.AccountId, board.WorkspaceId, _requestContext.UserId, targetBoardId, ct);
 
         var column = BoardField.Create(
             _requestContext.RequireAccountId(),

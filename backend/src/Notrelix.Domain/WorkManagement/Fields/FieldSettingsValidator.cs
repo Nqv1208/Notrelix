@@ -13,6 +13,10 @@ public static class FieldSettingsValidator
         if (type == FieldType.Status && (string.IsNullOrWhiteSpace(data) || data == "{}"))
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldSettings_StatusMustIncludeTransitions, "Status field settings must include 'transitions'.");
 
+        // A Relation field names the one board it links to; without it the field has no meaning.
+        if (type == FieldType.Relation && RelationFieldSettings.TargetBoardId(data) is null)
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Relation_TargetBoardRequired, "A Relation field needs a target board.");
+
         if (type is FieldType.Formula or FieldType.Rollup)
         {
             // Computed fields have no valid empty settings; syntax, node cap and shape are checked here,

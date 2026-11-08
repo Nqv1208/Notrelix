@@ -36,6 +36,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None
+        Include="..\..\contracts\fixtures\field-type-contract.v1.json"
+        Link="contracts/fixtures/field-type-contract.v1.json"
+        CopyToOutputDirectory="PreserveNewest"
+        CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
+  <ItemGroup>
     <AssemblyAttribute
         Include="System.Reflection.AssemblyMetadataAttribute">
       <_Parameter1>DomainTestProjectDirectory</_Parameter1>

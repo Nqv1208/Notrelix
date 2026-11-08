@@ -9300,6 +9300,9 @@ export interface components {
             /** Format: uuid */
             updatedBy?: string | null;
             updatedByName?: string | null;
+            relationLinks?: {
+                [key: string]: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.RelationLinkDto"][];
+            } | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemLabelDto": {
             /** Format: uuid */
@@ -9385,6 +9388,9 @@ export interface components {
             updatedBy?: string | null;
             updatedByName?: string | null;
             openBlockerKey?: string | null;
+            relationLinks?: {
+                [key: string]: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.RelationLinkDto"][];
+            } | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardItemVersionDto": {
             /** Format: int64 */
@@ -9605,6 +9611,13 @@ export interface components {
             totalItems?: number | null;
             lanes?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardLaneDto"][] | null;
             viewers?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardMemberDto"][] | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.RelationLinkDto": {
+            /** Format: uuid */
+            itemId?: string;
+            itemKey?: string | null;
+            title?: string | null;
+            locked?: boolean;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.RetiredBoardDto": {
             /** Format: uuid */

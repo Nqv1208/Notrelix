@@ -1,8 +1,6 @@
 using BoardEntity = global::Notrelix.Domain.WorkManagement.Boards.Board;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.Tenancy;
 using Notrelix.Application.Features.Governance.Public.Access;
-using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoardPeople;

@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.WorkManagement.RelationTargets;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
@@ -16,17 +17,20 @@ public sealed class BoardItemSummaryBuilder : IBoardItemSummaryBuilder
     private readonly IActorLookupService _actorLookup;
     private readonly IWorkManagementCollaborationReadPort _collabReadPort;
     private readonly ICurrentRequestContext _requestContext;
+    private readonly Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility? _visibility;
 
     public BoardItemSummaryBuilder(
         IWorkManagementDbContext context,
         IActorLookupService actorLookup,
         IWorkManagementCollaborationReadPort collabReadPort,
-        ICurrentRequestContext requestContext)
+        ICurrentRequestContext requestContext,
+        Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility? visibility = null)
     {
         _context = context;
         _actorLookup = actorLookup;
         _collabReadPort = collabReadPort;
         _requestContext = requestContext;
+        _visibility = visibility;
     }
 
     public async Task<List<BoardItemSummaryDto>> BuildAsync(IReadOnlyList<BoardField> fields, IReadOnlyList<BoardItem> cards, CancellationToken cancellationToken)
@@ -107,6 +111,10 @@ public sealed class BoardItemSummaryBuilder : IBoardItemSummaryBuilder
         var collaborationCounts = await _collabReadPort.GetCountsAsync(cardIds, cancellationToken);
         var readValues = await BoardItemReadValues.LoadAsync(_context, fields, cardIds, cancellationToken);
         var fieldProjection = await BoardItemFieldProjection.LoadAsync(_context, fields, cardIds, cancellationToken, _requestContext.UserId);
+        var relationLinks = await BoardItemRelationLinks.LoadAsync(
+            _context, _visibility, _requestContext.UserId, fields,
+            fieldProjection.ToDictionary(pair => pair.Key, pair => pair.Value.Stored),
+            cancellationToken);
 
         var membersByCardId = cardMembers
             .GroupBy(member => member.ItemId)
@@ -153,7 +161,7 @@ public sealed class BoardItemSummaryBuilder : IBoardItemSummaryBuilder
                 card.StartedAt,
                 card.CompletedAt,
                 values.ChildProgress,
-                projected.Stored.ToDictionary(pair => pair.Key, pair => pair.Value),
+                BoardItemRelationLinks.WithLinkIds(projected.Stored, relationLinks.GetValueOrDefault(card.Id)).ToDictionary(pair => pair.Key, pair => pair.Value),
                 projected.Computed.ToDictionary(pair => pair.Key, pair => pair.Value),
                 openBlockerCountByCardId.GetValueOrDefault(card.Id),
                 card.CoverColor,
@@ -163,7 +171,8 @@ public sealed class BoardItemSummaryBuilder : IBoardItemSummaryBuilder
                 card.ReminderOffsetMinutes ?? ItemReminder.DefaultMinutes,
                 card.UpdatedBy,
                 card.UpdatedBy.HasValue && memberActorMap.TryGetValue(card.UpdatedBy.Value, out var editor) ? editor.Name : null,
-                openBlockerKeyByCardId.GetValueOrDefault(card.Id)
+                openBlockerKeyByCardId.GetValueOrDefault(card.Id),
+                relationLinks.TryGetValue(card.Id, out var linksByField) ? linksByField.ToDictionary(pair => pair.Key, pair => pair.Value) : null
             );
         })
         .ToList();

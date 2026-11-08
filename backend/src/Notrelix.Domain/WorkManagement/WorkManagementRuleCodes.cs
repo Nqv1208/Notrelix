@@ -202,6 +202,11 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Relation_CannotResumeBroken = "WorkManagement_Relation_CannotResumeBroken";
     public const string WorkManagement_Relation_DuplicateNotAllowed = "WorkManagement_Relation_DuplicateNotAllowed";
     public const string WorkManagement_Relation_CardinalityExceeded = "WorkManagement_Relation_CardinalityExceeded";
+    public const string WorkManagement_Relation_LinkToSelf = "WorkManagement_Relation_LinkToSelf";
+    public const string WorkManagement_Relation_TargetBoardRequired = "WorkManagement_Relation_TargetBoardRequired";
+    public const string WorkManagement_Relation_TargetBoardNotFound = "WorkManagement_Relation_TargetBoardNotFound";
+    public const string WorkManagement_Relation_TargetItemNotFound = "WorkManagement_Relation_TargetItemNotFound";
+    public const string WorkManagement_FieldValue_InvalidRelationValue = "WorkManagement_FieldValue_InvalidRelationValue";
 
     // ── Scope ────────────────────────────────────────────────────────────
     public const string WorkManagement_BoardScopeMismatch = "WorkManagement_BoardScopeMismatch";

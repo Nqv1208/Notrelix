@@ -34958,6 +34958,16 @@
           "updatedByName": {
             "type": "string",
             "nullable": true
+          },
+          "relationLinks": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.RelationLinkDto"
+              }
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -35196,6 +35206,16 @@
           },
           "openBlockerKey": {
             "type": "string",
+            "nullable": true
+          },
+          "relationLinks": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.RelationLinkDto"
+              }
+            },
             "nullable": true
           }
         },
@@ -35861,6 +35881,27 @@
               "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardMemberDto"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.RelationLinkDto": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "itemKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "locked": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

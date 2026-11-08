@@ -3,6 +3,7 @@ using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Boards.Services;
+using Notrelix.Application.Features.WorkManagement.RelationTargets;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
 
@@ -89,6 +90,19 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
                             throw new ForbiddenException("Người này chưa xem được board của việc, nên chưa thể chọn. Hãy chia sẻ board với họ trước.", BoardAssigneeGuard.BoardNotSharedCode);
                 await BoardAssigneeGuard.EnsureNoneViewerAsync(_context, item.BoardId, named, cancellationToken);
             }
+        }
+
+        // A Relation field links items of another board: the shape is checked first, then each link must be a live item of
+        // the target board in this account and Workspace, and a new link needs that board readable by the writer.
+        if (field.Type == FieldType.Relation && request.Value is not null)
+        {
+            var linkJson = System.Text.Json.JsonSerializer.Serialize(request.Value);
+            FieldValueValidator.Validate(FieldValue.Create(JsonValue.Create(linkJson)), field.Type, field.Settings);
+            var targetBoardId = RelationFieldTargets.TargetBoardIdOf(field)
+                ?? throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Relation_TargetBoardRequired, "A Relation field needs a target board.");
+            await RelationFieldTargets.EnsureLinksAsync(
+                _context, _visibility, item.AccountId, item.WorkspaceId, _currentUser.UserId, targetBoardId,
+                RelationFieldTargets.ParseLinkIds(linkJson), RelationFieldTargets.StoredLinkIds(item, field.Id), cancellationToken);
         }
 
         var now = _timeProvider.UtcNow;

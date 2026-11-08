@@ -119,6 +119,23 @@ public static class FieldValueValidator
                     }
                     break;
 
+                case FieldType.Relation:
+                    // A set of target item ids. Whether each id is a live item of the target board is the
+                    // Application's check (the Domain fetches nothing); the shape, the cap and the uniqueness are here.
+                    if (kind != JsonValueKind.Array)
+                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidRelationValue, "Value for a Relation field must be an array of item IDs.");
+                    if (element.GetArrayLength() > RelationFieldSettings.MaxLinks)
+                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidRelationValue, $"A Relation field links at most {RelationFieldSettings.MaxLinks} items.");
+                    var linked = new HashSet<Guid>();
+                    foreach (var link in element.EnumerateArray())
+                    {
+                        if (link.ValueKind != JsonValueKind.String || !Guid.TryParse(link.GetString(), out var linkId) || linkId == Guid.Empty)
+                            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidRelationValue, "Relation items must be valid item IDs.");
+                        if (!linked.Add(linkId))
+                            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidRelationValue, "Relation value contains a duplicate item ID.");
+                    }
+                    break;
+
                 case FieldType.Status:
                 case FieldType.Select:
                 case FieldType.Person:
