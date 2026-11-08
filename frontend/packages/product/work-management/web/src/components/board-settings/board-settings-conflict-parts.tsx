@@ -24,6 +24,9 @@ export interface ConflictNoticeCopy {
   readonly choiceLatest: string;
   readonly diffHint: string;
   readonly keepMineAndSave: string;
+  /** Shown in place of the notice while what the person changed is being written (optional). */
+  readonly pendingTitle?: string;
+  readonly pendingBody?: string;
 }
 
 /** One line of the diff: what the person has, what is saved now, and what the save will keep. */
@@ -60,6 +63,19 @@ export function ConflictNotice({
   onKeepMine: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  if (busy === "mine" && copy.pendingTitle && copy.pendingBody)
+    return (
+      <div
+        role="status"
+        className="flex items-start gap-2.5 rounded-[10px] border border-line bg-background px-3.5 py-2.5 text-[13px] leading-[1.4] text-muted-foreground motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150"
+      >
+        <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+        <span className="flex min-w-0 flex-1 flex-col gap-px">
+          <b className="font-semibold text-foreground">{copy.pendingTitle}</b>
+          <span>{copy.pendingBody}</span>
+        </span>
+      </div>
+    );
   return (
     <div className="flex flex-col gap-3 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-1 motion-safe:duration-150">
       <div

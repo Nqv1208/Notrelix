@@ -172,6 +172,12 @@ export const vi = {
       "Chưa xuất bản được: câu {{a}} và câu {{b}} cùng ánh xạ trường {{field}}. Mỗi trường chỉ nhận một câu hỏi.",
     duplicateError:
       'Câu hỏi {{n}} "{{name}}" cũng ánh xạ tới trường {{field}}. Mỗi trường chỉ nhận một câu hỏi: đổi sang trường khác hoặc bỏ ánh xạ một trong hai. Chưa xuất bản được khi còn trùng.',
+    publishNeedsFix:
+      "Chưa xuất bản được khi còn câu hỏi cần sửa: trường đã bị xoá khỏi board.",
+    removedTarget: "trường đã bị xoá",
+    needsFix: "Cần sửa",
+    removedFieldError:
+      "Trường đã bị xoá khỏi board. Chọn trường khác hoặc bỏ ánh xạ; chưa xuất bản được khi còn câu hỏi cần sửa.",
     publishFailed: "Chưa xuất bản được biểu mẫu. Hãy thử lại.",
     conflict:
       "Biểu mẫu vừa được người khác sửa. Tải lại để xem thay đổi mới trước khi sửa tiếp, thay đổi của bạn chưa được lưu.",
@@ -186,6 +192,9 @@ export const vi = {
       takeTheirs: "Dùng bản mới",
       keepMine: "Giữ của tôi",
       keepMineAndSave: "Giữ của tôi và lưu",
+      pendingTitle: "Đang lưu thay đổi của bạn lên bản mới nhất…",
+      pendingBody:
+        "Chỉ phần bạn đã sửa được ghi lên bản mới nhất của {{by}}; phần còn lại của họ được giữ.",
       working: "Đang lưu…",
       diffLabel: "Khác biệt giữa bản của bạn và bản mới nhất",
       columns: {
@@ -559,6 +568,12 @@ export const en: FormsCopy = {
       "Cannot publish yet: questions {{a}} and {{b}} both map to {{field}}. A field takes one question.",
     duplicateError:
       'Question {{n}} "{{name}}" also maps to the {{field}} field. A field takes one question: pick another field or drop the mapping on one of them. It cannot be published while they clash.',
+    publishNeedsFix:
+      "Cannot publish yet while a question needs fixing: its board field was deleted.",
+    removedTarget: "field deleted",
+    needsFix: "Needs fix",
+    removedFieldError:
+      "The board field was deleted. Pick another field or drop the mapping; the form cannot be published while a question needs fixing.",
     publishFailed: "The form could not be published. Try again.",
     conflict:
       "Someone else just edited this form. Reload to see the change before editing further; your change was not saved.",
@@ -573,6 +588,9 @@ export const en: FormsCopy = {
       takeTheirs: "Use the new version",
       keepMine: "Keep mine",
       keepMineAndSave: "Keep mine and save",
+      pendingTitle: "Saving your changes onto the latest version…",
+      pendingBody:
+        "Only what you changed is written onto the latest version by {{by}}; the rest of theirs is kept.",
       working: "Saving…",
       diffLabel: "Differences between your version and the latest",
       columns: {
