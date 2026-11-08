@@ -376,6 +376,41 @@ export const cardsOperations = [
     },
   }),
 
+  // ─── GET /boards/:boardId/items/by-key/:key ─────────────────────────────────
+  // An item by its key on this board, or by the old key it kept after a move (UC-WM-A10).
+  // `globalThis.__mockHiddenBoardIds` names boards the viewer cannot see: an item moved there is NotFound.
+
+  defineMockOperation<
+    { boardId: string; key: string },
+    never,
+    { itemId: string; boardId: string; itemKey: string; moved: boolean }
+  >({
+    id: "wm.boardItems.resolveKey",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.ResolveKey",
+    } as any,
+    method: "GET",
+    route: "/boards/:boardId/items/by-key/:key",
+    async handle({ params, store }) {
+      const found = store.resolveItemKey(
+        params.boardId,
+        decodeURIComponent(params.key),
+      );
+      const hidden = (
+        globalThis as { __mockHiddenBoardIds?: readonly string[] }
+      ).__mockHiddenBoardIds;
+      if (!found || (found.moved && hidden?.includes(found.card.boardId)))
+        return notFound("Item key not found");
+      return ok({
+        itemId: found.card.id,
+        boardId: found.card.boardId,
+        itemKey: found.card.itemKey ?? "",
+        moved: found.moved,
+      });
+    },
+  }),
+
   // ─── POST /lists/:listId/cards ────────────────────────────────────────────
 
   defineMockOperation<

@@ -26,6 +26,7 @@ import {
   type CardDraftDefaults,
 } from "./use-card-draft";
 import { findItemFields } from "../../card-detail/item-field-editors";
+import { useLimitMessage } from "../../shared/use-limit-message";
 
 const FULL: TaskDetailCapabilities = {
   canCreateCard: true,
@@ -133,6 +134,9 @@ function CreateBody({
   });
   const [another, setAnother] = useState(false);
   const [failed, setFailed] = useState(false);
+  // The board is at its published item limit (D78.8): say so; the same create would be refused again.
+  const [limited, setLimited] = useState<string | null>(null);
+  const limitMessage = useLimitMessage();
   const [attempted, setAttempted] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const attempt = useRef<{ key: string; signature: string } | null>(null);
@@ -166,6 +170,7 @@ function CreateBody({
             ) : null}
             {failed ? (
               <FailedBanner
+                limit={limited}
                 onRetry={() => submit()}
                 onClose={() => {
                   keepDraft(board.id, d.draft);
@@ -202,6 +207,7 @@ function CreateBody({
       return;
     }
     setFailed(false);
+    setLimited(null);
     // A retry of the same draft reuses its key; an edited draft is a new request.
     const signature = JSON.stringify({
       ...d.toInput(""),
@@ -246,7 +252,10 @@ function CreateBody({
         }
         onOpenChange(false);
       },
-      onError: () => setFailed(true),
+      onError: (error) => {
+        setLimited(limitMessage(error));
+        setFailed(true);
+      },
     });
   }
 
@@ -338,9 +347,12 @@ function CreateBody({
 }
 
 function FailedBanner({
+  limit,
   onRetry,
   onClose,
 }: {
+  /** The limit the create would go over, told instead of the generic body, without Retry. */
+  limit?: string | null;
   onRetry: () => void;
   onClose: () => void;
 }) {
@@ -357,11 +369,13 @@ function FailedBanner({
       <div className="flex-1">
         <b className="font-[650]">{t.failedTitle}</b>
         <br />
-        {t.failedBody}
+        {limit ?? t.failedBody}
         <div className="mt-2 flex flex-wrap gap-2">
-          <PanelBtn small variant="primary" onClick={onRetry}>
-            {t.retry}
-          </PanelBtn>
+          {limit ? null : (
+            <PanelBtn small variant="primary" onClick={onRetry}>
+              {t.retry}
+            </PanelBtn>
+          )}
           <PanelBtn small onClick={onClose}>
             {t.keepDraft}
           </PanelBtn>

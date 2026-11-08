@@ -140,6 +140,15 @@ export const wmQueryKeys = {
       "columns",
       boardId,
     ),
+  itemByKey: (workspaceId: string, boardId: string, key: string) =>
+    workspaceQueryKey(
+      workspaceId,
+      "work-management",
+      "cards",
+      "by-key",
+      boardId,
+      key,
+    ),
   cardDetail: (workspaceId: string, cardId: string) =>
     workspaceQueryKey(
       workspaceId,

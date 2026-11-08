@@ -275,6 +275,11 @@ export const en = {
     goneTitle: "The board is gone",
     goneBody: "The board was deleted. No item was created.",
     errorBody: "The server failed. No item was created; try again.",
+    limitTitle: "The import would go over the item limit",
+    limitBody:
+      "This board already holds {{max}} active items, the most a board can hold. No item was created. Archive or delete some items first, then import again.",
+    limitJobBody:
+      "The board filled up while the import waited, so this import would go over its active-item limit. No item was created. Archive or delete some items, then import again.",
     lostTitle: "The connection dropped",
     lostBody:
       "It is not known how many items were created: check the board before importing again. Importing again uses the same key so nothing is created twice.",
@@ -628,6 +633,11 @@ export const vi: BoardLifecycleCopy = {
     goneTitle: "Board không còn",
     goneBody: "Board đã bị xoá. Không việc nào được tạo.",
     errorBody: "Có lỗi ở máy chủ. Không việc nào được tạo; thử lại.",
+    limitTitle: "Nhập sẽ vượt giới hạn số việc",
+    limitBody:
+      "Board này đã có {{max}} việc đang hoạt động, mức tối đa một board giữ được. Không việc nào được tạo. Hãy lưu trữ hoặc xoá bớt việc rồi nhập lại.",
+    limitJobBody:
+      "Board đã đầy trong lúc chờ nhập nên lần nhập này sẽ vượt giới hạn việc đang hoạt động. Không việc nào được tạo. Hãy lưu trữ hoặc xoá bớt việc rồi nhập lại.",
     lostTitle: "Mất kết nối giữa chừng",
     lostBody:
       "Không biết đã tạo được bao nhiêu việc: kiểm tra lại board trước khi nhập lại. Nhập lại dùng cùng khoá nên không tạo hai lần.",

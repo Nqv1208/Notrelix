@@ -55,6 +55,9 @@ export const en = {
   empty: "No items yet",
   moveFailed: "Couldn't move “{{title}}”. It is back in {{lane}}.",
   createFailed: "Couldn't add “{{title}}”.",
+  /** A create over the published item limit (D78.8): the limit and its max, no retry. */
+  addLimit:
+    "This board already holds {{max}} active items, the most a board can hold. Archive or delete some items first.",
   someone: "Someone",
   conflictMoved:
     "{{actor}} already moved “{{title}}” to {{lane}}. Your move was not saved.",
@@ -155,6 +158,8 @@ export const vi: KanbanLaneCopy = {
   empty: "Chưa có việc",
   moveFailed: "Không chuyển được “{{title}}”. Việc đã về lại {{lane}}.",
   createFailed: "Không thêm được “{{title}}”.",
+  addLimit:
+    "Board này đã có {{max}} việc đang hoạt động, mức tối đa một board giữ được. Hãy lưu trữ hoặc xoá bớt việc trước.",
   someone: "Có người",
   conflictMoved:
     "{{actor}} đã chuyển “{{title}}” sang {{lane}}. Thay đổi của bạn chưa được lưu.",

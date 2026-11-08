@@ -19,6 +19,7 @@ import { endpoints } from "@notrelix/contracts";
 import type { OperationResponse } from "@notrelix/contracts";
 import { useLocale } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
+import { limitOf } from "@notrelix/work-management-state";
 import {
   fillLifecycleCopy as fill,
   pluralLifecycle,
@@ -140,6 +141,8 @@ export function BoardImportDialog({
   const [lost, setLost] = useState(false);
   const [sending, setSending] = useState(false);
   const [denied, setDenied] = useState(false);
+  // A confirm the board is over its published item limit refused (D78.8): nothing was created, the run stays here.
+  const [limit, setLimit] = useState<{ max: number | null } | null>(null);
   const [attempt, setAttempt] = useState(() => crypto.randomUUID());
   const [dragging, setDragging] = useState(false);
 
@@ -154,6 +157,7 @@ export function BoardImportDialog({
     setLost(false);
     setSending(false);
     setDenied(false);
+    setLimit(null);
     setAttempt(crypto.randomUUID());
   };
   useEffect(() => {
@@ -331,6 +335,7 @@ export function BoardImportDialog({
     if (!upload?.jobId || sending) return;
     setSending(true);
     setLost(false);
+    setLimit(null);
     try {
       const result = await api.api.post<Job>(
         endpoints.boards.importConfirm(boardId, upload.jobId),
@@ -341,7 +346,9 @@ export function BoardImportDialog({
       setStep(4);
     } catch (error) {
       const code = (error as { status?: number } | null)?.status;
-      if (code === 403 || code === 404) setDenied(true);
+      const named = limitOf(error);
+      if (named) setLimit({ max: named.max });
+      else if (code === 403 || code === 404) setDenied(true);
       else if (code === 400) setPreview(null);
       else setLost(true);
     } finally {
@@ -417,6 +424,7 @@ export function BoardImportDialog({
   // A board archived before the run starts is shown where the person was: the check.
   const at = archived ? 3 : shown;
   const hasErrorsFailure = failed && progress?.failureCode === "has-errors";
+  const limitFailure = failed && progress?.failureCode === "items-limit";
   const fileBad =
     (shown === 3 && preview !== null && !clean) || hasErrorsFailure;
   // Errors left of the first three, and the rows they sit in (the rows of the three shown are not counted again).
@@ -573,6 +581,18 @@ export function BoardImportDialog({
           <p role="alert" className="m-0 text-compact text-danger-text">
             {copy.denied}
           </p>
+        ) : null}
+
+        {limit ? (
+          <FrameBanner
+            tone="err"
+            role="alert"
+            icon={<TriangleAlert aria-hidden="true" />}
+            title={copy.limitTitle}
+            body={fill(copy.limitBody, {
+              max: limit.max === null ? "" : numberLabel(limit.max),
+            })}
+          />
         ) : null}
 
         {step === 1 ? (
@@ -1119,23 +1139,27 @@ export function BoardImportDialog({
                         })
                       : progress?.failureCode === "board-gone"
                         ? copy.goneTitle
-                        : copy.failedTitle
+                        : limitFailure
+                          ? copy.limitTitle
+                          : copy.failedTitle
                   }
                   body={
                     archived
                       ? copy.archivedBody
                       : progress?.failureCode === "board-gone"
                         ? copy.goneBody
-                        : refusedAt
-                          ? fill(copy.failedHasErrors, {
-                              row: numberLabel(refusedAt.row ?? 0),
-                              column: refusedAt.column ?? "",
-                              value: refusedAt.value
-                                ? `“${refusedAt.value}”`
-                                : "",
-                              reason: reasonText(refusedAt),
-                            })
-                          : copy.errorBody
+                        : limitFailure
+                          ? copy.limitJobBody
+                          : refusedAt
+                            ? fill(copy.failedHasErrors, {
+                                row: numberLabel(refusedAt.row ?? 0),
+                                column: refusedAt.column ?? "",
+                                value: refusedAt.value
+                                  ? `“${refusedAt.value}”`
+                                  : "",
+                                reason: reasonText(refusedAt),
+                              })
+                            : copy.errorBody
                   }
                 />
                 {hasErrorsFailure ? (

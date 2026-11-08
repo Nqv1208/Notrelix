@@ -646,7 +646,8 @@ export function TableBulkFailure({
   copy: MainTableCopy;
   count: number;
   detail: string;
-  onRetry: () => void;
+  /** Absent when the same change would be refused again (over the bulk limit). */
+  onRetry?: () => void;
 }) {
   const b = copy.bulk;
   return (
@@ -665,15 +666,17 @@ export function TableBulkFailure({
         </b>
         <span>{detail}</span>
       </span>
-      <span className="flex shrink-0 items-center gap-1.5 max-md:w-full">
-        <button
-          type="button"
-          onClick={onRetry}
-          className="inline-flex h-11 cursor-pointer items-center justify-center rounded-[7px] border border-line-strong bg-popover px-3.5 text-compact font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring max-md:flex-1 dark:bg-card"
-        >
-          {b.retry}
-        </button>
-      </span>
+      {onRetry ? (
+        <span className="flex shrink-0 items-center gap-1.5 max-md:w-full">
+          <button
+            type="button"
+            onClick={onRetry}
+            className="inline-flex h-11 cursor-pointer items-center justify-center rounded-[7px] border border-line-strong bg-popover px-3.5 text-compact font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring max-md:flex-1 dark:bg-card"
+          >
+            {b.retry}
+          </button>
+        </span>
+      ) : null}
     </div>
   );
 }

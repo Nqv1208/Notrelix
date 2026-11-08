@@ -284,6 +284,8 @@ export class MockStore {
   readonly settings = new MockBoardSettingsState(this);
   private listsById = new Map<string, MockListRecord>();
   private cardsById = new Map<string, MockCardRecord>();
+  /** Old item keys kept after a move to another board: `${boardId}\n${key}` to the item id (UC-WM-A10). */
+  private itemKeyAliases = new Map<string, string>();
   /** Soft-deleted cards (the 30 day trash); the mock keeps the card row only. */
   private trashedCardsById = new Map<
     string,
@@ -3544,6 +3546,12 @@ export class MockStore {
     const position = this.getCards(list.id).length;
     const itemKey = this.nextItemKey(targetBoardId);
     const relocate = (record: MockCardRecord, key: string | null) => {
+      // The key it had on the source board keeps resolving to it (D76.3).
+      if (record.itemKey)
+        this.itemKeyAliases.set(
+          `${record.boardId}\n${record.itemKey}`,
+          record.id,
+        );
       this.removeIndex(this.cardIdsByListId, record.listId, record.id);
       this.cardsById.set(record.id, {
         ...record,
@@ -3574,6 +3582,23 @@ export class MockStore {
       relocate(child, itemKey ? `${itemKey}.${index + 1}` : null),
     );
     return { result: "ok", card: this.cardsById.get(cardId)! };
+  }
+
+  /**
+   * The item a key names on a board: its current key there, or an old key it
+   * kept after moving away (`moved`). Undefined when the board never issued it.
+   */
+  resolveItemKey(
+    boardId: string,
+    key: string,
+  ): { readonly card: MockCardRecord; readonly moved: boolean } | undefined {
+    const wanted = key.trim();
+    for (const card of this.cardsById.values())
+      if (card.boardId === boardId && card.itemKey === wanted)
+        return { card, moved: false };
+    const aliasOf = this.itemKeyAliases.get(`${boardId}\n${wanted}`);
+    const card = aliasOf ? this.cardsById.get(aliasOf) : undefined;
+    return card?.itemKey ? { card, moved: true } : undefined;
   }
 
   // ── Checklists ──
