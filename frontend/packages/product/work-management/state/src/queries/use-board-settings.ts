@@ -5,6 +5,7 @@ import type {
   BoardSettingsDto,
   BoardSettingsWriteResult,
   FormulaPreviewDraft,
+  FormulaRefusalDetail,
 } from "@notrelix/work-management-core";
 import type { BoardSettingsApi } from "../api/board-settings.api";
 import { useWorkManagementServices } from "../services";
@@ -30,9 +31,32 @@ function errorKind(error: unknown): string | null {
 }
 
 /** The first field a validation error names. */
+/**
+ * The stable rule that refused the write (`ruleCode`, e.g. WorkManagement_Field_ComputedFieldCycle). `code` on the
+ * error is only the category ("business_rule_violation"), so the rule is read from `ruleCode` first.
+ */
 function ruleCodeOf(error: unknown): { code?: string } {
+  const rule = (error as { ruleCode?: unknown } | null)?.ruleCode;
   const code = (error as { code?: unknown } | null)?.code;
-  return typeof code === "string" && code !== "" ? { code } : {};
+  const named = typeof rule === "string" && rule !== "" ? rule : code;
+  return typeof named === "string" && named !== "" ? { code: named } : {};
+}
+
+/** What a formula refusal names, from the problem's extensions (the loop, the unknown field, the syntax position). */
+function refusalDetailOf(error: unknown): { detail?: FormulaRefusalDetail } {
+  const body = (error as { details?: unknown } | null)?.details as
+    Record<string, unknown> | null | undefined;
+  if (!body) return {};
+  const detail: FormulaRefusalDetail = {};
+  if (
+    Array.isArray(body.cycle) &&
+    body.cycle.every((name) => typeof name === "string")
+  )
+    detail.cycle = body.cycle as string[];
+  if (typeof body.field === "string") detail.field = body.field;
+  if (typeof body.position === "number") detail.position = body.position;
+  if (typeof body.missing === "string") detail.missing = body.missing;
+  return Object.keys(detail).length > 0 ? { detail } : {};
 }
 
 /** Who saved first, from a 412 the server answered with the last writer. */
@@ -149,6 +173,7 @@ export function useBoardSettings(boardId: string, workspaceId: string) {
             reason: "invalid",
             field: invalidField(caught),
             ...ruleCodeOf(caught),
+            ...refusalDetailOf(caught),
           };
         }
         // What was written to is gone (someone else deleted it): read the settings again so the

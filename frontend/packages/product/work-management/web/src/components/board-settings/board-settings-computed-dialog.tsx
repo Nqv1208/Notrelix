@@ -139,6 +139,41 @@ export function previewDetail(
 }
 
 /**
+ * The sentence for a refused formula that names its own fault: the loop, the unknown reference or the syntax
+ * position. Null for any other refusal, which the rule's generic sentence covers.
+ */
+export function refusalMessage(
+  t: BoardSettingsCopy["computedDialog"],
+  failure: Extract<BoardSettingsWriteResult, { ok: false }>,
+): string | null {
+  const detail = failure.detail;
+  if (!detail) return null;
+  if (
+    failure.code === "WorkManagement_Field_ComputedFieldCycle" &&
+    detail.cycle
+  )
+    return fillCopy(t.cycleNamed, {
+      path: detail.cycle.map((name) => `“${name}”`).join(" → "),
+    });
+  if (
+    failure.code === "WorkManagement_Field_FormulaUnknownField" &&
+    detail.field
+  )
+    return fillCopy(t.unknownNamed, { field: detail.field });
+  if (
+    failure.code === "WorkManagement_FieldSettings_FormulaSyntaxInvalid" &&
+    detail.position !== undefined
+  )
+    return detail.missing
+      ? fillCopy(t.syntaxMissing, {
+          missing: detail.missing,
+          position: detail.position,
+        })
+      : fillCopy(t.syntaxAt, { position: detail.position });
+  return null;
+}
+
+/**
  * Creates or edits a Formula or Rollup field. It is evaluated by the server
  * on every board read; this dialog only writes the definition. A refusal
  * keeps what was typed and says why, by the server's rule code; a transport
@@ -266,7 +301,8 @@ export function ComputedFieldDialog({
     : failure.reason === "conflict"
       ? t.conflict
       : failure.reason === "invalid"
-        ? ((failure.code ? t.errors[failure.code] : undefined) ??
+        ? (refusalMessage(t, failure) ??
+          (failure.code ? t.errors[failure.code] : undefined) ??
           t.unknownError)
         : t.failed;
 
