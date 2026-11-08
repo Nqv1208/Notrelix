@@ -672,21 +672,18 @@ export function createItemExtrasApi(
         }
         return rows;
       };
-      const [members, board] = await Promise.all([
-        readMembers(),
-        api.get<{ members?: BoardMember[] | null }>(
-          endpoints.boards.full(boardId),
-        ),
-      ]);
-      const onBoard = new Map(
-        (board.members ?? []).map((member) => [
-          member.userId ?? "",
-          boardLevel(member.role),
-        ]),
-      );
-      if (members === null) {
-        // A Guest does not enumerate the workspace (GOV-009): read the people of this board
-        // (members and grant holders, names only) instead (UC-WM-A23).
+      // A Guest may not list the workspace (GOV-009): the board's own people (members and grant holders,
+      // names only) are the list, read without the workspace members or the full board (UC-WM-A23).
+      let isGuest = false;
+      try {
+        const me = await api.get<{ role?: string | null } | null>(
+          endpoints.workspaces.myMembership(workspaceId),
+        );
+        isGuest = (me?.role ?? "").trim().toLowerCase() === "guest";
+      } catch {
+        // The role is unknown: the members read below decides.
+      }
+      if (isGuest) {
         const rows =
           (await api.get<readonly BoardPersonWire[] | null>(
             endpoints.boards.people(boardId),
@@ -704,6 +701,33 @@ export function createItemExtrasApi(
           canInvite: false,
         };
       }
+      const [members, board] = await Promise.all([
+        readMembers(),
+        api.get<{ members?: BoardMember[] | null }>(
+          endpoints.boards.full(boardId),
+        ),
+      ]);
+      const onBoard = new Map(
+        (board.members ?? []).map((member) => [
+          member.userId ?? "",
+          boardLevel(member.role),
+        ]),
+      );
+      if (members === null)
+        return {
+          people: (board.members ?? [])
+            .filter((member) => Boolean(member.userId))
+            .map((member) => ({
+              userId: member.userId ?? "",
+              name: member.name ?? "",
+              department: null,
+              openCount: 0,
+              onBoard: true,
+              level: boardLevel(member.role),
+            })),
+          teams: [],
+          canInvite: false,
+        };
       return {
         people: members
           .filter((member) => member.status?.toLowerCase() !== "suspended")
