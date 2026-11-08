@@ -168,6 +168,12 @@ describe("createFormApi", () => {
     expect(second.nextCursor).toBeNull();
   });
 
+  it("undoes a decision by returning the response to the New tab", async () => {
+    const post = vi.fn(async () => undefined);
+    await apiWith({ post }).reopenSubmission("s-9");
+    expect(post).toHaveBeenCalledWith("/form-submissions/s-9/reopen", {});
+  });
+
   it("writes only the settings a question has", () => {
     expect(serializeFormQuestionConfig(false, {})).toBe('{"required":false}');
     expect(

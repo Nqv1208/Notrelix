@@ -468,6 +468,16 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
                 {b.publish}
               </button>
             ) : null}
+            {form.status === "closed" ? (
+              <button
+                type="button"
+                disabled={archived || conflict !== null}
+                onClick={() => void publish()}
+                className={BUTTON_CLASS.primary}
+              >
+                {b.reopen}
+              </button>
+            ) : null}
             {form.status === "published" ? (
               <button
                 type="button"
