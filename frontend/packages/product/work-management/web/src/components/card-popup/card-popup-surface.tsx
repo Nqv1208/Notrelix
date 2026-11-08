@@ -131,7 +131,7 @@ export function CardPopupSurface({
       {ready ? (
         <CardPopupProvider value={model}>
           <StaleSchemaProvider value={staleSchema ?? null}>
-            <PopupHeader onClose={onClose} />
+            <PopupHeader onClose={onClose} pane={pane} />
             <div
               className={cn(
                 "flex min-h-0 flex-1 flex-col overflow-y-auto",

@@ -73,6 +73,7 @@ import { MainTableSurface } from "./main-table-surface";
 import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
 import { TableSubItems } from "./table-sub-items";
 import { useViewportTableLayout } from "./table-layout";
+import { TableSplitDivider, useSplitPaneWidth } from "./table-split-divider";
 import type { TableEditors } from "./table-cell-editors";
 import type { TableFieldEditing } from "./table-field-cell";
 import {
@@ -419,6 +420,8 @@ export function MainTableView({
   const boardCovered = Boolean(selectedItemId) && isNarrow;
   // On the tablet the open item is a pane beside the table (`Final-T-Table` chia-doi), not a dialog over it.
   const split = layout === "tablet" && Boolean(selectedItemId);
+  // The pane's width is the person's, kept in this browser (the grip on the divider sets it).
+  const splitPane = useSplitPaneWidth();
 
   const { board } = table;
 
@@ -1434,10 +1437,19 @@ export function MainTableView({
       ) : null}
       {selectedItemId && split ? (
         <>
-          <span aria-hidden="true" className="w-px flex-none bg-line-strong" />
+          <TableSplitDivider
+            containerRef={tableRef}
+            paneId="table-split-pane"
+            width={splitPane.width}
+            onPreview={splitPane.preview}
+            onCommit={splitPane.commit}
+            label={copy.header.splitGrip}
+          />
           <div
+            id="table-split-pane"
             data-slot="table-split-pane"
-            className="h-full w-[46%] min-w-0 flex-none"
+            style={{ width: `${(splitPane.width * 100).toFixed(2)}%` }}
+            className="h-full min-w-0 flex-none"
           >
             <KanbanSelectedItem
               presentation="pane"
