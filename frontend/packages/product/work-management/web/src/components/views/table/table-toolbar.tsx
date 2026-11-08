@@ -5,6 +5,7 @@ import {
   TABLET_SLOT,
   TabletPortal,
   TabletSlot,
+  useIsTablet,
   useMediaQuery,
 } from "@notrelix/ui-web";
 import { CompactSearch } from "../../filters/compact-search";
@@ -170,17 +171,20 @@ export function MainTableToolbar({
           className={`h-5 w-px bg-border max-md:hidden tablet:hidden ${columnState?.personal ? "mx-1.5" : "mx-1"}`}
         />
 
-        <TableColumnsMenu
-          copy={copy}
-          customFields={customFields}
-          columnOrder={columnOrder}
-          onColumnOrderChange={onColumnOrderChange}
-          columnState={columnState}
-          hiddenColumnIds={hiddenColumnIds}
-          onColumnVisibleChange={onColumnVisibleChange}
-          density={density}
-          onDensityChange={onDensityChange}
-        />
+        {/* On the tablet the control sits in the title header cell (`Final-T-Table`), so it moves there. */}
+        <TableColumnsSlot>
+          <TableColumnsMenu
+            copy={copy}
+            customFields={customFields}
+            columnOrder={columnOrder}
+            onColumnOrderChange={onColumnOrderChange}
+            columnState={columnState}
+            hiddenColumnIds={hiddenColumnIds}
+            onColumnVisibleChange={onColumnVisibleChange}
+            density={density}
+            onDensityChange={onDensityChange}
+          />
+        </TableColumnsSlot>
 
         <span className="flex-1" />
         {/* The tablet row ends with the view menu, Add view and the avatar stack (the board header portals them in). */}
@@ -214,4 +218,14 @@ export function MainTableToolbar({
       </div>
     </div>
   );
+}
+
+/** Renders the columns control in the toolbar, or in the tablet's title header cell instead. */
+function TableColumnsSlot({ children }: { children: ReactNode }) {
+  const tablet = useIsTablet();
+  if (tablet)
+    return (
+      <TabletPortal slot={TABLET_SLOT.tableColumns}>{children}</TabletPortal>
+    );
+  return <>{children}</>;
 }

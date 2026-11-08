@@ -12,6 +12,8 @@ export const TABLET_SLOT = {
   toolbarTrail: "tablet-toolbar-trail",
   /** Where a view that draws the avatar stack right after its filter chips (Final-T-Board) hosts it. */
   toolbarStack: "tablet-toolbar-stack",
+  /** The Table's columns control, which the tablet draws in the title header cell (`Final-T-Table`). */
+  tableColumns: "tablet-table-columns",
 } as const;
 
 export type TabletSlotId = (typeof TABLET_SLOT)[keyof typeof TABLET_SLOT];

@@ -55,7 +55,7 @@ export const IconBtn = forwardRef<
 });
 
 const FIELD_BTN =
-  "inline-flex h-11 items-center gap-[7px] rounded-[8px] border border-line-strong bg-popover px-3 text-[13.5px] md:h-9 font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex h-11 items-center gap-[7px] rounded-[8px] border border-line-strong bg-popover px-3 text-[13.5px] md:h-9 in-data-popup-pane:h-11! font-medium whitespace-nowrap text-foreground hover:bg-state-hover-strong disabled:cursor-not-allowed disabled:opacity-50";
 
 /** `.qb`: a button of the quick row. */
 export const QuickBtn = forwardRef<
@@ -111,7 +111,7 @@ export function ChipReadOnly({ className, ...props }: ComponentProps<"span">) {
   return (
     <span
       className={cn(
-        "inline-flex h-9 items-center gap-[7px] rounded-[8px] border border-dashed border-line-strong bg-background px-3 text-[13.5px] font-medium whitespace-nowrap text-muted-foreground",
+        "inline-flex h-9 items-center gap-[7px] rounded-[8px] border border-dashed border-line-strong bg-background px-3 text-[13.5px] font-medium whitespace-nowrap text-muted-foreground in-data-popup-pane:h-11!",
         className,
       )}
       {...props}

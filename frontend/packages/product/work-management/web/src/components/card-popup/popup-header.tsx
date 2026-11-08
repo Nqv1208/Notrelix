@@ -1,5 +1,12 @@
 import { useId, useState } from "react";
-import { Check, ChevronDown, Loader2, MoreHorizontal, X } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Link as LinkIcon,
+  Loader2,
+  MoreHorizontal,
+  X,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -269,8 +276,17 @@ function GroupPicker() {
   );
 }
 
-/** The header bar: column picker, key, the cover slot, "⋯" and close. */
-export function PopupHeader({ onClose }: { onClose: () => void }) {
+/**
+ * The header bar: column picker, key, the cover slot, "⋯" and close. In the tablet split pane (`pane`) it
+ * also carries a copy-link button (`Final-T-Table` chia-doi); the bar is 56 px in both.
+ */
+export function PopupHeader({
+  onClose,
+  pane = false,
+}: {
+  onClose: () => void;
+  pane?: boolean;
+}) {
   const {
     card,
     board,
@@ -306,6 +322,15 @@ export function PopupHeader({ onClose }: { onClose: () => void }) {
       ) : null}
       <span className="flex-1" />
       {slots.cover}
+      {pane && mode === "view" && callbacks.onCopyLink ? (
+        <IconBtn
+          aria-label={actionsCopy.copyLink}
+          title={actionsCopy.copyLink}
+          onClick={() => callbacks.onCopyLink?.(card.id)}
+        >
+          <LinkIcon aria-hidden="true" className="size-4" />
+        </IconBtn>
+      ) : null}
       {mode === "view" ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
