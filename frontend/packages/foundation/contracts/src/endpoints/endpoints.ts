@@ -278,6 +278,13 @@ export const endpoints = {
     detail: (resourceType: string, resourceId: string, permissionId: string) =>
       `/resources/${resourceType}/${resourceId}/permissions/${permissionId}`,
   },
+  // Resource invitations by email (Workspaces.Invitations.*): a guest of one Board or Page (UC-WM-A19, A20).
+  resourceInvitations: {
+    list: (resourceType: string, resourceId: string) =>
+      `/resources/${resourceType}/${resourceId}/invitations`,
+    detail: (resourceType: string, resourceId: string, invitationId: string) =>
+      `/resources/${resourceType}/${resourceId}/invitations/${invitationId}`,
+  },
 
   checklists: {
     detail: (checklistId: string) => `/checklists/${checklistId}`,

@@ -5534,7 +5534,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List the pending guest invitations of one Board or Page (UC-WM-A20) */
+        get: operations["Workspaces.Invitations.ListResourceInvitations"];
         put?: never;
         /** Invite an outsider by email to one Board or Page as a Guest */
         post: operations["Workspaces.Invitations.InviteGuestToResource"];
@@ -9898,6 +9899,18 @@ export interface components {
             role?: string | null;
             /** Format: date-time */
             expiresAt?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.Invitations.Queries.ListResourceInvitations.ResourceInvitationDto": {
+            /** Format: uuid */
+            id?: string;
+            email?: string | null;
+            level?: string | null;
+            /** Format: uuid */
+            invitedBy?: string;
+            invitedByName?: string | null;
+            /** Format: date-time */
+            expiresAt?: string;
+            issuedByYou?: boolean;
         };
         "Notrelix.Application.Features.Workspaces.Navigation.Queries.GetPinnedResources.PinnedResourceDto": {
             kind?: string | null;
@@ -23623,6 +23636,29 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Workspaces.Invitations.ListResourceInvitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                resourceType: string;
+                resourceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Invitations.Queries.ListResourceInvitations.ResourceInvitationDto"][];
                 };
             };
         };

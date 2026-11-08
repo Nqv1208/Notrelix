@@ -35,6 +35,7 @@ public static class MapInvitationEndpoints
             .WithTags("Workspaces.Invitations")
             .WithOpenApi();
 
+        resourceGroup.MapListResourceInvitations();
         resourceGroup.MapInviteGuestToResource();
         resourceGroup.MapResendResourceInvitation();
         resourceGroup.MapRevokeResourceInvitation();

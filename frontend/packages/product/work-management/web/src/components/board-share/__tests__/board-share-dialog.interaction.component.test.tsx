@@ -285,4 +285,59 @@ describe("BoardShareDialogSurface", () => {
       within(screen.getByRole("dialog")).getByText(copy.people.empty),
     ).toBeTruthy();
   });
+
+  it("UC-WM-A19 offers an outsider's typed email as a Guest invitation at Viewer and sends it", () => {
+    const onInviteGuest = vi.fn(async () => true);
+    renderShare(shareDefaultScenario(), {
+      candidates: [],
+      onInvite: vi.fn(),
+      onInviteGuest,
+    });
+    const field = screen.getByRole("combobox");
+    fireEvent.change(field, { target: { value: "tuan@doitac-erp.vn" } });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: copy.add.guestOption.replace("{{email}}", "tuan@doitac-erp.vn"),
+      }),
+    );
+    expect(
+      screen.getByRole("button", { name: copy.add.invite }),
+    ).not.toHaveProperty("disabled", true);
+    fireEvent.click(screen.getByRole("button", { name: copy.add.invite }));
+    expect(onInviteGuest).toHaveBeenCalledWith("tuan@doitac-erp.vn");
+  });
+
+  it("UC-WM-A20 lists pending invitations and only the issuer may resend or revoke", () => {
+    const onRevokeInvitation = vi.fn();
+    renderShare(shareDefaultScenario(), {
+      pendingInvitations: [
+        {
+          id: "inv-1",
+          email: "a@x.vn",
+          issuedByYou: true,
+          invitedByName: "Hà",
+          expiresAt: "2027-01-01T00:00:00Z",
+        },
+        {
+          id: "inv-2",
+          email: "b@x.vn",
+          issuedByYou: false,
+          invitedByName: "Phúc",
+          expiresAt: "2027-01-01T00:00:00Z",
+        },
+      ],
+      onResendInvitation: vi.fn(),
+      onRevokeInvitation,
+    });
+    const section = screen.getByRole("region", {
+      name: /Lời mời đang chờ · 2/,
+    });
+    const revokes = within(section).getAllByRole("button", {
+      name: copy.pending.revoke,
+    });
+    expect(revokes[0]).not.toHaveProperty("disabled", true);
+    expect(revokes[1]).toHaveProperty("disabled", true);
+    fireEvent.click(revokes[0]!);
+    expect(onRevokeInvitation).toHaveBeenCalledWith("inv-1");
+  });
 });

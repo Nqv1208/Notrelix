@@ -122,6 +122,28 @@ function dropIfEmpty(
 const fixedEntry = (store: MockStore, entry: MockShareEntry) =>
   entry.owner || entry.userId === store.getCurrentUser().id;
 
+interface MockGuestInvitation {
+  id: string;
+  boardId: string;
+  email: string;
+  status: "pending" | "revoked";
+  invitedBy: string;
+  invitedByName: string;
+  expiresAt: string;
+}
+
+/** The guest invitations of this store, kept per store (a fresh mock session starts empty). */
+const guestInvitations = new WeakMap<object, MockGuestInvitation[]>();
+
+function guestInvitationsOf(store: object): MockGuestInvitation[] {
+  let list = guestInvitations.get(store);
+  if (!list) {
+    list = [];
+    guestInvitations.set(store, list);
+  }
+  return list;
+}
+
 export const boardSharingOperations = [
   defineMockOperation<{ boardId: string }, never, unknown>({
     id: "boards.sharing",
@@ -178,6 +200,62 @@ export const boardSharingOperations = [
             : {}),
         }));
       return ok(people);
+    },
+  }),
+
+  // UC-WM-A19: a resource invitation by email. A guest's level is Viewer (GOV-030); one pending
+  // invitation per email and Board.
+  defineMockOperation<
+    { resourceType: string; resourceId: string },
+    { email?: string; level?: string },
+    unknown
+  >({
+    id: "resources.invitations.create",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Invitations.InviteGuestToResource",
+    },
+    method: "POST",
+    route: "/resources/:resourceType/:resourceId/invitations",
+    async handle({ params, body, store }) {
+      if (params.resourceType !== BOARD_KIND) return notFound();
+      const board = store.getBoard(params.resourceId);
+      if (!board || !canManageBoard(board.id, store))
+        return notFound("Board not found");
+      const email = (body?.email ?? "").trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+        return validationError({ email: ["Enter a valid email address."] });
+      if (body?.level !== "Viewer")
+        return validationError({
+          level: [
+            "A guest resource entry is view-only: the level must be Viewer.",
+          ],
+        });
+      const list = guestInvitationsOf(store);
+      if (
+        list.some(
+          (invitation) =>
+            invitation.boardId === board.id &&
+            invitation.email === email &&
+            invitation.status === "pending",
+        )
+      )
+        return validationError({
+          email: [
+            "A pending invitation already exists for this email address on this resource.",
+          ],
+        });
+      const invitation: MockGuestInvitation = {
+        id: `mock-invitation-${list.length + 1}-${board.id}`,
+        boardId: board.id,
+        email,
+        status: "pending",
+        invitedBy: store.getCurrentUser().id,
+        invitedByName: store.getCurrentUser().name,
+        expiresAt: store.getClock().offsetDays(7),
+      };
+      list.push(invitation);
+      return { status: 201, body: invitation.id };
     },
   }),
 

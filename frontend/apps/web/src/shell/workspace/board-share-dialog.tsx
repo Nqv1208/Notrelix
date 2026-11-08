@@ -400,6 +400,67 @@ export function BoardShareDialog({
               write(() => sharing.remove(rowId), subjectOf(rowId, true))
           : undefined
       }
+      pendingInvitations={sharing.pendingInvitations}
+      onResendInvitation={
+        view.canManage && sharing.data
+          ? async (invitationId: string) => {
+              const row = sharing.pendingInvitations.find(
+                (r) => r.id === invitationId,
+              );
+              try {
+                await sharing.resendInvitation(invitationId);
+                if (row)
+                  toast.success(
+                    fillBoardShareCopy(copy.pending.resent, {
+                      email: row.email,
+                    }),
+                  );
+                return true;
+              } catch (error: unknown) {
+                toastFailure(copy.footer.writeFailed, error, "");
+                return false;
+              }
+            }
+          : undefined
+      }
+      onRevokeInvitation={
+        view.canManage && sharing.data
+          ? async (invitationId: string) => {
+              const row = sharing.pendingInvitations.find(
+                (r) => r.id === invitationId,
+              );
+              try {
+                await sharing.revokeInvitation(invitationId);
+                if (row)
+                  toast.success(
+                    fillBoardShareCopy(copy.pending.revoked, {
+                      email: row.email,
+                    }),
+                  );
+                return true;
+              } catch (error: unknown) {
+                toastFailure(copy.footer.writeFailed, error, "");
+                return false;
+              }
+            }
+          : undefined
+      }
+      onInviteGuest={
+        view.canManage && sharing.data
+          ? async (email: string) => {
+              try {
+                await sharing.inviteGuest(email);
+                toast.success(
+                  fillBoardShareCopy(copy.add.guestInvited, { email }),
+                );
+                return true;
+              } catch (error: unknown) {
+                toastFailure(copy.footer.writeFailed, error, "");
+                return false;
+              }
+            }
+          : undefined
+      }
       onClaimOwner={
         view.canManage && sharing.data?.canAssignOwner && user?.id
           ? () => write(() => sharing.claimOwner(user.id))
