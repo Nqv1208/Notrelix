@@ -186,6 +186,9 @@ export const vi = {
       takeTheirs: "Dùng bản mới",
       keepMine: "Giữ của tôi",
       keepMineAndSave: "Giữ của tôi và lưu",
+      pendingTitle: "Đang lưu thay đổi của bạn lên bản mới nhất…",
+      pendingBody:
+        "Chỉ phần bạn đã sửa được ghi lên bản mới nhất của {{by}}; phần còn lại của họ được giữ.",
       working: "Đang lưu…",
       diffLabel: "Khác biệt giữa bản của bạn và bản mới nhất",
       columns: {
@@ -573,6 +576,9 @@ export const en: FormsCopy = {
       takeTheirs: "Use the new version",
       keepMine: "Keep mine",
       keepMineAndSave: "Keep mine and save",
+      pendingTitle: "Saving your changes onto the latest version…",
+      pendingBody:
+        "Only what you changed is written onto the latest version by {{by}}; the rest of theirs is kept.",
       working: "Saving…",
       diffLabel: "Differences between your version and the latest",
       columns: {

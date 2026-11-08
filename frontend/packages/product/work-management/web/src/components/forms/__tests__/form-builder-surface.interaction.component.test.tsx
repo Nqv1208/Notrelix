@@ -9,8 +9,12 @@ import {
 } from "@notrelix/testing";
 import {
   BOARD_FIELDS,
+  Q_DESCRIPTION,
+  Q_DUE,
+  Q_EMAIL,
   Q_OWN_CHOICES,
   Q_PRIORITY,
+  Q_TITLE,
   formFixture,
   formsCopyFixture,
   question,
@@ -232,6 +236,60 @@ describe.each(["vi", "en"] as const)("form builder (%s)", (locale) => {
     await screen.findByText(b.conflict);
     fireEvent.click(screen.getByRole("button", { name: b.reload }));
     expect(props.onReload).toHaveBeenCalled();
+  });
+
+  it(`${fui("conflict-diff", locale)}shows the difference table of a stale save, keeps mine while the save is written, and holds the notice as status (${locale})`, async () => {
+    const latest = formFixture({
+      version: 5,
+      questions: [
+        { ...Q_TITLE, label: "Tên việc" },
+        Q_DESCRIPTION,
+        Q_PRIORITY,
+        Q_DUE,
+        Q_EMAIL,
+      ],
+    });
+    const onReadLatest = vi.fn(async () => latest);
+    let resolveRedo: (value: { ok: true }) => void = () => undefined;
+    const onUpdateQuestion = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        reason: "conflict",
+        conflict: { byName: "Hà Nguyễn", at: null },
+      })
+      .mockImplementationOnce(
+        () => new Promise((resolve) => (resolveRedo = resolve)),
+      );
+    const props = render(locale, {
+      selectedId: "q-title",
+      onUpdateQuestion,
+      onReadLatest,
+    });
+    fireEvent.click(screen.getByRole("switch", { name: b.requiredSwitch }));
+    await screen.findByRole("alert");
+    await waitFor(() => expect(onReadLatest).toHaveBeenCalled());
+
+    fireEvent.click(
+      screen.getByRole("button", { name: b.conflictNotice.showDiff }),
+    );
+    const table = screen.getByRole("table", {
+      name: b.conflictNotice.diffLabel,
+    });
+    expect(within(table).getByText("Tên việc")).toBeTruthy();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: b.conflictNotice.keepMineAndSave }),
+    );
+    expect(props.onReload).toHaveBeenCalled();
+    await waitFor(() => expect(onUpdateQuestion).toHaveBeenCalledTimes(2));
+    expect(screen.getByRole("status").textContent).toContain(
+      b.conflictNotice.pendingTitle,
+    );
+    expect(
+      screen.queryByRole("table", { name: b.conflictNotice.diffLabel }),
+    ).toBeNull();
+    resolveRedo({ ok: true });
   });
 
   it(`${fui("remove", locale)}asks before it removes a question (${locale})`, async () => {

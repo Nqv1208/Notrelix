@@ -1476,6 +1476,7 @@ function FormConflict({
           latest: fillFormsCopy(copy.columns.latest, { by }),
         },
         diffHint: fillFormsCopy(copy.diffHint, { by }),
+        pendingBody: fillFormsCopy(copy.pendingBody ?? "", { by }),
       }}
       busy={conflict.busy}
       rows={rows}
