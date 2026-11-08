@@ -707,10 +707,10 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
               >
                 <CloudOff className="size-5" />
               </span>
-              <b className="text-[16px] leading-[1.45] font-[650] text-foreground">
+              <b className="text-base leading-[1.45] font-[650] text-foreground">
                 {copy.list.errorTitle}
               </b>
-              <span className="max-w-[46ch] text-[13.5px] leading-[1.45] text-muted-foreground">
+              <span className="max-w-[46ch] text-compact leading-[1.45] text-muted-foreground">
                 {copy.list.errorBody}
               </span>
               <button
@@ -718,7 +718,7 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
                 className={cn(
                   SMALL_OUTLINE_CLASS,
                   "mt-1.5",
-                  touch !== null && "h-11 px-4 text-[14px]",
+                  touch !== null && "h-11 px-4 text-sm",
                 )}
                 onClick={props.onRetry}
               >
