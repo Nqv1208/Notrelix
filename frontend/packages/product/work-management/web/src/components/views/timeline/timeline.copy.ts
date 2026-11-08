@@ -131,6 +131,7 @@ export const en = {
     dialogDescription: "Choose an item that this one waits for, or blocks.",
     waits: "{{key}} waits for…",
     blocks: "{{key}} blocks…",
+    blocksShort: "blocks…",
     direction: "Direction of the dependency",
     search: "Search by key or title",
     list: "Items to link",
@@ -145,6 +146,23 @@ export const en = {
     cycleAlert:
       "Cannot link {{key}}: it would make a dependency loop. Pick another item. The loop is {{chain}}.",
     noMatch: "No item matches",
+    /** The phone sheet (WM-TLCal-320). */
+    sheetLabel: "Link {{key}} with…",
+    close: "Close",
+    cycleTitle: "Cannot link: this makes a dependency loop.",
+    optionMeta: "{{status}} · {{from}} to {{to}}",
+    optionCycle: "Makes a loop: {{key}} already waits for {{item}}",
+  },
+  /** The phone list (WM-TLCal-320): one row per item, a 44 px link button at its end. */
+  phone: {
+    list: "Items on the timeline",
+    linkButton: "Link with… {{key}}",
+    undated: "Unscheduled ({{count}})",
+    undatedSheet: "Unscheduled items",
+    readOnlyChip:
+      "{{key}} {{title}}, unscheduled, view only so it cannot be scheduled",
+    trayReadOnly:
+      "You can only view, so you cannot schedule. (People who can edit see “Set date” on each item.)",
   },
   linkToast: {
     created: "Linked: {{to}} waits for {{from}}",
@@ -316,6 +334,7 @@ export const vi: TimelineCopy = {
     dialogDescription: "Chọn việc mà việc này phải chờ, hoặc đang chặn.",
     waits: "{{key}} chờ…",
     blocks: "{{key}} chặn…",
+    blocksShort: "chặn…",
     direction: "Chiều phụ thuộc",
     search: "Tìm việc theo mã hoặc tên",
     list: "Việc để liên kết",
@@ -330,6 +349,21 @@ export const vi: TimelineCopy = {
     cycleAlert:
       "Không thể nối {{key}}: tạo vòng phụ thuộc. Chọn việc khác. Vòng là {{chain}}.",
     noMatch: "Không có việc nào khớp",
+    sheetLabel: "Liên kết với… {{key}}",
+    close: "Đóng",
+    cycleTitle: "Không thể nối: tạo vòng phụ thuộc.",
+    optionMeta: "{{status}} · {{from}} đến {{to}}",
+    optionCycle: "Tạo vòng: {{key}} đã chờ {{item}}",
+  },
+  phone: {
+    list: "Việc trên dòng thời gian",
+    linkButton: "Liên kết với… {{key}}",
+    undated: "Chưa lên lịch ({{count}})",
+    undatedSheet: "Việc chưa lên lịch",
+    readOnlyChip:
+      "{{key}} {{title}}, chưa lên lịch, chỉ xem nên không đặt lịch được",
+    trayReadOnly:
+      "Bạn chỉ có quyền xem nên không thể đặt lịch. (Người có quyền sửa thấy nút “Đặt ngày” trên mỗi việc.)",
   },
   linkToast: {
     created: "Đã nối: {{to}} chờ {{from}}",
