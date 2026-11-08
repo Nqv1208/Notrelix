@@ -430,6 +430,12 @@ export const en = {
     cancel: "Cancel",
     retry: "Retry",
     keptNote: "What you wrote is kept.",
+    cycleNamed: "Calculated fields cannot form a cycle: {{path}}.",
+    unknownNamed:
+      "The formula uses [{{field}}], which is not a field of this board.",
+    syntaxAt: "The formula is not written correctly at position {{position}}.",
+    syntaxMissing:
+      'The formula is not written correctly: "{{missing}}" is missing at position {{position}}.',
     errors: {
       WorkManagement_FieldSettings_FormulaExpressionRequired:
         "Write a formula first.",
@@ -1211,6 +1217,12 @@ export const vi: BoardSettingsCopy = {
     cancel: "Huỷ",
     retry: "Thử lại",
     keptNote: "Nội dung bạn viết vẫn còn ở đây.",
+    cycleNamed: "Các trường tính không được tạo vòng: {{path}}.",
+    unknownNamed:
+      "Công thức nhắc tới [{{field}}], không phải trường của bảng này.",
+    syntaxAt: "Công thức viết chưa đúng tại vị trí {{position}}.",
+    syntaxMissing:
+      'Công thức viết chưa đúng: thiếu "{{missing}}" tại vị trí {{position}}.',
     errors: {
       WorkManagement_FieldSettings_FormulaExpressionRequired:
         "Hãy viết công thức trước.",

@@ -427,6 +427,41 @@ public sealed class FieldValuesAndLifecyclePipelineIntegrationTests : IAsyncLife
     }
 
     [Fact]
+    public async Task ChangingTheDefault_LeavesTenItemsWithTheOldDefaultUnchanged_AndANewItemGetsTheNewOne()
+    {
+        // UC-WM-C03 acceptance, WM-008: a default applies to new items only; existing values are never rewritten.
+        var scene = await SeedAsync(FieldType.Select);
+        using var owner = Provider(scene.Stack);
+        var groupId = await _host.ReadAsync(c => c.BoardGroups.AsNoTracking().Where(g => g.BoardId == scene.BoardId).Select(g => g.Id).FirstAsync());
+        async Task<Guid> CreateAsync(int n)
+        {
+            var item = BoardItem.CreateRoot(scene.Stack.AccountId, scene.Stack.WorkspaceId, scene.BoardId, groupId, $"Việc {n}", FractionalIndex.Create($"b{n:D2}"), scene.Stack.OwnerId, OrgTreeTestHost.BaseTime);
+            await _host.WithSystemContextAsync(async c =>
+            {
+                await Notrelix.Application.Features.WorkManagement.BoardItems.Services.BoardItemFieldWrites.ApplyCreateRulesAsync(c, item, scene.Stack.OwnerId, OrgTreeTestHost.BaseTime, default);
+                c.BoardItems.Add(item);
+            });
+            return item.Id;
+        }
+
+        await OrgTreeTestHost.SendAsync(owner, new UpdateBoardFieldCommand(scene.BoardId, scene.FieldId, null, null, await FieldVersionAsync(scene.FieldId), $"\"{scene.Options[0]}\""));
+        var existing = new List<Guid>();
+        for (var n = 0; n < 10; n++) existing.Add(await CreateAsync(n));
+        var versions = new Dictionary<Guid, long>();
+        foreach (var id in existing) versions[id] = await VersionAsync(id);
+
+        await OrgTreeTestHost.SendAsync(owner, new UpdateBoardFieldCommand(scene.BoardId, scene.FieldId, null, null, await FieldVersionAsync(scene.FieldId), $"\"{scene.Options[1]}\""));
+        var fresh = await CreateAsync(10);
+
+        foreach (var id in existing)
+        {
+            (await StoredValueAsync(id, scene.FieldId)).Should().Contain(scene.Options[0].ToString(), "an existing value keeps the old default");
+            (await VersionAsync(id)).Should().Be(versions[id], "changing a default bumps no item");
+        }
+        (await StoredValueAsync(fresh, scene.FieldId)).Should().Contain(scene.Options[1].ToString());
+    }
+
+    [Fact]
     public async Task AValueNamingAnOptionThatWasRemoved_AnswersPreconditionNamingTheFieldAndTheOption_AndStoresNothing()
     {
         var scene = await SeedAsync(FieldType.Select);

@@ -185,9 +185,13 @@ public static class ProblemDetailsMapper
 
         // The stable rule that refused the request, additive to the category in errorCode, so a client
         // branches on it instead of reading the detail text.
-        if (exception is Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: var ruleCode })
+        if (exception is Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: var ruleCode } rule)
         {
             problemDetails.Extensions["ruleCode"] = ruleCode;
+            foreach (var (key, value) in rule.Details)
+            {
+                problemDetails.Extensions[key] = value;
+            }
         }
 
         if (exception is AppConflictException { Extensions.Count: > 0 } lost)

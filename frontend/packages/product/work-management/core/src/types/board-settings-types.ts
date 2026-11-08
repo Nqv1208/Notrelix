@@ -314,4 +314,18 @@ export type BoardSettingsWriteResult =
       field?: string;
       /** The server's rule or error code, when it sent one. */
       code?: string;
+      /** What a formula refusal names: the loop, the unknown field, or where the syntax breaks. */
+      detail?: FormulaRefusalDetail;
     };
+
+/** Facts a refused formula carries so the editor can name them (the server's problem extensions). */
+export interface FormulaRefusalDetail {
+  /** The fields of a cycle, in order, closing on the first ("A" -> "B" -> "A"). */
+  cycle?: string[];
+  /** The reference that is not a field of the board. */
+  field?: string;
+  /** 1-based position of a syntax error. */
+  position?: number;
+  /** The character a syntax error expected there. */
+  missing?: string;
+}
