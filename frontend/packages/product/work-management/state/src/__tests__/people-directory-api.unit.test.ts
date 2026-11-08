@@ -86,8 +86,8 @@ describe("The people directory of an item", () => {
       if (url.endsWith("/members/me")) return { userId: "me", role: "Guest" };
       if (url.endsWith("/people"))
         return [
-          { userId: "u1", name: "Ada", level: "editor" },
-          { userId: "u2", name: "Bao", level: "viewer" },
+          { userId: "u1", name: "Ada" },
+          { userId: "u2", name: "Bao" },
         ];
       throw new Error(`unexpected ${url}`);
     });
@@ -102,7 +102,7 @@ describe("The people directory of an item", () => {
         department: null,
         openCount: 0,
         onBoard: true,
-        level: "editor",
+        level: null,
       },
       {
         userId: "u2",
@@ -110,7 +110,7 @@ describe("The people directory of an item", () => {
         department: null,
         openCount: 0,
         onBoard: true,
-        level: "viewer",
+        level: null,
       },
     ]);
     expect(canInvite).toBe(false);

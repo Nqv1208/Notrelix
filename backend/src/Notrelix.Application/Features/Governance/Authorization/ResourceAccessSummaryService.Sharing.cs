@@ -168,7 +168,11 @@ public sealed partial class ResourceAccessSummaryService
 
     /// <summary>
     /// The Board's people with a Board role or an explicit user grant (see <see cref="IBoardSharingSummary"/>).
-    /// Same rank rules as the sharing view: a read-only Board role caps a person at Viewer, a Guest is capped.
+    /// Disclosure (UC-WM-A23): a caller who may manage the Board, or is a Board member or holds an explicit
+    /// grant on it, gets the people; any other caller gets NotFound. Only a manager gets each person's level,
+    /// Guest flag and Board-member flag; every other party gets userId, name and avatar only (the pickers need
+    /// nothing more). Guests are parties through their grant, so no Guest-role gate is needed; the sharing view
+    /// stays manager- or member-only because it also discloses grant levels and the log.
     /// </summary>
     public async Task<BoardPeople?> GetBoardPeopleAsync(Guid boardId, CancellationToken cancellationToken)
     {
@@ -178,12 +182,13 @@ public sealed partial class ResourceAccessSummaryService
             return null;
         }
 
-        var (_, _, _, _, board, entries, _, _, _, _) = loaded;
-        var memberById = (board.Members ?? []).GroupBy(m => m.UserId).ToDictionary(g => g.Key, g => g.First());
+        var (userId, _, _, _, board, entries, _, _, canManage, _) = loaded;
+        var members = board.Members ?? [];
+        var memberById = members.GroupBy(m => m.UserId).ToDictionary(g => g.Key, g => g.First());
         var grantById = entries.Grants.Where(g => g.SubjectType == "User").GroupBy(g => g.SubjectId).ToDictionary(g => g.Key, g => g.First());
         var guestIds = entries.Reach.Where(r => r.IsGuest).Select(r => r.UserId).ToHashSet();
 
-        var people = memberById.Keys.Union(grantById.Keys)
+        var rows = memberById.Keys.Union(grantById.Keys)
             .OrderBy(id => id)
             .Select(personId =>
             {
@@ -193,11 +198,12 @@ public sealed partial class ResourceAccessSummaryService
                 var rank = roleRank is > 0 and <= 1 ? roleRank : Math.Max(grant?.Rank ?? 0, roleRank);
                 var guest = guestIds.Contains(personId);
                 var shownRank = guest && rank > GuestRankCap ? GuestRankCap : rank;
-                return new BoardPerson(personId, AccessLevels.OfRank(shownRank), guest, member is not null);
+                return new BoardPersonRow(personId, AccessLevels.OfRank(shownRank), guest, member is not null);
             })
             .ToList();
 
-        return new BoardPeople(people);
+        var readerIsParty = memberById.ContainsKey(userId) || grantById.ContainsKey(userId);
+        return BoardPeopleDisclosure.Disclose(canManage, readerIsParty, rows);
     }
 
     /// <summary>A Workspace Guest is capped at Viewer (GOV-030): Viewer is rank 1.</summary>
@@ -209,4 +215,28 @@ public sealed partial class ResourceAccessSummaryService
         2 => "Member",
         _ => "Viewer",
     };
+}
+
+/// <summary>One person of the Board as the summary composed them, before disclosure.</summary>
+public sealed record BoardPersonRow(Guid UserId, string Level, bool IsGuest, bool IsBoardMember);
+
+/// <summary>The disclosure rule of the Board people read (UC-WM-A23): who gets the people, and which fields.</summary>
+public static class BoardPeopleDisclosure
+{
+    /// <summary>
+    /// Null (NotFound) unless the caller manages the Board or is a party to it (a Board member or an explicit
+    /// grant holder). A manager gets every field; any other party gets userId, name and avatar only (the
+    /// per-person fields are null).
+    /// </summary>
+    public static BoardPeople? Disclose(bool canManage, bool readerIsParty, IReadOnlyList<BoardPersonRow> rows)
+    {
+        if (!canManage && !readerIsParty)
+        {
+            return null;
+        }
+
+        return canManage
+            ? new BoardPeople(rows.Select(r => new BoardPerson(r.UserId, r.Level, r.IsGuest, r.IsBoardMember)).ToList())
+            : new BoardPeople(rows.Select(r => new BoardPerson(r.UserId, null, null, null)).ToList());
+    }
 }

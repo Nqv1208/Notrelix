@@ -33,8 +33,8 @@ public interface IBoardSharingSummary
     /// <summary>
     /// The people who can see the Board through a Board role or an explicit grant on it (UC-WM-A23, UC-WM-C13):
     /// the names a Guest may pick from. Space and Team reach and the Workspace's members are not listed, so a
-    /// Guest learns no Workspace directory. Null when the caller cannot read the Board (NotFound, as for a
-    /// missing Board). Emails are never part of this read.
+    /// Guest learns no Workspace directory. Null (NotFound) unless the caller manages the Board or is a party to it
+    /// (a Board member or an explicit grant holder). Only a manager gets the per-person fields. Emails are never part of this read.
     /// </summary>
     Task<BoardPeople?> GetBoardPeopleAsync(Guid boardId, CancellationToken cancellationToken);
 }
@@ -42,10 +42,10 @@ public interface IBoardSharingSummary
 /// <param name="People">One per person with a Board role or an explicit user grant on the Board.</param>
 public sealed record BoardPeople(IReadOnlyList<BoardPerson> People);
 
-/// <param name="Level">One of <see cref="AccessLevels"/>: the higher of the explicit grant and the Board role; a Guest is capped (GOV-030).</param>
-/// <param name="IsGuest">The person's Workspace role is Guest (a membership fact).</param>
-/// <param name="IsBoardMember">The person has a Board role row (not only an explicit grant).</param>
-public sealed record BoardPerson(Guid UserId, string Level, bool IsGuest, bool IsBoardMember);
+/// <param name="Level">One of <see cref="AccessLevels"/>, the higher of the explicit grant and the Board role, capped for a Guest (GOV-030). Null unless the caller manages the Board.</param>
+/// <param name="IsGuest">The person's Workspace role is Guest (a membership fact). Null unless the caller manages the Board.</param>
+/// <param name="IsBoardMember">The person has a Board role row. Null unless the caller manages the Board.</param>
+public sealed record BoardPerson(Guid UserId, string? Level, bool? IsGuest, bool? IsBoardMember);
 
 /// <param name="EveryMember">Every Workspace member who is not a Guest reaches the Board (the Workspace root).</param>
 /// <param name="UserIds">The people reached through the Space, and Owners and Admins; empty when <paramref name="EveryMember"/>.</param>

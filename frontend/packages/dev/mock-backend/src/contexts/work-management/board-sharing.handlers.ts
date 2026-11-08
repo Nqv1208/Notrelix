@@ -3,7 +3,7 @@
  *
  * Operations:
  *   boards.sharing              — GET    /boards/:boardId/sharing
- *   boards.people               — GET    /boards/:boardId/people (UC-WM-A23: the pickers a Guest reads)
+ *   boards.people               — GET    /boards/:boardId/people (UC-WM-A23: id, name and avatar for parties; fields for managers)
  *   boards.sharing.makePrivate  — POST   /boards/:boardId/sharing/private
  *   boards.members.updateRole   — PATCH  /boards/:boardId/members/:userId/role
  *   boards.members.remove       — DELETE /boards/:boardId/members/:userId
@@ -151,17 +151,31 @@ export const boardSharingOperations = [
       const board = store.getBoard(params.boardId);
       if (!board || !canReadBoard(board.id, store))
         return notFound("Board not found");
+      // Disclosure (UC-WM-A23): a manager, a Board member or a grant holder reads the people; anyone else
+      // gets NotFound. Only a manager gets level, Guest and Board-member fields; others get id, name, avatar.
+      const me = store.getCurrentUser().id;
+      const list = store.sharing.entriesOf(board.id);
+      const manager = canManageBoard(board.id, store);
+      const party = list.some(
+        (entry) =>
+          entry.userId === me &&
+          (entry.memberRole !== null || entry.grantLevel !== null),
+      );
+      if (!manager && !party) return notFound("Board not found");
       // Names of the people with a Board role or an explicit user grant only; never emails.
-      const people = store.sharing
-        .entriesOf(board.id)
+      const people = list
         .filter((entry) => entry.kind === "person" && entry.userId)
         .map((entry) => ({
           userId: entry.userId ?? "",
           name: store.getUser(entry.userId ?? "")?.name ?? "Unknown",
           avatarUrl: null,
-          level: entry.level,
-          isBoardMember: entry.memberRole !== null,
-          isGuest: entry.guest,
+          ...(manager
+            ? {
+                level: entry.level,
+                isBoardMember: entry.memberRole !== null,
+                isGuest: entry.guest,
+              }
+            : {}),
         }));
       return ok(people);
     },

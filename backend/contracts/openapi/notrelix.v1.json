@@ -35197,10 +35197,12 @@
             "nullable": true
           },
           "isBoardMember": {
-            "type": "boolean"
+            "type": "boolean",
+            "nullable": true
           },
           "isGuest": {
-            "type": "boolean"
+            "type": "boolean",
+            "nullable": true
           }
         },
         "additionalProperties": false

@@ -9411,8 +9411,8 @@ export interface components {
             name?: string | null;
             avatarUrl?: string | null;
             level?: string | null;
-            isBoardMember?: boolean;
-            isGuest?: boolean;
+            isBoardMember?: boolean | null;
+            isGuest?: boolean | null;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardPrivateImpactDto": {
             /** Format: int32 */

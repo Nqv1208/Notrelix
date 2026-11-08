@@ -86,16 +86,16 @@ public record BoardLifecycleImpactDto(
     int ViewCount);
 
 /// <summary>
-/// A person who can see the Board (UC-WM-A23, UC-WM-C13). Name and avatar only: no email. Level is the
-/// Board level the person holds (viewer, commenter, editor or manager), capped for a Guest.
+/// A person who can see the Board (UC-WM-A23, UC-WM-C13). Name and avatar only: no email. Level, IsBoardMember
+/// and IsGuest are present only for a caller who manages the Board (omitted otherwise, not sent as null).
 /// </summary>
 public record BoardPersonDto(
     Guid UserId,
     string Name,
     string? AvatarUrl,
-    string Level,
-    bool IsBoardMember,
-    bool IsGuest
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Level,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] bool? IsBoardMember,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] bool? IsGuest
 );
 
 public record BoardMemberDto(
