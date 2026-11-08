@@ -2,6 +2,7 @@ using Notrelix.Application.Features.WorkManagement.Forms.Commands.ProcessFormSub
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectFormSubmission;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.MarkFormSubmissionAsSpam;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.DeleteFormSubmission;
+using Notrelix.Application.Features.WorkManagement.Forms.Commands.ReopenFormSubmission;
 using Notrelix.Domain.WorkManagement.Forms;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.Forms;
@@ -191,6 +192,51 @@ public class FormSubmissionCommandTests : WorkManagementHandlerTestBase
 
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<Domain.Common.Exceptions.BusinessRuleException>();
+        }
+    }
+
+    // ── ReopenFormSubmission ─────────────────────────────────
+
+    public class ReopenFormSubmissionTests : FormSubmissionCommandTests
+    {
+        private readonly ReopenFormSubmissionCommandHandler _handler;
+
+        public ReopenFormSubmissionTests()
+        {
+            _handler = new ReopenFormSubmissionCommandHandler(DbContextMock.Object);
+        }
+
+        [Theory]
+        [InlineData(FormSubmissionStatus.Rejected)]
+        [InlineData(FormSubmissionStatus.Spam)]
+        public async Task Handle_DecidedSubmission_ReturnsToAccepted(FormSubmissionStatus status)
+        {
+            var submission = CreateFormSubmission(status: status);
+            SetupFormSubmissions(submission);
+
+            var result = await _handler.Handle(new ReopenFormSubmissionCommand(submission.Id), CancellationToken.None);
+
+            result.Succeeded.Should().BeTrue();
+            submission.Status.Should().Be(FormSubmissionStatus.Accepted);
+        }
+
+        [Fact]
+        public async Task Handle_AcceptedSubmission_IsANoOp()
+        {
+            var submission = CreateFormSubmission();
+            SetupFormSubmissions(submission);
+
+            var result = await _handler.Handle(new ReopenFormSubmissionCommand(submission.Id), CancellationToken.None);
+
+            result.Succeeded.Should().BeTrue();
+            submission.Status.Should().Be(FormSubmissionStatus.Accepted);
+        }
+
+        [Fact]
+        public async Task Handle_SubmissionNotFound_ThrowsNotFoundException()
+        {
+            await _handler.Invoking(h => h.Handle(new ReopenFormSubmissionCommand(Guid.CreateVersion7()), CancellationToken.None))
+                .Should().ThrowAsync<NotFoundException>();
         }
     }
 

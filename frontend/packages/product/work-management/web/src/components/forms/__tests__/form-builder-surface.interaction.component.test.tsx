@@ -391,6 +391,15 @@ describe.each(["vi", "en"] as const)("form builder (%s)", (locale) => {
     ).toBe(true);
   });
 
+  it(`${fui("closed", locale)}reopens a closed form with Mở lại: publishing it again (${locale})`, async () => {
+    const props = render(locale, {
+      form: formFixture({ status: "closed" }),
+    });
+    expect(screen.queryByRole("button", { name: b.close })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: b.reopen }));
+    await waitFor(() => expect(props.onPublish).toHaveBeenCalledTimes(1));
+  });
+
   it(`is read-only on an archived board: says why, locks the name, the questions and publishing (${locale})`, () => {
     render(locale, {
       form: formFixture({ status: "draft" }),

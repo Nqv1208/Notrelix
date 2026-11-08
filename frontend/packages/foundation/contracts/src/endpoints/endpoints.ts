@@ -440,6 +440,8 @@ export const endpoints = {
     reject: (submissionId: string) =>
       `/form-submissions/${submissionId}/reject`,
     spam: (submissionId: string) => `/form-submissions/${submissionId}/spam`,
+    reopen: (submissionId: string) =>
+      `/form-submissions/${submissionId}/reopen`,
   },
   // WorkManagement.BoardPreferences.*: a member's personal state of one view of a board.
   boardPreferences: {

@@ -137,7 +137,6 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_View_PresentationConfigInvalid = "WorkManagement_View_PresentationConfigInvalid";
 
     // ── Form ──────────────────────────────────────────────────────────────
-    public const string WorkManagement_Form_CannotPublishClosed = "WorkManagement_Form_CannotPublishClosed";
     public const string WorkManagement_Form_CannotPublishNoQuestions = "WorkManagement_Form_CannotPublishNoQuestions";
     public const string WorkManagement_Form_CannotSubmitToDraft = "WorkManagement_Form_CannotSubmitToDraft";
     public const string WorkManagement_Form_CannotSubmitToClosed = "WorkManagement_Form_CannotSubmitToClosed";

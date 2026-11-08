@@ -323,6 +323,11 @@ export function createFormApi(client: NotrelixClient) {
       await api.post<void>(endpoints.forms.spam(submissionId), {});
     },
 
+    /** Returns a rejected, spam or deleted response to the New tab: the undo of that decision. */
+    async reopenSubmission(submissionId: string): Promise<void> {
+      await api.post<void>(endpoints.forms.reopen(submissionId), {});
+    },
+
     async removeSubmission(submissionId: string): Promise<void> {
       await api.delete<void>(endpoints.forms.submission(submissionId));
     },

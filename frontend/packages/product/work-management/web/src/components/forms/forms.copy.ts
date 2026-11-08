@@ -82,6 +82,7 @@ export const vi = {
     preview: "Xem trước",
     publish: "Xuất bản",
     close: "Đóng nhận",
+    reopen: "Mở lại",
     description: "Mô tả (người điền thấy dưới tên)",
     questions: "Câu hỏi",
     questionsCount: "· {{count}}, thứ tự từ trên xuống",
@@ -157,7 +158,7 @@ export const vi = {
     archivedNote:
       "Board đã lưu trữ nên biểu mẫu chỉ đọc. Bỏ lưu trữ board để sửa biểu mẫu.",
     closedNote:
-      'Biểu mẫu đã đóng. Người điền thấy thông báo "đã đóng". Không thêm hay sửa câu hỏi được.',
+      'Biểu mẫu đã đóng. Người điền thấy thông báo "đã đóng". Không thêm hay sửa câu hỏi được; mở lại để tiếp tục.',
     publishedTitle: "Biểu mẫu đang nhận phản hồi",
     publishedNote:
       "Liên kết dành cho thành viên: cần đăng nhập và có quyền tạo việc trên board này.",
@@ -355,6 +356,7 @@ export const vi = {
     conflictTitle: "Phản hồi này vừa được người khác xử lý.",
     conflictBody: "Danh sách đã làm mới.",
     actionFailed: "Chưa xử lý được phản hồi. Phản hồi vẫn ở tab Mới.",
+    undoFailed: "Chưa hoàn tác được. Phản hồi vẫn ở trạng thái cũ.",
     createFailedProcess:
       "Đã tạo việc nhưng chưa đánh dấu được phản hồi là đã xử lý. Hãy thử lại.",
     rejectTitle: "Từ chối phản hồi này?",
@@ -477,6 +479,7 @@ export const en: FormsCopy = {
     preview: "Preview",
     publish: "Publish",
     close: "Stop accepting",
+    reopen: "Reopen",
     description: "Description (shown under the name)",
     questions: "Questions",
     questionsCount: "· {{count}}, top to bottom",
@@ -552,7 +555,7 @@ export const en: FormsCopy = {
     archivedNote:
       "The board is archived, so the form is read-only. Unarchive the board to edit it.",
     closedNote:
-      'The form is closed. People filling it see "closed". Questions cannot be added or edited.',
+      'The form is closed. People filling it see "closed". Questions cannot be added or edited; reopen it to continue.',
     publishedTitle: "The form is accepting responses",
     publishedNote:
       "The link is for members: they must sign in and be allowed to create items on this board.",
@@ -755,6 +758,7 @@ export const en: FormsCopy = {
     conflictTitle: "Someone else just handled this response.",
     conflictBody: "The list was refreshed.",
     actionFailed: "The response could not be handled. It stays in the New tab.",
+    undoFailed: "Could not undo. The response keeps its current state.",
     createFailedProcess:
       "The item was created but the response could not be marked as processed. Try again.",
     rejectTitle: "Reject this response?",

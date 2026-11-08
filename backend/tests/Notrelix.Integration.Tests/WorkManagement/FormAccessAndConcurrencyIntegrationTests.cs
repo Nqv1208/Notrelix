@@ -10,6 +10,7 @@ using Notrelix.Application.Features.WorkManagement.Forms.Commands.MarkFormSubmis
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.ProcessFormSubmission;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.PublishForm;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectFormSubmission;
+using Notrelix.Application.Features.WorkManagement.Forms.Commands.ReopenFormSubmission;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.RemoveFormQuestion;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.RestoreForm;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.SubmitForm;
@@ -447,6 +448,27 @@ public sealed class FormAccessAndConcurrencyIntegrationTests : IAsyncLifetime
             .Should().ContainSingle(s => s.Id == id && s.Status == "Rejected" && s.Reason == "Duplicate of ERP-168" && s.CreatedItemId == null);
         await FluentActions.Awaiting(() => Send(editor, new MarkFormSubmissionAsSpamCommand(id))).Should().ThrowAsync<DomainBusinessRule>();
         await FluentActions.Awaiting(() => Send(editor, new ProcessFormSubmissionCommand(id, Guid.CreateVersion7()))).Should().ThrowAsync<Exception>();
+    }
+
+    [Fact]
+    public async Task Undo_ReopensARejectedSpamOrDeletedResponseToNew()
+    {
+        using var editor = As(_editor);
+        var rejected = await SubmitAsync(_editor);
+        var spam = await SubmitAsync(_editor);
+        var deleted = await SubmitAsync(_editor);
+        await Send(editor, new RejectFormSubmissionCommand(rejected, "Trùng"));
+        await Send(editor, new MarkFormSubmissionAsSpamCommand(spam));
+        await Send(editor, new DeleteFormSubmissionCommand(deleted));
+
+        await Send(editor, new ReopenFormSubmissionCommand(rejected));
+        await Send(editor, new ReopenFormSubmissionCommand(spam));
+        await Send(editor, new ReopenFormSubmissionCommand(deleted));
+
+        var listed = await OrgTreeTestHost.QueryAsync(editor, new ListFormSubmissionsQuery(_formId));
+        listed.Should().Contain(s => s.Id == rejected && s.Status == "Accepted" && s.Reason == null && s.ProcessedAt == null);
+        listed.Should().Contain(s => s.Id == spam && s.Status == "Accepted");
+        listed.Should().Contain(s => s.Id == deleted && s.Status == "Accepted");
     }
 
     // ── board state and question types ──────────────────────────────────────

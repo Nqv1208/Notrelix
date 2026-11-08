@@ -7,7 +7,7 @@
  *   forms.publish / .close / .restore              — POST /forms/:formId/<verb>
  *   forms.questions.add / .update / .remove        — /forms/:formId/questions[/:questionId]
  *   forms.submissions.list / forms.submit          — /forms/:formId/submissions
- *   forms.submissions.process / .reject / .spam / .delete — /form-submissions/:submissionId[/<verb>]
+ *   forms.submissions.process / .reject / .spam / .reopen / .delete — /form-submissions/:submissionId[/<verb>]
  *
  * The rules mirror the producer: a form is read with the board, built by a
  * manager of the board, submitted by a member who can create items on it, and
@@ -397,9 +397,8 @@ export const formsOperations = [
       if (!form) return refusal;
       const stale = versionRefusal(form, query.expectedVersion);
       if (stale) return stale;
+      // A closed form is opened again by publishing it (Mở lại).
       if (form.status === "Published") return noContent();
-      if (form.status === "Closed")
-        return conflict("Cannot publish a closed form.");
       if (form.questions.length === 0)
         return conflict("Cannot publish a form with no questions.");
       form.status = "Published";
@@ -665,6 +664,26 @@ export const formsOperations = [
         return conflict("Only accepted submissions can be marked as spam.");
       submission.status = "Spam";
       submission.processedAt = store.now();
+      return noContent();
+    },
+  }),
+
+  defineMockOperation<SubmissionParams, never, void>({
+    id: "forms.submissions.reopen",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Forms.ReopenSubmission",
+    },
+    method: "POST",
+    route: "/form-submissions/:submissionId/reopen",
+    async handle({ params, store }) {
+      const { submission, refusal } = submissionOf(store, params.submissionId);
+      if (!submission) return refusal;
+      // The undo of a rejection, a spam mark or a delete: back to the New tab.
+      if (submission.status === "Accepted") return noContent();
+      submission.status = "Accepted";
+      submission.reason = null;
+      if (!submission.createdItemId) submission.processedAt = null;
       return noContent();
     },
   }),

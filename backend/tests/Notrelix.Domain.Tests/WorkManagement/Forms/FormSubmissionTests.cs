@@ -150,6 +150,61 @@ public class FormSubmissionTests
         act.Should().Throw<BusinessRuleException>();
     }
 
+    [Fact]
+    public void Reopen_ReturnsARejectedResponseToAccepted_AndClearsTheReason()
+    {
+        var submission = CreateSubmission();
+        submission.Reject(DateTimeOffset.UtcNow, "Trùng");
+
+        submission.Reopen();
+
+        submission.Status.Should().Be(FormSubmissionStatus.Accepted);
+        submission.RejectionReason.Should().BeNull();
+        submission.ProcessedAt.Should().BeNull();
+    }
+
+    [Fact]
+    public void Reopen_ReturnsASpamOrDeletedResponseToAccepted()
+    {
+        var spam = CreateSubmission();
+        spam.MarkAsSpam(DateTimeOffset.UtcNow);
+        spam.Reopen();
+        spam.Status.Should().Be(FormSubmissionStatus.Accepted);
+
+        var deleted = CreateSubmission();
+        deleted.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        deleted.Reopen();
+        deleted.Status.Should().Be(FormSubmissionStatus.Accepted);
+    }
+
+    [Fact]
+    public void Reopen_OfAnAcceptedResponse_IsANoOp()
+    {
+        var submission = CreateSubmission();
+        var eventsBefore = submission.DomainEvents.Count;
+
+        submission.Reopen();
+
+        submission.Status.Should().Be(FormSubmissionStatus.Accepted);
+        submission.DomainEvents.Should().HaveCount(eventsBefore, "a no-op raises nothing");
+    }
+
+    [Fact]
+    public void Reopen_OfAProcessedResponse_KeepsItsItemAndProcessingTime()
+    {
+        var submission = CreateSubmission();
+        var itemId = Guid.NewGuid();
+        var processedAt = DateTimeOffset.UtcNow;
+        submission.MarkProcessed(itemId, processedAt);
+        submission.Reject(processedAt, "x");
+
+        submission.Reopen();
+
+        submission.Status.Should().Be(FormSubmissionStatus.Accepted);
+        submission.CreatedItemId.Should().Be(itemId);
+        submission.ProcessedAt.Should().Be(processedAt);
+    }
+
     private static FormSubmission CreateSubmission()
     {
         return FormSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, null, null, "{}", null, null, DateTimeOffset.UtcNow);
