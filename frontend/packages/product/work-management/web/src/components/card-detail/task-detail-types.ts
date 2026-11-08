@@ -249,6 +249,8 @@ export interface TaskDetailCallbacks {
   readonly onToggleChildItem?: (childId: string, done: boolean) => void;
   /** Adds a child item with this title; the input stays inert without it. */
   readonly onAddChildItem?: (title: string) => void;
+  /** Opens the full create dialog with this item as the fixed parent (a sub-item with details). */
+  readonly onAddChildItemWithDetails?: () => void;
   /** Links this item to another; "Thêm" in "Liên kết" stays inert without it. */
   readonly onAddLink?: (
     itemId: string,

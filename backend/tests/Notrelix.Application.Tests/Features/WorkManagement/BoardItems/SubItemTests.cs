@@ -48,6 +48,23 @@ public class SubItemTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
+    public async Task CreatingAChildWithItsFacts_KeepsTheDescriptionAndDates()
+    {
+        var store = Store(_parent);
+        var start = new DateTime(2026, 10, 12, 0, 0, 0, DateTimeKind.Utc);
+        var due = new DateTime(2026, 10, 16, 0, 0, 0, DateTimeKind.Utc);
+
+        var dto = await Creator().Handle(
+            new CreateChildItemCommand(_parent.Id, "Facts", "**Scope** of the child", start, due),
+            CancellationToken.None);
+
+        var child = store.Single(i => i.Id == dto.Id);
+        child.DescriptionMd.Should().Be("**Scope** of the child");
+        child.StartedAt.Should().Be(new DateTimeOffset(start, TimeSpan.Zero));
+        child.DueAt.Should().Be(new DateTimeOffset(due, TimeSpan.Zero));
+    }
+
+    [Fact]
     public async Task CreatingAChild_PutsItInTheParentsGroupWithAKeyAndTheDefaultStatus()
     {
         var store = Store(_parent);

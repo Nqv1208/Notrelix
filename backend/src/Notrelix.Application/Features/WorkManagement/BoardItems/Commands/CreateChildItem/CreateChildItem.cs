@@ -11,7 +11,12 @@ namespace Notrelix.Application.Features.WorkManagement.BoardItems.Commands.Creat
 /// (the first Status option). Sub-items are one level only.
 /// </summary>
 [IdempotencyOperation("work-management.board-items.create-child-item.v1")]
-public record CreateChildItemCommand(Guid ParentItemId, string Title)
+public record CreateChildItemCommand(
+    Guid ParentItemId,
+    string Title,
+    string? DescriptionMd = null,
+    DateTime? StartDate = null,
+    DateTime? DueDate = null)
     : ICommand<ChildItemDto>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateItem;
@@ -67,7 +72,17 @@ public class CreateChildItemCommandHandler : IRequestHandler<CreateChildItemComm
         // is always the innermost lock of the request.
         var key = (await _keys.AllocateAsync(_context, parent.BoardId, 1, ct))[0];
 
-        var child = BoardItem.CreateSubItem(parent, request.Title, position, _requestContext.UserId, now, key.Key, key.Sequence);
+        var child = BoardItem.CreateSubItem(
+            parent,
+            request.Title,
+            position,
+            _requestContext.UserId,
+            now,
+            key.Key,
+            key.Sequence,
+            startedAt: request.StartDate.HasValue ? new DateTimeOffset(DateTime.SpecifyKind(request.StartDate.Value, DateTimeKind.Utc)) : null,
+            dueAt: request.DueDate.HasValue ? new DateTimeOffset(DateTime.SpecifyKind(request.DueDate.Value, DateTimeKind.Utc)) : null,
+            descriptionMd: request.DescriptionMd);
 
         var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, parent.BoardId, ct);
         var defaultStatus = statusField?.Options.OrderBy(option => option.Position).ThenBy(option => option.Id).FirstOrDefault();

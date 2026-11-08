@@ -99,13 +99,14 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         string? itemKey = null,
         long? itemSequence = null,
         DateTimeOffset? startedAt = null,
-        DateTimeOffset? dueAt = null)
+        DateTimeOffset? dueAt = null,
+        string? descriptionMd = null)
     {
         Guard.NotNull(parentPath);
         return CreateCore(
             parentPath.AccountId, parentPath.WorkspaceId, parentPath.BoardId, groupId, name, position, createdBy, createdAt,
             parentPath.ParentItemId, parentPath.ChildLevel,
-            itemKey, itemSequence, startedAt, dueAt);
+            itemKey, itemSequence, startedAt, dueAt, descriptionMd);
     }
 
     /// <summary>
@@ -119,7 +120,10 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guid createdBy,
         DateTimeOffset createdAt,
         string? itemKey = null,
-        long? itemSequence = null)
+        long? itemSequence = null,
+        DateTimeOffset? startedAt = null,
+        DateTimeOffset? dueAt = null,
+        string? descriptionMd = null)
     {
         Guard.NotNull(parent);
         parent.EnsureNotDeleted();
@@ -129,7 +133,7 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Item_SubItemsAreOneLevel, "A sub-item cannot have sub-items.");
 
         var path = ItemParentPath.Create(parent.AccountId, parent.WorkspaceId, parent.BoardId, parent.Id, parent.ItemLevel, []);
-        return CreateChild(path, parent.GroupId, name, position, createdBy, createdAt, itemKey, itemSequence);
+        return CreateChild(path, parent.GroupId, name, position, createdBy, createdAt, itemKey, itemSequence, startedAt, dueAt, descriptionMd);
     }
 
     private static BoardItem CreateCore(

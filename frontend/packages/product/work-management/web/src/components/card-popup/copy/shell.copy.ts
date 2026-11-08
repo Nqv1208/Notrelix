@@ -44,6 +44,7 @@ export const en = {
       title: "Sub-item",
       placeholder: "Name the sub-item",
       add: "Add sub-item",
+      withDetails: "Add with details",
     },
     link: { title: "Link a card" },
     fields: {
@@ -218,6 +219,7 @@ export const vi: ShellCopy = {
       title: "Việc con",
       placeholder: "Tên việc con",
       add: "Thêm việc con",
+      withDetails: "Thêm chi tiết",
     },
     link: { title: "Liên kết công việc" },
     fields: {

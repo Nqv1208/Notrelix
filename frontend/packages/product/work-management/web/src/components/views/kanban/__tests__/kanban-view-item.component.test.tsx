@@ -29,6 +29,7 @@ const boardState = vi.hoisted(() => ({ showCards: true }));
 const restoreDeleted = vi.hoisted(() =>
   vi.fn(async (_itemId: string) => undefined),
 );
+const viewerAccess = vi.hoisted(() => ({ myLevel: "editor" as string }));
 const fullColumns = [
   boardGroupFixture({
     id: "group-item",
@@ -151,7 +152,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
       createItemInLane: mutation(),
     }),
     useBoardAccess: () => ({
-      access: { myLevel: "editor" },
+      access: { myLevel: viewerAccess.myLevel },
       isLoading: false,
       error: null,
     }),
@@ -401,6 +402,29 @@ describe("KanbanView item detail through selectedItemId", () => {
     await waitFor(() =>
       expect(restoreDeleted).toHaveBeenCalledWith("card-item"),
     );
+  });
+
+  it("offers no Restore on the deleted notice to a commenter, who may not change the item", () => {
+    viewerAccess.myLevel = "commenter";
+    try {
+      cardQuery.current = {
+        card: undefined,
+        isLoading: false,
+        error: Object.assign(new Error("not found"), {
+          kind: "not_found",
+          code: "work-management.item.deleted",
+          details: { deletedByName: "Ada Lovelace" },
+        }),
+      };
+      renderView({
+        selectedItemId: "card-item",
+        onSelectedItemChange: vi.fn(),
+      });
+      expect(screen.queryByRole("button", { name: "Restore" })).toBeNull();
+      expect(restoreDeleted).not.toHaveBeenCalled();
+    } finally {
+      viewerAccess.myLevel = "editor";
+    }
   });
 
   it("keeps the card's last read under the deleted notice when it is deleted while open (BC-Notices)", () => {

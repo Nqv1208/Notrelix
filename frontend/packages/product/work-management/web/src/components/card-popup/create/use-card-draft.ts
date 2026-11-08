@@ -133,12 +133,15 @@ export function useCardDraft({
   defaults,
   laneValue,
   viewerUserId,
+  groupLocked = false,
 }: {
   board: Board;
   workspaceId: string;
   defaults: CardDraftDefaults;
   laneValue?: CreateItemWithDetailsInput["laneValue"];
   viewerUserId?: string | null;
+  /** A sub-item's group is its parent's: the column cannot be changed. */
+  groupLocked?: boolean;
 }) {
   const fields = useMemo(() => findItemFields(board), [board]);
   const initial = useMemo(() => emptyDraft(defaults), [defaults]);
@@ -511,7 +514,9 @@ export function useCardDraft({
 
   const actions = useMemo<CardPopupActions>(
     () => ({
-      moveToGroup: (listId) => patch({ listId }),
+      moveToGroup: (listId) => {
+        if (!groupLocked) patch({ listId });
+      },
       addWebLink: (url, name) => {
         setDraft((current) => ({
           ...current,
@@ -520,7 +525,7 @@ export function useCardDraft({
         return Promise.resolve(true);
       },
     }),
-    [patch],
+    [patch, groupLocked],
   );
 
   /** Clears the card for "Tạo tiếp thẻ khác": column, labels and people stay. */

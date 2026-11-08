@@ -119,6 +119,8 @@ function fakeServices(
       const answer = overrides.updateStatus?.(id, optionId);
       if (answer) return answer;
       board = applyItemStatus(board, id, optionId) ?? board;
+      // The server answers the version the next write names.
+      return { version: 2 };
     }),
     createCard: vi.fn(async () => ({ id: "item-new", version: 1 })),
     // A card dropped in a lane is one command: the server keeps the lane's option with the place, or refuses both.
@@ -320,6 +322,51 @@ describe("KanbanView on the ERP board", () => {
     );
     expect(screen.getByRole("button", { name: "Thêm công việc" })).toBeTruthy();
   });
+
+  it("keeps the created card when a detail did not save, and retries only that detail", async () => {
+    let refuse = true;
+    const { cards } = renderKanban(
+      erpOwnerAccess(),
+      {},
+      {
+        updateStatus: (id) => {
+          if (id !== "item-new") return undefined;
+          if (!refuse) return undefined;
+          refuse = false;
+          return Promise.reject(new Error("network"));
+        },
+      },
+    );
+    await ready();
+    fireEvent.click(screen.getByRole("button", { name: "Thêm công việc" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Tên thẻ" }), {
+      target: { value: "Đối chiếu công nợ" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Tạo thẻ" }));
+    expect(
+      await screen.findByText("Đã tạo, nhưng còn phần chưa lưu được"),
+    ).toBeTruthy();
+    expect(cards.createCard).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(
+      screen.getAllByRole("button", {
+        name: "Thử lại phần còn thiếu",
+      })[0] as HTMLElement,
+    );
+    await waitFor(() => expect(cards.updateStatus).toHaveBeenCalledTimes(2));
+    // The retry writes the status on the card that exists: no second card is created.
+    expect(cards.updateStatus).toHaveBeenLastCalledWith(
+      "item-new",
+      ERP_STATUS_OPTION_IDS.todo,
+      1,
+    );
+    expect(cards.createCard).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(
+        screen.queryByText("Đã tạo, nhưng còn phần chưa lưu được"),
+      ).toBeNull(),
+    );
+  }, 20_000);
 
   it("says why nothing was added on a board without a group and offers to add one", async () => {
     const { cards, createGroup } = renderKanban(
