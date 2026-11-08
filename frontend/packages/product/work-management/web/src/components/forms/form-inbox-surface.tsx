@@ -50,6 +50,10 @@ export interface FormInboxSurfaceProps {
   readonly form: FormDetail | null;
   readonly fields: readonly FormBoardField[];
   readonly submissions: readonly FormSubmission[];
+  /** More responses are on the server: the list shows "Xem thêm phản hồi" at its foot. */
+  readonly hasMore?: boolean;
+  readonly loadingMore?: boolean;
+  readonly onLoadMore?: () => void;
   /** Names of the board's people by user id. */
   readonly people: Readonly<Record<string, string>>;
   /** Who decided: shown on the history lines. */
@@ -270,6 +274,18 @@ export function FormInboxSurface(props: FormInboxSurfaceProps) {
             ) : (
               <ResponseList {...props} items={inTab} />
             )}
+            {status === "ready" && props.hasMore && props.onLoadMore ? (
+              <div className="flex justify-center px-3 py-3">
+                <button
+                  type="button"
+                  disabled={props.loadingMore}
+                  onClick={props.onLoadMore}
+                  className={cn(BUTTON_CLASS.outline, "h-8 max-md:h-11")}
+                >
+                  {props.loadingMore ? t.loadingMore : t.more}
+                </button>
+              </div>
+            ) : null}
           </div>
 
           <div className="min-w-0 flex-1 overflow-auto p-4">

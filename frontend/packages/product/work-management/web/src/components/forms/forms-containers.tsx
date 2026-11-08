@@ -400,6 +400,9 @@ export function FormInboxPage({
         form={form}
         fields={fields}
         submissions={visible}
+        hasMore={submissions.hasNextPage}
+        loadingMore={submissions.isFetchingNextPage}
+        onLoadMore={() => void submissions.fetchNextPage()}
         people={people}
         deciderName={deciderName}
         tab={tab}

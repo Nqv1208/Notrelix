@@ -253,12 +253,23 @@ export function createFormApi(client: NotrelixClient) {
       );
     },
 
-    /** The responses of a form, newest first (a deleted one is not listed). */
-    async submissions(formId: string): Promise<FormSubmission[]> {
-      const rows = await api.get<SubmissionWire[]>(
-        endpoints.forms.submissions(formId),
+    /**
+     * One page of the responses of a form, newest first (a deleted one is not listed); `nextCursor` goes back
+     * as `cursor` for the next page and is null on the last.
+     */
+    async submissionsPage(
+      formId: string,
+      cursor?: string,
+    ): Promise<{ items: FormSubmission[]; nextCursor: string | null }> {
+      const page = await api.get<{
+        items?: SubmissionWire[] | null;
+        nextCursor?: string | null;
+      }>(
+        `${endpoints.forms.submissionsPage(formId)}${
+          cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""
+        }`,
       );
-      return (rows ?? []).flatMap((row) => {
+      const items = (page?.items ?? []).flatMap((row) => {
         if (!row.id) return [];
         const status = parseFormSubmissionStatus(row.status, row.createdItemId);
         if (status === "deleted") return [];
@@ -277,6 +288,7 @@ export function createFormApi(client: NotrelixClient) {
           } satisfies FormSubmission,
         ];
       });
+      return { items, nextCursor: page?.nextCursor ?? null };
     },
 
     /**
