@@ -85,6 +85,19 @@ public record BoardLifecycleImpactDto(
     int GroupCount,
     int ViewCount);
 
+/// <summary>
+/// A person who can see the Board (UC-WM-A23, UC-WM-C13). Name and avatar only: no email. Level is the
+/// Board level the person holds (viewer, commenter, editor or manager), capped for a Guest.
+/// </summary>
+public record BoardPersonDto(
+    Guid UserId,
+    string Name,
+    string? AvatarUrl,
+    string Level,
+    bool IsBoardMember,
+    bool IsGuest
+);
+
 public record BoardMemberDto(
     Guid UserId,
     string Name,

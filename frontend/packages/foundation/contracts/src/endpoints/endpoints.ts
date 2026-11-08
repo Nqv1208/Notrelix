@@ -207,6 +207,8 @@ export const endpoints = {
     deletedByWorkspaceId: (workspaceId: string, spaceId?: string | null) =>
       `/workspaces/${workspaceId}/boards/deleted${spaceId ? `?spaceId=${encodeURIComponent(spaceId)}` : ""}`,
     detail: (boardId: string) => `/boards/${boardId}`,
+    // WorkManagement.Boards.GetPeople: the people who can see the board (the pickers a Guest reads, UC-WM-A23).
+    people: (boardId: string) => `/boards/${boardId}/people`,
     // WorkManagement.Boards.Archive / Unarchive / Restore carry the board version the person saw.
     archive: (boardId: string) => `/boards/${boardId}/archive`,
     unarchive: (boardId: string) => `/boards/${boardId}/unarchive`,

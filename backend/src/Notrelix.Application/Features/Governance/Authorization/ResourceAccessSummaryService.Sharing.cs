@@ -166,6 +166,40 @@ public sealed partial class ResourceAccessSummaryService
             losing);
     }
 
+    /// <summary>
+    /// The Board's people with a Board role or an explicit user grant (see <see cref="IBoardSharingSummary"/>).
+    /// Same rank rules as the sharing view: a read-only Board role caps a person at Viewer, a Guest is capped.
+    /// </summary>
+    public async Task<BoardPeople?> GetBoardPeopleAsync(Guid boardId, CancellationToken cancellationToken)
+    {
+        var loaded = await LoadAsync(boardId, cancellationToken);
+        if (loaded is null)
+        {
+            return null;
+        }
+
+        var (_, _, _, _, board, entries, _, _, _, _) = loaded;
+        var memberById = (board.Members ?? []).GroupBy(m => m.UserId).ToDictionary(g => g.Key, g => g.First());
+        var grantById = entries.Grants.Where(g => g.SubjectType == "User").GroupBy(g => g.SubjectId).ToDictionary(g => g.Key, g => g.First());
+        var guestIds = entries.Reach.Where(r => r.IsGuest).Select(r => r.UserId).ToHashSet();
+
+        var people = memberById.Keys.Union(grantById.Keys)
+            .OrderBy(id => id)
+            .Select(personId =>
+            {
+                grantById.TryGetValue(personId, out var grant);
+                memberById.TryGetValue(personId, out var member);
+                var roleRank = BoardRoleLevels.RankOf(member?.Role);
+                var rank = roleRank is > 0 and <= 1 ? roleRank : Math.Max(grant?.Rank ?? 0, roleRank);
+                var guest = guestIds.Contains(personId);
+                var shownRank = guest && rank > GuestRankCap ? GuestRankCap : rank;
+                return new BoardPerson(personId, AccessLevels.OfRank(shownRank), guest, member is not null);
+            })
+            .ToList();
+
+        return new BoardPeople(people);
+    }
+
     /// <summary>A Workspace Guest is capped at Viewer (GOV-030): Viewer is rank 1.</summary>
     private const int GuestRankCap = 1;
 

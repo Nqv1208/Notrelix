@@ -3950,6 +3950,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/boards/{boardId}/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the people who can see a board (board-scoped pickers for Guests)
+         * @description The people with a board role or an explicit grant on this board. Readable by anyone who can view the board, Guests included, so a Guest's assignee, Person-field and mention pickers list only people on the board. Names and avatars only; no email.
+         */
+        get: operations["WorkManagement.Boards.GetPeople"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/boards/{boardId}/lifecycle-impact": {
         parameters: {
             query?: never;
@@ -9384,6 +9404,15 @@ export interface components {
             role?: string | null;
             /** Format: date-time */
             joinedAt?: string;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardPersonDto": {
+            /** Format: uuid */
+            userId?: string;
+            name?: string | null;
+            avatarUrl?: string | null;
+            level?: string | null;
+            isBoardMember?: boolean;
+            isGuest?: boolean;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardPrivateImpactDto": {
             /** Format: int32 */
@@ -19550,6 +19579,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardSharingDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Boards.GetPeople": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                boardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.BoardPersonDto"][];
                 };
             };
         };

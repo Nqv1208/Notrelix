@@ -77,7 +77,45 @@ describe("The people directory of an item", () => {
     expect(people.find((p) => p.userId === "u1")?.onBoard).toBe(true);
     expect(people.find((p) => p.userId === "u2")?.onBoard).toBe(false);
     expect(
-      get.mock.calls.filter(([url]) => String(url).includes("/members")),
+      get.mock.calls.filter(([url]) => String(url).includes("/members?")),
     ).toHaveLength(2);
+  });
+
+  it("reads the board's own people for a Guest, never the workspace members", async () => {
+    const get = vi.fn(async (url: string) => {
+      if (url.endsWith("/members/me")) return { userId: "me", role: "Guest" };
+      if (url.endsWith("/people"))
+        return [
+          { userId: "u1", name: "Ada", level: "editor" },
+          { userId: "u2", name: "Bao", level: "viewer" },
+        ];
+      throw new Error(`unexpected ${url}`);
+    });
+    const { people, canInvite } = await createItemExtrasApi({
+      api: { get },
+    } as unknown as NotrelixClient).getPeopleDirectory("b-1", "ws-1");
+
+    expect(people).toEqual([
+      {
+        userId: "u1",
+        name: "Ada",
+        department: null,
+        openCount: 0,
+        onBoard: true,
+        level: "editor",
+      },
+      {
+        userId: "u2",
+        name: "Bao",
+        department: null,
+        openCount: 0,
+        onBoard: true,
+        level: "viewer",
+      },
+    ]);
+    expect(canInvite).toBe(false);
+    expect(
+      get.mock.calls.some(([url]) => String(url).includes("/members?")),
+    ).toBe(false);
   });
 });

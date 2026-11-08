@@ -3,6 +3,7 @@
  *
  * Operations:
  *   boards.sharing              — GET    /boards/:boardId/sharing
+ *   boards.people               — GET    /boards/:boardId/people (UC-WM-A23: the pickers a Guest reads)
  *   boards.sharing.makePrivate  — POST   /boards/:boardId/sharing/private
  *   boards.members.updateRole   — PATCH  /boards/:boardId/members/:userId/role
  *   boards.members.remove       — DELETE /boards/:boardId/members/:userId
@@ -135,6 +136,34 @@ export const boardSharingOperations = [
       if (!board || !canReadBoard(board.id, store))
         return notFound("Board not found");
       return ok(boardSharing(store, board.id, canManageBoard(board.id, store)));
+    },
+  }),
+
+  defineMockOperation<{ boardId: string }, never, unknown>({
+    id: "boards.people",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Boards.GetPeople",
+    },
+    method: "GET",
+    route: "/boards/:boardId/people",
+    async handle({ params, store }) {
+      const board = store.getBoard(params.boardId);
+      if (!board || !canReadBoard(board.id, store))
+        return notFound("Board not found");
+      // Names of the people with a Board role or an explicit user grant only; never emails.
+      const people = store.sharing
+        .entriesOf(board.id)
+        .filter((entry) => entry.kind === "person" && entry.userId)
+        .map((entry) => ({
+          userId: entry.userId ?? "",
+          name: store.getUser(entry.userId ?? "")?.name ?? "Unknown",
+          avatarUrl: null,
+          level: entry.level,
+          isBoardMember: entry.memberRole !== null,
+          isGuest: entry.guest,
+        }));
+      return ok(people);
     },
   }),
 
