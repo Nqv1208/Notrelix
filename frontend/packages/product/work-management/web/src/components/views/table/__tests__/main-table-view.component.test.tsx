@@ -230,6 +230,14 @@ function fakeServices(access: BoardAccess, itemFields = false) {
     cards,
     comments: { getCardUpdates: vi.fn(async () => []) },
     itemCapabilities: itemCapabilitiesStub(),
+    // The people directory the table's person editor reads (no grant holders beyond the board members).
+    itemExtras: {
+      getPeopleDirectory: vi.fn(async () => ({
+        people: [],
+        teams: [],
+        canInvite: false,
+      })),
+    },
   } as unknown as WorkManagementServices;
   return { services, cards, boards, fieldOptions };
 }

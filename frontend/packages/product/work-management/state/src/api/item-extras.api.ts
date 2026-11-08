@@ -79,6 +79,13 @@ interface WorkspaceMembersPage {
 const MEMBERS_PAGE_SIZE = 200;
 const MAX_MEMBER_PAGES = 100;
 
+/** A person who can see the board (`WorkManagement.Boards.GetPeople`): name and level, never an email. */
+interface BoardPersonWire {
+  readonly userId: string;
+  readonly name?: string | null;
+  readonly level?: string | null;
+}
+
 /** A member of the board (`WorkManagement.Boards.GetOverview`). */
 interface BoardMember {
   readonly userId?: string;
@@ -677,21 +684,26 @@ export function createItemExtrasApi(
           boardLevel(member.role),
         ]),
       );
-      if (members === null)
+      if (members === null) {
+        // A Guest does not enumerate the workspace (GOV-009): read the people of this board
+        // (members and grant holders, names only) instead (UC-WM-A23).
+        const rows =
+          (await api.get<readonly BoardPersonWire[] | null>(
+            endpoints.boards.people(boardId),
+          )) ?? [];
         return {
-          people: (board.members ?? [])
-            .filter((member) => Boolean(member.userId))
-            .map((member) => ({
-              userId: member.userId ?? "",
-              name: member.name ?? "",
-              department: null,
-              openCount: 0,
-              onBoard: true,
-              level: boardLevel(member.role),
-            })),
+          people: rows.map((row) => ({
+            userId: row.userId,
+            name: row.name ?? "",
+            department: null,
+            openCount: 0,
+            onBoard: true,
+            level: boardLevel(row.level),
+          })),
           teams: [],
           canInvite: false,
         };
+      }
       return {
         people: members
           .filter((member) => member.status?.toLowerCase() !== "suspended")

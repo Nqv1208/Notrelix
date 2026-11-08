@@ -70,6 +70,7 @@ public sealed class WorkP3ManifestArchitectureTests
         ["Boards.GetBoardMembersQuery"] = new(Disposition.Keep, "-"),
         ["Boards.GetBoardAccessQuery"] = new(Disposition.Keep, "-"),
         ["Boards.GetBoardSharingQuery"] = new(Disposition.Keep, "CTR-GAP-WM-BOARD-SHARING (sharing read model)"),
+        ["Boards.GetBoardPeopleQuery"] = new(Disposition.Keep, "UC-WM-A23 board-scoped people read"),
         ["Boards.MakeBoardPrivateCommand"] = new(Disposition.Keep, "CTR-GAP-WM-BOARD-SHARING (atomic make-private)"),
         ["Boards.CreateBoardInWorkspaceCommand"] = new(Disposition.Harden, "APP-BOARD-001 (default-schema ordering writer)"),
         ["Boards.UpdateBoardCommand"] = new(Disposition.Harden, "APP-BOARD-001, CONC-001", VersionedTarget: true),

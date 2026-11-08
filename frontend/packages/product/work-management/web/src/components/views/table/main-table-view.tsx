@@ -22,6 +22,7 @@ import {
   useMoveFieldOption,
   useUpdateFieldValue,
   useMoveItemToBoard,
+  usePeopleDirectory,
   useRemoveFieldOption,
   useUpdateCard,
   useWorkspaceBoards,
@@ -39,6 +40,7 @@ import {
   groupableFields,
   NONE_VALUE,
   BULK_ITEM_LIMIT,
+  personInitials,
   projectTableLanes,
   serializeCompoundFilter,
   sortCardsByLevels,
@@ -119,6 +121,25 @@ export interface MainTableViewProps {
 }
 
 /** The board group a new item of a group goes into. */
+/**
+ * The people the table's person editor offers: the board's members, then the grant holders the people
+ * directory names on this board, each once (UC-WM-C13).
+ */
+function mergeBoardPeople(
+  members: readonly { userId: string; name: string; initials: string }[],
+  directory: readonly { userId: string; name: string; onBoard: boolean }[],
+): { userId: string; name: string; initials: string }[] {
+  const listed = new Set(members.map((member) => member.userId));
+  const granted = directory
+    .filter((person) => person.onBoard && !listed.has(person.userId))
+    .map((person) => ({
+      userId: person.userId,
+      name: person.name,
+      initials: personInitials(person.name),
+    }));
+  return [...members, ...granted];
+}
+
 function listForNewItem(
   cards: readonly Card[],
   groups: readonly { id: string; position: number }[],
@@ -293,6 +314,9 @@ export function MainTableView({
     [copy, limitMessage, openShare],
   );
 
+  // The people who can see the board: the board's members, plus the grant holders the directory names
+  // (a Guest reads the directory, not the workspace members, UC-WM-C13).
+  const { directory } = usePeopleDirectory(boardId, workspaceId);
   const table = useBoardTable(boardId, workspaceId, {
     groupBy: view.applied.group?.fieldId,
     filter: noLegacyFilter,
@@ -856,11 +880,14 @@ export function MainTableView({
       : null;
 
   const itemFields = findItemFields(board);
-  const members = board.members.map((member) => ({
-    userId: member.userId,
-    name: member.name,
-    initials: member.initials,
-  }));
+  const members = mergeBoardPeople(
+    board.members.map((member) => ({
+      userId: member.userId,
+      name: member.name,
+      initials: member.initials,
+    })),
+    directory?.people ?? [],
+  );
   const writeAssignee = (cardId: string, userId: string | null) => {
     if (!itemFields.person) return;
     noteTitle(cardId);
