@@ -433,6 +433,7 @@ export const endpoints = {
     question: (formId: string, questionId: string) =>
       `/forms/${formId}/questions/${questionId}`,
     submissions: (formId: string) => `/forms/${formId}/submissions`,
+    submissionsPage: (formId: string) => `/forms/${formId}/submissions/page`,
     submission: (submissionId: string) => `/form-submissions/${submissionId}`,
     process: (submissionId: string) =>
       `/form-submissions/${submissionId}/process`,

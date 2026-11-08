@@ -549,6 +549,31 @@ export const formsOperations = [
 
   defineMockOperation<
     FormParams,
+    never,
+    { items: unknown[]; nextCursor: null }
+  >({
+    id: "forms.submissions.page",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Forms.ListSubmissionsPage",
+    },
+    method: "GET",
+    route: "/forms/:formId/submissions/page",
+    async handle({ params, store }) {
+      const { form, refusal } = readable(store, params.formId);
+      if (!form) return refusal;
+      // Responses can hold respondent data: they need edit rights on the board.
+      if (!canEditBoard(form.boardId, store)) return forbidden();
+      // The mock's responses fit one page, so the cursor never goes on.
+      return ok({
+        items: store.forms.submissions(form.id).map(submissionRow),
+        nextCursor: null,
+      });
+    },
+  }),
+
+  defineMockOperation<
+    FormParams,
     { answers?: Record<string, unknown> },
     unknown
   >({

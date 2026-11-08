@@ -318,6 +318,8 @@ export const vi = {
       spamBody: "Phản hồi đánh dấu spam không tạo việc và nằm ở đây.",
     },
     loading: "Đang tải phản hồi",
+    more: "Xem thêm phản hồi",
+    loadingMore: "Đang tải thêm…",
     loadError: "Chưa tải được phản hồi. Biểu mẫu vẫn nhận thêm phản hồi.",
     status: {
       new: "Mới",
@@ -706,6 +708,8 @@ export const en: FormsCopy = {
       spamBody: "Responses marked as spam create no item and are kept here.",
     },
     loading: "Loading the responses",
+    more: "Show more responses",
+    loadingMore: "Loading more…",
     loadError:
       "The responses could not be loaded. The form still takes responses.",
     status: {
