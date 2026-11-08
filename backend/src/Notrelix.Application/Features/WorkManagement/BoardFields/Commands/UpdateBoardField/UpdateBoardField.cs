@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Formulas;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
@@ -17,13 +18,16 @@ public class UpdateBoardFieldCommandHandler : IRequestHandler<UpdateBoardFieldCo
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IBoardRealtimeNotifier? _realtime;
+    private readonly Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility? _visibility;
 
     public UpdateBoardFieldCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
-        IBoardRealtimeNotifier? realtime = null)
+        IBoardRealtimeNotifier? realtime = null,
+        Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility? visibility = null)
     {
+        _visibility = visibility;
         _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
@@ -65,6 +69,8 @@ public class UpdateBoardFieldCommandHandler : IRequestHandler<UpdateBoardFieldCo
         {
             var self = new ComputedFieldInput(column.Id, column.Name, column.Type, request.Settings);
             var normalized = await ComputedFieldGuard.NormalizeAsync(_context, column.BoardId, self, column.Type, request.Settings, ct);
+            if (column.Type == FieldType.Relation && RelationFieldSettings.TargetBoardId(normalized) is Guid targetBoardId)
+                await RelationTargets.RelationFieldTargets.EnsureTargetBoardAsync(_context, _visibility, column.AccountId, column.WorkspaceId, _currentUser.UserId, targetBoardId, ct);
             var settings = FieldSettings.Create(JsonValue.Create(normalized)!);
             column.UpdateSettings(settings, _currentUser.UserId, now);
             await ComputedFieldGuard.EnsureAsync(_context, column, ct);

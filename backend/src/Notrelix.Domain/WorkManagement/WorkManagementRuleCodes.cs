@@ -205,10 +205,7 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Relation_LinkToSelf = "WorkManagement_Relation_LinkToSelf";
     public const string WorkManagement_Relation_TargetBoardRequired = "WorkManagement_Relation_TargetBoardRequired";
     public const string WorkManagement_Relation_TargetBoardNotFound = "WorkManagement_Relation_TargetBoardNotFound";
-    public const string WorkManagement_Relation_TargetBoardNotInWorkspace = "WorkManagement_Relation_TargetBoardNotInWorkspace";
-    public const string WorkManagement_Relation_TargetBoardNotReadable = "WorkManagement_Relation_TargetBoardNotReadable";
     public const string WorkManagement_Relation_TargetItemNotFound = "WorkManagement_Relation_TargetItemNotFound";
-    public const string WorkManagement_Relation_TargetItemNotOnTargetBoard = "WorkManagement_Relation_TargetItemNotOnTargetBoard";
     public const string WorkManagement_FieldValue_InvalidRelationValue = "WorkManagement_FieldValue_InvalidRelationValue";
 
     // ── Scope ────────────────────────────────────────────────────────────

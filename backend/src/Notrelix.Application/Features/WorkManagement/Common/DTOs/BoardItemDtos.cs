@@ -45,7 +45,9 @@ public record BoardItemSummaryDto(
     Guid? UpdatedBy = null,
     string? UpdatedByName = null,
     // Key of the first open blocker on this Board (lowest key); null when none, or when every open blocker is on another Board.
-    string? OpenBlockerKey = null
+    string? OpenBlockerKey = null,
+    // Relation links by field id: the links the viewer is shown; a locked link carries no key or title.
+    Dictionary<string, List<RelationLinkDto>>? RelationLinks = null
 );
 
 /// <summary>
@@ -60,6 +62,12 @@ public record BoardItemChildProgressDto(int Done, int Total);
 /// <see cref="ErrorCode"/> names the error (for example <c>divide-by-zero</c>, <c>unknown-field</c>).
 /// </summary>
 public record ComputedValueDto(string State, JsonElement? Value, string? ErrorCode);
+
+/// <summary>
+/// One link of a Relation field as the viewer sees it. A link to a board the viewer cannot read is <see cref="Locked"/>
+/// with no key or title; its id is kept so the cell round-trips it unchanged.
+/// </summary>
+public record RelationLinkDto(Guid ItemId, string? ItemKey, string? Title, bool Locked);
 
 public record BoardItemDto(
     Guid Id,
@@ -105,7 +113,9 @@ public record BoardItemDto(
     int ReminderOffsetMinutes = 1440,
     // Who last changed the Item (a user id); the client names them when a competing write is refused.
     Guid? UpdatedBy = null,
-    string? UpdatedByName = null
+    string? UpdatedByName = null,
+    // Relation links by field id: the links the viewer is shown; a locked link carries no key or title.
+    Dictionary<string, List<RelationLinkDto>>? RelationLinks = null
 );
 
 public record BoardItemMemberDto(Guid UserId, string Name, string? Avatar, DateTimeOffset AssignedAt);
