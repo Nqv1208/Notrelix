@@ -74,7 +74,7 @@ import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
 import { TableSubItems } from "./table-sub-items";
 import { useViewportTableLayout } from "./table-layout";
 import { TableSplitDivider, useSplitPaneWidth } from "./table-split-divider";
-import type { TableEditors } from "./table-cell-editors";
+import type { SystemCellColumn, TableEditors } from "./table-cell-editors";
 import type { TableFieldEditing } from "./table-field-cell";
 import {
   buildTableGroup,
@@ -182,6 +182,9 @@ function dueInstant(day: string, time = "17:00"): string {
  * for "Hoàn tác" to run out (the board has no restore write), then sends the
  * archive.
  */
+/** The key of a status or field write in flight for one item (the in-cell write bookkeeping). */
+const inCellKey = (kind: string, cardId: string) => `${kind}\u0000${cardId}`;
+
 export function MainTableView({
   boardId,
   workspaceId,
@@ -255,10 +258,20 @@ export function MainTableView({
   const toastAttempt = useRef(0);
   // A write over a published board limit (D78.8) names the limit and its max, not the generic failure.
   const limitMessage = useLimitMessage();
+  // Status, assignee and priority cell writes in flight, by kind and item: a lost race there opens the cell's
+  // in-cell choice instead of a toast (UC-WM-B33).
+  const inCellWrites = useRef(new Map<string, number>());
   const onWriteError = useCallback(
     (failure: KanbanWriteFailure) => {
       const title =
         failure.title ?? titles.current.get(failure.cardId ?? "") ?? "";
+      if (
+        failure.cardId &&
+        isVersionConflict(failure.error) &&
+        (inCellWrites.current.get(inCellKey(failure.kind, failure.cardId)) ??
+          0) > 0
+      )
+        return;
       // Lost to someone else's change: the board is read again, so the row now shows theirs; name who.
       if (failure.conflict) {
         toast.error(
@@ -772,9 +785,51 @@ export function MainTableView({
   if (table.error || !board)
     return <MainTableError copy={copy} onRetry={() => void table.refetch()} />;
 
-  const writeStatus = (cardId: string, statusOptionId: string) => {
+  // A status, assignee or priority cell write: a lost race opens the cell's choice with the value written (UC-WM-B33).
+  const cellWrite = (
+    kind: "status" | "field",
+    cardId: string,
+    column: SystemCellColumn,
+    mine: string,
+    send: () => Promise<unknown>,
+    resend: () => void,
+  ) => {
+    const key = inCellKey(kind, cardId);
+    const count = (delta: number) =>
+      inCellWrites.current.set(
+        key,
+        Math.max(0, (inCellWrites.current.get(key) ?? 0) + delta),
+      );
+    count(1);
+    send()
+      .catch((error: unknown) => {
+        if (!isVersionConflict(error)) return;
+        cellConflicts.open(cardId, column, {
+          mine,
+          byName: changedByNameOf(error) ?? table.lastEditorOf(cardId) ?? null,
+          resend: async () => resend(),
+        });
+      })
+      .finally(() => count(-1));
+  };
+  const writeStatus = (
+    cardId: string,
+    statusOptionId: string,
+    inCell = false,
+  ) => {
     noteTitle(cardId);
-    table.updateStatus.mutate({ cardId, statusOptionId });
+    if (!inCell) {
+      table.updateStatus.mutate({ cardId, statusOptionId });
+      return;
+    }
+    cellWrite(
+      "status",
+      cardId,
+      "status",
+      statusOptions.find((option) => option.id === statusOptionId)?.name ?? "",
+      () => table.updateStatus.mutateAsync({ cardId, statusOptionId }),
+      () => writeStatus(cardId, statusOptionId, true),
+    );
   };
 
   const selectedList = [...selectedIds];
@@ -891,14 +946,31 @@ export function MainTableView({
     })),
     directory?.people ?? [],
   );
-  const writeAssignee = (cardId: string, userId: string | null) => {
-    if (!itemFields.person) return;
+  const writeAssignee = (
+    cardId: string,
+    userId: string | null,
+    inCell = false,
+  ) => {
+    const person = itemFields.person;
+    if (!person) return;
     noteTitle(cardId);
-    table.updateFieldValue.mutate({
+    const payload = {
       cardId,
-      fieldDefinitionId: itemFields.person.id,
+      fieldDefinitionId: person.id,
       value: userId ? [userId] : [],
-    });
+    };
+    if (!inCell) {
+      table.updateFieldValue.mutate(payload);
+      return;
+    }
+    cellWrite(
+      "field",
+      cardId,
+      "assignee",
+      members.find((member) => member.userId === userId)?.name ?? "",
+      () => table.updateFieldValue.mutateAsync(payload),
+      () => writeAssignee(cardId, userId, true),
+    );
   };
   const writeDue = async (
     cardId: string,
@@ -953,6 +1025,28 @@ export function MainTableView({
     }
     return true;
   };
+  const writePriority = (cardId: string, optionId: string, inCell = false) => {
+    const priority = itemFields.priority;
+    if (!priority) return;
+    noteTitle(cardId);
+    const payload = {
+      cardId,
+      fieldDefinitionId: priority.id,
+      value: optionId,
+    };
+    if (!inCell) {
+      table.updateFieldValue.mutate(payload);
+      return;
+    }
+    cellWrite(
+      "field",
+      cardId,
+      "priority",
+      priority.options.find((option) => option.id === optionId)?.label ?? "",
+      () => table.updateFieldValue.mutateAsync(payload),
+      () => writePriority(cardId, optionId, true),
+    );
+  };
   const editors: TableEditors | undefined = itemFields.person
     ? {
         members,
@@ -962,15 +1056,8 @@ export function MainTableView({
         })),
         onAssignee: writeAssignee,
         onDue: writeDue,
-        onPriority: (cardId, optionId) => {
-          if (!itemFields.priority) return;
-          noteTitle(cardId);
-          table.updateFieldValue.mutate({
-            cardId,
-            fieldDefinitionId: itemFields.priority.id,
-            value: optionId,
-          });
-        },
+        onPriority: (cardId, optionId, inCell) =>
+          writePriority(cardId, optionId, inCell),
       }
     : undefined;
   const fieldEditing: TableFieldEditing = {

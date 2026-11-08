@@ -454,31 +454,36 @@ export function TableRow({
         );
         return (
           <Cell key="status" selected={selected}>
-            {canEdit ? (
-              <Popover open={editing} onOpenChange={onEditingChange}>
-                <PopoverTrigger asChild>{pill}</PopoverTrigger>
-                <PopoverContent
-                  align="start"
-                  side="bottom"
-                  aria-label={copy.status.change}
-                  sideOffset={2}
-                  alignOffset={-4}
-                  className="w-58.5 gap-0 rounded-[10px] border border-line-strong bg-popover p-1.5 text-compact shadow-pop ring-0 dark:bg-card"
-                >
-                  <TableStatusPicker
-                    copy={copy.status}
-                    options={statusOptions}
-                    currentId={status?.id ?? null}
-                    initialHighlightId={highlightStatusId}
-                    onSelect={(optionId) => {
-                      onEditingChange(false);
-                      if (optionId !== status?.id) onStatusChange(optionId);
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
-            ) : (
-              pill
+            {withConflict(
+              "status",
+              copy.columns.status,
+              status?.name ?? copy.group.noStatus,
+              canEdit ? (
+                <Popover open={editing} onOpenChange={onEditingChange}>
+                  <PopoverTrigger asChild>{pill}</PopoverTrigger>
+                  <PopoverContent
+                    align="start"
+                    side="bottom"
+                    aria-label={copy.status.change}
+                    sideOffset={2}
+                    alignOffset={-4}
+                    className="w-58.5 gap-0 rounded-[10px] border border-line-strong bg-popover p-1.5 text-compact shadow-pop ring-0 dark:bg-card"
+                  >
+                    <TableStatusPicker
+                      copy={copy.status}
+                      options={statusOptions}
+                      currentId={status?.id ?? null}
+                      initialHighlightId={highlightStatusId}
+                      onSelect={(optionId) => {
+                        onEditingChange(false);
+                        if (optionId !== status?.id) onStatusChange(optionId);
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                pill
+              ),
             )}
           </Cell>
         );
@@ -537,20 +542,25 @@ export function TableRow({
             selected={selected}
             className="text-muted-foreground"
           >
-            {canEdit && editors ? (
-              <AssigneeEditor
-                copy={copy}
-                members={editors.members}
-                currentId={row.assignee?.userId ?? null}
-                label={fillTableCopy(copy.row.changeAssignee, {
-                  key: keyLabel,
-                })}
-                onPick={(userId) => editors.onAssignee(row.id, userId)}
-              >
-                {person}
-              </AssigneeEditor>
-            ) : (
-              person
+            {withConflict(
+              "assignee",
+              copy.columns.assignee,
+              row.assignee?.name ?? copy.row.unassigned,
+              canEdit && editors ? (
+                <AssigneeEditor
+                  copy={copy}
+                  members={editors.members}
+                  currentId={row.assignee?.userId ?? null}
+                  label={fillTableCopy(copy.row.changeAssignee, {
+                    key: keyLabel,
+                  })}
+                  onPick={(userId) => editors.onAssignee(row.id, userId, true)}
+                >
+                  {person}
+                </AssigneeEditor>
+              ) : (
+                person
+              ),
             )}
           </Cell>
         );
@@ -633,21 +643,28 @@ export function TableRow({
         );
         return (
           <Cell key="priority" selected={selected}>
-            {canEdit && editors && editors.priorities.length > 0 ? (
-              <PriorityEditor
-                options={editors.priorities}
-                currentLabel={
-                  row.priority ? copy.row.priority[row.priority] : null
-                }
-                label={fillTableCopy(copy.row.changePriority, {
-                  key: keyLabel,
-                })}
-                onPick={(optionId) => editors.onPriority(row.id, optionId)}
-              >
-                {shown}
-              </PriorityEditor>
-            ) : (
-              shown
+            {withConflict(
+              "priority",
+              copy.columns.priority,
+              priority ? copy.row.priority[priority] : copy.row.noPriority,
+              canEdit && editors && editors.priorities.length > 0 ? (
+                <PriorityEditor
+                  options={editors.priorities}
+                  currentLabel={
+                    row.priority ? copy.row.priority[row.priority] : null
+                  }
+                  label={fillTableCopy(copy.row.changePriority, {
+                    key: keyLabel,
+                  })}
+                  onPick={(optionId) =>
+                    editors.onPriority(row.id, optionId, true)
+                  }
+                >
+                  {shown}
+                </PriorityEditor>
+              ) : (
+                shown
+              ),
             )}
           </Cell>
         );
