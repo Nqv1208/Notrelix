@@ -1,4 +1,5 @@
 using Notrelix.API.Endpoints.Admin;
+using Notrelix.API.Endpoints.WorkManagement.Limits;
 using Notrelix.API.Endpoints.Identity.Users;
 using Notrelix.API.Realtime;
 using Notrelix.API.Endpoints.Automation.Executions;
@@ -129,6 +130,9 @@ public static class EndpointRouteBuilderExtensions
 
         // WorkManagement - Templates
         app.MapTemplates();
+
+        // WorkManagement - Limits (D78.8)
+        app.MapWorkLimits();
 
         // Collaboration
         app.RegisterBoardItemActivityEndpoints();

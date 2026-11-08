@@ -139,4 +139,47 @@ public class ImportPlannerTests : WorkManagementHandlerTestBase
         result.UnmatchedPersonRows.Should().Equal(1);
         result.Items.Single().Values.Single().Value.Data.Value.Should().Be($"[\"{Ana}\",\"{Binh}\"]");
     }
+
+    [Fact]
+    public void Evaluate_ARequiredFieldTheRowLeavesEmpty_TakesItsDefault_LikeAnyCreate()
+    {
+        var code = RequiredText("Code", "\"N/A\"");
+        var schema = new ImportSchema([_title, code], [_group]);
+        var map = new[] { new ColumnMap(0, ImportPlanner.Title), new ColumnMap(1, code.Id.ToString()) };
+
+        var result = ImportPlanner.Evaluate(File(["One", ""], ["Two", "X-2"]), schema, map, collectItems: true);
+
+        result.ErrorCount.Should().Be(0);
+        result.Items.Select(i => i.Values.Single().Value.Data.Value).Should().Equal("\"N/A\"", "\"X-2\"");
+        ImportPlanner.Targets(schema).Single(t => t.Id == code.Id.ToString()).Required.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Evaluate_ARequiredFieldWithNoValueAndNoDefault_FailsTheRowNamingTheField_MappedOrNot()
+    {
+        var code = RequiredText("Code", defaultJson: null);
+        var schema = new ImportSchema([_title, code], [_group]);
+        var mapped = new[] { new ColumnMap(0, ImportPlanner.Title), new ColumnMap(1, code.Id.ToString()) };
+        var unmapped = new[] { new ColumnMap(0, ImportPlanner.Title) };
+
+        var withColumn = ImportPlanner.Evaluate(File(["One", ""], ["Two", "X-2"]), schema, mapped, collectItems: true);
+        var withoutColumn = ImportPlanner.Evaluate(File(["One", "ignored"]), schema, unmapped, collectItems: true);
+
+        withColumn.Errors.Should().ContainSingle(e => e.Row == 1 && e.Code == "required" && e.Target == code.Id.ToString() && e.Column == "Budget");
+        withColumn.Items.Select(i => i.Row).Should().Equal(2);
+        withoutColumn.Errors.Should().ContainSingle(e => e.Row == 1 && e.Code == "required" && e.Column == "Code");
+        withoutColumn.Items.Should().BeEmpty("a file that does not check clean imports nothing");
+    }
+
+    /// <summary>
+    /// A required field as an old board may hold it: the settings PATCH now refuses required without a default,
+    /// but a field made required before that rule, or with a default given later, is what the import must meet.
+    /// </summary>
+    private BoardField RequiredText(string name, string? defaultJson)
+    {
+        var field = BoardField.Create(TestAccountId, TestWorkspaceId, _boardId, name, FieldType.Text,
+            FieldSettings.Create(JsonValue.Create("{\"required\":true}")!), FractionalIndex.Create("a5"), TestUserId, TestNow);
+        if (defaultJson is not null) field.SetDefaultValue(FieldValue.Create(JsonValue.Create(defaultJson)!), TestUserId, TestNow);
+        return field;
+    }
 }

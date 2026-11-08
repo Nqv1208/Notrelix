@@ -70,6 +70,7 @@ public class RestoreBoardFieldCommandHandler : IRequestHandler<RestoreBoardField
             throw new ConflictException("This field was deleted more than 30 days ago and can no longer be restored.", "work-management.field.restore-window-closed");
 
         await FieldNameGuard.EnsureNameFreeAsync(_context, field.BoardId, field.Id, field.Name, ct);
+        await Limits.WorkLimits.EnsureFieldRoomAsync(_context, field.BoardId, 1, ct);
         field.Restore(_requestContext.UserId, now);
         return Result<RestoredBoardFieldDto>.Success(new RestoredBoardFieldDto(false, null));
     }

@@ -21,6 +21,7 @@ public static class MapBoardItemEndpoints
         boardItems.MapBulkUpdateBoardItems();
         boardItems.MapListBoardItemTrash();
         boardItems.MapListArchivedBoardItems();
+        boardItems.MapResolveBoardItemKey();
 
         var itemGroup = app
             .MapGroup("/api/v1/board-items/{itemId:guid}")

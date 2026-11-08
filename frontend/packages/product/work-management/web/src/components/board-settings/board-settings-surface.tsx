@@ -22,7 +22,7 @@ import { AutomationsSection } from "./board-settings-automations";
 import { WorkspaceRulesSection } from "./workspace-rules-section";
 import { BoardSettingsProvider, useSettings } from "./board-settings-context";
 import { FieldsSection } from "./board-settings-fields";
-import { fillCopy } from "./board-settings-format";
+import { fillCopy, limitCopy } from "./board-settings-format";
 import { GeneralSection } from "./board-settings-general";
 import { GroupsSection } from "./board-settings-groups";
 import { LabelsSection } from "./board-settings-labels";
@@ -439,7 +439,9 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
                     ? copy.feedback.conflictTitle
                     : feedback === "invalid"
                       ? copy.feedback.invalid
-                      : copy.feedback.failed}
+                      : feedback === "limit"
+                        ? limitCopy(copy, failure?.limit)
+                        : copy.feedback.failed}
                 </b>
                 {feedback === "conflict" ? (
                   <span>{copy.feedback.conflictBody}</span>

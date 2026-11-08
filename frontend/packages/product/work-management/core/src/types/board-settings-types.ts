@@ -283,7 +283,15 @@ export interface BoardSettingsViewPatch {
 }
 
 /** Why a write did not go through, as the page tells it. */
-export type BoardSettingsWriteFailure = "conflict" | "invalid" | "failed";
+export type BoardSettingsWriteFailure =
+  "conflict" | "invalid" | "limit" | "failed";
+
+/** A published board limit the write would go over (D78.8): which one, and its max. */
+export interface WriteLimit {
+  /** items, fields, groups, views or bulkItems; another name is told generically. */
+  readonly name: string;
+  readonly max: number | null;
+}
 
 /** Who saved first when a write was refused as stale, as the server names them. */
 export interface WriteConflict {
@@ -300,6 +308,8 @@ export type BoardSettingsWriteResult =
       reason: BoardSettingsWriteFailure;
       /** Present on a conflict, when the server named who saved first. */
       conflict?: WriteConflict;
+      /** Present when the write would go over a published board limit. */
+      limit?: WriteLimit;
       /** The request field a refused value belongs to ("name"). */
       field?: string;
       /** The server's rule or error code, when it sent one. */

@@ -1,6 +1,6 @@
 import { cn } from "@notrelix/ui-web";
 import { useSettings } from "./board-settings-context";
-import { fillCopy } from "./board-settings-format";
+import { fillCopy, limitCopy } from "./board-settings-format";
 import { BUTTON_CLASS } from "./board-settings-parts";
 
 /**
@@ -26,7 +26,9 @@ export function WriteError({ scope, id }: { scope: string; id: string }) {
             : t.conflictReloaded
           : failure.reason === "invalid"
             ? t.invalid
-            : t.failedKept}
+            : failure.reason === "limit"
+              ? limitCopy(copy, failure.limit)
+              : t.failedKept}
       </span>
       {failure.retry ? (
         <button

@@ -76,18 +76,22 @@ public class RestoreBoardItemCommandHandler : IRequestHandler<RestoreBoardItemCo
         }
 
         var deletedWithItem = item.DeletedAt;
-        item.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow, replacement);
 
         // The sub-items that went to the Trash with it come back with it; one deleted on its own earlier stays.
-        if (deletedWithItem is not null)
-        {
-            var children = await _context.BoardItems
+        List<BoardItem> children = deletedWithItem is null
+            ? []
+            : await _context.BoardItems
                 .IgnoreQueryFilters()
                 .Where(child => child.AccountId == accountId && child.WorkspaceId == workspaceId
                     && child.ParentItemId == item.Id && child.DeletedAt == deletedWithItem)
                 .ToListAsync(ct);
-            foreach (var child in children) child.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow);
-        }
+
+        // Coming back from the Trash makes them active again, so they need room under the board's limit (D78.8).
+        if (item.IsDeleted && !item.IsArchived)
+            await Limits.WorkLimits.EnsureItemRoomAsync(_context, item.BoardId, 1 + children.Count(child => !child.IsArchived), ct);
+
+        item.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow, replacement);
+        foreach (var child in children) child.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }
