@@ -146,7 +146,7 @@ export interface MainTableSurfaceProps {
   onClearFilter: () => void;
   onShowDone: () => void;
   /** A refused or lost bulk change: the banner under the table with "Thử lại"; absent = none. */
-  bulkFailure?: { detail: string; onRetry: () => void } | null;
+  bulkFailure?: { detail: string; onRetry?: () => void } | null;
   /** A change is on its way: the bar shows the progress line. */
   bulkSaving?: boolean;
   /** What the last bulk change did; "Hoàn tác" shows when `onUndo` is given. */

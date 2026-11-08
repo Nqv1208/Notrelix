@@ -52,6 +52,7 @@ import {
   type DayKey,
 } from "./calendar-model";
 import { useCalendarCopy } from "./use-calendar-copy";
+import { useLimitMessage } from "../../shared/use-limit-message";
 
 /** The hour a due date gets when the Calendar sets one from a day alone. */
 const DEFAULT_DUE_HOUR = 17;
@@ -242,9 +243,14 @@ export function BoardCalendarView({
   );
 
   const updateCard = useUpdateCard(boardId, workspaceId);
+  const limitMessage = useLimitMessage();
   const createItem = useCreateDatedItem(boardId, workspaceId, {
-    onError: (_error, input) =>
-      toast.error(fillCopy(copy.quickCreate.failed, { title: input.title })),
+    // Over the board's published item limit (D78.8) the limit is named instead.
+    onError: (error, input) =>
+      toast.error(
+        limitMessage(error) ??
+          fillCopy(copy.quickCreate.failed, { title: input.title }),
+      ),
   });
 
   type DatePatch = { startDate: string | null; dueDate: string | null };

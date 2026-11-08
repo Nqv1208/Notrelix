@@ -85,6 +85,12 @@ export type BulkItemChange =
   | { readonly type: "set-priority"; readonly priorityOptionId: string }
   | { readonly type: "delete" };
 
+/** Which item a key names now: its id, board and current key (`moved` when the key is an old one). */
+export type ResolvedItemKey = OperationResponse<
+  "WorkManagement.BoardItems.ResolveKey",
+  200
+>;
+
 type UpdateStatusOp = "WorkManagement.BoardItems.UpdateStatus";
 type UpdateStatusBody = OperationRequestBody<UpdateStatusOp>;
 
@@ -98,6 +104,14 @@ export function createCardApi(client: NotrelixClient) {
         endpoints.boardItems.detail(cardId),
       );
       return mapCardDto(card);
+    },
+
+    /** The item a key names on this board, or the item that kept it as an old key after a move (UC-WM-A10). */
+    async resolveItemKey(
+      boardId: string,
+      key: string,
+    ): Promise<ResolvedItemKey> {
+      return api.get<ResolvedItemKey>(endpoints.boardItems.byKey(boardId, key));
     },
 
     /** Creates the item and returns its id and first version (absent when the server sends none). */

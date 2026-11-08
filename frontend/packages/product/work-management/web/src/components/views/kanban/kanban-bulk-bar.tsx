@@ -25,6 +25,7 @@ import {
   TableBulkDone,
 } from "../table/table-bulk-bar";
 import { useArchiveUndoWindow } from "../table/use-archive-undo-window";
+import { useLimitMessage } from "../../shared/use-limit-message";
 
 /** "YYYY-MM-DD" as an instant at 17:00 of that local day. */
 function dueInstant(day: string): string {
@@ -59,6 +60,8 @@ export function KanbanBulkBar({
   onPendingArchiveChange?: (ids: readonly string[]) => void;
 }) {
   const copy = useMainTableCopy();
+  // Over the published bulk limit (D78.8): name the limit and its max.
+  const limitMessage = useLimitMessage();
   const bulk = useBulkUpdateItems(boardId, workspaceId);
   const readCard = useBoardCardReader(boardId, workspaceId);
   const titleOf = (id: string) => readCard(id)?.title;
@@ -80,9 +83,10 @@ export function KanbanBulkBar({
           const failed = bulkFailedItemId(error);
           const title = failed ? titleOf(failed) : undefined;
           toast.error(
-            title
-              ? fillTableCopy(copy.failed.bulkItem, { title })
-              : copy.failed.bulk,
+            limitMessage(error) ??
+              (title
+                ? fillTableCopy(copy.failed.bulkItem, { title })
+                : copy.failed.bulk),
             { id: "kanban-bulk" },
           );
         },
@@ -160,8 +164,10 @@ export function KanbanBulkBar({
                     bulk.mutate(
                       { itemIds: picked, change: inverse },
                       {
-                        onError: () =>
-                          toast.error(copy.failed.bulk, { id: "kanban-bulk" }),
+                        onError: (error) =>
+                          toast.error(limitMessage(error) ?? copy.failed.bulk, {
+                            id: "kanban-bulk",
+                          }),
                       },
                     );
                   }
@@ -173,9 +179,10 @@ export function KanbanBulkBar({
           const failed = bulkFailedItemId(error);
           const title = failed ? titleOf(failed) : undefined;
           toast.error(
-            title
-              ? fillTableCopy(copy.failed.bulkItem, { title })
-              : copy.failed.bulk,
+            limitMessage(error) ??
+              (title
+                ? fillTableCopy(copy.failed.bulkItem, { title })
+                : copy.failed.bulk),
             { id: "kanban-bulk" },
           );
         },

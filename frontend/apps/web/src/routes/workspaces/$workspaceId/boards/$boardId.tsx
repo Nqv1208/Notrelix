@@ -20,6 +20,7 @@ import {
   pickSavedView,
   useBoardTrash,
   useFullBoard,
+  useItemByKey,
   useSavedViews,
 } from "@notrelix/work-management-state";
 import {
@@ -111,6 +112,28 @@ export function BoardPage() {
         });
     },
   );
+  // A link may name the item by its key ("ERP-142", the route /items/ERP-142 lands here too): resolve it,
+  // old keys included, and open the item where it lives now (UC-WM-A10). A key that names nothing the viewer
+  // may see stays in the address, so the sheet asks for it and shows the same "gone" state as any missing item.
+  const byKey = useItemByKey(boardId, workspaceId, search.item);
+  const resolvedItem = byKey.resolved;
+  useEffect(() => {
+    if (!resolvedItem?.itemId) return;
+    if (!resolvedItem.boardId || resolvedItem.boardId === boardId) {
+      void navigate({
+        search: (prev: BoardSearch) => ({ ...prev, item: resolvedItem.itemId }),
+        replace: true,
+      });
+      return;
+    }
+    void navigate({
+      to: "/workspaces/$workspaceId/boards/$boardId",
+      params: { workspaceId, boardId: resolvedItem.boardId },
+      search: { item: resolvedItem.itemId },
+      replace: true,
+    });
+  }, [boardId, navigate, resolvedItem, workspaceId]);
+  const selectedItemId = byKey.isKey && !byKey.failed ? undefined : search.item;
   const currentUser = useCurrentUser();
   const connection = useRealtimeConnection();
   const { locale } = useLocale();
@@ -294,7 +317,7 @@ export function BoardPage() {
               workspaceId={workspaceId}
               boardId={boardId}
               view={view}
-              selectedItemId={search.item}
+              selectedItemId={selectedItemId}
               currentUserId={currentUser?.id ?? null}
               onSelectedItemChange={handleSelectedItemChange}
               onOpenItem={handleOpenItem}

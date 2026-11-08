@@ -6,6 +6,7 @@ export * from "./use-forms";
 export * from "./use-board-templates";
 export * from "./use-board-trash";
 export * from "./use-card";
+export * from "./use-item-by-key";
 export * from "./use-card-activity";
 export * from "./use-card-comments";
 export * from "./use-card-detail";

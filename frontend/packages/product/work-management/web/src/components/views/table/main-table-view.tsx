@@ -63,6 +63,7 @@ import { buildCardLink } from "../kanban/kanban-view-helpers";
 import { useKanbanLaneCopy } from "../kanban/use-kanban-lane-copy";
 import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
 import { MainTableError } from "./main-table-error";
+import { useLimitMessage } from "../../shared/use-limit-message";
 import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
 import { fillTableCopy, pluralTableCopy } from "./main-table.copy";
 import { MainTableSkeleton } from "./main-table-skeleton";
@@ -230,6 +231,8 @@ export function MainTableView({
   const titles = useRef(new Map<string, string>());
   // Each failure toast takes its own id: reusing one id swallows the next result toast.
   const toastAttempt = useRef(0);
+  // A write over a published board limit (D78.8) names the limit and its max, not the generic failure.
+  const limitMessage = useLimitMessage();
   const onWriteError = useCallback(
     (failure: KanbanWriteFailure) => {
       const title =
@@ -270,6 +273,13 @@ export function MainTableView({
         );
         return;
       }
+      const limited = limitMessage(failure.error);
+      if (limited) {
+        toast.error(limited, {
+          id: `table-write-${failure.cardId ?? "create"}-${++toastAttempt.current}`,
+        });
+        return;
+      }
       const message =
         failure.kind === "create"
           ? copy.failed.create
@@ -280,7 +290,7 @@ export function MainTableView({
         id: `table-write-${failure.cardId ?? "create"}-${++toastAttempt.current}`,
       });
     },
-    [copy, openShare],
+    [copy, limitMessage, openShare],
   );
 
   const table = useBoardTable(boardId, workspaceId, {
@@ -366,6 +376,8 @@ export function MainTableView({
     picked: string;
     change: BulkItemChange;
     detail: string;
+    /** Over the published bulk limit: the same change is refused again, so no Retry. */
+    limited?: boolean;
   } | null>(null);
   const bulkMutate = bulkUpdate.mutate;
   const moveItem = useMoveItemToBoard(boardId, workspaceId, {
@@ -400,8 +412,8 @@ export function MainTableView({
       bulkMutate(
         { itemIds: ids, change: { type: "archive" } },
         {
-          onError: () =>
-            toast.error(copy.failed.bulk, {
+          onError: (error) =>
+            toast.error(limitMessage(error) ?? copy.failed.bulk, {
               id: `table-bulk-${++toastAttempt.current}`,
             }),
           onSettled: done,
@@ -822,12 +834,16 @@ export function MainTableView({
         onError: (error) => {
           const failed = bulkFailedItemId(error);
           const title = failed ? titles.current.get(failed) : undefined;
+          const limited = limitMessage(error);
           setBulkFailure({
             picked,
             change,
-            detail: title
-              ? fillTableCopy(copy.failed.bulkItem, { title })
-              : copy.failed.bulk,
+            limited: limited !== null,
+            detail:
+              limited ??
+              (title
+                ? fillTableCopy(copy.failed.bulkItem, { title })
+                : copy.failed.bulk),
           });
         },
       },
@@ -1287,7 +1303,9 @@ export function MainTableView({
             failure
               ? {
                   detail: failure.detail,
-                  onRetry: () => bulkWrite(failure.change),
+                  onRetry: failure.limited
+                    ? undefined
+                    : () => bulkWrite(failure.change),
                 }
               : null
           }

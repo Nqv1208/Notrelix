@@ -328,6 +328,9 @@ export const endpoints = {
     create: (boardId: string) => `/boards/${boardId}/items`,
     bulk: (boardId: string) => `/boards/${boardId}/items/bulk`,
     detail: (itemId: string) => `/board-items/${itemId}`,
+    // WorkManagement.BoardItems.ResolveKey: an item by its key on the board, or the old key it kept after a move.
+    byKey: (boardId: string, key: string) =>
+      `/boards/${boardId}/items/by-key/${encodeURIComponent(key)}`,
     move: (itemId: string) => `/board-items/${itemId}/move`,
     linkPage: (itemId: string) => `/board-items/${itemId}/link-page`,
     // WorkManagement.BoardItems.UnlinkPage / ListLinkedPages: one page's link, and the pages the caller may see.
