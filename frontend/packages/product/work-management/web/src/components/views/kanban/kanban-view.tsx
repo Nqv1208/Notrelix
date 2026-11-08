@@ -1804,6 +1804,7 @@ function KanbanSelectedItemReady({
           activityError: activity.isError && activity.data === undefined,
           updates: updates.data ?? card.updates,
           updatesLoading: updates.isLoading,
+          updatesError: updates.isError && updates.data === undefined,
           // One "show more" at the foot of the feed reads the next page of the comments and of the history.
           updatesMore:
             updates.hasNextPage || activity.hasNextPage
@@ -1908,6 +1909,9 @@ function KanbanSelectedItemReady({
           onUpdateFieldValue,
           onRefreshActivity: () => {
             void activity.refetch();
+          },
+          onRefreshUpdates: () => {
+            void updates.refetch();
           },
           onCreateUpdate: (input, options) =>
             createUpdate.mutate(input, {

@@ -21,6 +21,7 @@ import { useCommentDraft } from "../../card-detail/update-composer";
 import { useCommentEdit } from "../../card-detail/use-comment-edit";
 import {
   canChangeOwnComment,
+  canDeleteComment,
   canWriteComment,
 } from "../../card-detail/task-detail-types";
 import { ReactionBar } from "../../comment-thread/reaction-bar";
@@ -193,6 +194,12 @@ function Bubble({
     update.author.userId,
     data.viewerUserId,
   );
+  // A Board manager may delete a comment they did not write; editing stays with the author.
+  const deletable = canDeleteComment(
+    capabilities,
+    update.author.userId,
+    data.viewerUserId,
+  );
   const edit = useCommentEdit(update.body, (body) =>
     callbacks.onUpdateUpdate(update.id, body),
   );
@@ -336,7 +343,7 @@ function Bubble({
         ) : null}
         {(update.reactions?.length ?? 0) > 0 ||
         react ||
-        (!edit.editing && (own || canReply)) ? (
+        (!edit.editing && (own || deletable || canReply)) ? (
           <div className="mt-1.5 flex flex-wrap items-center gap-3">
             {(update.reactions?.length ?? 0) > 0 || react ? (
               <ReactionBar
@@ -360,7 +367,7 @@ function Bubble({
                 {t.edit}
               </button>
             ) : null}
-            {!edit.editing && own ? (
+            {!edit.editing && deletable ? (
               <button
                 ref={deleteRef}
                 type="button"
@@ -713,6 +720,25 @@ export function CommentsColumn() {
         <FeedSkeleton label={t.loading} />
       ) : (
         <div className="mt-1 flex flex-col gap-3.5" data-comment-feed="">
+          {data.updatesError ? (
+            <FeedNotice
+              alert
+              tone="danger"
+              icon={<CloudOff aria-hidden="true" className="size-5" />}
+              title={t.updatesErrorTitle}
+              body={t.updatesErrorBody}
+              action={
+                <PanelBtn
+                  variant="primary"
+                  className="max-md:h-11"
+                  onClick={() => callbacks.onRefreshUpdates?.()}
+                >
+                  <RotateCw aria-hidden="true" className="size-4" />
+                  {t.retry}
+                </PanelBtn>
+              }
+            />
+          ) : null}
           {data.activityError ? (
             <FeedNotice
               alert
@@ -732,7 +758,7 @@ export function CommentsColumn() {
               }
             />
           ) : null}
-          {feed.length === 0 && !data.activityError ? (
+          {feed.length === 0 && !data.activityError && !data.updatesError ? (
             <FeedNotice
               icon={<MessageCircle aria-hidden="true" className="size-5" />}
               title={t.emptyTitle}

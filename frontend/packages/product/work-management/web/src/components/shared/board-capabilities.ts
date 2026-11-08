@@ -14,6 +14,9 @@ const FULL: TaskDetailCapabilities = {
   canComment: true,
 };
 
+/** A Board manager: edits, and moderates other people's comments. */
+const MANAGER: TaskDetailCapabilities = { ...FULL, canModerateComments: true };
+
 const READ_ONLY: TaskDetailCapabilities = {
   canCreateCard: false,
   canMoveCard: false,
@@ -44,7 +47,8 @@ export function boardCapabilities(
   // An archived board is read-only for everyone, a manager included: its
   // writes are refused until it is unarchived, so no write control is offered.
   if (archived) return FROZEN;
-  if (level === "editor" || level === "manager") return FULL;
+  if (level === "manager") return MANAGER;
+  if (level === "editor") return FULL;
   if (level === "commenter") return { ...READ_ONLY, canComment: true };
   return READ_ONLY;
 }
