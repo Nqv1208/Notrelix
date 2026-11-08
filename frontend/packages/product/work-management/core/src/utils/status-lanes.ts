@@ -269,13 +269,16 @@ export function isOptimisticOptionId(
 }
 
 export function normalizeName(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/đ/gi, "d")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
+  return (
+    value
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/đ/gi, "d")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      // The run above leaves at most one underscore at either end.
+      .replace(/^_|_$/g, "")
+  );
 }
 
 /** Category of a status option without one (older reads), from its name. */

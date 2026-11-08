@@ -245,7 +245,17 @@ function MatchCount({
   shown: number;
   total: number;
 }) {
-  const parts = template.split(/(\{\{shown\}\}.*?\{\{total\}\})/);
+  const open = template.indexOf("{{shown}}");
+  const close = open < 0 ? -1 : template.indexOf("{{total}}", open);
+  const end = close < 0 ? -1 : close + "{{total}}".length;
+  const parts =
+    open < 0 || end < 0
+      ? [template]
+      : [
+          template.slice(0, open),
+          template.slice(open, end),
+          template.slice(end),
+        ];
   return (
     <>
       {parts.map((part, index) =>
