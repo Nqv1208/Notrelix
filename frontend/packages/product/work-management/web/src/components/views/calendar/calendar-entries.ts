@@ -122,6 +122,14 @@ export function buildCalendarEntries({
           itemKey: card.itemKey,
           title: card.title,
           assigneeName: person?.name ?? null,
+          tone:
+            lane.category === "done"
+              ? "done"
+              : lane.category === "review"
+                ? "review"
+                : lane.category === "in_progress"
+                  ? "doing"
+                  : "todo",
         });
         continue;
       }
