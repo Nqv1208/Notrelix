@@ -292,6 +292,46 @@ describe.each(["vi", "en"] as const)("form builder (%s)", (locale) => {
     resolveRedo({ ok: true });
   });
 
+  it(`${fui("drag", locale)}shows a line where a dragged question would land and moves it on drop (${locale})`, async () => {
+    const props = render(locale);
+    const list = screen.getByRole("list", { name: b.list });
+    const rows = list.querySelectorAll<HTMLElement>('[draggable="true"]');
+    expect(rows).toHaveLength(5);
+    fireEvent.dragStart(rows[0]!, {
+      dataTransfer: { effectAllowed: "move" },
+    });
+    fireEvent.dragOver(rows[2]!);
+    expect(
+      list.querySelectorAll('[aria-hidden="true"].h-\\[3px\\]'),
+    ).toHaveLength(1);
+    fireEvent.drop(rows[2]!);
+    await waitFor(() =>
+      expect(props.onUpdateQuestion).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "q-title" }),
+        expect.objectContaining({ position: expect.any(String) }),
+      ),
+    );
+    expect(
+      list.querySelectorAll('[aria-hidden="true"].h-\\[3px\\]'),
+    ).toHaveLength(0);
+  });
+
+  it(`${fui("removed-field", locale)}marks a question whose board field was deleted, names it and keeps the form from publishing (${locale})`, () => {
+    render(locale, {
+      form: formFixture({
+        questions: [Q_TITLE, { ...Q_PRIORITY, boardFieldId: "f-deleted" }],
+      }),
+    });
+    expect(screen.getByText(b.needsFix)).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toContain(
+      b.removedFieldError,
+    );
+    expect(screen.getByRole("button", { name: b.publish })).toHaveProperty(
+      "disabled",
+      true,
+    );
+  });
+
   it(`${fui("remove", locale)}asks before it removes a question (${locale})`, async () => {
     const props = render(locale, { selectedId: "q-email" });
     fireEvent.click(screen.getByRole("button", { name: b.removeQuestion }));
