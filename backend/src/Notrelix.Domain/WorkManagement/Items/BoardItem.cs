@@ -432,6 +432,18 @@ public class BoardItem : SoftDeletableAggregateRoot, IWorkspaceScoped
                 : FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(people)));
         }
 
+        if (!newValue.IsEmpty && field.Type == FieldType.Relation)
+        {
+            // A Relation is a set of stable item ids: canonical sorted distinct ids, so the same set is a no-op; an item never links to itself.
+            var links = JsonSerializer.Deserialize<string[]>(newValue.Data.Value)!
+                .Select(Guid.Parse).Distinct().OrderBy(id => id).ToList();
+            if (links.Contains(Id))
+                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Relation_LinkToSelf, "An item cannot be linked to itself.");
+            newValue = links.Count == 0
+                ? FieldValue.Empty()
+                : FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(links)));
+        }
+
         var existingValue = _fieldValues.FirstOrDefault(fv => fv.FieldId == field.Id);
         var oldValue = existingValue?.Value ?? FieldValue.Empty();
 

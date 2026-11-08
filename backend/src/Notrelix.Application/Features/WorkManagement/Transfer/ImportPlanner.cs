@@ -56,6 +56,7 @@ public static class ImportPlanner
     public const string LockedPerson = "person";
     public const string LockedComputed = "computed";
     public const string LockedVote = "vote";
+    public const string LockedRelation = "relation";
 
     public static IReadOnlyList<ImportTarget> Targets(ImportSchema schema)
     {
@@ -69,6 +70,8 @@ public static class ImportPlanner
                 FieldType.Person => schema.People is null ? LockedPerson : null,
                 FieldType.Formula or FieldType.Rollup => LockedComputed,
                 FieldType.Vote => LockedVote,
+                // Links to items of another board are made in the item, never by an import row.
+                FieldType.Relation => LockedRelation,
                 _ => f.IsSystem && f.Type is not (FieldType.Status or FieldType.Date or FieldType.Person) ? LockedPerson : null,
             };
             targets.Add(new ImportTarget(f.Id.ToString(), f.Name, f.Type.ToString(), f.IsRequired, locked));
