@@ -37,8 +37,15 @@ export interface TablePriorityOption {
 export interface TableEditors {
   readonly members: readonly TableEditorMember[];
   readonly priorities: readonly TablePriorityOption[];
-  /** `null` = nobody. */
-  readonly onAssignee: (rowId: string, userId: string | null) => void;
+  /**
+   * `null` = nobody. `inCell`: the row's own cell is writing, so a lost race opens its in-cell choice (UC-WM-B33);
+   * without it a lost race is only reported as a toast (the phone list has no in-cell note).
+   */
+  readonly onAssignee: (
+    rowId: string,
+    userId: string | null,
+    inCell?: boolean,
+  ) => void;
   /**
    * "YYYY-MM-DD", or `null` to clear the date; `time` ("HH:MM") is given by the tablet and phone picker.
    * Resolves `false` when the server refused the day as before the start date.
@@ -48,11 +55,17 @@ export interface TableEditors {
     day: string | null,
     time?: string,
   ) => void | Promise<boolean>;
-  readonly onPriority: (rowId: string, optionId: string) => void;
+  /** `inCell` as for `onAssignee`. */
+  readonly onPriority: (
+    rowId: string,
+    optionId: string,
+    inCell?: boolean,
+  ) => void;
 }
 
-/** The built-in cells that carry the in-cell conflict choice. */
-export type SystemCellColumn = "title" | "due";
+/** The built-in cells that carry the in-cell conflict choice (the title, the due date, and the status, assignee and priority writes). */
+export type SystemCellColumn =
+  "title" | "due" | "status" | "assignee" | "priority";
 
 /** An open conflict on a built-in cell: what this person wrote, and who saved first. */
 export interface SystemCellConflict {

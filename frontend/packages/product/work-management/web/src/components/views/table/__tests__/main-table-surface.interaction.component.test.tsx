@@ -214,6 +214,7 @@ describe("MainTableSurface", () => {
     expect(props.onStatusChange).toHaveBeenCalledWith(
       ERP_TABLE_ITEM("ERP-144"),
       "status-review",
+      true,
     );
     expect(screen.queryByRole("listbox")).toBeNull();
   });
@@ -800,6 +801,7 @@ describe("MainTableSurface in-place edits and bulk people and boards", () => {
     expect(ed.onAssignee).toHaveBeenCalledWith(
       ERP_TABLE_ITEM("ERP-153"),
       "u-quan",
+      true,
     );
   });
 
@@ -810,7 +812,11 @@ describe("MainTableSurface in-place edits and bulk people and boards", () => {
       screen.getByRole("button", { name: "Đổi người phụ trách của ERP-151" }),
     );
     fireEvent.click(screen.getByRole("button", { name: /Chưa giao/ }));
-    expect(ed.onAssignee).toHaveBeenCalledWith(ERP_TABLE_ITEM("ERP-151"), null);
+    expect(ed.onAssignee).toHaveBeenCalledWith(
+      ERP_TABLE_ITEM("ERP-151"),
+      null,
+      true,
+    );
   });
 
   it("the priority cell offers the board's options", () => {
@@ -824,6 +830,7 @@ describe("MainTableSurface in-place edits and bulk people and boards", () => {
     expect(ed.onPriority).toHaveBeenCalledWith(
       ERP_TABLE_ITEM("ERP-153"),
       "p-urgent",
+      true,
     );
   });
 

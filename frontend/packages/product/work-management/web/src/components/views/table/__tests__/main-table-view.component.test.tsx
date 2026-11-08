@@ -388,35 +388,65 @@ describe("MainTableView on the ERP board", () => {
       details: by ? { changedByName: by } : {},
     });
 
-  it("names who changed the item first when the status write lost the race, and the row shows theirs", async () => {
+  const inCellNote = () =>
+    screen.findByRole("alertdialog", { name: "Xung đột giá trị" });
+  const noteClosed = () =>
+    waitFor(() =>
+      expect(
+        screen.queryByRole("alertdialog", { name: "Xung đột giá trị" }),
+      ).toBeNull(),
+    );
+  const pickStatus = async () => {
+    await ready();
+    fireEvent.click(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi trạng thái của ERP-149",
+      }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: /Đang làm/ }));
+  };
+
+  it("offers the in-cell choice when a status write lost the race, naming who won and what they set (UC-WM-B33)", async () => {
     const { cards } = renderTable(erpOwnerAccess());
     cards.updateStatus.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));
-    await ready();
+    await pickStatus();
+    const choice = await inCellNote();
+    expect(choice.textContent).toMatch(
+      /^Lê Hoàng Phúc vừa đổi Trạng thái thành Cần làm/,
+    );
+    expect(choice.textContent).toContain("Giá trị của bạn: Đang làm");
+    expect(toast.error).not.toHaveBeenCalled();
+    // "Dùng giá trị mới" drops the written status and sends nothing more.
     fireEvent.click(
-      within(row("ERP-149")!).getByRole("button", {
-        name: "Đổi trạng thái của ERP-149",
-      }),
+      within(choice).getByRole("button", { name: /Dùng giá trị mới/ }),
     );
-    fireEvent.click(screen.getByRole("option", { name: /Đang làm/ }));
-    await waitFor(() => expect(toast.error).toHaveBeenCalled());
-    expect(toast.error.mock.calls[0]?.[0]).toBe(
-      "Lê Hoàng Phúc vừa sửa “Viết tài liệu quy trình nhập hoá đơn đầu vào” trước bạn. Thay đổi của bạn chưa được lưu và hàng đang hiện bản của họ.",
-    );
-    await waitFor(() => expect(rowsOf("Cần làm")).toBe(6));
+    await noteClosed();
+    expect(cards.updateStatus).toHaveBeenCalledTimes(1);
+    expect(rowsOf("Cần làm")).toBe(6);
   });
 
-  it("says someone changed the item first when the server names no one", async () => {
+  it("writes the status I chose again on Keep mine, after reading the board", async () => {
+    const { cards } = renderTable(erpOwnerAccess());
+    cards.updateStatus.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));
+    await pickStatus();
+    const choice = await inCellNote();
+    fireEvent.click(
+      within(choice).getByRole("button", { name: "Giữ giá trị của tôi" }),
+    );
+    await waitFor(() => expect(cards.updateStatus).toHaveBeenCalledTimes(2));
+    expect(cards.updateStatus.mock.calls[1]?.[1]).toBe(
+      ERP_STATUS_OPTION_IDS.doing,
+    );
+    await waitFor(() => expect(rowsOf("Đang làm")).toBe(4));
+  });
+
+  it("says someone changed the item first in the in-cell note when the server names no one", async () => {
     const { cards } = renderTable(erpOwnerAccess());
     cards.updateStatus.mockRejectedValueOnce(lostRace(null));
-    await ready();
-    fireEvent.click(
-      within(row("ERP-149")!).getByRole("button", {
-        name: "Đổi trạng thái của ERP-149",
-      }),
-    );
-    fireEvent.click(screen.getByRole("option", { name: /Đang làm/ }));
-    await waitFor(() => expect(toast.error).toHaveBeenCalled());
-    expect(String(toast.error.mock.calls[0]?.[0])).toMatch(/^Có người vừa sửa/);
+    await pickStatus();
+    const choice = await inCellNote();
+    expect(choice.textContent).toMatch(/^Một người khác vừa đổi Trạng thái/);
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
   const renameErp149 = async (title: string) => {
@@ -522,9 +552,9 @@ describe("MainTableView on the ERP board", () => {
     expect(toast.error).not.toHaveBeenCalled();
   });
 
-  it("tells the person when an assignee or a priority lost the race and names who won", async () => {
+  it("offers the in-cell choice when an assignee write lost the race, and Dùng giá trị mới sends nothing more (UC-WM-B33)", async () => {
     const { cards } = renderTable(erpOwnerAccess(), {}, true);
-    cards.updateFieldValue.mockRejectedValue(lostRace("Lê Hoàng Phúc"));
+    cards.updateFieldValue.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));
     await ready();
     fireEvent.click(
       within(row("ERP-149")!).getByRole("button", {
@@ -534,7 +564,47 @@ describe("MainTableView on the ERP board", () => {
     fireEvent.click(
       screen.getAllByRole("button", { name: /Trần Minh Quân/ })[0]!,
     );
-    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+    const choice = await inCellNote();
+    expect(choice.textContent).toMatch(
+      /^Lê Hoàng Phúc vừa đổi Người phụ trách thành/,
+    );
+    expect(choice.textContent).toContain("Giá trị của bạn: Trần Minh Quân");
+    expect(toast.error).not.toHaveBeenCalled();
+    fireEvent.click(
+      within(choice).getByRole("button", { name: /Dùng giá trị mới/ }),
+    );
+    await noteClosed();
+    expect(cards.updateFieldValue).toHaveBeenCalledTimes(1);
+  });
+
+  it("writes the assignee I chose again on Keep mine (UC-WM-B33)", async () => {
+    const { cards } = renderTable(erpOwnerAccess(), {}, true);
+    cards.updateFieldValue.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));
+    await ready();
+    fireEvent.click(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi người phụ trách của ERP-149",
+      }),
+    );
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /Trần Minh Quân/ })[0]!,
+    );
+    const choice = await inCellNote();
+    fireEvent.click(
+      within(choice).getByRole("button", { name: "Giữ giá trị của tôi" }),
+    );
+    await waitFor(() =>
+      expect(cards.updateFieldValue).toHaveBeenCalledTimes(2),
+    );
+    expect(JSON.stringify(cards.updateFieldValue.mock.calls[1])).toContain(
+      "u-quan",
+    );
+  });
+
+  it("offers the in-cell choice when a priority write lost the race, and Dùng giá trị mới sends nothing more (UC-WM-B33)", async () => {
+    const { cards } = renderTable(erpOwnerAccess(), {}, true);
+    cards.updateFieldValue.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));
+    await ready();
     fireEvent.keyDown(
       within(row("ERP-149")!).getByRole("button", {
         name: "Đổi ưu tiên của ERP-149",
@@ -542,9 +612,38 @@ describe("MainTableView on the ERP board", () => {
       { key: "Enter" },
     );
     fireEvent.click(screen.getAllByRole("menuitem")[0]!);
-    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(2));
-    for (const call of toast.error.mock.calls)
-      expect(call[0]).toMatch(/^Lê Hoàng Phúc vừa sửa “Viết tài liệu/);
+    const choice = await inCellNote();
+    expect(choice.textContent).toMatch(/^Lê Hoàng Phúc vừa đổi Ưu tiên thành/);
+    expect(choice.textContent).toContain("Giá trị của bạn: Khẩn");
+    expect(toast.error).not.toHaveBeenCalled();
+    fireEvent.click(
+      within(choice).getByRole("button", { name: /Dùng giá trị mới/ }),
+    );
+    await noteClosed();
+    expect(cards.updateFieldValue).toHaveBeenCalledTimes(1);
+  });
+
+  it("writes the priority I chose again on Keep mine (UC-WM-B33)", async () => {
+    const { cards } = renderTable(erpOwnerAccess(), {}, true);
+    cards.updateFieldValue.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));
+    await ready();
+    fireEvent.keyDown(
+      within(row("ERP-149")!).getByRole("button", {
+        name: "Đổi ưu tiên của ERP-149",
+      }),
+      { key: "Enter" },
+    );
+    fireEvent.click(screen.getAllByRole("menuitem")[0]!);
+    const choice = await inCellNote();
+    fireEvent.click(
+      within(choice).getByRole("button", { name: "Giữ giá trị của tôi" }),
+    );
+    await waitFor(() =>
+      expect(cards.updateFieldValue).toHaveBeenCalledTimes(2),
+    );
+    expect(JSON.stringify(cards.updateFieldValue.mock.calls[1])).toContain(
+      "priority-urgent",
+    );
   });
 
   it("tells the person why an assignee was refused and offers Share to who may grant access", async () => {

@@ -214,6 +214,46 @@ function isBlockedAttachmentName(name: string): boolean {
 }
 
 /** A problem+json answer of the attachment endpoints (`errorCode` names the reason). */
+/**
+ * Test hook (UC-WM-B33): `globalThis.__mockItemSavedFirst[itemId]` stands for another member who saved the item
+ * first. The write that matches the race (a title or due date, a status, or a field value named in `fieldValues`)
+ * stores their value and is refused once as stale, naming them.
+ */
+interface ItemRace {
+  title?: string;
+  dueDate?: string | null;
+  byName?: string;
+  statusOptionId?: string;
+  fieldValues?: Record<string, unknown>;
+}
+
+function takeItemRace(
+  itemId: string,
+  matches: (race: ItemRace) => boolean,
+): ItemRace | undefined {
+  const races = (
+    globalThis as { __mockItemSavedFirst?: Record<string, ItemRace> }
+  ).__mockItemSavedFirst;
+  const race = races?.[itemId];
+  if (!races || !race || !matches(race)) return undefined;
+  delete races[itemId];
+  return race;
+}
+
+function staleItemResponse(byName: string | null | undefined) {
+  return {
+    status: 412,
+    body: {
+      type: "https://notrelix.dev/problems/common.precondition-failed",
+      title: "Precondition failed",
+      status: 412,
+      detail: "The item changed since this client loaded it.",
+      errorCode: "common.precondition-failed",
+      changedByName: byName ?? null,
+    },
+  } as any;
+}
+
 function attachmentProblem(status: number, errorCode: string, detail: string) {
   return {
     status,
@@ -590,32 +630,17 @@ export const cardsOperations = [
       }
       // Test hook (UC-WM-B33): `globalThis.__mockItemSavedFirst[itemId]` stands for another member who saved the
       // item first. Their title or due date is stored, and this write is refused as stale once, naming them.
-      const races = (
-        globalThis as {
-          __mockItemSavedFirst?: Record<
-            string,
-            { title?: string; dueDate?: string | null; byName?: string }
-          >;
-        }
-      ).__mockItemSavedFirst;
-      const race = races?.[params.id];
-      if (races && race) {
-        delete races[params.id];
+      const race = takeItemRace(
+        params.id,
+        (candidate) =>
+          candidate.title !== undefined || candidate.dueDate !== undefined,
+      );
+      if (race) {
         store.updateCard(params.id, {
           ...(race.title !== undefined ? { title: race.title } : {}),
           ...(race.dueDate !== undefined ? { dueAt: race.dueDate } : {}),
         });
-        return {
-          status: 412,
-          body: {
-            type: "https://notrelix.dev/problems/common.precondition-failed",
-            title: "Precondition failed",
-            status: 412,
-            detail: "The item changed since this client loaded it.",
-            errorCode: "common.precondition-failed",
-            changedByName: race.byName ?? null,
-          },
-        } as any;
+        return staleItemResponse(race.byName);
       }
       // Only the fields the request names change: a spread of `undefined`
       // would wipe the title of a date-only patch.
@@ -1023,11 +1048,16 @@ export const cardsOperations = [
       // A Formula is evaluated by the backend and never written.
       if (target?.fieldType === "formula")
         return badRequest({ value: ["Cannot write a computed field."] });
-      const updated = store.updateFieldValue(
+      const fieldId = (params as any).fieldId as string;
+      const race = takeItemRace(
         params.id,
-        (params as any).fieldId,
-        data.value,
+        (candidate) => candidate.fieldValues?.[fieldId] !== undefined,
       );
+      if (race) {
+        store.updateFieldValue(params.id, fieldId, race.fieldValues![fieldId]);
+        return staleItemResponse(race.byName);
+      }
+      const updated = store.updateFieldValue(params.id, fieldId, data.value);
       if (!updated) return notFound("Card not found");
       return ok(versionOf(store, params.id));
     },
@@ -1052,6 +1082,14 @@ export const cardsOperations = [
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
       const status = (body as { status?: string | null } | undefined)?.status;
       if (!status) return badRequest({ status: ["The status is required."] });
+      const race = takeItemRace(
+        params.id,
+        (candidate) => candidate.statusOptionId !== undefined,
+      );
+      if (race) {
+        store.updateItemStatus(params.id, race.statusOptionId!);
+        return staleItemResponse(race.byName);
+      }
       // A repeating item moved to a done status rolls to its next occurrence and keeps its status.
       if (rollRepeatOnCompletion(store, params.id, status))
         return ok(versionOf(store, params.id));

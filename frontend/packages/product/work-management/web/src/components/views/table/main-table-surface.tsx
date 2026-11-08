@@ -141,7 +141,8 @@ export interface MainTableSurfaceProps {
   onClearSelection: () => void;
   onGroupToggle: (groupId: string) => void;
   onOpenItem: (id: string) => void;
-  onStatusChange: (id: string, optionId: string) => void;
+  /** `inCell`: the row's own status cell is writing (UC-WM-B33); see `TableEditors.onAssignee`. */
+  onStatusChange: (id: string, optionId: string, inCell?: boolean) => void;
   onCreateItem: (groupId: string, title: string) => void;
   onClearFilter: () => void;
   onShowDone: () => void;
@@ -809,7 +810,7 @@ function MainTableSurfaceBody({
                                   setEditingId(editing ? row.id : null)
                                 }
                                 onStatusChange={(optionId) =>
-                                  onStatusChange(row.id, optionId)
+                                  onStatusChange(row.id, optionId, true)
                                 }
                                 onKeyDown={(event) => {
                                   setTabStopId(row.id);
