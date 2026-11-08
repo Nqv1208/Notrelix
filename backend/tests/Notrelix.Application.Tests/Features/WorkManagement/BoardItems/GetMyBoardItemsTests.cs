@@ -1,7 +1,5 @@
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyBoardItems;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
-using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardItems;
