@@ -245,7 +245,8 @@ export function fieldKeyOf(
     .replace(/đ/gi, "d")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    // The run above leaves at most one dash at either end.
+    .replace(/^-|-$/g, "");
   return slug || (id ?? "").slice(0, 8);
 }
 

@@ -55,6 +55,13 @@ export interface CalendarToolbarProps {
   viewBar?: ReactNode;
 }
 
+/** The text inside the first parentheses of a zone label ("GMT+7"), else the whole label. */
+function zoneShortLabel(label: string): string {
+  const open = label.indexOf("(");
+  const close = open < 0 ? -1 : label.indexOf(")", open + 1);
+  return close > open + 1 ? label.slice(open + 1, close) : label;
+}
+
 /**
  * The Calendar bar: today, previous and next, the range heading, the
  * month/week/day switch, the date basis and filter pills, the time zone and
@@ -328,7 +335,7 @@ export function CalendarToolbar({
           className="ml-auto min-w-0 truncate text-right text-xs leading-[1.45] text-meta-foreground untablet:@max-[1030px]/bar:hidden"
         >
           {/* WM-Toolbar-Calendar: the bar says "GMT+7"; the title keeps the full line. */}
-          {/\(([^)]+)\)/.exec(zoneLabel)?.[1] ?? zoneLabel}
+          {zoneShortLabel(zoneLabel)}
         </span>
 
         {canAdd ? (
