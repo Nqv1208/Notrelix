@@ -25,7 +25,11 @@ interface Fixture {
     options?: string[];
   }[];
   items: { key: string; values: Record<string, unknown> }[];
-  sorts: { name: string; sort: [string, "asc" | "desc"][]; expected: string[] }[];
+  sorts: {
+    name: string;
+    sort: [string, "asc" | "desc"][];
+    expected: string[];
+  }[];
   filters: {
     name: string;
     join: "and" | "or";
