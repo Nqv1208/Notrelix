@@ -106,6 +106,12 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(
     () => new Set(props.initialCollapsed),
   );
+  // The remembered set is read again when the view's key changes (the saved view arrives after the first paint).
+  const [seenInitial, setSeenInitial] = useState(props.initialCollapsed);
+  if (seenInitial !== props.initialCollapsed) {
+    setSeenInitial(props.initialCollapsed);
+    setCollapsed(new Set(props.initialCollapsed));
+  }
   // The card being dragged and the lane it was picked up from: a card of
   // several people shows in each person's lane (Q13), so the card alone does
   // not say which lane it leaves.
