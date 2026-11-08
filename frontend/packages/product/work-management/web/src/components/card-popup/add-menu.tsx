@@ -115,6 +115,17 @@ function SubItemPanel({
       >
         {t.subitem.add}
       </PanelBtn>
+      {callbacks.onAddChildItemWithDetails ? (
+        <PanelBtn
+          className="mt-2 w-full"
+          onClick={() => {
+            callbacks.onAddChildItemWithDetails?.();
+            onClose();
+          }}
+        >
+          {t.subitem.withDetails}
+        </PanelBtn>
+      ) : null}
     </div>
   );
 }

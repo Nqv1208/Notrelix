@@ -544,6 +544,29 @@ export function createItemExtrasApi(
       await this.removeLink(to, found.id);
       return true;
     },
+    /**
+     * `WorkManagement.BoardItems.CreateChild`: a sub-item under the parent, in the parent's group, with the
+     * facts the create dialog collected. The answer names the new id and version so the follow-up writes chain.
+     */
+    async createChildItem(
+      parentId: string,
+      input: {
+        readonly title: string;
+        readonly descriptionMd?: string;
+        readonly startDate?: string;
+        readonly dueDate?: string;
+      },
+      options: { readonly idempotencyKey: string },
+    ): Promise<{ id: string; version: number } | undefined> {
+      const created = await api.post<
+        { id?: string; version?: number } | null | undefined
+      >(`/board-items/${parentId}/child-items`, input, {
+        idempotencyKey: options.idempotencyKey,
+      });
+      return created?.id
+        ? { id: created.id, version: created.version ?? 1 }
+        : undefined;
+    },
     /** Adds a child item (sub-item) under an item. */
     async addChildItem(itemId: string, title: string): Promise<void> {
       await api.post<void>(

@@ -63,6 +63,14 @@ export const en = {
   chooseBoardGo: "Continue",
   chooseBoardLoading: "Loading the board",
   noBoards: "You have no board to add a card to yet.",
+  subitemOf:
+    "Sub-item of {{key}} {{title}}. It stays in the parent's group, which cannot be changed here.",
+  partialTitle: "Created, but part of it is not saved",
+  partialBody: "Still missing: {{details}}.",
+  partialKept:
+    "The rest is saved. Retrying sends only the missing part, so nothing is created twice.",
+  retryMissing: "Retry the missing part",
+  openItem: "Open the item",
 };
 export type CreateCopy = typeof en;
 export const vi: CreateCopy = {
@@ -127,4 +135,12 @@ export const vi: CreateCopy = {
   chooseBoardGo: "Tiếp tục",
   chooseBoardLoading: "Đang tải board",
   noBoards: "Bạn chưa có board nào để thêm thẻ.",
+  subitemOf:
+    "Việc con của {{key}} {{title}}. Nó nằm trong nhóm của việc cha, không đổi được ở đây.",
+  partialTitle: "Đã tạo, nhưng còn phần chưa lưu được",
+  partialBody: "Còn thiếu: {{details}}.",
+  partialKept:
+    "Phần còn lại đã lưu. Gửi lại chỉ phần còn thiếu, không tạo trùng.",
+  retryMissing: "Thử lại phần còn thiếu",
+  openItem: "Mở công việc",
 };

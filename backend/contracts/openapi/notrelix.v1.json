@@ -28230,6 +28230,20 @@
           "title": {
             "type": "string",
             "nullable": true
+          },
+          "descriptionMd": {
+            "type": "string",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "additionalProperties": false

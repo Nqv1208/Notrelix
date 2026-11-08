@@ -7055,6 +7055,11 @@ export interface components {
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.CreateChildItemRequest": {
             title?: string | null;
+            descriptionMd?: string | null;
+            /** Format: date-time */
+            startDate?: string | null;
+            /** Format: date-time */
+            dueDate?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.BoardItems.Requests.DuplicateBoardItemRequest": {
             name?: string | null;

@@ -1769,6 +1769,8 @@ function KanbanSelectedItemReady({
   const itemLinks = useItemLinks(card.id, card.workspaceId, card.boardId);
   const approvals = useItemApprovals(card.id, card.workspaceId);
   const extras = useItemSheetExtras(card);
+  // "Add with details" in the sub-items: the full create dialog with this item as the fixed parent.
+  const [subItemOpen, setSubItemOpen] = useState(false);
   const { directory } = usePeopleDirectory(card.boardId, card.workspaceId);
   const viewerUserId = useBoardViewerId();
   const linksCopy = useItemPageCopy();
@@ -1890,6 +1892,13 @@ function KanbanSelectedItemReady({
                 () => false,
               ),
           ...extras.callbacks,
+          // One level only: a sub-item takes no sub-items of its own, with or without details.
+          onAddChildItem: card.parentItemId
+            ? undefined
+            : extras.callbacks.onAddChildItem,
+          onAddChildItemWithDetails: card.parentItemId
+            ? undefined
+            : () => setSubItemOpen(true),
           onDuplicate: removal.requestDuplicate,
           onArchive: removal.requestArchive,
           onUnarchive: removal.unarchiveItem,
@@ -1917,6 +1926,32 @@ function KanbanSelectedItemReady({
           onMoveToBoard: removal.requestMove,
         }}
       />
+      {subItemOpen ? (
+        <CardCreatePopup
+          open={subItemOpen}
+          onOpenChange={(next) => {
+            if (!next) setSubItemOpen(false);
+          }}
+          workspaceId={card.workspaceId}
+          board={board}
+          // The sub-item's group is its parent's: the dialog offers that one group only.
+          groups={groups.filter((group) => group.id === card.listId)}
+          defaultGroupId={card.listId}
+          defaultStatusId={null}
+          currentUserId={viewerUserId}
+          parent={{
+            itemId: card.id,
+            key: card.itemKey,
+            title: card.title,
+            groupId: card.listId,
+          }}
+          onOpenItem={
+            onOpenItem
+              ? (itemId: string) => onOpenItem(board.id, itemId)
+              : undefined
+          }
+        />
+      ) : null}
       {removal.dialogs}
     </>
   );
