@@ -716,7 +716,7 @@ export function KanbanColumn({
             data-lane-cards=""
             ref={cardsRef}
             onScroll={(event) => moveWindow(event.currentTarget)}
-            className="-mx-1 -my-0.5 flex max-h-[calc(100dvh-17rem)] min-h-12 flex-col gap-2 overflow-y-auto px-1 py-0.5 [scrollbar-width:thin]"
+            className="-my-0.5 -ml-1 -mr-2 flex max-h-[calc(100dvh-17rem)] min-h-12 flex-col gap-2 overflow-y-auto py-0.5 pr-2 pl-1 [scrollbar-gutter:stable] [scrollbar-width:thin]"
           >
             {spaceAbove > 0 ? (
               <div

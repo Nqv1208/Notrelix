@@ -467,6 +467,26 @@ function KanbanCardContent({
         </div>
       ) : null}
 
+      {checklist ? (
+        <span
+          data-checklist-bar=""
+          aria-hidden="true"
+          className="block h-1.25 w-full overflow-hidden rounded-[3px] bg-state-hover-strong"
+        >
+          <span
+            className={cn(
+              "block h-full rounded-[3px]",
+              checklist.done >= checklist.total
+                ? "bg-work-status-done"
+                : "bg-primary",
+            )}
+            style={{
+              width: `${Math.round((checklist.done / checklist.total) * 100)}%`,
+            }}
+          />
+        </span>
+      ) : null}
+
       {hasMeta ? (
         <div
           id={`${idPrefix}-meta`}
@@ -565,8 +585,8 @@ function KanbanCardContent({
                   key={member.id}
                   aria-hidden="true"
                   className={cn(
-                    "flex size-5 items-center justify-center rounded-full text-mark-xs ring-2 ring-popover select-none dark:ring-card",
-                    index > 0 && "-ml-1.5",
+                    "flex size-5.5 items-center justify-center rounded-full text-mark-xs ring-2 ring-popover select-none dark:ring-card",
+                    index > 0 && "-ml-1",
                     identityMarkClass(member.userId || member.id),
                   )}
                 >
@@ -576,7 +596,7 @@ function KanbanCardContent({
               {hiddenAssignees > 0 ? (
                 <span
                   aria-hidden="true"
-                  className="-ml-1.5 flex size-5 items-center justify-center rounded-full bg-state-hover-strong text-mark-xs text-muted-foreground ring-2 ring-popover select-none dark:ring-card"
+                  className="-ml-1 flex size-5 items-center justify-center rounded-full bg-state-hover-strong text-mark-xs text-muted-foreground ring-2 ring-popover select-none dark:ring-card"
                 >
                   +{hiddenAssignees}
                 </span>
