@@ -165,7 +165,7 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-N06 | Answer a startup probe (enterprise baseline) | N | Orchestrator | no | n/a | n/a | no | DEFINED | not specified |
 | UC-PLT-N07 | Redact telemetry in the browser | N | Frontend runtime | n/a | yes | n/a | no | IMPLEMENTING | unit-tested, no real e2e |
 | UC-PLT-O01 | Fail the build on a forbidden dependency | O | CI | yes | yes | n/a | no | HARDENING | none open; architecture tests run in CI |
-| UC-PLT-P01 | Run code checks before every push | P | Developer, hook | yes | yes | n/a | no | IMPLEMENTING | local only |
+| UC-PLT-P01 | Run code checks before every push | P | Developer, hook | yes | yes | n/a | no | IMPLEMENTING | owner question: retire or rebuild the local pre-push gate |
 | UC-PLT-P02 | Produce container and packaging evidence | P | CI | yes | yes | n/a | no | IMPLEMENTING | not an e2e subject |
 
 Endpoints with no use case: none. `GET /health`, `GET /health/live` and `GET /health/ready` appear in N02 to N04. The realtime route `GET /api/v1/realtime` (`RealtimeGatewayEndpoint.cs`, excluded from OpenAPI) appears in I01 to I05.
@@ -1002,7 +1002,7 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - Rules: PFREQ114.
 - Acceptance: Given a failing frontend check, When pushing, Then the push is blocked.
 - Evidence: removed in #225 · Real e2e none
-- State: IMPLEMENTING — local only; the exact-head CI result is separate evidence.
+- State: IMPLEMENTING — Owner question: should UC-PLT-P01 be retired, because #225 removed the pre-push hook (`scripts/pre-push.sh` and `make hooks-install` are gone, and CI is the only enforced check), or should a local pre-push gate be rebuilt and specified in this use case? Not built here; no state change without the answer.
 
 ### UC-PLT-P02 Produce container and packaging evidence
 - Capability: P, PF-16
