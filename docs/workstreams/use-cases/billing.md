@@ -156,7 +156,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 | UC-BIL-H01 | Read current-period usage | H | Billing managers | No | Mock | tong-quan | No | DEFINED | Backend has no metered periods |
 | UC-BIL-H02 | Close a usage period and start the next | H | System | Dom | No | No | No | DEFINED | Late-usage rule is open: decision in Part 4 |
 | UC-BIL-H03 | Rebuild a usage aggregate from the ledger | H | System repair path | No | No | No | No | DEFINED | Needs the repair principal (see UC-BIL-D02) |
-| UC-BIL-H04 | See usage split across the account's workspaces | H | Billing managers | Part | Mock | tong-quan | No | IMPLEMENTING | No per-workspace split or run counts from the backend |
+| UC-BIL-H04 | See usage split across the account's workspaces | H | Billing managers | Part | Mock | tong-quan | No | IMPLEMENTING | Owner question: may the split name workspaces the caller does not hold, or only count them (see the use case) |
 | UC-BIL-I01 | Take one capacity slot for a new quota-bearing resource | I | Producer context (Automation rule creation) | Yes | No | No | No | INTEGRATING | No real-database concurrency run in this catalog's evidence |
 | UC-BIL-I02 | Give a capacity slot back when the resource is deleted | I | Producer context (Automation rule deletion) | Yes | No | No | No | INTEGRATING | No real e2e |
 | UC-BIL-I03 | Keep committed usage when a limit shrinks | I | System | Yes | Mock | ha-goi | billing-plan | INTEGRATING | No e2e of an over-limit downgrade |
@@ -663,7 +663,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - Rules: Product §77, §84; spec BILREQ052, BILREQ082.
 - Acceptance: Given two workspaces, when a manager opens the overview, then both appear and the total matches.
 - Evidence: BE partial: `ops.billing_account_usage` returns account totals (seats, guests, storage bytes) used by UC-BIL-E02 · FE `frontend/packages/features/workspace/src/web/billing/``billing-overview-surface.tsx` (mock) · Design `Final-Billing.dc.html` `tong-quan` · Tests `backend/tests/Notrelix.Integration.Tests/Rls/BillingUsagePolicyTests.cs` · Real e2e none
-- State: IMPLEMENTING — No per-workspace split or run counts from the backend.
+- State: IMPLEMENTING — Owner question: the split needs per-workspace counts for every workspace of the account, but RLS shows a Workspace-level caller only the rows of the workspaces they hold, so the read needs a definer function (a migration) like `ops.billing_account_usage`. The use case says "counts without names", which conflicts with "a caller sees workspaces they hold": may the split list the workspaces a caller does not hold, or only anonymous counts? Who may read it (Owner and Admin, interim, or a manager right from UC-BIL-J05)? Run counts also need a source: the usage ledger is capacity only today. Not built: no per-workspace read, no DTO or OpenAPI change.
 
 ## I. BIL-009 Usage limit enforcement handoff
 
