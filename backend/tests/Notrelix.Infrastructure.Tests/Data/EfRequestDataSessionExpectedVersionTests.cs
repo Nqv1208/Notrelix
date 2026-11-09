@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Common.Data;
 using Notrelix.Application.Common.Exceptions;
+using Notrelix.Application.Features.Workspaces.Members.Commands.SuspendMember;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWorkspaceProfile;
 using Notrelix.Domain.Common;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Projections.Search;
@@ -170,6 +172,47 @@ public sealed class EfRequestDataSessionExpectedVersionTests : IDisposable
         (await act.Should().ThrowAsync<PreconditionFailedException>())
             .Which.ErrorCode.Should().Be("common.precondition-failed");
     }
+
+    [Fact]
+    public async Task SuspendMember_StaleTargetMemberVersion_SurfacesPreconditionFailure()
+    {
+        var member = await TrackMemberAsync();
+        var constraint = MemberConstraint<SuspendMemberCommand>(member.UserId, member.Version + 5);
+
+        var act = () => RunAsync(constraint);
+
+        (await act.Should().ThrowAsync<PreconditionFailedException>())
+            .Which.ErrorCode.Should().Be("common.precondition-failed");
+    }
+
+    [Fact]
+    public async Task SuspendMember_CurrentTargetMemberVersion_IsAccepted()
+    {
+        var member = await TrackMemberAsync();
+        var constraint = MemberConstraint<SuspendMemberCommand>(member.UserId, member.Version);
+
+        await RunAsync(constraint);
+
+        _context.ChangeTracker.Entries<WorkspaceMember>().Single().State.Should().Be(EntityState.Unchanged);
+    }
+
+    private async Task<WorkspaceMember> TrackMemberAsync()
+    {
+        var member = WorkspaceMember.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), WorkspaceRole.Member, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        _context.WorkspaceMembers.Add(member);
+        await _context.SaveChangesAsync();
+        ((IHasDomainEvents)member).ClearDomainEvents();
+
+        var entry = _context.ChangeTracker.Entries<WorkspaceMember>().Single();
+        entry.State = EntityState.Unchanged;
+        return member;
+    }
+
+    private static ExpectedVersionConstraint MemberConstraint<TRequest>(Guid userId, long version)
+        where TRequest : notnull =>
+        new(typeof(TRequest),
+            ResourceRef.Create(ResourceKind.Create("workspaces.workspace-member"), userId),
+            version);
 
     // --- helpers -----------------------------------------------------------
 

@@ -51,16 +51,16 @@ Letters A to J follow the Workspaces list in the team spec (section 4, items 1 t
 | C | Workspace update | 2 | 1 | 0 | 0 | 1 | 0 | 0 |
 | D | Workspace lifecycle transition | 6 | 1 | 2 | 1 | 2 | 0 | 0 |
 | E | Membership read | 2 | 0 | 0 | 0 | 2 | 0 | 0 |
-| F | Membership add / remove / change | 10 | 1 | 2 | 4 | 1 | 1 | 1 |
+| F | Membership add / remove / change | 10 | 1 | 2 | 3 | 1 | 2 | 1 |
 | G | Invitation create | 9 | 1 | 3 | 0 | 4 | 1 | 0 |
 | H | Invitation accept / reject / revoke | 6 | 0 | 0 | 0 | 1 | 0 | 0 |
-| I | Workspace selection / switch integration | 6 | 0 | 1 | 2 | 2 | 1 | 0 |
+| I | Workspace selection / switch integration | 6 | 0 | 1 | 0 | 3 | 2 | 0 |
 | J | Workspace settings | 4 | 0 | 0 | 1 | 2 | 0 | 1 |
 | K | Spaces (added by this catalog) | 15 | 0 | 1 | 5 | 6 | 1 | 0 |
 | L | Teams (added by this catalog) | 10 | 0 | 1 | 1 | 8 | 0 | 0 |
-| M | Getting started and onboarding (added by this catalog) | 7 | 0 | 0 | 1 | 6 | 0 | 0 |
-| N | Home, navigation, search and activity (added by this catalog) | 6 | 1 | 1 | 3 | 1 | 0 | 0 |
-| | Total | 91 | 6 | 13 | 18 | 25 | 4 | 2 |
+| M | Getting started and onboarding (added by this catalog) | 7 | 0 | 0 | 0 | 7 | 0 | 0 |
+| N | Home, navigation, search and activity (added by this catalog) | 6 | 1 | 1 | 1 | 3 | 0 | 0 |
+| | Total | 91 | 6 | 13 | 12 | 31 | 27 | 2 |
 
 Four use cases are DONE (F05, G01, I04 and K01, accepted 2026-11-02 by an independent acceptance agent, see their Evidence lines); the other Workspaces use cases that the independent run checked stay HARDENING with the gap in their State line (F02, G04, G05, G06, H01, H03, B01). Twenty-one use cases are HARDENING because a real spec runs them against the real backend: C01 (settings), D03 and D04 (`workspace-delete-restore.real.e2e.spec.ts`, delete, gone for a member, restore), E01 and E02 (members read), I01 (`workspace-isolation.real.e2e.spec.ts`, a switch), H02, H05, H06 (`workspace-invitations-answer.real.e2e.spec.ts`, the invitee declines, is invited again and accepts from the rail list), F02 and F05 (`workspace-member-changes.real.e2e.spec.ts`, role change and removal), G01 and G03 to G06 (`workspace-invitations-manage.real.e2e.spec.ts`, invite, list, re-role, resend, revoke), H01 and H03 (`workspace-invitation-link.real.e2e.spec.ts`, the e-mail link and the join in one step), B01, B04, I02 and I04 (`workspace-read-and-lists.real.e2e.spec.ts`, reads, both lists and the realtime scope) and K01, K02, K15 (`workspace-spaces.real.e2e.spec.ts`, create, read and place). Every other use case that the web app calls is INTEGRATING: the generated client reaches the real producer (`frontend/tooling/contracts/enabled-consumer-surface.ts`), mock end-to-end specs under `frontend/e2e/mock` exercise the screens, but no real spec does. Use cases with a producer and no frontend caller are IMPLEMENTING.
 
@@ -155,11 +155,11 @@ Products compared and what was taken:
 | UC-WSP-E02 | Read my own membership | E | Any active member, Guest included | yes | yes | none | workspace-members.real.e2e.spec.ts | DONE | accepted 2026-11-02, see the Evidence line |
 | UC-WSP-F01 | Add an existing user as a member directly | F | Owner, Admin | yes | no | none | none | IMPLEMENTING | Kept for admin use; no screen. Account-membership and seat checks are merged; tests. |
 | UC-WSP-F02 | Change a member's workspace role | F | Owner, Admin | yes | yes | Final-Members | workspace-member-changes.real.e2e.spec.ts | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-WSP-F03 | Suspend a member | F | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | No test of the stale-version 412, the no-op or the last-owner refusal on suspend (only success, not found, grant revoke and self-target). |
-| UC-WSP-F04 | Activate a suspended member | F | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | No test of the seat refusal, the seat-free path or the active no-op on activate; no upgrade path on a seat refusal. |
+| UC-WSP-F03 | Suspend a member | F | Owner, Admin | yes | yes | Final-Members | none | HARDENING | Built: the stale-version 412, the no-op and the last-owner refusal are tested (`EfRequestDataSessionExpectedVersionTests`, `WorkspaceMemberSuspensionTests`, `SuspendMemberCommandHandlerTests`). Owner tests by hand. |
+| UC-WSP-F04 | Activate a suspended member | F | Owner, Admin | yes | yes | Final-Members | none | INTEGRATING | Built: the seat refusal, the seat-free path and the active no-op are tested (`ActivateMemberCommandHandlerTests`). Owner question: should a seat refusal on activate offer an upgrade path? |
 | UC-WSP-F05 | Remove a member | F | Owner, Admin | yes | yes | Final-Members | workspace-member-changes.real.e2e.spec.ts | DONE | accepted 2026-11-02, see the Evidence line |
 | UC-WSP-F06 | Leave a workspace | F | Any active member, Guest included | yes | yes | Final-Account | none | INTEGRATING | No sole-owner handover screen (D05, IMPLEMENTING); Space and Team cleanup is F09 (DEFINED, not built). |
-| UC-WSP-F07 | Set my own job title | F | Any active member | yes | partial | none | none | INTEGRATING | No control sets my own job title (the members surface only shows it; no artboard). |
+| UC-WSP-F07 | Set my own job title | F | Any active member | yes | partial | none | none | INTEGRATING | The control exists on the Account profile page (job title saved to `members/me/job-title` with the member version), tested. Owner question: is that page the profile dialog this row means, or should the roster edit the title inline? |
 | UC-WSP-F08 | Set another member's job title | F | Owner, Admin | yes | no | none | none | IMPLEMENTING | No frontend caller; artboard. |
 | UC-WSP-F09 | Clean a person's Space and Team entries when they leave (enterprise baseline) | F | System | no | no | none | none | DEFINED | Transaction step, event, 'needs a lead' state. |
 | UC-WSP-F10 | Provision members from an identity directory (SCIM) | F | System principal of Accounts | no | no | none | none | BLOCKED | Decision: system principal for provisioning and its permission. |
@@ -180,10 +180,10 @@ Products compared and what was taken:
 | UC-WSP-H06 | See my pending invitations | H | Any signed-in person | yes | yes | none | workspace-invitations-answer.real.e2e.spec.ts | DONE | closed 2026-11-03, see the Evidence line |
 | UC-WSP-I01 | Switch the active workspace | I | Any member of both workspaces | n/a | yes | BC-Shell-1440, BC-Shell-1280-768, BC-Shell-320 | workspace-isolation.real.e2e.spec.ts | HARDENING | Tests and owner check: out-of-order response test; realtime dispose proof; design diff at 3 widths and both themes. |
 | UC-WSP-I02 | List the workspaces I belong to | I | Any signed-in person | yes | yes | BC-Shell-1440, Final-Account | workspace-read-and-lists.real.e2e.spec.ts | DONE | closed 2026-11-03, see the Evidence line |
-| UC-WSP-I03 | Choose my default workspace | I | Any active member | yes | yes | Final-Account | none | INTEGRATING | No test of the archived-workspace refusal on set-default, or that the stored default is unchanged. |
+| UC-WSP-I03 | Choose my default workspace | I | Any active member | yes | yes | Final-Account | none | HARDENING | Built: the archived set-default refusal and the unchanged default are tested (`LeaveWorkspaceHandlerTests`). Owner tests by hand. |
 | UC-WSP-I04 | Authorize a realtime subscription to a workspace | I | System | yes | yes | none | workspace-read-and-lists.real.e2e.spec.ts | DONE | accepted 2026-11-02, see the Evidence line |
 | UC-WSP-I05 | See why a workspace is unavailable | I | Any signed-in person | partial | partial | Final-States | none | IMPLEMENTING | Archived banner with action; plan-limited state; real e2e. |
-| UC-WSP-I06 | Always see which workspace I am in | I | Any member | n/a | yes | BC-Shell-1440, BC-Shell-320 | none | INTEGRATING | The Space delete confirm and the confirmRemove and confirmArchive Team texts still do not name the workspace. |
+| UC-WSP-I06 | Always see which workspace I am in | I | Any member | n/a | yes | BC-Shell-1440, BC-Shell-320 | none | HARDENING | Built: the Space delete confirm names the workspace (en and vi). The two unused Team confirm texts already name the Team. Owner tests by hand. |
 | UC-WSP-J01 | Read workspace settings | J | Any active member | yes | yes | Final-Settings | none | HARDENING | Built (verified by reading code 2026-11-09, not run): GetWorkspaceSettings.cs, WorkspaceSettingsTests.cs, WorkspaceSettingsEndpointTests.cs, workspace.service.ts, use-workspace-settings.ts. Remaining: owner tests by hand. |
 | UC-WSP-J02 | Change workspace settings | J | Owner, Admin | yes | yes | Final-Settings | none | INTEGRATING | Invitation-expiry tests not confirmed as updated (the audit argument is in place); the expiry rule is unproven. |
 | UC-WSP-J03 | Read sharing and security extras | J | Owner, Admin, Member | yes | yes | Final-Settings, Final-Teams | none | HARDENING | Built (verified by reading code 2026-11-09, not run): GetWorkspaceSecurityExt.cs, WorkspaceSecurityExtIntegrationTests.cs, use-teams-ext.ts, workspace-security-surface.tsx. Remaining: owner tests by hand. |
@@ -216,16 +216,16 @@ Products compared and what was taken:
 | UC-WSP-M01 | Save, read and clear my onboarding draft | M | The signed-in person | yes | yes | Final-Onboarding | none | HARDENING | Built (verified by reading code 2026-11-09, not run): SaveOnboardingDraft.cs, GetOnboardingDraft.cs, ClearOnboardingDraft.cs, OnboardingDraftTests.cs, onboarding-api.ts, onboarding-page.tsx, onboarding-api.unit.test.ts. Remaining: owner tests by hand. |
 | UC-WSP-M02 | Sweep expired onboarding drafts | M | System | yes | n/a | none | none | HARDENING | Built (verified by reading code 2026-11-09, not run): OnboardingDraftSweep.cs, OnboardingIntegrationTests.cs. Remaining: owner tests by hand. |
 | UC-WSP-M03 | Check that a workspace address is free | M | Account member with `CreateWorkspace` | yes | yes | Final-Onboarding | none | HARDENING | Built (verified by reading code 2026-11-09, not run): CheckWorkspaceSlug.cs, WorkspaceSlugAndProfileTests.cs, OnboardingIntegrationTests.cs, onboarding-api.ts, onboarding-page.tsx. Remaining: owner tests by hand. |
-| UC-WSP-M04 | Create the company workspace through the four onboarding steps | M | New Account member | yes | yes | Final-Onboarding | none | INTEGRATING | No test of the per-step Idempotency-Key retry in onboarding-api.ts (built, but nothing asserts it). |
+| UC-WSP-M04 | Create the company workspace through the four onboarding steps | M | New Account member | yes | yes | Final-Onboarding | none | HARDENING | Built: the per-step Idempotency-Key retry is tested (`onboarding-api.unit.test.ts`). Owner tests by hand. |
 | UC-WSP-M05 | Join through an invitation and set my look and notifications | M | The invited person | yes | yes | Final-Onboarding | none | HARDENING | Built (verified by reading code 2026-11-09, not run): NotificationPreferencesIntegrationTests.cs, MapNotificationPreferenceEndpoints.cs, onboarding-join-surface.tsx, welcome-page.tsx, onboarding-api.ts. Remaining: owner tests by hand. |
 | UC-WSP-M06 | See the getting-started card | M | Any member, Guest included | yes | yes | Final-Home, Final-Onboarding | none | HARDENING | Built (verified by reading code 2026-11-09, not run): GetGettingStarted.cs, OnboardingIntegrationTests.cs, getting-started-card.tsx, home-getting-started.tsx, workspace-home-surface.tsx. Remaining: owner tests by hand. |
 | UC-WSP-M07 | Dismiss the getting-started card | M | Any member | yes | yes | Final-Home | none | HARDENING | Built (verified by reading code 2026-11-09, not run): DismissGettingStarted.cs, OnboardingIntegrationTests.cs, getting-started-card.tsx, home-getting-started.tsx. Remaining: owner tests by hand. |
 | UC-WSP-N01 | Open workspace Home | N | Any member | partial | yes | Final-Home, Final-M-Home | none | INTEGRATING | Home counts are checked only by mock e2e; no unit or component test that Home counts match My work. |
 | UC-WSP-N02 | Show workspace figures to Owner and Admin (enterprise baseline) | N | Owner, Admin | partial | no | none | none | DEFINED | Fix the count, add the route or delete the query; screen. |
 | UC-WSP-N03 | Read workspace activity | N | Any member | partial | partial | none | none | IMPLEMENTING | Real source from Collaboration through a port. |
-| UC-WSP-N04 | Remember recently opened resources | N | Any member | yes | yes | Final-Home, Final-Command | none | INTEGRATING | No test that a revoked Board or Page leaves the recents list. |
+| UC-WSP-N04 | Remember recently opened resources | N | Any member | yes | yes | Final-Home, Final-Command | none | HARDENING | Built: a revoked Board or Page leaves the recents (`WorkspaceNavigationHandlerTests`; the Board case also on PostgreSQL). Owner tests by hand. |
 | UC-WSP-N05 | Pin and unpin resources | N | Any member | yes | yes | Final-Home, BC-Shell-1440 | none | HARDENING | Built (verified by reading code 2026-11-09, not run): PinResource.cs, UnpinResource.cs, WorkspaceNavigationTests.cs, WorkspaceNavigationHandlerTests.cs, use-workspace-navigation-mutations.ts. Remaining: owner tests by hand. |
-| UC-WSP-N06 | Search the workspace from the command palette | N | Any member | yes | yes | Final-Command, Final-M-Search | none | INTEGRATING | No HTTP cross-tenant negative test for command-search (only CommandSearchQueryHandlerTests). |
+| UC-WSP-N06 | Search the workspace from the command palette | N | Any member | yes | yes | Final-Command, Final-M-Search | none | HARDENING | Built: HTTP cross-tenant negative for command search (`CommandSearchCrossTenantTests`, run by CI). Owner tests by hand. |
 
 # 3. Use cases
 
@@ -534,8 +534,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Row action, confirmation naming consequences, pending, permission denied.
 - Rules: [workspaces](../../product/workspaces.md) sections 13, 21; WGREQ015, WGREQ021.
 - Acceptance: Given an active member, When suspended, Then reads of the workspace give NotFound. Given the last owner, Then rejected.
-- Evidence: BE `POST /api/v1/workspaces/{id}/members/{userId}/suspend`, `SuspendMemberCommand` is an `IExpectedVersionRequest` (new `MemberVersionRequest` body) · FE `members.service.ts` and the Members surface send the member version; mock backend checks it · Design `Final-Members` · Tests `WorkspaceMemberTests`, `WorkspaceMembershipOutboxEvidenceTests` · Real e2e none
-- State: INTEGRATING — No test of the stale-version 412, the no-op or the last-owner refusal on suspend (only success, not found, grant revoke and self-target).
+- Evidence: BE `POST /api/v1/workspaces/{id}/members/{userId}/suspend`, `SuspendMemberCommand` is an `IExpectedVersionRequest` (new `MemberVersionRequest` body) · FE `members.service.ts` and the Members surface send the member version; mock backend checks it · Design `Final-Members` · Tests `WorkspaceMemberTests`, `WorkspaceMembershipOutboxEvidenceTests`, `WorkspaceMemberSuspensionTests` (Domain: no-op, last owner, removed), `SuspendMemberCommandHandlerTests` (no-op, version and resource), `EfRequestDataSessionExpectedVersionTests` (stale and current target-member version) · Real e2e none
+- State: HARDENING — Built: the stale-version 412 is tested at the expected-version binding (`EfRequestDataSessionExpectedVersionTests`), the no-op on an already suspended member (`SuspendMemberCommandHandlerTests`, `WorkspaceMemberSuspensionTests`) and the last-owner refusal at the Domain (`WorkspaceMemberSuspensionTests`; the handler cannot reach it with an Owner actor). Remaining: owner tests by hand.
 
 ### UC-WSP-F04 Activate a suspended member
 - Capability: F Membership add / remove / change
@@ -548,8 +548,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Row action, pending, success.
 - Rules: [workspaces](../../product/workspaces.md) sections 13, 21; WGREQ021.
 - Acceptance: Given a Suspended member, When activated, Then they read the workspace again.
-- Evidence: BE `POST /api/v1/workspaces/{id}/members/{userId}/activate`, `ActivateMemberCommandHandler` now takes `IBillingSeatGate` and the command is an `IExpectedVersionRequest` · FE `members.service.ts`, the Members surface (the seat refusal shows the producer's rule message in the toast) · Design `Final-Members` · Tests `WorkspaceMemberTests`; handler tests that construct it need the seat gate · Real e2e none
-- State: INTEGRATING — No test of the seat refusal, the seat-free path or the active no-op on activate; no upgrade path on a seat refusal.
+- Evidence: BE `POST /api/v1/workspaces/{id}/members/{userId}/activate`, `ActivateMemberCommandHandler` now takes `IBillingSeatGate` and the command is an `IExpectedVersionRequest` · FE `members.service.ts`, the Members surface (the seat refusal shows the producer's rule message in the toast) · Design `Final-Members` · Tests `WorkspaceMemberTests`, `ActivateMemberCommandHandlerTests` (seat refusal, seat-free path, active no-op, removed refusal), `WorkspaceMemberSuspensionTests`; `MemberActorTargetGuardHandlerTests` builds the activate handler with the seat gate · Real e2e none
+- State: INTEGRATING — Built: the seat refusal, the seat-free path and the active no-op on activate (`ActivateMemberCommandHandlerTests`). Owner question: should a seat refusal on activate offer an upgrade path? Today the toast shows only the producer's message.
 
 ### UC-WSP-F05 Remove a member
 - Capability: F Membership add / remove / change
@@ -590,8 +590,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Inline edit in the profile dialog, validation error, pending, conflict.
 - Rules: [workspaces](../../product/workspaces.md) section 11 (D15, 2026-10-23).
 - Acceptance: Given title `Lead`, When saved again, Then version is unchanged.
-- Evidence: BE `PUT /api/v1/workspaces/{id}/members/me/job-title`, `UpdateMyJobTitleCommandHandler` · FE consumer row `Workspaces.Members.UpdateMyJobTitle` (enabled surface) · Design none · Tests `MemberProfileIntegrationTests`, `WorkspaceMemberJobTitleTests`, `CoMemberProfileTests` · Real e2e none
-- State: INTEGRATING — No control sets my own job title (the members surface only shows it; no artboard).
+- Evidence: BE `PUT /api/v1/workspaces/{id}/members/me/job-title`, `UpdateMyJobTitleCommandHandler` · FE consumer row `Workspaces.Members.UpdateMyJobTitle` (enabled surface) · Design none · Tests `MemberProfileIntegrationTests`, `WorkspaceMemberJobTitleTests`, `CoMemberProfileTests`, `account-pages.component.test.tsx`, `account-profile.interaction.component.test.tsx` (the Account profile control) · Real e2e none
+- State: INTEGRATING — Built: the control exists on the Account profile page (`account-profile-surface.tsx`, saved with the member version to `members/me/job-title`), tested in `account-pages.component.test.tsx` and `account-profile.interaction.component.test.tsx`. Owner question: is the Account profile page the profile dialog this row means, or should the members roster also edit the title inline? No artboard exists for either.
 
 ### UC-WSP-F08 Set another member's job title
 - Capability: F Membership add / remove / change
@@ -891,8 +891,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Account page choice, pending, success.
 - Rules: [workspaces](../../product/workspaces.md) section 19.1.
 - Acceptance: Given membership in W2, When I set it, Then the next sign-in opens W2.
-- Evidence: BE `PUT /api/v1/account/default-workspace`, `SetDefaultWorkspaceCommandHandler` · FE account `workspaces.tsx`; `/home` (`home.tsx`) now opens the default workspace, read from the account list, and falls back to the first by name when none is chosen, the choice is archived or not listed, or the read fails (before, it always opened the first by name, so the choice had no effect) · Design `Final-Account` · Tests `UserProfileDefaultWorkspaceTests`, `AccountWorkspaceEndpointTests`, `account-pages.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — No test of the archived-workspace refusal on set-default, or that the stored default is unchanged.
+- Evidence: BE `PUT /api/v1/account/default-workspace`, `SetDefaultWorkspaceCommandHandler` · FE account `workspaces.tsx`; `/home` (`home.tsx`) now opens the default workspace, read from the account list, and falls back to the first by name when none is chosen, the choice is archived or not listed, or the read fails (before, it always opened the first by name, so the choice had no effect) · Design `Final-Account` · Tests `UserProfileDefaultWorkspaceTests`, `AccountWorkspaceEndpointTests`, `LeaveWorkspaceHandlerTests` (archived refusal, nothing stored), `account-pages.mock.e2e.spec.ts` · Real e2e none
+- State: HARDENING — Built: set-default on an archived workspace is refused and stores nothing (`LeaveWorkspaceHandlerTests`). Remaining: owner tests by hand.
 
 ### UC-WSP-I04 Authorize a realtime subscription to a workspace
 - Capability: I Workspace selection / switch integration
@@ -933,8 +933,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Switcher, dialog titles.
 - Rules: [workspaces](../../product/workspaces.md) section 84.
 - Acceptance: Given a destructive dialog, Then it names the workspace.
-- Evidence: BE none · FE `workspace-sidebar-surface.tsx` (skeleton with a status label while loading), `workspace-topbar-surface.tsx`; dialog audit done: member remove and suspend, workspace archive and leave already named the workspace; invitation revoke, Space archive and Team archive now do (copy en and vi) · Design `BC-Shell-1440`, `BC-Shell-320` · Tests `design-fidelity-shell.mock.e2e.spec.ts`; existing tests that assert the old revoke, Space archive and Team archive texts need updating · Real e2e none
-- State: INTEGRATING — The Space delete confirm and the confirmRemove and confirmArchive Team texts still do not name the workspace.
+- Evidence: BE none · FE `workspace-sidebar-surface.tsx` (skeleton with a status label while loading), `workspace-topbar-surface.tsx`; dialog audit done: member remove and suspend, workspace archive and leave already named the workspace; invitation revoke, Space archive and Team archive now do (copy en and vi) · Design `BC-Shell-1440`, `BC-Shell-320` · Tests `design-fidelity-shell.mock.e2e.spec.ts`; existing tests that assert the old revoke, Space archive and Team archive texts need updating; `space-page.interaction.component.test.tsx` (the Space delete confirm names the workspace) · Real e2e none
+- State: HARDENING — Built: the Space delete confirm names the workspace (`space-page.copy.ts` en and vi, `space-settings-panel.tsx`). The two Team confirm texts (`confirmRemove`, `confirmArchive` in `workspace-teams.copy.ts`, not drawn anywhere) already name the Team, as the neighbouring Team dialogs do. Remaining: owner tests by hand.
 
 ## J. Workspace settings
 
@@ -1403,8 +1403,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Step progress, per-step errors, resume, back.
 - Rules: [workspaces](../../product/workspaces.md) sections 48.4, 74; DESIGN.md sections 65, 66.
 - Acceptance: Given all four steps, Then a workspace, its departments and invitations exist and Home opens.
-- Evidence: BE commands of A01, K01, G01 · FE `onboarding-surface.tsx`, `onboarding-steps.tsx`, `onboarding-page.tsx` · Design `Final-Onboarding` · Tests `onboarding.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — No test of the per-step Idempotency-Key retry in onboarding-api.ts (built, but nothing asserts it).
+- Evidence: BE commands of A01, K01, G01 · FE `onboarding-surface.tsx`, `onboarding-steps.tsx`, `onboarding-page.tsx` · Design `Final-Onboarding` · Tests `onboarding.mock.e2e.spec.ts`, `apps/web` `onboarding-api.unit.test.ts` (the Idempotency-Key kept on a retry after a lost answer, forgotten after a success or a refused row) · Real e2e none
+- State: HARDENING — Built: `onboarding-api.unit.test.ts` proves the per-step Idempotency-Key is kept across a retry after a lost answer and dropped after a success or a refused row. Remaining: owner tests by hand.
 
 ### UC-WSP-M05 Join through an invitation and set my look and notifications
 - Capability: M Getting started and onboarding (added by this catalog)
@@ -1503,8 +1503,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Continue list, empty.
 - Rules: [workspaces](../../product/workspaces.md) sections 33 to 35; DESIGN.md section 27.
 - Acceptance: Given 31 opened resources, Then 30 remain.
-- Evidence: BE `POST` and `GET .../recents`, `RecordRecentResourceCommandHandler`, `GetRecentResourcesQueryHandler` · FE `navigation.service.ts`, `use-workspace-navigation.ts` · Design `Final-Home`, `Final-Command` · Tests `WorkspaceNavigationTests`, `WorkspaceNavigationHandlerTests`, `WorkspaceNavigationIntegrationTests`, `command-palette.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — No test that a revoked Board or Page leaves the recents list.
+- Evidence: BE `POST` and `GET .../recents`, `RecordRecentResourceCommandHandler`, `GetRecentResourcesQueryHandler` · FE `navigation.service.ts`, `use-workspace-navigation.ts` · Design `Final-Home`, `Final-Command` · Tests `WorkspaceNavigationTests`, `WorkspaceNavigationHandlerTests` (a revoked Board and Page leave the recents), `WorkspaceNavigationIntegrationTests` (a revoked Board leaves the recents on PostgreSQL), `command-palette.mock.e2e.spec.ts` · Real e2e none
+- State: HARDENING — Built: a revoked Board or Page leaves the member's recents on the next read (`WorkspaceNavigationHandlerTests`); the Board case also on PostgreSQL (`WorkspaceNavigationIntegrationTests`, run by CI). Remaining: owner tests by hand.
 
 ### UC-WSP-N05 Pin and unpin resources
 - Capability: N Home, navigation, search and activity (added by this catalog)
@@ -1531,8 +1531,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Loading, no match, results, filters.
 - Rules: [workspaces](../../product/workspaces.md) section 55; DESIGN.md section 26.
 - Acceptance: Given a Private Board outside the caller's reach, Then it is not found.
-- Evidence: BE `GET .../command-search`, `CommandSearchQueryHandler` · FE `command-palette-surface.tsx`, `use-command-search.ts` · Design `Final-Command`, `Final-M-Search` · Tests `CommandSearchQueryHandlerTests`, `command-palette.mock.e2e.spec.ts`, `design-fidelity-command.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — No HTTP cross-tenant negative test for command-search (only CommandSearchQueryHandlerTests).
+- Evidence: BE `GET .../command-search`, `CommandSearchQueryHandler` · FE `command-palette-surface.tsx`, `use-command-search.ts` · Design `Final-Command`, `Final-M-Search` · Tests `CommandSearchQueryHandlerTests`, `CommandSearchCrossTenantTests` (Rls, application role, HTTP: tenant B with tenant A's workspace id gets the made-up-id answer and no Board title), `command-palette.mock.e2e.spec.ts`, `design-fidelity-command.mock.e2e.spec.ts` · Real e2e none
+- State: HARDENING — Built: the HTTP cross-tenant negative for command search (`CommandSearchCrossTenantTests`, Rls folder, application role on PostgreSQL; CI runs it, not run locally: no Docker). Remaining: owner tests by hand.
 
 # 4. Product decisions applied
 
