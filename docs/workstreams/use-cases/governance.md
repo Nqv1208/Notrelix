@@ -44,15 +44,15 @@ Capability letters follow the Governance list of the team spec, in order.
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
 | A | WG-GOV resource/action model | 4 | 1 | 2 | 0 | 1 | 0 | 0 |
-| B | Built-in roles | 5 | 0 | 1 | 2 | 1 | 1 | 0 |
+| B | Built-in roles | 5 | 0 | 1 | 0 | 3 | 1 | 0 |
 | C | Custom roles | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
-| D | Permission assignment | 15 | 2 | 2 | 5 | 1 | 3 | 2 |
-| E | Effective permission evaluation | 13 | 1 | 5 | 2 | 1 | 4 | 0 |
+| D | Permission assignment | 15 | 2 | 2 | 3 | 3 | 3 | 2 |
+| E | Effective permission evaluation | 13 | 1 | 5 | 1 | 2 | 4 | 0 |
 | F | Protected operation integration | 5 | 2 | 1 | 1 | 0 | 1 | 0 |
-| G | Share-link lifecycle and policy | 10 | 3 | 2 | 3 | 0 | 0 | 2 |
+| G | Share-link lifecycle and policy | 10 | 3 | 2 | 2 | 1 | 0 | 2 |
 | H | Governance administration UI | 14 | 5 | 6 | 1 | 0 | 0 | 2 |
 | I | Architecture coverage for resource kinds and actions | 3 | 1 | 0 | 0 | 1 | 1 | 0 |
-|  | Total | 75 | 15 | 19 | 14 | 11 | 10 | 6 |
+|  | Total | 75 | 15 | 19 | 8 | 17 | 10 | 6 |
 
 Ten use cases are DONE in the index (B01, D01, D03, D04, E01, E04, E05, E06, F01, I01); each Evidence line names its proof. The execution pack certifies Governance parts as VERIFIED or PARTIALLY_VERIFIED on a base commit (certification (removed; see git history), records P2B-CERT-004 to P2B-CERT-016); that is backend proof only.
 
@@ -116,9 +116,9 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-A04 | Field-level permission (deferred) | A | Workspace Owner, Admin | Part | No | No | No | DEFINED | Lead decision L11: deferred behind Work Management field work. Domain type exists and is unused. |
 | UC-GOV-B01 | Decide a workspace action from the built-in role baseline | B | Server (every protected request) | Yes | Part | Part | Yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-GOV-B02 | Decide an account-scoped action from the account role | B | Server | Yes | No | No | No | IMPLEMENTING | No frontend check of denial; no API-level test of the Account cell. |
-| UC-GOV-B03 | Keep Owner-only actions Owner-only (Admin never silently becomes Owner) | B | Workspace Owner; Admin is denied | Yes | Yes | Part | No | INTEGRATING | tests and owner check |
+| UC-GOV-B03 | Keep Owner-only actions Owner-only (Admin never silently becomes Owner) | B | Workspace Owner; Admin is denied | Yes | Yes | Part | No | HARDENING | owner check and a real e2e of the denied path |
 | UC-GOV-B04 | A Guest does not enumerate the workspace | B | Guest | Yes | Yes | Yes | Yes | HARDENING | tests and owner check |
-| UC-GOV-B05 | A Guest's resource level is capped at Viewer | B | Guest; Board or Page manager who shares | Yes | Yes | Yes | No | INTEGRATING | tests and owner check |
+| UC-GOV-B05 | A Guest's resource level is capped at Viewer | B | Guest; Board or Page manager who shares | Yes | Yes | Yes | No | HARDENING | owner check; the Share dialog's disabled option has no unit test |
 | UC-GOV-C01 | Create a custom role (enterprise baseline) | C | Account Owner, Admin | Yes | No | No | No | HARDENING | Tests and owner check. |
 | UC-GOV-C02 | Change a custom role's name or actions | C | Account Owner, Admin | Yes | No | No | No | HARDENING | Tests and owner check. |
 | UC-GOV-C03 | Archive a custom role that has assignments | C | Account Owner, Admin | Yes | No | No | No | HARDENING | Tests and owner check. |
@@ -126,22 +126,22 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-C05 | Remove a custom role from a member | C | Workspace Owner | Yes | No | No | No | HARDENING | Tests and owner check. |
 | UC-GOV-C06 | List roles and the permission catalog | C | Account and workspace Owner, Admin | Yes | Part | No | No | HARDENING | Tests and owner check. |
 | UC-GOV-D01 | Give a workspace member access to a Board or Page | D | Board or Page manager | Yes | Yes | Yes | Yes | DONE | set DONE by the foundation finish lane pull request, see the Evidence line |
-| UC-GOV-D02 | Give a Team access to a Board or Page | D | Board or Page manager | Yes | Part | Part | Part | INTEGRATING | release 0.3 by owner decision 2026-11-03; Team picker in the Share dialog (needs an artboard), then dialog states |
+| UC-GOV-D02 | Give a Team access to a Board or Page | D | Board or Page manager | Yes | Part | Part | Part | INTEGRATING | owner question: Team picker artboard (see State) |
 | UC-GOV-D03 | Change the level of an existing grant | D | Board or Page manager | Yes | Yes | Yes | Yes | DONE | set DONE by the foundation finish lane pull request, see the Evidence line |
 | UC-GOV-D04 | Remove someone's access to a Board or Page | D | Board or Page manager | Yes | Yes | Yes | Yes | DONE | set DONE by the foundation finish lane pull request, see the Evidence line |
-| UC-GOV-D05 | List who holds explicit access on a resource | D | Board or Page manager | Yes | Part | Yes | No | INTEGRATING | tests and owner check |
+| UC-GOV-D05 | List who holds explicit access on a resource | D | Board or Page manager | Yes | Part | Yes | No | INTEGRATING | tests: revoked rows, order and the 500-entry cap need an Integration test |
 | UC-GOV-D06 | Refuse an unsafe grant | D | Board or Page manager | Yes | Part | No | No | IMPLEMENTING | No frontend mapping for each refusal; no real e2e of a refusal. |
-| UC-GOV-D07 | Invite a Guest to one resource | D | Board or Page manager; Workspace Owner or Admin may invite | Yes | Yes | Yes | No | INTEGRATING | tests and owner check |
+| UC-GOV-D07 | Invite a Guest to one resource | D | Board or Page manager; Workspace Owner or Admin may invite | Yes | Yes | Yes | No | INTEGRATING | tests: the Governance side of the handshake (adapter) has no named test |
 | UC-GOV-D08 | A Guest reaches only what was shared with them | D | Guest | Yes | Part | Part | Part | HARDENING | tests and owner check |
-| UC-GOV-D09 | Make a Board Private and see who loses it | D | Board manager | Yes | Yes | Yes | No | INTEGRATING | tests and owner check |
-| UC-GOV-D10 | Read the sharing and access summary of a Board | D | Anyone who can read the Board | Yes | Yes | Yes | Part | INTEGRATING | tests and owner check |
+| UC-GOV-D09 | Make a Board Private and see who loses it | D | Board manager | Yes | Yes | Yes | No | HARDENING | owner check and a real e2e |
+| UC-GOV-D10 | Read the sharing and access summary of a Board | D | Anyone who can read the Board | Yes | Yes | Yes | Part | HARDENING | owner check and a dedicated real e2e |
 | UC-GOV-D11 | Keep a 90-day log of Board access changes | D | Board manager reads; system writes | Yes | Yes | Yes | No | BLOCKED | owner decision 3 (retention and deletion) |
 | UC-GOV-D12 | End an explicit entry on a date (expiry) | D | Board or Page manager | No | No | No | No | BLOCKED | Owner must decide whether GOV-031 (and the Guest default expiry pre-fill, `guestDefaultExpiryDays`) is built now or removed from the ... |
 | UC-GOV-D13 | Explicit permission rules with priority and time window | D | Workspace Owner (future API) | Part | No | No | No | DEFINED | Engine evaluates rules; no command, endpoint or UI creates them. Lead decision L15: not built until a product need exists. |
 | UC-GOV-D14 | Apply a permission template | D | Workspace Owner (future) | Part | No | No | No | DEFINED | Domain only; no handler or endpoint. Not part of the owner's next scope. |
 | UC-GOV-D15 | Share a Page | D | Page manager | Yes | Part | No | No | IMPLEMENTING | Frontend page share uses a Documents extras route, not the Governance contract; no sharing summary for Pages; no real e2e. |
 | UC-GOV-E01 | Decide a Board or Page action in the fixed order | E | Server | Yes | Part | No | Yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
-| UC-GOV-E02 | Space-derived access | E | Server | Yes | Yes | Yes | No | INTEGRATING | tests and owner check |
+| UC-GOV-E02 | Space-derived access | E | Server | Yes | Yes | Yes | No | HARDENING | owner check and a real e2e of Space-derived access |
 | UC-GOV-E03 | A Team is an evaluated subject | E | Server | Yes | No | No | No | IMPLEMENTING | No frontend or real e2e proof. |
 | UC-GOV-E04 | Board child resources are authorized through their Board | E | Server | Yes | Part | No | Yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-GOV-E05 | Collections return what a single read would allow | E | Server | Yes | Yes | No | Yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
@@ -151,11 +151,11 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-E09 | Realtime access ends when authority ends | E | Connected user | Part | No | No | No | IMPLEMENTING | Authorization at subscribe time is proven; revocation while connected is not found in source or tests. |
 | UC-GOV-E10 | Export, search and analytics keep source authorization | E | Any reader | Part | No | No | No | DEFINED | Export audit not built; owned per context, Governance supplies the rule. |
 | UC-GOV-E11 | Entitlement and permission stay separate | E | Server | Yes | No | No | No | IMPLEMENTING | Billing is not built; the port always allows. |
-| UC-GOV-E12 | Show permission state in the UI as a projection of the server | E | Any user | Yes | Yes | Part | No | INTEGRATING | tests and owner check |
+| UC-GOV-E12 | Show permission state in the UI as a projection of the server | E | Any user | Yes | Yes | Part | No | INTEGRATING | tests: a server 403 or NotFound overriding a local allow, and an axe check |
 | UC-GOV-E13 | Explain why a person can or cannot do an action | E | Workspace Owner, Admin | Yes | No | No | No | HARDENING | Tests, screen and owner check. |
 | UC-GOV-F01 | Declare the resource and action on every request | F | Developer | Yes | No | No | n/a | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-GOV-F02 | Authorize background and system actions explicitly | F | System, Automation, Integration principal | Yes | No | No | No | IMPLEMENTING | Automation execution identity decided per context; no cross-context end-to-end proof. |
-| UC-GOV-F03 | Record audit evidence for permission grant and revoke | F | System | Yes | No | No | No | INTEGRATING | tests and owner check |
+| UC-GOV-F03 | Record audit evidence for permission grant and revoke | F | System | Yes | No | No | No | INTEGRATING | tests: audit row fields, the grant no-op and the failed change (Integration, needs Docker) |
 | UC-GOV-F04 | Audit every high-impact governance and administration change | F | System | Part | No | No | No | DEFINED | Missing audit on role change, member lifecycle, API tokens, share links, sharing policy. |
 | UC-GOV-F05 | Audit denied attempts on security-sensitive actions | F | System | No | No | No | No | DEFINED | Not built. |
 | UC-GOV-G01 | Create a share link for a Board or Page | G | Board or Page sharer | Part | No | Part | No | IMPLEMENTING | Defects: access mode is hard-coded `WorkspaceOnly`; request `Level` is ignored; the DTO returns `TokenHash`; no audit; no policy check; ... |
@@ -163,12 +163,12 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-G03 | A visitor opens a resource through a share link | G | Anonymous or signed-in visitor | No | No | No | No | BLOCKED | Owner must decide the execution principal of an anonymous visitor, abuse controls and whether Board links are in scope at all (76.4 says ... |
 | UC-GOV-G04 | List the share links of a resource | G | Board or Page sharer | No | No | Part | No | DEFINED | No endpoint. Enterprise baseline. |
 | UC-GOV-G05 | Link expiry, password and rotation | G | Link sharer | Part | No | No | No | BLOCKED | Depends on UC-GOV-G03 (no consumer). Domain rules exist and are tested. |
-| UC-GOV-G06 | Turn share links off for the whole workspace | G | Workspace Owner, Admin | Part | Yes | Yes | No | INTEGRATING | tests and owner check |
-| UC-GOV-G07 | Show the sharing policy inside the resource Share dialog | G | Board or Page sharer | Yes | Yes | Yes | No | INTEGRATING | tests and owner check |
-| UC-GOV-G08 | Copy the resource address (a locator, not a share link) | G | Any viewer | Yes | Yes | Yes | No | INTEGRATING | tests and owner check |
+| UC-GOV-G06 | Turn share links off for the whole workspace | G | Workspace Owner, Admin | Part | Yes | Yes | No | HARDENING | owner check and a real e2e of the toggle |
+| UC-GOV-G07 | Show the sharing policy inside the resource Share dialog | G | Board or Page sharer | Yes | Yes | Yes | No | INTEGRATING | tests: no component test of the policy line in the Share dialog |
+| UC-GOV-G08 | Copy the resource address (a locator, not a share link) | G | Any viewer | Yes | Yes | Yes | No | INTEGRATING | tests: no component test of the copied locator |
 | UC-GOV-G09 | Sharing is never transitive | G | Server | Part | No | No | No | DEFINED | No test pins non-transitivity. |
 | UC-GOV-G10 | Allow or stop guest invitations for the workspace (enterprise baseline) | G | Workspace Owner, Admin | No | Part | Part | No | DEFINED | New workspace setting, new check in UC-GOV-D07. |
-| UC-GOV-H01 | View Sharing and security of the workspace | H | Workspace Owner, Admin | Yes | Yes | Yes | No | INTEGRATING | tests and owner check |
+| UC-GOV-H01 | View Sharing and security of the workspace | H | Workspace Owner, Admin | Yes | Yes | Yes | No | INTEGRATING | tests: no unit or component test of the Sharing and security page |
 | UC-GOV-H02 | View the audit log of a workspace | H | Workspace Owner, Admin | No | Part | No | No | DEFINED | No endpoint, screen or artboard. Frontend service is dead code. |
 | UC-GOV-H03 | Export the audit log | H | Workspace Owner | No | No | No | No | DEFINED | Not built. |
 | UC-GOV-H04 | Audit reads of the audit log | H | System | No | No | No | No | DEFINED | Depends on UC-GOV-H02. |
@@ -287,8 +287,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: permission denied (control disabled with the reason)
 - Rules: [Governance §45, §44.2](../../product/governance.md) GOV-013; WGREQ154. Role caps and guards: see [Workspaces use cases](workspaces.md).
 - Acceptance: Given an Admin, When they delete the workspace or change a role, Then denied and nothing changes. Given an Admin, When they remove an Owner, Then refused.
-- Evidence: BE baseline; Workspaces member commands · Tests `WorkspaceRoleBaselineTests`, `backend/tests/Notrelix.Integration.Tests/Governance/GovernanceResourcePermissionFlowTests.cs` · Real e2e none · Design `Final-Members`
-- State: INTEGRATING. Built: the baseline denies the Admin cell and Workspaces guards refuse role minting and acting on an Owner or Admin; the Members surface receives the viewer's role (the member guards and surface are Workspaces'). Nothing left to build here. Missing: tests and owner check (real e2e of the denied path).
+- Evidence: BE baseline; Workspaces member commands · Tests Application `WorkspaceRoleBaselineTests`, `backend/tests/Notrelix.Integration.Tests/Governance/GovernanceResourcePermissionFlowTests.cs` · Real e2e none · Design `Final-Members`
+- State: HARDENING. Built: the baseline denies the Admin cell (`ChangeMemberRole`, `ManageWorkspace`, `ManageApiTokens` for Admin) and Workspaces guards refuse role minting and acting on an Owner or Admin; the Members surface receives the viewer's role (the member guards and surface are Workspaces'). Tested: Application `WorkspaceRoleBaselineTests` (every workspace role cell, including Admin denied for `ChangeMemberRole`), Integration `GovernanceResourcePermissionFlowTests`. Missing: owner check, real e2e of the denied path.
 
 ### UC-GOV-B04 A Guest does not enumerate the workspace
 - Capability: B Built-in roles (team spec, Governance list)
@@ -316,7 +316,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §30.1](../../product/governance.md) GOV-030; WGREQ154.
 - Acceptance: Given a Guest with a Manager entry, When they change board settings, Then denied. When the manager opens sharing, Then the entry shows Viewer with `levelCapped`.
 - Evidence: BE `AccessPolicyEngine`, `ResourceAccessSummaryService.Sharing.cs` · FE `frontend/apps/web/src/shell/workspace/board-share-dialog.tsx` · Tests `EffectiveBoardAccessTests`, `ResourceAccessSummaryServiceTests` · Real e2e none · Design `Final-Share`
-- State: INTEGRATING. Built end to end (the engine caps a Guest at Editor, the sharing read marks the entry `levelCapped`, the Share dialog shows Manager disabled with the reason); nothing left to build. Missing: tests and owner check (real e2e). Accepted by GOV-030 and left as is: a Manager entry for a Guest is stored at grant time and never effective.
+- State: HARDENING. Built: the engine caps a Guest at Viewer (`AccessPolicyEngine`, the Guest cap on the best source), the sharing read marks the entry `levelCapped` (Application `ResourceAccessSummaryServiceTests.GuestWithAManagerGrant_IsReportedAsViewer_AndSeesNoGrantNames`), and the Share dialog shows Manager disabled with the reason. Correction: the earlier line said the engine caps a Guest at Editor; the code and the owner decision of 2026-10-31 say Viewer. Tested: Application `EffectiveBoardAccessTests.Guest_IsViewOnly_WhateverTheGrant`, `Guest_WithAViewerGrant_HasTheGrantLevel`. Missing: owner check, real e2e; the dialog's disabled Manager option is not unit-tested.
 
 ## Capability C: Custom roles
 
@@ -432,7 +432,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §16, §23.2](../../product/governance.md) GOV-026; WGREQ037.
 - Acceptance: Given a Team grant, When a member leaves the Team, Then their access ends on the next request.
 - Evidence: BE same route as D01 · FE share dialog lists people; Team rows are read from the sharing read, no Team picker is shown · Tests `ResourceAccessSummaryServiceTests`, `PostgresAccessFactsProviderTests` · Real e2e none · Design `Final-Teams` (Team access shown in `chia-se`) · Foundation lane proof: `frontend/e2e/real/platform-foundations.real.e2e.spec.ts` test 5 (board and page: grant, same level is a no-op with the same entry and version, a level change without or with an old version is 412 `governance.permission.version-conflict`, with the current version it changes, removal ends access at once with the answer of a missing resource, a repeat of the removal succeeds) (user subject; the Team subject has no picker); Integration `GovernanceResourcePermissionFlowTests.Grant_ChangingTheLevelOfAnExistingGrant_NeedsItsCurrentVersion_AStaleOrMissingOneChangesNothing` and `Revoke_OfAnEntryThatIsAlreadyRevoked_Succeeds_AndChangesAndAuditsNothingMore` (both passed 2026-11-03)
-- State: INTEGRATING; release 0.3 by owner decision 2026-11-03. Built: the grant route accepts a Team subject and the sharing read shows Team rows. Not built: a Team picker in the Share dialog (it needs the Teams list inside the dialog and an artboard of the picker). Missing: that picker, then the dialog states. Integration `GovernanceResourcePermissionFlowTests.Grant_ChangingTheLevelOfAnExistingGrant_NeedsItsCurrentVersion_AStaleOrMissingOneChangesNothing` and `Revoke_OfAnEntryThatIsAlreadyRevoked_Succeeds_AndChangesAndAuditsNothingMore` (both passed 2026-11-03).
+- State: INTEGRATING; release 0.3 by owner decision 2026-11-03. Built: the grant route accepts a Team subject and the sharing read shows Team rows. Not built: a Team picker in the Share dialog (it needs the Teams list inside the dialog and an artboard of the picker). Missing: that picker, then the dialog states. Integration `GovernanceResourcePermissionFlowTests.Grant_ChangingTheLevelOfAnExistingGrant_NeedsItsCurrentVersion_AStaleOrMissingOneChangesNothing` and `Revoke_OfAnEntryThatIsAlreadyRevoked_Succeeds_AndChangesAndAuditsNothingMore` (both passed 2026-11-03). Owner question: is the Team picker to be built without an artboard, or should an artboard of the picker (Final-Share or Final-Teams) be drawn first? The grant route and the sharing read already accept and show Team rows.
 
 ### UC-GOV-D03 Change the level of an existing grant
 - Capability: D Permission assignment (team spec, Governance list)
@@ -474,7 +474,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §6, §62](../../product/governance.md) GOV-001, GOV-019; WGREQ168.
 - Acceptance: Given a manager, When they GET the list, Then they see every active grant. Given a Member without management, Then denied.
 - Evidence: BE `GET /api/v1/resources/{resourceType}/{resourceId}/permissions` (Governance.ResourcePermissions.Get, `GetResourcePermissionsQuery`) · FE `endpoints.ts` `resourcePermissions.list` (dialog reads the sharing summary instead) · Tests `GovernanceResourcePermissionFlowTests` · Real e2e none · Design `Final-Share`
-- State: INTEGRATING. Built: the list leaves out revoked rows, is ordered and capped at 500 entries (a guard: a resource's explicit entries are people and Teams), and each row carries its `version`. Expiry is out of scope by the owner decision. Missing: tests and owner check. The dialog keeps reading the sharing summary, which carries the same facts, so no screen calls this list except the Page share.
+- State: INTEGRATING. Built: the list leaves out revoked rows, is ordered and capped at 500 entries (a guard: a resource's explicit entries are people and Teams), and each row carries its `version`. Expiry is out of scope by the owner decision. Missing: tests and owner check. No named test covers the list's revoked-row, order or 500-entry rules (an Integration test needs Docker; the application handler reads through EF, so it cannot be unit-tested without the Infrastructure mapping). The dialog keeps reading the sharing summary, which carries the same facts, so no screen calls this list except the Page share.
 
 ### UC-GOV-D06 Refuse an unsafe grant
 - Capability: D Permission assignment (team spec, Governance list)
@@ -502,7 +502,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §29-§30](../../product/governance.md) GOV-009, GOV-030; invitation lifecycle owned by [Workspaces](workspaces.md); WGREQ027-WGREQ033.
 - Acceptance: Given a manager, When they invite a new email to Board B, Then after accept the Guest reads B and no other board.
 - Evidence: BE `IGuestResourceInvitationFacts`, `IGuestResourceAccessActions` (Governance Public); Workspaces commands `InviteGuestToResource`, `AcceptInvitation` · FE share dialog invite control · Tests `backend/tests/Notrelix.Application.Tests/Features/Governance/GrantResourcePermissionWorkspaceMembershipTests.cs` · Real e2e none · Design `Final-Share`
-- State: INTEGRATING. Built end to end (the invitation commands in Workspaces, the Governance facts, the invite control in the Share dialog); nothing left to build here. Missing: tests and owner check (real e2e from invite to accept; a named test of the Governance side of the handshake).
+- State: INTEGRATING. Built end to end (the invitation commands in Workspaces, the Governance facts, the invite control in the Share dialog); nothing left to build here. Missing: tests and owner check (real e2e from invite to accept; a named test of the Governance side of the handshake). Not built this pass: a named Governance test of `GuestResourceAccessActionsAdapter` (Infrastructure; it writes through the EF context, so it needs the Integration host, which needs Docker).
 
 ### UC-GOV-D08 A Guest reaches only what was shared with them
 - Capability: D Permission assignment (team spec, Governance list)
@@ -529,8 +529,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: destructive confirmation, pending, permission denied
 - Rules: [Governance §23.1, §44.3](../../product/governance.md) GOV-025; Work Management owns Board visibility ([Work Management use cases](work-management.md)).
 - Acceptance: Given a public-to-workspace Board, When made Private, Then non-members get NotFound.
-- Evidence: BE `POST /api/v1/boards/{boardId}/sharing/private` (WorkManagement.Boards.MakePrivate) · FE `board-share-dialog.tsx` · Tests `ResourceAccessSummaryServiceTests` · Real e2e none · Design `Final-Share`
-- State: INTEGRATING. Built end to end (the confirmation lists who loses access, the endpoint is served by Work Management); nothing left to build. Missing: tests and owner check (real e2e). Real-stack check 2026-10-31: the actor who makes a board Private stays on it as Owner, commit 2eced51cb.
+- Evidence: BE `POST /api/v1/boards/{boardId}/sharing/private` (WorkManagement.Boards.MakePrivate) · FE `board-share-dialog.tsx` · Tests `ResourceAccessSummaryServiceTests`, Integration `BoardSharingIntegrationTests` · Real e2e none · Design `Final-Share`
+- State: HARDENING. Built end to end (the confirmation lists who loses access, the endpoint is served by Work Management). Tested: Integration `BoardSharingIntegrationTests` (`PrivateImpact_NamesWhoLosesTheBoard_WithUnfinishedAndOverdueItems`, `MakePrivate_AddsPeopleAndSetsPrivateAtomically_AndAFailureLeavesTheBoardUnchanged`, `MakePrivate_NeedsBoardManagement_APlainMemberAndAGuestAreRefused`; these run in CI, not locally). Missing: owner check, real e2e. Real-stack check 2026-10-31: the actor who makes a board Private stays on it as Owner, commit 2eced51cb.
 
 ### UC-GOV-D10 Read the sharing and access summary of a Board
 - Capability: D Permission assignment (team spec, Governance list)
@@ -543,8 +543,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: loading, empty, permission denied, read-only
 - Rules: [Governance §44.3](../../product/governance.md) GOV-025, GOV-029; certification CTR-GAP-WM-BOARD-SHARING.
 - Acceptance: Given a non-manager, When reading sharing, Then counts only and no `grantedBy`.
-- Evidence: BE `GET /api/v1/boards/{boardId}/sharing` (WorkManagement.Boards.GetSharing), `GET /api/v1/boards/{boardId}/access` (WorkManagement.Boards.GetAccess), `IBoardSharingSummary` · FE `use-board-sharing.ts` · Tests `ResourceAccessSummaryServiceTests` · Real e2e none (grant spec reads it implicitly) · Design `Final-Share`
-- State: INTEGRATING. Built for a Board; each entry now also carries `permissionVersion` for a manager (UC-GOV-D03). Not built: a Page equivalent of the sharing read (Page share is UC-GOV-D15, IMPLEMENTING). Missing: tests and owner check (a dedicated real e2e).
+- Evidence: BE `GET /api/v1/boards/{boardId}/sharing` (WorkManagement.Boards.GetSharing), `GET /api/v1/boards/{boardId}/access` (WorkManagement.Boards.GetAccess), `IBoardSharingSummary` · FE `use-board-sharing.ts` · Tests `ResourceAccessSummaryServiceTests`, Integration `BoardSharingIntegrationTests` · Real e2e none (grant spec reads it implicitly) · Design `Final-Share`
+- State: HARDENING. Built for a Board: the sharing read carries each entry's `permissionVersion` for a manager (UC-GOV-D03). Tested: Application `ResourceAccessSummaryServiceTests` (counts, sources, manager-only names, Private boards), Integration `BoardSharingIntegrationTests` (the read carries `permissionVersion`; runs in CI, not locally). Not built: a Page equivalent of the sharing read (Page share is UC-GOV-D15, IMPLEMENTING). Missing: owner check, a dedicated real e2e.
 
 ### UC-GOV-D11 Keep a 90-day log of Board access changes
 - Capability: D Permission assignment (team spec, Governance list)
@@ -644,7 +644,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §23, §23.1, §23.3-§23.4](../../product/governance.md) GOV-007, GOV-025, GOV-027, GOV-028; Workspace Spaces: see [Workspaces use cases](workspaces.md).
 - Acceptance: Given Space S with a Viewer, When they edit a Board in S, Then denied; When they view it, Then allowed.
 - Evidence: BE `AccessPolicyEngine`, `EffectiveResourceAccess`, `PostgresAccessFactsProvider` · FE Space pages `frontend/e2e/mock/space-members.mock.e2e.spec.ts` · Tests `EffectiveBoardAccessTests`, `BoardChildAccessMatrixTests` · Real e2e none · Design `Final-Space`
-- State: INTEGRATING. Built end to end (the engine maps Space roles to levels, an unknown Space closure denies, a Private resource ignores Space roles; the Space pages exist); nothing left to build. Missing: tests and owner check (real e2e of Space-derived access).
+- State: HARDENING. Built end to end (the engine maps Space roles to levels, a Private resource ignores Space roles; the Space pages exist). Tested: Application `EffectiveBoardAccessTests` (`SpaceMember_OnAWorkspaceBoardInTheSpace_IsEditor_FromTheSpace`, `SpaceRoles_NeverReachAPrivateBoard_ButTheExplicitGrantDoes`, `HigherOfExplicitAndSpace_Wins_AndTheExplicitGrantIsTheSourceOnATie`), `BoardChildAccessMatrixTests`. Not named by a test: an unknown Space closure denies. Missing: owner check, real e2e of Space-derived access.
 
 ### UC-GOV-E03 A Team is an evaluated subject
 - Capability: E Effective permission evaluation (team spec, Governance list)
@@ -784,7 +784,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §91-§95](../../product/governance.md) GOV-023; WGREQ155.
 - Acceptance: Given a Viewer, When the board opens, Then edit controls are disabled with a reason.
 - Evidence: FE `frontend/packages/foundation/platform/src/permissions/ability.ts`, `core.ts`, `frontend/apps/web/src/router/guards/require-permission.ts`, `frontend/packages/ui/web/src/components/feedback/forbidden-state.tsx` · Tests `frontend/packages/foundation/platform/src/__tests__/platform-boundaries.unit.test.ts` · Real e2e none · Design `Final-States`
-- State: INTEGRATING. Built end to end (loading state, disabled or absent controls, the forbidden state, a server 403 or NotFound wins over a local flag); nothing left to build. Missing: tests and owner check (real e2e, an axe check of the forbidden state).
+- State: INTEGRATING. Built end to end (loading state, disabled or absent controls, the forbidden state, a server 403 or NotFound wins over a local flag). Tested: `frontend/apps/web/src/router/guards/require-permission.unit.test.ts` (a holder passes; a person without the permission gets the forbidden guard error), `frontend/packages/foundation/platform/src/__tests__/platform-boundaries.unit.test.ts` (`hasPermission`). Not built this pass: a named test that a server 403 or NotFound overrides a local allow (bounded; not written here), an axe check of the forbidden state. Missing: those tests and owner check; real e2e.
 
 ### UC-GOV-E13 Explain why a person can or cannot do an action
 - Capability: E Effective permission evaluation (team spec, Governance list)
@@ -842,7 +842,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §65-§70](../../product/governance.md) GOV-020, GOV-021; WGREQ105-WGREQ110.
 - Acceptance: Given a revoke, When committed, Then an audit row with action `RevokeResourcePermission` exists.
 - Evidence: BE `Notrelix.Infrastructure/Auditing/AuditService.cs`, `GrantResourcePermissionCommandHandler` · Tests `GovernanceResourcePermissionFlowTests` · Real e2e none · Design none · BE `Application/Common/Auditing/IAuditService.cs` (`AuditChange`)
-- State: INTEGRATING. Built: the audit row now carries the subject (type and id), the level before and after (a level word, no secret), the correlation and causation ids, and the client address and user agent read from the request; a grant at the level the subject already holds records nothing (a semantic no-op); a failed change leaves no row. Missing: tests and owner check (the audit service is shared with Workspaces and Work Management callers, which now also get the correlation id and the client address), the read path (UC-GOV-H02).
+- State: INTEGRATING. Built: the audit row now carries the subject (type and id), the level before and after (a level word, no secret), the correlation and causation ids, and the client address and user agent read from the request; a grant at the level the subject already holds records nothing (a semantic no-op); a failed change leaves no row. Missing: tests and owner check. Not built this pass: named assertions for the grant row's fields, the no-op and the failed change (the Integration `GovernanceResourcePermissionFlowTests` run grant and revoke but name audit assertions only for revoke; Docker needed), and the read path (UC-GOV-H02).
 
 ### UC-GOV-F04 Audit every high-impact governance and administration change
 - Capability: F Protected operation integration (team spec, Governance list)
@@ -955,8 +955,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: loading, error, conflict, pending, permission denied
 - Rules: [Governance §39.1](../../product/governance.md) GOV-032, GOV-011, GOV-018; WGREQ074, WGREQ148.
 - Acceptance: Given policy off, When an Editor creates a link, Then refused. Given policy off then on, Then a valid link works again.
-- Evidence: BE `PUT /api/v1/workspaces/{workspaceId}/settings` (Workspaces.Settings.UpdateWorkspaceSettings), `GET .../settings` (GetWorkspaceSettings), `WorkspaceSettings.AllowPublicSharing` · FE `frontend/apps/web/src/routes/workspaces/$workspaceId/security.tsx` · Tests `backend/tests/Notrelix.Domain.Tests/Governance/Policies/WorkspacePolicyTests.cs`; Workspaces settings tests · Real e2e none (`frontend/e2e/mock/workspace-teams.mock.e2e.spec.ts` only) · Design `Final-Teams`, `Final-Settings` · BE (enforcement) `Governance/Abstractions/IWorkspaceSharingPolicy.cs`, `Infrastructure/Services/WorkspaceSharingPolicy.cs`, `CreateShareLinkCommandHandler`
-- State: INTEGRATING. Built: creating a share link is refused with the rule `ShareLinksTurnedOff` while the workspace setting `AllowPublicSharing` is off (it only refuses; nothing was widened), and a workspace that never turned the setting on does not allow links. No visitor path exists to serve a link (UC-GOV-G03 waits on the owner decision on the anonymous principal), so "no link authorizes access" holds trivially. Not built: the audit entry of the setting change (UC-GOV-F04, DEFINED). Missing: tests and owner check (an Application test of the refusal, a real e2e of the toggle). Setting is owned by Workspaces ([Workspaces use cases](workspaces.md)).
+- Evidence: BE `PUT /api/v1/workspaces/{workspaceId}/settings` (Workspaces.Settings.UpdateWorkspaceSettings), `GET .../settings` (GetWorkspaceSettings), `WorkspaceSettings.AllowPublicSharing` · FE `frontend/apps/web/src/routes/workspaces/$workspaceId/security.tsx` · Tests `backend/tests/Notrelix.Domain.Tests/Governance/Policies/WorkspacePolicyTests.cs`; Application `CreateShareLinkWorkspacePolicyTests`; Workspaces settings tests · Real e2e none (`frontend/e2e/mock/workspace-teams.mock.e2e.spec.ts` only) · Design `Final-Teams`, `Final-Settings` · BE (enforcement) `Governance/Abstractions/IWorkspaceSharingPolicy.cs`, `Infrastructure/Services/WorkspaceSharingPolicy.cs`, `CreateShareLinkCommandHandler`
+- State: HARDENING. Built: creating a share link is refused with the rule `ShareLinksTurnedOff` while the workspace setting `AllowPublicSharing` is off (it only refuses; nothing was widened), and a workspace that never turned the setting on does not allow links. Tested: Application `CreateShareLinkWorkspacePolicyTests` (refusal with the rule code, nothing written), Integration `GovernanceResourcePermissionFlowTests.CreateShareLink_IsRefused_WhileWorkspaceShareLinksAreOff_AndWritesNothing`. No visitor path exists to serve a link (UC-GOV-G03 waits on the owner decision on the anonymous principal), so "no link authorizes access" holds trivially. Not built: the audit entry of the setting change (UC-GOV-F04, DEFINED). Missing: owner check, a real e2e of the toggle. Setting is owned by Workspaces ([Workspaces use cases](workspaces.md)).
 
 ### UC-GOV-G07 Show the sharing policy inside the resource Share dialog
 - Capability: G Share-link lifecycle and policy (team spec, Governance list)
@@ -970,7 +970,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §39.1, §94](../../product/governance.md) GOV-032.
 - Acceptance: Given links off, When a sharer opens Share, Then the link control is replaced by the policy note.
 - Evidence: FE `frontend/apps/web/src/shell/workspace/board-share-dialog.tsx` (`createUseWorkspaceSettings`) · Tests `frontend/apps/web/src/shell/workspace/__tests__/use-board-sharing.component.test.tsx` · Real e2e none · Design `Final-Share`, `Final-M-Share`
-- State: INTEGRATING. Built for a Board: the dialog reads the settings and shows the policy state. Not built: a page-level Share equivalent (Page share is UC-GOV-D15, IMPLEMENTING). Missing: tests and owner check (the path only runs against the mock backend in e2e).
+- State: INTEGRATING. Built for a Board: the dialog reads the settings and shows the policy state. Not built: a page-level Share equivalent (Page share is UC-GOV-D15, IMPLEMENTING). Missing: tests and owner check (the path only runs against the mock backend in e2e). Not built this pass: a component test that the Share dialog shows the policy line (`use-board-sharing.component.test.tsx` covers the hook only).
 
 ### UC-GOV-G08 Copy the resource address (a locator, not a share link)
 - Capability: G Share-link lifecycle and policy (team spec, Governance list)
@@ -984,7 +984,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §39.1](../../product/governance.md) GOV-010, GOV-032.
 - Acceptance: Given a non-member, When they open a copied address, Then NotFound.
 - Evidence: FE `board-share-dialog.tsx` · Tests `use-board-sharing.component.test.tsx` · Real e2e none · Design `Final-Share`
-- State: INTEGRATING. Built end to end (the app address is copied; a person without access gets NotFound on opening it); nothing left to build. Missing: tests and owner check (a real e2e of the non-member open).
+- State: INTEGRATING. Built end to end (the app address is copied; a person without access gets NotFound on opening it); nothing left to build. Missing: tests and owner check (a real e2e of the non-member open). Not built this pass: a component test of the copied locator (`use-board-sharing.component.test.tsx` covers the hook only).
 
 ### UC-GOV-G09 Sharing is never transitive
 - Capability: G Share-link lifecycle and policy (team spec, Governance list)
@@ -1028,7 +1028,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: [Governance §94-§95, §44.3](../../product/governance.md) GOV-009, GOV-032.
 - Acceptance: Given an Admin, When opening, Then the numbers match the data. Given a Member, Then 403.
 - Evidence: BE `GET /api/v1/workspaces/{workspaceId}/security-ext` (Workspaces.Settings.GetWorkspaceSecurityExt) · FE `.../routes/workspaces/$workspaceId/security.tsx`, `use-teams-ext.ts` · Tests `frontend/e2e/mock/workspace-teams.mock.e2e.spec.ts` · Real e2e none · Design `Final-Teams`, `Final-Settings`
-- State: INTEGRATING. Built end to end (the Sharing and security page reads `security-ext`, shows links on or off with the date, guests and the company domain; the endpoint is Workspaces'); nothing left to build here. Missing: tests and owner check (a real e2e, a 1 px check against Final-Teams and Final-Settings, the page only runs against the mock backend in e2e).
+- State: INTEGRATING. Built end to end (the Sharing and security page reads `security-ext`, shows links on or off with the date, guests and the company domain; the endpoint is Workspaces'); nothing left to build here. Missing: tests and owner check (a real e2e, a 1 px check against Final-Teams and Final-Settings, the page only runs against the mock backend in e2e). Not built this pass: any unit or component test of the Sharing and security page (the mock e2e `workspace-teams.mock.e2e.spec.ts` is the only test that names it).
 
 ### UC-GOV-H02 View the audit log of a workspace
 - Capability: H Governance administration UI (team spec, Governance list)
