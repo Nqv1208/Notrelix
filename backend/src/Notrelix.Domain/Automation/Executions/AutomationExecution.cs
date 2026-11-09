@@ -85,6 +85,45 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
 
     private AutomationExecution() : base() { }
 
+    /// <summary>
+    /// UC-AUT-C02: records a fact whose rule conditions were evaluated and not met. The execution is retained
+    /// as Skipped (no action runs, nothing is dispatched, and it is not a failure, so it never counts toward
+    /// the consecutive-failure limit).
+    /// </summary>
+    public static AutomationExecution CreateSkipped(
+        Guid accountId,
+        Guid workspaceId,
+        Guid ruleId,
+        Guid triggerId,
+        DateTimeOffset occurredAt,
+        long? ruleVersion,
+        string? configurationSnapshot,
+        DateTimeOffset skippedAt)
+    {
+        Guard.NotEmpty(accountId);
+        Guard.NotEmpty(workspaceId);
+        Guard.NotEmpty(ruleId);
+        Guard.NotEmpty(triggerId);
+
+        var execution = new AutomationExecution
+        {
+            AccountId = accountId,
+            WorkspaceId = workspaceId,
+            RuleId = ruleId,
+            TriggerId = triggerId,
+            Status = AutomationExecutionStatus.Skipped,
+            StartedAt = occurredAt,
+            FinishedAt = skippedAt,
+            AttemptCount = 0,
+            ChainDepth = 0,
+            RuleVersion = ruleVersion,
+            ConfigurationSnapshot = configurationSnapshot
+        };
+
+        execution.SetAuditOnCreate(null, skippedAt);
+        return execution;
+    }
+
     public static AutomationExecution Create(
         Guid accountId,
         Guid workspaceId,

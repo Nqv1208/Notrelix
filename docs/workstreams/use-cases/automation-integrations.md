@@ -54,21 +54,21 @@ Automation (letters follow the team spec order AUT-001 to AUT-014):
 
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
-| A | AUT-001 Rule lifecycle | 8 | 0 | 3 | 1 | 4 | 0 | 0 |
+| A | AUT-001 Rule lifecycle | 8 | 0 | 2 | 1 | 5 | 0 | 0 |
 | B | AUT-002 Trigger model | 8 | 2 | 3 | 0 | 3 | 0 | 0 |
-| C | AUT-003 Condition model | 3 | 1 | 1 | 0 | 1 | 0 | 0 |
+| C | AUT-003 Condition model | 3 | 1 | 0 | 0 | 2 | 0 | 0 |
 | D | AUT-004 Action model | 10 | 0 | 2 | 1 | 6 | 0 | 1 |
 | E | AUT-005 Enable/disable lifecycle | 7 | 1 | 2 | 2 | 2 | 0 | 0 |
 | F | AUT-006 Source-event subscription/matching | 3 | 0 | 0 | 0 | 3 | 0 | 0 |
 | G | AUT-007 Execution creation | 6 | 1 | 1 | 2 | 2 | 0 | 0 |
-| H | AUT-008 Execution state machine | 5 | 0 | 2 | 0 | 3 | 0 | 0 |
-| I | AUT-009 Business retry/failure policy | 4 | 0 | 2 | 2 | 0 | 0 | 0 |
+| H | AUT-008 Execution state machine | 5 | 0 | 1 | 0 | 4 | 0 | 0 |
+| I | AUT-009 Business retry/failure policy | 4 | 0 | 1 | 2 | 1 | 0 | 0 |
 | J | AUT-010 Execution history/query | 5 | 2 | 1 | 1 | 1 | 0 | 0 |
 | K | AUT-011 Automation authoring frontend | 8 | 1 | 2 | 0 | 5 | 0 | 0 |
 | L | AUT-012 Realtime execution status | 2 | 0 | 2 | 0 | 0 | 0 | 0 |
 | M | AUT-013 Entitlement integration | 4 | 1 | 0 | 2 | 1 | 0 | 0 |
 | N | AUT-014 Hardening/observability | 6 | 2 | 2 | 0 | 2 | 0 | 0 |
-| | Total | 79 | 11 | 23 | 11 | 33 | 0 | 1 |
+| | Total | 79 | 11 | 19 | 11 | 37 | 0 | 1 |
 
 Integrations (letters follow INT-001 to INT-014):
 
@@ -179,7 +179,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-AUT-B07 | An unknown or changed trigger type fails closed | B Trigger model | system | Y | N | N | N | IMPLEMENTING | domain proof only; no UI for invalid rules |
 | UC-AUT-B08 | Start a rule from an inbound provider event | B Trigger model | system, after Integrations has verified and translated the event | N | N | N | N | DEFINED | deferred until verified provider intake exists |
 | UC-AUT-C01 | Add all-of equals conditions | C Condition model | as A01 | Y | Y | Y | N | HARDENING | Built (verified by reading code 2026-11-09, not run): AutomationConditions.cs, N8nAutomationRuleEvaluator.cs (Holds), automation-flow.tsx, AutomationMultiActionTests.cs (Conditions_AreAnAndOfEqualsTests), AutomationConditionDefinitionTests.cs. Remaining: owner tests by hand. |
-| UC-AUT-C02 | A condition not met is shown as skipped, not failed | C Condition model | any reader of run history (J01 permission) | P | P | Y | N | IMPLEMENTING | no Skipped status or record |
+| UC-AUT-C02 | A condition not met is shown as skipped, not failed | C Condition model | any reader of run history (J01 permission) | Y | Y | Y | N | HARDENING | Built: a rule whose conditions are evaluated and not met keeps a `Skipped` execution, dispatches nothing and is not counted as a failure; the workspace rule run history shows "Skipped, conditions not met" (en, vi). Not built: a condition that cannot be evaluated (no item, forbidden) still records nothing. Owner question: product §33 says an evaluation error is not a skip, so should it be Failed? Owner tests by hand |
 | UC-AUT-C03 | Actor and time conditions, OR and nesting | C Condition model | as A01 | N | N | N | N | DEFINED | deferred by decision OD4 |
 | UC-AUT-D01 | Move the item to a group | D Action model | executor (bound creator) holding the MoveItem decision on the item | Y | Y | Y | Y | HARDENING | no owner check; no 1 px diff |
 | UC-AUT-D02 | Change the item status | D Action model | executor with edit permission on the item | Y | Y | Y | Y | HARDENING | as D01 |
@@ -561,8 +561,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: log row "Skipped".
 - Rules: automation.md §33 AUT-011, §106; AIREQ021.
 - Acceptance: Given a failing condition, When the fact arrives, Then the log shows Skipped and the rule is not disabled.
-- Evidence: BE the evaluator drops the rule silently; `AutomationExecutionStatus` has no Skipped (DEF-16) · FE FE-BS `automation-log.tsx` (design shows Skipped) · Design `Final-M-Automation` · Tests T-AA `AutomationRuleEvaluatorGuardTests` · Real e2e none
-- State: IMPLEMENTING — no Skipped status or record.
+- Evidence: BE `N8nAutomationRuleEvaluator` (records the Skipped row), `AutomationExecution.CreateSkipped`, `AutomationExecutionStatus.Skipped` · FE `workspace-rules.copy.ts` and `workspace-rules-section.tsx` (run history label), `workspace-automations.api.ts` (status map) · Design `Final-M-Automation` · Tests T-AD `AutomationExecutionSkippedTests`, T-AA `AutomationConditionSkipTests` · Real e2e none
+- State: HARDENING — Built: a condition that was evaluated and not met records a Skipped execution with no failure and no queued fact, and the consecutive-failure count and the rate window ignore it. Not built: `automation-log.tsx` (board screen) reads fixture outcomes and was not changed. Owner question: a condition that cannot be evaluated still records nothing, while product §33 says an evaluation error is not a skip; should it be recorded as Failed? Owner tests by hand.
 
 ### UC-AUT-C03 Actor and time conditions, OR and nesting
 - Capability: AUT-003 Condition model

@@ -38538,7 +38538,8 @@
           "Running",
           "Succeeded",
           "Failed",
-          "Cancelled"
+          "Cancelled",
+          "Skipped"
         ],
         "type": "string"
       },

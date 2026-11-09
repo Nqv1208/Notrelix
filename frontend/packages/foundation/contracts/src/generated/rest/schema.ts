@@ -10436,7 +10436,7 @@ export interface components {
             directory?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectoryDto"][] | null;
         };
         /** @enum {string} */
-        "Notrelix.Domain.Automation.Executions.AutomationExecutionStatus": "Queued" | "Running" | "Succeeded" | "Failed" | "Cancelled";
+        "Notrelix.Domain.Automation.Executions.AutomationExecutionStatus": "Queued" | "Running" | "Succeeded" | "Failed" | "Cancelled" | "Skipped";
         /** @enum {string} */
         "Notrelix.Domain.Identity.Security.SecurityActivityType": "SignInSucceeded" | "SignInFailed" | "PasswordChanged" | "PasswordReset" | "MfaEnabled" | "MfaDisabled" | "SessionRevoked" | "OtherSessionsRevoked";
         /**

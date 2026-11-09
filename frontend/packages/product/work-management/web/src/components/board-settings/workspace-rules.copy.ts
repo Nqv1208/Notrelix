@@ -117,6 +117,7 @@ export const workspaceRulesEn = {
       succeeded: "Succeeded",
       failed: "Failed",
       cancelled: "Cancelled",
+      skipped: "Skipped, conditions not met",
     },
   },
   feedback: {
@@ -242,6 +243,7 @@ export const workspaceRulesVi: WorkspaceRulesCopy = {
       succeeded: "Thành công",
       failed: "Thất bại",
       cancelled: "Đã huỷ",
+      skipped: "Bỏ qua, điều kiện không đạt",
     },
   },
   feedback: {

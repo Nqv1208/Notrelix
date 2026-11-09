@@ -110,10 +110,25 @@ public sealed class N8nAutomationRuleEvaluator
             if (exists) continue;
 
             // AU-5: the rule's conditions (all must hold) are read from the triggering item now.
-            if (rule.Configuration.Condition is not null
-                && !await ConditionsHoldAsync(rule, trigger, cancellationToken))
+            // UC-AUT-C02: conditions that were evaluated and not met are kept as a Skipped execution;
+            // a condition that cannot be evaluated at all still fails closed without a record.
+            if (rule.Configuration.Condition is not null)
             {
-                continue;
+                var outcome = await ConditionsOutcomeAsync(rule, trigger, cancellationToken);
+                if (outcome == ConditionOutcome.Unevaluable) continue;
+                if (outcome == ConditionOutcome.NotMet)
+                {
+                    _context.AutomationExecutions.Add(AutomationExecution.CreateSkipped(
+                        accountId,
+                        workspaceId,
+                        rule.Id,
+                        trigger.SourceEventId,
+                        trigger.OccurredAt,
+                        rule.ConfigurationVersion,
+                        AutomationRuleSnapshot.From(rule).Serialize(),
+                        _clock.UtcNow));
+                    continue;
+                }
             }
 
             if (ancestry is not null && IsSuppressedByAncestry(rule, ancestry))
@@ -182,29 +197,37 @@ public sealed class N8nAutomationRuleEvaluator
         }
     }
 
-    private async Task<bool> ConditionsHoldAsync(
+    /// <summary>The three answers of a condition check: held, evaluated and not met, or not evaluable at all.</summary>
+    private enum ConditionOutcome
+    {
+        Holds,
+        NotMet,
+        Unevaluable,
+    }
+
+    private async Task<ConditionOutcome> ConditionsOutcomeAsync(
         AutomationRule rule, AutomationTriggerContext trigger, CancellationToken cancellationToken)
     {
         // Fail closed: conditions read the triggering item of the rule's own board, as the rule's
-        // executor; anything missing means the conditions do not hold.
+        // executor; anything missing means the conditions cannot be evaluated.
         if (_workActions is null
             || rule.BoardId is not { } boardId
             || trigger.ItemId is not { } itemId
             || rule.ExecutorUserId is not { } executor
             || !AutomationConditions.TryParse(rule.Configuration.Condition!.RawJson, out var conditions))
         {
-            return false;
+            return ConditionOutcome.Unevaluable;
         }
 
         try
         {
             var facts = await _workActions.GetItemFactsAsync(
                 itemId, boardId, new AutomationPrincipal(trigger.AccountId, executor, trigger.WorkspaceId), cancellationToken);
-            return AutomationConditions.Holds(conditions, facts);
+            return AutomationConditions.Holds(conditions, facts) ? ConditionOutcome.Holds : ConditionOutcome.NotMet;
         }
         catch (Exception ex) when (ex is NotFoundException or ForbiddenException)
         {
-            return false;
+            return ConditionOutcome.Unevaluable;
         }
     }
 
@@ -348,7 +371,8 @@ public sealed class N8nAutomationRuleEvaluator
         var windowStart = trigger.OccurredAt - TimeSpan.FromSeconds(_guards.RateWindowSeconds);
         var started = await _context.AutomationExecutions
             .AsNoTracking()
-            .CountAsync(e => e.RuleId == rule.Id && e.CreatedAt > windowStart, cancellationToken);
+            .CountAsync(e => e.RuleId == rule.Id && e.CreatedAt > windowStart
+                && e.Status != AutomationExecutionStatus.Skipped, cancellationToken);
 
         if (started >= _guards.MaxExecutionsPerWindow)
         {
