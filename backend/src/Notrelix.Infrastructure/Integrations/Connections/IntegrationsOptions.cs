@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Options;
-
 namespace Notrelix.Infrastructure.Integrations.Connections;
 
 /// <summary>`Integrations:*` configuration. A provider with no client id and secret is "not configured" and cannot be connected.</summary>
