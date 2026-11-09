@@ -25400,6 +25400,7 @@
           "Workspaces.Spaces"
         ],
         "summary": "Get the user and team entries of a space",
+        "description": "Cursor-paginated (default 50, max 200) in subject id order. Pass nextCursor back as cursor for the next page.",
         "operationId": "Workspaces.Spaces.GetSpaceMembers",
         "parameters": [
           {
@@ -25419,6 +25420,21 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -25427,10 +25443,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembers.SpaceMemberDto"
-                  }
+                  "$ref": "#/components/schemas/Notrelix.Application.Common.Models.CursorPageOfSpaceMemberDto"
                 }
               }
             }
@@ -30716,6 +30729,27 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto"
+            },
+            "nullable": true
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Common.Models.CursorPageOfSpaceMemberDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembers.SpaceMemberDto"
             },
             "nullable": true
           },

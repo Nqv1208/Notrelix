@@ -21,13 +21,11 @@ import { rememberMarkTone } from "../model/navigation";
 type SpaceTreePage = OperationResponse<"Workspaces.Spaces.GetSpaceTree", 200>;
 type SpaceTreeNodeDto = NonNullable<SpaceTreePage["items"]>[number];
 type SpaceDetailDto = OperationResponse<"Workspaces.Spaces.GetSpace", 200>;
-type SpaceMemberDto =
-  OperationResponse<
-    "Workspaces.Spaces.GetSpaceMembers",
-    200
-  > extends readonly (infer Item)[]
-    ? Item
-    : never;
+type SpaceMembersPage = OperationResponse<
+  "Workspaces.Spaces.GetSpaceMembers",
+  200
+>;
+type SpaceMemberDto = NonNullable<SpaceMembersPage["items"]>[number];
 type CreateSpaceBody = OperationRequestBody<"Workspaces.Spaces.CreateSpace">;
 type MoveSpaceBody = OperationRequestBody<"Workspaces.Spaces.MoveSpace">;
 type RenameSpaceBody = OperationRequestBody<"Workspaces.Spaces.RenameSpace">;
@@ -143,6 +141,12 @@ export interface MoveSpaceInput {
 /** The tree is read 200 Spaces at a time (the producer's largest page). */
 const TREE_PAGE_SIZE = 200;
 
+/** Members are read 200 entries at a time (the producer's largest page). */
+const MEMBER_PAGE_SIZE = 200;
+
+/** The order the members tab shows people in: Admins first, then Members, then Viewers. */
+const ROLE_RANK: Record<SpaceRole, number> = { Admin: 3, Member: 2, Viewer: 1 };
+
 export interface SpaceDetailsInput {
   readonly name?: string;
   readonly description?: string | null;
@@ -176,12 +180,26 @@ export function createSpacesService(
       return nodes;
     },
 
+    /**
+     * Reads every page of the direct entries, then orders them by role (Admins
+     * first). The producer pages them in subject id order.
+     */
     async getMembers(
       workspaceId: string,
       spaceId: string,
     ): Promise<SpaceMemberEntry[]> {
-      return parseSpaceMembers(
-        await api.get<unknown>(e.spaceMembers(workspaceId, spaceId)),
+      const items: unknown[] = [];
+      let cursor: string | null = null;
+      do {
+        const query: string = `limit=${MEMBER_PAGE_SIZE}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+        const page: SpaceMembersPage = await api.get<SpaceMembersPage>(
+          `${e.spaceMembers(workspaceId, spaceId)}?${query}`,
+        );
+        items.push(...(page?.items ?? []));
+        cursor = page?.nextCursor ?? null;
+      } while (cursor);
+      return parseSpaceMembers(items).sort(
+        (a, b) => ROLE_RANK[b.role] - ROLE_RANK[a.role],
       );
     },
 

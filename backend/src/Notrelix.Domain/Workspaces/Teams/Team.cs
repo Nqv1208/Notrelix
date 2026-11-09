@@ -15,19 +15,33 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     private Team() : base() { }
 
-    public static Team Create(Guid accountId, Guid workspaceId, string name, Guid createdBy, DateTimeOffset createdAt)
+    /// <param name="otherTeamNames">
+    /// Names of the other non-deleted Teams of the Workspace, loaded by Application (see
+    /// <see cref="TeamRules.EnsureUniqueName"/>). Null skips the uniqueness check.
+    /// </param>
+    public static Team Create(
+        Guid accountId,
+        Guid workspaceId,
+        string name,
+        Guid createdBy,
+        DateTimeOffset createdAt,
+        IReadOnlyCollection<string>? otherTeamNames = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
-        Guard.MaxLength(name, 160);
         Guard.NotEmpty(createdBy);
+
+        var normalizedName = name.Trim();
+        Guard.MaxLength(normalizedName, 160);
+        if (otherTeamNames is not null)
+            TeamRules.EnsureUniqueName(normalizedName, otherTeamNames);
 
         var team = new Team
         {
             AccountId = accountId,
             WorkspaceId = workspaceId,
-            Name = name.Trim(),
+            Name = normalizedName,
             Status = TeamStatus.Active
         };
 
@@ -37,18 +51,22 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
         return team;
     }
 
-    public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt)
+    /// <param name="otherTeamNames">Names of the other non-deleted Teams of the Workspace; null skips the uniqueness check.</param>
+    public void Rename(string name, Guid updatedBy, DateTimeOffset updatedAt, IReadOnlyCollection<string>? otherTeamNames = null)
     {
         EnsureNotDeleted();
         Guard.NotNullOrWhiteSpace(name);
-        Guard.MaxLength(name, 160);
         Guard.NotEmpty(updatedBy);
 
         if (Status == TeamStatus.Archived)
             throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Team_CannotRenameArchived, "Cannot rename an archived team.");
 
         var normalizedName = name.Trim();
+        Guard.MaxLength(normalizedName, 160);
         if (Name == normalizedName) return;
+
+        if (otherTeamNames is not null)
+            TeamRules.EnsureUniqueName(normalizedName, otherTeamNames);
 
         var audit = PrepareAuditUpdate(updatedBy, updatedAt);
         var oldName = Name;

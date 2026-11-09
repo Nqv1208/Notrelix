@@ -69,6 +69,7 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Team_CannotRemoveLastLead = "Workspaces_Team_CannotRemoveLastLead";
     public const string Workspaces_Team_CannotDowngradeLastLead = "Workspaces_Team_CannotDowngradeLastLead";
     public const string Workspaces_Team_LastLeadCannotLeave = "Workspaces_Team_LastLeadCannotLeave";
+    public const string Workspaces_Team_DuplicateName = "Workspaces_Team_DuplicateName";
 
     // ── TeamMember ────────────────────────────────────────────────────────
     public const string Workspaces_TeamMember_AlreadyActive = "Workspaces_TeamMember_AlreadyActive";
