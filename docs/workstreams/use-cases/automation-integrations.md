@@ -168,7 +168,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-AUT-A04 | Edit a rule into a new version | A Rule lifecycle | as A01 | Y | Y | Y | Y | HARDENING | no expected version (DEF-2); no no-op proof; no conflict UI |
 | UC-AUT-A05 | Delete a rule | A Rule lifecycle | as A01 (ManageBoard or ManageWorkspaceSettings) | Y | Y | Y | Y | HARDENING | pending executions and scheduled jobs on delete are not proven; no purge job (J04) |
 | UC-AUT-A06 | Save a rule as a draft | A Rule lifecycle | as A01 | Y | Y | Y | N | INTEGRATING | create takes a plan slot while the rule is still a Draft (DEF-6), against the owner decision |
-| UC-AUT-A07 | Restore a deleted rule | A Rule lifecycle | board Manager or Owner and Admin, same as delete | P | N | N | N | IMPLEMENTING | domain method only; no command, endpoint or UI |
+| UC-AUT-A07 | Restore a deleted rule | A Rule lifecycle | board Manager or Owner and Admin, same as delete | Y | N | N | N | HARDENING | Built: POST `/api/v1/workspaces/{workspaceId}/automations/{automationId}/restore` (`AutomationRule.RestoreRemoved`) brings back a rule deleted under 90 days as Disabled, takes no plan slot, and makes a live rule a no-op. Not built: restore UI. Owner question: the output line says capacity is consumed again, but M04 says Disabled uses no slot; this build follows M04. Owner tests by hand |
 | UC-AUT-A08 | Create a rule from a template | A Rule lifecycle | as A01 | P | N | N | N | IMPLEMENTING | domain and table only; deferred by decision |
 | UC-AUT-B01 | Fire a rule when an item is created | B Trigger model | set up by a board Manager (A01) | Y | Y | Y | N | HARDENING | Built (verified by reading code 2026-11-09, not run): BoardItemMovedForAutomationConsumer.cs (BoardItemCreatedAutomationConsumer), N8nAutomationRuleEvaluator.cs, automation-pickers.tsx, AutomationTriggerMatrixIntegrationTests.cs, AutomationWorkEventRuntimeChainIntegrationTests.cs. Remaining: owner tests by hand. |
 | UC-AUT-B02 | Fire a rule when an item moves to a group | B Trigger model | as B01 | Y | Y | Y | Y | HARDENING | no axe or design diff; no owner check |
@@ -403,8 +403,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: empty, pending, error, permission denied.
 - Rules: automation.md §100; AIREQ015.
 - Acceptance: Given a rule deleted 10 days ago, When restored, Then it appears Disabled with its history and version.
-- Evidence: BE `AutomationRule.Restore` (domain only, no endpoint) · FE none · Design none · Tests T-AD `AutomationRuleDeletionLifecycleTests` · Real e2e none
-- State: IMPLEMENTING — domain method only; no command, endpoint or UI.
+- Evidence: BE `RestoreAutomationRuleCommandHandler` (Application), `RestoreAutomationRuleEndpoint`, `AutomationRule.RestoreRemoved` (the older `AutomationRule.Restore` undoes a soft delete and is not on this path) · FE none · Design none · Tests T-AD `AutomationRuleRestoreRemovedTests`, T-AA `RestoreAutomationRuleTests` · Real e2e none
+- State: HARDENING — Built: restore of a removed rule returns it Disabled with no plan slot, after 90 days it is NotFound, and a live rule is a no-op. Not built: the deleted-rules list and restore button in the FE. Owner question: the Output line says capacity is consumed again on restore, but M04 says Disabled uses no slot; this build follows M04 (no slot). Owner tests by hand.
 
 ### UC-AUT-A08 Create a rule from a template
 - Capability: AUT-001 Rule lifecycle

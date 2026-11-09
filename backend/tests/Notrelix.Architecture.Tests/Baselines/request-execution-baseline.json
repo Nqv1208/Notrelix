@@ -250,6 +250,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Automation.Rules.Commands.RestoreAutomationRule.RestoreAutomationRuleCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Automation.Rules.Commands.RestoreAutomationRule.RestoreAutomationRuleCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Automation.Rules.Commands.SetAutomationRuleEnabled.SetAutomationRuleEnabledCommand",
     "kind": "Command",
     "principalMarkers": [

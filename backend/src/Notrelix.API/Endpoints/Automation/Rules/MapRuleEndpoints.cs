@@ -19,6 +19,7 @@ public static class MapRuleEndpoints
         group.MapUpdateAutomationRule();
         group.MapDeleteAutomationRule();
         group.MapCancelAutomationExecution();
+        group.MapRestoreAutomationRule();
 
         return app;
     }
