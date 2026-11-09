@@ -23,6 +23,7 @@ public sealed class TestIntegrationDbContext(DbContextOptions<TestIntegrationDbC
     DbSet<IntegrationSyncCursor> IIntegrationDbContext.IntegrationSyncCursors => null!;
     DbSet<WebhookSubscription> IIntegrationDbContext.WebhookSubscriptions => null!;
     DbSet<WebhookDelivery> IIntegrationDbContext.WebhookDeliveries => null!;
+    DbSet<OutboundDeliveryLogEntry> IIntegrationDbContext.OutboundDeliveryLog => null!;
     DbSet<InboundWebhookEvent> IIntegrationDbContext.InboundWebhookEvents => null!;
     DbSet<CalendarIntegration> IIntegrationDbContext.CalendarIntegrations => null!;
     DbSet<CalendarEvent> IIntegrationDbContext.CalendarEvents => null!;
@@ -37,6 +38,7 @@ public sealed class TestIntegrationDbContext(DbContextOptions<TestIntegrationDbC
         modelBuilder.Ignore<IntegrationSyncCursor>();
         modelBuilder.Ignore<WebhookSubscription>();
         modelBuilder.Ignore<WebhookDelivery>();
+        modelBuilder.Ignore<OutboundDeliveryLogEntry>();
         modelBuilder.Ignore<InboundWebhookEvent>();
         modelBuilder.Ignore<CalendarIntegration>();
         modelBuilder.Ignore<CalendarEvent>();

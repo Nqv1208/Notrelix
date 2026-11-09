@@ -2,6 +2,7 @@ using System.Text.Json;
 using Notrelix.Application.Events.Integrations;
 using Notrelix.Application.Features.Integrations.Public.Secrets;
 using Notrelix.Domain.Integrations.Connections;
+using Notrelix.Domain.Integrations.Webhooks;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Integrations.Connections;
 
@@ -51,6 +52,17 @@ public sealed class IntegrationWebhookDispatchRequestedConsumer : IConsumer<Inte
     {
         var message = context.Message;
         var ct = context.CancellationToken;
+        var now = _clock.UtcNow;
+
+        // The delivery log row is the delivery identity: a redelivery finds the same row and counts the next attempt.
+        var log = await _db.OutboundDeliveryLog.FirstOrDefaultAsync(d =>
+            d.Id == message.DeliveryId && d.ConnectionId == message.ConnectionId, ct);
+        if (log is null)
+        {
+            log = OutboundDeliveryLogEntry.Create(
+                message.DeliveryId, message.AccountIdValue, message.WorkspaceIdValue, message.ConnectionId, message.DeliveryType, now);
+            _db.OutboundDeliveryLog.Add(log);
+        }
 
         var connection = await _db.IntegrationConnections.FirstOrDefaultAsync(c =>
             c.Id == message.ConnectionId
@@ -58,29 +70,30 @@ public sealed class IntegrationWebhookDispatchRequestedConsumer : IConsumer<Inte
             && c.Provider == IntegrationProvider.Webhook, ct);
 
         var isTest = message.DeliveryType == IntegrationWebhookDispatchRequestedV1.TestType;
-        if (connection is null
-            || connection.IsDeleted
-            || connection.Status == IntegrationConnectionStatus.Revoked
-            || connection.TargetUrl is null
-            || (connection.Status == IntegrationConnectionStatus.Paused && !isTest))
+        var skip = SkipReasonFor(connection, isTest);
+        if (skip is { } reason)
         {
-            _logger.LogDebug("Webhook delivery {DeliveryId} has no active connection; nothing to deliver", message.DeliveryId);
+            _logger.LogDebug("Webhook delivery {DeliveryId} skipped: {Reason}", message.DeliveryId, reason);
+            log.RecordSkipped(reason, now);
+            await _db.SaveChangesAsync(ct);
             return;
         }
 
         var secretReference = await _db.IntegrationSecretVersions
-            .Where(v => v.ConnectionId == connection.Id && v.Version == connection.CurrentSecretVersion)
+            .Where(v => v.ConnectionId == connection!.Id && v.Version == connection.CurrentSecretVersion)
             .Select(v => v.SecretReference)
             .FirstOrDefaultAsync(ct);
         var secret = secretReference is null ? null : await _secrets.ReadAsync(secretReference.Value, ct);
         if (secret is null)
         {
-            connection.RecordFailure("The signing secret is missing.", _clock.UtcNow);
+            connection!.RecordFailure("The signing secret is missing.", now);
+            log.RecordFailed(null, OutboundDeliveryFailureClass.SecretMissing, now);
             await _db.SaveChangesAsync(ct);
             return;
         }
 
-        var now = _clock.UtcNow;
+        var retryAttempt = context.GetRetryAttempt();
+        log.StartAttempt(retryAttempt + 1, now);
         var body = JsonSerializer.Serialize(new
         {
             id = message.DeliveryId,
@@ -91,23 +104,37 @@ public sealed class IntegrationWebhookDispatchRequestedConsumer : IConsumer<Inte
         });
 
         var result = await _sender.SendAsync(
-            connection.TargetUrl, secret, message.DeliveryId, message.DeliveryType, body, now, ct);
+            connection!.TargetUrl!, secret, message.DeliveryId, message.DeliveryType, body, now, ct);
 
         switch (result.Outcome)
         {
             case WebhookSendOutcome.Delivered:
                 connection.RecordSuccess(_clock.UtcNow);
+                log.RecordDelivered(result.StatusCode!.Value, _clock.UtcNow);
                 break;
 
-            case WebhookSendOutcome.Transient when context.GetRetryAttempt() < MaxRedeliveries:
+            case WebhookSendOutcome.Transient when retryAttempt < MaxRedeliveries:
+                log.RecordRetrying(result.StatusCode, result.FailureClass!.Value, _clock.UtcNow);
+                await _db.SaveChangesAsync(ct);
                 throw new WebhookDispatchRetryableException(message.DeliveryId, result.Description);
 
             default:
                 connection.RecordFailure(result.Description, _clock.UtcNow);
+                log.RecordFailed(result.StatusCode, result.FailureClass ?? OutboundDeliveryFailureClass.ReceiverRejected, _clock.UtcNow);
                 break;
         }
 
         await _db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>Why the delivery must not be sent, or null when the connection can receive it.</summary>
+    private static OutboundDeliverySkipReason? SkipReasonFor(IntegrationConnection? connection, bool isTest)
+    {
+        if (connection is null || connection.TargetUrl is null) return OutboundDeliverySkipReason.ConnectionMissing;
+        if (connection.IsDeleted) return OutboundDeliverySkipReason.ConnectionDeleted;
+        if (connection.Status == IntegrationConnectionStatus.Revoked) return OutboundDeliverySkipReason.ConnectionRevoked;
+        if (connection.Status == IntegrationConnectionStatus.Paused && !isTest) return OutboundDeliverySkipReason.ConnectionPaused;
+        return null;
     }
 
     private static JsonElement ParseData(string? payloadJson)

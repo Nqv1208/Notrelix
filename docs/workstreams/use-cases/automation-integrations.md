@@ -272,7 +272,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-INT-F02 | Send a test delivery | F Outbound provider operation | Owner and Admin | Y | Y | Y | Y | HARDENING | the result of the test is not shown to the user (only "queued") |
 | UC-INT-F03 | Send a Slack message (outbound operation) | F Outbound provider operation | system on behalf of an Automation rule whose creator may use the connection | N | N | N | N | DEFINED | unblocks UC-AUT-D09 |
 | UC-INT-F04 | Dispatch an n8n webhook for Automation | F Outbound provider operation | system on behalf of an Automation Webhook step | Y | N | N | N | IMPLEMENTING | no real e2e; see UC-AUT-D08 |
-| UC-INT-F05 | Read the delivery log of a webhook | F Outbound provider operation | Owner and Admin | N | N | Y | N | IMPLEMENTING | no read endpoint |
+| UC-INT-F05 | Read the delivery log of a webhook | F Outbound provider operation | Owner and Admin | N | N | Y | N | HARDENING | Built (not run here): OutboundDeliveryLogEntry.cs, ListConnectionDeliveryLog.cs, IntegrationConnectionEndpoints.cs (GET .../{connectionId}/deliveries), dispatch consumer writes one row per delivery; OutboundDeliveryLogEntryTests.cs, ConnectionDeliveryLogTests.cs. No screen (detail tab not built). Remaining: a PostgreSQL integration test of the log write (CI); owner tests by hand. |
 | UC-INT-F06 | Retry a failed delivery with backoff | F Outbound provider operation | system | P | N | N | N | IMPLEMENTING | the budget differs from the decision (DEF-12) |
 | UC-INT-F07 | Reconcile an unknown provider outcome | F Outbound provider operation | system | N | N | N | N | DEFINED | no executable path outside n8n |
 | UC-INT-G01 | Accept only bounded, verified calendar webhooks | G Inbound webhook verification | the provider (anonymous route, signature-authenticated, rate limited per IP) | Y | N | N | N | HARDENING | Built and run: WebhookIntakeRateLimitTests.cs (31st delivery gets 429 before the handler). Remaining: owner tests by hand. |
@@ -1829,8 +1829,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: loading, empty, error.
 - Rules: integrations.md §27 Webhook Delivery, §28 INT-010; AIREQ083, AIREQ114.
 - Acceptance: Given a failed delivery, Then the log shows its attempts and last status.
-- Evidence: BE `WebhookDelivery` entity and table only · FE none · Design `Final-Integrations` · Tests T-ID `WebhookDeliveryLifecycleTests` · Real e2e none
-- State: IMPLEMENTING — no read endpoint.
+- Evidence: BE `OutboundDeliveryLogEntry` (table `outbound_delivery_log_entries`), `ListConnectionDeliveryLog.cs`, `IntegrationWebhookDispatchRequestedConsumer.cs` (writes the log), `IntegrationConnectionEndpoints.cs` · FE none (no screen) · Design `Final-Integrations` · Tests `OutboundDeliveryLogEntryTests.cs`, `ConnectionDeliveryLogTests.cs` (run: Domain and Application suites) · Real e2e none
+- State: HARDENING — built and unit-tested (Domain and Application suites); the log write and the cursor read against PostgreSQL are not run here. No screen.
 
 ### UC-INT-F06 Retry a failed delivery with backoff
 - Capability: INT-006 Outbound provider operation

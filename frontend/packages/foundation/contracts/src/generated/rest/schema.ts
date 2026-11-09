@@ -2437,6 +2437,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/integrations/{connectionId}/deliveries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The delivery log of an outgoing webhook connection, newest first (cursor page, default 50, max 200) */
+        get: operations["Integrations.Connections.ListDeliveries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/integrations/webhooks": {
         parameters: {
             query?: never;
@@ -8057,6 +8074,11 @@ export interface components {
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
+        "Notrelix.Application.Common.Models.CursorPageOfOutboundDeliveryLogEntryDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Integrations.Connections.Queries.ListConnectionDeliveryLog.OutboundDeliveryLogEntryDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
         "Notrelix.Application.Common.Models.CursorPageOfPageDto": {
             items?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageDto"][] | null;
             nextCursor?: string | null;
@@ -8979,6 +9001,24 @@ export interface components {
         "Notrelix.Application.Features.Integrations.Connections.IntegrationsOverviewDto": {
             catalog?: components["schemas"]["Notrelix.Application.Features.Integrations.Connections.IntegrationCatalogEntryDto"][] | null;
             connections?: components["schemas"]["Notrelix.Application.Features.Integrations.Connections.IntegrationConnectionDto"][] | null;
+        };
+        "Notrelix.Application.Features.Integrations.Connections.Queries.ListConnectionDeliveryLog.OutboundDeliveryLogEntryDto": {
+            /** Format: uuid */
+            id?: string;
+            eventType?: string | null;
+            status?: string | null;
+            /** Format: int32 */
+            attemptCount?: number;
+            /** Format: int32 */
+            responseStatusCode?: number | null;
+            failureClass?: string | null;
+            skipReason?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+            /** Format: date-time */
+            deliveredAt?: string | null;
         };
         "Notrelix.Application.Features.Operators.Audit.OperatorAuditEntryDto": {
             /** Format: uuid */
@@ -16505,6 +16545,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Integrations.Connections.IntegrationAuthorizationDto"];
+                };
+            };
+        };
+    };
+    "Integrations.Connections.ListDeliveries": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfOutboundDeliveryLogEntryDto"];
                 };
             };
         };

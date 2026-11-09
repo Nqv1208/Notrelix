@@ -3925,6 +3925,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Integrations.Connections.Queries.ListConnectionDeliveryLog.ListConnectionDeliveryLogQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Integrations.Connections.Queries.ListConnectionDeliveryLog.ListConnectionDeliveryLogQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Integrations.Connections.Queries.StartIntegrationAuthorization.StartIntegrationAuthorizationQuery",
     "kind": "Query",
     "principalMarkers": [

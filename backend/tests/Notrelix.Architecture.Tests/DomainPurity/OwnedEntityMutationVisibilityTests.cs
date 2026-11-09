@@ -14,6 +14,10 @@ public class OwnedEntityMutationVisibilityTests
         "Notrelix.Domain.Billing.Plans.PlanPrice",
         "Notrelix.Domain.Billing.Plans.PlanLimit",
 
+        // ── Integrations ── a delivery log row has its own identity (the delivery id), no aggregate owns it, and the
+        // dispatch consumer writes it as the attempts happen
+        "Notrelix.Domain.Integrations.Webhooks.OutboundDeliveryLogEntry",
+
         // ── WorkManagement ── a reminder ledger row has its own lifecycle (one per Item and sender, no aggregate owns it)
         "Notrelix.Domain.WorkManagement.Items.BoardItemReminder",
         // a link row follows its source Item when the Item moves to another board (rehomed by that use case)

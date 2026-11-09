@@ -1,5 +1,6 @@
 using Notrelix.API.Contracts.Integrations.Connections;
 using Notrelix.API.Extensions;
+using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Integrations.Abstractions;
 using Notrelix.Application.Features.Integrations.Connections;
 using Notrelix.Application.Features.Integrations.Connections.Commands.CompleteIntegrationAuthorization;
@@ -9,6 +10,7 @@ using Notrelix.Application.Features.Integrations.Connections.Commands.PauseInteg
 using Notrelix.Application.Features.Integrations.Connections.Commands.ResumeIntegration;
 using Notrelix.Application.Features.Integrations.Connections.Commands.TestIntegration;
 using Notrelix.Application.Features.Integrations.Connections.Queries.ListIntegrations;
+using Notrelix.Application.Features.Integrations.Connections.Queries.ListConnectionDeliveryLog;
 using Notrelix.Application.Features.Integrations.Connections.Queries.StartIntegrationAuthorization;
 
 namespace Notrelix.API.Endpoints.Integrations.Connections;
@@ -32,6 +34,11 @@ public static class IntegrationConnectionEndpoints
             .WithName("Integrations.Connections.Authorize")
             .WithSummary("The provider's authorization page for the workspace (OAuth redirect flow)")
             .Produces<IntegrationAuthorizationDto>();
+
+        group.MapWorkspaceGet("/{connectionId:guid}/deliveries", ListDeliveriesAsync)
+            .WithName("Integrations.Connections.ListDeliveries")
+            .WithSummary("The delivery log of an outgoing webhook connection, newest first (cursor page, default 50, max 200)")
+            .Produces<CursorPage<OutboundDeliveryLogEntryDto>>();
 
         group.MapWorkspacePost("/webhooks", ConnectWebhookAsync)
             .WithName("Integrations.Webhooks.Connect")
@@ -70,6 +77,10 @@ public static class IntegrationConnectionEndpoints
 
     private static async Task<IResult> ListAsync(Guid workspaceId, ISender sender)
         => (await sender.Send(new ListIntegrationsQuery(workspaceId))).ToApiResult();
+
+    private static async Task<IResult> ListDeliveriesAsync(
+        Guid workspaceId, Guid connectionId, string? cursor, int? limit, ISender sender)
+        => (await sender.Send(new ListConnectionDeliveryLogQuery(workspaceId, connectionId, cursor, limit))).ToApiResult();
 
     private static async Task<IResult> AuthorizeAsync(
         Guid workspaceId, string provider, HttpRequest request, IConfiguration configuration, ISender sender)

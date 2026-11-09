@@ -204,6 +204,7 @@ public partial class ApplicationDbContext
     public DbSet<IntegrationSyncCursor> IntegrationSyncCursors => Set<IntegrationSyncCursor>();
     public DbSet<WebhookSubscription> WebhookSubscriptions => Set<WebhookSubscription>();
     public DbSet<WebhookDelivery> WebhookDeliveries => Set<WebhookDelivery>();
+    public DbSet<OutboundDeliveryLogEntry> OutboundDeliveryLog => Set<OutboundDeliveryLogEntry>();
     public DbSet<InboundWebhookEvent> InboundWebhookEvents => Set<InboundWebhookEvent>();
     public DbSet<global::Notrelix.Infrastructure.Data.Integrations.InboundWebhookReceipt> InboundWebhookReceipts => Set<global::Notrelix.Infrastructure.Data.Integrations.InboundWebhookReceipt>();
     public DbSet<global::Notrelix.Infrastructure.Data.Integrations.IntegrationSecretBlob> IntegrationSecretBlobs => Set<global::Notrelix.Infrastructure.Data.Integrations.IntegrationSecretBlob>();
