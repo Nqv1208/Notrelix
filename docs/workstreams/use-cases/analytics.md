@@ -40,31 +40,31 @@ Letters follow the capability list of the team spec (section 5), in order: ANA-0
 |---|---|---|---|---|---|---|---|---|
 | A | Source-event/reporting-contract inventory | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
 | B | Metric definition registry | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
-| C | Analytical projection foundation | 2 | 0 | 2 | 0 | 0 | 0 | 0 |
+| C | Analytical projection foundation | 2 | 0 | 1 | 0 | 1 | 0 | 0 |
 | D | Projection identity/idempotency | 1 | 0 | 1 | 0 | 0 | 0 | 0 |
 | E | Projection ordering/late-event policy | 1 | 0 | 1 | 0 | 0 | 0 | 0 |
 | F | Projection rebuild/backfill | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
 | G | Account/workspace metrics | 2 | 1 | 0 | 0 | 0 | 0 | 1 |
-| H | WorkManagement analytics | 5 | 1 | 0 | 2 | 2 | 0 | 0 |
+| H | WorkManagement analytics | 5 | 1 | 0 | 0 | 4 | 0 | 0 |
 | I | Documents/Collaboration analytics | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | J | Automation/Integrations analytics | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | K | Billing/usage analytics | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | L | Cross-context report composition | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| M | Report/query API (dashboard lifecycle) | 10 | 1 | 9 | 0 | 0 | 0 | 0 |
+| M | Report/query API (dashboard lifecycle) | 10 | 1 | 8 | 0 | 1 | 0 | 0 |
 | N | Dashboard/report frontend | 4 | 0 | 2 | 1 | 1 | 0 | 0 |
 | O | Filters/date/timezone semantics | 2 | 1 | 0 | 1 | 0 | 0 | 0 |
 | P | Freshness/staleness contract | 3 | 1 | 1 | 1 | 0 | 0 | 0 |
 | Q | Export | 3 | 2 | 1 | 0 | 0 | 0 | 0 |
-| R | Authorization/visibility | 4 | 2 | 1 | 0 | 1 | 0 | 0 |
+| R | Authorization/visibility | 4 | 2 | 0 | 0 | 2 | 0 | 0 |
 | S | Retention/data lifecycle | 4 | 3 | 1 | 0 | 0 | 0 | 0 |
 | T | Performance/storage strategy | 1 | 0 | 1 | 0 | 0 | 0 | 0 |
 | U | Observability | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | V | Data quality/reconciliation | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | W | Migration/versioning | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | X | Hardening | 2 | 1 | 0 | 0 | 0 | 0 | 1 |
-| | Total | 61 | 28 | 22 | 5 | 4 | 0 | 2 |
+| | Total | 61 | 28 | 19 | 3 | 9 | 0 | 2 |
 
-No use case is DONE: none has an owner check or a 1-px design diff. HARDENING means a `frontend/e2e/real` spec runs it: only `work-report.real.e2e.spec.ts` exists for this context, so only the board and workspace work report (H01, H02, N01, R01) are HARDENING. IMPLEMENTING is used for code that cannot run end to end: the Dashboard, Widget and Snapshot aggregates (Domain and EF only), the placement projection (consumers and rebuild, no HTTP), and the report builder UI that runs only on the mock backend (`backendCapabilities.reports` is `mockApi`).
+No use case is DONE: none has an owner check or a 1-px design diff. HARDENING is the owner's rule (2026-11-08): the named backend gap is built and tested, and the owner tests and sets DONE. The work report rows H01, H02, N01 and R01 run on the real backend (`work-report.real.e2e.spec.ts`); H03, H04, R03, C02 and M03 are backend-built with Built notes. IMPLEMENTING is used for code that cannot run end to end: the Dashboard, Widget and Snapshot aggregates (Domain and EF only), the placement projection (consumers and rebuild, no HTTP), and the report builder UI that runs only on the mock backend (`backendCapabilities.reports` is `mockApi`).
 
 ## 1.2 What exists today
 
@@ -582,7 +582,7 @@ Dashboards live in the Analytics context (owner decision 17: a dashboard is an A
 - Rules: ANA002; ARREQ044.
 - Acceptance: Given version 3, When a rename arrives with version 2, Then 412 and no change.
 - Evidence: BE Domain `Dashboard.cs` rename · FE mock `reports.rename` · Design Final-Reports · Tests `DashboardTests.cs` · Real e2e none
-- State: IMPLEMENTING.
+- State: IMPLEMENTING — no handler yet. Owner question: "dashboard owner or workspace admin" has no check in the pipeline (`PermissionAction` has no dashboard action and no owner check); which permission decides it?
 
 ### UC-ANA-M05 Archive, restore or delete a dashboard
 - Capability: M, ANA-013
