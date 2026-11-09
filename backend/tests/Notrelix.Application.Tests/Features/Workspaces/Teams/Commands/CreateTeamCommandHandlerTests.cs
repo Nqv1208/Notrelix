@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Workspaces.Teams.Commands.CreateTeam;
+using Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Tests.Features.Workspaces.Teams.Commands;
 
@@ -29,5 +30,19 @@ public class CreateTeamCommandHandlerTests : WorkspaceHandlerTestBase
         var command = new CreateTeamCommand(TestWorkspaceId, "New Team", null);
         Func<Task> act = () => sut.Handle(command, CancellationToken.None);
         await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task Handle_WhenAnotherTeamInTheWorkspaceHasTheName_IsRefusedCaseInsensitively()
+    {
+        SetupWorkspaces(CreateWorkspace(TestWorkspaceId));
+        SetupTeams(CreateTeam());
+        var sut = CreateSut();
+        var command = new CreateTeamCommand(TestWorkspaceId, "  test TEAM ", null);
+
+        Func<Task> act = () => sut.Handle(command, CancellationToken.None);
+
+        var rule = await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+        rule.Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Team_DuplicateName);
     }
 }
