@@ -114,6 +114,9 @@ export const endpoints = {
       `/workspaces/${workspaceId}/spaces/${spaceId}/archive`,
     spaceUnarchive: (workspaceId: string, spaceId: string) =>
       `/workspaces/${workspaceId}/spaces/${spaceId}/unarchive`,
+    // Workspaces.Spaces.RestoreSpace (POST, no expected version; DELETE on `space` is Workspaces.Spaces.DeleteSpace).
+    spaceRestore: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${workspaceId}/spaces/${spaceId}/restore`,
     spaceMove: (workspaceId: string, spaceId: string) =>
       `/workspaces/${workspaceId}/spaces/${spaceId}/move`,
     spaceMembers: (workspaceId: string, spaceId: string) =>
@@ -135,6 +138,9 @@ export const endpoints = {
       `/workspaces/${workspaceId}/teams/${teamId}/archive`,
     teamUnarchive: (workspaceId: string, teamId: string) =>
       `/workspaces/${workspaceId}/teams/${teamId}/unarchive`,
+    // Workspaces.Teams.RestoreTeam (POST, no expected version; DELETE on `team` takes expectedVersion in the query).
+    teamRestore: (workspaceId: string, teamId: string) =>
+      `/workspaces/${workspaceId}/teams/${teamId}/restore`,
     teamMembers: (workspaceId: string, teamId: string) =>
       `/workspaces/${workspaceId}/teams/${teamId}/members`,
     teamMember: (workspaceId: string, teamId: string, userId: string) =>

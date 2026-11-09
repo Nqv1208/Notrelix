@@ -196,7 +196,7 @@ Products compared and what was taken:
 | UC-WSP-K06 | Change a Space's visibility | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | HARDENING | Built: expected version on the visibility write; a stale one is 412. Real e2e: owner tests by hand. |
 | UC-WSP-K07 | Move or reorder a Space | K | Owner, Admin, Space Admin | yes | partial | Final-Space | none | INTEGRATING | Tree drag not built (no artboard shows it); the Move picker is the only control. |
 | UC-WSP-K08 | Archive or unarchive a Space | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | HARDENING | Built: expected version on archive and unarchive; a stale one is 412. Real e2e: owner tests by hand. |
-| UC-WSP-K09 | Delete or restore a Space | K | Owner, Admin, Space Admin | yes | no | Final-Space | none | IMPLEMENTING | Frontend calls; trash and retention rule; expected version. |
+| UC-WSP-K09 | Delete or restore a Space | K | Owner, Admin, Space Admin | yes | no | Final-Space | none | IMPLEMENTING | Built: `remove` and `restore` service calls and mutation hooks (`use-space-mutations.ts`), unit tests `space-team-delete-restore.unit.test.ts`; the producer takes no version. Still open: no screen calls them (Delete stays inert on the Space page); the trash and retention rule (LD-16) is an owner decision. |
 | UC-WSP-K10 | See who is in a Space | K | Owner, Admin, Space members | yes | yes | Final-Space, Final-M-Space | none | INTEGRATING | Members-extra is not paged: the tab filters and counts client-side, so it needs a server filter and search contract (owner call). |
 | UC-WSP-K11 | Add a person or Team to a Space | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | HARDENING | Built (verified by reading code 2026-11-09, not run): AddSpaceMember.cs, SpaceRulesTests.cs, SpaceAccessMatrixIntegrationTests.cs, space-members-dialogs.tsx, spaces.service.ts. Remaining: owner tests by hand. |
 | UC-WSP-K12 | Change a Space member's role | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | HARDENING | Built (verified by reading code 2026-11-09, not run): ChangeSpaceMemberRole.cs, SpaceRulesTests.cs, SpaceVersionTests.cs, space-members-view.tsx, spaces.service.ts. Remaining: owner tests by hand. |
@@ -211,7 +211,7 @@ Products compared and what was taken:
 | UC-WSP-L06 | Change a Team member's role | L | Owner, Admin | yes | yes | Final-Teams | none | HARDENING | Built (verified by reading code 2026-11-09, not run): ChangeTeamMemberRole.cs, TeamRulesTests.cs, TeamMemberTests.cs, workspace-team-surface.tsx, use-team-mutations.ts. Remaining: owner tests by hand. |
 | UC-WSP-L07 | Remove a person from a Team | L | Owner, Admin | yes | yes | Final-Teams | none | HARDENING | Built (verified by reading code 2026-11-09, not run): RemoveTeamMember.cs, TeamWriteConcurrencyIntegrationTests.cs, workspace-team-surface.tsx, use-team-mutations.ts. Remaining: owner tests by hand. |
 | UC-WSP-L08 | Archive or unarchive a Team | L | Owner, Admin | yes | yes | Final-Teams | none | HARDENING | Built (verified by reading code 2026-11-09, not run): ArchiveTeam.cs, UnarchiveTeam.cs, TeamVersionTests.cs, workspace-team-surface.tsx, use-team-mutations.ts. Remaining: owner tests by hand. |
-| UC-WSP-L09 | Delete or restore a Team | L | Owner, Admin | yes | no | Final-Teams | none | IMPLEMENTING | Frontend calls; reference rule; expected version on restore. |
+| UC-WSP-L09 | Delete or restore a Team | L | Owner, Admin | yes | no | Final-Teams | none | IMPLEMENTING | Built: `remove` (with `expectedVersion` in the query) and `restore` service calls and mutation hooks (`use-team-mutations.ts`), unit tests `space-team-delete-restore.unit.test.ts`. The producer checks no version on restore. Still open: no screen calls them; the reference rule (LD-16) is an owner decision. |
 | UC-WSP-L10 | Read the Teams administration view | L | Owner, Admin, Member | yes | yes | Final-Teams | none | INTEGRATING | Board grants are not listed in the Teams administration read (waits on the Governance read contract). |
 | UC-WSP-M01 | Save, read and clear my onboarding draft | M | The signed-in person | yes | yes | Final-Onboarding | none | HARDENING | Built (verified by reading code 2026-11-09, not run): SaveOnboardingDraft.cs, GetOnboardingDraft.cs, ClearOnboardingDraft.cs, OnboardingDraftTests.cs, onboarding-api.ts, onboarding-page.tsx, onboarding-api.unit.test.ts. Remaining: owner tests by hand. |
 | UC-WSP-M02 | Sweep expired onboarding drafts | M | System | yes | n/a | none | none | HARDENING | Built (verified by reading code 2026-11-09, not run): OnboardingDraftSweep.cs, OnboardingIntegrationTests.cs. Remaining: owner tests by hand. |
@@ -1119,8 +1119,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Confirmation, blocked reason, pending. The mock page keeps Delete inert.
 - Rules: [workspaces](../../product/workspaces.md) section 43.2; WSP-022; WGREQ039, WGREQ006.
 - Acceptance: Given an empty Space, When deleted, Then it leaves the tree and restore returns it.
-- Evidence: BE `DELETE .../spaces/{spaceId}`, `POST .../restore`, `DeleteSpaceCommandHandler`, `RestoreSpaceCommandHandler` · FE none (Delete stays inert in the page) · Design `Final-Space` · Tests `SpaceTests` · Real e2e none
-- State: IMPLEMENTING — Frontend calls; trash and retention rule; expected version.
+- Evidence: BE `DELETE .../spaces/{spaceId}`, `POST .../restore`, `DeleteSpaceCommandHandler`, `RestoreSpaceCommandHandler` · FE `spaces.service.ts` (`remove`, `restore`), `use-space-mutations.ts` (hooks, no screen yet; Delete stays inert in the page) · Design `Final-Space` · Tests `SpaceTests`, `space-team-delete-restore.unit.test.ts` · Real e2e none
+- State: IMPLEMENTING — Built: the service calls and mutation hooks, with the tree refreshed after each (unit tests pass 2026-11-10). Remaining: a screen must call them (Delete stays inert on the Space page; no new button added); the trash and retention rule (LD-16) is an owner decision.
 
 ### UC-WSP-K10 See who is in a Space
 - Capability: K Spaces (added by this catalog)
@@ -1331,8 +1331,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Confirmation, pending.
 - Rules: [workspaces](../../product/workspaces.md) section 48.1; WGREQ036.
 - Acceptance: Given a deleted Team, When restored, Then its members return.
-- Evidence: BE `DELETE .../teams/{teamId}`, `POST .../restore`, `DeleteTeamCommandHandler`, `RestoreTeamCommandHandler` · FE none · Design `Final-Teams` · Tests `TeamVersionTests` · Real e2e none
-- State: IMPLEMENTING — Frontend calls; reference rule; expected version on restore.
+- Evidence: BE `DELETE .../teams/{teamId}`, `POST .../restore`, `DeleteTeamCommandHandler`, `RestoreTeamCommandHandler` · FE `teams.service.ts` (`remove`, `restore`), `use-team-mutations.ts` (hooks, no screen yet) · Design `Final-Teams` · Tests `TeamVersionTests`, `space-team-delete-restore.unit.test.ts` · Real e2e none
+- State: IMPLEMENTING — Built: the service calls and mutation hooks; delete sends the Team version, restore sends none (unit tests pass 2026-11-10). Remaining: a screen must call them; the reference rule (LD-16) is an owner decision.
 
 ### UC-WSP-L10 Read the Teams administration view
 - Capability: L Teams (added by this catalog)
