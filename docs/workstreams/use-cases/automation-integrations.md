@@ -264,7 +264,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-INT-D01 | Change the address of an outgoing webhook | D Connection configuration | Owner and Admin | N | N | N | N | DEFINED | no endpoint or UI exists |
 | UC-INT-D02 | Typed, versioned provider configuration | D Connection configuration | system | P | N | N | N | IMPLEMENTING | only the webhook target address is a typed field; no versioned configuration object |
 | UC-INT-E01 | A signing secret is generated and shown once | E Credential reference/storage contract | Owner and Admin | Y | Y | Y | Y | HARDENING | the physical store depends on Data Protection key persistence (restart safety, AIREQ061) not proven in a restart test |
-| UC-INT-E02 | Regenerate a webhook secret | E Credential reference/storage contract | Owner and Admin | P | N | Y | N | IMPLEMENTING | domain only |
+| UC-INT-E02 | Regenerate a webhook secret | E Credential reference/storage contract | Owner and Admin | Y | N | Y | N | HARDENING | Built (not run here): RegenerateWebhookSecret.cs (command with ExpectedVersion, handler, validator), endpoint POST .../integrations/{connectionId}/secret, ExpectedVersionTargetMap entry. The new secret is returned once and never logged, audited or put in the idempotency store; no Idempotency-Key (reason in the No-op line). Tests: RegenerateWebhookSecretTests.cs (9 tests, Application suite). No screen (confirm and one-time dialogs not built). Remaining: the replaced secret blob is not physically revoked (only the current reference moves). Owner question: should regeneration need a step-up proof like API token issuance (no step-up purpose exists for integrations)? Owner tests by hand. |
 | UC-INT-E03 | Tokens are stored behind an opaque reference | E Credential reference/storage contract | system | Y | N | N | N | INTEGRATING | unit level only: the handler test shows one token set goes to the secret store and the connection keeps the reference; no integration test through PostgreSQL and the real secret store yet |
 | UC-INT-E04 | Refresh tokens before they expire | E Credential reference/storage contract | system | P | N | N | N | IMPLEMENTING | no refresh job |
 | UC-INT-E05 | Retire the secret after a disconnect | E Credential reference/storage contract | system | Y | N | N | N | HARDENING | Built (verified by reading code 2026-11-09, not run): IntegrationConnectionRevokedConsumer.cs, IntegrationConnectionRevokedConsumerTests.cs, CalendarConnectionFlowIntegrationTests.cs (RevokedConnection_OutboxEvent_ConsumerRevokesAllSecretReferences). Remaining: owner tests by hand. |
@@ -1711,12 +1711,12 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Input: `connectionId`, expected version.
 - Output: a new secret version shown once; the old one is invalid at once.
 - Main flow: "Regenerate secret" on the detail.
-- No-op / rejection / concurrency / retry: a retry with the same idempotency key returns the same new secret reference, never two.
+- No-op / rejection / concurrency / retry: built without an Idempotency-Key on purpose. A replayed result would have to hold the one-time secret in the idempotency result store, which must never hold it. Instead the request states the connection version it read (ExpectedVersion): a repeat with that stale version is refused (412), so a lost response cannot rotate twice, and a new attempt reads the version again. A connection that is not Active or Paused is refused (integrations.webhook.secret.connection-state).
 - UI states: confirm dialog, one-time dialog.
 - Rules: integrations.md §17; owner decision 45 (regeneration allowed); AIREQ062.
 - Acceptance: Given a regenerated secret, Then deliveries signed with the old secret are no longer produced.
-- Evidence: BE `IntegrationConnection.RotateSecret`, `IntegrationSecretRotatedDomainEvent` (no command, no endpoint) · FE none · Design `Final-Integrations` · Tests T-ID `SecretRotationBoundaryTests` · Real e2e none
-- State: IMPLEMENTING — domain only.
+- Evidence: BE `RegenerateWebhookSecret.cs`, `IntegrationConnectionEndpoints.cs` (POST secret), `ExpectedVersionTargetMap.cs`, `IntegrationConnection.RotateSecret` · FE none (no screen) · Design `Final-Integrations` · Tests `RegenerateWebhookSecretTests.cs` (run: Application suite), `ExpectedVersionArchitectureTests.cs` (run) · Real e2e none
+- State: HARDENING — the regenerate command, endpoint and audit row are built and unit-tested (Application suite). No screen. Replaced secret blob not revoked physically. Owner question on step-up.
 
 ### UC-INT-E03 Tokens are stored behind an opaque reference
 - Capability: INT-005 Credential reference/storage contract

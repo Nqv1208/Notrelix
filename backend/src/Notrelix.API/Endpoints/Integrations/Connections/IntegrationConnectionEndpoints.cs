@@ -7,6 +7,7 @@ using Notrelix.Application.Features.Integrations.Connections.Commands.CompleteIn
 using Notrelix.Application.Features.Integrations.Connections.Commands.ConnectWebhook;
 using Notrelix.Application.Features.Integrations.Connections.Commands.DisconnectIntegration;
 using Notrelix.Application.Features.Integrations.Connections.Commands.PauseIntegration;
+using Notrelix.Application.Features.Integrations.Connections.Commands.RegenerateWebhookSecret;
 using Notrelix.Application.Features.Integrations.Connections.Commands.ResumeIntegration;
 using Notrelix.Application.Features.Integrations.Connections.Commands.TestIntegration;
 using Notrelix.Application.Features.Integrations.Connections.Queries.ListIntegrations;
@@ -66,6 +67,11 @@ public static class IntegrationConnectionEndpoints
             .WithSummary("Send a test delivery to an outgoing webhook")
             .Produces<IntegrationTestDto>();
 
+        group.MapWorkspacePost("/{connectionId:guid}/secret", RegenerateSecretAsync)
+            .WithName("Integrations.Webhooks.RegenerateSecret")
+            .WithSummary("Regenerate an outgoing webhook's signing secret; the new secret is returned once and the old one stops signing")
+            .Produces<RegeneratedWebhookSecretDto>();
+
         group.MapWorkspaceDelete("/{connectionId:guid}", DisconnectAsync)
             .WithName("Integrations.Connections.Disconnect")
             .WithSummary("Disconnect a connection")
@@ -112,6 +118,10 @@ public static class IntegrationConnectionEndpoints
 
     private static async Task<IResult> TestAsync(Guid workspaceId, Guid connectionId, ISender sender)
         => (await sender.Send(new TestIntegrationCommand(workspaceId, connectionId))).ToApiResult();
+
+    private static async Task<IResult> RegenerateSecretAsync(
+        Guid workspaceId, Guid connectionId, RegenerateWebhookSecretRequest body, ISender sender)
+        => (await sender.Send(new RegenerateWebhookSecretCommand(workspaceId, connectionId, body.ExpectedVersion))).ToApiResult();
 
     private static async Task<IResult> DisconnectAsync(Guid workspaceId, Guid connectionId, ISender sender)
         => (await sender.Send(new DisconnectIntegrationCommand(workspaceId, connectionId))).ToNoContentResult();

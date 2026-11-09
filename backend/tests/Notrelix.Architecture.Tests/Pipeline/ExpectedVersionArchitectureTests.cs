@@ -68,6 +68,7 @@ public static class ExpectedVersionInventory
             ["UnarchiveWorkspaceCommand"] = "workspaces.workspace",
             ["UpdateWorkspaceProfileCommand"] = "workspaces.workspace",
             ["UpdateWorkspaceSettingsCommand"] = "workspaces.workspace",
+            ["RegenerateWebhookSecretCommand"] = "integrations.connection",
             ["MoveSpaceCommand"] = "workspaces.space",
             ["AddSpaceMemberCommand"] = "workspaces.space",
             ["RemoveSpaceMemberCommand"] = "workspaces.space",

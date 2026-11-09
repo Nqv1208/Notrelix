@@ -97,7 +97,9 @@ using Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFil
 using Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFilterVisibility;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Application.Features.Integrations.Connections.Commands.RegenerateWebhookSecret;
 using Notrelix.Application.Features.Workspaces.Settings.Commands.UpdateWorkspaceSettings;
+using Notrelix.Domain.Integrations.Connections;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.DeleteWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWorkspace;
@@ -219,6 +221,7 @@ public sealed class ExpectedVersionTargetMap
     private const string SavedFilterKind = "work-management.saved-filter";
     private const string AccountKind = "accounts.account";
     private const string WorkspaceKind = "workspaces.workspace";
+    private const string IntegrationConnectionKind = "integrations.connection";
     private const string SpaceKind = "workspaces.space";
     private const string TeamKind = "workspaces.team";
     private const string WorkspaceMemberKind = "workspaces.workspace-member";
@@ -337,6 +340,8 @@ public sealed class ExpectedVersionTargetMap
         [typeof(DeleteWorkspaceCommand)] = new(WorkspaceKind, typeof(Workspace)),
         [typeof(UpdateWorkspaceProfileCommand)] = new(WorkspaceKind, typeof(Workspace)),
         [typeof(UpdateWorkspaceSettingsCommand)] = new(WorkspaceKind, typeof(Workspace)),
+        // Integrations — regenerating a webhook secret is protected by the connection's version
+        [typeof(RegenerateWebhookSecretCommand)] = new(IntegrationConnectionKind, typeof(IntegrationConnection)),
 
         // Collaboration — comment edit and delete quote the comment version the reader saw (UC-COL-A05, A06, C01)
         [typeof(UpdateCommentCommand)] = new(CommentKind, typeof(Comment)),

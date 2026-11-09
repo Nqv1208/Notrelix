@@ -3850,6 +3850,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Integrations.Connections.Commands.RegenerateWebhookSecret.RegenerateWebhookSecretCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Integrations.Connections.Commands.RegenerateWebhookSecret.RegenerateWebhookSecretCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Integrations.Connections.Commands.ResumeIntegration.ResumeIntegrationCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -3900,7 +3925,7 @@
     ]
   },
   {
-    "requestType": "Notrelix.Application.Features.Integrations.Connections.Queries.ListIntegrations.ListIntegrationsQuery",
+    "requestType": "Notrelix.Application.Features.Integrations.Connections.Queries.GetIntegrationConnection.GetIntegrationConnectionQuery",
     "kind": "Query",
     "principalMarkers": [
       "IAuthenticatedRequest"
@@ -3921,7 +3946,7 @@
     "authorizedCache": false,
     "publicCache": false,
     "handlerTypes": [
-      "Notrelix.Application.Features.Integrations.Connections.Queries.ListIntegrations.ListIntegrationsQueryHandler"
+      "Notrelix.Application.Features.Integrations.Connections.Queries.GetIntegrationConnection.GetIntegrationConnectionQueryHandler"
     ]
   },
   {
@@ -3947,6 +3972,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Integrations.Connections.Queries.ListConnectionDeliveryLog.ListConnectionDeliveryLogQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Integrations.Connections.Queries.ListIntegrations.ListIntegrationsQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Integrations.Connections.Queries.ListIntegrations.ListIntegrationsQueryHandler"
     ]
   },
   {

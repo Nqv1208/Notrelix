@@ -9518,6 +9518,95 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/integrations/{connectionId}": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Read one connection in detail: status, last success and error, address and granted scopes",
+        "operationId": "Integrations.Connections.Get",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "connectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Integrations.Connections.IntegrationConnectionDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Disconnect a connection",
+        "operationId": "Integrations.Connections.Disconnect",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "connectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/integrations/{connectionId}/deliveries": {
       "get": {
         "tags": [
@@ -9779,13 +9868,13 @@
         ]
       }
     },
-    "/api/v1/workspaces/{workspaceId}/integrations/{connectionId}": {
-      "delete": {
+    "/api/v1/workspaces/{workspaceId}/integrations/{connectionId}/secret": {
+      "post": {
         "tags": [
           "Integrations"
         ],
-        "summary": "Disconnect a connection",
-        "operationId": "Integrations.Connections.Disconnect",
+        "summary": "Regenerate an outgoing webhook's signing secret; the new secret is returned once and the old one stops signing",
+        "operationId": "Integrations.Webhooks.RegenerateSecret",
         "parameters": [
           {
             "name": "workspaceId",
@@ -9806,9 +9895,26 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Integrations.Connections.RegenerateWebhookSecretRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "204": {
-            "description": "No Content"
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Integrations.Connections.Commands.RegenerateWebhookSecret.RegeneratedWebhookSecretDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -29039,6 +29145,16 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Integrations.Connections.RegenerateWebhookSecretRequest": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Operator.OperatorAccountPlansRequest": {
         "type": "object",
         "properties": {
@@ -34496,6 +34612,19 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.Integrations.Connections.Commands.RegenerateWebhookSecret.RegeneratedWebhookSecretDto": {
+        "type": "object",
+        "properties": {
+          "connection": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Integrations.Connections.IntegrationConnectionDto"
+          },
+          "signingSecret": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.Integrations.Connections.CreatedWebhookConnectionDto": {
         "type": "object",
         "properties": {
@@ -34528,6 +34657,22 @@
           },
           "configured": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Integrations.Connections.IntegrationConnectionDetailDto": {
+        "type": "object",
+        "properties": {
+          "connection": {
+            "$ref": "#/components/schemas/Notrelix.Application.Features.Integrations.Connections.IntegrationConnectionDto"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
