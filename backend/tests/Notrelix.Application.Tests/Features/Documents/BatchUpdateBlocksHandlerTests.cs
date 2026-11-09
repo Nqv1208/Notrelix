@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Documents.Blocks.Commands.BatchUpdateBlocks;
+using Notrelix.Domain.Documents;
 using Notrelix.Domain.Documents.Blocks;
 using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.Common;
@@ -189,6 +190,72 @@ public sealed class BatchUpdateBlocksHandlerTests
             [Upsert(blocks[0].Id, content: Text("x"), version: 1)]), CancellationToken.None);
 
         await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task RetryingTheWholeBatch_AnswersTheStoredBlocks_AndStoresNothingTwice()
+    {
+        var page = Page.Create(AccountId, WorkspaceId, "Doc", UserId, Now);
+        var seed = Block.CreateRoot(AccountId, WorkspaceId, page.Id, BlockType.Text,
+            BlockContent.Create(JsonValue.Create(Text("one"))), FractionalIndex.Create("a0"), UserId, Now);
+        var stored = new List<Block> { seed };
+        var context = new Mock<IDocumentDbContext>();
+        context.Setup(c => c.Pages).Returns(TestDbSet.Create([page]).Object);
+        context.Setup(c => c.Blocks).Returns(TestDbSet.Create(stored).Object);
+        var requestContext = new FakeCurrentRequestContext().AsUser(UserId);
+        requestContext.Tenant.SetWorkspace(AccountId, WorkspaceId, UserId);
+        var sut = new BatchUpdateBlocksCommandHandler(context.Object, new NoPageBlockWriteLock(), requestContext, new FixedClock());
+        var newId = Guid.CreateVersion7();
+        var batch = new BatchUpdateBlocksCommand(page.Id,
+        [
+            Upsert(newId, type: "paragraph", content: Text("new"), after: seed.Id),
+        ]);
+
+        var first = await sut.Handle(batch, CancellationToken.None);
+        var retry = await sut.Handle(batch, CancellationToken.None);
+
+        first.Succeeded.Should().BeTrue();
+        retry.Succeeded.Should().BeTrue();
+        retry.Data!.Select(b => b.Id).Should().ContainSingle().Which.Should().Be(newId, "the retry is answered with the block the first send stored");
+        stored.Should().HaveCount(2, "the retry adds no second block");
+        stored.Count(b => b.Id == newId).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ABatchThatWouldPassTheBlockLimit_IsRefused_ButOneThatReachesIt_Succeeds()
+    {
+        var keys = FractionalIndexGenerator.GenerateNKeysBetween(null, null, 5000);
+        var (sut, page, _, _) = Create(keys.Take(4999).Select((key, i) => ($"{key.Value}", $"block {i}")).ToArray());
+        var last = Guid.CreateVersion7();
+
+        var reachesLimit = await sut.Handle(new BatchUpdateBlocksCommand(page.Id,
+            [Upsert(last, type: "paragraph", content: Text("five thousandth"))]), CancellationToken.None);
+        reachesLimit.Succeeded.Should().BeTrue("4 999 live blocks plus one is exactly the limit");
+
+        var (overSut, overPage, _, _) = Create(keys.Take(5000).Select((key, i) => ($"{key.Value}", $"block {i}")).ToArray());
+        var act = () => overSut.Handle(new BatchUpdateBlocksCommand(overPage.Id,
+            [Upsert(Guid.CreateVersion7(), type: "paragraph", content: Text("over"))]), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+            .Which.RuleCode.Should().Be(DocumentRuleCodes.Documents_Page_BlockLimitReached);
+    }
+
+    [Fact]
+    public async Task AFailingLaterOperation_ThrowsBeforeAnyResultIsReturned()
+    {
+        // Unit level: the handler surfaces the failure and returns no partial answer. The rollback of the first
+        // operation's change is the data session's job and is proven against PostgreSQL in BatchRollbackIntegrationTests.
+        var (sut, page, blocks, added) = Create(("a0", "one"));
+        var first = Guid.CreateVersion7();
+
+        var act = () => sut.Handle(new BatchUpdateBlocksCommand(page.Id,
+        [
+            Upsert(first, type: "paragraph", content: Text("kept?"), after: blocks[0].Id),
+            Upsert(blocks[0].Id, content: Text("stale"), version: 9),
+        ]), CancellationToken.None);
+
+        await act.Should().ThrowAsync<PreconditionFailedException>();
+        added.Select(b => b.Id).Should().ContainSingle().Which.Should().Be(first, "the first operation ran, so only the rollback can undo it");
     }
 
     private static string Mentioning(string text, params Guid[] people) =>

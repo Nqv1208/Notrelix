@@ -47,21 +47,21 @@ Letters follow the Documents list in the team spec (section 4): A Page lifecycle
 
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
-| A | Page lifecycle | 17 | 2 | 2 | 5 | 7 | 0 | 1 |
-| B | Page hierarchy | 5 | 0 | 0 | 4 | 1 | 0 | 0 |
+| A | Page lifecycle | 17 | 1 | 2 | 5 | 7 | 0 | 2 |
+| B | Page hierarchy | 5 | 0 | 0 | 2 | 3 | 0 | 0 |
 | C | Page move / reparent | 3 | 1 | 0 | 1 | 1 | 0 | 0 |
-| D | Block lifecycle | 6 | 0 | 0 | 3 | 3 | 0 | 0 |
+| D | Block lifecycle | 6 | 0 | 0 | 1 | 5 | 0 | 0 |
 | E | Block types and content contract | 9 | 1 | 0 | 4 | 4 | 0 | 0 |
-| F | Block ordering | 4 | 0 | 1 | 1 | 2 | 0 | 0 |
+| F | Block ordering | 4 | 0 | 1 | 0 | 3 | 0 | 0 |
 | G | Document query and loading | 7 | 2 | 0 | 2 | 3 | 0 | 0 |
 | H | Editor state reconciliation | 8 | 1 | 0 | 4 | 3 | 0 | 0 |
-| I | Document permissions | 7 | 2 | 0 | 3 | 2 | 0 | 0 |
+| I | Document permissions | 7 | 2 | 0 | 1 | 4 | 0 | 0 |
 | J | Document events and activity | 8 | 2 | 1 | 4 | 1 | 0 | 0 |
 | K | Document realtime | 3 | 0 | 0 | 1 | 1 | 0 | 1 |
-| L | Recovery and conflict hardening | 5 | 2 | 0 | 3 | 0 | 0 | 0 |
-| | Total | 82 | 12 | 4 | 35 | 28 | 0 | 3 |
+| L | Recovery and conflict hardening | 5 | 2 | 0 | 1 | 2 | 0 | 0 |
+| | Total | 82 | 12 | 4 | 26 | 37 | 0 | 3 |
 
-No use case is DONE: none has an owner check or a 1-px design diff. 20 use cases are HARDENING because a `frontend/e2e/real` spec drives them against the real backend: `documents.real.e2e.spec.ts` (create, write a block, rename, reload, share, guest sees it only after sharing), `documents-trash-links.real.e2e.spec.ts` (trash, restore, delete for good, page reference and backlink) and `documents-structure.real.e2e.spec.ts` (move a page under another with its version, a stale or circular move refused, trash with children and restore, reorder and delete a block against its version; this spec calls the routes, it does not click the screens). Everything else that has both backend and frontend code is INTEGRATING. On 2026-11-09 six more moved to HARDENING on code reading alone (E02, E03, F03, H06, H08, K02); no e2e was run for them, and their State lines say so.
+No use case is DONE: none has an owner check or a 1-px design diff. 20 use cases are HARDENING because a `frontend/e2e/real` spec drives them against the real backend: `documents.real.e2e.spec.ts` (create, write a block, rename, reload, share, guest sees it only after sharing), `documents-trash-links.real.e2e.spec.ts` (trash, restore, delete for good, page reference and backlink) and `documents-structure.real.e2e.spec.ts` (move a page under another with its version, a stale or circular move refused, trash with children and restore, reorder and delete a block against its version; this spec calls the routes, it does not click the screens). Everything else that has both backend and frontend code is INTEGRATING. On 2026-11-09 six more moved to HARDENING on code reading alone (E02, E03, F03, H06, H08, K02); no e2e was run for them, and their State lines say so. The same day nine more moved to HARDENING on tests (B03, B05, D03, D05, F01, I02, I04, L02, L03): the Application tests were run, the integration tests were written for CI, and no e2e was run.
 
 ## 1.2 The ten most important gaps
 
@@ -136,19 +136,19 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-A15 | Set page visibility | A | Manager | partial | none | none | none | BLOCKED | Public needs the anonymous principal decision |
 | UC-DCT-A16 | Favorite a page | A | Any viewer | none | partial | none | none | BLOCKED | Owner context unknown; FE call is a no-op |
 | UC-DCT-A17 | Retain and purge deleted pages | A | System | none | none | none | none | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): Pages: trash for 30 days, then purge (the one 30-day rule). Backup handling is not covered by this decision. |
-| UC-DCT-B01 | Show the page tree | B | Workspace member | yes | yes | Final-Docs-2 | none | INTEGRATING | Sidebar does not call the tree endpoint; it reads the unpaged page list (UC-DCT-G02) |
+| UC-DCT-B01 | Show the page tree | B | Workspace member | yes | yes | Final-Docs-2 | none | INTEGRATING | Owner question: above 2 000 visible pages the tree endpoint answers root pages only (LD15), and the sidebar has no lazy child loading; wire the whole tree now or build lazy loading first? |
 | UC-DCT-B02 | Create a child page | B | Editor of the parent | yes | yes | Final-Docs-2 | none | INTEGRATING | No client creates a page under a chosen parent (File menu makes a sibling) |
-| UC-DCT-B03 | Show the breadcrumb | B | Viewer | yes | yes | Final-Docs-2 | none | INTEGRATING | No Application test of the breadcrumb handler, so the hidden-ancestor collapse over the API is unproven |
+| UC-DCT-B03 | Show the breadcrumb | B | Viewer | yes | yes | Final-Docs-2 | none | HARDENING | Built: `PageBreadcrumbHandlerTests` (path, hidden crumb, collapsed run, missing parent); owner tests by hand |
 | UC-DCT-B04 | Refuse a cycle or a foreign parent | B | System | yes | partial | none | real | HARDENING | Owner check; the Move to dialog is not driven in a browser |
-| UC-DCT-B05 | Limit nesting depth | B | System | yes | partial | none | none | INTEGRATING | No test of the nesting depth rule; the move dialog words only the 400 |
+| UC-DCT-B05 | Limit nesting depth | B | System | yes | partial | none | none | HARDENING | Built: `PageNestingDepthTests` (create and subtree move refused past the limit); the move dialog words only the 400; owner tests by hand |
 | UC-DCT-C01 | Move a root page and its subtree to a space | C | Editor of the page and of the space | yes | yes | Final-Docs-2 | none | INTEGRATING | Refusal for a page below the caller, a deleted page below, 412 and a hidden target are untested; no dialog artboard |
 | UC-DCT-C02 | Move a page under another parent | C | Editor of the page, Editor of the new parent | yes | yes | none | real | HARDENING | Owner check; Move to dialog not driven in a browser; sidebar drag not built |
 | UC-DCT-C03 | Refuse a move to another workspace | C | System | none | none | none | none | DEFINED | No explicit rejection test |
 | UC-DCT-D01 | Add a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
 | UC-DCT-D02 | Edit a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
-| UC-DCT-D03 | Save several blocks as one change | D | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Retry of a whole batch and the 5 000-block limit are not tested |
+| UC-DCT-D03 | Save several blocks as one change | D | Editor | yes | yes | Final-Docs-2 | none | HARDENING | Built: batch retry and 5 000-block limit in `BatchUpdateBlocksHandlerTests`; rollback in `BatchRollbackIntegrationTests` (CI); owner tests by hand |
 | UC-DCT-D04 | Delete a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Owner check; block menu with an undo toast not built |
-| UC-DCT-D05 | Refuse edits to a trashed page | D | System | yes | partial | none | none | INTEGRATING | Trashed-page refusal is tested for rename and one block edit only; create, delete and batch are not |
+| UC-DCT-D05 | Refuse edits to a trashed page | D | System | yes | partial | none | none | HARDENING | Built: `PageTrashedRefusalTests` covers create, edit, delete, batch, restore and move on a trashed page (reorder in `ReorderBlocksHandlerTests`); owner tests by hand |
 | UC-DCT-D06 | Convert a checklist line to a task | D | Editor with item-create right | partial | yes | Final-Docs-2 | none | INTEGRATING | A single server call for the three writes is not built (needs a Work Management and Documents decision) |
 | UC-DCT-E01 | Write rich text with marks | E | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
 | UC-DCT-E02 | Change a block's type | E | Editor | yes | yes | Final-Docs-2 | none | HARDENING | Built (verified by reading code 2026-11-09, not run): UpdateBlock.cs, Block.cs, BlockChangeTypeTests.cs, BlockEditingHandlerTests.cs, editor-commands.ts, slash-menu.tsx, format-commands.component.test.tsx. Remaining: owner tests by hand. |
@@ -159,29 +159,29 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-E07 | Reference another page | E | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
 | UC-DCT-E08 | Mention a person in a page | E | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Suggestion list offers every workspace member, not only people who can view the page (UC-COL-B05) |
 | UC-DCT-E09 | Open a block type this client does not know | E | Any viewer | partial | partial | none | none | DEFINED | No placeholder behaviour |
-| UC-DCT-F01 | Insert a block between two blocks | F | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Owner or lead check: the Evidence says a non-sibling afterBlockId is 400, but the test asserts 404 for an unknown block |
+| UC-DCT-F01 | Insert a block between two blocks | F | Editor | yes | yes | Final-Docs-2 | none | HARDENING | Built: `BlockEditingHandlerTests` asserts 400 for a block of the page that is not a sibling and 404 for an id not on the page (doc and test agree); owner tests by hand |
 | UC-DCT-F02 | Reorder blocks | F | Editor | yes | yes | none | real | HARDENING | Owner check; the grip and keys are not driven in a browser |
 | UC-DCT-F03 | Nest or un-nest a block | F | Editor | yes | yes | none | none | HARDENING | Built (verified by reading code 2026-11-09, not run): Block.cs, BlockHierarchyTests.cs, BlockTreeRulesTests.cs, BlockMoveFailureAtomicityTests.cs, block-move.ts, block-move.component.test.tsx. Remaining: owner tests by hand. |
 | UC-DCT-F04 | Insert many blocks densely | F | Editor | yes | none | none | none | IMPLEMENTING | Rebalance undefined |
 | UC-DCT-G01 | Open a page | G | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Block list unbounded |
 | UC-DCT-G02 | List the pages of a workspace | G | Workspace member | yes | yes | none | none | HARDENING | Built: cursor paging; real e2e owner |
-| UC-DCT-G03 | Search pages by title | G | Workspace member | yes | yes | Final-Command | none | INTEGRATING | No index on the title for search at scale |
+| UC-DCT-G03 | Search pages by title | G | Workspace member | yes | yes | Final-Command | none | INTEGRATING | Owner question: approve an ILIKE rewrite of the title match and a pg_trgm GIN index on the title, or keep the current search? |
 | UC-DCT-G04 | Read the pages that reference this page | G | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Unbounded |
 | UC-DCT-G05 | Show the tasks and boards linked to a page | G | Viewer | partial | yes | Final-Docs-2 | none | INTEGRATING | ResourceLink aggregate fate is undecided (owner decision) |
 | UC-DCT-G06 | Load a very large page (enterprise baseline) | G | Viewer | none | none | none | none | DEFINED | No block limit or windowing |
 | UC-DCT-G07 | Search inside page text (enterprise baseline) | G | Workspace member | none | none | none | none | DEFINED | Title search only |
 | UC-DCT-H01 | Autosave edits and show the saved state | H | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Offline state not proven |
 | UC-DCT-H02 | Rebase after a stale save | H | Editor | yes | yes | none | none | INTEGRATING | No conflict artboard; no proof with two sessions |
-| UC-DCT-H03 | Roll back a failed optimistic write | H | Editor | yes | yes | none | none | INTEGRATING | A failed save keeps the rejected block in the editor; the create, delete and reorder hooks have no optimistic patch to roll back |
+| UC-DCT-H03 | Roll back a failed optimistic write | H | Editor | yes | yes | none | none | INTEGRATING | Built: create, delete and reorder hooks patch the list at once and roll back (`block-mutation-rollback.unit.test.ts`). Owner question: editor saves keep a rejected block until Retry by design; revert it instead? |
 | UC-DCT-H04 | Edit while offline | H | Editor | none | none | none | none | DEFINED | Not built |
 | UC-DCT-H05 | Find and replace in a page | H | Editor | none | yes | none | none | INTEGRATING | No artboard for find and replace |
 | UC-DCT-H06 | Read a page on a phone app | H | Viewer | yes | yes | Final-M-Docs | none | HARDENING | Built (verified by reading code 2026-11-09, not run): GetPageEndpoint.cs, ListPageBlocksEndpoint.cs, mobile-document-screen.tsx, docs-mobile-screen.mobile.test.tsx. Remaining: owner tests by hand. |
 | UC-DCT-H07 | Use the 320 px page and its overflow sheet | H | Viewer, Editor | yes | yes | Final-Docs-2-320 | none | INTEGRATING | Measured gaps beyond 1 px (paragraph style select 36 px against 30, status pill 79 against 87); other states undrawn |
 | UC-DCT-H08 | Edit with keyboard and screen reader | H | Editor | none | yes | none | none | HARDENING | Built (verified by reading code 2026-11-09, not run): shortcut-catalog.ts, doc-keys.ts, block-handle.tsx, block-move.component.test.tsx, doc-menu-bar.component.test.tsx. Remaining: owner tests by hand. |
 | UC-DCT-I01 | See a page only when allowed | I | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | No cross-tenant negative test |
-| UC-DCT-I02 | Edit only with edit permission | I | Editor | partial | yes | none | none | INTEGRATING | Matrix test that every write request checks its action is not written |
+| UC-DCT-I02 | Edit only with edit permission | I | Editor | partial | yes | none | none | HARDENING | Built: every page request checked against its action at Viewer, Editor and Manager (`ResourceLevelEnforcementMatrixTests`); owner tests by hand |
 | UC-DCT-I03 | Share a page with a member | I | Manager | yes | yes | Final-Share | real | HARDENING | Owned by Governance |
-| UC-DCT-I04 | Creator becomes Manager | I | Creator | yes | none | none | none | INTEGRATING | Grant of Manager is only unit-tested; no integration assertion |
+| UC-DCT-I04 | Creator becomes Manager | I | Creator | yes | none | none | none | HARDENING | Built: stored Manager entry asserted (`GovernanceResourcePermissionFlowTests`, CI) and the grant call (`PageCreatorGrantTests`); owner tests by hand |
 | UC-DCT-I05 | Embedding a board never shares it | I | System | partial | partial | none | none | DEFINED | No proof |
 | UC-DCT-I06 | Read-only and trashed page states | I | Viewer | partial | yes | Final-Docs-2 | none | INTEGRATING | Owner question: a trashed page answers 404 but product section 77 names a 400, and GET still reads a trashed page |
 | UC-DCT-I07 | Lose access while the page is open | I | Editor | none | none | none | none | DEFINED | Behaviour not built |
@@ -197,8 +197,8 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-K02 | Recover after a dropped connection | K | Viewer | partial | yes | none | none | HARDENING | Built (verified by reading code 2026-11-09, not run): GetPageBlocks.cs, use-doc-live.ts, docs-collaboration.ts (refetch when the connection comes back), docs-collaboration.unit.test.ts. Remaining: owner tests by hand. |
 | UC-DCT-K03 | Edit together with live cursors | K | Editor | none | none | none | none | BLOCKED | Needs an ADR |
 | UC-DCT-L01 | Restore a version with the guard | L | Editor | yes | yes | none | none | INTEGRATING | Restore does not prove that a restored block type is valid under today's schema (DCT-030); no artboard |
-| UC-DCT-L02 | Refuse a stale block write | L | Editor | yes | yes | none | none | INTEGRATING | Coverage of every competing write is not proven |
-| UC-DCT-L03 | Apply a batch completely or not at all | L | Editor | yes | yes | none | none | INTEGRATING | No database test of the batch rollback |
+| UC-DCT-L02 | Refuse a stale block write | L | Editor | yes | yes | none | none | HARDENING | Built: stale 412 for update, single delete, reorder, batch and version restore, nothing changed (`BlockStaleWriteTests` and the handler tests); owner tests by hand |
+| UC-DCT-L03 | Apply a batch completely or not at all | L | Editor | yes | yes | none | none | HARDENING | Built: failing later operation throws with no partial answer (unit), and `BatchRollbackIntegrationTests` proves rollback on PostgreSQL (CI); owner tests by hand |
 | UC-DCT-L04 | Retry a create without a second effect | L | Editor | partial | none | none | none | DEFINED | Page create has no key; block replay returns 409 |
 | UC-DCT-L05 | Retain and delete the dependents of a page | L | System | none | none | none | none | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): Dependents of a page follow the page: trash for 30 days, then purge. Backup handling is not covered by this decision. |
 
@@ -499,7 +499,7 @@ Team capability 2 (team id DCT-002). Requirements `DCREQ006`, `DCREQ007`, `DCREQ
 - Rules: product doc sections 14, 16, 17 (product rule DCT-005); `DCREQ006`, `DCREQ025`; GOV-029.
 - Acceptance: Given a private child under a visible parent, When a person without access lists, Then the child is absent and the parent shows no child marker for it.
 - Evidence: BE `GET /api/v1/workspaces/{workspaceId}/pages/tree?parentId`, `GetPageTreeQueryHandler` (sorted by `PageTitleOrder`, case and marks ignored; whole tree up to 2 000 visible pages, beyond that root pages only, and `parentId` answers the visible children of that page, a hidden or missing parent is `404`; `hasChildren` counts visible children only) · FE `docs-sidebar-tree.ts`, `usePageList` (the sidebar builds its tree from the page list, not from this endpoint, so no client reads the one-level mode yet) · Design Final-Docs-2 (sidebar) · Tests `PageViewAccessTests`, `PageHierarchyTests` · Real e2e none
-- State: INTEGRATING — Sidebar does not call the tree endpoint; it reads the unpaged page list (UC-DCT-G02).
+- State: INTEGRATING — Owner question: above 2 000 visible pages the tree endpoint answers root pages only (LD15 says children load by parent), and the sidebar has no lazy child loading. Should the sidebar read the whole tree now and load children by parent later, or build lazy loading first? Until then the sidebar keeps reading the unpaged page list (UC-DCT-G02).
 
 ### UC-DCT-B02 Create a child page
 - Capability: B Page hierarchy
@@ -526,8 +526,8 @@ Team capability 2 (team id DCT-002). Requirements `DCREQ006`, `DCREQ007`, `DCREQ
 - UI states: loading, error.
 - Rules: product doc sections 16, 17; `DCREQ025`.
 - Acceptance: Given a page two levels deep, When opened, Then the crumb shows root, parent, page.
-- Evidence: BE `GET /api/v1/pages/{pageId}/breadcrumb`, `GetPageBreadcrumbQueryHandler` climbs one parent at a time inside the workspace (it read every page of the tenant before), evaluates `ViewPage` for each ancestor through `IPageViewAccess`, and answers one `unavailable` crumb without id, title or icon for a run of hidden or missing ancestors · FE `usePageBreadcrumb`, `mapBreadcrumb`, crumb text `crumbUnavailable` · Design Final-Docs-2 · Tests `PageHierarchyTests` · Real e2e none
-- State: INTEGRATING — No Application test of the breadcrumb handler, so the hidden-ancestor collapse over the API is unproven.
+- Evidence: BE `GET /api/v1/pages/{pageId}/breadcrumb`, `GetPageBreadcrumbQueryHandler` climbs one parent at a time inside the workspace (it read every page of the tenant before), evaluates `ViewPage` for each ancestor through `IPageViewAccess`, and answers one `unavailable` crumb without id, title or icon for a run of hidden or missing ancestors · FE `usePageBreadcrumb`, `mapBreadcrumb`, crumb text `crumbUnavailable` · Design Final-Docs-2 · Tests `PageHierarchyTests`, `PageBreadcrumbHandlerTests` · Real e2e none
+- State: HARDENING. Built: `PageBreadcrumbHandlerTests` covers the path from the root to the page, one unavailable crumb with no id, title or icon for a hidden ancestor, the collapse of a run of hidden ancestors, a missing parent and a page outside the workspace. Missing: owner tests by hand.
 
 ### UC-DCT-B04 Refuse a cycle or a foreign parent
 - Capability: B Page hierarchy
@@ -554,8 +554,8 @@ Team capability 2 (team id DCT-002). Requirements `DCREQ006`, `DCREQ007`, `DCREQ
 - UI states: validation error.
 - Rules: new rule in Part 5; team spec section 7 "maximum nesting if product-defined".
 - Acceptance: Given a page at depth 10, When a child is created, Then refused.
-- Evidence: BE `PageTreeRules.MaxDepth` and `EnsureCanNestUnder(parentDepth, subtreeDepth)` applied on create, create from template and move (the move passes the level of the deepest descendant) · FE the Move to dialog words the `400` as a rule message · Design none · Tests none · Real e2e none
-- State: INTEGRATING — No test of the nesting depth rule; the move dialog words only the 400.
+- Evidence: BE `PageTreeRules.MaxDepth` and `EnsureCanNestUnder(parentDepth, subtreeDepth)` applied on create, create from template and move (the move passes the level of the deepest descendant) · FE the Move to dialog words the `400` as a rule message · Design none · Tests `PageNestingDepthTests` (create under a page at the limit refused, one level below allowed, a subtree move past the limit refused, a subtree that fits allowed) · Real e2e none
+- State: HARDENING. Built: the limit is tested for create and for a move that carries a subtree, at the boundary (level 10 allowed, 11 refused). Missing: the move dialog words only the 400; owner tests by hand.
 
 ## Capability C: Page move / reparent
 
@@ -646,8 +646,8 @@ Team capability 4 (team id DCT-004). Requirements `DCREQ011` to `DCREQ013`, `DCR
 - UI states: saving, conflict, validation error, offline.
 - Rules: product doc section 21A ("a batch applies completely or not at all"); `DCREQ028`.
 - Acceptance: Given a batch whose third operation is stale, When sent, Then the first two are not stored and the answer is `412`.
-- Evidence: BE `POST /api/v1/pages/{pageId}/blocks/batch`, `BatchUpdateBlocksCommandHandler` (refuses a trashed page and a result past 5 000 live blocks; an upsert with a type and no version for an id the page already holds answers the stored block when type, content and properties match, so a retried save does not fail, and is `409` otherwise; delete goes through `PageBlockSet.Delete`) · FE `batch-block-writer.ts`, `useDocSaver` · Design Final-Docs-2 · Tests `BatchUpdateBlocksHandlerTests`, `doc-block-saver.unit.test.ts` · Real e2e none
-- State: INTEGRATING — Retry of a whole batch and the 5 000-block limit are not tested.
+- Evidence: BE `POST /api/v1/pages/{pageId}/blocks/batch`, `BatchUpdateBlocksCommandHandler` (refuses a trashed page and a result past 5 000 live blocks; an upsert with a type and no version for an id the page already holds answers the stored block when type, content and properties match, so a retried save does not fail, and is `409` otherwise; delete goes through `PageBlockSet.Delete`) · FE `batch-block-writer.ts`, `useDocSaver` · Design Final-Docs-2 · Tests `BatchUpdateBlocksHandlerTests` (retry of a whole batch, the 5 000-block limit, a failing later operation), `BatchRollbackIntegrationTests` (PostgreSQL), `doc-block-saver.unit.test.ts` · Real e2e none
+- State: HARDENING. Built: a retried batch answers the stored blocks and adds none; a page past 5 000 live blocks is refused and 5 000 is allowed; a failing later operation throws with no partial answer, and `BatchRollbackIntegrationTests` (runs in CI, not run here) proves the earlier operations are not stored. Missing: owner tests by hand.
 
 ### UC-DCT-D04 Delete a block
 - Capability: D Block lifecycle
@@ -674,8 +674,8 @@ Team capability 4 (team id DCT-004). Requirements `DCREQ011` to `DCREQ013`, `DCR
 - UI states: read-only banner "This page is in the trash".
 - Rules: product doc section 77; `DCREQ003`, `DCREQ004`.
 - Acceptance: Given a trashed page, When a block is created, Then refused and no block exists.
-- Evidence: BE `PageRules.EnsureCanEdit` called by `CreateBlockCommandHandler`, `UpdateBlockCommandHandler`, `DeleteBlockCommandHandler` and `BatchUpdateBlocksCommandHandler` before anything changes, and by `Page.RecordBlocksSaved`; `PostgresPageAuthorizationFacts` still hides a trashed page first; `CreatePageVersionCommandHandler` (checks) · FE none · Design none · Tests none · Real e2e none
-- State: INTEGRATING — Trashed-page refusal is tested for rename and one block edit only; create, delete and batch are not.
+- Evidence: BE `PageRules.EnsureCanEdit` called by `CreateBlockCommandHandler`, `UpdateBlockCommandHandler`, `DeleteBlockCommandHandler` and `BatchUpdateBlocksCommandHandler` before anything changes, and by `Page.RecordBlocksSaved`; `PostgresPageAuthorizationFacts` still hides a trashed page first; `CreatePageVersionCommandHandler` (checks) · FE none · Design none · Tests `PageTrashedRefusalTests` (rename, one block edit, create, delete, batch, version restore, page move), `ReorderBlocksHandlerTests` (reorder) · Real e2e none
+- State: HARDENING. Built: every block write, version restore and page move on a trashed page is refused with its rule code and changes nothing. Missing: owner tests by hand.
 
 ### UC-DCT-D06 Convert a checklist line to a task
 - Capability: D Block lifecycle
@@ -832,12 +832,12 @@ Team capability 6 (team id DCT-006). Requirements `DCREQ018` to `DCREQ022`. Orde
 - Input: `afterBlockId`, `parentBlockId` on create; or placement on a batch upsert.
 - Output: the server computes the sort key between the named block and the next one; the block shows exactly there after any reload.
 - Main flow: Enter in the middle of a list, or the plus handle between blocks.
-- No-op / rejection / concurrency / retry: an `afterBlockId` that is not a sibling is `400`; two people inserting after the same block get two distinct keys and both blocks stay.
+- No-op / rejection / concurrency / retry: an `afterBlockId` that is a block of this page but not a sibling under the parent is `400`; an `afterBlockId` that is not a block of this page is `404`; two people inserting after the same block get two distinct keys and both blocks stay.
 - UI states: saved, conflict.
 - Rules: product doc sections 28, 29; `DCREQ018` to `DCREQ021`.
 - Acceptance: Given blocks A and B, When C is inserted after A, Then the order is A, C, B for every reader.
 - Evidence: BE `PageBlockSet.PositionFor` (bounds from the named neighbours; `afterBlockId` that is not a sibling is `400`, a key from the client only between the named siblings), `FractionalIndexGenerator` · FE `block-insert.ts` · Design Final-Docs-2 · Tests `BlockEditingHandlerTests`, `BlockTreeRulesTests`, `block-mapping.unit.test.ts` · Real e2e none
-- State: INTEGRATING — Owner or lead check: the Evidence says a non-sibling afterBlockId is 400, but the test asserts 404 for an unknown block.
+- State: HARDENING. Built: `BlockEditingHandlerTests` asserts 400 for an `afterBlockId` that is a block of the page but not a sibling under the parent, and 404 for one that is not on the page. The doc and the test now agree; the product text names only the sibling rule, so the code was kept. Missing: owner tests by hand.
 
 ### UC-DCT-F02 Reorder blocks
 - Capability: F Block ordering
@@ -924,8 +924,8 @@ Team capability 7 (team id DCT-007). Requirements `DCREQ023` to `DCREQ026`, `DCR
 - UI states: loading, empty ("No match"), error.
 - Rules: product doc section 67; `DCREQ140`, `DCREQ141`; decision 33.
 - Acceptance: Given a private page "Salary plan", When another member searches "salary", Then no result.
-- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/pages/search`, `SearchPagesQueryHandler`, `PageSearchFactsAdapterTests` · FE `useDocsSearch`, `search.api.ts` · Design Final-Command · Tests `PageSearchFactsAdapterTests`, `PageViewAccessTests` · Real e2e none
-- State: INTEGRATING — No index on the title for search at scale.
+- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/pages/search`, `SearchPagesQueryHandler`, `PageSearchFactsAdapterTests` · FE `useDocsSearch`, `search.api.ts` · Design Final-Command · Tests `PageSearchFactsAdapterTests`, `PageViewAccessTests`, `PageReadVersionTests` · Real e2e none
+- State: INTEGRATING — Owner question: the search matches the title with `lower(title) LIKE %query%`, which a plain index does not serve. A GIN trigram index on the title (`pg_trgm` is already in the model) helps only when the match is `ILIKE` on the same column, and that rewrite breaks the in-memory handler test in `PageReadVersionTests` (EF.Functions does not run there). Approve the ILIKE rewrite and the index, or keep title search as it is?
 
 ### UC-DCT-G04 Read the pages that reference this page
 - Capability: G Document query and loading
@@ -1026,8 +1026,8 @@ Team capability 8 (team id DCT-008). Requirements `DCREQ027` to `DCREQ031`. Deci
 - UI states: pending, error toast, conflict.
 - Rules: product doc section 99; team spec section 13 "mutation reconciliation"; `DCREQ028`, `DCREQ029`.
 - Acceptance: Given a block create that the server refuses, Then the block vanishes and the person sees the reason.
-- Evidence: BE block routes · FE `useCreateBlock`, `useDeleteBlock`, `useReorderBlocks`, `useRefreshPageBlocks` · Design none · Tests `docs-blocks-trash.unit.test.ts`, `doc-block-saver.unit.test.ts` · Real e2e none
-- State: INTEGRATING — A failed save keeps the rejected block in the editor; the create, delete and reorder hooks have no optimistic patch to roll back.
+- Evidence: BE block routes · FE `useCreateBlock`, `useDeleteBlock`, `useReorderBlocks`, `useRefreshPageBlocks` · Design none · Tests `block-mutation-rollback.unit.test.ts`, `docs-blocks-trash.unit.test.ts`, `doc-block-saver.unit.test.ts` · Real e2e none
+- State: INTEGRATING — Built: `useCreateBlock`, `useDeleteBlock` and `useReorderBlocks` patch the block list at once and roll it back when the producer refuses (`block-mutation-rollback.unit.test.ts`, two cases per hook). Owner question: the editor screen (`useDocEditor`, `DocBlockSaver`) keeps a rejected block until Retry by design and does not use these hooks; should a rejected editor save revert the block instead?
 
 ### UC-DCT-H04 Edit while offline
 - Capability: H Editor state reconciliation
@@ -1128,8 +1128,8 @@ Team capability 9 (team id DCT-009). Requirements `DCREQ032` to `DCREQ035`, `DCR
 - UI states: read-only, permission denied.
 - Rules: product doc section 59; `DCREQ032`, `DCREQ033`, `DCREQ191`.
 - Acceptance: Given a Viewer, When they patch a block, Then `404` and no change. Given an Editor who is not a board manager, When they rename the page, Then it succeeds.
-- Evidence: BE `UpdatePageCommand`, `CreateBlockCommand` and the other commands (`Action`) · FE permission state in `usePagePermissions` · Design none · Tests `ResourceLevelEnforcementMatrixTests` (rename: Editor allowed, Viewer forbidden), `ArchivePageCommandHandlerTests`, `BlockEditingHandlerTests` · Real e2e none
-- State: INTEGRATING — Matrix test that every write request checks its action is not written.
+- Evidence: BE `UpdatePageCommand`, `CreateBlockCommand` and the other commands (`Action`) · FE permission state in `usePagePermissions` · Design none · Tests `ResourceLevelEnforcementMatrixTests` (every page request against its action; rename: Editor allowed, Viewer forbidden), `ArchivePageCommandHandlerTests`, `BlockEditingHandlerTests` · Real e2e none
+- State: HARDENING. Built: `EveryPageRequest_IsAllowedExactlyFromTheLevelOfItsAction` checks each of the page requests against its action at Viewer, Editor and Manager, and fails when a new page request has no row. Missing: owner tests by hand.
 
 ### UC-DCT-I03 Share a page with a member
 - Capability: I Document permissions
@@ -1156,8 +1156,8 @@ Team capability 9 (team id DCT-009). Requirements `DCREQ032` to `DCREQ035`, `DCR
 - UI states: none.
 - Rules: product doc section 59; `DCREQ032`.
 - Acceptance: Given a new page, When the creator opens its Share dialog, Then they are Manager.
-- Evidence: BE `IResourceCreatorGrant.GrantManager` in `CreatePageCommandHandler`, `CreatePageFromTemplateCommandHandler` · FE none · Design none · Tests `CreatePageTargetPolicyMatrixTests` · Real e2e none
-- State: INTEGRATING — Grant of Manager is only unit-tested; no integration assertion.
+- Evidence: BE `IResourceCreatorGrant.GrantManager` in `CreatePageCommandHandler`, `CreatePageFromTemplateCommandHandler` · FE none · Design none · Tests `CreatePageTargetPolicyMatrixTests`, `PageCreatorGrantTests`, Integration `GovernanceResourcePermissionFlowTests` (the stored Manager entry) · Real e2e none
+- State: HARDENING. Built: the stored Manager entry is asserted by `CreatePage_GivesTheCreatorAManagerEntry...` (integration, runs in CI, not run here; the assertion the gap named already existed) and the grant call by `PageCreatorGrantTests`. Missing: owner tests by hand.
 
 ### UC-DCT-I05 Embedding a board never shares it
 - Capability: I Document permissions
@@ -1393,8 +1393,8 @@ Team capability 12 (team id DCT-012). Requirements `DCREQ133`, `DCREQ136`, `DCRE
 - UI states: conflict.
 - Rules: product doc sections 31, 32 (product rule DCT-011); `DCREQ030`, `DCREQ136`.
 - Acceptance: Given two writes with version 5, Then the first wins and the second is `412`.
-- Evidence: BE `PageBlockSet.EnsureVersion`, `IExpectedVersionRequest` on `MovePageToSpaceCommand` · FE `BlockVersionConflict` · Design none · Tests `BlockEditingHandlerTests`, `ExpectedVersionArchitectureTests`, `ExpectedVersionConcurrencyIntegrationTests`, `EfRequestDataSessionExpectedVersionTests` · Real e2e none
-- State: INTEGRATING — Coverage of every competing write is not proven.
+- Evidence: BE `PageBlockSet.EnsureVersion`, `IExpectedVersionRequest` on `MovePageToSpaceCommand` · FE `BlockVersionConflict` · Design none · Tests `BlockEditingHandlerTests`, `BlockStaleWriteTests`, `ReorderBlocksHandlerTests`, `BatchUpdateBlocksHandlerTests`, `PageVersionHandlerTests`, `ExpectedVersionArchitectureTests`, `ExpectedVersionConcurrencyIntegrationTests`, `EfRequestDataSessionExpectedVersionTests` · Real e2e none
+- State: HARDENING. Built: a stale version answers `412` with the current block (or the restore conflict) and changes nothing for update, single delete, reorder, batch and version restore. Missing: owner tests by hand.
 
 ### UC-DCT-L03 Apply a batch completely or not at all
 - Capability: L Recovery and conflict hardening
@@ -1407,8 +1407,8 @@ Team capability 12 (team id DCT-012). Requirements `DCREQ133`, `DCREQ136`, `DCRE
 - UI states: conflict, error.
 - Rules: product doc section 21A; `DCREQ028`.
 - Acceptance: Given a batch with one invalid block, Then none of the blocks is stored.
-- Evidence: BE `BatchUpdateBlocksCommandHandler` · FE `batch-block-writer.ts` · Design none · Tests `BatchUpdateBlocksHandlerTests`, `BlockMoveFailureAtomicityTests` · Real e2e none
-- State: INTEGRATING — No database test of the batch rollback.
+- Evidence: BE `BatchUpdateBlocksCommandHandler` · FE `batch-block-writer.ts` · Design none · Tests `BatchUpdateBlocksHandlerTests`, `BlockMoveFailureAtomicityTests`, `BatchRollbackIntegrationTests` (PostgreSQL) · Real e2e none
+- State: HARDENING. Built: a failing later operation throws with no partial answer (unit), and `BatchRollbackIntegrationTests` (runs in CI, not run here) proves on PostgreSQL that the earlier operations of the same request are not stored. Missing: owner tests by hand.
 
 ### UC-DCT-L04 Retry a create without a second effect
 - Capability: L Recovery and conflict hardening
