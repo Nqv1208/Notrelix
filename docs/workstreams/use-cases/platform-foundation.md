@@ -348,7 +348,7 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - Rules: PFREQ031; BE-PLT-056.
 - Acceptance: Given an owner role, When the host starts, Then it stops with a clear message.
 - Evidence: BE `backend/src/Notrelix.Infrastructure/Data/Rls/RuntimeDatabaseRoleGuard.cs` · FE n/a · Design n/a · Tests `RuntimeDatabaseRoleGuardTests.cs`, `RuntimeDatabaseRoleGuardIntegrationTests.cs` · Real e2e none
-- State: IMPLEMENTING — Owner question: which production role setup (owner, application and worker logins) must be proven at deploy, and who records the proof? Built and tested: `RuntimeDatabaseRoleGuardTests` (unit: superuser, BYPASSRLS, table owner, SET ROLE from a privileged login, worker membership) and `RuntimeDatabaseRoleGuardIntegrationTests` (CI only). Dev only; production roles are not provisioned in this repo.
+- State: IMPLEMENTING — Owner question: which production role setup (owner, application and worker logins) must be proven at deploy, and who records the proof? Built and tested: `RuntimeDatabaseRoleGuardTests` (unit: superuser, BYPASSRLS, table owner, SET ROLE from a privileged login, worker membership) and `RuntimeDatabaseRoleGuardIntegrationTests` (CI only). The dev and CI login roles come from `infra/postgres/init`; no production role provisioning is evidenced in this repo.
 
 ### UC-PLT-D03 Reject a stale write with 412
 - Capability: D, PF-04
