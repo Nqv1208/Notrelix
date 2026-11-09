@@ -25,7 +25,8 @@ public sealed record WebhookSendResult(
     WebhookSendOutcome Outcome,
     string Description,
     int? StatusCode = null,
-    OutboundDeliveryFailureClass? FailureClass = null)
+    OutboundDeliveryFailureClass? FailureClass = null,
+    TimeSpan? RetryAfter = null)
 {
     public static WebhookSendResult Delivered(int statusCode) => new(WebhookSendOutcome.Delivered, $"HTTP {statusCode}", statusCode);
 }
@@ -73,7 +74,11 @@ public sealed class OutboundWebhookSender
                 _ => OutboundDeliveryFailureClass.ReceiverRejected,
             };
             var transient = failure is not OutboundDeliveryFailureClass.ReceiverRejected;
-            return new(transient ? WebhookSendOutcome.Transient : WebhookSendOutcome.Permanent, $"HTTP {status}", status, failure);
+            var retryAfter = WebhookRetryAfter.Capped(
+                response.Headers.RetryAfter?.Delta,
+                response.Headers.RetryAfter?.Date,
+                DateTimeOffset.UtcNow);
+            return new(transient ? WebhookSendOutcome.Transient : WebhookSendOutcome.Permanent, $"HTTP {status}", status, failure, retryAfter);
         }
         catch (BlockedWebhookAddressException)
         {

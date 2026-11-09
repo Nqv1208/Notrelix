@@ -20,6 +20,8 @@ public class WebhookRedeliveryPolicyTests
         var intervals = WebhookRedeliveryPolicy.RedeliveryIntervals;
 
         intervals.Should().OnlyContain(i => i > TimeSpan.Zero, "a zero wait is a hot loop");
+        intervals.Should().OnlyContain(i => i <= TimeSpan.FromSeconds(30),
+            "each wait holds a consumer slot shared by all tenants, so no wait may exceed 30 seconds");
         intervals.Zip(intervals.Skip(1)).Should().OnlyContain(pair => pair.Second >= pair.First);
     }
 

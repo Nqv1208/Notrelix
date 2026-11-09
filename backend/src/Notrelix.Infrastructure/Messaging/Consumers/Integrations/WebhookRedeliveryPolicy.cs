@@ -15,19 +15,20 @@ public static class WebhookRedeliveryPolicy
     public const int MaxRedeliveries = MaxAttempts - 1;
 
     /// <summary>
-    /// The wait before each redelivery, in order (exponential backoff). Owner question: the decision names the budget but not
-    /// the intervals; these are the proposal. Each wait is held in process by the retry pipeline, so long waits need a
-    /// broker-side delayed redelivery first (owner decision on the transport).
+    /// The wait before each redelivery, in order. Every wait is at most 30 seconds because each wait holds a consumer
+    /// slot in process, and the dispatch consumer's concurrency limit is shared by all tenants. A slow receiver must not
+    /// starve other workspaces. Longer backoff (minutes) needs a broker-side delayed redelivery first (owner question:
+    /// transport decision).
     /// </summary>
     public static readonly IReadOnlyList<TimeSpan> RedeliveryIntervals =
     [
         TimeSpan.FromSeconds(1),
+        TimeSpan.FromSeconds(2),
         TimeSpan.FromSeconds(5),
+        TimeSpan.FromSeconds(10),
+        TimeSpan.FromSeconds(20),
         TimeSpan.FromSeconds(30),
-        TimeSpan.FromMinutes(1),
-        TimeSpan.FromMinutes(2),
-        TimeSpan.FromMinutes(5),
-        TimeSpan.FromMinutes(10),
+        TimeSpan.FromSeconds(30),
     ];
 
     /// <summary>

@@ -75,20 +75,20 @@ Integrations (letters follow INT-001 to INT-014):
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
 | A | INT-001 Connector catalog | 3 | 2 | 0 | 0 | 1 | 0 | 0 |
-| B | INT-002 Connection lifecycle | 7 | 1 | 2 | 0 | 4 | 0 | 0 |
+| B | INT-002 Connection lifecycle | 7 | 1 | 1 | 0 | 5 | 0 | 0 |
 | C | INT-003 Provider authorization/OAuth | 5 | 1 | 1 | 1 | 2 | 0 | 0 |
 | D | INT-004 Connection configuration | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
-| E | INT-005 Credential reference/storage contract | 5 | 0 | 2 | 1 | 2 | 0 | 0 |
-| F | INT-006 Outbound provider operation | 7 | 2 | 3 | 0 | 2 | 0 | 0 |
+| E | INT-005 Credential reference/storage contract | 5 | 0 | 1 | 1 | 3 | 0 | 0 |
+| F | INT-006 Outbound provider operation | 7 | 2 | 1 | 0 | 4 | 0 | 0 |
 | G | INT-007 Inbound webhook verification | 4 | 0 | 0 | 1 | 3 | 0 | 0 |
 | H | INT-008 Inbound event mapping | 8 | 1 | 7 | 0 | 0 | 0 | 0 |
-| I | INT-009 Connection health | 4 | 2 | 1 | 0 | 1 | 0 | 0 |
+| I | INT-009 Connection health | 4 | 2 | 0 | 0 | 2 | 0 | 0 |
 | J | INT-010 Provider failure normalization | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
 | K | INT-011 Integration management frontend | 4 | 1 | 1 | 0 | 2 | 0 | 0 |
-| L | INT-012 Rate/retry/provider limits | 2 | 0 | 2 | 0 | 0 | 0 | 0 |
+| L | INT-012 Rate/retry/provider limits | 2 | 0 | 1 | 0 | 1 | 0 | 0 |
 | M | INT-013 Entitlement integration | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | N | INT-014 Hardening/security | 2 | 1 | 0 | 0 | 1 | 0 | 0 |
-| | Total | 55 | 13 | 20 | 4 | 18 | 0 | 0 |
+| | Total | 55 | 13 | 14 | 4 | 24 | 0 | 0 |
 
 Calendar sync and mapping use cases sit in INT capability H (Inbound event mapping) because the team spec has no separate sync capability. Marketplace and plugin use cases sit in INT capability A (Connector catalog).
 
@@ -273,7 +273,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-INT-F03 | Send a Slack message (outbound operation) | F Outbound provider operation | system on behalf of an Automation rule whose creator may use the connection | N | N | N | N | DEFINED | unblocks UC-AUT-D09 |
 | UC-INT-F04 | Dispatch an n8n webhook for Automation | F Outbound provider operation | system on behalf of an Automation Webhook step | Y | N | N | N | IMPLEMENTING | no real e2e; see UC-AUT-D08 |
 | UC-INT-F05 | Read the delivery log of a webhook | F Outbound provider operation | Owner and Admin | N | N | Y | N | HARDENING | Built (not run here): OutboundDeliveryLogEntry.cs, ListConnectionDeliveryLog.cs, IntegrationConnectionEndpoints.cs (GET .../{connectionId}/deliveries), dispatch consumer writes one row per delivery; OutboundDeliveryLogEntryTests.cs, ConnectionDeliveryLogTests.cs. No screen (detail tab not built). Remaining: a PostgreSQL integration test of the log write (CI); owner tests by hand. |
-| UC-INT-F06 | Retry a failed delivery with backoff | F Outbound provider operation | system | Y | N | N | N | HARDENING | Built (not run here): WebhookRedeliveryPolicy.cs holds the budget (8 attempts, 7 redeliveries) and the interval list; the consumer and its definition read it, so the old 3-redelivery budget is gone. Tests: WebhookRedeliveryPolicyTests.cs (Infrastructure suite; a receiver failing 7 times is delivered on attempt 8). The failed attempts are written to the delivery log (UC-INT-F05). Owner question: the intervals (1 s, 5 s, 30 s, 1 min, 2 min, 5 min, 10 min) are a proposal, the decision names only the budget; each wait is held in process by the retry pipeline, so long waits need a broker-side delayed redelivery (transport decision). The decision says 'up to 8 retries' and the acceptance says attempt 8: built as 8 attempts in total. Owner tests by hand. |
+| UC-INT-F06 | Retry a failed delivery with backoff | F Outbound provider operation | system | Y | N | N | N | HARDENING | Built (not run here): WebhookRedeliveryPolicy.cs holds the budget (8 attempts, 7 redeliveries) and the interval list; the consumer and its definition read it, so the old 3-redelivery budget is gone. Tests: WebhookRedeliveryPolicyTests.cs (Infrastructure suite; a receiver failing 7 times is delivered on attempt 8). The failed attempts are written to the delivery log (UC-INT-F05). Intervals are 1, 2, 5, 10, 20, 30 and 30 seconds, each at most 30 seconds, because each wait holds a consumer slot in process and that slot is shared by all tenants. Owner question: a longer backoff (minutes) needs a broker-side delayed redelivery, a transport decision, because in-process waits hold a slot shared across tenants; the intervals are short for that reason. The decision names only the budget. The decision says 'up to 8 retries' and the acceptance says attempt 8: built as 8 attempts in total. Owner tests by hand. |
 | UC-INT-F07 | Reconcile an unknown provider outcome | F Outbound provider operation | system | N | N | N | N | DEFINED | no executable path outside n8n |
 | UC-INT-G01 | Accept only bounded, verified calendar webhooks | G Inbound webhook verification | the provider (anonymous route, signature-authenticated, rate limited per IP) | Y | N | N | N | HARDENING | Built and run: WebhookIntakeRateLimitTests.cs (31st delivery gets 429 before the handler). Remaining: owner tests by hand. |
 | UC-INT-G02 | Reject replayed and duplicate deliveries | G Inbound webhook verification | system | Y | N | N | N | HARDENING | Built (verified by reading code 2026-11-09, not run): CalendarWebhookIntake.cs, CalendarWebhookIntakeIntegrationTests.cs (DuplicateDelivery and StaleTimestamp tests). Remaining: owner tests by hand. |
@@ -296,8 +296,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-INT-K02 | Confirm a disconnect | K Integration management frontend | Owner and Admin | Y | Y | Y | Y | HARDENING | no impact counts (B05) |
 | UC-INT-K03 | Connection detail page | K Integration management frontend | Owner and Admin | N | P | Y | N | IMPLEMENTING | reduced view only |
 | UC-INT-K04 | Live connection and sync progress | K Integration management frontend | Owner and Admin | N | N | N | N | DEFINED | no realtime producer or consumer exists |
-| UC-INT-L01 | Back off on a provider rate limit | L Rate/retry/provider limits | system | P | N | N | N | IMPLEMENTING | retry-after is not honored |
-| UC-INT-L02 | Queued work after a disconnect never runs | L Rate/retry/provider limits | system | P | N | N | N | IMPLEMENTING | skip is not recorded as a delivery state |
+| UC-INT-L01 | Back off on a provider rate limit | L Rate/retry/provider limits | system | P | N | N | N | IMPLEMENTING | Built: Retry-After (seconds or date) is parsed and capped at 1 hour (`WebhookRetryAfter.cs`, tests `WebhookRetryAfterTests.cs`), not yet honored at send. Owner question: the product names no cap (1 hour is the proposal), and honoring a 30 s wait needs a broker-side delayed redelivery (transport decision), since in-process waits hold a consumer slot shared across tenants |
+| UC-INT-L02 | Queued work after a disconnect never runs | L Rate/retry/provider limits | system | Y | N | N | N | HARDENING | Built: the dispatch consumer rechecks the connection at send and records a skipped delivery with a reason in outbound_delivery_log_entries. Only the state is unit-tested (OutboundDeliveryLogEntryTests.cs); the consumer skip path has no runnable test here (CI integration test). |
 | UC-INT-M01 | Plan limits on connections and premium providers | M Entitlement integration | Owner and Admin | N | N | P | N | DEFINED | the code uses a constant, not Billing |
 | UC-INT-N01 | Outgoing webhooks cannot reach internal networks | N Hardening/security | system | Y | N | N | Y | HARDENING | no test of the send-time DNS check in a hostile resolver case |
 | UC-INT-N02 | Connect, pause and disconnect are audited | N Hardening/security | Owner and Admin read the audit log | N | N | N | N | DEFINED | (enterprise baseline) |
@@ -1837,7 +1837,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Actors and permission: system.
 - Preconditions: a delivery failed with a retryable result (5xx, 408, 429, timeout, refusal).
 - Input: attempt number.
-- Output: owner decision 45: up to 8 attempts per event with backoff, then Failed and visible. Today 3 redeliveries at 1, 5 and 30 seconds.
+- Output: owner decision 45: up to 8 attempts per event with backoff, then Failed and visible. Built: 7 redeliveries with waits of 1, 2, 5, 10, 20, 30 and 30 seconds (each at most 30 seconds).
 - Main flow: broker retry with intervals.
 - No-op / rejection / concurrency / retry: the delivery id header is the receiver's dedupe key; a hot loop is forbidden.
 - UI states: attempts in the log (F05).
@@ -2178,7 +2178,9 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: integrations.md §58, §59 INT-021; AIREQ068, AIREQ115.
 - Acceptance: Given retry-after 30 s, Then no attempt is made before 30 s.
 - Evidence: BE `OutboundWebhookSender` (429 as retryable), consumer definition (`ConcurrentMessageLimit` 4) · FE none · Design none · Tests none · Real e2e none
-- State: IMPLEMENTING — retry-after is not honored.
+- Built: `WebhookRetryAfter.cs` parses the Retry-After header (seconds or HTTP date) on any failed answer and caps it at one hour; `WebhookSendResult.RetryAfter` carries the wait. Tests: `WebhookRetryAfterTests.cs` (Infrastructure suite).
+- Owner question: the product names no cap for Retry-After (one hour is the proposal). Honoring a receiver's wait needs a broker-side delayed redelivery, a transport decision, because in-process waits hold a consumer slot shared by all tenants. Until then the wait is parsed but not applied, so the next attempt uses the F06 schedule.
+- State: IMPLEMENTING — the Retry-After wait is parsed and capped but not applied at send; owner question on the cap and the delayed-redelivery transport.
 
 ### UC-INT-L02 Queued work after a disconnect never runs
 - Capability: INT-012 Rate/retry/provider limits
@@ -2191,8 +2193,9 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: none.
 - Rules: integrations.md §102; AIREQ063.
 - Acceptance: Given a queued delivery and a disconnect, Then no request is sent.
-- Evidence: BE `IntegrationWebhookDispatchRequestedConsumer` · FE none · Design none · Tests T-II `WebhookFanOutRuntimeChainIntegrationTests` · Real e2e none
-- State: IMPLEMENTING — skip is not recorded as a delivery state.
+- Evidence: BE `IntegrationWebhookDispatchRequestedConsumer.cs`, `OutboundDeliveryLogEntry.cs` (RecordSkipped) · FE none · Design none · Tests `OutboundDeliveryLogEntryTests.cs` (run: Domain suite), T-II `WebhookFanOutRuntimeChainIntegrationTests` (not run, Docker) · Real e2e none
+- Built: the consumer records a skipped delivery with a reason in `outbound_delivery_log_entries` (`OutboundDeliveryLogEntry.RecordSkipped`); the send is never made. Tests: `OutboundDeliveryLogEntryTests.cs` (Domain suite). Not covered here: a consumer-level skip test (needs Docker; add to the Messaging integration tests).
+- State: HARDENING — skipped intents are recorded as Skipped with a reason. Consumer skip path not yet tested without Docker.
 
 ## Capability M. Entitlement integration
 
