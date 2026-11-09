@@ -52,7 +52,7 @@ Letter maps to the team spec capability. Total use cases: **99**.
 | C | BIL-003 Subscription transition policy | 2 | 1 | 0 | 0 | 1 | 0 | 0 |
 | D | BIL-004 Entitlement model | 3 | 1 | 0 | 2 | 0 | 0 | 0 |
 | E | BIL-005 Entitlement evaluation | 4 | 2 | 0 | 0 | 2 | 0 | 0 |
-| F | BIL-006 Product entitlement contract | 4 | 2 | 1 | 0 | 1 | 0 | 0 |
+| F | BIL-006 Product entitlement contract | 4 | 2 | 1 | 0 | 0 | 1 | 0 |
 | G | BIL-007 Usage event/record contract | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | H | BIL-008 Usage aggregation | 4 | 3 | 1 | 0 | 0 | 0 | 0 |
 | I | BIL-009 Usage limit enforcement handoff | 5 | 1 | 1 | 3 | 0 | 0 | 0 |
@@ -73,7 +73,7 @@ Letter maps to the team spec capability. Total use cases: **99**.
 | X | BIL-024 Hardening/security | 6 | 4 | 2 | 0 | 0 | 0 | 0 |
 | | **All** | **99** | **56** | **26** | **7** | **8** | **1** | **1** |
 
-No use case is DONE: none has a recorded owner check or a 1-px design diff. HARDENING is given only where a spec under `frontend/e2e/real/` runs the path (`billing-plan.real.e2e.spec.ts`, which now drives the operator console, and `feature-availability.real.e2e.spec.ts`).
+Agents build use cases up to HARDENING once the UI and behaviour are built, with a short "Built" note. The owner tests by hand and sets DONE; no agent sets DONE. End-to-end specs are not required for HARDENING. UC-BIL-F01 is DONE (set by the foundation finish lane, see its Evidence line). The real-route specs that exist are `billing-plan.real.e2e.spec.ts` (drives the operator console) and `feature-availability.real.e2e.spec.ts`.
 
 ## 1.3 The ten most important gaps
 

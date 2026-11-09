@@ -317,6 +317,11 @@ export interface WorkspaceRulesPanelProps {
     ruleId: string,
     enabled: boolean,
   ) => Promise<WorkspaceAutomationWriteResult>;
+  /** Cancels a Queued run of a rule; the runs list is re-read afterwards. */
+  readonly onCancelRun: (
+    ruleId: string,
+    runId: string,
+  ) => Promise<WorkspaceAutomationWriteResult>;
   /** The rule whose runs are open, with the runs read for it. */
   readonly openRuleId: string | null;
   readonly onOpenRuns: (ruleId: string | null) => void;

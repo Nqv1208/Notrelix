@@ -105,7 +105,15 @@ export type WorkspaceAutomationWriteResult =
   | { ok: true }
   | {
       ok: false;
-      reason: "limit" | "invalid" | "forbidden" | "failed" | "broken-reference";
+      reason:
+        | "limit"
+        | "invalid"
+        | "forbidden"
+        | "failed"
+        | "broken-reference"
+        | "cancel-forbidden"
+        | "not-found"
+        | "not-queued";
       /** Present on a refused enable: every archived or deleted target the rule names. */
       brokenReferences?: readonly { kind: string; id: string; field: string }[];
     };

@@ -241,4 +241,72 @@ describe("the onboarding creates keep their Idempotency-Key across a retry", () 
     await api.sendInvites("w1", invite);
     expect(keys[3]).not.toBe(keys[2]);
   });
+
+  it("drops the workspace key when the create is refused, so the corrected retry is a new request", async () => {
+    const { api, keys } = scripted([refused, "ws-1"]);
+
+    await expect(api.createWorkspace(input)).rejects.toThrow("conflict");
+    await expect(api.createWorkspace(input)).resolves.toEqual({
+      id: "ws-1",
+      slug: "minh-an",
+    });
+
+    expect(keys[0]).toBeTruthy();
+    expect(keys[1]).not.toBe(keys[0]);
+  });
+
+  const department = { name: "Công nghệ", color: "blue" as const };
+
+  it("sends the same department key when the create is retried after a lost answer", async () => {
+    const { api, keys } = scripted([lostAnswer, "sp-1"]);
+
+    await expect(api.createDepartments("w1", [department])).rejects.toThrow(
+      "network",
+    );
+    await expect(api.createDepartments("w1", [department])).resolves.toEqual({
+      departments: [{ id: "sp-1", name: "Công nghệ", color: "blue" }],
+    });
+
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).toBeTruthy();
+    expect(keys[1]).toBe(keys[0]);
+  });
+
+  it("drops the department key when the create is refused, so the corrected retry is a new request", async () => {
+    const { api, keys } = scripted([refused, "sp-1"]);
+
+    await expect(api.createDepartments("w1", [department])).rejects.toThrow(
+      "conflict",
+    );
+    await api.createDepartments("w1", [department]);
+
+    expect(keys[0]).toBeTruthy();
+    expect(keys[1]).not.toBe(keys[0]);
+  });
+
+  const board = { templateId: "blank", name: "Kế hoạch Q4", spaceId: null };
+
+  it("sends the same board key when the create is retried after a lost answer", async () => {
+    const { api, keys } = scripted([lostAnswer, "b-1"]);
+
+    await expect(api.createBoard("w1", board)).rejects.toThrow("network");
+    await expect(api.createBoard("w1", board)).resolves.toMatchObject({
+      id: "b-1",
+      templateId: "blank",
+    });
+
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).toBeTruthy();
+    expect(keys[1]).toBe(keys[0]);
+  });
+
+  it("drops the board key when the create is refused, so the corrected retry is a new request", async () => {
+    const { api, keys } = scripted([refused, "b-1"]);
+
+    await expect(api.createBoard("w1", board)).rejects.toThrow("conflict");
+    await api.createBoard("w1", board);
+
+    expect(keys[0]).toBeTruthy();
+    expect(keys[1]).not.toBe(keys[0]);
+  });
 });

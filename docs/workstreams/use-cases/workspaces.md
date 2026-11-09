@@ -46,23 +46,23 @@ Letters A to J follow the Workspaces list in the team spec (section 4, items 1 t
 
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
-| A | Workspace create | 4 | 1 | 0 | 3 | 0 | 0 | 0 |
-| B | Workspace read / resolve | 4 | 0 | 2 | 0 | 2 | 0 | 0 |
-| C | Workspace update | 2 | 1 | 0 | 0 | 1 | 0 | 0 |
-| D | Workspace lifecycle transition | 6 | 1 | 2 | 1 | 2 | 0 | 0 |
-| E | Membership read | 2 | 0 | 0 | 0 | 2 | 0 | 0 |
+| A | Workspace create | 4 | 1 | 0 | 0 | 0 | 3 | 0 |
+| B | Workspace read / resolve | 4 | 0 | 2 | 0 | 0 | 2 | 0 |
+| C | Workspace update | 2 | 1 | 0 | 0 | 0 | 1 | 0 |
+| D | Workspace lifecycle transition | 6 | 1 | 2 | 1 | 0 | 2 | 0 |
+| E | Membership read | 2 | 0 | 0 | 0 | 0 | 2 | 0 |
 | F | Membership add / remove / change | 10 | 1 | 2 | 3 | 1 | 2 | 1 |
-| G | Invitation create | 9 | 1 | 3 | 0 | 4 | 1 | 0 |
-| H | Invitation accept / reject / revoke | 6 | 0 | 0 | 0 | 1 | 0 | 0 |
+| G | Invitation create | 9 | 1 | 3 | 0 | 0 | 5 | 0 |
+| H | Invitation accept / reject / revoke | 6 | 0 | 0 | 0 | 1 | 5 | 0 |
 | I | Workspace selection / switch integration | 6 | 0 | 1 | 0 | 3 | 2 | 0 |
 | J | Workspace settings | 4 | 0 | 0 | 1 | 2 | 0 | 1 |
-| K | Spaces (added by this catalog) | 15 | 0 | 1 | 5 | 6 | 1 | 0 |
+| K | Spaces (added by this catalog) | 15 | 0 | 1 | 5 | 6 | 3 | 0 |
 | L | Teams (added by this catalog) | 10 | 0 | 1 | 1 | 8 | 0 | 0 |
 | M | Getting started and onboarding (added by this catalog) | 7 | 0 | 0 | 0 | 7 | 0 | 0 |
 | N | Home, navigation, search and activity (added by this catalog) | 6 | 1 | 1 | 1 | 3 | 0 | 0 |
-| | Total | 91 | 6 | 13 | 12 | 31 | 27 | 2 |
+|  | Total | 91 | 6 | 13 | 12 | 31 | 27 | 2 |
 
-Four use cases are DONE (F05, G01, I04 and K01, accepted 2026-11-02 by an independent acceptance agent, see their Evidence lines); the other Workspaces use cases that the independent run checked stay HARDENING with the gap in their State line (F02, G04, G05, G06, H01, H03, B01). Twenty-one use cases are HARDENING because a real spec runs them against the real backend: C01 (settings), D03 and D04 (`workspace-delete-restore.real.e2e.spec.ts`, delete, gone for a member, restore), E01 and E02 (members read), I01 (`workspace-isolation.real.e2e.spec.ts`, a switch), H02, H05, H06 (`workspace-invitations-answer.real.e2e.spec.ts`, the invitee declines, is invited again and accepts from the rail list), F02 and F05 (`workspace-member-changes.real.e2e.spec.ts`, role change and removal), G01 and G03 to G06 (`workspace-invitations-manage.real.e2e.spec.ts`, invite, list, re-role, resend, revoke), H01 and H03 (`workspace-invitation-link.real.e2e.spec.ts`, the e-mail link and the join in one step), B01, B04, I02 and I04 (`workspace-read-and-lists.real.e2e.spec.ts`, reads, both lists and the realtime scope) and K01, K02, K15 (`workspace-spaces.real.e2e.spec.ts`, create, read and place). Every other use case that the web app calls is INTEGRATING: the generated client reaches the real producer (`frontend/tooling/contracts/enabled-consumer-surface.ts`), mock end-to-end specs under `frontend/e2e/mock` exercise the screens, but no real spec does. Use cases with a producer and no frontend caller are IMPLEMENTING.
+Twenty-seven use cases are DONE in the index (A01, A02, A04, B01, B04, C01, D03, D04, E01, E02, F02, F05, G01, G03, G04, G05, G06, H01, H02, H03, H05, H06, I02, I04, K01, K02, K15). Four of them (F05, G01, I04 and K01) were accepted 2026-11-02 by an independent acceptance agent (see their Evidence lines). Thirty-one use cases are HARDENING in the index. The rest of this section predates the current index rows; the index rows and State lines are the state of record. Real specs cover these against the real backend: C01 (settings), D03 and D04 (`workspace-delete-restore.real.e2e.spec.ts`, delete, gone for a member, restore), E01 and E02 (members read), I01 (`workspace-isolation.real.e2e.spec.ts`, a switch), H02, H05, H06 (`workspace-invitations-answer.real.e2e.spec.ts`, the invitee declines, is invited again and accepts from the rail list), F02 and F05 (`workspace-member-changes.real.e2e.spec.ts`, role change and removal), G01 and G03 to G06 (`workspace-invitations-manage.real.e2e.spec.ts`, invite, list, re-role, resend, revoke), H01 and H03 (`workspace-invitation-link.real.e2e.spec.ts`, the e-mail link and the join in one step), B01, B04, I02 and I04 (`workspace-read-and-lists.real.e2e.spec.ts`, reads, both lists and the realtime scope) and K01, K02, K15 (`workspace-spaces.real.e2e.spec.ts`, create, read and place). Every other use case that the web app calls is INTEGRATING: the generated client reaches the real producer (`frontend/tooling/contracts/enabled-consumer-surface.ts`), mock end-to-end specs under `frontend/e2e/mock` exercise the screens, but no real spec does. Use cases with a producer and no frontend caller are IMPLEMENTING.
 
 The geometry specs (`design-fidelity-*.mock.e2e.spec.ts`) cover Shell, Home, Members, Space and Command at 1440 px and some narrower sizes. The canvas draws no Workspaces screen at 1440, 1024 and 390 px in both themes, so line 3 is met by a measured diff where an artboard exists (Shell, Space) and by reviewed screenshots at all three widths in both themes where it does not.
 

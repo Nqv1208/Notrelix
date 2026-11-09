@@ -61,6 +61,22 @@ function failure(error: unknown): WorkspaceAutomationWriteResult {
   return { ok: false, reason: "failed" };
 }
 
+/** A refused cancel: the page says which refusal it was (403, 404 or 409). */
+function cancelFailure(
+  error: unknown,
+): Extract<WorkspaceAutomationWriteResult, { ok: false }> {
+  switch (errorKind(error)) {
+    case "forbidden":
+      return { ok: false, reason: "cancel-forbidden" };
+    case "not_found":
+      return { ok: false, reason: "not-found" };
+    case "conflict":
+      return { ok: false, reason: "not-queued" };
+    default:
+      return { ok: false, reason: "failed" };
+  }
+}
+
 /**
  * The rules of the workspace, their writes and the runs of the rule that is
  * open. Only a person who manages the workspace reads them (`forbidden`).
@@ -126,6 +142,15 @@ export function useWorkspaceAutomations(
     mutationFn: (ruleId: string) =>
       workspaceAutomations.remove(workspaceId, boardId, ruleId),
   });
+  const cancelMutation = useMutation({
+    mutationFn: (input: { ruleId: string; runId: string }) =>
+      workspaceAutomations.cancelRun(
+        workspaceId,
+        boardId,
+        input.ruleId,
+        input.runId,
+      ),
+  });
 
   const create = useCallback(
     async (
@@ -186,6 +211,27 @@ export function useWorkspaceAutomations(
     [removeMutation, refresh],
   );
 
+  const cancelRun = useCallback(
+    async (
+      ruleId: string,
+      runId: string,
+    ): Promise<WorkspaceAutomationWriteResult> => {
+      try {
+        await cancelMutation.mutateAsync({ ruleId, runId });
+        // Refreshing the automation keys also re-reads the open rule's runs.
+        await refresh();
+        return { ok: true };
+      } catch (error) {
+        const result = cancelFailure(error);
+        // The run changed or vanished under the page: re-read the list so it shows the truth.
+        if (result.reason === "not-queued" || result.reason === "not-found")
+          await refresh();
+        return result;
+      }
+    },
+    [cancelMutation, refresh],
+  );
+
   const forbidden = errorKind(rules.error) === "forbidden";
   return {
     rules: rules.data ?? [],
@@ -197,6 +243,7 @@ export function useWorkspaceAutomations(
     update,
     remove,
     setEnabled,
+    cancelRun,
     openRuleId,
     openRuns: setOpenRuleId,
     runs: runs.data ?? [],

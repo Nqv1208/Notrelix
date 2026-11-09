@@ -153,6 +153,12 @@ function notifyChoiceOf(preferences: PreferencesOutput | undefined) {
 const isRowRefusal = (failure: unknown): boolean =>
   [400, 409, 422].includes((failure as { status?: number }).status ?? 0);
 
+/** A 4xx answer refuses the request itself: the same request would be refused again. */
+const isRequestRefusal = (failure: unknown): boolean => {
+  const status = (failure as { status?: number }).status ?? 0;
+  return status >= 400 && status < 500;
+};
+
 /**
  * The calls behind the onboarding pages. The draft, the departments (one
  * `CreateSpace` each), the invitations (one `InviteMember` each, with the
@@ -178,6 +184,24 @@ export function createOnboardingApi(api: OnboardingApiClient) {
       attempts.set(signature, existing);
     }
     return existing;
+  };
+  /**
+   * Runs one create under its attempt key. A success or a 4xx refusal forgets
+   * the key, so a corrected retry is a new request. A lost answer or a 5xx keeps
+   * it, so the same-intent retry returns what the first attempt made.
+   */
+  const settleAttempt = async <T>(
+    signature: string,
+    run: () => Promise<T>,
+  ): Promise<T> => {
+    try {
+      const value = await run();
+      attempts.delete(signature);
+      return value;
+    } catch (failure) {
+      if (isRequestRefusal(failure)) attempts.delete(signature);
+      throw failure;
+    }
   };
   // The member's Account, read once from the bootstrap (a failure is not kept).
   let account: Promise<string> | null = null;
@@ -263,12 +287,16 @@ export function createOnboardingApi(api: OnboardingApiClient) {
         language: input.locale,
       };
       const signature = JSON.stringify(["workspace", body]);
-      const id = await api.post<string>(
-        endpoints.accounts.workspaces(await accountId()),
-        body,
-        { ...QUIET, idempotencyKey: attemptKey(signature) },
+      const id = await settleAttempt(signature, async () =>
+        api.post<string>(
+          endpoints.accounts.workspaces(await accountId()),
+          body,
+          {
+            ...QUIET,
+            idempotencyKey: attemptKey(signature),
+          },
+        ),
       );
-      attempts.delete(signature);
       return { id, slug: input.slug };
     },
     /**
@@ -287,12 +315,12 @@ export function createOnboardingApi(api: OnboardingApiClient) {
           spaceType: "Department",
         };
         const signature = JSON.stringify(["space", workspaceId, body]);
-        const id = await api.post<string>(
-          endpoints.workspaces.spaces(workspaceId),
-          body,
-          { ...QUIET, idempotencyKey: attemptKey(signature) },
+        const id = await settleAttempt(signature, () =>
+          api.post<string>(endpoints.workspaces.spaces(workspaceId), body, {
+            ...QUIET,
+            idempotencyKey: attemptKey(signature),
+          }),
         );
-        attempts.delete(signature);
         made.push({ id, name: department.name, color: department.color });
       }
       return { departments: made };
@@ -342,12 +370,16 @@ export function createOnboardingApi(api: OnboardingApiClient) {
         ...(input.spaceId ? { spaceId: input.spaceId } : {}),
       };
       const signature = JSON.stringify(["board", workspaceId, body]);
-      const id = await api.post<unknown>(
-        endpoints.boards.listByWorkspaceId(workspaceId),
-        body,
-        { ...QUIET, idempotencyKey: attemptKey(signature) },
+      const id = await settleAttempt(signature, () =>
+        api.post<unknown>(
+          endpoints.boards.listByWorkspaceId(workspaceId),
+          body,
+          {
+            ...QUIET,
+            idempotencyKey: attemptKey(signature),
+          },
+        ),
       );
-      attempts.delete(signature);
       return {
         id: typeof id === "string" ? id : "",
         templateId: input.templateId,
