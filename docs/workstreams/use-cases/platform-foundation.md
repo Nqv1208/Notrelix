@@ -163,7 +163,7 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-N04 | Show full health with each check | N | Operator | yes | n/a | n/a | no | HARDENING | no probe proof against the real compose stack |
 | UC-PLT-N05 | Report outbox age and dead letters | N | Operator | yes | n/a | n/a | no | HARDENING | owner question: which alert rule consumes the signal |
 | UC-PLT-N06 | Answer a startup probe (enterprise baseline) | N | Orchestrator | no | n/a | n/a | no | DEFINED | not specified |
-| UC-PLT-N07 | Redact telemetry in the browser | N | Frontend runtime | n/a | yes | n/a | no | IMPLEMENTING | unit-tested, no real e2e |
+| UC-PLT-N07 | Redact telemetry in the browser | N | Frontend runtime | n/a | yes | n/a | no | IMPLEMENTING | owner question: value masking and a send target |
 | UC-PLT-O01 | Fail the build on a forbidden dependency | O | CI | yes | yes | n/a | no | HARDENING | none open; architecture tests run in CI |
 | UC-PLT-P01 | Run code checks before every push | P | Developer, hook | yes | yes | n/a | no | IMPLEMENTING | owner question: retire or rebuild the local pre-push gate |
 | UC-PLT-P02 | Produce container and packaging evidence | P | CI | yes | yes | n/a | no | IMPLEMENTING | owner question: container build and Trivy gate have no caller |
@@ -969,8 +969,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: n/a.
 - Rules: PFREQ105; AGENTS observability protocol.
 - Acceptance: Given an error holding a token, When reported, Then the token is masked.
-- Evidence: BE n/a · FE `frontend/packages/foundation/observability/src/telemetry/` · Design n/a · Tests `observability.unit.test.ts` · Real e2e none
-- State: IMPLEMENTING.
+- Evidence: BE n/a · FE `frontend/packages/foundation/observability/src/telemetry/redaction.ts`, `adapters.ts` (the web runtime uses `ConsoleTelemetryAdapter`, `frontend/packages/runtimes/web/src/runtime/app-runtime.tsx`) · Design n/a · Tests `frontend/packages/foundation/observability/src/__tests__/observability.unit.test.ts` (key-based redaction, context merge) · Real e2e none
+- State: IMPLEMENTING — Owner question: (1) should redaction mask values as well as keys (for example a `Bearer` or JWT string inside an error message or stack), because today it masks only sensitive key names and passes the error object unchanged, so the acceptance case (an error holding a token) is not met for the message; (2) is there a telemetry send target, because the web runtime uses `ConsoleTelemetryAdapter` (no network send) and `ProductionTelemetryAdapter` has no caller; and (3) should unknown fields be dropped (an allow-list) as the main flow says, or kept as now. Not built here; no state change without the answers.
 
 ## Capability O: Architecture/dependency enforcement
 
