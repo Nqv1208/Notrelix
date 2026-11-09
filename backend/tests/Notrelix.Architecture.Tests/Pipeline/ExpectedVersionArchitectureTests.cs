@@ -136,6 +136,8 @@ public static class ExpectedVersionInventory
             ["ArchiveDashboardCommand"] = "analytics.dashboard",
             ["RestoreDashboardCommand"] = "analytics.dashboard",
             ["DeleteDashboardCommand"] = "analytics.dashboard",
+            ["MoveDashboardWidgetCommand"] = "analytics.dashboard",
+            ["RemoveDashboardWidgetCommand"] = "analytics.dashboard",
         };
 
     public static IReadOnlyCollection<Type> DiscoverConcreteVersionedRequests() =>

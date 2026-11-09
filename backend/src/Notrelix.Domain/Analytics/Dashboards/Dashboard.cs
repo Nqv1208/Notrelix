@@ -92,7 +92,10 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         EnsureActive();
         Guard.NotEmpty(updatedBy);
         var widget = _widgets.FirstOrDefault(w => w.Id == widgetId);
-        if (widget is null) return;
+        if (widget is null)
+        {
+            throw new BusinessRuleException(Analytics_Dashboard_WidgetNotFound, $"Widget '{widgetId}' not found on this dashboard.");
+        }
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         _widgets.Remove(widget);

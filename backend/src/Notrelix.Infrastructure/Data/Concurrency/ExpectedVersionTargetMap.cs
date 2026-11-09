@@ -1,6 +1,8 @@
 using Notrelix.Application.Features.Accounts.Accounts.Commands.RenameAccount;
 using Notrelix.Application.Features.Analytics.Dashboards.Commands.ArchiveDashboard;
 using Notrelix.Application.Features.Analytics.Dashboards.Commands.DeleteDashboard;
+using Notrelix.Application.Features.Analytics.Dashboards.Commands.MoveDashboardWidget;
+using Notrelix.Application.Features.Analytics.Dashboards.Commands.RemoveDashboardWidget;
 using Notrelix.Application.Features.Analytics.Dashboards.Commands.RestoreDashboard;
 using Notrelix.Application.Features.Analytics.Dashboards.Commands.RenameDashboard;
 using Notrelix.Domain.Analytics.Dashboards;
@@ -324,6 +326,8 @@ public sealed class ExpectedVersionTargetMap
         [typeof(ArchiveDashboardCommand)] = new(DashboardKind, typeof(Dashboard)),
         [typeof(RestoreDashboardCommand)] = new(DashboardKind, typeof(Dashboard)),
         [typeof(DeleteDashboardCommand)] = new(DashboardKind, typeof(Dashboard)),
+        [typeof(MoveDashboardWidgetCommand)] = new(DashboardKind, typeof(Dashboard)),
+        [typeof(RemoveDashboardWidgetCommand)] = new(DashboardKind, typeof(Dashboard)),
 
         // Workspaces
         [typeof(ArchiveWorkspaceCommand)] = new(WorkspaceKind, typeof(Workspace)),
