@@ -114,7 +114,7 @@ public class RenameAccountEvidenceTests : IAsyncLifetime
                 ExpectedVersion: null),
             async ct =>
             {
-                var r = await handler.Handle(new RenameAccountCommand("Acme Renamed"), ct);
+                var r = await handler.Handle(new RenameAccountCommand(accountId, "Acme Renamed", 1), ct);
                 return r;
             },
             CancellationToken.None);
@@ -143,7 +143,7 @@ public class RenameAccountEvidenceTests : IAsyncLifetime
                 ApplyTenantScope: false,
                 ApplyResourceScope: false,
                 ExpectedVersion: null),
-            async ct => await handler.Handle(new RenameAccountCommand("Acme Inc"), ct),
+            async ct => await handler.Handle(new RenameAccountCommand(accountId, "Acme Inc", 1), ct),
             CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
@@ -174,7 +174,7 @@ public class RenameAccountEvidenceTests : IAsyncLifetime
                 ExpectedVersion: null),
             async ct =>
             {
-                await handler.Handle(new RenameAccountCommand("Acme Renamed"), ct);
+                await handler.Handle(new RenameAccountCommand(accountId, "Acme Renamed", 1), ct);
                 return null;
             },
             CancellationToken.None);
@@ -201,7 +201,7 @@ public class RenameAccountEvidenceTests : IAsyncLifetime
                 ExpectedVersion: null),
             async ct =>
             {
-                await handler.Handle(new RenameAccountCommand("Acme Renamed"), ct);
+                await handler.Handle(new RenameAccountCommand(accountId, "Acme Renamed", 1), ct);
                 return null;
             },
             CancellationToken.None);
@@ -227,7 +227,7 @@ public class RenameAccountEvidenceTests : IAsyncLifetime
                 ExpectedVersion: null),
             async ct =>
             {
-                await handler.Handle(new RenameAccountCommand("Acme Renamed"), ct);
+                await handler.Handle(new RenameAccountCommand(accountId, "Acme Renamed", 1), ct);
                 throw new InvalidOperationException("later step failure");
             },
             CancellationToken.None);
@@ -261,8 +261,8 @@ public class RenameAccountEvidenceTests : IAsyncLifetime
         accountA.Version.Should().Be(1);
         accountB.Version.Should().Be(1);
 
-        await handlerA.Handle(new RenameAccountCommand("Name A"), CancellationToken.None);
-        await handlerB.Handle(new RenameAccountCommand("Name B"), CancellationToken.None);
+        await handlerA.Handle(new RenameAccountCommand(accountId, "Name A", 1), CancellationToken.None);
+        await handlerB.Handle(new RenameAccountCommand(accountId, "Name B", 1), CancellationToken.None);
 
         await ctxA.SaveChangesAsync();
 

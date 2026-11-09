@@ -109,7 +109,14 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
 
     private WebApplicationFactory<Program> Factory => _factory ??= AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString);
 
-    private async Task<(HttpStatusCode Status, string Body)> AsAsync(User who, HttpMethod method, string url, string? json = null)
+    private Task<(HttpStatusCode Status, string Body)> AsAsync(User who, HttpMethod method, string url, string? json = null) =>
+        SendAsync(who, method, url, json, accountId: null);
+
+    // Account-scoped routes name the Account in the X-Account-Id header (the Account hint), not in the path.
+    private Task<(HttpStatusCode Status, string Body)> AsInAccountAsync(User who, Guid accountId, HttpMethod method, string url, string json) =>
+        SendAsync(who, method, url, json, accountId);
+
+    private async Task<(HttpStatusCode Status, string Body)> SendAsync(User who, HttpMethod method, string url, string? json, Guid? accountId)
     {
         var factory = Factory;
         string token;
@@ -118,6 +125,7 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         using var request = new HttpRequestMessage(method, url);
+        if (accountId is { } hinted) request.Headers.Add("X-Account-Id", hinted.ToString("D"));
         if (json is not null) request.Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
         using var response = await client.SendAsync(request);
         return (response.StatusCode, Normalize(await response.Content.ReadAsStringAsync()));
@@ -194,6 +202,21 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
         await AssertIdenticalAsync(_suspended, "a suspended member holds no access and learns nothing", _itemId, _formId);
 
         await AssertWorkspaceReadsIdenticalAsync(_suspended, "a person without a seat in the Workspace learns nothing");
+    }
+
+    [Fact]
+    public async Task RenameAccount_OfAnotherAccount_GetsTheIdenticalNotFound_ForExistingAndMadeUpIds()
+    {
+        // The Account rename names its Account only through the hint. The owner of Account B who sends Account A's id
+        // must get the same answer as for an id that never existed. Only B's owner is probed: the same-Account
+        // outsider and the Account admin are members of A and would reach the rename gate.
+        const string json = "{\"name\":\"Probe\",\"expectedVersion\":1}";
+        var found = await AsInAccountAsync(_b.User, _a.AccountId, HttpMethod.Put, "/api/v1/accounts/rename", json);
+        var made = await AsInAccountAsync(_b.User, Guid.NewGuid(), HttpMethod.Put, "/api/v1/accounts/rename", json);
+
+        made.Status.Should().Be(HttpStatusCode.NotFound, "a made-up account id is NotFound");
+        found.Status.Should().Be(made.Status, "an Account the person does not belong to answers like a made-up one");
+        found.Body.Should().Be(made.Body, "the body does not reveal whether the Account exists");
     }
 
     [Fact]
