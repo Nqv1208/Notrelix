@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Context;
-using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Domain.Analytics.Dashboards;
