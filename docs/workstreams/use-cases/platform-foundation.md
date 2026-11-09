@@ -119,10 +119,10 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-C01 | Run every protected request through the pipeline | C | Application pipeline | yes | n/a | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-C02 | Answer a denied resource with the same NotFound | C | Application pipeline | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-C03 | Run a worker as a bounded principal | C | Consumer host | yes | n/a | n/a | no | IMPLEMENTING | principal list undefined |
-| UC-PLT-D01 | Open a tenant-scoped data session per request | D | Application pipeline | yes | n/a | n/a | no | IMPLEMENTING | runtime role proof per deploy |
-| UC-PLT-D02 | Refuse to run with an unsafe database role | D | Host startup | yes | n/a | n/a | no | IMPLEMENTING | prod role not exercised |
+| UC-PLT-D01 | Open a tenant-scoped data session per request | D | Application pipeline | yes | n/a | n/a | no | IMPLEMENTING | owner question: runtime role proof per deploy |
+| UC-PLT-D02 | Refuse to run with an unsafe database role | D | Host startup | yes | n/a | n/a | no | IMPLEMENTING | owner question: production role proof |
 | UC-PLT-D03 | Reject a stale write with 412 | D | Application pipeline | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
-| UC-PLT-D04 | Use the cache as derived state | D | Application | yes | n/a | n/a | no | IMPLEMENTING | no invalidation rule per use |
+| UC-PLT-D04 | Use the cache as derived state | D | Application | yes | n/a | n/a | no | IMPLEMENTING | owner question: derived cache or security state |
 | UC-PLT-E01 | Apply migrations at deploy | E | Operator, CI | yes | n/a | n/a | no | IMPLEMENTING | owner question: upgrade-path proof per release |
 | UC-PLT-E02 | Recover a dev database that failed a migration | E | Operator | yes | n/a | n/a | no | IMPLEMENTING | owner question: is the documented recreate enough |
 | UC-PLT-E03 | Validate configuration at startup | E | Host startup | yes | n/a | n/a | no | HARDENING | SecurityHeaders, OAuth redirect URLs, forwarded headers unvalidated |
@@ -161,7 +161,7 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-N02 | Answer a liveness probe | N | Orchestrator | yes | n/a | n/a | no | HARDENING | none open; route tests `GetLive_*` in `HealthEndpointTests` |
 | UC-PLT-N03 | Answer a readiness probe | N | Orchestrator | yes | n/a | n/a | no | HARDENING | no probe proof against the real compose stack |
 | UC-PLT-N04 | Show full health with each check | N | Operator | yes | n/a | n/a | no | HARDENING | no probe proof against the real compose stack |
-| UC-PLT-N05 | Report outbox age and dead letters | N | Operator | yes | n/a | n/a | no | HARDENING | owner question: which alert rule consumes the signal |
+| UC-PLT-N05 | Report outbox age and dead letters | N | Operator | yes | n/a | n/a | no | IMPLEMENTING | owner question: which alert rule consumes the signal |
 | UC-PLT-N06 | Answer a startup probe (enterprise baseline) | N | Orchestrator | no | n/a | n/a | no | DEFINED | not specified |
 | UC-PLT-N07 | Redact telemetry in the browser | N | Frontend runtime | n/a | yes | n/a | no | IMPLEMENTING | owner question: value masking and a send target |
 | UC-PLT-O01 | Fail the build on a forbidden dependency | O | CI | yes | yes | n/a | no | HARDENING | none open; architecture tests run in CI |
@@ -334,7 +334,7 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - Rules: PFREQ030 to PFREQ036; BE-PLT-011.
 - Acceptance: Given a failing handler, When the request ends, Then neither the change nor its outbox row exists.
 - Evidence: BE `DataSessionBehavior.cs`, `backend/src/Notrelix.Infrastructure/Data/EfRequestDataSession.cs` · FE n/a · Design n/a · Tests `backend/tests/Notrelix.Integration.Tests/Rls/AppRoleConformanceTests.cs` · Real e2e none
-- State: IMPLEMENTING — RLS is defense in depth and proven by integration tests, not from a browser.
+- State: IMPLEMENTING — Owner question: which runtime role proof must each deploy record? Built and tested: `DataSessionBehaviorTests` (Application unit) and `OutboxAtomicityTests.Rollback_RemovesBusinessAndOutboxRowsTogether` (integration, CI only) show a failed request leaves neither the change nor its outbox row. RLS is defense in depth and is proven by integration tests, not from a browser.
 
 ### UC-PLT-D02 Refuse to run with an unsafe database role
 - Capability: D, PF-04
@@ -348,7 +348,7 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - Rules: PFREQ031; BE-PLT-056.
 - Acceptance: Given an owner role, When the host starts, Then it stops with a clear message.
 - Evidence: BE `backend/src/Notrelix.Infrastructure/Data/Rls/RuntimeDatabaseRoleGuard.cs` · FE n/a · Design n/a · Tests `RuntimeDatabaseRoleGuardTests.cs`, `RuntimeDatabaseRoleGuardIntegrationTests.cs` · Real e2e none
-- State: IMPLEMENTING — dev only; production roles are not set up (development is not deployed).
+- State: IMPLEMENTING — Owner question: which production role setup (owner, application and worker logins) must be proven at deploy, and who records the proof? Built and tested: `RuntimeDatabaseRoleGuardTests` (unit: superuser, BYPASSRLS, table owner, SET ROLE from a privileged login, worker membership) and `RuntimeDatabaseRoleGuardIntegrationTests` (CI only). Dev only; production roles are not provisioned in this repo.
 
 ### UC-PLT-D03 Reject a stale write with 412
 - Capability: D, PF-04
@@ -376,7 +376,7 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - Rules: PFREQ035; data ownership doc (cache is derived).
 - Acceptance: Given Redis down, When a read runs, Then it still answers from the database.
 - Evidence: BE `backend/src/Notrelix.Infrastructure/Caching/RedisCacheService.cs`, `CacheRegistration.cs`, `RedisHealthCheck.cs` · FE n/a · Design n/a · Tests none specific found · Real e2e none
-- State: IMPLEMENTING — no rule says which data may be cached or who invalidates it; callers decide.
+- State: IMPLEMENTING — Owner question: Redis holds security state (OAuth state, step-up proofs, MFA challenges, refresh rotation ledger, MFA code-use guard, through `IRedisCacheService`), and no read-through data cache exists, so no read falls back to the database when Redis is down. Should D04 be re-scoped to a derived read cache with a database fallback and named invalidation per use, or should the security stores be recorded as fail-closed Redis state outside the derived-cache rule?
 
 ## Capability E: Migration, runtime initialization and configuration
 
@@ -942,7 +942,7 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - Rules: BE-PLT-043, BE-PLT-047.
 - Acceptance: Given a pending row 20 minutes old, When checked, Then Unhealthy.
 - Evidence: BE `Observability/HealthChecks/OutboxHealthCheck.cs`, `OutboxDiagnosticsService.cs`, `Metrics/MetricsService.cs`, gauges fed by `BackgroundJobs/OutboxDispatcher.cs` · FE n/a · Design n/a · Tests `backend/tests/Notrelix.Infrastructure.Tests/Observability/OutboxHealthCheckTests.cs` (thresholds: empty Healthy, 1 min Healthy, 6 min Degraded, 20 min Unhealthy, dead letter Unhealthy, retryable Failed Healthy), `MetricsServiceTests.cs` (gauge names and values), `PipelineTelemetryIntegrationTests.cs` (related) · Real e2e none
-- State: HARDENING — Built: the Degraded and Unhealthy thresholds and the dead-letter rule are unit-tested (`OutboxHealthCheckTests`, 6 passed locally); the dispatcher feeds the gauges. Owner question: which alert rule or dashboard should consume `outbox_*` gauges and the Unhealthy status? No alert exists in the repo, and this use case does not add one.
+- State: IMPLEMENTING — Built: the Degraded and Unhealthy thresholds and the dead-letter rule are unit-tested (`OutboxHealthCheckTests`, 6 passed locally); the dispatcher feeds the gauges. Owner question: which alert rule or dashboard should consume `outbox_*` gauges and the Unhealthy status? No alert exists in the repo, so the state stays IMPLEMENTING until the owner answers.
 
 ### UC-PLT-N06 Answer a startup probe (enterprise baseline)
 - Capability: N, PF-14
