@@ -8,17 +8,6 @@ public class SubscriptionTransitionMatrixTests
     private static readonly Guid Actor = Guid.NewGuid();
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
-    private static Subscription CreateSubscription(SubscriptionStatus initialStatus, SubscriptionTier tier = SubscriptionTier.Pro)
-    {
-        var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), tier, Now, Now.AddDays(30), Actor, Now);
-        if (initialStatus == SubscriptionStatus.Trialing)
-        {
-            // Can't directly set status, use reflection or just start with Active
-            // For trials, we'd need a different Create path
-        }
-        return sub;
-    }
-
     [Fact]
     public void Activate_Trialing_ShouldBecomeActive()
     {
@@ -37,13 +26,6 @@ public class SubscriptionTransitionMatrixTests
         sub.MarkPastDue(Actor, Now);
 
         sub.Status.Should().Be(SubscriptionStatus.PastDue);
-    }
-
-    [Fact]
-    public void MarkPastDue_FromTrialing_ShouldThrow()
-    {
-        // Can't create Trialing directly via public API
-        // But if we could, MarkPastDue should only allow from Active
     }
 
     [Fact]
@@ -89,13 +71,6 @@ public class SubscriptionTransitionMatrixTests
 
         var act = () => sub.MarkPastDue(Actor, Now);
         act.Should().Throw<BusinessRuleException>().WithMessage("*status*");
-    }
-
-    [Fact]
-    public void MarkPastDue_FromIncomplete_ShouldThrow()
-    {
-        var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
-        // Can't set Incomplete directly, but we test from invalid states
     }
 
     [Fact]
@@ -154,12 +129,6 @@ public class SubscriptionTransitionMatrixTests
     }
 
     [Fact]
-    public void ScheduleCancellation_FromTrialing_ShouldThrow()
-    {
-        // No public way to create Trialing, but if we could, it should throw
-    }
-
-    [Fact]
     public void ScheduleCancellation_AlreadyScheduled_ShouldBeNoOp()
     {
         var sub = Subscription.Create(Guid.NewGuid(), Guid.NewGuid(), SubscriptionTier.Pro, Now, Now.AddDays(30), Actor, Now);
@@ -191,12 +160,6 @@ public class SubscriptionTransitionMatrixTests
         sub.CancelImmediately(Actor, Now);
 
         sub.Status.Should().Be(SubscriptionStatus.Canceled);
-    }
-
-    [Fact]
-    public void CancelImmediately_FromTrialing_ShouldBecomeCanceled()
-    {
-        // Can't create Trialing directly, but document expected behavior
     }
 
     [Fact]
@@ -342,18 +305,6 @@ public class SubscriptionTransitionMatrixTests
         sub.Expire(Actor, Now);
 
         sub.DomainEvents.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void Expire_FromTrialing_ShouldThrow()
-    {
-        // Can't create Trialing directly
-    }
-
-    [Fact]
-    public void Expire_FromIncomplete_ShouldThrow()
-    {
-        // Can't create Incomplete directly
     }
 
     [Fact]

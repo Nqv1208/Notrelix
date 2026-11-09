@@ -49,7 +49,7 @@ Letter maps to the team spec capability. Total use cases: **99**.
 |---|---|---|---|---|---|---|---|---|
 | A | BIL-001 Plan/catalog model | 5 | 1 | 2 | 1 | 1 | 0 | 0 |
 | B | BIL-002 Subscription lifecycle | 6 | 5 | 1 | 0 | 0 | 0 | 0 |
-| C | BIL-003 Subscription transition policy | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
+| C | BIL-003 Subscription transition policy | 2 | 1 | 0 | 0 | 1 | 0 | 0 |
 | D | BIL-004 Entitlement model | 3 | 1 | 0 | 2 | 0 | 0 | 0 |
 | E | BIL-005 Entitlement evaluation | 4 | 2 | 0 | 0 | 2 | 0 | 0 |
 | F | BIL-006 Product entitlement contract | 4 | 2 | 1 | 0 | 1 | 0 | 0 |
@@ -71,7 +71,7 @@ Letter maps to the team spec capability. Total use cases: **99**.
 | V | BIL-022 Billing observability | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | W | BIL-023 Migration/backfill | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
 | X | BIL-024 Hardening/security | 6 | 4 | 2 | 0 | 0 | 0 | 0 |
-| | **All** | **99** | **56** | **27** | **8** | **7** | **0** | **1** |
+| | **All** | **99** | **56** | **26** | **7** | **8** | **1** | **1** |
 
 No use case is DONE: none has a recorded owner check or a 1-px design diff. HARDENING is given only where a spec under `frontend/e2e/real/` runs the path (`billing-plan.real.e2e.spec.ts`, which now drives the operator console, and `feature-availability.real.e2e.spec.ts`).
 
@@ -131,14 +131,14 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 | UC-BIL-A02 | Compare plans side by side | A | Billing managers (Owner, delegated manager) | No | Mock | so-sanh-goi | No | IMPLEMENTING | Mock-only (`backendCapabilities.billingPlans` equals the mock flag). Backend must serve plans with price rows |
 | UC-BIL-A03 | Maintain the plan catalog by revision | A | Platform operator | Yes | Real | No | No | INTEGRATING | No real spec publishes a revision; no design artboard; prices are 0 VND placeholders |
 | UC-BIL-A04 | Keep price history readable after a price change | A | System; read by billing managers on invoices | Dom | No | No | No | DEFINED | No price source exists |
-| UC-BIL-A05 | Ask sales about Enterprise | A | Billing managers | No | Mock | so-sanh-goi | No | IMPLEMENTING | No endpoint `POST .../billing/contact-sales` |
+| UC-BIL-A05 | Ask sales about Enterprise | A | Billing managers | No | Mock | so-sanh-goi | No | IMPLEMENTING | Owner question: a stored request is a tenant write, which migration 021 forbids for billing tables (see the use case) |
 | UC-BIL-B01 | Give every account a deterministic default subscription | B | System | Part | No | No | No | DEFINED | Bootstrap is only a read-time fallback |
 | UC-BIL-B02 | See subscription status, period and next change | B | Billing managers | No | Mock | tong-quan, chi-xem | No | IMPLEMENTING | Mock-only |
 | UC-BIL-B03 | Start a trial | B | Account owner or billing manager | Dom | No | No | No | DEFINED | No trial rule exists |
 | UC-BIL-B04 | End a trial by converting or expiring | B | System (lifecycle worker) | No | No | No | No | DEFINED | No worker |
 | UC-BIL-B05 | Renew a subscription at period end | B | System | Dom | No | No | No | DEFINED | No renewal worker |
 | UC-BIL-B06 | Expire a subscription | B | System | Dom | No | No | No | DEFINED | No trigger |
-| UC-BIL-C01 | Refuse an invalid subscription transition | C | System | Dom | No | No | No | IMPLEMENTING | Transition table is not closed or tested for Trialing, PastDue, Unpaid, Incomplete |
+| UC-BIL-C01 | Refuse an invalid subscription transition | C | System | Dom | No | No | No | HARDENING | Built: closed transition table for all seven statuses, every (from, to) pair tested. Owner question: may Unpaid and Incomplete recover to Active, or only cancel or expire? |
 | UC-BIL-C02 | Apply a scheduled change at the period boundary | C | System | No | No | No | No | DEFINED | No worker |
 | UC-BIL-D01 | Derive entitlements from a subscription | D | System | Dom | No | No | No | DEFINED | No derivation |
 | UC-BIL-D02 | Grant a manual entitlement override | D | Platform operator | Yes | Real | No | No | INTEGRATING | Account scope only (workspace scope not built); no real spec; no design artboard |
@@ -156,7 +156,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 | UC-BIL-H01 | Read current-period usage | H | Billing managers | No | Mock | tong-quan | No | DEFINED | Backend has no metered periods |
 | UC-BIL-H02 | Close a usage period and start the next | H | System | Dom | No | No | No | DEFINED | Late-usage rule is open: decision in Part 4 |
 | UC-BIL-H03 | Rebuild a usage aggregate from the ledger | H | System repair path | No | No | No | No | DEFINED | Needs the repair principal (see UC-BIL-D02) |
-| UC-BIL-H04 | See usage split across the account's workspaces | H | Billing managers | Part | Mock | tong-quan | No | IMPLEMENTING | No per-workspace split or run counts from the backend |
+| UC-BIL-H04 | See usage split across the account's workspaces | H | Billing managers | Part | Mock | tong-quan | No | IMPLEMENTING | Owner question: may the split name workspaces the caller does not hold, or only count them (see the use case) |
 | UC-BIL-I01 | Take one capacity slot for a new quota-bearing resource | I | Producer context (Automation rule creation) | Yes | No | No | No | INTEGRATING | No real-database concurrency run in this catalog's evidence |
 | UC-BIL-I02 | Give a capacity slot back when the resource is deleted | I | Producer context (Automation rule deletion) | Yes | No | No | No | INTEGRATING | No real e2e |
 | UC-BIL-I03 | Keep committed usage when a limit shrinks | I | System | Yes | Mock | ha-goi | billing-plan | INTEGRATING | No e2e of an over-limit downgrade |
@@ -164,7 +164,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 | UC-BIL-I05 | Show over-limit resources before a downgrade | I | Billing managers | No | Mock | ha-goi | No | IMPLEMENTING | Mock-only. Same use case as UC-BIL-R03 |
 | UC-BIL-J01 | Let workspace Owner and Admin view billing | J | Workspace Owner, Admin | Yes | Real | No | billing-plan | HARDENING | Interim permission |
 | UC-BIL-J02 | Delegate billing management to a member | J | Account owner | No | Mock | tong-quan | No | IMPLEMENTING | No Governance action for billing administration |
-| UC-BIL-J03 | Show a view-only billing page to people who cannot manage | J | Workspace people without billing management | No | Mock | chi-xem | No | IMPLEMENTING | Real backend only offers `canChangePlan` |
+| UC-BIL-J03 | Show a view-only billing page to people who cannot manage | J | Workspace people without billing management | No | Mock | chi-xem | No | IMPLEMENTING | Owner question: who sees a view-only page and who sees permission denied (see the use case) |
 | UC-BIL-J04 | Keep invoice profile: company, tax id, address, email (enterprise baseline) | J | Billing managers | Dom | Mock | No | No | DEFINED | No edit flow, no artboard state |
 | UC-BIL-J05 | Authorize billing with its own permission | J | Governance owner decides; Billing consumes | Part | No | No | No | DEFINED | Owner of Governance permission list must add the actions |
 | UC-BIL-K01 | Add a payment method through the provider's hosted form | K | Billing managers | Dom | No | No | No | DEFINED | Provider not chosen |
@@ -212,7 +212,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 | UC-BIL-S06 | Remind before a trial ends (enterprise baseline) | S | System; recipients are billing managers | No | No | No | No | DEFINED | No trial yet (UC-BIL-B03) |
 | UC-BIL-T01 | Open Plans and billing with every state | T | Workspace Owner, Admin | Yes | Real | tong-quan | feature-availability | HARDENING | Two pages behind `backendCapabilities.billingPlans` |
 | UC-BIL-T02 | Stop an invitation at the seat limit and offer more seats | T | Workspace Admin inviting people | No | Mock | het-cho | No | IMPLEMENTING | Mock-only seat summary |
-| UC-BIL-T03 | Tell not entitled from not authorized | T | Anyone using a gated feature | No | Mock | het-cho | No | IMPLEMENTING | No stable reason codes from the backend |
+| UC-BIL-T03 | Tell not entitled from not authorized | T | Anyone using a gated feature | No | Mock | het-cho | No | IMPLEMENTING | Owner question: which codes and copy for the seat limit (see the use case) |
 | UC-BIL-T04 | Say plainly what is not available yet | T | Workspace Owner, Admin | Yes | Real | No | feature-availability | HARDENING | Remove when UC-BIL-L01 is real |
 | UC-BIL-U01 | Publish canonical commercial facts | U | System | Dom | No | No | No | IMPLEMENTING | No consumer |
 | UC-BIL-U02 | Propagate an entitlement change to consumers | U | System | No | No | No | No | DEFINED | No cache exists |
@@ -220,9 +220,9 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 | UC-BIL-V02 | Alert on reconciliation lag and entitlement errors | V | Engineers on call | No | No | No | No | DEFINED | No signals defined |
 | UC-BIL-W01 | Backfill subscriptions, entitlements and lineage | W | System (migration) | No | No | No | No | DEFINED | `Account.PlanCode` migration not planned in code |
 | UC-BIL-W02 | Replace the hard-coded frontend catalog with the API | W | Frontend team | Part | Real | No | No | IMPLEMENTING | The tenant plan card and the operator console read the catalog from the API; the dead package stub (`features-billing`, prices that match nothing) is still there |
-| UC-BIL-X01 | Keep one account's billing data from another | X | System | Yes | No | No | No | IMPLEMENTING | No cross-tenant test per billing endpoint |
+| UC-BIL-X01 | Keep one account's billing data from another | X | System | Yes | No | No | No | IMPLEMENTING | Built: cross-tenant test for both tenant billing reads. Remaining: worker and transactional policy split for billing tables not proven |
 | UC-BIL-X02 | Never touch card data or secrets | X | System | Dom | No | No | No | DEFINED | No redaction test |
-| UC-BIL-X03 | Make commercial commands idempotent and rate-limited | X | System | Part | Mock | No | No | IMPLEMENTING | No key on `PUT .../billing/plan` |
+| UC-BIL-X03 | Make commercial commands idempotent and rate-limited | X | System | Part | Mock | No | No | IMPLEMENTING | No key on the plan change (`PUT /operator/v1/accounts/{accountId}/billing/plan`, operator-only, outside the request pipeline). Owner question in the use case |
 | UC-BIL-X04 | Audit every billing change | X | Auditors and billing managers | No | No | No | No | DEFINED | Governance audit contract not used by Billing |
 | UC-BIL-X05 | Coordinate Billing when an account closes | X | System (Accounts owns closure) | No | No | No | No | DEFINED | No consumer of the closure fact |
 | UC-BIL-X06 | Keep commercial evidence after product or account deletion | X | System | No | No | No | No | DEFINED | Retention period not decided (Part 4) |
@@ -299,7 +299,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - Rules: Product decision (owner, 2026-10-26) 46; product §100.
 - Acceptance: Given a manager, when they contact sales twice with one key, then one request is stored.
 - Evidence: BE none · FE `billing/billing-api.ts` (`contactSales`), `frontend/packages/features/workspace/src/web/billing/``billing-compare-surface.tsx` · Design `Final-Billing.dc.html` `so-sanh-goi` · Tests mock handler `frontend/packages/dev/mock-backend/src/contexts/billing/billing.handlers.ts` · Real e2e none
-- State: IMPLEMENTING — No endpoint `POST .../billing/contact-sales`; no stored request; no delivery to a sales mailbox.
+- State: IMPLEMENTING — Owner question: product decision 46 says contact sales is stored as a request, but the RLS pack forbids it. `backend/src/Notrelix.Infrastructure/Data/Rls/RlsSqlScripts/021_billing_and_account_writes.sql` revokes INSERT, UPDATE and DELETE on the billing tables from `notrelix_app` ("no tenant-side commercial billing writes"). A new request table is either a documented exception with its own INSERT grant and policy, or the write goes through a platform-side path. Which? Also, who may read the stored requests (operator console only, or the account's billing managers)? Not built: no endpoint, entity, table or migration; the mailbox delivery stays out of scope.
 
 ## B. BIL-002 Subscription lifecycle
 
@@ -400,8 +400,8 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - UI states: Error shown as a plain message.
 - Rules: Product §22 BIL-008; spec BILREQ013, BILREQ015.
 - Acceptance: Given a Canceled subscription, when a plan change is attempted, then it is rejected and the row is unchanged.
-- Evidence: BE `backend/src/Notrelix.Domain/Billing/``Subscriptions/Subscription.cs`, `Rules/SubscriptionRules.cs` · FE none · Design none · Tests `backend/tests/Notrelix.Application.Tests/Features/Billing/``BillingPlanTests.cs` · Real e2e none
-- State: IMPLEMENTING — Transition table is not closed or tested for Trialing, PastDue, Unpaid, Incomplete.
+- Evidence: BE `backend/src/Notrelix.Domain/Billing/Subscriptions/Subscription.cs`, `Rules/SubscriptionStatusTransitions.cs`, `Rules/SubscriptionRules.cs` · FE none · Design none · Tests `backend/tests/Notrelix.Domain.Tests/Billing/Subscriptions/SubscriptionStatusTransitionTableTests.cs`, `SubscriptionTransitionMatrixTests.cs`, `backend/tests/Notrelix.Application.Tests/Features/Billing/BillingPlanTests.cs` · Real e2e none
+- State: HARDENING — Built: the aggregate asks one closed table (`SubscriptionStatusTransitions`) for every status change, including Trialing, Unpaid and Incomplete; a theory tests all 49 pairs against a literal copy of the table, and each aggregate method is tested against it. A refused transition leaves status, version and events unchanged. Not built: no API or handler reaches these rules yet (the operator path uses plan change only). Owner question: the product names no recovery from Unpaid or Incomplete; the table allows Active, Canceled and Expired from both. Confirm or narrow it.
 
 ### UC-BIL-C02 Apply a scheduled change at the period boundary
 - Capability: C. BIL-003 Subscription transition policy
@@ -663,7 +663,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - Rules: Product §77, §84; spec BILREQ052, BILREQ082.
 - Acceptance: Given two workspaces, when a manager opens the overview, then both appear and the total matches.
 - Evidence: BE partial: `ops.billing_account_usage` returns account totals (seats, guests, storage bytes) used by UC-BIL-E02 · FE `frontend/packages/features/workspace/src/web/billing/``billing-overview-surface.tsx` (mock) · Design `Final-Billing.dc.html` `tong-quan` · Tests `backend/tests/Notrelix.Integration.Tests/Rls/BillingUsagePolicyTests.cs` · Real e2e none
-- State: IMPLEMENTING — No per-workspace split or run counts from the backend.
+- State: IMPLEMENTING — Owner question: the split needs per-workspace counts for every workspace of the account, but RLS shows a Workspace-level caller only the rows of the workspaces they hold, so the read needs a definer function (a migration) like `ops.billing_account_usage`. The use case says "counts without names", which conflicts with "a caller sees workspaces they hold": may the split list the workspaces a caller does not hold, or only anonymous counts? Who may read it (Owner and Admin, interim, or a manager right from UC-BIL-J05)? Run counts also need a source: the usage ledger is capacity only today. Not built: no per-workspace read, no DTO or OpenAPI change.
 
 ## I. BIL-009 Usage limit enforcement handoff
 
@@ -779,7 +779,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - Rules: Product §101; spec BILREQ099.
 - Acceptance: Given a viewer, when they open billing, then no buy or downgrade control is shown and managers are named.
 - Evidence: BE none (`viewer.canManage` exists only in the mock) · FE `frontend/apps/web/src/routes/workspaces/$workspaceId/billing.tsx`, `frontend/packages/features/workspace/src/web/billing/``billing-overview-surface.tsx` · Design `Final-Billing.dc.html` `chi-xem` · Tests `frontend/packages/features/workspace/src/web/billing/``__tests__/billing.interaction.component.test.tsx` · Real e2e none (real spec `billing-plan.real.e2e.spec.ts` checks no switcher)
-- State: IMPLEMENTING — Real backend only offers `canChangePlan`.
+- State: IMPLEMENTING — Owner question: `canChangePlan` does not exist in the backend, the contracts or the frontend; the only `viewer.canManage` is in the mock. The real plan and capability reads need `ViewBilling` (Owner and Admin, interim, UC-BIL-J02), so a Member gets 403 and the real capabilities page has no action control to hide. Should a person without the view right see a view-only page (the reads would need a new flag and a no-permission read) or the permission-denied state? Any manage flag depends on UC-BIL-J05 (billing actions in Governance, still DEFINED), so there is no real manage right to return yet. Not built: no flags, no DTO or OpenAPI change, no copy.
 
 ### UC-BIL-J04 Keep invoice profile: company, tax id, address, email (enterprise baseline)
 - Capability: J. BIL-010 Billing administration
@@ -1471,7 +1471,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - Rules: Product §101; spec BILREQ098, BILREQ099; `DESIGN.md` section 25.
 - Acceptance: Given a limit reached, then the prompt names billing managers; given a permission gap, then it names workspace admins.
 - Evidence: BE none (needs UC-BIL-E04) · FE partial: seat dialog copy only · Design `Final-Billing.dc.html` `het-cho` · Tests none · Real e2e none
-- State: IMPLEMENTING — No stable reason codes from the backend.
+- State: IMPLEMENTING — Owner question: the codes the backend already sends are `plan.feature_not_enabled` (custom roles, `ForbiddenException.Code`), `forbidden` (plain permission denial), `account.suspended` and the rule code `Workspaces_Member_SeatUnavailable` (AddMember). The seat limit in invitation acceptance returns a plain failure string with no code, so the UI cannot tell it apart. Should the limit get its own code (`plan.limit_reached`) and a changed accept response? The copy also needs names: the product says billing managers, which UC-BIL-J05 does not provide yet, so should the account owner be named until then? Not built: no frontend copy for these codes in en or vi.
 
 ### UC-BIL-T04 Say plainly what is not available yet
 - Capability: T. BIL-020 Billing frontend
@@ -1590,8 +1590,8 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - UI states: Permission denied.
 - Rules: Product §96; spec BILREQ082-084; RULE tenant isolation (`NRX-003`, `NRX-004`).
 - Acceptance: Given a user of account A, when they read account B billing, then NotFound.
-- Evidence: BE `Infrastructure/Billing/BillingUsageReader.cs` · FE none · Design none · Tests `backend/tests/Notrelix.Integration.Tests/Rls/BillingUsagePolicyTests.cs` · Real e2e none
-- State: IMPLEMENTING — No cross-tenant test per billing endpoint; Billing tables have no catalog, transactional and worker policy split proven.
+- Evidence: BE `backend/src/Notrelix.Infrastructure/Billing/BillingUsageReader.cs` · FE none · Design none · Tests `backend/tests/Notrelix.Integration.Tests/Rls/BillingUsagePolicyTests.cs`, `backend/tests/Notrelix.Integration.Tests/Rls/BillingNonMemberDisclosureTests.cs` · Real e2e none
+- State: IMPLEMENTING — Built: `BillingNonMemberDisclosureTests` runs each tenant billing read (`billing/plan`, `billing/capabilities`) for a person of another account, a same-account outsider and an account admin without a seat; an existing and a made-up workspace must answer the same, as 403 or 404. Not built: the worker and transactional policy split for billing tables is proven only at grant level (`DatabaseAccessTightening.BillingAndAccount.cs`). The operator routes use their own principal and are not covered here. Integration tests need Docker and were not run locally.
 
 ### UC-BIL-X02 Never touch card data or secrets
 - Capability: X. BIL-024 Hardening/security
@@ -1619,7 +1619,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - Rules: Product §70 BIL-025; spec BILREQ100, BILREQ105; team spec section 69.
 - Acceptance: Given a repeated command with one key, then one effect.
 - Evidence: BE partial: capacity actions dedup by logical id; plan change has none · FE `billing/billing-api.ts` sends keys for mock calls · Design none · Tests `backend/tests/Notrelix.Application.Tests/Features/Billing/``BillingCapacityActionsTests.cs` · Real e2e none
-- State: IMPLEMENTING — No key on `PUT .../billing/plan`; no limiter.
+- State: IMPLEMENTING — Owner question: the only plan change is the operator route `PUT /operator/v1/accounts/{accountId}/billing/plan`, which calls `OperatorAccountBillingService.ChangePlanAsync` directly. No `IdempotencyBehavior` or idempotency store runs for it, and it has no `WithIdempotencyKey()`. A repeat with the same plan is already a no-op; a repeat with a stale `expectedVersion` conflicts instead of returning the first result. Should the key go on a pipeline command under an operator principal, or on a dedicated operator idempotency table (new migration)? Which limit applies per operator? The rate-limit text names `TenantAwareRateLimitBehavior`, which does not exist in the repo.
 
 ### UC-BIL-X04 Audit every billing change
 - Capability: X. BIL-024 Hardening/security
