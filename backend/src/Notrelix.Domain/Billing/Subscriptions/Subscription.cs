@@ -1,3 +1,4 @@
+using Notrelix.Domain.Billing.Rules;
 using Notrelix.Domain.Billing.Subscriptions.Events;
 namespace Notrelix.Domain.Billing.Subscriptions;
 
@@ -84,7 +85,7 @@ public class Subscription : AggregateRoot, IAccountScoped
         Guard.NotEmpty(updatedBy);
         if (CancelAtPeriodEnd) return;
 
-        if (Status is not (SubscriptionStatus.Active or SubscriptionStatus.PastDue))
+        if (!SubscriptionStatusTransitions.CanScheduleCancellation(Status))
             throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_InvalidStatusTransition, $"Cannot schedule cancellation from status '{Status}'.");
 
         var pending = PrepareAuditUpdate(updatedBy, occurredAt);
@@ -99,7 +100,7 @@ public class Subscription : AggregateRoot, IAccountScoped
         Guard.NotEmpty(updatedBy);
         if (Status == SubscriptionStatus.Canceled) return;
 
-        if (Status is not (SubscriptionStatus.Active or SubscriptionStatus.PastDue or SubscriptionStatus.Trialing))
+        if (!SubscriptionStatusTransitions.CanTransition(Status, SubscriptionStatus.Canceled))
             throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_InvalidStatusTransition, $"Cannot cancel from status '{Status}'.");
 
         var pending = PrepareAuditUpdate(updatedBy, cancelledAt);
@@ -116,7 +117,7 @@ public class Subscription : AggregateRoot, IAccountScoped
         if (newStart >= newEnd)
             throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_PeriodStartMustBeBeforeEnd, "Renewal period start must be before end.");
 
-        if (Status is not (SubscriptionStatus.Active or SubscriptionStatus.PastDue))
+        if (!SubscriptionStatusTransitions.CanTransition(Status, SubscriptionStatus.Active))
             throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_InvalidStatusTransition, $"Cannot renew from status '{Status}'.");
 
         var pending = PrepareAuditUpdate(updatedBy, renewedAt);
@@ -134,7 +135,7 @@ public class Subscription : AggregateRoot, IAccountScoped
         Guard.NotEmpty(updatedBy);
         if (Status == SubscriptionStatus.Expired) return;
 
-        if (Status is not (SubscriptionStatus.Active or SubscriptionStatus.PastDue))
+        if (!SubscriptionStatusTransitions.CanTransition(Status, SubscriptionStatus.Expired))
             throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_InvalidStatusTransition, $"Cannot expire from status '{Status}'.");
 
         var pending = PrepareAuditUpdate(updatedBy, expiredAt);
@@ -149,7 +150,7 @@ public class Subscription : AggregateRoot, IAccountScoped
         Guard.NotEmpty(updatedBy);
         if (Status == SubscriptionStatus.PastDue) return;
 
-        if (Status is not SubscriptionStatus.Active)
+        if (!SubscriptionStatusTransitions.CanTransition(Status, SubscriptionStatus.PastDue))
             throw new BusinessRuleException(BillingRuleCodes.Billing_Subscription_InvalidStatusTransition, $"Cannot mark past due from status '{Status}'.");
 
         var pending = PrepareAuditUpdate(updatedBy, occurredAt);

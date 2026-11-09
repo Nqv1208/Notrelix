@@ -49,7 +49,7 @@ Letter maps to the team spec capability. Total use cases: **99**.
 |---|---|---|---|---|---|---|---|---|
 | A | BIL-001 Plan/catalog model | 5 | 1 | 2 | 1 | 1 | 0 | 0 |
 | B | BIL-002 Subscription lifecycle | 6 | 5 | 1 | 0 | 0 | 0 | 0 |
-| C | BIL-003 Subscription transition policy | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
+| C | BIL-003 Subscription transition policy | 2 | 1 | 0 | 0 | 1 | 0 | 0 |
 | D | BIL-004 Entitlement model | 3 | 1 | 0 | 2 | 0 | 0 | 0 |
 | E | BIL-005 Entitlement evaluation | 4 | 2 | 0 | 0 | 2 | 0 | 0 |
 | F | BIL-006 Product entitlement contract | 4 | 2 | 1 | 0 | 1 | 0 | 0 |
@@ -138,7 +138,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 | UC-BIL-B04 | End a trial by converting or expiring | B | System (lifecycle worker) | No | No | No | No | DEFINED | No worker |
 | UC-BIL-B05 | Renew a subscription at period end | B | System | Dom | No | No | No | DEFINED | No renewal worker |
 | UC-BIL-B06 | Expire a subscription | B | System | Dom | No | No | No | DEFINED | No trigger |
-| UC-BIL-C01 | Refuse an invalid subscription transition | C | System | Dom | No | No | No | IMPLEMENTING | Transition table is not closed or tested for Trialing, PastDue, Unpaid, Incomplete |
+| UC-BIL-C01 | Refuse an invalid subscription transition | C | System | Dom | No | No | No | HARDENING | Built: closed transition table for all seven statuses, every (from, to) pair tested. Owner question: may Unpaid and Incomplete recover to Active, or only cancel or expire? |
 | UC-BIL-C02 | Apply a scheduled change at the period boundary | C | System | No | No | No | No | DEFINED | No worker |
 | UC-BIL-D01 | Derive entitlements from a subscription | D | System | Dom | No | No | No | DEFINED | No derivation |
 | UC-BIL-D02 | Grant a manual entitlement override | D | Platform operator | Yes | Real | No | No | INTEGRATING | Account scope only (workspace scope not built); no real spec; no design artboard |
@@ -400,8 +400,8 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - UI states: Error shown as a plain message.
 - Rules: Product §22 BIL-008; spec BILREQ013, BILREQ015.
 - Acceptance: Given a Canceled subscription, when a plan change is attempted, then it is rejected and the row is unchanged.
-- Evidence: BE `backend/src/Notrelix.Domain/Billing/``Subscriptions/Subscription.cs`, `Rules/SubscriptionRules.cs` · FE none · Design none · Tests `backend/tests/Notrelix.Application.Tests/Features/Billing/``BillingPlanTests.cs` · Real e2e none
-- State: IMPLEMENTING — Transition table is not closed or tested for Trialing, PastDue, Unpaid, Incomplete.
+- Evidence: BE `backend/src/Notrelix.Domain/Billing/Subscriptions/Subscription.cs`, `Rules/SubscriptionStatusTransitions.cs`, `Rules/SubscriptionRules.cs` · FE none · Design none · Tests `backend/tests/Notrelix.Domain.Tests/Billing/Subscriptions/SubscriptionStatusTransitionTableTests.cs`, `SubscriptionTransitionMatrixTests.cs`, `backend/tests/Notrelix.Application.Tests/Features/Billing/BillingPlanTests.cs` · Real e2e none
+- State: HARDENING — Built: the aggregate asks one closed table (`SubscriptionStatusTransitions`) for every status change, including Trialing, Unpaid and Incomplete; a theory tests all 49 pairs against a literal copy of the table, and each aggregate method is tested against it. A refused transition leaves status, version and events unchanged. Not built: no API or handler reaches these rules yet (the operator path uses plan change only). Owner question: the product names no recovery from Unpaid or Incomplete; the table allows Active, Canceled and Expired from both. Confirm or narrow it.
 
 ### UC-BIL-C02 Apply a scheduled change at the period boundary
 - Capability: C. BIL-003 Subscription transition policy
