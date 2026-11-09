@@ -100,7 +100,7 @@ public sealed class CredentialScopeTests : IAsyncLifetime
         var unknown = await CallAsync(c => c.PostAsJsonAsync("/api/v1/auth/login", new { email = "nobody@example.com", password = WrongPassword }));
         wrong.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         unknown.StatusCode.Should().Be(wrong.StatusCode);
-        static string Shape(string body) => System.Text.RegularExpressions.Regex.Replace(body, "\"traceId\":\"[^\"]*\"", "");
+        static string Shape(string body) => System.Text.RegularExpressions.Regex.Replace(body, "\"(traceId|correlationId)\":\"[^\"]*\"", "");
         Shape(await unknown.Content.ReadAsStringAsync()).Should().Be(Shape(await wrong.Content.ReadAsStringAsync()), "the answer does not reveal whether the address exists");
         (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions")).Should().Be("1", "failed logins create no session");
     }
