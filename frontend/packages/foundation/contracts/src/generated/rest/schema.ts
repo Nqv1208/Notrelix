@@ -150,11 +150,102 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List the Active dashboards the caller may open in the Workspace, newest first
+         * @description Returns the caller's own Active dashboards as a cursor page: default 50, max 200 (limit). Pass nextCursor back as cursor for the next page. Archived and other members' private dashboards are not listed.
+         */
+        get: operations["Analytics.Dashboards.ListDashboards"];
         put?: never;
         /** Create an empty private dashboard owned by the caller */
         post: operations["Analytics.Dashboards.CreateDashboard"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/dashboards/{dashboardId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Open one dashboard with its widgets (the creator only) */
+        get: operations["Analytics.Dashboards.GetDashboard"];
+        /** Rename a dashboard the caller owns */
+        put: operations["Analytics.Dashboards.RenameDashboard"];
+        post?: never;
+        /** Permanently delete a dashboard the caller owns (its widgets go with it; sources are untouched) */
+        delete: operations["Analytics.Dashboards.DeleteDashboard"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/dashboards/{dashboardId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive a dashboard the caller owns (read only afterwards) */
+        post: operations["Analytics.Dashboards.ArchiveDashboard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/dashboards/{dashboardId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore an archived dashboard the caller owns to Active */
+        post: operations["Analytics.Dashboards.RestoreDashboard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/dashboards/{dashboardId}/widgets/{widgetId}/position": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Move or resize a widget of a dashboard the caller owns */
+        put: operations["Analytics.Dashboards.MoveDashboardWidget"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/dashboards/{dashboardId}/widgets/{widgetId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a widget from a dashboard the caller owns (its source is untouched) */
+        delete: operations["Analytics.Dashboards.RemoveDashboardWidget"];
         options?: never;
         head?: never;
         patch?: never;
@@ -6767,6 +6858,27 @@ export interface components {
         "Notrelix.API.Contracts.Analytics.Dashboards.Requests.CreateDashboardRequest": {
             name?: string | null;
         };
+        "Notrelix.API.Contracts.Analytics.Dashboards.Requests.DashboardVersionRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.Analytics.Dashboards.Requests.MoveDashboardWidgetRequest": {
+            /** Format: int32 */
+            x?: number;
+            /** Format: int32 */
+            y?: number;
+            /** Format: int32 */
+            w?: number;
+            /** Format: int32 */
+            h?: number;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.Analytics.Dashboards.Requests.RenameDashboardRequest": {
+            name?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.Automation.Rules.Requests.AutomationActionRequest": {
             type?: string | null;
             configuration?: string | null;
@@ -7930,6 +8042,11 @@ export interface components {
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
+        "Notrelix.Application.Common.Models.CursorPageOfDashboardSummaryDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Analytics.Dashboards.DTOs.DashboardSummaryDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
         "Notrelix.Application.Common.Models.CursorPageOfFormSubmissionDto": {
             items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionDto"][] | null;
             nextCursor?: string | null;
@@ -8020,6 +8137,52 @@ export interface components {
             items?: components["schemas"]["Notrelix.Application.Features.Accounts.Operator.OperatorAccountDto"][] | null;
             /** Format: int32 */
             total?: number;
+        };
+        "Notrelix.Application.Features.Analytics.Dashboards.DTOs.DashboardDetailDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            visibility?: string | null;
+            status?: string | null;
+            /** Format: uuid */
+            ownerUserId?: string | null;
+            /** Format: int64 */
+            version?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string | null;
+            widgets?: components["schemas"]["Notrelix.Application.Features.Analytics.Dashboards.DTOs.DashboardWidgetDto"][] | null;
+        };
+        "Notrelix.Application.Features.Analytics.Dashboards.DTOs.DashboardSummaryDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            visibility?: string | null;
+            status?: string | null;
+            /** Format: uuid */
+            ownerUserId?: string | null;
+            /** Format: int64 */
+            version?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string | null;
+        };
+        "Notrelix.Application.Features.Analytics.Dashboards.DTOs.DashboardWidgetDto": {
+            /** Format: uuid */
+            id?: string;
+            title?: string | null;
+            type?: string | null;
+            config?: unknown;
+            /** Format: int32 */
+            x?: number;
+            /** Format: int32 */
+            y?: number;
+            /** Format: int32 */
+            w?: number;
+            /** Format: int32 */
+            h?: number;
         };
         "Notrelix.Application.Features.Analytics.Placements.Queries.GetWorkspacePlacements.WorkItemPlacementDto": {
             /** Format: uuid */
@@ -10746,6 +10909,67 @@ export interface operations {
             };
         };
     };
+    "Analytics.Dashboards.ListDashboards": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfDashboardSummaryDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
     "Analytics.Dashboards.CreateDashboard": {
         parameters: {
             query?: never;
@@ -10774,6 +10998,223 @@ export interface operations {
                 content: {
                     "application/json": string;
                 };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Analytics.Dashboards.GetDashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                dashboardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Analytics.Dashboards.DTOs.DashboardDetailDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Analytics.Dashboards.RenameDashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                dashboardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Analytics.Dashboards.Requests.RenameDashboardRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Analytics.Dashboards.DeleteDashboard": {
+        parameters: {
+            query: {
+                expectedVersion: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+                dashboardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Analytics.Dashboards.ArchiveDashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                dashboardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Analytics.Dashboards.Requests.DashboardVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Analytics.Dashboards.RestoreDashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                dashboardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Analytics.Dashboards.Requests.DashboardVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Analytics.Dashboards.MoveDashboardWidget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                dashboardId: string;
+                widgetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Analytics.Dashboards.Requests.MoveDashboardWidgetRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Analytics.Dashboards.RemoveDashboardWidget": {
+        parameters: {
+            query: {
+                expectedVersion: number;
+            };
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                workspaceId: string;
+                dashboardId: string;
+                widgetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Idempotency key reused with a different payload */
             409: {

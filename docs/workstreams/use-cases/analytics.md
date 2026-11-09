@@ -50,7 +50,7 @@ Letters follow the capability list of the team spec (section 5), in order: ANA-0
 | J | Automation/Integrations analytics | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | K | Billing/usage analytics | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | L | Cross-context report composition | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| M | Report/query API (dashboard lifecycle) | 10 | 1 | 8 | 0 | 1 | 0 | 0 |
+| M | Report/query API (dashboard lifecycle) | 10 | 1 | 2 | 0 | 7 | 0 | 0 |
 | N | Dashboard/report frontend | 4 | 0 | 2 | 1 | 1 | 0 | 0 |
 | O | Filters/date/timezone semantics | 2 | 1 | 0 | 1 | 0 | 0 | 0 |
 | P | Freshness/staleness contract | 3 | 1 | 1 | 1 | 0 | 0 | 0 |
@@ -62,9 +62,9 @@ Letters follow the capability list of the team spec (section 5), in order: ANA-0
 | V | Data quality/reconciliation | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | W | Migration/versioning | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | X | Hardening | 2 | 1 | 0 | 0 | 0 | 0 | 1 |
-| | Total | 61 | 28 | 19 | 3 | 9 | 0 | 2 |
+| | Total | 61 | 28 | 13 | 3 | 15 | 0 | 2 |
 
-No use case is DONE: none has an owner check or a 1-px design diff. HARDENING is the owner's rule (2026-11-08): the named backend gap is built and tested, and the owner tests and sets DONE. The work report rows H01, H02, N01 and R01 run on the real backend (`work-report.real.e2e.spec.ts`); H03, H04, R03, C02 and M03 are backend-built with Built notes. IMPLEMENTING is used for code that cannot run end to end: the Dashboard, Widget and Snapshot aggregates (Domain and EF only), the placement projection (consumers and rebuild, no HTTP), and the report builder UI that runs only on the mock backend (`backendCapabilities.reports` is `mockApi`).
+No use case is DONE: none has an owner check or a 1-px design diff. HARDENING is the owner's rule (2026-11-08): the named backend gap is built and tested, and the owner tests and sets DONE. The work report rows H01, H02, N01 and R01 run on the real backend (`work-report.real.e2e.spec.ts`); H03, H04, R03, C02, M03, M04, M05, M01, M02, M07 and M08 are backend-built with Built notes. IMPLEMENTING is used for code that cannot run end to end: the Dashboard, Widget and Snapshot aggregates (Domain and EF only), the placement projection (consumers and rebuild, no HTTP), and the report builder UI that runs only on the mock backend (`backendCapabilities.reports` is `mockApi`).
 
 ## 1.2 What exists today
 
@@ -133,14 +133,14 @@ Table-stakes use cases the product docs do not list, added as "(enterprise basel
 | UC-ANA-J02 | Integration sync health report | J | Workspace admin | no | no | none | no | DEFINED | no projection |
 | UC-ANA-K01 | Seat and usage report from Billing facts | K | Workspace owner | no | no | none | no | DEFINED | no source contract |
 | UC-ANA-L01 | Compose a multi-source report with completeness | L | Workspace member | no | no | none | no | DEFINED | no composer |
-| UC-ANA-M01 | List the dashboards and reports I may open | M | Workspace member | no | mock | Final-Reports | no | IMPLEMENTING | no endpoint |
-| UC-ANA-M02 | Open one report or dashboard | M | Workspace member | no | mock | Final-Reports | no | IMPLEMENTING | no endpoint |
+| UC-ANA-M01 | List the dashboards and reports I may open | M | Workspace member | yes | mock | Final-Reports | no | HARDENING | no screen (owner); shared dashboards (M09) and reports not listed |
+| UC-ANA-M02 | Open one report or dashboard | M | Workspace member | yes | mock | Final-Reports | no | HARDENING | no screen (owner); widget figures and shared viewing not built |
 | UC-ANA-M03 | Create a dashboard | M | Workspace member | yes | mock | Final-Reports | no | HARDENING | no screen (owner); no list yet |
-| UC-ANA-M04 | Rename a dashboard | M | Dashboard owner | domain | mock | Final-Reports | no | IMPLEMENTING | no handler |
-| UC-ANA-M05 | Archive, restore or delete a dashboard | M | Dashboard owner | domain | mock | Final-Reports | no | IMPLEMENTING | no handler, no restore rule |
-| UC-ANA-M06 | Add and configure a widget | M | Dashboard owner | domain | mock | Final-Reports | no | IMPLEMENTING | untyped config |
-| UC-ANA-M07 | Arrange widgets by move and resize | M | Dashboard owner | domain | mock | Final-Reports | no | IMPLEMENTING | no handler |
-| UC-ANA-M08 | Remove a widget | M | Dashboard owner | domain | mock | Final-Reports | no | IMPLEMENTING | no handler |
+| UC-ANA-M04 | Rename a dashboard | M | Dashboard owner | yes | mock | Final-Reports | no | HARDENING | no screen (owner); Owner question: who may rename (owner or workspace admin) |
+| UC-ANA-M05 | Archive, restore or delete a dashboard | M | Dashboard owner | yes | mock | Final-Reports | no | HARDENING | no screen (owner); Owner question: restore window |
+| UC-ANA-M06 | Add and configure a widget | M | Dashboard owner | domain | mock | Final-Reports | no | IMPLEMENTING | Owner question: widget kinds and config contract (no add endpoint) |
+| UC-ANA-M07 | Arrange widgets by move and resize | M | Dashboard owner | yes | mock | Final-Reports | no | HARDENING | no screen (owner); keyboard and cancel are UI |
+| UC-ANA-M08 | Remove a widget | M | Dashboard owner | yes | mock | Final-Reports | no | HARDENING | no screen (owner); undo hint is UI |
 | UC-ANA-M09 | Share a dashboard privately or with the workspace | M | Dashboard owner | domain | mock | Final-Reports | no | IMPLEMENTING | no owner id, no handler |
 | UC-ANA-M10 | Duplicate a dashboard (enterprise baseline) | M | Workspace member | no | no | none | no | DEFINED | not specified |
 | UC-ANA-N01 | Work report page on the real backend | N | Workspace member | yes | yes | Final-Reports | yes | HARDENING | states, design diff |
@@ -539,8 +539,8 @@ Dashboards live in the Analytics context (owner decision 17: a dashboard is an A
 - UI states: loading, empty, success, permission denied, offline.
 - Rules: ANA007, ANA008; ARREQ049, ARREQ089 to ARREQ091.
 - Acceptance: Given one private dashboard of Ann, When Bob lists, Then it is absent. Given 500 dashboards, Then a page returns with a cursor.
-- Evidence: BE none · FE `report-list-surface.tsx` (mock `reports.list`) · Design Final-Reports, Final-M-Reports · Tests `reports.interaction.component.test.tsx` · Real e2e none (mock `reports.mock.e2e.spec.ts` "lists the three reports")
-- State: IMPLEMENTING — no endpoint; the mock lists three fixed reports.
+- Evidence: BE `backend/src/Notrelix.Application/Features/Analytics/Dashboards/Queries/ListDashboards/ListDashboards.cs`, `ListDashboardsQueryValidator.cs`, `Dashboards/Services/DashboardCursor.cs`, `Dashboards/DTOs/DashboardDtos.cs`, endpoint `backend/src/Notrelix.API/Endpoints/Analytics/Dashboards/Queries/ListDashboardsEndpoint.cs` (`GET .../dashboards?cursor=&limit=`) · FE `report-list-surface.tsx` (mock `reports.list`) · Design Final-Reports, Final-M-Reports · Tests `backend/tests/Notrelix.Application.Tests/Features/Analytics/ListDashboardsQueryTests.cs`, `backend/tests/Notrelix.Integration.Tests/Analytics/DashboardListIntegrationTests.cs` (runs in CI, needs Docker), `reports.interaction.component.test.tsx` · Real e2e none (mock `reports.mock.e2e.spec.ts` "lists the three reports")
+- State: HARDENING — Built: the endpoint lists the caller's own Active dashboards in the Workspace, newest first, as a keyset cursor page (default 50, max 200, a cursor from another page is accepted, a bad cursor or limit is 400). Another member's private dashboard is absent; another Workspace's dashboards never appear; a non-member is answered like a made-up Workspace. Not listed by design: archived dashboards (the product text names no archived view; Owner question), and dashboards shared with the Workspace (M09 is not built, so nothing is shared yet). Reports are not dashboards and have no producer. Remaining: no screen (owner decides); the integration test runs in CI only.
 
 ### UC-ANA-M02 Open one report or dashboard
 - Capability: M, ANA-013
@@ -553,8 +553,8 @@ Dashboards live in the Analytics context (owner decision 17: a dashboard is an A
 - UI states: loading, success, partial, permission denied, stale, error, offline.
 - Rules: ANA008, ANA031; ARREQ045, ARREQ089.
 - Acceptance: Given a shared dashboard with one widget over a hidden board, When a member opens it, Then that widget shows access denied and the rest render.
-- Evidence: BE none · FE `report-page.tsx`, `report-dashboard-surface.tsx` (mock `reports.get`) · Design Final-Reports · Tests `reports.interaction.component.test.tsx` · Real e2e none
-- State: IMPLEMENTING.
+- Evidence: BE `backend/src/Notrelix.Application/Features/Analytics/Dashboards/Queries/GetDashboard/GetDashboard.cs`, `GetDashboardQueryValidator.cs`, `Dashboards/DTOs/DashboardDtos.cs`, endpoint `backend/src/Notrelix.API/Endpoints/Analytics/Dashboards/Queries/GetDashboardEndpoint.cs` (`GET .../dashboards/{dashboardId}`) · FE `report-page.tsx`, `report-dashboard-surface.tsx` (mock `reports.get`) · Design Final-Reports · Tests `backend/tests/Notrelix.Application.Tests/Features/Analytics/GetDashboardQueryTests.cs`, `backend/tests/Notrelix.Integration.Tests/Analytics/DashboardOpenIntegrationTests.cs` (runs in CI, needs Docker), `reports.interaction.component.test.tsx` · Real e2e none
+- State: HARDENING — Built: the endpoint returns one dashboard the caller created, with its widgets (type, typed config as JSON, position) in position order; a colleague and a person outside the Workspace get the same refusal as a made-up id. Not built: widget figures and their freshness (no widget reads a source yet, so no per-widget permission denied can occur), and viewing a dashboard shared with the Workspace (M09). Reports are not dashboards and have no producer. Remaining: no screen (owner decides); the integration test runs in CI only.
 
 ### UC-ANA-M03 Create a dashboard
 - Capability: M, ANA-013
@@ -581,8 +581,8 @@ Dashboards live in the Analytics context (owner decision 17: a dashboard is an A
 - UI states: validation error, conflict, pending, read-only.
 - Rules: ANA002; ARREQ044.
 - Acceptance: Given version 3, When a rename arrives with version 2, Then 412 and no change.
-- Evidence: BE Domain `Dashboard.cs` rename · FE mock `reports.rename` · Design Final-Reports · Tests `DashboardTests.cs` · Real e2e none
-- State: IMPLEMENTING — no handler yet. Owner question: "dashboard owner or workspace admin" has no check in the pipeline (`PermissionAction` has no dashboard action and no owner check); which permission decides it?
+- Evidence: BE `backend/src/Notrelix.Application/Features/Analytics/Dashboards/Commands/RenameDashboard/RenameDashboard.cs`, `RenameDashboardCommandValidator.cs`, endpoint `backend/src/Notrelix.API/Endpoints/Analytics/Dashboards/Commands/RenameDashboardEndpoint.cs` (`PUT .../dashboards/{dashboardId}`), Domain `Dashboard.cs` rename · FE mock `reports.rename` · Design Final-Reports · Tests `backend/tests/Notrelix.Domain.Tests/Analytics/Dashboards/DashboardTests.cs`, `backend/tests/Notrelix.Application.Tests/Features/Analytics/RenameDashboardCommandTests.cs`, `backend/tests/Notrelix.Integration.Tests/Analytics/DashboardLifecycleIntegrationTests.cs` (runs in CI, needs Docker) · Real e2e none
+- State: HARDENING — Built: the owner renames a dashboard to 1 to 120 characters after trimming, with the expected version. The same title is a no-op with no version bump and no event; a stale version is 412 and changes nothing; an archived dashboard is refused as read only; a colleague or an outsider gets the NotFound of a made-up id. Not checked: workspace admins (only the creator is checked, as M05). Owner question: "dashboard owner or workspace admin" has no permission action in the pipeline (`PermissionAction` has no dashboard action), so which permission decides it is open; until then the rule is creator only. Remaining: no screen (owner decides); the integration test runs in CI only.
 
 ### UC-ANA-M05 Archive, restore or delete a dashboard
 - Capability: M, ANA-013
@@ -595,8 +595,8 @@ Dashboards live in the Analytics context (owner decision 17: a dashboard is an A
 - UI states: destructive confirmation, pending, conflict, permission denied.
 - Rules: ANA006, ANA033; product sections 19, 91, 92.
 - Acceptance: Given a dashboard over board B, When it is deleted, Then board B and its items are unchanged.
-- Evidence: BE Domain `DashboardArchivedDomainEvent` · FE mock `reports.delete` · Design Final-Reports · Tests `DashboardTests.cs`, mock e2e (delete) · Real e2e none
-- State: IMPLEMENTING — no restore operation exists in Domain; Part 4 decides it.
+- Evidence: BE `backend/src/Notrelix.Application/Features/Analytics/Dashboards/Commands/ArchiveDashboard/ArchiveDashboard.cs`, `.../Commands/RestoreDashboard/RestoreDashboard.cs`, `.../Commands/DeleteDashboard/DeleteDashboard.cs`, `.../Dashboards/Services/DashboardOwnership.cs`, endpoints `backend/src/Notrelix.API/Endpoints/Analytics/Dashboards/Commands/ArchiveDashboardEndpoint.cs`, `RestoreDashboardEndpoint.cs`, `DeleteDashboardEndpoint.cs` (`POST .../dashboards/{dashboardId}/archive`, `.../restore`, `DELETE .../dashboards/{dashboardId}?expectedVersion=`), Domain `Dashboard.cs` (`Restore`) · FE mock `reports.delete` · Design Final-Reports · Tests `backend/tests/Notrelix.Domain.Tests/Analytics/Dashboards/DashboardTests.cs`, `backend/tests/Notrelix.Application.Tests/Features/Analytics/DashboardLifecycleCommandTests.cs`, `backend/tests/Notrelix.Integration.Tests/Analytics/DashboardLifecycleIntegrationTests.cs` (runs in CI, needs Docker) · Real e2e none
+- State: HARDENING — Built: the owner archives an Active dashboard (soft: read only afterwards, version bumped), restores an archived one to Active, and deletes one permanently (its widgets go by database cascade; sources are untouched). Each takes the expected version: a stale version is 412 and changes nothing. A member who is not the creator, or a person outside the Workspace, gets the same NotFound as a made-up id. Not checked: workspace admins may archive, restore or delete by the rule, but only the creator is checked (`AR-GAP-03`, no owner id or admin check yet). Owner question: the product text names no restore window, so any archived dashboard restores. Delete works on Active and archived dashboards alike (the text does not require archiving first); delete writes no domain event. Remaining: no screen (owner decides); the integration test runs in CI only.
 
 ### UC-ANA-M06 Add and configure a widget
 - Capability: M, ANA-013
@@ -610,7 +610,7 @@ Dashboards live in the Analytics context (owner decision 17: a dashboard is an A
 - Rules: ANA010, ANA029, ANA032; ARREQ045 to ARREQ048.
 - Acceptance: Given a bar widget grouped by a field the Metric does not support, When saved, Then rejected with the rule code.
 - Evidence: BE Domain `DashboardWidget.cs`, `WidgetConfigValidator.cs` · FE `report-widgets.tsx`, `report-dialogs.tsx` (mock `reports.widgets.save`) · Design Final-Reports · Tests `DashboardWidgetTests.cs`; mock component test · Real e2e none
-- State: IMPLEMENTING — config is validated for JSON kind only; typed per-kind contracts are missing (`AR-GAP-04`).
+- State: IMPLEMENTING — not built. Owner question: the product text (section 25) lists widget types only as "may include", and section 26 requires a validated contract per type (required source, dimensions, filters, time range, sorting, limit, empty behaviour) but names none of them. The Domain has its own closed list (`DashboardWidgetType`, six kinds, with a JSON contract per kind in `WidgetConfigValidator`) that differs from that list. Until the owner names the kinds and their config, there is no add endpoint; M07 and M08 act on widgets that exist.
 
 ### UC-ANA-M07 Arrange widgets by move and resize
 - Capability: M, ANA-013
@@ -623,8 +623,8 @@ Dashboards live in the Analytics context (owner decision 17: a dashboard is an A
 - UI states: pending, conflict, cancelled by Esc, read-only.
 - Rules: ANA011; ARREQ045.
 - Acceptance: Given a widget moved, When the dashboard reloads, Then it is at the new place and no board item moved.
-- Evidence: BE Domain `WidgetPosition.cs` · FE `report-dashboard-surface.tsx` · Design Final-Reports · Tests mock e2e "moves with the keyboard, cancels, resizes, adds a widget and saves" · Real e2e none
-- State: IMPLEMENTING.
+- Evidence: BE `backend/src/Notrelix.Application/Features/Analytics/Dashboards/Commands/MoveDashboardWidget/MoveDashboardWidget.cs`, `MoveDashboardWidgetCommandValidator.cs`, endpoint `backend/src/Notrelix.API/Endpoints/Analytics/Dashboards/Widgets/MoveDashboardWidgetEndpoint.cs` (`PUT .../dashboards/{dashboardId}/widgets/{widgetId}/position`), Domain `WidgetPosition.cs`, `Dashboard.cs` (`MoveWidget`) · FE `report-dashboard-surface.tsx` · Design Final-Reports · Tests `backend/tests/Notrelix.Domain.Tests/Analytics/Dashboards/DashboardTests.cs`, `backend/tests/Notrelix.Application.Tests/Features/Analytics/DashboardWidgetCommandTests.cs`, `backend/tests/Notrelix.Integration.Tests/Analytics/DashboardWidgetIntegrationTests.cs` (runs in CI, needs Docker) · Real e2e none (mock e2e "moves with the keyboard, cancels, resizes, adds a widget and saves")
+- State: HARDENING — Built: the owner moves or resizes a widget with the expected version (stale is 412); a no-op position changes nothing; a negative coordinate or a zero size is refused (`Analytics_Widget_CoordinatesMustBeNonNegative`, `Analytics_Widget_DimensionsMustBePositive`); an unknown widget is refused; a colleague is answered like a made-up dashboard. Source order is never touched (the position is layout only). Owner question: the product text names no grid width, so no upper bound is enforced. Remaining: no screen (owner decides); keyboard move and cancel are UI; the integration test runs in CI only.
 
 ### UC-ANA-M08 Remove a widget
 - Capability: M, ANA-013
@@ -637,8 +637,8 @@ Dashboards live in the Analytics context (owner decision 17: a dashboard is an A
 - UI states: pending, conflict, undo hint.
 - Rules: ANA006; ARREQ045.
 - Acceptance: Given a widget removed, When reloaded, Then it is gone and its Metric is unchanged.
-- Evidence: BE Domain `DashboardWidget.cs` · FE mock "adds a note and removes a widget from the menu" · Design Final-Reports · Tests `DashboardWidgetTests.cs` · Real e2e none
-- State: IMPLEMENTING.
+- Evidence: BE `backend/src/Notrelix.Application/Features/Analytics/Dashboards/Commands/RemoveDashboardWidget/RemoveDashboardWidget.cs`, `RemoveDashboardWidgetCommandValidator.cs`, endpoint `backend/src/Notrelix.API/Endpoints/Analytics/Dashboards/Widgets/RemoveDashboardWidgetEndpoint.cs` (`DELETE .../dashboards/{dashboardId}/widgets/{widgetId}?expectedVersion=`, Idempotency-Key), Domain `DashboardWidget.cs`, `Dashboard.cs` (`RemoveWidget`) · FE mock "adds a note and removes a widget from the menu" · Design Final-Reports · Tests `backend/tests/Notrelix.Domain.Tests/Analytics/Dashboards/DashboardTests.cs`, `backend/tests/Notrelix.Application.Tests/Features/Analytics/DashboardWidgetCommandTests.cs`, `backend/tests/Notrelix.Integration.Tests/Analytics/DashboardWidgetIntegrationTests.cs` (runs in CI, needs Docker) · Real e2e none
+- State: HARDENING — Built: the owner removes a widget with the expected version (stale is 412); an unknown widget is `Analytics_Dashboard_WidgetNotFound`; a retry under the same Idempotency-Key replays the first answer and removes nothing twice; the widget's source is untouched; a colleague is answered like a made-up dashboard. Remaining: no screen (owner decides); the undo hint is UI; the integration test runs in CI only.
 
 ### UC-ANA-M09 Share a dashboard privately or with the workspace
 - Capability: M, ANA-013

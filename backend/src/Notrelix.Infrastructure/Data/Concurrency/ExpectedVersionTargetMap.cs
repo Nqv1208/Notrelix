@@ -1,4 +1,11 @@
 using Notrelix.Application.Features.Accounts.Accounts.Commands.RenameAccount;
+using Notrelix.Application.Features.Analytics.Dashboards.Commands.ArchiveDashboard;
+using Notrelix.Application.Features.Analytics.Dashboards.Commands.DeleteDashboard;
+using Notrelix.Application.Features.Analytics.Dashboards.Commands.MoveDashboardWidget;
+using Notrelix.Application.Features.Analytics.Dashboards.Commands.RemoveDashboardWidget;
+using Notrelix.Application.Features.Analytics.Dashboards.Commands.RestoreDashboard;
+using Notrelix.Application.Features.Analytics.Dashboards.Commands.RenameDashboard;
+using Notrelix.Domain.Analytics.Dashboards;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteComment;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment;
 using Notrelix.Domain.Accounts.Accounts;
@@ -216,6 +223,7 @@ public sealed class ExpectedVersionTargetMap
     private const string TeamKind = "workspaces.team";
     private const string WorkspaceMemberKind = "workspaces.workspace-member";
     private const string WorkspaceInvitationKind = "workspaces.workspace-invitation";
+    private const string DashboardKind = "analytics.dashboard";
 
     // The member write loads exactly one WorkspaceMember: another member is addressed by user id,
     // the caller's own by its Workspace id (the caller's user id is not part of the request).
@@ -312,6 +320,14 @@ public sealed class ExpectedVersionTargetMap
         [typeof(UpdateSavedFilterSortsCommand)] = new(SavedFilterKind, typeof(SavedFilter)),
         [typeof(UpdateSavedFilterVisibilityCommand)] = new(SavedFilterKind, typeof(SavedFilter)),
         [typeof(UpdateSavedFilterGroupCommand)] = new(SavedFilterKind, typeof(SavedFilter)),
+
+        // Analytics — dashboard lifecycle (UC-ANA-M04, M05): the Dashboard aggregate is the concurrency authority
+        [typeof(RenameDashboardCommand)] = new(DashboardKind, typeof(Dashboard)),
+        [typeof(ArchiveDashboardCommand)] = new(DashboardKind, typeof(Dashboard)),
+        [typeof(RestoreDashboardCommand)] = new(DashboardKind, typeof(Dashboard)),
+        [typeof(DeleteDashboardCommand)] = new(DashboardKind, typeof(Dashboard)),
+        [typeof(MoveDashboardWidgetCommand)] = new(DashboardKind, typeof(Dashboard)),
+        [typeof(RemoveDashboardWidgetCommand)] = new(DashboardKind, typeof(Dashboard)),
 
         // Workspaces
         [typeof(ArchiveWorkspaceCommand)] = new(WorkspaceKind, typeof(Workspace)),

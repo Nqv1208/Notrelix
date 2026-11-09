@@ -1,4 +1,6 @@
 using Notrelix.API.Endpoints.Analytics.Dashboards.Commands;
+using Notrelix.API.Endpoints.Analytics.Dashboards.Queries;
+using Notrelix.API.Endpoints.Analytics.Dashboards.Widgets;
 using Notrelix.API.Endpoints.Analytics.Placements.Queries;
 using Notrelix.API.Endpoints.Analytics.Queries;
 
@@ -26,7 +28,23 @@ public static class AnalyticsEndpointMappings
         app.MapGroup("/api/v1/workspaces/{workspaceId:guid}/dashboards")
             .WithTags("Analytics")
             .WithOpenApi()
-            .MapCreateDashboard();
+            .MapCreateDashboard()
+            .MapListDashboards();
+
+        app.MapGroup("/api/v1/workspaces/{workspaceId:guid}/dashboards/{dashboardId:guid}")
+            .WithTags("Analytics")
+            .WithOpenApi()
+            .MapGetDashboard()
+            .MapRenameDashboard()
+            .MapArchiveDashboard()
+            .MapRestoreDashboard()
+            .MapDeleteDashboard();
+
+        app.MapGroup("/api/v1/workspaces/{workspaceId:guid}/dashboards/{dashboardId:guid}/widgets/{widgetId:guid}")
+            .WithTags("Analytics")
+            .WithOpenApi()
+            .MapMoveDashboardWidget()
+            .MapRemoveDashboardWidget();
 
         return app;
     }

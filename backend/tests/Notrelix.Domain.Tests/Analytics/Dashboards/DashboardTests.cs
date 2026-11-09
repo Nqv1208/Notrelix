@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Analytics;
 using Notrelix.Domain.Analytics.Dashboards;
 using Notrelix.Domain.Analytics.Widgets;
 
@@ -128,16 +129,69 @@ public class DashboardTests
     }
 
     [Fact]
-    public void RemoveWidget_WithMissingWidget_ShouldBeNoOp()
+    public void RemoveWidget_WithMissingWidget_ShouldThrowWidgetNotFound()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+        var version = dashboard.Version;
+
+        var act = () => dashboard.RemoveWidget(Guid.NewGuid(), actor, now);
+
+        act.Should().Throw<BusinessRuleException>()
+            .Where(e => e.RuleCode == AnalyticsRuleCodes.Analytics_Dashboard_WidgetNotFound);
+        dashboard.Version.Should().Be(version);
+        dashboard.DomainEvents.Should().NotContain(e => e is DashboardWidgetRemovedDomainEvent);
+    }
+
+    [Fact]
+    public void MoveWidget_ToTheSamePosition_IsNoOp_WithoutVersionBump()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+        var position = WidgetPosition.Create(0, 0, 2, 2);
+        dashboard.AddWidget("Widget", DashboardWidgetType.TextWidget, JsonValue.Create("{\"content\":\"test\"}"), position, actor, now);
+        var widgetId = dashboard.Widgets.First().Id;
+        var version = dashboard.Version;
+
+        dashboard.MoveWidget(widgetId, WidgetPosition.Create(0, 0, 2, 2), actor, now);
+
+        dashboard.Version.Should().Be(version);
+        dashboard.DomainEvents.OfType<DashboardWidgetMovedDomainEvent>().Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData(-1, 0, 2, 2, AnalyticsRuleCodes.Analytics_Widget_CoordinatesMustBeNonNegative)]
+    [InlineData(0, -1, 2, 2, AnalyticsRuleCodes.Analytics_Widget_CoordinatesMustBeNonNegative)]
+    [InlineData(0, 0, 0, 2, AnalyticsRuleCodes.Analytics_Widget_DimensionsMustBePositive)]
+    [InlineData(0, 0, 2, -3, AnalyticsRuleCodes.Analytics_Widget_DimensionsMustBePositive)]
+    public void MoveWidget_WithBadCoordinatesOrSize_IsRefusedAndKeepsThePosition(int x, int y, int w, int h, string ruleCode)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+        var initial = WidgetPosition.Create(1, 1, 2, 2);
+        dashboard.AddWidget("Widget", DashboardWidgetType.TextWidget, JsonValue.Create("{\"content\":\"test\"}"), initial, actor, now);
+        var widgetId = dashboard.Widgets.First().Id;
+
+        var act = () => dashboard.MoveWidget(widgetId, WidgetPosition.Create(x, y, w, h), actor, now);
+
+        act.Should().Throw<BusinessRuleException>().Where(e => e.RuleCode == ruleCode);
+        dashboard.Widgets.First().Position.Should().Be(initial);
+    }
+
+    [Fact]
+    public void MoveWidget_WithUnknownWidget_ShouldThrowWidgetNotFound()
     {
         var now = DateTimeOffset.UtcNow;
         var actor = Guid.NewGuid();
         var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
 
-        dashboard.RemoveWidget(Guid.NewGuid(), actor, now);
+        var act = () => dashboard.MoveWidget(Guid.NewGuid(), WidgetPosition.Create(0, 0, 2, 2), actor, now);
 
-        dashboard.Widgets.Should().BeEmpty();
-        dashboard.DomainEvents.Should().NotContain(e => e is DashboardWidgetRemovedDomainEvent);
+        act.Should().Throw<BusinessRuleException>()
+            .Where(e => e.RuleCode == AnalyticsRuleCodes.Analytics_Dashboard_WidgetNotFound);
     }
 
     [Fact]
@@ -269,4 +323,62 @@ public class DashboardTests
         dashboard.Widgets.First().Position.Should().Be(initial);
     }
 
+    [Fact]
+    public void Restore_ArchivedDashboard_BecomesActive_AndRaisesEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+        dashboard.Archive(actor, now.AddDays(1));
+        var versionAfterArchive = dashboard.Version;
+
+        dashboard.Restore(actor, now.AddDays(2));
+
+        dashboard.Status.Should().Be(DashboardStatus.Active);
+        dashboard.Version.Should().Be(versionAfterArchive + 1);
+        dashboard.DomainEvents.OfType<DashboardRestoredDomainEvent>().Should().ContainSingle();
+    }
+
+    [Fact]
+    public void Restore_ActiveDashboard_IsNoOp()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+        var version = dashboard.Version;
+
+        dashboard.Restore(actor, now.AddDays(1));
+
+        dashboard.Status.Should().Be(DashboardStatus.Active);
+        dashboard.Version.Should().Be(version);
+        dashboard.DomainEvents.Should().NotContain(e => e is DashboardRestoredDomainEvent);
+    }
+
+    [Fact]
+    public void Restore_WithEmptyActor_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+        dashboard.Archive(actor, now.AddDays(1));
+
+        var act = () => dashboard.Restore(Guid.Empty, now.AddDays(2));
+
+        act.Should().Throw<DomainException>();
+        dashboard.Status.Should().Be(DashboardStatus.Archived);
+    }
+
+    [Fact]
+    public void Rename_ToTheSameName_IsNoOp_WithoutVersionBumpOrEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Weekly", actor, now);
+        var version = dashboard.Version;
+
+        dashboard.Rename("  Weekly  ", actor, now.AddDays(1));
+
+        dashboard.Version.Should().Be(version);
+        dashboard.DomainEvents.Should().NotContain(e => e is DashboardRenamedDomainEvent);
+    }
 }
