@@ -161,7 +161,7 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-N02 | Answer a liveness probe | N | Orchestrator | yes | n/a | n/a | no | HARDENING | none open; route tests `GetLive_*` in `HealthEndpointTests` |
 | UC-PLT-N03 | Answer a readiness probe | N | Orchestrator | yes | n/a | n/a | no | HARDENING | no probe proof against the real compose stack |
 | UC-PLT-N04 | Show full health with each check | N | Operator | yes | n/a | n/a | no | HARDENING | no probe proof against the real compose stack |
-| UC-PLT-N05 | Report outbox age and dead letters | N | Operator | yes | n/a | n/a | no | IMPLEMENTING | covered by integration tests; no alert rule |
+| UC-PLT-N05 | Report outbox age and dead letters | N | Operator | yes | n/a | n/a | no | HARDENING | owner question: which alert rule consumes the signal |
 | UC-PLT-N06 | Answer a startup probe (enterprise baseline) | N | Orchestrator | no | n/a | n/a | no | DEFINED | not specified |
 | UC-PLT-N07 | Redact telemetry in the browser | N | Frontend runtime | n/a | yes | n/a | no | IMPLEMENTING | unit-tested, no real e2e |
 | UC-PLT-O01 | Fail the build on a forbidden dependency | O | CI | yes | yes | n/a | no | HARDENING | none open; architecture tests run in CI |
@@ -941,8 +941,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: n/a.
 - Rules: BE-PLT-043, BE-PLT-047.
 - Acceptance: Given a pending row 20 minutes old, When checked, Then Unhealthy.
-- Evidence: BE `Observability/HealthChecks/OutboxHealthCheck.cs`, `OutboxDiagnosticsService.cs`, `Metrics/MetricsService.cs` · FE n/a · Design n/a · Tests `PipelineTelemetryIntegrationTests.cs` (related) · Real e2e none
-- State: IMPLEMENTING — no alert rule or dashboard consumes the signal.
+- Evidence: BE `Observability/HealthChecks/OutboxHealthCheck.cs`, `OutboxDiagnosticsService.cs`, `Metrics/MetricsService.cs`, gauges fed by `BackgroundJobs/OutboxDispatcher.cs` · FE n/a · Design n/a · Tests `backend/tests/Notrelix.Infrastructure.Tests/Observability/OutboxHealthCheckTests.cs` (thresholds: empty Healthy, 1 min Healthy, 6 min Degraded, 20 min Unhealthy, dead letter Unhealthy, retryable Failed Healthy), `MetricsServiceTests.cs` (gauge names and values), `PipelineTelemetryIntegrationTests.cs` (related) · Real e2e none
+- State: HARDENING — Built: the Degraded and Unhealthy thresholds and the dead-letter rule are unit-tested (`OutboxHealthCheckTests`, 6 passed locally); the dispatcher feeds the gauges. Owner question: which alert rule or dashboard should consume `outbox_*` gauges and the Unhealthy status? No alert exists in the repo, and this use case does not add one.
 
 ### UC-PLT-N06 Answer a startup probe (enterprise baseline)
 - Capability: N, PF-14
