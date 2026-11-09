@@ -220,7 +220,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 | UC-BIL-V02 | Alert on reconciliation lag and entitlement errors | V | Engineers on call | No | No | No | No | DEFINED | No signals defined |
 | UC-BIL-W01 | Backfill subscriptions, entitlements and lineage | W | System (migration) | No | No | No | No | DEFINED | `Account.PlanCode` migration not planned in code |
 | UC-BIL-W02 | Replace the hard-coded frontend catalog with the API | W | Frontend team | Part | Real | No | No | IMPLEMENTING | The tenant plan card and the operator console read the catalog from the API; the dead package stub (`features-billing`, prices that match nothing) is still there |
-| UC-BIL-X01 | Keep one account's billing data from another | X | System | Yes | No | No | No | IMPLEMENTING | No cross-tenant test per billing endpoint |
+| UC-BIL-X01 | Keep one account's billing data from another | X | System | Yes | No | No | No | IMPLEMENTING | Built: cross-tenant test for both tenant billing reads. Remaining: worker and transactional policy split for billing tables not proven |
 | UC-BIL-X02 | Never touch card data or secrets | X | System | Dom | No | No | No | DEFINED | No redaction test |
 | UC-BIL-X03 | Make commercial commands idempotent and rate-limited | X | System | Part | Mock | No | No | IMPLEMENTING | No key on the plan change (`PUT /operator/v1/accounts/{accountId}/billing/plan`, operator-only, outside the request pipeline). Owner question in the use case |
 | UC-BIL-X04 | Audit every billing change | X | Auditors and billing managers | No | No | No | No | DEFINED | Governance audit contract not used by Billing |
@@ -1590,8 +1590,8 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - UI states: Permission denied.
 - Rules: Product §96; spec BILREQ082-084; RULE tenant isolation (`NRX-003`, `NRX-004`).
 - Acceptance: Given a user of account A, when they read account B billing, then NotFound.
-- Evidence: BE `Infrastructure/Billing/BillingUsageReader.cs` · FE none · Design none · Tests `backend/tests/Notrelix.Integration.Tests/Rls/BillingUsagePolicyTests.cs` · Real e2e none
-- State: IMPLEMENTING — No cross-tenant test per billing endpoint; Billing tables have no catalog, transactional and worker policy split proven.
+- Evidence: BE `backend/src/Notrelix.Infrastructure/Billing/BillingUsageReader.cs` · FE none · Design none · Tests `backend/tests/Notrelix.Integration.Tests/Rls/BillingUsagePolicyTests.cs`, `backend/tests/Notrelix.Integration.Tests/Rls/BillingNonMemberDisclosureTests.cs` · Real e2e none
+- State: IMPLEMENTING — Built: `BillingNonMemberDisclosureTests` runs each tenant billing read (`billing/plan`, `billing/capabilities`) for a person of another account, a same-account outsider and an account admin without a seat; an existing and a made-up workspace must answer the same, as 403 or 404. Not built: the worker and transactional policy split for billing tables is proven only at grant level (`DatabaseAccessTightening.BillingAndAccount.cs`). The operator routes use their own principal and are not covered here. Integration tests need Docker and were not run locally.
 
 ### UC-BIL-X02 Never touch card data or secrets
 - Capability: X. BIL-024 Hardening/security
