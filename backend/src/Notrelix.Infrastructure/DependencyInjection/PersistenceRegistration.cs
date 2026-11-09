@@ -184,6 +184,8 @@ public static class PersistenceRegistration
             Notrelix.Infrastructure.Data.Collaboration.PostgresAttachmentTargetLock>();
         services.AddScoped<Notrelix.Application.Features.Collaboration.Abstractions.IReactionWriteLock,
             Notrelix.Infrastructure.Data.Collaboration.PostgresReactionWriteLock>();
+        services.AddScoped<Notrelix.Application.Features.Collaboration.Abstractions.IWatcherWriteLock,
+            Notrelix.Infrastructure.Data.Collaboration.PostgresWatcherWriteLock>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Transfer.IBoardTransferJobs, Notrelix.Infrastructure.Data.Ops.BoardTransferJobs>();
         services.AddSingleton<Notrelix.Application.Features.WorkManagement.Transfer.ITransferProgress, Notrelix.Infrastructure.Data.Ops.TransferProgress>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemKeyAllocator,

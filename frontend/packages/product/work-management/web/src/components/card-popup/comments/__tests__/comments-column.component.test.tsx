@@ -146,3 +146,18 @@ describe("moderator delete", () => {
     ).toBeNull();
   });
 });
+
+describe("comment body is text, never markup (UC-COL-H04)", () => {
+  const hostile =
+    '<script>alert(1)</script> [go](javascript:alert(1)) <img src=x onerror="alert(1)"> <a href="javascript:alert(1)">x</a>';
+
+  it("shows markup and script as text, with no element or link made from it", () => {
+    show({ updates: [{ ...comment, id: "c-x", body: hostile }] });
+    const row = document.querySelector('[data-comment="c-x"]') as HTMLElement;
+    expect(row.querySelector("script")).toBeNull();
+    expect(row.querySelector("img")).toBeNull();
+    expect(row.querySelector("a")).toBeNull();
+    expect(row.querySelector('[href^="javascript"]')).toBeNull();
+    expect(row.textContent).toContain("<script>alert(1)</script>");
+  });
+});

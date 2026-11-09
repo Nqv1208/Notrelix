@@ -24,18 +24,28 @@ public class FollowBoardItemCommandHandler : IRequestHandler<FollowBoardItemComm
     private readonly ICollaborationDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
+    private readonly IWatcherWriteLock _watcherLock;
 
-    public FollowBoardItemCommandHandler(ICollaborationDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider)
+    public FollowBoardItemCommandHandler(
+        ICollaborationDbContext context,
+        ICurrentRequestContext requestContext,
+        IDateTimeProvider timeProvider,
+        IWatcherWriteLock watcherLock)
     {
         _context = context;
         _requestContext = requestContext;
         _timeProvider = timeProvider;
+        _watcherLock = watcherLock;
     }
 
     public async Task<Result> Handle(FollowBoardItemCommand request, CancellationToken ct)
     {
         var userId = _requestContext.UserId;
         var kind = ResourceKind.Create(FollowBoardItemCommand.BoardItemKind);
+
+        // Concurrent follows of the same item serialize on this lock; the check below then sees the committed row,
+        // so a racing duplicate is the same no-op as a repeat follow (UC-COL-H03).
+        await _watcherLock.AcquireAsync(userId, ResourceRef.Create(kind, request.BoardItemId), ct);
 
         var already = await _context.ResourceWatchers
             .AnyAsync(w => w.UserId == userId && w.Target.Kind == kind && w.Target.ResourceId == request.BoardItemId, ct);
