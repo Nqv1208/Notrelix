@@ -3499,6 +3499,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     mutation: false,
   },
   {
+    context: "Automation",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceAutomationsApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/workspace-automations.api.ts",
+    capability: "Automation.Executions.Cancel",
+    operationId: "Automation.Executions.Cancel",
+    mutation: true,
+  },
+  {
     context: "Documents",
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "createPageApi",

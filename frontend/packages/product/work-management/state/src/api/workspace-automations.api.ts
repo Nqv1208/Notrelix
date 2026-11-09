@@ -288,6 +288,19 @@ export function createWorkspaceAutomationsApi(client: NotrelixClient) {
         quiet,
       );
     },
+    /** Cancels a Queued run: it ends Cancelled and no action runs. A run that started or finished is refused (409). */
+    cancelRun(
+      workspaceId: string,
+      boardId: string,
+      ruleId: string,
+      runId: string,
+    ): Promise<void> {
+      return api.post<void>(
+        `${base(workspaceId)}/${encodeURIComponent(ruleId)}/executions/${encodeURIComponent(runId)}/cancel?${claim(boardId)}`,
+        undefined,
+        { idempotencyKey: crypto.randomUUID(), ...quiet },
+      );
+    },
     async runs(
       boardId: string,
       ruleId: string,

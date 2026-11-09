@@ -3249,6 +3249,18 @@
           "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
         },
         {
+          "id": "workspace-rules-cancel-run",
+          "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
+        },
+        {
+          "id": "workspace-rules-cancel-refused",
+          "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
+        },
+        {
+          "id": "workspace-rules-cancel-only-queued",
+          "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
+        },
+        {
           "id": "workspace-rules-forbidden",
           "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
         }

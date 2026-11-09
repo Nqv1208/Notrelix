@@ -277,6 +277,90 @@ describe.each([
     expect(onOpenRuns).toHaveBeenCalledWith(null);
   });
 
+  it(`${fui("wm.board-settings.workspace-rules:workspace-rules-cancel-run", locale)}offers cancel only on a queued run, asks before cancelling it and cancels it on confirmation (${locale})`, async () => {
+    const queued = {
+      id: "x-queued",
+      status: "queued",
+      attempts: 0,
+      error: null,
+      ruleVersion: 2,
+      steps: [],
+      createdAt: "2026-10-13T08:30:00.000Z",
+    } as const;
+    const onCancelRun = vi.fn().mockResolvedValue({ ok: true });
+    renderRules(copy, {
+      onCancelRun,
+      openRuleId: "r-1",
+      runs: { status: "ready", data: [queued] },
+    });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: fillCopy(t.history.cancelName, {
+          time: new Date(queued.createdAt).toLocaleString(),
+        }),
+      }),
+    );
+    expect(onCancelRun).not.toHaveBeenCalled();
+    const dialog = screen.getByRole("alertdialog", {
+      name: t.history.confirmCancel.title,
+    });
+    fireEvent.click(
+      within(dialog).getByRole("button", {
+        name: t.history.confirmCancel.confirm,
+      }),
+    );
+    await waitFor(() =>
+      expect(onCancelRun).toHaveBeenCalledWith("r-1", "x-queued"),
+    );
+  });
+
+  it(`${fui("wm.board-settings.workspace-rules:workspace-rules-cancel-refused", locale)}says why a run can no longer be cancelled when the workspace refuses it (${locale})`, async () => {
+    const queued = {
+      id: "x-queued",
+      status: "queued",
+      attempts: 0,
+      error: null,
+      ruleVersion: 2,
+      steps: [],
+      createdAt: "2026-10-13T08:30:00.000Z",
+    } as const;
+    const onCancelRun = vi
+      .fn()
+      .mockResolvedValue({ ok: false, reason: "not-queued" });
+    renderRules(copy, {
+      onCancelRun,
+      openRuleId: "r-1",
+      runs: { status: "ready", data: [queued] },
+    });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: fillCopy(t.history.cancelName, {
+          time: new Date(queued.createdAt).toLocaleString(),
+        }),
+      }),
+    );
+    fireEvent.click(
+      within(
+        screen.getByRole("alertdialog", {
+          name: t.history.confirmCancel.title,
+        }),
+      ).getByRole("button", { name: t.history.confirmCancel.confirm }),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toContain(
+        t.feedback["not-queued"],
+      ),
+    );
+  });
+
+  it(`${fui("wm.board-settings.workspace-rules:workspace-rules-cancel-only-queued", locale)}offers no cancel on a run that already started or finished (${locale})`, () => {
+    renderRules(copy, {
+      openRuleId: "r-1",
+      runs: WORKSPACE_RULE_RUNS,
+    });
+    expect(screen.queryByText(t.history.cancel)).toBeNull();
+  });
+
   it(`${fui("wm.board-settings.workspace-rules:workspace-rules-forbidden", locale)}tells a member who is not a workspace admin that only admins manage automations (${locale})`, () => {
     renderRules(copy, { status: "forbidden", rules: [] });
     expect(screen.getByText(t.forbidden.title, { exact: false })).toBeTruthy();

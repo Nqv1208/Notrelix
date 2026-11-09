@@ -344,6 +344,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       onUpdate: rules.update,
       onDelete: rules.remove,
       onSetEnabled: rules.setEnabled,
+      onCancelRun: rules.cancelRun,
       openRuleId: rules.openRuleId,
       onOpenRuns: rules.openRuns,
       runs: {

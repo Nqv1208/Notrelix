@@ -82,6 +82,7 @@ export function workspaceRulesPanel(
     onUpdate: written,
     onDelete: written,
     onSetEnabled: written,
+    onCancelRun: written,
     openRuleId: null,
     onOpenRuns: noop,
     runs: { status: "ready", data: [] },
