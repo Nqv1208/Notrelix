@@ -49,10 +49,10 @@ Capability letters follow the Governance list of the team spec, in order.
 | D | Permission assignment | 15 | 2 | 2 | 3 | 3 | 3 | 2 |
 | E | Effective permission evaluation | 13 | 1 | 5 | 1 | 2 | 4 | 0 |
 | F | Protected operation integration | 5 | 2 | 1 | 1 | 0 | 1 | 0 |
-| G | Share-link lifecycle and policy | 10 | 3 | 2 | 2 | 1 | 0 | 2 |
-| H | Governance administration UI | 14 | 5 | 6 | 1 | 0 | 0 | 2 |
+| G | Share-link lifecycle and policy | 10 | 3 | 1 | 2 | 2 | 0 | 2 |
+| H | Governance administration UI | 14 | 5 | 5 | 1 | 1 | 0 | 2 |
 | I | Architecture coverage for resource kinds and actions | 3 | 1 | 0 | 0 | 1 | 1 | 0 |
-|  | Total | 75 | 15 | 19 | 8 | 17 | 10 | 6 |
+|  | Total | 75 | 15 | 17 | 8 | 19 | 10 | 6 |
 
 Ten use cases are DONE in the index (B01, D01, D03, D04, E01, E04, E05, E06, F01, I01); each Evidence line names its proof. The execution pack certifies Governance parts as VERIFIED or PARTIALLY_VERIFIED on a base commit (certification (removed; see git history), records P2B-CERT-004 to P2B-CERT-016); that is backend proof only.
 
@@ -112,7 +112,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 |---|---|---|---|---|---|---|---|---|---|
 | UC-GOV-A01 | Admit a protected resource kind with its action vocabulary | A | Developer of an owning context | Yes | No | No | No | IMPLEMENTING | Kinds exist for Board, Page and workspace; Items, Automation and Integration rely on the workspace kind or the Board. A written ... |
 | UC-GOV-A02 | Resolve a resource's kind, workspace and owner from its id | A | Application pipeline (system) | Yes | No | No | Part | HARDENING | tests and owner check |
-| UC-GOV-A03 | Classify every permission action in the role baseline | A | Developer | Yes | No | No | No | IMPLEMENTING | Stored-rule migration on rename is specified (§85) but has no test. |
+| UC-GOV-A03 | Classify every permission action in the role baseline | A | Developer | Yes | No | No | No | IMPLEMENTING | Owner question: no stored-rule migration for a permission action rename exists (`permission_rules.action`, custom role permissions, templates and audit mappings are plain text, §85), so there is no migration to test; build it with the first rename, or now? |
 | UC-GOV-A04 | Field-level permission (deferred) | A | Workspace Owner, Admin | Part | No | No | No | DEFINED | Lead decision L11: deferred behind Work Management field work. Domain type exists and is unused. |
 | UC-GOV-B01 | Decide a workspace action from the built-in role baseline | B | Server (every protected request) | Yes | Part | Part | Yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-GOV-B02 | Decide an account-scoped action from the account role | B | Server | Yes | No | No | No | IMPLEMENTING | No frontend check of denial; no API-level test of the Account cell. |
@@ -158,8 +158,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-F03 | Record audit evidence for permission grant and revoke | F | System | Yes | No | No | No | INTEGRATING | tests: audit row fields, the grant no-op and the failed change (Integration, needs Docker) |
 | UC-GOV-F04 | Audit every high-impact governance and administration change | F | System | Part | No | No | No | DEFINED | Missing audit on role change, member lifecycle, API tokens, share links, sharing policy. |
 | UC-GOV-F05 | Audit denied attempts on security-sensitive actions | F | System | No | No | No | No | DEFINED | Not built. |
-| UC-GOV-G01 | Create a share link for a Board or Page | G | Board or Page sharer | Part | No | Part | No | IMPLEMENTING | Defects: access mode is hard-coded `WorkspaceOnly`; request `Level` is ignored; the DTO returns `TokenHash`; no audit; no policy check; ... |
-| UC-GOV-G02 | Revoke (disable) a share link | G | Board or Page sharer, workspace Owner | Part | No | No | No | IMPLEMENTING | Authorization built on the shared resource (decided 2026-10-30); tests and owner check; no audit |
+| UC-GOV-G01 | Create a share link for a Board or Page | G | Board or Page sharer | Part | No | Part | No | IMPLEMENTING | Built (2026-11-09): request `Level` honoured and capped at Commenter (stored, migration `AddShareLinkLevel`); the DTO carries no token or hash; expiry required and not in the past; audit row `CreateShareLink`; policy check kept. Left: Owner question on the idempotency key (a replayed response would store the raw token), on the workspace maximum expiry and on the 422 status (repo maps validation to 400). Access mode `WorkspaceOnly` is correct for v1 (Lead decision L5). |
+| UC-GOV-G02 | Revoke (disable) a share link | G | Board or Page sharer, workspace Owner | Part | No | No | No | HARDENING | Built (2026-11-09): audit row `DisableShareLink` written only when the link actually changes; authorization tests: board manager who is not a workspace Admin and workspace Owner allowed, board Viewer denied, stranger and link of another board NotFound, already-off no-op. |
 | UC-GOV-G03 | A visitor opens a resource through a share link | G | Anonymous or signed-in visitor | No | No | No | No | BLOCKED | Owner must decide the execution principal of an anonymous visitor, abuse controls and whether Board links are in scope at all (76.4 says ... |
 | UC-GOV-G04 | List the share links of a resource | G | Board or Page sharer | No | No | Part | No | DEFINED | No endpoint. Enterprise baseline. |
 | UC-GOV-G05 | Link expiry, password and rotation | G | Link sharer | Part | No | No | No | BLOCKED | Depends on UC-GOV-G03 (no consumer). Domain rules exist and are tested. |
@@ -172,14 +172,14 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-H02 | View the audit log of a workspace | H | Workspace Owner, Admin | No | Part | No | No | DEFINED | No endpoint, screen or artboard. Frontend service is dead code. |
 | UC-GOV-H03 | Export the audit log | H | Workspace Owner | No | No | No | No | DEFINED | Not built. |
 | UC-GOV-H04 | Audit reads of the audit log | H | System | No | No | No | No | DEFINED | Depends on UC-GOV-H02. |
-| UC-GOV-H05 | Issue an API token for a workspace | H | Workspace Owner | Yes | No | No | No | IMPLEMENTING | No screen and no artboard; no audit row; no token lifetime cap; the token's scope and rights are not narrower than its issuer's by a ... |
-| UC-GOV-H06 | List API tokens | H | Workspace Owner | Yes | No | No | No | IMPLEMENTING | No screen; unbounded read. |
-| UC-GOV-H07 | Revoke an API token | H | Workspace Owner | Yes | No | No | No | IMPLEMENTING | No screen; no audit. |
+| UC-GOV-H05 | Issue an API token for a workspace | H | Workspace Owner | Yes | No | No | No | IMPLEMENTING | No screen and no artboard. Built (2026-11-09): audit row `CreateApiToken`; expiry required and capped at the default 365 days (Lead decision L7); a workspace cap shorter than 365 is UC-GOV-H08. Owner question: which rule narrows a token's scope and rights below its issuer's (none is stated in the product text). |
+| UC-GOV-H06 | List API tokens | H | Workspace Owner | Yes | No | No | No | IMPLEMENTING | No screen. Built (2026-11-09): cursor page, default 50, max 200, newest first; the secret and hash are never in the list. |
+| UC-GOV-H07 | Revoke an API token | H | Workspace Owner | Yes | No | No | No | IMPLEMENTING | No screen. Built (2026-11-09): audit row `RevokeApiToken` only when the token changes; an already-revoked token writes no row. |
 | UC-GOV-H08 | Cap API token lifetime by workspace policy (enterprise baseline) | H | Workspace Owner | No | No | No | No | DEFINED | Not built. |
 | UC-GOV-H09 | Manage roles on a governance screen | H | Workspace Owner | No | Part | No | No | DEFINED | Depends on C01-C06 and on a design. |
-| UC-GOV-H10 | Read outbox statistics (platform operator) | H | Platform operator (`SystemAdmin` role) | Yes | No | No | No | IMPLEMENTING | Operator surface only; how the `SystemAdmin` role is granted and audited is not documented. |
-| UC-GOV-H11 | List pending and failed outbox messages | H | Platform operator | Yes | No | No | No | IMPLEMENTING | Cap on the failed path not verified here; cross-tenant read by design; no audit of operator reads. |
-| UC-GOV-H12 | Read one outbox message | H | Platform operator | Yes | No | No | No | IMPLEMENTING | Detail fields not reviewed for payload or secret exposure; no test of the 404. |
+| UC-GOV-H10 | Read outbox statistics (platform operator) | H | Platform operator (`SystemAdmin` role) | Yes | No | No | No | IMPLEMENTING | Operator surface only. Owner question: how the `SystemAdmin` role is granted and audited (the product text names the role in Lead decision L9 only). |
+| UC-GOV-H11 | List pending and failed outbox messages | H | Platform operator | Yes | No | No | No | IMPLEMENTING | Built (2026-11-09): the limit is clamped to 1 to 200 on the pending and the failed path (`OutboxDiagnosticsLimits.Clamp`, unit tested). Cross-tenant read by design. Owner question: must operator reads be audited? L9 is silent; L3 audits reads of the workspace audit log only. |
+| UC-GOV-H12 | Read one outbox message | H | Platform operator | Yes | No | No | No | HARDENING | Built (2026-11-09): the detail DTO no longer carries `PayloadJson` (L9: no payload), tested by reflection and by serialization; the 404 is tested. The `Error` text is returned as stored; redacting secrets a producer writes into it is not built. |
 | UC-GOV-H13 | Workspace administration console | H | Workspace Owner, Admin | Part | Part | Part | No | BLOCKED | Owner decisions 1-9 of the admin plane (roadmap AD-1) are pending. Needed: what the console contains, who may open each area, whether ... |
 | UC-GOV-H14 | Account administration console | H | Account Owner, Admin | Part | Part | Part | No | BLOCKED | Same pending owner decisions as UC-GOV-H13; Accounts owns the content, Governance only the access rule. |
 | UC-GOV-I01 | Every endpoint declares its authorization | I | Developer, CI | Yes | No | No | n/a | DONE | set DONE by the foundation lane pull request, see the Evidence line |
@@ -873,6 +873,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - State: DEFINED - Not built.
 
 ## Capability G: Share-link lifecycle and policy
+- State: IMPLEMENTING - Owner question: the stored-rule migration on a rename (§85: stored rules, roles, templates, audit mappings) is not in the code, so its test cannot be written yet. Build it with the first rename, or now?
 
 ### UC-GOV-G01 Create a share link for a Board or Page
 - Capability: G Share-link lifecycle and policy (team spec, Governance list)
@@ -885,8 +886,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: validation error, permission denied, pending, success (URL shown once)
 - Rules: [Governance §31-§39](../../product/governance.md) GOV-010, GOV-032; WGREQ097-WGREQ102, WGREQ156; Lead decisions L5, L6.
 - Acceptance: Given an Editor, When they create a link at Viewer with a 7-day expiry, Then the response holds one raw token and the stored row holds only its hash.
-- Evidence: BE `POST /api/v1/resources/{resourceType}/{resourceId}/share-links` (Governance.ShareLinks.Create, `CreateShareLinkCommand`) · FE none (Share dialog offers only 'copy link' of the resource address) · Domain `Notrelix.Domain/Governance/ShareLinks/ShareLink.cs`, `ShareLinkTokenHash.cs` · Tests `backend/tests/Notrelix.Domain.Tests/Governance/ShareLinks/ShareLinkTests.cs`, `ShareLinkBoundaryTests.cs`, `ShareLinkTokenHashTests.cs` · Real e2e none · Design `Final-Share` (link row)
-- State: IMPLEMENTING - Defects: access mode is hard-coded `WorkspaceOnly`; request `Level` is ignored; the DTO returns `TokenHash`; no audit; no policy check; no past-expiry check; no idempotency key; no consumer of the link exists.
+- Evidence: BE `POST /api/v1/resources/{resourceType}/{resourceId}/share-links` (Governance.ShareLinks.Create, `CreateShareLinkCommand`) · FE none (Share dialog offers only 'copy link' of the resource address) · Domain `Notrelix.Domain/Governance/ShareLinks/ShareLink.cs`, `ShareLinkTokenHash.cs` · Tests `backend/tests/Notrelix.Domain.Tests/Governance/ShareLinks/ShareLinkTests.cs`, `ShareLinkBoundaryTests.cs`, `ShareLinkTokenHashTests.cs` · Application tests `backend/tests/Notrelix.Application.Tests/Features/Governance/CreateShareLinkHandlerTests.cs`, `CreateShareLinkWorkspacePolicyTests.cs`, `CanonicalKindValidatorsTests.cs` · Migration `backend/src/Notrelix.Infrastructure/Data/Migrations/20261109135108_AddShareLinkLevel.cs` · Real e2e none · Design `Final-Share` (link row)
+- State: IMPLEMENTING - Built (2026-11-09), Application tests and a Domain test: the request `Level` is honoured (Viewer or Commenter, stored on the row); the create response carries the raw token once and no token hash; an expiry is required and may not be in the past (400, rule codes `ShareLinkExpiryRequired`, `ShareLinkExpiryInPast`); one audit row `CreateShareLink` whose payload holds no token; the workspace policy check was already in place. Access mode `WorkspaceOnly` is kept (Lead decision L5: v1 links open for people signed in to the workspace). Left: Owner question: the idempotency key (`WithIdempotencyKey`) would store the create response, including the raw token, in the idempotency result table; the owner must decide whether a replay returns the first link without the token, or the key is left out. Owner question: the workspace maximum expiry (L5 says "within a workspace maximum" and names no number). Owner question: L5 and the product text say 422 for these refusals, but the repo maps business and validation refusals to 400; confirm which status. Integration test for the audit row and the Board manager path: written, not run (needs Docker). No consumer of the link exists (UC-GOV-G03).
 
 ### UC-GOV-G02 Revoke (disable) a share link
 - Capability: G Share-link lifecycle and policy (team spec, Governance list)
@@ -899,8 +900,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: destructive confirmation, pending, permission denied
 - Rules: [Governance §34, §36](../../product/governance.md) GOV-011; WGREQ102, WGREQ149.
 - Acceptance: Given an active link, When revoked, Then a visitor with the old URL is denied on the next request.
-- Evidence: BE `DELETE /api/v1/resources/{resourceType}/{resourceId}/share-links/{shareLinkId}` (Governance.ShareLinks.Disable, `DisableShareLinkCommand`, `ShareLinks/ShareLinkResources.cs` shared with create) · FE none · Domain `Notrelix.Domain/Governance/ShareLinks/ShareLink.cs`, `ShareLinkTokenHash.cs` · Tests `backend/tests/Notrelix.Domain.Tests/Governance/ShareLinks/ShareLinkTests.cs`, `ShareLinkBoundaryTests.cs`, `ShareLinkTokenHashTests.cs` · Real e2e none · Design none
-- State: IMPLEMENTING - Built (2026-10-30): authorized on the shared resource named by the route with the action create uses, so a Board manager who is not workspace Admin can revoke their own link; the link must belong to that resource or the answer is NotFound. Left: no audit; tests and owner check (Application and API tests: Board manager allowed, member without the action and a link of another board both NotFound, already-off no-op).
+- Evidence: BE `DELETE /api/v1/resources/{resourceType}/{resourceId}/share-links/{shareLinkId}` (Governance.ShareLinks.Disable, `DisableShareLinkCommand`, `ShareLinks/ShareLinkResources.cs` shared with create) · FE none · Domain `Notrelix.Domain/Governance/ShareLinks/ShareLink.cs`, `ShareLinkTokenHash.cs` · Tests `backend/tests/Notrelix.Domain.Tests/Governance/ShareLinks/ShareLinkTests.cs`, `ShareLinkBoundaryTests.cs`, `ShareLinkTokenHashTests.cs` · Application tests `backend/tests/Notrelix.Application.Tests/Features/Governance/DisableShareLinkHandlerTests.cs` · Integration tests `backend/tests/Notrelix.Integration.Tests/Governance/GovernanceResourcePermissionFlowTests.cs` (share-link authorization block; written, not run: needs Docker) · Real e2e none · Design none
+- State: HARDENING - Built (2026-10-30): authorized on the shared resource named by the route with the action create uses, so a Board manager who is not workspace Admin can revoke their own link; the link must belong to that resource or the answer is NotFound. Built (2026-11-09): audit row `DisableShareLink` (before and after status) on an actual change; an already-off link writes no second row. Tests: Application (audit, no-op, expired link, other-board NotFound) and integration (board manager allowed, workspace owner allowed with audit row, board Viewer denied, stranger NotFound, other-board and wrong-type NotFound, works while the workspace policy is off). Integration tests were not run locally (no Docker).
 
 ### UC-GOV-G03 A visitor opens a resource through a share link
 - Capability: G Share-link lifecycle and policy (team spec, Governance list)
@@ -1083,8 +1084,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: validation error, permission denied, pending, success (secret shown once)
 - Rules: [Governance §35, §44.1](../../product/governance.md) GOV-013; WGREQ098, WGREQ137, WGREQ164; identity side: [Identity use cases](identity.md); Lead decision L7. Enterprise baseline: GitHub.
 - Acceptance: Given an Owner with step-up, When they create a token, Then the response holds the secret once and a later list shows only prefix and metadata.
-- Evidence: BE `POST /api/v1/workspaces/{workspaceId}/api-tokens` (Identity.ApiTokens.Create, `CreateApiTokenCommand`) · FE none · Tests `backend/tests/Notrelix.Application.Tests/Features/Identity/ApiTokens/ApiTokenHandlerTests.cs`, `backend/tests/Notrelix.Integration.Tests/Auth/ApiTokenHttpFlowTests.cs`, `ApiTokenFlowTests.cs`, `backend/tests/Notrelix.Integration.Tests/Rls/ApiTokenScopeTests.cs` · Real e2e none · Design none
-- State: IMPLEMENTING - No screen and no artboard; no audit row; no token lifetime cap; the token's scope and rights are not narrower than its issuer's by a stated rule.
+- Evidence: BE `POST /api/v1/workspaces/{workspaceId}/api-tokens` (Identity.ApiTokens.Create, `CreateApiTokenCommand`) · FE none · Tests `backend/tests/Notrelix.Application.Tests/Features/Identity/ApiTokens/ApiTokenHandlerTests.cs` (audit row, expiry required, 365-day cap at and above the limit), `backend/tests/Notrelix.Integration.Tests/Auth/ApiTokenFlowTests.cs` (updated; not run, needs Docker), `backend/tests/Notrelix.Integration.Tests/Auth/ApiTokenHttpFlowTests.cs`, `ApiTokenFlowTests.cs`, `backend/tests/Notrelix.Integration.Tests/Rls/ApiTokenScopeTests.cs` · Real e2e none · Design none
+- State: IMPLEMENTING - Built (2026-11-09): the issue writes one `CreateApiToken` audit row with the token id, name and expiry and never the secret or digest; an expiry is required (`identity.api-tokens.expiration-required`, refused before the step-up proof is consumed) and may not be more than 365 days away (`identity.api-tokens.lifetime-exceeded`, Lead decision L7). Left: no screen and no artboard; a workspace cap shorter than 365 days is UC-GOV-H08. Owner question: which rule narrows a token's scope and rights below its issuer's (the product text names none). The 400 status for the expiry rules follows the repo's validation convention; H05 in the product says 400 too.
 
 ### UC-GOV-H06 List API tokens
 - Capability: H Governance administration UI (team spec, Governance list)
@@ -1097,8 +1098,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: loading, empty, permission denied
 - Rules: [Governance §44.1](../../product/governance.md); WGREQ137.
 - Acceptance: Given an Admin, When they list, Then 403 and the Owner's tokens are not visible.
-- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/api-tokens` (Identity.ApiTokens.List, `ListApiTokensQuery`) · FE none · Tests `ApiTokenHandlerTests` · Real e2e none · Design none
-- State: IMPLEMENTING - No screen; unbounded read.
+- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/api-tokens` (Identity.ApiTokens.List, `ListApiTokensQuery`) · FE none · Tests `backend/tests/Notrelix.Application.Tests/Features/Identity/ApiTokens/ApiTokenHandlerTests.cs` (paging: default 50, the cursor walks every row once, limit above 200 and below 1 refused) · Real e2e none · Design none
+- State: IMPLEMENTING - Built (2026-11-09): cursor page (`limit` default 50, max 200; `cursor` opaque, keyset over created-at and id, newest first). The response is `CursorPage<ApiTokenSummaryDto>`. Left: no screen (no artboard). The handler still loads the workspace's tokens and pages in memory, which is acceptable for an Owner-only list of a few tokens; a SQL keyset needs a translatable id comparison first.
 
 ### UC-GOV-H07 Revoke an API token
 - Capability: H Governance administration UI (team spec, Governance list)
@@ -1111,8 +1112,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: destructive confirmation, pending, permission denied
 - Rules: [Governance §44.1](../../product/governance.md); WGREQ102 analogy for credentials.
 - Acceptance: Given a revoked token, When it calls the API, Then 401.
-- Evidence: BE `DELETE /api/v1/workspaces/{workspaceId}/api-tokens/{tokenId}` (Identity.ApiTokens.Revoke, `RevokeApiTokenCommand`) · FE none · Tests `ApiTokenHttpFlowTests` · Real e2e none · Design none
-- State: IMPLEMENTING - No screen; no audit.
+- Evidence: BE `DELETE /api/v1/workspaces/{workspaceId}/api-tokens/{tokenId}` (Identity.ApiTokens.Revoke, `RevokeApiTokenCommand`) · FE none · Tests `backend/tests/Notrelix.Application.Tests/Features/Identity/ApiTokens/ApiTokenHandlerTests.cs` (audit row on a change, no row for an already-revoked token) · Integration `ApiTokenHttpFlowTests` · Real e2e none · Design none
+- State: IMPLEMENTING - Built (2026-11-09): one `RevokeApiToken` audit row with the before and after status when an active token is revoked; an already-revoked token is a no-op with no row. Left: no screen (no artboard).
 
 ### UC-GOV-H08 Cap API token lifetime by workspace policy (enterprise baseline)
 - Capability: H Governance administration UI (team spec, Governance list)
@@ -1154,7 +1155,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: Lead decision L9; WGREQ105 (operations evidence); owner: platform, see [Platform use cases](platform-foundation.md).
 - Acceptance: Given a tenant admin, When they call stats, Then 403.
 - Evidence: BE `GET /admin/outbox/stats` (GetOutboxStats) · Tests `backend/tests/Notrelix.API.Tests/Admin/AdminEndpointAuthorizationTests.cs` · Real e2e none · Design none
-- State: IMPLEMENTING - Operator surface only; how the `SystemAdmin` role is granted and audited is not documented.
+- State: IMPLEMENTING - Operator surface only. Owner question: how the `SystemAdmin` role is granted and audited is not documented; the product text does not say, so it is not invented here.
 
 ### UC-GOV-H11 List pending and failed outbox messages
 - Capability: H Governance administration UI (team spec, Governance list)
@@ -1167,8 +1168,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: none; no UI
 - Rules: Lead decision L9.
 - Acceptance: Given limit 5000, When called, Then at most 200 rows.
-- Evidence: BE `GET /admin/outbox/pending` (GetPendingOutboxMessages), `GET /admin/outbox/failed` (GetFailedOutboxMessages) · Tests `AdminEndpointAuthorizationTests` (success cases) · Real e2e none · Design none
-- State: IMPLEMENTING - Cap on the failed path not verified here; cross-tenant read by design; no audit of operator reads.
+- Evidence: BE `GET /admin/outbox/pending` (GetPendingOutboxMessages), `GET /admin/outbox/failed` (GetFailedOutboxMessages) · Tests `backend/tests/Notrelix.API.Tests/Admin/AdminEndpointAuthorizationTests.cs` (success cases), `backend/tests/Notrelix.Application.Tests/Common/Messaging/OutboxDiagnosticsContractTests.cs` (clamp 1 to 200) · Real e2e none · Design none
+- State: IMPLEMENTING - Built (2026-11-09): the cap is applied to both paths by one function and unit tested; the detail route is not part of this list. Cross-tenant read by design. Owner question: are operator reads audited (L9 is silent)?
 
 ### UC-GOV-H12 Read one outbox message
 - Capability: H Governance administration UI (team spec, Governance list)
@@ -1181,8 +1182,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: none; no UI
 - Rules: Lead decision L9.
 - Acceptance: Given an unknown id, When called, Then 404.
-- Evidence: BE `GET /admin/outbox/{id}` (GetOutboxMessageById) · Tests none specific · Real e2e none · Design none
-- State: IMPLEMENTING - Detail fields not reviewed for payload or secret exposure; no test of the 404.
+- Evidence: BE `GET /admin/outbox/{id}` (GetOutboxMessageById) · Tests `backend/tests/Notrelix.API.Tests/Admin/AdminEndpointAuthorizationTests.cs` (unknown id 404, normal user 403), `backend/tests/Notrelix.Application.Tests/Common/Messaging/OutboxDiagnosticsContractTests.cs` (no payload field, no payload key in JSON) · Real e2e none · Design none
+- State: HARDENING - Built (2026-11-09): `PayloadJson` removed from the detail DTO and from the query (Lead decision L9: operator reads return no payload); the 404 and the no-payload shape are tested. Left: the `Error` text is returned as stored; redaction of secrets a producer writes into it is not built.
 
 ### UC-GOV-H13 Workspace administration console
 - Capability: H Governance administration UI (team spec, Governance list)

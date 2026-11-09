@@ -1705,6 +1705,48 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task DisableShareLink_ByTheWorkspaceOwner_TurnsTheLinkOff_AndWritesOneAuditRow()
+    {
+        var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
+        var link = await SeedShareLinkAsync(accountId, workspaceId, BoardKind, boardId, ownerId);
+
+        using var provider = CreateProvider(accountId, ownerId, workspaceId);
+        var result = await SendAsync<Result>(provider, new DisableShareLinkCommand(BoardKind, boardId, link));
+
+        result.Succeeded.Should().BeTrue();
+        (await ShareLinkStatusAsync(link)).Should().Be(ShareLinkStatus.Disabled);
+        await AssertAuditRecordedAsync(workspaceId, ownerId, "DisableShareLink");
+    }
+
+    [Fact]
+    public async Task DisableShareLink_ByABoardManagerWhoIsNotAWorkspaceAdmin_TurnsTheLinkOff()
+    {
+        var (accountId, ownerId, workspaceId, boardId, managerId) = await SeedBoardStackAsync();
+        await SeedResourcePermissionAsync(accountId, workspaceId, BoardKind, boardId, managerId, PermissionLevel.Manager);
+        var link = await SeedShareLinkAsync(accountId, workspaceId, BoardKind, boardId, ownerId);
+
+        using var provider = CreateProvider(accountId, managerId, workspaceId);
+        var result = await SendAsync<Result>(provider, new DisableShareLinkCommand(BoardKind, boardId, link));
+
+        result.Succeeded.Should().BeTrue("the share action on the board, not workspace Admin, authorizes the revoke (decided 2026-10-30)");
+        (await ShareLinkStatusAsync(link)).Should().Be(ShareLinkStatus.Disabled);
+        await AssertAuditRecordedAsync(workspaceId, managerId, "DisableShareLink");
+    }
+
+    [Fact]
+    public async Task DisableShareLink_ByAStranger_IsNotFound_AndTheLinkStaysActive()
+    {
+        var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
+        var link = await SeedShareLinkAsync(accountId, workspaceId, BoardKind, boardId, ownerId);
+
+        using var provider = CreateProvider(accountId, Guid.NewGuid(), workspaceId);
+        var act = () => SendAsync<Result>(provider, new DisableShareLinkCommand(BoardKind, boardId, link));
+
+        await act.Should().ThrowAsync<AppNotFound>("a person with no access to the board gets the same NotFound as a missing link");
+        (await ShareLinkStatusAsync(link)).Should().Be(ShareLinkStatus.Active);
+    }
+
+    [Fact]
     public async Task CreateShareLink_IsRefused_WhileWorkspaceShareLinksAreOff_AndWritesNothing()
     {
         var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
@@ -1712,7 +1754,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         using var provider = CreateProvider(accountId, ownerId, workspaceId);
         var act = () => SendAsync<Result<CreateShareLinkResponse>>(provider,
-            new CreateShareLinkCommand(BoardKind, boardId, "Viewer"));
+            new CreateShareLinkCommand(BoardKind, boardId, "Viewer", DateTime.UtcNow.AddDays(7)));
 
         (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
             .Which.RuleCode.Should().Be("ShareLinksTurnedOff");
@@ -1729,7 +1771,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         using var provider = CreateProvider(accountId, ownerId, workspaceId);
         var result = await SendAsync<Result<CreateShareLinkResponse>>(provider,
-            new CreateShareLinkCommand(BoardKind, boardId, "Viewer"));
+            new CreateShareLinkCommand(BoardKind, boardId, "Viewer", DateTime.UtcNow.AddDays(7)));
 
         result.Succeeded.Should().BeTrue();
         (await ShareLinkStatusAsync(result.Data.ShareLink.Id)).Should().Be(ShareLinkStatus.Active);

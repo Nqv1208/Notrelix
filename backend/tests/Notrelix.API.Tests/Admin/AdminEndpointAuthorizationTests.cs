@@ -67,4 +67,26 @@ public class AdminEndpointAuthorizationTests : IClassFixture<NotrelixApiFactory>
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
+
+    [Fact]
+    public async Task OutboxById_SystemAdminUnknownId_ReturnsNotFound()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-Auth", "true");
+        client.DefaultRequestHeaders.Add("X-Test-Roles", "SystemAdmin");
+
+        var response = await client.GetAsync($"/admin/outbox/{Guid.CreateVersion7()}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task OutboxById_NormalUser_ReturnsForbidden()
+    {
+        var client = _factory.CreateAuthenticatedClient();
+
+        var response = await client.GetAsync($"/admin/outbox/{Guid.CreateVersion7()}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
 }

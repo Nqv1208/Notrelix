@@ -1437,13 +1437,13 @@ export interface paths {
         };
         /**
          * List API token metadata for a workspace
-         * @description Returns token metadata only. The raw secret is never returned by any read operation.
+         * @description Returns token metadata only, newest first, as a cursor page: default 50, max 200 (limit). Pass nextCursor back as cursor for the next page. The raw secret is never returned by any read operation.
          */
         get: operations["Identity.ApiTokens.List"];
         put?: never;
         /**
          * Issue a new API token for a workspace
-         * @description Requires a single-use step-up proof for the IssueApiToken purpose. The raw secret is returned exactly once in this response.
+         * @description Requires a single-use step-up proof for the IssueApiToken purpose. The token needs an expiry in the future, at most 365 days away (identity.api-tokens.lifetime-exceeded otherwise). The raw secret is returned exactly once in this response; the issue is recorded in the audit log.
          */
         post: operations["Identity.ApiTokens.Create"];
         delete?: never;
@@ -7875,6 +7875,11 @@ export interface components {
             /** Format: uuid */
             workspaceId?: string;
         };
+        "Notrelix.Application.Common.Models.CursorPageOfApiTokenSummaryDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
         "Notrelix.Application.Common.Models.CursorPageOfApprovalRequestDto": {
             items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalRequestDto"][] | null;
             nextCursor?: string | null;
@@ -13608,7 +13613,10 @@ export interface operations {
     };
     "Identity.ApiTokens.List": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -13623,7 +13631,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfApiTokenSummaryDto"];
                 };
             };
             /** @description Unauthorized */

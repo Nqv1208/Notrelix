@@ -5671,7 +5671,7 @@
           "Identity.ApiTokens"
         ],
         "summary": "List API token metadata for a workspace",
-        "description": "Returns token metadata only. The raw secret is never returned by any read operation.",
+        "description": "Returns token metadata only, newest first, as a cursor page: default 50, max 200 (limit). Pass nextCursor back as cursor for the next page. The raw secret is never returned by any read operation.",
         "operationId": "Identity.ApiTokens.List",
         "parameters": [
           {
@@ -5682,6 +5682,21 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -5690,10 +5705,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto"
-                  }
+                  "$ref": "#/components/schemas/Notrelix.Application.Common.Models.CursorPageOfApiTokenSummaryDto"
                 }
               }
             }
@@ -5743,7 +5755,7 @@
           "Identity.ApiTokens"
         ],
         "summary": "Issue a new API token for a workspace",
-        "description": "Requires a single-use step-up proof for the IssueApiToken purpose. The raw secret is returned exactly once in this response.",
+        "description": "Requires a single-use step-up proof for the IssueApiToken purpose. The token needs an expiry in the future, at most 365 days away (identity.api-tokens.lifetime-exceeded otherwise). The raw secret is returned exactly once in this response; the issue is recorded in the audit log.",
         "operationId": "Identity.ApiTokens.Create",
         "parameters": [
           {
@@ -30836,6 +30848,27 @@
           "workspaceId": {
             "type": "string",
             "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Common.Models.CursorPageOfApiTokenSummaryDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto"
+            },
+            "nullable": true
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "readOnly": true
           }
         },
         "additionalProperties": false
