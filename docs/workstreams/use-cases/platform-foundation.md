@@ -130,11 +130,11 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-F02 | Refuse a reused key with a different request | F | API, Application | yes | n/a | n/a | no | HARDENING | none open; client conflict case in `api-client.unit.test.ts` |
 | UC-PLT-G01 | Record a domain event in the outbox with the business change | G | Application, data session | yes | n/a | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-G02 | Dispatch outbox messages with retry and a wake signal | G | Outbox dispatcher | yes | n/a | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
-| UC-PLT-G03 | Deduplicate a consumer effect by event and consumer | G | Consumer filter | yes | n/a | n/a | no | IMPLEMENTING | per-effect identity per owner |
-| UC-PLT-G04 | Recover a stale processing claim | G | Consumer filter, dispatcher | yes | n/a | n/a | no | IMPLEMENTING | no crash-point e2e |
-| UC-PLT-G05 | Send queued email from the email outbox | G | Email dispatcher | yes | n/a | n/a | no | IMPLEMENTING | no real e2e |
-| UC-PLT-G06 | Run housekeeping jobs under a tenant-safe scope | G | Background jobs | yes | n/a | n/a | no | IMPLEMENTING | no run history |
-| UC-PLT-G07 | Sweep due-date and onboarding drafts | G | Background jobs | yes | n/a | n/a | no | IMPLEMENTING | no tenant matrix |
+| UC-PLT-G03 | Deduplicate a consumer effect by event and consumer | G | Consumer filter | yes | n/a | n/a | no | IMPLEMENTING | owner question: provider effect identity |
+| UC-PLT-G04 | Recover a stale processing claim | G | Consumer filter, dispatcher | yes | n/a | n/a | no | HARDENING | none open; crash-point tests at the store and filter level |
+| UC-PLT-G05 | Send queued email from the email outbox | G | Email dispatcher | yes | n/a | n/a | no | IMPLEMENTING | dispatcher loop has no test (needs Postgres) |
+| UC-PLT-G06 | Run housekeeping jobs under a tenant-safe scope | G | Background jobs | yes | n/a | n/a | no | IMPLEMENTING | owner question: run history and occurrence identity |
+| UC-PLT-G07 | Sweep due-date and onboarding drafts | G | Background jobs | yes | n/a | n/a | no | HARDENING | none open; sweep tests in integration suites (CI) |
 | UC-PLT-G08 | Realtime fan-out after commit | G | Realtime publisher | yes | n/a | n/a | yes | DONE | set DONE by the foundation finish lane pull request, see the Evidence line |
 | UC-PLT-H01 | Hold a later version behind a failed earlier one in a stream | H | Outbox dispatcher | yes | n/a | n/a | no | IMPLEMENTING | stream ids only on outbox |
 | UC-PLT-H02 | Retry with backoff, then dead-letter | H | Outbox dispatcher | yes | n/a | n/a | no | IMPLEMENTING | no operator action |
@@ -494,7 +494,7 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - Rules: PFREQ054 to PFREQ056; BE-PLT-007, BE-PLT-014 to BE-PLT-017.
 - Acceptance: Given the same event twice, When consumed, Then the effect happens once.
 - Evidence: BE `DeduplicationConsumeFilter.cs`, `MessageDeduplicationStore.cs` · FE n/a · Design n/a · Tests `backend/tests/Notrelix.Integration.Tests/Messaging/DeduplicationConsumeFilterIntegrationTests.cs`, `DeduplicationConsumeFilterClaimLeaseTests.cs` · Real e2e none
-- State: IMPLEMENTING — external provider effects need their own claim (`IProviderEffectClaimStore`), owner-specific.
+- State: IMPLEMENTING — Owner question: which external provider effects need their own claim (`IProviderEffectClaimStore`), and what identity does each owner use? Built and tested for consumer effects: `DeduplicationConsumeFilterIntegrationTests` (duplicate claim and concurrent claims, one winner; CI only) and `DeduplicationConsumeFilterClaimLeaseTests`.
 
 ### UC-PLT-G04 Recover a stale processing claim
 - Capability: G, PF-07
@@ -508,7 +508,7 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - Rules: BE-PLT-013; PFREQ057.
 - Acceptance: Given a claim older than the lease, When two workers race, Then exactly one resumes it.
 - Evidence: BE `MessageDeduplicationStore.cs` · FE n/a · Design n/a · Tests `OutboxClaimReclaimTests.cs` (`Claim_ReclaimsExpiredLease_ButNeverActiveLease`), `DeduplicationConsumeFilterClaimLeaseTests.cs` · Real e2e none
-- State: IMPLEMENTING — the spec's preparation gap is closed in source; no crash-point test through the real broker.
+- State: HARDENING — Built: the lease reclaim is tested at the store and consume-filter level: `OutboxClaimReclaimTests` (`CrashAfterClaim_BeforeEffect_StaleClaimIsReclaimedAndEffectRunsOnce`, `CrashAfterEffectCommit_BeforeCompletion_ReclaimDoesNotDuplicateEffect`, `Claim_ReclaimsExpiredLease_ButNeverActiveLease`) and `DeduplicationConsumeFilterClaimLeaseTests` (`OnlyOneRedeliveryWinsTheReclaim_TheOtherSeesRenewedLease`). Crash points are simulated in code, not through a live broker; that is not an e2e subject.
 
 ### UC-PLT-G05 Send queued email from the email outbox
 - Capability: G, PF-07
@@ -521,8 +521,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: n/a.
 - Rules: BE-PLT-018, BE-PLT-045.
 - Acceptance: Given a failing mail server, When it recovers, Then the mail is sent once.
-- Evidence: BE `BackgroundJobs/EmailDispatcher.cs`, `Data/Notifications/EmailOutboxMessage.cs` · FE n/a · Design n/a · Tests none specific found · Real e2e `email-confirmation.real.e2e.spec.ts` (indirect)
-- State: IMPLEMENTING.
+- Evidence: BE `BackgroundJobs/EmailDispatcher.cs`, `Data/Notifications/EmailOutboxMessage.cs` · FE n/a · Design n/a · Tests `backend/tests/Notrelix.Infrastructure.Tests/Notifications/EmailOutboxMessageTests.cs` (`SentMessage_CannotBeSettledAgain_SoTheMailIsNotSentTwice`, `FailedAttempt_IsRetried_AndTheRecoveredAttemptSendsOnce`, `StaleLease_CannotSettleAMessageTakenOverByAnotherWorker`) · Real e2e `email-confirmation.real.e2e.spec.ts` (indirect)
+- State: IMPLEMENTING — Built: the row rules for lease, retry and sent-once are unit-tested (8 passed locally with the existing tests). Gap: the dispatcher's claim and send loop (`ClaimBatchAsync`, `ProcessClaimAsync`) has no test; it needs a Postgres host, which is not run here.
 
 ### UC-PLT-G06 Run housekeeping jobs under a tenant-safe scope
 - Capability: G, PF-07 (background work, BE-PLT-027)
@@ -535,8 +535,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: n/a.
 - Rules: BE-PLT-027, BE-PLT-040, BE-PLT-041.
 - Acceptance: Given an orphan object older than its grace period, When the job runs, Then it is deleted and a live object is kept.
-- Evidence: BE `AttachmentObjectReaperService.cs`, `AvatarObjectReaperService.cs`, `SecurityActivityRetention.cs` · FE n/a · Design n/a · Tests none specific found · Real e2e none
-- State: IMPLEMENTING — no job run history; double run on two instances is not designed.
+- Evidence: BE `AttachmentObjectReaperService.cs`, `AvatarObjectReaperService.cs`, `SecurityActivityRetention.cs` · FE n/a · Design n/a · Tests `backend/tests/Notrelix.Infrastructure.Tests/Storage/AttachmentObjectReaperTests.cs` (orphan past grace removed, in-flight upload kept, second run deletes nothing, other tenant's prefix kept), `backend/tests/Notrelix.Infrastructure.Tests/Storage/AvatarObjectReaperTests.cs` · Real e2e none
+- State: IMPLEMENTING — Built: the reapers delete by policy in bounded batches and are idempotent (tests above). Owner question: must each run record history, and may two instances run the same occurrence (occurrence identity, BE-PLT-040)? Not designed yet.
 
 ### UC-PLT-G07 Sweep due-date and onboarding drafts
 - Capability: G, PF-07
@@ -549,8 +549,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: notification shows in the inbox.
 - Rules: BE-PLT-027, BE-PLT-040.
 - Acceptance: Given an item due tomorrow, When the sweep runs twice, Then one notification exists.
-- Evidence: BE `DueDateNotificationSweep.cs`, `OnboardingDraftSweep.cs` · FE inbox · Design Final-Inbox · Tests none specific found · Real e2e none
-- State: IMPLEMENTING — no tenant matrix test.
+- Evidence: BE `DueDateNotificationSweep.cs`, `OnboardingDraftSweep.cs` · FE inbox · Design Final-Inbox · Tests `backend/tests/Notrelix.Integration.Tests/Collaboration/DueDateNotificationsIntegrationTests.cs` (`Pass_NotifiesAssigneesOfItemsDueTomorrowAndOverdue_OnceEach_AndASecondPassAddsNothing`, `Pass_TellsNobodyWhoCannotSeeTheItemsBoard`), `backend/tests/Notrelix.Integration.Tests/Workspaces/OnboardingIntegrationTests.cs` (`DraftSweep_DeletesOnlyExpiredDrafts_InBatches_UnderTheWorkerScope_...`) · Real e2e none
+- State: HARDENING — Built: a due item notifies each assignee once, a second pass adds nothing, members who cannot see the board are not told, and expired drafts are swept in batches under the worker scope. Integration tests run in CI; they were read, not run here.
 
 ### UC-PLT-G08 Realtime fan-out after commit
 - Capability: G, PF-07
