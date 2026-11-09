@@ -166,7 +166,7 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-N07 | Redact telemetry in the browser | N | Frontend runtime | n/a | yes | n/a | no | IMPLEMENTING | unit-tested, no real e2e |
 | UC-PLT-O01 | Fail the build on a forbidden dependency | O | CI | yes | yes | n/a | no | HARDENING | none open; architecture tests run in CI |
 | UC-PLT-P01 | Run code checks before every push | P | Developer, hook | yes | yes | n/a | no | IMPLEMENTING | owner question: retire or rebuild the local pre-push gate |
-| UC-PLT-P02 | Produce container and packaging evidence | P | CI | yes | yes | n/a | no | IMPLEMENTING | not an e2e subject |
+| UC-PLT-P02 | Produce container and packaging evidence | P | CI | yes | yes | n/a | no | IMPLEMENTING | owner question: container build and Trivy gate have no caller |
 
 Endpoints with no use case: none. `GET /health`, `GET /health/live` and `GET /health/ready` appear in N02 to N04. The realtime route `GET /api/v1/realtime` (`RealtimeGatewayEndpoint.cs`, excluded from OpenAPI) appears in I01 to I05.
 
@@ -1015,8 +1015,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: n/a.
 - Rules: PFREQ114 to PFREQ120; NRX-016.
 - Acceptance: Given a candidate, When CI ends, Then each required job has a result on that commit.
-- Evidence: BE CI workflows · FE CI workflows · Design n/a · Tests CI · Real e2e none
-- State: IMPLEMENTING — available evidence, not a formal PF-16 certification.
+- Evidence: BE CI workflows · FE CI workflows · Design n/a · Tests CI · Real e2e none. Workflow facts: `.github/workflows/codeql.yml` runs on push and pull request; `.github/workflows/container-ci.yml` (image build, Trivy gate, SBOM) is `workflow_call` only and has no caller (`docs/delivery/ci-cd-architecture.md` section 1 and line 76).
+- State: IMPLEMENTING — Owner question: should `container-ci.yml` be called from the candidate CI path (so every candidate commit gets a container and SBOM result), or stay dormant until continuous delivery is reactivated? Until the owner answers, no container result exists on a candidate commit, so this use case is not HARDENING.
 
 # 4. Product decisions applied
 
