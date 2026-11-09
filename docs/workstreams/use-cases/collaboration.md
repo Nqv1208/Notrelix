@@ -59,8 +59,8 @@ Dates: this catalog was written on 2026-10-30. No use case has a recorded owner 
 | E | COL-005 Collaboration realtime | 5 | 3 | 1 | 0 | 0 | 0 | 1 |
 | F | COL-006 Target deletion/retention | 7 | 3 | 2 | 1 | 0 | 0 | 1 |
 | G | COL-007 Collaboration query/state | 16 | 2 | 1 | 2 | 11 | 0 | 0 |
-| H | COL-008 Collaboration hardening | 8 | 3 | 1 | 0 | 2 | 0 | 2 |
-| | Total | 85 | 19 | 6 | 9 | 46 | 0 | 5 |
+| H | COL-008 Collaboration hardening | 8 | 3 | 0 | 0 | 3 | 0 | 2 |
+| | Total | 85 | 19 | 5 | 9 | 47 | 0 | 5 |
 
 Collaboration has no dedicated capability for inbox, preferences, attachments, watchers or presence in the team spec. They sit in the nearest capability: attachments and watchers under B (target contract), notifications production under D, presence under E, Inbox, preferences and read state under G.
 
@@ -212,7 +212,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-G16 | Search comments (enterprise baseline) | G | Anyone, limited to targets they can view | no | no | partial | no | DEFINED | Owned together with Search; not built. |
 | UC-COL-H01 | Duplicate comment submit has one effect | H | Any commenter | no | no | no | no | DEFINED | Backend and client both missing. |
 | UC-COL-H02 | Competing edits carry an expected version | H | Author, resolver | no | no | no | no | DEFINED | Add version to the DTO, commands and UI conflict state. |
-| UC-COL-H03 | Concurrent reactions and follows do not duplicate | H | Any person | partial | no | no | no | IMPLEMENTING | Migration and concurrency test (RLS-safe change rule applies). |
+| UC-COL-H03 | Concurrent reactions and follows do not duplicate | H | Any person | yes | no | no | no | HARDENING | Built: unique indexes exist for reactions and watchers (no migration needed); a watcher lock makes a racing follow a no-op, as the reaction lock does. Remains: owner tests by hand. |
 | UC-COL-H04 | Comment content is safe to render | H | Any reader | yes | partial | no | no | HARDENING | Built: one limit (Comment.MaxContentLength, 10,000) for the Domain and both validators (the validators allowed 50,000); XSS and URL-scheme tests on the renderers. Remains: comments render as plain text, so no link chips; owner tests by hand. |
 | UC-COL-H05 | Rate limits and abuse controls | H | Any caller | no | no | no | no | DEFINED | Policies not attached. |
 | UC-COL-H06 | A mention retry notifies once | H | System | yes | no | no | no | HARDENING | Built: a delivery that loses the insert race on the deduplication key is a no-op; unique index in baseline. Remains: owner tests by hand. |
@@ -1354,8 +1354,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: none.
 - Rules: Product COL-009, Reaction retry, COL-016; spec DCREQ159, DCREQ177.
 - Acceptance: Given two parallel PUT requests, then the count is 1.
-- Evidence: BE partial: handlers check with AnyAsync before insert; ReactionConfiguration and ResourceWatcherConfiguration have non-unique indexes only · FE none · Design none · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Reactions/ReactionDuplicateTests.cs (Domain only) · Real e2e none
-- State: IMPLEMENTING — Migration and concurrency test (RLS-safe change rule applies).
+- Evidence: BE unique indexes ux_reactions_user_target_emoji (migration 20261028120000_AddReactionUniqueness) and ux_resource_watchers_user_target (migration 20261025105721_AddResourceWatcherUniqueness); PostgresReactionWriteLock and PostgresWatcherWriteLock take an advisory lock before the existence check; FollowBoardItemCommandHandler, AddReactionCommandHandler · FE none · Design none · Tests backend/tests/Notrelix.Integration.Tests/Collaboration/ConcurrentCollaborationInsertIntegrationTests.cs (8 racers for a reaction, 8 for a follow); backend/tests/Notrelix.Application.Tests/Features/Collaboration/FollowBoardItemTests.cs; backend/tests/Notrelix.Domain.Tests/Collaboration/Reactions/ReactionDuplicateTests.cs (Domain only) · Real e2e none
+- State: HARDENING — Built: the indexes were already in place (the gap text said otherwise), so no migration was added. A watcher lock (PostgresWatcherWriteLock) makes a racing identical follow wait and then see the committed row, as the reaction lock does; the concurrency test covers reactions and follows. Remains: a unique violation that ever reached the database still answers 409, not success; owner tests by hand.
 
 ### UC-COL-H04 Comment content is safe to render
 - Capability: H, COL-008 Collaboration hardening

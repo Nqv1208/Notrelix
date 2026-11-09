@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Events.Collaboration;
 using Notrelix.Application.Features.Collaboration.Reactions.Commands.AddReaction;
+using Notrelix.Application.Features.Collaboration.Watchers.Commands.FollowBoardItem;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Infrastructure.Data.Collaboration;
@@ -13,9 +14,9 @@ using Notrelix.Testing.Application.Fakes;
 namespace Notrelix.Integration.Tests.Collaboration;
 
 /// <summary>
-/// UC-COL-A09 and UC-COL-H06 under real concurrency against PostgreSQL. Several requests race on the same logical
-/// insert, each in its own transaction and context. The outcome must be one stored row and no failed request:
-/// a racing reaction add is a no-op (the transaction-scoped reaction lock plus the existing unique index), and a
+/// UC-COL-A09, UC-COL-H03 and UC-COL-H06 under real concurrency against PostgreSQL. Several requests race on the same
+/// logical insert, each in its own transaction and context. The outcome must be one stored row and no failed request:
+/// a racing reaction add or follow is a no-op (the transaction-scoped lock plus the existing unique index), and a
 /// racing mention-notification delivery is a no-op (the unique deduplication key). Runs in CI; needs Docker locally.
 /// </summary>
 [Collection("Database")]
@@ -95,6 +96,46 @@ public sealed class ConcurrentCollaborationInsertIntegrationTests : IAsyncLifeti
         await using var probe = _db.CreateOwnerContext(SystemTenant());
         var stored = await probe.NotificationItems.CountAsync(n => n.DeduplicationKey == deduplicationKey);
         stored.Should().Be(1, "one notification per (mention, person)");
+    }
+
+    [Fact]
+    public async Task ConcurrentFollowsOfOneItem_StoreOneWatcher_AndEveryFollowSucceeds()
+    {
+        var accountId = Guid.NewGuid();
+        var workspaceId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+
+        var results = await Task.WhenAll(Enumerable.Range(0, Racers)
+            .Select(_ => FollowAsync(accountId, workspaceId, userId, itemId)));
+
+        results.Should().HaveCount(Racers);
+        results.Should().OnlyContain(result => result.Succeeded, "a racing duplicate follow is a no-op, never a failure");
+
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
+        var stored = await probe.ResourceWatchers.CountAsync(w => w.UserId == userId && w.Target.ResourceId == itemId);
+        stored.Should().Be(1, "one person follows one item once");
+    }
+
+    private async Task<Result> FollowAsync(Guid accountId, Guid workspaceId, Guid userId, Guid itemId)
+    {
+        await using var context = _db.CreateOwnerContext(SystemTenant());
+        var request = new Mock<ICurrentRequestContext>();
+        request.Setup(r => r.UserId).Returns(userId);
+        request.Setup(r => r.RequireAccountId()).Returns(accountId);
+        request.Setup(r => r.RequireWorkspaceId()).Returns(workspaceId);
+
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        var handler = new FollowBoardItemCommandHandler(
+            context,
+            request.Object,
+            FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow),
+            new PostgresWatcherWriteLock(context));
+
+        var result = await handler.Handle(new FollowBoardItemCommand(itemId), CancellationToken.None);
+        await context.SaveChangesAsync();
+        await transaction.CommitAsync();
+        return result;
     }
 
     private async Task<Result> AddReactionAsync(
