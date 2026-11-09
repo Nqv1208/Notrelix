@@ -101,6 +101,8 @@ analytics.dashboard-created|1|Notrelix.Domain.Analytics.Dashboards.Events.Dashbo
 analytics.dashboard-renamed|1|Notrelix.Domain.Analytics.Dashboards.Events.DashboardRenamedDomainEvent|Workspace|DashboardId|System.Guid|False
 analytics.dashboard-renamed|1|Notrelix.Domain.Analytics.Dashboards.Events.DashboardRenamedDomainEvent|Workspace|NewName|System.String|False
 analytics.dashboard-renamed|1|Notrelix.Domain.Analytics.Dashboards.Events.DashboardRenamedDomainEvent|Workspace|UpdatedBy|System.Guid|False
+analytics.dashboard-restored|1|Notrelix.Domain.Analytics.Dashboards.Events.DashboardRestoredDomainEvent|Workspace|DashboardId|System.Guid|False
+analytics.dashboard-restored|1|Notrelix.Domain.Analytics.Dashboards.Events.DashboardRestoredDomainEvent|Workspace|RestoredBy|System.Guid|False
 analytics.dashboard-source-added|1|Notrelix.Domain.Analytics.Dashboards.Events.DashboardSourceAddedDomainEvent|Workspace|DashboardId|System.Guid|False
 analytics.dashboard-source-added|1|Notrelix.Domain.Analytics.Dashboards.Events.DashboardSourceAddedDomainEvent|Workspace|SourceId|System.Guid|False
 analytics.dashboard-source-updated|1|Notrelix.Domain.Analytics.Dashboards.Events.DashboardSourceUpdatedDomainEvent|Workspace|DashboardId|System.Guid|False

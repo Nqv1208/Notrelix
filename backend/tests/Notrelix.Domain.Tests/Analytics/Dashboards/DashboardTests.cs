@@ -269,4 +269,48 @@ public class DashboardTests
         dashboard.Widgets.First().Position.Should().Be(initial);
     }
 
+    [Fact]
+    public void Restore_ArchivedDashboard_BecomesActive_AndRaisesEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+        dashboard.Archive(actor, now.AddDays(1));
+        var versionAfterArchive = dashboard.Version;
+
+        dashboard.Restore(actor, now.AddDays(2));
+
+        dashboard.Status.Should().Be(DashboardStatus.Active);
+        dashboard.Version.Should().Be(versionAfterArchive + 1);
+        dashboard.DomainEvents.OfType<DashboardRestoredDomainEvent>().Should().ContainSingle();
+    }
+
+    [Fact]
+    public void Restore_ActiveDashboard_IsNoOp()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+        var version = dashboard.Version;
+
+        dashboard.Restore(actor, now.AddDays(1));
+
+        dashboard.Status.Should().Be(DashboardStatus.Active);
+        dashboard.Version.Should().Be(version);
+        dashboard.DomainEvents.Should().NotContain(e => e is DashboardRestoredDomainEvent);
+    }
+
+    [Fact]
+    public void Restore_WithEmptyActor_ShouldThrow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Dashboard", actor, now);
+        dashboard.Archive(actor, now.AddDays(1));
+
+        var act = () => dashboard.Restore(Guid.Empty, now.AddDays(2));
+
+        act.Should().Throw<DomainException>();
+        dashboard.Status.Should().Be(DashboardStatus.Archived);
+    }
 }

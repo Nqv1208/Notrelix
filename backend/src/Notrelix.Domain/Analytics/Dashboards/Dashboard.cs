@@ -133,6 +133,22 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new DashboardArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
     }
 
+    /// <summary>
+    /// Returns an archived dashboard to Active. The product text names no restore window, so any archived dashboard
+    /// may be restored (Owner question in the analytics use-case doc). Restoring an active dashboard is a no-op.
+    /// </summary>
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (Status == DashboardStatus.Active) return;
+        Guard.NotEmpty(restoredBy);
+
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        Status = DashboardStatus.Active;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new DashboardRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
+    }
+
     private void EnsureActive()
     {
         if (Status != DashboardStatus.Active)

@@ -28,6 +28,13 @@ public static class AnalyticsEndpointMappings
             .WithOpenApi()
             .MapCreateDashboard();
 
+        app.MapGroup("/api/v1/workspaces/{workspaceId:guid}/dashboards/{dashboardId:guid}")
+            .WithTags("Analytics")
+            .WithOpenApi()
+            .MapArchiveDashboard()
+            .MapRestoreDashboard()
+            .MapDeleteDashboard();
+
         return app;
     }
 }

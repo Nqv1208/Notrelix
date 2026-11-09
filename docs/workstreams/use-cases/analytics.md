@@ -50,7 +50,7 @@ Letters follow the capability list of the team spec (section 5), in order: ANA-0
 | J | Automation/Integrations analytics | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | K | Billing/usage analytics | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | L | Cross-context report composition | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| M | Report/query API (dashboard lifecycle) | 10 | 1 | 8 | 0 | 1 | 0 | 0 |
+| M | Report/query API (dashboard lifecycle) | 10 | 1 | 7 | 0 | 2 | 0 | 0 |
 | N | Dashboard/report frontend | 4 | 0 | 2 | 1 | 1 | 0 | 0 |
 | O | Filters/date/timezone semantics | 2 | 1 | 0 | 1 | 0 | 0 | 0 |
 | P | Freshness/staleness contract | 3 | 1 | 1 | 1 | 0 | 0 | 0 |
@@ -62,9 +62,9 @@ Letters follow the capability list of the team spec (section 5), in order: ANA-0
 | V | Data quality/reconciliation | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | W | Migration/versioning | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | X | Hardening | 2 | 1 | 0 | 0 | 0 | 0 | 1 |
-| | Total | 61 | 28 | 19 | 3 | 9 | 0 | 2 |
+| | Total | 61 | 28 | 18 | 3 | 10 | 0 | 2 |
 
-No use case is DONE: none has an owner check or a 1-px design diff. HARDENING is the owner's rule (2026-11-08): the named backend gap is built and tested, and the owner tests and sets DONE. The work report rows H01, H02, N01 and R01 run on the real backend (`work-report.real.e2e.spec.ts`); H03, H04, R03, C02 and M03 are backend-built with Built notes. IMPLEMENTING is used for code that cannot run end to end: the Dashboard, Widget and Snapshot aggregates (Domain and EF only), the placement projection (consumers and rebuild, no HTTP), and the report builder UI that runs only on the mock backend (`backendCapabilities.reports` is `mockApi`).
+No use case is DONE: none has an owner check or a 1-px design diff. HARDENING is the owner's rule (2026-11-08): the named backend gap is built and tested, and the owner tests and sets DONE. The work report rows H01, H02, N01 and R01 run on the real backend (`work-report.real.e2e.spec.ts`); H03, H04, R03, C02, M03 and M05 are backend-built with Built notes. IMPLEMENTING is used for code that cannot run end to end: the Dashboard, Widget and Snapshot aggregates (Domain and EF only), the placement projection (consumers and rebuild, no HTTP), and the report builder UI that runs only on the mock backend (`backendCapabilities.reports` is `mockApi`).
 
 ## 1.2 What exists today
 
@@ -137,7 +137,7 @@ Table-stakes use cases the product docs do not list, added as "(enterprise basel
 | UC-ANA-M02 | Open one report or dashboard | M | Workspace member | no | mock | Final-Reports | no | IMPLEMENTING | no endpoint |
 | UC-ANA-M03 | Create a dashboard | M | Workspace member | yes | mock | Final-Reports | no | HARDENING | no screen (owner); no list yet |
 | UC-ANA-M04 | Rename a dashboard | M | Dashboard owner | domain | mock | Final-Reports | no | IMPLEMENTING | no handler |
-| UC-ANA-M05 | Archive, restore or delete a dashboard | M | Dashboard owner | domain | mock | Final-Reports | no | IMPLEMENTING | no handler, no restore rule |
+| UC-ANA-M05 | Archive, restore or delete a dashboard | M | Dashboard owner | yes | mock | Final-Reports | no | HARDENING | no screen (owner); Owner question: restore window |
 | UC-ANA-M06 | Add and configure a widget | M | Dashboard owner | domain | mock | Final-Reports | no | IMPLEMENTING | untyped config |
 | UC-ANA-M07 | Arrange widgets by move and resize | M | Dashboard owner | domain | mock | Final-Reports | no | IMPLEMENTING | no handler |
 | UC-ANA-M08 | Remove a widget | M | Dashboard owner | domain | mock | Final-Reports | no | IMPLEMENTING | no handler |
@@ -595,8 +595,8 @@ Dashboards live in the Analytics context (owner decision 17: a dashboard is an A
 - UI states: destructive confirmation, pending, conflict, permission denied.
 - Rules: ANA006, ANA033; product sections 19, 91, 92.
 - Acceptance: Given a dashboard over board B, When it is deleted, Then board B and its items are unchanged.
-- Evidence: BE Domain `DashboardArchivedDomainEvent` · FE mock `reports.delete` · Design Final-Reports · Tests `DashboardTests.cs`, mock e2e (delete) · Real e2e none
-- State: IMPLEMENTING — no restore operation exists in Domain; Part 4 decides it.
+- Evidence: BE `backend/src/Notrelix.Application/Features/Analytics/Dashboards/Commands/ArchiveDashboard/ArchiveDashboard.cs`, `.../Commands/RestoreDashboard/RestoreDashboard.cs`, `.../Commands/DeleteDashboard/DeleteDashboard.cs`, `.../Dashboards/Services/DashboardOwnership.cs`, endpoints `backend/src/Notrelix.API/Endpoints/Analytics/Dashboards/Commands/ArchiveDashboardEndpoint.cs`, `RestoreDashboardEndpoint.cs`, `DeleteDashboardEndpoint.cs` (`POST .../dashboards/{dashboardId}/archive`, `.../restore`, `DELETE .../dashboards/{dashboardId}?expectedVersion=`), Domain `Dashboard.cs` (`Restore`) · FE mock `reports.delete` · Design Final-Reports · Tests `backend/tests/Notrelix.Domain.Tests/Analytics/Dashboards/DashboardTests.cs`, `backend/tests/Notrelix.Application.Tests/Features/Analytics/DashboardLifecycleCommandTests.cs`, `backend/tests/Notrelix.Integration.Tests/Analytics/DashboardLifecycleIntegrationTests.cs` (runs in CI, needs Docker) · Real e2e none
+- State: HARDENING — Built: the owner archives an Active dashboard (soft: read only afterwards, version bumped), restores an archived one to Active, and deletes one permanently (its widgets go by database cascade; sources are untouched). Each takes the expected version: a stale version is 412 and changes nothing. A member who is not the creator, or a person outside the Workspace, gets the same NotFound as a made-up id. Not checked: workspace admins may archive, restore or delete by the rule, but only the creator is checked (`AR-GAP-03`, no owner id or admin check yet). Owner question: the product text names no restore window, so any archived dashboard restores. Delete works on Active and archived dashboards alike (the text does not require archiving first); delete writes no domain event. Remaining: no screen (owner decides); the integration test runs in CI only.
 
 ### UC-ANA-M06 Add and configure a widget
 - Capability: M, ANA-013
