@@ -255,7 +255,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-INT-B04 | Disconnect a connection | B Connection lifecycle | Owner and Admin | Y | Y | Y | Y | HARDENING | no provider-side revoke (DEF-8); no impact counts in the dialog (B05) |
 | UC-INT-B05 | See the impact before disconnecting | B Connection lifecycle | Owner and Admin | N | N | Y | N | DEFINED | planned as slice 4 of the integrations plan |
 | UC-INT-B06 | Connect again after a disconnect | B Connection lifecycle | Owner and Admin | P | N | N | N | IMPLEMENTING | provider account change confirmation is not built |
-| UC-INT-B07 | Read one connection in detail | B Connection lifecycle | Owner and Admin | N | P | Y | N | IMPLEMENTING | no detail endpoint |
+| UC-INT-B07 | Read one connection in detail | B Connection lifecycle | Owner and Admin | Y | P | Y | N | HARDENING | Built (not run here): GetIntegrationConnection.cs, endpoint GET .../integrations/{connectionId} (IntegrationConnectionEndpoints.cs), IntegrationConnectionDetailDto (scopes and the base DTO; no secret, token, digest or reference). Tests: GetIntegrationConnectionTests.cs (Application suite), IntegrationConnectionDetailNonMemberTests.cs (RLS, CI). Remaining: no 'what uses it' list and no recent activity in the detail (use the delivery log, UC-INT-F05); the web still composes the reduced view (no screen change); owner tests by hand. |
 | UC-INT-C01 | Start provider authorization | C Provider authorization/OAuth | Owner and Admin (ManageIntegrations) | Y | Y | Y | P | INTEGRATING | no PKCE on the provider authorize URL (DEF-9) |
 | UC-INT-C02 | Complete authorization on the callback | C Provider authorization/OAuth | the signed-in member returning from the provider | Y | Y | Y | N | HARDENING | Built and run: CompleteIntegrationAuthorizationCommandHandlerTests.cs (10 unit tests) and IntegrationOAuthCallbackRedirectTests.cs (API). Remaining: owner tests by hand. |
 | UC-INT-C03 | A refused or failed authorization is explained | C Provider authorization/OAuth | as C02 | Y | Y | P | N | HARDENING | Built and run: IntegrationOAuthCallbackRedirectTests.cs (error=refused and error=failed). Remaining: owner tests by hand. |
@@ -1583,8 +1583,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: loading, error, permission denied.
 - Rules: integrations.md §7, §42; AIREQ098.
 - Acceptance: Given a connection, Then the detail shows last success, last error and scopes.
-- Evidence: BE none · FE FE-INT `integrations-view.ts` (reduced view) · Design `Final-Integrations` · Tests none · Real e2e none
-- State: IMPLEMENTING — no detail endpoint.
+- Evidence: BE `GetIntegrationConnection.cs`, `IntegrationConnectionEndpoints.cs` (GET detail), `IntegrationCatalog.cs` (`IntegrationConnectionDetailDto`) · FE `integrations-view.ts` (reduced view) · Design `Final-Integrations` · Tests `GetIntegrationConnectionTests.cs` (run: Application suite), `Rls/IntegrationConnectionDetailNonMemberTests.cs` (not run: Docker) · Real e2e none
+- State: HARDENING — the detail endpoint is built and unit-tested; the stranger-versus-made-up-id test runs in CI on PostgreSQL. No screen change. Remaining: the use list and recent activity.
 
 ## Capability C. Provider authorization and OAuth
 

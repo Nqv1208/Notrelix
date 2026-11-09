@@ -10,6 +10,7 @@ using Notrelix.Application.Features.Integrations.Connections.Commands.PauseInteg
 using Notrelix.Application.Features.Integrations.Connections.Commands.ResumeIntegration;
 using Notrelix.Application.Features.Integrations.Connections.Commands.TestIntegration;
 using Notrelix.Application.Features.Integrations.Connections.Queries.ListIntegrations;
+using Notrelix.Application.Features.Integrations.Connections.Queries.GetIntegrationConnection;
 using Notrelix.Application.Features.Integrations.Connections.Queries.ListConnectionDeliveryLog;
 using Notrelix.Application.Features.Integrations.Connections.Queries.StartIntegrationAuthorization;
 
@@ -34,6 +35,11 @@ public static class IntegrationConnectionEndpoints
             .WithName("Integrations.Connections.Authorize")
             .WithSummary("The provider's authorization page for the workspace (OAuth redirect flow)")
             .Produces<IntegrationAuthorizationDto>();
+
+        group.MapWorkspaceGet("/{connectionId:guid}", GetAsync)
+            .WithName("Integrations.Connections.Get")
+            .WithSummary("Read one connection in detail: status, last success and error, address and granted scopes")
+            .Produces<IntegrationConnectionDetailDto>();
 
         group.MapWorkspaceGet("/{connectionId:guid}/deliveries", ListDeliveriesAsync)
             .WithName("Integrations.Connections.ListDeliveries")
@@ -77,6 +83,9 @@ public static class IntegrationConnectionEndpoints
 
     private static async Task<IResult> ListAsync(Guid workspaceId, ISender sender)
         => (await sender.Send(new ListIntegrationsQuery(workspaceId))).ToApiResult();
+
+    private static async Task<IResult> GetAsync(Guid workspaceId, Guid connectionId, ISender sender)
+        => (await sender.Send(new GetIntegrationConnectionQuery(workspaceId, connectionId))).ToApiResult();
 
     private static async Task<IResult> ListDeliveriesAsync(
         Guid workspaceId, Guid connectionId, string? cursor, int? limit, ISender sender)

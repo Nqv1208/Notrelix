@@ -18,8 +18,8 @@ public sealed class TestIntegrationDbContext(DbContextOptions<TestIntegrationDbC
 {
     public DbSet<IntegrationConnection> IntegrationConnections { get; set; } = null!;
     public DbSet<IntegrationSecretVersion> IntegrationSecretVersions { get; set; } = null!;
+    public DbSet<IntegrationScope> IntegrationScopes { get; set; } = null!;
 
-    DbSet<IntegrationScope> IIntegrationDbContext.IntegrationScopes => null!;
     DbSet<IntegrationSyncCursor> IIntegrationDbContext.IntegrationSyncCursors => null!;
     DbSet<WebhookSubscription> IIntegrationDbContext.WebhookSubscriptions => null!;
     DbSet<WebhookDelivery> IIntegrationDbContext.WebhookDeliveries => null!;
@@ -34,7 +34,6 @@ public sealed class TestIntegrationDbContext(DbContextOptions<TestIntegrationDbC
         base.OnModelCreating(modelBuilder);
 
         // Sets the handler never touches are not modelled; their entity graphs need providers this context lacks.
-        modelBuilder.Ignore<IntegrationScope>();
         modelBuilder.Ignore<IntegrationSyncCursor>();
         modelBuilder.Ignore<WebhookSubscription>();
         modelBuilder.Ignore<WebhookDelivery>();
@@ -52,6 +51,12 @@ public sealed class TestIntegrationDbContext(DbContextOptions<TestIntegrationDbC
             entity.Property(x => x.CurrentSecretRef).HasConversion(
                 secret => secret == null ? null : secret.Value,
                 value => value == null ? null : SecretRef.Create(value));
+        });
+
+        modelBuilder.Entity<IntegrationScope>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Ignore(x => x.DomainEvents);
         });
 
         modelBuilder.Entity<IntegrationSecretVersion>(entity =>
