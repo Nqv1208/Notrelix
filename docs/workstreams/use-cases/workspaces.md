@@ -140,7 +140,7 @@ Products compared and what was taken:
 | UC-WSP-A03 | Stop creation at the plan limit (enterprise baseline) | A | Account member with `CreateWorkspace` | no | no | Final-Billing | none | DEFINED | Billing workspace-count entitlement; gate call; error contract; screen state. |
 | UC-WSP-A04 | Make workspace creation retry-safe | A | Account member with `CreateWorkspace` | yes | yes | none | none | DONE | closed 2026-11-03, see the Evidence line |
 | UC-WSP-B01 | Read one workspace | B | Any active member, Guest included | yes | yes | BC-Shell-1440 | workspace-read-and-lists.real.e2e.spec.ts | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-WSP-B02 | Open a workspace by its address | B | Anyone | yes | no | none | none | IMPLEMENTING | No frontend caller; rate-limit and enumeration test; vanity URL route. |
+| UC-WSP-B02 | Open a workspace by its address | B | Anyone | yes | no | none | none | IMPLEMENTING | Built: the anonymous resolve route is rate-limited (`GeneralAnonymous`, 60 a minute per IP) and tested (`ResolveSlugRateLimitTests`); an enumeration test shows a deleted and a made-up address get the same refusal (`ResolveSlugEnumerationTests`, integration, CI). Still open: no frontend caller (the routes use ids); the vanity URL route is an owner question. |
 | UC-WSP-B03 | List the workspaces of an Account | B | Account member with `ViewWorkspace` on the Account scope | yes | no | none | none | IMPLEMENTING | No caller; overlaps with I02 and B04; membership-filter proof. |
 | UC-WSP-B04 | List every workspace I belong to (user scope) | B | Any signed-in user | yes | yes | none | workspace-read-and-lists.real.e2e.spec.ts | DONE | closed 2026-11-03, see the Evidence line |
 | UC-WSP-C01 | Edit workspace name and description | C | Owner, Admin | yes | yes | none for workspace settings (`Final-Settings` is the Board settings page) | none | DONE | closed 2026-11-03, see the Evidence line |
@@ -316,8 +316,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Loading, not found page.
 - Rules: [workspaces](../../product/workspaces.md) sections 3, 52; WGREQ002, WGREQ032 (enumeration resistance).
 - Acceptance: Given a live address, When resolved, Then the id returns. Given a deleted or unknown address, Then the same not-found answer.
-- Evidence: BE `GET /api/v1/accounts/{accountId}/resolve`, `ResolveSlugQueryHandler`, `IWorkspaceSlugResolver` · FE none (routes use ids) · Design none · Tests `WorkspaceRouteTests` (Accounts), `AccountWorkspaceEndpointTests` · Real e2e none
-- State: IMPLEMENTING — No frontend caller; rate-limit and enumeration test; vanity URL route.
+- Evidence: BE `GET /api/v1/accounts/{accountId}/resolve`, `ResolveSlugQueryHandler`, `IWorkspaceSlugResolver` · FE none (routes use ids) · Design none · Tests `WorkspaceRouteTests` (Accounts), `AccountWorkspaceEndpointTests`, `ResolveSlugRateLimitTests` (API, 60 then 429), `ResolveSlugEnumerationTests` (integration, live vs deleted vs made-up) · Real e2e none
+- State: IMPLEMENTING — Built: the resolve route is limited under `GeneralAnonymous` (`ResolveSlugEndpoint.cs`), tested by `ResolveSlugRateLimitTests` (passes 2026-11-10) and by the enumeration test `ResolveSlugEnumerationTests` (written and compiled, not run: Docker). A deleted and a made-up address answer the same refusal, compared by status and body without the correlation fields. The refusal is a 400 in the shipped code, not a 404. Still open: no frontend caller (the routes use ids), so the row stays IMPLEMENTING; the vanity URL route is an owner question.
 
 ### UC-WSP-B03 List the workspaces of an Account
 - Capability: B Workspace read / resolve
