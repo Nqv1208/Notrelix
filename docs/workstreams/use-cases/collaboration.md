@@ -188,7 +188,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-E04 | Typing and cursor indicators | E | Editors of a page | no | no | no | no | BLOCKED | Waits for the live co-editing ADR that decision 3 leaves open (Documents owns it). |
 | UC-COL-E05 | Recover after reconnect, gap or revoked access | E | Any connected client | partial | partial | yes | no | DEFINED | Gateway exists for board streams; no Collaboration stream to recover. |
 | UC-COL-F01 | Item deleted or archived: comments follow the item | F | System | partial | no | partial | no | IMPLEMENTING | Owner question: no purge event exists (the delete event fires at trash time, when comments must stay); which event should the purge consumer use? Not built. |
-| UC-COL-F02 | Page removed or block deleted: comments stay as history | F | System | partial | yes | yes | no | IMPLEMENTING | Server side lifecycle missing; no real e2e. |
+| UC-COL-F02 | Page removed or block deleted: comments stay as history | F | System | partial | yes | yes | no | IMPLEMENTING | Owner question: no page purge event and no block-deleted event exist (page.archived fires at archive time); which Documents event should the lifecycle consumer use? Not built. |
 | UC-COL-F03 | Purge attachment objects after retention | F | System (background job) | yes | no | no | no | INTEGRATING | Owner question: retention default is 30 days in code (AttachmentRetentionOptions) and product section 90 gives no number; operator doc not checked. |
 | UC-COL-F04 | A person is anonymized or leaves: history stays | F | System, on an Identity event | partial | partial | no | no | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): Identity deletion anonymizes the person (name "Deleted user", email replaced by a non-reversible hash); comments and audit keep the user id. |
 | UC-COL-F05 | Workspace deleted or archived: retention, export and purge | F | System | no | no | no | no | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): A deleted workspace follows the workspace rule (30-day recoverable window, then purge); comments are trashed 30 days, then purged. |
@@ -1015,7 +1015,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product Page/Block deletion (86), COL-005, COL-026; spec DCREQ189, DCREQ220; team DCX-01.
 - Acceptance: Given a deleted block, then its comment shows detached; given a restored page, then comments return.
 - Evidence: BE partial: no consumer for page deletion · FE frontend/packages/product/docs/web/src/editor/comment-anchors.ts (detached) · Design Final-Docs-2 · Tests frontend comment-anchor unit tests · Real e2e none
-- State: IMPLEMENTING — Server side lifecycle missing; no real e2e.
+- State: IMPLEMENTING — Owner question: which Documents event signals a page purge or a block deletion? page.archived fires at archive time (comments stay as history); page.blocks-saved carries the page title and mentions, not deleted blocks; no page purge or block-deleted event exists. Not built; no real e2e.
 
 ### UC-COL-F03 Purge attachment objects after retention
 - Capability: F, COL-006 Target deletion/retention
