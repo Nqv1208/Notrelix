@@ -164,7 +164,7 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-N05 | Report outbox age and dead letters | N | Operator | yes | n/a | n/a | no | IMPLEMENTING | covered by integration tests; no alert rule |
 | UC-PLT-N06 | Answer a startup probe (enterprise baseline) | N | Orchestrator | no | n/a | n/a | no | DEFINED | not specified |
 | UC-PLT-N07 | Redact telemetry in the browser | N | Frontend runtime | n/a | yes | n/a | no | IMPLEMENTING | unit-tested, no real e2e |
-| UC-PLT-O01 | Fail the build on a forbidden dependency | O | CI | yes | yes | n/a | no | IMPLEMENTING | not an e2e subject |
+| UC-PLT-O01 | Fail the build on a forbidden dependency | O | CI | yes | yes | n/a | no | HARDENING | none open; architecture tests run in CI |
 | UC-PLT-P01 | Run code checks before every push | P | Developer, hook | yes | yes | n/a | no | IMPLEMENTING | local only |
 | UC-PLT-P02 | Produce container and packaging evidence | P | CI | yes | yes | n/a | no | IMPLEMENTING | not an e2e subject |
 
@@ -985,8 +985,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: n/a.
 - Rules: PFREQ107 to PFREQ113; NRX-006.
 - Acceptance: Given Domain referencing Infrastructure, When CI runs, Then the architecture test fails.
-- Evidence: BE `backend/tests/Notrelix.Architecture.Tests/` · FE `frontend/docs/generated/package-boundaries.md` · Design n/a · Tests as listed · Real e2e none
-- State: IMPLEMENTING — mapping of tests to requirements is a certification task.
+- Evidence: BE `backend/tests/Notrelix.Architecture.Tests/LayerRules/DependencyArchitectureTests.cs` (`Domain_ShouldNotReference_Infrastructure`, `Application_ShouldNotReference_Infrastructure`) · FE `frontend/docs/generated/package-boundaries.md`, `pnpm check:architecture` · CI `.github/workflows/ci.yml` (architecture test shard and `check:architecture` step) · Design n/a · Real e2e none
+- State: HARDENING — Built: the layer rules fail on a forbidden reference (architecture test project 666 passed locally; `pnpm check:architecture` 0 violations). Not an e2e subject.
 
 ## Capability P: CI, container, security and packaging evidence
 
