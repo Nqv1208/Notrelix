@@ -215,7 +215,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-AUT-I01 | Retryable failures retry within one budget | I Business retry/failure policy | system | Y | N | N | N | INTEGRATING | no UI for the retrying state ('đang thử lại, lần N' is not in the FE) |
 | UC-AUT-I02 | A terminal failure shows a safe, useful reason | I Business retry/failure policy | as J01 | Y | Y | Y | N | INTEGRATING | failure reason is free text (AutomationExecution.Fail(string)), not a stable reason class |
 | UC-AUT-I03 | Rerun a failed step | I Business retry/failure policy | board Manager | N | P | Y | N | IMPLEMENTING | mock-only UI path |
-| UC-AUT-I04 | A gone target or revoked permission is terminal | I Business retry/failure policy | system | P | N | N | N | IMPLEMENTING | the terminal versus retryable class is not a stable contract |
+| UC-AUT-I04 | A gone target or revoked permission is terminal | I Business retry/failure policy | system | Y | N | N | N | HARDENING | Built: `AutomationFailureClass` (stable codes `target_gone`, `permission_revoked`, `invalid_configuration`, `rule_inactive`, `target_rejected`, `outcome_unknown`, `transient`) is stored as `failure_class` on each failed execution; only `transient` is retried. Not built: the class is not in the DTO or the run log; executions failed before the migration have no class. Owner tests by hand |
 | UC-AUT-J01 | Read the recent runs of a rule | J Execution history/query | ManageBoard (with `boardId`) or ManageWorkspaceSettings | Y | Y | Y | Y | HARDENING | offset paging, no total or cursor (DEF-3); the payload may hold item data and its redaction is not proven |
 | UC-AUT-J02 | Open one run | J Execution history/query | as J01 | P | Y | Y | N | INTEGRATING | no run-detail endpoint; triggerer and item reference come from the list payload only |
 | UC-AUT-J03 | See all runs of a workspace and filter them | J Execution history/query | Owner and Admin (ManageWorkspaceSettings) | N | N | N | N | DEFINED | (enterprise baseline) |
@@ -1077,8 +1077,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: reason.
 - Rules: automation.md §54, §101 AUT-034; AIREQ033.
 - Acceptance: Given the target group deleted, Then no retry and the reason names it.
-- Evidence: BE `AutomationMoveItemUseCase`, `WorkItemActionAdapter` · FE none · Design none · Tests T-AA `AutomationBoardScopeAuthorityTests` · Real e2e none
-- State: IMPLEMENTING — the terminal versus retryable class is not a stable contract.
+- Evidence: BE `AutomationFailureClass` and its codes (Domain), `AutomationExecution.Fail` and `RecordRetryableDispatchFailure`, `AutomationMoveItemUseCase`, `N8nDispatchUseCase`, migration `20261109100301_AddAutomationExecutionFailureClass` · FE none · Design none · Tests T-AD `AutomationFailureClassTests`, T-AA `AutomationFailureClassTests`, `AutomationBoardScopeAuthorityTests` · Real e2e none
+- State: HARDENING — Built: a failure carries one stable class and the retry rule follows it: a terminal class ends the execution and is never retried (the domain refuses a retry for it), and only a technical failure is re-queued under the same execution id. Not built: the class is not in the execution DTO or the run log. Owner tests by hand.
 
 ## Capability J. Execution history and query
 

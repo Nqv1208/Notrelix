@@ -76,7 +76,7 @@ public class AutomationExecutionTests
         execution.Start(DateTimeOffset.UtcNow);
         ((IHasDomainEvents)execution).ClearDomainEvents();
 
-        execution.Fail("Timeout", DateTimeOffset.UtcNow);
+        execution.Fail(AutomationFailureClass.TargetRejected, "Timeout", DateTimeOffset.UtcNow);
 
         execution.Status.Should().Be(AutomationExecutionStatus.Failed);
         execution.Error.Should().Be("Timeout");
@@ -88,7 +88,7 @@ public class AutomationExecutionTests
     {
         var execution = CreateExecution();
 
-        var act = () => execution.Fail("Error", DateTimeOffset.UtcNow);
+        var act = () => execution.Fail(AutomationFailureClass.TargetRejected, "Error", DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>().WithMessage("*Running*");
     }
 
@@ -98,7 +98,7 @@ public class AutomationExecutionTests
         var execution = CreateExecution();
         execution.Start(DateTimeOffset.UtcNow);
 
-        var act = () => execution.Fail("", DateTimeOffset.UtcNow);
+        var act = () => execution.Fail(AutomationFailureClass.TargetRejected, "", DateTimeOffset.UtcNow);
         act.Should().Throw<BusinessRuleException>().WithMessage("*empty*");
     }
 

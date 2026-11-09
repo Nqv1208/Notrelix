@@ -57,7 +57,7 @@ public class AutomationExecutionCancelQueuedTests
     {
         var execution = CreateExecution();
         execution.Start(DateTimeOffset.UtcNow);
-        execution.Fail("n8n reported that the workflow failed.", DateTimeOffset.UtcNow);
+        execution.Fail(AutomationFailureClass.TargetRejected, "n8n reported that the workflow failed.", DateTimeOffset.UtcNow);
 
         var act = () => execution.CancelBeforeStart(Guid.NewGuid(), DateTimeOffset.UtcNow);
 

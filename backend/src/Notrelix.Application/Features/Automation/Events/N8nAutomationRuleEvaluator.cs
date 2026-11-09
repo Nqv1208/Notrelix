@@ -175,6 +175,7 @@ public sealed class N8nAutomationRuleEvaluator
                 var failedAt = _clock.UtcNow;
                 execution.Start(failedAt);
                 execution.Fail(
+                    AutomationFailureClass.InvalidConfiguration,
                     $"Action type '{rule.Configuration.Action.Type}' has no runtime executor.",
                     failedAt);
             }

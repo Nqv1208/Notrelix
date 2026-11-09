@@ -79,21 +79,21 @@ public sealed class AutomationMoveItemUseCase
         // The execution lifecycle only permits Fail from Running, so every
         // terminal pre-execution defect starts the execution first — the
         // failure is recorded against a started, then failed, state machine.
-        var startAndFail = async (string error) =>
+        var startAndFail = async (AutomationFailureClass failureClass, string error) =>
         {
             if (execution.Status == AutomationExecutionStatus.Queued)
             {
                 execution.Start(_clock.UtcNow);
             }
 
-            execution.Fail(error, _clock.UtcNow);
+            execution.Fail(failureClass, error, _clock.UtcNow);
             await _context.SaveChangesAsync(cancellationToken);
             return true;
         };
 
         if (rule is null)
         {
-            return await startAndFail("Automation rule no longer exists.");
+            return await startAndFail(AutomationFailureClass.TargetGone, "Automation rule no longer exists.");
         }
 
         // The version the execution started with; an execution staged before versions existed
@@ -105,7 +105,7 @@ public sealed class AutomationMoveItemUseCase
         // platform or a person only disabled stops its queued executions.
         if (rule.Status != AutomationRuleStatus.Active && !rule.IsRemoved)
         {
-            return await startAndFail("Automation rule is not active.");
+            return await startAndFail(AutomationFailureClass.RuleInactive, "Automation rule is not active.");
         }
 
         // AUT-020: the rule runs as the executor of the version it started on. A rule with no
@@ -114,12 +114,12 @@ public sealed class AutomationMoveItemUseCase
         if (snapshot.ExecutorUserId is not { } executorUserId || executorUserId == Guid.Empty)
         {
             if (!rule.IsRemoved) rule.DisableAutomatically(NoExecutorReason, _clock.UtcNow);
-            return await startAndFail("The rule has no executor; the automation cannot execute.");
+            return await startAndFail(AutomationFailureClass.InvalidConfiguration, "The rule has no executor; the automation cannot execute.");
         }
 
         if (message.ActorUserId is null || message.ActorUserId == Guid.Empty)
         {
-            return await startAndFail("The trigger fact carried no trusted actor; the automation cannot execute.");
+            return await startAndFail(AutomationFailureClass.InvalidConfiguration, "The trigger fact carried no trusted actor; the automation cannot execute.");
         }
 
         // AU-1: the actions act on the item the trigger fact was about; a rule made with a
@@ -129,7 +129,7 @@ public sealed class AutomationMoveItemUseCase
         if (itemId is null && !(actions.Count == 1 && actions[0].Type == AutomationActionConfigs.Types.MoveItem
                 && AutomationMoveItemConfiguration.TryParse(actions[0].Configuration, out _, out _)))
         {
-            return await startAndFail("The trigger fact carried no item for the rule's actions.");
+            return await startAndFail(AutomationFailureClass.InvalidConfiguration, "The trigger fact carried no item for the rule's actions.");
         }
 
         var principal = new AutomationPrincipal(
@@ -165,7 +165,7 @@ public sealed class AutomationMoveItemUseCase
                 }
                 catch (NotFoundException)
                 {
-                    execution.Fail("The triggering item is not on the rule's board.", _clock.UtcNow);
+                    execution.Fail(AutomationFailureClass.TargetGone, "The triggering item is not on the rule's board.", _clock.UtcNow);
                     await _context.SaveChangesAsync(cancellationToken);
                     return true;
                 }
@@ -197,12 +197,12 @@ public sealed class AutomationMoveItemUseCase
             // AUT-020: re-authorize the executor against the target now. Losing the
             // permission (or the visibility of the target) stops the rule with a
             // recorded reason; the failing action changed nothing.
-            return await StopRuleAsync(rule, execution, ExecutorForbiddenReason,
+            return await StopRuleAsync(rule, execution, ExecutorForbiddenReason, AutomationFailureClass.PermissionRevoked,
                 "The rule's executor no longer has permission to perform this action.", cancellationToken);
         }
         catch (NotFoundException) when (!rule.IsRemoved)
         {
-            return await StopRuleAsync(rule, execution, ExecutorNotFoundReason,
+            return await StopRuleAsync(rule, execution, ExecutorNotFoundReason, AutomationFailureClass.TargetGone,
                 "The rule's target is not available to its executor.", cancellationToken);
         }
         catch (WorkItemOperationConflictException)
@@ -210,7 +210,7 @@ public sealed class AutomationMoveItemUseCase
             // The target's OperationId dedup reports a conflicting payload for
             // the same execution id — an automation configuration defect, not
             // a transient condition.
-            return await FailStepAsync(execution, steps, actions, index,
+            return await FailStepAsync(execution, steps, actions, index, AutomationFailureClass.TargetRejected,
                 "Target action rejected the operation payload for this execution.", cancellationToken);
         }
         catch (Exception ex) when (ex is BusinessRuleException or Notrelix.Domain.Common.Exceptions.BusinessRuleException or ForbiddenException or NotFoundException or ActionRejectedException)
@@ -220,7 +220,7 @@ public sealed class AutomationMoveItemUseCase
             // of the automation. Retrying cannot repair a deterministic
             // target-owned rejection, so the execution fails closed instead
             // of entering the technical retry loop.
-            return await FailStepAsync(execution, steps, actions, index,
+            return await FailStepAsync(execution, steps, actions, index, ClassifyRejection(ex),
                 "Target action business rejection.", cancellationToken);
         }
         catch (Exception ex) when (_orderingConflicts.IsOrderingConflict(ex))
@@ -239,7 +239,7 @@ public sealed class AutomationMoveItemUseCase
             // Technical target failure: keep the execution retryable so the
             // delivery mechanism redelivers the durable intent under the
             // stable execution id.
-            execution.RecordRetryableDispatchFailure("Target action technical failure.", _clock.UtcNow);
+            execution.RecordRetryableDispatchFailure(AutomationFailureClass.Transient, "Target action technical failure.", _clock.UtcNow);
             await _context.SaveChangesAsync(cancellationToken);
             return false;
         }
@@ -333,11 +333,21 @@ public sealed class AutomationMoveItemUseCase
         await _workActions.MoveItemAsync(movedItem, targetGroupId, operationId, principal, cancellationToken);
     }
 
+    /// <summary>UC-AUT-I04: the terminal class of a target or executor rejection, by what the target refused.</summary>
+    private static AutomationFailureClass ClassifyRejection(Exception ex) => ex switch
+    {
+        ForbiddenException => AutomationFailureClass.PermissionRevoked,
+        NotFoundException => AutomationFailureClass.TargetGone,
+        ActionRejectedException => AutomationFailureClass.InvalidConfiguration,
+        _ => AutomationFailureClass.TargetRejected,
+    };
+
     private async Task<bool> FailStepAsync(
         AutomationExecution execution,
         List<AutomationExecutionStepDto> steps,
         IReadOnlyList<AutomationActionSnapshot> actions,
         int index,
+        AutomationFailureClass failureClass,
         string error,
         CancellationToken cancellationToken)
     {
@@ -348,7 +358,7 @@ public sealed class AutomationMoveItemUseCase
             execution.RecordProgress(AutomationExecutionProgress.Write(steps));
         }
 
-        execution.Fail(index < actions.Count ? $"Action {index + 1} ({actions[index].Type}): {error}" : error, _clock.UtcNow);
+        execution.Fail(failureClass, index < actions.Count ? $"Action {index + 1} ({actions[index].Type}): {error}" : error, _clock.UtcNow);
         await _context.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -357,11 +367,12 @@ public sealed class AutomationMoveItemUseCase
         AutomationRule rule,
         AutomationExecution execution,
         string ruleReason,
+        AutomationFailureClass failureClass,
         string executionError,
         CancellationToken cancellationToken)
     {
         rule.DisableAutomatically(ruleReason, _clock.UtcNow);
-        execution.Fail(executionError, _clock.UtcNow);
+        execution.Fail(failureClass, executionError, _clock.UtcNow);
         await _context.SaveChangesAsync(cancellationToken);
         return true;
     }

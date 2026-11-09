@@ -58,6 +58,9 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
     public DateTimeOffset StartedAt { get; private set; }
     public DateTimeOffset? FinishedAt { get; private set; }
     public string? Error { get; private set; }
+
+    /// <summary>UC-AUT-I04: the stable class of the last failure or retried attempt; null for a legacy row or no failure.</summary>
+    public AutomationFailureClass? FailureClass { get; private set; }
     public string? Payload { get; private set; }
     public int AttemptCount { get; private set; }
     public string? LastResponse { get; private set; }
@@ -153,15 +156,18 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new AutomationExecutionSucceededDomainEvent(AccountId, WorkspaceId, Id, RuleId, finishedAt));
     }
 
-    public void Fail(string error, DateTimeOffset finishedAt)
+    public void Fail(AutomationFailureClass failureClass, string error, DateTimeOffset finishedAt)
     {
         if (Status != AutomationExecutionStatus.Running)
             throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotFailUnlessRunning, "Execution can only fail from Running state.");
+        if (failureClass.IsRetryable())
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_FailureClassNotTerminal, "A transient failure is retried, not failed.");
         if (string.IsNullOrWhiteSpace(error))
             throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_ErrorRequiredOnFail, "Error must not be empty when execution fails.");
 
         Status = AutomationExecutionStatus.Failed;
         Error = error;
+        FailureClass = failureClass;
         FinishedAt = finishedAt;
         IncrementVersion();
         RaiseDomainEvent(new AutomationExecutionFailedDomainEvent(AccountId, WorkspaceId, Id, RuleId, error, finishedAt));
@@ -173,15 +179,18 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
     /// Automation attempt can run against the same execution identity.
     /// AttemptCount grows with every recorded attempt.
     /// </summary>
-    public void RecordRetryableDispatchFailure(string error, DateTimeOffset attemptedAt)
+    public void RecordRetryableDispatchFailure(AutomationFailureClass failureClass, string error, DateTimeOffset attemptedAt)
     {
         if (Status != AutomationExecutionStatus.Running)
             throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotStartUnlessQueued, "A retryable dispatch failure can only be recorded from a running attempt.");
+        if (!failureClass.IsRetryable())
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_FailureClassNotRetryable, "Only a transient failure can be retried; a terminal failure must fail the execution.");
         if (string.IsNullOrWhiteSpace(error))
             throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_ErrorRequiredOnFail, "Error must not be empty when a retryable dispatch failure is recorded.");
 
         Status = AutomationExecutionStatus.Queued;
         Error = error;
+        FailureClass = failureClass;
         AttemptCount++;
         ApplyAuditUpdate(PrepareAuditUpdate(null, attemptedAt));
         IncrementVersion();

@@ -20,6 +20,8 @@ public static class AutomationRuleCodes
     public const string Automation_Execution_ErrorRequiredOnFail = "Automation_Execution_ErrorRequiredOnFail";
     public const string Automation_Execution_CannotCancelUnlessQueuedOrRunning = "Automation_Execution_CannotCancelUnlessQueuedOrRunning";
     public const string Automation_Execution_CannotCancelUnlessQueued = "Automation_Execution_CannotCancelUnlessQueued";
+    public const string Automation_Execution_FailureClassNotTerminal = "Automation_Execution_FailureClassNotTerminal";
+    public const string Automation_Execution_FailureClassNotRetryable = "Automation_Execution_FailureClassNotRetryable";
 
     // ── Agent ─────────────────────────────────────────────────────────────
     public const string Automation_Agent_InvalidStatusTransition = "Automation_Agent_InvalidStatusTransition";
