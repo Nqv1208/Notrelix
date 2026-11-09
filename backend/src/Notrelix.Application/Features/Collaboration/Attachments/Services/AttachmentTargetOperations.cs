@@ -94,7 +94,8 @@ internal static class AttachmentTargetOperations
         string? contentType,
         CancellationToken ct)
     {
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+        // The validator refuses these first (400); this repeats the same allow-list for any caller that skips it.
+        if (!AttachmentLinkUrl.IsAllowed(url))
             return Result<AttachmentDto>.Failure("Attachment URL must be an absolute HTTP(S) URL.");
 
         var workspaceId = requestContext.RequireWorkspaceId();
