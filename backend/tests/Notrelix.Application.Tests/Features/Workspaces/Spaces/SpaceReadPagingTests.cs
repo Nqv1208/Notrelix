@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace;
+using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembers;
 using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceTree;
 using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetWorkspaceSpaces;
 using Notrelix.Testing.Application.Fakes;
@@ -263,5 +264,71 @@ public sealed class SpaceReadPagingTests : WorkspaceHandlerTestBase
         var cursor = (await ListPage(limit: 1)).Data!.NextCursor;
 
         new GetWorkspaceSpacesQueryValidator().Validate(new GetWorkspaceSpacesQuery(TestWorkspaceId, cursor, 1)).IsValid.Should().BeTrue();
+    }
+
+    // ── Members ─────────────────────────────────────────────
+
+    private Space SeedWithMembers(int others)
+    {
+        var space = Seed("Finance");
+        for (var n = 0; n < others; n++)
+            space.AddMember(SpaceMemberSubjectType.User, Guid.CreateVersion7(), SpaceRole.Member, TestUserId, TestNow);
+        return space;
+    }
+
+    private Task<Result<CursorPage<SpaceMemberDto>>> MemberPage(Space space, string? cursor = null, int? limit = null)
+    {
+        var actors = new Mock<IActorLookupService>();
+        actors.Setup(a => a.FindManyAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ActorSnapshot>());
+        return new GetSpaceMembersQueryHandler(_store, _visibility, actors.Object, RequestContextMock.Object)
+            .Handle(new GetSpaceMembersQuery(TestWorkspaceId, space.Id, cursor, limit), CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task Members_DefaultPageHoldsFifty_AndTheNextCursorLeadsToTheRest()
+    {
+        var space = SeedWithMembers(59);
+
+        var first = (await MemberPage(space)).Data!;
+        first.Items.Should().HaveCount(50);
+        first.NextCursor.Should().NotBeNullOrEmpty();
+
+        var second = (await MemberPage(space, first.NextCursor)).Data!;
+        second.Items.Should().HaveCount(10, "the creator plus 59 others is 60 entries");
+        second.NextCursor.Should().BeNull();
+        first.Items.Select(m => m.SubjectId).Intersect(second.Items.Select(m => m.SubjectId)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Members_WalkingOneAtATime_ReadsEveryEntryOnce_InSubjectIdOrder()
+    {
+        var space = SeedWithMembers(8);
+
+        var walked = await Walk(async c => (await MemberPage(space, c, 1)).Data!);
+
+        walked.Should().HaveCount(9);
+        walked.Select(m => m.SubjectId).Distinct().Should().HaveCount(9);
+        walked.Select(m => m.SubjectId).Should().BeInAscendingOrder();
+    }
+
+    [Fact]
+    public async Task Members_OfASpaceTheCallerCannotSee_AreNotFound()
+    {
+        var hidden = Seed("Hidden", visible: false);
+
+        Func<Task> act = () => MemberPage(hidden);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public void Members_Validator_RefusesAForeignCursorAndAnOutOfRangeLimit()
+    {
+        var validator = new GetSpaceMembersQueryValidator();
+
+        validator.Validate(new GetSpaceMembersQuery(TestWorkspaceId, Guid.NewGuid(), "not-a-cursor")).IsValid.Should().BeFalse();
+        validator.Validate(new GetSpaceMembersQuery(TestWorkspaceId, Guid.NewGuid(), null, 201)).IsValid.Should().BeFalse();
+        validator.Validate(new GetSpaceMembersQuery(TestWorkspaceId, Guid.NewGuid(), null, 200)).IsValid.Should().BeTrue();
     }
 }

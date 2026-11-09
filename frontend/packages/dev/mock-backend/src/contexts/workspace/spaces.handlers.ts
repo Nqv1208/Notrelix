@@ -459,7 +459,7 @@ export const spacesOperations = [
       },
       method: "GET",
       route: "/workspaces/:workspaceId/spaces/:spaceId/members",
-      async handle({ params, store }) {
+      async handle({ params, request, store }) {
         const viewer = store.spaceViewer(params.workspaceId);
         const space = store.spaces.getSpace(params.spaceId);
         if (
@@ -469,34 +469,43 @@ export const spacesOperations = [
         ) {
           return notFound();
         }
-        const rank: Record<MockSpaceRole, number> = {
-          Admin: 3,
-          Member: 2,
-          Viewer: 1,
-        };
-        return ok(
-          store.spaces
-            .membersOf(params.spaceId)
-            .sort((a, b) => rank[b.role] - rank[a.role])
-            .map((entry) => {
-              const user =
-                entry.subjectType === "User"
-                  ? store.getUser(entry.subjectId)
-                  : null;
-              const team =
-                entry.subjectType === "Team"
-                  ? store.spaces.getTeam(entry.subjectId)
-                  : null;
-              return {
-                subjectType: entry.subjectType,
-                subjectId: entry.subjectId,
-                role: entry.role,
-                displayName: team ? team.name : (user?.name ?? "Unknown"),
-                avatarUrl: user?.avatarUrl ?? null,
-                addedAt: entry.addedAt,
-              };
-            }),
-        );
+        // Pages run in subject id order, 50 by default and 200 at most; the client orders people by role.
+        const limit = Number(request.searchParams.get("limit") ?? 50);
+        const after = decodeCursor(request.searchParams.get("cursor"));
+        if (!Number.isInteger(limit) || limit < 1 || limit > 200)
+          return validationError({ Limit: ["Use a page size from 1 to 200."] });
+        if (after === false)
+          return validationError({ Cursor: ["Cursor is not valid."] });
+        const rows = store.spaces
+          .membersOf(params.spaceId)
+          .filter((entry) => after === null || entry.subjectId > after)
+          .sort((a, b) =>
+            a.subjectId < b.subjectId ? -1 : a.subjectId > b.subjectId ? 1 : 0,
+          );
+        const page = rows.slice(0, limit);
+        const nextCursor =
+          rows.length > limit
+            ? encodeCursor(page[page.length - 1]!.subjectId)
+            : null;
+        const items = page.map((entry) => {
+          const user =
+            entry.subjectType === "User"
+              ? store.getUser(entry.subjectId)
+              : null;
+          const team =
+            entry.subjectType === "Team"
+              ? store.spaces.getTeam(entry.subjectId)
+              : null;
+          return {
+            subjectType: entry.subjectType,
+            subjectId: entry.subjectId,
+            role: entry.role,
+            displayName: team ? team.name : (user?.name ?? "Unknown"),
+            avatarUrl: user?.avatarUrl ?? null,
+            addedAt: entry.addedAt,
+          };
+        });
+        return ok({ items, nextCursor, hasNextPage: nextCursor !== null });
       },
     },
   ),

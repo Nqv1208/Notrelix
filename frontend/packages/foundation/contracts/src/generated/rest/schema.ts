@@ -6218,7 +6218,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get the user and team entries of a space */
+        /**
+         * Get the user and team entries of a space
+         * @description Cursor-paginated (default 50, max 200) in subject id order. Pass nextCursor back as cursor for the next page.
+         */
         get: operations["Workspaces.Spaces.GetSpaceMembers"];
         put?: never;
         /** Add a user or a team to a space with a space role */
@@ -7847,6 +7850,11 @@ export interface components {
         };
         "Notrelix.Application.Common.Models.CursorPageOfSpaceDto": {
             items?: components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfSpaceMemberDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembers.SpaceMemberDto"][] | null;
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
@@ -25037,7 +25045,10 @@ export interface operations {
     };
     "Workspaces.Spaces.GetSpaceMembers": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -25053,7 +25064,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembers.SpaceMemberDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfSpaceMemberDto"];
                 };
             };
         };
