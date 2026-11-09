@@ -98,7 +98,7 @@ Calendar sync and mapping use cases sit in INT capability H (Inbound event mappi
 2. Only three trigger facts have a consumer (ItemCreated, ItemMovedToGroup, ItemAssigned). ItemUpdated, FieldChanged, ItemDeleted, FormSubmitted and ScheduleTrigger validate and save, then never fire (UC-AUT-B04, UC-AUT-B05).
 3. `SlackMessage` is accepted, enabled and counted as an integration action but has no executor and no Integrations operation behind it (UC-AUT-D09, UC-INT-F03).
 4. No scheduler runtime: Schedule intent, time zone and missed-run policy exist as design and `ScheduledJob` domain code only (UC-AUT-B05, UC-AUT-K08).
-5. No rerun of a failed step, no cancel, no workspace run feed, no realtime producer for `automation.execution.*` (UC-AUT-I03, UC-AUT-H04, UC-AUT-J03, UC-AUT-L01).
+5. No rerun of a failed step, no workspace run feed, no realtime producer for `automation.execution.*` (UC-AUT-I03, UC-AUT-J03, UC-AUT-L01). Cancel of a Queued execution is built on the backend (UC-AUT-H04); its frontend action is not.
 6. Calendar sync is not reachable: `TriggerCalendarSyncCommandHandler` throws, no endpoint, no job, and an OAuth connection is not linked to a `CalendarIntegration` binding (UC-INT-H01, UC-INT-H04, UC-INT-H05).
 7. Provider authorization has no PKCE, no reauthorization UI, no scope-upgrade re-consent, and disconnect does not revoke the grant at the provider (UC-INT-C01, UC-INT-C04, UC-INT-C05, UC-INT-B04).
 8. Outbound webhook retry is 3 attempts (1 s, 5 s, 30 s) against the owner decision of up to 8 with backoff; there is no delivery log, no unknown-outcome reconciliation, no secret regeneration (UC-INT-F05, UC-INT-F06, UC-INT-F07, UC-INT-E02).
@@ -213,7 +213,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-AUT-H04 | Cancel a queued execution | H Execution state machine | board Manager or Owner and Admin | Y | N | N | N | HARDENING | Built: POST `/api/v1/workspaces/{workspaceId}/automations/{automationId}/executions/{executionId}/cancel` refuses unless Queued (`AutomationExecution.CancelBeforeStart`). Not built: cancel action and confirmation in the FE; no expected version (as E01). Owner tests by hand |
 | UC-AUT-H05 | An unknown outcome is held, never re-fired | H Execution state machine | system | Y | N | N | N | IMPLEMENTING | no UI state; no governed reconciliation action |
 | UC-AUT-I01 | Retryable failures retry within one budget | I Business retry/failure policy | system | Y | N | N | N | INTEGRATING | no UI for the retrying state ('đang thử lại, lần N' is not in the FE) |
-| UC-AUT-I02 | A terminal failure shows a safe, useful reason | I Business retry/failure policy | as J01 | Y | Y | Y | N | INTEGRATING | failure reason is free text (AutomationExecution.Fail(string)), not a stable reason class |
+| UC-AUT-I02 | A terminal failure shows a safe, useful reason | I Business retry/failure policy | as J01 | Y | Y | Y | N | INTEGRATING | the stable failure class is stored on the execution row (`AutomationFailureClass`, codes such as `target_gone`) but not exposed: `AutomationExecutionDto` carries only `Error` (free text), so the API, OpenAPI and run log do not show it; expose the class in the DTO and the run log |
 | UC-AUT-I03 | Rerun a failed step | I Business retry/failure policy | board Manager | N | P | Y | N | IMPLEMENTING | mock-only UI path |
 | UC-AUT-I04 | A gone target or revoked permission is terminal | I Business retry/failure policy | system | Y | N | N | N | HARDENING | Built: `AutomationFailureClass` (stable codes `target_gone`, `permission_revoked`, `invalid_configuration`, `rule_inactive`, `target_rejected`, `outcome_unknown`, `transient`) is stored as `failure_class` on each failed execution; only `transient` is retried. Not built: the class is not in the DTO or the run log; executions failed before the migration have no class. Owner tests by hand |
 | UC-AUT-J01 | Read the recent runs of a rule | J Execution history/query | ManageBoard (with `boardId`) or ManageWorkspaceSettings | Y | Y | Y | Y | HARDENING | offset paging, no total or cursor (DEF-3); the payload may hold item data and its redaction is not proven |
@@ -1050,7 +1050,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: automation.md §106, §107 AUT-035; AIREQ033, AIREQ113.
 - Acceptance: Given a deleted target group, Then the log says the group no longer exists.
 - Evidence: BE `AutomationExecution.Fail`, `AutomationExecutionDto.Error` · FE FE-BS `automation-log.tsx` · Design `Final-M-Automation` · Tests T-AD `AutomationExecutionTests` · Real e2e none
-- State: INTEGRATING — failure reason is free text (AutomationExecution.Fail(string)), not a stable reason class.
+- State: INTEGRATING — the stable failure class (`AutomationFailureClass`, codes such as `target_gone`) is stored on the execution row, but `AutomationExecutionDto` carries only `Error` (free text), so the API, the OpenAPI contract and the run log do not show it. Remaining: expose the class in the DTO and the run log, with a safe label per class.
 
 ### UC-AUT-I03 Rerun a failed step
 - Capability: AUT-009 Business retry/failure policy
