@@ -131,6 +131,7 @@ public static class ExpectedVersionInventory
             ["RemoveMemberCommand"] = "workspaces.workspace-member",
             ["UpdateMemberRoleCommand"] = "workspaces.workspace-member",
             ["ChangeInvitationRoleCommand"] = "workspaces.workspace-invitation",
+            ["RenameAccountCommand"] = "accounts.account",
         };
 
     public static IReadOnlyCollection<Type> DiscoverConcreteVersionedRequests() =>

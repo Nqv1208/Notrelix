@@ -74,7 +74,7 @@ public class RenameAccountPipelineAuthorizationTests : IAsyncLifetime
         using var provider = CreatePipelineProvider(graph.AccountId, graph.ActorId);
         var sender = provider.GetRequiredService<ISender>();
         var evaluations = provider.GetRequiredService<EvaluationCountingDecisionStore>();
-        var command = new RenameAccountCommand("Renamed By Admin");
+        var command = new RenameAccountCommand(graph.AccountId, "Renamed By Admin", 1);
 
         var result = await sender.Send(command);
 
@@ -95,7 +95,7 @@ public class RenameAccountPipelineAuthorizationTests : IAsyncLifetime
         using var provider = CreatePipelineProvider(graph.AccountId, graph.ActorId);
         var sender = provider.GetRequiredService<ISender>();
         var evaluations = provider.GetRequiredService<EvaluationCountingDecisionStore>();
-        var command = new RenameAccountCommand("Renamed By Member");
+        var command = new RenameAccountCommand(graph.AccountId, "Renamed By Member", 1);
 
         var act = () => sender.Send(command);
 

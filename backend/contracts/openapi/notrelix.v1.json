@@ -27219,6 +27219,10 @@
           "name": {
             "type": "string",
             "nullable": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false
