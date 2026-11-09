@@ -172,9 +172,9 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-H02 | View the audit log of a workspace | H | Workspace Owner, Admin | No | Part | No | No | DEFINED | No endpoint, screen or artboard. Frontend service is dead code. |
 | UC-GOV-H03 | Export the audit log | H | Workspace Owner | No | No | No | No | DEFINED | Not built. |
 | UC-GOV-H04 | Audit reads of the audit log | H | System | No | No | No | No | DEFINED | Depends on UC-GOV-H02. |
-| UC-GOV-H05 | Issue an API token for a workspace | H | Workspace Owner | Yes | No | No | No | IMPLEMENTING | No screen and no artboard; no audit row; no token lifetime cap; the token's scope and rights are not narrower than its issuer's by a ... |
-| UC-GOV-H06 | List API tokens | H | Workspace Owner | Yes | No | No | No | IMPLEMENTING | No screen; unbounded read. |
-| UC-GOV-H07 | Revoke an API token | H | Workspace Owner | Yes | No | No | No | IMPLEMENTING | No screen; no audit. |
+| UC-GOV-H05 | Issue an API token for a workspace | H | Workspace Owner | Yes | No | No | No | IMPLEMENTING | No screen and no artboard. Built (2026-11-09): audit row `CreateApiToken`; expiry required and capped at the default 365 days (Lead decision L7); a workspace cap shorter than 365 is UC-GOV-H08. Owner question: which rule narrows a token's scope and rights below its issuer's (none is stated in the product text). |
+| UC-GOV-H06 | List API tokens | H | Workspace Owner | Yes | No | No | No | IMPLEMENTING | No screen. Built (2026-11-09): cursor page, default 50, max 200, newest first; the secret and hash are never in the list. |
+| UC-GOV-H07 | Revoke an API token | H | Workspace Owner | Yes | No | No | No | IMPLEMENTING | No screen. Built (2026-11-09): audit row `RevokeApiToken` only when the token changes; an already-revoked token writes no row. |
 | UC-GOV-H08 | Cap API token lifetime by workspace policy (enterprise baseline) | H | Workspace Owner | No | No | No | No | DEFINED | Not built. |
 | UC-GOV-H09 | Manage roles on a governance screen | H | Workspace Owner | No | Part | No | No | DEFINED | Depends on C01-C06 and on a design. |
 | UC-GOV-H10 | Read outbox statistics (platform operator) | H | Platform operator (`SystemAdmin` role) | Yes | No | No | No | IMPLEMENTING | Operator surface only; how the `SystemAdmin` role is granted and audited is not documented. |
@@ -1083,8 +1083,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: validation error, permission denied, pending, success (secret shown once)
 - Rules: [Governance §35, §44.1](../../product/governance.md) GOV-013; WGREQ098, WGREQ137, WGREQ164; identity side: [Identity use cases](identity.md); Lead decision L7. Enterprise baseline: GitHub.
 - Acceptance: Given an Owner with step-up, When they create a token, Then the response holds the secret once and a later list shows only prefix and metadata.
-- Evidence: BE `POST /api/v1/workspaces/{workspaceId}/api-tokens` (Identity.ApiTokens.Create, `CreateApiTokenCommand`) · FE none · Tests `backend/tests/Notrelix.Application.Tests/Features/Identity/ApiTokens/ApiTokenHandlerTests.cs`, `backend/tests/Notrelix.Integration.Tests/Auth/ApiTokenHttpFlowTests.cs`, `ApiTokenFlowTests.cs`, `backend/tests/Notrelix.Integration.Tests/Rls/ApiTokenScopeTests.cs` · Real e2e none · Design none
-- State: IMPLEMENTING - No screen and no artboard; no audit row; no token lifetime cap; the token's scope and rights are not narrower than its issuer's by a stated rule.
+- Evidence: BE `POST /api/v1/workspaces/{workspaceId}/api-tokens` (Identity.ApiTokens.Create, `CreateApiTokenCommand`) · FE none · Tests `backend/tests/Notrelix.Application.Tests/Features/Identity/ApiTokens/ApiTokenHandlerTests.cs` (audit row, expiry required, 365-day cap at and above the limit), `backend/tests/Notrelix.Integration.Tests/Auth/ApiTokenFlowTests.cs` (updated; not run, needs Docker), `backend/tests/Notrelix.Integration.Tests/Auth/ApiTokenHttpFlowTests.cs`, `ApiTokenFlowTests.cs`, `backend/tests/Notrelix.Integration.Tests/Rls/ApiTokenScopeTests.cs` · Real e2e none · Design none
+- State: IMPLEMENTING - Built (2026-11-09): the issue writes one `CreateApiToken` audit row with the token id, name and expiry and never the secret or digest; an expiry is required (`identity.api-tokens.expiration-required`, refused before the step-up proof is consumed) and may not be more than 365 days away (`identity.api-tokens.lifetime-exceeded`, Lead decision L7). Left: no screen and no artboard; a workspace cap shorter than 365 days is UC-GOV-H08. Owner question: which rule narrows a token's scope and rights below its issuer's (the product text names none). The 400 status for the expiry rules follows the repo's validation convention; H05 in the product says 400 too.
 
 ### UC-GOV-H06 List API tokens
 - Capability: H Governance administration UI (team spec, Governance list)
@@ -1097,8 +1097,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: loading, empty, permission denied
 - Rules: [Governance §44.1](../../product/governance.md); WGREQ137.
 - Acceptance: Given an Admin, When they list, Then 403 and the Owner's tokens are not visible.
-- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/api-tokens` (Identity.ApiTokens.List, `ListApiTokensQuery`) · FE none · Tests `ApiTokenHandlerTests` · Real e2e none · Design none
-- State: IMPLEMENTING - No screen; unbounded read.
+- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/api-tokens` (Identity.ApiTokens.List, `ListApiTokensQuery`) · FE none · Tests `backend/tests/Notrelix.Application.Tests/Features/Identity/ApiTokens/ApiTokenHandlerTests.cs` (paging: default 50, the cursor walks every row once, limit above 200 and below 1 refused) · Real e2e none · Design none
+- State: IMPLEMENTING - Built (2026-11-09): cursor page (`limit` default 50, max 200; `cursor` opaque, keyset over created-at and id, newest first). The response is `CursorPage<ApiTokenSummaryDto>`. Left: no screen (no artboard). The handler still loads the workspace's tokens and pages in memory, which is acceptable for an Owner-only list of a few tokens; a SQL keyset needs a translatable id comparison first.
 
 ### UC-GOV-H07 Revoke an API token
 - Capability: H Governance administration UI (team spec, Governance list)
@@ -1111,8 +1111,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: destructive confirmation, pending, permission denied
 - Rules: [Governance §44.1](../../product/governance.md); WGREQ102 analogy for credentials.
 - Acceptance: Given a revoked token, When it calls the API, Then 401.
-- Evidence: BE `DELETE /api/v1/workspaces/{workspaceId}/api-tokens/{tokenId}` (Identity.ApiTokens.Revoke, `RevokeApiTokenCommand`) · FE none · Tests `ApiTokenHttpFlowTests` · Real e2e none · Design none
-- State: IMPLEMENTING - No screen; no audit.
+- Evidence: BE `DELETE /api/v1/workspaces/{workspaceId}/api-tokens/{tokenId}` (Identity.ApiTokens.Revoke, `RevokeApiTokenCommand`) · FE none · Tests `backend/tests/Notrelix.Application.Tests/Features/Identity/ApiTokens/ApiTokenHandlerTests.cs` (audit row on a change, no row for an already-revoked token) · Integration `ApiTokenHttpFlowTests` · Real e2e none · Design none
+- State: IMPLEMENTING - Built (2026-11-09): one `RevokeApiToken` audit row with the before and after status when an active token is revoked; an already-revoked token is a no-op with no row. Left: no screen (no artboard).
 
 ### UC-GOV-H08 Cap API token lifetime by workspace policy (enterprise baseline)
 - Capability: H Governance administration UI (team spec, Governance list)
