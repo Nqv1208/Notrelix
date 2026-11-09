@@ -187,7 +187,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-E03 | See who else is viewing a page or item (presence) | E | Anyone with view access | partial | partial | no | no | IMPLEMENTING | Decide storage (Lead decision L16: gateway memory or Redis, not the PresenceSession table); build the topic, authorization and client. |
 | UC-COL-E04 | Typing and cursor indicators | E | Editors of a page | no | no | no | no | BLOCKED | Waits for the live co-editing ADR that decision 3 leaves open (Documents owns it). |
 | UC-COL-E05 | Recover after reconnect, gap or revoked access | E | Any connected client | partial | partial | yes | no | DEFINED | Gateway exists for board streams; no Collaboration stream to recover. |
-| UC-COL-F01 | Item deleted or archived: comments follow the item | F | System | partial | no | partial | no | IMPLEMENTING | No purge consumer; orphan Collaboration rows remain after purge; no test. |
+| UC-COL-F01 | Item deleted or archived: comments follow the item | F | System | partial | no | partial | no | IMPLEMENTING | Owner question: no purge event exists (the delete event fires at trash time, when comments must stay); which event should the purge consumer use? Not built. |
 | UC-COL-F02 | Page removed or block deleted: comments stay as history | F | System | partial | yes | yes | no | IMPLEMENTING | Server side lifecycle missing; no real e2e. |
 | UC-COL-F03 | Purge attachment objects after retention | F | System (background job) | yes | no | no | no | INTEGRATING | Owner question: retention default is 30 days in code (AttachmentRetentionOptions) and product section 90 gives no number; operator doc not checked. |
 | UC-COL-F04 | A person is anonymized or leaves: history stays | F | System, on an Identity event | partial | partial | no | no | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): Identity deletion anonymizes the person (name "Deleted user", email replaced by a non-reversible hash); comments and audit keep the user id. |
@@ -1001,7 +1001,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-026, Item deletion (87), Target deletion (84); spec DCREQ048, DCREQ049, DCREQ189; decision 50 (comments stay with a moved item).
 - Acceptance: Given a deleted item, then its comments are unreachable; after restore they return; after purge they are gone.
 - Evidence: BE partial: reads fail with NotFound because the item is not visible; only ItemDeletedActivityConsumer reacts; no purge of comments, reactions, watchers or attachments · FE none · Design Final-States · Tests none · Real e2e none
-- State: IMPLEMENTING — No purge consumer; orphan Collaboration rows remain after purge; no test.
+- State: IMPLEMENTING — Owner question: no purge integration event exists. The only delete event, work-management.board-item-deleted, fires when an item goes to trash, when its comments must stay (restore brings them back), so it cannot drive a purge; board_item.archived is not a purge either. Which event should the Collaboration purge consumer subscribe to (a Work Management purge event is needed)? Not built; no test.
 
 ### UC-COL-F02 Page removed or block deleted: comments stay as history
 - Capability: F, COL-006 Target deletion/retention
