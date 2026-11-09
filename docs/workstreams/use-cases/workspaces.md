@@ -185,7 +185,7 @@ Products compared and what was taken:
 | UC-WSP-I05 | See why a workspace is unavailable | I | Any signed-in person | partial | partial | Final-States | none | IMPLEMENTING | Archived banner with action; plan-limited state; real e2e. |
 | UC-WSP-I06 | Always see which workspace I am in | I | Any member | n/a | yes | BC-Shell-1440, BC-Shell-320 | none | HARDENING | Built: the Space delete confirm names the workspace (en and vi). The two unused Team confirm texts already name the Team. Owner tests by hand. |
 | UC-WSP-J01 | Read workspace settings | J | Any active member | yes | yes | Final-Settings | none | HARDENING | Built (verified by reading code 2026-11-09, not run): GetWorkspaceSettings.cs, WorkspaceSettingsTests.cs, WorkspaceSettingsEndpointTests.cs, workspace.service.ts, use-workspace-settings.ts. Remaining: owner tests by hand. |
-| UC-WSP-J02 | Change workspace settings | J | Owner, Admin | yes | yes | Final-Settings | none | INTEGRATING | Invitation-expiry tests not confirmed as updated (the audit argument is in place); the expiry rule is unproven. |
+| UC-WSP-J02 | Change workspace settings | J | Owner, Admin | yes | yes | Final-Settings | none | HARDENING | Built: `UpdateWorkspaceSettingsCommandHandlerTests` proves the invitation-expiry rule (0 and 31 refused with `Workspaces_Settings_InvitationExpiryDaysOutOfRange` and nothing changes; 30 stored) and the audit fact (Info on a change, none on a no-op, Warning when sharing opens). 11 tests pass 2026-11-10. No real e2e. |
 | UC-WSP-J03 | Read sharing and security extras | J | Owner, Admin, Member | yes | yes | Final-Settings, Final-Teams | none | HARDENING | Built (verified by reading code 2026-11-09, not run): GetWorkspaceSecurityExt.cs, WorkspaceSecurityExtIntegrationTests.cs, use-teams-ext.ts, workspace-security-surface.tsx. Remaining: owner tests by hand. |
 | UC-WSP-J04 | Keep Account-wide policy out of workspace settings | J | Owner, Admin | yes | no | none | none | BLOCKED | Decision: owner and enforcement of the MFA policy. |
 | UC-WSP-K01 | Create a Space (department) | K | Owner, Admin | yes | yes | Final-Space, Final-M-Space | workspace-spaces.real.e2e.spec.ts | DONE | accepted 2026-11-02, see the Evidence line |
@@ -964,7 +964,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 39, 40, 48.4; WSP-012; WGREQ010; WX-SET-001.
 - Acceptance: Given version 5, When an Admin saves, Then version is 6 and a second save carries 6.
 - Evidence: BE `PUT /api/v1/workspaces/{id}/settings`, `UpdateWorkspaceSettingsCommandHandler` · FE `use-workspace-settings-mutations.ts`, settings surface · Design `Final-Settings` · Tests `UpdateWorkspaceSettingsCommandHandlerTests`, `WorkspaceSettingsEndpointTests`, `workspace-pages.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Invitation-expiry tests not confirmed as updated (the audit argument is in place); the expiry rule is unproven.
+- State: HARDENING — Built: the invitation-expiry rule and the settings audit fact are tested in `UpdateWorkspaceSettingsCommandHandlerTests` (0 and 31 refused and nothing changes, 30 stored, one Info fact on a change, none on a no-op, one Warning fact when public sharing opens; 11 tests pass 2026-11-10). Remaining: owner tests by hand; no real e2e.
 
 ### UC-WSP-J03 Read sharing and security extras
 - Capability: J Workspace settings

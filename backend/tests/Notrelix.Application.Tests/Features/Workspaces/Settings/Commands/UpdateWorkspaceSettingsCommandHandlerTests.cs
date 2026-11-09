@@ -1,7 +1,6 @@
 using DomainRuleException = Notrelix.Domain.Common.Exceptions.BusinessRuleException;
 using Notrelix.Application.Common.Auditing;
 using Notrelix.Domain.Common.Auditing;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.Workspaces;
 using Notrelix.Application.Features.Workspaces.Settings.Commands.UpdateWorkspaceSettings;
 
