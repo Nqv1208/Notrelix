@@ -54,13 +54,13 @@ Dates: this catalog was written on 2026-10-30. No use case has a recorded owner 
 |---|---|---|---|---|---|---|---|---|
 | A | COL-001 Comment lifecycle | 11 | 1 | 0 | 0 | 10 | 0 | 0 |
 | B | COL-002 Comment target contract | 18 | 2 | 0 | 3 | 13 | 0 | 0 |
-| C | COL-003 Comment authorization | 6 | 0 | 0 | 3 | 2 | 0 | 1 |
+| C | COL-003 Comment authorization | 6 | 0 | 0 | 2 | 3 | 0 | 1 |
 | D | COL-004 Comment activity/events | 14 | 5 | 1 | 2 | 6 | 0 | 0 |
 | E | COL-005 Collaboration realtime | 5 | 3 | 1 | 0 | 0 | 0 | 1 |
 | F | COL-006 Target deletion/retention | 7 | 3 | 2 | 1 | 0 | 0 | 1 |
 | G | COL-007 Collaboration query/state | 16 | 2 | 1 | 2 | 11 | 0 | 0 |
 | H | COL-008 Collaboration hardening | 8 | 3 | 1 | 0 | 2 | 0 | 2 |
-| | Total | 85 | 19 | 6 | 11 | 44 | 0 | 5 |
+| | Total | 85 | 19 | 6 | 10 | 45 | 0 | 5 |
 
 Collaboration has no dedicated capability for inbox, preferences, attachments, watchers or presence in the team spec. They sit in the nearest capability: attachments and watchers under B (target contract), notifications production under D, presence under E, Inbox, preferences and read state under G.
 
@@ -166,7 +166,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-C02 | Moderator removes another person's comment | C | A person Governance names as moderator of the target (not yet decided) | no | no | no | no | BLOCKED | Decide in Governance which permission (for example a new Moderate action held by Board Manager, Page Manager and workspace Admin and Owner)  |
 | UC-COL-C03 | Viewer reads comments but cannot write | C | Viewer level on the target (ViewBoard or ViewPage only) | yes | yes | yes | no | HARDENING | Built: an Observer board role and an explicit Viewer grant on a restricted page are refused a comment (policy matrix); a Viewer who did not start a thread is refused resolve. Owner tests by hand. |
 | UC-COL-C04 | Guest collaborates only where explicitly shared | C | A Guest with explicit access to the item or page | yes | no | no | partial | INTEGRATING | Owner question: GOV-030 caps a Guest at Viewer and says a Guest never comments on a Board or Page; this use case says a Guest with access can comment up to Editor. The engine follows GOV-030 (Page_Guest test). Which rule stands? |
-| UC-COL-C05 | Identical NotFound across tenants and targets | C | Any caller | yes | no | yes | partial | INTEGRATING | No per-endpoint cross-tenant test for comments, reactions, watchers and inbox found. |
+| UC-COL-C05 | Identical NotFound across tenants and targets | C | Any caller | yes | no | yes | partial | HARDENING | Built: per-endpoint cross-tenant tests for comments, reactions, watchers and inbox (another account and a same-account outsider get the same answer as a made-up id). The test accepts Forbidden or NotFound, as the test brief says; the product text says NotFound (owner to confirm). Integration tests run in CI only. |
 | UC-COL-C06 | Upload refused by file policy | C | A person allowed to upload (UC-COL-B06, B08) | yes | partial | yes | no | INTEGRATING | Owner question: no malware scan (L23 keeps it out of this cut); confirm C06 can close without it; no real e2e. |
 | UC-COL-D01 | Read an item's activity history | D | Anyone with ViewBoard on the item | yes | yes | yes | no | INTEGRATING | History UI not found: cited task-activity-tab.tsx and item-page-activity.tsx do not exist; no real e2e. |
 | UC-COL-D02 | Item facts become activity rows | D | System (consumers) | yes | no | no | no | INTEGRATING | No integration test through the real outbox for every fact kind; events before release have no rows (decision 56). |
@@ -700,8 +700,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: permission denied or not found page.
 - Rules: Product COL-001, COL-022, Cross-Workspace target; spec DCREQ042, DCREQ047.
 - Acceptance: Given an id of another Workspace, then the response equals the response for a random GUID.
-- Evidence: BE Governance pipeline; ResourceLocator (collaboration.comment, collaboration.attachment); RLS policies · FE none · Design Final-States · Tests backend/tests/Notrelix.Integration.Tests/Integration/TenantIsolationTests.cs, CrossTenantIsolationTests.cs, RlsRuntimeEnforcementTests.cs; backend/tests/Notrelix.Domain.Tests/Collaboration/*/*WorkspaceScopeTests.cs · Real e2e frontend/e2e/real/workspace-isolation.real.e2e.spec.ts (not collaboration specific)
-- State: INTEGRATING — No per-endpoint cross-tenant test for comments, reactions, watchers and inbox found.
+- Evidence: BE Governance pipeline; ResourceLocator (collaboration.comment, collaboration.attachment); RLS policies · FE none · Design Final-States · Tests backend/tests/Notrelix.Integration.Tests/Integration/TenantIsolationTests.cs, CrossTenantIsolationTests.cs, RlsRuntimeEnforcementTests.cs; backend/tests/Notrelix.Domain.Tests/Collaboration/*/*WorkspaceScopeTests.cs; backend/tests/Notrelix.Integration.Tests/Rls/CollaborationNonMemberNotFoundTests.cs · Real e2e frontend/e2e/real/workspace-isolation.real.e2e.spec.ts (not collaboration specific)
+- State: HARDENING — Built: CollaborationNonMemberNotFoundTests compares, per endpoint, an id of another tenant with a made-up id for comments (read, edit, delete, resolve, reopen), reactions, watchers and inbox reads; the answers must match, Forbidden or NotFound. Remains: the test accepts Forbidden, but the product says NotFound (owner to confirm); the suite runs in CI only.
 
 ### UC-COL-C06 Upload refused by file policy
 - Capability: C, COL-003 Comment authorization
