@@ -29,6 +29,9 @@ public static class AutomationRuleCodes
     public const string Automation_ScheduledJob_CannotCompleteFromStatus = "Automation_ScheduledJob_CannotCompleteFromStatus";
     public const string Automation_ScheduledJob_CannotFailFromStatus = "Automation_ScheduledJob_CannotFailFromStatus";
 
+    // ── Configuration (AUT-029) ───────────────────────────────────────────
+    public const string Automation_Configuration_SecretFieldNotAllowed = "Automation_Configuration_SecretFieldNotAllowed";
+
     // ── ActionValidator ───────────────────────────────────────────────────
     public const string Automation_Action_InvalidConfigJson = "Automation_Action_InvalidConfigJson";
     public const string Automation_Action_ConfigCannotBeNullJson = "Automation_Action_ConfigCannotBeNullJson";

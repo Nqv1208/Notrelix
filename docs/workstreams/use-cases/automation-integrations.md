@@ -59,7 +59,7 @@ Automation (letters follow the team spec order AUT-001 to AUT-014):
 | C | AUT-003 Condition model | 3 | 1 | 1 | 0 | 1 | 0 | 0 |
 | D | AUT-004 Action model | 10 | 0 | 3 | 1 | 5 | 0 | 1 |
 | E | AUT-005 Enable/disable lifecycle | 7 | 1 | 2 | 2 | 2 | 0 | 0 |
-| F | AUT-006 Source-event subscription/matching | 3 | 0 | 0 | 1 | 2 | 0 | 0 |
+| F | AUT-006 Source-event subscription/matching | 3 | 0 | 0 | 0 | 3 | 0 | 0 |
 | G | AUT-007 Execution creation | 6 | 1 | 1 | 2 | 2 | 0 | 0 |
 | H | AUT-008 Execution state machine | 5 | 0 | 2 | 0 | 3 | 0 | 0 |
 | I | AUT-009 Business retry/failure policy | 4 | 0 | 2 | 2 | 0 | 0 | 0 |
@@ -67,8 +67,8 @@ Automation (letters follow the team spec order AUT-001 to AUT-014):
 | K | AUT-011 Automation authoring frontend | 8 | 1 | 3 | 0 | 4 | 0 | 0 |
 | L | AUT-012 Realtime execution status | 2 | 0 | 2 | 0 | 0 | 0 | 0 |
 | M | AUT-013 Entitlement integration | 4 | 1 | 1 | 2 | 0 | 0 | 0 |
-| N | AUT-014 Hardening/observability | 6 | 2 | 2 | 2 | 0 | 0 | 0 |
-| | Total | 79 | 11 | 26 | 14 | 27 | 0 | 1 |
+| N | AUT-014 Hardening/observability | 6 | 2 | 2 | 0 | 2 | 0 | 0 |
+| | Total | 79 | 11 | 26 | 11 | 30 | 0 | 1 |
 
 Integrations (letters follow INT-001 to INT-014):
 
@@ -76,11 +76,11 @@ Integrations (letters follow INT-001 to INT-014):
 |---|---|---|---|---|---|---|---|---|
 | A | INT-001 Connector catalog | 3 | 2 | 0 | 0 | 1 | 0 | 0 |
 | B | INT-002 Connection lifecycle | 7 | 1 | 2 | 0 | 4 | 0 | 0 |
-| C | INT-003 Provider authorization/OAuth | 5 | 1 | 1 | 3 | 0 | 0 | 0 |
+| C | INT-003 Provider authorization/OAuth | 5 | 1 | 1 | 1 | 2 | 0 | 0 |
 | D | INT-004 Connection configuration | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
 | E | INT-005 Credential reference/storage contract | 5 | 0 | 2 | 1 | 2 | 0 | 0 |
 | F | INT-006 Outbound provider operation | 7 | 2 | 3 | 0 | 2 | 0 | 0 |
-| G | INT-007 Inbound webhook verification | 4 | 0 | 0 | 2 | 2 | 0 | 0 |
+| G | INT-007 Inbound webhook verification | 4 | 0 | 0 | 1 | 3 | 0 | 0 |
 | H | INT-008 Inbound event mapping | 8 | 1 | 7 | 0 | 0 | 0 | 0 |
 | I | INT-009 Connection health | 4 | 2 | 1 | 0 | 1 | 0 | 0 |
 | J | INT-010 Provider failure normalization | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
@@ -88,7 +88,7 @@ Integrations (letters follow INT-001 to INT-014):
 | L | INT-012 Rate/retry/provider limits | 2 | 0 | 2 | 0 | 0 | 0 | 0 |
 | M | INT-013 Entitlement integration | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | N | INT-014 Hardening/security | 2 | 1 | 0 | 0 | 1 | 0 | 0 |
-| | Total | 55 | 13 | 20 | 7 | 15 | 0 | 0 |
+| | Total | 55 | 13 | 20 | 4 | 18 | 0 | 0 |
 
 Calendar sync and mapping use cases sit in INT capability H (Inbound event mapping) because the team spec has no separate sync capability. Marketplace and plugin use cases sit in INT capability A (Connector catalog).
 
@@ -200,7 +200,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-AUT-E07 | Check a rule before enabling it | E Enable/disable lifecycle | as E01 | N | P | Y | N | IMPLEMENTING | mock-only UI path; no backend check endpoint |
 | UC-AUT-F01 | One fact starts each matching rule once | F Source-event subscription/matching | system | Y | N | N | Y | HARDENING | a durable uniqueness constraint (AIREQ028) is not confirmed in the migrations |
 | UC-AUT-F02 | Filter by group on the trigger | F Source-event subscription/matching | as A01 | Y | Y | Y | Y | HARDENING | as B02 |
-| UC-AUT-F03 | A fact from another workspace never matches | F Source-event subscription/matching | system | Y | N | N | N | INTEGRATING | no integration test that a W1 fact loads only W1 rules (foreign-workspace tests cover item reach and causation) |
+| UC-AUT-F03 | A fact from another workspace never matches | F Source-event subscription/matching | system | Y | N | N | N | HARDENING | Built (integration test written; not run, Docker unavailable; CI work-rls shard runs it): Rls/AutomationTenantIsolationTests.cs. Remaining: owner tests by hand. |
 | UC-AUT-G01 | Each execution freezes the rule version | G Execution creation | system | Y | Y | Y | Y | HARDENING | as A04 |
 | UC-AUT-G02 | The runner is re-checked on every execution | G Execution creation | system as executor | Y | N | Y | N | HARDENING | Built (verified by reading code 2026-11-09, not run): AutomationExecutorAuthority.cs, AutomationExecutorIdentityTests.cs, AutomationMoveItemExecutorCompositionIntegrationTests.cs. Remaining: owner tests by hand. |
 | UC-AUT-G03 | Chains and runaway rules are bounded | G Execution creation | system | Y | N | N | N | INTEGRATING | a stopped chain or rate-limited trigger is silent: no log note and no UI state |
@@ -238,8 +238,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-AUT-N01 | Operators see backlog and failure metrics | N Hardening/observability | operators | N | N | N | N | DEFINED | no metrics, alerts or dashboards exist |
 | UC-AUT-N02 | Follow one fact to its execution by correlation id | N Hardening/observability | operators | P | N | N | N | IMPLEMENTING | not asserted end to end |
 | UC-AUT-N03 | A stuck provider claim is recovered under control | N Hardening/observability | operators with a governed, audited procedure | P | N | N | N | IMPLEMENTING | no operator action exists |
-| UC-AUT-N04 | No reusable secret in a rule | N Hardening/observability | as A01 | Y | N | N | N | INTEGRATING | no secret-like field rejection in the Automation validators and no test |
-| UC-AUT-N05 | Tenant isolation of rules and executions | N Hardening/observability | system | Y | N | N | N | INTEGRATING | no RLS cross-tenant test for automation_rules and automation_executions (foreign-workspace tests cover item reach only) |
+| UC-AUT-N04 | No reusable secret in a rule | N Hardening/observability | as A01 | Y | N | N | N | HARDENING | Built and run (Domain suite): AutomationSecretFieldGuard rejects secret-like names and Bearer values in action and trigger configuration (AutomationSecretFieldGuardTests.cs). Remaining: owner tests by hand. |
+| UC-AUT-N05 | Tenant isolation of rules and executions | N Hardening/observability | system | Y | N | N | N | HARDENING | Built (integration test written; not run, Docker unavailable; CI work-rls shard runs it): Rls/AutomationTenantIsolationTests.cs. Remaining: owner tests by hand. |
 | UC-AUT-N06 | Pause all automation of a workspace | N Hardening/observability | Owner and Admin | N | N | N | N | DEFINED | (enterprise baseline) |
 
 ## Integrations index
@@ -257,15 +257,15 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-INT-B06 | Connect again after a disconnect | B Connection lifecycle | Owner and Admin | P | N | N | N | IMPLEMENTING | provider account change confirmation is not built |
 | UC-INT-B07 | Read one connection in detail | B Connection lifecycle | Owner and Admin | N | P | Y | N | IMPLEMENTING | no detail endpoint |
 | UC-INT-C01 | Start provider authorization | C Provider authorization/OAuth | Owner and Admin (ManageIntegrations) | Y | Y | Y | P | INTEGRATING | no PKCE on the provider authorize URL (DEF-9) |
-| UC-INT-C02 | Complete authorization on the callback | C Provider authorization/OAuth | the signed-in member returning from the provider | Y | Y | Y | N | INTEGRATING | no test of CompleteIntegrationAuthorizationCommandHandler (state check, code exchange, connection write) |
-| UC-INT-C03 | A refused or failed authorization is explained | C Provider authorization/OAuth | as C02 | Y | Y | P | N | INTEGRATING | no test of the error=refused and error=failed redirects (IntegrationConnectionEndpoints.cs) |
+| UC-INT-C02 | Complete authorization on the callback | C Provider authorization/OAuth | the signed-in member returning from the provider | Y | Y | Y | N | HARDENING | Built and run: CompleteIntegrationAuthorizationCommandHandlerTests.cs (10 unit tests) and IntegrationOAuthCallbackRedirectTests.cs (API). Remaining: owner tests by hand. |
+| UC-INT-C03 | A refused or failed authorization is explained | C Provider authorization/OAuth | as C02 | Y | Y | P | N | HARDENING | Built and run: IntegrationOAuthCallbackRedirectTests.cs (error=refused and error=failed). Remaining: owner tests by hand. |
 | UC-INT-C04 | Reauthorize an expired connection | C Provider authorization/OAuth | Owner and Admin | P | N | Y | N | IMPLEMENTING | no `reauthorization-required` status and no UI |
 | UC-INT-C05 | Ask for more provider permission | C Provider authorization/OAuth | Owner and Admin | N | N | Y | N | DEFINED | domain facts only |
 | UC-INT-D01 | Change the address of an outgoing webhook | D Connection configuration | Owner and Admin | N | N | N | N | DEFINED | no endpoint or UI exists |
 | UC-INT-D02 | Typed, versioned provider configuration | D Connection configuration | system | P | N | N | N | IMPLEMENTING | only the webhook target address is a typed field; no versioned configuration object |
 | UC-INT-E01 | A signing secret is generated and shown once | E Credential reference/storage contract | Owner and Admin | Y | Y | Y | Y | HARDENING | the physical store depends on Data Protection key persistence (restart safety, AIREQ061) not proven in a restart test |
 | UC-INT-E02 | Regenerate a webhook secret | E Credential reference/storage contract | Owner and Admin | P | N | Y | N | IMPLEMENTING | domain only |
-| UC-INT-E03 | Tokens are stored behind an opaque reference | E Credential reference/storage contract | system | Y | N | N | N | INTEGRATING | no integration test of the OAuth code exchange storing tokens (calendar connect tests use a raw token) |
+| UC-INT-E03 | Tokens are stored behind an opaque reference | E Credential reference/storage contract | system | Y | N | N | N | INTEGRATING | unit level only: the handler test shows one token set goes to the secret store and the connection keeps the reference; no integration test through PostgreSQL and the real secret store yet |
 | UC-INT-E04 | Refresh tokens before they expire | E Credential reference/storage contract | system | P | N | N | N | IMPLEMENTING | no refresh job |
 | UC-INT-E05 | Retire the secret after a disconnect | E Credential reference/storage contract | system | Y | N | N | N | HARDENING | Built (verified by reading code 2026-11-09, not run): IntegrationConnectionRevokedConsumer.cs, IntegrationConnectionRevokedConsumerTests.cs, CalendarConnectionFlowIntegrationTests.cs (RevokedConnection_OutboxEvent_ConsumerRevokesAllSecretReferences). Remaining: owner tests by hand. |
 | UC-INT-F01 | Deliver a signed webhook for a work fact | F Outbound provider operation | system on Work and Collaboration facts | Y | N | N | N | HARDENING | Built (verified by reading code 2026-11-09, not run): WebhookEventFanOut.cs, IntegrationWebhookDispatchRequestedConsumer.cs, OutboundWebhookSender.cs, WebhookFanOutRuntimeChainIntegrationTests.cs (AnItemCreatedFactIsDeliveredOncePerActiveConnectionAndSkipsPausedOnes). Remaining: owner tests by hand. |
@@ -275,10 +275,10 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-INT-F05 | Read the delivery log of a webhook | F Outbound provider operation | Owner and Admin | N | N | Y | N | IMPLEMENTING | no read endpoint |
 | UC-INT-F06 | Retry a failed delivery with backoff | F Outbound provider operation | system | P | N | N | N | IMPLEMENTING | the budget differs from the decision (DEF-12) |
 | UC-INT-F07 | Reconcile an unknown provider outcome | F Outbound provider operation | system | N | N | N | N | DEFINED | no executable path outside n8n |
-| UC-INT-G01 | Accept only bounded, verified calendar webhooks | G Inbound webhook verification | the provider (anonymous route, signature-authenticated, rate limited per IP) | Y | N | N | N | INTEGRATING | no negative test for the WebhookIntakeByIp per-IP rate limit |
+| UC-INT-G01 | Accept only bounded, verified calendar webhooks | G Inbound webhook verification | the provider (anonymous route, signature-authenticated, rate limited per IP) | Y | N | N | N | HARDENING | Built and run: WebhookIntakeRateLimitTests.cs (31st delivery gets 429 before the handler). Remaining: owner tests by hand. |
 | UC-INT-G02 | Reject replayed and duplicate deliveries | G Inbound webhook verification | system | Y | N | N | N | HARDENING | Built (verified by reading code 2026-11-09, not run): CalendarWebhookIntake.cs, CalendarWebhookIntakeIntegrationTests.cs (DuplicateDelivery and StaleTimestamp tests). Remaining: owner tests by hand. |
 | UC-INT-G03 | The tenant comes from the binding, never the payload | G Inbound webhook verification | system | Y | N | N | N | HARDENING | Built (verified by reading code 2026-11-09, not run): CalendarWebhookBindingResolver.cs, CalendarWebhookIntakeIntegrationTests.cs (PayloadAccountWorkspaceAreIgnored test), CalendarWebhookDataSessionIntegrationTests.cs. Remaining: owner tests by hand. |
-| UC-INT-G04 | Malformed or conflicting payloads fail closed | G Inbound webhook verification | system | Y | N | N | N | INTEGRATING | no test for an unsupported event type (marked and skipped); malformed and conflicting payloads are tested |
+| UC-INT-G04 | Malformed or conflicting payloads fail closed | G Inbound webhook verification | system | Y | N | N | N | INTEGRATING | Owner question: no event-type branch exists (the processing path never reads the payload kind), so an unsupported type is processed, not marked and skipped; malformed and conflicting payloads are tested |
 | UC-INT-H01 | Bind a calendar to a connection | H Inbound event mapping | Owner and Admin (ManageIntegrations) | P | N | Y | N | IMPLEMENTING | no UI; the token travels in the request body and is not linked to the OAuth connection |
 | UC-INT-H02 | Remove a calendar binding | H Inbound event mapping | Owner and Admin (ManageIntegrations on the calendar integration) | Y | N | N | N | IMPLEMENTING | no UI; not idempotent by key |
 | UC-INT-H03 | Turn a verified calendar change into an internal fact | H Inbound event mapping | system | P | N | N | N | IMPLEMENTING | the consumer reconciles into Integrations state; the Work Management consumer of the fact is not found |
@@ -861,8 +861,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: none.
 - Rules: automation.md §62; RULE.md tenant invariants; AIREQ104.
 - Acceptance: Given the same group id value in two workspaces, When a W1 fact arrives, Then W2 rules do not run.
-- Evidence: BE `TenantContextConsumeFilter`, `AutomationRuleConfiguration` (RLS) · FE none · Design none · Tests T-AA `AutomationBoardScopeAuthorityTests` · Real e2e none
-- State: INTEGRATING — no integration test that a W1 fact loads only W1 rules (foreign-workspace tests cover item reach and causation).
+- Evidence: BE `TenantContextConsumeFilter`, `AutomationRuleConfiguration` (RLS), `N8nAutomationRuleEvaluator` (rule load filter) · FE none · Design none · Tests T-AA `AutomationBoardScopeAuthorityTests`; Rls `backend/tests/Notrelix.Integration.Tests/Rls/AutomationTenantIsolationTests.cs` · Real e2e none
+- State: HARDENING — Built (integration test written and compiles; not run locally because Docker is unavailable; the CI work-rls shard runs it): `AutomationTenantIsolationTests.cs`. The rule-loading filter of a W1 fact returns only W1 rules even when W2 has the same group id value. Remaining: owner tests by hand.
 
 ## Capability G. Execution creation
 
@@ -1409,8 +1409,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: validation error.
 - Rules: automation.md §85, §86 AUT-029; AIREQ113.
 - Acceptance: Given a config with `apiKey`, Then rejected.
-- Evidence: BE `AutomationActionValidator`, `N8nWebhookPath` · FE none · Design none · Tests T-AD `AutomationActionValidatorTests` · Real e2e none
-- State: INTEGRATING — no secret-like field rejection in the Automation validators and no test.
+- Evidence: BE `AutomationSecretFieldGuard`, `AutomationActionValidator`, `AutomationTriggerValidator`, `AutomationRuleCodes` · FE none · Design none · Tests T-AD `AutomationSecretFieldGuardTests`, `AutomationActionValidatorTests` · Real e2e none
+- State: HARDENING — Built and run (Domain suite): `AutomationSecretFieldGuard` rejects a secret-like property name (password, passwd, secret, token, apiKey, authorization, bearer, privateKey) at any depth, and a `Bearer ` value, in action and trigger configuration, with `Automation_Configuration_SecretFieldNotAllowed`. Matching is by substring, so a name such as `tokenId` is refused too. Remaining: owner tests by hand.
 
 ### UC-AUT-N05 Tenant isolation of rules and executions
 - Capability: AUT-014 Hardening/observability
@@ -1423,8 +1423,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: not found.
 - Rules: AIREQ104, AIREQ110; RULE.md tenant invariants.
 - Acceptance: Given a W2 rule id, When a W1 Manager calls update, Then NotFound.
-- Evidence: BE `AutomationRuleConfiguration`, `AutomationExecutionConfiguration` · FE none · Design none · Tests T-AA `AutomationBoardScopeAuthorityTests` · Real e2e none
-- State: INTEGRATING — no RLS cross-tenant test for automation_rules and automation_executions (foreign-workspace tests cover item reach only).
+- Evidence: BE `AutomationRuleConfiguration`, `AutomationExecutionConfiguration` · FE none · Design none · Tests T-AA `AutomationBoardScopeAuthorityTests`; Rls `backend/tests/Notrelix.Integration.Tests/Rls/AutomationTenantIsolationTests.cs` · Real e2e none
+- State: HARDENING — Built (integration test written and compiles; not run locally because Docker is unavailable; the CI work-rls shard runs it): `AutomationTenantIsolationTests.cs`. Under the application login, W1 sees only its own rules and executions; W2 rows are invisible to updates and deletes, and inserts into W2 are refused with SQLSTATE 42501. Remaining: owner tests by hand.
 
 ### UC-AUT-N06 Pause all automation of a workspace
 - Capability: AUT-014 Hardening/observability
@@ -1613,8 +1613,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: success toast, error toast.
 - Rules: integrations.md §9, §10, §14 INT-004, §15 INT-005; AIREQ058, AIREQ060.
 - Acceptance: Given a valid code, Then one Active connection exists and no token is in any response.
-- Evidence: BE GET `/api/v1/integrations/{provider}/callback` (Integrations.Connections.Callback), `CompleteIntegrationAuthorizationCommandHandler` · FE FE-INT (reads `connected` and `error`) · Design `Final-Integrations` · Tests T-II `CalendarConnectionFlowIntegrationTests` · Real e2e none
-- State: INTEGRATING — no test of CompleteIntegrationAuthorizationCommandHandler (state check, code exchange, connection write).
+- Evidence: BE GET `/api/v1/integrations/{provider}/callback` (Integrations.Connections.Callback), `CompleteIntegrationAuthorizationCommandHandler` · FE FE-INT (reads `connected` and `error`) · Design `Final-Integrations` · Tests T-II `CalendarConnectionFlowIntegrationTests`; Application `backend/tests/Notrelix.Application.Tests/Features/Integrations/CompleteIntegrationAuthorizationCommandHandlerTests.cs`; API `backend/tests/Notrelix.API.Tests/Integrations/IntegrationOAuthCallbackRedirectTests.cs` · Real e2e none
+- State: HARDENING — Built and run: 10 handler unit tests (unreadable, expired, other-member, other-workspace and other-provider states; refused exchange; provider not configured; success stores an opaque reference; reauthorization of an expired connection) and 5 API redirect tests. Remaining: owner tests by hand.
 
 ### UC-INT-C03 A refused or failed authorization is explained
 - Capability: INT-003 Provider authorization/OAuth
@@ -1627,8 +1627,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: error toast with retry.
 - Rules: integrations.md §14 INT-004.
 - Acceptance: Given a denied consent, Then no connection exists and the message says it was refused.
-- Evidence: BE callback endpoint · FE FE-INT (toast) · Design `Final-Integrations` · Tests none · Real e2e none
-- State: INTEGRATING — no test of the error=refused and error=failed redirects (IntegrationConnectionEndpoints.cs).
+- Evidence: BE callback endpoint (`IntegrationConnectionEndpoints.cs`) · FE FE-INT (toast) · Design `Final-Integrations` · Tests API `backend/tests/Notrelix.API.Tests/Integrations/IntegrationOAuthCallbackRedirectTests.cs` · Real e2e none
+- State: HARDENING — Built and run: API tests cover `error=refused` (provider error and missing code) and `error=failed`; neither creates a connection. Remaining: owner tests by hand.
 
 ### UC-INT-C04 Reauthorize an expired connection
 - Capability: INT-003 Provider authorization/OAuth
@@ -1729,8 +1729,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: none.
 - Rules: integrations.md §15, §16 INT-005; AIREQ060 to AIREQ062, AIREQ105.
 - Acceptance: Given a connected Google account, Then no API response contains a token.
-- Evidence: BE `IntegrationSecretBlobConfiguration`, `IntegrationSecretVersionConfiguration`, `SecretEncryptor` · FE none · Design none · Tests T-ID `IntegrationSecretStateTests` · Real e2e none
-- State: INTEGRATING — no integration test of the OAuth code exchange storing tokens (calendar connect tests use a raw token).
+- Evidence: BE `IntegrationSecretBlobConfiguration`, `IntegrationSecretVersionConfiguration`, `SecretEncryptor` · FE none · Design none · Tests T-ID `IntegrationSecretStateTests`; Application `backend/tests/Notrelix.Application.Tests/Features/Integrations/CompleteIntegrationAuthorizationCommandHandlerTests.cs` (in-memory unit test) · Real e2e none
+- State: INTEGRATING — unit level only. `CompleteIntegrationAuthorizationCommandHandlerTests` shows one raw token set goes to the secret store and the connection holds only the returned reference. Still open: the integration test through PostgreSQL and the real secret store (IntegrationSecretBlob), which needs Docker and is not written.
 
 ### UC-INT-E04 Refresh tokens before they expire
 - Capability: INT-005 Credential reference/storage contract
@@ -1873,8 +1873,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: none.
 - Rules: integrations.md §20, §21 INT-007, §22, §23, §24 INT-008; AIREQ075 to AIREQ079, AIREQ084.
 - Acceptance: Given a body with a wrong signature, Then 401 and a rejected receipt is recorded; given a 2 MB body, Then 413.
-- Evidence: BE POST `/api/v1/integrations/calendar/webhooks/{provider}/{webhookPath}` (Integrations.Calendar.HandleWebhook), `HandleCalendarWebhookCommandHandler`, `CalendarWebhookVerifier` · FE none · Design none · Tests T-II `CalendarWebhookIntakeIntegrationTests`, `CalendarWebhookDataSessionIntegrationTests` · Real e2e none
-- State: INTEGRATING — no negative test for the WebhookIntakeByIp per-IP rate limit.
+- Evidence: BE POST `/api/v1/integrations/calendar/webhooks/{provider}/{webhookPath}` (Integrations.Calendar.HandleWebhook), `HandleCalendarWebhookCommandHandler`, `CalendarWebhookVerifier` · FE none · Design none · Tests T-II `CalendarWebhookIntakeIntegrationTests`, `CalendarWebhookDataSessionIntegrationTests`; API `backend/tests/Notrelix.API.Tests/RateLimiting/WebhookIntakeRateLimitTests.cs` · Real e2e none
+- State: HARDENING — Built and run: the 31st delivery from one address gets 429 with `rate_limit.exceeded` and the handler never sees it. Remaining: owner tests by hand.
 
 ### UC-INT-G02 Reject replayed and duplicate deliveries
 - Capability: INT-007 Inbound webhook verification
@@ -1916,7 +1916,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: integrations.md §29, §30, §75 INT-026; AIREQ081, AIREQ082.
 - Acceptance: Given a payload missing the event id, Then rejected at the boundary; given an unsupported type, Then marked and skipped.
 - Evidence: BE `CalendarWebhookProcessingRequestedConsumer`, `CalendarWebhookProcessingUseCase` · FE none · Design none · Tests T-II `CalendarWebhookProcessingRuntimeTests` · Real e2e none
-- State: INTEGRATING — no test for an unsupported event type (marked and skipped); malformed and conflicting payloads are tested.
+- State: INTEGRATING — Owner question: which calendar event types are supported? The processing path never reads the payload `kind`; any dotted `resourceKind` is reconciled, so an unsupported type is processed rather than marked and skipped (integrations.md §29, §30). Malformed and conflicting payloads are tested. No test is added until the list is decided.
 
 ## Capability H. Inbound event mapping, with calendar sync
 
