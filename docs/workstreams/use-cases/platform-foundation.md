@@ -136,8 +136,8 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-G06 | Run housekeeping jobs under a tenant-safe scope | G | Background jobs | yes | n/a | n/a | no | IMPLEMENTING | owner question: run history and occurrence identity |
 | UC-PLT-G07 | Sweep due-date and onboarding drafts | G | Background jobs | yes | n/a | n/a | no | HARDENING | none open; sweep tests in integration suites (CI) |
 | UC-PLT-G08 | Realtime fan-out after commit | G | Realtime publisher | yes | n/a | n/a | yes | DONE | set DONE by the foundation finish lane pull request, see the Evidence line |
-| UC-PLT-H01 | Hold a later version behind a failed earlier one in a stream | H | Outbox dispatcher | yes | n/a | n/a | no | IMPLEMENTING | stream ids only on outbox |
-| UC-PLT-H02 | Retry with backoff, then dead-letter | H | Outbox dispatcher | yes | n/a | n/a | no | IMPLEMENTING | no operator action |
+| UC-PLT-H01 | Hold a later version behind a failed earlier one in a stream | H | Outbox dispatcher | yes | n/a | n/a | no | HARDENING | none open for the outbox leg; consumer ordering is H03 and H04 |
+| UC-PLT-H02 | Retry with backoff, then dead-letter | H | Outbox dispatcher | yes | n/a | n/a | no | IMPLEMENTING | owner question: operator action on dead letters (H05) |
 | UC-PLT-H03 | Declare ordering for every consumer | H | Architecture test | yes | n/a | n/a | no | DEFINED | no consumer needs ordering |
 | UC-PLT-H04 | Deliver in order a consumer that needs it | H | Platform | partial | n/a | n/a | no | BLOCKED | ordering owner and sequence undecided |
 | UC-PLT-H05 | Inspect, requeue or replay dead letters (enterprise baseline) | H | Operator | no | no | n/a | no | DEFINED | no tool |
@@ -145,17 +145,17 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-I02 | Subscribe to a scope with authorization | I | Gateway | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-I03 | Keep the connection alive and reconnect | I | Gateway, client | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-I04 | Recover from a gap, duplicate or reset | I | Client | n/a | yes | BC-Realtime-1440 | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
-| UC-PLT-I05 | Close a subscription when permission is lost | I | Gateway | yes | yes | n/a | no | IMPLEMENTING | not shown in browser |
+| UC-PLT-I05 | Close a subscription when permission is lost | I | Gateway | yes | yes | n/a | no | HARDENING | none open; gateway tests cover revocation |
 | UC-PLT-J01 | Export OpenAPI and regenerate the client | J | CI, developer | yes | yes | n/a | yes | HARDENING | drift check per release |
 | UC-PLT-J02 | Return one error shape for every failure | J | API | yes | yes | n/a | yes | HARDENING | per-context catalogue |
-| UC-PLT-J03 | Rate-limit before and after authentication | J | API middleware | yes | n/a | n/a | no | IMPLEMENTING | limits not in real e2e |
+| UC-PLT-J03 | Rate-limit before and after authentication | J | API middleware | yes | n/a | n/a | no | HARDENING | none open; tier tests in `RateLimitTiersTests` |
 | UC-PLT-K01 | Scope every cached query by global, account or workspace | K | Frontend runtime | n/a | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-K02 | Roll back an optimistic mutation on rejection | K | Frontend runtime | n/a | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-K03 | Ignore a late response from a previous scope | K | Frontend runtime | n/a | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-L01 | Bootstrap the session and providers | L | Frontend runtime | yes | yes | Final-Auth | yes | HARDENING | no 1-px or axe line |
 | UC-PLT-L02 | Behave sensibly offline (enterprise baseline) | L | Frontend runtime | n/a | partial | Final-States | no | DEFINED | no policy |
-| UC-PLT-L03 | Run the mobile runtime with bearer tokens | L | Mobile runtime | yes | partial | Final-M-Auth | no | IMPLEMENTING | mobile host not shipped |
-| UC-PLT-L04 | Show a recoverable error instead of a blank screen | L | Frontend runtime | n/a | yes | Final-States | no | IMPLEMENTING | no real e2e |
+| UC-PLT-L03 | Run the mobile runtime with bearer tokens | L | Mobile runtime | yes | partial | Final-M-Auth | no | IMPLEMENTING | owner question: which mobile host ships this runtime |
+| UC-PLT-L04 | Show a recoverable error instead of a blank screen | L | Frontend runtime | n/a | yes | Final-States | no | HARDENING | none open; component tests in `runtime-error-boundary.component.test.tsx` |
 | UC-PLT-M01 | Serve design tokens from one package | M | Frontend build | n/a | yes | Themes | no | HARDENING | none open; token tests in `tokens.unit.test.ts` |
 | UC-PLT-N01 | Carry a correlation id on every request and log | N | API middleware | yes | yes | n/a | no | HARDENING | none open; API tests in `CorrelationIdProblemTests` |
 | UC-PLT-N02 | Answer a liveness probe | N | Orchestrator | yes | n/a | n/a | no | HARDENING | none open; route tests `GetLive_*` in `HealthEndpointTests` |
@@ -580,7 +580,7 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - Rules: PFREQ058 to PFREQ064; BE-PLT-023, BE-PLT-024.
 - Acceptance: Given version 1 failed, When version 2 is ready, Then version 2 waits.
 - Evidence: BE `OutboxDispatcher.cs` claim · FE n/a · Design n/a · Tests `OutboxClaimReclaimTests.cs` (`Claim_FailedEarlierVersion_BlocksLaterVersionOfSameStream`, `Claim_ProcessedEarlierVersion_ReleasesLaterVersion_AndUnrelatedStreams`) · Real e2e none
-- State: IMPLEMENTING — this covers the outbox leg only, not broker consumers.
+- State: HARDENING — Built: the outbox claim skips a stream with an earlier failed or unprocessed version and releases it when that version is processed (`OutboxClaimReclaimTests`, `Claim_FailedEarlierVersion_BlocksLaterVersionOfSameStream`, `Claim_ProcessedEarlierVersion_ReleasesLaterVersion_AndUnrelatedStreams`). This covers the outbox leg only; broker consumer ordering is an owner decision (H03, H04).
 
 ### UC-PLT-H02 Retry with backoff, then dead-letter
 - Capability: H, PF-08
@@ -593,8 +593,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: n/a.
 - Rules: BE-PLT-018 to BE-PLT-022.
 - Acceptance: Given a permanent failure, When retries are exhausted, Then the row is dead-lettered and visible to health.
-- Evidence: BE `OutboxDispatcher.cs`, `OutboxHealthCheck.cs` · FE n/a · Design n/a · Tests `OutboxDispatchContractTests.cs` · Real e2e none
-- State: IMPLEMENTING — no operator action to inspect or requeue (H05).
+- Evidence: BE `OutboxDispatcher.cs`, `OutboxHealthCheck.cs` · FE n/a · Design n/a · Tests `backend/tests/Notrelix.Integration.Tests/Data/OutboxDispatchContractTests.cs` (`PublisherFailure_StaysRetryable_WithBackoff_ThenDeadLetters`), `backend/tests/Notrelix.Infrastructure.Tests/Observability/OutboxHealthCheckTests.cs` (a dead letter answers Unhealthy) · Real e2e none
+- State: IMPLEMENTING — Built: retry with backoff, dead-lettering at the limit, and the health signal are tested. Owner question: the operator action to inspect, requeue or discard a dead letter is H05 and is not built here; should H02 wait for H05 before HARDENING?
 
 ### UC-PLT-H03 Declare ordering for every consumer
 - Capability: H, PF-08
@@ -707,8 +707,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: denied, stale.
 - Rules: PFREQ067; BE-PLT-048.
 - Acceptance: Given a removed member, When the next check runs, Then their subscription is revoked.
-- Evidence: BE `RealtimeAuthorization.cs`, `RealtimeConnection.cs` · FE recovery policy · Design BC-Realtime-1440 · Tests `RealtimeConnectionTests.cs` · Real e2e none
-- State: IMPLEMENTING — shown in no browser test.
+- Evidence: BE `RealtimeAuthorization.cs`, `RealtimeConnection.cs` · FE recovery policy · Design BC-Realtime-1440 · Tests `backend/tests/Notrelix.API.Tests/Realtime/RealtimeConnectionTests.cs` (`Revoked_membership_ends_the_subscription_at_the_next_reauthorization`, `A_workspace_access_signal_revokes_the_subscription_at_once_without_waiting_for_the_periodic_pass`, `Reauthorization_failure_fails_closed_and_drops_the_subscription`, `Revoked_credentials_close_the_connection_with_4401`) · Real e2e none
+- State: HARDENING — Built: a removed member's subscription is revoked at the next reauthorization with `subscription_revoked`, a failed check drops it (fail closed), and revoked credentials close with 4401 (gateway tests; the revocation is not shown in a browser, which is not required here).
 
 ## Capability J: API, OpenAPI and generated contracts
 
@@ -752,7 +752,7 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - Rules: PFREQ076.
 - Acceptance: Given the limit exceeded, When another request arrives, Then 429.
 - Evidence: BE `Middleware/PreAuthenticationRateLimitMiddleware.cs`, `AuthenticatedRateLimitMiddleware.cs` · FE error policy · Design Final-States · Tests `backend/tests/Notrelix.API.Tests/RateLimiting/RateLimitTiersTests.cs`, `RateLimitPolicyCatalogTests.cs` · Real e2e none
-- State: IMPLEMENTING — real e2e runs with limits relaxed.
+- State: HARDENING — Built: the credential tier answers 429 with Retry-After after its budget, the CSRF tier and sensitive tier are limited per request and per user, and an unauthenticated sensitive call answers 401 rather than failing (`RateLimitTiersTests`, 429 cases; run in the API suite). Real e2e runs with limits relaxed, which is not a gap for this use case.
 
 ## Capability K: Frontend query/server-state foundation
 
@@ -840,7 +840,7 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - Rules: PFREQ086; owner decision 47.
 - Acceptance: Given a refresh, When used twice, Then the second is refused.
 - Evidence: BE Identity token endpoints · FE `frontend/packages/runtimes/mobile/src/runtime/mobile-workspace-lifecycle.ts` · Design Final-M-Auth · Tests `mobile-runtime.mobile.test.ts` · Real e2e none
-- State: IMPLEMENTING — no mobile host app ships.
+- State: IMPLEMENTING — Owner question: which mobile host app ships the runtime in this repo (bearer token, Keychain or Keystore storage, refresh rotation), and when? The runtime package and its tests exist; no host app is in the repo. This is outside the repo, so the state stays IMPLEMENTING.
 
 ### UC-PLT-L04 Show a recoverable error instead of a blank screen
 - Capability: L, PF-12
@@ -853,8 +853,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: error.
 - Rules: PFREQ090.
 - Acceptance: Given a thrown render error, When it happens, Then the page shows an error state with retry.
-- Evidence: BE n/a · FE `frontend/apps/web/src/providers/runtime-error-boundary.tsx` · Design Final-States · Tests component tests · Real e2e none
-- State: IMPLEMENTING.
+- Evidence: BE n/a · FE `frontend/apps/web/src/providers/runtime-error-boundary.tsx` (now with a Try again button that clears the error and remounts the subtree), `frontend/apps/web/src/providers/global-error-boundary.tsx` (re-export) · Design Final-States · Tests `frontend/apps/web/src/providers/__tests__/runtime-error-boundary.component.test.tsx` (3 cases: children render, error state with retry and report, retry renders again) · Real e2e none
+- State: HARDENING — Built: a render error shows a safe error state with a Try again button instead of a blank screen, and the error is reported with the component stack (web component tests, 3 passed locally). No design line for the error state is compared here.
 
 ## Capability M: UI tokens and primitive foundation
 
