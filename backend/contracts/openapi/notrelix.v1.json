@@ -34717,6 +34717,10 @@
           "targetUrl": {
             "type": "string",
             "nullable": true
+          },
+          "syncHealth": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

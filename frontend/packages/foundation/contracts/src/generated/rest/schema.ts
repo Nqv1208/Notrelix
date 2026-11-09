@@ -9023,6 +9023,7 @@ export interface components {
             lastErrorAt?: string | null;
             lastError?: string | null;
             targetUrl?: string | null;
+            syncHealth?: string | null;
         };
         "Notrelix.Application.Features.Integrations.Connections.IntegrationTestDto": {
             /** Format: uuid */

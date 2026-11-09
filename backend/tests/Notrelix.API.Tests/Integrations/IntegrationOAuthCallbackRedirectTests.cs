@@ -118,7 +118,7 @@ public sealed class IntegrationOAuthCallbackRedirectTests : IClassFixture<Integr
     {
         _host.Outcome = Result<IntegrationConnectionDto>.Success(new IntegrationConnectionDto(
             Guid.NewGuid(), "google-calendar", "active", Guid.Parse(TestAuthHandler.TestUserId),
-            DateTimeOffset.UtcNow, null, null, null, null));
+            DateTimeOffset.UtcNow, null, null, null, null, IntegrationSyncHealth.Idle));
 
         var response = await CallAsync("code=good&state=s");
 

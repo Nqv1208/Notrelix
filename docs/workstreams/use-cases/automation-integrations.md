@@ -288,7 +288,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-INT-H07 | Keep both identities of a mapped event | H Inbound event mapping | system | P | N | N | N | IMPLEMENTING | no flow uses it end to end |
 | UC-INT-H08 | Provider content is untrusted | H Inbound event mapping | system | N | N | N | N | DEFINED | no sanitizer exists at the provider boundary |
 | UC-INT-I01 | See status, last success and last error | I Connection health | Owner and Admin | Y | Y | Y | Y | HARDENING | Expired and Revoked collapse into "error" in the DTO |
-| UC-INT-I02 | Sync health is separate from connection status | I Connection health | Owner and Admin | N | N | N | N | IMPLEMENTING | no DTO field |
+| UC-INT-I02 | Sync health is separate from connection status | I Connection health | Owner and Admin | Y | N | N | N | HARDENING | Built (not run here): IntegrationSyncHealth.cs (closed set of the seven product values, derived from the stored state), field SyncHealth on IntegrationConnectionDto; the status field is unchanged. Tests: IntegrationSyncHealthTests.cs (Application suite). Only idle, failed and reauthorization-required are produced today. No screen (no health chip). Owner question: a failed delivery sets the status to error (RecordFailure), so the acceptance example 'status Active, health failed' is not reachable; should a failure keep status Active and only set health? Owner tests by hand. |
 | UC-INT-I03 | Hold work while reauthorization is needed | I Connection health | Owner and Admin | N | N | Y | N | DEFINED | no held-operation state exists |
 | UC-INT-I04 | Tell admins when a connection breaks (enterprise baseline) | I Connection health | Owner, Admin and the connector owner receive | N | N | N | N | DEFINED | (enterprise baseline) |
 | UC-INT-J01 | Provider results map to one taxonomy | J Provider failure normalization | system | Y | N | N | N | INTEGRATING | taxonomy exists per adapter only; no shared contract type; OAuth and calendar adapters are not mapped |
@@ -2059,8 +2059,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: health chip.
 - Rules: integrations.md §42, §43 INT-015.
 - Acceptance: Given a valid token and a failing sync, Then status is Active and health is failed.
-- Evidence: BE `SyncStatus` (Idle, InProgress, Completed, Failed, Partial) domain · FE none · Design `Final-Integrations` · Tests T-ID `SyncTransitionMatrixTests` · Real e2e none
-- State: IMPLEMENTING — no DTO field.
+- Evidence: BE `IntegrationSyncHealth.cs`, `IntegrationCatalog.cs` (`IntegrationConnectionDto.SyncHealth`) · FE none (no health chip) · Design `Final-Integrations` · Tests `IntegrationSyncHealthTests.cs` (run: Application suite) · Real e2e none
+- State: HARDENING — the health field is built and unit-tested (Application suite) and separate from the status. Owner question: status stays error on a failed delivery; the acceptance example is not reachable yet. No screen.
 
 ### UC-INT-I03 Hold work while reauthorization is needed
 - Capability: INT-009 Connection health
