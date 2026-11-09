@@ -59,8 +59,8 @@ Dates: this catalog was written on 2026-10-30. No use case has a recorded owner 
 | E | COL-005 Collaboration realtime | 5 | 3 | 1 | 0 | 0 | 0 | 1 |
 | F | COL-006 Target deletion/retention | 7 | 3 | 2 | 1 | 0 | 0 | 1 |
 | G | COL-007 Collaboration query/state | 16 | 2 | 1 | 2 | 11 | 0 | 0 |
-| H | COL-008 Collaboration hardening | 8 | 3 | 2 | 0 | 1 | 0 | 2 |
-| | Total | 85 | 19 | 7 | 11 | 43 | 0 | 5 |
+| H | COL-008 Collaboration hardening | 8 | 3 | 1 | 0 | 2 | 0 | 2 |
+| | Total | 85 | 19 | 6 | 11 | 44 | 0 | 5 |
 
 Collaboration has no dedicated capability for inbox, preferences, attachments, watchers or presence in the team spec. They sit in the nearest capability: attachments and watchers under B (target contract), notifications production under D, presence under E, Inbox, preferences and read state under G.
 
@@ -213,7 +213,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-H01 | Duplicate comment submit has one effect | H | Any commenter | no | no | no | no | DEFINED | Backend and client both missing. |
 | UC-COL-H02 | Competing edits carry an expected version | H | Author, resolver | no | no | no | no | DEFINED | Add version to the DTO, commands and UI conflict state. |
 | UC-COL-H03 | Concurrent reactions and follows do not duplicate | H | Any person | partial | no | no | no | IMPLEMENTING | Migration and concurrency test (RLS-safe change rule applies). |
-| UC-COL-H04 | Comment content is safe to render | H | Any reader | partial | partial | no | no | IMPLEMENTING | Align validator to 10,000; add XSS and scheme tests on the renderer. |
+| UC-COL-H04 | Comment content is safe to render | H | Any reader | yes | partial | no | no | HARDENING | Built: one limit (Comment.MaxContentLength, 10,000) for the Domain and both validators (the validators allowed 50,000); XSS and URL-scheme tests on the renderers. Remains: comments render as plain text, so no link chips; owner tests by hand. |
 | UC-COL-H05 | Rate limits and abuse controls | H | Any caller | no | no | no | no | DEFINED | Policies not attached. |
 | UC-COL-H06 | A mention retry notifies once | H | System | yes | no | no | no | HARDENING | Built: a delivery that loses the insert race on the deduplication key is a no-op; unique index in baseline. Remains: owner tests by hand. |
 | UC-COL-H07 | Provider comment sync maps through Collaboration operations | H | An integration (provider adapter) | no | no | no | no | BLOCKED | Needs the integration execution principal ([automation-integrations.md](automation-integrations.md)); a security-principal decision. |
@@ -1368,8 +1368,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: rendered text, link chips.
 - Rules: Product COL-029, Content sanitization (98).
 - Acceptance: Given `<script>` in a comment, then it shows as text.
-- Evidence: BE Domain trims and limits to 10,000; the validator allows 50,000 (mismatch) · FE resource-comments.tsx renderer · Design none · Tests none for XSS strings · Real e2e none
-- State: IMPLEMENTING — Align validator to 10,000; add XSS and scheme tests on the renderer.
+- Evidence: BE backend/src/Notrelix.Domain/Collaboration/Comments/Comment.cs (MaxContentLength), CreateCommentCommandValidator.cs, UpdateCommentCommandValidator.cs · FE packages/product/work-management/web/src/components/card-popup/markdown.tsx (links), comments/comments-column.tsx (plain text) · Design none · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/CommentContentLengthTests.cs; frontend/packages/product/work-management/web/src/components/card-popup/__tests__/markdown-link-safety.unit.test.tsx; .../card-popup/comments/__tests__/comments-column.component.test.tsx · Real e2e none
+- State: HARDENING — Built: one 10,000 limit for the Domain and both validators (the validators allowed 50,000); scheme tests (javascript:, data:, vbscript:, file: are not links) and markup escaping on the renderers. Remains: comments show plain text, so a comment link is never drawn as a link; owner tests by hand.
 
 ### UC-COL-H05 Rate limits and abuse controls
 - Capability: H, COL-008 Collaboration hardening
