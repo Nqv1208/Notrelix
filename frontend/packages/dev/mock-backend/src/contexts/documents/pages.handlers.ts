@@ -120,7 +120,11 @@ function peopleOf(
 export const pagesOperations = [
   // ─── GET /workspaces/:workspaceId/pages ───────────────────────────────────
 
-  defineMockOperation<{ workspaceId: string }, never, PageDtoApi[]>({
+  defineMockOperation<
+    { workspaceId: string },
+    never,
+    { items: PageDtoApi[]; nextCursor: string | null }
+  >({
     id: "pages.list",
     contract: {
       kind: "openapi",
@@ -128,16 +132,20 @@ export const pagesOperations = [
     },
     method: "GET",
     route: "/workspaces/:workspaceId/pages",
-    async handle({ params, store }) {
+    async handle({ params, query, store }) {
       const pages = store.getPages(params.workspaceId);
       // Where a page sits: its parent's title, for a parent in this same list.
       const titles = new Map(pages.map((page) => [page.id, page.title]));
-      return ok<PageDtoApi[]>(
-        pages.map((page) => ({
+      // The producer's cursor is opaque; here it is the offset of the next row.
+      const limit = Math.min(Number(query.limit) || 50, 200);
+      const from = Number(query.cursor) || 0;
+      return ok({
+        items: pages.slice(from, from + limit).map((page) => ({
           ...mapPageDto(page, store),
           parentTitle: (page.parentId && titles.get(page.parentId)) || null,
         })),
-      );
+        nextCursor: from + limit < pages.length ? String(from + limit) : null,
+      });
     },
   }),
 

@@ -11,6 +11,7 @@ import {
   type PageVersionContent,
 } from "../model/version.mapper";
 import type { DocsApiClient, PageApiEndpoints } from "./page.api";
+import { readAllCursorPages } from "./read-all-pages";
 
 /** The version of a block as the caller last read it (what a restore is checked against). */
 export interface SeenBlockVersion {
@@ -29,9 +30,13 @@ export function createVersionApi(
   endpoints: PageApiEndpoints,
 ) {
   return {
-    /** The history entries, newest first. */
+    /**
+     * The history entries, newest first, read to the end one cursor page at a
+     * time (`Documents.Versions.ListPageVersions`).
+     */
     async list(pageId: string): Promise<PageVersion[]> {
-      const dtos = await api.get<PageVersionDtoApi[]>(
+      const dtos = await readAllCursorPages<PageVersionDtoApi>(
+        api,
         endpoints.pages.versions(pageId),
       );
       return dtos.map(mapVersion);

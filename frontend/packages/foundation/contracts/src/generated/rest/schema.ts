@@ -837,7 +837,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List all pages in a workspace */
+        /**
+         * List the pages in a workspace, one cursor page at a time
+         * @description Id order, default 50 and at most 200 a page. Pass nextCursor back as cursor for the next page.
+         */
         get: operations["Documents.Pages.ListWorkspacePages"];
         put?: never;
         /** Create a new page */
@@ -1079,7 +1082,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the history entries of a page, newest first */
+        /**
+         * List the history entries of a page, newest first, one cursor page at a time
+         * @description Newest first, default 50 and at most 200 a page. Pass nextCursor back as cursor for the older entries.
+         */
         get: operations["Documents.Versions.ListPageVersions"];
         put?: never;
         /** Save the page as it is now as a named version */
@@ -7843,6 +7849,11 @@ export interface components {
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
+        "Notrelix.Application.Common.Models.CursorPageOfPageVersionDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageVersionDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
         "Notrelix.Application.Common.Models.CursorPageOfSecurityActivityDto": {
             items?: components["schemas"]["Notrelix.Application.Features.Identity.Security.Abstractions.SecurityActivityDto"][] | null;
             nextCursor?: string | null;
@@ -12319,7 +12330,10 @@ export interface operations {
     };
     "Documents.Pages.ListWorkspacePages": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -12334,7 +12348,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfPageDto"];
                 };
             };
         };
@@ -12804,7 +12818,10 @@ export interface operations {
     };
     "Documents.Versions.ListPageVersions": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 pageId: string;
@@ -12819,7 +12836,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageVersionDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfPageVersionDto"];
                 };
             };
         };
