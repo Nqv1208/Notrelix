@@ -145,7 +145,7 @@ Products compared and what was taken:
 | UC-WSP-B04 | List every workspace I belong to (user scope) | B | Any signed-in user | yes | yes | none | workspace-read-and-lists.real.e2e.spec.ts | DONE | closed 2026-11-03, see the Evidence line |
 | UC-WSP-C01 | Edit workspace name and description | C | Owner, Admin | yes | yes | none for workspace settings (`Final-Settings` is the Board settings page) | none | DONE | closed 2026-11-03, see the Evidence line |
 | UC-WSP-C02 | Change the workspace address (enterprise baseline) | C | Owner, Admin | no | no | none | none | DEFINED | Command, endpoint, event, settings field. |
-| UC-WSP-D01 | Archive a workspace | D | Owner, Admin | yes | yes | Final-Settings | none | INTEGRATING | Stub consumers only: the archive fact pauses no automation or integration sync yet (WorkspacesStubConsumers). |
+| UC-WSP-D01 | Archive a workspace | D | Owner, Admin | yes | yes | Final-Settings | none | INTEGRATING | Stub consumers only: the archive fact pauses no automation or integration sync yet (WorkspacesStubConsumers). Owner question: no existing port can pause a workspace's automations (Automation exposes only activity facts and WorkManagement ports); add a pause-by-workspace port to Automation, or accept the fact as log-only until then? |
 | UC-WSP-D02 | Unarchive a workspace | D | Owner, Admin | yes | no | none | none | IMPLEMENTING | Frontend entry for an archived workspace (it vanishes from lists); banner; copy. |
 | UC-WSP-D03 | Delete a workspace | D | Owner | yes | yes | none (no workspace danger-zone artboard; built from the archive pattern of the same page) | workspace-delete-restore.real.e2e.spec.ts | DONE | closed 2026-11-03, see the Evidence line |
 | UC-WSP-D04 | Restore a deleted workspace | D | Owner | yes | yes | none (the Recently deleted list reuses the archived-workspaces pattern) | workspace-delete-restore.real.e2e.spec.ts | DONE | closed 2026-11-03, see the Evidence line |
@@ -391,7 +391,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) section 60; WGREQ005, WGREQ006; Part 4 LD-02.
 - Acceptance: Given an Active workspace, When Owner archives it with the right version, Then status is Archived and members can still read it. Given a Member, Then 403.
 - Evidence: BE `POST /api/v1/workspaces/{id}/archive`, `ArchiveWorkspaceCommandHandler` · FE settings 'Danger zone' (`workspace-settings-surface.tsx`), `use-workspace-settings-mutations.ts` · Design `Final-Settings` · Tests `WorkspaceTests`, `WorkspaceMutationOrderingTests`, `WorkspaceLifecycleTests` · Real e2e none
-- State: INTEGRATING — Stub consumers only: the archive fact pauses no automation or integration sync yet (WorkspacesStubConsumers).
+- State: INTEGRATING — Stub consumers only: the archive fact pauses no automation or integration sync yet (WorkspacesStubConsumers). Owner question: the pause needs a port that does not exist. Automation's public surface has only `IAutomationActivityFacts`, and its ports cover WorkManagement and messages, so the consumer cannot pause a workspace's rules without a cross-context contract. Should Automation add a pause-by-workspace port, or is log-only acceptable until then?
 
 ### UC-WSP-D02 Unarchive a workspace
 - Capability: D Workspace lifecycle transition
