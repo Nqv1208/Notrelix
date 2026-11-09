@@ -4,6 +4,8 @@ using AppConflictException = Notrelix.Application.Common.Exceptions.ConflictExce
 using AppNotFoundException = Notrelix.Application.Common.Exceptions.NotFoundException;
 using AppValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
 
+using Notrelix.API.Middleware;
+
 namespace Notrelix.API.ErrorHandling;
 
 public static class ProblemDetailsMapper
@@ -182,6 +184,10 @@ public static class ProblemDetailsMapper
 
         problemDetails.Extensions["errorCode"] = mapped.ErrorCode;
         problemDetails.Extensions["traceId"] = context.TraceIdentifier;
+        if (CorrelationIdMiddleware.Read(context) is { } correlationId)
+        {
+            problemDetails.Extensions["correlationId"] = correlationId.ToString();
+        }
 
         // The stable rule that refused the request, additive to the category in errorCode, so a client
         // branches on it instead of reading the detail text.

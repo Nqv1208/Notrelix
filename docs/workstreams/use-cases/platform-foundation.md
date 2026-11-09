@@ -157,7 +157,7 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-L03 | Run the mobile runtime with bearer tokens | L | Mobile runtime | yes | partial | Final-M-Auth | no | IMPLEMENTING | mobile host not shipped |
 | UC-PLT-L04 | Show a recoverable error instead of a blank screen | L | Frontend runtime | n/a | yes | Final-States | no | IMPLEMENTING | no real e2e |
 | UC-PLT-M01 | Serve design tokens from one package | M | Frontend build | n/a | yes | Themes | no | HARDENING | none open; token tests in `tokens.unit.test.ts` |
-| UC-PLT-N01 | Carry a correlation id on every request and log | N | API middleware | yes | yes | n/a | no | IMPLEMENTING | no end-to-end trace proof |
+| UC-PLT-N01 | Carry a correlation id on every request and log | N | API middleware | yes | yes | n/a | no | HARDENING | none open; API tests in `CorrelationIdProblemTests` |
 | UC-PLT-N02 | Answer a liveness probe | N | Orchestrator | yes | n/a | n/a | no | HARDENING | none open; route tests `GetLive_*` in `HealthEndpointTests` |
 | UC-PLT-N03 | Answer a readiness probe | N | Orchestrator | yes | n/a | n/a | no | HARDENING | no probe proof against the real compose stack |
 | UC-PLT-N04 | Show full health with each check | N | Operator | yes | n/a | n/a | no | HARDENING | no probe proof against the real compose stack |
@@ -885,8 +885,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: error pages may show the id.
 - Rules: PFREQ100 to PFREQ106; BE-PLT-029, BE-PLT-042.
 - Acceptance: Given a request, When it fails, Then the problem body and log share one id.
-- Evidence: BE `Middleware/CorrelationIdMiddleware.cs`, `ApplicationTracingBehavior.cs` · FE `frontend/packages/foundation/observability/src/tracing.ts` · Design n/a · Tests `PipelineObservabilityTests.cs`, `PipelineTelemetryIntegrationTests.cs` · Real e2e none
-- State: IMPLEMENTING.
+- Evidence: BE `Middleware/CorrelationIdMiddleware.cs` (stores the id on `HttpContext.Items`), `ErrorHandling/ProblemDetailsMapper.cs`, `ProblemDetailsWriter.cs`, `ProblemDetailsOptionsSetup.cs` (write `correlationId` into problem bodies), `ApplicationTracingBehavior.cs` · FE `frontend/packages/foundation/observability/src/tracing.ts` · Design n/a · Tests `backend/tests/Notrelix.API.Tests/Middleware/CorrelationIdProblemTests.cs` (CSRF refusal and unknown resource: header and body carry one id; unsafe incoming id replaced), `backend/tests/Notrelix.API.Tests/ProblemDetails/NotFoundProblemDetailsTests.cs` (`NotFoundException_CarriesTheRequestCorrelationId`), `PipelineObservabilityTests.cs`, `PipelineTelemetryIntegrationTests.cs` · Real e2e none
+- State: HARDENING — Built: a failing request answers with one correlation id in the `X-Correlation-Id` header and in the problem body `correlationId` (API tests: 5 passed locally with the NotFound unit test). Problem bodies written by `EndpointExtensions` helpers without an HTTP context are covered only where the central customizer runs; not separately proven.
 
 ### UC-PLT-N02 Answer a liveness probe
 - Capability: N, PF-14
