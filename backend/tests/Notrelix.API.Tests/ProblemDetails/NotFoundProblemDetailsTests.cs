@@ -39,4 +39,17 @@ public class NotFoundProblemDetailsTests
         json.TryGetProperty("instance", out _).Should().BeTrue();
         json.TryGetProperty("traceId", out _).Should().BeTrue();
     }
+
+    [Fact]
+    public async Task NotFoundException_CarriesTheRequestCorrelationId()
+    {
+        var correlationId = Guid.NewGuid();
+        _context.Items[Notrelix.API.Middleware.CorrelationIdMiddleware.ItemKey] = correlationId;
+
+        await _handler.TryHandleAsync(_context, new DomainNotFoundException("Board", Guid.NewGuid()), default);
+
+        _context.Response.Body.Position = 0;
+        var json = await JsonSerializer.DeserializeAsync<JsonElement>(_context.Response.Body);
+        json.GetProperty("correlationId").GetString().Should().Be(correlationId.ToString());
+    }
 }

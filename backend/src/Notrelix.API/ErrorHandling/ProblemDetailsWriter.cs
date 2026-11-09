@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Notrelix.API.Middleware;
 
 namespace Notrelix.API.ErrorHandling;
 
@@ -17,6 +18,10 @@ public static class ProblemDetailsWriter
 
         problemDetails.Extensions["errorCode"] = ErrorCodes.CsrfValidationFailed;
         problemDetails.Extensions["traceId"] = Activity.Current?.Id ?? "unknown";
+        if (CorrelationIdMiddleware.Read(context) is { } correlationId)
+        {
+            problemDetails.Extensions["correlationId"] = correlationId.ToString();
+        }
 
         context.Response.StatusCode = StatusCodes.Status403Forbidden;
         context.Response.ContentType = "application/problem+json";
@@ -41,6 +46,10 @@ public static class ProblemDetailsWriter
 
         problemDetails.Extensions["errorCode"] = ErrorCodes.TooManyRequests;
         problemDetails.Extensions["traceId"] = Activity.Current?.Id ?? "unknown";
+        if (CorrelationIdMiddleware.Read(context) is { } correlationId)
+        {
+            problemDetails.Extensions["correlationId"] = correlationId.ToString();
+        }
         problemDetails.Extensions["retryAfter"] = retryAfterSeconds;
         problemDetails.Extensions["limit"] = limit;
         problemDetails.Extensions["remaining"] = remaining;
