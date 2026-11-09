@@ -195,7 +195,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-F06 | Notification retention | F | System (daily job) | no | no | no | no | DEFINED | Job missing; the table grows without bound. |
 | UC-COL-F07 | Restore a deleted comment | F | A moderator or the author within a window (undecided) | partial | no | no | no | BLOCKED | Depends on UC-COL-C02 (who may restore). |
 | UC-COL-G01 | List the comments of an item or page | G | ViewBoard on the item or view on the page | yes | yes | yes | partial | HARDENING | Built: page comments have cursor paging (default 50, max 200) under the ViewPage action; the page view follows nextCursor until done. The unpaged GET routes remain without a UI caller. Real e2e: owner tests by hand. |
-| UC-COL-G02 | Comment counts on cards and lists | G | Anyone who can see the card | yes | yes | yes | no | INTEGRATING | Counting rule for deleted and resolved comments undocumented. |
+| UC-COL-G02 | Comment counts on cards and lists | G | Anyone who can see the card | yes | yes | yes | no | INTEGRATING | Owner question: which comments does the card count? Code counts live comments (replies and resolved threads included, deleted ones not); proposed: keep that rule and write it into the product text. Not changed. |
 | UC-COL-G03 | Open the Inbox list | G | Any active member | yes | yes | yes | yes | HARDENING | The handler lives in the Work Management feature although Collaboration owns the Inbox; no design-fidelity spec for Inbox. |
 | UC-COL-G04 | Unread count per workspace (bell) | G | Any signed-in person | yes | yes | yes | no | INTEGRATING | Count is not live (depends on UC-COL-E02, DEFINED); no real e2e. |
 | UC-COL-G05 | Mark one notification read | G | The recipient | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
@@ -1115,7 +1115,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Decision 39; team DCX-02.
 - Acceptance: Given an item with two comments, then the card shows 2.
 - Evidence: BE backend/src/Notrelix.Application/Features/Collaboration/Public/ResourceSummary/, Infrastructure/CrossContext/Collaboration/ResourceSummary/PostgresCollaborationResourceSummary.cs · FE kanban-card.tsx · Design Kanban-Card-States · Tests backend/tests/Notrelix.Application.Tests/Features/WorkManagement/Boards/GetFullBoardCommentCountTests.cs · Real e2e none
-- State: INTEGRATING — Counting rule for deleted and resolved comments undocumented.
+- State: INTEGRATING — Owner question: the counting rule for deleted and resolved comments is not documented. Code today counts live comments only (DeletedAt is null): a deleted comment, including a tombstone that keeps its replies, is not counted; resolved threads and replies are counted. Proposed rule: the same, written into the product text, so the badge means comments still on the item. Owner to confirm, or say the badge should count open threads only. State left INTEGRATING until decided.
 
 ### UC-COL-G03 Open the Inbox list
 - Capability: G, COL-007 Collaboration query/state
