@@ -71,7 +71,7 @@ Letter maps to the team spec capability. Total use cases: **99**.
 | V | BIL-022 Billing observability | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | W | BIL-023 Migration/backfill | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
 | X | BIL-024 Hardening/security | 6 | 4 | 2 | 0 | 0 | 0 | 0 |
-| | **All** | **99** | **56** | **27** | **8** | **7** | **0** | **1** |
+| | **All** | **99** | **56** | **26** | **7** | **8** | **1** | **1** |
 
 No use case is DONE: none has a recorded owner check or a 1-px design diff. HARDENING is given only where a spec under `frontend/e2e/real/` runs the path (`billing-plan.real.e2e.spec.ts`, which now drives the operator console, and `feature-availability.real.e2e.spec.ts`).
 
