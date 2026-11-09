@@ -1,7 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Billing.Public.Capacity;
-using Notrelix.Application.Features.Billing.Public.Facts;
+using Notrelix.Application.Features.Automation.Rules.Services;
 
 namespace Notrelix.Application.Features.Automation.Rules.Commands.DeleteAutomationRule;
 
@@ -50,29 +50,16 @@ public class DeleteAutomationRuleCommandHandler : IRequestHandler<DeleteAutomati
         var now = _clock.UtcNow;
         var user = _requestContext.UserId;
         if (rule.IsRemoved) throw new NotFoundException(nameof(AutomationRule), request.AutomationRuleId);
+        var wasHoldingSlot = AutomationRuleCapacity.HoldsSlot(rule);
+        var fromVersion = rule.Version;
         rule.Remove(user, now);
 
-        // The rule no longer counts against the plan's rule limit.
-        await _capacity.ReleaseAsync(
-            new ReleaseCapacityRequest(new BillingCapacityOperationIdentity(
-                AccountId: rule.AccountId,
-                WorkspaceId: rule.WorkspaceId,
-                CapabilityCode: BillingCapabilityCode.AutomationRule,
-                Amount: 1,
-                LogicalOperationId: ReleaseOperationId(rule.Id),
-                SourceResource: rule.Id.ToString(),
-                ActorUserId: user,
-                OccurredAt: now)),
-            cancellationToken);
+        // Only a rule that holds a slot (enabled, or auto-disabled and still holding it) releases one.
+        if (wasHoldingSlot)
+            await _capacity.ReleaseAsync(
+                new ReleaseCapacityRequest(AutomationRuleCapacity.Identity(rule, "delete", fromVersion, user, now)),
+                cancellationToken);
 
         return Result.Success();
     }
-
-    /// <summary>
-    /// The identity of the release: stable per rule (a retry never releases twice) and different
-    /// from the rule's own id, which names the consume the rule's creation made.
-    /// </summary>
-    public static Guid ReleaseOperationId(Guid ruleId) =>
-        new(System.Security.Cryptography.MD5.HashData(
-            System.Text.Encoding.UTF8.GetBytes($"automation-rule-release:{ruleId:N}")));
 }

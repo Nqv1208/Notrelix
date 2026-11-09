@@ -11,6 +11,7 @@ public static class AutomationRuleCodes
     public const string Automation_Rule_MustHaveTrigger = "Automation_Rule_MustHaveTrigger";
     public const string Automation_Rule_MustHaveAction = "Automation_Rule_MustHaveAction";
     public const string Automation_Rule_MustHaveExecutor = "Automation_Rule_MustHaveExecutor";
+    public const string Automation_Rule_BrokenReference = "Automation_Rule_BrokenReference";
 
     // ── Execution ─────────────────────────────────────────────────────────
     public const string Automation_Execution_CannotStartUnlessQueued = "Automation_Execution_CannotStartUnlessQueued";

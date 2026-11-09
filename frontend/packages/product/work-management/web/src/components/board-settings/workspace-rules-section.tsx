@@ -134,7 +134,11 @@ function feedbackText(
   copy: WorkspaceRulesCopy,
   result: WorkspaceAutomationWriteResult,
 ): string | null {
-  return result.ok ? null : copy.feedback[result.reason];
+  if (result.ok) return null;
+  // A refused enable names its targets in the rule editor; the list here only says it failed.
+  return copy.feedback[
+    result.reason === "broken-reference" ? "failed" : result.reason
+  ];
 }
 
 /** The "Tự động hoá" section when the backend's workspace rules are shown. */
