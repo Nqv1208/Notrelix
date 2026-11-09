@@ -61,4 +61,14 @@ public class ShareLinkBoundaryTests
         var link = ShareLink.Create(Guid.NewGuid(), WsA, ResourceKind.Create("work-management.board"), Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now, Now.AddDays(-1));
         link.IsExpired(Now).Should().BeTrue();
     }
+
+    [Theory]
+    [InlineData(Notrelix.Domain.Governance.Permissions.PermissionLevel.Editor)]
+    [InlineData(Notrelix.Domain.Governance.Permissions.PermissionLevel.Manager)]
+    public void ShareLink_Create_WithALevelAboveCommenter_ShouldThrow(Notrelix.Domain.Governance.Permissions.PermissionLevel level)
+    {
+        var tokenHash = ShareLinkTokenHash.Create("test-hash");
+        var act = () => ShareLink.Create(Guid.NewGuid(), WsA, ResourceKind.Create("work-management.board"), Guid.NewGuid(), tokenHash, ShareLinkAccessMode.WorkspaceOnly, Actor, Now, Now.AddDays(7), level);
+        act.Should().Throw<BusinessRuleException>().Which.RuleCode.Should().Be("Governance_ShareLink_LevelAboveCommenter");
+    }
 }

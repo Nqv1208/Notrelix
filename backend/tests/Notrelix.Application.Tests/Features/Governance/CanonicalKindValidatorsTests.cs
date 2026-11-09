@@ -110,7 +110,7 @@ public class CanonicalKindValidatorsTests
     public void CreateShareLink_AcceptsCanonicalKind(string kind)
     {
         var validator = new CreateShareLinkCommandValidator();
-        var command = new CreateShareLinkCommand(kind, Guid.NewGuid(), "Viewer");
+        var command = new CreateShareLinkCommand(kind, Guid.NewGuid(), "Viewer", DateTime.UtcNow.AddDays(7));
 
         var result = validator.Validate(command);
 
@@ -122,7 +122,7 @@ public class CanonicalKindValidatorsTests
     public void CreateShareLink_RejectsMalformedKind(string kind)
     {
         var validator = new CreateShareLinkCommandValidator();
-        var command = new CreateShareLinkCommand(kind, Guid.NewGuid(), "Viewer");
+        var command = new CreateShareLinkCommand(kind, Guid.NewGuid(), "Viewer", DateTime.UtcNow.AddDays(7));
 
         var result = validator.Validate(command);
 

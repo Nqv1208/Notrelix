@@ -21,9 +21,10 @@ public class CreateShareLinkWorkspacePolicyTests
             context.Object,
             requestContext.Object,
             new Mock<IDateTimeProvider>().Object,
-            policy.Object);
+            policy.Object,
+            new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object);
 
-        var command = new CreateShareLinkCommand("work-management.board", Guid.CreateVersion7(), "Viewer");
+        var command = new CreateShareLinkCommand("work-management.board", Guid.CreateVersion7(), "Viewer", DateTime.UtcNow.AddDays(7));
 
         var refusal = await handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
