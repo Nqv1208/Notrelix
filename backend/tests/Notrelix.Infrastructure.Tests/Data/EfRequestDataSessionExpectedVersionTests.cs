@@ -8,7 +8,6 @@ using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWorkspa
 using Notrelix.Domain.Common;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.WorkManagement.Boards;
-using Notrelix.Domain.Workspaces;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data;
