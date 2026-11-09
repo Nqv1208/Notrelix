@@ -127,7 +127,7 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-E02 | Recover a dev database that failed a migration | E | Operator | yes | n/a | n/a | no | IMPLEMENTING | recreate procedure only |
 | UC-PLT-E03 | Validate configuration at startup | E | Host startup | yes | n/a | n/a | no | IMPLEMENTING | partial coverage |
 | UC-PLT-F01 | Replay the stored result for a retry with the same key | F | API, Application | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
-| UC-PLT-F02 | Refuse a reused key with a different request | F | API, Application | yes | n/a | n/a | no | IMPLEMENTING | no frontend case |
+| UC-PLT-F02 | Refuse a reused key with a different request | F | API, Application | yes | n/a | n/a | no | HARDENING | none open; client conflict case in `api-client.unit.test.ts` |
 | UC-PLT-G01 | Record a domain event in the outbox with the business change | G | Application, data session | yes | n/a | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-G02 | Dispatch outbox messages with retry and a wake signal | G | Outbox dispatcher | yes | n/a | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-G03 | Deduplicate a consumer effect by event and consumer | G | Consumer filter | yes | n/a | n/a | no | IMPLEMENTING | per-effect identity per owner |
@@ -449,8 +449,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: error.
 - Rules: PFREQ046; BE-PLT-016.
 - Acceptance: Given key K used for body A, When K is sent with body B, Then conflict.
-- Evidence: BE `IdempotencyBehavior.cs`, `ProblemDetailsMapper.cs` · FE none · Design n/a · Tests `IdempotencyEndpointContractTests.cs` · Real e2e none
-- State: IMPLEMENTING.
+- Evidence: BE `IdempotencyBehavior.cs`, `IdempotencyPayloadMismatchException.cs`, `ProblemDetailsMapper.cs` · FE `frontend/packages/foundation/contracts/src/client/api-client.ts` · Design n/a · Tests `backend/tests/Notrelix.API.Tests/Idempotency/IdempotencyEndpointContractTests.cs` (`PayloadMismatch_Returns409TypedConflict`), `backend/tests/Notrelix.Application.Tests/Features/WorkManagement/BoardItems/UpdateBoardItemIdempotencyTests.cs`, `backend/tests/Notrelix.Integration.Tests/WorkManagement/WorkIdempotencyIntegrationTests.cs` (`SameKeyDifferentPayload_IsRejected_WithNoSecondEffect`, CI only) · FE `frontend/packages/foundation/contracts/src/client/__tests__/api-client.unit.test.ts` (conflict kind and code, one write sent) · Real e2e none
+- State: HARDENING — Built: a reused key with a different body answers 409 `idempotency_payload_mismatch` (API test: 10 passed locally; the integration test runs in CI), and the client maps it to a conflict AppError with its code (contracts node tests: 43 passed locally). No real e2e.
 
 ## Capability G: Outbox/inbox, message identity, background jobs
 
