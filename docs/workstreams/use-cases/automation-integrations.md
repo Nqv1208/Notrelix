@@ -57,18 +57,18 @@ Automation (letters follow the team spec order AUT-001 to AUT-014):
 | A | AUT-001 Rule lifecycle | 8 | 0 | 3 | 1 | 4 | 0 | 0 |
 | B | AUT-002 Trigger model | 8 | 2 | 3 | 0 | 3 | 0 | 0 |
 | C | AUT-003 Condition model | 3 | 1 | 1 | 0 | 1 | 0 | 0 |
-| D | AUT-004 Action model | 10 | 0 | 3 | 1 | 5 | 0 | 1 |
+| D | AUT-004 Action model | 10 | 0 | 2 | 1 | 6 | 0 | 1 |
 | E | AUT-005 Enable/disable lifecycle | 7 | 1 | 2 | 2 | 2 | 0 | 0 |
 | F | AUT-006 Source-event subscription/matching | 3 | 0 | 0 | 0 | 3 | 0 | 0 |
 | G | AUT-007 Execution creation | 6 | 1 | 1 | 2 | 2 | 0 | 0 |
 | H | AUT-008 Execution state machine | 5 | 0 | 2 | 0 | 3 | 0 | 0 |
 | I | AUT-009 Business retry/failure policy | 4 | 0 | 2 | 2 | 0 | 0 | 0 |
 | J | AUT-010 Execution history/query | 5 | 2 | 1 | 1 | 1 | 0 | 0 |
-| K | AUT-011 Automation authoring frontend | 8 | 1 | 3 | 0 | 4 | 0 | 0 |
+| K | AUT-011 Automation authoring frontend | 8 | 1 | 2 | 0 | 5 | 0 | 0 |
 | L | AUT-012 Realtime execution status | 2 | 0 | 2 | 0 | 0 | 0 | 0 |
-| M | AUT-013 Entitlement integration | 4 | 1 | 1 | 2 | 0 | 0 | 0 |
+| M | AUT-013 Entitlement integration | 4 | 1 | 0 | 2 | 1 | 0 | 0 |
 | N | AUT-014 Hardening/observability | 6 | 2 | 2 | 0 | 2 | 0 | 0 |
-| | Total | 79 | 11 | 26 | 11 | 30 | 0 | 1 |
+| | Total | 79 | 11 | 23 | 11 | 33 | 0 | 1 |
 
 Integrations (letters follow INT-001 to INT-014):
 
@@ -190,7 +190,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-AUT-D07 | Create an item | D Action model | executor with create permission on the target board | P | N | N | N | IMPLEMENTING | validates and saves, never runs; must be refused until an executor exists |
 | UC-AUT-D08 | Call an n8n webhook | D Action model | ManageIntegrations on create and enable (workspace path) | Y | N | N | N | IMPLEMENTING | no UI to author or see it; no real e2e |
 | UC-AUT-D09 | Send a Slack message | D Action model | ManageIntegrations | P | N | N | N | BLOCKED | waits on UC-INT-F03 (Slack outbound operation); today the rule saves and never runs (DEF-4) |
-| UC-AUT-D10 | A deleted or archived target blocks enable or fails the step | D Action model | the actor enabling | P | P | Y | N | IMPLEMENTING | the enable check covers `rule.Configuration.Action` (first action) only; no structured broken-reference error |
+| UC-AUT-D10 | A deleted or archived target blocks enable or fails the step | D Action model | the actor enabling | Y | P | Y | N | HARDENING | Built: enable checks every action, condition and the trigger group and refuses with `Automation_Rule_BrokenReference` listing kind, id and field. Not built: the run-time terminal step (I04) and the save check (A04). Owner tests by hand |
 | UC-AUT-E01 | Enable a rule | E Enable/disable lifecycle | board Manager (ManageBoard) | Y | Y | Y | Y | HARDENING | no expected version or idempotency (DEF-1) |
 | UC-AUT-E02 | Disable a rule | E Enable/disable lifecycle | ManageBoard or ManageWorkspaceSettings only (kill switch | Y | Y | Y | Y | HARDENING | as E01 |
 | UC-AUT-E03 | A rule stops when its runner loses access | E Enable/disable lifecycle | system reacting to Workspaces facts | Y | P | Y | N | INTEGRATING | board rule list shows no disabled reason: FE pausedReason is never populated and disabledReason renders only in the workspace rules section |
@@ -224,7 +224,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-AUT-K01 | See the rules of a board | K Automation authoring frontend | board Manager | Y | Y | Y | Y | HARDENING | scope-transition behaviour not proven |
 | UC-AUT-K02 | Compose a rule: trigger, conditions, actions | K Automation authoring frontend | board Manager | Y | Y | Y | Y | HARDENING | no conflict state; no axe proof; 1 px diff not measured |
 | UC-AUT-K03 | Read the run log of a rule | K Automation authoring frontend | as J01 | Y | Y | Y | P | HARDENING | Built (verified by reading code 2026-11-09, not run): automation-log.tsx, automation-log-parts.tsx, board-automation.interaction.component.test.tsx. Remaining: owner tests by hand. |
-| UC-AUT-K04 | See why a rule cannot be enabled | K Automation authoring frontend | board Manager | P | P | Y | N | IMPLEMENTING | structured reasons are not in the API (see UC-AUT-D10) |
+| UC-AUT-K04 | See why a rule cannot be enabled | K Automation authoring frontend | board Manager | Y | Y | Y | N | HARDENING | Built: the enable 400 carries `brokenReferences` (OpenAPI `AutomationEnableRefusalResponse`); the board editor lists each one in en and vi. Not built: the draft-to-enable save path and the workspace rules list show a generic failure. Owner tests by hand |
 | UC-AUT-K05 | A non-manager sees a denied state | K Automation authoring frontend | Member, Guest, Viewer | Y | P | Y | N | HARDENING | Built (verified by reading code 2026-11-09, not run): board-settings-surface.tsx (DeniedCard), board-settings-surface.interaction.component.test.tsx, AutomationPermissionMarkerTests.cs. Remaining: owner tests by hand. |
 | UC-AUT-K06 | Phone: read rules, switch them, read the run log | K Automation authoring frontend | board Manager | Y | P | Y | N | IMPLEMENTING | the screen is a placeholder |
 | UC-AUT-K07 | Workspace automation page | K Automation authoring frontend | Owner and Admin | P | N | N | N | DEFINED | (enterprise baseline) |
@@ -234,7 +234,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-AUT-M01 | Creating a rule respects the plan limit | M Entitlement integration | as A01 | Y | P | N | N | INTEGRATING | no limit-reached notice with an upgrade path (the editor maps 'limit' to a generic failure) |
 | UC-AUT-M02 | Deleting a rule frees its slot | M Entitlement integration | as A05 | Y | N | N | N | INTEGRATING | retry of a delete never releasing twice is not tested (only one release under its identity is asserted) |
 | UC-AUT-M03 | What happens to rules on a plan downgrade | M Entitlement integration | system on Billing facts | N | N | N | N | DEFINED | the rule text is in Part 5 |
-| UC-AUT-M04 | Only enabled rules count toward the limit | M Entitlement integration | as A01 | P | N | N | N | IMPLEMENTING | code contradicts the decision |
+| UC-AUT-M04 | Only enabled rules count toward the limit | M Entitlement integration | as A01 | Y | N | N | N | HARDENING | Built: Draft create takes no slot; enable consumes one, disable and delete release one. Owner question: a platform auto-disable keeps its slot until a person acts (the decision says Disabled uses no slot). Owner tests by hand |
 | UC-AUT-N01 | Operators see backlog and failure metrics | N Hardening/observability | operators | N | N | N | N | DEFINED | no metrics, alerts or dashboards exist |
 | UC-AUT-N02 | Follow one fact to its execution by correlation id | N Hardening/observability | operators | P | N | N | N | IMPLEMENTING | not asserted end to end |
 | UC-AUT-N03 | A stuck provider claim is recovered under control | N Hardening/observability | operators with a governed, audited procedure | P | N | N | N | IMPLEMENTING | no operator action exists |
@@ -717,8 +717,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: blocked-enable message "field Ngày bàn giao archived" with Restore field and Choose another field.
 - Rules: automation.md §101, §102 AUT-034, §104; AIREQ048.
 - Acceptance: Given a rule step writing field F, When F is archived and the Manager enables, Then enable is rejected naming F.
-- Evidence: BE `AutomationExecutorAuthority.EnsureCanExecuteAsync` (checks the first action only) · FE FE-BS (message in design only) · Design `Final-Automation` · Tests T-AA `AutomationBoardScopeAuthorityTests` · Real e2e none
-- State: IMPLEMENTING — the enable check covers `rule.Configuration.Action` (first action) only; no structured broken-reference error.
+- Evidence: BE `AutomationExecutorAuthority.FindBrokenReferencesAsync`, `SetAutomationRuleEnabledCommandHandler` · FE `automation-editor.tsx` (broken-reference list) · Design `Final-Automation` · Tests T-AA `AutomationBrokenReferenceTests`, `AutomationBoardScopeAuthorityTests`; FE-BS `board-automation.interaction.component.test.tsx` · Real e2e none
+- State: HARDENING — Built: enable checks every action, condition and the trigger group and refuses with `Automation_Rule_BrokenReference`, listing each archived or deleted target (kind, id, field). Not built: the run-time terminal step (UC-AUT-I04) and the save check (UC-AUT-A04). Owner tests by hand.
 
 ## Capability E. Enable and disable lifecycle
 
@@ -1207,8 +1207,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: blocking notice with actions.
 - Rules: automation.md §7 AUT-002, §106.
 - Acceptance: Given an archived field, When enable fails, Then the notice names it.
-- Evidence: BE rejection codes in `AutomationRuleCodes.cs` · FE FE-BS (message copy) · Design `Final-Automation` · Tests FE-BS `__tests__/` · Real e2e none
-- State: IMPLEMENTING — structured reasons are not in the API (see UC-AUT-D10).
+- Evidence: BE rejection codes in `AutomationRuleCodes.cs`, OpenAPI `backend/contracts/openapi/notrelix.v1.json` (`AutomationEnableRefusalResponse`) · FE `automation-editor.tsx`, `board-automation.copy.ts` (en and vi) · Design `Final-Automation` · Tests FE-BS `__tests__/board-automation.interaction.component.test.tsx` · Real e2e none
+- State: HARDENING — Built: the refusal names each archived or deleted target (step, trigger or condition, and its kind) in the board editor, en and vi. Not built: the draft-to-enable save path and the workspace rules list show a generic failure. Owner tests by hand.
 
 ### UC-AUT-K05 A non-manager sees a denied state
 - Capability: AUT-011 Automation authoring frontend
@@ -1351,8 +1351,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: limit notice on the enable switch.
 - Rules: owner decision 44 (OD3); AIREQ053.
 - Acceptance: Given a limit of 3 and 3 enabled rules, When creating a Draft, Then it saves; When enabling it, Then rejected.
-- Evidence: BE the consume is in create (DEF-6) · FE none · Design none · Tests T-AA `CreateAutomationRuleBillingGateTests` · Real e2e none
-- State: IMPLEMENTING — code contradicts the decision.
+- Evidence: BE `AutomationRuleCapacity`, `CreateAutomationRule` (no slot), `SetAutomationRuleEnabled` (consume, release on disable), `DeleteAutomationRule` (release if held) · FE none · Design none · Tests T-AA `CreateAutomationRuleDraftCapacityTests`, `AutomationRuleCapacityTests`; integration `Billing/BillingCapacityFlowIntegrationTests.cs` (CI only) · Real e2e none
+- State: HARDENING — Built: Draft create takes no plan slot; enable consumes one (over the limit it is refused); disable and delete release the slot of a rule that holds one. Owner question: a rule the platform auto-disables keeps its slot until a person enables, disables or deletes it; the decision says Disabled uses no slot, and releasing on auto-disable needs the four executor call sites changed. Owner tests by hand.
 
 ## Capability N. Hardening and observability
 

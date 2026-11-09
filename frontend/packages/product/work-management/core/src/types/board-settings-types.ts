@@ -284,7 +284,14 @@ export interface BoardSettingsViewPatch {
 
 /** Why a write did not go through, as the page tells it. */
 export type BoardSettingsWriteFailure =
-  "conflict" | "invalid" | "limit" | "failed";
+  "conflict" | "invalid" | "limit" | "failed" | "broken-reference";
+
+/** A target a rule names that is archived or deleted (UC-AUT-D10): its kind, id and where the rule names it. */
+export interface BrokenAutomationReference {
+  readonly kind: string;
+  readonly id: string;
+  readonly field: string;
+}
 
 /** A published board limit the write would go over (D78.8): which one, and its max. */
 export interface WriteLimit {
@@ -316,6 +323,8 @@ export type BoardSettingsWriteResult =
       code?: string;
       /** What a formula refusal names: the loop, the unknown field, or where the syntax breaks. */
       detail?: FormulaRefusalDetail;
+      /** Present on a refused enable: every archived or deleted target the rule names. */
+      brokenReferences?: readonly BrokenAutomationReference[];
     };
 
 /** Facts a refused formula carries so the editor can name them (the server's problem extensions). */

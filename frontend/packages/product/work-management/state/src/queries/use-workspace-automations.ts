@@ -22,8 +22,36 @@ function errorKind(error: unknown): string | null {
     : null;
 }
 
+function brokenReferencesOf(
+  error: unknown,
+): { kind: string; id: string; field: string }[] {
+  const details = (error as { details?: unknown } | null)?.details;
+  const rows = (details as { brokenReferences?: unknown } | null)
+    ?.brokenReferences;
+  if (!Array.isArray(rows)) return [];
+  return rows.flatMap((row: unknown) => {
+    const { kind, id, field } = (row ?? {}) as Record<string, unknown>;
+    return typeof kind === "string" &&
+      typeof id === "string" &&
+      typeof field === "string"
+      ? [{ kind, id, field }]
+      : [];
+  });
+}
+
 function failure(error: unknown): WorkspaceAutomationWriteResult {
   const kind = errorKind(error);
+  // UC-AUT-D10 / K04: an enable refused because a target the rule names is archived or deleted.
+  if (
+    (error as { ruleCode?: unknown } | null)?.ruleCode ===
+    "Automation_Rule_BrokenReference"
+  ) {
+    return {
+      ok: false,
+      reason: "broken-reference",
+      brokenReferences: brokenReferencesOf(error),
+    };
+  }
   if (kind === "forbidden") return { ok: false, reason: "forbidden" };
   if (kind === "validation") {
     // The one validation the page can word: the plan's rule limit.

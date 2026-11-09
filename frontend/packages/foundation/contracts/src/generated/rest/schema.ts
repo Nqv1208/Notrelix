@@ -6722,6 +6722,21 @@ export interface components {
             /** Format: uuid */
             boardId?: string | null;
         };
+        "Notrelix.API.Contracts.Automation.Rules.Responses.AutomationBrokenReferenceResponse": {
+            kind?: string | null;
+            /** Format: uuid */
+            id?: string;
+            field?: string | null;
+        };
+        "Notrelix.API.Contracts.Automation.Rules.Responses.AutomationEnableRefusalResponse": {
+            title?: string | null;
+            /** Format: int32 */
+            status?: number;
+            detail?: string | null;
+            errorCode?: string | null;
+            ruleCode?: string | null;
+            brokenReferences?: components["schemas"]["Notrelix.API.Contracts.Automation.Rules.Responses.AutomationBrokenReferenceResponse"][] | null;
+        };
         "Notrelix.API.Contracts.Collaboration.Attachments.Requests.CreateBoardItemAttachmentRequest": {
             filename?: string | null;
             url?: string | null;
@@ -10723,7 +10738,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.API.Contracts.Automation.Rules.Responses.AutomationEnableRefusalResponse"];
                 };
             };
         };

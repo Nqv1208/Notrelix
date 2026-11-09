@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { ChevronLeft, CircleAlert, Info, Clock } from "lucide-react";
 import { Skeleton, cn } from "@notrelix/ui-web";
 import type {
+  BrokenAutomationReference,
   AutomationRuleDetailDto,
   AutomationRuleDocumentDto,
 } from "@notrelix/work-management-core";
@@ -15,6 +16,37 @@ import { StatusTag } from "./automation-parts";
 import { dayMonthOf } from "./automation-format";
 
 /** The editor of one rule: its flow, its footer and the column on the right. */
+
+/** Where a refused rule names the broken target: the trigger, a step or a condition, in the editor's words. */
+function brokenWhere(field: string, copy: AutomationEditorCopy): string {
+  if (field === "trigger.groupId") return copy.feedback.whereTrigger;
+  const step = /^actions\[(\d+)\]$/.exec(field);
+  if (step)
+    return fillCopy(copy.feedback.whereStep, { n: Number(step[1]) + 1 });
+  const condition = /^conditions\[(\d+)\]$/.exec(field);
+  if (condition)
+    return fillCopy(copy.feedback.whereCondition, {
+      n: Number(condition[1]) + 1,
+    });
+  return field;
+}
+
+function brokenKind(kind: string, copy: AutomationEditorCopy): string {
+  switch (kind) {
+    case "board":
+      return copy.feedback.kindBoard;
+    case "group":
+      return copy.feedback.kindGroup;
+    case "option":
+      return copy.feedback.kindOption;
+    case "field":
+      return copy.feedback.kindField;
+    case "member":
+      return copy.feedback.kindMember;
+    default:
+      return kind;
+  }
+}
 
 export function AutomationEditor({
   copy,
@@ -98,8 +130,11 @@ function RuleEditor({
   const [doc, setDoc] = useState<AutomationRuleDocumentDto>(rule.definition);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<
-    "conflict" | "invalid" | "failed" | null
+    "conflict" | "invalid" | "failed" | "broken-reference" | null
   >(null);
+  const [brokenRefs, setBrokenRefs] = useState<
+    readonly BrokenAutomationReference[]
+  >([]);
   const [chooseFieldStepId, setChooseFieldStepId] = useState<string | null>(
     null,
   );
@@ -130,6 +165,11 @@ function RuleEditor({
     setBusy(true);
     const result = await panel.actions.setEnabled(rule.id, next);
     setBusy(false);
+    if (!result.ok && result.reason === "broken-reference") {
+      setBrokenRefs(result.brokenReferences ?? []);
+      setFeedback("broken-reference");
+      return;
+    }
     // A rule write has no board limit; anything else is told as a failure.
     setFeedback(
       result.ok ? null : result.reason === "limit" ? "failed" : result.reason,
@@ -258,10 +298,27 @@ function RuleEditor({
                     ? copy.feedback.conflictTitle
                     : feedback === "invalid"
                       ? copy.feedback.invalid
-                      : copy.feedback.failed}
+                      : feedback === "broken-reference"
+                        ? copy.feedback.brokenTitle
+                        : copy.feedback.failed}
                 </b>
                 {feedback === "conflict" ? (
                   <span>{copy.feedback.conflictBody}</span>
+                ) : null}
+                {feedback === "broken-reference" ? (
+                  <ul
+                    className="list-disc pl-5"
+                    data-testid="broken-references"
+                  >
+                    {brokenRefs.map((reference) => (
+                      <li key={`${reference.field}:${reference.id}`}>
+                        {fillCopy(copy.feedback.brokenItem, {
+                          where: brokenWhere(reference.field, copy),
+                          kind: brokenKind(reference.kind, copy),
+                        })}
+                      </li>
+                    ))}
+                  </ul>
                 ) : null}
                 <span className="mt-1 flex gap-2">
                   {feedback === "conflict" ? (

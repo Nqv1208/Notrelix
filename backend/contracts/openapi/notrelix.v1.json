@@ -523,9 +523,15 @@
           "200": {
             "description": "OK",
             "content": {
+              "application/json": { }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.API.Contracts.Automation.Rules.Responses.AutomationEnableRefusalResponse"
                 }
               }
             }
@@ -27326,6 +27332,57 @@
           "boardId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Automation.Rules.Responses.AutomationBrokenReferenceResponse": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "field": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Automation.Rules.Responses.AutomationEnableRefusalResponse": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "errorCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "ruleCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "brokenReferences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.API.Contracts.Automation.Rules.Responses.AutomationBrokenReferenceResponse"
+            },
             "nullable": true
           }
         },

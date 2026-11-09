@@ -158,6 +158,8 @@ export function BoardSettingsProvider({
         return result;
       }
       if (result.reason === "conflict") void onReload?.();
+      // A refused enable names its targets where the rule is edited; no page-wide banner for it.
+      if (result.reason === "broken-reference") return result;
       setFailure({
         scope: scope ?? null,
         reason: result.reason,
