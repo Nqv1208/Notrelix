@@ -131,7 +131,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 | UC-BIL-A02 | Compare plans side by side | A | Billing managers (Owner, delegated manager) | No | Mock | so-sanh-goi | No | IMPLEMENTING | Mock-only (`backendCapabilities.billingPlans` equals the mock flag). Backend must serve plans with price rows |
 | UC-BIL-A03 | Maintain the plan catalog by revision | A | Platform operator | Yes | Real | No | No | INTEGRATING | No real spec publishes a revision; no design artboard; prices are 0 VND placeholders |
 | UC-BIL-A04 | Keep price history readable after a price change | A | System; read by billing managers on invoices | Dom | No | No | No | DEFINED | No price source exists |
-| UC-BIL-A05 | Ask sales about Enterprise | A | Billing managers | No | Mock | so-sanh-goi | No | IMPLEMENTING | No endpoint `POST .../billing/contact-sales` |
+| UC-BIL-A05 | Ask sales about Enterprise | A | Billing managers | No | Mock | so-sanh-goi | No | IMPLEMENTING | Owner question: a stored request is a tenant write, which migration 021 forbids for billing tables (see the use case) |
 | UC-BIL-B01 | Give every account a deterministic default subscription | B | System | Part | No | No | No | DEFINED | Bootstrap is only a read-time fallback |
 | UC-BIL-B02 | See subscription status, period and next change | B | Billing managers | No | Mock | tong-quan, chi-xem | No | IMPLEMENTING | Mock-only |
 | UC-BIL-B03 | Start a trial | B | Account owner or billing manager | Dom | No | No | No | DEFINED | No trial rule exists |
@@ -299,7 +299,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - Rules: Product decision (owner, 2026-10-26) 46; product §100.
 - Acceptance: Given a manager, when they contact sales twice with one key, then one request is stored.
 - Evidence: BE none · FE `billing/billing-api.ts` (`contactSales`), `frontend/packages/features/workspace/src/web/billing/``billing-compare-surface.tsx` · Design `Final-Billing.dc.html` `so-sanh-goi` · Tests mock handler `frontend/packages/dev/mock-backend/src/contexts/billing/billing.handlers.ts` · Real e2e none
-- State: IMPLEMENTING — No endpoint `POST .../billing/contact-sales`; no stored request; no delivery to a sales mailbox.
+- State: IMPLEMENTING — Owner question: product decision 46 says contact sales is stored as a request, but the RLS pack forbids it. `backend/src/Notrelix.Infrastructure/Data/Rls/RlsSqlScripts/021_billing_and_account_writes.sql` revokes INSERT, UPDATE and DELETE on the billing tables from `notrelix_app` ("no tenant-side commercial billing writes"). A new request table is either a documented exception with its own INSERT grant and policy, or the write goes through a platform-side path. Which? Also, who may read the stored requests (operator console only, or the account's billing managers)? Not built: no endpoint, entity, table or migration; the mailbox delivery stays out of scope.
 
 ## B. BIL-002 Subscription lifecycle
 
