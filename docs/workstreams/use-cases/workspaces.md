@@ -145,7 +145,7 @@ Products compared and what was taken:
 | UC-WSP-B04 | List every workspace I belong to (user scope) | B | Any signed-in user | yes | yes | none | workspace-read-and-lists.real.e2e.spec.ts | DONE | closed 2026-11-03, see the Evidence line |
 | UC-WSP-C01 | Edit workspace name and description | C | Owner, Admin | yes | yes | none for workspace settings (`Final-Settings` is the Board settings page) | none | DONE | closed 2026-11-03, see the Evidence line |
 | UC-WSP-C02 | Change the workspace address (enterprise baseline) | C | Owner, Admin | no | no | none | none | DEFINED | Command, endpoint, event, settings field. |
-| UC-WSP-D01 | Archive a workspace | D | Owner, Admin | yes | yes | Final-Settings | none | INTEGRATING | UI copy says every member loses access, the product says read-only (fix copy); participant contexts only have stub consumers (`WorkspacesStubConsumers`); real e2e. |
+| UC-WSP-D01 | Archive a workspace | D | Owner, Admin | yes | yes | Final-Settings | none | INTEGRATING | Built: archive copy says the workspace becomes read-only (en and vi). Still stub: participant contexts only have `WorkspacesStubConsumers`, so the archive fact pauses nothing yet. Real e2e: owner tests by hand. |
 | UC-WSP-D02 | Unarchive a workspace | D | Owner, Admin | yes | no | none | none | IMPLEMENTING | Frontend entry for an archived workspace (it vanishes from lists); banner; copy. |
 | UC-WSP-D03 | Delete a workspace | D | Owner | yes | yes | none (no workspace danger-zone artboard; built from the archive pattern of the same page) | workspace-delete-restore.real.e2e.spec.ts | DONE | closed 2026-11-03, see the Evidence line |
 | UC-WSP-D04 | Restore a deleted workspace | D | Owner | yes | yes | none (the Recently deleted list reuses the archived-workspaces pattern) | workspace-delete-restore.real.e2e.spec.ts | DONE | closed 2026-11-03, see the Evidence line |
@@ -191,20 +191,20 @@ Products compared and what was taken:
 | UC-WSP-K01 | Create a Space (department) | K | Owner, Admin | yes | yes | Final-Space, Final-M-Space | workspace-spaces.real.e2e.spec.ts | DONE | accepted 2026-11-02, see the Evidence line |
 | UC-WSP-K02 | Read the Space tree and list Spaces | K | Any non-Guest member | yes | yes | Final-Space | workspace-spaces.real.e2e.spec.ts | DONE | closed 2026-11-03, see the Evidence line |
 | UC-WSP-K03 | Read one Space | K | Any member who can see the Space | yes | yes | Final-Space | none | INTEGRATING | Real e2e. |
-| UC-WSP-K04 | Rename a Space or edit its description | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | INTEGRATING | Expected version; real e2e. |
-| UC-WSP-K05 | Change a Space's type | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | INTEGRATING | Expected version; real e2e. |
-| UC-WSP-K06 | Change a Space's visibility | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | INTEGRATING | Expected version; real e2e. |
+| UC-WSP-K04 | Rename a Space or edit its description | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | HARDENING | Built: expected version on rename and description; a stale one is 412. Real e2e: owner tests by hand. |
+| UC-WSP-K05 | Change a Space's type | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | INTEGRATING | Built: expected version on the type write. Not built: a control to change the type (owner question). Real e2e: owner tests by hand. |
+| UC-WSP-K06 | Change a Space's visibility | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | HARDENING | Built: expected version on the visibility write; a stale one is 412. Real e2e: owner tests by hand. |
 | UC-WSP-K07 | Move or reorder a Space | K | Owner, Admin, Space Admin | yes | partial | Final-Space | none | INTEGRATING | Frontend tree drag; real e2e. |
-| UC-WSP-K08 | Archive or unarchive a Space | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | INTEGRATING | Expected version; real e2e. |
+| UC-WSP-K08 | Archive or unarchive a Space | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | HARDENING | Built: expected version on archive and unarchive; a stale one is 412. Real e2e: owner tests by hand. |
 | UC-WSP-K09 | Delete or restore a Space | K | Owner, Admin, Space Admin | yes | no | Final-Space | none | IMPLEMENTING | Frontend calls; trash and retention rule; expected version. |
-| UC-WSP-K10 | See who is in a Space | K | Owner, Admin, Space members | yes | yes | Final-Space, Final-M-Space | none | INTEGRATING | Pagination for large Teams; real e2e; design diff. |
+| UC-WSP-K10 | See who is in a Space | K | Owner, Admin, Space members | yes | yes | Final-Space, Final-M-Space | none | INTEGRATING | Built: the members list is a cursor page (50 default, 200 max). Not built: paging of members-extra (owner call: needs a server filter and search contract). Real e2e; design diff. |
 | UC-WSP-K11 | Add a person or Team to a Space | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | INTEGRATING | Real e2e; design diff. |
 | UC-WSP-K12 | Change a Space member's role | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | INTEGRATING | Real e2e. |
 | UC-WSP-K13 | Remove a person or Team from a Space | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | INTEGRATING | Real e2e. |
 | UC-WSP-K14 | Open the department page overview | K | Owner, Admin, Space members | yes | yes | Final-Space, Final-M-Space | none | INTEGRATING | Real e2e; design diff; scale test for large Spaces. |
 | UC-WSP-K15 | Place a Board or Page in a Space (facts only) | K | Work Management and Documents | yes | yes | Final-Space | workspace-spaces.real.e2e.spec.ts | DONE | closed 2026-11-03, see the Evidence line |
-| UC-WSP-L01 | Create a Team | L | Owner, Admin | yes | yes | Final-Teams | none | INTEGRATING | Name rule; real e2e; design diff. |
-| UC-WSP-L02 | List and read Teams | L | Any non-Guest member | yes | yes | Final-Teams | none | INTEGRATING | Pagination (LD-06); real e2e. |
+| UC-WSP-L01 | Create a Team | L | Owner, Admin | yes | yes | Final-Teams | none | HARDENING | Built: Team name rule (trimmed length, case-insensitive uniqueness within the workspace, `Workspaces_Team_DuplicateName`). Owner question: the product doc has no Team name rule. Real e2e and design diff: owner tests by hand. |
+| UC-WSP-L02 | List and read Teams | L | Any non-Guest member | yes | yes | Final-Teams | none | HARDENING | Built: cursor page on the list (LD-06). Real e2e: owner tests by hand. |
 | UC-WSP-L03 | List Team members | L | Any non-Guest member | yes | yes | Final-Teams | none | INTEGRATING | Real e2e. |
 | UC-WSP-L04 | Rename a Team or edit its description | L | Owner, Admin | yes | yes | Final-Teams | none | INTEGRATING | Real e2e. |
 | UC-WSP-L05 | Add a person to a Team | L | Owner, Admin | yes | yes | Final-Teams | none | INTEGRATING | Real e2e. |
@@ -391,7 +391,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) section 60; WGREQ005, WGREQ006; Part 4 LD-02.
 - Acceptance: Given an Active workspace, When Owner archives it with the right version, Then status is Archived and members can still read it. Given a Member, Then 403.
 - Evidence: BE `POST /api/v1/workspaces/{id}/archive`, `ArchiveWorkspaceCommandHandler` · FE settings 'Danger zone' (`workspace-settings-surface.tsx`), `use-workspace-settings-mutations.ts` · Design `Final-Settings` · Tests `WorkspaceTests`, `WorkspaceMutationOrderingTests`, `WorkspaceLifecycleTests` · Real e2e none
-- State: INTEGRATING — UI copy says every member loses access, the product says read-only (fix copy); participant contexts only have stub consumers (`WorkspacesStubConsumers`); real e2e.
+- State: INTEGRATING — Built: the archive dialog copy now says the workspace becomes read-only ("Every member can still read this workspace, but nothing in it can change until an owner restores it."), in English and Vietnamese; the archive description says read-only too. Still stub: the participant contexts only have `WorkspacesStubConsumers`, so the fact pauses no automation or integration sync yet (consumers are not built here). Real e2e: owner tests by hand.
 
 ### UC-WSP-D02 Unarchive a workspace
 - Capability: D Workspace lifecycle transition
@@ -1049,8 +1049,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Inline edit, validation, pending, conflict.
 - Rules: [workspaces](../../product/workspaces.md) section 43.1; WGREQ038, WGREQ039; WX-SPACE-003.
 - Acceptance: Given a rename to a taken sibling name, Then refused.
-- Evidence: BE `PUT .../spaces/{spaceId}`, `PUT .../spaces/{spaceId}/description`, `RenameSpaceCommandHandler`, `UpdateSpaceDescriptionCommandHandler` · FE `space-settings-panel.tsx`, `spaces.service.ts` · Design `Final-Space` · Tests `SpaceTests`, `SpaceVersionTests`, `space-page.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Tests and owner check. Built: `expectedVersion` on rename and description (body), mapped in the expected-version target map; the Space page sends the node version and, when one save changes several fields, re-reads the version between the writes. Tests to update: rename and description handler and integration tests (command shape), `SpaceVersionTests`. Real e2e.
+- Evidence: BE `PUT .../spaces/{spaceId}`, `PUT .../spaces/{spaceId}/description`, `RenameSpaceCommandHandler`, `UpdateSpaceDescriptionCommandHandler` · FE `space-settings-panel.tsx`, `spaces.service.ts` · Design `Final-Space` · Tests `SpaceTests`, `SpaceVersionTests`, `SpaceHierarchyIntegrationTests` (stale-version case, CI), `space-page.mock.e2e.spec.ts` · Real e2e none
+- State: HARDENING — Built: `expectedVersion` on rename and description (body), mapped in the expected-version target map and the request baseline; the Space page sends the node version and re-reads it between the writes. A stale version answers 412 and changes nothing (`SpaceVersionTests`; the stale-version case in `SpaceHierarchyIntegrationTests`, which runs in CI). Real e2e: owner tests by hand.
 
 ### UC-WSP-K05 Change a Space's type
 - Capability: K Spaces (added by this catalog)
@@ -1064,7 +1064,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Rules: [workspaces](../../product/workspaces.md) sections 41, 44.1.
 - Acceptance: Given a Folder, When set to Department, Then the type changes and visibility stays.
 - Evidence: BE `PUT .../spaces/{spaceId}/type`, `ChangeSpaceTypeCommandHandler` · FE `spaces.service.ts` · Design `Final-Space` · Tests `SpaceTests` · Real e2e none
-- State: INTEGRATING — Tests and owner check. Built: `expectedVersion` on the type write (same path as K04). Not built: a control to change the type (the settings panel shows the type but offers no control; no artboard shows one). Real e2e.
+- State: INTEGRATING — Built: `expectedVersion` on the type write (same path as K04; the stale-version case in `SpaceHierarchyIntegrationTests` runs in CI). Not built: a control to change the type (the settings panel shows the type but offers no control; no artboard shows one): owner question. Real e2e: owner tests by hand.
 
 ### UC-WSP-K06 Change a Space's visibility
 - Capability: K Spaces (added by this catalog)
@@ -1077,8 +1077,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Choice with consequence text, pending, success.
 - Rules: [workspaces](../../product/workspaces.md) sections 44.1; WSP-023; GOV-025.
 - Acceptance: Given a Workspace Space, When set Private, Then a non-member loses it from the tree.
-- Evidence: BE `PUT .../spaces/{spaceId}/visibility`, `ChangeSpaceVisibilityCommandHandler` · FE `space-settings-panel.tsx` · Design `Final-Space` · Tests `SpaceAccessMatrixIntegrationTests`, `space-page.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Tests and owner check. Built: `expectedVersion` on the visibility write (same path as K04). Real e2e.
+- Evidence: BE `PUT .../spaces/{spaceId}/visibility`, `ChangeSpaceVisibilityCommandHandler` · FE `space-settings-panel.tsx` · Design `Final-Space` · Tests `SpaceAccessMatrixIntegrationTests`, `SpaceHierarchyIntegrationTests` (stale-version case, CI), `space-page.mock.e2e.spec.ts` · Real e2e none
+- State: HARDENING — Built: `expectedVersion` on the visibility write (same path as K04; the stale-version case in `SpaceHierarchyIntegrationTests` runs in CI). Real e2e: owner tests by hand.
 
 ### UC-WSP-K07 Move or reorder a Space
 - Capability: K Spaces (added by this catalog)
@@ -1105,8 +1105,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Confirmation, blocked state with reason, pending.
 - Rules: [workspaces](../../product/workspaces.md) section 43.2; WSP-022; WGREQ039.
 - Acceptance: Given a Space with one Board, When archived, Then refused naming the Board.
-- Evidence: BE `POST .../archive`, `POST .../unarchive`, `ArchiveSpaceCommandHandler`, `UnarchiveSpaceCommandHandler` · FE `space-settings-panel.tsx` · Design `Final-Space` · Tests `ArchiveSpaceCommandHandlerTests`, `space-page.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Tests and owner check. Built: `expectedVersion` on archive and unarchive (new body), sent by the Space page. Tests to update: `ArchiveSpaceCommandHandlerTests` and the integration tests that archive a Space (command shape). Real e2e.
+- Evidence: BE `POST .../archive`, `POST .../unarchive`, `ArchiveSpaceCommandHandler`, `UnarchiveSpaceCommandHandler` · FE `space-settings-panel.tsx` · Design `Final-Space` · Tests `ArchiveSpaceCommandHandlerTests`, `SpaceHierarchyIntegrationTests` (stale-version case, CI), `space-page.mock.e2e.spec.ts` · Real e2e none
+- State: HARDENING — Built: `expectedVersion` on archive and unarchive (body), sent by the Space page; a stale one answers 412 (the stale-version case in `SpaceHierarchyIntegrationTests` runs in CI). Real e2e: owner tests by hand.
 
 ### UC-WSP-K09 Delete or restore a Space
 - Capability: K Spaces (added by this catalog)
@@ -1133,8 +1133,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Loading, empty, success, filters, permission denied.
 - Rules: [workspaces](../../product/workspaces.md) sections 44.2, 44.3, 48.2; WSP-024, WSP-026.
 - Acceptance: Given a Team entry, Then its active members show once at the highest role.
-- Evidence: BE `GET .../members`, `GET .../members-extra`, `GetSpaceMembersQueryHandler`, `GetSpaceMembersExtraQueryHandler` · FE `space-members-view.tsx`, `use-space-members-extra.ts` · Design `Final-Space`, `Final-M-Space` · Tests `SpaceMembersExtraIntegrationTests`, `space-members.mock.e2e.spec.ts`, `design-fidelity-members.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Tests and owner check. Not built: paging of the members-extra read. The tab filters and counts people client-side over the whole set, so paging it needs a server-side filter and search contract: owner call. Real e2e; design diff.
+- Evidence: BE `GET .../members`, `GET .../members-extra`, `GetSpaceMembersQueryHandler`, `GetSpaceMembersExtraQueryHandler` · FE `space-members-view.tsx`, `use-space-members-extra.ts` · Design `Final-Space`, `Final-M-Space` · Tests `SpaceMembersExtraIntegrationTests`, `SpaceReadPagingTests`, `space-members-paging.unit.test.ts`, `space-members.mock.e2e.spec.ts`, `design-fidelity-members.mock.e2e.spec.ts` · Real e2e none
+- State: INTEGRATING — Built: `GET .../members` pages by cursor in subject id order (50 default, 200 max, the Space cursor shape); the Space page reads every page and orders people by role. Tests: `SpaceReadPagingTests`, `space-members-paging.unit.test.ts`. Not built: paging of the members-extra read. The tab filters and counts people client-side over the whole set, so paging it needs a server-side filter and search contract: owner call. Real e2e; design diff.
 
 ### UC-WSP-K11 Add a person or Team to a Space
 - Capability: K Spaces (added by this catalog)
@@ -1215,12 +1215,12 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `name`, `description`.
 - Output: A Team (Active) inside the workspace.
 - Main flow: 1. `POST /api/v1/workspaces/{id}/teams`. 2. Domain creates.
-- No-op / rejection / concurrency / retry: Duplicate name rule is not stated in the product (see Part 5; owner decision, not changed). A retry under the same Idempotency-Key returns the Team the first attempt made; a different body under that key is refused.
+- No-op / rejection / concurrency / retry: Duplicate name: refused, case-insensitively, when another non-deleted Team of the Workspace has the name (`Workspaces_Team_DuplicateName`); the product doc does not state this rule (see the State line). A retry under the same Idempotency-Key returns the Team the first attempt made; a different body under that key is refused.
 - UI states: Loading, success, validation error, permission denied, conflict, pending, offline, destructive confirmation.
 - Rules: [workspaces](../../product/workspaces.md) sections 45, 78; WSP-014, WSP-025; WGREQ034; WX-TEAM-001.
 - Acceptance: Given an Admin, When they create `Design`, Then the Team exists with no members.
-- Evidence: BE `POST /api/v1/workspaces/{id}/teams`, `CreateTeamCommandHandler` · FE `create-team-dialog.tsx`, `use-team-mutations.ts` · Design `Final-Teams` · Tests `TeamTests`, `TeamEndpointTests`, `workspace-teams.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Tests and owner check. Built: the create takes an Idempotency-Key (endpoint, dialog hook keeps one key per input, mock replays by key). Open owner decision: whether Team names are unique in a workspace. Tests to update: `TeamEndpointTests` (key). Real e2e; design diff.
+- Evidence: BE `POST /api/v1/workspaces/{id}/teams`, `CreateTeamCommandHandler` · FE `create-team-dialog.tsx`, `use-team-mutations.ts` · Design `Final-Teams` · Tests `TeamTests`, `CreateTeamCommandHandlerTests`, `TeamEndpointTests`, `workspace-teams.mock.e2e.spec.ts` · Real e2e none
+- State: HARDENING — Built: the Team name rule on create and on rename, applied by analogy with the Space name rule: trimmed name up to 160 characters, and unique, case-insensitively, among the non-deleted Teams of the workspace (`Workspaces_Team_DuplicateName`). Tests: `TeamTests`, `CreateTeamCommandHandlerTests`, the rule-code snapshot. Owner question: `docs/product/workspaces.md` section 45 does not state a Team name rule; confirm it. The check reads the names before the write and there is no unique index yet, so two concurrent creates of one name can both pass. Real e2e and design diff: owner tests by hand.
 
 ### UC-WSP-L02 List and read Teams
 - Capability: L Teams (added by this catalog)
@@ -1233,8 +1233,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Loading, empty, success, search.
 - Rules: [workspaces](../../product/workspaces.md) sections 45, 46; WGREQ034.
 - Acceptance: Given four Teams, Then four rows.
-- Evidence: BE `GET .../teams`, `GET .../teams/{teamId}`, `GetWorkspaceTeamsQueryHandler`, `GetTeamQueryHandler` · FE `workspace-teams-surface.tsx`, `use-teams.ts` · Design `Final-Teams` · Tests `TeamEndpointTests`, `workspace-teams.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Tests and owner check. Built: cursor page on the list (shared name cursor with the Space list), the Team service reads every page, the mock pages. Tests to update: `TeamEndpointTests`, `TeamAdministrationReadIntegrationTests` (the list now returns a page), OpenAPI shape tests. Real e2e.
+- Evidence: BE `GET .../teams`, `GET .../teams/{teamId}`, `GetWorkspaceTeamsQueryHandler`, `GetTeamQueryHandler` · FE `workspace-teams-surface.tsx`, `use-teams.ts` · Design `Final-Teams` · Tests `TeamEndpointTests`, `GetWorkspaceTeamsPagingTests`, `workspace-teams.mock.e2e.spec.ts` · Real e2e none
+- State: HARDENING — Built: the Team list is a cursor page (LD-06: name order, 50 default, 200 max, archived Teams included) and the Team service follows `nextCursor` to the end. The pagination gap was already built when checked; the index row and this section were stale. Tests: `GetWorkspaceTeamsPagingTests`; `TeamAdministrationReadIntegrationTests` and `TeamEndpointTests` cover the endpoints (CI). Real e2e: owner tests by hand.
 
 ### UC-WSP-L03 List Team members
 - Capability: L Teams (added by this catalog)
