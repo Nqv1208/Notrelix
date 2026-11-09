@@ -222,7 +222,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 | UC-BIL-W02 | Replace the hard-coded frontend catalog with the API | W | Frontend team | Part | Real | No | No | IMPLEMENTING | The tenant plan card and the operator console read the catalog from the API; the dead package stub (`features-billing`, prices that match nothing) is still there |
 | UC-BIL-X01 | Keep one account's billing data from another | X | System | Yes | No | No | No | IMPLEMENTING | No cross-tenant test per billing endpoint |
 | UC-BIL-X02 | Never touch card data or secrets | X | System | Dom | No | No | No | DEFINED | No redaction test |
-| UC-BIL-X03 | Make commercial commands idempotent and rate-limited | X | System | Part | Mock | No | No | IMPLEMENTING | No key on `PUT .../billing/plan` |
+| UC-BIL-X03 | Make commercial commands idempotent and rate-limited | X | System | Part | Mock | No | No | IMPLEMENTING | No key on the plan change (`PUT /operator/v1/accounts/{accountId}/billing/plan`, operator-only, outside the request pipeline). Owner question in the use case |
 | UC-BIL-X04 | Audit every billing change | X | Auditors and billing managers | No | No | No | No | DEFINED | Governance audit contract not used by Billing |
 | UC-BIL-X05 | Coordinate Billing when an account closes | X | System (Accounts owns closure) | No | No | No | No | DEFINED | No consumer of the closure fact |
 | UC-BIL-X06 | Keep commercial evidence after product or account deletion | X | System | No | No | No | No | DEFINED | Retention period not decided (Part 4) |
@@ -1619,7 +1619,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - Rules: Product §70 BIL-025; spec BILREQ100, BILREQ105; team spec section 69.
 - Acceptance: Given a repeated command with one key, then one effect.
 - Evidence: BE partial: capacity actions dedup by logical id; plan change has none · FE `billing/billing-api.ts` sends keys for mock calls · Design none · Tests `backend/tests/Notrelix.Application.Tests/Features/Billing/``BillingCapacityActionsTests.cs` · Real e2e none
-- State: IMPLEMENTING — No key on `PUT .../billing/plan`; no limiter.
+- State: IMPLEMENTING — Owner question: the only plan change is the operator route `PUT /operator/v1/accounts/{accountId}/billing/plan`, which calls `OperatorAccountBillingService.ChangePlanAsync` directly. No `IdempotencyBehavior` or idempotency store runs for it, and it has no `WithIdempotencyKey()`. A repeat with the same plan is already a no-op; a repeat with a stale `expectedVersion` conflicts instead of returning the first result. Should the key go on a pipeline command under an operator principal, or on a dedicated operator idempotency table (new migration)? Which limit applies per operator? The rate-limit text names `TenantAwareRateLimitBehavior`, which does not exist in the repo.
 
 ### UC-BIL-X04 Audit every billing change
 - Capability: X. BIL-024 Hardening/security
