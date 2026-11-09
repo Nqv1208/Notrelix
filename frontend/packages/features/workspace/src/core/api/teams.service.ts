@@ -30,6 +30,7 @@ export interface TeamsEndpoints {
     teamDescription: (workspaceId: string, teamId: string) => string;
     teamArchive: (workspaceId: string, teamId: string) => string;
     teamUnarchive: (workspaceId: string, teamId: string) => string;
+    teamRestore: (workspaceId: string, teamId: string) => string;
     teamMembers: (workspaceId: string, teamId: string) => string;
     teamMember: (workspaceId: string, teamId: string, userId: string) => string;
     teamMemberRole: (
@@ -61,8 +62,8 @@ export function parseTeamMembers(items: unknown): TeamMember[] {
 /**
  * Adapter for the Workspaces Team producer. Every write carries the Team
  * version read from the producer (body, or query string for removal); a
- * stale one is rejected and never retried automatically. Delete is not
- * offered: Teams are archived, like Spaces.
+ * stale one is rejected and never retried automatically. Delete and restore
+ * are offered next to archive; archive stays the everyday way to hide a Team.
  */
 export function createTeamsService(
   api: SpacesApiClient,
@@ -157,6 +158,22 @@ export function createTeamsService(
         expectedVersion: input.expectedVersion,
       };
       await api.post<void>(e.teamUnarchive(workspaceId, teamId), body);
+    },
+
+    /** Soft-deletes a Team; the producer checks `expectedVersion`, sent in the query string. */
+    async remove(
+      workspaceId: string,
+      teamId: string,
+      input: { expectedVersion: number },
+    ): Promise<void> {
+      await api.delete<void>(
+        `${e.team(workspaceId, teamId)}?expectedVersion=${encodeURIComponent(String(input.expectedVersion))}`,
+      );
+    },
+
+    /** Restores a deleted Team. The producer takes no expected version. */
+    async restore(workspaceId: string, teamId: string): Promise<void> {
+      await api.post<void>(e.teamRestore(workspaceId, teamId), {});
     },
 
     async addMember(

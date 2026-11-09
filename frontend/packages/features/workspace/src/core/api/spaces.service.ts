@@ -61,6 +61,7 @@ export interface SpacesEndpoints {
     spaceType: (workspaceId: string, spaceId: string) => string;
     spaceArchive: (workspaceId: string, spaceId: string) => string;
     spaceUnarchive: (workspaceId: string, spaceId: string) => string;
+    spaceRestore: (workspaceId: string, spaceId: string) => string;
     spaceMove: (workspaceId: string, spaceId: string) => string;
     spaceMembers: (workspaceId: string, spaceId: string) => string;
     spaceMember: (
@@ -309,6 +310,16 @@ export function createSpacesService(
     ): Promise<void> {
       const body: SpaceVersionBody = { expectedVersion };
       await api.post<void>(e.spaceUnarchive(workspaceId, spaceId), body);
+    },
+
+    /** Soft-deletes a Space. The producer takes no expected version; it refuses a Space with content. */
+    async remove(workspaceId: string, spaceId: string): Promise<void> {
+      await api.delete<void>(e.space(workspaceId, spaceId));
+    },
+
+    /** Restores a deleted Space under a live parent. The producer takes no expected version. */
+    async restore(workspaceId: string, spaceId: string): Promise<void> {
+      await api.post<void>(e.spaceRestore(workspaceId, spaceId), {});
     },
 
     async addMember(
