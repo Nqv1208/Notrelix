@@ -323,7 +323,7 @@ function ChecklistBlock({
                 <PersonMark member={assignee} size={20} />
               ) : null}
               {writableItem && editing !== item.id ? (
-                <span className="hidden gap-0.5 group-focus-within/cli:flex group-hover/cli:flex pointer-coarse:flex">
+                <span className="invisible flex gap-0.5 group-focus-within/cli:visible group-hover/cli:visible pointer-coarse:visible">
                   {model.setItemAssignee ? (
                     <ItemAssignButton
                       item={item}

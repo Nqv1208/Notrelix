@@ -588,6 +588,33 @@ describe("KanbanCard row 2 (checklist, files, blocked, crowding)", () => {
     expect(article.querySelector("[data-due]")!.textContent).toContain("→");
   });
 
+  it("draws a checklist progress bar filled to the share done", () => {
+    const { article } = renderCard({
+      checklistProgress: { done: 1, total: 4 },
+    });
+    const fill = article.querySelector(
+      "[data-checklist-bar] > span",
+    ) as HTMLElement;
+    expect(fill.style.width).toBe("25%");
+    expect(fill.className).toContain("bg-primary");
+  });
+
+  it("turns the checklist bar full and green when every item is done", () => {
+    const { article } = renderCard({
+      checklistProgress: { done: 4, total: 4 },
+    });
+    const fill = article.querySelector(
+      "[data-checklist-bar] > span",
+    ) as HTMLElement;
+    expect(fill.style.width).toBe("100%");
+    expect(fill.className).toContain("bg-work-status-done");
+  });
+
+  it("draws no checklist bar on a card without a checklist", () => {
+    const { article } = renderCard({});
+    expect(article.querySelector("[data-checklist-bar]")).toBeNull();
+  });
+
   it("keeps the word Bị chặn when the row has room", () => {
     const { article } = renderCard({ openBlockerCount: 1 });
     expect(article.querySelector("[data-blocked]")!.textContent).toContain(
