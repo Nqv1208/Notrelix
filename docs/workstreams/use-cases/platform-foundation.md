@@ -156,7 +156,7 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-L02 | Behave sensibly offline (enterprise baseline) | L | Frontend runtime | n/a | partial | Final-States | no | DEFINED | no policy |
 | UC-PLT-L03 | Run the mobile runtime with bearer tokens | L | Mobile runtime | yes | partial | Final-M-Auth | no | IMPLEMENTING | mobile host not shipped |
 | UC-PLT-L04 | Show a recoverable error instead of a blank screen | L | Frontend runtime | n/a | yes | Final-States | no | IMPLEMENTING | no real e2e |
-| UC-PLT-M01 | Serve design tokens from one package | M | Frontend build | n/a | yes | Themes | no | IMPLEMENTING | no real e2e needed; token tests exist |
+| UC-PLT-M01 | Serve design tokens from one package | M | Frontend build | n/a | yes | Themes | no | HARDENING | none open; token tests in `tokens.unit.test.ts` |
 | UC-PLT-N01 | Carry a correlation id on every request and log | N | API middleware | yes | yes | n/a | no | IMPLEMENTING | no end-to-end trace proof |
 | UC-PLT-N02 | Answer a liveness probe | N | Orchestrator | yes | n/a | n/a | no | HARDENING | none open; route tests `GetLive_*` in `HealthEndpointTests` |
 | UC-PLT-N03 | Answer a readiness probe | N | Orchestrator | yes | n/a | n/a | no | HARDENING | no probe proof against the real compose stack |
@@ -869,8 +869,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: light, dark.
 - Rules: PFREQ093 to PFREQ099.
 - Acceptance: Given the build, When a host imports `@notrelix/ui-tokens/css`, Then the tokens resolve.
-- Evidence: BE n/a · FE `frontend/packages/ui/tokens/package.json` export `./css`, `src/css/build-css.ts` · Design Themes · Tests `frontend/packages/ui/tokens/src/__tests__/tokens.unit.test.ts` · Real e2e none
-- State: IMPLEMENTING — the packaging gap in the spec is closed in source; no primitive inventory proof here.
+- Evidence: BE n/a · FE `frontend/packages/ui/tokens/package.json` export `./css`, `src/css/build-css.ts`, host import `frontend/apps/web/src/styles/globals.css` line 9 · Design Themes · Tests `frontend/packages/ui/tokens/src/__tests__/tokens.unit.test.ts` (generator match, `./css` export, every role in every appearance, OKLCH only) · Real e2e none
+- State: HARDENING — Built: the `./css` export resolves to `src/css/index.css`, the committed file matches `build-css.ts` (unit test), and the web host imports it with no own colour definitions. Unit run: 2242 passed, 2 skipped. Primitive inventory is out of scope (Part 6).
 
 ## Capability N: Observability and health
 
