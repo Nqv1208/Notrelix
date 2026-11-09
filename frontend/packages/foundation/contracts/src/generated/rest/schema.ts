@@ -143,6 +143,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/dashboards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create an empty private dashboard owned by the caller */
+        post: operations["Analytics.Dashboards.CreateDashboard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/automations/{automationId}/executions/{executionId}/cancel": {
         parameters: {
             query?: never;
@@ -6747,6 +6764,9 @@ export interface components {
             /** Format: int64 */
             expectedVersion?: number;
         };
+        "Notrelix.API.Contracts.Analytics.Dashboards.Requests.CreateDashboardRequest": {
+            name?: string | null;
+        };
         "Notrelix.API.Contracts.Automation.Rules.Requests.AutomationActionRequest": {
             type?: string | null;
             configuration?: string | null;
@@ -10723,6 +10743,51 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfWorkItemPlacementDto"];
                 };
+            };
+        };
+    };
+    "Analytics.Dashboards.CreateDashboard": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Analytics.Dashboards.Requests.CreateDashboardRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

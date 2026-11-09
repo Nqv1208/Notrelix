@@ -135,7 +135,7 @@ Table-stakes use cases the product docs do not list, added as "(enterprise basel
 | UC-ANA-L01 | Compose a multi-source report with completeness | L | Workspace member | no | no | none | no | DEFINED | no composer |
 | UC-ANA-M01 | List the dashboards and reports I may open | M | Workspace member | no | mock | Final-Reports | no | IMPLEMENTING | no endpoint |
 | UC-ANA-M02 | Open one report or dashboard | M | Workspace member | no | mock | Final-Reports | no | IMPLEMENTING | no endpoint |
-| UC-ANA-M03 | Create a dashboard | M | Workspace member | domain | mock | Final-Reports | no | IMPLEMENTING | no handler |
+| UC-ANA-M03 | Create a dashboard | M | Workspace member | yes | mock | Final-Reports | no | HARDENING | no screen (owner); no list yet |
 | UC-ANA-M04 | Rename a dashboard | M | Dashboard owner | domain | mock | Final-Reports | no | IMPLEMENTING | no handler |
 | UC-ANA-M05 | Archive, restore or delete a dashboard | M | Dashboard owner | domain | mock | Final-Reports | no | IMPLEMENTING | no handler, no restore rule |
 | UC-ANA-M06 | Add and configure a widget | M | Dashboard owner | domain | mock | Final-Reports | no | IMPLEMENTING | untyped config |
@@ -567,8 +567,8 @@ Dashboards live in the Analytics context (owner decision 17: a dashboard is an A
 - UI states: empty start, validation error, pending, permission denied.
 - Rules: ANA006, ANA007; ARREQ041 to ARREQ044.
 - Acceptance: Given a title, When created twice with one idempotency key, Then one dashboard exists.
-- Evidence: BE Domain `Dashboard.cs` only · FE `report-start.tsx`, `report-dialogs.tsx` (mock `reports.create`) · Design Final-Reports · Tests `DashboardTests.cs`, mock e2e "starts empty, takes a layout, a name, sharing and can be deleted" · Real e2e none
-- State: IMPLEMENTING — the aggregate has no explicit owner user id (`AR-GAP-03`).
+- Evidence: BE `backend/src/Notrelix.Application/Features/Analytics/Dashboards/Commands/CreateDashboard/CreateDashboard.cs` (+ `CreateDashboardCommandValidator.cs`), `backend/src/Notrelix.API/Endpoints/Analytics/Dashboards/Commands/CreateDashboardEndpoint.cs` (`POST /api/v1/workspaces/{workspaceId}/dashboards`, Idempotency-Key), Domain `Dashboard.cs` · FE `report-start.tsx`, `report-dialogs.tsx` (mock `reports.create`) · Design Final-Reports · Tests `backend/tests/Notrelix.Application.Tests/Features/Analytics/CreateDashboardCommandTests.cs`, `backend/tests/Notrelix.Integration.Tests/Analytics/DashboardCreateIntegrationTests.cs` (runs in CI, needs Docker), `DashboardTests.cs` · Real e2e none
+- State: HARDENING — Built: the owner's create persists one private, Active, empty dashboard under the caller's tenant; a retry with the same Idempotency-Key returns the first dashboard; a non-member is answered like a made-up Workspace. The owner is the audit creator (`CreatedBy`); there is no separate `OwnerUserId` (`AR-GAP-03` still open). Owner question: workspace-visible dashboards (`ManageDashboards`, Governance name) are not built; only private dashboards can be created. Remaining: no screen (owner decides); the integration test runs in CI only.
 
 ### UC-ANA-M04 Rename a dashboard
 - Capability: M, ANA-013

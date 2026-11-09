@@ -1,3 +1,4 @@
+using Notrelix.API.Endpoints.Analytics.Dashboards.Commands;
 using Notrelix.API.Endpoints.Analytics.Placements.Queries;
 using Notrelix.API.Endpoints.Analytics.Queries;
 
@@ -21,6 +22,11 @@ public static class AnalyticsEndpointMappings
             .WithTags("Analytics")
             .WithOpenApi()
             .MapListWorkspacePlacements();
+
+        app.MapGroup("/api/v1/workspaces/{workspaceId:guid}/dashboards")
+            .WithTags("Analytics")
+            .WithOpenApi()
+            .MapCreateDashboard();
 
         return app;
     }
