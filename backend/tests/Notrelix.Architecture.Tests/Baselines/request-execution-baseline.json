@@ -125,6 +125,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Automation.Executions.Commands.CancelAutomationExecution.CancelAutomationExecutionCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Automation.Executions.Commands.CancelAutomationExecution.CancelAutomationExecutionCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Automation.Executions.Commands.HandleN8nCallback.HandleN8nCallbackCommand",
     "kind": "Command",
     "principalMarkers": [

@@ -1,3 +1,4 @@
+using Notrelix.API.Endpoints.Automation.Executions.Commands;
 using Notrelix.API.Endpoints.Automation.Rules.Commands;
 using Notrelix.API.Endpoints.Automation.Rules.Queries;
 
@@ -17,6 +18,7 @@ public static class MapRuleEndpoints
         group.MapSetAutomationRuleEnabled();
         group.MapUpdateAutomationRule();
         group.MapDeleteAutomationRule();
+        group.MapCancelAutomationExecution();
 
         return app;
     }

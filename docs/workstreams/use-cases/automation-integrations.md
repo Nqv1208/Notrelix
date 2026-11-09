@@ -210,7 +210,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-AUT-H01 | An execution moves Queued, Running, then ends | H Execution state machine | system | Y | Y | Y | Y | HARDENING | as D01 |
 | UC-AUT-H02 | See each step of a run | H Execution state machine | as J01 | Y | Y | Y | Y | HARDENING | step status is stored in the `LastResponse` JSON, not in `AutomationExecutionStep` rows |
 | UC-AUT-H03 | Partial failure keeps what already happened | H Execution state machine | as J01 | Y | P | Y | N | HARDENING | Built (verified by reading code 2026-11-09, not run): AutomationMultiActionTests.cs (ARejectedAction_FailsTheExecution_AndLaterActionsDoNotRun), automation-log.tsx. Remaining: owner tests by hand. |
-| UC-AUT-H04 | Cancel a queued execution | H Execution state machine | board Manager or Owner and Admin | P | N | N | N | IMPLEMENTING | domain only |
+| UC-AUT-H04 | Cancel a queued execution | H Execution state machine | board Manager or Owner and Admin | Y | N | N | N | HARDENING | Built: POST `/api/v1/workspaces/{workspaceId}/automations/{automationId}/executions/{executionId}/cancel` refuses unless Queued (`AutomationExecution.CancelBeforeStart`). Not built: cancel action and confirmation in the FE; no expected version (as E01). Owner tests by hand |
 | UC-AUT-H05 | An unknown outcome is held, never re-fired | H Execution state machine | system | Y | N | N | N | IMPLEMENTING | no UI state; no governed reconciliation action |
 | UC-AUT-I01 | Retryable failures retry within one budget | I Business retry/failure policy | system | Y | N | N | N | INTEGRATING | no UI for the retrying state ('đang thử lại, lần N' is not in the FE) |
 | UC-AUT-I02 | A terminal failure shows a safe, useful reason | I Business retry/failure policy | as J01 | Y | Y | Y | N | INTEGRATING | failure reason is free text (AutomationExecution.Fail(string)), not a stable reason class |
@@ -1000,13 +1000,13 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Preconditions: execution Queued (not Running).
 - Input: execution id, expected version.
 - Output: status Cancelled; no step runs.
-- Main flow: a cancel command (not built).
+- Main flow: a cancel command (`CancelAutomationExecutionCommand`, `POST .../executions/{executionId}/cancel`).
 - No-op / rejection / concurrency / retry: cancelling a finished execution is rejected; a stale version is rejected.
 - UI states: cancel action, confirmation.
 - Rules: automation.md §49; AIREQ030.
 - Acceptance: Given a Queued execution, When cancelled, Then it ends Cancelled and no action runs.
-- Evidence: BE `AutomationExecution` Cancelled state and event, no endpoint · FE `AutomationExecutionRepository.cancel?` unimplemented · Design none · Tests T-AD `AutomationExecutionTests` · Real e2e none
-- State: IMPLEMENTING — domain only.
+- Evidence: BE `CancelAutomationExecutionCommandHandler` (Application), `CancelAutomationExecutionEndpoint`, `AutomationExecution.CancelBeforeStart`, OpenAPI `backend/contracts/openapi/notrelix.v1.json` · FE `AutomationExecutionRepository.cancel?` unimplemented · Design none · Tests T-AD `AutomationExecutionCancelQueuedTests`, T-AA `CancelAutomationExecutionTests`, architecture `request-execution-baseline.json` · Real e2e none
+- State: HARDENING — Built: the endpoint and handler refuse a Running or finished execution with `Automation_Execution_CannotCancelUnlessQueued` and a rule or board mismatch as NotFound. Not built: the FE cancel action and confirmation; no expected version (as E01, A05). Owner question: the n8n `retried` callback still cancels through `AutomationExecution.Cancel`, which also accepts Running; kept because that path needs it. Owner tests by hand.
 
 ### UC-AUT-H05 An unknown outcome is held, never re-fired
 - Capability: AUT-008 Execution state machine

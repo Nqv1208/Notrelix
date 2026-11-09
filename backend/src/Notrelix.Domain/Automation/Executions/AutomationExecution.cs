@@ -197,4 +197,19 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
         IncrementVersion();
         RaiseDomainEvent(new AutomationExecutionCancelledDomainEvent(AccountId, WorkspaceId, Id, RuleId, cancelledBy, cancelledAt));
     }
+
+    /// <summary>
+    /// UC-AUT-H04: a person cancels an execution that has not started. Only a Queued execution can be
+    /// cancelled this way: a running or finished one is refused, so no action is ever cut short by a person.
+    /// </summary>
+    public void CancelBeforeStart(Guid cancelledBy, DateTimeOffset cancelledAt)
+    {
+        if (Status != AutomationExecutionStatus.Queued)
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotCancelUnlessQueued, "Execution can only be cancelled while it is Queued.");
+
+        Status = AutomationExecutionStatus.Cancelled;
+        FinishedAt = cancelledAt;
+        IncrementVersion();
+        RaiseDomainEvent(new AutomationExecutionCancelledDomainEvent(AccountId, WorkspaceId, Id, RuleId, cancelledBy, cancelledAt));
+    }
 }
