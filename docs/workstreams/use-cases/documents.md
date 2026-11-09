@@ -164,7 +164,7 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-F03 | Nest or un-nest a block | F | Editor | yes | yes | none | none | INTEGRATING | Tests and owner check |
 | UC-DCT-F04 | Insert many blocks densely | F | Editor | yes | none | none | none | IMPLEMENTING | Rebalance undefined |
 | UC-DCT-G01 | Open a page | G | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Block list unbounded |
-| UC-DCT-G02 | List the pages of a workspace | G | Workspace member | yes | yes | none | none | INTEGRATING | Unbounded |
+| UC-DCT-G02 | List the pages of a workspace | G | Workspace member | yes | yes | none | none | HARDENING | Built: cursor paging; real e2e owner |
 | UC-DCT-G03 | Search pages by title | G | Workspace member | yes | yes | Final-Command | none | INTEGRATING | No real e2e |
 | UC-DCT-G04 | Read the pages that reference this page | G | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Unbounded |
 | UC-DCT-G05 | Show the tasks and boards linked to a page | G | Viewer | partial | yes | Final-Docs-2 | none | INTEGRATING | Owned by Work Management |
@@ -179,17 +179,17 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-H07 | Use the 320 px page and its overflow sheet | H | Viewer, Editor | yes | yes | Final-Docs-2-320 | none | INTEGRATING | 1-px diff not run |
 | UC-DCT-H08 | Edit with keyboard and screen reader | H | Editor | none | yes | none | none | INTEGRATING | No axe run on real stack |
 | UC-DCT-I01 | See a page only when allowed | I | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | No cross-tenant negative test |
-| UC-DCT-I02 | Edit only with edit permission | I | Editor | partial | yes | none | none | INTEGRATING | Rename uses ManageBoard |
+| UC-DCT-I02 | Edit only with edit permission | I | Editor | partial | yes | none | none | INTEGRATING | Rename is UpdatePage (checked); matrix test, real e2e |
 | UC-DCT-I03 | Share a page with a member | I | Manager | yes | yes | Final-Share | real | HARDENING | Owned by Governance |
 | UC-DCT-I04 | Creator becomes Manager | I | Creator | yes | none | none | none | INTEGRATING | No real e2e |
 | UC-DCT-I05 | Embedding a board never shares it | I | System | partial | partial | none | none | DEFINED | No proof |
-| UC-DCT-I06 | Read-only and trashed page states | I | Viewer | partial | yes | Final-Docs-2 | none | INTEGRATING | Trashed-page edit not proven |
+| UC-DCT-I06 | Read-only and trashed page states | I | Viewer | partial | yes | Final-Docs-2 | none | INTEGRATING | Trashed edit refused (400 rule code); owner question on 404 |
 | UC-DCT-I07 | Lose access while the page is open | I | Editor | none | none | none | none | DEFINED | Behaviour not built |
 | UC-DCT-J01 | Announce a saved or created page | J | System | yes | none | none | none | INTEGRATING | Only three integration events |
 | UC-DCT-J02 | Announce rename, move, restore and delete | J | System | partial | none | none | none | DEFINED | Domain events have no integration event |
-| UC-DCT-J03 | Capture an automatic version | J | System | yes | yes | none | none | INTEGRATING | No last-editor-leaves rule |
+| UC-DCT-J03 | Capture an automatic version | J | System | yes | yes | none | none | INTEGRATING | Owner question: last-editor-leaves trigger |
 | UC-DCT-J04 | Save a named version | J | Editor | yes | yes | none | none | INTEGRATING | No real e2e |
-| UC-DCT-J05 | Browse the version history | J | Viewer | yes | yes | none | none | INTEGRATING | Unbounded list |
+| UC-DCT-J05 | Browse the version history | J | Viewer | yes | yes | none | none | HARDENING | Built: cursor paging; real e2e owner |
 | UC-DCT-J06 | View a version | J | Viewer | yes | yes | none | none | INTEGRATING | No real e2e |
 | UC-DCT-J07 | Compare two versions (enterprise baseline) | J | Viewer | none | none | none | none | DEFINED | Not built |
 | UC-DCT-J08 | Read page activity | J | Viewer | partial | partial | none | none | IMPLEMENTING | History endpoint always empty |
@@ -906,12 +906,12 @@ Team capability 7 (team id DCT-007). Requirements `DCREQ023` to `DCREQ026`, `DCR
 - Input: workspace id; cursor and page size 200 (lead decision LD15).
 - Output: the active pages the caller may see, by title; trashed pages absent.
 - Main flow: used by pickers, search seeds, favorites and import targets.
-- No-op / rejection / concurrency / retry: an empty result is `200` with an empty list. Shipped code returns every page.
+- No-op / rejection / concurrency / retry: an empty result is `200` with an empty list. Built: a cursor page in id order, default 50, at most 200 (`cursor`, `limit`; a bad cursor or limit is `400`); the client follows `nextCursor` to the end, and sorts by title, because the tree, pickers and search seeds show the whole list.
 - UI states: loading, empty, error.
 - Rules: product doc sections 7, 8; `DCREQ024`, `DCREQ025`.
 - Acceptance: Given 450 pages, When listed, Then 3 pages of results of at most 200 each, none hidden-page data.
-- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/pages`, `GetWorkspacePagesQueryHandler` · FE `usePageList` · Design none · Tests `PageViewAccessTests`, `DocumentsOpenApiShapeTests` · Real e2e none
-- State: INTEGRATING — cursor paging, real e2e.
+- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/pages`, `GetWorkspacePagesQueryHandler`, `DocumentCursor` · FE `usePageList`, `page.api.ts` `getList`, `read-all-pages.ts` · Design none · Tests `PageListPagingTests`, `PageReadVersionTests`, `PageViewAccessTests`, `DocumentsOpenApiShapeTests`, `page-list-paging.unit.test.ts`, `contract-conformance.unit.test.ts` · Real e2e none
+- State: HARDENING — Built: cursor paging (50 default, 200 max) and the client reads to the end; OpenAPI and generated types regenerated. Real e2e: owner tests by hand.
 
 ### UC-DCT-G03 Search pages by title
 - Capability: G Document query and loading
@@ -1124,12 +1124,12 @@ Team capability 9 (team id DCT-009). Requirements `DCREQ032` to `DCREQ035`, `DCR
 - Input: any block write, version save or restore, template save, move to space.
 - Output: refused with `404` for people without the right; read-only editor for Viewers.
 - Main flow: the pipeline authorizes; the client hides write controls from the permission state (UX only).
-- No-op / rejection / concurrency / retry: rename (`UpdatePage` command) is authorized with `ManageBoard`, a Work Management action, on a page (drift; lead decision LD6 sets it to `UpdatePage`). `MovePage`, `PublishPage` and `SetPageDeadline` also ask for `ManageBoard` but throw before use.
+- No-op / rejection / concurrency / retry: stale gap, checked: rename (`UpdatePageCommand`) already asks `UpdatePage` (lead decision LD6), the Editor right, and so does `MovePage`. `PublishPage` and `SetPageDeadline` still ask for `ManageBoard` but throw before use.
 - UI states: read-only, permission denied.
 - Rules: product doc section 59; `DCREQ032`, `DCREQ033`, `DCREQ191`.
 - Acceptance: Given a Viewer, When they patch a block, Then `404` and no change. Given an Editor who is not a board manager, When they rename the page, Then it succeeds.
-- Evidence: BE `UpdatePageCommand`, `CreateBlockCommand` and the other commands (`Action`) · FE permission state in `usePagePermissions` · Design none · Tests `ArchivePageCommandHandlerTests`, `BlockEditingHandlerTests` · Real e2e none
-- State: INTEGRATING — fix rename action, matrix test of every request against its action, real e2e.
+- Evidence: BE `UpdatePageCommand`, `CreateBlockCommand` and the other commands (`Action`) · FE permission state in `usePagePermissions` · Design none · Tests `ResourceLevelEnforcementMatrixTests` (rename: Editor allowed, Viewer forbidden), `ArchivePageCommandHandlerTests`, `BlockEditingHandlerTests` · Real e2e none
+- State: INTEGRATING — Built: rename was already `UpdatePage` (stale gap), with the Editor and Viewer test. Remaining: matrix test of every request against its action, real e2e.
 
 ### UC-DCT-I03 Share a page with a member
 - Capability: I Document permissions
@@ -1184,8 +1184,8 @@ Team capability 9 (team id DCT-009). Requirements `DCREQ032` to `DCREQ035`, `DCR
 - UI states: read-only, no access.
 - Rules: product doc section 77.
 - Acceptance: Given a Viewer, When the page opens, Then every write control is absent and typing is blocked.
-- Evidence: BE `GET /api/v1/pages/{pageId}` · FE read-only note in `DocPageScreen` · Design Final-Docs-2 ("Bạn thấy trang…" note) · Tests `doc-page-surfaces.interaction.component.test.tsx`, `docs-page.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — real e2e as Viewer.
+- Evidence: BE `GET /api/v1/pages/{pageId}`, `UpdatePageCommandHandler`, `UpdateBlockCommandHandler`, `RestorePageVersionCommandHandler` · FE read-only note in `DocPageScreen` · Design Final-Docs-2 ("Bạn thấy trang…" note) · Tests `PageTrashedRefusalTests` (rename and block edit of a trashed page refused, rename of a removed page not found), `PageVersionHandlerTests` (restore refused), `PageTests` (rename and move refused when archived), `doc-page-surfaces.interaction.component.test.tsx` (read-only state, `aria-readonly`), `docs-page.mock.e2e.spec.ts` · Real e2e none
+- State: INTEGRATING — Built: edit, rename and restore of a trashed page are refused by the handler with their rule code and tested; a Viewer's read-only state is a component test. Owner question: the output says a trashed page is `404`, but product section 77 names `Documents_Page_CannotEditArchived` (a 400), and `GET /pages/{pageId}` still reads a trashed page (200). Real e2e as Viewer: owner.
 
 ### UC-DCT-I07 Lose access while the page is open
 - Capability: I Document permissions
@@ -1245,7 +1245,8 @@ Team capability 10 (team id DCT-010). Requirements `DCREQ128` to `DCREQ134`, `DC
 - Rules: product doc sections 46 to 51 (product rules DCT-016, DCT-017); `DCREQ128` to `DCREQ131`; decisions 13, 16, 19.
 - Acceptance: Given edits after 10 quiet minutes, When saved, Then one Automatic entry; given identical content, Then none.
 - Evidence: BE `PageBlocksSavedConsumers`, `PageVersionRecorder.CaptureAutomaticAsync` · FE history list shows it · Design none · Tests `PageVersionHandlerTests`, `PageBlocksSavedConsumersTests`, `DocumentVersionTests` · Real e2e none
-- State: INTEGRATING — real e2e, presence trigger.
+- Owner question: should the "last editor leaves" trigger take a snapshot, and on what signal? The product text (sections 46 to 51) does not state the rule. Decision 19 waits for a presence signal, and Documents stores no presence (section 35), so only the 10-minute rule captures today. No rule built.
+- State: INTEGRATING — owner question above; real e2e, presence trigger.
 
 ### UC-DCT-J04 Save a named version
 - Capability: J Document events and activity
@@ -1268,12 +1269,12 @@ Team capability 10 (team id DCT-010). Requirements `DCREQ128` to `DCREQ134`, `DC
 - Input: page id.
 - Output: entries newest first with number, kind (Automatic, Named, Restore), name, author and time.
 - Main flow: File menu or More, Version history.
-- No-op / rejection / concurrency / retry: the list is not paged today.
+- No-op / rejection / concurrency / retry: built: a cursor page, newest first, default 50, at most 200 (`cursor` is the number of the last entry it returned; a bad cursor or limit is `400`). The client reads to the end.
 - UI states: loading, empty, error.
 - Rules: product doc section 48; `DCREQ132`.
 - Acceptance: Given three saves, When opened, Then three entries newest first.
-- Evidence: BE `GET /api/v1/pages/{pageId}/versions`, `ListPageVersionsQueryHandler` · FE `usePageVersions` · Design none · Tests `PageVersionHandlerTests`, `page-versions.unit.test.ts` · Real e2e none
-- State: INTEGRATING — cursor paging, artboard, real e2e.
+- Evidence: BE `GET /api/v1/pages/{pageId}/versions`, `ListPageVersionsQueryHandler`, `ListPageVersionsQueryValidator` · FE `usePageVersions`, `version.api.ts` `list` · Design none · Tests `PageListPagingTests`, `PageVersionHandlerTests`, `page-versions.unit.test.ts`, `page-list-paging.unit.test.ts`, `PageHistoryAndTemplatesContractOpenApiTests` · Real e2e none
+- State: HARDENING — Built: cursor paging and tests; OpenAPI regenerated. Artboard check and real e2e: owner tests by hand.
 
 ### UC-DCT-J06 View a version
 - Capability: J Document events and activity

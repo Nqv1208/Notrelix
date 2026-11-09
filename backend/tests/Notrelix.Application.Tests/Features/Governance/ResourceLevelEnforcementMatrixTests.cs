@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Documents.Pages.Commands.UpdatePage;
 using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Application.Tests.Features.Governance;
@@ -120,6 +121,19 @@ public sealed class ResourceLevelEnforcementMatrixTests
             decision.Kind.Should().Be(level >= required ? AccessDecisionKind.Allowed : AccessDecisionKind.Forbidden,
                 $"{source} ({LevelName(level)}) → {action}");
         }
+    }
+
+    [Fact]
+    public void Rename_IsGatedAsEditing_SoAnEditorCanRenameAndAViewerCannot()
+    {
+        // A page rename is the UpdatePage command (the same right as editing its content), not a board action.
+        var rename = new UpdatePageCommand(Guid.NewGuid(), "Renamed plan", 1);
+        rename.Action.Should().Be(PermissionAction.UpdatePage);
+
+        Engine.Evaluate(Descriptor, Context, PageFacts("explicit Editor on a Private page", "Member"), new Probe(rename.Action, Page)).Kind
+            .Should().Be(AccessDecisionKind.Allowed, "an Editor renames the page");
+        Engine.Evaluate(Descriptor, Context, PageFacts("explicit Viewer on a Private page", "Member"), new Probe(rename.Action, Page)).Kind
+            .Should().Be(AccessDecisionKind.Forbidden, "a Viewer cannot rename the page");
     }
 
     [Fact]

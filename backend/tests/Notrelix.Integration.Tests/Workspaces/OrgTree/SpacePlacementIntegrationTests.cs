@@ -299,7 +299,7 @@ public sealed class SpacePlacementIntegrationTests : IAsyncLifetime
 
         var read = await OrgTreeTestHost.QueryAsync(owner, new GetPageQuery(root));
         read.Version.Should().Be(await VersionOfPageAsync(root), "the single read exposes the stored aggregate version");
-        (await OrgTreeTestHost.QueryAsync(owner, new GetWorkspacePagesQuery(s.Stack.WorkspaceId))).Single(p => p.Id == root).Version.Should().Be(read.Version);
+        (await OrgTreeTestHost.QueryAsync(owner, new GetWorkspacePagesQuery(s.Stack.WorkspaceId))).Items.Single(p => p.Id == root).Version.Should().Be(read.Version);
         (await OrgTreeTestHost.QueryAsync(owner, new GetPageTreeQuery(s.Stack.WorkspaceId))).Single(p => p.Id == root).Version.Should().Be(read.Version);
         (await OrgTreeTestHost.QueryAsync(owner, new SearchPagesQuery(s.Stack.WorkspaceId, "playbook"))).Single(p => p.Id == root).Version.Should().Be(read.Version);
 
