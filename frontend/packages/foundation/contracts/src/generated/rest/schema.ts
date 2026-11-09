@@ -123,6 +123,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/work-placements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the work item placements of the Boards the caller can read, as a cursor page
+         * @description Cursor-paginated (default 50, max 200), in item id order. Only items on Boards the caller may read are returned. Pass nextCursor back as cursor for the next page.
+         */
+        get: operations["Analytics.Placements.ListWorkspacePlacements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/dashboards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create an empty private dashboard owned by the caller */
+        post: operations["Analytics.Dashboards.CreateDashboard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/automations/{automationId}/executions/{executionId}/cancel": {
         parameters: {
             query?: never;
@@ -6727,6 +6764,9 @@ export interface components {
             /** Format: int64 */
             expectedVersion?: number;
         };
+        "Notrelix.API.Contracts.Analytics.Dashboards.Requests.CreateDashboardRequest": {
+            name?: string | null;
+        };
         "Notrelix.API.Contracts.Automation.Rules.Requests.AutomationActionRequest": {
             type?: string | null;
             configuration?: string | null;
@@ -7935,6 +7975,11 @@ export interface components {
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
+        "Notrelix.Application.Common.Models.CursorPageOfWorkItemPlacementDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Analytics.Placements.Queries.GetWorkspacePlacements.WorkItemPlacementDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
         "Notrelix.Application.Common.Models.CursorPageOfWorkspaceInvitationDto": {
             items?: components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationDto"][] | null;
             nextCursor?: string | null;
@@ -7975,6 +8020,21 @@ export interface components {
             items?: components["schemas"]["Notrelix.Application.Features.Accounts.Operator.OperatorAccountDto"][] | null;
             /** Format: int32 */
             total?: number;
+        };
+        "Notrelix.Application.Features.Analytics.Placements.Queries.GetWorkspacePlacements.WorkItemPlacementDto": {
+            /** Format: uuid */
+            workspaceId?: string;
+            /** Format: uuid */
+            itemId?: string;
+            /** Format: uuid */
+            boardId?: string;
+            /** Format: uuid */
+            groupId?: string;
+            isArchived?: boolean;
+            /** Format: int64 */
+            sourceRevision?: number;
+            /** Format: date-time */
+            lastOccurredAt?: string;
         };
         "Notrelix.Application.Features.Analytics.Reports.BoardReportDto": {
             /** Format: uuid */
@@ -10658,6 +10718,76 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Analytics.Reports.WorkspaceReportDto"];
                 };
+            };
+        };
+    };
+    "Analytics.Placements.ListWorkspacePlacements": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfWorkItemPlacementDto"];
+                };
+            };
+        };
+    };
+    "Analytics.Dashboards.CreateDashboard": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Analytics.Dashboards.Requests.CreateDashboardRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
