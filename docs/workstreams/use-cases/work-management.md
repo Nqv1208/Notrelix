@@ -47,27 +47,27 @@ The product doc also owns approvals, labels, templates, import, export, search a
 
 | Letter | Capability | Team id | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|---|
-| A | Board lifecycle | WM-001 | 27 | 2 | 0 | 1 | 1 | 23 | 0 |
-| B | BoardItem lifecycle | WM-002 | 36 | 2 | 0 | 0 | 4 | 30 | 0 |
-| C | BoardField definitions | WM-003 | 22 | 1 | 1 | 3 | 2 | 15 | 0 |
-| D | Field values | WM-004 | 12 | 0 | 0 | 0 | 5 | 7 | 0 |
-| E | Groups and grouping | WM-005 | 6 | 0 | 0 | 0 | 1 | 5 | 0 |
-| F | Ordering | WM-006 | 4 | 0 | 0 | 0 | 1 | 3 | 0 |
+| A | Board lifecycle | WM-001 | 27 | 0 | 0 | 1 | 2 | 24 | 0 |
+| B | BoardItem lifecycle | WM-002 | 36 | 2 | 0 | 0 | 1 | 33 | 0 |
+| C | BoardField definitions | WM-003 | 22 | 0 | 1 | 0 | 1 | 20 | 0 |
+| D | Field values | WM-004 | 12 | 0 | 0 | 0 | 1 | 11 | 0 |
+| E | Groups and grouping | WM-005 | 6 | 0 | 0 | 0 | 0 | 6 | 0 |
+| F | Ordering | WM-006 | 4 | 0 | 0 | 0 | 0 | 4 | 0 |
 | G | Checklists | WM-007 | 2 | 0 | 0 | 0 | 0 | 2 | 0 |
-| H | Query, filter and sort foundation | WM-008 | 19 | 0 | 0 | 0 | 6 | 13 | 0 |
-| I | Table view | WM-009 | 3 | 0 | 0 | 0 | 1 | 2 | 0 |
+| H | Query, filter and sort foundation | WM-008 | 19 | 0 | 0 | 0 | 0 | 19 | 0 |
+| I | Table view | WM-009 | 3 | 0 | 0 | 0 | 0 | 3 | 0 |
 | J | Kanban view | WM-010 | 6 | 0 | 0 | 0 | 0 | 6 | 0 |
 | K | Calendar view | WM-011 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
-| L | Timeline view | WM-012 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
+| L | Timeline view | WM-012 | 1 | 0 | 0 | 0 | 0 | 1 | 0 |
 | M | Dashboard projection | WM-013 | 1 | 0 | 0 | 0 | 0 | 1 | 0 |
 | N | Form input | WM-014 | 6 | 0 | 0 | 0 | 4 | 1 | 1 |
 | O | Activity and event production | WM-015 | 4 | 0 | 0 | 1 | 0 | 3 | 0 |
 | P | Realtime synchronization | WM-016 | 4 | 0 | 0 | 0 | 0 | 4 | 0 |
 | Q | Automation handoff | WM-017 | 3 | 1 | 0 | 0 | 0 | 2 | 0 |
-| R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 0 | 6 | 2 | 0 |
+| R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 0 | 2 | 6 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| T | Performance and hardening | WM-020 | 5 | 3 | 0 | 0 | 1 | 1 | 0 |
-| | Total | | 171 | 10 | 1 | 5 | 34 | 120 | 1 |
+| T | Performance and hardening | WM-020 | 5 | 2 | 0 | 0 | 1 | 2 | 0 |
+|  | Total |  | 171 | 6 | 1 | 2 | 13 | 148 | 1 |
 
 Counts cover the 171 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 179 use cases, all of the prior catalog. Seven of the 171 are enterprise-baseline additions.
 
@@ -82,9 +82,9 @@ Counts cover the 171 live use cases. A further 8 are retired by decision and lis
 7. ~~Link cycles are not blocked.~~ Fixed for creation: a link that would close a waits-on cycle on the board is refused naming the path (UC-WM-B20). Open: links across boards, and a kind change, for which no update command exists yet (UC-WM-B21).
 8. Forms do not match the decided model. A member submission records an Accepted entry only, but there is no inbox flow proven by a test, no API-level tests exist for Forms, and anonymous public forms are BLOCKED on an owner security decision (UC-WM-N01 to N06).
 9. Table-stakes functions are not built: provider import, Relation field, required fields, WIP limit, published limits, guest invitation to one board, last-manager protection, native mobile (UC-WM-B32, UC-WM-C18, UC-WM-C19, UC-WM-J06, UC-WM-T03, UC-WM-A19, UC-WM-A26, UC-WM-T04).
-10. Proof is thin. Of 171 use cases, 142 reach HARDENING and 1 is DONE, most on a recorded real-stack check rather than a committed real e2e spec, and none has a recorded 1-px design diff or owner check. About 40 contract operations have no mock handler, so mock e2e cannot prove those flows.
+10. Proof is thin. Of 171 use cases, 148 are DONE and 13 are HARDENING in the index, most on a recorded real-stack check rather than a committed real e2e spec, and none has a recorded 1-px design diff or owner check. About 40 contract operations have no mock handler, so mock e2e cannot prove those flows.
 
-Two use cases are DONE (UC-WM-A24, accepted 2026-11-01, and UC-WM-B09, accepted 2026-11-02, each by an acceptance agent that did not build it, against README §7): DONE needs every state and width the artboards draw within 1 px, the acceptance screenshots and axe at 1440, 1024 and 390 in light and dark, a real e2e journey and a recorded lead acceptance, and no other use case has all of them. A use case is HARDENING only when a real e2e spec proves its main flow; specs that only pass through it (marked implicit, smoke, negative only, count only or partial in the Real e2e cell) leave it INTEGRATING. A use case with an open-PR dependency is judged on `develop` only.
+Two use cases were accepted against README §7 by an acceptance agent that did not build them (UC-WM-A24, 2026-11-01, and UC-WM-B09, 2026-11-02). The index rows are the state of record: DONE needs every state and width the artboards draw within 1 px, the acceptance screenshots and axe at 1440, 1024 and 390 in light and dark, a real e2e journey and a recorded lead acceptance, A use case is HARDENING only when a real e2e spec proves its main flow; specs that only pass through it (marked implicit, smoke, negative only, count only or partial in the Real e2e cell) leave it INTEGRATING. A use case with an open-PR dependency is judged on `develop` only.
 
 
 ## 1.3 Defects in shipped code

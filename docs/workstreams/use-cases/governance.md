@@ -46,15 +46,15 @@ Capability letters follow the Governance list of the team spec, in order.
 | A | WG-GOV resource/action model | 4 | 1 | 2 | 0 | 1 | 0 | 0 |
 | B | Built-in roles | 5 | 0 | 1 | 2 | 1 | 1 | 0 |
 | C | Custom roles | 6 | 0 | 0 | 0 | 6 | 0 | 0 |
-| D | Permission assignment | 15 | 2 | 2 | 5 | 4 | 0 | 2 |
+| D | Permission assignment | 15 | 2 | 2 | 5 | 1 | 3 | 2 |
 | E | Effective permission evaluation | 13 | 1 | 5 | 2 | 1 | 4 | 0 |
 | F | Protected operation integration | 5 | 2 | 1 | 1 | 0 | 1 | 0 |
 | G | Share-link lifecycle and policy | 10 | 3 | 2 | 3 | 0 | 0 | 2 |
 | H | Governance administration UI | 14 | 5 | 6 | 1 | 0 | 0 | 2 |
 | I | Architecture coverage for resource kinds and actions | 3 | 1 | 0 | 0 | 1 | 1 | 0 |
-| | Total | 75 | 15 | 19 | 14 | 14 | 7 | 6 |
+|  | Total | 75 | 15 | 19 | 14 | 11 | 10 | 6 |
 
-Seven use cases are DONE (B01, E01, E04, E05, E06, F01, I01), set by the 0.1.0 foundation lane pull request on 2026-11-03 under the four lines of DEL-003 (each Evidence line names its proof); the others have no recorded proof of every line. The execution pack certifies Governance parts as VERIFIED or PARTIALLY_VERIFIED on a base commit (certification (removed; see git history), records P2B-CERT-004 to P2B-CERT-016); that is backend proof only.
+Ten use cases are DONE in the index (B01, D01, D03, D04, E01, E04, E05, E06, F01, I01); each Evidence line names its proof. The execution pack certifies Governance parts as VERIFIED or PARTIALLY_VERIFIED on a base commit (certification (removed; see git history), records P2B-CERT-004 to P2B-CERT-016); that is backend proof only.
 
 ## 1.2 The ten most important gaps
 
