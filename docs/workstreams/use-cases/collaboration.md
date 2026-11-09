@@ -53,14 +53,14 @@ Dates: this catalog was written on 2026-10-30. No use case has a recorded owner 
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
 | A | COL-001 Comment lifecycle | 11 | 1 | 0 | 0 | 10 | 0 | 0 |
-| B | COL-002 Comment target contract | 18 | 2 | 0 | 3 | 13 | 0 | 0 |
+| B | COL-002 Comment target contract | 18 | 2 | 0 | 2 | 14 | 0 | 0 |
 | C | COL-003 Comment authorization | 6 | 0 | 0 | 2 | 3 | 0 | 1 |
 | D | COL-004 Comment activity/events | 14 | 5 | 1 | 2 | 6 | 0 | 0 |
 | E | COL-005 Collaboration realtime | 5 | 3 | 1 | 0 | 0 | 0 | 1 |
 | F | COL-006 Target deletion/retention | 7 | 3 | 2 | 1 | 0 | 0 | 1 |
 | G | COL-007 Collaboration query/state | 16 | 2 | 1 | 2 | 11 | 0 | 0 |
 | H | COL-008 Collaboration hardening | 8 | 3 | 1 | 0 | 2 | 0 | 2 |
-| | Total | 85 | 19 | 6 | 10 | 45 | 0 | 5 |
+| | Total | 85 | 19 | 6 | 9 | 46 | 0 | 5 |
 
 Collaboration has no dedicated capability for inbox, preferences, attachments, watchers or presence in the team spec. They sit in the nearest capability: attachments and watchers under B (target contract), notifications production under D, presence under E, Inbox, preferences and read state under G.
 
@@ -149,7 +149,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-B03 | Mention a person inside a page block | B | A page editor (Documents UC) | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
 | UC-COL-B04 | Mention a team | B | Any commenter | no | no | no | no | DEFINED | Add a team mention field, fan-out at delivery and the suggestion list. |
 | UC-COL-B05 | Suggest people to mention without leaking others | B | Any commenter | partial | partial | yes | no | INTEGRATING | No Collaboration-owned suggestion read; page composer has no suggestion list; no real e2e. |
-| UC-COL-B06 | Attach a file to a board item | B | Anyone with UpdateItem on the item | yes | yes | yes | no | INTEGRATING | No cross-tenant negative upload test found; no real e2e; no malware scan (L23, not in this cut). |
+| UC-COL-B06 | Attach a file to a board item | B | Anyone with UpdateItem on the item | yes | yes | yes | no | HARDENING | Built: cross-tenant negative upload test (an upload to another tenant's item is refused like one to a made-up item). Remains: owner tests by hand; no real e2e. Malware scan is L23, out of this cut. |
 | UC-COL-B07 | Attach a link to a board item | B | Anyone with UpdateItem on the item | yes | partial | yes | no | HARDENING | Built: validator allows only absolute http and https links (javascript:, data:, vbscript:, file:, unparseable refused as 400). Remains: owner tests by hand; real e2e none. |
 | UC-COL-B08 | Attach a file to a page | B | Anyone with UpdatePage on the page | yes | yes | yes | no | HARDENING | Built (verified by reading code 2026-11-09, not run): UploadPageAttachment.cs, PageAttachmentEndpointTests.cs, doc-page-screen.tsx. Remaining: owner tests by hand. |
 | UC-COL-B09 | Register a link on a page | B | Anyone with UpdatePage on the page | yes | partial | yes | no | HARDENING | Built: same http and https allow-list as UC-COL-B07 (new page validator). Remains: owner tests by hand; real e2e none. |
@@ -460,8 +460,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: loading, uploading progress, success, validation error, permission denied, failed upload, offline.
 - Rules: Product COL-010, COL-011, Attachment authorization; decision 4; spec DCREQ162 to DCREQ166, DCREQ208.
 - Acceptance: Given an editor, when they upload a PDF, then it lists and downloads; given an .exe, then 415 and nothing is stored; given the same key twice, then one attachment.
-- Evidence: BE POST /api/v1/board-items/{boardItemId}/attachments/files (Collaboration.Attachments.UploadFile), UploadBoardItemAttachmentCommandHandler, AttachmentContentClassifier, IAttachmentTargetLock · FE frontend/packages/product/work-management/state/src/mutations/use-item-file-uploads.ts; frontend/packages/foundation/contracts/src/client/__tests__/upload.unit.test.ts · Design WM-Sheet-Files · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/UploadBoardItemAttachmentTests.cs, AttachmentFileAuthorizationTests.cs; backend/tests/Notrelix.API.Tests/Collaboration/AttachmentFileEndpointTests.cs; backend/tests/Notrelix.Integration.Tests/Collaboration/AttachmentObjectLifecycleIntegrationTests.cs · Real e2e none
-- State: INTEGRATING — No cross-tenant negative upload test found; no real e2e; no malware scan (L23, not in this cut).
+- Evidence: BE POST /api/v1/board-items/{boardItemId}/attachments/files (Collaboration.Attachments.UploadFile), UploadBoardItemAttachmentCommandHandler, AttachmentContentClassifier, IAttachmentTargetLock · FE frontend/packages/product/work-management/state/src/mutations/use-item-file-uploads.ts; frontend/packages/foundation/contracts/src/client/__tests__/upload.unit.test.ts · Design WM-Sheet-Files · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/UploadBoardItemAttachmentTests.cs, AttachmentFileAuthorizationTests.cs; backend/tests/Notrelix.API.Tests/Collaboration/AttachmentFileEndpointTests.cs; backend/tests/Notrelix.Integration.Tests/Collaboration/AttachmentObjectLifecycleIntegrationTests.cs; backend/tests/Notrelix.Integration.Tests/Rls/CollaborationNonMemberNotFoundTests.cs (cross-tenant upload) · Real e2e none
+- State: HARDENING — Built: the cross-tenant negative upload test (CollaborationNonMemberNotFoundTests) refuses an upload to another tenant's item as it refuses one to a made-up item. Remains: owner tests by hand; no real e2e. A malware scan is L23 and out of this cut (a plain note, not a blocker).
 
 ### UC-COL-B07 Attach a link to a board item
 - Capability: B, COL-002 Comment target contract

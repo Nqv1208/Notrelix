@@ -21,7 +21,8 @@ namespace Notrelix.Integration.Tests.Rls;
 /// UC-COL-C05: every Collaboration endpoint that takes a comment, reaction, watcher or inbox id answers a person
 /// outside the Workspace with the same status and the same body whether the id belongs to another tenant or was
 /// never issued. Proven per endpoint over the production graph on the application role, for a person of another
-/// account and a person of the same account who is not in the Workspace. The status is not hard-coded: a refusal
+/// account and a person of the same account who is not in the Workspace. A file upload to another tenant's item
+/// (UC-COL-B06) is refused the same way. The status is not hard-coded: a refusal
 /// is either Forbidden or NotFound, and the two answers must match each other. Request-specific fields
 /// (traceId, correlationId, instance) and ids are removed before the bodies are compared.
 /// </summary>
@@ -161,6 +162,30 @@ public sealed class CollaborationNonMemberNotFoundTests : IAsyncLifetime
             Refusals.Should().Contain(made.Status, $"{name}: a made-up id is refused as Forbidden or NotFound");
             found.Status.Should().Be(made.Status, $"{name}: {because}");
             found.Body.Should().Be(made.Body, $"{name}: {because}");
+        }
+    }
+
+    // UC-COL-B06: an upload to another tenant's item is refused like an upload to a made-up item.
+    private Task<(HttpStatusCode Status, string Body)> UploadAsync(User who, Guid itemId) =>
+        SendAsync(who, HttpMethod.Post, $"/api/v1/board-items/{itemId}/attachments/files", json: null, form: () =>
+        {
+            var file = new ByteArrayContent(new byte[] { 0x25, 0x50, 0x44, 0x46 });
+            file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
+            var content = new MultipartFormDataContent();
+            content.Add(file, "file", "report.pdf");
+            return content;
+        });
+
+    [Fact]
+    public async Task UploadToAnotherTenantsItem_GetsTheSameRefusalAsAMadeUpItem()
+    {
+        foreach (var who in new[] { _b.User, _sameAccountOutsider })
+        {
+            var found = await UploadAsync(who, _itemId);
+            var made = await UploadAsync(who, Guid.NewGuid());
+            Refusals.Should().Contain(made.Status, "a made-up item is refused as Forbidden or NotFound");
+            found.Status.Should().Be(made.Status, "a person outside the Workspace cannot attach a file to its item");
+            found.Body.Should().Be(made.Body, "the refusal does not reveal the item");
         }
     }
 
