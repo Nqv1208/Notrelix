@@ -158,7 +158,7 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-L04 | Show a recoverable error instead of a blank screen | L | Frontend runtime | n/a | yes | Final-States | no | IMPLEMENTING | no real e2e |
 | UC-PLT-M01 | Serve design tokens from one package | M | Frontend build | n/a | yes | Themes | no | IMPLEMENTING | no real e2e needed; token tests exist |
 | UC-PLT-N01 | Carry a correlation id on every request and log | N | API middleware | yes | yes | n/a | no | IMPLEMENTING | no end-to-end trace proof |
-| UC-PLT-N02 | Answer a liveness probe | N | Orchestrator | yes | n/a | n/a | no | IMPLEMENTING | no test of the route |
+| UC-PLT-N02 | Answer a liveness probe | N | Orchestrator | yes | n/a | n/a | no | HARDENING | none open; route tests `GetLive_*` in `HealthEndpointTests` |
 | UC-PLT-N03 | Answer a readiness probe | N | Orchestrator | yes | n/a | n/a | no | HARDENING | no probe proof against the real compose stack |
 | UC-PLT-N04 | Show full health with each check | N | Operator | yes | n/a | n/a | no | HARDENING | no probe proof against the real compose stack |
 | UC-PLT-N05 | Report outbox age and dead letters | N | Operator | yes | n/a | n/a | no | IMPLEMENTING | covered by integration tests; no alert rule |
@@ -899,8 +899,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: n/a.
 - Rules: PFREQ100.
 - Acceptance: Given the process runs, When probed, Then 200.
-- Evidence: BE `backend/src/Notrelix.API/Endpoints/Health/HealthEndpoints.cs` `Live` (`MapPublicGet`) · FE n/a · Design n/a · Tests none for the route · Real e2e none
-- State: IMPLEMENTING — no test of the route.
+- Evidence: BE `backend/src/Notrelix.API/Endpoints/Health/HealthEndpoints.cs` `Live` (`MapPublicGet`) · FE n/a · Design n/a · Tests `backend/tests/Notrelix.API.Tests/Contracts/HealthEndpointTests.cs` (`GetLive_WhenNotAuthenticated_ShouldReturnAlive`, `GetLive_WhenDependencyIsUnhealthy_ShouldStillReturnAlive`) · Real e2e none
+- State: HARDENING — Built: anonymous `GET /health/live` answers 200 `alive` and stays 200 with an Unhealthy dependency (API route tests, run locally). No compose probe proof.
 
 ### UC-PLT-N03 Answer a readiness probe
 - Capability: N, PF-14
