@@ -33,7 +33,7 @@ public sealed class CollaborationNonMemberNotFoundTests : IAsyncLifetime
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
     private static readonly HttpStatusCode[] Refusals = [HttpStatusCode.Forbidden, HttpStatusCode.NotFound];
     private const string ItemKind = "work-management.board-item";
-    private const string ThumbsUp = "thumbsup";
+    private static readonly string ThumbsUp = Uri.EscapeDataString("\U0001F44D");
     private const string GuidPattern = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|[0-9a-f]{32}|0H[0-9A-Z]{11}";
 
     private readonly AppRoleTestContainer _fixture;
