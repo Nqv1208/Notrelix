@@ -171,7 +171,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Open one dashboard with its widgets (the creator only) */
+        get: operations["Analytics.Dashboards.GetDashboard"];
         /** Rename a dashboard the caller owns */
         put: operations["Analytics.Dashboards.RenameDashboard"];
         post?: never;
@@ -8091,6 +8092,22 @@ export interface components {
             /** Format: int32 */
             total?: number;
         };
+        "Notrelix.Application.Features.Analytics.Dashboards.DTOs.DashboardDetailDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            visibility?: string | null;
+            status?: string | null;
+            /** Format: uuid */
+            ownerUserId?: string | null;
+            /** Format: int64 */
+            version?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string | null;
+            widgets?: components["schemas"]["Notrelix.Application.Features.Analytics.Dashboards.DTOs.DashboardWidgetDto"][] | null;
+        };
         "Notrelix.Application.Features.Analytics.Dashboards.DTOs.DashboardSummaryDto": {
             /** Format: uuid */
             id?: string;
@@ -8105,6 +8122,21 @@ export interface components {
             createdAt?: string;
             /** Format: date-time */
             updatedAt?: string | null;
+        };
+        "Notrelix.Application.Features.Analytics.Dashboards.DTOs.DashboardWidgetDto": {
+            /** Format: uuid */
+            id?: string;
+            title?: string | null;
+            type?: string | null;
+            config?: unknown;
+            /** Format: int32 */
+            x?: number;
+            /** Format: int32 */
+            y?: number;
+            /** Format: int32 */
+            w?: number;
+            /** Format: int32 */
+            h?: number;
         };
         "Notrelix.Application.Features.Analytics.Placements.Queries.GetWorkspacePlacements.WorkItemPlacementDto": {
             /** Format: uuid */
@@ -10934,6 +10966,56 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "Analytics.Dashboards.GetDashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                dashboardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Analytics.Dashboards.DTOs.DashboardDetailDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
             };
         };
     };
