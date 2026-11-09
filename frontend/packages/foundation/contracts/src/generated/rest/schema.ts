@@ -150,7 +150,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List the Active dashboards the caller may open in the Workspace, newest first
+         * @description Returns the caller's own Active dashboards as a cursor page: default 50, max 200 (limit). Pass nextCursor back as cursor for the next page. Archived and other members' private dashboards are not listed.
+         */
+        get: operations["Analytics.Dashboards.ListDashboards"];
         put?: never;
         /** Create an empty private dashboard owned by the caller */
         post: operations["Analytics.Dashboards.CreateDashboard"];
@@ -7991,6 +7995,11 @@ export interface components {
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
+        "Notrelix.Application.Common.Models.CursorPageOfDashboardSummaryDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Analytics.Dashboards.DTOs.DashboardSummaryDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
         "Notrelix.Application.Common.Models.CursorPageOfFormSubmissionDto": {
             items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionDto"][] | null;
             nextCursor?: string | null;
@@ -8081,6 +8090,21 @@ export interface components {
             items?: components["schemas"]["Notrelix.Application.Features.Accounts.Operator.OperatorAccountDto"][] | null;
             /** Format: int32 */
             total?: number;
+        };
+        "Notrelix.Application.Features.Analytics.Dashboards.DTOs.DashboardSummaryDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            visibility?: string | null;
+            status?: string | null;
+            /** Format: uuid */
+            ownerUserId?: string | null;
+            /** Format: int64 */
+            version?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string | null;
         };
         "Notrelix.Application.Features.Analytics.Placements.Queries.GetWorkspacePlacements.WorkItemPlacementDto": {
             /** Format: uuid */
@@ -10803,6 +10827,67 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfWorkItemPlacementDto"];
+                };
+            };
+        };
+    };
+    "Analytics.Dashboards.ListDashboards": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfDashboardSummaryDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };

@@ -60,7 +60,17 @@ public sealed class DashboardLifecycleIntegrationTests : IAsyncLifetime
 
     private async Task<Guid> CreateAsync(AppRoleTenant owner, string name)
     {
-        var response = await SendAsync(owner.User, HttpMethod.Post, $"/api/v1/workspaces/{owner.WorkspaceId}/dashboards", new { name });
+        string token;
+        using (var scope = Factory.Services.CreateScope())
+            token = scope.ServiceProvider.GetRequiredService<IJwtService>().GenerateAccessToken(owner.User);
+        using var client = Factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new("Bearer", token);
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/workspaces/{owner.WorkspaceId}/dashboards")
+        {
+            Content = JsonContent.Create(new CreateDashboardRequest(name)),
+        };
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+        using var response = await client.SendAsync(request);
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         return await response.Content.ReadFromJsonAsync<Guid>();
     }

@@ -50,7 +50,7 @@ Letters follow the capability list of the team spec (section 5), in order: ANA-0
 | J | Automation/Integrations analytics | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | K | Billing/usage analytics | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | L | Cross-context report composition | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| M | Report/query API (dashboard lifecycle) | 10 | 1 | 6 | 0 | 3 | 0 | 0 |
+| M | Report/query API (dashboard lifecycle) | 10 | 1 | 5 | 0 | 4 | 0 | 0 |
 | N | Dashboard/report frontend | 4 | 0 | 2 | 1 | 1 | 0 | 0 |
 | O | Filters/date/timezone semantics | 2 | 1 | 0 | 1 | 0 | 0 | 0 |
 | P | Freshness/staleness contract | 3 | 1 | 1 | 1 | 0 | 0 | 0 |
@@ -62,7 +62,7 @@ Letters follow the capability list of the team spec (section 5), in order: ANA-0
 | V | Data quality/reconciliation | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | W | Migration/versioning | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | X | Hardening | 2 | 1 | 0 | 0 | 0 | 0 | 1 |
-| | Total | 61 | 28 | 17 | 3 | 11 | 0 | 2 |
+| | Total | 61 | 28 | 16 | 3 | 12 | 0 | 2 |
 
 No use case is DONE: none has an owner check or a 1-px design diff. HARDENING is the owner's rule (2026-11-08): the named backend gap is built and tested, and the owner tests and sets DONE. The work report rows H01, H02, N01 and R01 run on the real backend (`work-report.real.e2e.spec.ts`); H03, H04, R03, C02, M03, M04 and M05 are backend-built with Built notes. IMPLEMENTING is used for code that cannot run end to end: the Dashboard, Widget and Snapshot aggregates (Domain and EF only), the placement projection (consumers and rebuild, no HTTP), and the report builder UI that runs only on the mock backend (`backendCapabilities.reports` is `mockApi`).
 
@@ -133,7 +133,7 @@ Table-stakes use cases the product docs do not list, added as "(enterprise basel
 | UC-ANA-J02 | Integration sync health report | J | Workspace admin | no | no | none | no | DEFINED | no projection |
 | UC-ANA-K01 | Seat and usage report from Billing facts | K | Workspace owner | no | no | none | no | DEFINED | no source contract |
 | UC-ANA-L01 | Compose a multi-source report with completeness | L | Workspace member | no | no | none | no | DEFINED | no composer |
-| UC-ANA-M01 | List the dashboards and reports I may open | M | Workspace member | no | mock | Final-Reports | no | IMPLEMENTING | no endpoint |
+| UC-ANA-M01 | List the dashboards and reports I may open | M | Workspace member | yes | mock | Final-Reports | no | HARDENING | no screen (owner); shared dashboards (M09) and reports not listed |
 | UC-ANA-M02 | Open one report or dashboard | M | Workspace member | no | mock | Final-Reports | no | IMPLEMENTING | no endpoint |
 | UC-ANA-M03 | Create a dashboard | M | Workspace member | yes | mock | Final-Reports | no | HARDENING | no screen (owner); no list yet |
 | UC-ANA-M04 | Rename a dashboard | M | Dashboard owner | yes | mock | Final-Reports | no | HARDENING | no screen (owner); Owner question: who may rename (owner or workspace admin) |
@@ -539,8 +539,8 @@ Dashboards live in the Analytics context (owner decision 17: a dashboard is an A
 - UI states: loading, empty, success, permission denied, offline.
 - Rules: ANA007, ANA008; ARREQ049, ARREQ089 to ARREQ091.
 - Acceptance: Given one private dashboard of Ann, When Bob lists, Then it is absent. Given 500 dashboards, Then a page returns with a cursor.
-- Evidence: BE none · FE `report-list-surface.tsx` (mock `reports.list`) · Design Final-Reports, Final-M-Reports · Tests `reports.interaction.component.test.tsx` · Real e2e none (mock `reports.mock.e2e.spec.ts` "lists the three reports")
-- State: IMPLEMENTING — no endpoint; the mock lists three fixed reports.
+- Evidence: BE `backend/src/Notrelix.Application/Features/Analytics/Dashboards/Queries/ListDashboards/ListDashboards.cs`, `ListDashboardsQueryValidator.cs`, `Dashboards/Services/DashboardCursor.cs`, `Dashboards/DTOs/DashboardDtos.cs`, endpoint `backend/src/Notrelix.API/Endpoints/Analytics/Dashboards/Queries/ListDashboardsEndpoint.cs` (`GET .../dashboards?cursor=&limit=`) · FE `report-list-surface.tsx` (mock `reports.list`) · Design Final-Reports, Final-M-Reports · Tests `backend/tests/Notrelix.Application.Tests/Features/Analytics/ListDashboardsQueryTests.cs`, `backend/tests/Notrelix.Integration.Tests/Analytics/DashboardListIntegrationTests.cs` (runs in CI, needs Docker), `reports.interaction.component.test.tsx` · Real e2e none (mock `reports.mock.e2e.spec.ts` "lists the three reports")
+- State: HARDENING — Built: the endpoint lists the caller's own Active dashboards in the Workspace, newest first, as a keyset cursor page (default 50, max 200, a cursor from another page is accepted, a bad cursor or limit is 400). Another member's private dashboard is absent; another Workspace's dashboards never appear; a non-member is answered like a made-up Workspace. Not listed by design: archived dashboards (the product text names no archived view; Owner question), and dashboards shared with the Workspace (M09 is not built, so nothing is shared yet). Reports are not dashboards and have no producer. Remaining: no screen (owner decides); the integration test runs in CI only.
 
 ### UC-ANA-M02 Open one report or dashboard
 - Capability: M, ANA-013

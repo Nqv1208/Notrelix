@@ -425,6 +425,101 @@
             "Cookie": [ ]
           }
         ]
+      },
+      "get": {
+        "tags": [
+          "Analytics",
+          "Analytics"
+        ],
+        "summary": "List the Active dashboards the caller may open in the Workspace, newest first",
+        "description": "Returns the caller's own Active dashboards as a cursor page: default 50, max 200 (limit). Pass nextCursor back as cursor for the next page. Archived and other members' private dashboards are not listed.",
+        "operationId": "Analytics.Dashboards.ListDashboards",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Common.Models.CursorPageOfDashboardSummaryDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspaceId}/dashboards/{dashboardId}": {
@@ -31292,6 +31387,27 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Common.Models.CursorPageOfDashboardSummaryDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Analytics.Dashboards.DTOs.DashboardSummaryDto"
+            },
+            "nullable": true
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Common.Models.CursorPageOfFormSubmissionDto": {
         "type": "object",
         "properties": {
@@ -31634,6 +31750,46 @@
           "total": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Analytics.Dashboards.DTOs.DashboardSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "visibility": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "ownerUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "additionalProperties": false
