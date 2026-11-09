@@ -79,6 +79,7 @@ SELECT ops.apply_scoped_business_policies('automation', 'ai_agent_runs', true);
 SELECT ops.apply_scoped_business_policies('integration', 'integration_connections', true);
 SELECT ops.apply_scoped_business_policies('integration', 'webhook_subscriptions', true);
 SELECT ops.apply_scoped_business_policies('integration', 'webhook_deliveries', true);
+SELECT ops.apply_scoped_business_policies('integration', 'outbound_delivery_log_entries', true);
 SELECT ops.apply_scoped_business_policies('integration', 'inbound_webhook_events', true);
 SELECT ops.apply_scoped_business_policies('integration', 'calendar_integrations', true);
 
