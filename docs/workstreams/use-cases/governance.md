@@ -49,10 +49,10 @@ Capability letters follow the Governance list of the team spec, in order.
 | D | Permission assignment | 15 | 2 | 2 | 3 | 3 | 3 | 2 |
 | E | Effective permission evaluation | 13 | 1 | 5 | 1 | 2 | 4 | 0 |
 | F | Protected operation integration | 5 | 2 | 1 | 1 | 0 | 1 | 0 |
-| G | Share-link lifecycle and policy | 10 | 3 | 2 | 2 | 1 | 0 | 2 |
-| H | Governance administration UI | 14 | 5 | 6 | 1 | 0 | 0 | 2 |
+| G | Share-link lifecycle and policy | 10 | 3 | 1 | 2 | 2 | 0 | 2 |
+| H | Governance administration UI | 14 | 5 | 5 | 1 | 1 | 0 | 2 |
 | I | Architecture coverage for resource kinds and actions | 3 | 1 | 0 | 0 | 1 | 1 | 0 |
-|  | Total | 75 | 15 | 19 | 8 | 17 | 10 | 6 |
+|  | Total | 75 | 15 | 17 | 8 | 19 | 10 | 6 |
 
 Ten use cases are DONE in the index (B01, D01, D03, D04, E01, E04, E05, E06, F01, I01); each Evidence line names its proof. The execution pack certifies Governance parts as VERIFIED or PARTIALLY_VERIFIED on a base commit (certification (removed; see git history), records P2B-CERT-004 to P2B-CERT-016); that is backend proof only.
 
@@ -112,7 +112,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 |---|---|---|---|---|---|---|---|---|---|
 | UC-GOV-A01 | Admit a protected resource kind with its action vocabulary | A | Developer of an owning context | Yes | No | No | No | IMPLEMENTING | Kinds exist for Board, Page and workspace; Items, Automation and Integration rely on the workspace kind or the Board. A written ... |
 | UC-GOV-A02 | Resolve a resource's kind, workspace and owner from its id | A | Application pipeline (system) | Yes | No | No | Part | HARDENING | tests and owner check |
-| UC-GOV-A03 | Classify every permission action in the role baseline | A | Developer | Yes | No | No | No | IMPLEMENTING | Stored-rule migration on rename is specified (§85) but has no test. |
+| UC-GOV-A03 | Classify every permission action in the role baseline | A | Developer | Yes | No | No | No | IMPLEMENTING | Owner question: no stored-rule migration for a permission action rename exists (`permission_rules.action`, custom role permissions, templates and audit mappings are plain text, §85), so there is no migration to test; build it with the first rename, or now? |
 | UC-GOV-A04 | Field-level permission (deferred) | A | Workspace Owner, Admin | Part | No | No | No | DEFINED | Lead decision L11: deferred behind Work Management field work. Domain type exists and is unused. |
 | UC-GOV-B01 | Decide a workspace action from the built-in role baseline | B | Server (every protected request) | Yes | Part | Part | Yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-GOV-B02 | Decide an account-scoped action from the account role | B | Server | Yes | No | No | No | IMPLEMENTING | No frontend check of denial; no API-level test of the Account cell. |
@@ -177,9 +177,9 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 | UC-GOV-H07 | Revoke an API token | H | Workspace Owner | Yes | No | No | No | IMPLEMENTING | No screen. Built (2026-11-09): audit row `RevokeApiToken` only when the token changes; an already-revoked token writes no row. |
 | UC-GOV-H08 | Cap API token lifetime by workspace policy (enterprise baseline) | H | Workspace Owner | No | No | No | No | DEFINED | Not built. |
 | UC-GOV-H09 | Manage roles on a governance screen | H | Workspace Owner | No | Part | No | No | DEFINED | Depends on C01-C06 and on a design. |
-| UC-GOV-H10 | Read outbox statistics (platform operator) | H | Platform operator (`SystemAdmin` role) | Yes | No | No | No | IMPLEMENTING | Operator surface only; how the `SystemAdmin` role is granted and audited is not documented. |
-| UC-GOV-H11 | List pending and failed outbox messages | H | Platform operator | Yes | No | No | No | IMPLEMENTING | Cap on the failed path not verified here; cross-tenant read by design; no audit of operator reads. |
-| UC-GOV-H12 | Read one outbox message | H | Platform operator | Yes | No | No | No | IMPLEMENTING | Detail fields not reviewed for payload or secret exposure; no test of the 404. |
+| UC-GOV-H10 | Read outbox statistics (platform operator) | H | Platform operator (`SystemAdmin` role) | Yes | No | No | No | IMPLEMENTING | Operator surface only. Owner question: how the `SystemAdmin` role is granted and audited (the product text names the role in Lead decision L9 only). |
+| UC-GOV-H11 | List pending and failed outbox messages | H | Platform operator | Yes | No | No | No | IMPLEMENTING | Built (2026-11-09): the limit is clamped to 1 to 200 on the pending and the failed path (`OutboxDiagnosticsLimits.Clamp`, unit tested). Cross-tenant read by design. Owner question: must operator reads be audited? L9 is silent; L3 audits reads of the workspace audit log only. |
+| UC-GOV-H12 | Read one outbox message | H | Platform operator | Yes | No | No | No | HARDENING | Built (2026-11-09): the detail DTO no longer carries `PayloadJson` (L9: no payload), tested by reflection and by serialization; the 404 is tested. The `Error` text is returned as stored; redacting secrets a producer writes into it is not built. |
 | UC-GOV-H13 | Workspace administration console | H | Workspace Owner, Admin | Part | Part | Part | No | BLOCKED | Owner decisions 1-9 of the admin plane (roadmap AD-1) are pending. Needed: what the console contains, who may open each area, whether ... |
 | UC-GOV-H14 | Account administration console | H | Account Owner, Admin | Part | Part | Part | No | BLOCKED | Same pending owner decisions as UC-GOV-H13; Accounts owns the content, Governance only the access rule. |
 | UC-GOV-I01 | Every endpoint declares its authorization | I | Developer, CI | Yes | No | No | n/a | DONE | set DONE by the foundation lane pull request, see the Evidence line |
@@ -873,6 +873,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - State: DEFINED - Not built.
 
 ## Capability G: Share-link lifecycle and policy
+- State: IMPLEMENTING - Owner question: the stored-rule migration on a rename (§85: stored rules, roles, templates, audit mappings) is not in the code, so its test cannot be written yet. Build it with the first rename, or now?
 
 ### UC-GOV-G01 Create a share link for a Board or Page
 - Capability: G Share-link lifecycle and policy (team spec, Governance list)
@@ -1154,7 +1155,7 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - Rules: Lead decision L9; WGREQ105 (operations evidence); owner: platform, see [Platform use cases](platform-foundation.md).
 - Acceptance: Given a tenant admin, When they call stats, Then 403.
 - Evidence: BE `GET /admin/outbox/stats` (GetOutboxStats) · Tests `backend/tests/Notrelix.API.Tests/Admin/AdminEndpointAuthorizationTests.cs` · Real e2e none · Design none
-- State: IMPLEMENTING - Operator surface only; how the `SystemAdmin` role is granted and audited is not documented.
+- State: IMPLEMENTING - Operator surface only. Owner question: how the `SystemAdmin` role is granted and audited is not documented; the product text does not say, so it is not invented here.
 
 ### UC-GOV-H11 List pending and failed outbox messages
 - Capability: H Governance administration UI (team spec, Governance list)
@@ -1167,8 +1168,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: none; no UI
 - Rules: Lead decision L9.
 - Acceptance: Given limit 5000, When called, Then at most 200 rows.
-- Evidence: BE `GET /admin/outbox/pending` (GetPendingOutboxMessages), `GET /admin/outbox/failed` (GetFailedOutboxMessages) · Tests `AdminEndpointAuthorizationTests` (success cases) · Real e2e none · Design none
-- State: IMPLEMENTING - Cap on the failed path not verified here; cross-tenant read by design; no audit of operator reads.
+- Evidence: BE `GET /admin/outbox/pending` (GetPendingOutboxMessages), `GET /admin/outbox/failed` (GetFailedOutboxMessages) · Tests `backend/tests/Notrelix.API.Tests/Admin/AdminEndpointAuthorizationTests.cs` (success cases), `backend/tests/Notrelix.Application.Tests/Common/Messaging/OutboxDiagnosticsContractTests.cs` (clamp 1 to 200) · Real e2e none · Design none
+- State: IMPLEMENTING - Built (2026-11-09): the cap is applied to both paths by one function and unit tested; the detail route is not part of this list. Cross-tenant read by design. Owner question: are operator reads audited (L9 is silent)?
 
 ### UC-GOV-H12 Read one outbox message
 - Capability: H Governance administration UI (team spec, Governance list)
@@ -1181,8 +1182,8 @@ Letter to capability map (Governance list of the team spec, in order): A resourc
 - UI states: none; no UI
 - Rules: Lead decision L9.
 - Acceptance: Given an unknown id, When called, Then 404.
-- Evidence: BE `GET /admin/outbox/{id}` (GetOutboxMessageById) · Tests none specific · Real e2e none · Design none
-- State: IMPLEMENTING - Detail fields not reviewed for payload or secret exposure; no test of the 404.
+- Evidence: BE `GET /admin/outbox/{id}` (GetOutboxMessageById) · Tests `backend/tests/Notrelix.API.Tests/Admin/AdminEndpointAuthorizationTests.cs` (unknown id 404, normal user 403), `backend/tests/Notrelix.Application.Tests/Common/Messaging/OutboxDiagnosticsContractTests.cs` (no payload field, no payload key in JSON) · Real e2e none · Design none
+- State: HARDENING - Built (2026-11-09): `PayloadJson` removed from the detail DTO and from the query (Lead decision L9: operator reads return no payload); the 404 and the no-payload shape are tested. Left: the `Error` text is returned as stored; redaction of secrets a producer writes into it is not built.
 
 ### UC-GOV-H13 Workspace administration console
 - Capability: H Governance administration UI (team spec, Governance list)
