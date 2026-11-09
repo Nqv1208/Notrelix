@@ -200,8 +200,9 @@ function Bubble({
     update.author.userId,
     data.viewerUserId,
   );
+  // The version is the one the list returned; a stale one is refused and the list is read again.
   const edit = useCommentEdit(update.body, (body) =>
-    callbacks.onUpdateUpdate(update.id, body),
+    callbacks.onUpdateUpdate(update.id, body, update.version ?? 0),
   );
   const react =
     canReply || canWriteComment(capabilities)
@@ -333,7 +334,7 @@ function Bubble({
                 className="border-danger-text bg-danger-text font-semibold text-danger-foreground hover:bg-danger-text hover:brightness-95"
                 onClick={() => {
                   setConfirming(false);
-                  callbacks.onDeleteUpdate(update.id);
+                  callbacks.onDeleteUpdate(update.id, update.version ?? 0);
                 }}
               >
                 {t.deleteConfirm}
@@ -662,7 +663,8 @@ export function CommentsColumn() {
     ...top.map((update) => ({
       at: update.createdAt,
       update,
-      deleted: false,
+      // A deleted comment the server kept for its replies shows the placeholder, with no author or text.
+      deleted: update.deleted === true,
       event: null as CardActivity | null,
     })),
     // Replies whose comment was deleted stay together under its placeholder, at the first reply's time.

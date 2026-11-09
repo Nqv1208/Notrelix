@@ -1449,6 +1449,7 @@
           "Collaboration.Comments"
         ],
         "summary": "Get comments for a page",
+        "description": "Every live comment of the page, oldest first, unpaged. Prefer the /page route for long threads.",
         "operationId": "Collaboration.Comments.GetPageComments",
         "parameters": [
           {
@@ -1560,6 +1561,63 @@
         ]
       }
     },
+    "/api/v1/pages/{pageId}/comments/page": {
+      "get": {
+        "tags": [
+          "Collaboration.Comments",
+          "Collaboration.Comments"
+        ],
+        "summary": "Get a page of the comments of a page",
+        "description": "Oldest first, default 50 and at most 200 a page. Pass nextCursor back as cursor for the next page. A deleted comment with live replies comes back as a tombstone (isDeleted true, no author or body).",
+        "operationId": "Collaboration.Comments.GetPageCommentsPage",
+        "parameters": [
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Common.Models.CursorPageOfCommentDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/comments/{commentId}": {
       "patch": {
         "tags": [
@@ -1567,6 +1625,7 @@
           "Collaboration.Comments"
         ],
         "summary": "Update a comment",
+        "description": "Replaces the text of the author's comment. Answers 412 with the current comment when expectedVersion is stale.",
         "operationId": "Collaboration.Comments.Update",
         "parameters": [
           {
@@ -1593,9 +1652,45 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {
+              "application/json": { }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -1616,6 +1711,7 @@
           "Collaboration.Comments"
         ],
         "summary": "Delete a comment",
+        "description": "Soft-deletes the author's comment. Pass expectedVersion as a query parameter; 412 when it is stale.",
         "operationId": "Collaboration.Comments.Delete",
         "parameters": [
           {
@@ -1626,15 +1722,60 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "expectedVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {
+              "application/json": { }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -27265,6 +27406,11 @@
           "contentMd": {
             "type": "string",
             "nullable": true
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -31605,6 +31751,13 @@
           },
           "anchor": {
             "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentAnchorDto"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isDeleted": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

@@ -25,6 +25,8 @@ export interface PageComment {
   resolved: boolean;
   createdAt: string;
   updatedAt: string;
+  /** The version the server holds; edit and delete quote it. */
+  version?: number;
 }
 
 export interface CreateCommentPayload {

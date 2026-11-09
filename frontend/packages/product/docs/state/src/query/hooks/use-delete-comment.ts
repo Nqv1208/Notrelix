@@ -11,7 +11,13 @@ export function createUseDeleteComment(
   return function useDeleteComment(workspaceId: string, pageId: string) {
     const queryClient = useQueryClient();
     return useMutation({
-      mutationFn: commentApi.delete,
+      mutationFn: ({
+        commentId,
+        expectedVersion,
+      }: {
+        commentId: string;
+        expectedVersion: number;
+      }) => commentApi.delete(commentId, expectedVersion),
       onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: docsQueryKeys.comments(workspaceId, pageId),

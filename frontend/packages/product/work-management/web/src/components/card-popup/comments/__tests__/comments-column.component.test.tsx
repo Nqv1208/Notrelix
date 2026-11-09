@@ -20,6 +20,7 @@ const comment = {
   createdAt: "2026-11-01T09:00:00.000Z",
   author,
   reactions: [],
+  version: 4,
 };
 
 function show({
@@ -117,7 +118,21 @@ describe("moderator delete", () => {
         name: en.related.comments.deleteConfirm,
       }),
     );
-    expect(onDeleteUpdate).toHaveBeenCalledWith("c-1");
+    // The delete quotes the version the list returned.
+    expect(onDeleteUpdate).toHaveBeenCalledWith("c-1", 4);
+  });
+
+  it("keeps a deleted comment's replies under a placeholder with no author or text", () => {
+    show({
+      updates: [
+        { ...comment, id: "c-9", body: "", deleted: true },
+        { ...comment, id: "r-1", body: "a reply", parentId: "c-9" },
+      ],
+    });
+    const placeholder = document.querySelector("[data-comment-deleted]");
+    expect(placeholder).not.toBeNull();
+    expect(placeholder?.textContent).not.toContain("Ship it");
+    expect(document.body.textContent).toContain("a reply");
   });
 
   it("hides delete on another person's comment from a commenter, and offers no Edit", () => {

@@ -63,6 +63,7 @@ export interface PageApiEndpoints {
     breadcrumb: (pageId: string) => string;
     blocks: (pageId: string) => string;
     comments: (pageId: string) => string;
+    commentsPage: (pageId: string) => string;
     history: (pageId: string) => string;
     search: (workspaceId: string) => string;
     move: (pageId: string) => string;

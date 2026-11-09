@@ -339,8 +339,12 @@ export interface TaskDetailCallbacks {
     emoji: string,
     on: boolean,
   ) => void;
-  readonly onUpdateUpdate: (updateId: string, body: string) => void;
-  readonly onDeleteUpdate: (updateId: string) => void;
+  readonly onUpdateUpdate: (
+    updateId: string,
+    body: string,
+    expectedVersion: number,
+  ) => void;
+  readonly onDeleteUpdate: (updateId: string, expectedVersion: number) => void;
   readonly onSelectTab: (tab: CardDetailTab) => void;
   /** Copies the item link; the button is disabled without it. */
   readonly onCopyLink?: (cardId: string) => void;

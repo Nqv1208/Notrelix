@@ -309,10 +309,11 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     await commentApi.updateCardUpdate(
       comment.id,
       "Updated work in progress comment.",
+      1,
     );
     const updates = await commentApi.getCardUpdates(createdCard.id);
     expect(updates.some((u: any) => u.body.includes("Updated"))).toBe(true);
-    await commentApi.deleteCardUpdate(comment.id);
+    await commentApi.deleteCardUpdate(comment.id, 1);
 
     // Relational Invariants preserved
     store.assertInvariants();

@@ -1514,7 +1514,8 @@ export function createDocPageScreen({
         reopenComment.mutate(id);
       },
       onCommentDelete: (id) => {
-        deleteComment.mutate(id);
+        const version = commentsQuery.data?.find((c) => c.id === id)?.version;
+        deleteComment.mutate({ commentId: id, expectedVersion: version ?? 0 });
         if (id === activeCommentId) setActiveCommentId(null);
       },
       onCommentCreate: (body) => {

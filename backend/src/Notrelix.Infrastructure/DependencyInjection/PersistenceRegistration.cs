@@ -170,6 +170,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Collaboration.Automation.AutomationActivityFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Collaboration.Activity.Ports.IResourceActivityReader,
             global::Notrelix.Infrastructure.Data.Collaboration.ResourceActivityReader>();
+        services.AddScoped<global::Notrelix.Application.Features.Collaboration.Comments.Ports.ICommentTombstoneReader,
+            global::Notrelix.Infrastructure.Data.Collaboration.CommentTombstoneReader>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Public.SpaceOverview.IPageSpaceOverviewFacts,
             global::Notrelix.Infrastructure.CrossContext.Workspaces.Documents.PageSpaceOverviewFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.CommandSearch.IWorkSearchFacts,
