@@ -25,9 +25,6 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Integrations;
 [OrderingNotApplicable("Each message is one independent delivery whose outcome is recorded on the connection; the receiver orders by the delivery identity.")]
 public sealed class IntegrationWebhookDispatchRequestedConsumer : IConsumer<IntegrationWebhookDispatchRequestedV1>
 {
-    /// <summary>Redeliveries after the first attempt, matching the consumer definition.</summary>
-    public const int MaxRedeliveries = 3;
-
     private readonly ApplicationDbContext _db;
     private readonly IIntegrationSecretStore _secrets;
     private readonly OutboundWebhookSender _sender;
@@ -106,22 +103,23 @@ public sealed class IntegrationWebhookDispatchRequestedConsumer : IConsumer<Inte
         var result = await _sender.SendAsync(
             connection!.TargetUrl!, secret, message.DeliveryId, message.DeliveryType, body, now, ct);
 
-        switch (result.Outcome)
+        if (WebhookRedeliveryPolicy.ShouldRedeliver(retryAttempt, result.Outcome))
         {
-            case WebhookSendOutcome.Delivered:
-                connection.RecordSuccess(_clock.UtcNow);
-                log.RecordDelivered(result.StatusCode!.Value, _clock.UtcNow);
-                break;
+            log.RecordRetrying(result.StatusCode, result.FailureClass!.Value, _clock.UtcNow);
+            await _db.SaveChangesAsync(ct);
+            throw new WebhookDispatchRetryableException(message.DeliveryId, result.Description);
+        }
 
-            case WebhookSendOutcome.Transient when retryAttempt < MaxRedeliveries:
-                log.RecordRetrying(result.StatusCode, result.FailureClass!.Value, _clock.UtcNow);
-                await _db.SaveChangesAsync(ct);
-                throw new WebhookDispatchRetryableException(message.DeliveryId, result.Description);
-
-            default:
-                connection.RecordFailure(result.Description, _clock.UtcNow);
-                log.RecordFailed(result.StatusCode, result.FailureClass ?? OutboundDeliveryFailureClass.ReceiverRejected, _clock.UtcNow);
-                break;
+        if (result.Outcome == WebhookSendOutcome.Delivered)
+        {
+            connection.RecordSuccess(_clock.UtcNow);
+            log.RecordDelivered(result.StatusCode!.Value, _clock.UtcNow);
+        }
+        else
+        {
+            // The budget is used up, or another attempt cannot help: the failure is recorded and visible.
+            connection.RecordFailure(result.Description, _clock.UtcNow);
+            log.RecordFailed(result.StatusCode, result.FailureClass ?? OutboundDeliveryFailureClass.ReceiverRejected, _clock.UtcNow);
         }
 
         await _db.SaveChangesAsync(ct);
