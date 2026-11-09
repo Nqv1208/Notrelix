@@ -123,8 +123,8 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-D02 | Refuse to run with an unsafe database role | D | Host startup | yes | n/a | n/a | no | IMPLEMENTING | prod role not exercised |
 | UC-PLT-D03 | Reject a stale write with 412 | D | Application pipeline | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-D04 | Use the cache as derived state | D | Application | yes | n/a | n/a | no | IMPLEMENTING | no invalidation rule per use |
-| UC-PLT-E01 | Apply migrations at deploy | E | Operator, CI | yes | n/a | n/a | no | IMPLEMENTING | upgrade-path proof per release |
-| UC-PLT-E02 | Recover a dev database that failed a migration | E | Operator | yes | n/a | n/a | no | IMPLEMENTING | recreate procedure only |
+| UC-PLT-E01 | Apply migrations at deploy | E | Operator, CI | yes | n/a | n/a | no | IMPLEMENTING | owner question: upgrade-path proof per release |
+| UC-PLT-E02 | Recover a dev database that failed a migration | E | Operator | yes | n/a | n/a | no | IMPLEMENTING | owner question: is the documented recreate enough |
 | UC-PLT-E03 | Validate configuration at startup | E | Host startup | yes | n/a | n/a | no | HARDENING | SecurityHeaders, OAuth redirect URLs, forwarded headers unvalidated |
 | UC-PLT-F01 | Replay the stored result for a retry with the same key | F | API, Application | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-F02 | Refuse a reused key with a different request | F | API, Application | yes | n/a | n/a | no | HARDENING | none open; client conflict case in `api-client.unit.test.ts` |
@@ -391,8 +391,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: n/a.
 - Rules: PFREQ037 to PFREQ043; `docs/` migration owner (backend operations).
 - Acceptance: Given a database with policies, When the newest migration runs, Then it succeeds and policies remain.
-- Evidence: BE `backend/src/Notrelix.Infrastructure/Data/Migrations/` · FE n/a · Design n/a · Tests the RLS upgrade-path guard in `backend/tests/Notrelix.Integration.Tests/Rls/` · Real e2e none
-- State: IMPLEMENTING — supported-upgrade proof is per release boundary.
+- Evidence: BE `backend/src/Notrelix.Infrastructure/Data/Migrations/`, `--migrate` and `--rls-apply` modes (`backend/src/Notrelix.API/Extensions/DatabaseStartupExtensions.cs`) · FE n/a · Design n/a · Tests `backend/tests/Notrelix.Integration.Tests/Rls/PolicyCoverageTests.cs` (forced RLS and a policy on every table, after migrations), `backend/tests/Notrelix.Integration.Tests/Integration/RlsRuntimeEnforcementTests.cs` (`MigrateAsync` then policy apply) · Real e2e none
+- State: IMPLEMENTING — Owner question: which prior release database is the upgrade-path fixture, and must a migrate-from-the-previous-release run be recorded for each release boundary? The integration tests migrate a fresh database; they do not migrate from an earlier release.
 
 ### UC-PLT-E02 Recover a dev database that failed a migration
 - Capability: E, PF-05
@@ -405,8 +405,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: n/a.
 - Rules: PFREQ040.
 - Acceptance: Given a stuck database, When recreated, Then the app starts.
-- Evidence: BE migration tooling · FE n/a · Design n/a · Tests none · Real e2e none
-- State: IMPLEMENTING — a documented procedure, no automated check.
+- Evidence: BE migration tooling · docs `backend/docs/operations/migrations-and-data-change.md` (recovery for a stuck development database, section 8), `Makefile` targets `dev-reset` and `dev-reset-full` · FE n/a · Design n/a · Tests none · Real e2e none
+- State: IMPLEMENTING — Owner question: is the documented recreate (`make dev-reset`, or the recovery paragraph in `migrations-and-data-change.md`) the accepted procedure, or must a scripted check that the app starts after a recreate be added? No automated check exists.
 
 ### UC-PLT-E03 Validate configuration at startup
 - Capability: E, PF-05
