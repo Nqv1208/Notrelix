@@ -164,7 +164,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 | UC-BIL-I05 | Show over-limit resources before a downgrade | I | Billing managers | No | Mock | ha-goi | No | IMPLEMENTING | Mock-only. Same use case as UC-BIL-R03 |
 | UC-BIL-J01 | Let workspace Owner and Admin view billing | J | Workspace Owner, Admin | Yes | Real | No | billing-plan | HARDENING | Interim permission |
 | UC-BIL-J02 | Delegate billing management to a member | J | Account owner | No | Mock | tong-quan | No | IMPLEMENTING | No Governance action for billing administration |
-| UC-BIL-J03 | Show a view-only billing page to people who cannot manage | J | Workspace people without billing management | No | Mock | chi-xem | No | IMPLEMENTING | Real backend only offers `canChangePlan` |
+| UC-BIL-J03 | Show a view-only billing page to people who cannot manage | J | Workspace people without billing management | No | Mock | chi-xem | No | IMPLEMENTING | Owner question: who sees a view-only page and who sees permission denied (see the use case) |
 | UC-BIL-J04 | Keep invoice profile: company, tax id, address, email (enterprise baseline) | J | Billing managers | Dom | Mock | No | No | DEFINED | No edit flow, no artboard state |
 | UC-BIL-J05 | Authorize billing with its own permission | J | Governance owner decides; Billing consumes | Part | No | No | No | DEFINED | Owner of Governance permission list must add the actions |
 | UC-BIL-K01 | Add a payment method through the provider's hosted form | K | Billing managers | Dom | No | No | No | DEFINED | Provider not chosen |
@@ -779,7 +779,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - Rules: Product §101; spec BILREQ099.
 - Acceptance: Given a viewer, when they open billing, then no buy or downgrade control is shown and managers are named.
 - Evidence: BE none (`viewer.canManage` exists only in the mock) · FE `frontend/apps/web/src/routes/workspaces/$workspaceId/billing.tsx`, `frontend/packages/features/workspace/src/web/billing/``billing-overview-surface.tsx` · Design `Final-Billing.dc.html` `chi-xem` · Tests `frontend/packages/features/workspace/src/web/billing/``__tests__/billing.interaction.component.test.tsx` · Real e2e none (real spec `billing-plan.real.e2e.spec.ts` checks no switcher)
-- State: IMPLEMENTING — Real backend only offers `canChangePlan`.
+- State: IMPLEMENTING — Owner question: `canChangePlan` does not exist in the backend, the contracts or the frontend; the only `viewer.canManage` is in the mock. The real plan and capability reads need `ViewBilling` (Owner and Admin, interim, UC-BIL-J02), so a Member gets 403 and the real capabilities page has no action control to hide. Should a person without the view right see a view-only page (the reads would need a new flag and a no-permission read) or the permission-denied state? Any manage flag depends on UC-BIL-J05 (billing actions in Governance, still DEFINED), so there is no real manage right to return yet. Not built: no flags, no DTO or OpenAPI change, no copy.
 
 ### UC-BIL-J04 Keep invoice profile: company, tax id, address, email (enterprise baseline)
 - Capability: J. BIL-010 Billing administration
