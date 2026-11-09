@@ -115,7 +115,7 @@ Table-stakes use cases the product docs do not list, added as "(enterprise basel
 | UC-ANA-B01 | Publish a Metric definition version | B | Analytics team | no | no | n/a | no | DEFINED | no registry |
 | UC-ANA-B02 | Browse the Metric catalog | B | Workspace member | no | no | Final-Reports | no | DEFINED | no registry |
 | UC-ANA-C01 | Keep a projection current from source events | C | Platform consumer | yes | n/a | n/a | no | IMPLEMENTING | one projection |
-| UC-ANA-C02 | Read a projection locally | C | Application | yes | n/a | n/a | no | IMPLEMENTING | no route, unbounded |
+| UC-ANA-C02 | Read a projection locally | C | Workspace member | yes | n/a | n/a | no | HARDENING | no screen (owner) |
 | UC-ANA-D01 | A duplicate or replayed fact has no second effect | D | Platform consumer | yes | n/a | n/a | no | IMPLEMENTING | one projection |
 | UC-ANA-E01 | A late or out-of-order fact is ignored | E | Platform consumer | yes | n/a | n/a | no | IMPLEMENTING | one projection |
 | UC-ANA-F01 | Rebuild a workspace placement projection | F | Operator | yes | no | n/a | no | IMPLEMENTING | no trigger, no audit |
@@ -256,17 +256,17 @@ Shared evidence. Report routes: `GET /api/v1/boards/{boardId}/report` (`GetBoard
 
 ### UC-ANA-C02 Read a projection locally
 - Capability: C, ANA-003
-- Actors and permission: Application (internal); `IRequirePermission` on the query.
+- Actors and permission: workspace member (`ViewWorkspace`, `IRequirePermission`), rows limited to the Boards the caller may read (Governance visibility, active and archived), as the reports are.
 - Preconditions: the workspace projection is initialized.
-- Input: workspace id.
-- Output: list of `WorkItemPlacementDto`.
-- Main flow: 1. A report handler calls the query. 2. The query reads only the local table.
+- Input: workspace id, `cursor`, `limit` (default 50, 1 to 200).
+- Output: `CursorPage<WorkItemPlacementDto>` in item id order with `nextCursor`.
+- Main flow: 1. The caller lists placements. 2. The query reads only the local table, filtered to the visible Boards. 3. A page and its `nextCursor` return.
 - No-op / rejection / concurrency / retry: read only; no producer call.
 - UI states: none.
 - Rules: ARREQ033; product ANA021.
 - Acceptance: Given rows in two workspaces, When one is read, Then only its rows return.
-- Evidence: BE `Placements/Queries/GetWorkspacePlacements/GetWorkspacePlacements.cs` (no route) · FE n/a · Design n/a · Tests `GetWorkspacePlacements_ProductionHandler_ReadsLocalScopedPr...` · Real e2e none
-- State: IMPLEMENTING — returns every row without a limit; must be bounded before any route exposes it (Part 1.4).
+- Evidence: BE `backend/src/Notrelix.Application/Features/Analytics/Placements/Queries/GetWorkspacePlacements/GetWorkspacePlacements.cs`, `backend/src/Notrelix.API/Endpoints/Analytics/Placements/Queries/ListWorkspacePlacementsEndpoint.cs` (`GET /api/v1/workspaces/{workspaceId}/work-placements`), OpenAPI `backend/contracts/openapi/notrelix.v1.json` and `frontend/packages/foundation/contracts/src/generated/rest/schema.ts` · FE n/a · Design n/a · Tests `backend/tests/Notrelix.Application.Tests/Features/Analytics/WorkspacePlacementsPageTests.cs`, `backend/tests/Notrelix.Integration.Tests/Analytics/WorkspacePlacementProjectionIntegrationTests.cs` (`GetWorkspacePlacements_ReadsBoundedCursorPages_AndOnlyBoardsTheCallerMayRead`, `GetWorkspacePlacements_ProductionHandler_ReadsLocalScopedProjection`), `backend/tests/Notrelix.Architecture.Tests/InfrastructureLayer/AnalyticsProjectionSourceOwnershipArchitectureTests.cs` · Real e2e none
+- State: HARDENING — Built: a bounded cursor page (default 50, max 200) behind `GET /api/v1/workspaces/{workspaceId}/work-placements` with `ViewWorkspace`, limited to Boards the caller may read so a hidden Board's placements are not disclosed. Remaining: no screen (owner decides); the integration tests need Docker and run in CI only.
 
 ## Capability D: Projection identity/idempotency
 

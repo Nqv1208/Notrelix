@@ -1,3 +1,4 @@
+using Notrelix.API.Endpoints.Analytics.Placements.Queries;
 using Notrelix.API.Endpoints.Analytics.Queries;
 
 namespace Notrelix.API.Endpoints.Analytics;
@@ -15,6 +16,11 @@ public static class AnalyticsEndpointMappings
             .WithTags("Analytics")
             .WithOpenApi()
             .MapGetWorkspaceReport();
+
+        app.MapGroup("/api/v1/workspaces/{workspaceId:guid}/work-placements")
+            .WithTags("Analytics")
+            .WithOpenApi()
+            .MapListWorkspacePlacements();
 
         return app;
     }
