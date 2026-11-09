@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Options;
+
 namespace Notrelix.Infrastructure.Integrations.Connections;
 
 /// <summary>`Integrations:*` configuration. A provider with no client id and secret is "not configured" and cannot be connected.</summary>
@@ -39,4 +41,21 @@ public sealed class IntegrationWebhookOptions
     public bool? AllowPrivateTargets { get; init; }
 
     public int TimeoutSeconds { get; init; } = 10;
+}
+
+/// <summary>Startup check for `Integrations:*`. An out-of-range webhook timeout would otherwise fail on the first outbound call.</summary>
+public sealed class IntegrationsOptionsValidator : IValidateOptions<IntegrationsOptions>
+{
+    public const int MaxWebhookTimeoutSeconds = 120;
+
+    public ValidateOptionsResult Validate(string? name, IntegrationsOptions options)
+    {
+        if (options.Webhook.TimeoutSeconds is < 1 or > MaxWebhookTimeoutSeconds)
+        {
+            return ValidateOptionsResult.Fail(
+                $"{IntegrationsOptions.SectionName}:Webhook:TimeoutSeconds must be between 1 and {MaxWebhookTimeoutSeconds}.");
+        }
+
+        return ValidateOptionsResult.Success;
+    }
 }

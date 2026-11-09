@@ -125,7 +125,7 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-D04 | Use the cache as derived state | D | Application | yes | n/a | n/a | no | IMPLEMENTING | no invalidation rule per use |
 | UC-PLT-E01 | Apply migrations at deploy | E | Operator, CI | yes | n/a | n/a | no | IMPLEMENTING | upgrade-path proof per release |
 | UC-PLT-E02 | Recover a dev database that failed a migration | E | Operator | yes | n/a | n/a | no | IMPLEMENTING | recreate procedure only |
-| UC-PLT-E03 | Validate configuration at startup | E | Host startup | yes | n/a | n/a | no | IMPLEMENTING | partial coverage |
+| UC-PLT-E03 | Validate configuration at startup | E | Host startup | yes | n/a | n/a | no | HARDENING | SecurityHeaders, OAuth redirect URLs, forwarded headers unvalidated |
 | UC-PLT-F01 | Replay the stored result for a retry with the same key | F | API, Application | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-F02 | Refuse a reused key with a different request | F | API, Application | yes | n/a | n/a | no | HARDENING | none open; client conflict case in `api-client.unit.test.ts` |
 | UC-PLT-G01 | Record a domain event in the outbox with the business change | G | Application, data session | yes | n/a | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
@@ -419,8 +419,8 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - UI states: n/a.
 - Rules: PFREQ014, PFREQ040.
 - Acceptance: Given an empty allowed-origin list with wildcard off, When started, Then the realtime options fail validation.
-- Evidence: BE `CsrfOptionsValidator.cs`, `RealtimeGatewayOptionsValidator` (`RealtimeGatewayOptions.cs`), `OAuthRegistration.cs`, `MfaRegistration.cs`, `EmailRegistration.cs` · FE `frontend/apps/web/src/config/env.ts` · Design n/a · Tests `RealtimeGatewayUnitTests.cs` · Real e2e none
-- State: IMPLEMENTING — messaging, outbox and rate-limit options bind without validation.
+- Evidence: BE `CsrfOptionsValidator.cs`, `RealtimeGatewayOptionsValidator` (`RealtimeGatewayOptions.cs`), `OAuthRegistration.cs`, `MfaRegistration.cs`, `EmailRegistration.cs`, `RateLimitingOptionsValidator.cs`, `OutboxDispatchOptionsValidator` (`BackgroundJobsRegistration.cs`, `MessagingRegistration.cs`), `IntegrationsOptionsValidator` (`Integrations/Connections/IntegrationsOptions.cs`) · FE `frontend/apps/web/src/config/env.ts` · Design n/a · Tests `RealtimeGatewayUnitTests.cs`, `backend/tests/Notrelix.Infrastructure.Tests/Options/OutboxDispatchOptionsValidatorTests.cs`, `backend/tests/Notrelix.Infrastructure.Tests/Options/IntegrationsOptionsValidatorTests.cs`, `backend/tests/Notrelix.API.Tests/RateLimiting/RateLimitPolicyCatalogTests.cs` · Real e2e none
+- State: HARDENING — Built: the options with a startup-breaking range or shape now use `ValidateOnStart` with a validator. The integrations webhook timeout gained one in this pass (1 to 120 seconds; 6 tests passed locally). Not validated, and they bind with their defaults: `SecurityHeaderOptions`, `OAuthRedirectOptions` URLs, forwarded-header settings, and the `OutboxHealthCheckOptions` thresholds.
 
 ## Capability F: Idempotency
 

@@ -11,7 +11,10 @@ public static class IntegrationsRegistration
     public static IServiceCollection AddIntegrations(
         this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddOptions<IntegrationsOptions>().Bind(configuration.GetSection(IntegrationsOptions.SectionName));
+        services.AddOptions<IntegrationsOptions>()
+            .Bind(configuration.GetSection(IntegrationsOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<IntegrationsOptions>, IntegrationsOptionsValidator>();
         services.AddSingleton<IntegrationProviderSettings>();
         services.AddSingleton<IIntegrationProviderSettings>(sp => sp.GetRequiredService<IntegrationProviderSettings>());
         services.AddHttpClient<IIntegrationOAuthClient, IntegrationOAuthClient>(client =>
