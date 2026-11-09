@@ -1,5 +1,7 @@
+using Notrelix.Application.Features.Accounts.Accounts.Commands.RenameAccount;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteComment;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment;
+using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddFieldOption;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveBoardField;
@@ -208,6 +210,7 @@ public sealed class ExpectedVersionTargetMap
             && checklist.DomainEvents.OfType<ChecklistItemRemovedDomainEvent>().Any(removed => removed.ItemId == itemId));
     private const string FormKind = "work-management.form";
     private const string SavedFilterKind = "work-management.saved-filter";
+    private const string AccountKind = "accounts.account";
     private const string WorkspaceKind = "workspaces.workspace";
     private const string SpaceKind = "workspaces.space";
     private const string TeamKind = "workspaces.team";
@@ -328,6 +331,9 @@ public sealed class ExpectedVersionTargetMap
         // Documents — page rename and move under another parent: the page version the editor read.
         [typeof(UpdatePageCommand)] = new("documents.page", typeof(Page)),
         [typeof(MovePageCommand)] = new("documents.page", typeof(Page)),
+
+        // Accounts — Account rename quotes the Account version the settings screen read (UC-ACC-C01)
+        [typeof(RenameAccountCommand)] = new(AccountKind, typeof(Account)),
 
         // Workspaces — Space hierarchy and membership (WSP-021, WSP-024)
         [typeof(MoveSpaceCommand)] = new(SpaceKind, typeof(Space)),
