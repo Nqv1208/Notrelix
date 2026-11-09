@@ -212,7 +212,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 | UC-BIL-S06 | Remind before a trial ends (enterprise baseline) | S | System; recipients are billing managers | No | No | No | No | DEFINED | No trial yet (UC-BIL-B03) |
 | UC-BIL-T01 | Open Plans and billing with every state | T | Workspace Owner, Admin | Yes | Real | tong-quan | feature-availability | HARDENING | Two pages behind `backendCapabilities.billingPlans` |
 | UC-BIL-T02 | Stop an invitation at the seat limit and offer more seats | T | Workspace Admin inviting people | No | Mock | het-cho | No | IMPLEMENTING | Mock-only seat summary |
-| UC-BIL-T03 | Tell not entitled from not authorized | T | Anyone using a gated feature | No | Mock | het-cho | No | IMPLEMENTING | No stable reason codes from the backend |
+| UC-BIL-T03 | Tell not entitled from not authorized | T | Anyone using a gated feature | No | Mock | het-cho | No | IMPLEMENTING | Owner question: which codes and copy for the seat limit (see the use case) |
 | UC-BIL-T04 | Say plainly what is not available yet | T | Workspace Owner, Admin | Yes | Real | No | feature-availability | HARDENING | Remove when UC-BIL-L01 is real |
 | UC-BIL-U01 | Publish canonical commercial facts | U | System | Dom | No | No | No | IMPLEMENTING | No consumer |
 | UC-BIL-U02 | Propagate an entitlement change to consumers | U | System | No | No | No | No | DEFINED | No cache exists |
@@ -1471,7 +1471,7 @@ Columns: BE = backend (Yes, Part = partial, Dom = domain only, No); FE = fronten
 - Rules: Product §101; spec BILREQ098, BILREQ099; `DESIGN.md` section 25.
 - Acceptance: Given a limit reached, then the prompt names billing managers; given a permission gap, then it names workspace admins.
 - Evidence: BE none (needs UC-BIL-E04) · FE partial: seat dialog copy only · Design `Final-Billing.dc.html` `het-cho` · Tests none · Real e2e none
-- State: IMPLEMENTING — No stable reason codes from the backend.
+- State: IMPLEMENTING — Owner question: the codes the backend already sends are `plan.feature_not_enabled` (custom roles, `ForbiddenException.Code`), `forbidden` (plain permission denial), `account.suspended` and the rule code `Workspaces_Member_SeatUnavailable` (AddMember). The seat limit in invitation acceptance returns a plain failure string with no code, so the UI cannot tell it apart. Should the limit get its own code (`plan.limit_reached`) and a changed accept response? The copy also needs names: the product says billing managers, which UC-BIL-J05 does not provide yet, so should the account owner be named until then? Not built: no frontend copy for these codes in en or vi.
 
 ### UC-BIL-T04 Say plainly what is not available yet
 - Capability: T. BIL-020 Billing frontend
