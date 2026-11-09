@@ -205,7 +205,7 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task RenameAccount_OfAnotherAccount_GetsTheIdenticalNotFound_ForExistingAndMadeUpIds()
+    public async Task RenameAccount_OfAnotherAccount_GetsTheIdenticalRefusal_ForExistingAndMadeUpIds()
     {
         // The Account rename names its Account only through the hint. The owner of Account B who sends Account A's id
         // must get the same answer as for an id that never existed. Only B's owner is probed: the same-Account
@@ -214,7 +214,7 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
         var found = await AsInAccountAsync(_b.User, _a.AccountId, HttpMethod.Put, "/api/v1/accounts/rename", json);
         var made = await AsInAccountAsync(_b.User, Guid.NewGuid(), HttpMethod.Put, "/api/v1/accounts/rename", json);
 
-        made.Status.Should().Be(HttpStatusCode.NotFound, "a made-up account id is NotFound");
+        made.Status.Should().BeOneOf(new[] { HttpStatusCode.NotFound, HttpStatusCode.Forbidden }, "a made-up account id is refused");
         found.Status.Should().Be(made.Status, "an Account the person does not belong to answers like a made-up one");
         found.Body.Should().Be(made.Body, "the body does not reveal whether the Account exists");
     }

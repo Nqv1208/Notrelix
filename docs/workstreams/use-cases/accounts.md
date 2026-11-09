@@ -397,7 +397,7 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - Rules: ACC-017; IAREQ033, IAREQ034; IA-TST-ACCOUNT-APP-002.
 - Acceptance: Given Account A and Account B, When a user of B asks for A, Then status and body equal those for a random id. Given the same user, When a direct SQL query runs under B's context, Then zero rows of A appear.
 - Evidence: BE pipeline authorization, RLS `007_policies_platform.sql` (`ops.has_account_access`, `ops.is_account_admin`) · FE none · Design none · Tests `RenameAccountPipelineAuthorizationTests`, `AppRoleConformanceTests`, `NonMemberDisclosureTests` (rename case) · Real e2e none
-- State: IMPLEMENTING — Built: `NonMemberDisclosureTests.RenameAccount_OfAnotherAccount_GetsTheIdenticalNotFound_ForExistingAndMadeUpIds` (written, not run locally: Docker; CI runs it). Remaining: the frontend denied state, because no route carries an Account id yet. Owner question: which URL carries the Account id? Owner tests by hand.
+- State: IMPLEMENTING — Built: `NonMemberDisclosureTests.RenameAccount_OfAnotherAccount_GetsTheIdenticalRefusal_ForExistingAndMadeUpIds` (written, not run locally: Docker; CI runs it). Remaining: the frontend denied state, because no route carries an Account id yet. Owner question: which URL carries the Account id? Owner tests by hand.
 
 ### UC-ACC-E03 Carry Account context in background work
 - Capability: E Account-context resolution
