@@ -652,7 +652,7 @@ Dashboards live in the Analytics context (owner decision 17: a dashboard is an A
 - Rules: ANA008, product section 90; ARREQ049 to ARREQ056.
 - Acceptance: Given a workspace-shared dashboard with a widget over Ann's private board, When Bob opens it, Then that widget shows access denied.
 - Evidence: BE Domain `DashboardVisibility.cs`, `DashboardVisibilityChangedDomainEvent` · FE mock `reports.sharing.get`, `reports.sharing.save` · Design Final-Reports · Tests `DashboardTests.cs` · Real e2e none
-- State: IMPLEMENTING — no `OwnerUserId` (`AR-GAP-03`).
+- State: IMPLEMENTING — no `OwnerUserId` (`AR-GAP-03`). Owner question: sharing a dashboard with the workspace needs the manage permission, but the work grant (who may widen visibility, and whether a Workspace-visible dashboard needs `ManageDashboards`) is undecided; not built.
 
 ### UC-ANA-M10 Duplicate a dashboard (enterprise baseline)
 - Capability: M, ANA-013
