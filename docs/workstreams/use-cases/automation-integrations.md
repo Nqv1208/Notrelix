@@ -54,21 +54,21 @@ Automation (letters follow the team spec order AUT-001 to AUT-014):
 
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
-| A | AUT-001 Rule lifecycle | 8 | 0 | 3 | 1 | 4 | 0 | 0 |
+| A | AUT-001 Rule lifecycle | 8 | 0 | 2 | 1 | 5 | 0 | 0 |
 | B | AUT-002 Trigger model | 8 | 2 | 3 | 0 | 3 | 0 | 0 |
-| C | AUT-003 Condition model | 3 | 1 | 1 | 0 | 1 | 0 | 0 |
+| C | AUT-003 Condition model | 3 | 1 | 0 | 0 | 2 | 0 | 0 |
 | D | AUT-004 Action model | 10 | 0 | 2 | 1 | 6 | 0 | 1 |
 | E | AUT-005 Enable/disable lifecycle | 7 | 1 | 2 | 2 | 2 | 0 | 0 |
 | F | AUT-006 Source-event subscription/matching | 3 | 0 | 0 | 0 | 3 | 0 | 0 |
 | G | AUT-007 Execution creation | 6 | 1 | 1 | 2 | 2 | 0 | 0 |
-| H | AUT-008 Execution state machine | 5 | 0 | 2 | 0 | 3 | 0 | 0 |
-| I | AUT-009 Business retry/failure policy | 4 | 0 | 2 | 2 | 0 | 0 | 0 |
+| H | AUT-008 Execution state machine | 5 | 0 | 1 | 0 | 4 | 0 | 0 |
+| I | AUT-009 Business retry/failure policy | 4 | 0 | 1 | 2 | 1 | 0 | 0 |
 | J | AUT-010 Execution history/query | 5 | 2 | 1 | 1 | 1 | 0 | 0 |
 | K | AUT-011 Automation authoring frontend | 8 | 1 | 2 | 0 | 5 | 0 | 0 |
 | L | AUT-012 Realtime execution status | 2 | 0 | 2 | 0 | 0 | 0 | 0 |
 | M | AUT-013 Entitlement integration | 4 | 1 | 0 | 2 | 1 | 0 | 0 |
 | N | AUT-014 Hardening/observability | 6 | 2 | 2 | 0 | 2 | 0 | 0 |
-| | Total | 79 | 11 | 23 | 11 | 33 | 0 | 1 |
+| | Total | 79 | 11 | 19 | 11 | 37 | 0 | 1 |
 
 Integrations (letters follow INT-001 to INT-014):
 
@@ -168,7 +168,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-AUT-A04 | Edit a rule into a new version | A Rule lifecycle | as A01 | Y | Y | Y | Y | HARDENING | no expected version (DEF-2); no no-op proof; no conflict UI |
 | UC-AUT-A05 | Delete a rule | A Rule lifecycle | as A01 (ManageBoard or ManageWorkspaceSettings) | Y | Y | Y | Y | HARDENING | pending executions and scheduled jobs on delete are not proven; no purge job (J04) |
 | UC-AUT-A06 | Save a rule as a draft | A Rule lifecycle | as A01 | Y | Y | Y | N | INTEGRATING | create takes a plan slot while the rule is still a Draft (DEF-6), against the owner decision |
-| UC-AUT-A07 | Restore a deleted rule | A Rule lifecycle | board Manager or Owner and Admin, same as delete | P | N | N | N | IMPLEMENTING | domain method only; no command, endpoint or UI |
+| UC-AUT-A07 | Restore a deleted rule | A Rule lifecycle | board Manager or Owner and Admin, same as delete | Y | N | N | N | HARDENING | Built: POST `/api/v1/workspaces/{workspaceId}/automations/{automationId}/restore` (`AutomationRule.RestoreRemoved`) brings back a rule deleted under 90 days as Disabled, takes no plan slot, and makes a live rule a no-op. Not built: restore UI. Owner question: the output line says capacity is consumed again, but M04 says Disabled uses no slot; this build follows M04. Owner tests by hand |
 | UC-AUT-A08 | Create a rule from a template | A Rule lifecycle | as A01 | P | N | N | N | IMPLEMENTING | domain and table only; deferred by decision |
 | UC-AUT-B01 | Fire a rule when an item is created | B Trigger model | set up by a board Manager (A01) | Y | Y | Y | N | HARDENING | Built (verified by reading code 2026-11-09, not run): BoardItemMovedForAutomationConsumer.cs (BoardItemCreatedAutomationConsumer), N8nAutomationRuleEvaluator.cs, automation-pickers.tsx, AutomationTriggerMatrixIntegrationTests.cs, AutomationWorkEventRuntimeChainIntegrationTests.cs. Remaining: owner tests by hand. |
 | UC-AUT-B02 | Fire a rule when an item moves to a group | B Trigger model | as B01 | Y | Y | Y | Y | HARDENING | no axe or design diff; no owner check |
@@ -179,7 +179,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-AUT-B07 | An unknown or changed trigger type fails closed | B Trigger model | system | Y | N | N | N | IMPLEMENTING | domain proof only; no UI for invalid rules |
 | UC-AUT-B08 | Start a rule from an inbound provider event | B Trigger model | system, after Integrations has verified and translated the event | N | N | N | N | DEFINED | deferred until verified provider intake exists |
 | UC-AUT-C01 | Add all-of equals conditions | C Condition model | as A01 | Y | Y | Y | N | HARDENING | Built (verified by reading code 2026-11-09, not run): AutomationConditions.cs, N8nAutomationRuleEvaluator.cs (Holds), automation-flow.tsx, AutomationMultiActionTests.cs (Conditions_AreAnAndOfEqualsTests), AutomationConditionDefinitionTests.cs. Remaining: owner tests by hand. |
-| UC-AUT-C02 | A condition not met is shown as skipped, not failed | C Condition model | any reader of run history (J01 permission) | P | P | Y | N | IMPLEMENTING | no Skipped status or record |
+| UC-AUT-C02 | A condition not met is shown as skipped, not failed | C Condition model | any reader of run history (J01 permission) | Y | Y | Y | N | HARDENING | Built: a rule whose conditions are evaluated and not met keeps a `Skipped` execution, dispatches nothing and is not counted as a failure; the workspace rule run history shows "Skipped, conditions not met" (en, vi). Not built: a condition that cannot be evaluated (no item, forbidden) still records nothing. Owner question: product §33 says an evaluation error is not a skip, so should it be Failed? Owner tests by hand |
 | UC-AUT-C03 | Actor and time conditions, OR and nesting | C Condition model | as A01 | N | N | N | N | DEFINED | deferred by decision OD4 |
 | UC-AUT-D01 | Move the item to a group | D Action model | executor (bound creator) holding the MoveItem decision on the item | Y | Y | Y | Y | HARDENING | no owner check; no 1 px diff |
 | UC-AUT-D02 | Change the item status | D Action model | executor with edit permission on the item | Y | Y | Y | Y | HARDENING | as D01 |
@@ -210,12 +210,12 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-AUT-H01 | An execution moves Queued, Running, then ends | H Execution state machine | system | Y | Y | Y | Y | HARDENING | as D01 |
 | UC-AUT-H02 | See each step of a run | H Execution state machine | as J01 | Y | Y | Y | Y | HARDENING | step status is stored in the `LastResponse` JSON, not in `AutomationExecutionStep` rows |
 | UC-AUT-H03 | Partial failure keeps what already happened | H Execution state machine | as J01 | Y | P | Y | N | HARDENING | Built (verified by reading code 2026-11-09, not run): AutomationMultiActionTests.cs (ARejectedAction_FailsTheExecution_AndLaterActionsDoNotRun), automation-log.tsx. Remaining: owner tests by hand. |
-| UC-AUT-H04 | Cancel a queued execution | H Execution state machine | board Manager or Owner and Admin | P | N | N | N | IMPLEMENTING | domain only |
+| UC-AUT-H04 | Cancel a queued execution | H Execution state machine | board Manager or Owner and Admin | Y | N | N | N | HARDENING | Built: POST `/api/v1/workspaces/{workspaceId}/automations/{automationId}/executions/{executionId}/cancel` refuses unless Queued (`AutomationExecution.CancelBeforeStart`). Not built: cancel action and confirmation in the FE; no expected version (as E01). Owner tests by hand |
 | UC-AUT-H05 | An unknown outcome is held, never re-fired | H Execution state machine | system | Y | N | N | N | IMPLEMENTING | no UI state; no governed reconciliation action |
 | UC-AUT-I01 | Retryable failures retry within one budget | I Business retry/failure policy | system | Y | N | N | N | INTEGRATING | no UI for the retrying state ('đang thử lại, lần N' is not in the FE) |
 | UC-AUT-I02 | A terminal failure shows a safe, useful reason | I Business retry/failure policy | as J01 | Y | Y | Y | N | INTEGRATING | failure reason is free text (AutomationExecution.Fail(string)), not a stable reason class |
 | UC-AUT-I03 | Rerun a failed step | I Business retry/failure policy | board Manager | N | P | Y | N | IMPLEMENTING | mock-only UI path |
-| UC-AUT-I04 | A gone target or revoked permission is terminal | I Business retry/failure policy | system | P | N | N | N | IMPLEMENTING | the terminal versus retryable class is not a stable contract |
+| UC-AUT-I04 | A gone target or revoked permission is terminal | I Business retry/failure policy | system | Y | N | N | N | HARDENING | Built: `AutomationFailureClass` (stable codes `target_gone`, `permission_revoked`, `invalid_configuration`, `rule_inactive`, `target_rejected`, `outcome_unknown`, `transient`) is stored as `failure_class` on each failed execution; only `transient` is retried. Not built: the class is not in the DTO or the run log; executions failed before the migration have no class. Owner tests by hand |
 | UC-AUT-J01 | Read the recent runs of a rule | J Execution history/query | ManageBoard (with `boardId`) or ManageWorkspaceSettings | Y | Y | Y | Y | HARDENING | offset paging, no total or cursor (DEF-3); the payload may hold item data and its redaction is not proven |
 | UC-AUT-J02 | Open one run | J Execution history/query | as J01 | P | Y | Y | N | INTEGRATING | no run-detail endpoint; triggerer and item reference come from the list payload only |
 | UC-AUT-J03 | See all runs of a workspace and filter them | J Execution history/query | Owner and Admin (ManageWorkspaceSettings) | N | N | N | N | DEFINED | (enterprise baseline) |
@@ -403,8 +403,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: empty, pending, error, permission denied.
 - Rules: automation.md §100; AIREQ015.
 - Acceptance: Given a rule deleted 10 days ago, When restored, Then it appears Disabled with its history and version.
-- Evidence: BE `AutomationRule.Restore` (domain only, no endpoint) · FE none · Design none · Tests T-AD `AutomationRuleDeletionLifecycleTests` · Real e2e none
-- State: IMPLEMENTING — domain method only; no command, endpoint or UI.
+- Evidence: BE `RestoreAutomationRuleCommandHandler` (Application), `RestoreAutomationRuleEndpoint`, `AutomationRule.RestoreRemoved` (the older `AutomationRule.Restore` undoes a soft delete and is not on this path) · FE none · Design none · Tests T-AD `AutomationRuleRestoreRemovedTests`, T-AA `RestoreAutomationRuleTests` · Real e2e none
+- State: HARDENING — Built: restore of a removed rule returns it Disabled with no plan slot, after 90 days it is NotFound, and a live rule is a no-op. Not built: the deleted-rules list and restore button in the FE. Owner question: the Output line says capacity is consumed again on restore, but M04 says Disabled uses no slot; this build follows M04 (no slot). Owner tests by hand.
 
 ### UC-AUT-A08 Create a rule from a template
 - Capability: AUT-001 Rule lifecycle
@@ -561,8 +561,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: log row "Skipped".
 - Rules: automation.md §33 AUT-011, §106; AIREQ021.
 - Acceptance: Given a failing condition, When the fact arrives, Then the log shows Skipped and the rule is not disabled.
-- Evidence: BE the evaluator drops the rule silently; `AutomationExecutionStatus` has no Skipped (DEF-16) · FE FE-BS `automation-log.tsx` (design shows Skipped) · Design `Final-M-Automation` · Tests T-AA `AutomationRuleEvaluatorGuardTests` · Real e2e none
-- State: IMPLEMENTING — no Skipped status or record.
+- Evidence: BE `N8nAutomationRuleEvaluator` (records the Skipped row), `AutomationExecution.CreateSkipped`, `AutomationExecutionStatus.Skipped` · FE `workspace-rules.copy.ts` and `workspace-rules-section.tsx` (run history label), `workspace-automations.api.ts` (status map) · Design `Final-M-Automation` · Tests T-AD `AutomationExecutionSkippedTests`, T-AA `AutomationConditionSkipTests` · Real e2e none
+- State: HARDENING — Built: a condition that was evaluated and not met records a Skipped execution with no failure and no queued fact, and the consecutive-failure count and the rate window ignore it. Not built: `automation-log.tsx` (board screen) reads fixture outcomes and was not changed. Owner question: a condition that cannot be evaluated still records nothing, while product §33 says an evaluation error is not a skip; should it be recorded as Failed? Owner tests by hand.
 
 ### UC-AUT-C03 Actor and time conditions, OR and nesting
 - Capability: AUT-003 Condition model
@@ -1000,13 +1000,13 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Preconditions: execution Queued (not Running).
 - Input: execution id, expected version.
 - Output: status Cancelled; no step runs.
-- Main flow: a cancel command (not built).
+- Main flow: a cancel command (`CancelAutomationExecutionCommand`, `POST .../executions/{executionId}/cancel`).
 - No-op / rejection / concurrency / retry: cancelling a finished execution is rejected; a stale version is rejected.
 - UI states: cancel action, confirmation.
 - Rules: automation.md §49; AIREQ030.
 - Acceptance: Given a Queued execution, When cancelled, Then it ends Cancelled and no action runs.
-- Evidence: BE `AutomationExecution` Cancelled state and event, no endpoint · FE `AutomationExecutionRepository.cancel?` unimplemented · Design none · Tests T-AD `AutomationExecutionTests` · Real e2e none
-- State: IMPLEMENTING — domain only.
+- Evidence: BE `CancelAutomationExecutionCommandHandler` (Application), `CancelAutomationExecutionEndpoint`, `AutomationExecution.CancelBeforeStart`, OpenAPI `backend/contracts/openapi/notrelix.v1.json` · FE `AutomationExecutionRepository.cancel?` unimplemented · Design none · Tests T-AD `AutomationExecutionCancelQueuedTests`, T-AA `CancelAutomationExecutionTests`, architecture `request-execution-baseline.json` · Real e2e none
+- State: HARDENING — Built: the endpoint and handler refuse a Running or finished execution with `Automation_Execution_CannotCancelUnlessQueued` and a rule or board mismatch as NotFound. Not built: the FE cancel action and confirmation; no expected version (as E01, A05). Owner question: the n8n `retried` callback still cancels through `AutomationExecution.Cancel`, which also accepts Running; kept because that path needs it. Owner tests by hand.
 
 ### UC-AUT-H05 An unknown outcome is held, never re-fired
 - Capability: AUT-008 Execution state machine
@@ -1077,8 +1077,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: reason.
 - Rules: automation.md §54, §101 AUT-034; AIREQ033.
 - Acceptance: Given the target group deleted, Then no retry and the reason names it.
-- Evidence: BE `AutomationMoveItemUseCase`, `WorkItemActionAdapter` · FE none · Design none · Tests T-AA `AutomationBoardScopeAuthorityTests` · Real e2e none
-- State: IMPLEMENTING — the terminal versus retryable class is not a stable contract.
+- Evidence: BE `AutomationFailureClass` and its codes (Domain), `AutomationExecution.Fail` and `RecordRetryableDispatchFailure`, `AutomationMoveItemUseCase`, `N8nDispatchUseCase`, migration `20261109100301_AddAutomationExecutionFailureClass` · FE none · Design none · Tests T-AD `AutomationFailureClassTests`, T-AA `AutomationFailureClassTests`, `AutomationBoardScopeAuthorityTests` · Real e2e none
+- State: HARDENING — Built: a failure carries one stable class and the retry rule follows it: a terminal class ends the execution and is never retried (the domain refuses a retry for it), and only a technical failure is re-queued under the same execution id. Not built: the class is not in the execution DTO or the run log. Owner tests by hand.
 
 ## Capability J. Execution history and query
 

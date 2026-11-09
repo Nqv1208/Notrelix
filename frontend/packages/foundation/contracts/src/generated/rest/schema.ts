@@ -123,6 +123,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/automations/{automationId}/executions/{executionId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a queued automation execution: it ends Cancelled and no action runs; a running or finished one is refused */
+        post: operations["Automation.Executions.Cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/automations/{automationId}/executions": {
         parameters: {
             query?: never;
@@ -188,6 +205,23 @@ export interface paths {
         post?: never;
         /** Delete an automation rule: it is disabled, in-flight executions finish, its history stays readable for 90 days */
         delete: operations["Automation.Rules.Delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/automations/{automationId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore a deleted automation rule within 90 days: it comes back Disabled and takes no plan slot */
+        post: operations["Automation.Rules.Restore"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -10402,7 +10436,7 @@ export interface components {
             directory?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectoryDto"][] | null;
         };
         /** @enum {string} */
-        "Notrelix.Domain.Automation.Executions.AutomationExecutionStatus": "Queued" | "Running" | "Succeeded" | "Failed" | "Cancelled";
+        "Notrelix.Domain.Automation.Executions.AutomationExecutionStatus": "Queued" | "Running" | "Succeeded" | "Failed" | "Cancelled" | "Skipped";
         /** @enum {string} */
         "Notrelix.Domain.Identity.Security.SecurityActivityType": "SignInSucceeded" | "SignInFailed" | "PasswordChanged" | "PasswordReset" | "MfaEnabled" | "MfaDisabled" | "SessionRevoked" | "OtherSessionsRevoked";
         /**
@@ -10622,6 +10656,50 @@ export interface operations {
             };
         };
     };
+    "Automation.Executions.Cancel": {
+        parameters: {
+            query?: {
+                boardId?: string;
+            };
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                automationId: string;
+                executionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "Automation.Executions.List": {
         parameters: {
             query?: {
@@ -10798,6 +10876,49 @@ export interface operations {
         };
     };
     "Automation.Rules.Delete": {
+        parameters: {
+            query?: {
+                boardId?: string;
+            };
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                automationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Automation.Rules.Restore": {
         parameters: {
             query?: {
                 boardId?: string;

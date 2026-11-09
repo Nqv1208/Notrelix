@@ -56,7 +56,7 @@ public class AutomationExecutionVersionTests
         ((IHasDomainEvents)execution).ClearDomainEvents();
         var version = execution.Version;
 
-        execution.Fail("error", _now);
+        execution.Fail(AutomationFailureClass.TargetRejected, "error", _now);
 
         execution.Version.Should().Be(version + 1);
         execution.DomainEvents.Should().Contain(e => e is AutomationExecutionFailedDomainEvent);

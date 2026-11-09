@@ -58,6 +58,9 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
     public DateTimeOffset StartedAt { get; private set; }
     public DateTimeOffset? FinishedAt { get; private set; }
     public string? Error { get; private set; }
+
+    /// <summary>UC-AUT-I04: the stable class of the last failure or retried attempt; null for a legacy row or no failure.</summary>
+    public AutomationFailureClass? FailureClass { get; private set; }
     public string? Payload { get; private set; }
     public int AttemptCount { get; private set; }
     public string? LastResponse { get; private set; }
@@ -81,6 +84,45 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
     public IReadOnlyCollection<AutomationExecutionStep> Steps => _steps.AsReadOnly();
 
     private AutomationExecution() : base() { }
+
+    /// <summary>
+    /// UC-AUT-C02: records a fact whose rule conditions were evaluated and not met. The execution is retained
+    /// as Skipped (no action runs, nothing is dispatched, and it is not a failure, so it never counts toward
+    /// the consecutive-failure limit).
+    /// </summary>
+    public static AutomationExecution CreateSkipped(
+        Guid accountId,
+        Guid workspaceId,
+        Guid ruleId,
+        Guid triggerId,
+        DateTimeOffset occurredAt,
+        long? ruleVersion,
+        string? configurationSnapshot,
+        DateTimeOffset skippedAt)
+    {
+        Guard.NotEmpty(accountId);
+        Guard.NotEmpty(workspaceId);
+        Guard.NotEmpty(ruleId);
+        Guard.NotEmpty(triggerId);
+
+        var execution = new AutomationExecution
+        {
+            AccountId = accountId,
+            WorkspaceId = workspaceId,
+            RuleId = ruleId,
+            TriggerId = triggerId,
+            Status = AutomationExecutionStatus.Skipped,
+            StartedAt = occurredAt,
+            FinishedAt = skippedAt,
+            AttemptCount = 0,
+            ChainDepth = 0,
+            RuleVersion = ruleVersion,
+            ConfigurationSnapshot = configurationSnapshot
+        };
+
+        execution.SetAuditOnCreate(null, skippedAt);
+        return execution;
+    }
 
     public static AutomationExecution Create(
         Guid accountId,
@@ -153,15 +195,18 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new AutomationExecutionSucceededDomainEvent(AccountId, WorkspaceId, Id, RuleId, finishedAt));
     }
 
-    public void Fail(string error, DateTimeOffset finishedAt)
+    public void Fail(AutomationFailureClass failureClass, string error, DateTimeOffset finishedAt)
     {
         if (Status != AutomationExecutionStatus.Running)
             throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotFailUnlessRunning, "Execution can only fail from Running state.");
+        if (failureClass.IsRetryable())
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_FailureClassNotTerminal, "A transient failure is retried, not failed.");
         if (string.IsNullOrWhiteSpace(error))
             throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_ErrorRequiredOnFail, "Error must not be empty when execution fails.");
 
         Status = AutomationExecutionStatus.Failed;
         Error = error;
+        FailureClass = failureClass;
         FinishedAt = finishedAt;
         IncrementVersion();
         RaiseDomainEvent(new AutomationExecutionFailedDomainEvent(AccountId, WorkspaceId, Id, RuleId, error, finishedAt));
@@ -173,15 +218,18 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
     /// Automation attempt can run against the same execution identity.
     /// AttemptCount grows with every recorded attempt.
     /// </summary>
-    public void RecordRetryableDispatchFailure(string error, DateTimeOffset attemptedAt)
+    public void RecordRetryableDispatchFailure(AutomationFailureClass failureClass, string error, DateTimeOffset attemptedAt)
     {
         if (Status != AutomationExecutionStatus.Running)
             throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotStartUnlessQueued, "A retryable dispatch failure can only be recorded from a running attempt.");
+        if (!failureClass.IsRetryable())
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_FailureClassNotRetryable, "Only a transient failure can be retried; a terminal failure must fail the execution.");
         if (string.IsNullOrWhiteSpace(error))
             throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_ErrorRequiredOnFail, "Error must not be empty when a retryable dispatch failure is recorded.");
 
         Status = AutomationExecutionStatus.Queued;
         Error = error;
+        FailureClass = failureClass;
         AttemptCount++;
         ApplyAuditUpdate(PrepareAuditUpdate(null, attemptedAt));
         IncrementVersion();
@@ -191,6 +239,21 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
     {
         if (Status != AutomationExecutionStatus.Queued && Status != AutomationExecutionStatus.Running)
             throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotCancelUnlessQueuedOrRunning, "Execution can only be cancelled from Queued or Running state.");
+
+        Status = AutomationExecutionStatus.Cancelled;
+        FinishedAt = cancelledAt;
+        IncrementVersion();
+        RaiseDomainEvent(new AutomationExecutionCancelledDomainEvent(AccountId, WorkspaceId, Id, RuleId, cancelledBy, cancelledAt));
+    }
+
+    /// <summary>
+    /// UC-AUT-H04: a person cancels an execution that has not started. Only a Queued execution can be
+    /// cancelled this way: a running or finished one is refused, so no action is ever cut short by a person.
+    /// </summary>
+    public void CancelBeforeStart(Guid cancelledBy, DateTimeOffset cancelledAt)
+    {
+        if (Status != AutomationExecutionStatus.Queued)
+            throw new BusinessRuleException(AutomationRuleCodes.Automation_Execution_CannotCancelUnlessQueued, "Execution can only be cancelled while it is Queued.");
 
         Status = AutomationExecutionStatus.Cancelled;
         FinishedAt = cancelledAt;

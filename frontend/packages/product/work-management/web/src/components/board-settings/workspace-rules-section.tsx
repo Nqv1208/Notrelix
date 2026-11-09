@@ -465,6 +465,7 @@ const RUN_TONE: Readonly<
   succeeded: "brand",
   failed: "warning",
   cancelled: "warning",
+  skipped: "brand",
 };
 
 /** The name of an action type in the editor's words, or the type itself. */

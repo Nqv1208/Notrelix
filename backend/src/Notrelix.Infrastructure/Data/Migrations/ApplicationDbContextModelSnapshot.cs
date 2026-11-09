@@ -1250,6 +1250,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("error");
 
+                    b.Property<string>("FailureClass")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("failure_class");
+
                     b.Property<DateTimeOffset?>("FinishedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("finished_at");

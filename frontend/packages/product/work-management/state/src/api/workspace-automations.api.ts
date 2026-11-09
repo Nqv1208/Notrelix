@@ -23,6 +23,7 @@ const STATUS_BY_NAME: Readonly<
   Succeeded: "succeeded",
   Failed: "failed",
   Cancelled: "cancelled",
+  Skipped: "skipped",
 };
 
 /** The contract documents the status as its name, which is what the API sends. */

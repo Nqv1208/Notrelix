@@ -67,7 +67,7 @@ export interface WorkspaceAutomationRuleDto {
 }
 
 export type WorkspaceAutomationRunStatus =
-  "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "queued" | "running" | "succeeded" | "failed" | "cancelled" | "skipped";
 
 /** What one action of a run did. */
 export interface WorkspaceAutomationRunStepDto {

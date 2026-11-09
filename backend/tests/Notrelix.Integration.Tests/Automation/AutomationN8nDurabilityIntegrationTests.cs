@@ -586,7 +586,7 @@ public sealed class AutomationN8nDurabilityIntegrationTests : IAsyncLifetime
         var execution = AutomationExecution.Create(
             graph.AccountId, graph.WorkspaceId, graph.RuleId, Guid.NewGuid(), Now);
         execution.Start(Now);
-        execution.RecordRetryableDispatchFailure("n8n unreachable", Now);
+        execution.RecordRetryableDispatchFailure(AutomationFailureClass.Transient, "n8n unreachable", Now);
         await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.AutomationExecutions.Add(execution);
         await seed.SaveChangesAsync();
