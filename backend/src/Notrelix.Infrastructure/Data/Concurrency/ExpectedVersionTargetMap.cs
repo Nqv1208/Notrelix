@@ -1,3 +1,6 @@
+using Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteComment;
+using Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment;
+using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddFieldOption;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveFieldOption;
@@ -184,6 +187,7 @@ public sealed class ExpectedVersionTargetMap
     public IReadOnlyCollection<KeyValuePair<Type, TargetDefinition>> Entries => [.. _targets];
 
     private const string ApprovalRequestKind = "work-management.approval-request";
+    private const string CommentKind = "collaboration.comment";
     private const string BoardKind = "work-management.board";
     private const string BoardFieldKind = "work-management.board-field";
     private const string LabelKind = "work-management.label";
@@ -314,6 +318,10 @@ public sealed class ExpectedVersionTargetMap
         [typeof(DeleteWorkspaceCommand)] = new(WorkspaceKind, typeof(Workspace)),
         [typeof(UpdateWorkspaceProfileCommand)] = new(WorkspaceKind, typeof(Workspace)),
         [typeof(UpdateWorkspaceSettingsCommand)] = new(WorkspaceKind, typeof(Workspace)),
+
+        // Collaboration — comment edit and delete quote the comment version the reader saw (UC-COL-A05, A06, C01)
+        [typeof(UpdateCommentCommand)] = new(CommentKind, typeof(Comment)),
+        [typeof(DeleteCommentCommand)] = new(CommentKind, typeof(Comment)),
 
         // Documents — Space placement of a root page (docs/product/workspaces.md §79)
         [typeof(MovePageToSpaceCommand)] = new("documents.page", typeof(Page)),

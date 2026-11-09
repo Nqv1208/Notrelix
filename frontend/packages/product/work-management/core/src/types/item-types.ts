@@ -143,6 +143,10 @@ export interface CardUpdate {
   parentId?: string;
   /** One entry per emoji anyone chose, with who and whether the viewer did. */
   reactions?: CardReaction[];
+  /** The comment's version as the list returned it; edit and delete quote it. */
+  version?: number;
+  /** A deleted comment that still has replies: a placeholder, with no author or text. */
+  deleted?: boolean;
 }
 
 /** The fixed palette a person may react with. */
@@ -325,6 +329,10 @@ export interface CommentDtoApi {
   isEdited: boolean;
   resolvedAt?: string | null;
   createdAt: string;
+  /** The comment's version; edit and delete quote it. */
+  version?: number;
+  /** A deleted comment that still has replies: no author or text. */
+  isDeleted?: boolean;
   /** Files that came with the comment (gap `CTR-GAP-WM-ITEM-DETAIL`). */
   attachmentIds?: string[];
   reactions?: {

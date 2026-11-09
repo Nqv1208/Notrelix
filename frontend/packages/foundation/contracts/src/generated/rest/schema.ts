@@ -376,11 +376,34 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get comments for a page */
+        /**
+         * Get comments for a page
+         * @description Every live comment of the page, oldest first, unpaged. Prefer the /page route for long threads.
+         */
         get: operations["Collaboration.Comments.GetPageComments"];
         put?: never;
         /** Create a comment on a page */
         post: operations["Collaboration.Comments.CreatePageComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pages/{pageId}/comments/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a page of the comments of a page
+         * @description Oldest first, default 50 and at most 200 a page. Pass nextCursor back as cursor for the next page. A deleted comment with live replies comes back as a tombstone (isDeleted true, no author or body).
+         */
+        get: operations["Collaboration.Comments.GetPageCommentsPage"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -397,11 +420,17 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete a comment */
+        /**
+         * Delete a comment
+         * @description Soft-deletes the author's comment. Pass expectedVersion as a query parameter; 412 when it is stale.
+         */
         delete: operations["Collaboration.Comments.Delete"];
         options?: never;
         head?: never;
-        /** Update a comment */
+        /**
+         * Update a comment
+         * @description Replaces the text of the author's comment. Answers 412 with the current comment when expectedVersion is stale.
+         */
         patch: operations["Collaboration.Comments.Update"];
         trace?: never;
     };
@@ -6719,6 +6748,8 @@ export interface components {
         };
         "Notrelix.API.Contracts.Collaboration.Comments.Requests.UpdateCommentRequest": {
             contentMd?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number | null;
         };
         "Notrelix.API.Contracts.Collaboration.Notifications.Requests.SnoozeInboxEntryRequest": {
             /** Format: date-time */
@@ -8162,6 +8193,9 @@ export interface components {
             createdAt?: string;
             reactions?: components["schemas"]["Notrelix.Application.Features.Collaboration.Comments.DTOs.ReactionSummaryDto"][] | null;
             anchor?: components["schemas"]["Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentAnchorDto"];
+            /** Format: int64 */
+            version?: number;
+            isDeleted?: boolean;
         };
         "Notrelix.Application.Features.Collaboration.Comments.DTOs.ReactionSummaryDto": {
             emoji?: string | null;
@@ -11223,9 +11257,36 @@ export interface operations {
             };
         };
     };
+    "Collaboration.Comments.GetPageCommentsPage": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfCommentDto"];
+                };
+            };
+        };
+    };
     "Collaboration.Comments.Delete": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header?: never;
             path: {
                 commentId: string;
@@ -11240,7 +11301,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };
@@ -11266,7 +11363,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
         };

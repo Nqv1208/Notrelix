@@ -149,6 +149,7 @@ export const endpoints = {
     breadcrumb: (pageId: string) => `/pages/${pageId}/breadcrumb`,
     blocks: (pageId: string) => `/pages/${pageId}/blocks`,
     comments: (pageId: string) => `/pages/${pageId}/comments`,
+    commentsPage: (pageId: string) => `/pages/${pageId}/comments/page`,
     history: (pageId: string) => `/pages/${pageId}/history`,
     search: (workspaceId: string) => `/workspaces/${workspaceId}/pages/search`,
     move: (pageId: string) => `/pages/${pageId}/move`,

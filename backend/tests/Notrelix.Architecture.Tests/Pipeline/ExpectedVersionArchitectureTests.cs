@@ -28,6 +28,8 @@ public static class ExpectedVersionInventory
             ["MovePageCommand"] = "documents.page",
             ["UpdateBoardFieldCommand"] = "work-management.board-field",
             ["DeleteBoardGroupCommand"] = "work-management.board-group",
+            ["UpdateCommentCommand"] = "collaboration.comment",
+            ["DeleteCommentCommand"] = "collaboration.comment",
             ["UpdateBoardItemCommand"] = "work-management.board-item",
             ["ArchiveBoardItemCommand"] = "work-management.board-item",
             ["MoveBoardItemCommand"] = "work-management.board-item",

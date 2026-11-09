@@ -238,7 +238,7 @@ public class CommentReactionTests
         actors.Setup(a => a.FindManyAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([new ActorSnapshot(_me, "Me", null), new ActorSnapshot(_other, "Other", null)]);
 
-        var result = await new GetCommentsQueryHandler(_context.Object, actors.Object, _user.Object)
+        var result = await new GetCommentsQueryHandler(_context.Object, actors.Object, _user.Object, new InMemoryCommentTombstones([]))
             .Handle(GetCommentsQuery.ForBoardItem(_item), CancellationToken.None);
 
         var reactions = result.Data!.Single().Reactions.ToDictionary(r => r.Emoji);

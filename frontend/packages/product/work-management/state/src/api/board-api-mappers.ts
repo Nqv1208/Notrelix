@@ -480,6 +480,8 @@ export function mapCommentDtoToCardUpdate(
     updatedAt: dto.isEdited ? dto.createdAt : undefined,
     parentId: dto.parentCommentId ?? undefined,
     reactions: dto.reactions ?? [],
+    version: dto.version,
+    deleted: dto.isDeleted,
   };
 }
 

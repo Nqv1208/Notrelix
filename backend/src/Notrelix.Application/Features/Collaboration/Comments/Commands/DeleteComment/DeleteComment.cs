@@ -4,7 +4,7 @@ using Notrelix.Application.Features.Collaboration.Comments.Services;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteComment;
 
-public record DeleteCommentCommand(Guid CommentId) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
+public record DeleteCommentCommand(Guid CommentId, long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest
 {
     // A coarse workspace-member gate: the author, or a moderator of the target, is decided in the handler from its target.
     public PermissionAction Action => PermissionAction.ViewBoard;

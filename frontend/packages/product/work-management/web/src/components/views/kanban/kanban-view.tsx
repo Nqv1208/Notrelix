@@ -1920,9 +1920,10 @@ function KanbanSelectedItemReady({
             }),
           onToggleReaction: (commentId, emoji, on) =>
             toggleReaction.mutate({ commentId, emoji, on }),
-          onUpdateUpdate: (updateId, body) =>
-            updateUpdate.mutate({ updateId, body }),
-          onDeleteUpdate: (updateId) => deleteUpdate.mutate(updateId),
+          onUpdateUpdate: (updateId, body, expectedVersion) =>
+            updateUpdate.mutate({ updateId, body, expectedVersion }),
+          onDeleteUpdate: (updateId, expectedVersion) =>
+            deleteUpdate.mutate({ updateId, expectedVersion }),
           onSelectTab: () => undefined,
           onCopyLink,
           onMoveToGroup,

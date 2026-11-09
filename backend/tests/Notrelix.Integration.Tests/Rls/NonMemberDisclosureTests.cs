@@ -164,8 +164,8 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
     {
         await AssertIdenticalAsync(_sameAccountOutsider, "a person of the same account outside the Workspace learns nothing", _itemId, _formId);
 
-        var comment = await AsAsync(_sameAccountOutsider, HttpMethod.Patch, $"/api/v1/comments/{_commentId}", "{\"contentMd\":\"x\"}");
-        var madeComment = await AsAsync(_sameAccountOutsider, HttpMethod.Patch, $"/api/v1/comments/{Guid.NewGuid()}", "{\"contentMd\":\"x\"}");
+        var comment = await AsAsync(_sameAccountOutsider, HttpMethod.Patch, $"/api/v1/comments/{_commentId}", "{\"contentMd\":\"x\",\"expectedVersion\":1}");
+        var madeComment = await AsAsync(_sameAccountOutsider, HttpMethod.Patch, $"/api/v1/comments/{Guid.NewGuid()}", "{\"contentMd\":\"x\",\"expectedVersion\":1}");
         madeComment.Status.Should().Be(HttpStatusCode.NotFound);
         comment.Should().Be(madeComment, "an existing comment answers like a made-up one");
 

@@ -831,12 +831,29 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var commentId = (await SendAsync<Result<Guid>>(memberProvider,
             CreateCommentCommand.ForBoardItem(itemId, "Mine", null))).Data;
 
-        (await SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Edited"))).Succeeded.Should().BeTrue(
+        (await SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Edited", 1))).Succeeded.Should().BeTrue(
             "an author who can still view the item edits their own comment");
 
         using var ownerProvider = CreateProvider(accountId, ownerId);
-        var act = () => SendAsync<Result>(ownerProvider, new UpdateCommentCommand(commentId, "Rewritten"));
+        var act = () => SendAsync<Result>(ownerProvider, new UpdateCommentCommand(commentId, "Rewritten", 1));
         await act.Should().ThrowAsync<AppForbidden>("the workspace Owner may not rewrite another person's comment");
+    }
+
+    [Fact]
+    public async Task UpdateComment_WithAStaleVersion_IsRefusedAndTheTextStaysAsItWas()
+    {
+        var (accountId, ownerId, _, boardId, memberId) = await SeedBoardStackAsync();
+        var itemId = await ResolveBoardItemIdAsync(boardId);
+
+        using var memberProvider = CreateProvider(accountId, memberId);
+        var commentId = (await SendAsync<Result<Guid>>(memberProvider,
+            CreateCommentCommand.ForBoardItem(itemId, "Mine", null))).Data;
+        (await SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Edited", 1))).Succeeded.Should().BeTrue(
+            "the first edit quotes the version the comment was created with");
+
+        // Version 1 is stale now: the first edit moved the comment to version 2.
+        var stale = () => SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Stale", 1));
+        await stale.Should().ThrowAsync<PreconditionFailedException>("a stale expected version is refused with 412");
     }
 
     [Fact]
@@ -849,10 +866,10 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             CreateCommentCommand.ForPage(pageId, "Owner's", null))).Data;
 
         using var memberProvider = CreateProvider(accountId, memberId);
-        var act = () => SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Rewritten"));
+        var act = () => SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Rewritten", 1));
         await act.Should().ThrowAsync<AppForbidden>("a member who can view the page may not rewrite the Owner's comment");
 
-        (await SendAsync<Result>(ownerProvider, new UpdateCommentCommand(commentId, "Edited"))).Succeeded.Should().BeTrue();
+        (await SendAsync<Result>(ownerProvider, new UpdateCommentCommand(commentId, "Edited", 1))).Succeeded.Should().BeTrue();
     }
 
     [Fact]
@@ -863,9 +880,9 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var commentId = (await SendAsync<Result<Guid>>(memberProvider, CreateCommentCommand.ForPage(pageId, "Mine", null))).Data;
         await SeedPermissionRuleAsync(accountId, workspaceId, memberId, PermissionAction.ViewPage, "documents.page", pageId, PermissionEffect.Deny);
 
-        var hidden = () => SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Edited"));
+        var hidden = () => SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Edited", 1));
         var missingId = Guid.NewGuid();
-        var missing = () => SendAsync<Result>(memberProvider, new UpdateCommentCommand(missingId, "Edited"));
+        var missing = () => SendAsync<Result>(memberProvider, new UpdateCommentCommand(missingId, "Edited", 1));
 
         var hiddenError = (await hidden.Should().ThrowAsync<AppNotFound>()).Which;
         var missingError = (await missing.Should().ThrowAsync<AppNotFound>()).Which;

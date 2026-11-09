@@ -66,8 +66,8 @@ public class CommentAuthorizationTests
         _user.Setup(u => u.UserId).Returns(actor);
         return action switch
         {
-            "edit" => new UpdateCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new UpdateCommentCommand(commentId, "Changed"), default),
-            "delete" => new DeleteCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new DeleteCommentCommand(commentId), default),
+            "edit" => new UpdateCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new UpdateCommentCommand(commentId, "Changed", 1), default),
+            "delete" => new DeleteCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new DeleteCommentCommand(commentId, 1), default),
             "resolve" => new ResolveCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new ResolveCommentCommand(commentId), default),
             _ => new ReopenCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new ReopenCommentCommand(commentId), default),
         };
@@ -113,7 +113,7 @@ public class CommentAuthorizationTests
         var act = () => Run(action, _author, comment.Id);
 
         // Identical to what the pipeline says for a missing comment, so a hidden one cannot be told apart.
-        var pipeline = new UpdateCommentCommand(comment.Id, "x").Resource;
+        var pipeline = new UpdateCommentCommand(comment.Id, "x", 1).Resource;
         (await act.Should().ThrowAsync<NotFoundException>()).Which.Message
             .Should().Be(new NotFoundException(pipeline.Kind.ToString(), pipeline.ResourceId).Message);
     }
@@ -126,7 +126,7 @@ public class CommentAuthorizationTests
         var act = () => Run("edit", _author, missing);
 
         (await act.Should().ThrowAsync<NotFoundException>()).Which.Message
-            .Should().Be(new NotFoundException(new UpdateCommentCommand(missing, "x").Resource.Kind.ToString(), missing).Message);
+            .Should().Be(new NotFoundException(new UpdateCommentCommand(missing, "x", 1).Resource.Kind.ToString(), missing).Message);
     }
 
     [Fact]
@@ -220,7 +220,7 @@ public class CommentAuthorizationTests
     [Fact]
     public void TheWorkspaceGate_IsNoLongerOwnerOnly()
     {
-        new UpdateCommentCommand(Guid.CreateVersion7(), "x").Action.Should().NotBe(PermissionAction.UpdateItem);
-        new DeleteCommentCommand(Guid.CreateVersion7()).Action.Should().NotBe(PermissionAction.UpdateItem);
+        new UpdateCommentCommand(Guid.CreateVersion7(), "x", 1).Action.Should().NotBe(PermissionAction.UpdateItem);
+        new DeleteCommentCommand(Guid.CreateVersion7(), 1).Action.Should().NotBe(PermissionAction.UpdateItem);
     }
 }
