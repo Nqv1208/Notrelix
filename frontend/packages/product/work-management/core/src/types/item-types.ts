@@ -147,6 +147,8 @@ export interface CardUpdate {
   version?: number;
   /** A deleted comment that still has replies: a placeholder, with no author or text. */
   deleted?: boolean;
+  /** A top-level thread that was resolved (UC-COL-A07); reopening it clears this. */
+  resolved?: boolean;
 }
 
 /** The fixed palette a person may react with. */

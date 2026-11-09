@@ -4,6 +4,7 @@ import {
   AttachmentUploads,
   createAttachmentApi,
   createUseAttachmentContent,
+  createUseDeletePageAttachment,
   createUsePageAttachments,
   useRememberPageAttachment,
   type DocsFileClient,
@@ -203,6 +204,7 @@ export function createDocPageScreen({
 }: CreateDocPageScreenDeps) {
   const attachmentApi = createAttachmentApi(api, endpoints);
   const usePageAttachments = createUsePageAttachments(api, endpoints);
+  const useDeletePageAttachment = createUseDeletePageAttachment(api, endpoints);
   const useAttachmentContent = createUseAttachmentContent(api, endpoints);
   const usePage = createUsePage(api, endpoints);
   const usePageBlocks = createUsePageBlocks(api, endpoints);
@@ -572,6 +574,8 @@ export function createDocPageScreen({
       [pageId, rememberAttachment],
     );
     useEffect(() => () => uploads.dispose(), [uploads]);
+    const deleteAttachment = useDeletePageAttachment(workspaceId, pageId);
+    const deleteAttachmentAsync = deleteAttachment.mutateAsync;
     const media = useMemo<DocMediaHost>(
       () => ({
         uploads,
@@ -610,8 +614,16 @@ export function createDocPageScreen({
             notify?.(current.media.file.downloadFailed);
           }
         },
+        remove: async (attachment) => {
+          try {
+            await deleteAttachmentAsync(attachment.id);
+          } catch {
+            const { copy: current, notify } = mediaRef.current;
+            notify?.(current.media.file.deleteFailed);
+          }
+        },
       }),
-      [pageId, uploads, workspaceId],
+      [pageId, uploads, workspaceId, deleteAttachmentAsync],
     );
     const richEditor = useDocRichEditor({
       pageId,

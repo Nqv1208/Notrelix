@@ -77,6 +77,23 @@ export function canWriteComment(capabilities: TaskDetailCapabilities): boolean {
   return capabilities.canComment ?? capabilities.canEditFields;
 }
 
+/**
+ * Who may resolve or reopen a top-level thread (UC-COL-A07, A08): its starter, or an editor of the item. A
+ * Viewer who did not start the thread gets no control.
+ */
+export function canResolveComment(
+  capabilities: TaskDetailCapabilities,
+  authorUserId: string,
+  viewerUserId?: string | null,
+): boolean {
+  if (capabilities.canEditFields) return true;
+  return (
+    canWriteComment(capabilities) &&
+    Boolean(viewerUserId) &&
+    authorUserId === viewerUserId
+  );
+}
+
 /** A child item listed under "Việc con"; `done` = done category. */
 export interface ItemSheetChildItem {
   readonly id: string;
@@ -345,6 +362,8 @@ export interface TaskDetailCallbacks {
     expectedVersion: number,
   ) => void;
   readonly onDeleteUpdate: (updateId: string, expectedVersion: number) => void;
+  /** Resolves (`resolved`) or reopens a top-level thread; absent: threads cannot be resolved here. */
+  readonly onSetUpdateResolved?: (updateId: string, resolved: boolean) => void;
   readonly onSelectTab: (tab: CardDetailTab) => void;
   /** Copies the item link; the button is disabled without it. */
   readonly onCopyLink?: (cardId: string) => void;

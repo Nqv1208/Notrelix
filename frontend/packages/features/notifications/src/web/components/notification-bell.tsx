@@ -13,6 +13,7 @@ import { useNotificationBellCopy } from "./use-notification-bell-copy";
 interface CreateNotificationBellDeps {
   api: NotificationsApiClient;
   endpoints: NotificationsEndpoints;
+  workspaceId: string;
 }
 
 export function createNotificationBell(deps: CreateNotificationBellDeps) {

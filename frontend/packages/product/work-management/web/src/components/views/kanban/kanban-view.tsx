@@ -3,6 +3,7 @@ import {
   FaceFieldsPopover,
   KanbanFaceProvider,
 } from "../../card-popup/capabilities";
+import { threadRefusalMessage } from "../../item-page/collaboration-refusal";
 import { useItemPageCopy } from "../../item-page/use-item-page-copy";
 import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
 import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
@@ -40,6 +41,7 @@ import {
   useAddFieldOption,
   useCreateCardUpdate,
   useDeleteCardUpdate,
+  useSetCardUpdateResolved,
   useToggleCommentReaction,
   useMoveFieldOption,
   useRemoveFieldOption,
@@ -1766,6 +1768,7 @@ function KanbanSelectedItemReady({
   const updateUpdate = useUpdateCardUpdate(card.id, card.workspaceId);
   const deleteUpdate = useDeleteCardUpdate(card.id, card.workspaceId);
   const toggleReaction = useToggleCommentReaction(card.id, card.workspaceId);
+  const setUpdateResolved = useSetCardUpdateResolved(card.id, card.workspaceId);
   const itemLinks = useItemLinks(card.id, card.workspaceId, card.boardId);
   const approvals = useItemApprovals(card.id, card.workspaceId);
   const extras = useItemSheetExtras(card);
@@ -1924,6 +1927,14 @@ function KanbanSelectedItemReady({
             updateUpdate.mutate({ updateId, body, expectedVersion }),
           onDeleteUpdate: (updateId, expectedVersion) =>
             deleteUpdate.mutate({ updateId, expectedVersion }),
+          onSetUpdateResolved: (updateId, resolved) =>
+            setUpdateResolved.mutate(
+              { updateId, resolved },
+              {
+                onError: (error) =>
+                  toast.error(threadRefusalMessage(error, linksCopy.thread)),
+              },
+            ),
           onSelectTab: () => undefined,
           onCopyLink,
           onMoveToGroup,

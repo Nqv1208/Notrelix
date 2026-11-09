@@ -482,6 +482,7 @@ export function mapCommentDtoToCardUpdate(
     reactions: dto.reactions ?? [],
     version: dto.version,
     deleted: dto.isDeleted,
+    resolved: Boolean(dto.resolvedAt),
   };
 }
 
