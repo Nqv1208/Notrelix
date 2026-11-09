@@ -1,10 +1,18 @@
 using Notrelix.Domain.Documents;
 using Notrelix.Application.Features.Documents.Abstractions;
+using Notrelix.Application.Features.Documents.Blocks.Commands.BatchUpdateBlocks;
+using Notrelix.Application.Features.Documents.Blocks.Commands.CreateBlock;
+using Notrelix.Application.Features.Documents.Blocks.Commands.DeleteBlock;
 using Notrelix.Application.Features.Documents.Blocks.Commands.UpdateBlock;
+using Notrelix.Application.Features.Documents.Pages.Commands.MovePage;
 using Notrelix.Application.Features.Documents.Pages.Commands.UpdatePage;
+using Notrelix.Application.Features.Documents.Pages.Services;
+using Notrelix.Application.Features.Documents.Versions.Commands.RestorePageVersion;
+using Notrelix.Application.Features.Documents.Versions.Services;
 using Notrelix.Domain.Documents.Blocks;
 using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.SharedKernel.Ordering;
+using Notrelix.Testing.Application.Fakes;
 using TestDbSet = Notrelix.Application.Tests.Features.Collaboration.TestDbSet;
 
 namespace Notrelix.Application.Tests.Features.Documents;
@@ -83,7 +91,101 @@ public sealed class PageTrashedRefusalTests
         block.Version.Should().Be(1, "a refused edit does not bump the block version");
     }
 
+    [Fact]
+    public async Task CreatingABlockOnATrashedPage_IsRefused_AndNoBlockIsAdded()
+    {
+        var page = NewPage("Plan");
+        page.Archive(UserId, Now.AddMinutes(1));
+        var blocks = new List<Block>();
+        var sut = new CreateBlockCommandHandler(BlockContext(page, blocks), new NoPageBlockWriteLock(), RequestContext(), Clock());
+
+        var act = () => sut.Handle(new CreateBlockCommand(page.Id, null, "paragraph", null, null, null, null), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which.RuleCode.Should().Be(DocumentRuleCodes.Documents_Page_CannotEditArchived);
+        blocks.Should().BeEmpty("a refused create adds no block");
+    }
+
+    [Fact]
+    public async Task DeletingABlockOnATrashedPage_IsRefused_AndTheBlockStaysLive()
+    {
+        var page = NewPage("Plan");
+        var block = NewBlock(page, "a0");
+        page.Archive(UserId, Now.AddMinutes(1));
+        var sut = new DeleteBlockCommandHandler(BlockContext(page, [block]), new NoPageBlockWriteLock(), User(), Clock());
+
+        var act = () => sut.Handle(new DeleteBlockCommand(page.Id, block.Id, block.Version), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which.RuleCode.Should().Be(DocumentRuleCodes.Documents_Page_CannotEditArchived);
+        block.IsDeleted.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ABatchOnATrashedPage_IsRefused_AndNothingIsSaved()
+    {
+        var page = NewPage("Plan");
+        var block = NewBlock(page, "a0");
+        page.Archive(UserId, Now.AddMinutes(1));
+        var blocks = new List<Block> { block };
+        var sut = new BatchUpdateBlocksCommandHandler(BlockContext(page, blocks), new NoPageBlockWriteLock(), RequestContext(), Clock());
+
+        var act = () => sut.Handle(new BatchUpdateBlocksCommand(page.Id,
+            [new BatchUpdateBlockItem("upsert", Guid.CreateVersion7(), "paragraph", null, null, null, null, null, null)]), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which.RuleCode.Should().Be(DocumentRuleCodes.Documents_Page_CannotEditArchived);
+        blocks.Should().ContainSingle().Which.Should().BeSameAs(block);
+        block.Version.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task RestoringAVersionOfATrashedPage_IsRefused_BeforeTheVersionIsRead()
+    {
+        var page = NewPage("Plan");
+        page.Archive(UserId, Now.AddMinutes(1));
+        var sut = new RestorePageVersionCommandHandler(BlockContext(page, []), new NoPageBlockWriteLock(),
+            new Mock<IPageVersionRecorder>().Object, RequestContext(), Clock());
+
+        var act = () => sut.Handle(new RestorePageVersionCommand(page.Id, Guid.CreateVersion7(), []), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which.RuleCode.Should().Be(DocumentRuleCodes.Documents_Page_CannotEditArchived);
+    }
+
+    [Fact]
+    public async Task MovingATrashedPage_IsRefused_AndItKeepsItsParent()
+    {
+        var root = NewPage("Root");
+        var page = Page.Create(AccountId, WorkspaceId, "Plan", UserId, Now, root.Id);
+        page.Archive(UserId, Now.AddMinutes(1));
+        var pages = new InMemoryPageSubtreeStore(root, page);
+        var sut = new MovePageCommandHandler(pages, new Mock<IPageSpacePlacement>().Object, new Mock<IPageSubtreeAuthorizer>().Object,
+            RequestContext(), Clock());
+
+        var act = () => sut.Handle(new MovePageCommand(page.Id, null, page.Version), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which.RuleCode.Should().Be(DocumentRuleCodes.Documents_Page_CannotMoveArchived);
+        page.ParentId.Should().Be(root.Id);
+    }
+
     private static Page NewPage(string title) => Page.Create(AccountId, WorkspaceId, title, UserId, Now);
+
+    private static Block NewBlock(Page page, string position) => Block.CreateRoot(AccountId, WorkspaceId, page.Id, BlockType.Text,
+        BlockContent.Create(Notrelix.Domain.SharedKernel.JsonValue.Create("{\"v\":1,\"runs\":[{\"text\":\"kept\",\"marks\":[]}]}")),
+        FractionalIndex.Create(position), UserId, Now);
+
+    private static IDocumentDbContext BlockContext(Page page, List<Block> blocks)
+    {
+        var contextMock = new Mock<IDocumentDbContext>();
+        contextMock.Setup(c => c.Pages).Returns(TestDbSet.Create([page]).Object);
+        contextMock.Setup(c => c.Blocks).Returns(TestDbSet.Create(blocks).Object);
+        return contextMock.Object;
+    }
+
+    private static FakeCurrentRequestContext RequestContext()
+    {
+        var requestContext = new FakeCurrentRequestContext().AsUser(UserId);
+        requestContext.Tenant.SetWorkspace(AccountId, WorkspaceId, UserId);
+        return requestContext;
+    }
+
 
     private static IDocumentDbContext Context(Page page)
     {
