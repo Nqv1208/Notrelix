@@ -52,19 +52,19 @@ Letters follow the capability lanes of the team spec (section 6): PF-01 is A, PF
 | B | Actor/account/workspace context propagation | 4 | 0 | 1 | 1 | 2 | 0 | 0 |
 | C | Authorization enforcement pipeline | 3 | 0 | 1 | 0 | 0 | 2 | 0 |
 | D | Persistence foundation (data session, RLS, cache) | 4 | 0 | 3 | 0 | 0 | 1 | 0 |
-| E | Migration, runtime initialization and configuration | 3 | 0 | 3 | 0 | 0 | 0 | 0 |
-| F | Idempotency | 2 | 0 | 1 | 0 | 0 | 1 | 0 |
-| G | Outbox/inbox, message identity, background jobs | 8 | 0 | 5 | 0 | 0 | 3 | 0 |
-| H | Ordered delivery and poison handling | 5 | 2 | 2 | 0 | 0 | 0 | 1 |
-| I | Realtime connection and recovery | 5 | 0 | 1 | 0 | 0 | 4 | 0 |
-| J | API, OpenAPI and generated contracts | 3 | 0 | 1 | 0 | 2 | 0 | 0 |
+| E | Migration, runtime initialization and configuration | 3 | 0 | 2 | 0 | 1 | 0 | 0 |
+| F | Idempotency | 2 | 0 | 0 | 0 | 1 | 1 | 0 |
+| G | Outbox/inbox, message identity, background jobs | 8 | 0 | 3 | 0 | 2 | 3 | 0 |
+| H | Ordered delivery and poison handling | 5 | 2 | 1 | 0 | 1 | 0 | 1 |
+| I | Realtime connection and recovery | 5 | 0 | 0 | 0 | 1 | 4 | 0 |
+| J | API, OpenAPI and generated contracts | 3 | 0 | 0 | 0 | 3 | 0 | 0 |
 | K | Frontend query/server-state foundation | 3 | 0 | 0 | 0 | 0 | 3 | 0 |
-| L | Frontend runtime and host composition | 4 | 1 | 2 | 0 | 1 | 0 | 0 |
-| M | UI tokens and primitive foundation | 1 | 0 | 1 | 0 | 0 | 0 | 0 |
-| N | Observability and health | 7 | 1 | 4 | 0 | 2 | 0 | 0 |
-| O | Architecture/dependency enforcement | 1 | 0 | 1 | 0 | 0 | 0 | 0 |
+| L | Frontend runtime and host composition | 4 | 1 | 1 | 0 | 2 | 0 | 0 |
+| M | UI tokens and primitive foundation | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
+| N | Observability and health | 7 | 1 | 2 | 0 | 4 | 0 | 0 |
+| O | Architecture/dependency enforcement | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
 | P | CI, container, security and packaging evidence | 2 | 0 | 2 | 0 | 0 | 0 | 0 |
-|  | Total | 58 | 4 | 28 | 1 | 7 | 17 | 1 |
+|  | Total | 58 | 4 | 16 | 1 | 19 | 17 | 1 |
 
 Seventeen use cases are DONE (A01 to A03, C01, C02, D03, F01, G01, G02, G08, I01 to I04, K01 to K03), set by the 0.1.0 foundation lane pull request on 2026-11-03 under the four lines of DEL-003: their Evidence lines name the backend tests, the real e2e journeys and the reason a design line does not apply. Design fidelity does not apply to most system use cases. State rules used here: HARDENING means a `frontend/e2e/real` spec exercises the mechanism, directly or because every real spec signs in (so sign-in, CSRF, context, authorization, idempotent writes and the outbox are exercised by all of them); IMPLEMENTING means the mechanism exists with its own unit, integration or architecture tests but no real spec shows it from outside, including tooling gates that are not browser subjects; INTEGRATING means backend and frontend both exist but end-to-end proof or a state is missing. Design columns are "n/a" for mechanisms without a screen.
 
