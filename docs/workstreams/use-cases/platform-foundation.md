@@ -113,12 +113,12 @@ Searched 2026-10-30. The search returned no usable vendor platform pages, so the
 | UC-PLT-A02 | Reject an unsafe browser request without a valid CSRF pair | A | API middleware | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-A03 | Handle an expired session in the browser | A | Frontend runtime | yes | yes | Final-States | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-B01 | Resolve the request context from trusted credentials | B | API middleware | yes | n/a | n/a | yes | HARDENING | cross-tenant negative per route |
-| UC-PLT-B02 | Rebuild tenant and principal for a background consumer | B | Consumer host | yes | n/a | n/a | no | IMPLEMENTING | system principal rules per job |
+| UC-PLT-B02 | Rebuild tenant and principal for a background consumer | B | Consumer host | yes | n/a | n/a | no | IMPLEMENTING | owner question: system principal rules per job |
 | UC-PLT-B03 | Switch workspace without leaking state | B | Frontend runtime | n/a | yes | n/a | yes | HARDENING | late-response proof |
-| UC-PLT-B04 | Switch account or principal and reset the cache | B | Frontend runtime | no | yes | n/a | no | INTEGRATING | no Account id |
+| UC-PLT-B04 | Switch account or principal and reset the cache | B | Frontend runtime | no | yes | n/a | no | INTEGRATING | owner question: Account id decision |
 | UC-PLT-C01 | Run every protected request through the pipeline | C | Application pipeline | yes | n/a | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
 | UC-PLT-C02 | Answer a denied resource with the same NotFound | C | Application pipeline | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
-| UC-PLT-C03 | Run a worker as a bounded principal | C | Consumer host | yes | n/a | n/a | no | IMPLEMENTING | principal list undefined |
+| UC-PLT-C03 | Run a worker as a bounded principal | C | Consumer host | yes | n/a | n/a | no | IMPLEMENTING | owner question: worker principal list and grants |
 | UC-PLT-D01 | Open a tenant-scoped data session per request | D | Application pipeline | yes | n/a | n/a | no | IMPLEMENTING | owner question: runtime role proof per deploy |
 | UC-PLT-D02 | Refuse to run with an unsafe database role | D | Host startup | yes | n/a | n/a | no | IMPLEMENTING | owner question: production role proof |
 | UC-PLT-D03 | Reject a stale write with 412 | D | Application pipeline | yes | yes | n/a | yes | DONE | set DONE by the foundation lane pull request, see the Evidence line |
@@ -246,7 +246,7 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - Rules: PFREQ019; BE-PLT-027, BE-PLT-048.
 - Acceptance: Given an event for tenant A, When consumed, Then the handler sees only tenant A rows.
 - Evidence: BE `TenantContextConsumeFilter.cs`, `WorkerPrincipalConsumeFilter.cs` · FE n/a · Design n/a · Tests `backend/tests/Notrelix.Infrastructure.Tests/Messaging/TenantContextConsumeFilterScopedEventTests.cs` · Real e2e none
-- State: IMPLEMENTING — the worker principal and what each consumer may do is not listed in one place.
+- State: IMPLEMENTING — Built and tested: `TenantContextConsumeFilter` restores the workspace or account tenant per event type (`TenantContextConsumeFilterScopedEventTests`), and a missing tenant raises `IntegrationEventTenantEnvelopeException` (`ScopedEventTenantEnvelopeReplayCompatibilityTests`). Owner question: which system principal and grants may each consumer and job use? The list is not written in one place.
 
 ### UC-PLT-B03 Switch workspace without leaking state
 - Capability: B, PF-02
@@ -274,7 +274,7 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - Rules: PFREQ020, PFREQ022.
 - Acceptance: Given user A signs out and B signs in, When B opens a screen, Then no A cache entry exists.
 - Evidence: BE none (no Account id exposed) · FE `frontend/packages/foundation/query/src/account-scope.ts`, `application-lifecycle.ts` · Design n/a · Tests `account-scope.unit.test.tsx` · Real e2e none
-- State: INTEGRATING — TEMPORARY MODEL: Account equals the principal until the backend exposes an Account id and a switch signal.
+- State: INTEGRATING — TEMPORARY MODEL: Account equals the principal until the backend exposes an Account id and a switch signal. Owner question: which Account id does the backend expose (and when), and which signal tells the browser an account switch happened? Until then the state stays INTEGRATING.
 
 ## Capability C: Authorization enforcement pipeline
 
@@ -318,7 +318,7 @@ Common evidence. Backend: `backend/src/Notrelix.API/Middleware/`, `backend/src/N
 - Rules: PFREQ019; BE-PLT-027, BE-PLT-048.
 - Acceptance: Given a consumer for a removed member, When it retries, Then it cannot act for that member.
 - Evidence: BE `WorkerPrincipalConsumeFilter.cs`, `backend/src/Notrelix.Infrastructure/Data/DatabasePrincipal.cs` · FE n/a · Design n/a · Tests `RuntimeDatabaseRoleGuardTests.cs` · Real e2e none
-- State: IMPLEMENTING — the list of worker principals and their grants is not decided in one document.
+- State: IMPLEMENTING — Owner question: which worker principals and grants exist, and must a retried consumer re-check that the actor's authority still holds (BE-PLT-048)? `WorkerPrincipalConsumeFilter` sets the database login only; it does not re-check membership, and no consumer test was found that refuses a removed member's retry.
 
 ## Capability D: Persistence foundation
 
