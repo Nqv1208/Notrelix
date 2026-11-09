@@ -141,18 +141,18 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-A06 | Delete a comment | A | The author (Lead decision L1) | yes | yes | yes | no | INTEGRATING | Author-only rule in place; no expected version, no real e2e; list query drops the deleted comment and leaves replies with an orphan ParentId. |
 | UC-COL-A07 | Resolve a thread | A | The thread starter, or a person with edit right on the target (Product | yes | partial | yes | no | INTEGRATING | Thread-starter-or-editor rule and page UI in place; no real e2e; item UI for resolve not found. |
 | UC-COL-A08 | Reopen a thread | A | Same rule as UC-COL-A07 (decision 24) | yes | partial | yes | no | INTEGRATING | As UC-COL-A07. |
-| UC-COL-A09 | React to a comment on a board item | A | Anyone with CreateComment on the item | yes | yes | yes | no | INTEGRATING | Check-then-insert with no unique index: concurrent requests can store two rows; no real e2e. |
+| UC-COL-A09 | React to a comment on a board item | A | Anyone with CreateComment on the item | yes | yes | yes | no | HARDENING | Built: a transaction-scoped reaction lock makes a racing duplicate a no-op; unique index already existed. Remains: owner tests by hand; real e2e none. |
 | UC-COL-A10 | Withdraw a reaction | A | The person who reacted (only their own reaction) | yes | yes | yes | no | INTEGRATING | No real e2e. |
 | UC-COL-A11 | React to a comment on a page (enterprise baseline) | A | Anyone with CreateComment on the page | no | no | no | no | DEFINED | Add page routes and a target-generic reaction command; design the chips for the docs panel. |
 | UC-COL-B01 | Mention a person in an item comment | B | Any commenter | yes | yes | yes | yes | HARDENING | Mention of a Team, Page or Board has no use case; delivery-time recheck absent (UC-COL-B02). |
-| UC-COL-B02 | Mention a person in a page comment | B | Any page commenter | partial | yes | yes | partial | INTEGRATING | Defect: page comments create a Mention for any listed user without a view check. |
+| UC-COL-B02 | Mention a person in a page comment | B | Any page commenter | partial | yes | yes | partial | HARDENING | Built: page mentions need the person to view the page (VisiblePageIdsAsync). Remains: owner tests by hand; real e2e inbox-page-reply not re-run. |
 | UC-COL-B03 | Mention a person inside a page block | B | A page editor (Documents UC) | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
 | UC-COL-B04 | Mention a team | B | Any commenter | no | no | no | no | DEFINED | Add a team mention field, fan-out at delivery and the suggestion list. |
 | UC-COL-B05 | Suggest people to mention without leaking others | B | Any commenter | partial | partial | yes | no | INTEGRATING | No Collaboration-owned suggestion read; the page composer has no suggestion list proven; no real e2e. |
 | UC-COL-B06 | Attach a file to a board item | B | Anyone with UpdateItem on the item | yes | yes | yes | no | INTEGRATING | No real e2e; no cross-tenant negative upload test found; no virus scan. |
-| UC-COL-B07 | Attach a link to a board item | B | Anyone with UpdateItem on the item | yes | partial | yes | no | INTEGRATING | No Url scheme allow-list found in the validator (javascript: and data: must be refused); no real e2e. |
+| UC-COL-B07 | Attach a link to a board item | B | Anyone with UpdateItem on the item | yes | partial | yes | no | HARDENING | Built: validator allows only absolute http and https links (javascript:, data:, vbscript:, file:, unparseable refused as 400). Remains: owner tests by hand; real e2e none. |
 | UC-COL-B08 | Attach a file to a page | B | Anyone with UpdatePage on the page | yes | yes | yes | no | INTEGRATING | No real e2e (documents.real e2e has no upload). |
-| UC-COL-B09 | Register a link on a page | B | Anyone with UpdatePage on the page | yes | partial | yes | no | INTEGRATING | As UC-COL-B07. |
+| UC-COL-B09 | Register a link on a page | B | Anyone with UpdatePage on the page | yes | partial | yes | no | HARDENING | Built: same http and https allow-list as UC-COL-B07 (new page validator). Remains: owner tests by hand; real e2e none. |
 | UC-COL-B10 | List and open attachments of an item or page | B | Anyone who can view the item (ViewBoard) or page (ViewPage) | yes | yes | yes | no | INTEGRATING | No real e2e. |
 | UC-COL-B11 | Delete an attachment from an item | B | A person with UpdateItem on the item (Lead decision) | yes | yes | yes | no | INTEGRATING | Editor-only rule in place; no real e2e. |
 | UC-COL-B12 | Delete an attachment from a page | B | A person with UpdatePage on the page (Lead decision) | yes | partial | yes | no | INTEGRATING | Editor-only rule in place; no real e2e. |
@@ -215,7 +215,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-H03 | Concurrent reactions and follows do not duplicate | H | Any person | partial | no | no | no | IMPLEMENTING | Migration and concurrency test (RLS-safe change rule applies). |
 | UC-COL-H04 | Comment content is safe to render | H | Any reader | partial | partial | no | no | IMPLEMENTING | Align validator to 10,000; add XSS and scheme tests on the renderer. |
 | UC-COL-H05 | Rate limits and abuse controls | H | Any caller | no | no | no | no | DEFINED | Policies not attached. |
-| UC-COL-H06 | A mention retry notifies once | H | System | yes | no | no | no | INTEGRATING | Read-then-insert without a confirmed unique index on DeduplicationKey; add a test with concurrent delivery. |
+| UC-COL-H06 | A mention retry notifies once | H | System | yes | no | no | no | HARDENING | Built: a delivery that loses the insert race on the deduplication key is a no-op; unique index in baseline. Remains: owner tests by hand. |
 | UC-COL-H07 | Provider comment sync maps through Collaboration operations | H | An integration (provider adapter) | no | no | no | no | BLOCKED | Needs the integration execution principal ([automation-integrations.md](automation-integrations.md)); a security-principal decision. |
 | UC-COL-H08 | Guest and public comments | H | Anonymous or public-link visitors | no | no | no | no | BLOCKED | Anonymous principal and abuse controls are an owner decision. |
 
@@ -347,7 +347,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-009, Reaction retry, Reaction count; decision 59; spec DCREQ158 to DCREQ161.
 - Acceptance: Given a Member, when they click an emoji, then the chip count rises and highlights; a second click removes it. Given a Viewer, then the chips are read-only.
 - Evidence: BE PUT /api/v1/board-items/{boardItemId}/comments/{commentId}/reactions/{emoji} (Collaboration.Comments.AddReaction), AddReactionCommandHandler · FE frontend/packages/product/work-management/state/src/ (item-comments.api.ts, use-card-comments.ts, mutations) (use-toggle-comment-reaction.ts) · Design WM-Comments · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/CommentReactionTests.cs; backend/tests/Notrelix.Domain.Tests/Collaboration/Reactions/; backend/tests/Notrelix.API.Tests/Contracts/CommentReactionContractOpenApiTests.cs; frontend/e2e/mock/comment-replies-reactions.mock.e2e.spec.ts · Real e2e none
-- State: INTEGRATING — Check-then-insert with no unique index: concurrent requests can store two rows; no real e2e.
+- State: HARDENING — Built: a reaction add takes a transaction-scoped lock on (comment, person, emoji) before its existence check, so a racing duplicate is a no-op. The unique index on reactions already existed (migration 20261028120000), so the gap's "no unique index" was stale. Unit tests: CommentReactionTests. Concurrent integration test: ConcurrentCollaborationInsertIntegrationTests (runs in CI; not run locally, no Docker). Remains: owner tests by hand; no real e2e.
 
 ### UC-COL-A10 Withdraw a reaction
 - Capability: A, COL-001 Comment lifecycle
@@ -405,7 +405,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-030, Mention privacy; decision 12; spec DCREQ157.
 - Acceptance: Given a person without page access, when mentioned in a page comment, then no notification exists. Given a viewer, then one notification exists.
 - Evidence: BE POST /pages/{pageId}/comments, CreateCommentCommandHandler (no page visibility check today: ResolveMentionBoardAsync returns null for pages) · FE frontend/packages/product/docs/state/src/query/hooks/ (use-page-comments, use-create-comment, ...) · Design Final-Docs-2 · Tests none for the page path · Real e2e frontend/e2e/real/inbox-page-reply.real.e2e.spec.ts (block mention, UC-COL-B03)
-- State: INTEGRATING — Defect: page comments create a Mention for any listed user without a view check. Add IResourceVisibility.VisiblePageIdsAsync check and a test.
+- State: HARDENING — Built: a page-comment mention is created only for a person who can view the page (IResourceVisibility.VisiblePageIdsAsync); no Mention and no notification otherwise. Unit tests: CreateCommentResourceRefTests (page mention cases). Remains: owner tests by hand; the Evidence line above still says no page check and no page tests, which is stale.
 
 ### UC-COL-B03 Mention a person inside a page block
 - Capability: B, COL-002 Comment target contract
@@ -475,7 +475,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-010; spec DCREQ162.
 - Acceptance: Given a valid link, then it lists on the item.
 - Evidence: BE POST /api/v1/board-items/{boardItemId}/attachments (Collaboration.Attachments.Create), CreateBoardItemAttachmentCommandHandler · FE item sheet Files section (WM) · Design WM-Sheet-Files · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Attachments/AttachmentTests.cs · Real e2e none
-- State: INTEGRATING — No Url scheme allow-list found in the validator (javascript: and data: must be refused); no real e2e.
+- State: HARDENING — Built: CreateBoardItemAttachmentCommandValidator allows only an absolute http or https URL with a host (AttachmentLinkUrl); javascript:, data:, vbscript:, file:, mailto: and unparseable values fail validation (400). The handler repeats the check. Unit tests: AttachmentLinkUrlTests. Remains: owner tests by hand; real e2e none.
 
 ### UC-COL-B08 Attach a file to a page
 - Capability: B, COL-002 Comment target contract
@@ -503,7 +503,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-010.
 - Acceptance: Given a valid link, then it lists on the page.
 - Evidence: BE POST /api/v1/pages/{pageId}/attachments (Collaboration.PageAttachments.Create), CreatePageAttachmentCommandHandler · FE docs state hooks · Design Final-Docs-2 · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/PageAttachmentTests.cs · Real e2e none
-- State: INTEGRATING — As UC-COL-B07.
+- State: HARDENING — Built: CreatePageAttachmentCommandValidator (new) applies the same http and https allow-list as UC-COL-B07. Unit tests: AttachmentLinkUrlTests. Remains: owner tests by hand; real e2e none.
 
 ### UC-COL-B10 List and open attachments of an item or page
 - Capability: B, COL-002 Comment target contract
@@ -1397,7 +1397,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-008, COL-018.
 - Acceptance: Given two deliveries, then one entry.
 - Evidence: BE MentionCreatedNotificationConsumer (dedupe by DeduplicationKey); unique index not confirmed · FE none · Design none · Tests none direct · Real e2e none
-- State: INTEGRATING — Read-then-insert without a confirmed unique index on DeduplicationKey; add a test with concurrent delivery.
+- State: HARDENING — Built: MentionCreatedNotificationConsumer treats a unique violation on ux_notifications_items_dedup (SQLSTATE 23505) as a no-op; other violations still throw. The unique index is in the schema baseline. Unit tests: MentionCreatedNotificationConsumerTests (race and non-dedup violation). Concurrent-delivery integration test: ConcurrentCollaborationInsertIntegrationTests (runs in CI; not run locally, no Docker). Remains: owner tests by hand.
 
 ### UC-COL-H07 Provider comment sync maps through Collaboration operations
 - Capability: H, COL-008 Collaboration hardening

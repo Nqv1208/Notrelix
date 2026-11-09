@@ -57,6 +57,9 @@ public class RawSqlArchitectureTests
         // taken only at the commit point of an attachment upload/link, serializing
         // the per-item cap recount with the row insert inside the request transaction.
         "src/Notrelix.Infrastructure/Data/Collaboration/PostgresAttachmentTargetLock.cs",
+        // Reaction write lock: transaction-scoped advisory lock (pg_advisory_xact_lock) keyed on one
+        // comment, person and emoji, taken before the existence check so a concurrent duplicate add is a no-op.
+        "src/Notrelix.Infrastructure/Data/Collaboration/PostgresReactionWriteLock.cs",
         // Attachment object reaper: FOR UPDATE SKIP LOCKED claim of purge-due
         // soft-deleted rows and a try-advisory sweep claim, under the system context.
         "src/Notrelix.Infrastructure/BackgroundJobs/PostgresAttachmentReaperStore.cs",

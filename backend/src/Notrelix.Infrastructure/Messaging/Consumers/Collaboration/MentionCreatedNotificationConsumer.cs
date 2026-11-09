@@ -93,11 +93,40 @@ public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreate
 
         _context.NotificationRecipients.Add(recipient);
 
-        await _context.SaveChangesAsync(context.CancellationToken);
+        try
+        {
+            await _context.SaveChangesAsync(context.CancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsDeduplicationViolation(ex))
+        {
+            // A concurrent delivery of the same mention inserted the notification first. The read above is only a
+            // fast path; the unique index on deduplication_key is the guarantee, so this delivery is a no-op (UC-COL-H06).
+            _logger.LogDebug(
+                "Notification for mention {MentionId} -> user {UserId} was created by a concurrent delivery, skipping",
+                msg.MentionId, msg.MentionedUserId);
+            return;
+        }
 
         _logger.LogInformation(
             "Created notification for mention {MentionId} -> user {UserId} in workspace {WorkspaceId}",
             msg.MentionId, msg.MentionedUserId, msg.WorkspaceId);
+    }
+
+    private const string DeduplicationIndexName = "ux_notifications_items_dedup";
+
+    /// <summary>
+    /// True when the save failed because the notification's deduplication key already exists (SQLSTATE 23505 on
+    /// the deduplication index). Any other violation is not ours to swallow and is rethrown by the caller.
+    /// </summary>
+    private static bool IsDeduplicationViolation(DbUpdateException ex)
+    {
+        if (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } postgres)
+        {
+            return postgres.ConstraintName == DeduplicationIndexName;
+        }
+
+        var message = ex.InnerException?.Message ?? ex.Message;
+        return message.Contains("23505", StringComparison.Ordinal) && message.Contains(DeduplicationIndexName, StringComparison.Ordinal);
     }
 
     /// <summary>
