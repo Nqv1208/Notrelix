@@ -1,9 +1,7 @@
 using MassTransit;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Events.Collaboration;
-using Notrelix.Application.Common.Context;
 using Notrelix.Application.Features.Collaboration.Reactions.Commands.AddReaction;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.Collaboration.Comments;
