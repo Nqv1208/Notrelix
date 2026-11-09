@@ -31,6 +31,7 @@ public static class AnalyticsEndpointMappings
         app.MapGroup("/api/v1/workspaces/{workspaceId:guid}/dashboards/{dashboardId:guid}")
             .WithTags("Analytics")
             .WithOpenApi()
+            .MapRenameDashboard()
             .MapArchiveDashboard()
             .MapRestoreDashboard()
             .MapDeleteDashboard();

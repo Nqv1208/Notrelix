@@ -131,4 +131,39 @@ public sealed class DashboardLifecycleIntegrationTests : IAsyncLifetime
         found.StatusCode.Should().Be(made.StatusCode, "an existing Workspace answers like a made-up one to a non-member");
         (await ReadAsync(id)).Exists.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task The_owner_renames_and_a_stale_invalid_or_foreign_rename_changes_nothing()
+    {
+        var id = await CreateAsync(_a, "Before");
+
+        (await SendAsync(_a.User, HttpMethod.Put, ById(_a, id), new RenameDashboardRequest("After", 1)))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var renamed = await ReadNameAsync(id);
+        renamed.Name.Should().Be("After");
+        renamed.Version.Should().Be(2);
+
+        (await SendAsync(_a.User, HttpMethod.Put, ById(_a, id), new RenameDashboardRequest("Stale", 1)))
+            .StatusCode.Should().Be(HttpStatusCode.PreconditionFailed, "version 1 is stale after the rename");
+        (await ReadNameAsync(id)).Name.Should().Be("After");
+
+        (await SendAsync(_a.User, HttpMethod.Put, ById(_a, id), new RenameDashboardRequest(new string('x', 121), 2)))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest, "a name over 120 characters is refused");
+        (await ReadNameAsync(id)).Version.Should().Be(2);
+
+        var found = await SendAsync(_colleague, HttpMethod.Put, ById(_a, id), new RenameDashboardRequest("Colleague", 2));
+        var made = await SendAsync(_colleague, HttpMethod.Put, ById(_a, Guid.NewGuid()), new RenameDashboardRequest("Colleague", 2));
+        made.StatusCode.Should().BeOneOf(new[] { HttpStatusCode.NotFound, HttpStatusCode.Forbidden });
+        found.StatusCode.Should().Be(made.StatusCode, "a colleague cannot rename someone else's dashboard");
+        (await ReadNameAsync(id)).Name.Should().Be("After");
+    }
+
+    private async Task<(string Name, long Version)> ReadNameAsync(Guid dashboardId)
+    {
+        var system = new FakeCurrentTenantContext();
+        system.SetSystem();
+        await using var ctx = _fixture.CreateOwnerContext(system);
+        var row = await ctx.Dashboards.AsNoTracking().FirstAsync(d => d.Id == dashboardId);
+        return (row.Name, row.Version);
+    }
 }

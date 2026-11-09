@@ -2,6 +2,7 @@ using Notrelix.Application.Features.Accounts.Accounts.Commands.RenameAccount;
 using Notrelix.Application.Features.Analytics.Dashboards.Commands.ArchiveDashboard;
 using Notrelix.Application.Features.Analytics.Dashboards.Commands.DeleteDashboard;
 using Notrelix.Application.Features.Analytics.Dashboards.Commands.RestoreDashboard;
+using Notrelix.Application.Features.Analytics.Dashboards.Commands.RenameDashboard;
 using Notrelix.Domain.Analytics.Dashboards;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteComment;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment;
@@ -319,6 +320,7 @@ public sealed class ExpectedVersionTargetMap
         [typeof(UpdateSavedFilterGroupCommand)] = new(SavedFilterKind, typeof(SavedFilter)),
 
         // Analytics — dashboard lifecycle (UC-ANA-M04, M05): the Dashboard aggregate is the concurrency authority
+        [typeof(RenameDashboardCommand)] = new(DashboardKind, typeof(Dashboard)),
         [typeof(ArchiveDashboardCommand)] = new(DashboardKind, typeof(Dashboard)),
         [typeof(RestoreDashboardCommand)] = new(DashboardKind, typeof(Dashboard)),
         [typeof(DeleteDashboardCommand)] = new(DashboardKind, typeof(Dashboard)),

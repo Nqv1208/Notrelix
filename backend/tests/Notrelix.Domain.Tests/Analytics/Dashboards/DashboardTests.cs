@@ -313,4 +313,18 @@ public class DashboardTests
         act.Should().Throw<DomainException>();
         dashboard.Status.Should().Be(DashboardStatus.Archived);
     }
+
+    [Fact]
+    public void Rename_ToTheSameName_IsNoOp_WithoutVersionBumpOrEvent()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var actor = Guid.NewGuid();
+        var dashboard = Dashboard.Create(Guid.NewGuid(), Guid.NewGuid(), "Weekly", actor, now);
+        var version = dashboard.Version;
+
+        dashboard.Rename("  Weekly  ", actor, now.AddDays(1));
+
+        dashboard.Version.Should().Be(version);
+        dashboard.DomainEvents.Should().NotContain(e => e is DashboardRenamedDomainEvent);
+    }
 }

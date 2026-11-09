@@ -427,6 +427,109 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/dashboards/{dashboardId}": {
+      "put": {
+        "tags": [
+          "Analytics",
+          "Analytics"
+        ],
+        "summary": "Rename a dashboard the caller owns",
+        "operationId": "Analytics.Dashboards.RenameDashboard",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "dashboardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Analytics.Dashboards.Requests.RenameDashboardRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Analytics",
+          "Analytics"
+        ],
+        "summary": "Permanently delete a dashboard the caller owns (its widgets go with it; sources are untouched)",
+        "operationId": "Analytics.Dashboards.DeleteDashboard",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "dashboardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "expectedVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/dashboards/{dashboardId}/archive": {
       "post": {
         "tags": [
@@ -518,58 +621,6 @@
           },
           "required": true
         },
-        "responses": {
-          "204": {
-            "description": "No Content"
-          }
-        },
-        "security": [
-          {
-            "Bearer": [ ]
-          },
-          {
-            "Cookie": [ ]
-          }
-        ]
-      }
-    },
-    "/api/v1/workspaces/{workspaceId}/dashboards/{dashboardId}": {
-      "delete": {
-        "tags": [
-          "Analytics",
-          "Analytics"
-        ],
-        "summary": "Permanently delete a dashboard the caller owns (its widgets go with it; sources are untouched)",
-        "operationId": "Analytics.Dashboards.DeleteDashboard",
-        "parameters": [
-          {
-            "name": "workspaceId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "dashboardId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "expectedVersion",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        ],
         "responses": {
           "204": {
             "description": "No Content"
@@ -27707,6 +27758,20 @@
       "Notrelix.API.Contracts.Analytics.Dashboards.Requests.DashboardVersionRequest": {
         "type": "object",
         "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Analytics.Dashboards.Requests.RenameDashboardRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
           "expectedVersion": {
             "type": "integer",
             "format": "int64"

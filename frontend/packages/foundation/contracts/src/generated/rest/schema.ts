@@ -160,6 +160,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/dashboards/{dashboardId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Rename a dashboard the caller owns */
+        put: operations["Analytics.Dashboards.RenameDashboard"];
+        post?: never;
+        /** Permanently delete a dashboard the caller owns (its widgets go with it; sources are untouched) */
+        delete: operations["Analytics.Dashboards.DeleteDashboard"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/dashboards/{dashboardId}/archive": {
         parameters: {
             query?: never;
@@ -189,23 +207,6 @@ export interface paths {
         /** Restore an archived dashboard the caller owns to Active */
         post: operations["Analytics.Dashboards.RestoreDashboard"];
         delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/workspaces/{workspaceId}/dashboards/{dashboardId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Permanently delete a dashboard the caller owns (its widgets go with it; sources are untouched) */
-        delete: operations["Analytics.Dashboards.DeleteDashboard"];
         options?: never;
         head?: never;
         patch?: never;
@@ -6822,6 +6823,11 @@ export interface components {
             /** Format: int64 */
             expectedVersion?: number;
         };
+        "Notrelix.API.Contracts.Analytics.Dashboards.Requests.RenameDashboardRequest": {
+            name?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.Automation.Rules.Requests.AutomationActionRequest": {
             type?: string | null;
             configuration?: string | null;
@@ -10846,6 +10852,54 @@ export interface operations {
             };
         };
     };
+    "Analytics.Dashboards.RenameDashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                dashboardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Analytics.Dashboards.Requests.RenameDashboardRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Analytics.Dashboards.DeleteDashboard": {
+        parameters: {
+            query: {
+                expectedVersion: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+                dashboardId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "Analytics.Dashboards.ArchiveDashboard": {
         parameters: {
             query?: never;
@@ -10886,29 +10940,6 @@ export interface operations {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Analytics.Dashboards.Requests.DashboardVersionRequest"];
             };
         };
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    "Analytics.Dashboards.DeleteDashboard": {
-        parameters: {
-            query: {
-                expectedVersion: number;
-            };
-            header?: never;
-            path: {
-                workspaceId: string;
-                dashboardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
         responses: {
             /** @description No Content */
             204: {
