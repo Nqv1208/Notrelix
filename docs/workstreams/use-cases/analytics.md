@@ -124,8 +124,8 @@ Table-stakes use cases the product docs do not list, added as "(enterprise basel
 | UC-ANA-G02 | Feature and workspace usage rollups | G | Workspace admin | no | no | none | no | BLOCKED | usage metric undecided |
 | UC-ANA-H01 | Read a board work report | H | Board reader | yes | yes | Final-Reports | yes | HARDENING | design diff, states |
 | UC-ANA-H02 | Read the workspace work report | H | Workspace member | yes | yes | Final-Reports | yes | HARDENING | design diff, states |
-| UC-ANA-H03 | Narrow the workspace report to a department space | H | Workspace owner, admin | yes | yes | Final-Reports | no | INTEGRATING | no real e2e for space |
-| UC-ANA-H04 | Choose the report period in weeks | H | Workspace member | yes | yes | Final-Reports | no | INTEGRATING | no real e2e for weeks |
+| UC-ANA-H03 | Narrow the workspace report to a department space | H | Workspace owner, admin | yes | yes | Final-Reports | no | HARDENING | design diff not measured |
+| UC-ANA-H04 | Choose the report period in weeks | H | Workspace member | yes | yes | Final-Reports | no | HARDENING | design diff not measured |
 | UC-ANA-H05 | Count work items by placement (work-item-count v1) | H | Workspace member | partial | no | Final-Reports | no | DEFINED | no Metric api |
 | UC-ANA-I01 | Documents activity report | I | Workspace member | no | no | none | no | DEFINED | no projection |
 | UC-ANA-I02 | Collaboration activity report | I | Workspace member | no | no | none | no | DEFINED | no projection |
@@ -146,7 +146,7 @@ Table-stakes use cases the product docs do not list, added as "(enterprise basel
 | UC-ANA-N01 | Work report page on the real backend | N | Workspace member | yes | yes | Final-Reports | yes | HARDENING | states, design diff |
 | UC-ANA-N02 | Report list and builder pages | N | Workspace member | no | mock | Final-Reports, Final-M-Reports | no | IMPLEMENTING | mock only |
 | UC-ANA-N03 | Drill from a figure to the items behind it | N | Board reader | no | mock | Final-Reports | no | IMPLEMENTING | no endpoint |
-| UC-ANA-N04 | The page says reports are not available | N | Workspace member | n/a | yes | Final-States | partial | INTEGRATING | reports text not asserted |
+| UC-ANA-N04 | The page says reports are not available | N | Workspace member | n/a | yes | Final-States | partial | INTEGRATING | Owner question: real backend shows the work report, not this surface |
 | UC-ANA-O01 | Filter a report by board, person or space | O | Workspace member | partial | partial | Final-Reports | partial | INTEGRATING | person filter mock only |
 | UC-ANA-O02 | Time zone and week boundaries | O | Workspace member | partial | no | none | no | DEFINED | UTC only, undisclosed |
 | UC-ANA-P01 | Show when figures were generated | P | Workspace member | partial | partial | Final-Reports | partial | INTEGRATING | no cutoff or lag |
@@ -157,7 +157,7 @@ Table-stakes use cases the product docs do not list, added as "(enterprise basel
 | UC-ANA-Q03 | Schedule a recurring report (enterprise baseline) | Q | Dashboard owner | no | no | none | no | DEFINED | no owner for delivery |
 | UC-ANA-R01 | See only figures from boards I may read | R | Workspace member, guest | yes | yes | Final-Reports | yes | HARDENING | guest case not run e2e |
 | UC-ANA-R02 | Grouping by person respects confidentiality | R | Workspace member | no | no | none | no | DEFINED | no rule built |
-| UC-ANA-R03 | Derived data stays inside its tenant | R | System | partial | n/a | n/a | no | IMPLEMENTING | no cross-tenant report test |
+| UC-ANA-R03 | Derived data stays inside its tenant | R | System | partial | n/a | n/a | no | HARDENING | integration run in CI only |
 | UC-ANA-R04 | Cache keys carry tenant, metric version and audience | R | System | no | n/a | n/a | no | DEFINED | no cache yet |
 | UC-ANA-S01 | Capture a reporting snapshot | S | System | domain | no | n/a | no | IMPLEMENTING | no lineage, legacy gap |
 | UC-ANA-S02 | Read a historical snapshot by schema version | S | Workspace member | no | no | none | no | DEFINED | no read path |
@@ -401,8 +401,8 @@ Shared evidence. Report routes: `GET /api/v1/boards/{boardId}/report` (`GetBoard
 - UI states: loading, empty, success, permission denied.
 - Rules: ANA008, ANA023; ARREQ049.
 - Acceptance: Given a department with two boards, When an admin narrows to it, Then only those boards count. Given a member, When they pass `spaceId`, Then forbidden.
-- Evidence: BE same route with `spaceId`; `WorkReportQueryTests` (`Narrowing_to_a_department...`, `A_space_the_caller_cannot_see_is_not_found`), `WorkReportFactsIntegrationTests` (`Boards_are_found_by_the_spaces_they_are_placed_in...`) · FE space selector in `work-report-api.ts` · Design Final-Reports · Real e2e none for space
-- State: INTEGRATING — backend and frontend connect; the real e2e selects a board only.
+- Evidence: BE same route with `spaceId` (`GetWorkspaceReportEndpoint.cs`, `GetWorkspaceReport.cs`); `WorkReportQueryTests` (`Narrowing_to_a_department...`, `A_space_the_caller_cannot_see_is_not_found`, `Filtering_by_space_needs_the_space_management_permission`), `WorkReportFactsIntegrationTests` (`Boards_are_found_by_the_spaces_they_are_placed_in...`) · FE space selector in `frontend/apps/web/src/routes/workspaces/$workspaceId/reports/work-report-api.ts` and `work-report-page.tsx` · Design Final-Reports · Real e2e none for space
+- State: HARDENING — Built: the workspace report narrows to a space subtree among the readable boards; a plain member is refused by the `ManageSpaces` action (asserted on the query's action); an invisible space is NotFound. Remaining: 1-px design diff not measured; owner check. No real e2e is required by the owner for this state.
 
 ### UC-ANA-H04 Choose the report period in weeks
 - Capability: H, ANA-008
@@ -415,8 +415,8 @@ Shared evidence. Report routes: `GET /api/v1/boards/{boardId}/report` (`GetBoard
 - UI states: loading, success, validation error.
 - Rules: ANA012, ANA013; ARREQ020, ARREQ021.
 - Acceptance: Given `weeks=12`, When requested, Then twelve buckets return. Given `weeks=0`, Then validation error.
-- Evidence: BE `WorkReportPeriod.cs`, `*QueryValidator.cs`; `WorkReportQueryTests` (`A_workspace_report_asks_for_the_requested_number_of_weeks`) · FE `work-report-api.ts` `board(boardId, weeks)` · Design Final-Reports · Real e2e none
-- State: INTEGRATING — no real e2e picks a period; week boundaries are UTC and not disclosed (O02).
+- Evidence: BE `WorkReportPeriod.cs`, `GetWorkspaceReportQueryValidator.cs`, `GetBoardReportQueryValidator.cs`; `WorkReportQueryTests` (`A_workspace_report_asks_for_the_requested_number_of_weeks`, `A_board_report_asks_for_the_requested_number_of_weeks`, the out-of-range and in-range cases) · FE `frontend/apps/web/src/routes/workspaces/$workspaceId/reports/work-report-api.ts` `board(boardId, weeks)` and `work-report-page.tsx` · Design Final-Reports · Real e2e none
+- State: HARDENING — Built: `weeks` is forwarded by both report routes, validated to 1 to 26 and defaults to 8. Remaining: design diff not measured; week boundaries are UTC and not disclosed (O02); no validation-error state is shown in the UI.
 
 ### UC-ANA-H05 Count work items by placement (work-item-count v1)
 - Capability: H, ANA-008
@@ -724,7 +724,7 @@ Dashboards live in the Analytics context (owner decision 17: a dashboard is an A
 - Rules: ARREQ096.
 - Acceptance: Given the real backend, When a member opens a report builder address, Then the unavailable message shows and no 404 request is sent.
 - Evidence: BE n/a · FE `frontend/packages/features/workspace/src/web/unavailable/feature-unavailable-surface.tsx` · Design Final-States · Tests `feature-availability.interaction.component.test.tsx` · Real e2e `feature-availability.real.e2e.spec.ts` (asserts billing text; reports text not asserted)
-- State: INTEGRATING — add a real e2e line for the reports text; remove the flag when the producer ships.
+- State: INTEGRATING — the copy test `feature-availability.interaction.component.test.tsx` asserts "Reports are not available yet". Owner question: on the real backend `apps/web/src/routes/workspaces/$workspaceId/reports.tsx` renders the work report (`backendCapabilities.reports` is false), and `FeatureUnavailableSurface` is not mounted for reports at all, so the Acceptance above is not what the code does. Which should the builder address show on the real backend?
 
 ## Capability O: Filters/date/timezone semantics
 
@@ -885,8 +885,8 @@ Dashboards live in the Analytics context (owner decision 17: a dashboard is an A
 - UI states: none.
 - Rules: ANA007, ANA024; ARREQ052; platform-and-messaging tenant context.
 - Acceptance: Given rows in two tenants, When tenant A queries, Then no row of B appears.
-- Evidence: BE RLS policies for dashboards, widgets, sources, snapshots, placements · FE n/a · Design n/a · Tests `WorkspaceScopes_StayIsolated`, `Rebuild_WorkspaceIsolation_...` · Real e2e `workspace-isolation.real.e2e.spec.ts` (not report specific)
-- State: IMPLEMENTING — no cross-tenant test for the two report endpoints.
+- Evidence: BE RLS policies for dashboards, widgets, sources, snapshots, placements · FE n/a · Design n/a · Tests `WorkspaceScopes_StayIsolated`, `Rebuild_WorkspaceIsolation_...`, `backend/tests/Notrelix.Integration.Tests/Rls/AnalyticsReportNonMemberDisclosureTests.cs` (board and workspace report, another account and a same-account outsider) · Real e2e `workspace-isolation.real.e2e.spec.ts` (not report specific)
+- State: HARDENING — Built: the two report read endpoints answer a foreign or unrelated caller with the same status as a made-up id (status compared, never hard-coded). The new integration test file was written and built but not run locally (Docker is not available); CI runs it. Remaining: no projection read endpoint exists to test (UC-ANA-C02).
 
 ### UC-ANA-R04 Cache keys carry tenant, metric version and audience
 - Capability: R, ANA-018
