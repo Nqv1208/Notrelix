@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
 
+import { countMyWorkItems } from "../../../core/model/my-work";
+import { overdueSummary } from "../my-work-model";
 import {
   homeAllDoneScenario,
   homeCopyFixture,
@@ -95,6 +97,30 @@ describe("WorkspaceHomeSurface", () => {
         .getByRole("link", { name: /Triển khai ERP Q4/ })
         .getAttribute("href"),
     ).toBe("/workspaces/ws-product/boards/board-erp");
+  });
+
+  it("FUI[workspace.home:counts-match-my-work] shows the open and overdue counts My work counts for the same items", () => {
+    const scenario = homeDefaultScenario();
+    if (scenario.myWork.status !== "ready")
+      throw new Error("fixture must be ready");
+    const groups = scenario.myWork.data;
+    const items = groups.flatMap((group) => group.items);
+    const open = countMyWorkItems(groups);
+    const overdue = overdueSummary(items, scenario.now).count;
+    const myWorkOverdue =
+      groups.find((group) => group.range === "overdue")?.items.length ?? 0;
+
+    expect(open).toBe(items.length);
+    expect(overdue).toBe(myWorkOverdue);
+
+    renderHome(scenario);
+    expect(
+      screen.getByText(
+        `Thứ Hai, 12 tháng 10 · 3 cuộc họp hôm nay, ${open} việc đang mở`,
+      ),
+    ).toBeTruthy();
+    const chips = screen.getByRole("group", { name: viCopy.home.chipsLabel });
+    expect(chips.textContent).toContain(`${overdue} quá hạn`);
   });
 
   it("FUI[workspace.home:complete] completes an item inline and blocks a second request while one is in flight", () => {

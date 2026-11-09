@@ -220,7 +220,7 @@ Products compared and what was taken:
 | UC-WSP-M05 | Join through an invitation and set my look and notifications | M | The invited person | yes | yes | Final-Onboarding | none | HARDENING | Built (verified by reading code 2026-11-09, not run): NotificationPreferencesIntegrationTests.cs, MapNotificationPreferenceEndpoints.cs, onboarding-join-surface.tsx, welcome-page.tsx, onboarding-api.ts. Remaining: owner tests by hand. |
 | UC-WSP-M06 | See the getting-started card | M | Any member, Guest included | yes | yes | Final-Home, Final-Onboarding | none | HARDENING | Built (verified by reading code 2026-11-09, not run): GetGettingStarted.cs, OnboardingIntegrationTests.cs, getting-started-card.tsx, home-getting-started.tsx, workspace-home-surface.tsx. Remaining: owner tests by hand. |
 | UC-WSP-M07 | Dismiss the getting-started card | M | Any member | yes | yes | Final-Home | none | HARDENING | Built (verified by reading code 2026-11-09, not run): DismissGettingStarted.cs, OnboardingIntegrationTests.cs, getting-started-card.tsx, home-getting-started.tsx. Remaining: owner tests by hand. |
-| UC-WSP-N01 | Open workspace Home | N | Any member | partial | yes | Final-Home, Final-M-Home | none | INTEGRATING | Home counts are checked only by mock e2e; no unit or component test that Home counts match My work. |
+| UC-WSP-N01 | Open workspace Home | N | Any member | partial | yes | Final-Home, Final-M-Home | none | HARDENING | Built: `FUI[workspace.home:counts-match-my-work]` checks the open and overdue counts against My work's `countMyWorkItems` and `overdueSummary` on the same items. No real e2e; the mock specs still cover the screen. |
 | UC-WSP-N02 | Show workspace figures to Owner and Admin (enterprise baseline) | N | Owner, Admin | partial | no | none | none | DEFINED | Fix the count, add the route or delete the query; screen. |
 | UC-WSP-N03 | Read workspace activity | N | Any member | partial | partial | none | none | IMPLEMENTING | Real source from Collaboration through a port. |
 | UC-WSP-N04 | Remember recently opened resources | N | Any member | yes | yes | Final-Home, Final-Command | none | HARDENING | Built: a revoked Board or Page leaves the recents (`WorkspaceNavigationHandlerTests`; the Board case also on PostgreSQL). Owner tests by hand. |
@@ -1461,8 +1461,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Loading per section, empty, success, partial error.
 - Rules: [workspaces](../../product/workspaces.md) sections 85, 33; WX-HOME-001, WX-HOME-002.
 - Acceptance: Given overdue items, Then the counts match My work.
-- Evidence: BE reads of N04, N05, M06 and Work Management feeds · FE `workspace-home-surface.tsx`, route `home.tsx` · Design `Final-Home`, `Final-M-Home` · Tests `home.mock.e2e.spec.ts`, `design-fidelity-home.mock.e2e.spec.ts`, `real-pages-guard.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Home counts are checked only by mock e2e; no unit or component test that Home counts match My work.
+- Evidence: BE reads of N04, N05, M06 and Work Management feeds · FE `workspace-home-surface.tsx`, route `home.tsx` · Design `Final-Home`, `Final-M-Home` · Tests `home.mock.e2e.spec.ts`, `design-fidelity-home.mock.e2e.spec.ts`, `real-pages-guard.mock.e2e.spec.ts`, `workspace-home.interaction.component.test.tsx` (counts test, 20 Home tests pass 2026-11-10) · Real e2e none
+- State: HARDENING — Built: the component test `FUI[workspace.home:counts-match-my-work]` renders Home from the same items My work groups and checks the open count (`countMyWorkItems`) and the overdue chip (`overdueSummary`). Remaining: mock e2e only, no real spec.
 
 ### UC-WSP-N02 Show workspace figures to Owner and Admin (enterprise baseline)
 - Capability: N Home, navigation, search and activity (added by this catalog)
