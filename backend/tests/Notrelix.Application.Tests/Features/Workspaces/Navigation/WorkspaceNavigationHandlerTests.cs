@@ -181,6 +181,24 @@ public class WorkspaceNavigationHandlerTests
     }
 
     [Fact]
+    public async Task GetRecents_ABoardAndAPageWhoseAccessIsRevoked_LeaveTheListOnTheNextRead()
+    {
+        var board = RecentResource.Create(AccountId, WorkspaceId, UserId, NavigationResourceKinds.Board, Guid.CreateVersion7(), Now);
+        var page = RecentResource.Create(AccountId, WorkspaceId, UserId, NavigationResourceKinds.Page, Guid.CreateVersion7(), Now.AddMinutes(1));
+        _store.Recents.AddRange([board, page]);
+        var handler = new GetRecentResourcesQueryHandler(_store, _requestContext.Object, _visibility.Object);
+        CallerCanSee([board.ResourceId], [page.ResourceId]);
+        (await handler.Handle(new GetRecentResourcesQuery(WorkspaceId), default)).Data!.Should().HaveCount(2);
+
+        // The member loses access to both; the stored references stay, only the read stops showing them.
+        CallerCanSee([], []);
+        var after = await handler.Handle(new GetRecentResourcesQuery(WorkspaceId), default);
+
+        after.Data!.Should().BeEmpty("a revoked Board or Page must not stay in the member's recents");
+        _store.Recents.Should().HaveCount(2);
+    }
+
+    [Fact]
     public async Task GetPins_OmitsReferencesTheCallerCanNoLongerSee()
     {
         var visiblePage = PinnedResource.Create(AccountId, WorkspaceId, UserId, NavigationResourceKinds.Page, Guid.CreateVersion7(), 0, Now);
