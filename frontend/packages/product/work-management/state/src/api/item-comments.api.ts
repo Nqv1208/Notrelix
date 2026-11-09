@@ -103,5 +103,21 @@ export function createCommentApi(client: NotrelixClient) {
         `/comments/${updateId}?expectedVersion=${expectedVersion}`,
       );
     },
+
+    /**
+     * `Collaboration.Comments.Resolve` (`resolved`) or `Reopen`: the thread starter or an editor of the item.
+     * Resolving a resolved thread, or reopening an active one, is a no-op on the server.
+     */
+    async setCardUpdateResolved(
+      updateId: string,
+      resolved: boolean,
+    ): Promise<void> {
+      await api.post<void>(
+        resolved
+          ? endpoints.comments.resolve(updateId)
+          : endpoints.comments.reopen(updateId),
+        {},
+      );
+    },
   };
 }

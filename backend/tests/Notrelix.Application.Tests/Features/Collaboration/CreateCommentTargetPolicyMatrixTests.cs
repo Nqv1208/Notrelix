@@ -123,6 +123,63 @@ public sealed class CreateCommentTargetPolicyMatrixTests
     }
 
     /// <summary>
+    /// UC-COL-C03: a read-only board role (Observer) is a Viewer and cannot comment. Item facts carry their Board,
+    /// as production facts do, so the Board-child path decides the level.
+    /// </summary>
+    [Fact]
+    public void BoardItem_ObserverBoardRole_IsForbiddenFromCommenting()
+    {
+        var observer = Facts(workspaceRole: "Member") with
+        {
+            ResourceMemberRole = "Observer",
+            ParentBoardId = Guid.NewGuid(),
+            IsBoardChild = true,
+        };
+
+        var decision = EvaluateComment(CreateCommentCommand.ForBoardItem(Guid.NewGuid(), "Hello", null), observer);
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
+    }
+
+    /// <summary>UC-COL-C03: an explicit Viewer grant on a restricted page reads but does not comment.</summary>
+    [Fact]
+    public void Page_ViewerGrant_OnRestrictedAudience_IsForbiddenFromCommenting()
+    {
+        var viewer = Facts(workspaceRole: "Member", resourceAudience: "Restricted", hasExplicitResourcePermission: true) with
+        {
+            ActiveResourcePermissionRank = 1,
+        };
+
+        var decision = EvaluateComment(CreateCommentCommand.ForPage(Guid.NewGuid(), "Hello", null), viewer);
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
+    }
+
+    /// <summary>
+    /// UC-COL-C04 (GOV-030): a Guest is capped at Viewer on a Board or Page and never comments there, even with
+    /// an explicit grant. The use case's "can comment up to Editor" is an open owner question.
+    /// </summary>
+    [Fact]
+    public void Page_Guest_WithExplicitResourcePermission_IsForbidden_GOV030()
+    {
+        var decision = EvaluateComment(
+            CreateCommentCommand.ForPage(Guid.NewGuid(), "Hello", null),
+            Facts(workspaceRole: "Guest", resourceAudience: "Restricted", hasExplicitResourcePermission: true));
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
+    }
+
+    [Fact]
+    public void Page_Guest_WithoutExplicitAccess_IsNotFound()
+    {
+        var decision = EvaluateComment(
+            CreateCommentCommand.ForPage(Guid.NewGuid(), "Hello", null),
+            Facts(workspaceRole: "Guest", resourceAudience: "Restricted"));
+
+        decision.Kind.Should().Be(AccessDecisionKind.NotFound);
+    }
+
+    /// <summary>
     /// The board-item usage-right branch is scoped to CreateComment only:
     /// MoveItem keeps the frozen canonical contract that denies ordinary
     /// members (pinned by M6 target-action evidence).

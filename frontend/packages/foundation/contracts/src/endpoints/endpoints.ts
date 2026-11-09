@@ -314,7 +314,9 @@ export const endpoints = {
   notifications: {
     list: "/notifications",
     read: (id: string) => `/notifications/${id}/read`,
-    readAll: "/notifications/read-all",
+    // Collaboration.Inbox.ReadAll (workspace-scoped Inbox).
+    readAll: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/inbox/read-all`,
     // Collaboration.Preferences.*: one member's choices in one workspace.
     preferences: (workspaceId: string) =>
       `/workspaces/${workspaceId}/notification-preferences`,

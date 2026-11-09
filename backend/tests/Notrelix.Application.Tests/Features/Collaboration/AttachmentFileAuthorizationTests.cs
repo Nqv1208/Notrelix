@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment;
 using Notrelix.Application.Features.Collaboration.Attachments.Commands.UploadBoardItemAttachment;
 using Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardItemAttachmentContent;
+using Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardItemAttachments;
 using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Application.Tests.Features.Collaboration;
@@ -63,6 +64,22 @@ public sealed class AttachmentFileAuthorizationTests
         Evaluate(Upload(), noMembership).Should().NotBe(AccessDecisionKind.Allowed);
         Evaluate(new GetBoardItemAttachmentContentQuery(ItemId, Guid.NewGuid()), noMembership)
             .Should().NotBe(AccessDecisionKind.Allowed);
+    }
+
+    /// <summary>UC-COL-B10: listing an item's attachments needs the Viewer level; a user with no access gets NotFound.</summary>
+    [Fact]
+    public void ListAttachments_NeedsViewer_AndNoAccessIsNotFound()
+    {
+        var noAccess = Facts(explicitRank: 4) with
+        {
+            WorkspaceMemberRole = null,
+            ResourceMemberRole = null,
+            HasExplicitResourcePermission = false,
+            ActiveResourcePermissionRank = null,
+        };
+
+        Evaluate(new GetBoardItemAttachmentsQuery(ItemId), Facts(explicitRank: 1)).Should().Be(AccessDecisionKind.Allowed);
+        Evaluate(new GetBoardItemAttachmentsQuery(ItemId), noAccess).Should().Be(AccessDecisionKind.NotFound);
     }
 
     [Fact]

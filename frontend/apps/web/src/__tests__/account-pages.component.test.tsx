@@ -78,7 +78,7 @@ vi.mock("@notrelix/runtime-web", () => ({
         notifications: {
           list: "/notifications",
           read: (id: string) => `/notifications/${id}/read`,
-          readAll: "/notifications/read-all",
+          readAll: (id: string) => `/workspaces/${id}/inbox/read-all`,
           preferences: (id: string) =>
             `/workspaces/${id}/notification-preferences`,
         },

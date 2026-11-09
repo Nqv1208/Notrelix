@@ -66,6 +66,7 @@ function setup(options: {
   let drafts: BlockDraft[] = [];
   const onRefused = vi.fn();
   const download = vi.fn(async () => undefined);
+  const remove = vi.fn(async () => undefined);
   const retryContent = vi.fn();
   let holder: { completeUpload: (u: never, a: PageAttachment) => void } | null =
     null;
@@ -80,6 +81,7 @@ function setup(options: {
     uploads,
     onRefused,
     download,
+    remove,
     useFiles: () => ({
       files: new Map([STORED, REPORT].map((file) => [file.id, file])),
       loading: false,
@@ -132,6 +134,7 @@ function setup(options: {
     uploads,
     onRefused,
     download,
+    remove,
     retryContent,
     drafts: () => drafts,
     editor: () => editorRef!.editor!,
@@ -338,6 +341,44 @@ describe("file block", () => {
       );
     });
     expect(view.download).toHaveBeenCalledWith(REPORT);
+  });
+
+  it("offers Delete on a stored file to an editor, and only an editor", async () => {
+    const FILE: BlockDraft = {
+      id: "f",
+      type: "file",
+      content: richText(),
+      properties: { attachmentId: "att-2" },
+    };
+    const editor = setup({ drafts: [FILE] });
+    await screen.findByText("bao-cao.pdf");
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: "Xoá bao-cao.pdf khỏi trang" }),
+      );
+    });
+    expect(editor.remove).toHaveBeenCalledWith(REPORT);
+  });
+
+  it("offers no Delete on a stored file to a viewer", async () => {
+    setup({
+      drafts: [
+        {
+          id: "f",
+          type: "file",
+          content: richText(),
+          properties: { attachmentId: "att-2" },
+        },
+      ],
+      editable: false,
+    });
+    await screen.findByText("bao-cao.pdf");
+    expect(
+      screen.queryByRole("button", { name: "Xoá bao-cao.pdf khỏi trang" }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Tải xuống bao-cao.pdf" }),
+    ).toBeTruthy();
   });
 });
 

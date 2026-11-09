@@ -545,6 +545,8 @@ export const vi = {
       download: "Tải xuống {{name}}",
       downloadFailed: "Chưa tải xuống được tệp.",
       remove: "Xoá tệp",
+      deleteFile: "Xoá {{name}} khỏi trang",
+      deleteFailed: "Chưa xoá được tệp.",
     },
     upload: {
       uploading: "Đang tải lên {{name}}",
@@ -1317,6 +1319,8 @@ export const en: DocPageCopy = {
       download: "Download {{name}}",
       downloadFailed: "The file could not be downloaded.",
       remove: "Remove file",
+      deleteFile: "Delete {{name}} from the page",
+      deleteFailed: "The file could not be deleted.",
     },
     upload: {
       uploading: "Uploading {{name}}",

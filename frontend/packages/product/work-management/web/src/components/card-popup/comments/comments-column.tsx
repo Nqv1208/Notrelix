@@ -21,6 +21,7 @@ import { useCommentDraft } from "../../card-detail/update-composer";
 import { useCommentEdit } from "../../card-detail/use-comment-edit";
 import {
   canChangeOwnComment,
+  canResolveComment,
   canDeleteComment,
   canWriteComment,
 } from "../../card-detail/task-detail-types";
@@ -200,6 +201,11 @@ function Bubble({
     update.author.userId,
     data.viewerUserId,
   );
+  // Only a top-level thread resolves: its starter or an editor of the item may resolve or reopen it.
+  const resolvable =
+    !update.parentId &&
+    Boolean(callbacks.onSetUpdateResolved) &&
+    canResolveComment(capabilities, update.author.userId, data.viewerUserId);
   // The version is the one the list returned; a stale one is refused and the list is read again.
   const edit = useCommentEdit(update.body, (body) =>
     callbacks.onUpdateUpdate(update.id, body, update.version ?? 0),
@@ -251,6 +257,15 @@ function Bubble({
             >
               {" · "}
               {t.edited}
+            </span>
+          ) : null}
+          {update.resolved && !update.parentId ? (
+            <span
+              data-comment-resolved=""
+              className="text-[12.5px] text-meta-foreground"
+            >
+              {" · "}
+              {sheet.thread.resolved}
             </span>
           ) : null}
         </div>
@@ -344,7 +359,7 @@ function Bubble({
         ) : null}
         {(update.reactions?.length ?? 0) > 0 ||
         react ||
-        (!edit.editing && (own || deletable || canReply)) ? (
+        (!edit.editing && (own || deletable || canReply || resolvable)) ? (
           <div className="mt-1.5 flex flex-wrap items-center gap-3">
             {(update.reactions?.length ?? 0) > 0 || react ? (
               <ReactionBar
@@ -382,6 +397,18 @@ function Bubble({
             {!edit.editing && canReply ? (
               <button type="button" className={TEXT_ACTION} onClick={onReply}>
                 {t.reply}
+              </button>
+            ) : null}
+            {!edit.editing && resolvable ? (
+              <button
+                type="button"
+                className={TEXT_ACTION}
+                aria-pressed={update.resolved ? true : undefined}
+                onClick={() =>
+                  callbacks.onSetUpdateResolved?.(update.id, !update.resolved)
+                }
+              >
+                {update.resolved ? sheet.thread.reopen : sheet.thread.resolve}
               </button>
             ) : null}
           </div>

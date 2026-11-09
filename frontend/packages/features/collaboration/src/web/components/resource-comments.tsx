@@ -18,6 +18,7 @@ const collabEndpoints = {
 };
 
 interface ResourceCommentsProps {
+  workspaceId: string;
   resourceId: string;
   resourceType: "page" | "block" | "card";
   currentUserId?: string;
@@ -26,6 +27,7 @@ interface ResourceCommentsProps {
 }
 
 export function ResourceComments({
+  workspaceId,
   resourceId,
   resourceType: _resourceType,
   currentUserId = "current-user",
@@ -47,14 +49,18 @@ export function ResourceComments({
     [api],
   );
 
-  const { data: comments = [], isLoading } = useComments(resourceId);
+  const { data: comments = [], isLoading } = useComments(
+    workspaceId,
+    resourceId,
+  );
   const createComment = useCreateComment();
-  const deleteComment = useDeleteComment(resourceId);
+  const deleteComment = useDeleteComment(workspaceId, resourceId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
     createComment.mutate({
+      workspaceId,
       resourceId,
       body: newComment.trim(),
       authorId: currentUserId,
