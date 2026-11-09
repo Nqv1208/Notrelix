@@ -52,15 +52,15 @@ Dates: this catalog was written on 2026-10-30. No use case has a recorded owner 
 
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
-| A | COL-001 Comment lifecycle | 11 | 1 | 0 | 8 | 2 | 0 | 0 |
-| B | COL-002 Comment target contract | 18 | 2 | 0 | 10 | 6 | 0 | 0 |
-| C | COL-003 Comment authorization | 6 | 0 | 0 | 5 | 0 | 0 | 1 |
-| D | COL-004 Comment activity/events | 14 | 5 | 1 | 5 | 3 | 0 | 0 |
+| A | COL-001 Comment lifecycle | 11 | 1 | 0 | 3 | 7 | 0 | 0 |
+| B | COL-002 Comment target contract | 18 | 2 | 0 | 6 | 10 | 0 | 0 |
+| C | COL-003 Comment authorization | 6 | 0 | 0 | 4 | 1 | 0 | 1 |
+| D | COL-004 Comment activity/events | 14 | 5 | 1 | 3 | 5 | 0 | 0 |
 | E | COL-005 Collaboration realtime | 5 | 3 | 1 | 0 | 0 | 0 | 1 |
 | F | COL-006 Target deletion/retention | 7 | 3 | 2 | 1 | 0 | 0 | 1 |
-| G | COL-007 Collaboration query/state | 16 | 2 | 1 | 7 | 6 | 0 | 0 |
-| H | COL-008 Collaboration hardening | 8 | 3 | 2 | 1 | 0 | 0 | 2 |
-| | Total | 85 | 19 | 8 | 36 | 17 | 0 | 5 |
+| G | COL-007 Collaboration query/state | 16 | 2 | 1 | 4 | 9 | 0 | 0 |
+| H | COL-008 Collaboration hardening | 8 | 3 | 2 | 0 | 1 | 0 | 2 |
+| | Total | 85 | 19 | 7 | 21 | 33 | 0 | 5 |
 
 Collaboration has no dedicated capability for inbox, preferences, attachments, watchers or presence in the team spec. They sit in the nearest capability: attachments and watchers under B (target contract), notifications production under D, presence under E, Inbox, preferences and read state under G.
 
@@ -136,46 +136,46 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-A01 | Comment on a board item | A | Workspace Owner, Admin, Member | yes | yes | yes | yes | HARDENING | No idempotency key; validator and Domain limits differ; no 1-px diff, owner check or axe record. |
 | UC-COL-A02 | Comment on a Documents page | A | Workspace Owner, Admin, Member with Commenter level on the page | yes | yes | yes | partial | HARDENING | Same gaps as UC-COL-A01; no real e2e for the docs panel itself. |
 | UC-COL-A03 | Reply in a thread | A | Same as UC-COL-A01 or UC-COL-A02 | yes | yes | yes | no | HARDENING | Built: a deleted parent that still has live replies stays in the thread as a tombstone (UC-COL-A06), so replies keep their parent. Real e2e: owner tests by hand. |
-| UC-COL-A04 | Anchor a page comment to text | A | Same as UC-COL-A02 | yes | yes | yes | no | INTEGRATING | No real e2e; no Application test for foreign-Block rejection found. |
+| UC-COL-A04 | Anchor a page comment to text | A | Same as UC-COL-A02 | yes | yes | yes | no | INTEGRATING | No Application test that a foreign Block is refused (AnchorInvalid); no real e2e. |
 | UC-COL-A05 | Edit a comment | A | The comment's author (Lead decision L1) | yes | yes | yes | no | HARDENING | Built: author-only rule; expected version on the PATCH (a stale one answers 412 and changes nothing); the list carries the version. Real e2e: owner tests by hand (written, not run). |
 | UC-COL-A06 | Delete a comment | A | The author (Lead decision L1) | yes | yes | yes | no | HARDENING | Built: author-only rule; expected version on the DELETE (412 when stale); a deleted parent with live replies stays as a tombstone. Real e2e: owner tests by hand. Open: a second delete answers NotFound, not the no-op the rule names. |
-| UC-COL-A07 | Resolve a thread | A | The thread starter, or a person with edit right on the target (Product | yes | partial | yes | no | INTEGRATING | Thread-starter-or-editor rule and page UI in place; no real e2e; item UI for resolve not found. |
-| UC-COL-A08 | Reopen a thread | A | Same rule as UC-COL-A07 (decision 24) | yes | partial | yes | no | INTEGRATING | As UC-COL-A07. |
+| UC-COL-A07 | Resolve a thread | A | The thread starter, or a person with edit right on the target (Product | yes | partial | yes | no | INTEGRATING | No item UI for resolve found (page only); a refused resolve shows no message; no real e2e. |
+| UC-COL-A08 | Reopen a thread | A | Same rule as UC-COL-A07 (decision 24) | yes | partial | yes | no | INTEGRATING | No item UI for reopen found; a refused reopen shows no message; no real e2e. |
 | UC-COL-A09 | React to a comment on a board item | A | Anyone with CreateComment on the item | yes | yes | yes | no | HARDENING | Built: a transaction-scoped reaction lock makes a racing duplicate a no-op; unique index already existed. Remains: owner tests by hand; real e2e none. |
-| UC-COL-A10 | Withdraw a reaction | A | The person who reacted (only their own reaction) | yes | yes | yes | no | INTEGRATING | No real e2e. |
+| UC-COL-A10 | Withdraw a reaction | A | The person who reacted (only their own reaction) | yes | yes | yes | no | HARDENING | Built (verified by reading code 2026-11-09, not run): RemoveReaction.cs, CommentReactionTests.cs, use-toggle-comment-reaction.ts. Remaining: owner tests by hand. |
 | UC-COL-A11 | React to a comment on a page (enterprise baseline) | A | Anyone with CreateComment on the page | no | no | no | no | DEFINED | Add page routes and a target-generic reaction command; design the chips for the docs panel. |
 | UC-COL-B01 | Mention a person in an item comment | B | Any commenter | yes | yes | yes | yes | HARDENING | Mention of a Team, Page or Board has no use case; delivery-time recheck absent (UC-COL-B02). |
 | UC-COL-B02 | Mention a person in a page comment | B | Any page commenter | partial | yes | yes | partial | HARDENING | Built: page mentions need the person to view the page (VisiblePageIdsAsync). Remains: owner tests by hand; real e2e inbox-page-reply not re-run. |
 | UC-COL-B03 | Mention a person inside a page block | B | A page editor (Documents UC) | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
 | UC-COL-B04 | Mention a team | B | Any commenter | no | no | no | no | DEFINED | Add a team mention field, fan-out at delivery and the suggestion list. |
-| UC-COL-B05 | Suggest people to mention without leaking others | B | Any commenter | partial | partial | yes | no | INTEGRATING | No Collaboration-owned suggestion read; the page composer has no suggestion list proven; no real e2e. |
-| UC-COL-B06 | Attach a file to a board item | B | Anyone with UpdateItem on the item | yes | yes | yes | no | INTEGRATING | No real e2e; no cross-tenant negative upload test found; no virus scan. |
+| UC-COL-B05 | Suggest people to mention without leaking others | B | Any commenter | partial | partial | yes | no | INTEGRATING | No Collaboration-owned suggestion read; page composer has no suggestion list; no real e2e. |
+| UC-COL-B06 | Attach a file to a board item | B | Anyone with UpdateItem on the item | yes | yes | yes | no | INTEGRATING | No cross-tenant negative upload test found; no real e2e; no malware scan (L23, not in this cut). |
 | UC-COL-B07 | Attach a link to a board item | B | Anyone with UpdateItem on the item | yes | partial | yes | no | HARDENING | Built: validator allows only absolute http and https links (javascript:, data:, vbscript:, file:, unparseable refused as 400). Remains: owner tests by hand; real e2e none. |
-| UC-COL-B08 | Attach a file to a page | B | Anyone with UpdatePage on the page | yes | yes | yes | no | INTEGRATING | No real e2e (documents.real e2e has no upload). |
+| UC-COL-B08 | Attach a file to a page | B | Anyone with UpdatePage on the page | yes | yes | yes | no | HARDENING | Built (verified by reading code 2026-11-09, not run): UploadPageAttachment.cs, PageAttachmentEndpointTests.cs, doc-page-screen.tsx. Remaining: owner tests by hand. |
 | UC-COL-B09 | Register a link on a page | B | Anyone with UpdatePage on the page | yes | partial | yes | no | HARDENING | Built: same http and https allow-list as UC-COL-B07 (new page validator). Remains: owner tests by hand; real e2e none. |
-| UC-COL-B10 | List and open attachments of an item or page | B | Anyone who can view the item (ViewBoard) or page (ViewPage) | yes | yes | yes | no | INTEGRATING | No real e2e. |
-| UC-COL-B11 | Delete an attachment from an item | B | A person with UpdateItem on the item (Lead decision) | yes | yes | yes | no | INTEGRATING | Editor-only rule in place; no real e2e. |
-| UC-COL-B12 | Delete an attachment from a page | B | A person with UpdatePage on the page (Lead decision) | yes | partial | yes | no | INTEGRATING | Editor-only rule in place; no real e2e. |
+| UC-COL-B10 | List and open attachments of an item or page | B | Anyone who can view the item (ViewBoard) or page (ViewPage) | yes | yes | yes | no | INTEGRATING | No named test that a user without view access gets NotFound from the item list route; no real e2e. |
+| UC-COL-B11 | Delete an attachment from an item | B | A person with UpdateItem on the item (Lead decision) | yes | yes | yes | no | INTEGRATING | Editor-only Delete has no frontend test (cited item-page-files-upload test does not exist); no real e2e. |
+| UC-COL-B12 | Delete an attachment from a page | B | A person with UpdatePage on the page (Lead decision) | yes | partial | yes | no | INTEGRATING | No page attachment delete control in the UI (docs package has no delete call); no real e2e. |
 | UC-COL-B13 | Follow a board item | B | Anyone who can view the item's board (ViewBoard) | yes | yes | yes | yes | HARDENING | No unique index on (user, target): concurrent calls can store two watchers. |
 | UC-COL-B14 | Unfollow a board item | B | The follower | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
 | UC-COL-B15 | See whether I follow an item | B | Anyone who can view the item | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
 | UC-COL-B16 | Follow automatically after creating, being assigned or commenting | B | System, acting for the person | yes | partial | no | yes | HARDENING | No unit test of the follow consumers found; reason for following is not shown. |
 | UC-COL-B17 | Follow a page (enterprise baseline) | B | Anyone who can view the page | no | no | no | no | DEFINED | Add page watcher routes, auto-follow for page commenters and the docs UI. |
-| UC-COL-B18 | Add a new collaboration target kind | B | A team that owns a resource kind (system change, not an end-user flow) | yes | no | no | no | INTEGRATING | Two kinds only (board item, page); no registry document. |
+| UC-COL-B18 | Add a new collaboration target kind | B | A team that owns a resource kind (system change, not an end-user flow) | yes | no | no | no | INTEGRATING | Two kinds only; no target-contract registry; no test that an unregistered kind is refused. |
 | UC-COL-C01 | Author-only edit and delete of a comment | C | The comment's author (Lead decision L1) | yes | partial | yes | no | HARDENING | Built: backend rule, Application and integration tests, author-only UI, and expected version on edit and delete. Real e2e: owner tests by hand (written, not run). |
 | UC-COL-C02 | Moderator removes another person's comment | C | A person Governance names as moderator of the target (not yet decided) | no | no | no | no | BLOCKED | Decide in Governance which permission (for example a new Moderate action held by Board Manager, Page Manager and workspace Admin and Owner)  |
-| UC-COL-C03 | Viewer reads comments but cannot write | C | Viewer level on the target (ViewBoard or ViewPage only) | yes | yes | yes | no | INTEGRATING | Viewer write refusal not proven in a real e2e. |
-| UC-COL-C04 | Guest collaborates only where explicitly shared | C | A Guest with explicit access to the item or page | yes | no | no | partial | INTEGRATING | The guest real e2e does not post a comment. |
+| UC-COL-C03 | Viewer reads comments but cannot write | C | Viewer level on the target (ViewBoard or ViewPage only) | yes | yes | yes | no | INTEGRATING | No direct Viewer 403 test for comment create, reply or resolve (reactions and attachment upload only); no real e2e. |
+| UC-COL-C04 | Guest collaborates only where explicitly shared | C | A Guest with explicit access to the item or page | yes | no | no | partial | INTEGRATING | No test that a Guest with shared access can post a comment; the guest real e2e lists the page only. |
 | UC-COL-C05 | Identical NotFound across tenants and targets | C | Any caller | yes | no | yes | partial | INTEGRATING | No per-endpoint cross-tenant test for comments, reactions, watchers and inbox found. |
-| UC-COL-C06 | Upload refused by file policy | C | A person allowed to upload (UC-COL-B06, B08) | yes | partial | yes | no | INTEGRATING | No real e2e; no malware scan (Lead decision L23 says not in this cut). |
-| UC-COL-D01 | Read an item's activity history | D | Anyone with ViewBoard on the item | yes | yes | yes | no | INTEGRATING | No real e2e; offset paging (not a cursor); comments are not part of the history (decision 56). |
-| UC-COL-D02 | Item facts become activity rows | D | System (consumers) | yes | no | no | no | INTEGRATING | No integration test through the real outbox for every fact; historical events before release have no rows (decision 56). |
+| UC-COL-C06 | Upload refused by file policy | C | A person allowed to upload (UC-COL-B06, B08) | yes | partial | yes | no | INTEGRATING | Owner question: no malware scan (L23 keeps it out of this cut); confirm C06 can close without it; no real e2e. |
+| UC-COL-D01 | Read an item's activity history | D | Anyone with ViewBoard on the item | yes | yes | yes | no | INTEGRATING | History UI not found: cited task-activity-tab.tsx and item-page-activity.tsx do not exist; no real e2e. |
+| UC-COL-D02 | Item facts become activity rows | D | System (consumers) | yes | no | no | no | INTEGRATING | No integration test through the real outbox for every fact kind; events before release have no rows (decision 56). |
 | UC-COL-D03 | A comment becomes a workspace activity row | D | System | yes | partial | no | no | HARDENING | Built: the Activity title is the event key collab.comment-created; the label key and target type are structured parameters (tests cover both). Edit and delete add no rows (product section 88). Real e2e: owner tests by hand; the workspace feed still shows no entries (WX-HOME-001). |
 | UC-COL-D04 | A mention becomes an Inbox notification | D | System | yes | yes | yes | yes | HARDENING | The consumer does not re-check that the person can view the source at delivery (COL-030 says it must); the Inbox list hides unreadable entri |
 | UC-COL-D05 | Followers are told about changes | D | System | yes | yes | yes | yes | HARDENING | No unit tests of the notifier; follower view access is not re-checked at delivery. |
 | UC-COL-D06 | Approval requested and decided notify the right person | D | System | yes | yes | yes | yes | HARDENING | Preference type approval is stored but the consumers do not read it (verify). |
-| UC-COL-D07 | Due-soon notification | D | System (daily job) | yes | yes | yes | no | INTEGRATING | No real e2e. |
-| UC-COL-D08 | Nudge an assignee | D | A person with view access, never to self (decision 35) | yes | yes | yes | no | INTEGRATING | No real e2e. |
+| UC-COL-D07 | Due-soon notification | D | System (daily job) | yes | yes | yes | no | HARDENING | Built (verified by reading code 2026-11-09, not run): ItemFollowerNotifier.cs, DueDateNotificationsIntegrationTests.cs, inbox-list.tsx. Remaining: owner tests by hand. |
+| UC-COL-D08 | Nudge an assignee | D | A person with view access, never to self (decision 35) | yes | yes | yes | no | INTEGRATING | No named test of the reminder consumer (ItemFollowerConsumers) or its never-to-self filter; the 24-hour limit is tested in Work Management only. |
 | UC-COL-D09 | Read a page's activity (enterprise baseline) | D | Anyone with ViewPage | no | no | no | no | DEFINED | Needs Documents to publish page facts and an activity reader for kind documents.page; version history stays a Documents feature. |
 | UC-COL-D10 | Publish comment, reaction and attachment facts for other contexts | D | System | partial | no | no | no | IMPLEMENTING | Seven of nine fact kinds have no integration event; add them with schema versions. |
 | UC-COL-D11 | A reply notifies the thread's author (enterprise baseline) | D | System | no | no | no | no | DEFINED | Build the consumer and Inbox wording; add the `reply` kind to the Inbox DTO copy. |
@@ -189,7 +189,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-E05 | Recover after reconnect, gap or revoked access | E | Any connected client | partial | partial | yes | no | DEFINED | Gateway exists for board streams; no Collaboration stream to recover. |
 | UC-COL-F01 | Item deleted or archived: comments follow the item | F | System | partial | no | partial | no | IMPLEMENTING | No purge consumer; orphan Collaboration rows remain after purge; no test. |
 | UC-COL-F02 | Page removed or block deleted: comments stay as history | F | System | partial | yes | yes | no | IMPLEMENTING | Server side lifecycle missing; no real e2e. |
-| UC-COL-F03 | Purge attachment objects after retention | F | System (background job) | yes | no | no | no | INTEGRATING | Retention default and operator doc not checked here. |
+| UC-COL-F03 | Purge attachment objects after retention | F | System (background job) | yes | no | no | no | INTEGRATING | Owner question: retention default is 30 days in code (AttachmentRetentionOptions) and product section 90 gives no number; operator doc not checked. |
 | UC-COL-F04 | A person is anonymized or leaves: history stays | F | System, on an Identity event | partial | partial | no | no | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): Identity deletion anonymizes the person (name "Deleted user", email replaced by a non-reversible hash); comments and audit keep the user id. |
 | UC-COL-F05 | Workspace deleted or archived: retention, export and purge | F | System | no | no | no | no | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): A deleted workspace follows the workspace rule (30-day recoverable window, then purge); comments are trashed 30 days, then purged. |
 | UC-COL-F06 | Notification retention | F | System (daily job) | no | no | no | no | DEFINED | Job missing; the table grows without bound. |
@@ -197,18 +197,18 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-G01 | List the comments of an item or page | G | ViewBoard on the item or view on the page | yes | yes | yes | partial | HARDENING | Built: page comments have cursor paging (default 50, max 200) under the ViewPage action; the page view follows nextCursor until done. The unpaged GET routes remain without a UI caller. Real e2e: owner tests by hand. |
 | UC-COL-G02 | Comment counts on cards and lists | G | Anyone who can see the card | yes | yes | yes | no | INTEGRATING | Counting rule for deleted and resolved comments undocumented. |
 | UC-COL-G03 | Open the Inbox list | G | Any active member | yes | yes | yes | yes | HARDENING | The handler lives in the Work Management feature although Collaboration owns the Inbox; no design-fidelity spec for Inbox. |
-| UC-COL-G04 | Unread count per workspace (bell) | G | Any signed-in person | yes | yes | yes | no | INTEGRATING | No real e2e; not live (UC-COL-E02). |
+| UC-COL-G04 | Unread count per workspace (bell) | G | Any signed-in person | yes | yes | yes | no | INTEGRATING | Count is not live (depends on UC-COL-E02, DEFINED); no real e2e. |
 | UC-COL-G05 | Mark one notification read | G | The recipient | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
-| UC-COL-G06 | Mark every notification read | G | The recipient | yes | yes | yes | no | INTEGRATING | No real e2e; one statement over all rows (fine until very large). |
+| UC-COL-G06 | Mark every notification read | G | The recipient | yes | yes | yes | no | HARDENING | Built (verified by reading code 2026-11-09, not run): MapInboxEndpoints.cs, InboxStatesIntegrationTests.cs, the inbox route. Remaining: owner tests by hand. |
 | UC-COL-G07 | Mark done and take back into the Inbox | G | The recipient | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
 | UC-COL-G08 | Snooze a notification | G | The recipient | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
 | UC-COL-G09 | Mute and unmute a thread | G | The recipient | yes | yes | yes | yes | HARDENING | Follower and approval consumers' honouring of mute not proven by test. |
 | UC-COL-G10 | Reply to a mention from the Inbox | G | The recipient with CreateComment on the target | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
-| UC-COL-G11 | Read my notification preferences | G | An active member, only for themself in that Workspace | yes | yes | yes | no | INTEGRATING | No real e2e. |
-| UC-COL-G12 | Save my notification preferences | G | The person, only their own matrix | yes | yes | yes | no | INTEGRATING | Only the mention producer reads the matrix; follower, approval, assigned, due consumers must read it; no real e2e. |
+| UC-COL-G11 | Read my notification preferences | G | An active member, only for themself in that Workspace | yes | yes | yes | no | HARDENING | Built (verified by reading code 2026-11-09, not run): NotificationPreferencesHandlerTests.cs, GetNotificationPreferences.cs, use-notification-preferences.ts. Remaining: owner tests by hand. |
+| UC-COL-G12 | Save my notification preferences | G | The person, only their own matrix | yes | yes | yes | no | INTEGRATING | Follower, assigned, due and form consumers now read the matrix; suppression by a switched-off approval or assigned cell is not confirmed by a test; email cells are saved but not sent (D13). |
 | UC-COL-G13 | Quiet hours and pause (enterprise baseline) | G | The person | no | no | no | no | DEFINED | Meaningful only after UC-COL-D13. |
 | UC-COL-G14 | Unread comment markers (read state) | G | Any viewer | partial | no | no | no | IMPLEMENTING | No Application or API; decide before building (Lead decision L17). |
-| UC-COL-G15 | Switch workspace or account without leaking collaboration state | G | Any signed-in person | no | yes | no | no | INTEGRATING | No real e2e of a workspace switch with comments open. |
+| UC-COL-G15 | Switch workspace or account without leaking collaboration state | G | Any signed-in person | no | yes | no | no | INTEGRATING | Comment query keys carry the target id only, not the workspace; dropping late responses after a switch is not confirmed by a test. |
 | UC-COL-G16 | Search comments (enterprise baseline) | G | Anyone, limited to targets they can view | no | no | partial | no | DEFINED | Owned together with Search; not built. |
 | UC-COL-H01 | Duplicate comment submit has one effect | H | Any commenter | no | no | no | no | DEFINED | Backend and client both missing. |
 | UC-COL-H02 | Competing edits carry an expected version | H | Author, resolver | no | no | no | no | DEFINED | Add version to the DTO, commands and UI conflict state. |
@@ -277,7 +277,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-005 and the Comment Anchor section; spec DCREQ147 to DCREQ149.
 - Acceptance: Given selected text, when the comment is sent, then the highlight and the panel entry show. Given the text is later deleted, then the comment shows detached with its quote and is never attached to other text.
 - Evidence: BE POST /pages/{pageId}/comments (anchor), CreateCommentCommandHandler.ResolveAnchorAsync, CommentAnchor.ForTextRange, IPageBlockFacts · FE frontend/packages/product/docs/web/src/editor/comment-anchors.ts, frontend/packages/product/docs/core/src/types/comment.ts · Design Final-Docs-2 · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Comments/CommentAnchorTests.cs; backend/tests/Notrelix.API.Tests/Contracts/PageCommentAnchorContractOpenApiTests.cs; frontend/packages/product/docs/core/src/__tests__/comment-anchor.unit.test.ts; frontend/packages/product/docs/state/src/__tests__/page-comment-anchor.unit.test.ts · Real e2e none
-- State: INTEGRATING — No real e2e; no Application test for foreign-Block rejection found.
+- State: INTEGRATING — No Application test that a foreign Block is refused (AnchorInvalid); no real e2e.
 
 ### UC-COL-A05 Edit a comment
 - Capability: A, COL-001 Comment lifecycle
@@ -319,7 +319,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product Comment status (CommentStatus is local); decision 20; spec DCREQ045.
 - Acceptance: Given a thread, when an allowed person resolves it, then it leaves the default list and shows under resolved. Given a repeat, then nothing changes.
 - Evidence: BE POST /api/v1/comments/{commentId}/resolve (Collaboration.Comments.Resolve), ResolveCommentCommandHandler · FE frontend/packages/product/docs/state/src/query/hooks/ (use-page-comments, use-create-comment, ...) (use-resolve-comment.ts); docs side panel (doc-side-panel-surface.tsx) offers Resolve only when the view carries canResolve (viewer is the starter, or host.canEdit; doc-page-mapping.ts); frontend/packages/dev/mock-backend/src/contexts/documents/comments.handlers.ts · Design Final-Docs-2 · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/GetCommentsResolvedTests.cs; frontend/packages/product/docs/state/src/__tests__/page-comment-resolve.unit.test.ts ; backend/tests/Notrelix.Application.Tests/Features/Collaboration/CommentAuthorizationTests.cs (thread starter, editor of the target, plain commenter 403); frontend/packages/product/docs/web/src/components/__tests__/doc-comment-threads.interaction.component.test.tsx and doc-page-mapping.unit.test.ts (starter, editor, neither) · Real e2e none
-- State: INTEGRATING — Thread-starter-or-editor rule implemented and the page UI offers it only to them; no real e2e; item UI for resolve not found. A refused resolve on the page shows no message yet.
+- State: INTEGRATING — No item UI for resolve found (page only); a refused resolve shows no message; no real e2e.
 
 ### UC-COL-A08 Reopen a thread
 - Capability: A, COL-001 Comment lifecycle
@@ -333,7 +333,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Decisions 20 and 24; spec DCREQ045.
 - Acceptance: Given a resolved thread, when an allowed person reopens it, then it returns to the default list.
 - Evidence: BE POST /api/v1/comments/{commentId}/reopen (Collaboration.Comments.Reopen), ReopenCommentCommandHandler · FE frontend/packages/product/docs/state/src/query/hooks/ (use-page-comments, use-create-comment, ...) (use-reopen-comment.ts); docs side panel offers Reopen only with canResolve, as UC-COL-A07 · Design Final-Docs-2 · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/ReopenCommentTests.cs ; backend/tests/Notrelix.Application.Tests/Features/Collaboration/CommentAuthorizationTests.cs (thread starter, editor of the target, plain commenter 403); docs comment-threads interaction test (neither sees Reopen) · Real e2e none
-- State: INTEGRATING — As UC-COL-A07; no real e2e.
+- State: INTEGRATING — No item UI for reopen found; a refused reopen shows no message; no real e2e.
 
 ### UC-COL-A09 React to a comment on a board item
 - Capability: A, COL-001 Comment lifecycle
@@ -360,8 +360,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: success, optimistic rollback, permission denied.
 - Rules: Product Reaction retry; decision 59; spec DCREQ160.
 - Acceptance: Given the caller holds a reaction, when they remove it, then the count drops; a repeat changes nothing.
-- Evidence: BE DELETE /api/v1/board-items/{boardItemId}/comments/{commentId}/reactions/{emoji} (Collaboration.Comments.RemoveReaction), RemoveReactionCommandHandler · FE frontend/packages/product/work-management/state/src/ (item-comments.api.ts, use-card-comments.ts, mutations) (use-toggle-comment-reaction.ts) · Design WM-Comments · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/CommentReactionTests.cs; frontend/e2e/mock/comment-replies-reactions.mock.e2e.spec.ts · Real e2e none
-- State: INTEGRATING — No real e2e.
+- Evidence: BE DELETE /api/v1/board-items/{boardItemId}/comments/{commentId}/reactions/{emoji} (Collaboration.Comments.RemoveReaction), backend/src/Notrelix.Application/Features/Collaboration/Reactions/Commands/RemoveReaction/RemoveReaction.cs, backend/src/Notrelix.API/Endpoints/Collaboration/Comments/Commands/ReactionEndpoints.cs · FE frontend/packages/product/work-management/state/src/mutations/use-toggle-comment-reaction.ts · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/CommentReactionTests.cs (removes only the caller's reaction; a missing one is a no-op; palette check) · Real e2e none
+- State: HARDENING — Built (verified by reading code 2026-11-09, not run): RemoveReaction.cs, CommentReactionTests.cs, use-toggle-comment-reaction.ts. Remaining: owner tests by hand.
 
 ### UC-COL-A11 React to a comment on a page (enterprise baseline)
 - Capability: A, COL-001 Comment lifecycle
@@ -447,7 +447,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product Mention privacy (section 73), COL-030; decision 42.
 - Acceptance: Given a user outside the Workspace, then they never appear in the list.
 - Evidence: BE Workspace members and board members reads (owned by Workspaces and Work Management; see [work-management.md](work-management.md)) · FE frontend/packages/product/work-management/web (comment composer) · Design WM-Comments · Tests frontend component tests of the composer · Real e2e none
-- State: INTEGRATING — No Collaboration-owned suggestion read; the page composer has no suggestion list proven; no real e2e.
+- State: INTEGRATING — No Collaboration-owned suggestion read; page composer has no suggestion list; no real e2e.
 
 ### UC-COL-B06 Attach a file to a board item
 - Capability: B, COL-002 Comment target contract
@@ -461,7 +461,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-010, COL-011, Attachment authorization; decision 4; spec DCREQ162 to DCREQ166, DCREQ208.
 - Acceptance: Given an editor, when they upload a PDF, then it lists and downloads; given an .exe, then 415 and nothing is stored; given the same key twice, then one attachment.
 - Evidence: BE POST /api/v1/board-items/{boardItemId}/attachments/files (Collaboration.Attachments.UploadFile), UploadBoardItemAttachmentCommandHandler, AttachmentContentClassifier, IAttachmentTargetLock · FE frontend/packages/product/work-management/state/src/mutations/use-item-file-uploads.ts; frontend/packages/foundation/contracts/src/client/__tests__/upload.unit.test.ts · Design WM-Sheet-Files · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/UploadBoardItemAttachmentTests.cs, AttachmentFileAuthorizationTests.cs; backend/tests/Notrelix.API.Tests/Collaboration/AttachmentFileEndpointTests.cs; backend/tests/Notrelix.Integration.Tests/Collaboration/AttachmentObjectLifecycleIntegrationTests.cs · Real e2e none
-- State: INTEGRATING — No real e2e; no cross-tenant negative upload test found; no virus scan.
+- State: INTEGRATING — No cross-tenant negative upload test found; no real e2e; no malware scan (L23, not in this cut).
 
 ### UC-COL-B07 Attach a link to a board item
 - Capability: B, COL-002 Comment target contract
@@ -488,8 +488,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: As UC-COL-B06.
 - Rules: Product Attachment authorization (page target); decision 10; spec DCREQ163, DCREQ164.
 - Acceptance: Given a page editor, when they upload an image, then the block shows it; given a viewer, then 403 or NotFound.
-- Evidence: BE POST /api/v1/pages/{pageId}/attachments/files (Collaboration.PageAttachments.UploadFile), UploadPageAttachmentCommandHandler · FE frontend/packages/product/docs/state/src/query/hooks/ (use-remember-page-attachment.ts); frontend/packages/dev/mock-backend/src/contexts/documents/page-attachments.handlers.ts · Design Final-Docs-2 · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/PageAttachmentTests.cs; backend/tests/Notrelix.API.Tests/Collaboration/PageAttachmentEndpointTests.cs; backend/tests/Notrelix.API.Tests/Contracts/PageAttachmentContractOpenApiTests.cs; frontend/packages/product/docs/state/src/__tests__/attachment-uploads.unit.test.ts, page-attachments.unit.test.ts · Real e2e none
-- State: INTEGRATING — No real e2e (documents.real e2e has no upload).
+- Evidence: BE POST /api/v1/pages/{pageId}/attachments/files (Collaboration.PageAttachments.UploadFile), backend/src/Notrelix.Application/Features/Collaboration/Attachments/Commands/UploadPageAttachment/UploadPageAttachment.cs · FE frontend/packages/product/docs/web/src/components/doc-page-screen.tsx (attachmentApi.upload); frontend/packages/product/docs/state/src/query/hooks/use-remember-page-attachment.ts · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/PageAttachmentTests.cs; backend/tests/Notrelix.API.Tests/Collaboration/PageAttachmentEndpointTests.cs (viewer cannot upload; another page's attachment not found); frontend/packages/product/docs/state/src/__tests__/attachment-uploads.unit.test.ts · Real e2e none
+- State: HARDENING — Built (verified by reading code 2026-11-09, not run): UploadPageAttachment.cs, PageAttachmentEndpointTests.cs, doc-page-screen.tsx. Remaining: owner tests by hand.
 
 ### UC-COL-B09 Register a link on a page
 - Capability: B, COL-002 Comment target contract
@@ -517,7 +517,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-011, attachment target kinds; spec DCREQ165.
 - Acceptance: Given a viewer, when they open an attachment, then bytes stream; given a user without access, then the same NotFound as a missing id.
 - Evidence: BE GET /api/v1/board-items/{boardItemId}/attachments and /{attachmentId}/content (Collaboration.Attachments.Get, GetContent); GET /api/v1/pages/{pageId}/attachments and /{attachmentId}/content (Collaboration.PageAttachments.Get, GetContent) · FE frontend/packages/product/docs/state/src/query/hooks/use-attachment-content.ts; WM item sheet · Design WM-Sheet-Files · Tests backend/tests/Notrelix.API.Tests/Collaboration/PageAttachmentEndpointTests.cs, AttachmentFileEndpointTests.cs · Real e2e none
-- State: INTEGRATING — No real e2e.
+- State: INTEGRATING — No named test that a user without view access gets NotFound from the item list route; no real e2e.
 
 ### UC-COL-B11 Delete an attachment from an item
 - Capability: B, COL-002 Comment target contract
@@ -531,7 +531,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product Attachment deletion; decision 10; spec DCREQ166.
 - Acceptance: Given an editor, when they delete, then it leaves the list; given a viewer, then 403.
 - Evidence: BE DELETE /api/v1/board-items/{boardItemId}/attachments/{attachmentId} (Collaboration.Attachments.Delete), DeleteAttachmentCommandHandler · FE frontend/packages/product/work-management/state/src/mutations/use-delete-card-file.ts (reads the file list again after a refusal); item-page-sections.tsx shows Delete only when canEditFields; the page toasts the refusal (collaboration-refusal.ts) · Design WM-Sheet-Files · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Attachments/AttachmentTests.cs ; backend/tests/Notrelix.Application.Tests/Features/Collaboration/AttachmentDeleteAuthorizationTests.cs (editor including the Owner, read-only uploader 403, other member 403, no view access NotFound); frontend/packages/product/work-management/web/src/components/item-page/__tests__/item-page-files-upload.interaction.component.test.tsx (Delete for an editor, none for others) · Real e2e none
-- State: INTEGRATING — Editor-only rule implemented, decided from the attachment's own target; no real e2e. The route's boardItemId is matched; an attachment of another item is NotFound.
+- State: INTEGRATING — Editor-only Delete has no frontend test (cited item-page-files-upload test does not exist); no real e2e.
 
 ### UC-COL-B12 Delete an attachment from a page
 - Capability: B, COL-002 Comment target contract
@@ -545,7 +545,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Decision 10; product section 90.
 - Acceptance: Given an editor, then the attachment is removed from the page list.
 - Evidence: BE DELETE /api/v1/pages/{pageId}/attachments/{attachmentId} (Collaboration.PageAttachments.Delete), DeletePageAttachmentCommandHandler · FE docs state hooks; the page has no attachment delete control, so nothing is offered to a non-editor · Design Final-Docs-2 · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/PageAttachmentTests.cs ; backend/tests/Notrelix.Application.Tests/Features/Collaboration/AttachmentDeleteAuthorizationTests.cs · Real e2e none
-- State: INTEGRATING — No real e2e.
+- State: INTEGRATING — No page attachment delete control in the UI (docs package has no delete call); no real e2e.
 
 ### UC-COL-B13 Follow a board item
 - Capability: B, COL-002 Comment target contract
@@ -629,7 +629,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-001, COL-021; spec DCREQ041.
 - Acceptance: Given a new kind without a contract, then no route accepts it.
 - Evidence: BE backend/src/Notrelix.Application/Features/Collaboration/Comments/.. ResourceKind factories (CreateCommentCommand.ForBoardItem, ForPage); AttachmentTargets · FE none · Design none · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/ResourceKindFactoriesTests.cs; backend/tests/Notrelix.Architecture.Tests/Contracts/CollaborationReadBoundaryArchitectureTests.cs · Real e2e none
-- State: INTEGRATING — Two kinds only (board item, page); no registry document.
+- State: INTEGRATING — Two kinds only; no target-contract registry; no test that an unregistered kind is refused.
 
 ### Capability C: COL-003 Comment authorization
 
@@ -673,7 +673,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product Target authorization (section 71); decision 59; spec DCREQ044, DCREQ192.
 - Acceptance: Given a Viewer, then the composer and reaction picker are absent, and each write API call returns 403.
 - Evidence: BE Governance AccessPolicyEngine (CreateComment rank), Collaboration command Action declarations · FE resource-comments-surface.tsx read-only state · Design WM-Comments · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/CreateCommentTargetPolicyMatrixTests.cs; frontend/e2e/mock/comment-replies-reactions.mock.e2e.spec.ts (viewer case); frontend/e2e/mock/work-management-roles.mock.e2e.spec.ts · Real e2e none
-- State: INTEGRATING — Viewer write refusal not proven in a real e2e.
+- State: INTEGRATING — No direct Viewer 403 test for comment create, reply or resolve (reactions and attachment upload only); no real e2e.
 
 ### UC-COL-C04 Guest collaborates only where explicitly shared
 - Capability: C, COL-003 Comment authorization
@@ -687,7 +687,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product Target authorization; [governance.md](../../product/governance.md) guests and sharing; spec DCREQ044.
 - Acceptance: Given a Guest without access, then NotFound; given shared access, then they can comment.
 - Evidence: BE backend/src/Notrelix.Application/Features/Governance/Authorization/AccessPolicyEngine.cs (CreateComment branch) · FE none specific · Design none · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/CreateCommentTargetPolicyMatrixTests.cs; frontend/e2e/real/guest-permission.real.e2e.spec.ts · Real e2e frontend/e2e/real/guest-permission.real.e2e.spec.ts (guest sees shared page only)
-- State: INTEGRATING — The guest real e2e does not post a comment.
+- State: INTEGRATING — No test that a Guest with shared access can post a comment; the guest real e2e lists the page only.
 
 ### UC-COL-C05 Identical NotFound across tenants and targets
 - Capability: C, COL-003 Comment authorization
@@ -715,7 +715,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-010, Attachment authorization (file policy); spec DCREQ162, DCREQ164.
 - Acceptance: Given an .exe renamed .pdf, then 415; given a 101 MB file, then 413 and no object remains.
 - Evidence: BE UploadBoardItemAttachment and UploadPageAttachment handlers, AttachmentContentClassifier, AttachmentUploadOptions (Collaboration:Attachments) · FE upload client (frontend/packages/foundation/contracts/src/client) · Design WM-Sheet-Files · Tests backend/tests/Notrelix.API.Tests/ProblemDetails/AttachmentProblemDetailsTests.cs; backend/tests/Notrelix.Application.Tests/Features/Collaboration/AttachmentFileAuthorizationTests.cs · Real e2e none
-- State: INTEGRATING — No real e2e; no malware scan (Lead decision L23 says not in this cut).
+- State: INTEGRATING — Owner question: no malware scan (L23 keeps it out of this cut); confirm C06 can close without it; no real e2e.
 
 ### Capability D: COL-004 Comment activity/events
 
@@ -731,7 +731,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-019, COL-020 (Activity is not Audit); decision 56; spec DCREQ185 to DCREQ187.
 - Acceptance: Given an item with edits, then the tab lists them newest first with the actor; given no access, then NotFound.
 - Evidence: BE GET /api/v1/board-items/{boardItemId}/activity (Collaboration.Activity.GetResourceActivity), GetResourceActivityQueryHandler, ResourceActivityReader · FE frontend/packages/product/work-management/web/src/components/card-detail/task-activity-tab.tsx, item-page/item-page-activity.tsx · Design Final-Detail, Final-T-Detail · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/GetResourceActivityTests.cs, ItemChangeWordsTests.cs; backend/tests/Notrelix.API.Tests/Contracts/ItemActivityContractOpenApiTests.cs; backend/tests/Notrelix.Infrastructure.Tests/CrossContext/WorkItemActivityFactsAdapterTests.cs; frontend task-activity-tab.component.test.tsx · Real e2e none
-- State: INTEGRATING — No real e2e; offset paging (not a cursor); comments are not part of the history (decision 56).
+- State: INTEGRATING — History UI not found: cited task-activity-tab.tsx and item-page-activity.tsx do not exist; no real e2e.
 
 ### UC-COL-D02 Item facts become activity rows
 - Capability: D, COL-004 Comment activity/events
@@ -745,7 +745,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-020; decision 56; spec DCREQ186, DCREQ190.
 - Acceptance: Given a redelivered event, then one row exists.
 - Evidence: BE backend/src/Notrelix.Infrastructure/Messaging/Consumers/Collaboration/ItemActivityConsumers.cs, ItemActivityRecorder.cs · FE none · Design none · Tests backend/tests/Notrelix.Infrastructure.Tests/Messaging/Consumers/ItemActivityConsumersTests.cs · Real e2e none
-- State: INTEGRATING — No integration test through the real outbox for every fact; historical events before release have no rows (decision 56).
+- State: INTEGRATING — No integration test through the real outbox for every fact kind; events before release have no rows (decision 56).
 
 ### UC-COL-D03 A comment becomes a workspace activity row
 - Capability: D, COL-004 Comment activity/events
@@ -814,8 +814,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: Inbox entry.
 - Rules: Decision 78.2; product COL-017.
 - Acceptance: Given an item due tomorrow, then followers get one entry; a second run adds none.
-- Evidence: BE ItemFollowerNotifier (deduplicationScope overload); the job lives in Work Management · FE frontend/packages/features/workspace/src/web/inbox/, frontend/apps/web/src/routes/workspaces/$workspaceId/inbox.tsx · Design Final-Inbox · Tests backend/tests/Notrelix.Integration.Tests/Collaboration/DueDateNotificationsIntegrationTests.cs · Real e2e none
-- State: INTEGRATING — No real e2e.
+- Evidence: BE backend/src/Notrelix.Infrastructure/Messaging/Consumers/Collaboration/ItemFollowerNotifier.cs (deduplicationScope overload); the daily pass lives in Work Management · FE frontend/packages/features/workspace/src/web/inbox/inbox-list.tsx · Tests backend/tests/Notrelix.Integration.Tests/Collaboration/DueDateNotificationsIntegrationTests.cs (one entry each, a second pass adds none, muted or off skipped, unseen board skipped; Docker, CI) · Real e2e none
+- State: HARDENING — Built (verified by reading code 2026-11-09, not run): ItemFollowerNotifier.cs, DueDateNotificationsIntegrationTests.cs, inbox-list.tsx. Remaining: owner tests by hand.
 
 ### UC-COL-D08 Nudge an assignee
 - Capability: D, COL-004 Comment activity/events
@@ -829,7 +829,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Decision 35; link [work-management.md](work-management.md).
 - Acceptance: Given an assignee, when nudged, then one entry exists; a second press within 24 hours sends none.
 - Evidence: BE ItemFollowerConsumers.cs (BoardItemOwnersRemindedNotificationConsumer) · FE WM My work (see Work Management file) · Design WM-Actions-Remind · Tests covered by Work Management tests · Real e2e none
-- State: INTEGRATING — No real e2e.
+- State: INTEGRATING — No named test of the reminder consumer (ItemFollowerConsumers) or its never-to-self filter; the 24-hour limit is tested in Work Management only.
 
 ### UC-COL-D09 Read a page's activity (enterprise baseline)
 - Capability: D, COL-004 Comment activity/events
@@ -1029,7 +1029,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-010, Attachment retention (90), Attachment deletion; spec DCREQ166.
 - Acceptance: Given a deleted attachment past retention, then the object is gone and the row says purged.
 - Evidence: BE backend/src/Notrelix.Infrastructure/BackgroundJobs/AttachmentObjectReaper.cs, AttachmentObjectReaperService.cs · FE none · Design none · Tests backend/tests/Notrelix.Infrastructure.Tests/Storage/AttachmentObjectReaperTests.cs; backend/tests/Notrelix.Integration.Tests/Collaboration/AttachmentObjectLifecycleIntegrationTests.cs · Real e2e none
-- State: INTEGRATING — Retention default and operator doc not checked here.
+- State: INTEGRATING — Owner question: retention default is 30 days in code (AttachmentRetentionOptions) and product section 90 gives no number; operator doc not checked.
 
 ### UC-COL-F04 A person is anonymized or leaves: history stays
 - Capability: F, COL-006 Target deletion/retention
@@ -1143,7 +1143,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-014, COL-015 (count derived from recipient rows).
 - Acceptance: Given 3 unread in one Workspace, then the summary says 3.
 - Evidence: BE GET /api/v1/inbox/summary (Collaboration.Notifications.GetInboxSummary), GetInboxSummaryQueryHandler, PostgresNotificationInbox · FE frontend/packages/features/notifications/src/web/components/inbox-bell.tsx; apps/web/src/shell/workspace/workspace-shell.tsx · Design Final-Inbox, Final-M-Inbox · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/GetInboxSummaryTests.cs; frontend inbox-bell.component.test.tsx · Real e2e none
-- State: INTEGRATING — No real e2e; not live (UC-COL-E02).
+- State: INTEGRATING — Count is not live (depends on UC-COL-E02, DEFINED); no real e2e.
 
 ### UC-COL-G05 Mark one notification read
 - Capability: G, COL-007 Collaboration query/state
@@ -1170,8 +1170,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: success with count, pending.
 - Rules: As G05.
 - Acceptance: Given 7 unread, then 7 are marked and the badge is 0.
-- Evidence: BE POST /api/v1/workspaces/{workspaceId}/inbox/read-all (Collaboration.Notifications.MarkWorkspaceInboxRead), backend/src/Notrelix.Application/Features/Collaboration/Notifications/Commands/MarkWorkspaceInboxRead/ · FE frontend/packages/features/workspace/src/web/inbox/, frontend/apps/web/src/routes/workspaces/$workspaceId/inbox.tsx · Design Final-Inbox · Tests backend/tests/Notrelix.Integration.Tests/Collaboration/InboxStatesIntegrationTests.cs · Real e2e none (mock: work-feed handler only)
-- State: INTEGRATING — No real e2e; one statement over all rows (fine until very large).
+- Evidence: BE POST /api/v1/workspaces/{workspaceId}/inbox/read-all (Collaboration.Notifications.MarkWorkspaceInboxRead), backend/src/Notrelix.API/Endpoints/Collaboration/Notifications/MapInboxEndpoints.cs, backend/src/Notrelix.Application/Features/Collaboration/Notifications/Commands/MarkWorkspaceInboxRead/ · FE frontend/apps/web/src/shell/workspace/work-feed-bridge.ts (inbox.readAll), frontend/apps/web/src/routes/workspaces/$workspaceId/inbox.tsx · Design Final-Inbox · Tests backend/tests/Notrelix.Integration.Tests/Collaboration/InboxStatesIntegrationTests.cs (read-all leaves a snoozed entry alone); backend/tests/Notrelix.Application.Tests/Features/WorkManagement/BoardItems/WorkspaceInboxTests.cs · Real e2e none (mock: work-feed handler only)
+- State: HARDENING — Built (verified by reading code 2026-11-09, not run): MapInboxEndpoints.cs, InboxStatesIntegrationTests.cs, the inbox route. Remaining: owner tests by hand.
 
 ### UC-COL-G07 Mark done and take back into the Inbox
 - Capability: G, COL-007 Collaboration query/state
@@ -1240,8 +1240,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: loading, success, error.
 - Rules: Product Preferences (D15); spec DCREQ211.
 - Acceptance: Given a new member, then in-app is on for all seven and email on for assigned, mention, approval and invitation.
-- Evidence: BE GET /api/v1/workspaces/{workspaceId}/notification-preferences (Collaboration.Preferences.GetNotificationPreferences) · FE apps/web/src/routes/workspaces/$workspaceId/account/notifications.tsx; frontend/packages/features/notifications/src/web/query/hooks/use-notification-preferences.ts · Design Final-Account · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/NotificationPreferencesHandlerTests.cs; backend/tests/Notrelix.API.Tests/Contracts/NotificationPreferencesOpenApiShapeTests.cs; backend/tests/Notrelix.Domain.Tests/Collaboration/Preferences/ · Real e2e none
-- State: INTEGRATING — No real e2e.
+- Evidence: BE GET /api/v1/workspaces/{workspaceId}/notification-preferences (Collaboration.Preferences.GetNotificationPreferences), backend/src/Notrelix.Application/Features/Collaboration/Preferences/Queries/GetNotificationPreferences/ · FE frontend/apps/web/src/routes/workspaces/$workspaceId/account/notifications.tsx; frontend/packages/features/notifications/src/web/query/hooks/use-notification-preferences.ts · Design Final-Account · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/NotificationPreferencesHandlerTests.cs (seven default rows at version 0; in-app on, email on for assigned, mention, approval, invitation); backend/tests/Notrelix.Domain.Tests/Collaboration/Preferences/NotificationPreferenceSetTests.cs · Real e2e none
+- State: HARDENING — Built (verified by reading code 2026-11-09, not run): NotificationPreferencesHandlerTests.cs, GetNotificationPreferences.cs, use-notification-preferences.ts. Remaining: owner tests by hand.
 
 ### UC-COL-G12 Save my notification preferences
 - Capability: G, COL-007 Collaboration query/state
@@ -1255,7 +1255,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product Preferences (D15); spec DCREQ211.
 - Acceptance: Given the mention in-app switched off, then a later mention creates no entry for that person (UC-COL-D04).
 - Evidence: BE PATCH /api/v1/workspaces/{workspaceId}/notification-preferences (Collaboration.Preferences.UpdateNotificationPreferences), NotificationPreferenceSet · FE account/notifications.tsx, createUseNotificationPreferences · Design Final-Account · Tests backend/tests/Notrelix.Integration.Tests/Collaboration/NotificationPreferencesIntegrationTests.cs; backend/tests/Notrelix.Domain.Tests/Collaboration/Preferences/NotificationPreferenceSetTests.cs · Real e2e none
-- State: INTEGRATING — Only the mention producer reads the matrix; follower, approval, assigned, due consumers must read it; no real e2e.
+- State: INTEGRATING — Follower, assigned, due and form consumers now read the matrix; suppression by a switched-off approval or assigned cell is not confirmed by a test; email cells are saved but not sent (D13).
 
 ### UC-COL-G13 Quiet hours and pause (enterprise baseline)
 - Capability: G, COL-007 Collaboration query/state
@@ -1297,7 +1297,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-025; spec DCREQ219; team COL-007.
 - Acceptance: Given a switch, then the comment panel never shows the previous target's comments.
 - Evidence: BE none · FE frontend/packages/features/collaboration/src/core/query/keys.ts; frontend/packages/features/notifications/src/query/keys.ts · Design none · Tests frontend/packages/features/notifications/src/__tests__/notifications-query-keys.unit.test.ts; collaboration.unit.test.ts · Real e2e none
-- State: INTEGRATING — No real e2e of a workspace switch with comments open.
+- State: INTEGRATING — Comment query keys carry the target id only, not the workspace; dropping late responses after a switch is not confirmed by a test.
 
 ### UC-COL-G16 Search comments (enterprise baseline)
 - Capability: G, COL-007 Collaboration query/state
