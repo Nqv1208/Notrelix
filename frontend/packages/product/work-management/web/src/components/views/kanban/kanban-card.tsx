@@ -67,7 +67,7 @@ function markFor(member: CardMember): string {
 const DUE_CLASS: Readonly<Record<ItemDueState["kind"], string>> = {
   overdue: "bg-danger-subtle font-semibold text-danger-subtle-foreground",
   today: "bg-warning-subtle font-semibold text-warning-subtle-foreground",
-  date: "-ml-1 font-medium text-muted-foreground",
+  date: "px-0 font-medium text-muted-foreground",
 };
 
 /** A count as shown on the face: 99+ above 99. */
@@ -467,7 +467,7 @@ function KanbanCardContent({
         </div>
       ) : null}
 
-      {checklist ? (
+      {checklist && !progress ? (
         <span
           data-checklist-bar=""
           aria-hidden="true"
