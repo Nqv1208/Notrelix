@@ -231,6 +231,8 @@ function KanbanCardContent({
   idPrefix,
   reserveMore = false,
   reservePick = false,
+  hoverLeft = false,
+  hoverRight = false,
   failure,
 }: {
   card: Card;
@@ -243,6 +245,10 @@ function KanbanCardContent({
   reserveMore?: boolean;
   /** Cards are being picked: the pick box sits at the start of the top row, which starts after it (BC-Bulk). */
   reservePick?: boolean;
+  /** The pick box shows on hover at the start of the card: the first row slides right to leave it room. */
+  hoverLeft?: boolean;
+  /** The hover actions sit at the card's top right: the priority and key slide left of them. */
+  hoverRight?: boolean;
 }) {
   const {
     isDone,
@@ -283,12 +289,16 @@ function KanbanCardContent({
   // sit at the end of the title's line instead of leaving an empty band above it.
   const labelRow =
     shownLabels.length > 0 || moreLabels > 0 || isDone || archivedChild;
-  const inlineTail =
-    !labelRow &&
-    !reserveMore &&
-    !reservePick &&
-    (priority !== null || itemKey !== null);
+  const inlineTail = !labelRow && (priority !== null || itemKey !== null);
   const showTop = !inlineTail && (hasTop || reserveMore || reservePick);
+  // The row's own room for what overlays it: padding that moves with a short transition, never a jump to a new line.
+  const roomClass = cn(
+    "transition-[padding] duration-150 ease-out motion-reduce:transition-none",
+    reservePick
+      ? "pl-[26px]"
+      : hoverLeft && "group-hover:pl-[26px] group-focus-within:pl-[26px]",
+    reserveMore ? "pr-[37px]" : hoverRight && "group-hover:pr-[66px]",
+  );
   // A row that appears on a card already drawn (a label was added) grows in, pushing the title down smoothly.
   // A card that mounts with its row (first paint, scrolling into the lane's window) does not animate.
   const wasShown = useRef(showTop);
@@ -344,8 +354,7 @@ function KanbanCardContent({
           onAnimationEnd={() => setGrow(false)}
           className={cn(
             "flex min-h-[22px] min-w-0 items-center gap-1.5 text-metadata text-meta-foreground",
-            reserveMore && "pr-[37px]",
-            reservePick && "pl-[26px]",
+            roomClass,
             grow &&
               "overflow-hidden animate-[card-row-grow_220ms_ease-out] motion-reduce:animate-none",
           )}
@@ -407,7 +416,7 @@ function KanbanCardContent({
       ) : null}
 
       {inlineTail ? (
-        <div className="flex items-start gap-2">
+        <div className={cn("flex items-start gap-2", roomClass)}>
           <h3 className={cn(titleClass, "min-w-0 flex-1")}>{card.title}</h3>
           <span
             id={`${idPrefix}-top`}
@@ -893,6 +902,8 @@ function KanbanCardView({
         idPrefix={descriptionId}
         reserveMore={touchMore && actions !== undefined && hasCardMenu(actions)}
         reservePick={picking && !isDragging}
+        hoverLeft={selection !== undefined && !isDragging}
+        hoverRight={actions !== undefined && !touchMore && !isDragging}
         failure={actions?.failureOf?.(card.id)}
       />
     </article>
