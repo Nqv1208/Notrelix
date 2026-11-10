@@ -1,5 +1,13 @@
-import { memo, useId, useLayoutEffect, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { useSortable } from "@dnd-kit/sortable";
+import { useSmoothHeight } from "./use-smooth-height";
 import { CSS } from "@dnd-kit/utilities";
 import {
   Archive,
@@ -751,6 +759,7 @@ function KanbanCardView({
   const itemActionsCopy = itemActionsCopyFor(copy.locale);
   const picked = selection?.selectedIds.has(card.id) ?? false;
   const picking = (selection?.selectedIds.size ?? 0) > 0;
+  const smoothHeight = useSmoothHeight(true);
   const { listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: dndId ?? card.id,
@@ -762,6 +771,14 @@ function KanbanCardView({
         ? null
         : { duration: 180, easing: "cubic-bezier(0.2, 0, 0, 1)" },
     });
+  // One stable ref callback: a new one each render would reset the height the observer remembers.
+  const setCardRef = useCallback(
+    (node: HTMLElement | null) => {
+      setNodeRef(node);
+      smoothHeight(node);
+    },
+    [setNodeRef, smoothHeight],
+  );
   // Pointer and touch only: Enter and Space belong to opening the card.
   const { onKeyDown: _keyboard, ...dragListeners } = (listeners ??
     {}) as Record<string, unknown>;
@@ -780,7 +797,7 @@ function KanbanCardView({
 
   const cardElement = (
     <article
-      ref={setNodeRef}
+      ref={setCardRef}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
