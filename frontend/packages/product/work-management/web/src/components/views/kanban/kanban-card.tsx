@@ -365,7 +365,7 @@ function KanbanCardContent({
           id={`${idPrefix}-top`}
           onAnimationEnd={() => setGrow(false)}
           className={cn(
-            "flex min-h-[22px] min-w-0 items-center gap-1.5 text-metadata text-meta-foreground",
+            "flex min-h-[22px] min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-metadata text-meta-foreground",
             roomClass,
             grow &&
               "overflow-hidden animate-[card-row-grow_220ms_ease-out] motion-reduce:animate-none",
@@ -391,10 +391,7 @@ function KanbanCardContent({
           {shownLabels.map((label, index) => {
             const tone = itemLabelTone(label);
             return (
-              <span
-                key={label.id}
-                className="inline-flex min-w-6 shrink overflow-hidden rounded-[5px]"
-              >
+              <span key={label.id} className="inline-flex max-w-full min-w-0">
                 {index === 0 ? (
                   <span className="sr-only">{copy.label} </span>
                 ) : null}
