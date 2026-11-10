@@ -107,7 +107,6 @@ export function KanbanCardQuickEdit({
     setStart(dayOf(card.startDate));
     setDue(cardDueDay(card));
     // Only when it opens: a pick that changes the card must not reset the name being typed.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
   useLayoutEffect(() => {
     if (open && rect) area.current?.select();
