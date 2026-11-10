@@ -52,7 +52,8 @@ public class MessageHandlerTests
         _context.Setup(c => c.IsAuthenticated).Returns(true);
 
         _db.Setup(d => d.ChatSpaces).Returns(TestDbSet.Create(_spaces).Object);
-        _db.Setup(d => d.ChatMemberships).Returns(TestDbSet.Create(_memberships).Object);
+        // Read on every access, so a membership that changes after the handler started (a concurrent leave) shows up like it would in the database.
+        _db.Setup(d => d.ChatMemberships).Returns(() => TestDbSet.Create(_memberships.Concat(_spaces.SelectMany(s => s.Memberships)).ToList()).Object);
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(new List<ChannelGroup>()).Object);
         _db.Setup(d => d.ChatMessages).Returns(TestDbSet.Create(_messages).Object);
 
@@ -160,6 +161,38 @@ public class MessageHandlerTests
         AsUser(_member);
 
         var act = () => SendHandler().Handle(Send(_workspaceId, space.Id, "late"), CancellationToken.None);
+
+        var error = await act.Should().ThrowAsync<ConflictException>();
+        error.Which.ErrorCode.Should().Be(ChatRuleCodes.ChannelArchived);
+        _messages.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Send_WhenTheMemberLeavesWhileWaitingForTheLock_IsNotFoundAndStoresNothing()
+    {
+        var space = Channel();
+        space.AddMember(_member, MembershipRole.Member, Now);
+        AsUser(_member);
+        // A leave that held the lock first commits while this send waits for it.
+        _sequences.Setup(s => s.LockAsync(space.Id, It.IsAny<CancellationToken>()))
+            .Returns(() => { space.RemoveMember(_member, Now); return Task.CompletedTask; });
+
+        var act = () => SendHandler().Handle(Send(_workspaceId, space.Id, "too late"), CancellationToken.None);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+        _messages.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Send_WhenTheChannelIsArchivedWhileWaitingForTheLock_IsA409AndStoresNothing()
+    {
+        var space = Channel();
+        space.AddMember(_member, MembershipRole.Member, Now);
+        AsUser(_member);
+        _sequences.Setup(s => s.LockAsync(space.Id, It.IsAny<CancellationToken>()))
+            .Returns(() => { space.SetArchived(true, _owner, Now); return Task.CompletedTask; });
+
+        var act = () => SendHandler().Handle(Send(_workspaceId, space.Id, "too late"), CancellationToken.None);
 
         var error = await act.Should().ThrowAsync<ConflictException>();
         error.Which.ErrorCode.Should().Be(ChatRuleCodes.ChannelArchived);

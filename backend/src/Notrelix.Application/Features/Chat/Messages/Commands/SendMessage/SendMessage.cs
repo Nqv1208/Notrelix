@@ -45,6 +45,21 @@ public class SendMessageCommandHandler(
         // second one finds the first one's row instead of storing a second message.
         await sequences.LockAsync(space.Id, cancellationToken);
 
+        // The checks above ran on rows read before the lock. A leave, a removal, an archive or a delete that held the
+        // lock first has committed by now, so the standing of the channel and of the caller is read again from the
+        // database before anything is stored.
+        var live = await db.ChatSpaces.AsNoTracking()
+            .Where(s => s.Id == space.Id && s.WorkspaceId == request.WorkspaceId && s.DeletedAt == null)
+            .Select(s => new { Archived = s.ArchivedAt != null })
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? throw new NotFoundException(nameof(Space), request.SpaceId);
+        var stillMember = await db.ChatMemberships.AsNoTracking()
+            .AnyAsync(m => m.SpaceId == space.Id && m.UserId == userId && m.LeftAt == null, cancellationToken);
+        if (!stillMember)
+            throw new NotFoundException(nameof(Space), request.SpaceId);
+        if (live.Archived)
+            throw new ConflictException("The channel is archived and read-only.", ChatRuleCodes.ChannelArchived);
+
         var clientMessageId = request.ClientMessageId.Trim();
         var stored = await db.ChatMessages.AsNoTracking().FirstOrDefaultAsync(
             m => m.SpaceId == space.Id && m.AuthorId == userId && m.ClientMessageId == clientMessageId,
