@@ -28,14 +28,17 @@ function setup() {
     onOpen: vi.fn(),
   };
   render(
+    <article>
     <KanbanCardQuickEdit
       card={CARD}
       copy={en}
       edit={edit}
+      rows={[]}
       open
       onOpenChange={() => {}}
       className=""
-    />,
+    />
+    </article>,
   );
   return edit;
 }

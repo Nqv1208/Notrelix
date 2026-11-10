@@ -1,5 +1,12 @@
 import { useRef, useState } from "react";
-import { CalendarDays, MoreHorizontal, UserRound } from "lucide-react";
+import {
+  Archive,
+  CalendarDays,
+  Copy,
+  Link2,
+  MoreHorizontal,
+  UserRound,
+} from "lucide-react";
 import {
   Button,
   DropdownMenu,
@@ -130,6 +137,26 @@ export function KanbanCardQuickActions({
     Boolean(onAssignMe) &&
     !isAssignedTo(card, actions.currentUserId);
   const hasMenu = hasCardMenu(actions);
+  const editRows = [
+    onDuplicate && {
+      key: "copy",
+      label: copy.copyCard,
+      icon: <Copy aria-hidden="true" className="size-4" />,
+      run: () => onDuplicate(card.id),
+    },
+    onCopyLink && {
+      key: "link",
+      label: copy.copyLink,
+      icon: <Link2 aria-hidden="true" className="size-4" />,
+      run: () => onCopyLink(card.id),
+    },
+    onArchive && {
+      key: "archive",
+      label: copy.archive,
+      icon: <Archive aria-hidden="true" className="size-4" />,
+      run: () => onArchive(card.id),
+    },
+  ].filter((row): row is NonNullable<typeof row> => Boolean(row));
   const canEdit = !always && actions.quickEdit !== undefined;
   if (!canAssign && !(onSetDue && !always) && !hasMenu && !canEdit) return null;
   // At phone width a tap on the options button opens the move sheet (the menu's actions follow the columns).
@@ -196,6 +223,8 @@ export function KanbanCardQuickActions({
           edit={actions.quickEdit}
           open={editOpen}
           onOpenChange={setEditOpen}
+          move={move && !move.disabledReason ? move : undefined}
+          rows={editRows}
           className={ACTION_CLASS}
         />
       ) : null}
