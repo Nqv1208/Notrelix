@@ -383,7 +383,10 @@ function KanbanCardContent({
           {shownLabels.map((label, index) => {
             const tone = itemLabelTone(label);
             return (
-              <span key={label.id} className="inline-flex min-w-0">
+              <span
+                key={label.id}
+                className="inline-flex min-w-6 shrink overflow-hidden rounded-[5px]"
+              >
                 {index === 0 ? (
                   <span className="sr-only">{copy.label} </span>
                 ) : null}
