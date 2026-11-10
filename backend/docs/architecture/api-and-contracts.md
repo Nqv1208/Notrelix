@@ -2505,4 +2505,4 @@ Page history and templates (additive routes). `GET /api/v1/pages/{pageId}/versio
 
 # 153. Chat context (planned)
 
-Chat endpoints (planned) live in `Endpoints/Chat/<Area>/Map*Endpoints.cs` under `/api/v1/chat`, tagged `Chat.*`, with contracts in `Contracts/Chat/`. Sends and creates take an `Idempotency-Key`; reads are cursor paged; no-access and missing return the same NotFound. The endpoint list is in `docs/workstreams/specs/chat-foundation.md` section 15, and `ApiArchitectureTests.expectedBcs` must include Chat.
+Chat endpoints (planned) live in `Endpoints/Chat/<Area>/Map*Endpoints.cs` under `/api/v1/workspaces/{workspaceId}/chat`, tagged `Chat.*`, with contracts in `Contracts/Chat/`. Sends and creates take an `Idempotency-Key`; reads are cursor paged; no-access and missing return the same NotFound. The endpoint list is in `docs/workstreams/specs/chat-foundation.md` section 15, and `ApiArchitectureTests.expectedBcs` must include Chat.
