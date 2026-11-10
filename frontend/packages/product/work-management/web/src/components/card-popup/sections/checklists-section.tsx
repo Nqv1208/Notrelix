@@ -20,6 +20,7 @@ import {
 import { takeChecklistRequest } from "./checklist-focus";
 import {
   IconBtn,
+  PanelBtn,
   PersonMark,
   PopSection,
   SECTION_ICONS,
@@ -160,6 +161,127 @@ function InlineText({
       }}
       className="box-border h-8 min-w-0 flex-1 rounded-[8px] border border-primary bg-popover px-2.5 text-[14px] text-foreground ring-[3px] ring-brand-subtle outline-none placeholder:text-meta-foreground"
     />
+  );
+}
+
+/**
+ * The new-item box: the text, Add and Cancel, and beside them who the item goes to and when it is due.
+ * Enter adds and stays open for the next item; Escape and Cancel close it; leaving the box saves what was
+ * typed, except when focus only moves to one of its own pickers.
+ */
+function ItemComposer({
+  label,
+  placeholder,
+  addLabel,
+  cancelLabel,
+  withAssign,
+  withDue,
+  onSubmit,
+  onClose,
+}: {
+  label: string;
+  placeholder: string;
+  addLabel: string;
+  cancelLabel: string;
+  withAssign: boolean;
+  withDue: boolean;
+  onSubmit: (
+    text: string,
+    extras: { assigneeId: string | null; dueAt: string | null },
+  ) => void;
+  onClose: () => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const [assigneeId, setAssigneeId] = useState<string | null>(null);
+  const [dueAt, setDueAt] = useState<string | null>(null);
+  const box = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const done = useRef(false);
+  useEffect(() => {
+    input.current?.focus();
+  }, []);
+  const submit = () => {
+    const text = draft.trim();
+    if (!text) return false;
+    onSubmit(text, { assigneeId, dueAt });
+    setDraft("");
+    setAssigneeId(null);
+    setDueAt(null);
+    return true;
+  };
+  const close = () => {
+    done.current = true;
+    onClose();
+  };
+  const shape = {
+    title: draft,
+    assigneeId: assigneeId ?? undefined,
+    dueAt: dueAt ?? undefined,
+  };
+  return (
+    <div
+      ref={box}
+      className="flex w-full flex-col gap-2"
+      onBlur={(event) => {
+        const next = event.relatedTarget as HTMLElement | null;
+        // Focus moving to a button of the box or into one of its pickers is not leaving it.
+        if (
+          next &&
+          (box.current?.contains(next) ||
+            next.closest("[data-slot=popover-content],[role=dialog]"))
+        )
+          return;
+        if (done.current) return;
+        done.current = true;
+        submit();
+        onClose();
+      }}
+    >
+      <input
+        ref={input}
+        type="text"
+        data-popup-esc=""
+        value={draft}
+        maxLength={200}
+        aria-label={label}
+        placeholder={placeholder}
+        onChange={(event) => setDraft(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            event.stopPropagation();
+            close();
+          } else if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+            event.preventDefault();
+            submit();
+          }
+        }}
+        className="box-border h-9 w-full min-w-0 rounded-[8px] border border-primary bg-popover px-2.5 text-[14px] text-foreground ring-[3px] ring-brand-subtle outline-none placeholder:text-meta-foreground"
+      />
+      <div className="flex flex-wrap items-center gap-2">
+        <PanelBtn
+          variant="primary"
+          small
+          disabled={draft.trim() === ""}
+          onClick={() => {
+            if (submit()) input.current?.focus();
+          }}
+        >
+          {addLabel}
+        </PanelBtn>
+        <SmallBtn className="max-md:h-11" onClick={close}>
+          {cancelLabel}
+        </SmallBtn>
+        <span className="ml-auto flex items-center gap-1">
+          {withAssign ? (
+            <ItemAssignButton labelled item={shape} onAssign={setAssigneeId} />
+          ) : null}
+          {withDue ? (
+            <ItemDueButton labelled item={shape} onDue={setDueAt} />
+          ) : null}
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -369,11 +491,14 @@ function ChecklistBlock({
       {canWrite ? (
         <div className="mt-2 flex">
           {adding ? (
-            <InlineText
-              keepOpen
+            <ItemComposer
               label={fillPopupCopy(t.itemLabel, { name: list.title })}
               placeholder={t.itemPlaceholder}
-              onSubmit={(text) => model.addItem(list.id, text)}
+              addLabel={t.add}
+              cancelLabel={t.cancel}
+              withAssign={model.setItemAssignee !== undefined}
+              withDue={model.setItemDue !== undefined}
+              onSubmit={(text, extras) => model.addItem(list.id, text, extras)}
               onClose={() => setAdding(false)}
             />
           ) : (
