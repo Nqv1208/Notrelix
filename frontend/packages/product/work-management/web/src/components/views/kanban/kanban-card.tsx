@@ -292,13 +292,17 @@ function KanbanCardContent({
   const inlineTail = !labelRow && (priority !== null || itemKey !== null);
   const showTop = !inlineTail && (hasTop || reserveMore || reservePick);
   // The row's own room for what overlays it: padding that moves with a short transition, never a jump to a new line.
-  const roomClass = cn(
-    "transition-[padding] duration-150 ease-out motion-reduce:transition-none",
-    reservePick
-      ? "pl-[26px]"
-      : hoverLeft && "group-hover:pl-[26px] group-focus-within:pl-[26px]",
-    reserveMore ? "pr-[37px]" : hoverRight && "group-hover:pr-[66px]",
-  );
+  // A banner cover carries the pick box and the hover buttons on the picture, above the row: nothing to make room for.
+  const onBanner = cover !== null && !fullCover;
+  const roomClass = onBanner
+    ? undefined
+    : cn(
+        "transition-[padding] duration-150 ease-out motion-reduce:transition-none",
+        reservePick
+          ? "pl-[26px]"
+          : hoverLeft && "group-hover:pl-[26px] group-focus-within:pl-[26px]",
+        reserveMore ? "pr-[37px]" : hoverRight && "group-hover:pr-[66px]",
+      );
   // A row that appears on a card already drawn (a label was added) grows in, pushing the title down smoothly.
   // A card that mounts with its row (first paint, scrolling into the lane's window) does not animate.
   const wasShown = useRef(showTop);
