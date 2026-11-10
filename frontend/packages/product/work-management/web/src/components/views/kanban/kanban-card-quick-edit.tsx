@@ -123,7 +123,7 @@ export function KanbanCardQuickEdit({
     close();
   };
   const sideRight = rect
-    ? rect.left + rect.width + 8 + 200 <= window.innerWidth
+    ? rect.left + rect.width + 8 + 240 <= window.innerWidth
     : true;
   const toggle = (next: Exclude<Panel, null>) =>
     setPanel(panel === next ? null : next);
@@ -218,7 +218,7 @@ export function KanbanCardQuickEdit({
                 </Button>
               </div>
               <div
-                className="absolute flex w-52 flex-col gap-1"
+                className="absolute flex w-60 flex-col gap-1"
                 style={{
                   top: rect.top,
                   left: sideRight ? rect.left + rect.width + 8 : undefined,

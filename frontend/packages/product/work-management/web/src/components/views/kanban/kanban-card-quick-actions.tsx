@@ -1,10 +1,12 @@
 import { useRef, useState } from "react";
 import {
   Archive,
+  FolderInput,
   CalendarDays,
   Copy,
   Link2,
   MoreHorizontal,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import {
@@ -132,11 +134,14 @@ export function KanbanCardQuickActions({
     move,
   } = actions;
   // On a touch screen the hover actions are not reachable: only the options button stays, always visible.
+  // On a pointer device a card that can be edited shows two buttons: Edit, which holds every other action, and Archive.
+  const merged = !always && actions.quickEdit !== undefined;
   const canAssign =
     !always &&
+    !merged &&
     Boolean(onAssignMe) &&
     !isAssignedTo(card, actions.currentUserId);
-  const hasMenu = hasCardMenu(actions);
+  const hasMenu = hasCardMenu(actions) && !merged;
   const editRows = [
     onDuplicate && {
       key: "copy",
@@ -150,15 +155,22 @@ export function KanbanCardQuickActions({
       icon: <Link2 aria-hidden="true" className="size-4" />,
       run: () => onCopyLink(card.id),
     },
-    onArchive && {
-      key: "archive",
-      label: copy.archive,
-      icon: <Archive aria-hidden="true" className="size-4" />,
-      run: () => onArchive(card.id),
+    onMoveToBoard && {
+      key: "board",
+      label: copy.moveToBoard,
+      icon: <FolderInput aria-hidden="true" className="size-4" />,
+      run: () => onMoveToBoard(card.id),
+    },
+    onDelete && {
+      key: "delete",
+      label: copy.delete,
+      icon: <Trash2 aria-hidden="true" className="size-4" />,
+      run: () => onDelete(card.id),
     },
   ].filter((row): row is NonNullable<typeof row> => Boolean(row));
-  const canEdit = !always && actions.quickEdit !== undefined;
-  if (!canAssign && !(onSetDue && !always) && !hasMenu && !canEdit) return null;
+  const canEdit = merged;
+  if (!canAssign && !(onSetDue && !always && !merged) && !hasMenu && !canEdit)
+    return null;
   // At phone width a tap on the options button opens the move sheet (the menu's actions follow the columns).
   const sheetMode = phone && move !== undefined && !move.disabledReason;
   const sheetRows = [
@@ -221,12 +233,28 @@ export function KanbanCardQuickActions({
           card={card}
           copy={copy}
           edit={actions.quickEdit}
-          open={editOpen}
-          onOpenChange={setEditOpen}
+          open={editOpen || dueOpen}
+          onOpenChange={(next) => {
+            setEditOpen(next);
+            onDueOpenChange(next);
+          }}
           move={move && !move.disabledReason ? move : undefined}
           rows={editRows}
           className={ACTION_CLASS}
         />
+      ) : null}
+      {canEdit && onArchive ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className={ACTION_CLASS}
+          aria-label={`${copy.archive}: ${card.title}`}
+          title={copy.archive}
+          onClick={() => onArchive(card.id)}
+        >
+          <Archive aria-hidden="true" className="size-3.5" />
+        </Button>
       ) : null}
       {canAssign ? (
         <Button
@@ -242,7 +270,7 @@ export function KanbanCardQuickActions({
           <UserRound aria-hidden="true" className="size-3.5" />
         </Button>
       ) : null}
-      {onSetDue && !always ? (
+      {onSetDue && !always && !merged ? (
         <Popover open={dueOpen} onOpenChange={onDueOpenChange}>
           <PopoverTrigger asChild>
             <Button
