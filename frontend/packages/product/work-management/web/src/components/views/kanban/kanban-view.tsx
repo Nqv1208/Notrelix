@@ -562,6 +562,18 @@ export function KanbanView({
   );
   const picking = useKanbanSelection(orderedCardIds);
   const lanesReady = !kanban.isLoading && Boolean(board);
+  // A board that was drawn as skeletons opens its lanes one after the other when the data arrives;
+  // later changes (a filter, a new lane, a refresh) do not replay it.
+  const sawSkeleton = useRef(false);
+  if (kanban.isLoading) sawSkeleton.current = true;
+  const reveal = lanesReady && sawSkeleton.current;
+  useEffect(() => {
+    if (!reveal) return;
+    const timer = setTimeout(() => {
+      sawSkeleton.current = false;
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [reveal]);
   useEffect(() => {
     const scroller = scrollerRef.current;
     if (!lanesReady || !scroller) return;
@@ -1363,6 +1375,7 @@ export function KanbanView({
               </>
             ) : (
               <KanbanBoard
+                reveal={reveal}
                 onDraggingChange={setDragging}
                 lanes={shownLanes}
                 groupOrder={kanban.groups}
