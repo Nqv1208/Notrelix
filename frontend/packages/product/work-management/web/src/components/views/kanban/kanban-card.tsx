@@ -5,6 +5,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { useSmoothHeight } from "./use-smooth-height";
@@ -240,7 +241,7 @@ function KanbanCardContent({
   reserveMore = false,
   reservePick = false,
   hoverLeft = false,
-  hoverRight = false,
+  pick = null,
   failure,
 }: {
   card: Card;
@@ -255,8 +256,8 @@ function KanbanCardContent({
   reservePick?: boolean;
   /** The pick box shows on hover at the start of the card: the first row slides right to leave it room. */
   hoverLeft?: boolean;
-  /** The hover actions sit at the card's top right: the priority and key slide left of them. */
-  hoverRight?: boolean;
+  /** The pick box: it sits on the title's line, and the title slides right of it. */
+  pick?: ReactNode;
 }) {
   const {
     isDone,
@@ -298,19 +299,17 @@ function KanbanCardContent({
   const labelRow =
     shownLabels.length > 0 || moreLabels > 0 || isDone || archivedChild;
   const inlineTail = !labelRow && (priority !== null || itemKey !== null);
-  const showTop = !inlineTail && (hasTop || reserveMore || reservePick);
-  // The row's own room for what overlays it: padding that moves with a short transition, never a jump to a new line.
-  // A banner cover carries the pick box and the hover buttons on the picture, above the row: nothing to make room for.
-  const onBanner = cover !== null && !fullCover;
-  const roomClass = onBanner
-    ? undefined
-    : cn(
+  const showTop = !inlineTail && (hasTop || reserveMore);
+  // The title makes room for the pick box beside it with padding that moves with a short transition. The rows
+  // above it (labels, priority, key) never move: the hover buttons sit over their right end.
+  const titleRoom = pick
+    ? cn(
         "transition-[padding] duration-150 ease-out motion-reduce:transition-none",
         reservePick
           ? "pl-[26px]"
           : hoverLeft && "group-hover:pl-[26px] group-focus-within:pl-[26px]",
-        reserveMore ? "pr-[37px]" : hoverRight && "group-hover:pr-[66px]",
-      );
+      )
+    : undefined;
   // A row that appears on a card already drawn (a label was added) grows in, pushing the title down smoothly.
   // A card that mounts with its row (first paint, scrolling into the lane's window) does not animate.
   const wasShown = useRef(showTop);
@@ -366,7 +365,7 @@ function KanbanCardContent({
           onAnimationEnd={() => setGrow(false)}
           className={cn(
             "flex min-h-[22px] min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-metadata text-meta-foreground",
-            roomClass,
+            reserveMore && "pr-[37px]",
             grow &&
               "overflow-hidden animate-[card-row-grow_220ms_ease-out] motion-reduce:animate-none",
           )}
@@ -428,7 +427,8 @@ function KanbanCardContent({
       ) : null}
 
       {inlineTail ? (
-        <div className={cn("flex items-start gap-2", roomClass)}>
+        <div className={cn("relative flex items-start gap-2", titleRoom)}>
+          {pick}
           <h3 className={cn(titleClass, "min-w-0 flex-1")}>{card.title}</h3>
           <span
             id={`${idPrefix}-top`}
@@ -439,7 +439,10 @@ function KanbanCardContent({
           </span>
         </div>
       ) : (
-        <h3 className={titleClass}>{card.title}</h3>
+        <div className={cn("relative", titleRoom)}>
+          {pick}
+          <h3 className={titleClass}>{card.title}</h3>
+        </div>
       )}
 
       {failure ? (
@@ -792,6 +795,33 @@ function KanbanCardView({
     .filter(Boolean)
     .join(" ");
 
+  const pickBox =
+    selection && !isDragging ? (
+      // BC-Bulk: an 18 px box, 5 px radius, on the title's line; it shows on hover or focus until a card is picked.
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={picked}
+        aria-label={fillCopy(copy.selectCard, { title: card.title })}
+        onClick={(event) => {
+          event.stopPropagation();
+          selection.onToggle(card.id, { range: event.shiftKey });
+        }}
+        className={cn(
+          "absolute top-px left-0 z-20 grid size-[18px] cursor-pointer place-items-center rounded-[5px] border-0 p-0 text-primary-foreground before:absolute before:-inset-2 before:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+          picked
+            ? "bg-primary"
+            : "bg-popover shadow-[inset_0_0_0_1.5px_var(--color-line-strong)] dark:bg-card",
+          !picked &&
+            !picking &&
+            "opacity-0 focus-visible:opacity-100 group-hover:opacity-100",
+        )}
+      >
+        {picked ? (
+          <Check aria-hidden="true" className="size-3" strokeWidth={3} />
+        ) : null}
+      </button>
+    ) : null;
   const cardElement = (
     <article
       ref={setCardRef}
@@ -881,32 +911,6 @@ function KanbanCardView({
           }
         }}
       />
-      {selection && !isDragging ? (
-        // BC-Bulk: an 18 px box, 5 px radius, at the start of the top row; it shows on hover or focus until a card is picked.
-        <button
-          type="button"
-          role="checkbox"
-          aria-checked={picked}
-          aria-label={fillCopy(copy.selectCard, { title: card.title })}
-          onClick={(event) => {
-            event.stopPropagation();
-            selection.onToggle(card.id, { range: event.shiftKey });
-          }}
-          className={cn(
-            "absolute top-[13px] left-3 z-20 grid size-[18px] cursor-pointer place-items-center rounded-[5px] border-0 p-0 text-primary-foreground before:absolute before:-inset-2 before:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-            picked
-              ? "bg-primary"
-              : "bg-popover shadow-[inset_0_0_0_1.5px_var(--color-line-strong)] dark:bg-card",
-            !picked &&
-              !picking &&
-              "opacity-0 focus-visible:opacity-100 group-hover:opacity-100",
-          )}
-        >
-          {picked ? (
-            <Check aria-hidden="true" className="size-3" strokeWidth={3} />
-          ) : null}
-        </button>
-      ) : null}
       {actions && !isDragging ? (
         <KanbanCardQuickActions
           card={card}
@@ -924,7 +928,7 @@ function KanbanCardView({
         reserveMore={touchMore && actions !== undefined && hasCardMenu(actions)}
         reservePick={picking && !isDragging}
         hoverLeft={selection !== undefined && !isDragging}
-        hoverRight={actions !== undefined && !touchMore && !isDragging}
+        pick={pickBox}
         failure={actions?.failureOf?.(card.id)}
       />
     </article>
