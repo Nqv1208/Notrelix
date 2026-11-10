@@ -1,5 +1,7 @@
-import { useLocation } from "@tanstack/react-router";
-import { SignInFlow } from "@notrelix/features-auth";
+import { useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "@tanstack/react-router";
+import { SignInFlow, useAuth } from "@notrelix/features-auth";
+import { sanitizeInternalReturnUrl } from "../routing/sanitize-return-url";
 import { AuthLayout } from "./auth-layout";
 import { useAuthFlowDeps } from "./auth-flow-deps";
 
@@ -8,6 +10,23 @@ export function SignInPage() {
   // Subscribing to the location re-renders the page when the address changes in place.
   const { searchStr } = useLocation();
   const search = new URLSearchParams(searchStr);
+  const { isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const checked = useRef(false);
+  // Someone who already has a session and types this address is sent on. Only the
+  // first answer counts: a sign-in finished on this page navigates on its own, and
+  // an MFA step or a provider error needs the form.
+  useEffect(() => {
+    if (isLoading || checked.current) return;
+    checked.current = true;
+    if (!isAuthenticated) return;
+    if (search.get("step") === "mfa" || search.get("error")) return;
+    const target = search.get("returnTo") ?? search.get("redirect");
+    void navigate({
+      to: target ? sanitizeInternalReturnUrl(target) : "/home",
+      replace: true,
+    });
+  });
   return (
     <AuthLayout>
       <SignInFlow
