@@ -795,6 +795,14 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             RETURNING id::text
             """, userId: UserId);
         (await forgedDraft.Should().ThrowAsync<PostgresException>()).Which.SqlState.Should().Be("42501");
+
+        // The person saves their own draft with the application login (Save and exit).
+        var ownDraftId = Guid.NewGuid();
+        (await QueryScalarsAsAppRoleAsync($"""
+            INSERT INTO workspace.onboarding_drafts (id, user_id, step, data, created_at, updated_at, expires_at)
+            VALUES ('{ownDraftId}', '{UserId}', 'own', '[]'::jsonb, now(), now(), now())
+            RETURNING id::text
+            """, userId: UserId)).Should().Equal([ownDraftId.ToString()]);
     }
 
     /// <summary>
