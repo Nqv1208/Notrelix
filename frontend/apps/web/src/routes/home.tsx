@@ -1,46 +1,55 @@
-import { useMemo, useState } from "react";
-import { Navigate, useNavigate } from "@tanstack/react-router";
-import { CloudOff, LayoutGrid } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { Navigate, useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  createUseWorkspaceList,
-  useWorkspaceShellCopy,
-} from "@notrelix/features-workspace/web";
-import { createUseAccountWorkspaces } from "@notrelix/features-account";
+  WorkspacesHomeSurface,
+  createUseAccountWorkspaces,
+  createUseProfile,
+  useWorkspacesHomeCopy,
+  type AccountSection,
+  type AccountWorkspaceTone,
+  type AccountWorkspaceView,
+  type DeletedWorkspaceView,
+} from "@notrelix/features-account";
+import { workspaceQueryKeys } from "@notrelix/features-workspace";
+import { useLocale } from "@notrelix/i18n";
+import { useAccountId } from "@notrelix/query";
 import { useAppRuntime } from "@notrelix/runtime-web";
-import {
-  Button,
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-  NotrelixLogoMark,
-  Skeleton,
-} from "@notrelix/ui-web";
+import { NotrelixLogoMark } from "@notrelix/ui-web";
 import { AuthGuard } from "@/shell/guards/auth-guard";
-import { CreateWorkspaceDialog } from "@/shell/workspace/create-workspace-dialog";
+import { useToast } from "./workspaces/$workspaceId/account/use-account-pages";
+
+const TONES: readonly AccountWorkspaceTone[] = [
+  "blue",
+  "sage",
+  "gold",
+  "coral",
+  "ember",
+];
+
+/** The mark letters of a workspace: the first letters of its first two words. */
+function initialsOf(name: string): string {
+  const words = name
+    .trim()
+    .split(/\s+/)
+    .filter((word) => /^\p{L}/u.test(word));
+  const [first = "", second = ""] = words;
+  return `${first.charAt(0)}${second.charAt(0)}`.toUpperCase();
+}
 
 /**
- * Account-level landing (`/home`). The workspace shell is workspace-scoped,
- * so `/home` resolves into a workspace instead of rendering a second shell:
- * members with a workspace land on the one they chose as default (the first
- * by name when they chose none or the choice cannot be read); members without
- * one set one up (the Onboarding mockup), unless they still have a workspace in Recently deleted:
- * then they land on "Your workspaces" outside a workspace to restore it. The duplicate home sidebar and switcher are retired.
+ * Home (`/home`): the account-level overview of the person's workspaces. It is
+ * a launcher outside any workspace: a card opens one workspace, the default is
+ * marked, and archived and recently deleted ones can be brought back from
+ * here. A person with no workspace and nothing to restore starts onboarding.
  */
 function HomeLanding() {
-  const copy = useWorkspaceShellCopy();
-  const navigate = useNavigate();
+  const copy = useWorkspacesHomeCopy();
+  const { locale } = useLocale();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const accountId = useAccountId();
   const { api: runtimeClient } = useAppRuntime();
-  const useWorkspaceList = useMemo(
-    () =>
-      createUseWorkspaceList({
-        api: runtimeClient.api,
-        endpoints: runtimeClient.endpoints,
-      }),
-    [runtimeClient],
-  );
   const useAccountWorkspaces = useMemo(
     () =>
       createUseAccountWorkspaces({
@@ -49,121 +58,157 @@ function HomeLanding() {
       }),
     [runtimeClient],
   );
-  const {
-    data: workspaces,
-    isLoading: listLoading,
-    isError,
-    refetch,
-  } = useWorkspaceList();
-  const account = useAccountWorkspaces();
-  const [createOpen, setCreateOpen] = useState(false);
-
-  const first = workspaces?.[0];
-  // The default is a hint: the person's own choice opens when it is still one they can open; a list
-  // that cannot be read must not keep them out, so a failed read falls back to the first.
-  const defaultSettled = account.workspaces !== undefined || account.isError;
-  // With no workspace the Recently deleted list decides where they land, so wait for it (a failed read falls through).
-  const deletedSettled =
-    account.deleted !== undefined || account.deletedIsError;
-  const noWorkspace = !first && !listLoading && !isError;
-  const isLoading =
-    listLoading ||
-    (first !== undefined && !defaultSettled) ||
-    (noWorkspace && !deletedSettled);
-  const chosen = account.workspaces?.find(
-    (workspace) => workspace.isDefault && !workspace.isArchived,
+  const useProfile = useMemo(
+    () =>
+      createUseProfile({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+      }),
+    [runtimeClient],
   );
-  const target =
-    workspaces?.find((workspace) => workspace.id === chosen?.id) ?? first;
-  if (noWorkspace && !isLoading) {
-    return (
-      <Navigate
-        to={account.deleted?.length ? "/account/workspaces" : "/onboarding"}
-        replace
-      />
-    );
+  const list = useAccountWorkspaces();
+  const { profile } = useProfile();
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState<"failed" | "restore" | null>(
+    null,
+  );
+  const [notice, showNotice] = useToast();
+
+  const workspaces = useMemo<AccountSection<readonly AccountWorkspaceView[]>>(
+    () =>
+      list.workspaces
+        ? {
+            status: "ready",
+            data: list.workspaces.map((workspace, index) => {
+              const to = `/workspaces/${workspace.id}`;
+              return {
+                ...workspace,
+                initials: initialsOf(workspace.name),
+                tone: TONES[index % TONES.length] ?? "blue",
+                open: {
+                  href: to,
+                  onNavigate: () => void router.navigate({ to }),
+                },
+              };
+            }),
+          }
+        : list.isError
+          ? { status: "error" }
+          : { status: "loading" },
+    [list.workspaces, list.isError, router],
+  );
+
+  const deleted = useMemo<AccountSection<readonly DeletedWorkspaceView[]>>(
+    () =>
+      list.deleted
+        ? {
+            status: "ready",
+            data: list.deleted.map((workspace, index) => ({
+              id: workspace.id,
+              name: workspace.name,
+              initials: initialsOf(workspace.name),
+              tone: TONES[index % TONES.length] ?? "blue",
+              deletedOn: new Intl.DateTimeFormat(locale, {
+                dateStyle: "medium",
+              }).format(new Date(workspace.deletedAt)),
+              daysLeft: Math.max(
+                1,
+                Math.ceil(
+                  (new Date(workspace.purgeAfter).getTime() - Date.now()) /
+                    86_400_000,
+                ),
+              ),
+            })),
+          }
+        : list.deletedIsError
+          ? { status: "error" }
+          : { status: "loading" },
+    [list.deleted, list.deletedIsError, locale],
+  );
+
+  const run = useCallback(
+    async (
+      action: () => Promise<unknown>,
+      failure: "failed" | "restore",
+      done: string,
+    ) => {
+      setBusy(true);
+      setActionError(null);
+      try {
+        await action();
+        // The rail and the switcher read the same list.
+        await queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.all(accountId),
+        });
+        showNotice(done);
+      } catch {
+        setActionError(failure);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [queryClient, accountId, showNotice],
+  );
+
+  const nameOf = (id: string) =>
+    list.workspaces?.find((workspace) => workspace.id === id)?.name ?? "";
+
+  // With no workspace the Recently deleted list decides what to show, so wait for it
+  // (a failed read falls through to onboarding).
+  const settled = list.deleted !== undefined || list.deletedIsError;
+  if (list.workspaces?.length === 0 && settled && !list.deleted?.length) {
+    return <Navigate to="/onboarding" replace />;
   }
-  if (target && !isLoading) {
-    return (
-      <Navigate
-        to="/workspaces/$workspaceId"
-        params={{ workspaceId: target.id }}
-        replace
-      />
-    );
-  }
+
+  const account = {
+    href: "/account/workspaces",
+    onNavigate: () => void router.navigate({ to: "/account/workspaces" }),
+  };
 
   return (
     <main className="flex min-h-svh flex-col bg-surface-canvas">
-      <header className="flex h-12 items-center border-b border-border px-4">
+      <header className="flex h-12 shrink-0 items-center border-b border-border px-4">
         <NotrelixLogoMark className="h-5 w-auto" aria-hidden="true" />
         <span className="ml-2 text-label text-foreground">Notrelix</span>
       </header>
-      <div className="flex flex-1 items-center justify-center p-4">
-        {isLoading ? (
-          <div
-            role="status"
-            aria-label={copy.landing.loadingTitle}
-            className="flex w-full max-w-sm flex-col gap-3"
-          >
-            <Skeleton className="h-6 w-2/3" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-5/6" />
-          </div>
-        ) : isError ? (
-          <Empty className="max-w-md border-0">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <CloudOff aria-hidden="true" className="text-icon" />
-              </EmptyMedia>
-              <EmptyTitle>
-                <h1 className="text-section-heading text-foreground">
-                  {copy.landing.errorTitle}
-                </h1>
-              </EmptyTitle>
-              <EmptyDescription className="text-body">
-                {copy.landing.errorDescription}
-              </EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              <Button onClick={() => void refetch()}>
-                {copy.landing.retry}
-              </Button>
-            </EmptyContent>
-          </Empty>
-        ) : (
-          <Empty className="max-w-md border-0">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <LayoutGrid aria-hidden="true" className="text-icon" />
-              </EmptyMedia>
-              <EmptyTitle>
-                <h1 className="text-section-heading text-foreground">
-                  {copy.landing.emptyTitle}
-                </h1>
-              </EmptyTitle>
-              <EmptyDescription className="text-body">
-                {copy.landing.emptyDescription}
-              </EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              <Button onClick={() => setCreateOpen(true)}>
-                {copy.createWorkspace.submit}
-              </Button>
-            </EmptyContent>
-          </Empty>
-        )}
-      </div>
-      <CreateWorkspaceDialog
+      <WorkspacesHomeSurface
         copy={copy}
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onCreated={(created) =>
-          void navigate({
-            to: "/workspaces/$workspaceId",
-            params: { workspaceId: created.id },
-          })
+        name={profile?.name ?? ""}
+        workspaces={workspaces}
+        deleted={deleted}
+        busy={busy || list.isBusy}
+        actionError={actionError}
+        notice={notice}
+        create={{
+          href: "/onboarding",
+          onNavigate: () => void router.navigate({ to: "/onboarding" }),
+        }}
+        account={account}
+        onSetDefault={(id) =>
+          void run(
+            () => list.setDefault(id),
+            "failed",
+            copy.notice.defaultSet.replace("{{name}}", nameOf(id)),
+          )
         }
+        onUnarchive={(id) =>
+          void run(
+            () => list.unarchive(id),
+            "failed",
+            copy.notice.unarchived.replace("{{name}}", nameOf(id)),
+          )
+        }
+        onRestore={(id) => {
+          const entry = list.deleted?.find((workspace) => workspace.id === id);
+          if (!entry) return;
+          void run(
+            () =>
+              list.restore({ workspaceId: id, expectedVersion: entry.version }),
+            "restore",
+            copy.notice.restored.replace("{{name}}", entry.name),
+          );
+        }}
+        onRetry={() => void list.refetch()}
       />
     </main>
   );

@@ -1,9 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { SignInFlow, useAuth } from "@notrelix/features-auth";
 import { sanitizeInternalReturnUrl } from "../routing/sanitize-return-url";
 import { AuthLayout } from "./auth-layout";
 import { useAuthFlowDeps } from "./auth-flow-deps";
+
+/**
+ * True while this document was opened on the sign-in address (a typed address, a
+ * bookmark, a reload). Only then is a live session an answer: a sign-in page reached
+ * inside the app comes from a sign-out or an expired session, and the session the
+ * app still holds in that moment is the one that just ended.
+ */
+let openedHere =
+  typeof window !== "undefined" &&
+  window.location.pathname.startsWith("/sign-in");
 
 export function SignInPage() {
   const { service, navigation } = useAuthFlowDeps();
@@ -16,15 +26,18 @@ export function SignInPage() {
   // on, "form" otherwise. Only the first answer counts: a sign-in finished on this
   // page navigates on its own, and an MFA step or a provider error needs the form.
   // The form is not drawn before the answer, so it never flashes before the move.
+  const direct = useRef(openedHere);
   const [phase, setPhase] = useState<"checking" | "leaving" | "form">(
-    "checking",
+    direct.current ? "checking" : "form",
   );
   useEffect(() => {
     if (isLoading || phase !== "checking") return;
+    openedHere = false;
     if (
       !isAuthenticated ||
       search.get("step") === "mfa" ||
-      search.get("error")
+      search.get("error") ||
+      search.get("reason")
     ) {
       setPhase("form");
       return;
