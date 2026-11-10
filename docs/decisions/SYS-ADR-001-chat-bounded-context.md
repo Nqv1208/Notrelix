@@ -62,7 +62,7 @@ The realtime gateway today is notify-only: server frames carry no payload, there
 
 ## Decision
 
-1. **Chat is a new bounded context.** Logical owner `chat`, rule prefix `CHT`, database schema `chat`, API prefix `/api/v1/chat`, backend folders `Chat/` inside the existing Domain, Application, Infrastructure and API projects (no new `.csproj`, `backend/AGENTS.md` §6), frontend package `@notrelix/features-chat`.
+1. **Chat is a new bounded context.** Logical owner `chat`, rule prefix `CHT`, database schema `chat`, API prefix `/api/v1/workspaces/{workspaceId}/chat`, backend folders `Chat/` inside the existing Domain, Application, Infrastructure and API projects (no new `.csproj`, `backend/AGENTS.md` §6), frontend package `@notrelix/features-chat`.
 2. **Ownership.**
    - Chat owns: channels, channel groups, memberships, conversations (direct and group), messages, threads, pins, per-channel read boundaries and notification levels, and the chat-specific access rules.
    - Chat reuses, and does not duplicate, Collaboration's mention identity rules (COL-007, COL-030), reaction uniqueness (COL-009), attachment policy (COL-010, COL-011) and notification delivery (COL-017, COL-018) through Application contracts.

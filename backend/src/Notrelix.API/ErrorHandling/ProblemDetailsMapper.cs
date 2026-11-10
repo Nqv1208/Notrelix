@@ -77,6 +77,20 @@ public static class ProblemDetailsMapper
                 ex.Message,
                 null
             ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.ChannelArchived } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.ChannelArchived,
+                "Channel archived",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.LastManager } ex => (
+                StatusCodes.Status422UnprocessableEntity,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.LastManager,
+                "Last manager",
+                ex.Message,
+                null
+            ),
             Notrelix.Domain.Common.Exceptions.BusinessRuleException ex => (
                 StatusCodes.Status400BadRequest,
                 ErrorCodes.BusinessRuleViolation,
