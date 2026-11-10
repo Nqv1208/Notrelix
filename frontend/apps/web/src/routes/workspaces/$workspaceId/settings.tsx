@@ -12,6 +12,8 @@ import {
   createUseWorkspaceSettingsMutations,
   formatCopy,
   useWorkspaceSettingsCopy,
+  useWorkspaceTeamsCopy,
+  WorkspaceSetupFrame,
   WorkspaceSettingsSurface,
   type SaveStatus,
   type WorkspaceProfileValues,
@@ -21,6 +23,7 @@ import { useAppRuntime } from "@notrelix/runtime-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { toastFailure } from "@/shell/workspace/failure-toast";
 import { sectionState } from "@/shell/workspace/section-state";
+import { useSetupFrame } from "@/shell/workspace/use-setup-frame";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
 
 /** Maps a failed write to the section's status (inline, never toast-only). */
@@ -53,6 +56,8 @@ export function SettingsPage() {
   const { workspaceId, workspace, isLoading, isError, refetch } =
     useWorkspaceContext();
   const copy = useWorkspaceSettingsCopy();
+  const teamsCopy = useWorkspaceTeamsCopy();
+  const frame = useSetupFrame("general");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { api: runtimeClient } = useAppRuntime();
@@ -172,30 +177,36 @@ export function SettingsPage() {
   };
 
   return (
-    <WorkspaceSettingsSurface
-      copy={copy}
-      workspaceName={workspace?.name ?? null}
-      canManage={isWorkspaceAdmin(viewer.role)}
-      versionAvailable={version !== undefined}
-      profile={profile}
-      defaults={sectionState(settings, settings.data)}
-      profileStatus={profileStatus}
-      defaultsStatus={defaultsStatus}
-      archiving={mutations.archive.isPending}
-      canDelete={viewer.role === "owner"}
-      isPersonal={workspace?.isPersonal === true}
-      deleting={mutations.remove.isPending}
-      onSaveProfile={onSaveProfile}
-      onSaveDefaults={onSaveDefaults}
-      onArchive={onArchive}
-      onDelete={() => void onDelete()}
-      onReload={() => {
-        setProfileStatus({ state: "idle" });
-        setDefaultsStatus({ state: "idle" });
-        void refetch();
-        void settings.refetch();
-      }}
-      onRetryDefaults={() => void settings.refetch()}
-    />
+    <WorkspaceSetupFrame
+      copy={teamsCopy}
+      frame={frame}
+      hideNav={!isWorkspaceAdmin(viewer.role)}
+    >
+      <WorkspaceSettingsSurface
+        copy={copy}
+        workspaceName={workspace?.name ?? null}
+        canManage={isWorkspaceAdmin(viewer.role)}
+        versionAvailable={version !== undefined}
+        profile={profile}
+        defaults={sectionState(settings, settings.data)}
+        profileStatus={profileStatus}
+        defaultsStatus={defaultsStatus}
+        archiving={mutations.archive.isPending}
+        canDelete={viewer.role === "owner"}
+        isPersonal={workspace?.isPersonal === true}
+        deleting={mutations.remove.isPending}
+        onSaveProfile={onSaveProfile}
+        onSaveDefaults={onSaveDefaults}
+        onArchive={onArchive}
+        onDelete={() => void onDelete()}
+        onReload={() => {
+          setProfileStatus({ state: "idle" });
+          setDefaultsStatus({ state: "idle" });
+          void refetch();
+          void settings.refetch();
+        }}
+        onRetryDefaults={() => void settings.refetch()}
+      />
+    </WorkspaceSetupFrame>
   );
 }

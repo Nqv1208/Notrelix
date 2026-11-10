@@ -764,7 +764,7 @@ export function WorkspaceSettingsSurface({
       : null;
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 md:px-8 md:py-8">
+    <div className="flex w-full max-w-5xl flex-col gap-6">
       <header className="flex flex-col gap-1">
         <h1 className="text-page-title text-foreground">{copy.title}</h1>
         <p className="text-body text-muted-foreground">
