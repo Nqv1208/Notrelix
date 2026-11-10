@@ -12,6 +12,10 @@ export type BoardConnectionState =
   | "closed"
   | "failed";
 
+/** A toast over the board's bottom edge: it never takes room from the content, so nothing shifts when it comes or goes. */
+const TOAST_BOX =
+  "pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex justify-center px-4";
+
 interface BoardConnectionNoticeProps {
   state: BoardConnectionState;
   /** When the connection was lost; names the time in the notice. */
@@ -36,10 +40,10 @@ export function BoardConnectionNotice({
   const t = copy.connection;
   if (state === "reconnecting")
     return (
-      <div className="flex justify-end px-3 pt-2 max-sm:justify-start sm:px-6">
+      <div className={TOAST_BOX}>
         <span
           role="status"
-          className="inline-flex h-7 items-center gap-1.5 rounded-[7px] max-sm:h-11 bg-warning-subtle px-2.5 text-[13px] whitespace-nowrap text-warning-text"
+          className="pointer-events-auto inline-flex h-9 items-center gap-2 rounded-[10px] border border-line-strong bg-card px-3.5 text-[13px] whitespace-nowrap text-warning-text shadow-popover animate-in fade-in-0 slide-in-from-bottom-2 duration-200 motion-reduce:animate-none"
         >
           <LoaderCircle
             aria-hidden="true"
@@ -56,11 +60,11 @@ export function BoardConnectionNotice({
     minute: "2-digit",
   });
   return (
-    <div className="px-3 pt-3 sm:px-6">
+    <div className={TOAST_BOX}>
       <div
         role="status"
         className={cn(
-          "flex flex-wrap items-start gap-2.5 rounded-[10px] bg-warning-subtle px-3.5 py-2.5 text-[13px] leading-[1.4] text-warning-text sm:flex-nowrap",
+          "pointer-events-auto flex w-full max-w-xl flex-wrap items-start gap-2.5 rounded-[12px] border border-line-strong bg-card px-3.5 py-2.5 text-[13px] leading-[1.4] text-warning-text shadow-popover animate-in fade-in-0 slide-in-from-bottom-2 duration-200 motion-reduce:animate-none sm:flex-nowrap",
         )}
       >
         <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
