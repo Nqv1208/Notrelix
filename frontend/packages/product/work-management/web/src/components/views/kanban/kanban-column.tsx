@@ -177,8 +177,8 @@ export interface KanbanColumnProps {
   loadFailed?: boolean;
 }
 
-/** Cards each "Hiện thêm" of a lane read in pages adds (the first window is the lane's card limit). */
-export const KANBAN_LANE_PAGE = 50;
+/** Cards each step of a lane read in pages adds (they load as the lane is scrolled to its end) (the first window is the lane's card limit). */
+export const KANBAN_LANE_PAGE = 10;
 /** Cards of one lane drawn at once; the others stand in as spacers of their estimated height. */
 export const KANBAN_LANE_DOM_CAP = 80;
 const KANBAN_CARD_ESTIMATE = 96;
@@ -410,7 +410,8 @@ export function KanbanColumn({
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) revealMore.current();
       },
-      { rootMargin: "0px 0px 240px 0px" },
+      // The lane's own scroller is the root: a sentinel inside it is only "in view" against that box.
+      { root: cardsRef.current, rootMargin: "0px 0px 240px 0px" },
     );
     observer.observe(node);
     return () => observer.disconnect();
@@ -918,47 +919,18 @@ export function KanbanColumn({
             {copy.loadMoreRetry}
           </Button>
         </div>
-      ) : pagedMore ? (
-        <div className="flex flex-wrap items-center justify-center gap-3 px-6 py-2.5 text-crumb text-muted-foreground">
-          {fillCopy(copy.shownOf, {
-            shown: visibleCards.length,
-            total: count,
-          })}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={loadingMore}
-            aria-busy={loadingMore || undefined}
-            onClick={() => {
-              focusFirstRevealed.current =
-                lane.cards[visibleCards.length]?.id ?? null;
-              if (visibleCards.length >= loaded) onLoadMore?.();
-              setPageShown(visibleCards.length + KANBAN_LANE_PAGE);
-            }}
-          >
-            {pluralCopy(
-              { one: copy.pageMore_one, other: copy.pageMore_other },
-              Math.min(KANBAN_LANE_PAGE, count - visibleCards.length),
-            )}
-          </Button>
-        </div>
-      ) : null}
-
-      {hiddenCount > 0 ? (
-        <button
-          type="button"
-          onClick={() => {
-            focusFirstRevealed.current = lane.cards[limit]?.id ?? null;
-            setExpanded(true);
-          }}
-          className="h-7.5 rounded-md bg-popover px-2 text-left dark:bg-card text-crumb font-medium text-muted-foreground hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus-ring"
+      ) : pagedMore && loadingMore ? (
+        <div
+          role="status"
+          aria-busy="true"
+          className="flex flex-col gap-2 px-1 pb-1"
         >
-          {pluralCopy(
-            { one: copy.showMore_one, other: copy.showMore_other },
-            hiddenCount,
-          )}
-        </button>
+          <span className="sr-only">{copy.loadingMore}</span>
+          <span
+            aria-hidden="true"
+            className="block h-16 rounded-xl bg-card/70 motion-safe:animate-pulse"
+          />
+        </div>
       ) : null}
 
       {canAdd ? (

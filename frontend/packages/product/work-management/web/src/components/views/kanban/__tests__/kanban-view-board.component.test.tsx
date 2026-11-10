@@ -979,16 +979,17 @@ describe("KanbanView settings of the view", () => {
     );
   });
 
-  it("shows as many cards per lane as the saved lane limit", async () => {
+  it("shows as many cards per lane as the saved lane limit and keeps the rest for the scroll, with no button", async () => {
     renderKanban(erpOwnerAccess(), {}, { viewConfig: { laneCardLimit: 2 } });
     await ready();
     await waitFor(() =>
-      expect(
-        within(lane("Cần làm")).getByRole("button", {
-          name: "Xem thêm 4 việc",
-        }),
-      ).toBeTruthy(),
+      expect(lane("Cần làm").querySelectorAll("[data-card-id]")).toHaveLength(
+        2,
+      ),
     );
+    expect(
+      within(lane("Cần làm")).queryByRole("button", { name: /Xem thêm/ }),
+    ).toBeNull();
   });
 });
 
