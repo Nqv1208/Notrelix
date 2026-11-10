@@ -22,6 +22,10 @@ import {
   type KanbanCardMove,
 } from "./kanban-card-move-menu";
 import type { KanbanCardCopy } from "./kanban-card.copy";
+import {
+  KanbanCardQuickEdit,
+  type KanbanQuickEdit,
+} from "./kanban-card-quick-edit";
 
 /**
  * What a card offers on hover and focus. Each action is present only when the
@@ -40,6 +44,8 @@ export interface KanbanCardActions {
   readonly onAssignMe?: (card: Card) => void;
   /** `day` is `YYYY-MM-DD`; `null` clears the due date. */
   readonly onSetDue?: (card: Card, day: string | null) => void;
+  /** Edit the card in place (name, labels, people, dates) without opening the popup. */
+  readonly quickEdit?: KanbanQuickEdit;
   readonly onCopyLink?: (cardId: string) => void;
   readonly onDuplicate?: (cardId: string) => void;
   readonly onArchive?: (cardId: string) => void;
@@ -104,6 +110,7 @@ export function KanbanCardQuickActions({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const moreRef = useRef<HTMLButtonElement>(null);
   const phone = useMediaQuery("(max-width: 767px)");
   const always = useMediaQuery(MORE_ALWAYS_QUERY);
@@ -123,7 +130,8 @@ export function KanbanCardQuickActions({
     Boolean(onAssignMe) &&
     !isAssignedTo(card, actions.currentUserId);
   const hasMenu = hasCardMenu(actions);
-  if (!canAssign && !(onSetDue && !always) && !hasMenu) return null;
+  const canEdit = !always && actions.quickEdit !== undefined;
+  if (!canAssign && !(onSetDue && !always) && !hasMenu && !canEdit) return null;
   // At phone width a tap on the options button opens the move sheet (the menu's actions follow the columns).
   const sheetMode = phone && move !== undefined && !move.disabledReason;
   const sheetRows = [
@@ -140,7 +148,7 @@ export function KanbanCardQuickActions({
       destructive: true,
     },
   ].filter((row): row is NonNullable<typeof row> => Boolean(row));
-  const pinned = dueOpen || menuOpen;
+  const pinned = dueOpen || menuOpen || editOpen;
   const day = cardDueDay(card);
 
   const moreButton = (
@@ -181,6 +189,16 @@ export function KanbanCardQuickActions({
             : "pointer-events-none opacity-0 group-has-[:focus-visible]:pointer-events-auto group-has-[:focus-visible]:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100"),
       )}
     >
+      {canEdit && actions.quickEdit ? (
+        <KanbanCardQuickEdit
+          card={card}
+          copy={copy}
+          edit={actions.quickEdit}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          className={ACTION_CLASS}
+        />
+      ) : null}
       {canAssign ? (
         <Button
           type="button"
