@@ -2715,3 +2715,9 @@ no side effect before authoritative commit
 ```
 
 The objective is a use-case layer that is explicit enough to be secure and reliable, while remaining independent enough that persistence, messaging, providers, and hosts can evolve around it.
+
+---
+
+# 159. Chat context (planned)
+
+Chat Application layout (planned): `Features/Chat/{Abstractions,Public,Channels,Conversations,Messages,Threads,ReadState,Mentions,Reactions,Search}` with `Commands`, `Queries`, `DTOs`, `Ports`, `Services` per use case. Handlers use `IChatDbContext` only. Cross-context needs (Workspaces membership, Governance permission, Collaboration mention and notification, resource view checks) go through ports in `Ports/` implemented under `Infrastructure/CrossContext/Chat/`.

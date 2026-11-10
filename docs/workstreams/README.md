@@ -296,6 +296,23 @@ Owns execution decomposition for:
 - Documents;
 - Collaboration.
 
+### Chat
+
+```text
+docs/workstreams/teams/chat.md
+```
+
+Owns execution decomposition for:
+
+- Chat (channels, conversations, messages, threads, chat realtime scope).
+
+Its specification, blueprint and phase plan are:
+
+```text
+docs/workstreams/specs/chat-foundation.md
+docs/workstreams/chat-delivery-plan.md
+```
+
 ### Automation & Integrations
 
 ```text

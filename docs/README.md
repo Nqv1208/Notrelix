@@ -256,6 +256,7 @@ docs/
 │   ├── work-management.md
 │   ├── documents.md
 │   ├── collaboration.md
+│   ├── chat.md
 │   ├── automation.md
 │   ├── integrations.md
 │   ├── billing.md
@@ -1015,6 +1016,7 @@ product/governance.md
 product/work-management.md
 product/documents.md
 product/collaboration.md
+product/chat.md
 product/automation.md
 product/integrations.md
 product/billing.md

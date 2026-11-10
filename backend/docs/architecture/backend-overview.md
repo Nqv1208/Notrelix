@@ -1980,3 +1980,9 @@ current exceptions remain bounded
 tests/gates prove the structural rules
 future extraction changes topology rather than product meaning
 ```
+
+---
+
+# 79. Chat context (planned)
+
+Chat is the twelfth business bounded context (`SYS-ADR-001`, Proposed). It lives as `Chat/` folders inside the existing Domain, Application, Infrastructure and API projects; no new production project is added (`backend/AGENTS.md`). Schema `chat`, API prefix `/api/v1/chat`. It reuses the Reference Architecture Pack mechanisms (outbox, RLS scoped policies, expected version, idempotency, realtime change mapper) and introduces no new mechanism row, except the realtime `Channel` scope. Product rules: `docs/product/chat.md`; delivery: `docs/workstreams/teams/chat.md`.

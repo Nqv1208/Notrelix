@@ -2853,3 +2853,9 @@ replace the source implementation as executable evidence.
 - **Lifecycle:** `Active` → `Disabled` / `Revoked` / `Expired`. `Revoked` and `Expired` are terminal and mutually exclusive. No soft-delete base.
 - **Key invariants:** `Limit` ≥ 0; `FeatureCode` must be non-null; workspace-scoped entitlement requires `TargetWorkspaceId`; account-scoped must not specify it; `Revoked` state blocks `MarkExpired`.
 - **Boundary status:** reviewed.
+
+---
+
+# 161. Chat context (planned)
+
+Chat aggregates (planned, `docs/workstreams/specs/chat-foundation.md` section 19): `Space` (root, kinds channel_public, channel_private, direct, group; owns Membership and the per-space `last_sequence`), `Message` (root, owns reactions, pin marker and thread data by identifier), `ChannelGroup` (root). Chat Domain has no reference to another context's Domain types; people and resources are identifiers and `ResourceRef`. Invariants: gap-free per-space sequence, unique client message id per author and space, one direct space per unordered pair, monotonic read boundary.

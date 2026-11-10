@@ -1495,6 +1495,9 @@ Fix in code before the catalog can reach DONE: the authorization defects in sect
 
 ## 6. Not covered
 
+Free-standing chat (channels, direct and group conversations, messages, threads) is owned by Chat: see `docs/workstreams/use-cases/chat.md`. Chat unread and presence are UC-CHT-C08, C09 and D01, not UC-COL-E02 and E03.
+
+
 | Product section or checklist | Disposition |
 |---|---|
 | Sections 1 to 7 (mission, owns, does not own, target, COL-001, COL-002) | Covered as rules by UC-COL-A01, A02, B18, C05. |
