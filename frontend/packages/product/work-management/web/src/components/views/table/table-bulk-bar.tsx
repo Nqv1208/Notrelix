@@ -1,4 +1,11 @@
-import { useState, type ReactNode } from "react";
+import {
+  cloneElement,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import {
   Archive,
   ArrowRight,
@@ -42,7 +49,15 @@ import type { TableStatusOption } from "./table-model";
 import { StatusDot } from "./table-parts";
 
 const BAR_BASE =
-  "z-20 mx-auto flex w-fit items-center gap-0.5 rounded-[12px] bg-inverse-surface py-1.5 pr-1.5 pl-3.5 whitespace-nowrap text-inverse-foreground shadow-bar flex-wrap animate-in fade-in-0 slide-in-from-bottom-4 duration-250 ease-out motion-reduce:animate-none max-xl:rounded-[14px] max-xl:py-1 max-xl:pl-4.5 max-md:py-2 max-md:pl-3";
+  "z-20 mx-auto flex w-fit items-center gap-0.5 rounded-[12px] bg-inverse-surface py-1.5 pr-1.5 pl-3.5 whitespace-nowrap text-inverse-foreground shadow-bar flex-wrap max-xl:rounded-[14px] max-xl:py-1 max-xl:pl-4.5 max-md:py-2 max-md:pl-3";
+
+/** The bar comes up from below and fades in; on its way out it goes back down. */
+const BAR_IN =
+  "animate-in fade-in-0 slide-in-from-bottom-4 duration-250 ease-out motion-reduce:animate-none";
+const BAR_OUT =
+  "pointer-events-none animate-out fade-out-0 slide-out-to-bottom-4 fill-mode-forwards duration-200 ease-in motion-reduce:hidden";
+/** How long a bar stays mounted while it leaves (a little over BAR_OUT). */
+const BAR_EXIT_MS = 220;
 
 const BAR_CLASS = `absolute inset-x-3 bottom-5.5 max-md:bottom-3 ${BAR_BASE}`;
 
@@ -63,6 +78,8 @@ export interface TableBulkBarProps {
   statusOptions: readonly TableStatusOption[];
   /** The bar sits in a flex column the surface anchors to the bottom (under the failure banner), not on its own. */
   stacked?: boolean;
+  /** The bar is leaving (its selection is gone): it plays its exit and takes no input. */
+  exiting?: boolean;
   /** The viewer may change status and due date. */
   canEdit: boolean;
   /** The viewer may archive items. */
@@ -136,6 +153,7 @@ export function TableBulkBar({
   limit,
   saving = false,
   stacked = false,
+  exiting = false,
   statusOptions,
   canEdit,
   canArchive,
@@ -166,10 +184,13 @@ export function TableBulkBar({
       role="toolbar"
       aria-label={fillTableCopy(b.label, { count })}
       aria-busy={saving}
+      aria-hidden={exiting || undefined}
       data-table-bulk-bar=""
-      className={
-        stacked ? cn("pointer-events-auto max-w-full", BAR_BASE) : BAR_CLASS
-      }
+      data-exiting={exiting ? "" : undefined}
+      className={cn(
+        stacked ? cn("pointer-events-auto max-w-full", BAR_BASE) : BAR_CLASS,
+        exiting ? BAR_OUT : BAR_IN,
+      )}
     >
       <b className="mr-1.5 text-dense-body font-semibold max-xl:text-[14.5px] max-xl:font-[650]">
         {fillTableCopy(b.selected, { count })}
@@ -720,4 +741,40 @@ export function TableArchivedNotice({
       </button>
     </div>
   );
+}
+
+/**
+ * Keeps a bar on screen while it plays its exit: given the bar (or `null` once
+ * nothing is selected), it returns the last bar marked `exiting` for a moment
+ * before it lets go. The bar itself is not rendered while it is `null` and has
+ * never been shown.
+ */
+export function useBarExit(
+  bar: ReactElement<{ exiting?: boolean }> | null,
+): ReactElement<{ exiting?: boolean }> | null {
+  const last = useRef(bar);
+  const present = bar !== null;
+  const [gone, setGone] = useState(!present);
+  if (bar) last.current = bar;
+  useEffect(() => {
+    if (present) {
+      setGone(false);
+      return;
+    }
+    const timer = setTimeout(() => setGone(true), BAR_EXIT_MS);
+    return () => clearTimeout(timer);
+  }, [present]);
+  if (bar) return bar;
+  if (!gone && last.current)
+    return cloneElement(last.current, { exiting: true });
+  return null;
+}
+
+/** `useBarExit` as a wrapper, for a parent that builds its bar inline. */
+export function BarExit({
+  children,
+}: {
+  children: ReactElement<{ exiting?: boolean }> | null;
+}) {
+  return useBarExit(children);
 }

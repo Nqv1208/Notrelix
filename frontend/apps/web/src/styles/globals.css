@@ -674,3 +674,19 @@
     margin: 0 auto;
   }
 }
+
+/* A card row that appears on a card already drawn (a label was added): grows from nothing, so the title below it moves down smoothly. The negative margin cancels the card's 8px gap while the row has no height. */
+@keyframes card-row-grow {
+  from {
+    max-height: 0;
+    min-height: 0;
+    opacity: 0;
+    margin-bottom: -8px;
+  }
+  to {
+    max-height: 22px;
+    min-height: 22px;
+    opacity: 1;
+    margin-bottom: 0;
+  }
+}

@@ -1,4 +1,4 @@
-import { memo, useId, useState } from "react";
+import { memo, useId, useLayoutEffect, useRef, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -279,6 +279,48 @@ function KanbanCardContent({
   );
   const cover = card.cover ?? null;
   const fullCover = cover?.style === "full";
+  // A card without labels (or a done / archived mark) has nothing for a row of its own: its priority and key
+  // sit at the end of the title's line instead of leaving an empty band above it.
+  const labelRow =
+    shownLabels.length > 0 || moreLabels > 0 || isDone || archivedChild;
+  const inlineTail =
+    !labelRow &&
+    !reserveMore &&
+    !reservePick &&
+    (priority !== null || itemKey !== null);
+  const showTop = !inlineTail && (hasTop || reserveMore || reservePick);
+  // A row that appears on a card already drawn (a label was added) grows in, pushing the title down smoothly.
+  // A card that mounts with its row (first paint, scrolling into the lane's window) does not animate.
+  const wasShown = useRef(showTop);
+  const [grow, setGrow] = useState(false);
+  useLayoutEffect(() => {
+    if (showTop && !wasShown.current) setGrow(true);
+    wasShown.current = showTop;
+  }, [showTop]);
+  const priorityMark = priority ? (
+    <span
+      data-priority={priority}
+      title={`${copy.priorityPrefix} ${copy.priority[priority]}`}
+      className={cn("inline-flex shrink-0", PRIORITY_TONE_CLASS[priority])}
+    >
+      <PriorityGlyph level={priority} />
+      <span className="sr-only">{copy.priorityPrefix} </span>
+      <span className="sr-only">{copy.priority[priority]}</span>
+    </span>
+  ) : null;
+  const keyMark = itemKey ? (
+    <span className="shrink-0 font-mono text-metadata leading-[1.45]">
+      {itemKey}
+    </span>
+  ) : null;
+  const titleClass = cn(
+    "line-clamp-3 break-words text-nav leading-[1.4]",
+    fullCover
+      ? "relative text-primary-foreground"
+      : isDone || archivedChild
+        ? "text-muted-foreground"
+        : "text-foreground",
+  );
   return (
     <>
       {cover ? (
@@ -296,13 +338,16 @@ function KanbanCardContent({
           />
         )
       ) : null}
-      {hasTop || reserveMore || reservePick ? (
+      {showTop ? (
         <div
           id={`${idPrefix}-top`}
+          onAnimationEnd={() => setGrow(false)}
           className={cn(
             "flex min-h-[22px] min-w-0 items-center gap-1.5 text-metadata text-meta-foreground",
             reserveMore && "pr-[37px]",
             reservePick && "pl-[26px]",
+            grow &&
+              "overflow-hidden animate-[card-row-grow_220ms_ease-out] motion-reduce:animate-none",
           )}
         >
           {archivedChild ? (
@@ -352,45 +397,29 @@ function KanbanCardContent({
               +{moreLabels}
             </span>
           ) : null}
-          {priority ? (
-            <span
-              data-priority={priority}
-              title={`${copy.priorityPrefix} ${copy.priority[priority]}`}
-              className={cn(
-                "ml-auto inline-flex shrink-0",
-                PRIORITY_TONE_CLASS[priority],
-              )}
-            >
-              <PriorityGlyph level={priority} />
-              <span className="sr-only">{copy.priorityPrefix} </span>
-              <span className="sr-only">{copy.priority[priority]}</span>
-            </span>
-          ) : null}
-          {itemKey ? (
-            <span
-              className={cn(
-                "shrink-0 font-mono text-metadata leading-[1.45]",
-                priority ? null : "ml-auto",
-              )}
-            >
-              {itemKey}
+          {priorityMark || keyMark ? (
+            <span className="ml-auto flex shrink-0 items-center gap-1.5">
+              {priorityMark}
+              {keyMark}
             </span>
           ) : null}
         </div>
       ) : null}
 
-      <h3
-        className={cn(
-          "line-clamp-3 break-words text-nav leading-[1.4]",
-          fullCover
-            ? "relative text-primary-foreground"
-            : isDone || archivedChild
-              ? "text-muted-foreground"
-              : "text-foreground",
-        )}
-      >
-        {card.title}
-      </h3>
+      {inlineTail ? (
+        <div className="flex items-start gap-2">
+          <h3 className={cn(titleClass, "min-w-0 flex-1")}>{card.title}</h3>
+          <span
+            id={`${idPrefix}-top`}
+            className="flex h-[21px] shrink-0 items-center gap-1.5 text-metadata text-meta-foreground"
+          >
+            {priorityMark}
+            {keyMark}
+          </span>
+        </div>
+      ) : (
+        <h3 className={titleClass}>{card.title}</h3>
+      )}
 
       {failure ? (
         <>
