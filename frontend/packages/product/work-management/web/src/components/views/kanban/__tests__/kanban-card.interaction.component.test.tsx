@@ -634,7 +634,7 @@ describe("KanbanCard row 2 (checklist, files, blocked, crowding)", () => {
   it("a card with neither label, priority nor key has no top row at all", () => {
     const { article } = renderCard({
       labels: [],
-      priority: null,
+      priority: undefined,
       itemKey: null,
     });
     expect(article.querySelector("[id$='-top']")).toBeNull();
