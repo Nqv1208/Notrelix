@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { memo, useId, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -316,7 +316,7 @@ function KanbanCardContent({
           ) : isDone ? (
             <span
               data-completed=""
-              className="inline-flex items-center gap-1.5 text-metadata leading-[1.45] font-medium whitespace-nowrap text-meta-foreground"
+              className="inline-flex h-5 shrink-0 items-center gap-1 rounded-[5px] bg-success-subtle px-[7px] text-micro font-semibold whitespace-nowrap text-success-subtle-foreground"
             >
               <SquareCheck className="size-3.25" aria-hidden="true" />
               {copy.completed}
@@ -662,7 +662,7 @@ export function KanbanCardOverlay({
  * sheet. The hover actions (assign to me, due date, options) are a shortcut
  * to the commonest sheet actions.
  */
-export function KanbanCard({
+function KanbanCardView({
   card,
   dndId,
   laneKey,
@@ -902,3 +902,6 @@ export function KanbanCard({
     </ContextMenu>
   );
 }
+
+/** A card re-renders only when what it shows changes, not when the sheet of another card opens. */
+export const KanbanCard = memo(KanbanCardView);

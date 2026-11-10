@@ -42,7 +42,7 @@ import type { TableStatusOption } from "./table-model";
 import { StatusDot } from "./table-parts";
 
 const BAR_BASE =
-  "z-20 mx-auto flex w-fit items-center gap-0.5 rounded-[12px] bg-inverse-surface py-1.5 pr-1.5 pl-3.5 whitespace-nowrap text-inverse-foreground shadow-bar flex-wrap max-xl:rounded-[14px] max-xl:py-1 max-xl:pl-4.5 max-md:py-2 max-md:pl-3";
+  "z-20 mx-auto flex w-fit items-center gap-0.5 rounded-[12px] bg-inverse-surface py-1.5 pr-1.5 pl-3.5 whitespace-nowrap text-inverse-foreground shadow-bar flex-wrap animate-in fade-in-0 slide-in-from-bottom-4 duration-250 ease-out motion-reduce:animate-none max-xl:rounded-[14px] max-xl:py-1 max-xl:pl-4.5 max-md:py-2 max-md:pl-3";
 
 const BAR_CLASS = `absolute inset-x-3 bottom-5.5 max-md:bottom-3 ${BAR_BASE}`;
 

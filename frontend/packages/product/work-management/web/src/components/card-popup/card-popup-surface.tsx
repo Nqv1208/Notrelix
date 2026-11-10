@@ -263,6 +263,8 @@ export function CardPopupSurface({
           "fixed top-3 left-0 flex h-[calc(100dvh-12px)] max-h-none w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-t-[16px] rounded-b-none bg-popover p-0 text-[14px] text-foreground ring-0",
           "md:top-1/2 md:left-1/2 md:h-[calc(100dvh-128px)] md:w-[1120px] md:max-w-[calc(100vw-48px)] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[16px] md:shadow-popover",
           "sm:max-w-none",
+          // A calmer entrance than the base 100 ms: the card is heavy to draw, and a longer ease hides its first frames.
+          "duration-200 ease-out motion-reduce:animate-none",
         )}
       >
         <DialogTitle className="sr-only">{label}</DialogTitle>

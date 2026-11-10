@@ -8,9 +8,14 @@ import {
   ArrowLeft,
   ArrowRight,
   ChevronLeft,
+  EyeOff,
+  Gauge,
   Inbox,
   MoreHorizontal,
+  PanelLeftClose,
+  Pencil,
   Plus,
+  Trash2,
   TriangleAlert,
 } from "lucide-react";
 import {
@@ -509,6 +514,8 @@ export function KanbanColumn({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
+                // One line per action: the menu is as wide as its longest label, never narrower than 14rem.
+                className="w-max min-w-56 [&_[data-slot=dropdown-menu-item]]:text-[14px] [&_[data-slot=dropdown-menu-item]]:whitespace-nowrap"
                 onCloseAutoFocus={(event) => {
                   if (openingForm.current) {
                     openingForm.current = false;
@@ -531,6 +538,7 @@ export function KanbanColumn({
                       openingForm.current = true;
                     }}
                   >
+                    <Pencil aria-hidden="true" />
                     {edit.subject === "status"
                       ? copy.editStatus
                       : copy.editValue}
@@ -546,6 +554,7 @@ export function KanbanColumn({
                       openingWip.current = true;
                     }}
                   >
+                    <Gauge aria-hidden="true" />
                     {copy.wipSet}
                   </DropdownMenuItem>
                 ) : null}
@@ -568,9 +577,11 @@ export function KanbanColumn({
                   </>
                 ) : null}
                 <DropdownMenuItem onSelect={() => onCollapsedChange(true)}>
+                  <PanelLeftClose aria-hidden="true" />
                   {copy.collapse}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={onHide}>
+                  <EyeOff aria-hidden="true" />
                   {copy.hide}
                 </DropdownMenuItem>
                 {canEdit && edit.remove ? (
@@ -584,6 +595,7 @@ export function KanbanColumn({
                         openingRemove.current = true;
                       }}
                     >
+                      <Trash2 aria-hidden="true" />
                       {edit.subject === "status"
                         ? copy.deleteStatus
                         : copy.deleteValue}
