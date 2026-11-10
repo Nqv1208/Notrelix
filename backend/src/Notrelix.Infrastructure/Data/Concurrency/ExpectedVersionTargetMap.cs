@@ -3,6 +3,8 @@ using Notrelix.Application.Features.Chat.Channels.Commands.DeleteChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.UpdateChannel;
 using Notrelix.Application.Features.Chat.ChannelGroups.Commands.DeleteChannelGroup;
 using Notrelix.Application.Features.Chat.ChannelGroups.Commands.UpdateChannelGroup;
+using Notrelix.Application.Features.Chat.Messages.Commands.DeleteMessage;
+using Notrelix.Application.Features.Chat.Messages.Commands.EditMessage;
 using Notrelix.Application.Features.Accounts.Accounts.Commands.RenameAccount;
 using Notrelix.Application.Features.Analytics.Dashboards.Commands.ArchiveDashboard;
 using Notrelix.Application.Features.Analytics.Dashboards.Commands.DeleteDashboard;
@@ -206,6 +208,7 @@ public sealed class ExpectedVersionTargetMap
     private const string CommentKind = "collaboration.comment";
     private const string ChatChannelKind = "chat.channel";
     private const string ChatChannelGroupKind = "chat.channel-group";
+    private const string ChatMessageKind = "chat.message";
     private const string BoardKind = "work-management.board";
     private const string BoardFieldKind = "work-management.board-field";
     private const string LabelKind = "work-management.label";
@@ -359,6 +362,10 @@ public sealed class ExpectedVersionTargetMap
         [typeof(ArchiveChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
         [typeof(DeleteChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
         [typeof(UpdateChannelGroupCommand)] = new(ChatChannelGroupKind, typeof(Notrelix.Domain.Chat.Spaces.ChannelGroup)),
+
+        // Chat — message edit and delete quote the message version the client read (UC-CHT-B04, B05)
+        [typeof(EditMessageCommand)] = new(ChatMessageKind, typeof(Notrelix.Domain.Chat.Messages.Message)),
+        [typeof(DeleteMessageCommand)] = new(ChatMessageKind, typeof(Notrelix.Domain.Chat.Messages.Message)),
         [typeof(DeleteChannelGroupCommand)] = new(ChatChannelGroupKind, typeof(Notrelix.Domain.Chat.Spaces.ChannelGroup)),
 
         // Documents — Space placement of a root page (docs/product/workspaces.md §79)

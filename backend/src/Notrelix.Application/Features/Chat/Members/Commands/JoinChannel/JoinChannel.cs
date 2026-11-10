@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.DTOs;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Spaces;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
@@ -23,7 +24,8 @@ public class JoinChannelCommandHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
-    IDateTimeProvider clock) : IRequestHandler<JoinChannelCommand, Result<ChannelDto>>
+    IDateTimeProvider clock,
+    ChatSystemMessages systemMessages) : IRequestHandler<JoinChannelCommand, Result<ChannelDto>>
 {
     public async Task<Result<ChannelDto>> Handle(JoinChannelCommand request, CancellationToken cancellationToken)
     {
@@ -36,7 +38,8 @@ public class JoinChannelCommandHandler(
         if (space.IsPrivate)
             throw new NotFoundException(nameof(Space), space.Id);
 
-        space.AddMember(userId, MembershipRole.Member, clock.UtcNow);
+        if (space.AddMember(userId, MembershipRole.Member, clock.UtcNow))
+            await systemMessages.AnnounceAsync(space, userId, ChatSystemMessages.MemberJoined, cancellationToken);
         return Result<ChannelDto>.Success(ChannelDto.From(space, space.GetActiveMembership(userId)));
     }
 }

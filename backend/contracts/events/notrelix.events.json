@@ -1860,6 +1860,313 @@
       ]
     },
     {
+      "name": "chat.message.created",
+      "version": 1,
+      "clrType": "Notrelix.Application.Events.Chat.ChatMessageCreatedIntegrationEvent",
+      "producerContext": "Chat",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
+        "carriesWorkspaceId": true
+      },
+      "serializedProperties": [
+        {
+          "name": "messageId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "spaceId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sequence",
+          "type": "Int64",
+          "nullable": false
+        },
+        {
+          "name": "authorId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "kind",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "content",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "clientMessageId",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "version",
+          "type": "Int64",
+          "nullable": false
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
+      "consumers": []
+    },
+    {
+      "name": "chat.message.deleted",
+      "version": 1,
+      "clrType": "Notrelix.Application.Events.Chat.ChatMessageDeletedIntegrationEvent",
+      "producerContext": "Chat",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
+        "carriesWorkspaceId": true
+      },
+      "serializedProperties": [
+        {
+          "name": "messageId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "spaceId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sequence",
+          "type": "Int64",
+          "nullable": false
+        },
+        {
+          "name": "authorId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "deletedBy",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "version",
+          "type": "Int64",
+          "nullable": false
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
+      "consumers": []
+    },
+    {
+      "name": "chat.message.updated",
+      "version": 1,
+      "clrType": "Notrelix.Application.Events.Chat.ChatMessageUpdatedIntegrationEvent",
+      "producerContext": "Chat",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
+        "carriesWorkspaceId": true
+      },
+      "serializedProperties": [
+        {
+          "name": "messageId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "spaceId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sequence",
+          "type": "Int64",
+          "nullable": false
+        },
+        {
+          "name": "authorId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "content",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "version",
+          "type": "Int64",
+          "nullable": false
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
+      "consumers": []
+    },
+    {
       "name": "checklist.created",
       "version": 1,
       "clrType": "Notrelix.Application.Events.WorkManagement.ChecklistCreatedIntegrationEvent",

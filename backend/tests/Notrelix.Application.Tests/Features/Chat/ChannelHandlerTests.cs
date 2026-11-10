@@ -8,8 +8,10 @@ using Notrelix.Application.Features.Chat.Channels.Commands.UpdateChannel;
 using Notrelix.Application.Features.Chat.Channels.Queries.ListChannels;
 using Notrelix.Application.Features.Chat.Members.Commands.JoinChannel;
 using Notrelix.Application.Features.Chat.Members.Commands.RemoveChannelMember;
+using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Application.Tests.Features.Collaboration;
+using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Rules;
 using Notrelix.Domain.Chat.Spaces;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
@@ -34,7 +36,10 @@ public class ChannelHandlerTests
     private readonly List<Space> _spaces = [];
     private readonly List<Membership> _memberships = [];
     private readonly List<ChannelGroup> _groups = [];
+    private readonly List<Message> _messages = [];
     private readonly Mock<IChatDbContext> _db = new();
+    private readonly Mock<ISpaceSequenceAllocator> _sequences = new();
+    private long _lastSequence;
 
     public ChannelHandlerTests()
     {
@@ -46,6 +51,9 @@ public class ChannelHandlerTests
         _db.Setup(d => d.ChatSpaces).Returns(TestDbSet.Create(_spaces).Object);
         _db.Setup(d => d.ChatMemberships).Returns(TestDbSet.Create(_memberships).Object);
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(_groups).Object);
+        _db.Setup(d => d.ChatMessages).Returns(TestDbSet.Create(_messages).Object);
+        _sequences.Setup(s => s.LockAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        _sequences.Setup(s => s.NextAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(() => ++_lastSequence);
 
         SetCaller(_owner, "Owner");
         _members.Setup(m => m.FindAsync(_workspaceId, _member, It.IsAny<CancellationToken>()))
@@ -80,9 +88,10 @@ public class ChannelHandlerTests
     }
 
     private CreateChannelCommandHandler CreateHandler() => new(_db.Object, _context.Object, _clock.Object);
-    private JoinChannelCommandHandler JoinHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object);
-    private RemoveChannelMemberCommandHandler RemoveHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object);
-    private UpdateChannelCommandHandler UpdateHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object);
+    private ChatSystemMessages SystemMessages() => new(_db.Object, _sequences.Object, _clock.Object);
+    private JoinChannelCommandHandler JoinHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
+    private RemoveChannelMemberCommandHandler RemoveHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
+    private UpdateChannelCommandHandler UpdateHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
     private ListChannelsQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object);
 
     [Fact]

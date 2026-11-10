@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.DTOs;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Rules;
 
@@ -20,7 +21,8 @@ public class UpdateChannelCommandHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
-    IDateTimeProvider clock) : IRequestHandler<UpdateChannelCommand, Result<ChannelDto>>
+    IDateTimeProvider clock,
+    ChatSystemMessages systemMessages) : IRequestHandler<UpdateChannelCommand, Result<ChannelDto>>
 {
     public async Task<Result<ChannelDto>> Handle(UpdateChannelCommand request, CancellationToken cancellationToken)
     {
@@ -32,7 +34,10 @@ public class UpdateChannelCommandHandler(
 
         var name = request.Name.Trim();
         await ChannelAccess.RequireUniqueNameAsync(db, request.WorkspaceId, name, space.Id, cancellationToken);
+        var previousName = space.Name;
         space.UpdateDetails(name, request.Topic, userId, clock.UtcNow);
+        if (space.Name != previousName)
+            await systemMessages.AnnounceAsync(space, userId, ChatSystemMessages.Renamed(space.Name), cancellationToken);
 
         return Result<ChannelDto>.Success(ChannelDto.From(space, space.GetActiveMembership(userId)));
     }

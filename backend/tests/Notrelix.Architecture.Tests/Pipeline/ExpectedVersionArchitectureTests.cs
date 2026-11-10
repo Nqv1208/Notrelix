@@ -34,6 +34,8 @@ public static class ExpectedVersionInventory
             ["ArchiveChannelCommand"] = "chat.channel",
             ["DeleteChannelCommand"] = "chat.channel",
             ["UpdateChannelGroupCommand"] = "chat.channel-group",
+            ["EditMessageCommand"] = "chat.message",
+            ["DeleteMessageCommand"] = "chat.message",
             ["DeleteChannelGroupCommand"] = "chat.channel-group",
             ["UpdateBoardItemCommand"] = "work-management.board-item",
             ["ArchiveBoardItemCommand"] = "work-management.board-item",

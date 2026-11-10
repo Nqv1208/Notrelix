@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.DTOs;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Rules;
 
@@ -23,7 +24,8 @@ public class ArchiveChannelCommandHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
-    IDateTimeProvider clock) : IRequestHandler<ArchiveChannelCommand, Result<ChannelDto>>
+    IDateTimeProvider clock,
+    ChatSystemMessages systemMessages) : IRequestHandler<ArchiveChannelCommand, Result<ChannelDto>>
 {
     public async Task<Result<ChannelDto>> Handle(ArchiveChannelCommand request, CancellationToken cancellationToken)
     {
@@ -36,7 +38,11 @@ public class ArchiveChannelCommandHandler(
         if (!request.Archived)
             await ChannelAccess.RequireUniqueNameAsync(db, request.WorkspaceId, space.Name, space.Id, cancellationToken);
 
-        space.SetArchived(request.Archived, userId, clock.UtcNow);
+        if (space.SetArchived(request.Archived, userId, clock.UtcNow))
+        {
+            var content = request.Archived ? ChatSystemMessages.Archived : ChatSystemMessages.Unarchived;
+            await systemMessages.AnnounceAsync(space, userId, content, cancellationToken);
+        }
         return Result<ChannelDto>.Success(ChannelDto.From(space, space.GetActiveMembership(userId)));
     }
 }

@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 
 namespace Notrelix.Application.Features.Chat.Members.Commands.RemoveChannelMember;
@@ -20,7 +21,8 @@ public class RemoveChannelMemberCommandHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
-    IDateTimeProvider clock) : IRequestHandler<RemoveChannelMemberCommand, Result>
+    IDateTimeProvider clock,
+    ChatSystemMessages systemMessages) : IRequestHandler<RemoveChannelMemberCommand, Result>
 {
     public async Task<Result> Handle(RemoveChannelMemberCommand request, CancellationToken cancellationToken)
     {
@@ -32,7 +34,11 @@ public class RemoveChannelMemberCommandHandler(
         if (request.UserId != userId)
             ChannelAccess.RequireManager(space, caller, userId);
 
-        space.RemoveMember(request.UserId, clock.UtcNow);
+        if (space.RemoveMember(request.UserId, clock.UtcNow))
+        {
+            var content = request.UserId == userId ? ChatSystemMessages.MemberLeft : ChatSystemMessages.MemberRemoved;
+            await systemMessages.AnnounceAsync(space, userId, content, cancellationToken);
+        }
         return Result.Success();
     }
 }

@@ -21,4 +21,19 @@ public static class ChatRuleCodes
 
     /// <summary>A sidebar position is not a finite number.</summary>
     public const string InvalidPosition = "invalid-position";
+
+    /// <summary>A message's text is empty or longer than the limit after trim.</summary>
+    public const string MessageContentInvalid = "message-content-invalid";
+
+    /// <summary>A message sequence must start at 1; the store assigns it.</summary>
+    public const string MessageSequenceInvalid = "message-sequence-invalid";
+
+    /// <summary>A deleted message is a tombstone and cannot be edited.</summary>
+    public const string MessageDeleted = "message-deleted";
+
+    /// <summary>Only the author of a message edits or deletes it (UC-CHT-B04, B05).</summary>
+    public const string MessageNotAuthor = "message-not-author";
+
+    /// <summary>A system message announces a change and cannot be edited or deleted by a person (CHT-007, UC-CHT-B09).</summary>
+    public const string SystemMessageImmutable = "system-message-immutable";
 }
