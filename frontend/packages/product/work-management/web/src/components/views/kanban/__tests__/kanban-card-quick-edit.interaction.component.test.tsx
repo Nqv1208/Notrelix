@@ -29,15 +29,15 @@ function setup() {
   };
   render(
     <article>
-    <KanbanCardQuickEdit
-      card={CARD}
-      copy={en}
-      edit={edit}
-      rows={[]}
-      open
-      onOpenChange={() => {}}
-      className=""
-    />
+      <KanbanCardQuickEdit
+        card={CARD}
+        copy={en}
+        edit={edit}
+        rows={[]}
+        open
+        onOpenChange={() => {}}
+        className=""
+      />
     </article>,
   );
   return edit;

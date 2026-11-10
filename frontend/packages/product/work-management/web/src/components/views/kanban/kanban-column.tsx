@@ -376,6 +376,33 @@ export function KanbanColumn({
     target.focus();
   }, [expanded, paged, pageShown, loaded]);
 
+  // Reaching the end of the cards shows the next page by itself, so no click is needed and the lane does not
+  // jump under the pointer; the button stays for keyboard use and for a page that failed.
+  const sentinel = useRef<HTMLDivElement | null>(null);
+  const autoMore =
+    (pagedMore && !(loadFailed && lane.hasMore) && !loadingMore) ||
+    (!paged && hiddenCount > 0);
+  const revealMore = useRef<() => void>(() => {});
+  revealMore.current = () => {
+    if (paged) {
+      if (visibleCards.length >= loaded) onLoadMore?.();
+      setPageShown(visibleCards.length + KANBAN_LANE_PAGE);
+    } else setExpanded(true);
+  };
+  useEffect(() => {
+    const node = sentinel.current;
+    if (!autoMore || !node || typeof IntersectionObserver === "undefined")
+      return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) revealMore.current();
+      },
+      { rootMargin: "0px 0px 240px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [autoMore, visibleCards.length]);
+
   const setRefs = (element: HTMLElement | null) => {
     sectionRef.current = element;
     setNodeRef(element);
@@ -758,6 +785,13 @@ export function KanbanColumn({
                 aria-hidden="true"
                 style={{ height: spaceBelow }}
                 className="shrink-0"
+              />
+            ) : null}
+            {autoMore ? (
+              <div
+                ref={sentinel}
+                aria-hidden="true"
+                className="h-px shrink-0"
               />
             ) : null}
           </div>
