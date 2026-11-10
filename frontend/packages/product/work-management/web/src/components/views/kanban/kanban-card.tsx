@@ -67,7 +67,7 @@ function markFor(member: CardMember): string {
 const DUE_CLASS: Readonly<Record<ItemDueState["kind"], string>> = {
   overdue: "bg-danger-subtle font-semibold text-danger-subtle-foreground",
   today: "bg-warning-subtle font-semibold text-warning-subtle-foreground",
-  date: "-ml-1.5 font-medium text-muted-foreground",
+  date: "-ml-1 font-medium text-muted-foreground",
 };
 
 /** A count as shown on the face: 99+ above 99. */

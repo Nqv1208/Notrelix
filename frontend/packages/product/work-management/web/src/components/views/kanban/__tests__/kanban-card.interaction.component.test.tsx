@@ -588,6 +588,15 @@ describe("KanbanCard row 2 (checklist, files, blocked, crowding)", () => {
     expect(article.querySelector("[data-due]")!.textContent).toContain("→");
   });
 
+  it("never pulls the due date's icon outside the clipped row", () => {
+    // The chip has 4px of padding (px-1); a pull of more than that cuts the icon.
+    const { article } = renderCard({ dueAt: dueOn(16, 10) });
+    const chip = article.querySelector("[data-due]") as HTMLElement;
+    expect(chip.className).toContain("px-1");
+    expect(chip.className).toContain("-ml-1 ");
+    expect(chip.className).not.toContain("-ml-1.5");
+  });
+
   it("draws a checklist progress bar filled to the share done", () => {
     const { article } = renderCard({
       checklistProgress: { done: 1, total: 4 },
