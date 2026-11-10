@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { SignInFlow, useAuth } from "@notrelix/features-auth";
 import { sanitizeInternalReturnUrl } from "../routing/sanitize-return-url";
@@ -12,21 +12,33 @@ export function SignInPage() {
   const search = new URLSearchParams(searchStr);
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
-  const checked = useRef(false);
-  // Someone who already has a session and types this address is sent on. Only the
-  // first answer counts: a sign-in finished on this page navigates on its own, and
-  // an MFA step or a provider error needs the form.
+  // "checking" until the session answers, "leaving" when a signed-in person is sent
+  // on, "form" otherwise. Only the first answer counts: a sign-in finished on this
+  // page navigates on its own, and an MFA step or a provider error needs the form.
+  // The form is not drawn before the answer, so it never flashes before the move.
+  const [phase, setPhase] = useState<"checking" | "leaving" | "form">(
+    "checking",
+  );
   useEffect(() => {
-    if (isLoading || checked.current) return;
-    checked.current = true;
-    if (!isAuthenticated) return;
-    if (search.get("step") === "mfa" || search.get("error")) return;
+    if (isLoading || phase !== "checking") return;
+    if (
+      !isAuthenticated ||
+      search.get("step") === "mfa" ||
+      search.get("error")
+    ) {
+      setPhase("form");
+      return;
+    }
+    setPhase("leaving");
     const target = search.get("returnTo") ?? search.get("redirect");
     void navigate({
       to: target ? sanitizeInternalReturnUrl(target) : "/home",
       replace: true,
     });
   });
+  if (phase !== "form") {
+    return <div className="bg-background h-screen w-screen" aria-hidden />;
+  }
   return (
     <AuthLayout>
       <SignInFlow
