@@ -37,6 +37,7 @@ public class PinHandlerTests
     private readonly Mock<IWorkspaceMemberFacts> _members = new();
     private readonly List<Space> _spaces = [];
     private readonly List<Message> _messages = [];
+    private readonly List<Reaction> _reactions = [];
     private readonly List<Pin> _pins = [];
     private readonly List<string> _order = [];
     private readonly Mock<IChatDbContext> _db = new();
@@ -56,6 +57,7 @@ public class PinHandlerTests
         _db.Setup(d => d.ChatMemberships).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.Memberships).ToList()).Object);
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(new List<ChannelGroup>()).Object);
         _db.Setup(d => d.ChatMessages).Returns(() => TestDbSet.Create(_messages).Object);
+        _db.Setup(d => d.ChatReactions).Returns(() => TestDbSet.Create(_reactions).Object);
         _db.Setup(d => d.ChatPins).Returns(() => TestDbSet.Create(_pins).Object);
 
         _sequences.Setup(s => s.LockAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))

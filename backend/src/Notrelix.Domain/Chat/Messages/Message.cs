@@ -220,6 +220,18 @@ public class Message : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(ChatRuleCodes.MessageDeleted, "A deleted message cannot be pinned.");
     }
 
+    /// <summary>
+    /// Refuses a reaction to a message that cannot carry one: a system message (announcements are not content, as with a pin) or a
+    /// tombstone (UC-CHT-G06). The space and membership checks belong to the handler.
+    /// </summary>
+    public void EnsureReactable()
+    {
+        if (IsSystem)
+            throw new BusinessRuleException(ChatRuleCodes.MessageNotReactable, "A system message cannot be reacted to.");
+        if (IsDeleted)
+            throw new BusinessRuleException(ChatRuleCodes.MessageDeleted, "A deleted message cannot be reacted to.");
+    }
+
     private void EnsureEditable(Guid editedBy)
     {
         Guard.NotEmpty(editedBy);

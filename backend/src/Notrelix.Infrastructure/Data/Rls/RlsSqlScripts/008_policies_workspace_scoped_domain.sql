@@ -78,6 +78,7 @@ SELECT ops.apply_scoped_business_policies('chat', 'messages', true);
 SELECT ops.apply_scoped_business_policies('chat', 'threads', true);
 SELECT ops.apply_scoped_business_policies('chat', 'thread_followers', true);
 SELECT ops.apply_scoped_business_policies('chat', 'pins', true);
+SELECT ops.apply_scoped_business_policies('chat', 'reactions', true);
 SELECT ops.apply_scoped_business_policies('automation', 'automation_rules', true);
 SELECT ops.apply_scoped_business_policies('automation', 'automation_executions', true);
 SELECT ops.apply_scoped_business_policies('automation', 'scheduled_jobs', true);

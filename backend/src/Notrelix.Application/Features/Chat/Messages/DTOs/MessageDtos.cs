@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Chat.Reactions.DTOs;
 using Notrelix.Domain.Chat.Messages;
 
 namespace Notrelix.Application.Features.Chat.Messages.DTOs;
@@ -21,13 +22,15 @@ public sealed record MessageDto(
     DateTimeOffset? EditedAt,
     DateTimeOffset? DeletedAt,
     long Version,
-    ReplyPreviewDto? ReplyPreview = null)
+    ReplyPreviewDto? ReplyPreview = null,
+    IReadOnlyList<ReactionSummaryDto>? Reactions = null)
 {
     /// <summary>
     /// The message as readers see it. <paramref name="replyPreview"/> is the live quote of <see cref="ReplyToId"/>, read by the
-    /// caller from the quoted message; it is null when the message quotes nothing.
+    /// caller from the quoted message; it is null when the message quotes nothing. <paramref name="reactions"/> is the reaction
+    /// summary (UC-CHT-G06), empty when nothing reacted.
     /// </summary>
-    public static MessageDto From(Message message, ReplyPreviewDto? replyPreview = null) => new(
+    public static MessageDto From(Message message, ReplyPreviewDto? replyPreview = null, IReadOnlyList<ReactionSummaryDto>? reactions = null) => new(
         message.Id,
         message.SpaceId,
         message.Sequence,
@@ -45,7 +48,8 @@ public sealed record MessageDto(
         message.EditedAt,
         message.DeletedAt,
         message.Version,
-        replyPreview);
+        replyPreview,
+        reactions ?? []);
 }
 
 /// <summary>
