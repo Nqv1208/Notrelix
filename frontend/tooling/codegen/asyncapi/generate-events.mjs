@@ -46,6 +46,8 @@ function schemaToTs(schema, indent = 0) {
       return "number";
     case "boolean":
       return "boolean";
+    case "null":
+      return "null";
     case "array":
       return `ReadonlyArray<${schemaToTs(schema.items, indent)}>`;
     case "object":
