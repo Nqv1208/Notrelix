@@ -78,7 +78,7 @@ export function ChatMessageRow({
         {continued ? (
           <time
             dateTime={message.createdAt}
-            className="invisible block pt-1 text-[11px] tabular-nums text-muted-foreground group-hover:visible"
+            className="invisible block pt-1 text-xs tabular-nums text-muted-foreground group-hover:visible"
           >
             {time}
           </time>

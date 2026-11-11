@@ -151,7 +151,7 @@ export function ChatHeader({
                       <Avatar className="size-6" aria-hidden="true">
                         <AvatarFallback
                           className={cn(
-                            "text-[10px] font-semibold",
+                            "text-xs font-semibold",
                             avatarToneOf(member.userId),
                           )}
                         >
