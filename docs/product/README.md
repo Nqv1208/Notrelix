@@ -172,7 +172,7 @@ It MUST NOT become another product constitution.
 
 # 7. Canonical context set
 
-Notrelix currently recognizes eleven business bounded contexts:
+Notrelix currently recognizes twelve business bounded contexts:
 
 ```text
 Accounts
@@ -182,6 +182,7 @@ Governance
 Work Management
 Documents
 Collaboration
+Chat
 Automation
 Integrations
 Billing
@@ -210,6 +211,7 @@ governance.md
 work-management.md
 documents.md
 collaboration.md
+chat.md
 automation.md
 integrations.md
 billing.md
@@ -1102,6 +1104,7 @@ docs/product/
 ├── work-management.md
 ├── documents.md
 ├── collaboration.md
+├── chat.md
 ├── automation.md
 ├── integrations.md
 ├── billing.md

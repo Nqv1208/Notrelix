@@ -138,6 +138,7 @@ const RULE_NAMESPACE_STEMS =
     "WM",
     "DCT",
     "COL",
+    "CHT",
     "AUT",
     "INT",
     "BIL",

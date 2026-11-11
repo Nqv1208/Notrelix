@@ -94,6 +94,11 @@ Current source has first-class Attachments, Comments, Mentions, Presence, Reacti
 # 3. Does not own
 
 ```text
+free-standing conversation (channels, direct and group conversations, messages, threads)
+→ Chat (docs/product/chat.md, SYS-ADR-001)
+```
+
+```text
 target Board/Item/Field/View
 → Work Management
 

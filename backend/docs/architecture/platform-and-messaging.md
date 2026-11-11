@@ -2486,3 +2486,9 @@ tenantless worker
 unbounded replay
 broker-specific business contract
 ```
+
+---
+
+# 151. Chat context (planned)
+
+Chat events (planned): `chat.channel.*`, `chat.membership.*`, `chat.message.created|updated|deleted`, `chat.reaction.changed`, `chat.read.advanced`, `chat.mention.created` through the outbox, with consumers for Collaboration notification intents, Governance Audit and Search indexing. Realtime: `RealtimeScopeKind.Channel`, message-carrying event frames, `typing` and `presence` client frames (protocol v1.1, `SYS-ADR-001`).

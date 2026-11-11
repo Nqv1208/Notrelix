@@ -63,6 +63,7 @@ docs/product/
 ├── work-management.md
 ├── documents.md
 ├── collaboration.md
+├── chat.md
 ├── automation.md
 ├── integrations.md
 ├── billing.md
@@ -779,6 +780,18 @@ Collaboration targets stable scoped resources; it does not copy resource ownersh
 Detailed owner:
 
 [`docs/product/collaboration.md`](docs/product/collaboration.md)
+
+---
+
+## 7.7.1 Chat
+
+Chat owns free-standing conversation inside a Workspace: channels and categories (public and private), direct and group conversations, messages, threads, pins, and per-space read state and notification level. It reuses Collaboration's mention, reaction, attachment and notification rules and links to Boards, Pages and Teams only by reference.
+
+Detailed owner:
+
+[`docs/product/chat.md`](docs/product/chat.md)
+
+Admission decision (accepted): [`docs/decisions/SYS-ADR-001-chat-bounded-context.md`](docs/decisions/SYS-ADR-001-chat-bounded-context.md)
 
 ---
 

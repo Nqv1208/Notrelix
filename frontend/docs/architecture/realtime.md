@@ -1836,3 +1836,9 @@ session established
 ```
 
 Realtime is successful when it makes the product feel live without creating a second source of truth, leaking events across Workspaces, hiding gaps, or assuming transport arrival order is business truth.
+
+---
+
+# 146. Chat context (planned)
+
+Chat realtime (planned, protocol v1.1): a `ModuleRealtimeAdapter` for Chat registers in `module-adapter-registry`; it handles `chat.*` events by patching the Chat query cache in place (insert by sequence, dedupe by `clientMessageId`, ignore older versions), recovers gaps with `GET .../messages?after=`, and clears a space on `access-changed`. Typing and presence frames are sent only through the runtime-owned client (FE-RT-004). The mock transport must be able to emit events to tests; mock e2e never opens a real socket.

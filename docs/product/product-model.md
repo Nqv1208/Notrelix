@@ -121,7 +121,7 @@ Changes to approved product semantics require product/change governance.
 
 # 5. Canonical context set
 
-The accepted business bounded contexts are:
+The accepted business bounded contexts are (Chat was added as the twelfth by `SYS-ADR-001`, Accepted):
 
 ```text
 Accounts
@@ -131,6 +131,7 @@ Governance
 Work Management
 Documents
 Collaboration
+Chat
 Automation
 Integrations
 Billing
@@ -139,7 +140,7 @@ Analytics / Reporting
 
 This set is semantic.
 
-It does not imply eleven services, eleven backend projects, or eleven frontend packages.
+It does not imply twelve services, twelve backend projects, or twelve frontend packages.
 
 ---
 

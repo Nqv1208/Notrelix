@@ -86,6 +86,7 @@ The current implementation remains a modular monolith and frontend monorepo unti
 | Workspace & Governance | Workspaces, Governance | membership, invitations, policy/resource authorization |
 | Work Management | WorkManagement | board/item/view behavior |
 | Documents & Collaboration | Documents, Collaboration | pages, blocks, comments, collaborative resource behavior |
+| Chat | Chat | channels, conversations, messages, threads, chat realtime scope |
 | Automation & Integrations | Automation, Integrations | rules, triggers, actions, external connectors |
 | Billing & Entitlements | Billing | plans, subscription, entitlement and usage semantics |
 | Analytics & Reporting | Analytics / Reporting | read models, reporting semantics, cross-context analytical consumption |
@@ -119,6 +120,7 @@ The following names describe **future extraction candidates**, not projects to c
 | WorkManagement | Work Management capability/service | remain inside current backend projects |
 | Documents | Documents capability/service | remain inside current backend projects |
 | Collaboration | Collaboration capability/service | remain inside current backend projects |
+| Chat | Chat capability/service | remain inside current backend projects (no new `.csproj`) |
 | Automation | Automation capability/service | remain inside current backend projects |
 | Integrations | Integrations capability/service | remain inside current backend projects |
 | Billing | Billing capability/service | remain inside current backend projects |
@@ -513,6 +515,22 @@ Critical dependencies:
 - notification/activity supporting capabilities.
 
 Collaboration MUST reference resources through contracts/identifiers. It must not directly own or mutate WorkManagement/Documents persistence.
+
+## 12A. Team: Chat
+
+### 12A.1 Chat bounded context
+
+Primary responsibility:
+
+- channels, channel groups and memberships;
+- direct and group conversations;
+- messages with a per-space sequence, threads and pins;
+- per-space read state and notification level;
+- the chat realtime scope, typing and presence.
+
+Chat MUST reference resources through contracts/identifiers and must not own or mutate WorkManagement or Documents persistence. It applies Collaboration's mention, reaction, attachment and notification rules through ports.
+
+Specification: `docs/workstreams/teams/chat.md`, `docs/workstreams/specs/chat-foundation.md`, plan `docs/workstreams/chat-delivery-plan.md`. Chat can start after `SYS-ADR-001` is Accepted; it needs Workspaces membership, Governance permission checks, the Collaboration notification contract and the realtime gateway (Platform).
 
 ## 13. Team: Automation & Integrations
 
