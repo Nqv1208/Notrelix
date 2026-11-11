@@ -1,5 +1,4 @@
 using Npgsql;
-using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.Chat.Pins.Commands.PinMessage;
 using Notrelix.Application.Features.Chat.Pins.Commands.UnpinMessage;
 using Notrelix.Application.Features.Chat.Pins.Queries.ListPins;

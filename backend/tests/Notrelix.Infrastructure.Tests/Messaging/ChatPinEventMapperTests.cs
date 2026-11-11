@@ -1,7 +1,5 @@
-using Notrelix.Application.EventMappers;
 using Notrelix.Application.EventMappers.Chat;
 using Notrelix.Application.Events.Chat;
-using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Messages.Events;
 
 namespace Notrelix.Infrastructure.Tests.Messaging;

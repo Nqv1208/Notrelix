@@ -1,4 +1,3 @@
-using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Chat.Pins.Commands.PinMessage;
 using Notrelix.Application.Features.Workspaces.Public.Members;

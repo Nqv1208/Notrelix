@@ -1,7 +1,4 @@
-using Notrelix.Application.Common.Context;
-using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Common.Realtime.Gateway;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Queries.AuthorizeChannelRealtimeSubscription;

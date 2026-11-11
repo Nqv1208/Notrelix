@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using Notrelix.Application.Common.Context;
 using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Events.Chat;
 using Notrelix.Application.Features.Chat.Realtime;

@@ -1,9 +1,5 @@
-using FluentAssertions;
 using Notrelix.Application.Common.Realtime;
 using FluentValidation.TestHelper;
-using Notrelix.Application.Common.Context;
-using Notrelix.Application.Common.Exceptions;
-using Notrelix.Application.Common.Time;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Commands.UpdateChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.ArchiveChannel;

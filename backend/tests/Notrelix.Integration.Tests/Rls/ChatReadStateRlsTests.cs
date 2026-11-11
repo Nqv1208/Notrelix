@@ -1,7 +1,4 @@
-using FluentAssertions;
 using Npgsql;
-using Notrelix.Application.Common.Context;
-using Notrelix.Application.Features.Chat.ReadState.Services;
 using Notrelix.Domain.Chat.Spaces;
 using Notrelix.Infrastructure.Data.Chat;
 using Notrelix.Integration.Tests.Containers;

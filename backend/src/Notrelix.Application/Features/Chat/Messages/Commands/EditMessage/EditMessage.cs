@@ -6,7 +6,6 @@ using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Rules;
-using Space = Notrelix.Domain.Chat.Spaces.Space;
 
 namespace Notrelix.Application.Features.Chat.Messages.Commands.EditMessage;
 

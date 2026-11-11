@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Messaging;
 using Notrelix.Application.Features.Chat.Realtime;
 using Notrelix.Application.Features.Chat.ReadState.DTOs;
 

@@ -11,7 +11,6 @@ using Notrelix.Application.Tests.Features.Collaboration;
 using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Rules;
 using Notrelix.Domain.Chat.Spaces;
-using Notrelix.Domain.Common.Exceptions;
 using AppValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
 using AppConflictException = Notrelix.Application.Common.Exceptions.ConflictException;

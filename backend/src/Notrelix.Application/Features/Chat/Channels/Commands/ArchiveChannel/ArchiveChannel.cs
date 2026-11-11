@@ -1,11 +1,9 @@
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.DTOs;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
-using Notrelix.Domain.Chat.Rules;
 
 namespace Notrelix.Application.Features.Chat.Channels.Commands.ArchiveChannel;
 

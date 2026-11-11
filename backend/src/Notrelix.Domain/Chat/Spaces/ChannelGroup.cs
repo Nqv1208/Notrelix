@@ -5,7 +5,7 @@ namespace Notrelix.Domain.Chat.Spaces;
 /// <summary>A category that orders channels in the sidebar. It carries no access meaning.</summary>
 public class ChannelGroup : AggregateRoot, IWorkspaceScoped
 {
-        public Guid AccountId { get; private set; }
+    public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public string Name { get; private set; } = null!;
     public double Position { get; private set; }
