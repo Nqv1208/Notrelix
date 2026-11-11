@@ -49,8 +49,9 @@ export interface ChatMessageRowProps {
   readonly locale: string;
   readonly timeZone?: string;
   readonly copy: ChatCopy;
-  readonly onEdit: (message: ChatMessage) => void;
-  readonly onDelete: (message: ChatMessage) => void;
+  /** Edit and delete of the caller's own message; without a handler the action is not offered. */
+  readonly onEdit?: (message: ChatMessage) => void;
+  readonly onDelete?: (message: ChatMessage) => void;
   /** The message this one replies to (quote preview), when it replies. */
   readonly quote?: QuoteView | null;
   /** The reply count and the latest reply of a thread root; no chip when absent or zero. */
@@ -343,7 +344,7 @@ export function ChatMessageRow({
               )}
             </Button>
           ) : null}
-          {isOwn && live ? (
+          {isOwn && live && onEdit && onDelete ? (
             <>
               <Button
                 variant="ghost"

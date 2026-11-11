@@ -211,8 +211,6 @@ export function ChatThreadPanel({
                 locale={locale}
                 timeZone={timeZone}
                 copy={copy}
-                onEdit={() => undefined}
-                onDelete={() => undefined}
                 pinned={pinnedIds.has(root.id)}
                 reactions={root.reactions ?? []}
                 workspaceId={workspaceId}

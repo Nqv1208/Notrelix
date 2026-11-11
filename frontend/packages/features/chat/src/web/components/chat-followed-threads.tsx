@@ -3,7 +3,7 @@ import { MessagesSquare } from "lucide-react";
 import type { ChatFollowedThread } from "../../core/types/chat";
 import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
-import { fillCopy, pluralCopy } from "./use-chat-copy";
+import { pluralCopy } from "./use-chat-copy";
 
 export interface FollowedThreadsPanelProps {
   readonly hooks: ChatHooks;
@@ -95,9 +95,14 @@ export function FollowedThreadsPanel({
                 </p>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <span className="tabular-nums">
-                    {fillCopy(copy.thread.replies_other, {
-                      count: entry.thread.replyCount,
-                    })}
+                    {pluralCopy(
+                      {
+                        one: copy.thread.replies_one,
+                        other: copy.thread.replies_other,
+                      },
+                      entry.thread.replyCount,
+                      { count: entry.thread.replyCount },
+                    )}
                   </span>
                   {unread > 0 ? (
                     <span className="font-semibold text-primary tabular-nums">
