@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { BellOff, BellRing, Check, Loader2, X } from "lucide-react";
 import { Button, Skeleton, cn } from "@notrelix/ui-web";
-import type { ChatMessage } from "../../core/types/chat";
+import type { ChatMentionPayload, ChatMessage } from "../../core/types/chat";
 import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
-import { ChatComposer } from "./chat-composer";
+import { ChatComposer, type ChatComposerMentions } from "./chat-composer";
 import { ChatMessageRow } from "./chat-message-row";
 import { fillCopy, pluralCopy } from "./use-chat-copy";
 
@@ -18,6 +18,11 @@ export interface ChatThreadPanelProps {
   readonly locale: string;
   readonly timeZone?: string;
   readonly pinnedIds: ReadonlySet<string>;
+  /** The caller, the names and the channels a reply can mention; without it @ and # are plain text. */
+  readonly mentionBase?: Pick<
+    ChatComposerMentions,
+    "selfId" | "people" | "channels"
+  >;
   readonly onClose: () => void;
   readonly onReact: (message: ChatMessage, emoji: string, add: boolean) => void;
   readonly onTogglePin: (message: ChatMessage, pinned: boolean) => void;
@@ -38,6 +43,7 @@ export function ChatThreadPanel({
   locale,
   timeZone,
   pinnedIds,
+  mentionBase,
   onClose,
   onReact,
   onTogglePin,
@@ -55,10 +61,21 @@ export function ChatThreadPanel({
   const replies = thread.data?.pages.flatMap((page) => page.items) ?? [];
   const unread = summary?.unreadReplies ?? 0;
 
-  function send(content: string) {
+  const mentionables = hooks.useMentionables(
+    workspaceId,
+    root?.spaceId,
+    mentionBase !== undefined && root !== null,
+  );
+
+  function send(content: string, payload?: ChatMentionPayload) {
     setNotice(null);
     replier.mutate(
-      { content, alsoSendToChannel: alsoSend },
+      {
+        content,
+        alsoSendToChannel: alsoSend,
+        mentions: payload?.mentions,
+        confirmBroadcast: payload?.confirmBroadcast,
+      },
       {
         onSuccess: () => {
           setDraft("");
@@ -295,6 +312,20 @@ export function ChatThreadPanel({
         busy={replier.isPending}
         onChange={setDraft}
         onSend={send}
+        mentions={
+          mentionBase
+            ? {
+                ...mentionBase,
+                mentionables: mentionables.data,
+                status: mentionables.isError
+                  ? "error"
+                  : mentionables.isPending
+                    ? "loading"
+                    : "ready",
+                draftKey: `thread-${rootId}`,
+              }
+            : undefined
+        }
         footerExtra={
           <label
             className={cn(
