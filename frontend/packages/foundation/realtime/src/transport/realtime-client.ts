@@ -294,9 +294,10 @@ interface ListenerEntry {
 export function deriveSubscriptionScope(
   filter: RealtimeSubscriptionFilter,
 ): RealtimeSubscriptionScope {
-  return filter.boardId
-    ? { kind: "board", id: filter.boardId }
-    : { kind: "workspace", id: filter.workspaceId };
+  if (filter.boardId) return { kind: "board", id: filter.boardId };
+  if (filter.channelId) return { kind: "channel", id: filter.channelId };
+  if (filter.userId) return { kind: "user", id: filter.userId };
+  return { kind: "workspace", id: filter.workspaceId };
 }
 
 export class RealtimeClient implements RealtimeTransport {

@@ -72,6 +72,15 @@ export class MockRealtimeTransport implements RealtimeTransport {
     filter: RealtimeSubscriptionFilter,
     listener: RealtimeEventListener,
   ): () => void {
+    // Chat scopes (channel, per-user) live on the scope streams, as the gateway streams them.
+    if (filter.channelId || filter.userId) {
+      const target: MockScopeTarget = filter.channelId
+        ? { kind: "channel", id: filter.channelId }
+        : { kind: "user", id: filter.userId! };
+      return this.subscribeScope(target, (envelope) => {
+        if (envelope.workspaceId === filter.workspaceId) listener(envelope);
+      });
+    }
     const id = `mock-sub-${++this.subscriptionCounter}`;
     this.subscriptions.set(id, { filter, listener });
     return () => {
@@ -112,6 +121,7 @@ export class MockRealtimeTransport implements RealtimeTransport {
         ? envelope.subscriptionId.slice("board:".length)
         : undefined;
       if (frameBoardId !== filter.boardId) continue;
+      if (envelope.subscriptionId.startsWith("channel:")) continue;
       if (
         filter.eventTypes &&
         filter.eventTypes.length > 0 &&

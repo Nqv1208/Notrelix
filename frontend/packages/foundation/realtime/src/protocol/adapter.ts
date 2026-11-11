@@ -4,6 +4,8 @@ export interface ModuleRealtimeContext {
   readonly workspaceId: string;
   /** Set when the frame arrived through a board subscription: the open board. */
   readonly boardId?: string;
+  /** Set when the frame arrived through a Chat channel subscription: the open channel. */
+  readonly channelId?: string;
   readonly invalidateQueries: (
     queryKeys: readonly unknown[][],
   ) => Promise<void> | void;

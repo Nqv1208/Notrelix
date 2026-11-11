@@ -118,3 +118,27 @@ export function idempotentCreate(
   });
   return reply;
 }
+
+/**
+ * Dev only (browser checks of the Chat realtime path): another member writes a
+ * message in a space, as if from their own device. It is stored and announced
+ * like any user message (the channel frame, then the unread frames). Null when
+ * the space is unknown. Exposed as `globalThis.__notrelixMockInjectChat`; the mock never ships it.
+ */
+export function injectIncomingMessage(
+  state: MockChatState,
+  spaceId: string,
+  authorId: string,
+  content: string,
+): ChatMessageRecord | null {
+  const space = state.spaces.get(spaceId);
+  if (!space) return null;
+  return appendUserMessage(
+    state,
+    space,
+    authorId,
+    content,
+    `injected-${state.nextId("message")}`,
+    null,
+  );
+}

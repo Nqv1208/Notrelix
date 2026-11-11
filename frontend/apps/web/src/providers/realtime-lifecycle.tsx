@@ -1,13 +1,18 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "@tanstack/react-router";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { useAuth } from "@notrelix/features-auth";
 import { workspaceRealtimeAdapter } from "@notrelix/features-workspace";
 import { workManagementRealtimeAdapter } from "@notrelix/work-management-state";
+import {
+  createChatRealtimeAdapter,
+  createChatService,
+} from "@notrelix/features-chat";
 import { ModuleAdapterRegistry } from "../realtime/module-adapter-registry";
 import { getActiveWorkspaceIdFromPathname } from "../realtime/active-workspace";
 import { getActiveBoardIdFromPathname } from "../realtime/active-board";
+import { getActiveChannelIdFromPathname } from "../realtime/active-channel";
 import { createDragGate } from "../realtime/drag-gate";
 import { handleWorkspaceRecovery } from "../realtime/workspace-recovery-policy";
 
@@ -20,13 +25,26 @@ export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
   const accountId = user?.id ?? null;
   const workspaceId = getActiveWorkspaceIdFromPathname(location.pathname);
   const boardId = getActiveBoardIdFromPathname(location.pathname);
+  const channelId = getActiveChannelIdFromPathname(location.pathname);
+  // Bumped when the person's access changed: the open channel is subscribed again.
+  const [accessEpoch, setAccessEpoch] = useState(0);
+
+  const chatAdapter = useMemo(
+    () =>
+      createChatRealtimeAdapter({
+        queryClient,
+        service: createChatService(runtime.api.api, runtime.api.endpoints),
+      }),
+    [queryClient, runtime.api],
+  );
 
   const registry = useMemo(() => {
     const next = new ModuleAdapterRegistry();
     next.register(workspaceRealtimeAdapter);
     next.register(workManagementRealtimeAdapter);
+    next.register(chatAdapter);
     return next;
-  }, []);
+  }, [chatAdapter]);
 
   useEffect(() => {
     if (!isAuthenticated || !sessionGeneration) {
@@ -87,6 +105,20 @@ export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
           code: signal.code,
         });
       }
+      // Chat streams recover on their own: the channel backfills after its last
+      // known sequence and the counters are read again (UC-CHT-C04, C05).
+      if (signal.scope.kind === "channel" || signal.scope.kind === "user") {
+        void chatAdapter.recover(signal).catch((error) => {
+          runtime.telemetry.reportError(error, {
+            context: "realtime.chat_recovery",
+            workspaceId,
+            reason: signal.reason,
+          });
+        });
+        return;
+      }
+      if (signal.reason === "access-changed")
+        setAccessEpoch((epoch) => epoch + 1);
       void handleWorkspaceRecovery({
         workspaceId,
         accountId,
@@ -109,6 +141,97 @@ export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
     };
   }, [
     accountId,
+    chatAdapter,
+    isAuthenticated,
+    queryClient,
+    registry,
+    runtime.realtime,
+    runtime.telemetry,
+    sessionGeneration,
+    workspaceId,
+  ]);
+
+  // The per-user stream carries the caller's unread and mention counters (UC-CHT-C09).
+  useEffect(() => {
+    if (!isAuthenticated || !sessionGeneration || !workspaceId || !accountId)
+      return;
+
+    let active = true;
+    const invalidateQueries = async (keys: readonly unknown[][]) => {
+      if (!active) return;
+      await Promise.all(
+        keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+      );
+    };
+
+    const unsubscribe = runtime.realtime.subscribe(
+      { workspaceId, userId: accountId },
+      (envelope) => {
+        if (!active) return;
+        void registry
+          .dispatch(envelope, { workspaceId, invalidateQueries })
+          .catch((error) => {
+            runtime.telemetry.reportError(error, {
+              context: "realtime.user_dispatch",
+              eventType: envelope.eventType,
+              eventId: envelope.eventId,
+            });
+          });
+      },
+    );
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [
+    accountId,
+    isAuthenticated,
+    queryClient,
+    registry,
+    runtime.realtime,
+    runtime.telemetry,
+    sessionGeneration,
+    workspaceId,
+  ]);
+
+  // The open Chat channel streams its messages (UC-CHT-C01). One channel at a
+  // time: switching or leaving the channel unsubscribes it (never every channel).
+  useEffect(() => {
+    if (!isAuthenticated || !sessionGeneration || !workspaceId || !channelId)
+      return;
+
+    let active = true;
+    const invalidateQueries = async (keys: readonly unknown[][]) => {
+      if (!active) return;
+      await Promise.all(
+        keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+      );
+    };
+
+    const unsubscribe = runtime.realtime.subscribe(
+      { workspaceId, channelId },
+      (envelope) => {
+        if (!active) return;
+        void registry
+          .dispatch(envelope, { workspaceId, channelId, invalidateQueries })
+          .catch((error) => {
+            runtime.telemetry.reportError(error, {
+              context: "realtime.channel_dispatch",
+              eventType: envelope.eventType,
+              eventId: envelope.eventId,
+            });
+          });
+      },
+    );
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [
+    accessEpoch,
+    channelId,
     isAuthenticated,
     queryClient,
     registry,
