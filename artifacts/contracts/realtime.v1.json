@@ -2,7 +2,8 @@
   "asyncapi": "2.6.0",
   "info": {
     "title": "Notrelix Realtime Protocol Specification",
-    "version": "1.0.0"
+    "version": "1.1.0",
+    "description": "Realtime gateway protocol, schema version 1 (protocol v1.1). Event frames are notify-only, except the chat channel stream (payloadContract chat.message.v1) and the per-user stream (payloadContract chat.unread.v1), which carry a compact payload. A payload that does not fit the 4096-byte frame limit is dropped and the frame carries payloadOmitted true; the client refetches over REST. Board frames stay hand-written in the client and are not produced by the gateway contract yet."
   },
   "channels": {
     "workspace/{workspaceId}": {
@@ -12,6 +13,26 @@
             { "$ref": "#/components/messages/BoardItemCreated" },
             { "$ref": "#/components/messages/BoardItemUpdated" },
             { "$ref": "#/components/messages/BoardItemMoved" }
+          ]
+        }
+      }
+    },
+    "chat/channel/{spaceId}": {
+      "subscribe": {
+        "message": {
+          "oneOf": [
+            { "$ref": "#/components/messages/ChatMessageCreated" },
+            { "$ref": "#/components/messages/ChatMessageUpdated" },
+            { "$ref": "#/components/messages/ChatMessageDeleted" }
+          ]
+        }
+      }
+    },
+    "user/{userId}": {
+      "subscribe": {
+        "message": {
+          "oneOf": [
+            { "$ref": "#/components/messages/ChatUnreadChanged" }
           ]
         }
       }
@@ -54,6 +75,121 @@
           },
           "required": ["itemId", "targetGroupId", "position"]
         }
+      },
+      "ChatMessageCreated": {
+        "name": "chat.message.created",
+        "title": "A channel message was sent",
+        "x-payloadContract": "chat.message.v1",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string", "format": "uuid" },
+            "sequence": { "type": "integer" },
+            "authorId": { "type": "string", "format": "uuid" },
+            "kind": { "type": "string", "enum": ["user", "system"] },
+            "content": { "oneOf": [{ "type": "string" }, { "type": "null" }] },
+            "contentOmitted": { "type": "boolean" },
+            "deleted": { "type": "boolean" },
+            "createdAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
+            "editedAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
+            "replyToId": { "oneOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }] },
+            "version": { "type": "integer" }
+          },
+          "required": ["id", "sequence", "authorId", "kind", "content", "contentOmitted", "deleted", "createdAt", "editedAt", "replyToId", "version"]
+        }
+      },
+      "ChatMessageUpdated": {
+        "name": "chat.message.updated",
+        "title": "A channel message was edited",
+        "x-payloadContract": "chat.message.v1",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string", "format": "uuid" },
+            "sequence": { "type": "integer" },
+            "authorId": { "type": "string", "format": "uuid" },
+            "kind": { "type": "string", "enum": ["user", "system"] },
+            "content": { "oneOf": [{ "type": "string" }, { "type": "null" }] },
+            "contentOmitted": { "type": "boolean" },
+            "deleted": { "type": "boolean" },
+            "createdAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
+            "editedAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
+            "replyToId": { "oneOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }] },
+            "version": { "type": "integer" }
+          },
+          "required": ["id", "sequence", "authorId", "kind", "content", "contentOmitted", "deleted", "createdAt", "editedAt", "replyToId", "version"]
+        }
+      },
+      "ChatMessageDeleted": {
+        "name": "chat.message.deleted",
+        "title": "A channel message was deleted (tombstone)",
+        "x-payloadContract": "chat.message.v1",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string", "format": "uuid" },
+            "sequence": { "type": "integer" },
+            "authorId": { "type": "string", "format": "uuid" },
+            "kind": { "type": "string", "enum": ["user", "system"] },
+            "content": { "oneOf": [{ "type": "string" }, { "type": "null" }] },
+            "contentOmitted": { "type": "boolean" },
+            "deleted": { "type": "boolean" },
+            "createdAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
+            "editedAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
+            "replyToId": { "oneOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }] },
+            "version": { "type": "integer" }
+          },
+          "required": ["id", "sequence", "authorId", "kind", "content", "contentOmitted", "deleted", "createdAt", "editedAt", "replyToId", "version"]
+        }
+      },
+      "ChatUnreadChanged": {
+        "name": "chat.unread.changed",
+        "title": "The unread counts of one space changed for this person",
+        "x-payloadContract": "chat.unread.v1",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "spaceId": { "type": "string", "format": "uuid" },
+            "unread": { "type": "integer" },
+            "mentions": { "type": "integer" }
+          },
+          "required": ["spaceId", "unread", "mentions"]
+        }
+      }
+    },
+    "schemas": {
+      "RealtimeSubscriptionScope": {
+        "type": "object",
+        "description": "A subscribe scope. The kind is the wire value; the stream key is {namespace}:{ResourceKind}:{id N}. channel is ChatChannel (stream chat:Channel:<spaceId>), user is the caller's own per-user stream (stream user:notifications:<userId>).",
+        "properties": {
+          "kind": { "type": "string", "enum": ["workspace", "board", "channel", "user"] },
+          "id": { "type": "string", "format": "uuid" }
+        },
+        "required": ["kind", "id"]
+      },
+      "RealtimeEventFrame": {
+        "type": "object",
+        "description": "An event frame (type event). payload is present only on the chat channel and per-user streams. payloadOmitted true means the payload was dropped to fit the 4096-byte limit and the client must refetch the resource over REST. streamVersion is gap-free per streamKey.",
+        "properties": {
+          "type": { "type": "string", "enum": ["event"] },
+          "subscriptionId": { "type": "string" },
+          "schemaVersion": { "type": "integer", "enum": [1] },
+          "eventId": { "type": "string" },
+          "eventType": { "type": "string" },
+          "changeKind": { "type": "string" },
+          "streamKey": { "type": "string" },
+          "streamVersion": { "type": "integer" },
+          "resourceKind": { "type": "string" },
+          "resourceId": { "type": "string", "format": "uuid" },
+          "resourceVersion": { "type": "integer" },
+          "workspaceId": { "type": "string", "format": "uuid" },
+          "correlationId": { "type": "string" },
+          "occurredAt": { "type": "string", "format": "date-time" },
+          "payloadContract": { "type": "string" },
+          "payload": { "type": "object" },
+          "payloadOmitted": { "type": "boolean" }
+        },
+        "required": ["type", "subscriptionId", "schemaVersion", "eventId", "eventType", "changeKind", "streamKey", "streamVersion", "resourceKind", "resourceId", "resourceVersion", "workspaceId", "correlationId", "occurredAt", "payloadContract"]
       }
     }
   }

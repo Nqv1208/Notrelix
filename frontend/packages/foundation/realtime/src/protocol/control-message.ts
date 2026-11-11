@@ -3,7 +3,12 @@
  * `envelope.ts`). `ping`/`pong` flow in both directions.
  */
 
-export type RealtimeSubscriptionScopeKind = "workspace" | "board";
+/**
+ * Scope kinds of the gateway protocol v1.1. `channel` is a Chat space (stream
+ * `chat:Channel:<id>`); `user` is the caller's own per-user stream (`user:notifications:<id>`).
+ */
+export type RealtimeSubscriptionScopeKind =
+  "workspace" | "board" | "channel" | "user";
 
 export interface RealtimeSubscriptionScope {
   readonly kind: RealtimeSubscriptionScopeKind;

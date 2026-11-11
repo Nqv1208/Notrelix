@@ -141,7 +141,7 @@ REST prefix `/api/v1/workspaces/{workspaceId}/chat`; endpoints in the use-case c
 
 # 12. Events and realtime
 
-Integration events (outbox): `chat.channel.created|updated|archived|deleted`, `chat.membership.added|removed`, `chat.message.created|updated|deleted`, `chat.reaction.changed`, `chat.read.advanced`, `chat.mention.created`. Mapped to realtime by `RealtimeChangeMapper`. Realtime protocol v1.1: scope kind `Channel`, event frames with a compact payload, client frames `typing` and `presence`. The contract file `frontend/artifacts/contracts/realtime.v1.json` and `frontend/docs/architecture/realtime.md` are updated with the protocol. Limits unchanged: 50 subscriptions and 8 connections per user, 4096 bytes and 20 frames per second per connection.
+Integration events (outbox): `chat.channel.created|updated|archived|deleted`, `chat.membership.added|removed`, `chat.message.created|updated|deleted`, `chat.reaction.changed`, `chat.read.advanced`, `chat.mention.created`. Mapped to realtime by `RealtimeChangeMapper`. Realtime protocol v1.1: scope kind `Channel`, event frames with a compact payload, client frames `typing` and `presence`. The contract file `artifacts/contracts/realtime.v1.json` and `frontend/docs/architecture/realtime.md` are updated with the protocol. Limits unchanged: 50 subscriptions and 8 connections per user, 4096 bytes and 20 frames per second per connection.
 
 # 13. Migrations
 

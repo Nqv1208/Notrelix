@@ -62,7 +62,10 @@ function parseScope(value: unknown): RealtimeSubscriptionScope | null {
   if (!value || typeof value !== "object") return null;
   const scope = value as Record<string, unknown>;
   if (
-    (scope.kind === "workspace" || scope.kind === "board") &&
+    (scope.kind === "workspace" ||
+      scope.kind === "board" ||
+      scope.kind === "channel" ||
+      scope.kind === "user") &&
     isNonEmptyString(scope.id)
   ) {
     return { kind: scope.kind, id: scope.id };
@@ -97,6 +100,13 @@ function parseEventFrame(
     return null;
   }
 
+  // Only the chat and per-user streams carry a payload; a notify-only frame has none.
+  const payload = isPlainObject(record.payload) ? record.payload : undefined;
+  const payloadOmitted =
+    typeof record.payloadOmitted === "boolean"
+      ? record.payloadOmitted
+      : undefined;
+
   return {
     schemaVersion: record.schemaVersion,
     eventId: record.eventId,
@@ -121,7 +131,13 @@ function parseEventFrame(
       typeof record.payloadContract === "string"
         ? record.payloadContract
         : undefined,
+    ...(payload === undefined ? {} : { payload }),
+    ...(payloadOmitted === undefined ? {} : { payloadOmitted }),
   };
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function optionalNumber(value: unknown): number | undefined {

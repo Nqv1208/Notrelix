@@ -113,7 +113,7 @@ It does not make the client more authoritative than the backend resource contrac
 Realtime wire shape is producer-owned.
 
 The backend realtime gateway (`GET /api/v1/realtime`, upgraded to WebSocket,
-session-cookie authenticated) speaks protocol v1:
+session-cookie authenticated) speaks protocol v1 (v1.1 adds the Chat scopes):
 
 ```text
 client → server: subscribe | unsubscribe | ping | pong
@@ -132,15 +132,20 @@ reconnect, 4401 refreshes the session first, 1003/1008/1009 are client
 protocol faults.
 
 The client types for this protocol are written by hand in
-`frontend/packages/foundation/realtime/src/protocol/` (TRANSITION): the
-contract artifact below is a hand-written stub with no backend producer and
-does not describe this protocol. Its generated types
+`frontend/packages/foundation/realtime/src/protocol/` (TRANSITION). The
+contract artifact below is an AsyncAPI description, not the producer of the
+Board and workspace frames (those stay hand-written). For protocol v1.1 it
+describes the Chat frames: scope kinds `channel` (stream `chat:Channel:<id>`)
+and `user` (stream `user:notifications:<id>`), the message frames
+`chat.message.created|updated|deleted` (payloadContract `chat.message.v1`) and
+`chat.unread.changed` (payloadContract `chat.unread.v1`), and the optional
+`payloadOmitted` flag. Its generated payload types
 (`GeneratedRealtimeMessage`, `RealtimeEventMessage` in `@notrelix/contracts`)
-have no consumer. Replacing the hand-written types with a generated producer
+have no consumer yet. Replacing the hand-written types with a generated producer
 is an open contract-owner decision.
 
 ```text
-artifacts/contracts/realtime.v1.json   (stub, not the gateway contract)
+artifacts/contracts/realtime.v1.json   (AsyncAPI 2.6, protocol v1.1)
 ```
 
 Work Management announces every material change of a Board on one Board
