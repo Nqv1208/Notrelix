@@ -39,7 +39,7 @@ public static class MapChatAttachmentEndpoints
             .WithIdempotencyKey()
             .WithName("Chat.Attachments.Upload")
             .WithSummary("Attach a file to your own message (multipart/form-data, streamed)")
-            .WithDescription("Only the author of the message, as an active member of its space, attaches. The shared file policy applies: a blocked extension or an executable file is 415 before any byte is stored, a file over the size cap is 413, a message with the maximum number of files is 400. A system or deleted message is 409; an archived channel is 409 channel-archived; another person's message is 403; a space the caller is not a member of is 404.")
+            .WithDescription("Only the author of the message, as an active member of its space, attaches. The shared file policy applies: a blocked extension or an executable file is 415 before any byte is stored, a file over the size cap is 413, a message with the maximum number of files is 409 attachment.limit_exceeded; an empty file is 400. A system or deleted message is 409; an archived channel is 409 channel-archived; another person's message is 403; a space the caller is not a member of is 404.")
             .Accepts<UploadChatAttachmentForm>("multipart/form-data")
             .Produces<MessageAttachmentDto>(StatusCodes.Status201Created, "application/json")
             .ProducesProblems(

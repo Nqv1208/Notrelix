@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Notrelix.API.Tests.Contracts;
 
-/// <summary>Files on a message on the checked-in producer contract: the routes, the multipart upload with an idempotency key, the typed file list and the message view that carries it (UC-CHT-G08, CHT-012).</summary>
+/// <summary>Files on a message on the checked-in producer contract: the routes, the multipart upload with an idempotency key, and the typed file (UC-CHT-G08, CHT-012). The message views are not typed in the contract (the Chat message routes declare problems only), so the file list in a message view is covered by the handler tests.</summary>
 public class ChatAttachmentContractOpenApiTests
 {
     private const string ListRoute = "/api/v1/workspaces/{workspaceId}/chat/messages/{messageId}/attachments";
@@ -52,15 +52,6 @@ public class ChatAttachmentContractOpenApiTests
         Document.GetProperty("components").GetProperty("schemas").GetProperty(AttachmentSchema).GetProperty("properties")
             .EnumerateObject().Select(p => p.Name)
             .Should().BeEquivalentTo(["id", "messageId", "fileName", "sizeBytes", "contentType", "uploadedBy", "createdAt", "downloadPath"]);
-    }
-
-    [Fact]
-    public void TheMessageView_CarriesTheFileList()
-    {
-        Document.GetProperty("components").GetProperty("schemas")
-            .GetProperty("Notrelix.Application.Features.Chat.Messages.DTOs.MessageDto").GetProperty("properties")
-            .TryGetProperty("attachments", out var attachments).Should().BeTrue();
-        attachments.GetProperty("items").GetProperty("$ref").GetString().Should().EndWith(AttachmentSchema);
     }
 
     private static JsonElement Load([System.Runtime.CompilerServices.CallerFilePath] string sourceFile = "")
