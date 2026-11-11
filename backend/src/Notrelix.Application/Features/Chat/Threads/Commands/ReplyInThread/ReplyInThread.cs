@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Messages.DTOs;
+using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Rules;
@@ -73,7 +74,8 @@ public class ReplyInThreadCommandHandler(
             m => m.SpaceId == space.Id && m.AuthorId == userId && m.ClientMessageId == clientMessageId,
             cancellationToken);
         if (stored is not null)
-            return Result<SendMessageResultDto>.Success(new SendMessageResultDto(MessageDto.From(stored), Created: false));
+            return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
+                await ReplyPreviews.DtoAsync(db, request.WorkspaceId, stored, cancellationToken), Created: false));
 
         // The root is read again under the lock: a delete that committed while this request waited is respected.
         var rootDeleted = await db.ChatMessages.AsNoTracking()
@@ -115,7 +117,8 @@ public class ReplyInThreadCommandHandler(
             await EnsureFollowerAsync(db, accountId, request.WorkspaceId, root.Id, root.AuthorId, readReplySequence: 0, cancellationToken);
         await EnsureFollowerAsync(db, accountId, request.WorkspaceId, root.Id, userId, readReplySequence: threadSequence, cancellationToken);
 
-        return Result<SendMessageResultDto>.Success(new SendMessageResultDto(MessageDto.From(reply), Created: true));
+        return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
+            await ReplyPreviews.DtoAsync(db, request.WorkspaceId, reply, cancellationToken), Created: true));
     }
 
     /// <summary>Adds a default follow (not muted) when the person has no follow row yet. An existing row is never overwritten.</summary>

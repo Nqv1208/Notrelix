@@ -20,9 +20,14 @@ public sealed record MessageDto(
     DateTimeOffset CreatedAt,
     DateTimeOffset? EditedAt,
     DateTimeOffset? DeletedAt,
-    long Version)
+    long Version,
+    ReplyPreviewDto? ReplyPreview = null)
 {
-    public static MessageDto From(Message message) => new(
+    /// <summary>
+    /// The message as readers see it. <paramref name="replyPreview"/> is the live quote of <see cref="ReplyToId"/>, read by the
+    /// caller from the quoted message; it is null when the message quotes nothing.
+    /// </summary>
+    public static MessageDto From(Message message, ReplyPreviewDto? replyPreview = null) => new(
         message.Id,
         message.SpaceId,
         message.Sequence,
@@ -39,8 +44,15 @@ public sealed record MessageDto(
         message.CreatedAt,
         message.EditedAt,
         message.DeletedAt,
-        message.Version);
+        message.Version,
+        replyPreview);
 }
+
+/// <summary>
+/// The message a reply quotes, as a reader may see it (UC-CHT-F02). Read live at each request, so a quote of a deleted message
+/// shows a tombstone. Content is null when the quoted message is deleted; the author and the sequence stay.
+/// </summary>
+public sealed record ReplyPreviewDto(Guid MessageId, long Sequence, Guid AuthorId, string? Content, bool Deleted);
 
 /// <summary>A page of messages in ascending sequence order, with whether older or newer messages exist.</summary>
 public sealed record MessagePageDto(IReadOnlyList<MessageDto> Items, bool HasOlder, bool HasNewer);

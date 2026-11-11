@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Messages.DTOs;
+using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Chat.Threads.DTOs;
 using Notrelix.Application.Features.Chat.Threads.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
@@ -57,10 +58,11 @@ public class ListThreadRepliesQueryHandler(
             .ToListAsync(cancellationToken);
 
         var now = clock.UtcNow;
+        var items = await ReplyPreviews.DtosAsync(db, request.WorkspaceId, rows.Take(request.Limit).ToList(), cancellationToken);
         return Result<ThreadRepliesPageDto>.Success(new ThreadRepliesPageDto(
-            MessageDto.From(root),
+            await ReplyPreviews.DtoAsync(db, request.WorkspaceId, root, cancellationToken),
             ThreadSummaries.For(root.Id, root.SpaceId, thread, follower, now),
-            rows.Take(request.Limit).Select(MessageDto.From).ToList(),
+            items,
             HasNewer: rows.Count > request.Limit));
     }
 }

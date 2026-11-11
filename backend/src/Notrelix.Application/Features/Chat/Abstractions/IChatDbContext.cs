@@ -12,4 +12,5 @@ public interface IChatDbContext
     DbSet<Message> ChatMessages { get; }
     DbSet<MessageThread> ChatThreads { get; }
     DbSet<ThreadFollower> ChatThreadFollowers { get; }
+    DbSet<Pin> ChatPins { get; }
 }

@@ -21,6 +21,7 @@ public sealed class ChatSystemMessages(
     public const string MemberAdded = "added a member to the channel";
     public const string Archived = "archived the channel";
     public const string Unarchived = "unarchived the channel";
+    public const string MessagePinned = "pinned a message";
 
     public static string Renamed(string name) => $"renamed the channel to {name}";
 

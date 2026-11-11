@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Messages.DTOs;
+using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Rules;
@@ -65,7 +66,8 @@ public class SendMessageCommandHandler(
             m => m.SpaceId == space.Id && m.AuthorId == userId && m.ClientMessageId == clientMessageId,
             cancellationToken);
         if (stored is not null)
-            return Result<SendMessageResultDto>.Success(new SendMessageResultDto(MessageDto.From(stored), Created: false));
+            return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
+                await ReplyPreviews.DtoAsync(db, request.WorkspaceId, stored, cancellationToken), Created: false));
 
         if (request.ReplyToId is { } replyToId)
         {
@@ -88,7 +90,8 @@ public class SendMessageCommandHandler(
             clock.UtcNow);
 
         db.ChatMessages.Add(message);
-        return Result<SendMessageResultDto>.Success(new SendMessageResultDto(MessageDto.From(message), Created: true));
+        return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
+            await ReplyPreviews.DtoAsync(db, request.WorkspaceId, message, cancellationToken), Created: true));
     }
 }
 
