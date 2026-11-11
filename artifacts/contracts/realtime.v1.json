@@ -3,7 +3,7 @@
   "info": {
     "title": "Notrelix Realtime Protocol Specification",
     "version": "1.1.0",
-    "description": "Realtime gateway protocol, schema version 1 (protocol v1.1). Event frames are notify-only, except the chat channel stream (payloadContract chat.message.v1) and the per-user stream (payloadContract chat.unread.v1), which carry a compact payload. The chat channel stream also carries chat.space.changed (payloadContract chat.space.v1: the change and the message id), a small pin frame that readers apply or answer by refetching the pins. A payload that does not fit the 4096-byte frame limit is dropped and the frame carries payloadOmitted true; the client refetches over REST. Board frames stay hand-written in the client and are not produced by the gateway contract yet."
+    "description": "Realtime gateway protocol, schema version 1 (protocol v1.1). Event frames are notify-only, except the chat channel stream (payloadContract chat.message.v1) and the per-user stream (payloadContract chat.unread.v1), which carry a compact payload. The chat channel stream also carries chat.space.changed (payloadContract chat.space.v1: the change and the message id), a small pin frame that readers apply or answer by refetching the pins. The chat channel stream also carries chat.reaction.changed (payloadContract chat.reaction.v1: the message, the palette kind, the change added or removed and the person; no counts), a compact frame that readers apply or answer by refetching the message reactions. A payload that does not fit the 4096-byte frame limit is dropped and the frame carries payloadOmitted true; the client refetches over REST. Board frames stay hand-written in the client and are not produced by the gateway contract yet."
   },
   "channels": {
     "workspace/{workspaceId}": {
@@ -24,7 +24,8 @@
             { "$ref": "#/components/messages/ChatMessageCreated" },
             { "$ref": "#/components/messages/ChatMessageUpdated" },
             { "$ref": "#/components/messages/ChatMessageDeleted" },
-            { "$ref": "#/components/messages/ChatSpaceChanged" }
+            { "$ref": "#/components/messages/ChatSpaceChanged" },
+            { "$ref": "#/components/messages/ChatReactionChanged" }
           ]
         }
       }
@@ -160,6 +161,21 @@
             "messageId": { "type": "string", "format": "uuid" }
           },
           "required": ["change", "messageId"]
+        }
+      },
+      "ChatReactionChanged": {
+        "name": "chat.reaction.changed",
+        "title": "A reaction of a message of the channel was added or removed (the change, the kind and the person; no counts)",
+        "x-payloadContract": "chat.reaction.v1",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "messageId": { "type": "string", "format": "uuid" },
+            "kind": { "type": "string" },
+            "change": { "type": "string" },
+            "actorId": { "type": "string", "format": "uuid" }
+          },
+          "required": ["messageId", "kind", "change", "actorId"]
         }
       },
       "ChatUnreadChanged": {

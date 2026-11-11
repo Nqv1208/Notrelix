@@ -677,6 +677,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/chat/messages/{messageId}/reactions/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * React to a message with a palette emoji
+         * @description Idempotent: a reaction the caller already has returns the message's reaction summary with 200 and changes nothing; a new one returns 201. The kind is one of the six palette emoji; any other kind is 400. A system or deleted message is 409 (message-not-reactable or message-deleted). An archived channel is 409 channel-archived. A message the caller cannot see, or a space the caller is not a member of, is 404.
+         */
+        put: operations["Chat.Reactions.Add"];
+        post?: never;
+        /**
+         * Remove the caller's reaction from a message
+         * @description Idempotent: a reaction the caller does not have returns the message's reaction summary with 200 and changes nothing. The kind is one of the six palette emoji; any other kind is 400. An archived channel is 409 channel-archived; a message the caller cannot see is 404.
+         */
+        delete: operations["Chat.Reactions.Remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/messages/{messageId}/reactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List who reacted to a message
+         * @description Earliest reaction first. kind narrows the list to one emoji; cursor is the nextCursor of the previous page; limit is 1 to 100, default 50. A message the caller cannot see, or a private channel the caller is not a member of, is 404.
+         */
+        get: operations["Chat.Reactions.ListReactors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/chat/me/unread": {
         parameters: {
             query?: never;
@@ -8985,6 +9029,28 @@ export interface components {
             currentPlan?: components["schemas"]["Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.BillingPlanDto"];
             availablePlans?: components["schemas"]["Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.BillingPlanDto"][] | null;
         };
+        "Notrelix.Application.Features.Chat.Reactions.DTOs.MessageReactionsDto": {
+            /** Format: uuid */
+            messageId?: string;
+            reactions?: components["schemas"]["Notrelix.Application.Features.Chat.Reactions.DTOs.ReactionSummaryDto"][] | null;
+        };
+        "Notrelix.Application.Features.Chat.Reactions.DTOs.ReactionSummaryDto": {
+            emoji?: string | null;
+            /** Format: int32 */
+            count?: number;
+            reactedByMe?: boolean;
+        };
+        "Notrelix.Application.Features.Chat.Reactions.DTOs.ReactorDto": {
+            emoji?: string | null;
+            /** Format: uuid */
+            userId?: string;
+            /** Format: date-time */
+            reactedAt?: string;
+        };
+        "Notrelix.Application.Features.Chat.Reactions.DTOs.ReactorPageDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Chat.Reactions.DTOs.ReactorDto"][] | null;
+            nextCursor?: string | null;
+        };
         "Notrelix.Application.Features.Collaboration.Activity.DTOs.ActivityChangeDto": {
             fieldName?: string | null;
             from?: string | null;
@@ -13354,6 +13420,189 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Reactions.Add": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                messageId: string;
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Reactions.DTOs.MessageReactionsDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Reactions.Remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                messageId: string;
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Reactions.DTOs.MessageReactionsDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Reactions.ListReactors": {
+        parameters: {
+            query?: {
+                kind?: string;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+                messageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Reactions.DTOs.ReactorPageDto"];
                 };
             };
             /** @description Bad Request */

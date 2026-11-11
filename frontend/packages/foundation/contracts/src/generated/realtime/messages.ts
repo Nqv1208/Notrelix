@@ -69,6 +69,13 @@ export interface ChatMessageUpdatedPayload {
   "version": number;
 }
 
+export interface ChatReactionChangedPayload {
+  "actorId": string;
+  "change": string;
+  "kind": string;
+  "messageId": string;
+}
+
 export interface ChatSpaceChangedPayload {
   "change": string;
   "messageId": string;
@@ -87,6 +94,7 @@ export type GeneratedRealtimeMessage =
   | { eventType: "chat.message.created"; payload: ChatMessageCreatedPayload }
   | { eventType: "chat.message.deleted"; payload: ChatMessageDeletedPayload }
   | { eventType: "chat.message.updated"; payload: ChatMessageUpdatedPayload }
+  | { eventType: "chat.reaction.changed"; payload: ChatReactionChangedPayload }
   | { eventType: "chat.space.changed"; payload: ChatSpaceChangedPayload }
   | { eventType: "chat.unread.changed"; payload: ChatUnreadChangedPayload };
 

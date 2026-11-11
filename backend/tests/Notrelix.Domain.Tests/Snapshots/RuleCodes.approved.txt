@@ -119,9 +119,11 @@ message-content-invalid|Chat|MessageContentInvalid
 message-deleted|Chat|MessageDeleted
 message-not-author|Chat|MessageNotAuthor
 message-not-pinnable|Chat|MessageNotPinnable
+message-not-reactable|Chat|MessageNotReactable
 message-sequence-invalid|Chat|MessageSequenceInvalid
 name-conflict|Chat|NameConflict
 rate-limited|Chat|RateLimited
+reaction-kind-invalid|Chat|ReactionKindInvalid
 space-not-found|Chat|SpaceNotFound
 system-message-immutable|Chat|SystemMessageImmutable
 thread-root-invalid|Chat|ThreadRootInvalid
