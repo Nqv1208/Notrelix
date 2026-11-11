@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@notrelix/testing";
 import {
   ChatSidebar,
+  groupChannels,
   unreadBadge,
   type ChatSidebarProps,
 } from "../web/components/chat-sidebar";
@@ -110,5 +111,60 @@ describe("ChatSidebar", () => {
     expect(screen.getByText("Channels could not load.")).not.toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(onRetry).toHaveBeenCalledOnce();
+  });
+
+  it("groups the channels under headings: the ungrouped ones first, then each group numbered", () => {
+    render(
+      <ChatSidebar
+        {...props({
+          channels: [
+            channel("c-general", "general"),
+            channel("c-erp", "erp-rollout", { groupId: "g-2" }),
+            channel("c-launch", "launch-2026", { groupId: "g-2" }),
+            channel("c-ke-toan", "ke-toan", { groupId: "g-9" }),
+          ],
+        })}
+      />,
+    );
+    const headings = screen
+      .getAllByRole("heading", { level: 3 })
+      .map((node) => node.textContent);
+    expect(headings).toEqual(["Channels", "Group 1", "Group 2"]);
+    expect(screen.getByRole("button", { name: /erp-rollout/ })).not.toBeNull();
+  });
+
+  it("shows the jump-to field as plain text, not as a control", () => {
+    render(<ChatSidebar {...props()} />);
+    expect(
+      screen.queryByRole("button", { name: /Jump to or search/ }),
+    ).toBeNull();
+    expect(
+      screen.getByText("Jump to or search").closest("[aria-hidden='true']"),
+    ).not.toBeNull();
+  });
+
+  it("shows the caller in the footer when the host knows their name", () => {
+    const { unmount } = render(
+      <ChatSidebar
+        {...props({ viewer: { id: "me", name: "Nguyễn Thu Hà" } })}
+      />,
+    );
+    expect(screen.getByText("Nguyễn Thu Hà")).not.toBeNull();
+    unmount();
+    render(<ChatSidebar {...props({ viewer: null })} />);
+    expect(screen.queryByText("Nguyễn Thu Hà")).toBeNull();
+  });
+});
+
+describe("groupChannels", () => {
+  it("keeps the ungrouped channels first and each group as one run, in order", () => {
+    const groups = groupChannels([
+      channel("a", "a", { groupId: "g-1" }),
+      channel("b", "b"),
+      channel("c", "c", { groupId: "g-1" }),
+      channel("d", "d", { groupId: "g-2" }),
+    ]);
+    expect(groups.map((group) => group.groupId)).toEqual([null, "g-1", "g-2"]);
+    expect(groups[1]!.channels.map((entry) => entry.id)).toEqual(["a", "c"]);
   });
 });

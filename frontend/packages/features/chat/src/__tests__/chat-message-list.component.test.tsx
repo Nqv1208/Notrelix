@@ -178,15 +178,38 @@ describe("ChatMessageList", () => {
     expect(screen.getByText(/^System:/)).not.toBeNull();
   });
 
-  it("offers edit and delete only on the caller's own message", () => {
+  it("offers edit and delete in a toolbar only on the caller's own message", () => {
     const messages = [
       message(1, { authorId: ME }),
       message(2, { authorId: OTHER }),
     ];
-    render(<ChatMessageList {...props({ messages })} />);
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    render(<ChatMessageList {...props({ messages, onEdit, onDelete })} />);
+    expect(screen.getAllByRole("toolbar")).toHaveLength(1);
     expect(
-      screen.getAllByRole("button", { name: /Message actions for/ }),
+      screen.getAllByRole("button", { name: "Edit message" }),
     ).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Edit message" }));
+    expect(onEdit).toHaveBeenCalledWith(expect.objectContaining({ id: "m-1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete message" }));
+    expect(onDelete).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "m-1" }),
+    );
+  });
+
+  it("offers no toolbar on a deleted message of the caller's", () => {
+    const messages = [
+      message(1, {
+        authorId: ME,
+        deleted: true,
+        content: null,
+        deletedAt: "2026-11-10T09:05:00.000Z",
+        version: 2,
+      }),
+    ];
+    render(<ChatMessageList {...props({ messages })} />);
+    expect(screen.queryByRole("toolbar")).toBeNull();
   });
 
   it("renders the empty, loading, error and no-access states", () => {
@@ -213,7 +236,48 @@ describe("ChatMessageList", () => {
     unmountNoAccess();
 
     render(<ChatMessageList {...props({ status: "ready" })} />);
-    expect(screen.getByText("No messages yet")).not.toBeNull();
+    expect(screen.getByText("This is the start of #general")).not.toBeNull();
+  });
+
+  it("shows the error with its detail and a retry, and a way back on a narrow screen", () => {
+    const onRetry = vi.fn();
+    const onBack = vi.fn();
+    render(
+      <ChatMessageList
+        {...props({
+          status: "error",
+          onRetryLoad: onRetry,
+          onBackToList: onBack,
+        })}
+      />,
+    );
+    expect(
+      screen.getByText(
+        "Something went wrong while loading the history. Messages you have read are kept.",
+      ),
+    ).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(onRetry).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole("button", { name: "Back to channels" }));
+    expect(onBack).toHaveBeenCalledOnce();
+  });
+
+  it("offers the way back from the no-access state only when the screen is narrow", () => {
+    const { unmount } = render(
+      <ChatMessageList {...props({ status: "no-access" })} />,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Back to channels" }),
+    ).toBeNull();
+    unmount();
+    render(
+      <ChatMessageList
+        {...props({ status: "no-access", onBackToList: vi.fn() })}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Back to channels" }),
+    ).not.toBeNull();
   });
 
   it("shows a pending send with its state and offers retry and discard when it failed", () => {
@@ -250,7 +314,7 @@ describe("ChatMessageList", () => {
     );
     expect(screen.getByText("Sending")).not.toBeNull();
     expect(screen.getByText("Not sent")).not.toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    fireEvent.click(screen.getByRole("button", { name: "Resend" }));
     expect(onRetry).toHaveBeenCalledWith(
       expect.objectContaining({ clientMessageId: "c-2" }),
     );
