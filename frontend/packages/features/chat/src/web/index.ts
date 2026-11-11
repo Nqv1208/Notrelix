@@ -27,3 +27,23 @@ export {
   type ChatCopy,
 } from "./components/chat.copy";
 export { useChatCopy, fillCopy, pluralCopy } from "./components/use-chat-copy";
+export {
+  createChatRealtimeAdapter,
+  type ChatRealtimeAdapter,
+  type ChatRealtimeAdapterOptions,
+  type ChatRealtimeContext,
+  type ChatRealtimeEnvelope,
+  type ChatRecoverySignal,
+} from "./realtime/chat-realtime-adapter";
+export {
+  applyMessageCreated,
+  applyMessageDeleted,
+  applyMessageUpdated,
+  applyUnreadFrame,
+  lastKnownSequence,
+  mergeHistoryPage,
+  messageFromCreatedFrame,
+  windowIsLive,
+  type MessageFrameOutcome,
+  type UnreadFrameOutcome,
+} from "./query/chat-realtime-reducers";

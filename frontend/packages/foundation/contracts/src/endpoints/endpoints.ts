@@ -330,35 +330,35 @@ export const endpoints = {
   // Chat.* (REST prefix /api/v1/workspaces/{workspaceId}/chat). A channel is a space: the same GUID.
   chat: {
     channels: (workspaceId: string) =>
-      `/workspaces/${workspaceId}/chat/channels`,
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels`,
     channel: (workspaceId: string, channelId: string) =>
-      `/workspaces/${workspaceId}/chat/channels/${channelId}`,
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}`,
     channelOrder: (workspaceId: string) =>
-      `/workspaces/${workspaceId}/chat/channels/order`,
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/order`,
     channelArchive: (workspaceId: string, channelId: string) =>
-      `/workspaces/${workspaceId}/chat/channels/${channelId}/archive`,
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/archive`,
     channelMembers: (workspaceId: string, channelId: string) =>
-      `/workspaces/${workspaceId}/chat/channels/${channelId}/members`,
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/members`,
     channelJoin: (workspaceId: string, channelId: string) =>
-      `/workspaces/${workspaceId}/chat/channels/${channelId}/members/me`,
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/members/me`,
     channelMember: (workspaceId: string, channelId: string, userId: string) =>
-      `/workspaces/${workspaceId}/chat/channels/${channelId}/members/${userId}`,
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/members/${encodeURIComponent(userId)}`,
     channelGroups: (workspaceId: string) =>
-      `/workspaces/${workspaceId}/chat/channel-groups`,
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channel-groups`,
     channelGroup: (workspaceId: string, groupId: string) =>
-      `/workspaces/${workspaceId}/chat/channel-groups/${groupId}`,
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channel-groups/${encodeURIComponent(groupId)}`,
     messages: (workspaceId: string, spaceId: string) =>
-      `/workspaces/${workspaceId}/chat/spaces/${spaceId}/messages`,
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/messages`,
     message: (workspaceId: string, messageId: string) =>
-      `/workspaces/${workspaceId}/chat/messages/${messageId}`,
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}`,
     unread: (workspaceId: string) =>
-      `/workspaces/${workspaceId}/chat/me/unread`,
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/unread`,
     markRead: (workspaceId: string, spaceId: string) =>
-      `/workspaces/${workspaceId}/chat/spaces/${spaceId}/read`,
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/read`,
     markAllRead: (workspaceId: string) =>
-      `/workspaces/${workspaceId}/chat/me/read-all`,
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/read-all`,
     notificationLevel: (workspaceId: string, spaceId: string) =>
-      `/workspaces/${workspaceId}/chat/spaces/${spaceId}/notification-level`,
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/notification-level`,
   },
 
   boardGroups: {

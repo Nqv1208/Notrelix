@@ -212,6 +212,8 @@ export function ChatWorkspace({
   const joiner = hooks.useJoinChannel(ws);
 
   // ─── Local interaction state ──────────────────────────────────────────────
+  // Drafts are kept per space while the page is open (UC-CHT-B07). A feature package does not touch browser
+  // storage, so keeping them across a reload needs a host-provided store: owner decision, not built here.
   const [drafts, setDrafts] = useState<Readonly<Record<string, string>>>({});
   const [scrollRequest, setScrollRequest] = useState<ChatScrollRequest | null>(
     null,
@@ -283,7 +285,12 @@ export function ChatWorkspace({
 
   function setDraft(value: string) {
     if (!channelId) return;
-    setDrafts((prev) => ({ ...prev, [channelId]: value }));
+    setDrafts((prev) => {
+      const next = { ...prev };
+      if (value.length === 0) delete next[channelId];
+      else next[channelId] = value;
+      return next;
+    });
   }
 
   function handleSend(content: string) {

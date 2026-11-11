@@ -169,6 +169,12 @@ export function ChatMessageList(props: ChatMessageListProps) {
   }
 
   const label = fillCopy(copy.list.label, { channel: channelName });
+  const announcement = useIncomingAnnouncement(rows, props.viewerId, (row) =>
+    fillCopy(row.text === null ? copy.list.newFromOmitted : copy.list.newFrom, {
+      name: props.authorName(row.authorId),
+      text: row.text ?? "",
+    }),
+  );
 
   if (status === "loading") {
     return (
@@ -246,7 +252,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
       <div
         ref={scrollRef}
         role="log"
-        aria-live="polite"
+        aria-live="off"
         aria-label={label}
         aria-busy={props.isLoadingOlder || props.isLoadingNewer}
         tabIndex={0}
@@ -348,6 +354,9 @@ export function ChatMessageList(props: ChatMessageListProps) {
           </p>
         ) : null}
       </div>
+      <p role="status" aria-live="polite" className="sr-only">
+        {announcement}
+      </p>
       <JumpLatest
         visible={!atBottom || props.hasNewer}
         label={copy.list.jumpLatest}
@@ -361,10 +370,51 @@ export function ChatMessageList(props: ChatMessageListProps) {
   );
 }
 
+/**
+ * The line a screen reader hears for a new message from someone else: the
+ * author and the text, once per arrival. The log itself is not live (aria-live
+ * is off on it), so a busy channel does not read the whole list. The first
+ * render and older pages loaded above stay silent.
+ */
+function useIncomingAnnouncement(
+  rows: readonly ChatRow[],
+  viewerId: string,
+  format: (incoming: { authorId: string; text: string | null }) => string,
+): string {
+  let newest: ChatMessage | null = null;
+  for (let index = rows.length - 1; index >= 0; index--) {
+    const row = rows[index]!;
+    if (row.kind === "message") {
+      newest = row.message;
+      break;
+    }
+  }
+  const seen = useRef<{ id: string | null } | null>(null);
+  const [line, setLine] = useState("");
+  const newestId = newest?.id ?? null;
+  useLayoutEffect(() => {
+    const previous = seen.current;
+    seen.current = { id: newestId };
+    if (previous === null || previous.id === newestId || !newest) return;
+    if (newest.kind !== "user" || newest.authorId === viewerId) return;
+    setLine(
+      format({
+        authorId: newest.authorId,
+        text: newest.deleted ? null : newest.content,
+      }),
+    );
+  }, [newestId]);
+  return line;
+}
+
 function isAtBottom(el: HTMLElement): boolean {
   return el.scrollHeight - el.scrollTop - el.clientHeight < BOTTOM_SLACK_PX;
 }
 
+/**
+ * The jump-to-latest control sits in the flow between the message log and the
+ * composer, so it never covers a message (it used to float over the last one at 390 px).
+ */
 function JumpLatest({
   visible,
   label,
@@ -376,16 +426,16 @@ function JumpLatest({
 }) {
   if (!visible) return null;
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
+    <div className="flex shrink-0 justify-center border-t border-border bg-background px-4 py-2">
       <Button
         type="button"
         variant="secondary"
         size="sm"
-        className="pointer-events-auto rounded-full shadow-sm"
+        className="max-w-full rounded-full shadow-sm"
         onClick={onClick}
       >
         <ArrowDown aria-hidden="true" />
-        {label}
+        <span className="truncate">{label}</span>
       </Button>
     </div>
   );

@@ -1,0 +1,412 @@
+import { QueryClient } from "@tanstack/react-query";
+import { describe, expect, it, vi } from "vitest";
+import {
+  createChatRealtimeAdapter,
+  type ChatRealtimeEnvelope,
+} from "../web/realtime/chat-realtime-adapter";
+import { chatQueryKeys } from "../query/keys";
+import type {
+  ChatMessage,
+  ChatMessagePage,
+  ChatUnreadSummary,
+} from "../core/types/chat";
+import type { ChatMessagesCache } from "../web/query/message-cache";
+import type { PendingMessage } from "../core/model/chat-model";
+
+const WS = "ws-1";
+const CH = "space-1";
+const AT = "2026-11-10T04:00:00.000Z";
+
+function message(
+  sequence: number,
+  overrides: Partial<ChatMessage> = {},
+): ChatMessage {
+  return {
+    id: `m-${sequence}`,
+    spaceId: CH,
+    sequence,
+    kind: "user",
+    authorId: "user-a",
+    content: `text ${sequence}`,
+    clientMessageId: null,
+    replyToId: null,
+    edited: false,
+    deleted: false,
+    createdAt: "2026-11-10T03:00:00.000Z",
+    editedAt: null,
+    deletedAt: null,
+    version: 1,
+    ...overrides,
+  };
+}
+
+function page(items: ChatMessage[], hasNewer = false): ChatMessagePage {
+  return { items, hasOlder: false, hasNewer };
+}
+
+function envelope(
+  eventType: string,
+  payload: Record<string, unknown> | undefined,
+  over: Partial<ChatRealtimeEnvelope> = {},
+): ChatRealtimeEnvelope {
+  return {
+    eventType,
+    eventId: `evt-${Math.random()}`,
+    resourceId: CH,
+    workspaceId: WS,
+    timestamp: AT,
+    payload,
+    ...over,
+  };
+}
+
+function createMessagePayload(
+  sequence: number,
+  over: Record<string, unknown> = {},
+) {
+  return {
+    id: `m-${sequence}`,
+    sequence,
+    authorId: "user-b",
+    kind: "user",
+    content: `incoming ${sequence}`,
+    contentOmitted: false,
+    deleted: false,
+    createdAt: AT,
+    editedAt: null,
+    replyToId: null,
+    version: 1,
+    ...over,
+  };
+}
+
+function setup(initial: ChatMessage[], hasNewer = false) {
+  const queryClient = new QueryClient();
+  const key = [...chatQueryKeys.messages(WS, CH), "latest"];
+  queryClient.setQueryData<ChatMessagesCache>(key, {
+    pageParams: [{}],
+    pages: [{ items: initial, hasOlder: false, hasNewer }],
+  });
+  const listMessages = vi.fn(
+    async (_ws: string, _ch: string, _cursor: { after?: number }) =>
+      page([message(3), message(4)]),
+  );
+  const service = { listMessages } as never;
+  const adapter = createChatRealtimeAdapter({ queryClient, service });
+  const invalidateQueries = vi.fn();
+  const context = { workspaceId: WS, channelId: CH, invalidateQueries };
+  const read = () => queryClient.getQueryData<ChatMessagesCache>(key)!;
+  const ids = () => read().pages.flatMap((p) => p.items.map((m) => m.sequence));
+  return {
+    queryClient,
+    key,
+    adapter,
+    context,
+    listMessages,
+    invalidateQueries,
+    read,
+    ids,
+  };
+}
+
+describe("ChatRealtimeAdapter: channel frames", () => {
+  it("supports the message frames and the unread frame only", () => {
+    const { adapter } = setup([]);
+    expect(adapter.supports(envelope("chat.message.created", {}))).toBe(true);
+    expect(adapter.supports(envelope("chat.unread.changed", {}))).toBe(true);
+    expect(adapter.supports(envelope("board.board", {}))).toBe(false);
+  });
+
+  it("a created frame of the open channel appends to the loaded history", async () => {
+    const { adapter, context, ids } = setup([message(1), message(2)]);
+    await adapter.validateAndHandle(
+      envelope("chat.message.created", createMessagePayload(3)),
+      context,
+    );
+    expect(ids()).toEqual([1, 2, 3]);
+  });
+
+  it("ignores frames of another channel or another workspace", async () => {
+    const { adapter, context, listMessages, ids } = setup([message(1)]);
+    await adapter.validateAndHandle(
+      envelope("chat.message.created", createMessagePayload(2), {
+        resourceId: "space-2",
+      }),
+      context,
+    );
+    await adapter.validateAndHandle(
+      envelope("chat.message.created", createMessagePayload(2), {
+        workspaceId: "ws-2",
+      }),
+      context,
+    );
+    expect(ids()).toEqual([1]);
+    expect(listMessages).not.toHaveBeenCalled();
+  });
+
+  it("a duplicate frame changes nothing (dedupe by id)", async () => {
+    const { adapter, context, ids } = setup([message(1), message(2)]);
+    await adapter.validateAndHandle(
+      envelope("chat.message.created", createMessagePayload(2)),
+      context,
+    );
+    expect(ids()).toEqual([1, 2]);
+  });
+
+  it("a gap fetches the range after the last known sequence, then merges it once", async () => {
+    const { adapter, context, listMessages, ids } = setup([
+      message(1),
+      message(2),
+    ]);
+    await adapter.validateAndHandle(
+      envelope("chat.message.created", createMessagePayload(5)),
+      context,
+    );
+    expect(listMessages).toHaveBeenCalledTimes(1);
+    expect(listMessages.mock.calls[0]![2]).toEqual({ after: 2 });
+    expect(ids()).toEqual([1, 2, 3, 4]);
+  });
+
+  it("a payloadOmitted frame fetches the range after the last known sequence instead of using a payload", async () => {
+    const { adapter, context, listMessages, ids } = setup([
+      message(1),
+      message(2),
+    ]);
+    await adapter.validateAndHandle(
+      envelope("chat.message.created", undefined, { payloadOmitted: true }),
+      context,
+    );
+    expect(listMessages.mock.calls[0]![2]).toEqual({ after: 2 });
+    expect(ids()).toEqual([1, 2, 3, 4]);
+  });
+
+  it("a contentOmitted edit fetches the message's range and does not patch with null text", async () => {
+    const { adapter, context, listMessages, read } = setup([
+      message(1),
+      message(2),
+    ]);
+    await adapter.validateAndHandle(
+      envelope(
+        "chat.message.updated",
+        createMessagePayload(2, {
+          content: null,
+          contentOmitted: true,
+          version: 2,
+          editedAt: AT,
+        }),
+      ),
+      context,
+    );
+    expect(listMessages.mock.calls[0]![2]).toEqual({ after: 1 });
+    expect(read().pages[0]!.items[1]!.content).toBe("text 2");
+  });
+
+  it("an edit by a newer version patches the message in place; a stale one is ignored", async () => {
+    const { adapter, context, read } = setup([message(1), message(2)]);
+    await adapter.validateAndHandle(
+      envelope(
+        "chat.message.updated",
+        createMessagePayload(2, {
+          content: "edited",
+          editedAt: AT,
+          version: 2,
+        }),
+      ),
+      context,
+    );
+    expect(read().pages[0]!.items[1]).toMatchObject({
+      content: "edited",
+      edited: true,
+      version: 2,
+    });
+    await adapter.validateAndHandle(
+      envelope(
+        "chat.message.updated",
+        createMessagePayload(2, { content: "old", version: 1 }),
+      ),
+      context,
+    );
+    expect(read().pages[0]!.items[1]!.content).toBe("edited");
+  });
+
+  it("a delete leaves a tombstone with the same id and sequence", async () => {
+    const { adapter, context, read } = setup([message(1), message(2)]);
+    await adapter.validateAndHandle(
+      envelope(
+        "chat.message.deleted",
+        createMessagePayload(2, { content: null, deleted: true, version: 2 }),
+      ),
+      context,
+    );
+    expect(read().pages[0]!.items[1]).toMatchObject({
+      id: "m-2",
+      sequence: 2,
+      deleted: true,
+      content: null,
+    });
+  });
+
+  it("a created frame of an own send confirms its pending entry by clientMessageId", async () => {
+    const { adapter, context, queryClient } = setup([message(1)]);
+    const pendingKey = chatQueryKeys.pending(WS, CH);
+    queryClient.setQueryData<PendingMessage[]>(pendingKey, [
+      {
+        clientMessageId: "cmid-9",
+        spaceId: CH,
+        content: "mine",
+        authorId: "me",
+        createdAt: AT,
+        status: "sending",
+        failure: null,
+      },
+    ]);
+    await adapter.validateAndHandle(
+      envelope(
+        "chat.message.created",
+        createMessagePayload(2, {
+          id: "m-2",
+          authorId: "me",
+          clientMessageId: "cmid-9",
+        }),
+      ),
+      context,
+    );
+    expect(queryClient.getQueryData<PendingMessage[]>(pendingKey)).toEqual([]);
+  });
+
+  it("a window that is behind the newest message is not patched by a gap", async () => {
+    const { adapter, context, listMessages, ids } = setup(
+      [message(1), message(2)],
+      true,
+    );
+    await adapter.validateAndHandle(
+      envelope("chat.message.created", createMessagePayload(7)),
+      context,
+    );
+    expect(listMessages).not.toHaveBeenCalled();
+    expect(ids()).toEqual([1, 2]);
+  });
+
+  it("a backfill that never catches up reloads the window instead (repeated gaps)", async () => {
+    const {
+      adapter,
+      context,
+      listMessages,
+      invalidateQueries,
+      queryClient,
+      key,
+    } = setup([message(1)]);
+    listMessages.mockImplementation(
+      async (_w, _c, cursor: { after?: number }) =>
+        page([message((cursor.after ?? 0) + 1)], true),
+    );
+    await adapter.validateAndHandle(
+      envelope("chat.message.created", createMessagePayload(50)),
+      context,
+    );
+    expect(listMessages.mock.calls.length).toBe(5);
+    expect(queryClient.getQueryState(key)?.isInvalidated).toBe(true);
+    expect(invalidateQueries).not.toHaveBeenCalled();
+  });
+});
+
+describe("ChatRealtimeAdapter: unread frames", () => {
+  const summary: ChatUnreadSummary = {
+    spaces: [
+      {
+        spaceId: CH,
+        name: "general",
+        readSequence: 1,
+        lastSequence: 2,
+        unreadCount: 1,
+        firstUnreadSequence: 2,
+        mentionCount: 0,
+        notificationLevel: "all",
+        muted: false,
+      },
+    ],
+    totalUnread: 1,
+    totalMentions: 0,
+  };
+
+  it("updates the unread summary cache in place and the totals with it", async () => {
+    const { adapter, context, queryClient } = setup([message(1)]);
+    queryClient.setQueryData(chatQueryKeys.unread(WS), summary);
+    await adapter.validateAndHandle(
+      envelope(
+        "chat.unread.changed",
+        { spaceId: CH, unread: 3, mentions: 1 },
+        { resourceId: "user-1" },
+      ),
+      context,
+    );
+    expect(
+      queryClient.getQueryData<ChatUnreadSummary>(chatQueryKeys.unread(WS)),
+    ).toMatchObject({
+      totalUnread: 3,
+      totalMentions: 1,
+    });
+  });
+
+  it("a frame for a space the summary does not list refetches the summary and the channel list", async () => {
+    const { adapter, context, queryClient } = setup([message(1)]);
+    queryClient.setQueryData(chatQueryKeys.unread(WS), summary);
+    const invalidate = vi.fn();
+    await adapter.validateAndHandle(
+      envelope("chat.unread.changed", {
+        spaceId: "new-space",
+        unread: 1,
+        mentions: 0,
+      }),
+      { ...context, invalidateQueries: invalidate },
+    );
+    expect(invalidate).toHaveBeenCalledWith([
+      [...chatQueryKeys.unread(WS)],
+      [...chatQueryKeys.channels(WS)],
+    ]);
+  });
+});
+
+describe("ChatRealtimeAdapter: recovery", () => {
+  it("a channel subscription that is acknowledged again backfills after the last known sequence", async () => {
+    const { adapter, listMessages, ids } = setup([message(1), message(2)]);
+    await adapter.recover({
+      reason: "subscribed",
+      workspaceId: WS,
+      scope: { kind: "channel", id: CH },
+    });
+    expect(listMessages.mock.calls[0]![2]).toEqual({ after: 2 });
+    expect(ids()).toEqual([1, 2, 3, 4]);
+  });
+
+  it("a lost channel leaves the sidebar cache and its detail is read again", async () => {
+    const { adapter, queryClient } = setup([message(1)]);
+    queryClient.setQueryData(chatQueryKeys.channels(WS), [
+      { id: CH },
+      { id: "other" },
+    ]);
+    const spy = vi.spyOn(queryClient, "invalidateQueries");
+    await adapter.recover({
+      reason: "permission-lost",
+      workspaceId: WS,
+      scope: { kind: "channel", id: CH },
+    });
+    expect(queryClient.getQueryData(chatQueryKeys.channels(WS))).toEqual([
+      { id: "other" },
+    ]);
+    expect(spy).toHaveBeenCalledWith({
+      queryKey: chatQueryKeys.channel(WS, CH),
+    });
+  });
+
+  it("a gap of the per-user stream reads the unread counters again", async () => {
+    const { adapter, queryClient } = setup([message(1)]);
+    const spy = vi.spyOn(queryClient, "invalidateQueries");
+    await adapter.recover({
+      reason: "gap",
+      workspaceId: WS,
+      scope: { kind: "user", id: "me" },
+    });
+    expect(spy).toHaveBeenCalledWith({ queryKey: chatQueryKeys.unread(WS) });
+  });
+});

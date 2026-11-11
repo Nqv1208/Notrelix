@@ -82,11 +82,62 @@ function props(
   };
 }
 
+describe("ChatMessageList: a new message while reading above the bottom", () => {
+  it("announces only the new message from someone else, politely, once", () => {
+    const first = [message(1)];
+    const { rerender } = render(
+      <ChatMessageList {...props({ messages: first })} />,
+    );
+    rerender(
+      <ChatMessageList
+        {...props({
+          messages: [...first, message(2, { content: "hello there" })],
+        })}
+      />,
+    );
+    const status = screen
+      .getAllByRole("status")
+      .find(
+        (node) =>
+          node.getAttribute("aria-live") === "polite" &&
+          node.textContent?.includes("hello"),
+      );
+    expect(status?.textContent).toBe(
+      "New message from Other person: hello there",
+    );
+    // Older text is not read again.
+    expect(
+      screen
+        .getAllByRole("status")
+        .some((node) => node.textContent?.includes("text 1")),
+    ).toBe(false);
+  });
+
+  it("does not announce the caller's own send, and the jump control is never inside the log", () => {
+    const { rerender } = render(
+      <ChatMessageList {...props({ messages: [message(1)] })} />,
+    );
+    rerender(
+      <ChatMessageList
+        {...props({
+          messages: [message(1), message(2, { authorId: ME, content: "mine" })],
+        })}
+      />,
+    );
+    expect(screen.queryByText("New message from Me: mine")).toBeNull();
+    const jump = screen.queryByRole("button", { name: en.list.jumpLatest });
+    // The control is rendered after the log, never inside it (it used to float over the last message).
+    const log = screen.getByRole("log");
+    expect(jump === null || !log.contains(jump)).toBe(true);
+  });
+});
+
 describe("ChatMessageList", () => {
-  it("is a named log that announces new messages politely", () => {
+  it("is a named log; new messages are announced by a polite status line, not by the whole log", () => {
     render(<ChatMessageList {...props({ messages: [message(1)] })} />);
     const log = screen.getByRole("log", { name: "Messages in general" });
-    expect(log.getAttribute("aria-live")).toBe("polite");
+    // The log itself is quiet (no reading of the whole list); new messages are announced by a polite status line.
+    expect(log.getAttribute("aria-live")).toBe("off");
     expect(within(log).getByText("text 1")).not.toBeNull();
   });
 

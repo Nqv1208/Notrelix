@@ -9,6 +9,8 @@ import { useAppRuntime } from "@notrelix/runtime-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
 
+const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
+
 /**
  * Chat (CHT-001..004). `/chat` opens the first channel of the caller; `/chat/$channelId`
  * opens that channel. The feature owns the channel, history and read state; this page
@@ -16,7 +18,13 @@ import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
  */
 export function ChatPage() {
   const { workspaceId } = useWorkspaceContext();
-  const { channelId } = useParams({ strict: false }) as { channelId?: string };
+  const { channelId: rawChannelId } = useParams({ strict: false }) as {
+    channelId?: string;
+  };
+  // The id comes from the address bar and ends up in an API path: only a plain id is used, anything else (such as
+  // "..") is treated as no channel and the page opens the first one.
+  const channelId =
+    rawChannelId && SAFE_ID.test(rawChannelId) ? rawChannelId : undefined;
   const navigate = useNavigate();
   const { api: runtimeClient } = useAppRuntime();
   const viewer = useWorkspaceViewer(workspaceId);
