@@ -18,6 +18,8 @@ import {
   cn,
 } from "@notrelix/ui-web";
 import type { ChatMessage } from "../../core/types/chat";
+import type { ChatHooks } from "../query/create-chat-hooks";
+import type { ThreadCounts } from "../query/interaction-cache";
 import {
   dayKeyOf,
   type ChatRow,
@@ -25,7 +27,11 @@ import {
 } from "../../core/model/chat-model";
 import type { ChatCopy } from "./chat.copy";
 import { fillCopy } from "./use-chat-copy";
-import { ChatMessageRow, ChatPendingRow } from "./chat-message-row";
+import {
+  ChatMessageRow,
+  ChatPendingRow,
+  type QuoteView,
+} from "./chat-message-row";
 
 /** Within this many pixels of the bottom the list counts as at the bottom. */
 const BOTTOM_SLACK_PX = 48;
@@ -77,6 +83,24 @@ export interface ChatMessageListProps {
   readonly pendingEntries: readonly PendingMessage[];
   /** Shown on the no-access and error states on narrow screens, to return to the channel list. */
   readonly onBackToList?: () => void;
+  /** Phase 2: the workspace and hooks the reaction popover reads through. */
+  readonly workspaceId?: string;
+  readonly hooks?: ChatHooks;
+  /** The pinned message ids of the channel (the toolbar shows Unpin for them). */
+  readonly pinnedIds?: ReadonlySet<string>;
+  /** The reply count and latest reply of each thread root, by message id. */
+  readonly threadCounts?: ThreadCounts;
+  /** The quote of a reply (the message it answers), or null when the message quotes nothing. */
+  readonly quoteOf?: (message: ChatMessage) => QuoteView | null;
+  readonly onReact?: (
+    message: ChatMessage,
+    emoji: string,
+    add: boolean,
+  ) => void;
+  readonly onReply?: (message: ChatMessage) => void;
+  readonly onOpenThread?: (message: ChatMessage) => void;
+  readonly onTogglePin?: (message: ChatMessage, pinned: boolean) => void;
+  readonly onOpenQuote?: (messageId: string) => void;
 }
 
 function dayLabel(dayKey: string, locale: string, copy: ChatCopy): string {
@@ -377,6 +401,18 @@ export function ChatMessageList(props: ChatMessageListProps) {
                     copy={copy}
                     onEdit={props.onEdit}
                     onDelete={props.onDelete}
+                    quote={props.quoteOf?.(row.message) ?? null}
+                    thread={threadView(props.threadCounts, row.message.id)}
+                    pinned={props.pinnedIds?.has(row.message.id) ?? false}
+                    reactions={row.message.reactions ?? []}
+                    workspaceId={props.workspaceId}
+                    hooks={props.hooks}
+                    authorName={props.authorName}
+                    onReact={props.onReact}
+                    onReply={props.onReply}
+                    onOpenThread={props.onOpenThread}
+                    onTogglePin={props.onTogglePin}
+                    onOpenQuote={props.onOpenQuote}
                   />
                 )}
               </li>
@@ -403,6 +439,12 @@ export function ChatMessageList(props: ChatMessageListProps) {
       />
     </div>
   );
+}
+
+function threadView(counts: ThreadCounts | undefined, messageId: string) {
+  const entry = counts?.[messageId];
+  if (!entry || entry.replyCount === 0) return null;
+  return { replyCount: entry.replyCount, lastReplyAt: entry.lastReplyAt };
 }
 
 /**
