@@ -871,7 +871,7 @@ function FieldControlBody({
                 write(o.id);
                 setOpen(false);
               }}
-              className={cn(PRIORITY_OPT, o.id === raw && "font-semibold")}
+              className={PRIORITY_OPT}
             >
               {glyph(o.label)}
               {o.label}
@@ -888,7 +888,7 @@ function FieldControlBody({
             type="button"
             role="option"
             aria-selected={!current}
-            className={cn(PRIORITY_OPT, !current && "font-semibold")}
+            className={PRIORITY_OPT}
             onClick={() => {
               write(null);
               setOpen(false);

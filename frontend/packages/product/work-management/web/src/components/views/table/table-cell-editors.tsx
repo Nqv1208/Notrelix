@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Check } from "lucide-react";
 import {
   Calendar,
   calendarLocale,
@@ -195,11 +195,17 @@ export function PickRow({
       onClick={onClick}
       className={cn(
         "flex h-8 max-xl:h-11 w-full cursor-pointer items-center gap-2 rounded-md border-0 bg-transparent px-2 text-left text-compact text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring",
-        pressed && "bg-state-hover font-semibold",
+        pressed && "bg-state-hover",
       )}
     >
       {mark}
       <span className="min-w-0 flex-1 truncate">{children}</span>
+      {pressed ? (
+        <Check
+          aria-hidden="true"
+          className="size-3.5 shrink-0 text-brand-ink"
+        />
+      ) : null}
     </button>
   );
 }

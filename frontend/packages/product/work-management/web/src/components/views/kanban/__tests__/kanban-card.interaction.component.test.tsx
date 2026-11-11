@@ -605,6 +605,70 @@ describe("KanbanCard row 2 (checklist, files, blocked, crowding)", () => {
     expect(article.querySelector("[data-checklist-bar]")).toBeNull();
   });
 
+  it("puts priority and key on the title's line when the card has no label", () => {
+    const { article } = renderCard({
+      labels: [],
+      priority: "high",
+      itemKey: "ERP-142",
+    });
+    const title = article.querySelector("h3")!;
+    const line = title.parentElement!;
+    expect(line.querySelector("[data-priority]")).not.toBeNull();
+    expect(line.textContent).toContain("ERP-142");
+    // no band of its own above the title
+    expect(article.querySelector("div[id$='-top']")).toBeNull();
+  });
+
+  it("keeps priority and key in the label row when the card has a label", () => {
+    const { article } = renderCard({
+      labels: [labelFixture({ name: "Dữ liệu" })],
+      priority: "high",
+      itemKey: "ERP-142",
+    });
+    const top = article.querySelector("div[id$='-top']")!;
+    expect(top.querySelector("[data-priority]")).not.toBeNull();
+    expect(top.textContent).toContain("ERP-142");
+    expect(article.querySelector("span[id$='-top']")).toBeNull();
+  });
+
+  it("a card with neither label, priority nor key has no top row at all", () => {
+    const { article } = renderCard({
+      labels: [],
+      priority: undefined,
+      itemKey: null,
+    });
+    expect(article.querySelector("[id$='-top']")).toBeNull();
+  });
+
+  it("grows the label row in only when a label is added to a card already drawn", () => {
+    const bare = cardFixture({ title: "Thẻ", labels: [], priority: "high" });
+    const labelled = { ...bare, labels: [labelFixture({ name: "Dữ liệu" })] };
+    const tree = (card: Card) => (
+      <DndContext>
+        <SortableContext items={[card.id]}>
+          <KanbanCard
+            card={card}
+            now={NOW}
+            copy={VI}
+            onOpenDetails={() => undefined}
+          />
+        </SortableContext>
+      </DndContext>
+    );
+    const view = renderPureUi(tree(bare));
+    // first paint with a label: no animation
+    const first = renderPureUi(tree(labelled));
+    expect(
+      first.container.querySelector("div[id$='-top']")!.className,
+    ).not.toContain("card-row-grow");
+    first.unmount();
+    // a label arrives on the drawn card: the row grows in
+    view.rerender(tree(labelled));
+    expect(
+      view.container.querySelector("div[id$='-top']")!.className,
+    ).toContain("card-row-grow");
+  });
+
   it("draws a checklist progress bar filled to the share done", () => {
     const { article } = renderCard({
       checklistProgress: { done: 1, total: 4 },

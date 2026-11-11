@@ -15,7 +15,7 @@ export const sortConfigSchema = z.object({
  * Cards a Kanban lane renders before "Xem thêm N việc". A lane scrolls inside
  * its own height, so this only pages very long lanes.
  */
-export const DEFAULT_KANBAN_LANE_CARD_LIMIT = 20;
+export const DEFAULT_KANBAN_LANE_CARD_LIMIT = 10;
 /** A lane's work-in-progress limit: a warning number, never a write rule. */
 export const MIN_KANBAN_WIP_LIMIT = 1;
 export const MAX_KANBAN_WIP_LIMIT = 999;

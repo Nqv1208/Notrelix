@@ -75,6 +75,8 @@ export interface KanbanBoardProps {
   /** A filter or search narrows the board. */
   filterActive: boolean;
   /** The board holds no item at all (not merely a filter hiding them). */
+  /** The board has just loaded: its lanes open one after the other instead of appearing at once. */
+  reveal?: boolean;
   boardEmpty?: boolean;
   /** "Thêm vào {lane}" is offered. */
   canAdd: boolean;
@@ -191,6 +193,7 @@ export function KanbanBoard({
   timeZone,
   selectedItemId,
   filterActive,
+  reveal = false,
   boardEmpty = false,
   canAdd,
   canDrag,
@@ -515,7 +518,7 @@ export function KanbanBoard({
         data-dragging={drag ? "" : undefined}
         className="flex min-w-min items-start gap-3"
       >
-        {shown.map((lane) => {
+        {shown.map((lane, laneIndex) => {
           const key = laneKey(lane);
           const original = lanes.find(
             (candidate) => laneKey(candidate) === key,
@@ -523,6 +526,7 @@ export function KanbanBoard({
           return (
             <KanbanColumn
               key={key}
+              enterIndex={reveal ? laneIndex : undefined}
               lane={lane}
               name={lane.name || noValueName}
               copy={copy}

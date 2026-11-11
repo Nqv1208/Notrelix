@@ -24,6 +24,7 @@ export const en = {
   showMore_other: "Show {{count}} more items",
   // A column read in pages: the items shown of those it holds, and the button that adds the next ones.
   shownOf: "Showing {{shown}} of {{total}}",
+  loadingMore: "Loading more items…",
   pageMore_one: "Show {{count}} more item",
   pageMore_other: "Show {{count}} more items",
   loadMoreFailed: "Could not load more",
@@ -130,6 +131,7 @@ export const vi: KanbanLaneCopy = {
   showMore_one: "Xem thêm {{count}} việc",
   showMore_other: "Xem thêm {{count}} việc",
   shownOf: "Đã hiện {{shown}} trên {{total}}",
+  loadingMore: "Đang tải thêm việc…",
   pageMore_one: "Hiện thêm {{count}} việc",
   pageMore_other: "Hiện thêm {{count}} việc",
   loadMoreFailed: "Không tải thêm được",

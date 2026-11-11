@@ -11,7 +11,12 @@ export interface ItemChecklistsModel {
   readonly renameList: (checklistId: string, title: string) => void;
   readonly deleteList: (checklistId: string) => void;
   readonly moveList: (checklistId: string, toIndex: number) => void;
-  readonly addItem: (checklistId: string, title: string) => void;
+  /** `extras`: the person and the due time (an ISO instant) the new item starts with; a draft ignores them. */
+  readonly addItem: (
+    checklistId: string,
+    title: string,
+    extras?: { assigneeId?: string | null; dueAt?: string | null },
+  ) => void;
   readonly renameItem: (
     checklistId: string,
     itemId: string,

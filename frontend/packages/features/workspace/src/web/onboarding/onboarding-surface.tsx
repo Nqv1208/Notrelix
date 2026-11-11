@@ -101,7 +101,9 @@ export function OnboardingSurface(props: OnboardingSurfaceProps) {
     onExit,
     onEnterHome,
   } = props;
-  const [tried, setTried] = useState(false);
+  // A try belongs to the step it was made on: the next step starts without its errors.
+  const [triedStep, setTriedStep] = useState<typeof step | null>(null);
+  const tried = triedStep === step;
   const resend = props.resend ?? { status: "idle", secondsLeft: 0 };
   const t = copy.frame;
   const index =
@@ -121,7 +123,7 @@ export function OnboardingSurface(props: OnboardingSurfaceProps) {
   const boardReady = draft.board.name.trim().length > 0;
 
   const next = (ready: boolean) => () => {
-    setTried(true);
+    setTriedStep(step);
     if (ready) onNext();
   };
 

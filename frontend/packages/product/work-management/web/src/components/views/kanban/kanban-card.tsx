@@ -1,5 +1,14 @@
-import { useId, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useSortable } from "@dnd-kit/sortable";
+import { useSmoothHeight } from "./use-smooth-height";
 import { CSS } from "@dnd-kit/utilities";
 import {
   Archive,
@@ -231,6 +240,8 @@ function KanbanCardContent({
   idPrefix,
   reserveMore = false,
   reservePick = false,
+  hoverLeft = false,
+  pick = null,
   failure,
 }: {
   card: Card;
@@ -243,6 +254,10 @@ function KanbanCardContent({
   reserveMore?: boolean;
   /** Cards are being picked: the pick box sits at the start of the top row, which starts after it (BC-Bulk). */
   reservePick?: boolean;
+  /** The pick box shows on hover at the start of the card: the first row slides right to leave it room. */
+  hoverLeft?: boolean;
+  /** The pick box: it sits on the title's line, and the title slides right of it. */
+  pick?: ReactNode;
 }) {
   const {
     isDone,
@@ -279,6 +294,54 @@ function KanbanCardContent({
   );
   const cover = card.cover ?? null;
   const fullCover = cover?.style === "full";
+  // A card without labels (or a done / archived mark) has nothing for a row of its own: its priority and key
+  // sit at the end of the title's line instead of leaving an empty band above it.
+  const labelRow =
+    shownLabels.length > 0 || moreLabels > 0 || isDone || archivedChild;
+  const inlineTail = !labelRow && (priority !== null || itemKey !== null);
+  const showTop = !inlineTail && (hasTop || reserveMore);
+  // The title makes room for the pick box beside it with padding that moves with a short transition. The rows
+  // above it (labels, priority, key) never move: the hover buttons sit over their right end.
+  const titleRoom = pick
+    ? cn(
+        "transition-[padding] duration-150 ease-out motion-reduce:transition-none",
+        reservePick
+          ? "pl-[26px]"
+          : hoverLeft && "group-hover:pl-[26px] group-focus-within:pl-[26px]",
+      )
+    : undefined;
+  // A row that appears on a card already drawn (a label was added) grows in, pushing the title down smoothly.
+  // A card that mounts with its row (first paint, scrolling into the lane's window) does not animate.
+  const wasShown = useRef(showTop);
+  const [grow, setGrow] = useState(false);
+  useLayoutEffect(() => {
+    if (showTop && !wasShown.current) setGrow(true);
+    wasShown.current = showTop;
+  }, [showTop]);
+  const priorityMark = priority ? (
+    <span
+      data-priority={priority}
+      title={`${copy.priorityPrefix} ${copy.priority[priority]}`}
+      className={cn("inline-flex shrink-0", PRIORITY_TONE_CLASS[priority])}
+    >
+      <PriorityGlyph level={priority} />
+      <span className="sr-only">{copy.priorityPrefix} </span>
+      <span className="sr-only">{copy.priority[priority]}</span>
+    </span>
+  ) : null;
+  const keyMark = itemKey ? (
+    <span className="shrink-0 font-mono text-metadata leading-[1.45]">
+      {itemKey}
+    </span>
+  ) : null;
+  const titleClass = cn(
+    "line-clamp-3 break-words text-nav leading-[1.4]",
+    fullCover
+      ? "relative text-primary-foreground"
+      : isDone || archivedChild
+        ? "text-muted-foreground"
+        : "text-foreground",
+  );
   return (
     <>
       {cover ? (
@@ -296,13 +359,15 @@ function KanbanCardContent({
           />
         )
       ) : null}
-      {hasTop || reserveMore || reservePick ? (
+      {showTop ? (
         <div
           id={`${idPrefix}-top`}
+          onAnimationEnd={() => setGrow(false)}
           className={cn(
-            "flex min-h-[22px] min-w-0 items-center gap-1.5 text-metadata text-meta-foreground",
+            "flex min-h-[22px] min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-metadata text-meta-foreground",
             reserveMore && "pr-[37px]",
-            reservePick && "pl-[26px]",
+            grow &&
+              "overflow-hidden animate-[card-row-grow_220ms_ease-out] motion-reduce:animate-none",
           )}
         >
           {archivedChild ? (
@@ -316,7 +381,7 @@ function KanbanCardContent({
           ) : isDone ? (
             <span
               data-completed=""
-              className="inline-flex items-center gap-1.5 text-metadata leading-[1.45] font-medium whitespace-nowrap text-meta-foreground"
+              className="inline-flex h-5 shrink-0 items-center gap-1 rounded-[5px] bg-success-subtle px-[7px] text-micro font-semibold whitespace-nowrap text-success-subtle-foreground"
             >
               <SquareCheck className="size-3.25" aria-hidden="true" />
               {copy.completed}
@@ -325,7 +390,7 @@ function KanbanCardContent({
           {shownLabels.map((label, index) => {
             const tone = itemLabelTone(label);
             return (
-              <span key={label.id} className="inline-flex min-w-0">
+              <span key={label.id} className="inline-flex max-w-full min-w-0">
                 {index === 0 ? (
                   <span className="sr-only">{copy.label} </span>
                 ) : null}
@@ -352,45 +417,33 @@ function KanbanCardContent({
               +{moreLabels}
             </span>
           ) : null}
-          {priority ? (
-            <span
-              data-priority={priority}
-              title={`${copy.priorityPrefix} ${copy.priority[priority]}`}
-              className={cn(
-                "ml-auto inline-flex shrink-0",
-                PRIORITY_TONE_CLASS[priority],
-              )}
-            >
-              <PriorityGlyph level={priority} />
-              <span className="sr-only">{copy.priorityPrefix} </span>
-              <span className="sr-only">{copy.priority[priority]}</span>
-            </span>
-          ) : null}
-          {itemKey ? (
-            <span
-              className={cn(
-                "shrink-0 font-mono text-metadata leading-[1.45]",
-                priority ? null : "ml-auto",
-              )}
-            >
-              {itemKey}
+          {priorityMark || keyMark ? (
+            <span className="ml-auto flex shrink-0 items-center gap-1.5">
+              {priorityMark}
+              {keyMark}
             </span>
           ) : null}
         </div>
       ) : null}
 
-      <h3
-        className={cn(
-          "line-clamp-3 break-words text-nav leading-[1.4]",
-          fullCover
-            ? "relative text-primary-foreground"
-            : isDone || archivedChild
-              ? "text-muted-foreground"
-              : "text-foreground",
-        )}
-      >
-        {card.title}
-      </h3>
+      {inlineTail ? (
+        <div className={cn("relative flex items-start gap-2", titleRoom)}>
+          {pick}
+          <h3 className={cn(titleClass, "min-w-0 flex-1")}>{card.title}</h3>
+          <span
+            id={`${idPrefix}-top`}
+            className="flex h-[21px] shrink-0 items-center gap-1.5 text-metadata text-meta-foreground"
+          >
+            {priorityMark}
+            {keyMark}
+          </span>
+        </div>
+      ) : (
+        <div className={cn("relative", titleRoom)}>
+          {pick}
+          <h3 className={titleClass}>{card.title}</h3>
+        </div>
+      )}
 
       {failure ? (
         <>
@@ -662,7 +715,7 @@ export function KanbanCardOverlay({
  * sheet. The hover actions (assign to me, due date, options) are a shortcut
  * to the commonest sheet actions.
  */
-export function KanbanCard({
+function KanbanCardView({
   card,
   dndId,
   laneKey,
@@ -706,6 +759,7 @@ export function KanbanCard({
   const itemActionsCopy = itemActionsCopyFor(copy.locale);
   const picked = selection?.selectedIds.has(card.id) ?? false;
   const picking = (selection?.selectedIds.size ?? 0) > 0;
+  const smoothHeight = useSmoothHeight(true);
   const { listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: dndId ?? card.id,
@@ -717,6 +771,14 @@ export function KanbanCard({
         ? null
         : { duration: 180, easing: "cubic-bezier(0.2, 0, 0, 1)" },
     });
+  // One stable ref callback: a new one each render would reset the height the observer remembers.
+  const setCardRef = useCallback(
+    (node: HTMLElement | null) => {
+      setNodeRef(node);
+      smoothHeight(node);
+    },
+    [setNodeRef, smoothHeight],
+  );
   // Pointer and touch only: Enter and Space belong to opening the card.
   const { onKeyDown: _keyboard, ...dragListeners } = (listeners ??
     {}) as Record<string, unknown>;
@@ -733,9 +795,36 @@ export function KanbanCard({
     .filter(Boolean)
     .join(" ");
 
+  const pickBox =
+    selection && !isDragging ? (
+      // BC-Bulk: an 18 px box, 5 px radius, on the title's line; it shows on hover or focus until a card is picked.
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={picked}
+        aria-label={fillCopy(copy.selectCard, { title: card.title })}
+        onClick={(event) => {
+          event.stopPropagation();
+          selection.onToggle(card.id, { range: event.shiftKey });
+        }}
+        className={cn(
+          "absolute top-px left-0 z-20 grid size-[18px] cursor-pointer place-items-center rounded-[5px] border-0 p-0 text-primary-foreground before:absolute before:-inset-2 before:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+          picked
+            ? "bg-primary"
+            : "bg-popover shadow-[inset_0_0_0_1.5px_var(--color-line-strong)] dark:bg-card",
+          !picked &&
+            !picking &&
+            "opacity-0 focus-visible:opacity-100 group-hover:opacity-100",
+        )}
+      >
+        {picked ? (
+          <Check aria-hidden="true" className="size-3" strokeWidth={3} />
+        ) : null}
+      </button>
+    ) : null;
   const cardElement = (
     <article
-      ref={setNodeRef}
+      ref={setCardRef}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
@@ -822,32 +911,6 @@ export function KanbanCard({
           }
         }}
       />
-      {selection && !isDragging ? (
-        // BC-Bulk: an 18 px box, 5 px radius, at the start of the top row; it shows on hover or focus until a card is picked.
-        <button
-          type="button"
-          role="checkbox"
-          aria-checked={picked}
-          aria-label={fillCopy(copy.selectCard, { title: card.title })}
-          onClick={(event) => {
-            event.stopPropagation();
-            selection.onToggle(card.id, { range: event.shiftKey });
-          }}
-          className={cn(
-            "absolute top-[13px] left-3 z-20 grid size-[18px] cursor-pointer place-items-center rounded-[5px] border-0 p-0 text-primary-foreground before:absolute before:-inset-2 before:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-            picked
-              ? "bg-primary"
-              : "bg-popover shadow-[inset_0_0_0_1.5px_var(--color-line-strong)] dark:bg-card",
-            !picked &&
-              !picking &&
-              "opacity-0 focus-visible:opacity-100 group-hover:opacity-100",
-          )}
-        >
-          {picked ? (
-            <Check aria-hidden="true" className="size-3" strokeWidth={3} />
-          ) : null}
-        </button>
-      ) : null}
       {actions && !isDragging ? (
         <KanbanCardQuickActions
           card={card}
@@ -864,6 +927,8 @@ export function KanbanCard({
         idPrefix={descriptionId}
         reserveMore={touchMore && actions !== undefined && hasCardMenu(actions)}
         reservePick={picking && !isDragging}
+        hoverLeft={selection !== undefined && !isDragging}
+        pick={pickBox}
         failure={actions?.failureOf?.(card.id)}
       />
     </article>
@@ -902,3 +967,6 @@ export function KanbanCard({
     </ContextMenu>
   );
 }
+
+/** A card re-renders only when what it shows changes, not when the sheet of another card opens. */
+export const KanbanCard = memo(KanbanCardView);

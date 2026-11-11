@@ -28,6 +28,7 @@ import {
 import {
   useBoardLabels,
   useCardLabelWrites,
+  useToggleCardLabel,
   useBoardKanban,
   useBoardView,
   useCard,
@@ -387,6 +388,8 @@ export function KanbanView({
     onOpenItem: openItem,
   });
   const updateCardDetails = useUpdateCard(boardId, workspaceId);
+  const boardLabels = useBoardLabels(boardId, workspaceId);
+  const toggleCardLabel = useToggleCardLabel(boardId, workspaceId);
   // Adding a lane and renaming or recolouring one write an option of the field
   // the board is grouped by; a failure puts the lane back and says so.
   const addOption = useAddFieldOption(boardId, workspaceId, {
@@ -559,6 +562,18 @@ export function KanbanView({
   );
   const picking = useKanbanSelection(orderedCardIds);
   const lanesReady = !kanban.isLoading && Boolean(board);
+  // A board that was drawn as skeletons opens its lanes one after the other when the data arrives;
+  // later changes (a filter, a new lane, a refresh) do not replay it.
+  const sawSkeleton = useRef(false);
+  if (kanban.isLoading) sawSkeleton.current = true;
+  const reveal = lanesReady && sawSkeleton.current;
+  useEffect(() => {
+    if (!reveal) return;
+    const timer = setTimeout(() => {
+      sawSkeleton.current = false;
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [reveal]);
   useEffect(() => {
     const scroller = scrollerRef.current;
     if (!lanesReady || !scroller) return;
@@ -1167,6 +1182,54 @@ export function KanbanView({
             },
           );
         },
+        quickEdit: {
+          labels: boardLabels.data ?? [],
+          members: (board?.members ?? []).filter(
+            (member) => member.role !== "viewer",
+          ),
+          onRename: (card, title) => {
+            noteOrigin(card.id);
+            updateCardDetails.mutate(
+              { cardId: card.id, patch: { title } },
+              {
+                onError: () =>
+                  toast.error(
+                    fillCopy(laneCopyRef.current.saveFailed, {
+                      title: card.title,
+                    }),
+                    { id: `kanban-write-${card.id}` },
+                  ),
+              },
+            );
+          },
+          onToggleLabel: (card, labelId, on) =>
+            toggleCardLabel.mutate({ cardId: card.id, labelId, on }),
+          onToggleMember: (card, userId, on) => {
+            if (!personField) return;
+            const current = (card.members ?? [])
+              .map((member) => member.userId)
+              .filter((id): id is string => typeof id === "string");
+            noteOrigin(card.id);
+            kanban.updateFieldValue.mutate({
+              cardId: card.id,
+              fieldDefinitionId: personField.id,
+              value: on
+                ? [...current.filter((id) => id !== userId), userId]
+                : current.filter((id) => id !== userId),
+            });
+          },
+          onSetDates: (card, dates) => {
+            noteOrigin(card.id);
+            updateCardDetails.mutate({
+              cardId: card.id,
+              patch: {
+                startDate: dates.start ? `${dates.start}T00:00:00.000Z` : null,
+                dueDate: dates.due ? `${dates.due}T00:00:00.000Z` : null,
+              },
+            });
+          },
+          onOpen: (cardId) => handleOpenDetail(cardId),
+        },
         onCopyLink: handleCopyLink,
         onDuplicate: capabilities.canCreateCard
           ? removal.requestDuplicate
@@ -1312,6 +1375,7 @@ export function KanbanView({
               </>
             ) : (
               <KanbanBoard
+                reveal={reveal}
                 onDraggingChange={setDragging}
                 lanes={shownLanes}
                 groupOrder={kanban.groups}

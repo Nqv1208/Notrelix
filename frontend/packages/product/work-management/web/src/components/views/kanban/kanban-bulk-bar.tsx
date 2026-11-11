@@ -21,6 +21,7 @@ import { useMainTableCopy } from "../table/use-main-table-copy";
 import { tableStatusOptions } from "../table/table-model";
 import {
   TableArchivedNotice,
+  BarExit,
   TableBulkBar,
   TableBulkDone,
 } from "../table/table-bulk-bar";
@@ -200,8 +201,9 @@ export function KanbanBulkBar({
     )
     .map((candidate) => ({ id: candidate.id, title: candidate.title }));
 
-  if (ids.length === 0)
-    return pendingArchive.length > 0 ? (
+  // With nothing picked the bar leaves (it plays its exit) while a notice of the last change may take its place.
+  const notice =
+    ids.length > 0 ? null : pendingArchive.length > 0 ? (
       <TableArchivedNotice
         copy={copy}
         count={pendingArchive.length}
@@ -216,81 +218,89 @@ export function KanbanBulkBar({
       />
     ) : null;
 
-  return (
-    <TableBulkBar
-      copy={copy}
-      count={ids.length}
-      saving={bulk.isPending}
-      limit={{ max: BULK_ITEM_LIMIT, available: ids.length }}
-      statusOptions={
-        statusField
-          ? tableStatusOptions(
-              orderByKey(statusField.options, (option) => option.position),
-            )
-          : []
-      }
-      canEdit={capabilities.canEditFields}
-      canArchive={capabilities.canDelete}
-      onStatus={(optionId) =>
-        settle({ type: "set-status", statusOptionId: optionId })
-      }
-      onDue={(day) =>
-        settle(
-          day
-            ? { type: "set-due-date", dueDate: dueInstant(day) }
-            : { type: "clear-due-date" },
-        )
-      }
-      onArchive={() => {
-        setDone(null);
-        archiveWindow.start(ids);
-        onClear();
-      }}
-      {...(capabilities.canDelete
-        ? { onDelete: () => settle({ type: "delete" }) }
-        : {})}
-      onClear={onClear}
-      {...(itemFields.priority
-        ? {
-            priority: {
-              options: itemFields.priority.options.map((option) => ({
-                id: option.id,
-                label: option.label,
-              })),
-              onPriority: (optionId: string) =>
-                settle({ type: "set-priority", priorityOptionId: optionId }),
-            },
-          }
-        : {})}
-      {...(itemFields.person
-        ? {
-            assign: {
-              members: board.members.map((member) => ({
-                userId: member.userId,
-                name: member.name,
-                initials: member.initials,
-              })),
-              onAssign: (userId: string | null) =>
-                settle(
-                  userId
-                    ? { type: "assign", userId }
-                    : { type: "unassign-all" },
-                ),
-            },
-          }
-        : {})}
-      {...(capabilities.canEditFields
-        ? {
-            move: {
-              boards: moveTargets,
-              onMove: (targetBoardId: string) => {
-                for (const cardId of ids)
-                  moveItem.mutate({ cardId, targetBoardId });
-                onClear();
+  const bar =
+    ids.length === 0 ? null : (
+      <TableBulkBar
+        copy={copy}
+        count={ids.length}
+        saving={bulk.isPending}
+        limit={{ max: BULK_ITEM_LIMIT, available: ids.length }}
+        statusOptions={
+          statusField
+            ? tableStatusOptions(
+                orderByKey(statusField.options, (option) => option.position),
+              )
+            : []
+        }
+        canEdit={capabilities.canEditFields}
+        canArchive={capabilities.canDelete}
+        onStatus={(optionId) =>
+          settle({ type: "set-status", statusOptionId: optionId })
+        }
+        onDue={(day) =>
+          settle(
+            day
+              ? { type: "set-due-date", dueDate: dueInstant(day) }
+              : { type: "clear-due-date" },
+          )
+        }
+        onArchive={() => {
+          setDone(null);
+          archiveWindow.start(ids);
+          onClear();
+        }}
+        {...(capabilities.canDelete
+          ? { onDelete: () => settle({ type: "delete" }) }
+          : {})}
+        onClear={onClear}
+        {...(itemFields.priority
+          ? {
+              priority: {
+                options: itemFields.priority.options.map((option) => ({
+                  id: option.id,
+                  label: option.label,
+                })),
+                onPriority: (optionId: string) =>
+                  settle({ type: "set-priority", priorityOptionId: optionId }),
               },
-            },
-          }
-        : {})}
-    />
+            }
+          : {})}
+        {...(itemFields.person
+          ? {
+              assign: {
+                members: board.members.map((member) => ({
+                  userId: member.userId,
+                  name: member.name,
+                  initials: member.initials,
+                })),
+                onAssign: (userId: string | null) =>
+                  settle(
+                    userId
+                      ? { type: "assign", userId }
+                      : { type: "unassign-all" },
+                  ),
+              },
+            }
+          : {})}
+        {...(capabilities.canEditFields
+          ? {
+              move: {
+                boards: moveTargets,
+                onMove: (targetBoardId: string) => {
+                  for (const cardId of ids)
+                    moveItem.mutate({ cardId, targetBoardId });
+                  onClear();
+                },
+              },
+            }
+          : {})}
+      />
+    );
+
+  return (
+    <>
+      {notice}
+      <BarExit>{bar}</BarExit>
+    </>
   );
 }

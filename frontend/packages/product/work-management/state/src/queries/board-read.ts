@@ -8,11 +8,11 @@ import { wmQueryKeys } from "./keys";
 import { useWorkManagementServices } from "../services";
 
 /** Items of each Status lane a board read brings with it. */
-export const BOARD_FIRST_PAGE = 50;
-/** Items a "show more" reads from the server. */
-export const BOARD_LANE_PAGE = 50;
+export const BOARD_FIRST_PAGE = 10;
+/** Items each step of scrolling a lane to its end reads from the server. */
+export const BOARD_LANE_PAGE = 10;
 // Pages a refetch reads back to put a lane's loaded items where they were (about 2,000 items).
-const RESTORE_PAGES = 40;
+const RESTORE_PAGES = 200;
 
 /** What the open view needs of the board read. */
 export interface BoardReadNeed {
@@ -156,7 +156,7 @@ export async function readBoard(
         });
         read = appendLanePage(read, key, page);
       } catch {
-        break; // what is loaded stays; the person presses "show more" again
+        break; // what is loaded stays; the lane loads the rest as it is scrolled
       }
     }
   }

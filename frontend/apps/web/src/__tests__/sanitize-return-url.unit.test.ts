@@ -21,6 +21,12 @@ describe("sanitizeInternalReturnUrl", () => {
     expect(sanitizeInternalReturnUrl("//malicious.com")).toBe("/");
   });
 
+  it("rejects backslashes and control characters that browsers read as slashes", () => {
+    expect(sanitizeInternalReturnUrl("/\\evil.com")).toBe("/");
+    expect(sanitizeInternalReturnUrl("/\t/evil.com")).toBe("/");
+    expect(sanitizeInternalReturnUrl("/a\nb")).toBe("/");
+  });
+
   it("rejects invalid inputs", () => {
     expect(sanitizeInternalReturnUrl("")).toBe("/");
     expect(sanitizeInternalReturnUrl("javascript:alert(1)")).toBe("/");
