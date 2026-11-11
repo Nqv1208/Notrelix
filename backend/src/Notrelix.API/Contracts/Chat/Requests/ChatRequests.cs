@@ -23,3 +23,12 @@ public record CreateChannelGroupRequest(string Name, double? Position);
 
 /// <summary>The category's new name and position, with the version the client read. A stale version is 412.</summary>
 public record UpdateChannelGroupRequest(string Name, double? Position, long? ExpectedVersion);
+
+/// <summary>
+/// A message to a space. ClientMessageId is the sender's key for this message (unique per space and author; a retry
+/// with the same one returns the stored message). Idempotency-Key is the transport key of the request, a separate value.
+/// </summary>
+public record SendMessageRequest(string? Content, string? ClientMessageId, Guid? ReplyToId);
+
+/// <summary>The new text, with the version the editor read. A stale version is refused with 412.</summary>
+public record EditMessageRequest(string? Content, long? ExpectedVersion);

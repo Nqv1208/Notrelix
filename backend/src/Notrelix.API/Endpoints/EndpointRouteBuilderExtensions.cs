@@ -1,6 +1,7 @@
 using Notrelix.API.Endpoints.Chat.ChannelGroups;
 using Notrelix.API.Endpoints.Chat.Channels;
 using Notrelix.API.Endpoints.Chat.Members;
+using Notrelix.API.Endpoints.Chat.Messages;
 using Notrelix.API.Endpoints.Admin;
 using Notrelix.API.Endpoints.WorkManagement.Limits;
 using Notrelix.API.Endpoints.Identity.Users;
@@ -145,6 +146,7 @@ public static class EndpointRouteBuilderExtensions
         app.MapChannelRoutes();
         app.MapChannelMemberRoutes();
         app.MapChannelGroupRoutes();
+        app.MapMessageRoutes();
         app.MapWatchersEndpoints();
         app.RegisterNotificationPreferenceEndpoints();
         app.RegisterInboxEndpoints();

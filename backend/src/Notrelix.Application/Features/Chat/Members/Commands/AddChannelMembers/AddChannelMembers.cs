@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.DTOs;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Spaces;
 
@@ -23,7 +24,8 @@ public class AddChannelMembersCommandHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
-    IDateTimeProvider clock) : IRequestHandler<AddChannelMembersCommand, Result<AddChannelMembersResultDto>>
+    IDateTimeProvider clock,
+    ChatSystemMessages systemMessages) : IRequestHandler<AddChannelMembersCommand, Result<AddChannelMembersResultDto>>
 {
     public async Task<Result<AddChannelMembersResultDto>> Handle(AddChannelMembersCommand request, CancellationToken cancellationToken)
     {
@@ -47,7 +49,10 @@ public class AddChannelMembersCommandHandler(
             }
 
             if (space.AddMember(candidate, MembershipRole.Member, now))
+            {
                 added.Add(candidate);
+                await systemMessages.AnnounceAsync(space, userId, ChatSystemMessages.MemberAdded, cancellationToken);
+            }
         }
 
         return Result<AddChannelMembersResultDto>.Success(new AddChannelMembersResultDto(added, skipped));

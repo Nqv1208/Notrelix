@@ -1,3 +1,4 @@
+using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Spaces;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
 
@@ -8,4 +9,5 @@ public interface IChatDbContext
     DbSet<Space> ChatSpaces { get; }
     DbSet<Membership> ChatMemberships { get; }
     DbSet<ChannelGroup> ChatChannelGroups { get; }
+    DbSet<Message> ChatMessages { get; }
 }

@@ -115,9 +115,14 @@ invalid-position|Chat|InvalidPosition
 kind-not-supported|Chat|KindNotSupported
 last-manager|Chat|LastManager
 limit-reached|Chat|LimitReached
+message-content-invalid|Chat|MessageContentInvalid
+message-deleted|Chat|MessageDeleted
+message-not-author|Chat|MessageNotAuthor
+message-sequence-invalid|Chat|MessageSequenceInvalid
 name-conflict|Chat|NameConflict
 rate-limited|Chat|RateLimited
 space-not-found|Chat|SpaceNotFound
+system-message-immutable|Chat|SystemMessageImmutable
 version-conflict|Chat|VersionConflict
 Collaboration_Attachment_FileSizeExceeded|Collaboration|Collaboration_Attachment_FileSizeExceeded
 Collaboration_Attachment_FileSizeMustBePositive|Collaboration|Collaboration_Attachment_FileSizeMustBePositive

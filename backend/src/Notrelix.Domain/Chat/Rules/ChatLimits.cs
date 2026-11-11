@@ -11,6 +11,9 @@ public static class ChatLimits
     public const int GroupCap = 8;
     public const int PinLimit = 50;
 
+    /// <summary>The longest client message id, in characters. The client picks it; the server only keeps it.</summary>
+    public const int ClientMessageIdMaxLength = 128;
+
     /// <summary>The longest channel name, in characters (UC-CHT-A01).</summary>
     public const int ChannelNameMaxLength = 80;
 
