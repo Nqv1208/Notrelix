@@ -2741,6 +2741,76 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/mentionables": {
+      "get": {
+        "tags": [
+          "Chat.Mentions"
+        ],
+        "summary": "List the people a message in a space can mention",
+        "description": "The active members of the space (inSpace true) and, unless the caller is a Guest, the other active colleagues of the Workspace (inSpace false: the composer warns that they will not be notified and gain nothing). People are ids. canBroadcast says whether the caller may use @channel and @here; broadcastConfirmAbove is the member count above which a broadcast needs confirmBroadcast. A space the caller is not a member of is 404.",
+        "operationId": "Chat.Mentions.ListMentionables",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "spaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Chat.Mentions.DTOs.MentionablesDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/messages": {
       "get": {
         "tags": [
@@ -2853,7 +2923,7 @@
           "Chat.Messages"
         ],
         "summary": "Send a message to a space",
-        "description": "clientMessageId is the sender's key for the message: a retry with the same one returns the stored message with 200 and stores nothing. The first send returns 201. Idempotency-Key is the transport key and is required on this endpoint. An archived channel is 409 channel-archived; a space the caller is not a member of is 404.",
+        "description": "clientMessageId is the sender's key for the message: a retry with the same one returns the stored message with 200 and stores nothing. The first send returns 201. Idempotency-Key is the transport key and is required on this endpoint. An archived channel is 409 channel-archived; a space the caller is not a member of is 404. mentions are the structured mentions of the text (person, channel link, @channel, @here): each is checked against the channel on the server and the response lists the stored ones in mentions and the ones not stored in mentionNotices (cannot-view: stored, nobody is notified; unknown, link-not-visible, broadcast-not-allowed, no-audience: shown as text). A malformed mention is 400 (mention-invalid, mention-limit-exceeded). An @channel or @here in a channel of more than 50 members needs confirmBroadcast true, otherwise 409 broadcast-confirmation-required.",
         "operationId": "Chat.Messages.Send",
         "parameters": [
           {
@@ -2971,7 +3041,7 @@
           "Chat.Messages"
         ],
         "summary": "Edit the text of your own message",
-        "description": "Only the author edits. A stale expectedVersion is 412. A deleted message or a system message cannot be edited (409). The sequence never changes.",
+        "description": "Only the author edits. A stale expectedVersion is 412. A deleted message or a system message cannot be edited (409). The sequence never changes. When the text changes, mentions replaces the message's mentions (same rules as the send); the text unchanged changes nothing.",
         "operationId": "Chat.Messages.Edit",
         "parameters": [
           {
@@ -4042,7 +4112,7 @@
           "Chat.Threads"
         ],
         "summary": "Reply in the thread of a message",
-        "description": "clientMessageId is the sender's key: a retry with the same one returns the stored reply with 200 and stores nothing; the first reply returns 201. alsoSendToChannel also shows the reply in the channel's main flow. The reply takes the next thread sequence. Replying reopens an archived thread and makes the replier and the root's author followers. An archived channel is 409 channel-archived; a reply to a reply or a system message is 409 thread-root-invalid; a deleted root with no replies is 409 message-deleted. A space the caller is not a member of is 404.",
+        "description": "clientMessageId is the sender's key: a retry with the same one returns the stored reply with 200 and stores nothing; the first reply returns 201. alsoSendToChannel also shows the reply in the channel's main flow. The reply takes the next thread sequence. Replying reopens an archived thread and makes the replier and the root's author followers. An archived channel is 409 channel-archived; a reply to a reply or a system message is 409 thread-root-invalid; a deleted root with no replies is 409 message-deleted. A space the caller is not a member of is 404. mentions and confirmBroadcast work as in a send.",
         "operationId": "Chat.Threads.Reply",
         "parameters": [
           {
@@ -31439,6 +31509,17 @@
             "type": "integer",
             "format": "int64",
             "nullable": true
+          },
+          "mentions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.API.Contracts.Chat.Requests.MentionRequest"
+            },
+            "nullable": true
+          },
+          "confirmBroadcast": {
+            "type": "boolean",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -31479,6 +31560,36 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Chat.Requests.MentionRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "start": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "length": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "spaceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Chat.Requests.ReorderChannelsRequest": {
         "type": "object",
         "properties": {
@@ -31506,6 +31617,17 @@
           "alsoSendToChannel": {
             "type": "boolean",
             "nullable": true
+          },
+          "mentions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.API.Contracts.Chat.Requests.MentionRequest"
+            },
+            "nullable": true
+          },
+          "confirmBroadcast": {
+            "type": "boolean",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -31524,6 +31646,17 @@
           "replyToId": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "mentions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.API.Contracts.Chat.Requests.MentionRequest"
+            },
+            "nullable": true
+          },
+          "confirmBroadcast": {
+            "type": "boolean",
             "nullable": true
           }
         },
@@ -36099,6 +36232,43 @@
               "$ref": "#/components/schemas/Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.BillingPlanDto"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Chat.Mentions.DTOs.MentionableDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "inSpace": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Chat.Mentions.DTOs.MentionablesDto": {
+        "type": "object",
+        "properties": {
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Chat.Mentions.DTOs.MentionableDto"
+            },
+            "nullable": true
+          },
+          "canBroadcast": {
+            "type": "boolean"
+          },
+          "broadcastConfirmAbove": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "memberCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

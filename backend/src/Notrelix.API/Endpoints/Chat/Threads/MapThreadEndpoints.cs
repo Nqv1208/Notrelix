@@ -22,7 +22,7 @@ public static class MapThreadEndpoints
             .WithIdempotencyKey()
             .WithName("Chat.Threads.Reply")
             .WithSummary("Reply in the thread of a message")
-            .WithDescription("clientMessageId is the sender's key: a retry with the same one returns the stored reply with 200 and stores nothing; the first reply returns 201. alsoSendToChannel also shows the reply in the channel's main flow. The reply takes the next thread sequence. Replying reopens an archived thread and makes the replier and the root's author followers. An archived channel is 409 channel-archived; a reply to a reply or a system message is 409 thread-root-invalid; a deleted root with no replies is 409 message-deleted. A space the caller is not a member of is 404.")
+            .WithDescription("clientMessageId is the sender's key: a retry with the same one returns the stored reply with 200 and stores nothing; the first reply returns 201. alsoSendToChannel also shows the reply in the channel's main flow. The reply takes the next thread sequence. Replying reopens an archived thread and makes the replier and the root's author followers. An archived channel is 409 channel-archived; a reply to a reply or a system message is 409 thread-root-invalid; a deleted root with no replies is 409 message-deleted. A space the caller is not a member of is 404. mentions and confirmBroadcast work as in a send.")
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict);
 
         group.MapWorkspaceGet("/messages/{rootId:guid}/replies", ListRepliesAsync)
@@ -55,7 +55,8 @@ public static class MapThreadEndpoints
     private static async Task<IResult> ReplyAsync(Guid workspaceId, Guid rootId, ReplyInThreadRequest body, ISender sender)
     {
         var result = await sender.Send(new ReplyInThreadCommand(
-            workspaceId, rootId, body.Content ?? string.Empty, body.ClientMessageId ?? string.Empty, body.AlsoSendToChannel ?? false));
+            workspaceId, rootId, body.Content ?? string.Empty, body.ClientMessageId ?? string.Empty, body.AlsoSendToChannel ?? false,
+            body.Mentions?.Select(m => m.ToInput()).ToList(), body.ConfirmBroadcast ?? false));
         if (!result.Succeeded)
             return result.ToApiResult();
 

@@ -4,6 +4,7 @@ using Notrelix.API.Endpoints.Chat.Members;
 using Notrelix.API.Endpoints.Chat.Threads;
 using Notrelix.API.Endpoints.Chat.Messages;
 using Notrelix.API.Endpoints.Chat.Pins;
+using Notrelix.API.Endpoints.Chat.Mentions;
 using Notrelix.API.Endpoints.Chat.Reactions;
 using Notrelix.API.Endpoints.Chat.ReadState;
 using Notrelix.API.Endpoints.Admin;
@@ -154,6 +155,7 @@ public static class EndpointRouteBuilderExtensions
         app.MapThreadRoutes();
         app.MapPinRoutes();
         app.MapReactionRoutes();
+        app.MapMentionRoutes();
         app.MapReadStateRoutes();
         app.MapWatchersEndpoints();
         app.RegisterNotificationPreferenceEndpoints();
