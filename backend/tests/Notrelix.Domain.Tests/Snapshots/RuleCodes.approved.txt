@@ -118,6 +118,7 @@ last-manager|Chat|LastManager
 limit-reached|Chat|LimitReached
 message-content-invalid|Chat|MessageContentInvalid
 message-deleted|Chat|MessageDeleted
+message-not-attachable|Chat|MessageNotAttachable
 message-not-author|Chat|MessageNotAuthor
 message-not-pinnable|Chat|MessageNotPinnable
 message-not-reactable|Chat|MessageNotReactable
