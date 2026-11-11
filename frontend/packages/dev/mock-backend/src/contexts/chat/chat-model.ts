@@ -118,6 +118,25 @@ export interface ChatReactionRecord {
   readonly createdAt: string;
 }
 
+/**
+ * A file on a message (backend Attachment with target kind chat.message, kept by Collaboration). The bytes stay in the mock; a
+ * message keeps at most the per-message cap, and the delete of the message removes them.
+ */
+export interface ChatAttachmentRecord {
+  readonly id: string;
+  readonly workspaceId: string;
+  readonly spaceId: string;
+  readonly messageId: string;
+  readonly filename: string;
+  readonly contentType: string;
+  readonly sizeBytes: number;
+  readonly bytes: Uint8Array;
+  readonly uploadedBy: string;
+  readonly createdAt: string;
+  /** The Idempotency-Key of the upload that stored it, so a retry returns the same file. */
+  readonly idempotencyKey: string;
+}
+
 export interface ChatGroupRecord {
   readonly id: string;
   readonly workspaceId: string;
@@ -145,6 +164,10 @@ export const CHAT_LIMITS = {
   reactionKindsPerMessageMax: 6,
   /** Reactions one person holds on one message at most (backend ChatLimits.ReactionsPerUserPerMessageMax). */
   reactionsPerUserPerMessageMax: 6,
+  /** Files one message holds at most (backend AttachmentUploadOptions.MaxAttachmentsPerMessage). */
+  attachmentsPerMessageMax: 10,
+  /** The size cap of one file, in bytes (backend AttachmentUploadOptions.MaxFileSizeBytes, 100 MB). */
+  attachmentMaxBytes: 100 * 1024 * 1024,
   /** Days without a reply after which a thread is archived (backend ChatLimits.ThreadInactivityDays). */
   threadInactivityDays: 7,
   /** The largest message payload of a realtime frame, in UTF-8 bytes (ChatRealtime.MaxPayloadBytes). */
@@ -168,6 +191,10 @@ export const CHAT_ERROR = {
   limitReached: "limit-reached",
   messageNotPinnable: "message-not-pinnable",
   messageNotReactable: "message-not-reactable",
+  messageNotAttachable: "message-not-attachable",
+  attachmentUnsupportedMediaType: "attachment.unsupported_media_type",
+  attachmentPayloadTooLarge: "attachment.payload_too_large",
+  attachmentLimitExceeded: "attachment.limit_exceeded",
   threadRootInvalid: "thread-root-invalid",
   /** The errorCode of a 400 business rule the backend does not map by name; the rule itself travels as ruleCode. */
   businessRule: "business_rule.violation",

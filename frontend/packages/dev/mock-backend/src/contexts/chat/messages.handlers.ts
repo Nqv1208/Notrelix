@@ -26,7 +26,12 @@ import {
   type ChatCaller,
 } from "./chat-access";
 import { CHAT_ERROR, CHAT_LIMITS, type ChatMessageRecord } from "./chat-model";
-import { appendUserMessage, removePin, removeReactionsOf } from "./chat-writes";
+import {
+  appendUserMessage,
+  removeAttachmentsOf,
+  removePin,
+  removeReactionsOf,
+} from "./chat-writes";
 import { announceMessageEvent } from "./chat-realtime";
 import type { MockChatState } from "./chat-state";
 
@@ -326,6 +331,8 @@ export const messagesOperations = [
           removePin(state, space, message.id);
           // A tombstone carries no reactions; the delete fact already tells readers (no reaction frame).
           removeReactionsOf(state, message.id);
+          // A tombstone carries no files either: the attachments go with the message (UC-CHT-G08).
+          removeAttachmentsOf(state, message.id);
         }
         return { status: 204 };
       });
