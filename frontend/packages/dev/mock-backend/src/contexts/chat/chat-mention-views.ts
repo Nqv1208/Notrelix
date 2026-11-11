@@ -4,7 +4,7 @@
  * use them without a cycle.
  */
 
-import type { ChatMentionKind, ChatMentionRecord } from "./chat-model";
+import type { ChatMentionKind } from "./chat-model";
 import type { MockChatState } from "./chat-state";
 
 /** MentionDto: one stored mention as a reader sees it. */
