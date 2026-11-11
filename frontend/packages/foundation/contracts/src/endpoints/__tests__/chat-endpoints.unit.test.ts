@@ -87,6 +87,23 @@ describe("chat endpoint paths", () => {
     );
   });
 
+  it("builds the message attachment paths and encodes their ids", () => {
+    const chat = endpoints.chat;
+    expect(chat.messageAttachments("w", "m1")).toBe(
+      "/workspaces/w/chat/messages/m1/attachments",
+    );
+    expect(chat.messageAttachment("w", "m1", "a1")).toBe(
+      "/workspaces/w/chat/messages/m1/attachments/a1",
+    );
+    expect(chat.messageAttachmentContent("w", "m1", "a1")).toBe(
+      "/workspaces/w/chat/messages/m1/attachments/a1/content",
+    );
+    expect(chat.messageAttachmentContent("a/b", "c d", "e?f")).toBe(
+      "/workspaces/a%2Fb/chat/messages/c%20d/attachments/e%3Ff/content",
+    );
+    expect(chat.messageAttachments("a/b", "c d")).toContain("c%20d");
+  });
+
   it("keeps a plain id as it is", () => {
     expect(endpoints.chat.channel("w-1", "c_2")).toBe(
       "/workspaces/w-1/chat/channels/c_2",
