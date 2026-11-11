@@ -101,6 +101,20 @@ export interface ChatPinRecord {
   readonly pinnedAt: string;
 }
 
+/**
+ * A person's reaction of one palette kind to a message (backend Reaction): one per message, person and kind. A tombstone keeps
+ * none; the delete of the message removes them.
+ */
+export interface ChatReactionRecord {
+  readonly id: string;
+  readonly workspaceId: string;
+  readonly spaceId: string;
+  readonly messageId: string;
+  readonly userId: string;
+  readonly kind: string;
+  readonly createdAt: string;
+}
+
 export interface ChatGroupRecord {
   readonly id: string;
   readonly workspaceId: string;
@@ -122,6 +136,10 @@ export const CHAT_LIMITS = {
   reorderMax: 200,
   /** Pins a space holds at most (backend ChatLimits.PinLimit). */
   pinLimit: 50,
+  /** Distinct reaction kinds one message holds at most (backend ChatLimits.ReactionKindsPerMessageMax). */
+  reactionKindsPerMessageMax: 6,
+  /** Reactions one person holds on one message at most (backend ChatLimits.ReactionsPerUserPerMessageMax). */
+  reactionsPerUserPerMessageMax: 6,
   /** Days without a reply after which a thread is archived (backend ChatLimits.ThreadInactivityDays). */
   threadInactivityDays: 7,
   /** The largest message payload of a realtime frame, in UTF-8 bytes (ChatRealtime.MaxPayloadBytes). */
@@ -144,8 +162,22 @@ export const CHAT_ERROR = {
   idempotencyPayloadMismatch: "idempotency_payload_mismatch",
   limitReached: "limit-reached",
   messageNotPinnable: "message-not-pinnable",
+  messageNotReactable: "message-not-reactable",
   threadRootInvalid: "thread-root-invalid",
 } as const;
+
+/**
+ * The reaction palette (backend Domain ReactionKinds, the Collaboration palette, COL-009): the only kinds a person may react
+ * with. Any other kind is a 400.
+ */
+export const CHAT_REACTION_PALETTE: readonly string[] = [
+  "👍",
+  "❤️",
+  "😄",
+  "🎉",
+  "👀",
+  "🚀",
+];
 
 /** The announcements the backend writes as system messages (ChatSystemMessages). */
 export const CHAT_SYSTEM_TEXT = {

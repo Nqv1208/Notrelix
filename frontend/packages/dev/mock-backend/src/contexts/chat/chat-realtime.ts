@@ -32,6 +32,7 @@ import {
 export const CHAT_MESSAGE_CONTRACT = "chat.message.v1";
 export const CHAT_UNREAD_CONTRACT = "chat.unread.v1";
 export const CHAT_SPACE_CONTRACT = "chat.space.v1";
+export const CHAT_REACTION_CONTRACT = "chat.reaction.v1";
 
 export type ChatMessageEventType =
   "chat.message.created" | "chat.message.updated" | "chat.message.deleted";
@@ -227,6 +228,36 @@ export function announcePinChanged(
       occurredAt: state.store().getClock().isoNow(),
       payloadContract: CHAT_SPACE_CONTRACT,
       payload: { change, messageId } as Readonly<Record<string, unknown>>,
+    }),
+  );
+}
+
+/**
+ * A reaction of a message changed (backend ChatReactionEventMapper and ChatRealtime.ForReactionChanged): `added` or `removed`, the
+ * message, the palette kind and the person. Compact: no counts and no content; readers apply the change or refetch the summary.
+ */
+export function announceReactionChanged(
+  state: MockChatState,
+  space: ChatSpaceRecord,
+  messageId: string,
+  kind: string,
+  change: "added" | "removed",
+  actorId: string,
+): void {
+  publishMockScopeFrame(
+    frame({
+      state,
+      eventType: "chat.reaction.changed",
+      subscriptionId: `channel:${space.id}`,
+      streamKey: channelStreamKey(space.id),
+      resourceKind: "Channel",
+      resourceId: space.id,
+      workspaceId: space.workspaceId,
+      occurredAt: state.store().getClock().isoNow(),
+      payloadContract: CHAT_REACTION_CONTRACT,
+      payload: { messageId, kind, change, actorId } as Readonly<
+        Record<string, unknown>
+      >,
     }),
   );
 }

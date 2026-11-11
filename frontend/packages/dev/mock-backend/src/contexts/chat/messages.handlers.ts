@@ -26,7 +26,11 @@ import {
   type ChatCaller,
 } from "./chat-access";
 import { CHAT_ERROR, CHAT_LIMITS, type ChatMessageRecord } from "./chat-model";
-import { appendUserMessage, removePin } from "./chat-writes";
+import {
+  appendUserMessage,
+  removePin,
+  removeReactionsOf,
+} from "./chat-writes";
 import { announceMessageEvent } from "./chat-realtime";
 import type { MockChatState } from "./chat-state";
 
@@ -163,7 +167,7 @@ export const messagesOperations = [
           .filter((m) => m.threadRootId === null || m.alsoSentToChannel);
         const page = messagePage(mainFlow, { before, after, around }, limit);
         return ok({
-          items: page.items.map(messageView),
+          items: page.items.map((m) => messageView(state, caller.userId, m)),
           hasOlder: page.hasOlder,
           hasNewer: page.hasNewer,
         });
@@ -206,7 +210,7 @@ export const messagesOperations = [
               m.authorId === caller.userId &&
               m.clientMessageId === clientMessageId,
           );
-        if (stored) return ok(messageView(stored));
+        if (stored) return ok(messageView(state, caller.userId, stored));
         const replyToId =
           typeof body?.replyToId === "string" ? body.replyToId : null;
         if (
@@ -223,7 +227,7 @@ export const messagesOperations = [
           clientMessageId,
           replyToId,
         );
-        return { status: 201, body: messageView(message) };
+        return { status: 201, body: messageView(state, caller.userId, message) };
       });
     },
   }),
@@ -275,7 +279,7 @@ export const messagesOperations = [
           message.version += 1;
           announceMessageEvent(state, space, message, "chat.message.updated");
         }
-        return ok(messageView(message));
+        return ok(messageView(state, caller.userId, message));
       });
     },
   }),
@@ -321,6 +325,8 @@ export const messagesOperations = [
           announceMessageEvent(state, space, message, "chat.message.deleted");
           // A pin ends with the deletion of its message (UC-CHT-F06).
           removePin(state, space, message.id);
+          // A tombstone carries no reactions; the delete fact already tells readers (no reaction frame).
+          removeReactionsOf(state, message.id);
         }
         return { status: 204 };
       });

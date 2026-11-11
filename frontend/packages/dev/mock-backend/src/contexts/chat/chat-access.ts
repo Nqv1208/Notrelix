@@ -14,6 +14,7 @@ import type { MockChatState } from "./chat-state";
 import {
   CHAT_ERROR,
   CHAT_LIMITS,
+  CHAT_REACTION_PALETTE,
   type ChatGroupRecord,
   type ChatMembershipRecord,
   type ChatMessageRecord,
@@ -125,6 +126,7 @@ export type ChatAction =
   | "viewWorkspace"
   | "messagePost"
   | "messagePin"
+  | "messageReact"
   | "channelCreate"
   | "channelManage"
   | "groupManage"
@@ -135,6 +137,7 @@ const DENIED_ROLES: Record<ChatAction, readonly ChatWorkspaceRole[]> = {
   viewWorkspace: [],
   messagePost: [],
   messagePin: ["Guest"],
+  messageReact: [],
   channelCreate: ["Guest"],
   channelManage: ["Guest"],
   groupManage: ["Member", "Guest"],
@@ -428,8 +431,36 @@ export function channelView(
   };
 }
 
-/** MessageDto: a tombstone keeps its author, time and sequence, with null content. */
-export function messageView(message: ChatMessageRecord) {
+/**
+ * The reaction summary of a message as the viewer sees it (backend ReactionSummaries): per palette kind, the count and whether the
+ * viewer is among the reactors, in palette order. A kind nobody reacted with is absent.
+ */
+export function reactionSummaryOf(
+  state: MockChatState,
+  messageId: string,
+  viewerUserId: string,
+) {
+  return CHAT_REACTION_PALETTE.flatMap((kind) => {
+    const rows = state
+      .reactionsOfMessage(messageId)
+      .filter((row) => row.kind === kind);
+    if (rows.length === 0) return [];
+    return [
+      {
+        emoji: kind,
+        count: rows.length,
+        reactedByMe: rows.some((row) => row.userId === viewerUserId),
+      },
+    ];
+  });
+}
+
+/** MessageDto: a tombstone keeps its author, time and sequence, with null content, and the reaction summary of the viewer. */
+export function messageView(
+  state: MockChatState,
+  viewerUserId: string,
+  message: ChatMessageRecord,
+) {
   return {
     id: message.id,
     spaceId: message.spaceId,
@@ -448,6 +479,7 @@ export function messageView(message: ChatMessageRecord) {
     editedAt: message.editedAt,
     deletedAt: message.deletedAt,
     version: message.version,
+    reactions: reactionSummaryOf(state, message.id, viewerUserId),
   };
 }
 
@@ -480,9 +512,17 @@ export function threadSummaryView(
 }
 
 /** PinDto: the pinned message as readers see it, with who pinned it and when. */
-export function pinView(state: MockChatState, pin: ChatPinRecord) {
+export function pinView(
+  state: MockChatState,
+  pin: ChatPinRecord,
+  viewerUserId: string,
+) {
   return {
-    message: messageView(state.messages.get(pin.messageId)!),
+    message: messageView(
+      state,
+      viewerUserId,
+      state.messages.get(pin.messageId)!,
+    ),
     pinnedBy: pin.pinnedBy,
     pinnedAt: pin.pinnedAt,
   };

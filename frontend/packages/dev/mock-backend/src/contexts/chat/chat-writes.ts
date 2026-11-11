@@ -130,6 +130,16 @@ export function removePin(
   return true;
 }
 
+/**
+ * Clears the reactions of a message whose content is deleted (backend DeleteMessage). No reaction frame: the message's delete fact
+ * already tells the readers, and the tombstone carries no reactions.
+ */
+export function removeReactionsOf(state: MockChatState, messageId: string): void {
+  for (const row of state.reactionsOfMessage(messageId)) {
+    state.reactions.delete(state.reactionKey(row.messageId, row.userId, row.kind));
+  }
+}
+
 /** Stores the system message that announces a change, attributed to the person who made it. */
 export function appendSystemMessage(
   state: MockChatState,

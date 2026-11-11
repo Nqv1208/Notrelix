@@ -102,7 +102,7 @@ export const pinsOperations = [
         }
         // A message already pinned answers with its pin and changes nothing.
         const existing = state.pins.get(message.id);
-        if (existing) return ok(pinView(state, existing));
+        if (existing) return ok(pinView(state, existing, caller.userId));
         if (state.pinsOfSpace(space.id).length >= CHAT_LIMITS.pinLimit) {
           fail(
             422,
@@ -127,7 +127,7 @@ export const pinsOperations = [
           CHAT_SYSTEM_TEXT.pinned,
         );
         announcePinChanged(state, space, message.id, "pinned");
-        return { status: 201, body: pinView(state, pin) };
+        return { status: 201, body: pinView(state, pin, caller.userId) };
       });
     },
   }),
@@ -195,7 +195,7 @@ export const pinsOperations = [
         const page = rows.slice(0, limit);
         const last = page[page.length - 1];
         return ok({
-          items: page.map((pin) => pinView(state, pin)),
+          items: page.map((pin) => pinView(state, pin, caller.userId)),
           nextCursor: rows.length > limit && last ? pinCursorOf(last) : null,
         });
       });
