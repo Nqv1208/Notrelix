@@ -35,12 +35,25 @@ public static class ChannelAccess
     }
 
     /// <summary>
-    /// A private channel is seen by its members only. A public channel is seen by every non-guest member; a Guest
-    /// sees a public channel only when they were added to it.
+    /// A live channel of the Workspace (not a direct or group conversation): the channel-only commands load through here, so a
+    /// conversation is the same NotFound as a missing channel. Messages, pins and reactions load through <see cref="LoadLiveAsync"/>,
+    /// which serves every kind of space.
+    /// </summary>
+    public static async Task<Space> LoadChannelAsync(IChatDbContext db, Guid workspaceId, Guid channelId, CancellationToken ct)
+    {
+        var space = await LoadLiveAsync(db, workspaceId, channelId, ct);
+        if (space.IsConversation)
+            throw new NotFoundException(nameof(Space), channelId);
+        return space;
+    }
+
+    /// <summary>
+    /// A private channel and a conversation are seen by their members only. A public channel is seen by every non-guest member; a
+    /// Guest sees a public channel only when they were added to it.
     /// </summary>
     public static void RequireVisible(Space space, WorkspaceMemberFact caller, Guid userId)
     {
-        var mustBeMember = space.IsPrivate || string.Equals(caller.Role, GuestRole, StringComparison.Ordinal);
+        var mustBeMember = !space.IsPublic || string.Equals(caller.Role, GuestRole, StringComparison.Ordinal);
         if (mustBeMember && !space.IsActiveMember(userId))
             throw new NotFoundException(nameof(Space), space.Id);
     }
@@ -62,6 +75,7 @@ public static class ChannelAccess
             s.WorkspaceId == workspaceId
             && s.DeletedAt == null
             && s.ArchivedAt == null
+            && (s.Kind == SpaceKind.ChannelPublic || s.Kind == SpaceKind.ChannelPrivate)
             && s.Id != exceptChannelId
             && s.Name.ToLower() == key, ct);
 

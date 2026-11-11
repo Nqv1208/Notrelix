@@ -2894,6 +2894,37 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("channel_groups", "chat");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.DirectPair", b =>
+                {
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.Property<Guid>("UserLow")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_low");
+
+                    b.Property<Guid>("UserHigh")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_high");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid>("SpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("space_id");
+
+                    b.HasKey("WorkspaceId", "UserLow", "UserHigh")
+                        .HasName("pk_direct_pairs");
+
+                    b.HasIndex("SpaceId")
+                        .HasDatabaseName("ix_direct_pairs_space_id");
+
+                    b.ToTable("direct_pairs", "chat");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.Membership", b =>
                 {
                     b.Property<Guid>("SpaceId")
@@ -2907,6 +2938,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uuid")
                         .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset?>("HiddenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("hidden_at");
 
                     b.Property<DateTimeOffset>("JoinedAt")
                         .HasColumnType("timestamp with time zone")
@@ -2961,6 +2996,37 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     NpgsqlIndexBuilderExtensions.IncludeProperties(b.HasIndex("UserId", "WorkspaceId"), new[] { "SpaceId", "ReadSequence" });
 
                     b.ToTable("memberships", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.PersonBlock", b =>
+                {
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.Property<Guid>("BlockerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("blocker_id");
+
+                    b.Property<Guid>("BlockedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("blocked_id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.HasKey("WorkspaceId", "BlockerId", "BlockedId")
+                        .HasName("pk_blocks");
+
+                    b.HasIndex("WorkspaceId", "BlockedId")
+                        .HasDatabaseName("ix_blocks_workspace_blocked");
+
+                    b.ToTable("blocks", "chat");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.Space", b =>
@@ -3059,7 +3125,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("WorkspaceId", "Name")
                         .IsUnique()
                         .HasDatabaseName("ux_spaces_workspace_name_live")
-                        .HasFilter("archived_at IS NULL AND deleted_at IS NULL");
+                        .HasFilter("archived_at IS NULL AND deleted_at IS NULL AND kind IN ('channel_public', 'channel_private')");
 
                     b.ToTable("spaces", "chat");
                 });
@@ -13000,6 +13066,16 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_thread_followers_threads_root_message_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.DirectPair", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
+                        .WithMany()
+                        .HasForeignKey("SpaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_direct_pairs_chat_spaces_space_id");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.Membership", b =>

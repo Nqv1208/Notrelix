@@ -28,9 +28,11 @@ public class ChatMembershipConfiguration : IEntityTypeConfiguration<Membership>
         builder.Property(x => x.ReadSequence).HasColumnName("read_sequence").IsRequired().HasDefaultValue(0L);
         builder.Property(x => x.MentionCount).HasColumnName("mention_count").IsRequired().HasDefaultValue(0);
         builder.Property(x => x.MutedUntil).HasColumnName("muted_until");
+        builder.Property(x => x.HiddenAt).HasColumnName("hidden_at");
 
         builder.Ignore(x => x.IsActive);
         builder.Ignore(x => x.IsManager);
+        builder.Ignore(x => x.IsHidden);
 
         builder.HasIndex(x => x.UserId).HasDatabaseName("idx_memberships_user");
 

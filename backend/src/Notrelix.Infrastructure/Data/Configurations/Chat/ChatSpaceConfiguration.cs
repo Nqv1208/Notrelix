@@ -30,6 +30,7 @@ public class ChatSpaceConfiguration : IEntityTypeConfiguration<Space>
         builder.Ignore(x => x.IsArchived);
         builder.Ignore(x => x.IsPublic);
         builder.Ignore(x => x.IsPrivate);
+        builder.Ignore(x => x.IsConversation);
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
         builder.Property(x => x.DeleteReason).HasColumnName("delete_reason");
@@ -51,11 +52,12 @@ public class ChatSpaceConfiguration : IEntityTypeConfiguration<Space>
 
         builder.HasIndex(x => new { x.WorkspaceId, x.Kind }).HasDatabaseName("idx_spaces_workspace_kind");
 
-        // A name is unique among the channels that are live: not archived and not deleted.
+        // A name is unique among the channels that are live: not archived and not deleted. Conversations carry no channel name
+        // (a direct one has none, a group one may share a channel's name), so only the channel kinds take part.
         builder.HasIndex(x => new { x.WorkspaceId, x.Name })
             .IsUnique()
             .HasDatabaseName("ux_spaces_workspace_name_live")
-            .HasFilter("archived_at IS NULL AND deleted_at IS NULL");
+            .HasFilter("archived_at IS NULL AND deleted_at IS NULL AND kind IN ('channel_public', 'channel_private')");
     }
 }
 
