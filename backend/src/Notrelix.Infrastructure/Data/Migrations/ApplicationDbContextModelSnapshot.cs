@@ -2722,11 +2722,27 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("left_at");
 
+                    b.Property<int>("MentionCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("mention_count");
+
+                    b.Property<DateTimeOffset?>("MutedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("muted_until");
+
                     b.Property<string>("NotificationLevel")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("notification_level");
+
+                    b.Property<long>("ReadSequence")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(0L)
+                        .HasColumnName("read_sequence");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -2743,6 +2759,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("idx_memberships_user");
+
+                    b.HasIndex("UserId", "WorkspaceId")
+                        .HasDatabaseName("idx_memberships_user_workspace_active")
+                        .HasFilter("left_at IS NULL");
+
+                    NpgsqlIndexBuilderExtensions.IncludeProperties(b.HasIndex("UserId", "WorkspaceId"), new[] { "SpaceId", "ReadSequence" });
 
                     b.ToTable("memberships", "chat");
                 });
