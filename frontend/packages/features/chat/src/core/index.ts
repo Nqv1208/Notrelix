@@ -19,3 +19,4 @@ export {
 } from "./api/chat-failure";
 export * from "./model/chat-model";
 export * from "./realtime/chat-frames";
+export * from "./model/conversation-model";

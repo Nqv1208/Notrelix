@@ -2,6 +2,11 @@ import type {
   ChatAddMembersResult,
   ChatChannel,
   ChatChannelDetail,
+  ChatConversation,
+  ChatConversationVisibility,
+  ChatPersonBlock,
+  ChatStartConversationInput,
+  ChatStartConversationResult,
   ChatCreateChannelInput,
   ChatFollowedThreadPage,
   ChatMessage,
@@ -73,6 +78,17 @@ export interface ChatEndpoints {
       kind: string,
     ) => string;
     messageReactors: (workspaceId: string, messageId: string) => string;
+    conversations: (workspaceId: string) => string;
+    conversationParticipants: (
+      workspaceId: string,
+      conversationId: string,
+    ) => string;
+    conversationLeave: (workspaceId: string, conversationId: string) => string;
+    conversationVisibility: (
+      workspaceId: string,
+      conversationId: string,
+    ) => string;
+    blocks: (workspaceId: string) => string;
   };
 }
 
@@ -424,6 +440,81 @@ export function createChatService(
         paths.notificationLevel(workspaceId, spaceId),
         input,
       );
+    },
+
+    /** `Chat.Conversations.List`: newest activity first; the ones the caller hid are left out. */
+    listConversations(workspaceId: string): Promise<ChatConversation[]> {
+      return api.get<ChatConversation[]>(paths.conversations(workspaceId));
+    },
+
+    /**
+     * `Chat.Conversations.Start`: a direct conversation is one per pair (starting it again returns it and
+     * shows it again in the caller's list); a group needs two other people or more.
+     */
+    startConversation(
+      workspaceId: string,
+      input: ChatStartConversationInput,
+      idempotencyKey: string,
+    ): Promise<ChatStartConversationResult> {
+      const body =
+        input.kind === "direct"
+          ? { kind: "direct", userId: input.userId }
+          : {
+              kind: "group",
+              userIds: [...input.userIds],
+              name: input.name ?? null,
+            };
+      return api.post<ChatStartConversationResult>(
+        paths.conversations(workspaceId),
+        body,
+        { idempotencyKey },
+      );
+    },
+
+    /** `Chat.Conversations.AddParticipants`: a group only; a person outside the Workspace comes back under skipped. */
+    addConversationParticipants(
+      workspaceId: string,
+      conversationId: string,
+      userIds: readonly string[],
+    ): Promise<ChatAddMembersResult> {
+      return api.post<ChatAddMembersResult>(
+        paths.conversationParticipants(workspaceId, conversationId),
+        { userIds: [...userIds] },
+      );
+    },
+
+    /** `Chat.Conversations.Leave`: a group only; a direct conversation cannot be left (hide it instead). */
+    leaveConversation(
+      workspaceId: string,
+      conversationId: string,
+    ): Promise<void> {
+      return api.delete<void>(
+        paths.conversationLeave(workspaceId, conversationId),
+      );
+    },
+
+    /** `Chat.Conversations.SetVisibility`: only the caller's own list changes; idempotent. */
+    setConversationVisibility(
+      workspaceId: string,
+      conversationId: string,
+      hidden: boolean,
+    ): Promise<ChatConversationVisibility> {
+      return api.put<ChatConversationVisibility>(
+        paths.conversationVisibility(workspaceId, conversationId),
+        { hidden },
+      );
+    },
+
+    /** `Chat.Blocks.Set`: blocks or unblocks a person for the caller; idempotent. */
+    setPersonBlock(
+      workspaceId: string,
+      userId: string,
+      blocked: boolean,
+    ): Promise<ChatPersonBlock> {
+      return api.put<ChatPersonBlock>(paths.blocks(workspaceId), {
+        userId,
+        blocked,
+      });
     },
   };
 }
