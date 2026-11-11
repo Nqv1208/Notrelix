@@ -41,3 +41,15 @@ public record MarkSpaceReadRequest(long? UpToSequence);
 /// timed mute (UC-CHT-D05). An until time with another level is refused.
 /// </summary>
 public record SetNotificationLevelRequest(string? Level, DateTimeOffset? MutedUntil);
+
+/// <summary>
+/// A reply in a thread. ClientMessageId is the sender's key for this reply (unique per space and author). AlsoSendToChannel
+/// shows the reply in the channel's main flow too (UC-CHT-F01).
+/// </summary>
+public record ReplyInThreadRequest(string? Content, string? ClientMessageId, bool? AlsoSendToChannel);
+
+/// <summary>The caller's follow state on a thread. following false removes the follow; muted with following silences it (UC-CHT-F04).</summary>
+public record FollowThreadRequest(bool? Following, bool? Muted);
+
+/// <summary>The thread sequence the caller has read up to (UC-CHT-F08). A lower value than the pointer changes nothing.</summary>
+public record MarkThreadReadRequest(long? UpToReplySequence);
