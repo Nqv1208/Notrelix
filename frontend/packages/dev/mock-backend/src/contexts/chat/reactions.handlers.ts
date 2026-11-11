@@ -144,7 +144,9 @@ export const reactionsOperations = [
         const rows = state.reactionsOfMessage(message.id);
         const distinctKinds = new Set(rows.map((row) => row.kind)).size;
         const kindIsNew = !rows.some((row) => row.kind === kind);
-        const byCaller = rows.filter((row) => row.userId === caller.userId).length;
+        const byCaller = rows.filter(
+          (row) => row.userId === caller.userId,
+        ).length;
         if (
           kindIsNew &&
           distinctKinds >= CHAT_LIMITS.reactionKindsPerMessageMax
@@ -174,7 +176,14 @@ export const reactionsOperations = [
           createdAt: state.stampWrite(),
         };
         state.reactions.set(key, row);
-        announceReactionChanged(state, space, message.id, kind, "added", caller.userId);
+        announceReactionChanged(
+          state,
+          space,
+          message.id,
+          kind,
+          "added",
+          caller.userId,
+        );
         return {
           status: 201,
           body: summaryBody(state, message.id, caller.userId),
@@ -205,7 +214,14 @@ export const reactionsOperations = [
         const key = state.reactionKey(message.id, caller.userId, kind);
         // A reaction the caller does not have is a success that changes nothing.
         if (state.reactions.delete(key)) {
-          announceReactionChanged(state, space, message.id, kind, "removed", caller.userId);
+          announceReactionChanged(
+            state,
+            space,
+            message.id,
+            kind,
+            "removed",
+            caller.userId,
+          );
         }
         return ok(summaryBody(state, message.id, caller.userId));
       });
@@ -255,7 +271,8 @@ export const reactionsOperations = [
             userId: row.userId,
             reactedAt: row.createdAt,
           })),
-          nextCursor: rows.length > limit && last ? reactorCursorOf(last) : null,
+          nextCursor:
+            rows.length > limit && last ? reactorCursorOf(last) : null,
         });
       });
     },

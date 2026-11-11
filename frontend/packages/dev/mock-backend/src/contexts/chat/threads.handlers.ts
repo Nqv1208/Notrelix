@@ -121,7 +121,11 @@ export const threadsOperations = [
                   m.authorId === caller.userId &&
                   m.clientMessageId === clientMessageId,
               );
-            if (stored) return { status: 200, body: messageView(state, caller.userId, stored) };
+            if (stored)
+              return {
+                status: 200,
+                body: messageView(state, caller.userId, stored),
+              };
             if (
               root.deletedAt !== null &&
               (state.threads.get(root.id)?.replyCount ?? 0) === 0
@@ -142,7 +146,10 @@ export const threadsOperations = [
               clientMessageId,
               alsoSendToChannel,
             );
-            return { status: 201, body: messageView(state, caller.userId, reply) };
+            return {
+              status: 201,
+              body: messageView(state, caller.userId, reply),
+            };
           },
         );
       });

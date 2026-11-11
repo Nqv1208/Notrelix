@@ -26,11 +26,7 @@ import {
   type ChatCaller,
 } from "./chat-access";
 import { CHAT_ERROR, CHAT_LIMITS, type ChatMessageRecord } from "./chat-model";
-import {
-  appendUserMessage,
-  removePin,
-  removeReactionsOf,
-} from "./chat-writes";
+import { appendUserMessage, removePin, removeReactionsOf } from "./chat-writes";
 import { announceMessageEvent } from "./chat-realtime";
 import type { MockChatState } from "./chat-state";
 
@@ -227,7 +223,10 @@ export const messagesOperations = [
           clientMessageId,
           replyToId,
         );
-        return { status: 201, body: messageView(state, caller.userId, message) };
+        return {
+          status: 201,
+          body: messageView(state, caller.userId, message),
+        };
       });
     },
   }),

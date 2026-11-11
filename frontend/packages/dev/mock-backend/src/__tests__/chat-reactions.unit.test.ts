@@ -23,11 +23,19 @@ function kindPath(kind: string): string {
 }
 
 async function react(store: Store, messageId: string, kind: string) {
-  return chat(store, "PUT", `/messages/${messageId}/reactions/${kindPath(kind)}`);
+  return chat(
+    store,
+    "PUT",
+    `/messages/${messageId}/reactions/${kindPath(kind)}`,
+  );
 }
 
 async function unreact(store: Store, messageId: string, kind: string) {
-  return chat(store, "DELETE", `/messages/${messageId}/reactions/${kindPath(kind)}`);
+  return chat(
+    store,
+    "DELETE",
+    `/messages/${messageId}/reactions/${kindPath(kind)}`,
+  );
 }
 
 async function reactorsOf(store: Store, messageId: string, query = "") {
@@ -212,8 +220,14 @@ describe("MFB-CHAT-S2.5: Chat mock handlers (reactions)", () => {
       ]);
       expect(all.body.nextCursor).toBeNull();
 
-      const narrowed = await reactorsOf(store, target!.id, `kind=${kindPath(ROCKET)}`);
-      expect(narrowed.body.items.map((i: { emoji: string }) => i.emoji)).toEqual([ROCKET]);
+      const narrowed = await reactorsOf(
+        store,
+        target!.id,
+        `kind=${kindPath(ROCKET)}`,
+      );
+      expect(
+        narrowed.body.items.map((i: { emoji: string }) => i.emoji),
+      ).toEqual([ROCKET]);
     });
 
     it("pages the reactors with a cursor without repeats", async () => {
@@ -259,15 +273,23 @@ describe("MFB-CHAT-S2.5: Chat mock handlers (reactions)", () => {
       const history = await chat(store, "GET", `/spaces/${GENERAL}/messages`, {
         query: `around=${sequence}&limit=10`,
       });
-      const row = history.body.items.find((m: { id: string }) => m.id === target!.id);
+      const row = history.body.items.find(
+        (m: { id: string }) => m.id === target!.id,
+      );
 
-      expect(row.reactions).toEqual([{ emoji: THUMBS, count: 1, reactedByMe: true }]);
+      expect(row.reactions).toEqual([
+        { emoji: THUMBS, count: 1, reactedByMe: true },
+      ]);
       actAs(store, "admin");
       const asOther = await chat(store, "GET", `/spaces/${GENERAL}/messages`, {
         query: `around=${sequence}&limit=10`,
       });
-      const otherRow = asOther.body.items.find((m: { id: string }) => m.id === target!.id);
-      expect(otherRow.reactions).toEqual([{ emoji: THUMBS, count: 1, reactedByMe: false }]);
+      const otherRow = asOther.body.items.find(
+        (m: { id: string }) => m.id === target!.id,
+      );
+      expect(otherRow.reactions).toEqual([
+        { emoji: THUMBS, count: 1, reactedByMe: false },
+      ]);
     });
   });
 
@@ -282,7 +304,9 @@ describe("MFB-CHAT-S2.5: Chat mock handlers (reactions)", () => {
         await unreact(store, target!.id, THUMBS);
       });
 
-      const reactions = frames.filter((f) => f.eventType === "chat.reaction.changed");
+      const reactions = frames.filter(
+        (f) => f.eventType === "chat.reaction.changed",
+      );
       expect(reactions).toHaveLength(2);
       expect(reactions[0]!.payloadContract).toBe("chat.reaction.v1");
       expect(reactions[0]!.payload).toEqual({
