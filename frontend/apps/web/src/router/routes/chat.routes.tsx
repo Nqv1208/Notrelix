@@ -14,3 +14,10 @@ export const chatChannelRoute = createRoute({
   path: "/chat/$channelId",
   component: ChatPage,
 });
+
+/** One direct or group conversation (a conversation is a space too; its stream is the channel stream). */
+export const chatConversationRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/chat/dm/$conversationId",
+  component: ChatPage,
+});

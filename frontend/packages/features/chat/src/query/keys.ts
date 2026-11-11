@@ -31,6 +31,12 @@ export const chatQueryKeys = {
   followedThreads: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "chat", "followed-threads"),
   /** The pins of one channel (newest pin first). */
+  /** The caller's direct and group conversations (hidden ones are not in the server list). */
+  conversations: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "conversations"),
+  /** Client-only projection: the people the caller blocked this session (the API has no read of blocks). */
+  blocks: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "blocks"),
   pins: (workspaceId: string, channelId: string) =>
     workspaceQueryKey(workspaceId, "chat", "pins", channelId),
 } as const;

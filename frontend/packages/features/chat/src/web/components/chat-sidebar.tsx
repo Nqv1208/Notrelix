@@ -4,6 +4,10 @@ import type { ChatChannel } from "../../core/types/chat";
 import type { ChatCopy } from "./chat.copy";
 import { avatarToneOf, initialsOf } from "./chat-initials";
 import { fillCopy, pluralCopy } from "./use-chat-copy";
+import {
+  ChatConversationSection,
+  type ChatConversationListView,
+} from "./chat-conversation-list";
 
 export interface ChannelUnread {
   readonly count: number;
@@ -37,6 +41,8 @@ export interface ChatSidebarProps {
   readonly joiningId: string | null;
   /** The caller; the footer is left out when it is null. */
   readonly viewer?: ChatSidebarViewer | null;
+  /** The direct and group conversations section; left out when the host does not offer conversations. */
+  readonly conversations?: ChatConversationListView | null;
 }
 
 /** A badge count: nothing for zero, 99+ above 99 (UC-CHT-D01). */
@@ -100,6 +106,7 @@ export function ChatSidebar({
   onRetry,
   joiningId,
   viewer = null,
+  conversations = null,
 }: ChatSidebarProps) {
   const groups = groupChannels(channels);
 
@@ -183,6 +190,10 @@ export function ChatSidebar({
             );
           })
         )}
+
+        {conversations ? (
+          <ChatConversationSection view={conversations} copy={copy} />
+        ) : null}
 
         {browse ? (
           <section

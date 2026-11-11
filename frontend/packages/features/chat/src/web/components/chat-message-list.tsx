@@ -54,6 +54,8 @@ export interface ChatScrollRequest {
 
 export interface ChatMessageListProps {
   readonly channelName: string;
+  /** Replaces the "start of the channel" empty state (a conversation has its own wording). */
+  readonly emptyState?: { readonly title: string; readonly body: string };
   readonly rows: readonly ChatRow[];
   readonly status: ChatListStatus;
   readonly hasOlder: boolean;
@@ -286,9 +288,12 @@ export function ChatMessageList(props: ChatMessageListProps) {
             <MessageSquareText aria-hidden="true" />
           </EmptyMedia>
           <EmptyTitle>
-            {fillCopy(copy.list.startOf, { channel: channelName })}
+            {props.emptyState?.title ??
+              fillCopy(copy.list.startOf, { channel: channelName })}
           </EmptyTitle>
-          <EmptyDescription>{copy.list.emptyBody}</EmptyDescription>
+          <EmptyDescription>
+            {props.emptyState?.body ?? copy.list.emptyBody}
+          </EmptyDescription>
         </EmptyHeader>
       </Empty>
     );
