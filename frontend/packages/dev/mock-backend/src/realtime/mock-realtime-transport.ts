@@ -18,6 +18,18 @@ import type {
   RealtimeConnectionState,
 } from "@notrelix/realtime";
 
+/**
+ * A scope the gateway streams beside the workspace and board streams: a Chat
+ * channel (`channel:<spaceId>`) or the caller's per-user stream (`user:<userId>`).
+ */
+export interface MockScopeTarget {
+  readonly kind: "channel" | "user";
+  readonly id: string;
+}
+
+/** Every transport created and not disposed: a scope frame reaches all of them. */
+const liveTransports = new Set<MockRealtimeTransport>();
+
 export class MockRealtimeTransport implements RealtimeTransport {
   private state: RealtimeConnectionState = "idle";
   private readonly stateListeners = new Set<RealtimeStateListener>();
@@ -27,12 +39,18 @@ export class MockRealtimeTransport implements RealtimeTransport {
     { filter: RealtimeSubscriptionFilter; listener: RealtimeEventListener }
   >();
   private subscriptionCounter = 0;
+  /** Listeners of the scope streams, by wire subscription id (`channel:<id>`, `user:<id>`). */
+  private readonly scopeListeners = new Map<
+    string,
+    Set<RealtimeEventListener>
+  >();
 
   constructor() {
     // A browser test drives the connection through `globalThis.__notrelixMockRealtime.simulateState("reconnecting")`.
     (
       globalThis as { __notrelixMockRealtime?: MockRealtimeTransport }
     ).__notrelixMockRealtime = this;
+    liveTransports.add(this);
   }
 
   /** Test/dev helper: the connection state the app shows (reconnecting, offline, connected). */
@@ -120,11 +138,44 @@ export class MockRealtimeTransport implements RealtimeTransport {
     }
   }
 
+  /**
+   * Subscribes a Chat scope stream (channel or per-user). Frames reach the
+   * listener when `publishMockScopeFrame` delivers them; nothing is sent.
+   */
+  subscribeScope(
+    target: MockScopeTarget,
+    listener: RealtimeEventListener,
+  ): () => void {
+    const key = `${target.kind}:${target.id}`;
+    const listeners = this.scopeListeners.get(key) ?? new Set();
+    listeners.add(listener);
+    this.scopeListeners.set(key, listeners);
+    return () => {
+      listeners.delete(listener);
+      if (listeners.size === 0) this.scopeListeners.delete(key);
+    };
+  }
+
+  /** Delivers a scope frame to the listeners of its subscription id (safe dispatch). */
+  deliverScopeFrame(envelope: RealtimeEnvelope): void {
+    const listeners = this.scopeListeners.get(envelope.subscriptionId);
+    if (!listeners) return;
+    for (const listener of Array.from(listeners)) {
+      try {
+        listener(envelope);
+      } catch {
+        // Safe dispatch: errors in listeners don't crash transport
+      }
+    }
+  }
+
   dispose(): void {
     this.disconnect();
     this.stateListeners.clear();
     this.recoveryListeners.clear();
     this.subscriptions.clear();
+    this.scopeListeners.clear();
+    liveTransports.delete(this);
   }
 
   private setState(nextState: RealtimeConnectionState): void {
@@ -142,4 +193,14 @@ export class MockRealtimeTransport implements RealtimeTransport {
 
 export function createMockRealtimeTransport(): RealtimeTransport {
   return new MockRealtimeTransport();
+}
+
+/**
+ * Hands a Chat scope frame to every live mock transport. The mock store has no
+ * socket and no transport of its own; the app's transport is one of these.
+ */
+export function publishMockScopeFrame(envelope: RealtimeEnvelope): void {
+  for (const transport of liveTransports) {
+    transport.deliverScopeFrame(envelope);
+  }
 }
