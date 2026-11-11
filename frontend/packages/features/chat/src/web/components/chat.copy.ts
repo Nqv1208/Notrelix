@@ -333,6 +333,47 @@ export const en = {
   panel: {
     label: "Channel panels",
   },
+  mentions: {
+    listLabel: "Mention suggestions",
+    peopleHeading: "People",
+    channelsHeading: "Channels",
+    broadcastHeading: "Notify everyone",
+    channelDescription: "Notify everyone in this channel",
+    hereDescription: "Notify everyone who is here now",
+    notInSpace: "Not in this channel",
+    noMatch: "No match",
+    loading: "Loading suggestions",
+    error: "Suggestions could not load.",
+    chipChannel: "Link to channel {{name}}",
+    forYou: "Mentions you",
+    cannotView:
+      "{{name}} is not in this channel and will not be notified. Nothing is shared with them.",
+    addToChannel: "Add {{name}}",
+    adding: "Adding",
+    addFailed: "Could not add {{name}} to the channel.",
+    broadcastNotAllowed:
+      "You cannot notify everyone here, so {{token}} stays plain text.",
+    noAudience: "No one else is here, so {{token}} notifies nobody.",
+    sentNotice:
+      "{{name}} was not notified because they are not in this channel.",
+    sentNoAudience:
+      "{{token}} notified nobody: no one else is in this channel.",
+    sentNotAllowed: "{{token}} was sent as plain text.",
+    confirmTitle: "Notify {{count}} people?",
+    confirmBody:
+      "{{token}} sends a notification to everyone in this channel. Send it?",
+    confirmSend: "Send and notify",
+    confirmCancel: "Keep editing",
+    broadcastConfirmFailed:
+      "The channel grew past the limit. Confirm the broadcast to send.",
+    tab: "Mentions",
+    panelTitle: "Unread mentions",
+    panelEmpty: "No unread mentions. You are all caught up.",
+    panelRow_one: "{{count}} unread mention",
+    panelRow_other: "{{count}} unread mentions",
+    sidebarBadge_one: "{{count}} unread mention",
+    sidebarBadge_other: "{{count}} unread mentions",
+  },
 };
 
 export type ChatCopy = typeof en;
@@ -665,5 +706,45 @@ export const vi: ChatCopy = {
   },
   panel: {
     label: "Bảng của kênh",
+  },
+  mentions: {
+    listLabel: "Gợi ý nhắc đến",
+    peopleHeading: "Mọi người",
+    channelsHeading: "Kênh",
+    broadcastHeading: "Thông báo cho mọi người",
+    channelDescription: "Thông báo cho mọi người trong kênh",
+    hereDescription: "Thông báo cho những người đang online",
+    notInSpace: "Chưa ở trong kênh",
+    noMatch: "Không có kết quả",
+    loading: "Đang tải gợi ý",
+    error: "Không tải được gợi ý.",
+    chipChannel: "Liên kết tới kênh {{name}}",
+    forYou: "Nhắc đến bạn",
+    cannotView:
+      "{{name}} chưa ở trong kênh này nên sẽ không nhận được thông báo. Không có quyền nào được cấp cho họ.",
+    addToChannel: "Thêm {{name}}",
+    adding: "Đang thêm",
+    addFailed: "Không thêm được {{name}} vào kênh.",
+    broadcastNotAllowed:
+      "Bạn không có quyền thông báo cho mọi người ở đây nên {{token}} chỉ là văn bản thường.",
+    noAudience: "Không còn ai khác ở đây nên {{token}} không thông báo cho ai.",
+    sentNotice: "{{name}} không được thông báo vì chưa ở trong kênh này.",
+    sentNoAudience:
+      "{{token}} không thông báo cho ai: không còn ai khác trong kênh.",
+    sentNotAllowed: "{{token}} đã được gửi dưới dạng văn bản thường.",
+    confirmTitle: "Thông báo cho {{count}} người?",
+    confirmBody:
+      "{{token}} sẽ gửi thông báo cho mọi người trong kênh này. Gửi chứ?",
+    confirmSend: "Gửi và thông báo",
+    confirmCancel: "Tiếp tục soạn",
+    broadcastConfirmFailed:
+      "Kênh đã vượt ngưỡng. Hãy xác nhận thông báo cho mọi người để gửi.",
+    tab: "Nhắc đến",
+    panelTitle: "Lượt nhắc đến chưa đọc",
+    panelEmpty: "Không có lượt nhắc đến nào chưa đọc.",
+    panelRow_one: "{{count}} lượt nhắc đến chưa đọc",
+    panelRow_other: "{{count}} lượt nhắc đến chưa đọc",
+    sidebarBadge_one: "{{count}} lượt nhắc đến chưa đọc",
+    sidebarBadge_other: "{{count}} lượt nhắc đến chưa đọc",
   },
 };

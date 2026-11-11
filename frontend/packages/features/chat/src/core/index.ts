@@ -20,3 +20,4 @@ export {
 export * from "./model/chat-model";
 export * from "./realtime/chat-frames";
 export * from "./model/conversation-model";
+export * from "./model/mention-model";
