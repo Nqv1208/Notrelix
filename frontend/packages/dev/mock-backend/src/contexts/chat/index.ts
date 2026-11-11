@@ -12,6 +12,7 @@ import { channelsOperations } from "./channels.handlers";
 import { channelGroupsOperations } from "./channel-groups.handlers";
 import { conversationsOperations } from "./conversations.handlers";
 import { membersOperations } from "./members.handlers";
+import { mentionsOperations } from "./mentions.handlers";
 import { messagesOperations } from "./messages.handlers";
 import { pinsOperations } from "./pins.handlers";
 import { reactionsOperations } from "./reactions.handlers";
@@ -32,6 +33,7 @@ export const chatOperations = [
   ...channelsOperations,
   ...conversationsOperations,
   ...membersOperations,
+  ...mentionsOperations,
   ...messagesOperations,
   ...pinsOperations,
   ...reactionsOperations,

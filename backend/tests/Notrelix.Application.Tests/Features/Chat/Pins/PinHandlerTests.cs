@@ -39,6 +39,8 @@ public class PinHandlerTests
     private readonly List<Space> _spaces = [];
     private readonly List<Message> _messages = [];
     private readonly List<Reaction> _reactions = [];
+    private readonly List<MessageMention> _mentions = [];
+    private readonly Mock<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer> _broadcast = new();
     private readonly List<Pin> _pins = [];
     private readonly List<string> _order = [];
     private readonly Mock<IChatDbContext> _db = new();
@@ -59,6 +61,7 @@ public class PinHandlerTests
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(new List<ChannelGroup>()).Object);
         _db.Setup(d => d.ChatMessages).Returns(() => TestDbSet.Create(_messages).Object);
         _db.Setup(d => d.ChatReactions).Returns(() => TestDbSet.Create(_reactions).Object);
+        _db.Setup(d => d.ChatMessageMentions).Returns(() => TestDbSet.Create(_mentions).Object);
         _db.Setup(d => d.ChatPins).Returns(() => TestDbSet.Create(_pins).Object);
 
         _sequences.Setup(s => s.LockAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -99,7 +102,7 @@ public class PinHandlerTests
     private ListPinsQueryHandler ListPinsHandler() => new(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments());
     private ListMessagesQueryHandler ListMessagesHandler() => new(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments());
     private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments());
-    private SendMessageCommandHandler SendHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments());
+    private SendMessageCommandHandler SendHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments());
 
     private int SystemMessageCount(Space space) => _messages.Count(m => m.SpaceId == space.Id && m.IsSystem);
 

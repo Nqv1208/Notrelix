@@ -69,6 +69,11 @@ public class DeleteMessageCommandHandler(
             foreach (var reaction in reactions)
                 db.ChatReactions.Remove(reaction);
 
+            // A tombstone carries no mentions either, so a deleted message never counts as a mention.
+            var mentions = await db.ChatMessageMentions.Where(m => m.MessageId == message.Id).ToListAsync(cancellationToken);
+            foreach (var mention in mentions)
+                db.ChatMessageMentions.Remove(mention);
+
             // A tombstone carries no files either (UC-CHT-G08): the attachments of the message are removed with it, and the retention
             // job purges the stored objects. Nobody can open them from now on, because the shared flow no longer finds them.
             await attachments.RemoveAllAsync(message.Id, cancellationToken);

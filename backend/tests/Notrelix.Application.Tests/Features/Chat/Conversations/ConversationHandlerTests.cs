@@ -67,6 +67,7 @@ public class ConversationHandlerTests
         _db.Setup(d => d.ChatSpaces).Returns(TestDbSet.Create(_spaces).Object);
         _db.Setup(d => d.ChatMemberships).Returns(TestDbSet.Create(_memberships).Object);
         _db.Setup(d => d.ChatMessages).Returns(TestDbSet.Create(_messages).Object);
+        _db.Setup(d => d.ChatMessageMentions).Returns(TestDbSet.Create(new List<MessageMention>()).Object);
         _db.Setup(d => d.ChatDirectPairs).Returns(TestDbSet.Create(_pairs).Object);
         _db.Setup(d => d.ChatBlocks).Returns(TestDbSet.Create(_blocks).Object);
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(_groups).Object);
@@ -478,7 +479,7 @@ public class ConversationHandlerTests
         await VisibilityHandler().Handle(new SetConversationVisibilityCommand(_workspaceId, direct.Id, true), CancellationToken.None);
 
         AsCaller(_alice, "Member");
-        var send = new SendMessageCommandHandler(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments());
+        var send = new SendMessageCommandHandler(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new Mock<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer>().Object, new InMemoryChatMessageAttachments());
         await send.Handle(new SendMessageCommand(_workspaceId, direct.Id, "are you there?", "client-1", null), CancellationToken.None);
 
         direct.GetActiveMembership(_bob)!.IsHidden.Should().BeFalse("the message restores the conversation for bob");

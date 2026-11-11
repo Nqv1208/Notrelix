@@ -104,6 +104,7 @@ public sealed class ChatThreadIntegrationTests : IAsyncLifetime
             ActiveMembers(_member).Object,
             new ChatSpaceSequenceAllocator(context),
             new FixedClock(Now),
+            Mock.Of<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer>(),
             new InMemoryChatMessageAttachments());
 
         var result = await handler.Handle(

@@ -12,6 +12,7 @@ import type {
   ChatAttachmentRecord,
   ChatGroupRecord,
   ChatMembershipRecord,
+  ChatMentionRecord,
   ChatMessageRecord,
   ChatPinRecord,
   ChatReactionRecord,
@@ -66,6 +67,8 @@ export class MockChatState {
   readonly reactions = new Map<string, ChatReactionRecord>();
   /** Files on messages by attachment id (Collaboration attachments with target kind chat.message). */
   readonly attachments = new Map<string, ChatAttachmentRecord>();
+  /** The stored mentions of each message, in text order; a message with none has no entry. */
+  readonly mentions = new Map<string, ChatMentionRecord[]>();
   /** The direct conversation of each pair, keyed by `${workspaceId}|${low}|${high}` (backend DirectPair). */
   readonly directPairs = new Map<string, string>();
   /** Blocks keyed by `${workspaceId}|${blockerId}|${blockedId}` (backend PersonBlock). */
@@ -98,6 +101,7 @@ export class MockChatState {
     this.pins.clear();
     this.reactions.clear();
     this.attachments.clear();
+    this.mentions.clear();
     this.directPairs.clear();
     this.blocks.clear();
     this.streamVersions.clear();

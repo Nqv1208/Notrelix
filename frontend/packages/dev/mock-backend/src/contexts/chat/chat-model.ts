@@ -41,7 +41,7 @@ export interface ChatMembershipRecord {
   /** Set only with a timed mute (level "none"). */
   mutedUntil: string | null;
   readSequence: number;
-  /** Mentions are not recorded before S2.4: always 0. */
+  /** Reserved, always 0 (backend Membership.MentionCount): mention counts are computed from the stored mentions. */
   mentionCount: number;
   readonly joinedAt: string;
   leftAt: string | null;
@@ -137,6 +137,23 @@ export interface ChatAttachmentRecord {
   readonly idempotencyKey: string;
 }
 
+/** The kinds of a mention (backend MentionKind wire spelling). */
+export type ChatMentionKind =
+  "user" | "channel-link" | "broadcast-channel" | "broadcast-here";
+
+/**
+ * One stored mention of a message (backend MessageMention): the kind, where the text sits (UTF-16 characters of the stored,
+ * trimmed content) and, for a person or a channel, the stable id. The rows of a message are replaced when its text is edited and
+ * removed when it is deleted.
+ */
+export interface ChatMentionRecord {
+  readonly kind: ChatMentionKind;
+  readonly start: number;
+  readonly length: number;
+  /** The person or the channel; null for a broadcast. */
+  readonly targetId: string | null;
+}
+
 export interface ChatGroupRecord {
   readonly id: string;
   readonly workspaceId: string;
@@ -174,6 +191,12 @@ export const CHAT_LIMITS = {
   realtimePayloadMaxBytes: 3000,
   /** Recipients of one message's unread fan-out (ChatRealtime.MaxUnreadRecipients). */
   unreadRecipientsMax: 2000,
+  /** The most mentions one message holds (ChatLimits.MentionsPerMessageMax). */
+  mentionsPerMessageMax: 50,
+  /** A channel with more active members than this asks for a broadcast confirmation (ChatLimits.BroadcastConfirmThreshold). */
+  broadcastConfirmThreshold: 50,
+  /** The most people one mention picker answer lists (ListMentionablesQuery.PeopleMax). */
+  mentionablesMax: 200,
 } as const;
 
 /** The stable error codes (ChatRuleCodes and the ProblemDetails mapper). */
@@ -198,6 +221,16 @@ export const CHAT_ERROR = {
   threadRootInvalid: "thread-root-invalid",
   /** The errorCode of a 400 business rule the backend does not map by name; the rule itself travels as ruleCode. */
   businessRule: "business_rule.violation",
+  broadcastConfirmationRequired: "broadcast-confirmation-required",
+} as const;
+
+/** What a send did not do for a mention (backend MentionResolver codes), shown to the sender only. */
+export const CHAT_MENTION_NOTICE = {
+  cannotView: "cannot-view",
+  unknown: "unknown",
+  linkNotVisible: "link-not-visible",
+  broadcastNotAllowed: "broadcast-not-allowed",
+  noAudience: "no-audience",
 } as const;
 
 /** Rule codes of the Chat conversations (ChatRuleCodes) that answer 400 with the generic business-rule problem. */

@@ -1,5 +1,6 @@
 using Notrelix.Application.Events.Chat;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.Mentions.Services;
 using Notrelix.Application.Features.Chat.Realtime;
 using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Spaces;
@@ -9,7 +10,7 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Chat;
 /// <summary>
 /// The per-user stream of a new message (UC-CHT-C09): every active member of the space except the author, who is not muted,
 /// gets their new unread and mention count for the space. Cost per message: one query for the recipients (bounded by
-/// <see cref="ChatRealtime.MaxUnreadRecipients"/>) and one grouped count for all of them, then one realtime publish per
+/// <see cref="ChatRealtime.MaxUnreadRecipients"/>) and one grouped count for the unread and one for the mentions of all of them, then one realtime publish per
 /// recipient in chunks. Nothing is queried per recipient.
 /// </summary>
 public sealed class ChatUnreadFanOut
@@ -36,7 +37,7 @@ public sealed class ChatUnreadFanOut
             .Where(m => m.SpaceId == message.SpaceId && m.LeftAt == null && m.UserId != message.AuthorId)
             .OrderBy(m => m.UserId)
             .Take(ChatRealtime.MaxUnreadRecipients + 1)
-            .Select(m => new { m.UserId, m.ReadSequence, m.NotificationLevel, m.MutedUntil, m.MentionCount })
+            .Select(m => new { m.UserId, m.ReadSequence, m.NotificationLevel, m.MutedUntil })
             .ToListAsync(cancellationToken);
 
         if (recipients.Count > ChatRealtime.MaxUnreadRecipients)
@@ -65,9 +66,11 @@ public sealed class ChatUnreadFanOut
             select new { UserId = g.Key, Count = g.Count() }).ToListAsync(cancellationToken);
         var counts = unread.Where(u => userIds.Contains(u.UserId)).ToDictionary(u => u.UserId, u => u.Count);
 
+        var mentionCounts = await MentionCounts.ForSpaceAsync(_db, message.SpaceId, userIds, cancellationToken);
+
         var frames = audience.Select(r => ChatRealtime.Unread(
             accountId, workspaceId, r.UserId, message.SpaceId,
-            counts.GetValueOrDefault(r.UserId), r.MentionCount,
+            counts.GetValueOrDefault(r.UserId), mentionCounts.GetValueOrDefault(r.UserId),
             message.CorrelationId, message.EventId, now)).ToList();
 
         foreach (var chunk in frames.Chunk(PublishChunk))

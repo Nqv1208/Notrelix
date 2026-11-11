@@ -52,6 +52,15 @@ public static class ChatRuleCodes
     /// <summary>The reaction kind is not on the palette (400, UC-CHT-G06).</summary>
     public const string ReactionKindInvalid = "reaction-kind-invalid";
 
+    /// <summary>A mention does not fit the text it claims: outside it, overlapping another, wrong text for its kind or an unknown kind (400, UC-CHT-G01).</summary>
+    public const string MentionInvalid = "mention-invalid";
+
+    /// <summary>A message holds more mentions than the limit (400, UC-CHT-G01).</summary>
+    public const string MentionLimitExceeded = "mention-limit-exceeded";
+
+    /// <summary>An @channel or @here in a large channel was sent without the confirmation (409, UC-CHT-G03).</summary>
+    public const string BroadcastConfirmationRequired = "broadcast-confirmation-required";
+
     /// <summary>A person names themselves as the other side of a direct conversation or a block (400, UC-CHT-E01, E06).</summary>
     public const string SelfTarget = "self-target";
 

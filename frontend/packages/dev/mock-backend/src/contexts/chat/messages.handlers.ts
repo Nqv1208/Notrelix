@@ -29,9 +29,16 @@ import { CHAT_ERROR, CHAT_LIMITS, type ChatMessageRecord } from "./chat-model";
 import {
   appendUserMessage,
   removeAttachmentsOf,
+  removeMentionsOf,
   removePin,
   removeReactionsOf,
 } from "./chat-writes";
+import {
+  resolveMentions,
+  storedWarnings,
+  storeMentions,
+  type MentionInputBody,
+} from "./chat-mentions";
 import { announceMessageEvent } from "./chat-realtime";
 import type { MockChatState } from "./chat-state";
 
@@ -49,11 +56,15 @@ interface SendBody {
   content?: string | null;
   clientMessageId?: string | null;
   replyToId?: string | null;
+  mentions?: MentionInputBody[] | null;
+  confirmBroadcast?: boolean | null;
 }
 
 interface EditBody {
   content?: string | null;
   expectedVersion?: number | null;
+  mentions?: MentionInputBody[] | null;
+  confirmBroadcast?: boolean | null;
 }
 
 /** One page, as ListMessages cuts it: ascending by sequence, with the two flags. */
@@ -211,7 +222,21 @@ export const messagesOperations = [
               m.authorId === caller.userId &&
               m.clientMessageId === clientMessageId,
           );
-        if (stored) return ok(messageView(state, caller.userId, stored));
+        if (stored) {
+          // A retry also repeats the warnings of the stored mentions (UC-CHT-G02).
+          return ok(
+            messageView(
+              state,
+              caller.userId,
+              stored,
+              storedWarnings(
+                state,
+                space.id,
+                state.mentions.get(stored.id) ?? [],
+              ),
+            ),
+          );
+        }
         const replyToId =
           typeof body?.replyToId === "string" ? body.replyToId : null;
         if (
@@ -220,6 +245,14 @@ export const messagesOperations = [
         ) {
           notFoundProblem();
         }
+        const resolution = resolveMentions(
+          state,
+          caller,
+          space,
+          body?.content ?? "",
+          body?.mentions,
+          body?.confirmBroadcast === true,
+        );
         const message = appendUserMessage(
           state,
           space,
@@ -227,10 +260,11 @@ export const messagesOperations = [
           content,
           clientMessageId,
           replyToId,
+          resolution.spans,
         );
         return {
           status: 201,
-          body: messageView(state, caller.userId, message),
+          body: messageView(state, caller.userId, message, resolution.notices),
         };
       });
     },
@@ -276,12 +310,25 @@ export const messagesOperations = [
           );
         }
         const changed = content !== message.content;
+        const resolution = resolveMentions(
+          state,
+          caller,
+          space,
+          body?.content ?? "",
+          body?.mentions,
+          body?.confirmBroadcast === true,
+        );
         requireVersion(expected, message.version);
         if (changed) {
           message.content = content;
           message.editedAt = state.stampWrite();
           message.version += 1;
+          // The new text replaces the mentions: the positions of the old ones no longer fit.
+          storeMentions(state, message.id, resolution.spans);
           announceMessageEvent(state, space, message, "chat.message.updated");
+          return ok(
+            messageView(state, caller.userId, message, resolution.notices),
+          );
         }
         return ok(messageView(state, caller.userId, message));
       });
@@ -333,6 +380,8 @@ export const messagesOperations = [
           removeReactionsOf(state, message.id);
           // A tombstone carries no files either: the attachments go with the message (UC-CHT-G08).
           removeAttachmentsOf(state, message.id);
+          // A tombstone carries no mentions either, so a deleted message never counts as a mention.
+          removeMentionsOf(state, message.id);
         }
         return { status: 204 };
       });

@@ -24,6 +24,8 @@ import {
   type ChatSpaceRecord,
   type ChatWorkspaceRole,
 } from "./chat-model";
+import { mentionCountIn, mentionViewsOf } from "./chat-mention-views";
+import type { MentionNotice } from "./chat-mentions";
 
 // ─── Problems ────────────────────────────────────────────────────────────────
 
@@ -145,6 +147,7 @@ export type ChatAction =
   | "messagePost"
   | "messagePin"
   | "messageReact"
+  | "mentionBroadcast"
   | "channelCreate"
   | "channelManage"
   | "groupManage"
@@ -156,6 +159,7 @@ const DENIED_ROLES: Record<ChatAction, readonly ChatWorkspaceRole[]> = {
   messagePost: [],
   messagePin: ["Guest"],
   messageReact: [],
+  mentionBroadcast: ["Member", "Guest"],
   channelCreate: ["Guest"],
   channelManage: ["Guest"],
   groupManage: ["Member", "Guest"],
@@ -400,7 +404,13 @@ export function unreadRow(
     lastSequence: space.lastSequence,
     unreadCount: unread.count,
     firstUnreadSequence: unread.first,
-    mentionCount: membership.mentionCount,
+    mentionCount: mentionCountIn(
+      state,
+      space.id,
+      membership.userId,
+      membership.readSequence,
+      membership.joinedAt,
+    ),
     notificationLevel: level,
     muted: level === "none",
   };
@@ -502,11 +512,15 @@ export function attachmentView(row: ChatAttachmentRecord) {
   };
 }
 
-/** MessageDto: a tombstone keeps its author, time and sequence, with null content, and the reaction summary of the viewer. */
+/**
+ * MessageDto: a tombstone keeps its author, time and sequence, with null content, the reaction summary of the viewer and the mentions the
+ * viewer may see. `mentionNotices` is what a send or an edit did not do for the sender; every other view leaves it empty.
+ */
 export function messageView(
   state: MockChatState,
   viewerUserId: string,
   message: ChatMessageRecord,
+  mentionNotices: readonly MentionNotice[] = [],
 ) {
   return {
     id: message.id,
@@ -528,6 +542,13 @@ export function messageView(
     version: message.version,
     reactions: reactionSummaryOf(state, message.id, viewerUserId),
     attachments: state.attachmentsOfMessage(message.id).map(attachmentView),
+    mentions: mentionViewsOf(
+      state,
+      message.workspaceId,
+      viewerUserId,
+      message.id,
+    ),
+    mentionNotices: [...mentionNotices],
   };
 }
 

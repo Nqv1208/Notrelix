@@ -18,6 +18,7 @@ import type { GeneratedRealtimeMessage } from "@notrelix/contracts";
 import { publishMockScopeFrame } from "../../realtime/mock-realtime-transport";
 import type { MockChatState } from "./chat-state";
 import { streamIdOf } from "./chat-state";
+import { mentionCountIn } from "./chat-mention-views";
 import {
   CHAT_LIMITS,
   type ChatMessageRecord,
@@ -288,7 +289,13 @@ export function announceMessageCreated(
       row.userId,
       space.id,
       unreadIn(state, space.id, row.userId, row.readSequence).count,
-      row.mentionCount,
+      mentionCountIn(
+        state,
+        space.id,
+        row.userId,
+        row.readSequence,
+        row.joinedAt,
+      ),
     );
   }
 }

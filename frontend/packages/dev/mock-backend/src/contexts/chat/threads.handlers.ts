@@ -26,6 +26,11 @@ import {
 } from "./chat-access";
 import { CHAT_ERROR, CHAT_LIMITS } from "./chat-model";
 import { appendThreadReply, idempotentCreate } from "./chat-writes";
+import {
+  resolveMentions,
+  storedWarnings,
+  type MentionInputBody,
+} from "./chat-mentions";
 
 type RootParams = {
   workspaceId: string;
@@ -41,6 +46,8 @@ interface ReplyBody {
   content?: string | null;
   clientMessageId?: string | null;
   alsoSendToChannel?: boolean | null;
+  mentions?: MentionInputBody[] | null;
+  confirmBroadcast?: boolean | null;
 }
 
 interface FollowBody {
@@ -94,6 +101,8 @@ export const threadsOperations = [
             content,
             clientMessageId,
             alsoSendToChannel,
+            mentions: body?.mentions ?? null,
+            confirmBroadcast: body?.confirmBroadcast === true,
           },
           () => {
             const root = state.messages.get(params.rootId);
@@ -124,7 +133,16 @@ export const threadsOperations = [
             if (stored)
               return {
                 status: 200,
-                body: messageView(state, caller.userId, stored),
+                body: messageView(
+                  state,
+                  caller.userId,
+                  stored,
+                  storedWarnings(
+                    state,
+                    space.id,
+                    state.mentions.get(stored.id) ?? [],
+                  ),
+                ),
               };
             if (
               root.deletedAt !== null &&
@@ -137,6 +155,14 @@ export const threadsOperations = [
                 "The message was deleted and has no replies.",
               );
             }
+            const resolution = resolveMentions(
+              state,
+              caller,
+              space,
+              body?.content ?? "",
+              body?.mentions,
+              body?.confirmBroadcast === true,
+            );
             const reply = appendThreadReply(
               state,
               space,
@@ -145,10 +171,16 @@ export const threadsOperations = [
               content,
               clientMessageId,
               alsoSendToChannel,
+              resolution.spans,
             );
             return {
               status: 201,
-              body: messageView(state, caller.userId, reply),
+              body: messageView(
+                state,
+                caller.userId,
+                reply,
+                resolution.notices,
+              ),
             };
           },
         );
