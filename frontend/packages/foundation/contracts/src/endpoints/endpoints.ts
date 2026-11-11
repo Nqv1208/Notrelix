@@ -327,6 +327,39 @@ export const endpoints = {
     preferences: (workspaceId: string) =>
       `/workspaces/${workspaceId}/notification-preferences`,
   },
+  // Chat.* (REST prefix /api/v1/workspaces/{workspaceId}/chat). A channel is a space: the same GUID.
+  chat: {
+    channels: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/chat/channels`,
+    channel: (workspaceId: string, channelId: string) =>
+      `/workspaces/${workspaceId}/chat/channels/${channelId}`,
+    channelOrder: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/chat/channels/order`,
+    channelArchive: (workspaceId: string, channelId: string) =>
+      `/workspaces/${workspaceId}/chat/channels/${channelId}/archive`,
+    channelMembers: (workspaceId: string, channelId: string) =>
+      `/workspaces/${workspaceId}/chat/channels/${channelId}/members`,
+    channelJoin: (workspaceId: string, channelId: string) =>
+      `/workspaces/${workspaceId}/chat/channels/${channelId}/members/me`,
+    channelMember: (workspaceId: string, channelId: string, userId: string) =>
+      `/workspaces/${workspaceId}/chat/channels/${channelId}/members/${userId}`,
+    channelGroups: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/chat/channel-groups`,
+    channelGroup: (workspaceId: string, groupId: string) =>
+      `/workspaces/${workspaceId}/chat/channel-groups/${groupId}`,
+    messages: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${workspaceId}/chat/spaces/${spaceId}/messages`,
+    message: (workspaceId: string, messageId: string) =>
+      `/workspaces/${workspaceId}/chat/messages/${messageId}`,
+    unread: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/chat/me/unread`,
+    markRead: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${workspaceId}/chat/spaces/${spaceId}/read`,
+    markAllRead: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/chat/me/read-all`,
+    notificationLevel: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${workspaceId}/chat/spaces/${spaceId}/notification-level`,
+  },
 
   boardGroups: {
     create: (boardId: string) => `/boards/${boardId}/groups`,

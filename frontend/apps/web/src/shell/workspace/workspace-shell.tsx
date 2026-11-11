@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { resolveApiAssetUrl } from "@notrelix/contracts";
 import { createUsePageList } from "@notrelix/docs-state";
 import { createUseLogout, useCurrentUser } from "@notrelix/features-auth";
+import { createChatHooks } from "@notrelix/features-chat/web";
 import { InboxBell } from "@notrelix/features-notifications";
 import {
   buildSpaceIndex,
@@ -424,6 +425,16 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const isMobile = useIsMobile();
   const railOpener = useRef<HTMLElement | null>(null);
   const inboxSummary = useInboxSummary();
+  // The Chat total unread for the sidebar badge (UC-CHT-D01); the Chat page reads the same query.
+  const chatHooks = useMemo(
+    () =>
+      createChatHooks({
+        api: runtimeClient.api,
+        endpoints: runtimeClient.endpoints,
+      }),
+    [runtimeClient],
+  );
+  const chatUnread = chatHooks.useUnreadSummary(workspaceId);
   const railWorkspaces = useMemo<SystemRailWorkspace[]>(() => {
     const list = workspaces.data ?? (workspace ? [workspace] : []);
     return list.map((item) => ({
@@ -685,6 +696,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             inboxSummary.data?.perWorkspace.find(
               (entry) => entry.workspaceId === workspaceId,
             )?.unread ?? null,
+          chat: chatUnread.data?.totalUnread ?? null,
         }}
         sharedBoards={sharedBoards}
         pinned={pinnedState}

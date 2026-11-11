@@ -1,21 +1,68 @@
-import { useParams } from "@tanstack/react-router";
-import { MessageSquare } from "lucide-react";
+import { useEffect, useMemo } from "react";
+import { useNavigate, useParams } from "@tanstack/react-router";
+import {
+  ChatWorkspace,
+  createChatHooks,
+  type ChatViewerRole,
+} from "@notrelix/features-chat/web";
+import { useAppRuntime } from "@notrelix/runtime-web";
+import { useWorkspaceContext } from "@/providers/workspace-provider";
+import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
 
+/**
+ * Chat (CHT-001..004). `/chat` opens the first channel of the caller; `/chat/$channelId`
+ * opens that channel. The feature owns the channel, history and read state; this page
+ * supplies the transport, the caller and the Workspace member names.
+ */
 export function ChatPage() {
-  const { _workspaceId } = useParams({ from: "/workspaces/$workspaceId/chat" });
+  const { workspaceId } = useWorkspaceContext();
+  const { channelId } = useParams({ strict: false }) as { channelId?: string };
+  const navigate = useNavigate();
+  const { api: runtimeClient } = useAppRuntime();
+  const viewer = useWorkspaceViewer(workspaceId);
+
+  const deps = useMemo(
+    () => ({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
+    [runtimeClient],
+  );
+  const hooks = useMemo(() => createChatHooks(deps), [deps]);
+  const channels = hooks.useChannels(workspaceId);
+  const firstChannelId = channels.data?.[0]?.id ?? null;
+
+  // A bare /chat opens the first channel; the list is the caller's own, so the first one is theirs.
+  useEffect(() => {
+    if (channelId || !firstChannelId) return;
+    void navigate({
+      to: "/workspaces/$workspaceId/chat/$channelId",
+      params: { workspaceId, channelId: firstChannelId },
+      replace: true,
+    });
+  }, [channelId, firstChannelId, navigate, workspaceId]);
+
+  const people = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const member of viewer.members.data ?? []) {
+      map.set(member.userId, member.name);
+    }
+    return map;
+  }, [viewer.members.data]);
 
   return (
-    <div className="h-full flex flex-col items-center justify-center p-8">
-      <div className="flex flex-col items-center gap-4 text-center max-w-md">
-        <div className="size-16 rounded-2xl bg-muted flex items-center justify-center">
-          <MessageSquare className="size-8 text-muted-foreground" />
-        </div>
-        <h1 className="text-xl font-semibold">Chat</h1>
-        <p className="text-sm text-muted-foreground">
-          Real-time team chat is coming soon. You'll be able to communicate with
-          your workspace members directly.
-        </p>
-      </div>
+    <div className="flex h-full min-h-0 flex-col">
+      <ChatWorkspace
+        deps={deps}
+        workspaceId={workspaceId}
+        viewerId={viewer.userId ?? ""}
+        viewerRole={(viewer.role as ChatViewerRole | null) ?? null}
+        channelId={channelId ?? null}
+        people={people}
+        onOpenChannel={(id) =>
+          void navigate({
+            to: "/workspaces/$workspaceId/chat/$channelId",
+            params: { workspaceId, channelId: id },
+          })
+        }
+      />
     </div>
   );
 }

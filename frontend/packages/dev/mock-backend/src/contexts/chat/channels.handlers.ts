@@ -126,7 +126,9 @@ export const channelsOperations = [
             .spacesOfWorkspace(params.workspaceId)
             .filter(
               (space) =>
-                space.deletedAt === null && space.kind === "channel_public",
+                space.deletedAt === null &&
+                space.kind === "channel_public" &&
+                state.activeMembershipOf(space.id, caller.userId) === undefined,
             );
         } else {
           spaces = state

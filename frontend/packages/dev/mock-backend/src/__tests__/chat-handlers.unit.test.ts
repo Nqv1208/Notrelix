@@ -39,6 +39,21 @@ describe("MFB-CHAT-S1.6: Chat mock handlers (channels, messages, read state)", (
       });
     });
 
+    it("browses only the public channels the caller is not in", async () => {
+      const store = storeAs("owner");
+      const mine = await chat(store, "GET", "/channels");
+      const browse = await chat(store, "GET", "/channels", {
+        query: "browse=true",
+      });
+      expect(browse.status).toBe(200);
+      const mineIds = new Set(mine.body.map((c: { id: string }) => c.id));
+      for (const channel of browse.body) {
+        expect(mineIds.has(channel.id)).toBe(false);
+        expect(channel.kind).toBe("channel_public");
+        expect(channel.isMember).toBe(false);
+      }
+    });
+
     it("gives a Guest only the spaces they were added to, and browses nothing", async () => {
       const store = storeAs("viewer");
       const mine = await chat(store, "GET", "/channels");

@@ -7,3 +7,10 @@ export const chatRoute = createRoute({
   path: "/chat",
   component: ChatPage,
 });
+
+/** One channel of the Workspace's Chat (a channel is a space). */
+export const chatChannelRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/chat/$channelId",
+  component: ChatPage,
+});

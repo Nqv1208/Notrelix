@@ -41,7 +41,7 @@ import { docRoute, docsIndexRoute } from "./routes/documents.routes";
 import { billingRoute } from "./routes/billing.routes";
 import { integrationsRoute } from "./routes/integrations.routes";
 import { searchRoute } from "./routes/search.routes";
-import { chatRoute } from "./routes/chat.routes";
+import { chatChannelRoute, chatRoute } from "./routes/chat.routes";
 import {
   accountRoute,
   accountProfileRoute,
@@ -92,6 +92,7 @@ export const routeTree = rootRoute.addChildren([
     integrationsRoute,
     searchRoute,
     chatRoute,
+    chatChannelRoute,
     accountRoute.addChildren([
       accountProfileRoute,
       accountSecurityRoute,
