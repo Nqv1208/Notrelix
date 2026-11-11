@@ -10,5 +10,6 @@ public sealed record MessageUpdatedDomainEvent(
     Guid AuthorId,
     string Content,
     long Version,
-    DateTimeOffset OccurredAt
+    DateTimeOffset OccurredAt,
+    Guid? ThreadRootId = null
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);
