@@ -8,6 +8,7 @@
 
 import {
   CHAT_LIMITS,
+  type ChatMentionInput,
   type ChatMessage,
   type ChatMessagePage,
   type ChatUnreadRow,
@@ -69,6 +70,9 @@ export interface PendingMessage {
   readonly status: "sending" | "failed";
   /** The failure of a failed send: a retry may succeed, or the send is refused. */
   readonly failure: "retryable" | "refused" | null;
+  /** The mentions that travel with the content, kept so a retry sends the same ones. */
+  readonly mentions?: readonly ChatMentionInput[];
+  readonly confirmBroadcast?: boolean;
 }
 
 /** The pending sends that the server has not already stored, oldest first. */
@@ -227,6 +231,8 @@ export function unreadAfterRead(
     ...row,
     readSequence,
     unreadCount: row.lastSequence <= readSequence ? 0 : row.unreadCount,
+    // A read to the newest message clears the mention counter; a partial read waits for the server's count.
+    mentionCount: row.lastSequence <= readSequence ? 0 : row.mentionCount,
     firstUnreadSequence:
       row.lastSequence <= readSequence ? null : row.firstUnreadSequence,
   };

@@ -77,6 +77,16 @@ describe("chat endpoint paths", () => {
     expect(chat.blocks("a/b")).toContain("a%2Fb");
   });
 
+  it("builds the mentionables path and encodes its ids", () => {
+    const chat = endpoints.chat;
+    expect(chat.spaceMentionables("w", "s1")).toBe(
+      "/workspaces/w/chat/spaces/s1/mentionables",
+    );
+    expect(chat.spaceMentionables("a/b", "c d")).toBe(
+      "/workspaces/a%2Fb/chat/spaces/c%20d/mentionables",
+    );
+  });
+
   it("keeps a plain id as it is", () => {
     expect(endpoints.chat.channel("w-1", "c_2")).toBe(
       "/workspaces/w-1/chat/channels/c_2",

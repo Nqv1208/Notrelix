@@ -368,6 +368,9 @@ export const endpoints = {
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/threads/${encodeURIComponent(threadId)}/read`,
     followedThreads: (workspaceId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/threads`,
+    /** GET lists the people a message in the space can mention, and whether the caller may broadcast. */
+    spaceMentionables: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/mentionables`,
     /** Pins: PUT pins a message and DELETE unpins it (the message id). */
     messagePin: (workspaceId: string, messageId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/pin`,

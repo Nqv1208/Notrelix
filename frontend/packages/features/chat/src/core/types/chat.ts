@@ -21,12 +21,60 @@ export const CHAT_LIMITS = {
   channelTopicMaxLength: 250,
   pageSize: 50,
   pageSizeMax: 100,
+  /** The most mentions one message holds (ChatLimits.MentionsPerMessageMax). */
+  mentionsPerMessageMax: 50,
 } as const;
 
 export type ChatChannelKind = "channel_public" | "channel_private";
 export type ChatMemberRole = "manager" | "member";
 export type ChatNotificationLevel = "all" | "mentions" | "none";
 export type ChatMessageKind = "user" | "system";
+
+/** The kinds of a mention (backend MentionKind wire spelling). */
+export type ChatMentionKind =
+  "user" | "channel-link" | "broadcast-channel" | "broadcast-here";
+
+/**
+ * MentionDto: one stored mention as a reader sees it. `start` and `length` count UTF-16 characters of
+ * `content`; a person is `userId`, a channel link is `spaceId`, a broadcast names neither.
+ */
+export interface ChatMention {
+  readonly kind: ChatMentionKind;
+  readonly start: number;
+  readonly length: number;
+  readonly userId: string | null;
+  readonly spaceId: string | null;
+}
+
+/** What a send or an edit did not do for one mention (MentionNoticeDto); shown to the sender only. */
+export type ChatMentionNoticeCode =
+  | "cannot-view"
+  | "unknown"
+  | "link-not-visible"
+  | "broadcast-not-allowed"
+  | "no-audience";
+
+export interface ChatMentionNotice {
+  readonly code: ChatMentionNoticeCode | (string & {});
+  readonly start: number;
+  readonly length: number;
+  readonly userId: string | null;
+}
+
+/** MentionableDto: a person a message in the space can mention; `inSpace` false means they will not be notified. */
+export interface ChatMentionable {
+  readonly userId: string;
+  readonly inSpace: boolean;
+}
+
+/** MentionablesDto: the picker of one space. */
+export interface ChatMentionables {
+  readonly people: readonly ChatMentionable[];
+  readonly canBroadcast: boolean;
+  /** A broadcast in a space of more members than this needs confirmBroadcast. */
+  readonly broadcastConfirmAbove: number;
+  readonly memberCount: number;
+}
 
 /** ChannelDto: the membership fields are the caller's own. */
 export interface ChatChannel {
@@ -76,6 +124,10 @@ export interface ChatMessage {
   readonly replyPreview?: ChatReplyPreview | null;
   /** The reaction summary, one entry per palette emoji that has reactions. */
   readonly reactions?: readonly ChatReactionSummary[];
+  /** The stored mentions of `content` the reader may see (a channel link the reader cannot see is left out). */
+  readonly mentions?: readonly ChatMention[];
+  /** What the send or edit that returned this message did not do for the sender; empty on every other read. */
+  readonly mentionNotices?: readonly ChatMentionNotice[];
   readonly edited: boolean;
   readonly deleted: boolean;
   readonly createdAt: string;
@@ -292,4 +344,19 @@ export interface ChatConversationVisibility {
 export interface ChatPersonBlock {
   readonly userId: string;
   readonly blocked: boolean;
+}
+
+/** MentionRequest: one mention a client sends with a message; positions count UTF-16 characters of the content as sent. */
+export interface ChatMentionInput {
+  readonly kind: ChatMentionKind;
+  readonly start: number;
+  readonly length: number;
+  readonly userId?: string | null;
+  readonly spaceId?: string | null;
+}
+
+/** The mentions and the broadcast confirmation that travel with a send, an edit or a thread reply. */
+export interface ChatMentionPayload {
+  readonly mentions?: readonly ChatMentionInput[];
+  readonly confirmBroadcast?: boolean;
 }
