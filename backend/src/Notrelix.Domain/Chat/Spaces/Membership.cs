@@ -33,7 +33,10 @@ public sealed class Membership : IWorkspaceScoped
     /// <summary>The highest sequence the person has seen in the space (CHT-009). Moves forward only; see <see cref="ReadStates.ReadBoundary"/>.</summary>
     public long ReadSequence { get; private set; }
 
-    /// <summary>Mentions of the person not yet read (CHT-010, S2.4). No mention facts exist in Phase 1, so this stays 0.</summary>
+    /// <summary>
+    /// Reserved column, always 0. Mention counts are computed from the stored mentions (UC-CHT-D04), so a read, an edit or a delete
+    /// can never leave a stale number here; the column stays because the migration is expand-only.
+    /// </summary>
     public int MentionCount { get; private set; }
 
     /// <summary>When a mute ends. Only set with <see cref="NotificationLevel.None"/>; null is a permanent mute or no mute.</summary>

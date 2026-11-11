@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.Mentions.Services;
 using Notrelix.Application.Features.Chat.Messages.DTOs;
 using Notrelix.Application.Features.Chat.Reactions.Services;
 using Notrelix.Domain.Chat.Messages;
@@ -6,7 +7,7 @@ using Notrelix.Domain.Chat.Messages;
 namespace Notrelix.Application.Features.Chat.Messages.Services;
 
 /// <summary>
-/// Builds the message views readers see (UC-CHT-F02, G06): the live quote of each reply and the reaction summary of each message,
+/// Builds the message views readers see (UC-CHT-F02, G06): the live quote of each reply, the reaction summary and the mentions of each message,
 /// in a fixed number of queries per page. A quote is always a message of the same space (the send refuses any other), and the
 /// caller reads a page only when it may see the space, so a preview never shows content the viewer could not already read. A
 /// deleted quoted message gives a tombstone preview with no content.
@@ -27,12 +28,20 @@ public static class ReplyPreviews
         return rows.ToDictionary(r => r.MessageId);
     }
 
-    /// <summary>One message as a DTO, with its live quote and its reaction summary.</summary>
-    public static async Task<MessageDto> DtoAsync(IChatDbContext db, Guid workspaceId, Guid viewerId, Message message, CancellationToken cancellationToken)
+    /// <summary>
+    /// One message as a DTO, with its live quote, its reaction summary and its mentions. A message the request has just stored is
+    /// not in the database yet, so its mentions and the sender's notices come from <paramref name="resolution"/>.
+    /// </summary>
+    public static async Task<MessageDto> DtoAsync(
+        IChatDbContext db, Guid workspaceId, Guid viewerId, Message message, CancellationToken cancellationToken, MentionResolution? resolution = null)
     {
         var previews = await LoadAsync(db, workspaceId, message.ReplyToId is { } quoted ? [quoted] : [], cancellationToken);
         var reactions = await ReactionSummaries.ForMessageAsync(db, workspaceId, viewerId, message.Id, cancellationToken);
-        return MessageDto.From(message, PreviewOf(message, previews), reactions);
+        if (resolution is not null)
+            return MessageDto.From(message, PreviewOf(message, previews), reactions, resolution.Spans.Select(MessageMentions.ToDto).ToList(), resolution.Notices);
+
+        var mentions = await MessageMentions.LoadAsync(db, workspaceId, viewerId, [message.Id], cancellationToken);
+        return MessageDto.From(message, PreviewOf(message, previews), reactions, mentions.TryGetValue(message.Id, out var list) ? list : []);
     }
 
     /// <summary>A page of messages as DTOs, each with its live quote and reaction summary, in two lookups for the whole page.</summary>
@@ -41,8 +50,13 @@ public static class ReplyPreviews
     {
         var previews = await LoadAsync(db, workspaceId, messages.Where(m => m.ReplyToId is not null).Select(m => m.ReplyToId!.Value), cancellationToken);
         var reactions = await ReactionSummaries.LoadAsync(db, workspaceId, viewerId, messages.Select(m => m.Id), cancellationToken);
+        var mentions = await MessageMentions.LoadAsync(db, workspaceId, viewerId, messages.Select(m => m.Id), cancellationToken);
         return messages
-            .Select(m => MessageDto.From(m, PreviewOf(m, previews), reactions.TryGetValue(m.Id, out var summary) ? summary : []))
+            .Select(m => MessageDto.From(
+                m,
+                PreviewOf(m, previews),
+                reactions.TryGetValue(m.Id, out var summary) ? summary : [],
+                mentions.TryGetValue(m.Id, out var list) ? list : []))
             .ToList();
     }
 

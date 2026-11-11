@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Chat.Mentions.DTOs;
 using Notrelix.Application.Features.Chat.Reactions.DTOs;
 using Notrelix.Domain.Chat.Messages;
 
@@ -23,14 +24,23 @@ public sealed record MessageDto(
     DateTimeOffset? DeletedAt,
     long Version,
     ReplyPreviewDto? ReplyPreview = null,
-    IReadOnlyList<ReactionSummaryDto>? Reactions = null)
+    IReadOnlyList<ReactionSummaryDto>? Reactions = null,
+    IReadOnlyList<MentionDto>? Mentions = null,
+    IReadOnlyList<MentionNoticeDto>? MentionNotices = null)
 {
     /// <summary>
     /// The message as readers see it. <paramref name="replyPreview"/> is the live quote of <see cref="ReplyToId"/>, read by the
     /// caller from the quoted message; it is null when the message quotes nothing. <paramref name="reactions"/> is the reaction
     /// summary (UC-CHT-G06), empty when nothing reacted.
+    /// <paramref name="mentions"/> are the stored mentions this reader may see (UC-CHT-G01, G04), empty when none. <paramref name="mentionNotices"/>
+    /// are what a send or an edit did not do for the sender (UC-CHT-G02); they are empty in every other view.
     /// </summary>
-    public static MessageDto From(Message message, ReplyPreviewDto? replyPreview = null, IReadOnlyList<ReactionSummaryDto>? reactions = null) => new(
+    public static MessageDto From(
+        Message message,
+        ReplyPreviewDto? replyPreview = null,
+        IReadOnlyList<ReactionSummaryDto>? reactions = null,
+        IReadOnlyList<MentionDto>? mentions = null,
+        IReadOnlyList<MentionNoticeDto>? mentionNotices = null) => new(
         message.Id,
         message.SpaceId,
         message.Sequence,
@@ -49,7 +59,9 @@ public sealed record MessageDto(
         message.DeletedAt,
         message.Version,
         replyPreview,
-        reactions ?? []);
+        reactions ?? [],
+        mentions ?? [],
+        mentionNotices ?? []);
 }
 
 /// <summary>

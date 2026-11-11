@@ -66,6 +66,11 @@ public class DeleteMessageCommandHandler(
             var reactions = await db.ChatReactions.Where(r => r.MessageId == message.Id).ToListAsync(cancellationToken);
             foreach (var reaction in reactions)
                 db.ChatReactions.Remove(reaction);
+
+            // A tombstone carries no mentions either, so a deleted message never counts as a mention.
+            var mentions = await db.ChatMessageMentions.Where(m => m.MessageId == message.Id).ToListAsync(cancellationToken);
+            foreach (var mention in mentions)
+                db.ChatMessageMentions.Remove(mention);
         }
         return Result.Success();
     }

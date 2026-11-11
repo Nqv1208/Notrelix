@@ -34,4 +34,13 @@ public static class ChatLimits
 
     /// <summary>The longest channel group name, in characters (UC-CHT-A02).</summary>
     public const int ChannelGroupNameMaxLength = 60;
+
+    /// <summary>The most mentions (people, broadcasts and channel links together) one message holds (UC-CHT-G01 to G04).</summary>
+    public const int MentionsPerMessageMax = 50;
+
+    /// <summary>
+    /// A channel with more active members than this asks for a confirmation before an @channel or @here is sent (CHT-010,
+    /// UC-CHT-G03). The Workspace limit is not configurable yet, so this is the default.
+    /// </summary>
+    public const int BroadcastConfirmThreshold = 50;
 }

@@ -1,6 +1,8 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Chat.Mentions.DTOs;
+using Notrelix.Application.Features.Chat.Mentions.Services;
 using Notrelix.Application.Features.Chat.Conversations.Services;
 using Notrelix.Application.Features.Chat.Messages.DTOs;
 using Notrelix.Application.Features.Chat.Messages.Services;
@@ -17,10 +19,17 @@ namespace Notrelix.Application.Features.Chat.Threads.Commands.ReplyInThread;
 /// stored reply (200), and a deleted root with no replies is refused (409 message-deleted). A reply to a reply or to a
 /// system message is refused (409 thread-root-invalid). The reply takes the next space sequence and the next thread
 /// sequence under the space lock. It reopens an archived thread, and the replier and the root's author follow it.
-/// With AlsoSendToChannel the reply also shows in the channel's main flow.
+/// With AlsoSendToChannel the reply also shows in the channel's main flow. Mentions are resolved as in a send (UC-CHT-G01 to G04).
 /// </summary>
 [IdempotencyOperation("chat.threads.reply-in-thread.v1")]
-public record ReplyInThreadCommand(Guid WorkspaceId, Guid RootMessageId, string Content, string ClientMessageId, bool AlsoSendToChannel)
+public record ReplyInThreadCommand(
+    Guid WorkspaceId,
+    Guid RootMessageId,
+    string Content,
+    string ClientMessageId,
+    bool AlsoSendToChannel,
+    IReadOnlyList<MentionInput>? Mentions = null,
+    bool ConfirmBroadcast = false)
     : ICommand<Result<SendMessageResultDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ChatMessagePost;
@@ -32,13 +41,14 @@ public class ReplyInThreadCommandHandler(
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
     ISpaceSequenceAllocator sequences,
-    IDateTimeProvider clock) : IRequestHandler<ReplyInThreadCommand, Result<SendMessageResultDto>>
+    IDateTimeProvider clock,
+    IBroadcastAuthorizer broadcast) : IRequestHandler<ReplyInThreadCommand, Result<SendMessageResultDto>>
 {
     public async Task<Result<SendMessageResultDto>> Handle(ReplyInThreadCommand request, CancellationToken cancellationToken)
     {
         var userId = requestContext.UserId;
         var accountId = requestContext.RequireAccountId();
-        await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
+        var caller = await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
 
         var root = await db.ChatMessages.AsNoTracking().FirstOrDefaultAsync(
             m => m.Id == request.RootMessageId && m.WorkspaceId == request.WorkspaceId, cancellationToken)
@@ -75,8 +85,14 @@ public class ReplyInThreadCommandHandler(
             m => m.SpaceId == space.Id && m.AuthorId == userId && m.ClientMessageId == clientMessageId,
             cancellationToken);
         if (stored is not null)
+        {
+            var storedMentions = (await db.ChatMessageMentions.AsNoTracking()
+                .Where(m => m.MessageId == stored.Id).OrderBy(m => m.Start).ToListAsync(cancellationToken))
+                .Select(m => m.ToSpan()).ToList();
+            var again = new MentionResolution(storedMentions, MentionResolver.StoredWarnings(space, storedMentions));
             return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-                await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, stored, cancellationToken), Created: false));
+                await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, stored, cancellationToken, again), Created: false));
+        }
 
         // The root is read again under the lock: a delete that committed while this request waited is respected.
         var rootDeleted = await db.ChatMessages.AsNoTracking()
@@ -87,6 +103,9 @@ public class ReplyInThreadCommandHandler(
         var thread = await db.ChatThreads.FirstOrDefaultAsync(t => t.RootMessageId == root.Id, cancellationToken);
         if (rootDeleted && (thread?.ReplyCount ?? 0) == 0)
             throw new ConflictException("The message was deleted and has no replies.", ChatRuleCodes.MessageDeleted);
+
+        var resolution = await MentionResolver.ResolveAsync(
+            db, members, broadcast, space, caller, request.Content, request.Mentions, request.ConfirmBroadcast, cancellationToken);
 
         var now = clock.UtcNow;
         if (thread is null)
@@ -110,6 +129,7 @@ public class ReplyInThreadCommandHandler(
             request.AlsoSendToChannel,
             now);
         db.ChatMessages.Add(reply);
+        await MessageMentions.ReplaceAsync(db, reply, resolution.Spans, hadBefore: false, cancellationToken);
         // A new message brings a hidden conversation back to every list that hid it (UC-CHT-E07).
         ConversationVisibility.ShowAgain(space);
 
@@ -121,7 +141,7 @@ public class ReplyInThreadCommandHandler(
         await EnsureFollowerAsync(db, accountId, request.WorkspaceId, root.Id, userId, readReplySequence: threadSequence, cancellationToken);
 
         return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-            await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, reply, cancellationToken), Created: true));
+            await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, reply, cancellationToken, resolution), Created: true));
     }
 
     /// <summary>Adds a default follow (not muted) when the person has no follow row yet. An existing row is never overwritten.</summary>

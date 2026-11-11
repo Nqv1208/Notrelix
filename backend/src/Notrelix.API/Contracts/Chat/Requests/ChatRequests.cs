@@ -28,10 +28,26 @@ public record UpdateChannelGroupRequest(string Name, double? Position, long? Exp
 /// A message to a space. ClientMessageId is the sender's key for this message (unique per space and author; a retry
 /// with the same one returns the stored message). Idempotency-Key is the transport key of the request, a separate value.
 /// </summary>
-public record SendMessageRequest(string? Content, string? ClientMessageId, Guid? ReplyToId);
+public record SendMessageRequest(
+    string? Content,
+    string? ClientMessageId,
+    Guid? ReplyToId,
+    IReadOnlyList<MentionRequest>? Mentions = null,
+    bool? ConfirmBroadcast = null);
 
-/// <summary>The new text, with the version the editor read. A stale version is refused with 412.</summary>
-public record EditMessageRequest(string? Content, long? ExpectedVersion);
+/// <summary>
+/// One mention in a message's text (UC-CHT-G01, G03, G04). Kind is user, channel-link, broadcast-channel or broadcast-here. Start and
+/// Length count UTF-16 characters of the content sent; the text covered starts with @ for a person, # for a channel link, and is
+/// @channel or @here for a broadcast. A person is named by userId, a channel by spaceId. The server checks every mention against
+/// the channel; one it will not store is shown as text and reported in mentionNotices.
+/// </summary>
+public record MentionRequest(string? Kind, int? Start, int? Length, Guid? UserId, Guid? SpaceId)
+{
+    public Notrelix.Application.Features.Chat.Mentions.DTOs.MentionInput ToInput() => new(Kind, Start ?? -1, Length ?? 0, UserId, SpaceId);
+}
+
+/// <summary>The new text, with the version the editor read, and the mentions of the new text. A stale version is refused with 412.</summary>
+public record EditMessageRequest(string? Content, long? ExpectedVersion, IReadOnlyList<MentionRequest>? Mentions = null, bool? ConfirmBroadcast = null);
 
 /// <summary>The sequence the person has read up to in a space (UC-CHT-D02). A lower sequence than the boundary changes nothing.</summary>
 public record MarkSpaceReadRequest(long? UpToSequence);
@@ -46,7 +62,12 @@ public record SetNotificationLevelRequest(string? Level, DateTimeOffset? MutedUn
 /// A reply in a thread. ClientMessageId is the sender's key for this reply (unique per space and author). AlsoSendToChannel
 /// shows the reply in the channel's main flow too (UC-CHT-F01).
 /// </summary>
-public record ReplyInThreadRequest(string? Content, string? ClientMessageId, bool? AlsoSendToChannel);
+public record ReplyInThreadRequest(
+    string? Content,
+    string? ClientMessageId,
+    bool? AlsoSendToChannel,
+    IReadOnlyList<MentionRequest>? Mentions = null,
+    bool? ConfirmBroadcast = null);
 
 /// <summary>The caller's follow state on a thread. following false removes the follow; muted with following silences it (UC-CHT-F04).</summary>
 public record FollowThreadRequest(bool? Following, bool? Muted);

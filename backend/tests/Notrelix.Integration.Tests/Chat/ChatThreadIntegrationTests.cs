@@ -103,7 +103,8 @@ public sealed class ChatThreadIntegrationTests : IAsyncLifetime
             RequestAs(_member).Object,
             ActiveMembers(_member).Object,
             new ChatSpaceSequenceAllocator(context),
-            new FixedClock(Now));
+            new FixedClock(Now),
+            Mock.Of<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer>());
 
         var result = await handler.Handle(
             new ReplyInThreadCommand(_workspaceId, _rootId, content, clientMessageId, AlsoSendToChannel: false),

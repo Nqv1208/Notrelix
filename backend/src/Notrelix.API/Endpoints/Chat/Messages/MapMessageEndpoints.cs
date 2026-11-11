@@ -27,13 +27,13 @@ public static class MapMessageEndpoints
             .WithIdempotencyKey()
             .WithName("Chat.Messages.Send")
             .WithSummary("Send a message to a space")
-            .WithDescription("clientMessageId is the sender's key for the message: a retry with the same one returns the stored message with 200 and stores nothing. The first send returns 201. Idempotency-Key is the transport key and is required on this endpoint. An archived channel is 409 channel-archived; a space the caller is not a member of is 404.")
+            .WithDescription("clientMessageId is the sender's key for the message: a retry with the same one returns the stored message with 200 and stores nothing. The first send returns 201. Idempotency-Key is the transport key and is required on this endpoint. An archived channel is 409 channel-archived; a space the caller is not a member of is 404. mentions are the structured mentions of the text (person, channel link, @channel, @here): each is checked against the channel on the server and the response lists the stored ones in mentions and the ones not stored in mentionNotices (cannot-view: stored, nobody is notified; unknown, link-not-visible, broadcast-not-allowed, no-audience: shown as text). A malformed mention is 400 (mention-invalid, mention-limit-exceeded). An @channel or @here in a channel of more than 50 members needs confirmBroadcast true, otherwise 409 broadcast-confirmation-required.")
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict);
 
         group.MapWorkspacePatch("/messages/{messageId:guid}", EditAsync)
             .WithName("Chat.Messages.Edit")
             .WithSummary("Edit the text of your own message")
-            .WithDescription("Only the author edits. A stale expectedVersion is 412. A deleted message or a system message cannot be edited (409). The sequence never changes.")
+            .WithDescription("Only the author edits. A stale expectedVersion is 412. A deleted message or a system message cannot be edited (409). The sequence never changes. When the text changes, mentions replaces the message's mentions (same rules as the send); the text unchanged changes nothing.")
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict, StatusCodes.Status412PreconditionFailed);
 
         group.MapWorkspaceDelete("/messages/{messageId:guid}", DeleteAsync)
@@ -62,7 +62,8 @@ public static class MapMessageEndpoints
     private static async Task<IResult> SendAsync(Guid workspaceId, Guid spaceId, SendMessageRequest body, ISender sender)
     {
         var result = await sender.Send(new SendMessageCommand(
-            workspaceId, spaceId, body.Content ?? string.Empty, body.ClientMessageId ?? string.Empty, body.ReplyToId));
+            workspaceId, spaceId, body.Content ?? string.Empty, body.ClientMessageId ?? string.Empty, body.ReplyToId,
+            body.Mentions?.Select(m => m.ToInput()).ToList(), body.ConfirmBroadcast ?? false));
         if (!result.Succeeded)
             return result.ToApiResult();
 
@@ -76,7 +77,8 @@ public static class MapMessageEndpoints
         if (body.ExpectedVersion is not { } expectedVersion)
             return EndpointExtensions.InvalidInput("expectedVersion is required.");
 
-        var result = await sender.Send(new EditMessageCommand(workspaceId, messageId, body.Content ?? string.Empty, expectedVersion));
+        var result = await sender.Send(new EditMessageCommand(
+            workspaceId, messageId, body.Content ?? string.Empty, expectedVersion, body.Mentions?.Select(m => m.ToInput()).ToList(), body.ConfirmBroadcast ?? false));
         return result.ToApiResult();
     }
 

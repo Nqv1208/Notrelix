@@ -689,6 +689,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/mentionables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the people a message in a space can mention
+         * @description The active members of the space (inSpace true) and, unless the caller is a Guest, the other active colleagues of the Workspace (inSpace false: the composer warns that they will not be notified and gain nothing). People are ids. canBroadcast says whether the caller may use @channel and @here; broadcastConfirmAbove is the member count above which a broadcast needs confirmBroadcast. A space the caller is not a member of is 404.
+         */
+        get: operations["Chat.Mentions.ListMentionables"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/messages": {
         parameters: {
             query?: never;
@@ -704,7 +724,7 @@ export interface paths {
         put?: never;
         /**
          * Send a message to a space
-         * @description clientMessageId is the sender's key for the message: a retry with the same one returns the stored message with 200 and stores nothing. The first send returns 201. Idempotency-Key is the transport key and is required on this endpoint. An archived channel is 409 channel-archived; a space the caller is not a member of is 404.
+         * @description clientMessageId is the sender's key for the message: a retry with the same one returns the stored message with 200 and stores nothing. The first send returns 201. Idempotency-Key is the transport key and is required on this endpoint. An archived channel is 409 channel-archived; a space the caller is not a member of is 404. mentions are the structured mentions of the text (person, channel link, @channel, @here): each is checked against the channel on the server and the response lists the stored ones in mentions and the ones not stored in mentionNotices (cannot-view: stored, nobody is notified; unknown, link-not-visible, broadcast-not-allowed, no-audience: shown as text). A malformed mention is 400 (mention-invalid, mention-limit-exceeded). An @channel or @here in a channel of more than 50 members needs confirmBroadcast true, otherwise 409 broadcast-confirmation-required.
          */
         post: operations["Chat.Messages.Send"];
         delete?: never;
@@ -732,7 +752,7 @@ export interface paths {
         head?: never;
         /**
          * Edit the text of your own message
-         * @description Only the author edits. A stale expectedVersion is 412. A deleted message or a system message cannot be edited (409). The sequence never changes.
+         * @description Only the author edits. A stale expectedVersion is 412. A deleted message or a system message cannot be edited (409). The sequence never changes. When the text changes, mentions replaces the message's mentions (same rules as the send); the text unchanged changes nothing.
          */
         patch: operations["Chat.Messages.Edit"];
         trace?: never;
@@ -920,7 +940,7 @@ export interface paths {
         put?: never;
         /**
          * Reply in the thread of a message
-         * @description clientMessageId is the sender's key: a retry with the same one returns the stored reply with 200 and stores nothing; the first reply returns 201. alsoSendToChannel also shows the reply in the channel's main flow. The reply takes the next thread sequence. Replying reopens an archived thread and makes the replier and the root's author followers. An archived channel is 409 channel-archived; a reply to a reply or a system message is 409 thread-root-invalid; a deleted root with no replies is 409 message-deleted. A space the caller is not a member of is 404.
+         * @description clientMessageId is the sender's key: a retry with the same one returns the stored reply with 200 and stores nothing; the first reply returns 201. alsoSendToChannel also shows the reply in the channel's main flow. The reply takes the next thread sequence. Replying reopens an archived thread and makes the replier and the root's author followers. An archived channel is 409 channel-archived; a reply to a reply or a system message is 409 thread-root-invalid; a deleted root with no replies is 409 message-deleted. A space the caller is not a member of is 404. mentions and confirmBroadcast work as in a send.
          */
         post: operations["Chat.Threads.Reply"];
         delete?: never;
@@ -7595,6 +7615,8 @@ export interface components {
             content?: string | null;
             /** Format: int64 */
             expectedVersion?: number | null;
+            mentions?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.MentionRequest"][] | null;
+            confirmBroadcast?: boolean | null;
         };
         "Notrelix.API.Contracts.Chat.Requests.FollowThreadRequest": {
             following?: boolean | null;
@@ -7608,6 +7630,17 @@ export interface components {
             /** Format: int64 */
             upToReplySequence?: number | null;
         };
+        "Notrelix.API.Contracts.Chat.Requests.MentionRequest": {
+            kind?: string | null;
+            /** Format: int32 */
+            start?: number | null;
+            /** Format: int32 */
+            length?: number | null;
+            /** Format: uuid */
+            userId?: string | null;
+            /** Format: uuid */
+            spaceId?: string | null;
+        };
         "Notrelix.API.Contracts.Chat.Requests.ReorderChannelsRequest": {
             placements?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.ChannelPlacementRequest"][] | null;
         };
@@ -7615,12 +7648,16 @@ export interface components {
             content?: string | null;
             clientMessageId?: string | null;
             alsoSendToChannel?: boolean | null;
+            mentions?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.MentionRequest"][] | null;
+            confirmBroadcast?: boolean | null;
         };
         "Notrelix.API.Contracts.Chat.Requests.SendMessageRequest": {
             content?: string | null;
             clientMessageId?: string | null;
             /** Format: uuid */
             replyToId?: string | null;
+            mentions?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.MentionRequest"][] | null;
+            confirmBroadcast?: boolean | null;
         };
         "Notrelix.API.Contracts.Chat.Requests.SetConversationVisibilityRequest": {
             hidden?: boolean | null;
@@ -9204,6 +9241,19 @@ export interface components {
             conversation?: components["schemas"]["Notrelix.Application.Features.Chat.Conversations.DTOs.ConversationDto"];
             created?: boolean;
             skipped?: string[] | null;
+        };
+        "Notrelix.Application.Features.Chat.Mentions.DTOs.MentionableDto": {
+            /** Format: uuid */
+            userId?: string;
+            inSpace?: boolean;
+        };
+        "Notrelix.Application.Features.Chat.Mentions.DTOs.MentionablesDto": {
+            people?: components["schemas"]["Notrelix.Application.Features.Chat.Mentions.DTOs.MentionableDto"][] | null;
+            canBroadcast?: boolean;
+            /** Format: int32 */
+            broadcastConfirmAbove?: number;
+            /** Format: int32 */
+            memberCount?: number;
         };
         "Notrelix.Application.Features.Chat.Reactions.DTOs.MessageReactionsDto": {
             /** Format: uuid */
@@ -13509,6 +13559,47 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Mentions.ListMentionables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                spaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Mentions.DTOs.MentionablesDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

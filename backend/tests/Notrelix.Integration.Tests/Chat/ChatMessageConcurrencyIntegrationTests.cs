@@ -110,7 +110,8 @@ public sealed class ChatMessageConcurrencyIntegrationTests : IAsyncLifetime
             RequestAs(_member).Object,
             ActiveMembers(_member).Object,
             new ChatSpaceSequenceAllocator(context),
-            new FixedClock(Now));
+            new FixedClock(Now),
+            Mock.Of<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer>());
 
         var result = await handler.Handle(
             new SendMessageCommand(_workspaceId, _spaceId, content, clientMessageId, null),
@@ -176,7 +177,8 @@ public sealed class ChatMessageConcurrencyIntegrationTests : IAsyncLifetime
                 RequestAs(_member).Object,
                 ActiveMembers(_member).Object,
                 new ChatSpaceSequenceAllocator(context),
-                new FixedClock(Now));
+                new FixedClock(Now),
+            Mock.Of<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer>());
             await handler.Handle(new SendMessageCommand(_workspaceId, _spaceId, "rolled back", "client-rollback", null), CancellationToken.None);
             await context.SaveChangesAsync();
             await transaction.RollbackAsync();

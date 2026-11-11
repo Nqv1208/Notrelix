@@ -1,6 +1,8 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Chat.Mentions.DTOs;
+using Notrelix.Application.Features.Chat.Mentions.Services;
 using Notrelix.Application.Features.Chat.Conversations.Services;
 using Notrelix.Application.Features.Chat.Messages.DTOs;
 using Notrelix.Application.Features.Chat.Messages.Services;
@@ -15,9 +17,18 @@ namespace Notrelix.Application.Features.Chat.Messages.Commands.SendMessage;
 /// Sends a message to a space (UC-CHT-B01, B06). Only a member of the space can send, and an archived channel refuses
 /// the send (409 channel-archived). A repeat with the same clientMessageId from the same author returns the stored
 /// message and stores nothing (200). The sequence is assigned in the same transaction as the insert.
+/// Mentions are validated here against the space, never trusted from the client (CHT-010, COL-030, UC-CHT-G01 to G04): see
+/// <see cref="MentionResolver"/>. ConfirmBroadcast acknowledges an @channel or @here in a channel above the member threshold.
 /// </summary>
 [IdempotencyOperation("chat.messages.send-message.v1")]
-public record SendMessageCommand(Guid WorkspaceId, Guid SpaceId, string Content, string ClientMessageId, Guid? ReplyToId)
+public record SendMessageCommand(
+    Guid WorkspaceId,
+    Guid SpaceId,
+    string Content,
+    string ClientMessageId,
+    Guid? ReplyToId,
+    IReadOnlyList<MentionInput>? Mentions = null,
+    bool ConfirmBroadcast = false)
     : ICommand<Result<SendMessageResultDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ChatMessagePost;
@@ -29,13 +40,14 @@ public class SendMessageCommandHandler(
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
     ISpaceSequenceAllocator sequences,
-    IDateTimeProvider clock) : IRequestHandler<SendMessageCommand, Result<SendMessageResultDto>>
+    IDateTimeProvider clock,
+    IBroadcastAuthorizer broadcast) : IRequestHandler<SendMessageCommand, Result<SendMessageResultDto>>
 {
     public async Task<Result<SendMessageResultDto>> Handle(SendMessageCommand request, CancellationToken cancellationToken)
     {
         var userId = requestContext.UserId;
         var accountId = requestContext.RequireAccountId();
-        await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
+        var caller = await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
 
         var space = await ChannelAccess.LoadLiveAsync(db, request.WorkspaceId, request.SpaceId, cancellationToken);
         if (!space.IsActiveMember(userId))
@@ -67,8 +79,15 @@ public class SendMessageCommandHandler(
             m => m.SpaceId == space.Id && m.AuthorId == userId && m.ClientMessageId == clientMessageId,
             cancellationToken);
         if (stored is not null)
+        {
+            // A retry returns the stored message and the warnings its stored mentions give now; nothing is stored again.
+            var storedMentions = (await db.ChatMessageMentions.AsNoTracking()
+                .Where(m => m.MessageId == stored.Id).OrderBy(m => m.Start).ToListAsync(cancellationToken))
+                .Select(m => m.ToSpan()).ToList();
+            var again = new MentionResolution(storedMentions, MentionResolver.StoredWarnings(space, storedMentions));
             return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-                await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, stored, cancellationToken), Created: false));
+                await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, stored, cancellationToken, again), Created: false));
+        }
 
         if (request.ReplyToId is { } replyToId)
         {
@@ -77,6 +96,9 @@ public class SendMessageCommandHandler(
             if (!quoted)
                 throw new NotFoundException(nameof(Message), replyToId);
         }
+
+        var resolution = await MentionResolver.ResolveAsync(
+            db, members, broadcast, space, caller, request.Content, request.Mentions, request.ConfirmBroadcast, cancellationToken);
 
         var sequence = await sequences.NextAsync(space.Id, cancellationToken);
         var message = Message.CreateUserMessage(
@@ -91,10 +113,11 @@ public class SendMessageCommandHandler(
             clock.UtcNow);
 
         db.ChatMessages.Add(message);
+        await MessageMentions.ReplaceAsync(db, message, resolution.Spans, hadBefore: false, cancellationToken);
         // A new message brings a hidden conversation back to every list that hid it (UC-CHT-E07).
         ConversationVisibility.ShowAgain(space);
         return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-            await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, message, cancellationToken), Created: true));
+            await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, message, cancellationToken, resolution), Created: true));
     }
 }
 
