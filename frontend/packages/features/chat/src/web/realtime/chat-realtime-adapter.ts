@@ -17,13 +17,18 @@
 
 import type { QueryClient } from "@tanstack/react-query";
 import { CHAT_LIMITS, type ChatService } from "../../core";
-import type { ChatUnreadSummary } from "../../core/types/chat";
+import type { ChatMessage, ChatUnreadSummary } from "../../core/types/chat";
 import type { PendingMessage } from "../../core/model/chat-model";
 import {
   isChatMessageEvent,
   parseChatMessageFrame,
+  parseChatReactionFrame,
+  parseChatSpaceFrame,
   parseChatUnreadFrame,
+  CHAT_REACTION_EVENT,
+  CHAT_SPACE_EVENT,
   CHAT_UNREAD_EVENT,
+  type ChatMessageFramePayload,
 } from "../../core/realtime/chat-frames";
 import { chatQueryKeys } from "../../query/keys";
 import {
@@ -33,10 +38,16 @@ import {
   applyUnreadFrame,
   lastKnownSequence,
   mergeHistoryPage,
+  messageFromCreatedFrame,
   windowIsLive,
   type MessageFrameOutcome,
 } from "../query/chat-realtime-reducers";
 import type { ChatMessagesCache } from "../query/message-cache";
+import {
+  applyReactionChange,
+  patchMessageInData,
+} from "../query/interaction-cache";
+import { applyStoredReply } from "../query/thread-writes";
 
 export interface ChatRealtimeEnvelope {
   readonly eventType: string;
@@ -74,6 +85,8 @@ export interface ChatRecoverySignal {
 export interface ChatRealtimeAdapterOptions {
   readonly queryClient: QueryClient;
   readonly service: Pick<ChatService, "listMessages">;
+  /** The caller's user id: a reaction frame of the caller is already applied by the caller's own write. */
+  readonly viewerId?: string;
 }
 
 /** Bounded backfill: past this many pages the window is reloaded instead (C04, repeated gaps). */
@@ -97,7 +110,7 @@ export interface ChatRealtimeAdapter {
 export function createChatRealtimeAdapter(
   options: ChatRealtimeAdapterOptions,
 ): ChatRealtimeAdapter {
-  const { queryClient, service } = options;
+  const { queryClient, service, viewerId } = options;
 
   /** Pages after `from` (or after the last known sequence) merged into the live window. */
   async function backfill(
@@ -137,6 +150,28 @@ export function createChatRealtimeAdapter(
     }
   }
 
+  /**
+   * A thread reply: it joins its open thread and moves its root's reply count. It
+   * is not inserted into the channel history, because the frame does not say
+   * whether the author also sent it to the channel; the channel backfill from
+   * the sequence before it brings the reply in only when it is in the main flow.
+   */
+  function applyThreadReplyCreated(
+    frame: ChatMessageFramePayload,
+    envelope: ChatRealtimeEnvelope,
+    workspaceId: string,
+    channelId: string,
+  ): Promise<void> {
+    const rootId = frame.threadRootId!;
+    const reply: ChatMessage = {
+      ...messageFromCreatedFrame(frame, channelId, envelope.timestamp),
+      threadRootId: rootId,
+      threadSequence: frame.threadSequence,
+    };
+    applyStoredReply(queryClient, workspaceId, reply);
+    return backfill(workspaceId, channelId, frame.sequence - 1);
+  }
+
   function applyChannelFrame(
     envelope: ChatRealtimeEnvelope,
     workspaceId: string,
@@ -149,6 +184,32 @@ export function createChatRealtimeAdapter(
       : parseChatMessageFrame(envelope.payload);
     // Without a usable payload the missing range is fetched after the last known sequence.
     if (!frame) return backfill(workspaceId, channelId);
+
+    if (frame.threadRootId !== null) {
+      // The thread's own cache and count move; a reply edit or delete also reaches the loaded thread.
+      if (envelope.eventType === "chat.message.created") {
+        return applyThreadReplyCreated(frame, envelope, workspaceId, channelId);
+      }
+      queryClient.setQueriesData(
+        { queryKey: chatQueryKeys.thread(workspaceId, frame.threadRootId) },
+        (data: unknown) =>
+          patchMessageInData(data, frame.id, (message) =>
+            message.version >= frame.version
+              ? message
+              : {
+                  ...message,
+                  content: frame.deleted ? null : frame.content,
+                  edited: frame.editedAt !== null || message.edited,
+                  editedAt: frame.editedAt ?? message.editedAt,
+                  deleted: frame.deleted,
+                  deletedAt: frame.deleted
+                    ? (message.deletedAt ?? envelope.timestamp)
+                    : message.deletedAt,
+                  version: frame.version,
+                },
+          ),
+      );
+    }
 
     let refetchFrom: number | null = null;
     const reduce = (cache: ChatMessagesCache): ChatMessagesCache => {
@@ -223,21 +284,80 @@ export function createChatRealtimeAdapter(
     }
   }
 
+  /** A reaction of a message changed: the summary of the message in every loaded cache moves. */
+  function applyReactionFrame(
+    envelope: ChatRealtimeEnvelope,
+    workspaceId: string,
+  ): void {
+    const frame = envelope.payloadOmitted
+      ? null
+      : parseChatReactionFrame(envelope.payload);
+    if (!frame) return;
+    const actorIsViewer = viewerId !== undefined && frame.actorId === viewerId;
+    queryClient.setQueriesData(
+      { queryKey: chatQueryKeys.all(workspaceId) },
+      (data: unknown) =>
+        patchMessageInData(data, frame.messageId, (message) => ({
+          ...message,
+          reactions: applyReactionChange(message.reactions ?? [], {
+            kind: frame.kind,
+            change: frame.change,
+            actorIsViewer,
+          }),
+        })),
+    );
+  }
+
+  /** A pin of the channel changed: the pin list is read again (the header and the Pins panel follow it). */
+  function applySpaceFrame(
+    envelope: ChatRealtimeEnvelope,
+    workspaceId: string,
+    channelId: string,
+  ): Promise<void> {
+    const frame = envelope.payloadOmitted
+      ? null
+      : parseChatSpaceFrame(envelope.payload);
+    if (!frame) return Promise.resolve();
+    return queryClient
+      .invalidateQueries({
+        queryKey: chatQueryKeys.pins(workspaceId, channelId),
+      })
+      .then(() => undefined);
+  }
+
   return {
     id: "chat-adapter",
     supports(envelope: ChatRealtimeEnvelope): boolean {
       return (
         isChatMessageEvent(envelope.eventType) ||
-        envelope.eventType === CHAT_UNREAD_EVENT
+        envelope.eventType === CHAT_UNREAD_EVENT ||
+        envelope.eventType === CHAT_REACTION_EVENT ||
+        envelope.eventType === CHAT_SPACE_EVENT
       );
     },
     async validateAndHandle(envelope, context): Promise<void> {
       // A frame of another workspace belongs to a previous scope (NRX-014).
       if (envelope.workspaceId !== context.workspaceId) return;
-      if (isChatMessageEvent(envelope.eventType)) {
+      if (
+        isChatMessageEvent(envelope.eventType) ||
+        envelope.eventType === CHAT_REACTION_EVENT ||
+        envelope.eventType === CHAT_SPACE_EVENT
+      ) {
         // Only the open channel's stream is subscribed; any other channel is ignored.
         if (!context.channelId || envelope.resourceId !== context.channelId)
           return;
+        if (envelope.eventType === CHAT_REACTION_EVENT) {
+          applyReactionFrame(envelope, context.workspaceId);
+          return;
+        }
+        if (envelope.eventType === CHAT_SPACE_EVENT) {
+          await applySpaceFrame(
+            envelope,
+            context.workspaceId,
+            context.channelId,
+          );
+          return;
+        }
         await applyChannelFrame(
           envelope,
           context.workspaceId,
@@ -265,6 +385,9 @@ export function createChatRealtimeAdapter(
         }
         // Subscribed, gap, duplicate or reset: backfill after the last known sequence (C04, C05).
         await backfill(workspaceId, channelId);
+        await queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.pins(workspaceId, channelId),
+        });
         return;
       }
       if (signal.scope.kind === "user") {

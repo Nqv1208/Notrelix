@@ -77,6 +77,8 @@ function frame(
     createdAt: AT,
     editedAt: null,
     replyToId: null,
+    threadRootId: null,
+    threadSequence: null,
     version: 1,
     clientMessageId: null,
     ...overrides,

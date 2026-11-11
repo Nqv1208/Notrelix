@@ -62,12 +62,92 @@ export interface ChatMessage {
   readonly content: string | null;
   readonly clientMessageId: string | null;
   readonly replyToId: string | null;
+  /** The root of the thread this reply belongs to; null for a message of the main flow. */
+  readonly threadRootId?: string | null;
+  /** The reply's place in its thread (gap-free per thread); null outside a thread. */
+  readonly threadSequence?: number | null;
+  /** A thread reply the author also sent to the channel is in the main flow too. */
+  readonly alsoSentToChannel?: boolean;
+  /** The live quote of `replyToId`; null when the message quotes nothing. */
+  readonly replyPreview?: ChatReplyPreview | null;
+  /** The reaction summary, one entry per palette emoji that has reactions. */
+  readonly reactions?: readonly ChatReactionSummary[];
   readonly edited: boolean;
   readonly deleted: boolean;
   readonly createdAt: string;
   readonly editedAt: string | null;
   readonly deletedAt: string | null;
   readonly version: number;
+}
+
+/** The message a reply quotes, as the caller may see it (a tombstone keeps author and sequence). */
+export interface ChatReplyPreview {
+  readonly messageId: string;
+  readonly sequence: number;
+  readonly authorId: string;
+  readonly content: string | null;
+  readonly deleted: boolean;
+}
+
+export interface ChatReactionSummary {
+  readonly emoji: string;
+  readonly count: number;
+  readonly reactedByMe: boolean;
+}
+
+export interface ChatMessageReactions {
+  readonly messageId: string;
+  readonly reactions: readonly ChatReactionSummary[];
+}
+
+export interface ChatReactorPage {
+  readonly items: readonly {
+    emoji: string;
+    userId: string;
+    reactedAt: string;
+  }[];
+  readonly nextCursor: string | null;
+}
+
+/** ThreadSummaryDto: the reply count and the caller's follow state of one thread. */
+export interface ChatThreadSummary {
+  readonly rootMessageId: string;
+  readonly spaceId: string;
+  readonly replyCount: number;
+  readonly lastReplyAt: string | null;
+  readonly archived: boolean;
+  readonly following: boolean;
+  readonly muted: boolean;
+  readonly unreadReplies: number;
+}
+
+/** `GET /messages/{rootId}/replies`: the root, its summary and one page of replies (ascending). */
+export interface ChatThreadRepliesPage {
+  readonly root: ChatMessage;
+  readonly thread: ChatThreadSummary;
+  readonly items: readonly ChatMessage[];
+  readonly hasNewer: boolean;
+}
+
+export interface ChatFollowedThread {
+  readonly root: ChatMessage;
+  readonly thread: ChatThreadSummary;
+}
+
+export interface ChatFollowedThreadPage {
+  readonly items: readonly ChatFollowedThread[];
+  readonly nextCursor: string | null;
+}
+
+export interface ChatPin {
+  readonly message: ChatMessage;
+  readonly pinnedBy: string;
+  readonly pinnedAt: string;
+}
+
+export interface ChatPinPage {
+  readonly items: readonly ChatPin[];
+  readonly nextCursor: string | null;
 }
 
 /** One page of messages, ascending by sequence. */
@@ -136,3 +216,18 @@ export interface ChatMessageCursor {
   readonly after?: number;
   readonly around?: number;
 }
+
+/** The reply thread cursor: the thread sequence of the last reply already held. */
+export interface ChatThreadCursor {
+  readonly after?: number;
+}
+
+/** The reaction palette the server accepts (ReactionKinds.Palette); anything else is refused. */
+export const CHAT_REACTION_PALETTE = [
+  "👍",
+  "❤️",
+  "😄",
+  "🎉",
+  "👀",
+  "🚀",
+] as const;
