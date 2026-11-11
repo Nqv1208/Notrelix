@@ -48,4 +48,10 @@ public static class ChatRuleCodes
 
     /// <summary>The reaction kind is not on the palette (400, UC-CHT-G06).</summary>
     public const string ReactionKindInvalid = "reaction-kind-invalid";
+
+    /// <summary>A person names themselves as the other side of a direct conversation or a block (400, UC-CHT-E01, E06).</summary>
+    public const string SelfTarget = "self-target";
+
+    /// <summary>A group conversation needs at least three participants, the caller included (400, UC-CHT-E02).</summary>
+    public const string GroupTooSmall = "group-too-small";
 }
