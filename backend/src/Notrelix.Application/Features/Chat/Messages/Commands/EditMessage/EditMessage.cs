@@ -1,6 +1,8 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Chat.Mentions.DTOs;
+using Notrelix.Application.Features.Chat.Mentions.Services;
 using Notrelix.Application.Features.Chat.Messages.DTOs;
 using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
@@ -11,9 +13,17 @@ namespace Notrelix.Application.Features.Chat.Messages.Commands.EditMessage;
 
 /// <summary>
 /// Replaces a message's text (UC-CHT-B04). Only the author edits. A stale expectedVersion is 412; a message the caller
-/// cannot see is the same NotFound as a missing one. The sequence never changes.
+/// cannot see is the same NotFound as a missing one. The sequence never changes. An edit that changes the text replaces
+/// the message's mentions with the ones sent (the positions of the old ones no longer fit), resolved as in a send (UC-CHT-G01 to G04);
+/// an edit that leaves the text as it is changes nothing.
 /// </summary>
-public record EditMessageCommand(Guid WorkspaceId, Guid MessageId, string Content, long ExpectedVersion)
+public record EditMessageCommand(
+    Guid WorkspaceId,
+    Guid MessageId,
+    string Content,
+    long ExpectedVersion,
+    IReadOnlyList<MentionInput>? Mentions = null,
+    bool ConfirmBroadcast = false)
     : ICommand<Result<MessageDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ChatMessagePost;
@@ -25,7 +35,8 @@ public class EditMessageCommandHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
-    IDateTimeProvider clock) : IRequestHandler<EditMessageCommand, Result<MessageDto>>
+    IDateTimeProvider clock,
+    IBroadcastAuthorizer broadcast) : IRequestHandler<EditMessageCommand, Result<MessageDto>>
 {
     public async Task<Result<MessageDto>> Handle(EditMessageCommand request, CancellationToken cancellationToken)
     {
@@ -45,7 +56,14 @@ public class EditMessageCommandHandler(
         if (space.IsArchived)
             throw new ConflictException("The channel is archived and read-only.", ChatRuleCodes.ChannelArchived);
 
-        message.Edit(request.Content, userId, clock.UtcNow);
+        var resolution = await MentionResolver.ResolveAsync(
+            db, members, broadcast, space, caller, request.Content, request.Mentions, request.ConfirmBroadcast, cancellationToken);
+        if (message.Edit(request.Content, userId, clock.UtcNow))
+        {
+            await MessageMentions.ReplaceAsync(db, message, resolution.Spans, hadBefore: true, cancellationToken);
+            return Result<MessageDto>.Success(await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, message, cancellationToken, resolution));
+        }
+
         return Result<MessageDto>.Success(await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, message, cancellationToken));
     }
 }

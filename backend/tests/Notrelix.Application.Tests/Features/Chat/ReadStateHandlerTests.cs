@@ -55,6 +55,7 @@ public class ReadStateHandlerTests
         _db.Setup(d => d.ChatMemberships).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.Memberships).ToList()).Object);
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(new List<ChannelGroup>()).Object);
         _db.Setup(d => d.ChatMessages).Returns(() => TestDbSet.Create(_messages).Object);
+        _db.Setup(d => d.ChatMessageMentions).Returns(() => TestDbSet.Create(new List<MessageMention>()).Object);
 
         _members.Setup(m => m.FindAsync(_workspaceId, _owner, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new WorkspaceMemberFact(_owner, "Owner", true));

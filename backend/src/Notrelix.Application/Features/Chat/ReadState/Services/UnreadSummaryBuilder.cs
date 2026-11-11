@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.Mentions.Services;
 using Notrelix.Application.Features.Chat.ReadState.DTOs;
 using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Spaces;
@@ -6,9 +7,9 @@ using Notrelix.Domain.Chat.Spaces;
 namespace Notrelix.Application.Features.Chat.ReadState.Services;
 
 /// <summary>
-/// Builds the unread summary of a person in a Workspace (UC-CHT-D01). Two statements: the person's live memberships with
-/// the space names, and one grouped count of the messages after each boundary. The count is computed in the database;
-/// no message is loaded. A message counts when it is a user message, is not deleted, is not the person's own, and its
+/// Builds the unread summary of a person in a Workspace (UC-CHT-D01, D04). Three statements: the person's live memberships with
+/// the space names, one grouped count of the messages after each boundary and one grouped count of the mentions of the person
+/// among them (see <see cref="MentionCounts"/>). The counts are computed in the database; no message is loaded. A message counts when it is a user message, is not deleted, is not the person's own, and its
 /// sequence is after the person's read boundary in its space.
 /// </summary>
 public static class UnreadSummaryBuilder
@@ -32,7 +33,6 @@ public static class UnreadSummaryBuilder
                 s.LastSequence,
                 m.NotificationLevel,
                 m.MutedUntil,
-                m.MentionCount,
             }).ToListAsync(cancellationToken);
 
         var unread = await (
@@ -49,6 +49,7 @@ public static class UnreadSummaryBuilder
             select new { SpaceId = g.Key, Count = g.Count(), First = g.Min(x => x.Sequence) }).ToListAsync(cancellationToken);
 
         var counts = unread.ToDictionary(u => u.SpaceId);
+        var mentions = await MentionCounts.ForUserAsync(db, workspaceId, userId, cancellationToken);
         var rows = spaces
             .OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
             .ThenBy(s => s.SpaceId)
@@ -64,7 +65,7 @@ public static class UnreadSummaryBuilder
                     s.LastSequence,
                     count?.Count ?? 0,
                     count is null ? null : (long?)count.First,
-                    s.MentionCount,
+                    mentions.GetValueOrDefault(s.SpaceId),
                     level.ToWire(),
                     muted);
             })

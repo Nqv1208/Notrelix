@@ -110,11 +110,14 @@ Billing_Usage_SoftLimitCannotBeNegative|Billing|Billing_Usage_SoftLimitCannotBeN
 Billing_Usage_SoftLimitCannotExceedHard|Billing|Billing_Usage_SoftLimitCannotExceedHard
 Billing_Usage_StartMustBeBeforeEnd|Billing|Billing_Usage_StartMustBeBeforeEnd
 Billing_Usage_ValueCannotBeNegative|Billing|Billing_Usage_ValueCannotBeNegative
+broadcast-confirmation-required|Chat|BroadcastConfirmationRequired
 channel-archived|Chat|ChannelArchived
 invalid-position|Chat|InvalidPosition
 kind-not-supported|Chat|KindNotSupported
 last-manager|Chat|LastManager
 limit-reached|Chat|LimitReached
+mention-invalid|Chat|MentionInvalid
+mention-limit-exceeded|Chat|MentionLimitExceeded
 message-content-invalid|Chat|MessageContentInvalid
 message-deleted|Chat|MessageDeleted
 message-not-author|Chat|MessageNotAuthor
