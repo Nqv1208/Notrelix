@@ -17,6 +17,13 @@ describe("chat endpoint paths", () => {
       chat.message("w", hostile),
       chat.markRead("w", hostile),
       chat.notificationLevel("w", hostile),
+      chat.threadReplies("w", hostile),
+      chat.threadFollow("w", hostile),
+      chat.threadRead("w", hostile),
+      chat.messagePin("w", hostile),
+      chat.spacePins("w", hostile),
+      chat.messageReaction("w", "m", hostile),
+      chat.messageReactors("w", hostile),
     ];
     for (const path of paths) {
       expect(path).toContain(encoded);
@@ -24,6 +31,30 @@ describe("chat endpoint paths", () => {
       expect(path).not.toContain("?");
       expect(path).not.toContain("#");
     }
+  });
+
+  it("builds the thread, pin and reaction paths of the Chat REST contract", () => {
+    const chat = endpoints.chat;
+    expect(chat.threadReplies("w", "r1")).toBe(
+      "/workspaces/w/chat/messages/r1/replies",
+    );
+    expect(chat.threadFollow("w", "t1")).toBe(
+      "/workspaces/w/chat/threads/t1/follow",
+    );
+    expect(chat.threadRead("w", "t1")).toBe(
+      "/workspaces/w/chat/threads/t1/read",
+    );
+    expect(chat.followedThreads("w")).toBe("/workspaces/w/chat/me/threads");
+    expect(chat.messagePin("w", "m1")).toBe(
+      "/workspaces/w/chat/messages/m1/pin",
+    );
+    expect(chat.spacePins("w", "s1")).toBe("/workspaces/w/chat/spaces/s1/pins");
+    expect(chat.messageReaction("w", "m1", "👍")).toBe(
+      `/workspaces/w/chat/messages/m1/reactions/${encodeURIComponent("👍")}`,
+    );
+    expect(chat.messageReactors("w", "m1")).toBe(
+      "/workspaces/w/chat/messages/m1/reactions",
+    );
   });
 
   it("keeps a plain id as it is", () => {

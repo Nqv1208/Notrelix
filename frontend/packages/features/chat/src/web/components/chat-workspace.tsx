@@ -15,7 +15,15 @@ import {
   SheetTitle,
   useIsMobile,
 } from "@notrelix/ui-web";
-import { Archive, MessageSquareText, Plus, WifiOff } from "lucide-react";
+import {
+  Archive,
+  MessageSquareText,
+  MessagesSquare,
+  Pin,
+  Plus,
+  WifiOff,
+  X,
+} from "lucide-react";
 import {
   chatFailureOf,
   type ChatFailureKind,
@@ -33,6 +41,12 @@ import {
   type ChatMessage,
   type ChatNotificationLevel,
 } from "../../core/types/chat";
+import { cn } from "@notrelix/ui-web";
+import { ReplyChip } from "./chat-quote";
+import { ChatThreadPanel } from "./chat-thread-panel";
+import { PinnedBar, PinsPanel } from "./chat-pins";
+import { FollowedThreadsPanel } from "./chat-followed-threads";
+import type { QuoteView } from "./chat-message-row";
 import {
   createChatHooks,
   flattenPages,
@@ -91,6 +105,12 @@ interface ChannelLock {
   /** The first unread sequence when the channel opened (the "New" divider). */
   readonly firstUnread: number | null;
 }
+
+/** The right-hand panel: one thread, the channel's pins, or the threads the caller follows. */
+type SidePanel =
+  | { readonly kind: "thread"; readonly rootId: string }
+  | { readonly kind: "pins" }
+  | { readonly kind: "following" };
 
 interface EditState {
   readonly messageId: string;
@@ -220,6 +240,22 @@ export function ChatWorkspace({
   const updater = hooks.useUpdateChannel(ws, ch);
   const archiver = hooks.useArchiveChannel(ws, ch);
   const joiner = hooks.useJoinChannel(ws);
+  const reactor = hooks.useReaction(ws);
+  const pinner = hooks.usePinMessage(ws, ch);
+  const pinQuery = hooks.usePins(ws, ch);
+  const threadCountQuery = hooks.useThreadCounts(ws, ch);
+  const pinnedNewest = pinQuery.data?.pages[0]?.items[0]?.message ?? null;
+  const pinnedIds = useMemo(
+    () =>
+      new Set(
+        (pinQuery.data?.pages.flatMap((page) => page.items) ?? []).map(
+          (pin) => pin.message.id,
+        ),
+      ),
+    [pinQuery.data],
+  );
+  const pinCount =
+    pinQuery.data?.pages.reduce((sum, page) => sum + page.items.length, 0) ?? 0;
 
   // ─── Local interaction state ──────────────────────────────────────────────
   // Drafts are kept per space while the page is open (UC-CHT-B07). A feature package does not touch browser
@@ -238,6 +274,8 @@ export function ChatWorkspace({
   const [renameError, setRenameError] = useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [panel, setPanel] = useState<SidePanel | null>(null);
   const requestedFor = useRef<string | null>(null);
   const nonce = useRef(0);
 
@@ -303,12 +341,73 @@ export function ChatWorkspace({
     });
   }
 
+  // A reply and an open panel belong to one channel: both close when the channel changes.
+  useEffect(() => {
+    setReplyTo(null);
+    setPanel(null);
+  }, [channelId]);
+
   function handleSend(content: string) {
     if (!channelId) return;
     if (hasNewer) jumpToLatest();
-    sender.send(content);
+    sender.send(content, replyTo?.id ?? null);
+    setReplyTo(null);
     setDraft("");
     request("bottom");
+  }
+
+  function handleReact(message: ChatMessage, emoji: string, add: boolean) {
+    reactor.mutate(
+      { messageId: message.id, kind: emoji, add },
+      { onError: () => setNotice(copy.reactions.failed) },
+    );
+  }
+
+  function handleTogglePin(message: ChatMessage, pinned: boolean) {
+    pinner.mutate(
+      { messageId: message.id, pinned },
+      {
+        onError: () =>
+          setNotice(pinned ? copy.pins.failed : copy.pins.unpinFailed),
+      },
+    );
+  }
+
+  function handleOpenThread(message: ChatMessage) {
+    setPanel({ kind: "thread", rootId: message.threadRootId ?? message.id });
+  }
+
+  function togglePanel(next: SidePanel) {
+    setPanel((current) =>
+      current !== null && current.kind === next.kind ? null : next,
+    );
+  }
+
+  function quoteOf(message: ChatMessage): QuoteView | null {
+    if (!message.replyToId) return null;
+    const target = flat.find((item) => item.id === message.replyToId);
+    if (target) {
+      return {
+        name: authorName(target.authorId),
+        text: target.deleted ? null : target.content,
+        deleted: target.deleted,
+        unavailable: false,
+      };
+    }
+    if (message.replyPreview) {
+      return {
+        name: authorName(message.replyPreview.authorId),
+        text: message.replyPreview.content,
+        deleted: message.replyPreview.deleted,
+        unavailable: false,
+      };
+    }
+    return {
+      name: copy.list.unknownAuthor,
+      text: null,
+      deleted: false,
+      unavailable: true,
+    };
   }
 
   function handleEditStart(message: ChatMessage) {
@@ -469,6 +568,10 @@ export function ChatWorkspace({
   }, [unread.data]);
   const authorName = (userId: string) =>
     people.get(userId) ?? copy.list.unknownAuthor;
+  const channelNameOf = (spaceId: string) =>
+    channels.data?.find((entry) => entry.id === spaceId)?.name ??
+    browse.data?.find((entry) => entry.id === spaceId)?.name ??
+    "";
 
   const detailFailure = detail.isError
     ? chatFailureOf(detail.error).kind
@@ -542,7 +645,10 @@ export function ChatWorkspace({
 
       {listOnly ? null : (
         <section
-          className="flex min-h-0 min-w-0 flex-1 flex-col"
+          className={cn(
+            "flex min-h-0 min-w-0 flex-1 flex-col",
+            isMobile && panel !== null && "hidden",
+          )}
           aria-label={copy.page.title}
         >
           {!channelId ? (
@@ -617,6 +723,37 @@ export function ChatWorkspace({
                   {copy.header.archivedNotice}
                 </ChatStatusBanner>
               ) : null}
+              <PinnedBar
+                copy={copy}
+                count={pinCount}
+                newest={pinnedNewest}
+                newestAuthor={
+                  pinnedNewest ? authorName(pinnedNewest.authorId) : ""
+                }
+                onOpen={() => togglePanel({ kind: "pins" })}
+              />
+              <div className="flex items-center justify-end gap-1 border-b border-border px-3 py-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={panel?.kind === "pins" ? "secondary" : "ghost"}
+                  aria-pressed={panel?.kind === "pins"}
+                  onClick={() => togglePanel({ kind: "pins" })}
+                >
+                  <Pin aria-hidden="true" />
+                  {copy.pins.tab}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={panel?.kind === "following" ? "secondary" : "ghost"}
+                  aria-pressed={panel?.kind === "following"}
+                  onClick={() => togglePanel({ kind: "following" })}
+                >
+                  <MessagesSquare aria-hidden="true" />
+                  {copy.thread.followedTab}
+                </Button>
+              </div>
               <ChatMessageList
                 channelName={channel.name}
                 rows={rows}
@@ -665,6 +802,20 @@ export function ChatWorkspace({
                 onRetryPending={(entry: PendingMessage) => sender.retry(entry)}
                 onDiscardPending={(id) => sender.discard(id)}
                 onBackToList={isMobile ? openList : undefined}
+                workspaceId={ws}
+                hooks={hooks}
+                pinnedIds={pinnedIds}
+                threadCounts={threadCountQuery.data}
+                quoteOf={quoteOf}
+                onReact={handleReact}
+                onReply={(message) => setReplyTo(message)}
+                onOpenThread={handleOpenThread}
+                onTogglePin={handleTogglePin}
+                onOpenQuote={(id) =>
+                  document
+                    .getElementById(`message-${id}`)
+                    ?.scrollIntoView({ block: "center" })
+                }
               />
               <ChatComposer
                 channelName={channel.name}
@@ -673,11 +824,132 @@ export function ChatWorkspace({
                 copy={copy}
                 onChange={setDraft}
                 onSend={handleSend}
+                leading={
+                  replyTo ? (
+                    <ReplyChip
+                      copy={copy}
+                      name={authorName(replyTo.authorId)}
+                      text={
+                        replyTo.deleted
+                          ? copy.list.deleted
+                          : (replyTo.content ?? "")
+                      }
+                      onCancel={() => setReplyTo(null)}
+                    />
+                  ) : null
+                }
               />
             </>
           )}
         </section>
       )}
+
+      {channelId && channel && panel !== null ? (
+        <aside
+          className={cn(
+            "flex min-h-0 w-full flex-col border-s border-border bg-background md:w-96 md:shrink-0",
+          )}
+          aria-label={copy.panel.label}
+          data-testid="chat-side-panel"
+        >
+          <div
+            role="tablist"
+            aria-label={copy.panel.label}
+            className="flex items-center gap-1 border-b border-border px-2 py-1"
+          >
+            {panel.kind === "thread" ? (
+              <button
+                type="button"
+                role="tab"
+                aria-selected
+                className="rounded-md bg-muted px-2.5 py-1.5 text-sm font-medium"
+              >
+                {copy.thread.title}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={panel.kind === "pins"}
+              onClick={() => setPanel({ kind: "pins" })}
+              className={cn(
+                "rounded-md px-2.5 py-1.5 text-sm font-medium",
+                panel.kind === "pins"
+                  ? "bg-muted"
+                  : "text-muted-foreground hover:bg-muted",
+              )}
+            >
+              {copy.pins.tab}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={panel.kind === "following"}
+              onClick={() => setPanel({ kind: "following" })}
+              className={cn(
+                "rounded-md px-2.5 py-1.5 text-sm font-medium",
+                panel.kind === "following"
+                  ? "bg-muted"
+                  : "text-muted-foreground hover:bg-muted",
+              )}
+            >
+              {copy.thread.followedTab}
+            </button>
+            <Button
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              className="ms-auto"
+              aria-label={copy.pins.close}
+              title={copy.pins.close}
+              onClick={() => setPanel(null)}
+            >
+              <X aria-hidden="true" />
+            </Button>
+          </div>
+          {panel.kind === "thread" ? (
+            <ChatThreadPanel
+              key={panel.rootId}
+              hooks={hooks}
+              workspaceId={ws}
+              rootId={panel.rootId}
+              viewerId={viewerId}
+              authorName={authorName}
+              copy={copy}
+              locale={locale}
+              timeZone={timeZone}
+              pinnedIds={pinnedIds}
+              onClose={() => setPanel(null)}
+              onReact={handleReact}
+              onTogglePin={handleTogglePin}
+            />
+          ) : null}
+          {panel.kind === "pins" ? (
+            <PinsPanel
+              hooks={hooks}
+              workspaceId={ws}
+              channelId={ch}
+              copy={copy}
+              locale={locale}
+              timeZone={timeZone}
+              authorName={authorName}
+              canUnpin={() => true}
+              unpinBusy={pinner.isPending}
+              onUnpin={(message) => handleTogglePin(message, false)}
+            />
+          ) : null}
+          {panel.kind === "following" ? (
+            <FollowedThreadsPanel
+              hooks={hooks}
+              workspaceId={ws}
+              copy={copy}
+              authorName={authorName}
+              channelName={channelNameOf}
+              onOpenThread={(rootId) => setPanel({ kind: "thread", rootId })}
+            />
+          ) : null}
+        </aside>
+      ) : null}
 
       <CreateChannelDialog
         open={createOpen}

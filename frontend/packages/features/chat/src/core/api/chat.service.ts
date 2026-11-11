@@ -3,12 +3,19 @@ import type {
   ChatChannel,
   ChatChannelDetail,
   ChatCreateChannelInput,
+  ChatFollowedThreadPage,
   ChatMessage,
   ChatMessagePage,
   ChatMessageCursor,
+  ChatMessageReactions,
   ChatNotificationLevel,
   ChatNotificationState,
+  ChatPin,
+  ChatPinPage,
+  ChatReactorPage,
   ChatReadBoundary,
+  ChatThreadCursor,
+  ChatThreadRepliesPage,
   ChatUnreadSummary,
   ChatUpdateChannelInput,
 } from "../types/chat";
@@ -54,6 +61,18 @@ export interface ChatEndpoints {
     markRead: (workspaceId: string, spaceId: string) => string;
     markAllRead: (workspaceId: string) => string;
     notificationLevel: (workspaceId: string, spaceId: string) => string;
+    threadReplies: (workspaceId: string, rootId: string) => string;
+    threadFollow: (workspaceId: string, threadId: string) => string;
+    threadRead: (workspaceId: string, threadId: string) => string;
+    followedThreads: (workspaceId: string) => string;
+    messagePin: (workspaceId: string, messageId: string) => string;
+    spacePins: (workspaceId: string, spaceId: string) => string;
+    messageReaction: (
+      workspaceId: string,
+      messageId: string,
+      kind: string,
+    ) => string;
+    messageReactors: (workspaceId: string, messageId: string) => string;
   };
 }
 
@@ -254,6 +273,145 @@ export function createChatService(
     /** `Chat.ReadState.MarkAllRead`: returns the unread summary after the change. */
     markAllRead(workspaceId: string): Promise<ChatUnreadSummary> {
       return api.post<ChatUnreadSummary>(paths.markAllRead(workspaceId));
+    },
+
+    /**
+     * `Chat.Threads.ListReplies`: the root, its summary and a page of replies. `after` is the thread
+     * sequence of the last reply already held (forward paging from the first reply).
+     */
+    listThreadReplies(
+      workspaceId: string,
+      rootId: string,
+      cursor: ChatThreadCursor,
+      limit: number,
+    ): Promise<ChatThreadRepliesPage> {
+      return api.get<ChatThreadRepliesPage>(
+        withQuery(paths.threadReplies(workspaceId, rootId), {
+          after: cursor.after,
+          limit,
+        }),
+      );
+    },
+
+    /**
+     * `Chat.Threads.Reply`. The clientMessageId is the sender's key and the Idempotency-Key, so a retry
+     * replays the stored reply (200) instead of storing a second one.
+     */
+    replyInThread(
+      workspaceId: string,
+      rootId: string,
+      input: {
+        content: string;
+        clientMessageId: string;
+        alsoSendToChannel: boolean;
+      },
+    ): Promise<ChatMessage> {
+      return api.post<ChatMessage>(
+        paths.threadReplies(workspaceId, rootId),
+        input,
+        { idempotencyKey: input.clientMessageId },
+      );
+    },
+
+    /** `Chat.Threads.Follow`: following true follows (muted true without notifications); false unfollows. */
+    setThreadFollow(
+      workspaceId: string,
+      threadId: string,
+      input: { following: boolean; muted: boolean },
+    ): Promise<{ rootMessageId: string; following: boolean; muted: boolean }> {
+      return api.put<{
+        rootMessageId: string;
+        following: boolean;
+        muted: boolean;
+      }>(paths.threadFollow(workspaceId, threadId), input);
+    },
+
+    /** `Chat.Threads.MarkRead`: moves the read pointer forward; returns the unread replies left. */
+    markThreadRead(
+      workspaceId: string,
+      threadId: string,
+      upToReplySequence: number,
+    ): Promise<{ rootMessageId: string; unreadReplies: number }> {
+      return api.put<{ rootMessageId: string; unreadReplies: number }>(
+        paths.threadRead(workspaceId, threadId),
+        { upToReplySequence },
+      );
+    },
+
+    /** `Chat.Threads.Mine`: the threads the caller follows, most recent reply first. */
+    listFollowedThreads(
+      workspaceId: string,
+      cursor: string | null,
+      limit: number,
+    ): Promise<ChatFollowedThreadPage> {
+      return api.get<ChatFollowedThreadPage>(
+        withQuery(paths.followedThreads(workspaceId), {
+          cursor: cursor ?? undefined,
+          limit,
+        }),
+      );
+    },
+
+    /** `Chat.Pins.Pin`: idempotent; a message already pinned is answered with its pin. */
+    pinMessage(workspaceId: string, messageId: string): Promise<ChatPin> {
+      return api.put<ChatPin>(paths.messagePin(workspaceId, messageId));
+    },
+
+    /** `Chat.Pins.Unpin`: idempotent (204 for a message that is not pinned). */
+    unpinMessage(workspaceId: string, messageId: string): Promise<void> {
+      return api.delete<void>(paths.messagePin(workspaceId, messageId));
+    },
+
+    /** `Chat.Pins.List`: the newest pin first. */
+    listPins(
+      workspaceId: string,
+      spaceId: string,
+      cursor: string | null,
+      limit: number,
+    ): Promise<ChatPinPage> {
+      return api.get<ChatPinPage>(
+        withQuery(paths.spacePins(workspaceId, spaceId), {
+          cursor: cursor ?? undefined,
+          limit,
+        }),
+      );
+    },
+
+    /** `Chat.Reactions.Add`: a palette emoji; idempotent (the summary answers either way). */
+    addReaction(
+      workspaceId: string,
+      messageId: string,
+      kind: string,
+    ): Promise<ChatMessageReactions> {
+      return api.put<ChatMessageReactions>(
+        paths.messageReaction(workspaceId, messageId, kind),
+      );
+    },
+
+    /** `Chat.Reactions.Remove`: idempotent; returns the summary after the change. */
+    removeReaction(
+      workspaceId: string,
+      messageId: string,
+      kind: string,
+    ): Promise<ChatMessageReactions> {
+      return api.delete<ChatMessageReactions>(
+        paths.messageReaction(workspaceId, messageId, kind),
+      );
+    },
+
+    /** `Chat.Reactions.ListReactors`: earliest reaction first; `kind` narrows to one emoji. */
+    listReactors(
+      workspaceId: string,
+      messageId: string,
+      input: { kind?: string; cursor?: string | null; limit: number },
+    ): Promise<ChatReactorPage> {
+      return api.get<ChatReactorPage>(
+        withQuery(paths.messageReactors(workspaceId, messageId), {
+          kind: input.kind,
+          cursor: input.cursor ?? undefined,
+          limit: input.limit,
+        }),
+      );
     },
 
     /** `Chat.ReadState.SetNotificationLevel`: a timed mute is level none with mutedUntil. */
