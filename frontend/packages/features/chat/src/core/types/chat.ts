@@ -9,6 +9,10 @@
 
 /** Limits the backend fixes (ChatLimits). The composer counts characters, not bytes. */
 export const CHAT_LIMITS = {
+  /** A group conversation holds at most this many people, the caller included. */
+  groupCap: 8,
+  /** A group conversation needs at least this many people, the caller included. */
+  groupMin: 3,
   messageMaxLength: 4000,
   /** The composer shows its counter from this many characters. */
   counterFrom: 3800,
@@ -231,3 +235,61 @@ export const CHAT_REACTION_PALETTE = [
   "👀",
   "🚀",
 ] as const;
+
+export type ChatConversationKind = "direct" | "group";
+
+export interface ChatConversationParticipant {
+  readonly userId: string;
+  readonly role: ChatMemberRole;
+  readonly joinedAt: string;
+}
+
+/** The newest message of a conversation as a list preview (text is null for a tombstone). */
+export interface ChatConversationPreview {
+  readonly sequence: number;
+  readonly authorId: string;
+  readonly kind: ChatMessageKind;
+  readonly text: string | null;
+  readonly createdAt: string;
+}
+
+/** ConversationDto: a direct or group conversation as the caller reads it. A conversation is a space. */
+export interface ChatConversation {
+  readonly id: string;
+  readonly kind: ChatConversationKind;
+  /** The group name; null for a direct conversation and for a group without one. */
+  readonly name: string | null;
+  readonly participants: readonly ChatConversationParticipant[];
+  readonly isHidden: boolean;
+  readonly notificationLevel: ChatNotificationLevel;
+  readonly unreadCount: number;
+  readonly lastMessage: ChatConversationPreview | null;
+  readonly lastActivityAt: string;
+  readonly version: number;
+  readonly createdAt: string;
+}
+
+export type ChatStartConversationInput =
+  | { readonly kind: "direct"; readonly userId: string }
+  | {
+      readonly kind: "group";
+      readonly userIds: readonly string[];
+      readonly name?: string | null;
+    };
+
+/** StartConversationResultDto: `created` is false when the direct conversation already existed. */
+export interface ChatStartConversationResult {
+  readonly conversation: ChatConversation;
+  readonly created: boolean;
+  readonly skipped: readonly string[];
+}
+
+export interface ChatConversationVisibility {
+  readonly conversationId: string;
+  readonly hidden: boolean;
+}
+
+export interface ChatPersonBlock {
+  readonly userId: string;
+  readonly blocked: boolean;
+}

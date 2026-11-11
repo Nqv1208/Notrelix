@@ -17,6 +17,8 @@ import {
 } from "@notrelix/ui-web";
 import {
   Archive,
+  Ban,
+  EyeOff,
   MessageSquareText,
   MessagesSquare,
   Pin,
@@ -36,7 +38,15 @@ import {
   type PendingMessage,
 } from "../../core/model/chat-model";
 import {
+  conversationTitle,
+  directCounterpart,
+  groupRoomLeft,
+} from "../../core/model/conversation-model";
+import {
+  CHAT_LIMITS,
   type ChatChannel,
+  type ChatConversation,
+  type ChatStartConversationInput,
   type ChatHistoryAnchor,
   type ChatMessage,
   type ChatNotificationLevel,
@@ -72,7 +82,14 @@ import {
   RenameChannelDialog,
   type CreateChannelValues,
 } from "./chat-dialogs";
-import { useChatCopy } from "./use-chat-copy";
+import { ChatNewMessageDialog } from "./chat-new-message-dialog";
+import {
+  ChatAddPeopleDialog,
+  ChatConversationDetails,
+  ChatConversationHeader,
+} from "./chat-conversation-view";
+import type { ChatConversationListView } from "./chat-conversation-list";
+import { fillCopy, pluralCopy, useChatCopy } from "./use-chat-copy";
 
 export type ChatViewerRole = "owner" | "admin" | "member" | "guest";
 
@@ -87,6 +104,12 @@ export interface ChatWorkspaceProps {
   readonly viewerRole: ChatViewerRole | null;
   /** The open channel, or null on the bare `/chat` route. */
   readonly channelId: string | null;
+  /** The open direct or group conversation (it takes the place of the channel), or null. */
+  readonly conversationId?: string | null;
+  /** Opens a conversation (the host's route). Without it the workspace offers no direct messages. */
+  readonly onOpenConversation?: (conversationId: string) => void;
+  /** Leaves the open conversation for the bare chat page (after leaving a group). */
+  readonly onCloseConversation?: () => void;
   /** Names of the Workspace members by user id (the host supplies them). */
   readonly people: ReadonlyMap<string, string>;
   readonly onOpenChannel: (channelId: string) => void;
@@ -110,7 +133,8 @@ interface ChannelLock {
 type SidePanel =
   | { readonly kind: "thread"; readonly rootId: string }
   | { readonly kind: "pins" }
-  | { readonly kind: "following" };
+  | { readonly kind: "following" }
+  | { readonly kind: "details" };
 
 interface EditState {
   readonly messageId: string;
@@ -148,7 +172,10 @@ export function ChatWorkspace({
   workspaceId,
   viewerId,
   viewerRole,
-  channelId,
+  channelId: channelProp,
+  conversationId = null,
+  onOpenConversation,
+  onCloseConversation,
   people,
   onOpenChannel,
   onBackToList,
@@ -165,7 +192,11 @@ export function ChatWorkspace({
     [deps.api, deps.endpoints],
   );
   const ws = workspaceId;
+  // A conversation is a space like a channel: from here on `channelId` is the id of the open space,
+  // whether it is a channel or a conversation.
+  const channelId = conversationId ?? channelProp;
   const ch = channelId ?? "";
+  const offersConversations = onOpenConversation !== undefined;
   const canBrowse = viewerRole !== null && viewerRole !== "guest";
   const canManageWorkspace = viewerRole === "owner" || viewerRole === "admin";
 
@@ -173,7 +204,12 @@ export function ChatWorkspace({
   const channels = hooks.useChannels(ws);
   const browse = hooks.useBrowseChannels(ws, canBrowse);
   const unread = hooks.useUnreadSummary(ws);
-  const detail = hooks.useChannel(ws, channelId ?? undefined);
+  const detail = hooks.useChannel(
+    ws,
+    conversationId ? undefined : (channelId ?? undefined),
+  );
+  const conversationsQuery = hooks.useConversations(ws);
+  const blockedPeople = hooks.useBlockedPeople(ws).data;
   const channel: ChatChannel | null =
     detail.data?.channel ??
     channels.data?.find((entry) => entry.id === channelId) ??
@@ -182,6 +218,31 @@ export function ChatWorkspace({
   const unreadRow = unread.data?.spaces.find(
     (row) => row.spaceId === channelId,
   );
+
+  // The conversation list leaves out a hidden conversation after a refetch; the open one is kept as last
+  // seen so the view can offer to show it again.
+  const knownConversations = useRef(new Map<string, ChatConversation>());
+  for (const entry of conversationsQuery.data ?? []) {
+    knownConversations.current.set(entry.id, entry);
+  }
+  const conversation: ChatConversation | null = conversationId
+    ? (conversationsQuery.data?.find((entry) => entry.id === conversationId) ??
+      knownConversations.current.get(conversationId) ??
+      null)
+    : null;
+
+  // A new message in a conversation moves its unread count; the list row (preview, order) follows it.
+  const unreadSignature = unread.data?.totalUnread ?? null;
+  const signatureSeen = useRef(unreadSignature);
+  useEffect(() => {
+    if (!offersConversations || signatureSeen.current === unreadSignature)
+      return;
+    signatureSeen.current = unreadSignature;
+    void queryClient.invalidateQueries({
+      queryKey: chatQueryKeys.conversations(ws),
+      refetchType: "active",
+    });
+  }, [unreadSignature, offersConversations, queryClient, ws]);
 
   // The history opens once per visit: at the first unread message when there is
   // one (D03), otherwise at the newest. The choice does not move while the reader
@@ -236,6 +297,11 @@ export function ChatWorkspace({
   const deleter = hooks.useDeleteMessage(ws, ch);
   const reader = hooks.useMarkRead(ws);
   const levelWriter = hooks.useSetNotificationLevel(ws);
+  const starter = hooks.useStartConversation(ws);
+  const participantAdder = hooks.useAddParticipants(ws, ch);
+  const leaver = hooks.useLeaveConversation(ws);
+  const visibility = hooks.useSetConversationVisibility(ws);
+  const blocker = hooks.useBlockPerson(ws);
   const creator = hooks.useCreateChannel(ws);
   const updater = hooks.useUpdateChannel(ws, ch);
   const archiver = hooks.useArchiveChannel(ws, ch);
@@ -274,6 +340,15 @@ export function ChatWorkspace({
   const [renameError, setRenameError] = useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
+  const [newMessageOpen, setNewMessageOpen] = useState(false);
+  const [newMessageError, setNewMessageError] = useState<string | null>(null);
+  const [addPeopleOpen, setAddPeopleOpen] = useState(false);
+  const [addPeopleError, setAddPeopleError] = useState<string | null>(null);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [blockTarget, setBlockTarget] = useState<{
+    readonly userId: string;
+    readonly blocked: boolean;
+  } | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [panel, setPanel] = useState<SidePanel | null>(null);
   const requestedFor = useRef<string | null>(null);
@@ -322,13 +397,22 @@ export function ChatWorkspace({
   }
 
   // ─── Handlers ─────────────────────────────────────────────────────────────
-  const composerDisabledReason = !channel
-    ? null
-    : channel.isArchived
-      ? copy.composer.archived
-      : !channel.isMember
-        ? copy.composer.notMember
-        : null;
+  const counterpartId = conversation
+    ? directCounterpart(conversation, viewerId)
+    : null;
+  const counterpartBlocked =
+    counterpartId !== null && (blockedPeople ?? []).includes(counterpartId);
+  const composerDisabledReason = conversation
+    ? counterpartBlocked
+      ? copy.dm.view.blockedComposer
+      : null
+    : !channel
+      ? null
+      : channel.isArchived
+        ? copy.composer.archived
+        : !channel.isMember
+          ? copy.composer.notMember
+          : null;
   const draft = drafts[ch] ?? "";
 
   function setDraft(value: string) {
@@ -543,6 +627,127 @@ export function ChatWorkspace({
     levelWriter.mutate({ spaceId: channelId, level });
   }
 
+  // ─── Conversations ────────────────────────────────────────────────────────
+  const nameOf = (userId: string) =>
+    people.get(userId) ?? copy.list.unknownAuthor;
+  const pickable = useMemo(
+    () =>
+      [...people.entries()]
+        .filter(([id]) => id !== viewerId)
+        .map(([id, name]) => ({ id, name })),
+    [people, viewerId],
+  );
+  const addCandidates = useMemo(() => {
+    const inside = new Set(conversation?.participants.map((p) => p.userId));
+    return pickable.filter((person) => !inside.has(person.id));
+  }, [pickable, conversation]);
+
+  function handleStart(input: ChatStartConversationInput) {
+    if (!onOpenConversation) return;
+    setNewMessageError(null);
+    starter.mutate(input, {
+      onSuccess: (result) => {
+        setNewMessageOpen(false);
+        setListOpen(false);
+        if (result.skipped.length > 0) {
+          setNotice(
+            pluralCopy(
+              {
+                one: copy.dm.details.addSkipped_one,
+                other: copy.dm.details.addSkipped_other,
+              },
+              result.skipped.length,
+            ),
+          );
+        }
+        onOpenConversation(result.conversation.id);
+      },
+      onError: (error) => {
+        const failure = chatFailureOf(error);
+        setNewMessageError(
+          failure.kind === "not-found"
+            ? copy.dm.dialog.notFound
+            : failure.code === "limit-reached"
+              ? fillCopy(copy.dm.dialog.limitReached, {
+                  max: CHAT_LIMITS.groupCap,
+                })
+              : copy.dm.dialog.failed,
+        );
+      },
+    });
+  }
+
+  function handleAddPeople(userIds: readonly string[]) {
+    setAddPeopleError(null);
+    participantAdder.mutate(userIds, {
+      onSuccess: (result) => {
+        setAddPeopleOpen(false);
+        if (result.skipped.length > 0) {
+          setNotice(
+            pluralCopy(
+              {
+                one: copy.dm.details.addSkipped_one,
+                other: copy.dm.details.addSkipped_other,
+              },
+              result.skipped.length,
+            ),
+          );
+        }
+      },
+      onError: (error) =>
+        setAddPeopleError(
+          chatFailureOf(error).code === "limit-reached"
+            ? fillCopy(copy.dm.details.addFull, { max: CHAT_LIMITS.groupCap })
+            : copy.dm.details.addFailed,
+        ),
+    });
+  }
+
+  function handleLeave() {
+    if (!conversationId) return;
+    leaver.mutate(conversationId, {
+      onSuccess: () => {
+        setLeaveOpen(false);
+        knownConversations.current.delete(conversationId);
+        onCloseConversation?.();
+      },
+      onError: () => {
+        setLeaveOpen(false);
+        setNotice(copy.dm.details.leaveFailed);
+      },
+    });
+  }
+
+  function handleVisibility(hidden: boolean) {
+    if (!conversationId) return;
+    // The list drops a hidden conversation on its next refetch: keep the view's copy in step by hand.
+    if (conversation) {
+      knownConversations.current.set(conversationId, {
+        ...conversation,
+        isHidden: hidden,
+      });
+    }
+    visibility.mutate(
+      { conversationId, hidden },
+      {
+        onError: () =>
+          setNotice(hidden ? copy.dm.view.hideFailed : copy.dm.view.showFailed),
+      },
+    );
+  }
+
+  function handleBlockConfirm() {
+    if (!blockTarget) return;
+    const target = blockTarget;
+    blocker.mutate(target, {
+      onSuccess: () => setBlockTarget(null),
+      onError: () => {
+        setBlockTarget(null);
+        setNotice(copy.dm.details.blockFailed);
+      },
+    });
+  }
+
   // ─── View ─────────────────────────────────────────────────────────────────
   const channelsStatus: ChannelListStatus = channels.isPending
     ? "loading"
@@ -599,11 +804,47 @@ export function ChatWorkspace({
     isMobile && channelId === null && (channels.data?.length ?? 0) > 0;
   const openList = () => (onBackToList ? onBackToList() : setListOpen(true));
 
+  const conversationList: ChatConversationListView | null = offersConversations
+    ? {
+        conversations: (conversationsQuery.data ?? []).filter(
+          (entry) => !entry.isHidden,
+        ),
+        status: conversationsQuery.isPending
+          ? "loading"
+          : conversationsQuery.isError
+            ? "error"
+            : "ready",
+        activeId: conversationId,
+        viewerId,
+        locale,
+        timeZone,
+        nameOf,
+        // The unread summary is refreshed by the realtime stream: it is fresher than the list.
+        unreadOf: (entry) =>
+          unreadBySpace.get(entry.id)?.count ?? entry.unreadCount,
+        onSelect: (id) => {
+          setListOpen(false);
+          onOpenConversation?.(id);
+        },
+        onNewMessage: () => {
+          setNewMessageError(null);
+          setNewMessageOpen(true);
+        },
+        onRetry: () => void conversationsQuery.refetch(),
+      }
+    : null;
+  const spaceName = conversation
+    ? conversationTitle(conversation, viewerId, nameOf)
+    : (channel?.name ?? "");
+  const spaceReady =
+    conversationId !== null ? conversation !== null : channel !== null;
+
   const sidebar = (
     <ChatSidebar
+      conversations={conversationList}
       channels={channels.data ?? []}
       status={channelsStatus}
-      activeChannelId={channelId}
+      activeChannelId={conversationId ? null : channelProp}
       unreadBySpace={unreadBySpace}
       browse={browseView}
       canCreate={viewerRole !== null && viewerRole !== "guest"}
@@ -677,7 +918,38 @@ export function ChatWorkspace({
                 </p>
               )}
             </div>
-          ) : channel === null && detailFailure !== null ? (
+          ) : conversationId !== null && conversation === null ? (
+            conversationsQuery.isPending ? (
+              <div
+                role="status"
+                className="flex flex-1 items-center justify-center text-sm text-muted-foreground"
+              >
+                {copy.page.loadingChannel}
+              </div>
+            ) : (
+              <Empty className="flex-1">
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <MessageSquareText aria-hidden="true" />
+                  </EmptyMedia>
+                  <EmptyTitle>{copy.dm.view.notFoundTitle}</EmptyTitle>
+                  <EmptyDescription>
+                    {copy.dm.view.notFoundBody}
+                  </EmptyDescription>
+                </EmptyHeader>
+                <Button
+                  onClick={() => {
+                    setNewMessageError(null);
+                    setNewMessageOpen(true);
+                  }}
+                >
+                  {copy.dm.view.newMessage}
+                </Button>
+              </Empty>
+            )
+          ) : conversationId === null &&
+            channel === null &&
+            detailFailure !== null ? (
             <Empty className="flex-1">
               <EmptyHeader>
                 <EmptyMedia variant="icon">
@@ -687,7 +959,7 @@ export function ChatWorkspace({
                 <EmptyDescription>{copy.list.noAccessBody}</EmptyDescription>
               </EmptyHeader>
             </Empty>
-          ) : channel === null ? (
+          ) : !spaceReady ? (
             <div
               role="status"
               className="flex flex-1 items-center justify-center text-sm text-muted-foreground"
@@ -696,31 +968,89 @@ export function ChatWorkspace({
             </div>
           ) : (
             <>
-              <ChatHeader
-                channel={channel}
-                members={members}
-                viewerId={viewerId}
-                canManage={canManage}
-                joining={joiner.isPending}
-                authorName={authorName}
-                copy={copy}
-                onOpenList={openList}
-                onRename={() => {
-                  setRenameError(null);
-                  setRenameOpen(true);
-                }}
-                onToggleArchive={() => setArchiveOpen(true)}
-                onJoin={() => handleJoin(ch)}
-                onSetLevel={handleLevel}
-              />
+              {conversation ? (
+                <ChatConversationHeader
+                  conversation={conversation}
+                  viewerId={viewerId}
+                  nameOf={nameOf}
+                  copy={copy}
+                  detailsOpen={panel?.kind === "details"}
+                  blocked={counterpartBlocked}
+                  onOpenList={openList}
+                  onToggleDetails={() => togglePanel({ kind: "details" })}
+                  onHide={() => handleVisibility(true)}
+                />
+              ) : channel ? (
+                <ChatHeader
+                  channel={channel}
+                  members={members}
+                  viewerId={viewerId}
+                  canManage={canManage}
+                  joining={joiner.isPending}
+                  authorName={authorName}
+                  copy={copy}
+                  onOpenList={openList}
+                  onRename={() => {
+                    setRenameError(null);
+                    setRenameOpen(true);
+                  }}
+                  onToggleArchive={() => setArchiveOpen(true)}
+                  onJoin={() => handleJoin(ch)}
+                  onSetLevel={handleLevel}
+                />
+              ) : null}
               {connection === "reconnecting" ? (
                 <ChatStatusBanner tone="warning" icon={<WifiOff />}>
                   {copy.list.reconnecting}
                 </ChatStatusBanner>
               ) : null}
-              {channel.isArchived ? (
+              {channel?.isArchived ? (
                 <ChatStatusBanner tone="info" icon={<Archive />}>
                   {copy.header.archivedNotice}
+                </ChatStatusBanner>
+              ) : null}
+              {conversation?.isHidden ? (
+                <ChatStatusBanner
+                  tone="info"
+                  icon={<EyeOff />}
+                  action={
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={visibility.isPending}
+                      onClick={() => handleVisibility(false)}
+                    >
+                      {copy.dm.view.show}
+                    </Button>
+                  }
+                >
+                  {copy.dm.view.hiddenNotice}
+                </ChatStatusBanner>
+              ) : null}
+              {counterpartBlocked && counterpartId ? (
+                <ChatStatusBanner
+                  tone="warning"
+                  icon={<Ban />}
+                  action={
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        setBlockTarget({
+                          userId: counterpartId,
+                          blocked: false,
+                        })
+                      }
+                    >
+                      {copy.dm.view.unblock}
+                    </Button>
+                  }
+                >
+                  {fillCopy(copy.dm.view.blockedNotice, {
+                    name: nameOf(counterpartId),
+                  })}
                 </ChatStatusBanner>
               ) : null}
               <PinnedBar
@@ -755,7 +1085,20 @@ export function ChatWorkspace({
                 </Button>
               </div>
               <ChatMessageList
-                channelName={channel.name}
+                channelName={spaceName}
+                emptyState={
+                  conversation
+                    ? {
+                        title: fillCopy(
+                          conversation.kind === "group"
+                            ? copy.dm.view.introGroup
+                            : copy.dm.view.introDirect,
+                          { name: spaceName },
+                        ),
+                        body: copy.dm.view.introBody,
+                      }
+                    : undefined
+                }
                 rows={rows}
                 status={listStatus}
                 hasOlder={messages.hasPreviousPage === true}
@@ -818,7 +1161,12 @@ export function ChatWorkspace({
                 }
               />
               <ChatComposer
-                channelName={channel.name}
+                channelName={spaceName}
+                labelOverride={
+                  conversation
+                    ? fillCopy(copy.dm.view.composer, { name: spaceName })
+                    : undefined
+                }
                 value={draft}
                 disabledReason={composerDisabledReason}
                 copy={copy}
@@ -844,7 +1192,7 @@ export function ChatWorkspace({
         </section>
       )}
 
-      {channelId && channel && panel !== null ? (
+      {channelId && (channel || conversation) && panel !== null ? (
         <aside
           className={cn(
             "flex min-h-0 w-full flex-col border-s border-border bg-background md:w-96 md:shrink-0",
@@ -857,6 +1205,24 @@ export function ChatWorkspace({
             aria-label={copy.panel.label}
             className="flex items-center gap-1 border-b border-border px-2 py-1"
           >
+            {conversation ? (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={panel.kind === "details"}
+                onClick={() => setPanel({ kind: "details" })}
+                className={cn(
+                  "rounded-md px-2.5 py-1.5 text-sm font-medium",
+                  panel.kind === "details"
+                    ? "bg-muted"
+                    : "text-muted-foreground hover:bg-muted",
+                )}
+              >
+                {conversation.kind === "group"
+                  ? copy.dm.details.groupTitle
+                  : copy.dm.details.dmTitle}
+              </button>
+            ) : null}
             {panel.kind === "thread" ? (
               <button
                 type="button"
@@ -907,6 +1273,31 @@ export function ChatWorkspace({
               <X aria-hidden="true" />
             </Button>
           </div>
+          {panel.kind === "details" && conversation ? (
+            <ChatConversationDetails
+              conversation={conversation}
+              viewerId={viewerId}
+              nameOf={nameOf}
+              copy={copy}
+              locale={locale}
+              blocked={counterpartBlocked}
+              busy={visibility.isPending || leaver.isPending}
+              onBlock={() =>
+                counterpartId &&
+                setBlockTarget({ userId: counterpartId, blocked: true })
+              }
+              onUnblock={() =>
+                counterpartId &&
+                setBlockTarget({ userId: counterpartId, blocked: false })
+              }
+              onAddPeople={() => {
+                setAddPeopleError(null);
+                setAddPeopleOpen(true);
+              }}
+              onLeave={() => setLeaveOpen(true)}
+              onHide={() => handleVisibility(true)}
+            />
+          ) : null}
           {panel.kind === "thread" ? (
             <ChatThreadPanel
               key={panel.rootId}
@@ -994,6 +1385,70 @@ export function ChatWorkspace({
           busy={archiver.isPending}
           onOpenChange={setArchiveOpen}
           onConfirm={handleArchive}
+        />
+      ) : null}
+      {offersConversations ? (
+        <ChatNewMessageDialog
+          open={newMessageOpen}
+          busy={starter.isPending}
+          people={pickable}
+          error={newMessageError}
+          copy={copy}
+          onOpenChange={setNewMessageOpen}
+          onSubmit={handleStart}
+        />
+      ) : null}
+      {conversation?.kind === "group" ? (
+        <>
+          <ChatAddPeopleDialog
+            open={addPeopleOpen}
+            busy={participantAdder.isPending}
+            candidates={addCandidates}
+            roomLeft={groupRoomLeft(conversation.participants.length)}
+            error={addPeopleError}
+            copy={copy}
+            onOpenChange={setAddPeopleOpen}
+            onSubmit={handleAddPeople}
+          />
+          <ConfirmDialog
+            open={leaveOpen}
+            title={copy.dm.details.leaveTitle}
+            body={copy.dm.details.leaveBody}
+            confirmLabel={copy.dm.details.leaveConfirm}
+            cancelLabel={copy.dm.details.cancel}
+            destructive
+            busy={leaver.isPending}
+            onOpenChange={setLeaveOpen}
+            onConfirm={handleLeave}
+          />
+        </>
+      ) : null}
+      {blockTarget ? (
+        <ConfirmDialog
+          open
+          title={fillCopy(
+            blockTarget.blocked
+              ? copy.dm.details.blockTitle
+              : copy.dm.details.unblockTitle,
+            { name: nameOf(blockTarget.userId) },
+          )}
+          body={
+            blockTarget.blocked
+              ? copy.dm.details.blockBody
+              : copy.dm.details.unblockBody
+          }
+          confirmLabel={
+            blockTarget.blocked
+              ? copy.dm.details.blockConfirm
+              : copy.dm.details.unblockConfirm
+          }
+          cancelLabel={copy.dm.details.cancel}
+          destructive={blockTarget.blocked}
+          busy={blocker.isPending}
+          onOpenChange={(open) => {
+            if (!open) setBlockTarget(null);
+          }}
+          onConfirm={handleBlockConfirm}
         />
       ) : null}
       <ConfirmDialog

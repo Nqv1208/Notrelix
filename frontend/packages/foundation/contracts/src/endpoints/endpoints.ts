@@ -378,6 +378,21 @@ export const endpoints = {
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/reactions/${encodeURIComponent(kind)}`,
     messageReactors: (workspaceId: string, messageId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/reactions`,
+    /** Conversations: GET lists the caller's direct and group conversations, POST starts one. */
+    conversations: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/conversations`,
+    /** POST adds people to a group conversation. */
+    conversationParticipants: (workspaceId: string, conversationId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/conversations/${encodeURIComponent(conversationId)}/participants`,
+    /** DELETE leaves a group conversation. */
+    conversationLeave: (workspaceId: string, conversationId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/conversations/${encodeURIComponent(conversationId)}/participants/me`,
+    /** PUT hides or shows a conversation in the caller's list. */
+    conversationVisibility: (workspaceId: string, conversationId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/conversations/${encodeURIComponent(conversationId)}/visibility`,
+    /** PUT blocks or unblocks a person for the caller. */
+    blocks: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/blocks`,
   },
 
   boardGroups: {

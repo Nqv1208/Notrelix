@@ -24,6 +24,9 @@ describe("chat endpoint paths", () => {
       chat.spacePins("w", hostile),
       chat.messageReaction("w", "m", hostile),
       chat.messageReactors("w", hostile),
+      chat.conversationParticipants("w", hostile),
+      chat.conversationLeave("w", hostile),
+      chat.conversationVisibility("w", hostile),
     ];
     for (const path of paths) {
       expect(path).toContain(encoded);
@@ -55,6 +58,23 @@ describe("chat endpoint paths", () => {
     expect(chat.messageReactors("w", "m1")).toBe(
       "/workspaces/w/chat/messages/m1/reactions",
     );
+  });
+
+  it("builds the conversation and block paths of the Chat REST contract", () => {
+    const chat = endpoints.chat;
+    expect(chat.conversations("w")).toBe("/workspaces/w/chat/conversations");
+    expect(chat.conversationParticipants("w", "c1")).toBe(
+      "/workspaces/w/chat/conversations/c1/participants",
+    );
+    expect(chat.conversationLeave("w", "c1")).toBe(
+      "/workspaces/w/chat/conversations/c1/participants/me",
+    );
+    expect(chat.conversationVisibility("w", "c1")).toBe(
+      "/workspaces/w/chat/conversations/c1/visibility",
+    );
+    expect(chat.blocks("w")).toBe("/workspaces/w/chat/me/blocks");
+    expect(chat.conversations("a/b")).toContain("a%2Fb");
+    expect(chat.blocks("a/b")).toContain("a%2Fb");
   });
 
   it("keeps a plain id as it is", () => {

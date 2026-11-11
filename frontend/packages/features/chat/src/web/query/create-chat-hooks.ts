@@ -54,6 +54,7 @@ import {
   type ThreadCounts,
 } from "./interaction-cache";
 import { applyStoredReply, seedThreadCount } from "./thread-writes";
+import { createConversationHooks } from "./create-conversation-hooks";
 
 export interface ChatHookDeps {
   readonly api: ChatApiClient;
@@ -255,6 +256,11 @@ export function createChatHooks(deps: ChatHookDeps) {
           { queryKey: messagesKey },
           (cache) => (cache ? appendToNewest(cache, message) : cache),
         );
+        // A conversation's list row shows its newest message: refresh it (a no-op when no list is mounted).
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.conversations(workspaceId),
+          refetchType: "active",
+        });
       },
       onError: (error, input) => {
         const failure: ChatFailure = chatFailureOf(error);
@@ -853,6 +859,7 @@ export function createChatHooks(deps: ChatHookDeps) {
 
   return {
     service,
+    ...createConversationHooks(service),
     useChannels,
     useBrowseChannels,
     useChannel,

@@ -14,18 +14,24 @@ const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
 /**
  * Chat (CHT-001..004). `/chat` opens the first channel of the caller; `/chat/$channelId`
- * opens that channel. The feature owns the channel, history and read state; this page
+ * opens that channel; `/chat/dm/$conversationId` opens a direct or group conversation. The feature owns the channel, history and read state; this page
  * supplies the transport, the caller and the Workspace member names.
  */
 export function ChatPage() {
   const { workspaceId } = useWorkspaceContext();
-  const { channelId: rawChannelId } = useParams({ strict: false }) as {
-    channelId?: string;
-  };
+  const { channelId: rawChannelId, conversationId: rawConversationId } =
+    useParams({ strict: false }) as {
+      channelId?: string;
+      conversationId?: string;
+    };
   // The id comes from the address bar and ends up in an API path: only a plain id is used, anything else (such as
   // "..") is treated as no channel and the page opens the first one.
   const channelId =
     rawChannelId && SAFE_ID.test(rawChannelId) ? rawChannelId : undefined;
+  const conversationId =
+    rawConversationId && SAFE_ID.test(rawConversationId)
+      ? rawConversationId
+      : undefined;
   const navigate = useNavigate();
   const { api: runtimeClient } = useAppRuntime();
   const viewer = useWorkspaceViewer(workspaceId);
@@ -48,13 +54,13 @@ export function ChatPage() {
 
   // A bare /chat opens the first channel; the list is the caller's own, so the first one is theirs.
   useEffect(() => {
-    if (channelId || !firstChannelId) return;
+    if (channelId || conversationId || !firstChannelId) return;
     void navigate({
       to: "/workspaces/$workspaceId/chat/$channelId",
       params: { workspaceId, channelId: firstChannelId },
       replace: true,
     });
-  }, [channelId, firstChannelId, navigate, workspaceId]);
+  }, [channelId, conversationId, firstChannelId, navigate, workspaceId]);
 
   const people = useMemo(() => {
     const map = new Map<string, string>();
@@ -72,6 +78,19 @@ export function ChatPage() {
         viewerId={viewer.userId ?? ""}
         viewerRole={(viewer.role as ChatViewerRole | null) ?? null}
         channelId={channelId ?? null}
+        conversationId={conversationId ?? null}
+        onOpenConversation={(id) =>
+          void navigate({
+            to: "/workspaces/$workspaceId/chat/dm/$conversationId",
+            params: { workspaceId, conversationId: id },
+          })
+        }
+        onCloseConversation={() =>
+          void navigate({
+            to: "/workspaces/$workspaceId/chat",
+            params: { workspaceId },
+          })
+        }
         people={people}
         connection={connection}
         onOpenChannel={(id) =>
