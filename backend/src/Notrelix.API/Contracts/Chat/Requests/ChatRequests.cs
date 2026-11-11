@@ -53,3 +53,18 @@ public record FollowThreadRequest(bool? Following, bool? Muted);
 
 /// <summary>The thread sequence the caller has read up to (UC-CHT-F08). A lower value than the pointer changes nothing.</summary>
 public record MarkThreadReadRequest(long? UpToReplySequence);
+
+/// <summary>
+/// A conversation to start. Kind is direct (with userId, the other person) or group (with userIds, two or more others, and an
+/// optional name). Idempotency-Key makes a retry return the same conversation.
+/// </summary>
+public record StartConversationRequest(string? Kind, Guid? UserId, IReadOnlyList<Guid>? UserIds, string? Name);
+
+/// <summary>Workspace members to add to a group conversation.</summary>
+public record AddConversationParticipantsRequest(IReadOnlyList<Guid>? UserIds);
+
+/// <summary>Hides (true) or shows (false) a conversation in the caller's own list.</summary>
+public record SetConversationVisibilityRequest(bool? Hidden);
+
+/// <summary>Blocks (true) or unblocks (false) a person of the Workspace for the caller (UC-CHT-E06).</summary>
+public record SetPersonBlockRequest(Guid? UserId, bool? Blocked);

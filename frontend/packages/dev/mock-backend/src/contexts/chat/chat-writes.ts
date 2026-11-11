@@ -34,8 +34,20 @@ export function appendUserMessage(
     threadSequence: null,
     alsoSentToChannel: false,
   });
+  showConversationAgain(state, space);
   announceMessageCreated(state, space, message);
   return message;
+}
+
+/** A new message brings a hidden conversation back to every list that hid it (UC-CHT-E07). */
+function showConversationAgain(
+  state: MockChatState,
+  space: ChatSpaceRecord,
+): void {
+  if (space.kind !== "direct" && space.kind !== "group") return;
+  for (const membership of state.membershipsOfSpace(space.id)) {
+    if (membership.leftAt === null) membership.hiddenAt = null;
+  }
 }
 
 /**
@@ -64,6 +76,7 @@ export function appendThreadReply(
     threadSequence,
     alsoSentToChannel: alsoSendToChannel,
   });
+  showConversationAgain(state, space);
   const record = thread ?? {
     rootMessageId: root.id,
     workspaceId: space.workspaceId,

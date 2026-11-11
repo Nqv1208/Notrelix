@@ -6,7 +6,8 @@
  * Plan: docs/workstreams/chat-delivery-plan.md (S1.6), docs/workstreams/specs/chat-foundation.md §15-§22
  */
 
-export type ChatSpaceKind = "channel_public" | "channel_private";
+export type ChatSpaceKind =
+  "channel_public" | "channel_private" | "direct" | "group";
 export type ChatMembershipRole = "manager" | "member";
 export type ChatNotificationLevel = "all" | "mentions" | "none";
 export type ChatMessageKind = "user" | "system";
@@ -44,6 +45,8 @@ export interface ChatMembershipRecord {
   mentionCount: number;
   readonly joinedAt: string;
   leftAt: string | null;
+  /** When the person hid a conversation from their own list (UC-CHT-E07); null when shown. */
+  hiddenAt: string | null;
 }
 
 export interface ChatMessageRecord {
@@ -136,6 +139,8 @@ export const CHAT_LIMITS = {
   reorderMax: 200,
   /** Pins a space holds at most (backend ChatLimits.PinLimit). */
   pinLimit: 50,
+  /** People a group conversation holds at most, the caller included (backend ChatLimits.GroupCap). */
+  groupCap: 8,
   /** Distinct reaction kinds one message holds at most (backend ChatLimits.ReactionKindsPerMessageMax). */
   reactionKindsPerMessageMax: 6,
   /** Reactions one person holds on one message at most (backend ChatLimits.ReactionsPerUserPerMessageMax). */
@@ -164,6 +169,15 @@ export const CHAT_ERROR = {
   messageNotPinnable: "message-not-pinnable",
   messageNotReactable: "message-not-reactable",
   threadRootInvalid: "thread-root-invalid",
+  /** The errorCode of a 400 business rule the backend does not map by name; the rule itself travels as ruleCode. */
+  businessRule: "business_rule.violation",
+} as const;
+
+/** Rule codes of the Chat conversations (ChatRuleCodes) that answer 400 with the generic business-rule problem. */
+export const CHAT_RULE = {
+  selfTarget: "self-target",
+  groupTooSmall: "group-too-small",
+  kindNotSupported: "kind-not-supported",
 } as const;
 
 /**

@@ -111,6 +111,7 @@ Billing_Usage_SoftLimitCannotExceedHard|Billing|Billing_Usage_SoftLimitCannotExc
 Billing_Usage_StartMustBeBeforeEnd|Billing|Billing_Usage_StartMustBeBeforeEnd
 Billing_Usage_ValueCannotBeNegative|Billing|Billing_Usage_ValueCannotBeNegative
 channel-archived|Chat|ChannelArchived
+group-too-small|Chat|GroupTooSmall
 invalid-position|Chat|InvalidPosition
 kind-not-supported|Chat|KindNotSupported
 last-manager|Chat|LastManager
@@ -124,6 +125,7 @@ message-sequence-invalid|Chat|MessageSequenceInvalid
 name-conflict|Chat|NameConflict
 rate-limited|Chat|RateLimited
 reaction-kind-invalid|Chat|ReactionKindInvalid
+self-target|Chat|SelfTarget
 space-not-found|Chat|SpaceNotFound
 system-message-immutable|Chat|SystemMessageImmutable
 thread-root-invalid|Chat|ThreadRootInvalid

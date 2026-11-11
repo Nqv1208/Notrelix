@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Chat.Conversations.Services;
 using Notrelix.Application.Features.Chat.Messages.DTOs;
 using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
@@ -109,6 +110,8 @@ public class ReplyInThreadCommandHandler(
             request.AlsoSendToChannel,
             now);
         db.ChatMessages.Add(reply);
+        // A new message brings a hidden conversation back to every list that hid it (UC-CHT-E07).
+        ConversationVisibility.ShowAgain(space);
 
         // The root's author follows the thread by default when they still belong to the space (CHT-013). The replier
         // follows it too and has read their own reply.

@@ -34,7 +34,7 @@ public class ReorderChannelsCommandHandler(
         var loaded = new List<(Space Space, ChannelPlacement Placement)>();
         foreach (var placement in request.Placements)
         {
-            var space = await ChannelAccess.LoadLiveAsync(db, request.WorkspaceId, placement.ChannelId, cancellationToken);
+            var space = await ChannelAccess.LoadChannelAsync(db, request.WorkspaceId, placement.ChannelId, cancellationToken);
             ChannelAccess.RequireVisible(space, caller, userId);
             ChannelAccess.RequireManager(space, caller, userId);
             if (space.Version != placement.ExpectedVersion)
