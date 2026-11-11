@@ -110,10 +110,12 @@ function setup(initial: ChatMessage[], hasNewer = false) {
 }
 
 describe("ChatRealtimeAdapter: channel frames", () => {
-  it("supports the message frames and the unread frame only", () => {
+  it("supports the message, reaction, pin and unread frames only", () => {
     const { adapter } = setup([]);
     expect(adapter.supports(envelope("chat.message.created", {}))).toBe(true);
     expect(adapter.supports(envelope("chat.unread.changed", {}))).toBe(true);
+    expect(adapter.supports(envelope("chat.reaction.changed", {}))).toBe(true);
+    expect(adapter.supports(envelope("chat.space.changed", {}))).toBe(true);
     expect(adapter.supports(envelope("board.board", {}))).toBe(false);
   });
 
@@ -408,5 +410,126 @@ describe("ChatRealtimeAdapter: recovery", () => {
       scope: { kind: "user", id: "me" },
     });
     expect(spy).toHaveBeenCalledWith({ queryKey: chatQueryKeys.unread(WS) });
+  });
+});
+
+describe("ChatRealtimeAdapter: threads, reactions and pins", () => {
+  function threadFrame(
+    sequence: number,
+    threadSequence: number,
+    over: Record<string, unknown> = {},
+  ) {
+    return createMessagePayload(sequence, {
+      id: `reply-${threadSequence}`,
+      threadRootId: "m-1",
+      threadSequence,
+      ...over,
+    });
+  }
+
+  it("a thread reply is not inserted into the channel history and moves its root's count", async () => {
+    const { adapter, context, queryClient, read } = setup([
+      message(1),
+      message(2),
+    ]);
+    const counts = chatQueryKeys.threadCounts(WS, CH);
+    await adapter.validateAndHandle(
+      envelope("chat.message.created", threadFrame(3, 1)),
+      context,
+    );
+    expect(
+      queryClient.getQueryData<Record<string, { replyCount: number }>>(
+        counts,
+      )?.["m-1"]?.replyCount,
+    ).toBe(1);
+    // The reply itself stays out of the main flow; the channel backfill (after the sequence before it) brings only what is in the main flow.
+    expect(read().pages[0]!.items.some((item) => item.id === "reply-1")).toBe(
+      false,
+    );
+  });
+
+  it("a thread reply joins a loaded thread once, in order", async () => {
+    const { adapter, context, queryClient } = setup([message(1)]);
+    const threadKey = chatQueryKeys.thread(WS, "m-1");
+    queryClient.setQueryData(threadKey, {
+      pageParams: [{}],
+      pages: [
+        {
+          root: message(1),
+          thread: { rootMessageId: "m-1", replyCount: 0 },
+          items: [],
+          hasNewer: false,
+        },
+      ],
+    });
+    await adapter.validateAndHandle(
+      envelope("chat.message.created", threadFrame(3, 1)),
+      context,
+    );
+    await adapter.validateAndHandle(
+      envelope("chat.message.created", threadFrame(3, 1)),
+      context,
+    );
+    const pages = queryClient.getQueryData<{
+      pages: { items: ChatMessage[] }[];
+    }>(threadKey)!.pages;
+    expect(pages[0]!.items.map((item) => item.id)).toEqual(["reply-1"]);
+  });
+
+  it("a reaction frame of another person moves the summary of the message in every loaded cache", async () => {
+    const { adapter, context, queryClient, read } = setup([
+      message(1),
+      message(2),
+    ]);
+    await adapter.validateAndHandle(
+      envelope("chat.reaction.changed", {
+        messageId: "m-2",
+        kind: "👍",
+        change: "added",
+        actorId: "someone-else",
+      }),
+      context,
+    );
+    const target = read().pages[0]!.items.find((item) => item.id === "m-2")!;
+    expect(target.reactions).toEqual([
+      { emoji: "👍", count: 1, reactedByMe: false },
+    ]);
+    expect(
+      queryClient.getQueryData(chatQueryKeys.pins(WS, CH)),
+    ).toBeUndefined();
+  });
+
+  it("a reaction frame of the viewer does not count the caller's own write twice", async () => {
+    const { queryClient, context, read } = setup([
+      message(1, { reactions: [{ emoji: "👍", count: 1, reactedByMe: true }] }),
+    ]);
+    const adapterWithViewer = createChatRealtimeAdapter({
+      queryClient,
+      service: { listMessages: vi.fn() } as never,
+      viewerId: "me",
+    });
+    await adapterWithViewer.validateAndHandle(
+      envelope("chat.reaction.changed", {
+        messageId: "m-1",
+        kind: "👍",
+        change: "added",
+        actorId: "me",
+      }),
+      context,
+    );
+    expect(read().pages[0]!.items[0]!.reactions).toEqual([
+      { emoji: "👍", count: 1, reactedByMe: true },
+    ]);
+  });
+
+  it("a pin frame invalidates the pin list of the channel", async () => {
+    const { adapter, context, invalidateQueries, queryClient } = setup([]);
+    const spy = vi.spyOn(queryClient, "invalidateQueries");
+    await adapter.validateAndHandle(
+      envelope("chat.space.changed", { messageId: "m-1", change: "pinned" }),
+      context,
+    );
+    expect(spy).toHaveBeenCalledWith({ queryKey: chatQueryKeys.pins(WS, CH) });
+    expect(invalidateQueries).not.toHaveBeenCalled();
   });
 });

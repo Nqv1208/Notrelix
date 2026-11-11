@@ -34,8 +34,9 @@ export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
       createChatRealtimeAdapter({
         queryClient,
         service: createChatService(runtime.api.api, runtime.api.endpoints),
+        viewerId: accountId ?? undefined,
       }),
-    [queryClient, runtime.api],
+    [queryClient, runtime.api, accountId],
   );
 
   const registry = useMemo(() => {

@@ -1,12 +1,42 @@
-import { Ban, Pencil, RotateCw, Trash2, X } from "lucide-react";
+import { useRef, type KeyboardEvent } from "react";
+import {
+  Ban,
+  MessagesSquare,
+  MessageSquareText,
+  Pencil,
+  Pin,
+  PinOff,
+  Reply,
+  RotateCw,
+  Trash2,
+  X,
+} from "lucide-react";
 import { Avatar, AvatarFallback, Button, cn } from "@notrelix/ui-web";
-import type { ChatMessage } from "../../core/types/chat";
+import type { ChatMessage, ChatReactionSummary } from "../../core/types/chat";
 import type { PendingMessage } from "../../core/model/chat-model";
+import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
 import { avatarToneOf, initialsOf } from "./chat-initials";
+import { ReactionChips, ReactionPicker } from "./chat-reactions";
+import { fillCopy, pluralCopy } from "./use-chat-copy";
 
 export interface MessageAuthor {
   readonly name: string;
+}
+
+/** The quoted message of a reply, as the row shows it. */
+export interface QuoteView {
+  readonly name: string;
+  readonly text: string | null;
+  readonly deleted: boolean;
+  /** The quoted message cannot be read here (not loaded and no live preview). */
+  readonly unavailable: boolean;
+}
+
+/** The thread summary of a root message as the row shows it. */
+export interface ThreadChipView {
+  readonly replyCount: number;
+  readonly lastReplyAt: string | null;
 }
 
 export interface ChatMessageRowProps {
@@ -19,8 +49,29 @@ export interface ChatMessageRowProps {
   readonly locale: string;
   readonly timeZone?: string;
   readonly copy: ChatCopy;
-  readonly onEdit: (message: ChatMessage) => void;
-  readonly onDelete: (message: ChatMessage) => void;
+  /** Edit and delete of the caller's own message; without a handler the action is not offered. */
+  readonly onEdit?: (message: ChatMessage) => void;
+  readonly onDelete?: (message: ChatMessage) => void;
+  /** The message this one replies to (quote preview), when it replies. */
+  readonly quote?: QuoteView | null;
+  /** The reply count and the latest reply of a thread root; no chip when absent or zero. */
+  readonly thread?: ThreadChipView | null;
+  readonly pinned?: boolean;
+  readonly reactions?: readonly ChatReactionSummary[];
+  /** The workspace and the hooks the reaction popover reads through. */
+  readonly workspaceId?: string;
+  readonly hooks?: ChatHooks;
+  readonly authorName?: (userId: string) => string;
+  /** Toolbar actions. Without a handler the action is not offered. */
+  readonly onReact?: (
+    message: ChatMessage,
+    emoji: string,
+    add: boolean,
+  ) => void;
+  readonly onReply?: (message: ChatMessage) => void;
+  readonly onOpenThread?: (message: ChatMessage) => void;
+  readonly onTogglePin?: (message: ChatMessage, pinned: boolean) => void;
+  readonly onOpenQuote?: (messageId: string) => void;
 }
 
 export function formatClock(iso: string, locale: string, timeZone?: string) {
@@ -45,9 +96,22 @@ export function ChatMessageRow({
   copy,
   onEdit,
   onDelete,
+  quote,
+  thread,
+  pinned = false,
+  reactions = [],
+  workspaceId,
+  hooks,
+  authorName,
+  onReact,
+  onReply,
+  onOpenThread,
+  onTogglePin,
+  onOpenQuote,
 }: ChatMessageRowProps) {
   const time = formatClock(message.createdAt, locale, timeZone);
   const isSystem = message.kind === "system";
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
 
   if (isSystem) {
     return (
@@ -65,7 +129,39 @@ export function ChatMessageRow({
     );
   }
 
-  const showToolbar = !message.deleted && isOwn;
+  const live = !message.deleted;
+  const reacted = reactions
+    .filter((entry) => entry.reactedByMe)
+    .map((entry) => entry.emoji);
+  const canReact = live && Boolean(onReact);
+  const showToolbar =
+    live &&
+    (Boolean(onReply) ||
+      Boolean(onOpenThread) ||
+      Boolean(onTogglePin) ||
+      canReact ||
+      isOwn);
+
+  // Arrow keys move between the toolbar buttons (the toolbar is one Tab stop).
+  function handleToolbarKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    const buttons = Array.from(
+      toolbarRef.current?.querySelectorAll<HTMLButtonElement>("button") ?? [],
+    ).filter((button) => !button.disabled);
+    if (buttons.length === 0) return;
+    const at = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    let next = at;
+    if (event.key === "ArrowRight")
+      next = (at + 1 + buttons.length) % buttons.length;
+    if (event.key === "ArrowLeft")
+      next = (at - 1 + buttons.length) % buttons.length;
+    if (event.key === "Home") next = 0;
+    if (event.key === "End") next = buttons.length - 1;
+    event.preventDefault();
+    buttons[next]?.focus();
+  }
+
+  const threadCount = thread?.replyCount ?? 0;
 
   return (
     <div
@@ -73,6 +169,7 @@ export function ChatMessageRow({
         "group relative flex gap-3 px-4 hover:bg-muted/50",
         continued ? "py-0.5" : "mt-3 pt-0.5 pb-0.5",
       )}
+      data-message-id={message.id}
     >
       <div className={GUTTER}>
         {continued ? (
@@ -110,8 +207,25 @@ export function ChatMessageRow({
             >
               {time}
             </time>
+            {pinned ? (
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <Pin className="size-3" aria-hidden="true" />
+                {copy.pins.pinned}
+              </span>
+            ) : null}
           </div>
         )}
+        {quote ? (
+          <QuoteBlock
+            quote={quote}
+            copy={copy}
+            onOpen={
+              onOpenQuote
+                ? () => onOpenQuote(message.replyToId ?? "")
+                : undefined
+            }
+          />
+        ) : null}
         {message.deleted ? (
           <p className="flex items-center gap-1.5 text-sm italic text-muted-foreground">
             <Ban className="size-3.5 shrink-0" aria-hidden="true" />
@@ -127,34 +241,175 @@ export function ChatMessageRow({
             ) : null}
           </p>
         )}
+        {live && hooks && workspaceId && authorName ? (
+          <ReactionChips
+            messageId={message.id}
+            workspaceId={workspaceId}
+            reactions={reactions}
+            hooks={hooks}
+            authorName={authorName}
+            copy={copy}
+            onToggle={(emoji, add) => onReact?.(message, emoji, add)}
+          />
+        ) : null}
+        {threadCount > 0 && onOpenThread ? (
+          <button
+            type="button"
+            onClick={() => onOpenThread(message)}
+            className="mt-1 inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs font-medium text-primary hover:bg-muted focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none"
+            aria-label={`${pluralCopy(
+              {
+                one: copy.thread.replies_one,
+                other: copy.thread.replies_other,
+              },
+              threadCount,
+              { count: threadCount },
+            )}, ${copy.thread.openThread}`}
+            data-testid="chat-thread-chip"
+          >
+            <MessageSquareText className="size-3.5" aria-hidden="true" />
+            <span>
+              {fillCopy(
+                threadCount === 1
+                  ? copy.thread.replies_one
+                  : copy.thread.replies_other,
+                { count: threadCount },
+              )}
+            </span>
+            {thread?.lastReplyAt ? (
+              <time
+                dateTime={thread.lastReplyAt}
+                className="text-muted-foreground"
+              >
+                {fillCopy(copy.thread.latest, {
+                  time: formatClock(thread.lastReplyAt, locale, timeZone),
+                })}
+              </time>
+            ) : null}
+          </button>
+        ) : null}
       </div>
       {showToolbar ? (
         <div
+          ref={toolbarRef}
           role="toolbar"
           aria-label={fillActions(copy, author.name)}
+          onKeyDown={handleToolbarKeyDown}
           className="absolute end-4 -top-3 z-10 flex items-center gap-0.5 rounded-md border border-border bg-background p-0.5 shadow-sm invisible group-focus-within:visible group-hover:visible"
         >
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={copy.list.edit}
-            title={copy.list.edit}
-            onClick={() => onEdit(message)}
-          >
-            <Pencil aria-hidden="true" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="text-destructive hover:text-destructive"
-            aria-label={copy.list.delete}
-            title={copy.list.delete}
-            onClick={() => onDelete(message)}
-          >
-            <Trash2 aria-hidden="true" />
-          </Button>
+          {canReact ? (
+            <ReactionPicker
+              copy={copy}
+              reacted={reacted}
+              onPick={(emoji) =>
+                onReact?.(message, emoji, !reacted.includes(emoji))
+              }
+            />
+          ) : null}
+          {onReply && live ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={copy.toolbar.reply}
+              title={copy.toolbar.reply}
+              onClick={() => onReply(message)}
+            >
+              <Reply aria-hidden="true" />
+            </Button>
+          ) : null}
+          {onOpenThread && live ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={copy.toolbar.openThread}
+              title={copy.toolbar.openThread}
+              onClick={() => onOpenThread(message)}
+            >
+              <MessagesSquare aria-hidden="true" />
+            </Button>
+          ) : null}
+          {onTogglePin && live ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={pinned ? copy.toolbar.unpin : copy.toolbar.pin}
+              aria-pressed={pinned}
+              title={pinned ? copy.toolbar.unpin : copy.toolbar.pin}
+              onClick={() => onTogglePin(message, !pinned)}
+            >
+              {pinned ? (
+                <PinOff aria-hidden="true" />
+              ) : (
+                <Pin aria-hidden="true" />
+              )}
+            </Button>
+          ) : null}
+          {isOwn && live && onEdit && onDelete ? (
+            <>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={copy.list.edit}
+                title={copy.list.edit}
+                onClick={() => onEdit(message)}
+              >
+                <Pencil aria-hidden="true" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="text-destructive hover:text-destructive"
+                aria-label={copy.list.delete}
+                title={copy.list.delete}
+                onClick={() => onDelete(message)}
+              >
+                <Trash2 aria-hidden="true" />
+              </Button>
+            </>
+          ) : null}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function QuoteBlock({
+  quote,
+  copy,
+  onOpen,
+}: {
+  readonly quote: QuoteView;
+  readonly copy: ChatCopy;
+  readonly onOpen?: () => void;
+}) {
+  const text = quote.unavailable
+    ? copy.quote.unavailable
+    : quote.deleted
+      ? copy.quote.deleted
+      : (quote.text ?? "");
+  const body = (
+    <>
+      <span className="font-semibold">
+        {fillCopy(copy.quote.quoteOf, { name: quote.name })}
+      </span>
+      <span className="min-w-0 truncate">{text}</span>
+    </>
+  );
+  return (
+    <div className="mb-1 border-s-2 border-border ps-2 text-xs text-muted-foreground">
+      {onOpen ? (
+        <button
+          type="button"
+          onClick={onOpen}
+          className="flex min-w-0 max-w-full items-center gap-1.5 text-start hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none"
+        >
+          {body}
+        </button>
+      ) : (
+        <div className="flex min-w-0 max-w-full items-center gap-1.5">
+          {body}
+        </div>
+      )}
     </div>
   );
 }

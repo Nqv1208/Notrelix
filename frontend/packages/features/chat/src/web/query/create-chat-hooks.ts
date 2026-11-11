@@ -26,11 +26,17 @@ import {
   type ChatChannel,
   type ChatChannelDetail,
   type ChatCreateChannelInput,
+  type ChatFollowedThreadPage,
   type ChatHistoryAnchor,
   type ChatMessage,
   type ChatMessageCursor,
   type ChatMessagePage,
   type ChatNotificationLevel,
+  type ChatPinPage,
+  type ChatReactorPage,
+  type ChatThreadCursor,
+  type ChatThreadRepliesPage,
+  type ChatThreadSummary,
   type ChatUnreadSummary,
   type ChatUpdateChannelInput,
 } from "../../core/types/chat";
@@ -41,6 +47,13 @@ import {
   tombstoneMessage,
   type ChatMessagesCache,
 } from "./message-cache";
+import {
+  patchMessageInData,
+  patchThreadSummary,
+  toggleReaction,
+  type ThreadCounts,
+} from "./interaction-cache";
+import { applyStoredReply, seedThreadCount } from "./thread-writes";
 
 export interface ChatHookDeps {
   readonly api: ChatApiClient;
@@ -545,6 +558,299 @@ export function createChatHooks(deps: ChatHookDeps) {
     });
   }
 
+  // ─── Threads ───────────────────────────────────────────────────────────────
+
+  /**
+   * The replies of one thread, paged forward by thread sequence (the root
+   * rides on the first page). Every loaded page refreshes the reply count of
+   * the thread in the channel's client-side count projection.
+   */
+  function useThreadReplies(workspaceId: string, rootId: string | undefined) {
+    const queryClient = useQueryClient();
+    return useInfiniteQuery<
+      ChatThreadRepliesPage,
+      Error,
+      InfiniteData<ChatThreadRepliesPage, ChatThreadCursor>,
+      QueryKey,
+      ChatThreadCursor
+    >({
+      queryKey: chatQueryKeys.thread(workspaceId, rootId ?? ""),
+      queryFn: async ({ pageParam }) => {
+        const page = await service.listThreadReplies(
+          workspaceId,
+          rootId!,
+          pageParam,
+          CHAT_LIMITS.pageSize,
+        );
+        seedThreadCount(queryClient, workspaceId, page.thread);
+        return page;
+      },
+      initialPageParam: {} as ChatThreadCursor,
+      getNextPageParam: (
+        last: ChatThreadRepliesPage,
+      ): ChatThreadCursor | undefined => {
+        const tail = last.items[last.items.length - 1];
+        return last.hasNewer && tail
+          ? { after: tail.threadSequence ?? undefined }
+          : undefined;
+      },
+      enabled: workspaceId.length > 0 && Boolean(rootId),
+      staleTime: CHANNEL_STALE_MS,
+    });
+  }
+
+  /**
+   * The reply counts of the channel's threads (client-side projection). The
+   * server's thread summary is read with the replies, and the realtime stream
+   * keeps the count moving after that.
+   */
+  function useThreadCounts(workspaceId: string, channelId: string) {
+    return useQuery<ThreadCounts>({
+      queryKey: chatQueryKeys.threadCounts(workspaceId, channelId),
+      queryFn: () => ({}),
+      initialData: {},
+      staleTime: Infinity,
+      gcTime: Infinity,
+      enabled: false,
+    });
+  }
+
+  /**
+   * Sends a reply in a thread. The stored reply joins the open thread, bumps
+   * its root's count and, when the author also sent it to the channel, joins
+   * the channel history. The realtime frame of the same reply is deduplicated by id.
+   */
+  function useReplyInThread(workspaceId: string, rootId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (input: {
+        content: string;
+        alsoSendToChannel: boolean;
+        clientMessageId?: string;
+      }) =>
+        service.replyInThread(workspaceId, rootId, {
+          content: input.content,
+          clientMessageId: input.clientMessageId ?? newClientMessageId(),
+          alsoSendToChannel: input.alsoSendToChannel,
+        }),
+      onSuccess: (reply: ChatMessage) => {
+        applyStoredReply(queryClient, workspaceId, reply);
+      },
+    });
+  }
+
+  /** Follow, mute or unfollow a thread (the state comes back in the thread summary). */
+  function useFollowThread(workspaceId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (input: {
+        threadId: string;
+        following: boolean;
+        muted: boolean;
+      }) =>
+        service.setThreadFollow(workspaceId, input.threadId, {
+          following: input.following,
+          muted: input.muted,
+        }),
+      onSuccess: (state, input) => {
+        queryClient.setQueryData(
+          chatQueryKeys.thread(workspaceId, input.threadId),
+          (data: unknown) =>
+            patchThreadSummary(data, (summary: ChatThreadSummary) => ({
+              ...summary,
+              following: state.following,
+              muted: state.muted,
+              unreadReplies: state.following ? summary.unreadReplies : 0,
+            })),
+        );
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.followedThreads(workspaceId),
+        });
+      },
+    });
+  }
+
+  /** Moves the read pointer of a followed thread to its newest reply (the count left comes back). */
+  function useMarkThreadRead(workspaceId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (input: { threadId: string; upToReplySequence: number }) =>
+        service.markThreadRead(
+          workspaceId,
+          input.threadId,
+          input.upToReplySequence,
+        ),
+      onSuccess: (result, input) => {
+        queryClient.setQueryData(
+          chatQueryKeys.thread(workspaceId, input.threadId),
+          (data: unknown) =>
+            patchThreadSummary(data, (summary: ChatThreadSummary) => ({
+              ...summary,
+              unreadReplies: result.unreadReplies,
+            })),
+        );
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.followedThreads(workspaceId),
+        });
+      },
+    });
+  }
+
+  /** The threads the caller follows, paged by the server's cursor (most recent reply first). */
+  function useFollowedThreads(workspaceId: string, enabled: boolean) {
+    const queryClient = useQueryClient();
+    return useInfiniteQuery<
+      ChatFollowedThreadPage,
+      Error,
+      InfiniteData<ChatFollowedThreadPage, string | null>,
+      QueryKey,
+      string | null
+    >({
+      queryKey: chatQueryKeys.followedThreads(workspaceId),
+      queryFn: async ({ pageParam }) => {
+        const page = await service.listFollowedThreads(
+          workspaceId,
+          pageParam,
+          CHAT_LIMITS.pageSize,
+        );
+        for (const entry of page.items) {
+          seedThreadCount(queryClient, workspaceId, entry.thread);
+        }
+        return page;
+      },
+      initialPageParam: null,
+      getNextPageParam: (last: ChatFollowedThreadPage) =>
+        last.nextCursor ?? undefined,
+      enabled: enabled && workspaceId.length > 0,
+      staleTime: CHANNEL_STALE_MS,
+    });
+  }
+
+  // ─── Pins ──────────────────────────────────────────────────────────────────
+
+  /**
+   * The pins of one channel, newest first. A channel holds at most 50 pins, so
+   * the first page is the whole set the header and the toolbar need.
+   */
+  function usePins(workspaceId: string, channelId: string) {
+    return useInfiniteQuery<
+      ChatPinPage,
+      Error,
+      InfiniteData<ChatPinPage, string | null>,
+      QueryKey,
+      string | null
+    >({
+      queryKey: chatQueryKeys.pins(workspaceId, channelId),
+      queryFn: ({ pageParam }) =>
+        service.listPins(
+          workspaceId,
+          channelId,
+          pageParam,
+          CHAT_LIMITS.pageSize,
+        ),
+      initialPageParam: null,
+      getNextPageParam: (last: ChatPinPage) => last.nextCursor ?? undefined,
+      enabled: workspaceId.length > 0 && channelId.length > 0,
+      staleTime: CHANNEL_STALE_MS,
+    });
+  }
+
+  /** Pins or unpins a message; the pin list of the channel is read again after the change. */
+  function usePinMessage(workspaceId: string, channelId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: async (input: { messageId: string; pinned: boolean }) => {
+        if (input.pinned)
+          await service.pinMessage(workspaceId, input.messageId);
+        else await service.unpinMessage(workspaceId, input.messageId);
+      },
+      onSuccess: () => {
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.pins(workspaceId, channelId),
+        });
+      },
+    });
+  }
+
+  // ─── Reactions ─────────────────────────────────────────────────────────────
+
+  /** Who reacted to a message with one emoji (or any emoji), earliest first. */
+  function useReactors(
+    workspaceId: string,
+    messageId: string | undefined,
+    kind: string | undefined,
+    enabled: boolean,
+  ) {
+    return useInfiniteQuery<
+      ChatReactorPage,
+      Error,
+      InfiniteData<ChatReactorPage, string | null>,
+      QueryKey,
+      string | null
+    >({
+      queryKey: [
+        ...chatQueryKeys.all(workspaceId),
+        "reactors",
+        messageId ?? "",
+        kind ?? "",
+      ],
+      queryFn: ({ pageParam }) =>
+        service.listReactors(workspaceId, messageId!, {
+          kind,
+          cursor: pageParam,
+          limit: CHAT_LIMITS.pageSize,
+        }),
+      initialPageParam: null,
+      getNextPageParam: (last: ChatReactorPage) => last.nextCursor ?? undefined,
+      enabled: enabled && workspaceId.length > 0 && Boolean(messageId),
+      staleTime: CHANNEL_STALE_MS,
+    });
+  }
+
+  /**
+   * Adds or removes the caller's palette reaction. The summary of the message
+   * changes at once in every loaded cache (channel, thread, pins) and is put
+   * back when the server refuses it; the server's answer then replaces the guess.
+   */
+  function useReaction(workspaceId: string) {
+    const queryClient = useQueryClient();
+    const scope = chatQueryKeys.all(workspaceId);
+    return useMutation({
+      mutationFn: (input: { messageId: string; kind: string; add: boolean }) =>
+        input.add
+          ? service.addReaction(workspaceId, input.messageId, input.kind)
+          : service.removeReaction(workspaceId, input.messageId, input.kind),
+      onMutate: async (input) => {
+        await queryClient.cancelQueries({ queryKey: scope });
+        const snapshot = queryClient.getQueriesData({ queryKey: scope });
+        queryClient.setQueriesData({ queryKey: scope }, (data: unknown) =>
+          patchMessageInData(data, input.messageId, (message) => ({
+            ...message,
+            reactions: toggleReaction(
+              message.reactions ?? [],
+              input.kind,
+              input.add,
+            ),
+          })),
+        );
+        return { snapshot };
+      },
+      onError: (_error, _input, context) => {
+        for (const [key, data] of context?.snapshot ?? []) {
+          queryClient.setQueryData(key, data);
+        }
+      },
+      onSuccess: (result) => {
+        queryClient.setQueriesData({ queryKey: scope }, (data: unknown) =>
+          patchMessageInData(data, result.messageId, (message) => ({
+            ...message,
+            reactions: result.reactions,
+          })),
+        );
+      },
+    });
+  }
+
   return {
     service,
     useChannels,
@@ -564,6 +870,16 @@ export function createChatHooks(deps: ChatHookDeps) {
     useArchiveChannel,
     useJoinChannel,
     useAddMembers,
+    useThreadReplies,
+    useThreadCounts,
+    useReplyInThread,
+    useFollowThread,
+    useMarkThreadRead,
+    useFollowedThreads,
+    usePins,
+    usePinMessage,
+    useReactors,
+    useReaction,
   };
 }
 

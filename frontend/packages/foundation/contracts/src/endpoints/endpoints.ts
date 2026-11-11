@@ -359,6 +359,25 @@ export const endpoints = {
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/read-all`,
     notificationLevel: (workspaceId: string, spaceId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/notification-level`,
+    /** Threads: GET reads a thread's replies, POST replies in it (the root message id). */
+    threadReplies: (workspaceId: string, rootId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(rootId)}/replies`,
+    threadFollow: (workspaceId: string, threadId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/threads/${encodeURIComponent(threadId)}/follow`,
+    threadRead: (workspaceId: string, threadId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/threads/${encodeURIComponent(threadId)}/read`,
+    followedThreads: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/threads`,
+    /** Pins: PUT pins a message and DELETE unpins it (the message id). */
+    messagePin: (workspaceId: string, messageId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/pin`,
+    spacePins: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/pins`,
+    /** Reactions: PUT adds and DELETE removes the caller's palette emoji; GET lists who reacted. */
+    messageReaction: (workspaceId: string, messageId: string, kind: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/reactions/${encodeURIComponent(kind)}`,
+    messageReactors: (workspaceId: string, messageId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/reactions`,
   },
 
   boardGroups: {

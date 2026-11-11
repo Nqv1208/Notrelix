@@ -9,6 +9,8 @@ export type ChatMessageEventType =
   "chat.message.created" | "chat.message.updated" | "chat.message.deleted";
 
 export const CHAT_UNREAD_EVENT = "chat.unread.changed";
+export const CHAT_REACTION_EVENT = "chat.reaction.changed";
+export const CHAT_SPACE_EVENT = "chat.space.changed";
 
 export function isChatMessageEvent(
   eventType: string,
@@ -35,6 +37,24 @@ export interface ChatMessageFramePayload {
   readonly version: number;
   /** Not in chat.message.v1 today; read when present so an own send can be reconciled. */
   readonly clientMessageId: string | null;
+  /** The thread root of a reply (null for the main flow). */
+  readonly threadRootId: string | null;
+  /** The reply's thread sequence (null for the main flow). */
+  readonly threadSequence: number | null;
+}
+
+/** chat.reaction.v1: one reaction of a message was added or removed (compact: no counts). */
+export interface ChatReactionFramePayload {
+  readonly messageId: string;
+  readonly kind: string;
+  readonly change: "added" | "removed";
+  readonly actorId: string;
+}
+
+/** chat.space.v1: a pin of the space changed; readers refetch the pins. */
+export interface ChatSpaceFramePayload {
+  readonly messageId: string;
+  readonly change: "pinned" | "unpinned";
 }
 
 /** The unread payload (chat.unread.v1): the counts of one space for this person. */
@@ -94,7 +114,44 @@ export function parseChatMessageFrame(
     clientMessageId: isNonEmpty(payload.clientMessageId)
       ? payload.clientMessageId
       : null,
+    threadRootId: isNonEmpty(payload.threadRootId)
+      ? payload.threadRootId
+      : null,
+    threadSequence:
+      isCount(payload.threadSequence) && payload.threadSequence >= 1
+        ? payload.threadSequence
+        : null,
   };
+}
+
+export function parseChatReactionFrame(
+  payload: unknown,
+): ChatReactionFramePayload | null {
+  if (!isRecord(payload)) return null;
+  const { messageId, kind, change, actorId } = payload;
+  if (
+    !isNonEmpty(messageId) ||
+    !isNonEmpty(kind) ||
+    !isNonEmpty(actorId) ||
+    (change !== "added" && change !== "removed")
+  ) {
+    return null;
+  }
+  return { messageId, kind, change, actorId };
+}
+
+export function parseChatSpaceFrame(
+  payload: unknown,
+): ChatSpaceFramePayload | null {
+  if (!isRecord(payload)) return null;
+  const { messageId, change } = payload;
+  if (
+    !isNonEmpty(messageId) ||
+    (change !== "pinned" && change !== "unpinned")
+  ) {
+    return null;
+  }
+  return { messageId, change };
 }
 
 export function parseChatUnreadFrame(

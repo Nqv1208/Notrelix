@@ -21,4 +21,16 @@ export const chatQueryKeys = {
     workspaceQueryKey(workspaceId, "chat", "pending", channelId),
   unread: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "chat", "unread"),
+  /** The replies of one thread (the root message id); the thread summary rides with its pages. */
+  thread: (workspaceId: string, rootId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "thread", rootId),
+  /** Client-only projection: the reply count and last reply of each thread of a channel, by root id. */
+  threadCounts: (workspaceId: string, channelId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "thread-counts", channelId),
+  /** The threads the caller follows (most recent reply first). */
+  followedThreads: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "followed-threads"),
+  /** The pins of one channel (newest pin first). */
+  pins: (workspaceId: string, channelId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "pins", channelId),
 } as const;

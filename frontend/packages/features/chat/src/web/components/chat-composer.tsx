@@ -1,4 +1,4 @@
-import { useId, type KeyboardEvent } from "react";
+import { useId, type KeyboardEvent, type ReactNode } from "react";
 import { Send } from "lucide-react";
 import { Button, Textarea, cn } from "@notrelix/ui-web";
 import {
@@ -18,6 +18,14 @@ export interface ChatComposerProps {
   readonly copy: ChatCopy;
   readonly onChange: (value: string) => void;
   readonly onSend: (content: string) => void;
+  /** Above the text: the reply chip of a quote reply. */
+  readonly leading?: ReactNode;
+  /** In the footer before Send: the thread composer's "also send to channel". */
+  readonly footerExtra?: ReactNode;
+  /** The accessible name and placeholder; the channel composer names the channel by default. */
+  readonly labelOverride?: string;
+  /** Sends are refused while a send is in flight. */
+  readonly busy?: boolean;
 }
 
 /**
@@ -32,16 +40,21 @@ export function ChatComposer({
   copy,
   onChange,
   onSend,
+  leading,
+  footerExtra,
+  labelOverride,
+  busy = false,
 }: ChatComposerProps) {
   const hintId = useId();
   const length = chatTextLength(value);
   const check = checkMessageContent(value);
   const tooLong = length > CHAT_LIMITS.messageMaxLength;
   const disabled = disabledReason !== null;
-  const label = fillCopy(copy.composer.label, { channel: channelName });
+  const label =
+    labelOverride ?? fillCopy(copy.composer.label, { channel: channelName });
 
   function submit() {
-    if (disabled) return;
+    if (disabled || busy) return;
     const result = checkMessageContent(value);
     if (!result.ok) return;
     onSend(result.content);
@@ -73,6 +86,7 @@ export function ChatComposer({
           submit();
         }}
       >
+        {leading}
         <Textarea
           aria-label={label}
           aria-describedby={hintId}
@@ -86,6 +100,7 @@ export function ChatComposer({
           className="max-h-40 min-h-11 resize-none border-0 bg-transparent px-3 py-2.5 shadow-none focus-visible:border-0 focus-visible:ring-0 md:text-sm"
         />
         <div className="flex flex-wrap items-center gap-2 border-t border-border px-2 py-1.5">
+          {footerExtra}
           <div
             id={hintId}
             className={cn(
@@ -113,7 +128,7 @@ export function ChatComposer({
             size="sm"
             aria-label={copy.composer.send}
             title={copy.composer.send}
-            disabled={disabled || tooLong || !check.ok}
+            disabled={disabled || busy || tooLong || !check.ok}
           >
             <Send aria-hidden="true" />
             {copy.composer.send}
