@@ -55,5 +55,5 @@ export const layout = {
   "content-max-width": "45rem",
   "page-max-width": "80rem",
   /** Fixed width of a Kanban column (and its skeleton / add-column slot). */
-  "kanban-column": "16rem",
+  "kanban-column": "calc(16rem + 10px)",
 } as const;

@@ -18,6 +18,7 @@ import {
 import { TableAddGroup, type TableAddGroupProps } from "./table-add-group";
 import {
   TableArchivedNotice,
+  BarExit,
   TableBulkBar,
   TableBulkDone,
   TableBulkFailure,
@@ -979,30 +980,34 @@ function MainTableSurfaceBody({
               assign={bulkAssign}
               move={bulkMove}
             />
-          ) : selectedCount > 0 ? (
-            <TableBulkBar
-              copy={copy}
-              saving={bulkSaving}
-              count={selectedCount}
-              limit={{
-                max: BULK_ITEM_LIMIT,
-                // The group note says how many were not picked, so the bar does not say it twice.
-                available: groupPickNote ? selectedCount : allRowIds.length,
-              }}
-              stacked
-              statusOptions={statusOptions}
-              canEdit={canEdit}
-              canArchive={canArchive}
-              onStatus={onBulkStatus}
-              onDue={onBulkDue}
-              onArchive={onBulkArchive}
-              onDelete={onBulkDelete}
-              priority={bulkPriority}
-              onClear={onClearSelection}
-              assign={bulkAssign}
-              move={bulkMove}
-            />
-          ) : null}
+          ) : (
+            <BarExit>
+              {selectedCount > 0 ? (
+                <TableBulkBar
+                  copy={copy}
+                  saving={bulkSaving}
+                  count={selectedCount}
+                  limit={{
+                    max: BULK_ITEM_LIMIT,
+                    // The group note says how many were not picked, so the bar does not say it twice.
+                    available: groupPickNote ? selectedCount : allRowIds.length,
+                  }}
+                  stacked
+                  statusOptions={statusOptions}
+                  canEdit={canEdit}
+                  canArchive={canArchive}
+                  onStatus={onBulkStatus}
+                  onDue={onBulkDue}
+                  onArchive={onBulkArchive}
+                  onDelete={onBulkDelete}
+                  priority={bulkPriority}
+                  onClear={onClearSelection}
+                  assign={bulkAssign}
+                  move={bulkMove}
+                />
+              ) : null}
+            </BarExit>
+          )}
         </div>
       ) : bulkDone ? (
         <TableBulkDone

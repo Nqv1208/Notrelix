@@ -164,6 +164,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useCardActivity: list,
     useCardComments: list,
     useUpdateCard: mutation,
+    useToggleCardLabel: mutation,
     useRestoreDeletedItem: () => ({ mutateAsync: restoreDeleted }),
     useCreateGroup: mutation,
     useItemLinks: () => ({

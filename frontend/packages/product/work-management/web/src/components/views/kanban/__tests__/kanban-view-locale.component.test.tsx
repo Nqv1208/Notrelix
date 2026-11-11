@@ -117,6 +117,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useWorkspaceBoards: () => ({ data: [] }),
     useBoardTrash: () => ({ entries: [], restore: vi.fn() }),
     useUpdateCard: mutation,
+    useToggleCardLabel: mutation,
     useCreateGroup: mutation,
     useAddFieldOption: () => ({ mutate: vi.fn(), isPending: false }),
     useUpdateFieldOption: mutation,
