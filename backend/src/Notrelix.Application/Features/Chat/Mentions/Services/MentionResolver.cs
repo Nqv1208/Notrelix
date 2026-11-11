@@ -101,7 +101,8 @@ public static class MentionResolver
                             break;
                         }
 
-                        if (activeMembers < 2)
+                        // A direct conversation has one other person: there is no audience to broadcast to (UC-CHT-G03).
+                        if (activeMembers < 2 || space.Kind == SpaceKind.Direct)
                         {
                             notices.Add(new MentionNoticeDto(NoAudience, span.Start, span.Length, null));
                             break;

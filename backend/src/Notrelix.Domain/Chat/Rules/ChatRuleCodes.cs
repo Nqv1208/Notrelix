@@ -57,4 +57,10 @@ public static class ChatRuleCodes
 
     /// <summary>An @channel or @here in a large channel was sent without the confirmation (409, UC-CHT-G03).</summary>
     public const string BroadcastConfirmationRequired = "broadcast-confirmation-required";
+
+    /// <summary>A person names themselves as the other side of a direct conversation or a block (400, UC-CHT-E01, E06).</summary>
+    public const string SelfTarget = "self-target";
+
+    /// <summary>A group conversation needs at least three participants, the caller included (400, UC-CHT-E02).</summary>
+    public const string GroupTooSmall = "group-too-small";
 }

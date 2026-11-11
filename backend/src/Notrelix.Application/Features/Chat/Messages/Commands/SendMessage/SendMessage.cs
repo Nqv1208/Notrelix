@@ -3,6 +3,7 @@ using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Mentions.DTOs;
 using Notrelix.Application.Features.Chat.Mentions.Services;
+using Notrelix.Application.Features.Chat.Conversations.Services;
 using Notrelix.Application.Features.Chat.Messages.DTOs;
 using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
@@ -113,6 +114,8 @@ public class SendMessageCommandHandler(
 
         db.ChatMessages.Add(message);
         await MessageMentions.ReplaceAsync(db, message, resolution.Spans, hadBefore: false, cancellationToken);
+        // A new message brings a hidden conversation back to every list that hid it (UC-CHT-E07).
+        ConversationVisibility.ShowAgain(space);
         return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
             await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, message, cancellationToken, resolution), Created: true));
     }

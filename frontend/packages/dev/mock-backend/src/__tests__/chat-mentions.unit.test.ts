@@ -684,4 +684,76 @@ describe("MFB-CHAT-S2.4: Chat mock handlers (mentions and broadcast)", () => {
       expect(privateSpace.body.errorCode).toBe(missing.body.errorCode);
     });
   });
+  describe("mentions in conversations", () => {
+    async function group(store: Store) {
+      const res = await chat(store, "POST", "/conversations", {
+        body: { kind: "group", userIds: [USERS.member, USERS.admin] },
+        idempotencyKey: key("mention-group"),
+      });
+      return res.body.conversation.id as string;
+    }
+    async function direct(store: Store) {
+      const res = await chat(store, "POST", "/conversations", {
+        body: { kind: "direct", userId: USERS.member },
+        idempotencyKey: key("mention-direct"),
+      });
+      return res.body.conversation.id as string;
+    }
+
+    it("stores a mention of a participant and counts it for them", async () => {
+      const store = storeAs("owner");
+      const id = await group(store);
+
+      const res = await send(store, id, "hi @Member", [
+        person(3, 7, USERS.member),
+      ]);
+
+      expect(res.status).toBe(201);
+      expect(res.body.mentions).toHaveLength(1);
+      expect(res.body.mentionNotices).toEqual([]);
+      actAs(store, "member");
+      expect((await summaryOf(store, id)).row.mentionCount).toBe(1);
+    });
+
+    it("warns about a Workspace member who is not a participant and never counts it for them", async () => {
+      const store = storeAs("owner");
+      const id = await direct(store);
+
+      const res = await send(store, id, "psst @Admin", [
+        person(5, 6, USERS.admin),
+      ]);
+
+      expect(res.body.mentionNotices).toEqual([
+        { code: "cannot-view", start: 5, length: 6, userId: USERS.admin },
+      ]);
+      actAs(store, "admin");
+      const unread = await chat(store, "GET", "/me/unread");
+      expect(unread.body.spaces.some((x: any) => x.spaceId === id)).toBe(false);
+    });
+
+    it("has no audience for @channel in a direct conversation, but broadcasts in a group", async () => {
+      const store = storeAs("owner");
+      const dm = await direct(store);
+      const grp = await group(store);
+
+      const inDirect = await send(store, dm, "hey @channel", [channelToken(4)]);
+      const inGroup = await send(store, grp, "hey @channel", [channelToken(4)]);
+
+      expect(inDirect.body.mentions).toEqual([]);
+      expect(inDirect.body.mentionNotices[0].code).toBe("no-audience");
+      expect(inGroup.body.mentions).toHaveLength(1);
+    });
+
+    it("lists the participants only in the picker of a conversation", async () => {
+      const store = storeAs("owner");
+      const id = await group(store);
+
+      const res = await chat(store, "GET", `/spaces/${id}/mentionables`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.people.every((p: any) => p.inSpace)).toBe(true);
+      expect(res.body.people).toHaveLength(3);
+      expect(res.body.canBroadcast).toBe(true);
+    });
+  });
 });

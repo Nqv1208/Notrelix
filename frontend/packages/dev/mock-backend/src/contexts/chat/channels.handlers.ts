@@ -13,7 +13,8 @@ import {
   channelView,
   groupIn,
   guarded,
-  liveSpace,
+  isConversationKind,
+  liveChannel,
   nextChannelPosition,
   optionalInteger,
   optionalText,
@@ -136,6 +137,7 @@ export const channelsOperations = [
             .filter(
               (space) =>
                 space.deletedAt === null &&
+                !isConversationKind(space.kind) &&
                 state.activeMembershipOf(space.id, caller.userId) !== undefined,
             );
         }
@@ -212,6 +214,7 @@ export const channelsOperations = [
                 mentionCount: 0,
                 joinedAt: now,
                 leftAt: null,
+                hiddenAt: null,
               },
             );
             return {
@@ -236,7 +239,7 @@ export const channelsOperations = [
         const state = store.chat;
         const caller = callerIn(store, params.workspaceId);
         requireAction(caller, "viewWorkspace");
-        const space = liveSpace(state, params.workspaceId, params.channelId);
+        const space = liveChannel(state, params.workspaceId, params.channelId);
         requireVisible(state, space, caller);
         return ok({
           channel: channelView(state, space, caller.userId),
@@ -286,7 +289,11 @@ export const channelsOperations = [
           });
           // Every channel is checked before any is moved: a refusal changes nothing.
           const loaded = checked.map((item) => {
-            const space = liveSpace(state, params.workspaceId, item.channelId);
+            const space = liveChannel(
+              state,
+              params.workspaceId,
+              item.channelId,
+            );
             requireVisible(state, space, caller);
             requireManager(state, space, caller);
             requireVersion(item.expected, space.version);
@@ -336,7 +343,7 @@ export const channelsOperations = [
           CHAT_LIMITS.channelTopicMaxLength,
         );
         const expected = parseVersion(body?.expectedVersion, "expectedVersion");
-        const space = liveSpace(state, params.workspaceId, params.channelId);
+        const space = liveChannel(state, params.workspaceId, params.channelId);
         requireVisible(state, space, caller);
         requireManager(state, space, caller);
         requireUniqueChannelName(state, params.workspaceId, name, space.id);
@@ -371,7 +378,7 @@ export const channelsOperations = [
           validationProblem("archived is required.");
         const archive = body.archived;
         const expected = parseVersion(body.expectedVersion, "expectedVersion");
-        const space = liveSpace(state, params.workspaceId, params.channelId);
+        const space = liveChannel(state, params.workspaceId, params.channelId);
         requireVisible(state, space, caller);
         requireManager(state, space, caller);
         // Unarchiving checks the name again: a name taken meanwhile is a conflict.
@@ -415,7 +422,7 @@ export const channelsOperations = [
           optionalInteger(query.expectedVersion, "expectedVersion"),
           "expectedVersion",
         );
-        const space = liveSpace(state, params.workspaceId, params.channelId);
+        const space = liveChannel(state, params.workspaceId, params.channelId);
         requireVisible(state, space, caller);
         requireManager(state, space, caller);
         requireVersion(expected, space.version);

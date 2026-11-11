@@ -47,9 +47,11 @@ public class ListChannelsQueryHandler(
         }
         else
         {
+            // Conversations have their own list (UC-CHT-E05); the channel list holds channels only.
             var ids = mine.Keys.ToArray();
             spaces = await db.ChatSpaces
-                .Where(s => s.WorkspaceId == request.WorkspaceId && s.DeletedAt == null && ids.Contains(s.Id))
+                .Where(s => s.WorkspaceId == request.WorkspaceId && s.DeletedAt == null && ids.Contains(s.Id)
+                    && (s.Kind == SpaceKind.ChannelPublic || s.Kind == SpaceKind.ChannelPrivate))
                 .ToListAsync(cancellationToken);
         }
 

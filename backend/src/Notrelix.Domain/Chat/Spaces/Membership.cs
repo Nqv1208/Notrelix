@@ -42,7 +42,14 @@ public sealed class Membership : IWorkspaceScoped
     /// <summary>When a mute ends. Only set with <see cref="NotificationLevel.None"/>; null is a permanent mute or no mute.</summary>
     public DateTimeOffset? MutedUntil { get; private set; }
 
+    /// <summary>
+    /// When the person hid a direct or group conversation from their own list (UC-CHT-E07). Null when it is shown. Only this
+    /// person's list changes; the next message in the conversation clears it (<see cref="Restore"/>).
+    /// </summary>
+    public DateTimeOffset? HiddenAt { get; private set; }
+
     public bool IsActive => LeftAt is null;
+    public bool IsHidden => HiddenAt is not null;
     public bool IsManager => IsActive && Role == MembershipRole.Manager;
 
     private Membership() { }
@@ -71,6 +78,28 @@ public sealed class Membership : IWorkspaceScoped
         Role = role;
         JoinedAt = at;
         LeftAt = null;
+        HiddenAt = null;
+    }
+
+    /// <summary>
+    /// Hides the conversation from this person's list (UC-CHT-E07). Returns false when it is already hidden. Hiding a space
+    /// they have left is refused by the caller, which only loads active memberships.
+    /// </summary>
+    public bool Hide(DateTimeOffset at)
+    {
+        if (IsHidden) return false;
+
+        HiddenAt = at;
+        return true;
+    }
+
+    /// <summary>Shows the conversation again, as a new message does (UC-CHT-E07). Returns false when it was already shown.</summary>
+    public bool Restore()
+    {
+        if (!IsHidden) return false;
+
+        HiddenAt = null;
+        return true;
     }
 
     internal void Leave(DateTimeOffset at) => LeftAt = at;

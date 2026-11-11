@@ -31,7 +31,7 @@ public class ArchiveChannelCommandHandler(
     {
         var userId = requestContext.UserId;
         var caller = await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
-        var space = await ChannelAccess.LoadLiveAsync(db, request.WorkspaceId, request.ChannelId, cancellationToken);
+        var space = await ChannelAccess.LoadChannelAsync(db, request.WorkspaceId, request.ChannelId, cancellationToken);
         ChannelAccess.RequireVisible(space, caller, userId);
         ChannelAccess.RequireManager(space, caller, userId);
 

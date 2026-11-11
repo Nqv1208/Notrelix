@@ -34,8 +34,8 @@ public class JoinChannelCommandHandler(
         if (string.Equals(caller.Role, ChannelAccess.GuestRole, StringComparison.Ordinal))
             throw new ForbiddenException("A Guest joins a channel only when they are added to it.");
 
-        var space = await ChannelAccess.LoadLiveAsync(db, request.WorkspaceId, request.ChannelId, cancellationToken);
-        if (space.IsPrivate)
+        var space = await ChannelAccess.LoadChannelAsync(db, request.WorkspaceId, request.ChannelId, cancellationToken);
+        if (!space.IsPublic)
             throw new NotFoundException(nameof(Space), space.Id);
 
         if (space.AddMember(userId, MembershipRole.Member, clock.UtcNow))

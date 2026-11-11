@@ -398,6 +398,7 @@ export function seedChatWorld(state: MockChatState, store: MockStore): void {
         mentionCount: 0,
         joinedAt: clock.offsetDays(-(row.joinedDaysAgo ?? seed.createdDaysAgo)),
         leftAt: null,
+        hiddenAt: null,
       });
     }
   }

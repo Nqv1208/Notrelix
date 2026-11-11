@@ -34,6 +34,8 @@ export interface ChatProblemBody {
   status: number;
   detail: string;
   errorCode: string;
+  /** The stable rule behind a business-rule problem (additive to errorCode). */
+  ruleCode?: string;
 }
 
 /** Thrown inside a handler to answer with a problem; `guarded` turns it into the response. */
@@ -58,6 +60,21 @@ export function fail(
       status,
       detail,
       errorCode,
+    },
+  });
+}
+
+/** A domain rule the backend answers with the generic 400: errorCode business_rule.violation, the rule in ruleCode. */
+export function ruleProblem(ruleCode: string, detail: string): never {
+  throw new ChatFailure({
+    status: 400,
+    body: {
+      type: `https://notrelix.dev/problems/${CHAT_ERROR.businessRule}`,
+      title: "Business rule violation",
+      status: 400,
+      detail,
+      errorCode: CHAT_ERROR.businessRule,
+      ruleCode,
     },
   });
 }
@@ -170,14 +187,29 @@ export function liveSpace(
   return space;
 }
 
-/** A private channel is seen by its members; a Guest sees only the spaces they were added to. */
+/** A live channel: a direct or group conversation is the same NotFound as a missing channel (backend LoadChannelAsync). */
+export function liveChannel(
+  state: MockChatState,
+  workspaceId: string,
+  spaceId: string,
+): ChatSpaceRecord {
+  const space = liveSpace(state, workspaceId, spaceId);
+  if (isConversationKind(space.kind)) notFoundProblem();
+  return space;
+}
+
+export function isConversationKind(kind: ChatSpaceRecord["kind"]): boolean {
+  return kind === "direct" || kind === "group";
+}
+
+/** A private channel or a conversation is seen by its members; a Guest sees only the spaces they were added to. */
 export function requireVisible(
   state: MockChatState,
   space: ChatSpaceRecord,
   caller: ChatCaller,
 ): void {
   const mustBeMember =
-    space.kind === "channel_private" || caller.role === "Guest";
+    space.kind !== "channel_public" || caller.role === "Guest";
   if (mustBeMember && !state.activeMembershipOf(space.id, caller.userId)) {
     notFoundProblem();
   }

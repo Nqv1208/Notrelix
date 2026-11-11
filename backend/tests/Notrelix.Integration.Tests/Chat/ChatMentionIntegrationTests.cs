@@ -194,4 +194,34 @@ public sealed class ChatMentionIntegrationTests : IAsyncLifetime
         (await probe.ChatMessageMentions.IgnoreQueryFilters().CountAsync(m => m.SpaceId == _spaceId)).Should().Be(0);
         (await MentionCountOfAsync(_bob)).Should().Be(0);
     }
+
+    [Fact]
+    public async Task InAConversation_AMentionOfAParticipantCounts_AndOneOfANonParticipantWarnsAndNeverCounts()
+    {
+        var direct = Space.CreateDirect(_accountId, _workspaceId, _author, _bob, Now);
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
+        {
+            seed.ChatSpaces.Add(direct);
+            await seed.SaveChangesAsync();
+        }
+
+        Result<SendMessageResultDto> result;
+        await using (var context = _db.CreateOwnerContext(SystemTenant()))
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync();
+            var handler = new SendMessageCommandHandler(
+                context, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now), Broadcasters(true));
+            result = await handler.Handle(
+                new SendMessageCommand(_workspaceId, direct.Id, "hi @Bob and @Carol", "d-1", null, [Person(3, 4, _bob), Person(12, 6, _carol)]),
+                CancellationToken.None);
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+
+        result.Data!.Message.Mentions.Should().HaveCount(2);
+        result.Data.Message.MentionNotices.Should().ContainSingle(n => n.UserId == _carol);
+        await using var read = _db.CreateOwnerContext(SystemTenant());
+        var counts = await MentionCounts.ForSpaceAsync(read, direct.Id, [_author, _bob, _carol], CancellationToken.None);
+        counts.Should().Equal(new Dictionary<Guid, int> { [_bob] = 1 });
+    }
 }

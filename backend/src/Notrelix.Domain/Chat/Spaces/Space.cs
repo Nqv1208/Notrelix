@@ -3,8 +3,8 @@ using Notrelix.Domain.Chat.Rules;
 namespace Notrelix.Domain.Chat.Spaces;
 
 /// <summary>
-/// A space: the unit of scope and access in Chat (CHT-001). Phase 1 creates channels. It owns its memberships
-/// and the per-space sequence counter (<see cref="LastSequence"/>), which message sends advance in a later slice.
+/// A space: the unit of scope and access in Chat (CHT-001). It is a channel or a conversation (direct or group, S2.1). It owns
+/// its memberships and the per-space sequence counter (<see cref="LastSequence"/>), which every message send advances.
 /// </summary>
 /// <remarks>
 /// Invariants held here: the name is 1 to 80 characters; an archived channel is read-only (every change except
@@ -33,6 +33,9 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
     public bool IsArchived => ArchivedAt is not null;
     public bool IsPublic => Kind == SpaceKind.ChannelPublic;
     public bool IsPrivate => Kind == SpaceKind.ChannelPrivate;
+
+    /// <summary>A direct or group conversation: a space whose members are fixed people, not a channel (CHT-003).</summary>
+    public bool IsConversation => Kind is SpaceKind.Direct or SpaceKind.Group;
 
     private Space() : base() { }
 
@@ -69,6 +72,121 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
         space._memberships.Add(Membership.Create(space.Id, accountId, workspaceId, createdBy, MembershipRole.Manager, createdAt));
         return space;
     }
+
+    /// <summary>
+    /// Creates the direct conversation of two people (UC-CHT-E01). Both start as members; the name stays empty because a direct
+    /// conversation has no name. The pair itself is recorded by <see cref="DirectPair"/>.
+    /// </summary>
+    public static Space CreateDirect(Guid accountId, Guid workspaceId, Guid createdBy, Guid otherUserId, DateTimeOffset createdAt)
+    {
+        Guard.NotEmpty(accountId);
+        Guard.NotEmpty(workspaceId);
+        Guard.NotEmpty(createdBy);
+        Guard.NotEmpty(otherUserId);
+        if (createdBy == otherUserId)
+            throw new BusinessRuleException(ChatRuleCodes.SelfTarget, "A direct conversation needs two different people.");
+
+        var space = new Space
+        {
+            AccountId = accountId,
+            WorkspaceId = workspaceId,
+            Kind = SpaceKind.Direct,
+            Name = string.Empty,
+            Position = 0,
+            LastSequence = 0,
+        };
+        space.SetAuditOnCreate(createdBy, createdAt);
+        space._memberships.Add(Membership.Create(space.Id, accountId, workspaceId, createdBy, MembershipRole.Member, createdAt));
+        space._memberships.Add(Membership.Create(space.Id, accountId, workspaceId, otherUserId, MembershipRole.Member, createdAt));
+        return space;
+    }
+
+    /// <summary>
+    /// Creates a group conversation with its first participants (UC-CHT-E02). The caller is one of <paramref name="participantIds"/>.
+    /// A group has at least three people and at most <see cref="ChatLimits.GroupCap"/>, counted with the caller; the name is
+    /// optional (empty when not given). Duplicate ids count once.
+    /// </summary>
+    public static Space CreateGroup(
+        Guid accountId,
+        Guid workspaceId,
+        string? name,
+        IEnumerable<Guid> participantIds,
+        Guid createdBy,
+        DateTimeOffset createdAt)
+    {
+        Guard.NotEmpty(accountId);
+        Guard.NotEmpty(workspaceId);
+        Guard.NotEmpty(createdBy);
+
+        var people = participantIds.Distinct().ToList();
+        if (!people.Contains(createdBy))
+            people.Add(createdBy);
+        if (people.Count < 3)
+            throw new BusinessRuleException(ChatRuleCodes.GroupTooSmall, "A group conversation has at least three people.");
+        if (people.Count > ChatLimits.GroupCap)
+            throw new BusinessRuleException(ChatRuleCodes.LimitReached, $"A group conversation holds at most {ChatLimits.GroupCap} people.");
+
+        var space = new Space
+        {
+            AccountId = accountId,
+            WorkspaceId = workspaceId,
+            Kind = SpaceKind.Group,
+            Name = NormalizeConversationName(name),
+            Position = 0,
+            LastSequence = 0,
+        };
+        space.SetAuditOnCreate(createdBy, createdAt);
+        foreach (var person in people)
+            space._memberships.Add(Membership.Create(space.Id, accountId, workspaceId, person, MembershipRole.Member, createdAt));
+        return space;
+    }
+
+    /// <summary>
+    /// Adds a participant to a group conversation (UC-CHT-E03). Returns false when the person is already a participant. The group
+    /// holds at most <see cref="ChatLimits.GroupCap"/> active participants; the next one is refused with limit-reached.
+    /// </summary>
+    public bool AddParticipant(Guid userId, DateTimeOffset joinedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(userId);
+        if (Kind != SpaceKind.Group)
+            throw new BusinessRuleException(ChatRuleCodes.KindNotSupported, "Only a group conversation takes new participants.");
+        if (IsActiveMember(userId)) return false;
+        if (ActiveMemberCount() >= ChatLimits.GroupCap)
+            throw new BusinessRuleException(ChatRuleCodes.LimitReached, $"A group conversation holds at most {ChatLimits.GroupCap} people.");
+
+        return AddMember(userId, MembershipRole.Member, joinedAt);
+    }
+
+    /// <summary>
+    /// The caller leaves a group conversation (UC-CHT-E04). Returns false when they are not a participant. A direct conversation
+    /// cannot be left: its two people stay for good (400 kind-not-supported).
+    /// </summary>
+    public bool LeaveConversation(Guid userId, DateTimeOffset leftAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(userId);
+        if (Kind != SpaceKind.Group)
+            throw new BusinessRuleException(ChatRuleCodes.KindNotSupported, "Only a group conversation can be left.");
+
+        var member = GetActiveMembership(userId);
+        if (member is null) return false;
+
+        member.Leave(leftAt);
+        return true;
+    }
+
+    /// <summary>Closes a conversation that has no active participant left (UC-CHT-E04): a soft delete, purged by retention.</summary>
+    public bool CloseIfNoParticipants(Guid closedBy, DateTimeOffset closedAt)
+    {
+        if (IsDeleted || ActiveMemberCount() > 0) return false;
+
+        Delete(closedBy, closedAt);
+        return true;
+    }
+
+    /// <summary>The number of people who are active members now.</summary>
+    public int ActiveMemberCount() => _memberships.Count(m => m.IsActive);
 
     /// <summary>Renames and sets the topic. Returns false, and changes nothing, when both are already as given.</summary>
     public bool UpdateDetails(string name, string? topic, Guid updatedBy, DateTimeOffset updatedAt)
@@ -213,6 +331,15 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
         if (string.IsNullOrWhiteSpace(topic)) return null;
         var trimmed = topic.Trim();
         Guard.MaxLength(trimmed, ChatLimits.ChannelTopicMaxLength);
+        return trimmed;
+    }
+
+    /// <summary>A conversation name is optional: empty when not given, otherwise trimmed and at most the channel name length.</summary>
+    private static string NormalizeConversationName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return string.Empty;
+        var trimmed = name!.Trim();
+        Guard.MaxLength(trimmed, ChatLimits.ChannelNameMaxLength);
         return trimmed;
     }
 

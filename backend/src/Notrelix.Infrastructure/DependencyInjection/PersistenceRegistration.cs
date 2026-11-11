@@ -99,6 +99,7 @@ public static class PersistenceRegistration
         services.AddScoped<ICollaborationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IChatDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.ISpaceSequenceAllocator, Notrelix.Infrastructure.Data.Chat.ChatSpaceSequenceAllocator>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IDirectConversationLock, Notrelix.Infrastructure.Data.Chat.ChatDirectConversationLock>();
         services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IChatReadStateStore, Notrelix.Infrastructure.Data.Chat.ChatReadStateStore>();
         services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IChatThreadReadStore, Notrelix.Infrastructure.Data.Chat.ChatThreadReadStore>();
         services.AddScoped<IAutomationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());

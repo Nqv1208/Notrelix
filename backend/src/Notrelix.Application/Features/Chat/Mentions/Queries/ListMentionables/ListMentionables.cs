@@ -5,6 +5,7 @@ using Notrelix.Application.Features.Chat.Mentions.DTOs;
 using Notrelix.Application.Features.Chat.Mentions.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Rules;
+using Notrelix.Domain.Chat.Spaces;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
 
 namespace Notrelix.Application.Features.Chat.Mentions.Queries.ListMentionables;
@@ -44,14 +45,15 @@ public class ListMentionablesQueryHandler(
         var inSpace = space.Memberships.Where(m => m.IsActive).Select(m => m.UserId).OrderBy(id => id).ToList();
         var people = inSpace.Select(id => new MentionableDto(id, InSpace: true)).ToList();
 
-        if (!isGuest)
+        // A conversation lists its participants only: the Workspace directory is a channel composer feature (COL-030).
+        if (!isGuest && !space.IsConversation)
         {
             var inSpaceSet = inSpace.ToHashSet();
             var colleagues = await members.ListActiveColleagueIdsAsync(request.WorkspaceId, cancellationToken);
             people.AddRange(colleagues.Where(id => !inSpaceSet.Contains(id)).OrderBy(id => id).Select(id => new MentionableDto(id, InSpace: false)));
         }
 
-        var canBroadcast = !isGuest && inSpace.Count > 1 && await broadcast.CanBroadcastAsync(request.WorkspaceId, cancellationToken);
+        var canBroadcast = !isGuest && inSpace.Count > 1 && space.Kind != SpaceKind.Direct && await broadcast.CanBroadcastAsync(request.WorkspaceId, cancellationToken);
         return Result<MentionablesDto>.Success(new MentionablesDto(
             people.Take(ListMentionablesQuery.PeopleMax).ToList(), canBroadcast, ChatLimits.BroadcastConfirmThreshold, inSpace.Count));
     }

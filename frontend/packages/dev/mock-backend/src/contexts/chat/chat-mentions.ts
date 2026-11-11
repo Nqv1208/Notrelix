@@ -225,7 +225,8 @@ export function resolveMentions(
         length: span.length,
         userId: null,
       });
-    } else if (activeMembers < 2) {
+    } else if (activeMembers < 2 || space.kind === "direct") {
+      // A direct conversation has one other person: there is no audience to broadcast to (UC-CHT-G03).
       notices.push({
         code: CHAT_MENTION_NOTICE.noAudience,
         start: span.start,

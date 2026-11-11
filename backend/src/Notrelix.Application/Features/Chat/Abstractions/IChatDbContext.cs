@@ -15,4 +15,6 @@ public interface IChatDbContext
     DbSet<Pin> ChatPins { get; }
     DbSet<Notrelix.Domain.Chat.Messages.Reaction> ChatReactions { get; }
     DbSet<MessageMention> ChatMessageMentions { get; }
+    DbSet<DirectPair> ChatDirectPairs { get; }
+    DbSet<PersonBlock> ChatBlocks { get; }
 }

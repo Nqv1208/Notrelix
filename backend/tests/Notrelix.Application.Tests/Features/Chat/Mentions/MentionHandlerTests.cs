@@ -631,4 +631,77 @@ public class MentionHandlerTests
         await privateSpace.Should().ThrowAsync<AppNotFoundException>();
         await missing.Should().ThrowAsync<AppNotFoundException>();
     }
+
+    // ── Conversations (direct and group) ─────────────────────────────────────
+
+    private Space Group(params Guid[] others)
+    {
+        var space = Space.CreateGroup(_accountId, _workspaceId, "Team", others, _author, Now);
+        _spaces.Add(space);
+        return space;
+    }
+
+    private Space DirectWithBob()
+    {
+        var space = Space.CreateDirect(_accountId, _workspaceId, _author, _bob, Now);
+        _spaces.Add(space);
+        return space;
+    }
+
+    [Fact]
+    public async Task Send_InAGroupConversation_StoresAMentionOfAParticipantAndCountsItForThem()
+    {
+        var space = Group(_bob, _carol);
+
+        var result = await Send(space, "hi @Bob", [Person(3, 4, _bob)]);
+
+        result.Data!.Message.Mentions.Should().ContainSingle(m => m.UserId == _bob);
+        result.Data.Message.MentionNotices.Should().BeEmpty();
+        (await MentionsOf(_bob, space)).Should().Be(1);
+        (await MentionsOf(_carol, space)).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Send_InAConversation_ToAWorkspaceMemberWhoIsNotAParticipant_WarnsAndNeverCountsIt()
+    {
+        var space = DirectWithBob();
+
+        var result = await Send(space, "hi @Col", [Person(3, 4, _colleague)]);
+
+        result.Data!.Message.MentionNotices.Should().ContainSingle()
+            .Which.Should().BeEquivalentTo(new MentionNoticeDto(MentionResolver.CannotView, 3, 4, _colleague));
+        AsUser(_colleague);
+        (await Summary()).Data!.Spaces.Should().NotContain(s => s.SpaceId == space.Id);
+    }
+
+    [Fact]
+    public async Task Send_ABroadcastInADirectConversation_HasNoAudienceButWorksInAGroup()
+    {
+        _broadcast.Setup(b => b.CanBroadcastAsync(_workspaceId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        var direct = DirectWithBob();
+        var group = Group(_bob, _carol);
+
+        var inDirect = await Send(direct, "hey @channel", [Channel(4)], "c-d");
+        var inGroup = await Send(group, "hey @channel", [Channel(4)], "c-g");
+
+        inDirect.Data!.Message.Mentions.Should().BeEmpty();
+        inDirect.Data.Message.MentionNotices.Single().Code.Should().Be(MentionResolver.NoAudience);
+        inGroup.Data!.Message.Mentions.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task Mentionables_InAConversation_ListsTheParticipantsOnlyAndNoDirectoryBroadcast()
+    {
+        var group = Group(_bob, _carol);
+        var direct = DirectWithBob();
+
+        var inGroup = await MentionablesHandler().Handle(new ListMentionablesQuery(_workspaceId, group.Id), CancellationToken.None);
+        var inDirect = await MentionablesHandler().Handle(new ListMentionablesQuery(_workspaceId, direct.Id), CancellationToken.None);
+
+        inGroup.Data!.People.Should().OnlyContain(p => p.InSpace);
+        inGroup.Data.People.Select(p => p.UserId).Should().BeEquivalentTo([_author, _bob, _carol]);
+        inGroup.Data.CanBroadcast.Should().BeTrue();
+        inDirect.Data!.People.Should().OnlyContain(p => p.InSpace);
+        inDirect.Data.CanBroadcast.Should().BeFalse();
+    }
 }

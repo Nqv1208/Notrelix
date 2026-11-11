@@ -389,6 +389,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/chat/me/blocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Block or unblock a person for the caller
+         * @description A block stops a direct conversation between the caller and that person from being started by either side (404). It does not hide channel messages. Idempotent. Blocking yourself is 400; a person who is not in the Workspace is 404.
+         */
+        put: operations["Chat.Blocks.Set"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/chat/channel-groups": {
         parameters: {
             query?: never;
@@ -519,6 +539,90 @@ export interface paths {
          * @description An archived channel is read-only. Unarchiving checks the name again: a name taken meanwhile is 409 name-conflict.
          */
         post: operations["Chat.Channels.Archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's direct and group conversations
+         * @description Newest activity first, each with its participants, the newest message as a preview and the caller's unread count. Conversations the caller hid are left out. limit is 1 to 100, default 50.
+         */
+        get: operations["Chat.Conversations.List"];
+        put?: never;
+        /**
+         * Start a direct or group conversation
+         * @description A direct conversation is one per pair of people: starting it again returns the conversation that exists (200), otherwise it is created (201). A group has at least three people counted with the caller and at most eight: over the cap is 422 limit-reached. Starting with yourself is 400. A person who is not an active member of the Workspace, a person blocked in either direction, or (for a Guest) a person with no shared space is 404. A group lists the people who could not be added under skipped.
+         */
+        post: operations["Chat.Conversations.Start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/conversations/{conversationId}/participants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add people to a group conversation
+         * @description Any participant may add people to a group. A direct conversation takes no one else (400 kind-not-supported). The group stays within eight people: over the cap is 422 limit-reached. A person outside the Workspace is listed under skipped. A conversation the caller is not in is 404.
+         */
+        post: operations["Chat.Conversations.AddParticipants"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/conversations/{conversationId}/participants/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Leave a group conversation
+         * @description The remaining participants see a system message. A direct conversation cannot be left (400 kind-not-supported). When the last participant leaves, the conversation closes. A conversation the caller is not in is 404.
+         */
+        delete: operations["Chat.Conversations.Leave"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/conversations/{conversationId}/visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Hide or show a conversation in the caller's list
+         * @description Only the caller's own list changes; the other participants keep the conversation. A new message in it shows it again. Idempotent. A conversation the caller is not in is 404.
+         */
+        put: operations["Chat.Conversations.SetVisibility"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7477,6 +7581,9 @@ export interface components {
         "Notrelix.API.Contracts.Chat.Requests.AddChannelMembersRequest": {
             userIds?: string[] | null;
         };
+        "Notrelix.API.Contracts.Chat.Requests.AddConversationParticipantsRequest": {
+            userIds?: string[] | null;
+        };
         "Notrelix.API.Contracts.Chat.Requests.ArchiveChannelRequest": {
             archived?: boolean | null;
             /** Format: int64 */
@@ -7552,10 +7659,25 @@ export interface components {
             mentions?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.MentionRequest"][] | null;
             confirmBroadcast?: boolean | null;
         };
+        "Notrelix.API.Contracts.Chat.Requests.SetConversationVisibilityRequest": {
+            hidden?: boolean | null;
+        };
         "Notrelix.API.Contracts.Chat.Requests.SetNotificationLevelRequest": {
             level?: string | null;
             /** Format: date-time */
             mutedUntil?: string | null;
+        };
+        "Notrelix.API.Contracts.Chat.Requests.SetPersonBlockRequest": {
+            /** Format: uuid */
+            userId?: string | null;
+            blocked?: boolean | null;
+        };
+        "Notrelix.API.Contracts.Chat.Requests.StartConversationRequest": {
+            kind?: string | null;
+            /** Format: uuid */
+            userId?: string | null;
+            userIds?: string[] | null;
+            name?: string | null;
         };
         "Notrelix.API.Contracts.Chat.Requests.UpdateChannelGroupRequest": {
             name?: string | null;
@@ -9065,6 +9187,60 @@ export interface components {
         "Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.WorkspaceBillingPlanDto": {
             currentPlan?: components["schemas"]["Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.BillingPlanDto"];
             availablePlans?: components["schemas"]["Notrelix.Application.Features.Billing.Plans.Queries.GetWorkspaceBillingPlan.BillingPlanDto"][] | null;
+        };
+        "Notrelix.Application.Features.Chat.Blocks.DTOs.PersonBlockDto": {
+            /** Format: uuid */
+            userId?: string;
+            blocked?: boolean;
+        };
+        "Notrelix.Application.Features.Chat.Conversations.DTOs.AddConversationParticipantsResultDto": {
+            added?: string[] | null;
+            skipped?: string[] | null;
+        };
+        "Notrelix.Application.Features.Chat.Conversations.DTOs.ConversationDto": {
+            /** Format: uuid */
+            id?: string;
+            kind?: string | null;
+            name?: string | null;
+            participants?: components["schemas"]["Notrelix.Application.Features.Chat.Conversations.DTOs.ConversationParticipantDto"][] | null;
+            isHidden?: boolean;
+            notificationLevel?: string | null;
+            /** Format: int32 */
+            unreadCount?: number;
+            lastMessage?: components["schemas"]["Notrelix.Application.Features.Chat.Conversations.DTOs.ConversationPreviewDto"];
+            /** Format: date-time */
+            lastActivityAt?: string;
+            /** Format: int64 */
+            version?: number;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        "Notrelix.Application.Features.Chat.Conversations.DTOs.ConversationParticipantDto": {
+            /** Format: uuid */
+            userId?: string;
+            role?: string | null;
+            /** Format: date-time */
+            joinedAt?: string;
+        };
+        "Notrelix.Application.Features.Chat.Conversations.DTOs.ConversationPreviewDto": {
+            /** Format: int64 */
+            sequence?: number;
+            /** Format: uuid */
+            authorId?: string;
+            kind?: string | null;
+            text?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        "Notrelix.Application.Features.Chat.Conversations.DTOs.ConversationVisibilityDto": {
+            /** Format: uuid */
+            conversationId?: string;
+            hidden?: boolean;
+        };
+        "Notrelix.Application.Features.Chat.Conversations.DTOs.StartConversationResultDto": {
+            conversation?: components["schemas"]["Notrelix.Application.Features.Chat.Conversations.DTOs.ConversationDto"];
+            created?: boolean;
+            skipped?: string[] | null;
         };
         "Notrelix.Application.Features.Chat.Mentions.DTOs.MentionableDto": {
             /** Format: uuid */
@@ -12299,6 +12475,59 @@ export interface operations {
             };
         };
     };
+    "Chat.Blocks.Set": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.SetPersonBlockRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Blocks.DTOs.PersonBlockDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
     "Chat.ChannelGroups.Create": {
         parameters: {
             query?: never;
@@ -12885,6 +13114,296 @@ export interface operations {
             };
             /** @description Precondition Failed */
             412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Conversations.List": {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Conversations.DTOs.ConversationDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Conversations.Start": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.StartConversationRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Conversations.DTOs.StartConversationResultDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Chat.Conversations.AddParticipants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.AddConversationParticipantsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Conversations.DTOs.AddConversationParticipantsResultDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Conversations.Leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Conversations.SetVisibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.SetConversationVisibilityRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Conversations.DTOs.ConversationVisibilityDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

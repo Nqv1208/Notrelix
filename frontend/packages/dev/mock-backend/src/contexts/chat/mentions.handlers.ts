@@ -7,6 +7,7 @@ import { defineMockOperation } from "../../operations/types";
 import { ok } from "../../transport/create-response";
 import {
   callerIn,
+  isConversationKind,
   guarded,
   liveSpace,
   notFoundProblem,
@@ -47,7 +48,8 @@ export const mentionsOperations = [
           .map((row) => row.userId)
           .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
         const people = inSpace.map((userId) => ({ userId, inSpace: true }));
-        if (caller.role !== "Guest") {
+        // A conversation lists its participants only: the Workspace directory is a channel composer feature (COL-030).
+        if (caller.role !== "Guest" && !isConversationKind(space.kind)) {
           // The rest of the Workspace, not Guests (the backend lists the active non-Guest colleagues), marked as not in the space.
           const inSpaceSet = new Set(inSpace);
           const others = store
@@ -61,7 +63,10 @@ export const mentionsOperations = [
         }
         return ok({
           people: people.slice(0, CHAT_LIMITS.mentionablesMax),
-          canBroadcast: canBroadcast(caller) && inSpace.length > 1,
+          canBroadcast:
+            canBroadcast(caller) &&
+            inSpace.length > 1 &&
+            space.kind !== "direct",
           broadcastConfirmAbove: CHAT_LIMITS.broadcastConfirmThreshold,
           memberCount: inSpace.length,
         });
