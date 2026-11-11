@@ -60,10 +60,7 @@ public class Message : AggregateRoot, IWorkspaceScoped
         if (clientMessageId.Trim().Length > ChatLimits.ClientMessageIdMaxLength)
             throw new BusinessRuleException(ChatRuleCodes.MessageContentInvalid, "The client message id is too long.");
 
-        var message = Create(accountId, workspaceId, spaceId, sequence, authorId, MessageKind.User, content, createdAt);
-        message.ClientMessageId = clientMessageId.Trim();
-        message.ReplyToId = replyToId;
-        return message;
+        return Create(accountId, workspaceId, spaceId, sequence, authorId, MessageKind.User, content, createdAt, clientMessageId.Trim(), replyToId);
     }
 
     /// <summary>A system message, attributed to the person whose change it announces (UC-CHT-B09).</summary>
@@ -85,7 +82,9 @@ public class Message : AggregateRoot, IWorkspaceScoped
         Guid authorId,
         MessageKind kind,
         string content,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        string? clientMessageId = null,
+        Guid? replyToId = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
@@ -104,6 +103,8 @@ public class Message : AggregateRoot, IWorkspaceScoped
             AuthorId = authorId,
             Kind = kind,
             Content = normalized,
+            ClientMessageId = clientMessageId,
+            ReplyToId = replyToId,
         };
 
         message.SetAuditOnCreate(authorId, createdAt);
@@ -118,7 +119,8 @@ public class Message : AggregateRoot, IWorkspaceScoped
             normalized,
             message.ClientMessageId,
             message.Version,
-            createdAt));
+            createdAt,
+            replyToId));
 
         return message;
     }

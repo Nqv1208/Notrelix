@@ -1,6 +1,7 @@
 using System.Security.Claims;
 
 using Notrelix.Application.Common.Realtime.Gateway;
+using Notrelix.Application.Features.Chat.Channels.Queries.AuthorizeChannelRealtimeSubscription;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.AuthorizeBoardRealtimeSubscription;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.AuthorizeWorkspaceRealtimeSubscription;
 using Notrelix.Infrastructure.Auth.Jwt;
@@ -101,6 +102,14 @@ public sealed class MediatorRealtimeSubscriptionAuthorizer : IRealtimeSubscripti
             execution.SetCorrelation(principal.CorrelationId);
             services.GetRequiredService<ICurrentTenantContext>().SetUser(principal.UserId);
 
+            // The per-user stream belongs to the person it names: any other id is the same denial as a missing scope.
+            if (scope.Kind == RealtimeScopeKind.User)
+            {
+                return scope.Id == principal.UserId
+                    ? RealtimeAuthorizationResult.Granted(RealtimeSubscriptionGrant.Unbound)
+                    : RealtimeAuthorizationResult.Denied;
+            }
+
             var sender = services.GetRequiredService<ISender>();
             var result = scope.Kind switch
             {
@@ -108,6 +117,8 @@ public sealed class MediatorRealtimeSubscriptionAuthorizer : IRealtimeSubscripti
                     new AuthorizeWorkspaceRealtimeSubscriptionQuery(scope.Id), cancellationToken),
                 RealtimeScopeKind.Board => await sender.Send(
                     new AuthorizeBoardRealtimeSubscriptionQuery(scope.Id), cancellationToken),
+                RealtimeScopeKind.Channel => await sender.Send(
+                    new AuthorizeChannelRealtimeSubscriptionQuery(scope.Id), cancellationToken),
                 _ => null,
             };
 

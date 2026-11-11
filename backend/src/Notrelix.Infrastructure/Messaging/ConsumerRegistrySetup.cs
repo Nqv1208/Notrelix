@@ -797,6 +797,36 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "ChatMessageCreatedRealtimeConsumer",
+                EventName = "chat.message.created",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-realtime-v1",
+                BoundedContext = "Chat",
+                Description = "Publishes a new message to the realtime gateway (channel frame) and fans out unread counts to the per-user stream",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ChatMessageUpdatedRealtimeConsumer",
+                EventName = "chat.message.updated",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-realtime-v1",
+                BoundedContext = "Chat",
+                Description = "Publishes an edited message to the realtime gateway (channel frame)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ChatMessageDeletedRealtimeConsumer",
+                EventName = "chat.message.deleted",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-realtime-v1",
+                BoundedContext = "Chat",
+                Description = "Publishes a deleted message (tombstone) to the realtime gateway (channel frame)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "BoardItemMemberAssignedAutomationConsumer",
                 EventName = "work-management.board-item-member-assigned",
                 EventVersion = 1,

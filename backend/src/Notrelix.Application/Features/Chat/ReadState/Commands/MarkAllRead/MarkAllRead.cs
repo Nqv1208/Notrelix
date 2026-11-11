@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Messaging;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Time;
 using Notrelix.Application.Features.Chat.Abstractions;
@@ -24,15 +25,23 @@ public class MarkAllReadCommandHandler(
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
     IChatReadStateStore readStates,
-    IDateTimeProvider clock) : IRequestHandler<MarkAllReadCommand, Result<UnreadSummaryDto>>
+    IDateTimeProvider clock,
+    IIntegrationEventCollector events) : IRequestHandler<MarkAllReadCommand, Result<UnreadSummaryDto>>
 {
     public async Task<Result<UnreadSummaryDto>> Handle(MarkAllReadCommand request, CancellationToken cancellationToken)
     {
         var userId = requestContext.UserId;
         await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
 
+        var before = await UnreadSummaryBuilder.BuildAsync(db, request.WorkspaceId, userId, clock.UtcNow, cancellationToken);
         await readStates.AdvanceAllAsync(request.WorkspaceId, userId, cancellationToken);
         var summary = await UnreadSummaryBuilder.BuildAsync(db, request.WorkspaceId, userId, clock.UtcNow, cancellationToken);
+
+        // One per-user fact for each space whose count moved: the other devices of the person clear those badges (UC-CHT-C09).
+        var changed = before.Spaces.Where(s => s.UnreadCount > 0).Select(s => s.SpaceId).ToHashSet();
+        ReadStateRealtime.Announce(events, requestContext.RequireAccountId(), request.WorkspaceId, userId,
+            summary.Spaces.Where(s => changed.Contains(s.SpaceId)), clock.UtcNow);
+
         return Result<UnreadSummaryDto>.Success(summary);
     }
 }

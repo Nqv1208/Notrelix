@@ -210,7 +210,26 @@ public static class RealtimeProtocol
         sentAt,
     });
 
-    public static byte[] Event(string subscriptionId, RealtimeNotification notification) => Serialize(new
+    /// <summary>The largest server frame in bytes (the same cap the client applies to frames it sends).</summary>
+    public const int MaxFrameBytes = 4096;
+
+    /// <summary>
+    /// One event frame. A notification with a payload carries it under <c>payload</c>; when the frame would exceed
+    /// <see cref="MaxFrameBytes"/> the payload is dropped and <c>payloadOmitted</c> is set, so the client refetches the
+    /// resource over REST instead of receiving a frame it cannot hold.
+    /// </summary>
+    public static byte[] Event(string subscriptionId, RealtimeNotification notification)
+    {
+        var frame = Serialize(EventFrame(subscriptionId, notification, payload: notification.Payload, payloadOmitted: false));
+        if (frame.Length <= MaxFrameBytes || notification.Payload is null)
+        {
+            return frame;
+        }
+
+        return Serialize(EventFrame(subscriptionId, notification, payload: null, payloadOmitted: true));
+    }
+
+    private static object EventFrame(string subscriptionId, RealtimeNotification notification, JsonElement? payload, bool payloadOmitted) => new
     {
         type = ServerTypes.Event,
         subscriptionId,
@@ -227,7 +246,9 @@ public static class RealtimeProtocol
         correlationId = notification.CorrelationId,
         occurredAt = notification.OccurredAt.ToString("O"),
         payloadContract = notification.PayloadContract,
-    });
+        payload,
+        payloadOmitted = payloadOmitted ? true : (bool?)null,
+    };
 
     private static byte[] Serialize<T>(T value) => Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value, JsonOptions));
 }
