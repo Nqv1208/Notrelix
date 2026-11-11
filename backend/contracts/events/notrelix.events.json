@@ -7132,6 +7132,11 @@
       "sensitiveFields": [],
       "consumers": [
         {
+          "name": "ChatWorkspaceMemberRemovedConsumer",
+          "context": "Chat",
+          "maturity": "Implemented"
+        },
+        {
           "name": "WorkspaceMemberRemovedAutomationConsumer",
           "context": "Automation",
           "maturity": "Implemented"

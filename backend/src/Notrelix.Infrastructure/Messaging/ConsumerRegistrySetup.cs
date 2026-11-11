@@ -827,6 +827,16 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "ChatWorkspaceMemberRemovedConsumer",
+                EventName = "workspace.member.removed",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-workspace-member-removed-v1",
+                BoundedContext = "Chat",
+                Description = "Ends the channel memberships of a person removed from or leaving a Workspace and signals the access change per channel",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "BoardItemMemberAssignedAutomationConsumer",
                 EventName = "work-management.board-item-member-assigned",
                 EventVersion = 1,
