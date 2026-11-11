@@ -67,7 +67,7 @@ public class SendMessageCommandHandler(
             cancellationToken);
         if (stored is not null)
             return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-                await ReplyPreviews.DtoAsync(db, request.WorkspaceId, stored, cancellationToken), Created: false));
+                await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, stored, cancellationToken), Created: false));
 
         if (request.ReplyToId is { } replyToId)
         {
@@ -91,7 +91,7 @@ public class SendMessageCommandHandler(
 
         db.ChatMessages.Add(message);
         return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-            await ReplyPreviews.DtoAsync(db, request.WorkspaceId, message, cancellationToken), Created: true));
+            await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, message, cancellationToken), Created: true));
     }
 }
 

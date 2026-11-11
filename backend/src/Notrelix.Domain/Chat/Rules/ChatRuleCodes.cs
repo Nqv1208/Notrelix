@@ -42,4 +42,10 @@ public static class ChatRuleCodes
 
     /// <summary>A reply targets a message that is not a root of a thread: a reply itself or a system message (UC-CHT-F01).</summary>
     public const string ThreadRootInvalid = "thread-root-invalid";
+
+    /// <summary>A system message announces a change and carries no reactions (UC-CHT-G06).</summary>
+    public const string MessageNotReactable = "message-not-reactable";
+
+    /// <summary>The reaction kind is not on the palette (400, UC-CHT-G06).</summary>
+    public const string ReactionKindInvalid = "reaction-kind-invalid";
 }

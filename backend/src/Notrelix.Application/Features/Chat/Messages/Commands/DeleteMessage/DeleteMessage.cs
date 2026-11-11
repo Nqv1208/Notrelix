@@ -10,7 +10,7 @@ namespace Notrelix.Application.Features.Chat.Messages.Commands.DeleteMessage;
 /// <summary>
 /// Deletes the caller's own message, leaving a tombstone (UC-CHT-B05). The content goes; the author, the time and the
 /// sequence stay, so a thread keeps its place. Deleting a message that is already a tombstone changes nothing.
-/// A deleted message loses its pin (UC-CHT-F06). The delete takes the space lock, as a pin does, so a pin and a delete of one
+/// A deleted message loses its pin (UC-CHT-F06) and its reactions (UC-CHT-G06). The delete takes the space lock, as a pin does, so a pin and a delete of one
 /// message cannot both commit.
 /// </summary>
 public record DeleteMessageCommand(Guid WorkspaceId, Guid MessageId, long ExpectedVersion)
@@ -60,6 +60,12 @@ public class DeleteMessageCommandHandler(
                 pin.Remove(userId, now);
                 db.ChatPins.Remove(pin);
             }
+
+            // A tombstone carries no reactions. The message's delete fact already tells readers; the reaction rows go without
+            // a fact of their own, so one deletion is one announcement.
+            var reactions = await db.ChatReactions.Where(r => r.MessageId == message.Id).ToListAsync(cancellationToken);
+            foreach (var reaction in reactions)
+                db.ChatReactions.Remove(reaction);
         }
         return Result.Success();
     }

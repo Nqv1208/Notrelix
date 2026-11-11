@@ -142,7 +142,11 @@ and `user` (stream `user:notifications:<id>`), the message frames
 `payloadOmitted` flag. A pin change is a `chat.space.changed` frame on the
 channel stream of its space (payloadContract `chat.space.v1`, payload
 `{ change: "pinned" | "unpinned", messageId }`, no content); a reader applies it
-or refetches the pins over REST (UC-CHT-F06, F07). A thread reply is a `chat.message.created` frame on the
+or refetches the pins over REST (UC-CHT-F06, F07). A reaction change is a
+`chat.reaction.changed` frame on the channel stream of its space (payloadContract
+`chat.reaction.v1`, payload `{ messageId, kind, change: "added" | "removed", actorId }`,
+no content and no counts); a reader applies it or refetches the message's reactions over
+REST (UC-CHT-G06, G07). A thread reply is a `chat.message.created` frame on the
 channel stream of its space with `threadRootId` and `threadSequence` set; the
 frame is not a separate kind (UC-CHT-F01). Its generated payload types
 (`GeneratedRealtimeMessage`, `RealtimeEventMessage` in `@notrelix/contracts`)

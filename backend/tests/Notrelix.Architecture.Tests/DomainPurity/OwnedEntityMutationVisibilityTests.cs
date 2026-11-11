@@ -32,6 +32,8 @@ public class OwnedEntityMutationVisibilityTests
         // ── Chat ── a pin has its own identity and lifecycle (one per message, listed per space); no aggregate owns it,
         // and the pin handlers and the delete of its message remove it through Remove, which raises the pin fact
         "Notrelix.Domain.Chat.Messages.Pin",
+        // A reaction has its own identity (one per message, person and kind), listed per message; no aggregate owns it.
+        "Notrelix.Domain.Chat.Messages.Reaction",
 
         // ── Analytics ──
         "Notrelix.Domain.Analytics.Dashboards.DashboardWidget",

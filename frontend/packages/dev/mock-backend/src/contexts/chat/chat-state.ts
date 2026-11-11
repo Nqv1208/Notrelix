@@ -13,12 +13,13 @@ import type {
   ChatMembershipRecord,
   ChatMessageRecord,
   ChatPinRecord,
+  ChatReactionRecord,
   ChatSpaceRecord,
   ChatThreadFollowerRecord,
   ChatThreadRecord,
 } from "./chat-model";
 
-export type ChatIdKind = "space" | "group" | "message" | "pin";
+export type ChatIdKind = "space" | "group" | "message" | "pin" | "reaction";
 
 /** The tag of each id family: a GUID whose first group names the family. */
 const ID_TAG: Record<ChatIdKind, string> = {
@@ -26,6 +27,7 @@ const ID_TAG: Record<ChatIdKind, string> = {
   group: "c2000000",
   message: "c3000000",
   pin: "c4000000",
+  reaction: "c5000000",
 };
 
 /** A deterministic GUID-shaped id of a family, numbered from 1. */
@@ -57,6 +59,8 @@ export class MockChatState {
   readonly threadFollowers = new Map<string, ChatThreadFollowerRecord>();
   /** Pins keyed by the pinned message id: a message has at most one pin. */
   readonly pins = new Map<string, ChatPinRecord>();
+  /** Reactions keyed by `${messageId}|${userId}|${kind}`: one per message, person and kind. */
+  readonly reactions = new Map<string, ChatReactionRecord>();
 
   private readonly streamVersions = new Map<string, number>();
   private readonly idCounters: Record<ChatIdKind, number> = {
@@ -64,6 +68,7 @@ export class MockChatState {
     group: 0,
     message: 0,
     pin: 0,
+    reaction: 0,
   };
   private writeTick = 0;
   private eventCounter = 0;
@@ -81,11 +86,13 @@ export class MockChatState {
     this.threads.clear();
     this.threadFollowers.clear();
     this.pins.clear();
+    this.reactions.clear();
     this.streamVersions.clear();
     this.idCounters.space = 0;
     this.idCounters.group = 0;
     this.idCounters.message = 0;
     this.idCounters.pin = 0;
+    this.idCounters.reaction = 0;
     this.writeTick = 0;
     this.eventCounter = 0;
   }
@@ -186,6 +193,25 @@ export class MockChatState {
             ? 1
             : streamIdOf(a.id) > streamIdOf(b.id)
               ? -1
+              : 0),
+      );
+  }
+
+  reactionKey(messageId: string, userId: string, kind: string): string {
+    return `${messageId}|${userId}|${kind}`;
+  }
+
+  /** The reactions of one message, in the order they were made (the order of ListReactors). */
+  reactionsOfMessage(messageId: string): ChatReactionRecord[] {
+    return Array.from(this.reactions.values())
+      .filter((row) => row.messageId === messageId)
+      .sort(
+        (a, b) =>
+          Date.parse(a.createdAt) - Date.parse(b.createdAt) ||
+          (streamIdOf(a.id) < streamIdOf(b.id)
+            ? -1
+            : streamIdOf(a.id) > streamIdOf(b.id)
+              ? 1
               : 0),
       );
   }

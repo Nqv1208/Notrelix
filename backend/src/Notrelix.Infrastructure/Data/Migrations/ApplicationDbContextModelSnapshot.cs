@@ -2746,6 +2746,58 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("pins", "chat");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.Reaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("kind");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("message_id");
+
+                    b.Property<Guid>("SpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("space_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_reactions");
+
+                    b.HasIndex("SpaceId")
+                        .HasDatabaseName("ix_reactions_space_id");
+
+                    b.HasIndex("MessageId", "CreatedAt", "UserId")
+                        .HasDatabaseName("ix_reactions_message_created_at");
+
+                    b.HasIndex("MessageId", "UserId", "Kind")
+                        .IsUnique()
+                        .HasDatabaseName("ux_reactions_message_user_kind");
+
+                    b.ToTable("reactions", "chat");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Chat.Messages.ThreadFollower", b =>
                 {
                     b.Property<Guid>("RootMessageId")
@@ -12921,6 +12973,23 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_pins_chat_spaces_space_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.Reaction", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Messages.Message", null)
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_reactions_messages_message_id");
+
+                    b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
+                        .WithMany()
+                        .HasForeignKey("SpaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_reactions_chat_spaces_space_id");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Chat.Messages.ThreadFollower", b =>

@@ -11,6 +11,15 @@ public static class ChatLimits
     public const int GroupCap = 8;
     public const int PinLimit = 50;
 
+    /// <summary>
+    /// The most distinct reaction kinds one message holds. The palette has six kinds (CHT-011, COL-009), so this bound is reached only
+    /// if the palette grows; the handler checks it under the space lock.
+    /// </summary>
+    public const int ReactionKindsPerMessageMax = 6;
+
+    /// <summary>The most reactions one person holds on one message (one per palette kind).</summary>
+    public const int ReactionsPerUserPerMessageMax = 6;
+
     /// <summary>Days without a reply after which a thread is archived (UC-CHT-F05; foundation spec section 34).</summary>
     public const int ThreadInactivityDays = 7;
 

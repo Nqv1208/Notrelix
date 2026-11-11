@@ -98,6 +98,13 @@ public static class ProblemDetailsMapper
                 ex.Message,
                 null
             ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageNotReactable } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageNotReactable,
+                "Message not reactable",
+                ex.Message,
+                null
+            ),
             Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.LimitReached } ex => (
                 StatusCodes.Status422UnprocessableEntity,
                 Notrelix.Domain.Chat.Rules.ChatRuleCodes.LimitReached,

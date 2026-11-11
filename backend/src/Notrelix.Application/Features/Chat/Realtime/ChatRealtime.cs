@@ -23,10 +23,12 @@ public static class ChatRealtime
     public const string MessageDeletedEvent = "chat.message.deleted";
     public const string UnreadChangedEvent = "chat.unread.changed";
     public const string SpaceChangedEvent = "chat.space.changed";
+    public const string ReactionChangedEvent = "chat.reaction.changed";
 
     public const string MessagePayloadContract = "chat.message.v1";
     public const string UnreadPayloadContract = "chat.unread.v1";
     public const string SpaceChangedPayloadContract = "chat.space.v1";
+    public const string ReactionPayloadContract = "chat.reaction.v1";
 
     /// <summary>
     /// The largest message payload in bytes. The frame envelope (ids, stream key, names, timestamps) is under 1 KiB,
@@ -106,6 +108,18 @@ public static class ChatRealtime
 
     /// <summary>The pin payload (contract <see cref="SpaceChangedPayloadContract"/>).</summary>
     public sealed record SpaceChangedFrame(string Change, Guid MessageId);
+
+    /// <summary>
+    /// A reaction changed on a message of a space (UC-CHT-G06, G07): the message, the kind, the change ("added" or "removed") and who
+    /// changed it. No counts and no content: a reader applies the change to the summary it holds, or refetches the message's
+    /// reactions over REST (the frame is an advisory, the REST summary is the authority). Contract <see cref="ReactionPayloadContract"/>.
+    /// </summary>
+    public static RealtimeResourceChangedV1 ForReactionChanged(ChatReactionChangedIntegrationEvent e, DateTimeOffset now)
+        => Channel(e.EventId, e.AccountId, e.WorkspaceId, e.SpaceId, e.ActorUserId, e.CorrelationId, e.CausationId,
+            e.OccurredAt, ReactionChangedEvent, Serialize(new ReactionChangedFrame(e.MessageId, e.Kind, e.ChangeKind, e.ActorUserId ?? Guid.Empty)), now, ReactionPayloadContract);
+
+    /// <summary>The reaction payload (contract <see cref="ReactionPayloadContract"/>).</summary>
+    public sealed record ReactionChangedFrame(Guid MessageId, string Kind, string Change, Guid ActorId);
 
     /// <summary>One space's unread counts for one person, for the per-user stream (the badge refresh).</summary>
     public static RealtimeResourceChangedV1 Unread(

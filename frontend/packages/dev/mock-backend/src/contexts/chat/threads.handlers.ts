@@ -121,7 +121,11 @@ export const threadsOperations = [
                   m.authorId === caller.userId &&
                   m.clientMessageId === clientMessageId,
               );
-            if (stored) return { status: 200, body: messageView(stored) };
+            if (stored)
+              return {
+                status: 200,
+                body: messageView(state, caller.userId, stored),
+              };
             if (
               root.deletedAt !== null &&
               (state.threads.get(root.id)?.replyCount ?? 0) === 0
@@ -142,7 +146,10 @@ export const threadsOperations = [
               clientMessageId,
               alsoSendToChannel,
             );
-            return { status: 201, body: messageView(reply) };
+            return {
+              status: 201,
+              body: messageView(state, caller.userId, reply),
+            };
           },
         );
       });
@@ -187,14 +194,16 @@ export const threadsOperations = [
           )
           .slice(0, limit + 1);
         return ok({
-          root: messageView(root),
+          root: messageView(state, caller.userId, root),
           thread: threadSummaryView(
             state,
             root,
             caller.userId,
             state.nowDate(),
           ),
-          items: rows.slice(0, limit).map(messageView),
+          items: rows
+            .slice(0, limit)
+            .map((m) => messageView(state, caller.userId, m)),
           hasNewer: rows.length > limit,
         });
       });
@@ -366,7 +375,7 @@ export const threadsOperations = [
           items: page.map(({ rootMessageId }) => {
             const root = state.messages.get(rootMessageId)!;
             return {
-              root: messageView(root),
+              root: messageView(state, caller.userId, root),
               thread: threadSummaryView(state, root, caller.userId, now),
             };
           }),

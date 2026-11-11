@@ -837,6 +837,16 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "ChatReactionRealtimeConsumer",
+                EventName = "chat.reaction.changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-realtime-v1",
+                BoundedContext = "Chat",
+                Description = "Publishes a reaction change of a channel message to the realtime gateway (compact channel frame; readers apply it or refetch the reaction summary)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "ChatWorkspaceMemberRemovedConsumer",
                 EventName = "workspace.member.removed",
                 EventVersion = 1,

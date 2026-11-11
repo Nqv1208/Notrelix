@@ -34,6 +34,7 @@ public class ThreadHandlerTests
     private readonly Mock<IWorkspaceMemberFacts> _members = new();
     private readonly List<Space> _spaces = [];
     private readonly List<Message> _messages = [];
+    private readonly List<Reaction> _reactions = [];
     private readonly List<MessageThread> _threads = [];
     private readonly List<ThreadFollower> _followers = [];
     private readonly List<string> _order = [];
@@ -56,6 +57,7 @@ public class ThreadHandlerTests
         _db.Setup(d => d.ChatMemberships).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.Memberships).ToList()).Object);
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(new List<ChannelGroup>()).Object);
         _db.Setup(d => d.ChatMessages).Returns(() => TestDbSet.Create(_messages).Object);
+        _db.Setup(d => d.ChatReactions).Returns(() => TestDbSet.Create(_reactions).Object);
         _db.Setup(d => d.ChatThreads).Returns(() => TestDbSet.Create(_threads).Object);
         _db.Setup(d => d.ChatThreadFollowers).Returns(() => TestDbSet.Create(_followers).Object);
 

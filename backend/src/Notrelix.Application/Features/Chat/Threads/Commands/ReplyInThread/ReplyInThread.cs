@@ -75,7 +75,7 @@ public class ReplyInThreadCommandHandler(
             cancellationToken);
         if (stored is not null)
             return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-                await ReplyPreviews.DtoAsync(db, request.WorkspaceId, stored, cancellationToken), Created: false));
+                await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, stored, cancellationToken), Created: false));
 
         // The root is read again under the lock: a delete that committed while this request waited is respected.
         var rootDeleted = await db.ChatMessages.AsNoTracking()
@@ -118,7 +118,7 @@ public class ReplyInThreadCommandHandler(
         await EnsureFollowerAsync(db, accountId, request.WorkspaceId, root.Id, userId, readReplySequence: threadSequence, cancellationToken);
 
         return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-            await ReplyPreviews.DtoAsync(db, request.WorkspaceId, reply, cancellationToken), Created: true));
+            await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, reply, cancellationToken), Created: true));
     }
 
     /// <summary>Adds a default follow (not muted) when the person has no follow row yet. An existing row is never overwritten.</summary>

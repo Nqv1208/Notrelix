@@ -63,7 +63,7 @@ public class ListFollowedThreadsQueryHandler(
         var roots = await db.ChatMessages.AsNoTracking()
             .Where(m => rootIds.Contains(m.Id))
             .ToDictionaryAsync(m => m.Id, cancellationToken);
-        var rootDtos = await ReplyPreviews.DtosAsync(db, request.WorkspaceId, rootIds.Select(id => roots[id]).ToList(), cancellationToken);
+        var rootDtos = await ReplyPreviews.DtosAsync(db, request.WorkspaceId, userId, rootIds.Select(id => roots[id]).ToList(), cancellationToken);
         var rootById = rootDtos.ToDictionary(r => r.Id);
 
         var now = clock.UtcNow;
