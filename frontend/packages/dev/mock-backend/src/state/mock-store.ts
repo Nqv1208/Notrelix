@@ -54,6 +54,8 @@ import { MockSpaceState, type MockSpaceViewer } from "./mock-spaces";
 import { MockDocsHistoryState } from "./mock-docs-history";
 import { MockBoardTemplateState } from "./mock-board-templates";
 import { MockWorkFeedState } from "./mock-work-feed";
+import { MockChatState } from "../contexts/chat/chat-state";
+import { seedChatWorld } from "../contexts/chat/chat-world";
 import {
   defaultStatusOptions,
   ERP_AUDIENCE,
@@ -399,6 +401,9 @@ export class MockStore {
 
   /** The member's work feed: relationships, approvals, mentions, inbox. */
   readonly feed = new MockWorkFeedState();
+
+  /** The Chat world: channels, groups, memberships, messages and read state (the Chat contract). */
+  readonly chat = new MockChatState(() => this);
 
   private config: MockBackendConfig;
   private clock: MockClock;
@@ -792,6 +797,7 @@ export class MockStore {
     this.seedDepartmentBoards(primaryWsId);
     this.seedInvoiceDoc(primaryWsId);
     this.feed.seed(this);
+    seedChatWorld(this.chat, this);
 
     // Extras for card-main-0001
     if (this.cardsById.has("card-main-0001")) {
@@ -2123,6 +2129,7 @@ export class MockStore {
     this.docsHistory.clear();
     this.boardTemplates.clear();
     this.feed.clear();
+    this.chat.clear();
     this.completedCardIds.clear();
     this.activityByCardId.clear();
     this.attachmentsByCardId.clear();
