@@ -1,4 +1,6 @@
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.Attachments.Services;
+using Notrelix.Application.Features.Collaboration.Public.Attachments;
 using Notrelix.Application.Features.Chat.Messages.DTOs;
 using Notrelix.Application.Features.Chat.Reactions.Services;
 using Notrelix.Domain.Chat.Messages;
@@ -6,7 +8,7 @@ using Notrelix.Domain.Chat.Messages;
 namespace Notrelix.Application.Features.Chat.Messages.Services;
 
 /// <summary>
-/// Builds the message views readers see (UC-CHT-F02, G06): the live quote of each reply and the reaction summary of each message,
+/// Builds the message views readers see (UC-CHT-F02, G06): the live quote of each reply and the reaction summary and the file list of each message,
 /// in a fixed number of queries per page. A quote is always a message of the same space (the send refuses any other), and the
 /// caller reads a page only when it may see the space, so a preview never shows content the viewer could not already read. A
 /// deleted quoted message gives a tombstone preview with no content.
@@ -28,21 +30,23 @@ public static class ReplyPreviews
     }
 
     /// <summary>One message as a DTO, with its live quote and its reaction summary.</summary>
-    public static async Task<MessageDto> DtoAsync(IChatDbContext db, Guid workspaceId, Guid viewerId, Message message, CancellationToken cancellationToken)
+    public static async Task<MessageDto> DtoAsync(IChatDbContext db, IChatMessageAttachments attachments, Guid workspaceId, Guid viewerId, Message message, CancellationToken cancellationToken)
     {
         var previews = await LoadAsync(db, workspaceId, message.ReplyToId is { } quoted ? [quoted] : [], cancellationToken);
         var reactions = await ReactionSummaries.ForMessageAsync(db, workspaceId, viewerId, message.Id, cancellationToken);
-        return MessageDto.From(message, PreviewOf(message, previews), reactions);
+        var files = await MessageAttachments.ForMessageAsync(attachments, workspaceId, message.Id, cancellationToken);
+        return MessageDto.From(message, PreviewOf(message, previews), reactions, files);
     }
 
     /// <summary>A page of messages as DTOs, each with its live quote and reaction summary, in two lookups for the whole page.</summary>
     public static async Task<IReadOnlyList<MessageDto>> DtosAsync(
-        IChatDbContext db, Guid workspaceId, Guid viewerId, IReadOnlyList<Message> messages, CancellationToken cancellationToken)
+        IChatDbContext db, IChatMessageAttachments attachments, Guid workspaceId, Guid viewerId, IReadOnlyList<Message> messages, CancellationToken cancellationToken)
     {
         var previews = await LoadAsync(db, workspaceId, messages.Where(m => m.ReplyToId is not null).Select(m => m.ReplyToId!.Value), cancellationToken);
         var reactions = await ReactionSummaries.LoadAsync(db, workspaceId, viewerId, messages.Select(m => m.Id), cancellationToken);
+        var files = await MessageAttachments.LoadAsync(attachments, workspaceId, messages.Select(m => m.Id), cancellationToken);
         return messages
-            .Select(m => MessageDto.From(m, PreviewOf(m, previews), reactions.TryGetValue(m.Id, out var summary) ? summary : []))
+            .Select(m => MessageDto.From(m, PreviewOf(m, previews), reactions.TryGetValue(m.Id, out var summary) ? summary : [], files.TryGetValue(m.Id, out var list) ? list : []))
             .ToList();
     }
 

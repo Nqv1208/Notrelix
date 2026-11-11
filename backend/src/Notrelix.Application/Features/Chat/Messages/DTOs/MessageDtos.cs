@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Chat.Attachments.DTOs;
 using Notrelix.Application.Features.Chat.Reactions.DTOs;
 using Notrelix.Domain.Chat.Messages;
 
@@ -23,14 +24,16 @@ public sealed record MessageDto(
     DateTimeOffset? DeletedAt,
     long Version,
     ReplyPreviewDto? ReplyPreview = null,
-    IReadOnlyList<ReactionSummaryDto>? Reactions = null)
+    IReadOnlyList<ReactionSummaryDto>? Reactions = null,
+    IReadOnlyList<MessageAttachmentDto>? Attachments = null)
 {
     /// <summary>
     /// The message as readers see it. <paramref name="replyPreview"/> is the live quote of <see cref="ReplyToId"/>, read by the
     /// caller from the quoted message; it is null when the message quotes nothing. <paramref name="reactions"/> is the reaction
     /// summary (UC-CHT-G06), empty when nothing reacted.
+    /// <paramref name="attachments"/> is the file list (UC-CHT-G08), empty when the message has none and always empty for a tombstone.
     /// </summary>
-    public static MessageDto From(Message message, ReplyPreviewDto? replyPreview = null, IReadOnlyList<ReactionSummaryDto>? reactions = null) => new(
+    public static MessageDto From(Message message, ReplyPreviewDto? replyPreview = null, IReadOnlyList<ReactionSummaryDto>? reactions = null, IReadOnlyList<MessageAttachmentDto>? attachments = null) => new(
         message.Id,
         message.SpaceId,
         message.Sequence,
@@ -49,7 +52,8 @@ public sealed record MessageDto(
         message.DeletedAt,
         message.Version,
         replyPreview,
-        reactions ?? []);
+        reactions ?? [],
+        attachments ?? []);
 }
 
 /// <summary>

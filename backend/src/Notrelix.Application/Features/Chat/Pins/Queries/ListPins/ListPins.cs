@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Collaboration.Public.Attachments;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Chat.Pins.DTOs;
@@ -27,7 +28,8 @@ public record ListPinsQuery(Guid WorkspaceId, Guid SpaceId, string? Cursor, int 
 public class ListPinsQueryHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
-    IWorkspaceMemberFacts members) : IRequestHandler<ListPinsQuery, Result<PinPageDto>>
+    IWorkspaceMemberFacts members,
+    IChatMessageAttachments attachments) : IRequestHandler<ListPinsQuery, Result<PinPageDto>>
 {
     public async Task<Result<PinPageDto>> Handle(ListPinsQuery request, CancellationToken cancellationToken)
     {
@@ -56,7 +58,7 @@ public class ListPinsQueryHandler(
             .ToListAsync(cancellationToken);
         var pinnedMessages = messages.ToDictionary(m => m.Id);
         var ordered = page.Where(p => pinnedMessages.ContainsKey(p.MessageId)).Select(p => pinnedMessages[p.MessageId]).ToList();
-        var dtos = await ReplyPreviews.DtosAsync(db, request.WorkspaceId, userId, ordered, cancellationToken);
+        var dtos = await ReplyPreviews.DtosAsync(db, attachments, request.WorkspaceId, userId, ordered, cancellationToken);
         var dtoById = dtos.ToDictionary(d => d.Id);
 
         var items = page

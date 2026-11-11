@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Collaboration.Public.Attachments;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Conversations.Services;
 using Notrelix.Application.Features.Chat.Messages.DTOs;
@@ -29,7 +30,8 @@ public class SendMessageCommandHandler(
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
     ISpaceSequenceAllocator sequences,
-    IDateTimeProvider clock) : IRequestHandler<SendMessageCommand, Result<SendMessageResultDto>>
+    IDateTimeProvider clock,
+    IChatMessageAttachments attachments) : IRequestHandler<SendMessageCommand, Result<SendMessageResultDto>>
 {
     public async Task<Result<SendMessageResultDto>> Handle(SendMessageCommand request, CancellationToken cancellationToken)
     {
@@ -68,7 +70,7 @@ public class SendMessageCommandHandler(
             cancellationToken);
         if (stored is not null)
             return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-                await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, stored, cancellationToken), Created: false));
+                await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, stored, cancellationToken), Created: false));
 
         if (request.ReplyToId is { } replyToId)
         {
@@ -94,7 +96,7 @@ public class SendMessageCommandHandler(
         // A new message brings a hidden conversation back to every list that hid it (UC-CHT-E07).
         ConversationVisibility.ShowAgain(space);
         return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-            await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, message, cancellationToken), Created: true));
+            await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, message, cancellationToken), Created: true));
     }
 }
 

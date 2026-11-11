@@ -232,6 +232,18 @@ public class Message : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(ChatRuleCodes.MessageDeleted, "A deleted message cannot be reacted to.");
     }
 
+    /// <summary>
+    /// Refuses a file on a message that cannot carry one: a system message (announcements are not content) or a tombstone
+    /// (UC-CHT-G08, CHT-012). Who may attach, the space state and the file policy belong to the handler and to Collaboration.
+    /// </summary>
+    public void EnsureAttachable()
+    {
+        if (IsSystem)
+            throw new BusinessRuleException(ChatRuleCodes.MessageNotAttachable, "A system message cannot carry a file.");
+        if (IsDeleted)
+            throw new BusinessRuleException(ChatRuleCodes.MessageDeleted, "A deleted message cannot carry a file.");
+    }
+
     private void EnsureEditable(Guid editedBy)
     {
         Guard.NotEmpty(editedBy);

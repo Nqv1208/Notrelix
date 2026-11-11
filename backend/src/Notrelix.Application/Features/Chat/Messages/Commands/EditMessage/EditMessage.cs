@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Collaboration.Public.Attachments;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Messages.DTOs;
 using Notrelix.Application.Features.Chat.Messages.Services;
@@ -25,7 +26,8 @@ public class EditMessageCommandHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
-    IDateTimeProvider clock) : IRequestHandler<EditMessageCommand, Result<MessageDto>>
+    IDateTimeProvider clock,
+    IChatMessageAttachments attachments) : IRequestHandler<EditMessageCommand, Result<MessageDto>>
 {
     public async Task<Result<MessageDto>> Handle(EditMessageCommand request, CancellationToken cancellationToken)
     {
@@ -46,7 +48,7 @@ public class EditMessageCommandHandler(
             throw new ConflictException("The channel is archived and read-only.", ChatRuleCodes.ChannelArchived);
 
         message.Edit(request.Content, userId, clock.UtcNow);
-        return Result<MessageDto>.Success(await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, message, cancellationToken));
+        return Result<MessageDto>.Success(await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, message, cancellationToken));
     }
 }
 

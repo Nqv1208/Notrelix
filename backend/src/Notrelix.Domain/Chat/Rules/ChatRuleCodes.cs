@@ -46,6 +46,9 @@ public static class ChatRuleCodes
     /// <summary>A system message announces a change and carries no reactions (UC-CHT-G06).</summary>
     public const string MessageNotReactable = "message-not-reactable";
 
+    /// <summary>A system message announces a change and carries no files (409, UC-CHT-G08).</summary>
+    public const string MessageNotAttachable = "message-not-attachable";
+
     /// <summary>The reaction kind is not on the palette (400, UC-CHT-G06).</summary>
     public const string ReactionKindInvalid = "reaction-kind-invalid";
 

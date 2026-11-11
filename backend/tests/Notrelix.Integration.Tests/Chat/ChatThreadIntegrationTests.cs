@@ -103,7 +103,8 @@ public sealed class ChatThreadIntegrationTests : IAsyncLifetime
             RequestAs(_member).Object,
             ActiveMembers(_member).Object,
             new ChatSpaceSequenceAllocator(context),
-            new FixedClock(Now));
+            new FixedClock(Now),
+            new InMemoryChatMessageAttachments());
 
         var result = await handler.Handle(
             new ReplyInThreadCommand(_workspaceId, _rootId, content, clientMessageId, AlsoSendToChannel: false),
@@ -183,7 +184,7 @@ public sealed class ChatThreadIntegrationTests : IAsyncLifetime
 
         await using var context = _db.CreateOwnerContext(SystemTenant());
         // The member replied twice and is the root's author, so they follow the thread with their pointer at their last reply.
-        var listed = await new ListFollowedThreadsQueryHandler(context, RequestAs(_member).Object, ActiveMembers(_member).Object, new FixedClock(Now))
+        var listed = await new ListFollowedThreadsQueryHandler(context, RequestAs(_member).Object, ActiveMembers(_member).Object, new FixedClock(Now), new InMemoryChatMessageAttachments())
             .Handle(new ListFollowedThreadsQuery(_workspaceId, null, 50), CancellationToken.None);
 
         listed.Succeeded.Should().BeTrue();
@@ -201,7 +202,7 @@ public sealed class ChatThreadIntegrationTests : IAsyncLifetime
         for (var i = 0; i < 3; i++) await ReplyInOwnTransactionAsync($"reply {i}", $"page-{i}");
 
         await using var context = _db.CreateOwnerContext(SystemTenant());
-        var handler = new ListThreadRepliesQueryHandler(context, RequestAs(_member).Object, ActiveMembers(_member).Object, new FixedClock(Now));
+        var handler = new ListThreadRepliesQueryHandler(context, RequestAs(_member).Object, ActiveMembers(_member).Object, new FixedClock(Now), new InMemoryChatMessageAttachments());
 
         var page = await handler.Handle(new ListThreadRepliesQuery(_workspaceId, _rootId, After: 1, Limit: 1), CancellationToken.None);
 
