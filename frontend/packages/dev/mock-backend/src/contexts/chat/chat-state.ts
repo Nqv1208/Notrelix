@@ -61,6 +61,10 @@ export class MockChatState {
   readonly pins = new Map<string, ChatPinRecord>();
   /** Reactions keyed by `${messageId}|${userId}|${kind}`: one per message, person and kind. */
   readonly reactions = new Map<string, ChatReactionRecord>();
+  /** The direct conversation of each pair, keyed by `${workspaceId}|${low}|${high}` (backend DirectPair). */
+  readonly directPairs = new Map<string, string>();
+  /** Blocks keyed by `${workspaceId}|${blockerId}|${blockedId}` (backend PersonBlock). */
+  readonly blocks = new Set<string>();
 
   private readonly streamVersions = new Map<string, number>();
   private readonly idCounters: Record<ChatIdKind, number> = {
@@ -87,6 +91,8 @@ export class MockChatState {
     this.threadFollowers.clear();
     this.pins.clear();
     this.reactions.clear();
+    this.directPairs.clear();
+    this.blocks.clear();
     this.streamVersions.clear();
     this.idCounters.space = 0;
     this.idCounters.group = 0;
@@ -195,6 +201,20 @@ export class MockChatState {
               ? -1
               : 0),
       );
+  }
+
+  /** The key of a pair: the two people in ordinal order, so either side finds the same conversation. */
+  pairKey(workspaceId: string, a: string, b: string): string {
+    const [low, high] = a < b ? [a, b] : [b, a];
+    return `${workspaceId}|${low}|${high}`;
+  }
+
+  /** True when either person has blocked the other in the Workspace. */
+  isBlockedBetween(workspaceId: string, a: string, b: string): boolean {
+    return (
+      this.blocks.has(`${workspaceId}|${a}|${b}`) ||
+      this.blocks.has(`${workspaceId}|${b}|${a}`)
+    );
   }
 
   reactionKey(messageId: string, userId: string, kind: string): string {

@@ -6,8 +6,10 @@
  * Plan: docs/workstreams/chat-delivery-plan.md (S1.6), docs/workstreams/specs/chat-foundation.md §15
  */
 
+import { blocksOperations } from "./blocks.handlers";
 import { channelsOperations } from "./channels.handlers";
 import { channelGroupsOperations } from "./channel-groups.handlers";
+import { conversationsOperations } from "./conversations.handlers";
 import { membersOperations } from "./members.handlers";
 import { messagesOperations } from "./messages.handlers";
 import { pinsOperations } from "./pins.handlers";
@@ -24,7 +26,9 @@ export { MockChatState, chatGuid, streamIdOf } from "./chat-state";
 
 export const chatOperations = [
   ...channelGroupsOperations,
+  ...blocksOperations,
   ...channelsOperations,
+  ...conversationsOperations,
   ...membersOperations,
   ...messagesOperations,
   ...pinsOperations,

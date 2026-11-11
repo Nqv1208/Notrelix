@@ -14,7 +14,7 @@ import {
   fail,
   forbiddenProblem,
   guarded,
-  liveSpace,
+  liveChannel,
   notFoundProblem,
   requireAction,
   requireManager,
@@ -35,7 +35,7 @@ type ChannelParams = {
 };
 
 /** A person who is an active member of the Workspace (a suspended one is not). */
-function isActiveWorkspaceMember(
+export function isActiveWorkspaceMember(
   store: MockStore,
   workspaceId: string,
   userId: string,
@@ -71,6 +71,7 @@ function addMember(
     mentionCount: 0,
     joinedAt,
     leftAt: null,
+    hiddenAt: null,
   });
   return true;
 }
@@ -90,7 +91,7 @@ export const membersOperations = [
         requireAction(caller, "memberInvite");
         if (!Array.isArray(body?.userIds))
           validationProblem("userIds is required.");
-        const space = liveSpace(state, params.workspaceId, params.channelId);
+        const space = liveChannel(state, params.workspaceId, params.channelId);
         requireVisible(state, space, caller);
         if (space.kind === "channel_public")
           requireManager(state, space, caller);
@@ -140,7 +141,7 @@ export const membersOperations = [
             "A Guest joins a channel only when they are added to it.",
           );
         }
-        const space = liveSpace(state, params.workspaceId, params.channelId);
+        const space = liveChannel(state, params.workspaceId, params.channelId);
         // A private channel is not there for a person who is not in it.
         if (space.kind === "channel_private") notFoundProblem();
         if (space.archivedAt !== null) archivedProblem();
@@ -168,7 +169,7 @@ export const membersOperations = [
       return guarded(async () => {
         const state = store.chat;
         const caller = callerIn(store, params.workspaceId);
-        const space = liveSpace(state, params.workspaceId, params.channelId);
+        const space = liveChannel(state, params.workspaceId, params.channelId);
         requireVisible(state, space, caller);
         const self = params.userId === caller.userId;
         if (!self) requireManager(state, space, caller);
