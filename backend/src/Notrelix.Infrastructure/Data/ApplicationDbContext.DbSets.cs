@@ -239,6 +239,7 @@ public partial class ApplicationDbContext
     public DbSet<Notrelix.Domain.Chat.Messages.ThreadFollower> ChatThreadFollowers => Set<Notrelix.Domain.Chat.Messages.ThreadFollower>();
     public DbSet<Notrelix.Domain.Chat.Messages.Pin> ChatPins => Set<Notrelix.Domain.Chat.Messages.Pin>();
     public DbSet<Notrelix.Domain.Chat.Messages.Reaction> ChatReactions => Set<Notrelix.Domain.Chat.Messages.Reaction>();
+    public DbSet<Notrelix.Domain.Chat.Messages.MessageMention> ChatMessageMentions => Set<Notrelix.Domain.Chat.Messages.MessageMention>();
 
     // Collaboration
     public DbSet<Comment> Comments => Set<Comment>();
