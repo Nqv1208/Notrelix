@@ -29,6 +29,9 @@ export const en = {
     error: "Channels could not load.",
     retry: "Try again",
     closeList: "Close channel list",
+    jumpTo: "Jump to or search",
+    channelsHeading: "Channels",
+    groupNumbered: "Group {{number}}",
   },
   header: {
     publicMark: "Public channel",
@@ -45,7 +48,6 @@ export const en = {
     join: "Join channel",
     archivedNotice: "This channel is archived and read-only.",
     archivedBadge: "Archived",
-    openList: "Open channel list",
     manager: "Manager",
     you: "You",
   },
@@ -59,7 +61,6 @@ export const en = {
   list: {
     label: "Messages in {{channel}}",
     loading: "Loading messages",
-    empty: "No messages yet",
     emptyBody: "Send the first message to start the conversation.",
     error: "Messages could not load.",
     retry: "Try again",
@@ -75,7 +76,7 @@ export const en = {
     systemLabel: "System",
     sending: "Sending",
     notSent: "Not sent",
-    retrySend: "Retry",
+    retrySend: "Resend",
     discardSend: "Discard",
     refusedSend: "This message could not be sent here.",
     actions: "Message actions for {{author}}",
@@ -90,6 +91,11 @@ export const en = {
       "The text is removed for everyone. The message keeps its place in the channel.",
     confirmDelete: "Delete",
     unknownAuthor: "Unknown member",
+    backToList: "Back to channels",
+    startOf: "This is the start of #{{channel}}",
+    errorBody:
+      "Something went wrong while loading the history. Messages you have read are kept.",
+    reconnecting: "Reconnecting. New messages may not show yet.",
   },
   composer: {
     label: "Message #{{channel}}",
@@ -175,6 +181,9 @@ export const vi: ChatCopy = {
     error: "Không tải được danh sách kênh.",
     retry: "Thử lại",
     closeList: "Đóng danh sách kênh",
+    jumpTo: "Chuyển tới hoặc tìm kiếm",
+    channelsHeading: "Kênh",
+    groupNumbered: "Nhóm {{number}}",
   },
   header: {
     publicMark: "Kênh công khai",
@@ -191,7 +200,6 @@ export const vi: ChatCopy = {
     join: "Tham gia kênh",
     archivedNotice: "Kênh này đã được lưu trữ và chỉ đọc.",
     archivedBadge: "Đã lưu trữ",
-    openList: "Mở danh sách kênh",
     manager: "Quản lý",
     you: "Bạn",
   },
@@ -205,7 +213,6 @@ export const vi: ChatCopy = {
   list: {
     label: "Tin nhắn trong {{channel}}",
     loading: "Đang tải tin nhắn",
-    empty: "Chưa có tin nhắn nào",
     emptyBody: "Gửi tin nhắn đầu tiên để bắt đầu cuộc trò chuyện.",
     error: "Không tải được tin nhắn.",
     retry: "Thử lại",
@@ -221,7 +228,7 @@ export const vi: ChatCopy = {
     systemLabel: "Hệ thống",
     sending: "Đang gửi",
     notSent: "Chưa gửi được",
-    retrySend: "Thử lại",
+    retrySend: "Gửi lại",
     discardSend: "Bỏ",
     refusedSend: "Không gửi được tin nhắn ở đây.",
     actions: "Thao tác với tin nhắn của {{author}}",
@@ -236,6 +243,11 @@ export const vi: ChatCopy = {
       "Nội dung sẽ bị xóa với mọi người. Tin nhắn vẫn giữ vị trí trong kênh.",
     confirmDelete: "Xóa",
     unknownAuthor: "Thành viên",
+    backToList: "Quay lại danh sách kênh",
+    startOf: "Đây là khởi đầu của #{{channel}}",
+    errorBody:
+      "Có sự cố khi lấy lịch sử kênh. Tin đã đọc của bạn vẫn được giữ.",
+    reconnecting: "Đang kết nối lại. Tin mới có thể chưa hiện.",
   },
   composer: {
     label: "Tin nhắn tới #{{channel}}",

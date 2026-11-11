@@ -1,19 +1,9 @@
-import { Ellipsis, Pencil, RotateCw, Trash2, X } from "lucide-react";
-import {
-  Avatar,
-  AvatarFallback,
-  Button,
-  cn,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@notrelix/ui-web";
+import { Ban, Pencil, RotateCw, Trash2, X } from "lucide-react";
+import { Avatar, AvatarFallback, Button, cn } from "@notrelix/ui-web";
 import type { ChatMessage } from "../../core/types/chat";
 import type { PendingMessage } from "../../core/model/chat-model";
 import type { ChatCopy } from "./chat.copy";
-import { initialsOf } from "./chat-initials";
-import { fillCopy } from "./use-chat-copy";
+import { avatarToneOf, initialsOf } from "./chat-initials";
 
 export interface MessageAuthor {
   readonly name: string;
@@ -40,6 +30,9 @@ export function formatClock(iso: string, locale: string, timeZone?: string) {
     timeZone,
   }).format(new Date(iso));
 }
+
+/** The avatar column width; the continued rows keep the same gutter so the text lines up. */
+const GUTTER = "w-9 shrink-0";
 
 /** A message the server stored: text, edited flag, tombstone, or a system line. */
 export function ChatMessageRow({
@@ -72,17 +65,31 @@ export function ChatMessageRow({
     );
   }
 
+  const showToolbar = !message.deleted && isOwn;
+
   return (
     <div
       className={cn(
-        "group relative flex gap-3 px-4 py-0.5 hover:bg-muted/40",
-        continued ? "" : "mt-3",
+        "group relative flex gap-3 px-4 hover:bg-muted/50",
+        continued ? "py-0.5" : "mt-3 pt-0.5 pb-0.5",
       )}
     >
-      <div className="w-8 shrink-0 pt-0.5">
-        {continued ? null : (
-          <Avatar className="size-8" aria-hidden="true">
-            <AvatarFallback className="text-xs">
+      <div className={GUTTER}>
+        {continued ? (
+          <time
+            dateTime={message.createdAt}
+            className="invisible block pt-1 text-[11px] tabular-nums text-muted-foreground group-hover:visible"
+          >
+            {time}
+          </time>
+        ) : (
+          <Avatar className="size-9" aria-hidden="true">
+            <AvatarFallback
+              className={cn(
+                "text-xs font-semibold",
+                avatarToneOf(message.authorId),
+              )}
+            >
               {initialsOf(author.name)}
             </AvatarFallback>
           </Avatar>
@@ -90,8 +97,8 @@ export function ChatMessageRow({
       </div>
       <div className="min-w-0 flex-1">
         {continued ? null : (
-          <div className="flex items-baseline gap-2">
-            <span className="font-semibold text-foreground">
+          <div className="flex flex-wrap items-baseline gap-x-2">
+            <span className="text-sm font-semibold text-foreground">
               {author.name}
               {isOwn ? (
                 <span className="sr-only"> ({copy.header.you})</span>
@@ -106,11 +113,12 @@ export function ChatMessageRow({
           </div>
         )}
         {message.deleted ? (
-          <p className="text-sm italic text-muted-foreground">
+          <p className="flex items-center gap-1.5 text-sm italic text-muted-foreground">
+            <Ban className="size-3.5 shrink-0" aria-hidden="true" />
             {copy.list.deleted}
           </p>
         ) : (
-          <p className="whitespace-pre-wrap break-words text-sm text-foreground">
+          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
             {message.content}
             {message.edited ? (
               <span className="ms-1.5 text-xs text-muted-foreground">
@@ -120,38 +128,39 @@ export function ChatMessageRow({
           </p>
         )}
       </div>
-      {!message.deleted && isOwn ? (
-        <div className="absolute end-3 -top-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={fillCopy(copy.list.actions, {
-                  author: author.name,
-                })}
-              >
-                <Ellipsis aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => onEdit(message)}>
-                <Pencil aria-hidden="true" />
-                {copy.list.edit}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                variant="destructive"
-                onSelect={() => onDelete(message)}
-              >
-                <Trash2 aria-hidden="true" />
-                {copy.list.delete}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      {showToolbar ? (
+        <div
+          role="toolbar"
+          aria-label={fillActions(copy, author.name)}
+          className="absolute end-4 -top-3 z-10 flex items-center gap-0.5 rounded-md border border-border bg-background p-0.5 shadow-sm invisible group-focus-within:visible group-hover:visible"
+        >
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={copy.list.edit}
+            title={copy.list.edit}
+            onClick={() => onEdit(message)}
+          >
+            <Pencil aria-hidden="true" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-destructive hover:text-destructive"
+            aria-label={copy.list.delete}
+            title={copy.list.delete}
+            onClick={() => onDelete(message)}
+          >
+            <Trash2 aria-hidden="true" />
+          </Button>
         </div>
       ) : null}
     </div>
   );
+}
+
+function fillActions(copy: ChatCopy, author: string): string {
+  return copy.list.actions.replace("{{author}}", author);
 }
 
 export interface ChatPendingRowProps {
@@ -177,34 +186,54 @@ export function ChatPendingRow({
   const failed = pending.status === "failed";
   return (
     <div
-      className={cn(
-        "flex gap-3 px-4 py-0.5 mt-3",
-        failed ? "text-destructive" : "text-muted-foreground",
-      )}
+      className="mt-3 flex gap-3 px-4 pt-0.5 pb-0.5"
       data-testid="chat-pending-message"
       data-status={pending.status}
     >
-      <div className="w-8 shrink-0" aria-hidden="true" />
+      <div className={GUTTER}>
+        <Avatar className="size-9" aria-hidden="true">
+          <AvatarFallback
+            className={cn(
+              "text-xs font-semibold",
+              avatarToneOf(pending.authorId),
+            )}
+          >
+            {initialsOf(author.name)}
+          </AvatarFallback>
+        </Avatar>
+      </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2">
-          <span className="font-semibold text-foreground">{author.name}</span>
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <span className="text-sm font-semibold text-foreground">
+            {author.name}
+          </span>
           <time
             dateTime={pending.createdAt}
             className="text-xs tabular-nums text-muted-foreground"
           >
             {formatClock(pending.createdAt, locale, timeZone)}
           </time>
-          <span className="text-xs">
+          <span
+            className={cn(
+              "text-xs font-medium",
+              failed ? "text-destructive" : "text-muted-foreground",
+            )}
+          >
             {failed ? copy.list.notSent : copy.list.sending}
           </span>
         </div>
-        <p className="whitespace-pre-wrap break-words text-sm">
+        <p
+          className={cn(
+            "whitespace-pre-wrap break-words text-sm leading-relaxed",
+            failed ? "text-muted-foreground" : "text-muted-foreground/80",
+          )}
+        >
           {pending.content}
         </p>
         {failed ? (
           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
             {pending.failure === "refused" ? (
-              <span>{copy.list.refusedSend}</span>
+              <span className="text-destructive">{copy.list.refusedSend}</span>
             ) : (
               <Button
                 type="button"

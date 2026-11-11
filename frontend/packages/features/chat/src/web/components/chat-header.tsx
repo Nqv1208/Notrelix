@@ -2,9 +2,9 @@ import {
   Archive,
   ArchiveRestore,
   Bell,
+  ChevronLeft,
   Hash,
   Lock,
-  Menu,
   Pencil,
   Settings,
   Users,
@@ -24,6 +24,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  cn,
 } from "@notrelix/ui-web";
 import type {
   ChatChannel,
@@ -31,7 +32,7 @@ import type {
   ChatNotificationLevel,
 } from "../../core/types/chat";
 import type { ChatCopy } from "./chat.copy";
-import { initialsOf } from "./chat-initials";
+import { avatarToneOf, initialsOf } from "./chat-initials";
 import { fillCopy } from "./use-chat-copy";
 
 export interface ChatHeaderProps {
@@ -42,7 +43,7 @@ export interface ChatHeaderProps {
   readonly joining: boolean;
   readonly authorName: (userId: string) => string;
   readonly copy: ChatCopy;
-  /** Shown on narrow screens to open the channel list as a sheet. */
+  /** Shown on narrow screens: leaves the room for the channel list. */
   readonly onOpenList: () => void;
   readonly onRename: () => void;
   readonly onToggleArchive: () => void;
@@ -55,7 +56,8 @@ const LEVELS: readonly ChatNotificationLevel[] = ["all", "mentions", "none"];
 /**
  * The header of an open channel: its name and topic, the members, the
  * notification level, and for a manager the rename and archive actions. A
- * public channel the caller is not in offers to join it.
+ * public channel the caller is not in offers to join it. On a narrow screen a
+ * back button returns to the channel list.
  */
 export function ChatHeader({
   channel,
@@ -77,15 +79,15 @@ export function ChatHeader({
   const canJoin = !channel.isMember && !isPrivate && !channel.isArchived;
 
   return (
-    <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-4 py-3">
+    <header className="flex min-h-14 flex-wrap items-center gap-x-2 gap-y-1 border-b border-border bg-background px-3 py-2 md:px-5">
       <Button
         variant="ghost"
         size="icon-sm"
         className="md:hidden"
-        aria-label={copy.header.openList}
+        aria-label={copy.list.backToList}
         onClick={onOpenList}
       >
-        <Menu aria-hidden="true" />
+        <ChevronLeft aria-hidden="true" />
       </Button>
       <div className="flex min-w-0 flex-1 flex-col">
         <h1 className="flex min-w-0 items-center gap-1.5 text-base font-semibold text-foreground">
@@ -98,7 +100,7 @@ export function ChatHeader({
           </span>
           <span className="truncate">{channel.name}</span>
           {channel.isArchived ? (
-            <span className="ms-2 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            <span className="ms-2 shrink-0 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">
               {copy.header.archivedBadge}
             </span>
           ) : null}
@@ -108,7 +110,7 @@ export function ChatHeader({
         </p>
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex shrink-0 items-center gap-1">
         {canJoin ? (
           <Button size="sm" onClick={onJoin} disabled={joining}>
             {copy.header.join}
@@ -120,6 +122,7 @@ export function ChatHeader({
             <Button
               variant="ghost"
               size="sm"
+              className="text-muted-foreground"
               aria-label={fillCopy(copy.header.membersButton, {
                 count: members.length,
               })}
@@ -146,7 +149,12 @@ export function ChatHeader({
                       className="flex items-center gap-2 px-2 py-1.5 text-sm"
                     >
                       <Avatar className="size-6" aria-hidden="true">
-                        <AvatarFallback className="text-xs">
+                        <AvatarFallback
+                          className={cn(
+                            "text-[10px] font-semibold",
+                            avatarToneOf(member.userId),
+                          )}
+                        >
                           {initialsOf(name)}
                         </AvatarFallback>
                       </Avatar>

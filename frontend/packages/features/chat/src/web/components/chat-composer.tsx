@@ -62,39 +62,45 @@ export function ChatComposer({
     });
 
   return (
-    <div className="border-t border-border bg-background px-4 pt-3 pb-4">
+    <div className="shrink-0 bg-background px-3 pt-2 pb-3 md:px-5 md:pb-4">
       <form
-        className="flex items-end gap-2"
+        className={cn(
+          "flex flex-col rounded-xl border border-input bg-card shadow-xs transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/30",
+          disabled && "opacity-60",
+        )}
         onSubmit={(event) => {
           event.preventDefault();
           submit();
         }}
       >
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <Textarea
-            aria-label={label}
-            aria-describedby={hintId}
-            aria-invalid={tooLong || undefined}
-            placeholder={label}
-            value={value}
-            disabled={disabled}
-            rows={1}
-            onChange={(event) => onChange(event.target.value)}
-            onKeyDown={handleKeyDown}
-            className="max-h-40 min-h-10 resize-none"
-          />
+        <Textarea
+          aria-label={label}
+          aria-describedby={hintId}
+          aria-invalid={tooLong || undefined}
+          placeholder={label}
+          value={value}
+          disabled={disabled}
+          rows={1}
+          onChange={(event) => onChange(event.target.value)}
+          onKeyDown={handleKeyDown}
+          className="max-h-40 min-h-11 resize-none border-0 bg-transparent px-3 py-2.5 shadow-none focus-visible:border-0 focus-visible:ring-0 md:text-sm"
+        />
+        <div className="flex flex-wrap items-center gap-2 border-t border-border px-2 py-1.5">
           <div
             id={hintId}
             className={cn(
-              "flex items-center justify-between gap-2 text-xs",
+              "flex min-w-0 flex-1 items-center gap-2 text-xs",
               tooLong ? "text-destructive" : "text-muted-foreground",
             )}
           >
-            <span role={message ? "status" : undefined}>
+            <span
+              role={message ? "status" : undefined}
+              className="min-w-0 truncate"
+            >
               {message ?? copy.composer.hint}
             </span>
             {showsCounter(value) ? (
-              <span className="tabular-nums" aria-live="off">
+              <span className="shrink-0 tabular-nums" aria-live="off">
                 {fillCopy(copy.composer.counter, {
                   count: length,
                   max: CHAT_LIMITS.messageMaxLength,
@@ -102,16 +108,17 @@ export function ChatComposer({
               </span>
             ) : null}
           </div>
+          <Button
+            type="submit"
+            size="sm"
+            aria-label={copy.composer.send}
+            title={copy.composer.send}
+            disabled={disabled || tooLong || !check.ok}
+          >
+            <Send aria-hidden="true" />
+            {copy.composer.send}
+          </Button>
         </div>
-        <Button
-          type="submit"
-          size="icon"
-          aria-label={copy.composer.send}
-          disabled={disabled || tooLong || !check.ok}
-          title={copy.composer.send}
-        >
-          <Send aria-hidden="true" />
-        </Button>
       </form>
     </div>
   );
