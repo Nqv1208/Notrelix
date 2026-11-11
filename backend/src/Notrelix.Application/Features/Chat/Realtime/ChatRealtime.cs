@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Common.Realtime.Gateway;
 using Notrelix.Application.Events.Chat;
 using Notrelix.Domain.Chat.Messages;
@@ -42,7 +41,11 @@ public static class ChatRealtime
 
     private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web);
 
-    /// <summary>The message payload of the channel stream (contract <see cref="MessagePayloadContract"/>).</summary>
+    /// <summary>
+    /// The message payload of the channel stream (contract <see cref="MessagePayloadContract"/>). ThreadRootId is set for a
+    /// thread reply (UC-CHT-F01): the frame still goes to the channel stream, and ThreadSequence lets a client that holds the
+    /// root count its replies without a round trip (the count is the highest sequence it has seen).
+    /// </summary>
     public sealed record MessageFrame(
         Guid Id,
         long Sequence,
@@ -54,7 +57,9 @@ public static class ChatRealtime
         DateTimeOffset? CreatedAt,
         DateTimeOffset? EditedAt,
         Guid? ReplyToId,
-        long Version);
+        long Version,
+        Guid? ThreadRootId = null,
+        long? ThreadSequence = null);
 
     /// <summary>The per-user unread payload (contract <see cref="UnreadPayloadContract"/>).</summary>
     public sealed record UnreadFrame(Guid SpaceId, int Unread, int Mentions);
@@ -63,7 +68,8 @@ public static class ChatRealtime
     {
         var frame = new MessageFrame(
             e.MessageId, e.Sequence, e.AuthorId, e.Kind, e.Content, ContentOmitted: false, Deleted: false,
-            CreatedAt: e.OccurredAt, EditedAt: null, ReplyToId: e.ReplyToId, Version: e.Version);
+            CreatedAt: e.OccurredAt, EditedAt: null, ReplyToId: e.ReplyToId, Version: e.Version,
+            ThreadRootId: e.ThreadRootId, ThreadSequence: e.ThreadSequence);
         return Channel(e.EventId, e.AccountId, e.WorkspaceId, e.SpaceId, e.ActorUserId, e.CorrelationId, e.CausationId,
             e.OccurredAt, MessageCreatedEvent, Fit(frame), now);
     }
@@ -73,7 +79,7 @@ public static class ChatRealtime
         // Only a user message is edited (a system message is immutable), so the kind is known.
         var frame = new MessageFrame(
             e.MessageId, e.Sequence, e.AuthorId, MessageKindWire.UserKind, e.Content, ContentOmitted: false, Deleted: false,
-            CreatedAt: null, EditedAt: e.OccurredAt, ReplyToId: null, Version: e.Version);
+            CreatedAt: null, EditedAt: e.OccurredAt, ReplyToId: null, Version: e.Version, ThreadRootId: e.ThreadRootId);
         return Channel(e.EventId, e.AccountId, e.WorkspaceId, e.SpaceId, e.ActorUserId, e.CorrelationId, e.CausationId,
             e.OccurredAt, MessageUpdatedEvent, Fit(frame), now);
     }
@@ -83,7 +89,7 @@ public static class ChatRealtime
         // A tombstone keeps its id, sequence, author and version; the content is gone (null).
         var frame = new MessageFrame(
             e.MessageId, e.Sequence, e.AuthorId, MessageKindWire.UserKind, Content: null, ContentOmitted: false, Deleted: true,
-            CreatedAt: null, EditedAt: null, ReplyToId: null, Version: e.Version);
+            CreatedAt: null, EditedAt: null, ReplyToId: null, Version: e.Version, ThreadRootId: e.ThreadRootId);
         return Channel(e.EventId, e.AccountId, e.WorkspaceId, e.SpaceId, e.ActorUserId, e.CorrelationId, e.CausationId,
             e.OccurredAt, MessageDeletedEvent, Serialize(frame), now);
     }

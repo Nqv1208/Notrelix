@@ -15,7 +15,8 @@ public sealed record ChatMessageDeletedIntegrationEvent(
     Guid CorrelationId,
     Guid? ActorUserId = null,
     Guid? CausationId = null,
-    DateTimeOffset OccurredAt = default
+    DateTimeOffset OccurredAt = default,
+    Guid? ThreadRootId = null
 ) : IntegrationEvent(
     eventId: EventId,
     messageName: "chat.message.deleted",

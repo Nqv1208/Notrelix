@@ -28,7 +28,9 @@ public sealed class ChatMessageEventMapper :
             ActorUserId: domainEvent.AuthorId,
             CausationId: null,
             OccurredAt: domainEvent.OccurredAt,
-            ReplyToId: domainEvent.ReplyToId
+            ReplyToId: domainEvent.ReplyToId,
+            ThreadRootId: domainEvent.ThreadRootId,
+            ThreadSequence: domainEvent.ThreadSequence
         );
     }
 
@@ -47,7 +49,8 @@ public sealed class ChatMessageEventMapper :
             CorrelationId: domainEvent.EventId,
             ActorUserId: domainEvent.AuthorId,
             CausationId: null,
-            OccurredAt: domainEvent.OccurredAt
+            OccurredAt: domainEvent.OccurredAt,
+            ThreadRootId: domainEvent.ThreadRootId
         );
     }
 
@@ -66,7 +69,8 @@ public sealed class ChatMessageEventMapper :
             CorrelationId: domainEvent.EventId,
             ActorUserId: domainEvent.DeletedBy,
             CausationId: null,
-            OccurredAt: domainEvent.OccurredAt
+            OccurredAt: domainEvent.OccurredAt,
+            ThreadRootId: domainEvent.ThreadRootId
         );
     }
 

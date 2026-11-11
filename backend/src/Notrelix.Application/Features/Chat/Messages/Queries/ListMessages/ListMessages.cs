@@ -36,7 +36,9 @@ public class ListMessagesQueryHandler(
         var space = await ChannelAccess.LoadLiveAsync(db, request.WorkspaceId, request.SpaceId, cancellationToken);
         ChannelAccess.RequireVisible(space, caller, userId);
 
-        var messages = db.ChatMessages.AsNoTracking().Where(m => m.SpaceId == space.Id);
+        // Thread replies stay in their thread; only a reply the author also sent to the channel is in the main flow (UC-CHT-F01).
+        var messages = db.ChatMessages.AsNoTracking()
+            .Where(m => m.SpaceId == space.Id && (m.ThreadRootId == null || m.AlsoSentToChannel));
         var limit = request.Limit;
 
         if (request.Before is { } before)
