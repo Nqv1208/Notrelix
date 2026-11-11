@@ -796,13 +796,16 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             """, userId: UserId);
         (await forgedDraft.Should().ThrowAsync<PostgresException>()).Which.SqlState.Should().Be("42501");
 
-        // The person saves their own draft with the application login (Save and exit).
-        var ownDraftId = Guid.NewGuid();
+        // The person saves their own draft with the application login (Save and exit): one draft per user, so the
+        // existing row is updated; the same statement cannot reach another person's draft.
         (await QueryScalarsAsAppRoleAsync($"""
-            INSERT INTO workspace.onboarding_drafts (id, user_id, step, data, created_at, updated_at, expires_at)
-            VALUES ('{ownDraftId}', '{UserId}', 'own', '[]'::jsonb, now(), now(), now())
-            RETURNING id::text
-            """, userId: UserId)).Should().Equal([ownDraftId.ToString()]);
+            UPDATE workspace.onboarding_drafts SET step = 'saved' WHERE user_id = '{UserId}'
+            RETURNING step
+            """, userId: UserId)).Should().Equal(["saved"]);
+        (await QueryScalarsAsAppRoleAsync($"""
+            UPDATE workspace.onboarding_drafts SET step = 'hijacked' WHERE user_id = '{otherUser}'
+            RETURNING step
+            """, userId: UserId)).Should().BeEmpty("a person cannot write another person's draft");
     }
 
     /// <summary>
