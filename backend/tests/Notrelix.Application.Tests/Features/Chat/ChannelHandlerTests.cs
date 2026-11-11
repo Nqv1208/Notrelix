@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Common.Context;
 using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Time;
@@ -90,7 +91,7 @@ public class ChannelHandlerTests
     private CreateChannelCommandHandler CreateHandler() => new(_db.Object, _context.Object, _clock.Object);
     private ChatSystemMessages SystemMessages() => new(_db.Object, _sequences.Object, _clock.Object);
     private JoinChannelCommandHandler JoinHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
-    private RemoveChannelMemberCommandHandler RemoveHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
+    private RemoveChannelMemberCommandHandler RemoveHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages(), new Mock<IAccessChangeSignal>().Object);
     private UpdateChannelCommandHandler UpdateHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
     private ListChannelsQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object);
 

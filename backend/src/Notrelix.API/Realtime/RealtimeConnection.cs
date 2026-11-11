@@ -408,7 +408,8 @@ public sealed class RealtimeConnection
     /// <summary>One access-signal subscription per workspace of this connection, held until the connection ends.</summary>
     private async Task EnsureAccessSignalAsync(Guid workspaceId, CancellationToken token)
     {
-        if (_accessSource is null || _accessHandles.ContainsKey(workspaceId))
+        // A per-user subscription is bound to no workspace and has no workspace signal to follow.
+        if (_accessSource is null || workspaceId == Guid.Empty || _accessHandles.ContainsKey(workspaceId))
         {
             return;
         }
@@ -436,9 +437,13 @@ public sealed class RealtimeConnection
         // The person's own client learns it at once, so buttons appear and disappear without waiting for a poll.
         Enqueue(RealtimeProtocol.AccessChanged(signal.WorkspaceId));
 
-        var boardOnly = string.Equals(signal.ResourceKind, RealtimeAccessSignal.BoardResource, StringComparison.Ordinal)
-            ? signal.ResourceId
-            : (Guid?)null;
+        // A Board or a Chat channel signal re-authorizes only the subscriptions of that resource; a workspace signal, all of them.
+        var resourceScope = signal.ResourceKind switch
+        {
+            RealtimeAccessSignal.BoardResource => (RealtimeScopeKind?)RealtimeScopeKind.Board,
+            RealtimeAccessSignal.ChannelResource => RealtimeScopeKind.Channel,
+            _ => null,
+        };
         _ = Task.Run(async () =>
         {
             try
@@ -446,7 +451,7 @@ public sealed class RealtimeConnection
                 await ReauthorizeAsync(
                     _stop.Token,
                     s => s.WorkspaceId == signal.WorkspaceId
-                        && (boardOnly is null || (s.Scope.Kind == RealtimeScopeKind.Board && s.Scope.Id == boardOnly))).ConfigureAwait(false);
+                        && (resourceScope is null || (s.Scope.Kind == resourceScope && s.Scope.Id == signal.ResourceId))).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -542,7 +547,11 @@ public sealed class RealtimeConnection
 
         // Defense in depth: never forward a notification that is not for the exact
         // stream and tenant the subscription was authorized for.
-        if (notification.WorkspaceId != subscription.WorkspaceId
+        // A per-user stream spans workspaces, so each notification must name the person the stream belongs to.
+        var bound = subscription.Scope.Kind == RealtimeScopeKind.User
+            ? notification.ResourceId == subscription.Scope.Id
+            : notification.WorkspaceId == subscription.WorkspaceId;
+        if (!bound
             || !string.Equals(notification.StreamKey, subscription.Scope.StreamKey, StringComparison.Ordinal))
         {
             _logger.LogWarning(

@@ -1914,6 +1914,11 @@
           "nullable": false
         },
         {
+          "name": "replyToId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
           "name": "eventId",
           "type": "Guid",
           "nullable": false
@@ -1966,7 +1971,13 @@
       ],
       "piiFields": [],
       "sensitiveFields": [],
-      "consumers": []
+      "consumers": [
+        {
+          "name": "ChatMessageCreatedRealtimeConsumer",
+          "context": "Chat",
+          "maturity": "Implemented"
+        }
+      ]
     },
     {
       "name": "chat.message.deleted",
@@ -2065,7 +2076,13 @@
       ],
       "piiFields": [],
       "sensitiveFields": [],
-      "consumers": []
+      "consumers": [
+        {
+          "name": "ChatMessageDeletedRealtimeConsumer",
+          "context": "Chat",
+          "maturity": "Implemented"
+        }
+      ]
     },
     {
       "name": "chat.message.updated",
@@ -2164,7 +2181,13 @@
       ],
       "piiFields": [],
       "sensitiveFields": [],
-      "consumers": []
+      "consumers": [
+        {
+          "name": "ChatMessageUpdatedRealtimeConsumer",
+          "context": "Chat",
+          "maturity": "Implemented"
+        }
+      ]
     },
     {
       "name": "checklist.created",

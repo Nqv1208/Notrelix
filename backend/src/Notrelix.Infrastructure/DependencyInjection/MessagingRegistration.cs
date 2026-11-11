@@ -14,6 +14,7 @@ public static class MessagingRegistration
         services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Collaboration.ItemAudience>();
         services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Collaboration.ItemActivityRecorder>();
         services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Integrations.WebhookEventFanOut>();
+        services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Chat.ChatUnreadFanOut>();
 
         // Domain -> integration event mappers (order preserved for composite aggregation).
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Identity.UserEventMapper>();

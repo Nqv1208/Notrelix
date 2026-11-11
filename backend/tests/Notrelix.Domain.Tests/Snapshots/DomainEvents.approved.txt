@@ -268,6 +268,7 @@ chat.message-created|1|Notrelix.Domain.Chat.Messages.Events.MessageCreatedDomain
 chat.message-created|1|Notrelix.Domain.Chat.Messages.Events.MessageCreatedDomainEvent|Workspace|Content|System.String|True
 chat.message-created|1|Notrelix.Domain.Chat.Messages.Events.MessageCreatedDomainEvent|Workspace|Kind|Notrelix.Domain.Chat.Messages.MessageKind|False
 chat.message-created|1|Notrelix.Domain.Chat.Messages.Events.MessageCreatedDomainEvent|Workspace|MessageId|System.Guid|False
+chat.message-created|1|Notrelix.Domain.Chat.Messages.Events.MessageCreatedDomainEvent|Workspace|ReplyToId|System.Guid|True
 chat.message-created|1|Notrelix.Domain.Chat.Messages.Events.MessageCreatedDomainEvent|Workspace|Sequence|System.Int64|False
 chat.message-created|1|Notrelix.Domain.Chat.Messages.Events.MessageCreatedDomainEvent|Workspace|SpaceId|System.Guid|False
 chat.message-created|1|Notrelix.Domain.Chat.Messages.Events.MessageCreatedDomainEvent|Workspace|Version|System.Int64|False

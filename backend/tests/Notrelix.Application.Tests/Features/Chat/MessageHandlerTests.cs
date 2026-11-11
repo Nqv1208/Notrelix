@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Application.Common.Realtime;
 using FluentValidation.TestHelper;
 using Notrelix.Application.Common.Context;
 using Notrelix.Application.Common.Exceptions;
@@ -42,6 +43,7 @@ public class MessageHandlerTests
     private readonly List<Message> _messages = [];
     private readonly Mock<IChatDbContext> _db = new();
     private readonly Mock<ISpaceSequenceAllocator> _sequences = new();
+    private readonly Mock<IAccessChangeSignal> _access = new();
     private long _lastSequence;
 
     public MessageHandlerTests()
@@ -107,9 +109,9 @@ public class MessageHandlerTests
     private ListMessagesQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object);
     private ChatSystemMessages SystemMessages() => new(_db.Object, _sequences.Object, _clock.Object);
     private JoinChannelCommandHandler JoinHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
-    private RemoveChannelMemberCommandHandler RemoveHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
+    private RemoveChannelMemberCommandHandler RemoveHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages(), _access.Object);
     private UpdateChannelCommandHandler UpdateHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
-    private ArchiveChannelCommandHandler ArchiveHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
+    private ArchiveChannelCommandHandler ArchiveHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages(), _access.Object);
 
     private static SendMessageCommand Send(Guid workspaceId, Guid spaceId, string content, string clientMessageId = "client-1") =>
         new(workspaceId, spaceId, content, clientMessageId, null);
@@ -606,6 +608,45 @@ public class MessageHandlerTests
         var left = SystemMessagesIn(space).Should().ContainSingle().Subject;
         left.AuthorId.Should().Be(_member);
         left.Content.Should().Be("left the channel");
+    }
+
+    [Fact]
+    public async Task Leave_ClosesTheLeaversLiveSubscriptionToTheChannel()
+    {
+        // UC-CHT-C06: the access signal names the person and the channel, so the gateway closes that subscription at once.
+        var space = Channel();
+        space.AddMember(_member, MembershipRole.Member, Now);
+        AsUser(_member);
+
+        await RemoveHandler().Handle(new RemoveChannelMemberCommand(_workspaceId, space.Id, _member), CancellationToken.None);
+
+        _access.Verify(a => a.ChannelPerson(_workspaceId, space.Id, _member), Times.Once);
+    }
+
+    [Fact]
+    public async Task Removal_ClosesTheRemovedPersonsSubscriptionNotEveryones()
+    {
+        var space = Channel();
+        space.AddMember(_member, MembershipRole.Member, Now);
+        AsUser(_owner);
+
+        await RemoveHandler().Handle(new RemoveChannelMemberCommand(_workspaceId, space.Id, _member), CancellationToken.None);
+
+        _access.Verify(a => a.ChannelPerson(_workspaceId, space.Id, _member), Times.Once);
+        _access.Verify(a => a.Channel(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Archive_ClosesEverySubscriptionToTheChannel_AndUnarchiveClosesNothing()
+    {
+        var space = Channel();
+        AsUser(_owner);
+
+        await ArchiveHandler().Handle(new ArchiveChannelCommand(_workspaceId, space.Id, true, space.Version), CancellationToken.None);
+        _access.Verify(a => a.Channel(_workspaceId, space.Id), Times.Once);
+
+        await ArchiveHandler().Handle(new ArchiveChannelCommand(_workspaceId, space.Id, false, space.Version), CancellationToken.None);
+        _access.Verify(a => a.Channel(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Once);
     }
 
     [Fact]

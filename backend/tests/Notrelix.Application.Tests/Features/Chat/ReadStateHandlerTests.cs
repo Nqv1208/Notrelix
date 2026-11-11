@@ -1,4 +1,6 @@
 using FluentAssertions;
+using Notrelix.Application.Common.Realtime;
+using Notrelix.Application.Common.Messaging;
 using FluentValidation.TestHelper;
 using Moq;
 using Notrelix.Application.Common.Context;
@@ -37,6 +39,7 @@ public class ReadStateHandlerTests
 
     private readonly Mock<ICurrentRequestContext> _context = new();
     private readonly Mock<IDateTimeProvider> _clock = new();
+    private readonly Mock<IIntegrationEventCollector> _events = new();
     private readonly Mock<IWorkspaceMemberFacts> _members = new();
     private readonly List<Space> _spaces = [];
     private readonly List<Message> _messages = [];
@@ -104,7 +107,7 @@ public class ReadStateHandlerTests
             .Handle(new GetUnreadSummaryQuery(_workspaceId), CancellationToken.None);
 
     private Task<Result<ReadBoundaryDto>> MarkRead(Guid spaceId, long upTo) =>
-        new MarkSpaceReadCommandHandler(_db.Object, _context.Object, _members.Object, _store)
+        new MarkSpaceReadCommandHandler(_db.Object, _context.Object, _members.Object, _store, _events.Object, _clock.Object)
             .Handle(new MarkSpaceReadCommand(_workspaceId, spaceId, upTo), CancellationToken.None);
 
     private Task<Result<NotificationSettingsDto>> SetLevel(Guid spaceId, string level, DateTimeOffset? until) =>
@@ -230,6 +233,25 @@ public class ReadStateHandlerTests
     // --- D02: mark a space read ---
 
     [Fact]
+    public async Task MarkSpaceRead_AnnouncesTheNewCountOnThePersonsOwnStream()
+    {
+        // UC-CHT-C09: the person's other devices learn the space's new count from their per-user stream.
+        AsUser(_member);
+        var alpha = Channel("alpha");
+        Join(alpha, _member);
+        for (var i = 1; i <= 3; i++) Store(alpha, i, _owner, $"m{i}");
+        var added = new List<IIntegrationEvent>();
+        _events.Setup(e => e.Add(It.IsAny<IIntegrationEvent>())).Callback<IIntegrationEvent>(added.Add);
+
+        await MarkRead(alpha.Id, 3);
+
+        var fact = added.OfType<RealtimeResourceChangedV1>().Should().ContainSingle().Which;
+        fact.TopicNamespace.Should().Be("user");
+        fact.ResourceId.Should().Be(_member);
+        fact.ChangeKind.Should().Be("chat.unread.changed");
+    }
+
+    [Fact]
     public async Task MarkSpaceRead_MovesTheBoundaryForward_AndClampsItToTheLastSequence()
     {
         AsUser(_member);
@@ -343,7 +365,7 @@ public class ReadStateHandlerTests
         var notMine = Channel("not-mine");
         Store(notMine, 1, _owner, "untouched");
 
-        var result = await new MarkAllReadCommandHandler(_db.Object, _context.Object, _members.Object, _store, _clock.Object)
+        var result = await new MarkAllReadCommandHandler(_db.Object, _context.Object, _members.Object, _store, _clock.Object, _events.Object)
             .Handle(new MarkAllReadCommand(_workspaceId), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
@@ -360,7 +382,7 @@ public class ReadStateHandlerTests
         var alpha = Channel("alpha");
         Join(alpha, _member);
         Store(alpha, 1, _owner, "before");
-        await new MarkAllReadCommandHandler(_db.Object, _context.Object, _members.Object, _store, _clock.Object)
+        await new MarkAllReadCommandHandler(_db.Object, _context.Object, _members.Object, _store, _clock.Object, _events.Object)
             .Handle(new MarkAllReadCommand(_workspaceId), CancellationToken.None);
 
         Store(alpha, 2, _owner, "arrived after the call");

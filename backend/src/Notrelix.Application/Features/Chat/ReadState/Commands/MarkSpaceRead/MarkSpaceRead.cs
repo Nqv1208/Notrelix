@@ -1,7 +1,10 @@
+using Notrelix.Application.Common.Messaging;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Time;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.ReadState.DTOs;
+using Notrelix.Application.Features.Chat.ReadState.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.ReadStates;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
@@ -24,7 +27,9 @@ public class MarkSpaceReadCommandHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
-    IChatReadStateStore readStates) : IRequestHandler<MarkSpaceReadCommand, Result<ReadBoundaryDto>>
+    IChatReadStateStore readStates,
+    IIntegrationEventCollector events,
+    IDateTimeProvider clock) : IRequestHandler<MarkSpaceReadCommand, Result<ReadBoundaryDto>>
 {
     public async Task<Result<ReadBoundaryDto>> Handle(MarkSpaceReadCommand request, CancellationToken cancellationToken)
     {
@@ -44,6 +49,11 @@ public class MarkSpaceReadCommandHandler(
             .Where(m => m.SpaceId == space.Id && m.UserId == userId)
             .Select(m => m.ReadSequence)
             .FirstAsync(cancellationToken);
+
+        // The person's other devices learn the new count of this space (UC-CHT-C09).
+        var summary = await UnreadSummaryBuilder.BuildAsync(db, request.WorkspaceId, userId, clock.UtcNow, cancellationToken);
+        ReadStateRealtime.Announce(events, requestContext.RequireAccountId(), request.WorkspaceId, userId,
+            summary.Spaces.Where(s => s.SpaceId == space.Id), clock.UtcNow);
 
         return Result<ReadBoundaryDto>.Success(new ReadBoundaryDto(space.Id, readSequence, space.LastSequence));
     }

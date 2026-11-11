@@ -825,6 +825,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Chat.Channels.Queries.AuthorizeChannelRealtimeSubscription.AuthorizeChannelRealtimeSubscriptionQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Channels.Queries.AuthorizeChannelRealtimeSubscription.AuthorizeChannelRealtimeSubscriptionQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Chat.Channels.Queries.GetChannel.GetChannelQuery",
     "kind": "Query",
     "principalMarkers": [

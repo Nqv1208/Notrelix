@@ -26,9 +26,13 @@ public static class RealtimeChannelResolver
     /// map to a resource-qualified channel.
     /// </summary>
     public static string ForTopic(RealtimeTopic topic)
-        => topic.Namespace == "workspace"
-            ? Workspace(topic.ResourceId)
-            : $"resource:{topic.Namespace}:{topic.ResourceKind}:{topic.ResourceId}";
+        => topic.Namespace switch
+        {
+            "workspace" => Workspace(topic.ResourceId),
+            // The per-user stream of one person (unread badges): the existing user notification channel.
+            "user" => UserNotifications(topic.ResourceId),
+            _ => $"resource:{topic.Namespace}:{topic.ResourceKind}:{topic.ResourceId}",
+        };
 
     public static string ForScope(RealtimeScope scope) => ForTopic(scope.Topic);
 

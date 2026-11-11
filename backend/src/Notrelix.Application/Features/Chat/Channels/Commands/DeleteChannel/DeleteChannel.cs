@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
@@ -21,7 +22,8 @@ public class DeleteChannelCommandHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
-    IDateTimeProvider clock) : IRequestHandler<DeleteChannelCommand, Result>
+    IDateTimeProvider clock,
+    IAccessChangeSignal access) : IRequestHandler<DeleteChannelCommand, Result>
 {
     public async Task<Result> Handle(DeleteChannelCommand request, CancellationToken cancellationToken)
     {
@@ -32,6 +34,7 @@ public class DeleteChannelCommandHandler(
         ChannelAccess.RequireManager(space, caller, userId);
 
         space.Delete(userId, clock.UtcNow);
+        access.Channel(request.WorkspaceId, request.ChannelId);
         return Result.Success();
     }
 }

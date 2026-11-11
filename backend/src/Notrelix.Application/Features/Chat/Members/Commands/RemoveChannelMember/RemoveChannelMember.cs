@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Messages.Services;
@@ -22,7 +23,8 @@ public class RemoveChannelMemberCommandHandler(
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
     IDateTimeProvider clock,
-    ChatSystemMessages systemMessages) : IRequestHandler<RemoveChannelMemberCommand, Result>
+    ChatSystemMessages systemMessages,
+    IAccessChangeSignal access) : IRequestHandler<RemoveChannelMemberCommand, Result>
 {
     public async Task<Result> Handle(RemoveChannelMemberCommand request, CancellationToken cancellationToken)
     {
@@ -38,6 +40,8 @@ public class RemoveChannelMemberCommandHandler(
         {
             var content = request.UserId == userId ? ChatSystemMessages.MemberLeft : ChatSystemMessages.MemberRemoved;
             await systemMessages.AnnounceAsync(space, userId, content, cancellationToken);
+            // The person's live subscription to this channel closes at once (UC-CHT-C06).
+            access.ChannelPerson(request.WorkspaceId, request.ChannelId, request.UserId);
         }
         return Result.Success();
     }

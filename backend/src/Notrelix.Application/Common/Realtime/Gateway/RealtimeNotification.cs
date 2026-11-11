@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Notrelix.Application.Common.Realtime.Gateway;
 
 /// <summary>
@@ -12,6 +14,10 @@ namespace Notrelix.Application.Common.Realtime.Gateway;
 /// </param>
 /// <param name="ResourceVersion">Version of the changed resource at commit; informational only.</param>
 /// <param name="SubjectUserId">An access signal only: the person whose access changed, or null for everyone it concerns.</param>
+/// <param name="Payload">
+/// A compact semantic payload, carried only for the topics that opt in (Chat: channel messages and the per-user
+/// unread stream). Null for every other topic, so their frames stay notify-only.
+/// </param>
 public sealed record RealtimeNotification(
     string EventId,
     string EventType,
@@ -26,7 +32,8 @@ public sealed record RealtimeNotification(
     long ResourceVersion,
     int SchemaVersion,
     string PayloadContract,
-    Guid? SubjectUserId = null);
+    Guid? SubjectUserId = null,
+    JsonElement? Payload = null);
 
 /// <summary>
 /// Source of realtime notifications for one scope. Implementations share the
@@ -41,7 +48,14 @@ public interface IRealtimeNotificationSource
 }
 
 /// <summary>Resolved tenant binding of an authorized subscription.</summary>
-public sealed record RealtimeSubscriptionGrant(Guid AccountId, Guid WorkspaceId);
+public sealed record RealtimeSubscriptionGrant(Guid AccountId, Guid WorkspaceId)
+{
+    /// <summary>
+    /// The grant of a per-user stream: it spans the person's workspaces, so it is bound to none. The gateway checks
+    /// such a subscription against the person named in each notification, not against a workspace.
+    /// </summary>
+    public static readonly RealtimeSubscriptionGrant Unbound = new(Guid.Empty, Guid.Empty);
+}
 
 /// <summary>
 /// Source of access-change signals for one workspace. An access signal is not delivered to clients: it
@@ -66,4 +80,6 @@ public static class RealtimeAccessSignal
     /// <summary>The signal concerns one Board (resource id = the Board), or the whole workspace.</summary>
     public const string BoardResource = "Board";
     public const string WorkspaceResource = "Workspace";
+    /// <summary>The signal concerns one Chat channel (resource id = the space id).</summary>
+    public const string ChannelResource = "Channel";
 }
