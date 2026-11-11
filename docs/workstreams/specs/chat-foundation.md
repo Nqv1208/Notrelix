@@ -134,7 +134,7 @@ The message list is a `log` live region with polite announcements for new messag
 
 ## 15. API contract
 
-Prefix `/api/v1/chat`, JSON, session cookie and CSRF as the rest of the API, `Idempotency-Key` on creates and sends.
+Prefix `/api/v1/workspaces/{workspaceId}/chat` (the Workspace is in the path, validated by membership, and every handler requires the space to belong to it, otherwise the same NotFound as a missing space), JSON, session cookie and CSRF as the rest of the API, `Idempotency-Key` on creates and sends.
 
 | Area | Endpoints |
 |---|---|
@@ -149,7 +149,7 @@ Prefix `/api/v1/chat`, JSON, session cookie and CSRF as the rest of the API, `Id
 | Mentions, links | `GET /spaces/{id}/mentionables`, `GET /links/resolve` |
 | Search, export | `GET /search`, `POST /exports` |
 
-Error codes are stable (`space-not-found`, `channel-archived`, `name-conflict`, `version-conflict`, `rate-limited`, `limit-reached`). Responses for no-access and missing are identical.
+Error codes are stable (`space-not-found`, `channel-archived`, `name-conflict`, `version-conflict` (HTTP 412, the codebase convention for a stale expected version), `rate-limited`, `limit-reached`). Responses for no-access and missing are identical.
 
 ## 16. Generated client and frontend contract
 

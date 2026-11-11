@@ -230,6 +230,11 @@ public partial class ApplicationDbContext
     public DbSet<WorkspacePolicy> WorkspacePolicies => Set<WorkspacePolicy>();
     public DbSet<PermissionTemplate> PermissionTemplates => Set<PermissionTemplate>();
 
+    // Chat (the Workspaces Space keeps the name Spaces; the Chat space is ChatSpaces)
+    public DbSet<Notrelix.Domain.Chat.Spaces.Space> ChatSpaces => Set<Notrelix.Domain.Chat.Spaces.Space>();
+    public DbSet<Notrelix.Domain.Chat.Spaces.Membership> ChatMemberships => Set<Notrelix.Domain.Chat.Spaces.Membership>();
+    public DbSet<Notrelix.Domain.Chat.Spaces.ChannelGroup> ChatChannelGroups => Set<Notrelix.Domain.Chat.Spaces.ChannelGroup>();
+
     // Collaboration
     public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<Mention> PageMentions => Set<Mention>();
