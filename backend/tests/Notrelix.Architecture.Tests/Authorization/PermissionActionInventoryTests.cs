@@ -23,7 +23,6 @@ public class PermissionActionInventoryTests
         // Chat actions reserved for later slices (moderation, mentions, reactions, search); nothing consumes them yet.
         "ChatMessageModerate",
         "ChatMentionBroadcast",
-        "ChatMessagePin",
         "ChatMessageReact",
         "ChatSearch",
     ];

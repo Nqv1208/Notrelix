@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Messages.DTOs;
+using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Chat.Threads.DTOs;
 using Notrelix.Application.Features.Chat.Threads.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
@@ -63,10 +64,12 @@ public class ListFollowedThreadsQueryHandler(
         var roots = await db.ChatMessages.AsNoTracking()
             .Where(m => rootIds.Contains(m.Id))
             .ToDictionaryAsync(m => m.Id, cancellationToken);
+        var rootDtos = await ReplyPreviews.DtosAsync(db, request.WorkspaceId, rootIds.Select(id => roots[id]).ToList(), cancellationToken);
+        var rootById = rootDtos.ToDictionary(r => r.Id);
 
         var now = clock.UtcNow;
         var items = page.Select(x => new FollowedThreadDto(
-            MessageDto.From(roots[x.t.RootMessageId]),
+            rootById[x.t.RootMessageId],
             ThreadSummaries.For(x.t.RootMessageId, x.t.SpaceId, x.t, x.f, now))).ToList();
 
         var next = rows.Count > request.Limit && page.Count > 0

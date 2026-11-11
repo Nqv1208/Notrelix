@@ -118,6 +118,7 @@ limit-reached|Chat|LimitReached
 message-content-invalid|Chat|MessageContentInvalid
 message-deleted|Chat|MessageDeleted
 message-not-author|Chat|MessageNotAuthor
+message-not-pinnable|Chat|MessageNotPinnable
 message-sequence-invalid|Chat|MessageSequenceInvalid
 name-conflict|Chat|NameConflict
 rate-limited|Chat|RateLimited

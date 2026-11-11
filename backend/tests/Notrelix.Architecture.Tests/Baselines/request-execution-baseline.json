@@ -1075,6 +1075,81 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Chat.Pins.Commands.PinMessage.PinMessageCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Pins.Commands.PinMessage.PinMessageCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Pins.Commands.UnpinMessage.UnpinMessageCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Pins.Commands.UnpinMessage.UnpinMessageCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Pins.Queries.ListPins.ListPinsQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Pins.Queries.ListPins.ListPinsQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Chat.ReadState.Commands.MarkAllRead.MarkAllReadCommand",
     "kind": "Command",
     "principalMarkers": [

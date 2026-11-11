@@ -58,6 +58,7 @@ public class MessageHandlerTests
         _db.Setup(d => d.ChatMemberships).Returns(() => TestDbSet.Create(_memberships.Concat(_spaces.SelectMany(s => s.Memberships)).ToList()).Object);
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(new List<ChannelGroup>()).Object);
         _db.Setup(d => d.ChatMessages).Returns(TestDbSet.Create(_messages).Object);
+        _db.Setup(d => d.ChatPins).Returns(TestDbSet.Create(new List<Pin>()).Object);
 
         _sequences.Setup(s => s.LockAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         _sequences.Setup(s => s.NextAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(() => ++_lastSequence);
@@ -105,7 +106,7 @@ public class MessageHandlerTests
 
     private SendMessageCommandHandler SendHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object);
     private EditMessageCommandHandler EditHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object);
-    private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object);
+    private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object);
     private ListMessagesQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object);
     private ChatSystemMessages SystemMessages() => new(_db.Object, _sequences.Object, _clock.Object);
     private JoinChannelCommandHandler JoinHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());

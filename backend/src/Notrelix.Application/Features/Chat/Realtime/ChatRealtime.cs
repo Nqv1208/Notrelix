@@ -22,9 +22,11 @@ public static class ChatRealtime
     public const string MessageUpdatedEvent = "chat.message.updated";
     public const string MessageDeletedEvent = "chat.message.deleted";
     public const string UnreadChangedEvent = "chat.unread.changed";
+    public const string SpaceChangedEvent = "chat.space.changed";
 
     public const string MessagePayloadContract = "chat.message.v1";
     public const string UnreadPayloadContract = "chat.unread.v1";
+    public const string SpaceChangedPayloadContract = "chat.space.v1";
 
     /// <summary>
     /// The largest message payload in bytes. The frame envelope (ids, stream key, names, timestamps) is under 1 KiB,
@@ -94,6 +96,17 @@ public static class ChatRealtime
             e.OccurredAt, MessageDeletedEvent, Serialize(frame), now);
     }
 
+    /// <summary>
+    /// A pin changed in a space (UC-CHT-F06, F07): the change ("pinned" or "unpinned") and the message. It carries no content;
+    /// a reader that needs the pinned message refetches the pins over REST.
+    /// </summary>
+    public static RealtimeResourceChangedV1 ForSpaceChanged(ChatSpaceChangedIntegrationEvent e, DateTimeOffset now)
+        => Channel(e.EventId, e.AccountId, e.WorkspaceId, e.SpaceId, e.ActorUserId, e.CorrelationId, e.CausationId,
+            e.OccurredAt, SpaceChangedEvent, Serialize(new SpaceChangedFrame(e.ChangeKind, e.MessageId)), now, SpaceChangedPayloadContract);
+
+    /// <summary>The pin payload (contract <see cref="SpaceChangedPayloadContract"/>).</summary>
+    public sealed record SpaceChangedFrame(string Change, Guid MessageId);
+
     /// <summary>One space's unread counts for one person, for the per-user stream (the badge refresh).</summary>
     public static RealtimeResourceChangedV1 Unread(
         Guid? accountId, Guid workspaceId, Guid userId, Guid spaceId, int unread, int mentions,
@@ -133,7 +146,8 @@ public static class ChatRealtime
 
     private static RealtimeResourceChangedV1 Channel(
         Guid eventId, Guid? accountId, Guid? workspaceId, Guid spaceId, Guid? actorUserId,
-        Guid correlationId, Guid? causationId, DateTimeOffset occurredAt, string changeKind, JsonElement payload, DateTimeOffset now)
+        Guid correlationId, Guid? causationId, DateTimeOffset occurredAt, string eventName, JsonElement payload, DateTimeOffset now,
+        string payloadContract = MessagePayloadContract)
     {
         var scope = new RealtimeScope(RealtimeScopeKind.Channel, spaceId);
         return new RealtimeResourceChangedV1(
@@ -149,8 +163,8 @@ public static class ChatRealtime
             spaceId,
             scope.StreamKey,
             RealtimeStreamClock.Next(now),
-            changeKind,
-            MessagePayloadContract,
+            eventName,
+            payloadContract,
             payload);
     }
 

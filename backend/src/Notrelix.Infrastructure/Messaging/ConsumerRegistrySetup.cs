@@ -827,6 +827,16 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "ChatSpaceChangedRealtimeConsumer",
+                EventName = "chat.space.changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-realtime-v1",
+                BoundedContext = "Chat",
+                Description = "Publishes a pin change of a channel to the realtime gateway (notify-only channel frame; readers refetch the pins)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "ChatWorkspaceMemberRemovedConsumer",
                 EventName = "workspace.member.removed",
                 EventVersion = 1,

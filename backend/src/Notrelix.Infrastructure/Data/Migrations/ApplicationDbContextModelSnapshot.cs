@@ -2702,6 +2702,50 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("threads", "chat");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.Pin", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("message_id");
+
+                    b.Property<DateTimeOffset>("PinnedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("pinned_at");
+
+                    b.Property<Guid>("PinnedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pinned_by");
+
+                    b.Property<Guid>("SpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("space_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pins");
+
+                    b.HasIndex("MessageId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_pins_message");
+
+                    b.HasIndex("SpaceId", "PinnedAt", "Id")
+                        .IsDescending(false, true, true)
+                        .HasDatabaseName("ix_pins_space_pinned_at");
+
+                    b.ToTable("pins", "chat");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Chat.Messages.ThreadFollower", b =>
                 {
                     b.Property<Guid>("RootMessageId")
@@ -12860,6 +12904,23 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_threads_spaces_space_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.Pin", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Messages.Message", null)
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_pins_messages_message_id");
+
+                    b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
+                        .WithMany()
+                        .HasForeignKey("SpaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_pins_chat_spaces_space_id");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Chat.Messages.ThreadFollower", b =>

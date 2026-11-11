@@ -29,6 +29,10 @@ public class OwnedEntityMutationVisibilityTests
         // holders in several workspaces, so no single aggregate owns the move
         "Notrelix.Domain.Governance.Roles.MemberRoleAssignment",
 
+        // ── Chat ── a pin has its own identity and lifecycle (one per message, listed per space); no aggregate owns it,
+        // and the pin handlers and the delete of its message remove it through Remove, which raises the pin fact
+        "Notrelix.Domain.Chat.Messages.Pin",
+
         // ── Analytics ──
         "Notrelix.Domain.Analytics.Dashboards.DashboardWidget",
 
