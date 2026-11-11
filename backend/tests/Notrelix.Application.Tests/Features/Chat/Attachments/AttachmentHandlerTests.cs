@@ -71,6 +71,7 @@ public class AttachmentHandlerTests
         _db.Setup(d => d.ChatMemberships).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.Memberships).ToList()).Object);
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(new List<ChannelGroup>()).Object);
         _db.Setup(d => d.ChatMessages).Returns(() => TestDbSet.Create(_messages).Object);
+        _db.Setup(d => d.ChatMessageMentions).Returns(TestDbSet.Create(new List<MessageMention>()).Object);
         _db.Setup(d => d.ChatReactions).Returns(TestDbSet.Create(new List<Reaction>()).Object);
         _db.Setup(d => d.ChatPins).Returns(TestDbSet.Create(new List<Pin>()).Object);
         _db.Setup(d => d.ChatThreads).Returns(TestDbSet.Create(new List<MessageThread>()).Object);
