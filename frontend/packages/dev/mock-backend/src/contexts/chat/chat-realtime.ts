@@ -31,6 +31,7 @@ import {
 
 export const CHAT_MESSAGE_CONTRACT = "chat.message.v1";
 export const CHAT_UNREAD_CONTRACT = "chat.unread.v1";
+export const CHAT_SPACE_CONTRACT = "chat.space.v1";
 
 export type ChatMessageEventType =
   "chat.message.created" | "chat.message.updated" | "chat.message.deleted";
@@ -62,9 +63,8 @@ function messagePayload(
     editedAt: message.editedAt,
     replyToId: message.replyToId,
     version: message.version,
-    // The mock has no threads yet: every message is a channel message.
-    threadRootId: null,
-    threadSequence: null,
+    threadRootId: message.threadRootId,
+    threadSequence: message.threadSequence,
   };
   if (eventType === "chat.message.created") {
     return base;
@@ -200,6 +200,33 @@ function unreadFrame(
       occurredAt: state.store().getClock().isoNow(),
       payloadContract: CHAT_UNREAD_CONTRACT,
       payload: payload as unknown as Readonly<Record<string, unknown>>,
+    }),
+  );
+}
+
+/**
+ * A pin of a space changed (backend ChatPinEventMapper): `pinned` when a message is pinned, `unpinned` when the pin
+ * ends by an unpin or by the deletion of the message. Notify-only: the frame carries no content and readers refetch
+ * the pins over REST.
+ */
+export function announcePinChanged(
+  state: MockChatState,
+  space: ChatSpaceRecord,
+  messageId: string,
+  change: "pinned" | "unpinned",
+): void {
+  publishMockScopeFrame(
+    frame({
+      state,
+      eventType: "chat.space.changed",
+      subscriptionId: `channel:${space.id}`,
+      streamKey: channelStreamKey(space.id),
+      resourceKind: "Channel",
+      resourceId: space.id,
+      workspaceId: space.workspaceId,
+      occurredAt: state.store().getClock().isoNow(),
+      payloadContract: CHAT_SPACE_CONTRACT,
+      payload: { change, messageId } as Readonly<Record<string, unknown>>,
     }),
   );
 }

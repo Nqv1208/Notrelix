@@ -369,6 +369,10 @@ export function seedChatWorld(state: MockChatState, store: MockStore): void {
           message.replyToSequence === undefined
             ? null
             : (ids[message.replyToSequence - 1] ?? null),
+        // The seed has no thread replies.
+        threadRootId: null,
+        threadSequence: null,
+        alsoSentToChannel: false,
         createdAt,
         editedAt: edited
           ? clock.offsetMinutes(-(messageCount - sequence) * 3 - 59)

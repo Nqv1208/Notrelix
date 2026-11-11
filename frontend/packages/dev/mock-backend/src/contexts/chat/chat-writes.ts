@@ -12,7 +12,7 @@ import {
   type ChatMessageRecord,
   type ChatSpaceRecord,
 } from "./chat-model";
-import { announceMessageCreated } from "./chat-realtime";
+import { announceMessageCreated, announcePinChanged } from "./chat-realtime";
 import { fail } from "./chat-access";
 
 /** Stores a user message: the sequence is the space's next one, the space row moves with it. */
@@ -30,9 +30,104 @@ export function appendUserMessage(
     content,
     clientMessageId,
     replyToId,
+    threadRootId: null,
+    threadSequence: null,
+    alsoSentToChannel: false,
   });
   announceMessageCreated(state, space, message);
   return message;
+}
+
+/**
+ * Stores a reply in the thread of a root message (UC-CHT-F01). The reply takes the next space sequence and the next
+ * thread sequence; the thread row is opened by the first reply and moves on each reply. The root's author follows
+ * the thread by default when they still belong to the space, and the replier follows it and has read their reply.
+ */
+export function appendThreadReply(
+  state: MockChatState,
+  space: ChatSpaceRecord,
+  root: ChatMessageRecord,
+  authorId: string,
+  content: string,
+  clientMessageId: string,
+  alsoSendToChannel: boolean,
+): ChatMessageRecord {
+  const thread = state.threads.get(root.id);
+  const threadSequence = (thread?.replyCount ?? 0) + 1;
+  const message = storeMessage(state, space, {
+    authorId,
+    kind: "user",
+    content,
+    clientMessageId,
+    replyToId: null,
+    threadRootId: root.id,
+    threadSequence,
+    alsoSentToChannel: alsoSendToChannel,
+  });
+  const record = thread ?? {
+    rootMessageId: root.id,
+    workspaceId: space.workspaceId,
+    spaceId: space.id,
+    replyCount: 0,
+    lastReplyAt: message.createdAt,
+  };
+  record.replyCount = threadSequence;
+  record.lastReplyAt = message.createdAt;
+  state.threads.set(root.id, record);
+  if (
+    root.authorId !== authorId &&
+    state.activeMembershipOf(space.id, root.authorId)
+  ) {
+    ensureThreadFollower(state, root.id, space.workspaceId, root.authorId, 0);
+  }
+  ensureThreadFollower(
+    state,
+    root.id,
+    space.workspaceId,
+    authorId,
+    threadSequence,
+  );
+  announceMessageCreated(state, space, message);
+  return message;
+}
+
+/**
+ * A default follow (not muted) when the person has no follow row yet; an existing row is never overwritten, and its
+ * read pointer only moves forward (ThreadFollower.MarkReadThrough).
+ */
+export function ensureThreadFollower(
+  state: MockChatState,
+  rootMessageId: string,
+  workspaceId: string,
+  userId: string,
+  readReplySequence: number,
+): void {
+  const existing = state.threadFollowerOf(rootMessageId, userId);
+  if (!existing) {
+    state.threadFollowers.set(`${rootMessageId}|${userId}`, {
+      rootMessageId,
+      workspaceId,
+      userId,
+      muted: false,
+      readReplySequence,
+    });
+    return;
+  }
+  existing.readReplySequence = Math.max(
+    existing.readReplySequence,
+    readReplySequence,
+  );
+}
+
+/** Removes the pin of a message and announces the end on the channel frame (UC-CHT-F07). False when it had none. */
+export function removePin(
+  state: MockChatState,
+  space: ChatSpaceRecord,
+  messageId: string,
+): boolean {
+  if (!state.pins.delete(messageId)) return false;
+  announcePinChanged(state, space, messageId, "unpinned");
+  return true;
 }
 
 /** Stores the system message that announces a change, attributed to the person who made it. */
@@ -48,6 +143,9 @@ export function appendSystemMessage(
     content,
     clientMessageId: null,
     replyToId: null,
+    threadRootId: null,
+    threadSequence: null,
+    alsoSentToChannel: false,
   });
   announceMessageCreated(state, space, message);
   return message;
@@ -62,6 +160,9 @@ function storeMessage(
     content: string;
     clientMessageId: string | null;
     replyToId: string | null;
+    threadRootId: string | null;
+    threadSequence: number | null;
+    alsoSentToChannel: boolean;
   },
 ): ChatMessageRecord {
   space.lastSequence += 1;
@@ -75,6 +176,9 @@ function storeMessage(
     content: fields.content,
     clientMessageId: fields.clientMessageId,
     replyToId: fields.replyToId,
+    threadRootId: fields.threadRootId,
+    threadSequence: fields.threadSequence,
+    alsoSentToChannel: fields.alsoSentToChannel,
     createdAt: state.stampWrite(),
     editedAt: null,
     deletedAt: null,
