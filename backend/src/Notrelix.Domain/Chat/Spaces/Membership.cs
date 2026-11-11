@@ -73,6 +73,19 @@ public sealed class Membership : IWorkspaceScoped
     internal void Leave(DateTimeOffset at) => LeftAt = at;
 
     /// <summary>
+    /// Ends this membership because the person left or was removed from the Workspace that owns the space. Only the Workspace
+    /// exit path calls it. Unlike <see cref="Space.RemoveMember"/> the last manager may go: the channel stays, without a manager,
+    /// and Workspace Owners and Admins still manage it (ChannelAccess.RequireManager). Returns false when it already ended.
+    /// </summary>
+    public bool EndWorkspaceExit(DateTimeOffset leftAt)
+    {
+        if (!IsActive) return false;
+
+        Leave(leftAt);
+        return true;
+    }
+
+    /// <summary>
     /// Sets how the person is notified in this space (UC-CHT-D05, D06). A mute is the level None with an optional until.
     /// A level other than None clears the until. An until that is not after <paramref name="now"/> is a no-op. Returns
     /// false and changes nothing when the stored settings already match.
