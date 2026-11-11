@@ -139,7 +139,9 @@ describes the Chat frames: scope kinds `channel` (stream `chat:Channel:<id>`)
 and `user` (stream `user:notifications:<id>`), the message frames
 `chat.message.created|updated|deleted` (payloadContract `chat.message.v1`) and
 `chat.unread.changed` (payloadContract `chat.unread.v1`), and the optional
-`payloadOmitted` flag. Its generated payload types
+`payloadOmitted` flag. A thread reply is a `chat.message.created` frame on the
+channel stream of its space with `threadRootId` and `threadSequence` set; the
+frame is not a separate kind (UC-CHT-F01). Its generated payload types
 (`GeneratedRealtimeMessage`, `RealtimeEventMessage` in `@notrelix/contracts`)
 have no consumer yet. Replacing the hand-written types with a generated producer
 is an open contract-owner decision.

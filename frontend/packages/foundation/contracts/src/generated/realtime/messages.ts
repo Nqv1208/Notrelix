@@ -32,6 +32,8 @@ export interface ChatMessageCreatedPayload {
   "kind": "user" | "system";
   "replyToId": string | null;
   "sequence": number;
+  "threadRootId": string | null;
+  "threadSequence": number | null;
   "version": number;
 }
 
@@ -46,6 +48,8 @@ export interface ChatMessageDeletedPayload {
   "kind": "user" | "system";
   "replyToId": string | null;
   "sequence": number;
+  "threadRootId": string | null;
+  "threadSequence": number | null;
   "version": number;
 }
 
@@ -60,6 +64,8 @@ export interface ChatMessageUpdatedPayload {
   "kind": "user" | "system";
   "replyToId": string | null;
   "sequence": number;
+  "threadRootId": string | null;
+  "threadSequence": number | null;
   "version": number;
 }
 
