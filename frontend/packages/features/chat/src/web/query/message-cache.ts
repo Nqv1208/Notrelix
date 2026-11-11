@@ -55,7 +55,11 @@ export function replaceMessage(
     if (message.version < current.version) return page;
     changed = true;
     const items = page.items.slice();
-    items[index] = message;
+    // A realtime frame carries no files: the ones the message already holds stay.
+    items[index] =
+      message.attachments === undefined && current.attachments !== undefined
+        ? { ...message, attachments: current.attachments }
+        : message;
     return { ...page, items };
   });
   return changed ? { ...cache, pages } : cache;

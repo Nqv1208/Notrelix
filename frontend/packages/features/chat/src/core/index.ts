@@ -9,6 +9,8 @@ export {
   type ChatApiClient,
   type ChatEndpoints,
   type ChatRequestOptions,
+  type ChatUploadOptions,
+  type ChatUploadProgress,
   type ChatService,
 } from "./api/chat.service";
 export {
@@ -21,3 +23,4 @@ export * from "./model/chat-model";
 export * from "./realtime/chat-frames";
 export * from "./model/conversation-model";
 export * from "./model/mention-model";
+export * from "./model/attachment-model";

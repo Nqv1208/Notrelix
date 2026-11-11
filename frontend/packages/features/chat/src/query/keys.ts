@@ -30,6 +30,22 @@ export const chatQueryKeys = {
   /** Client-only projection: the reply count and last reply of each thread of a channel, by root id. */
   threadCounts: (workspaceId: string, channelId: string) =>
     workspaceQueryKey(workspaceId, "chat", "thread-counts", channelId),
+  /** Client-only projection: the files on their way to stored messages (uploading, queued or failed). */
+  uploads: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "uploads"),
+  /** The bytes of one attachment (image preview); read with the session, never shared between messages. */
+  attachmentContent: (
+    workspaceId: string,
+    messageId: string,
+    attachmentId: string,
+  ) =>
+    workspaceQueryKey(
+      workspaceId,
+      "chat",
+      "attachment-content",
+      messageId,
+      attachmentId,
+    ),
   /** The threads the caller follows (most recent reply first). */
   followedThreads: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "chat", "followed-threads"),
