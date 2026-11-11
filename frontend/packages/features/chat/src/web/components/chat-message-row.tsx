@@ -17,6 +17,9 @@ import type { PendingMessage } from "../../core/model/chat-model";
 import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
 import { avatarToneOf, initialsOf } from "./chat-initials";
+import { mentionsViewer } from "../../core/model/mention-model";
+import { ChatMentionText } from "./chat-mention-text";
+import { useChatMentions } from "./chat-mention-context";
 import { ReactionChips, ReactionPicker } from "./chat-reactions";
 import { fillCopy, pluralCopy } from "./use-chat-copy";
 
@@ -112,6 +115,10 @@ export function ChatMessageRow({
   const time = formatClock(message.createdAt, locale, timeZone);
   const isSystem = message.kind === "system";
   const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const mentionContext = useChatMentions();
+  const mentionsMe =
+    mentionContext.viewerId !== null &&
+    mentionsViewer(message, mentionContext.viewerId);
 
   if (isSystem) {
     return (
@@ -168,8 +175,10 @@ export function ChatMessageRow({
       className={cn(
         "group relative flex gap-3 px-4 hover:bg-muted/50",
         continued ? "py-0.5" : "mt-3 pt-0.5 pb-0.5",
+        mentionsMe && "border-s-2 border-warning bg-warning-subtle/40",
       )}
       data-message-id={message.id}
+      data-mentions-me={mentionsMe ? "true" : undefined}
     >
       <div className={GUTTER}>
         {continued ? (
@@ -233,7 +242,14 @@ export function ChatMessageRow({
           </p>
         ) : (
           <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
-            {message.content}
+            {mentionsMe ? (
+              <span className="sr-only">{copy.mentions.forYou}: </span>
+            ) : null}
+            <ChatMentionText
+              content={message.content ?? ""}
+              mentions={message.mentions}
+              copy={copy}
+            />
             {message.edited ? (
               <span className="ms-1.5 text-xs text-muted-foreground">
                 ({copy.list.edited})
@@ -241,6 +257,7 @@ export function ChatMessageRow({
             ) : null}
           </p>
         )}
+        {live && isOwn ? <SentNotices message={message} copy={copy} /> : null}
         {live && hooks && workspaceId && authorName ? (
           <ReactionChips
             messageId={message.id}
@@ -513,5 +530,47 @@ export function ChatPendingRow({
         ) : null}
       </div>
     </div>
+  );
+}
+
+/**
+ * What the send or edit of this message did not do for a mention (UC-CHT-G02, G03): the person outside the channel was not
+ * notified, a broadcast reached nobody or stayed text. Only the sender's own copy carries notices; a reload drops them.
+ */
+function SentNotices({
+  message,
+  copy,
+}: {
+  readonly message: ChatMessage;
+  readonly copy: ChatCopy;
+}) {
+  const context = useChatMentions();
+  const lines: string[] = [];
+  for (const notice of message.mentionNotices ?? []) {
+    const covered = (message.content ?? "").slice(
+      notice.start,
+      notice.start + notice.length,
+    );
+    if (notice.code === "cannot-view") {
+      const name =
+        (notice.userId ? context.personName(notice.userId) : null) ??
+        covered.replace(/^@/, "");
+      lines.push(fillCopy(copy.mentions.sentNotice, { name }));
+    } else if (notice.code === "no-audience") {
+      lines.push(fillCopy(copy.mentions.sentNoAudience, { token: covered }));
+    } else if (notice.code === "broadcast-not-allowed") {
+      lines.push(fillCopy(copy.mentions.sentNotAllowed, { token: covered }));
+    }
+  }
+  if (lines.length === 0) return null;
+  return (
+    <ul
+      className="mt-1 flex flex-col gap-0.5 text-xs text-muted-foreground"
+      data-testid="chat-sent-notices"
+    >
+      {lines.map((line, index) => (
+        <li key={index}>{line}</li>
+      ))}
+    </ul>
   );
 }

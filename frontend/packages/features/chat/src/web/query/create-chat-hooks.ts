@@ -28,6 +28,8 @@ import {
   type ChatCreateChannelInput,
   type ChatFollowedThreadPage,
   type ChatHistoryAnchor,
+  type ChatMentionInput,
+  type ChatMentionPayload,
   type ChatMessage,
   type ChatMessageCursor,
   type ChatMessagePage,
@@ -117,6 +119,23 @@ export function createChatHooks(deps: ChatHookDeps) {
       queryFn: () => service.getChannel(workspaceId, channelId!),
       staleTime: CHANNEL_STALE_MS,
       enabled: Boolean(channelId) && workspaceId.length > 0,
+    });
+  }
+
+  /**
+   * The mention picker of a space (Chat.Mentions.ListMentionables): who a message can mention, whether the caller
+   * may broadcast and the member count above which a broadcast needs confirmation.
+   */
+  function useMentionables(
+    workspaceId: string,
+    spaceId: string | undefined,
+    enabled = true,
+  ) {
+    return useQuery({
+      queryKey: chatQueryKeys.mentionables(workspaceId, spaceId ?? ""),
+      queryFn: () => service.listMentionables(workspaceId, spaceId!),
+      staleTime: CHANNEL_STALE_MS,
+      enabled: enabled && Boolean(spaceId) && workspaceId.length > 0,
     });
   }
 
@@ -213,11 +232,15 @@ export function createChatHooks(deps: ChatHookDeps) {
         clientMessageId: string;
         content: string;
         replyToId?: string | null;
+        mentions?: readonly ChatMentionInput[];
+        confirmBroadcast?: boolean;
       }) =>
         service.sendMessage(workspaceId, channelId, {
           content: input.content,
           clientMessageId: input.clientMessageId,
           replyToId: input.replyToId ?? null,
+          mentions: input.mentions,
+          confirmBroadcast: input.confirmBroadcast,
         }),
       onMutate: async (input) => {
         await queryClient.cancelQueries({ queryKey: messagesKey });
@@ -233,6 +256,8 @@ export function createChatHooks(deps: ChatHookDeps) {
           createdAt: new Date().toISOString(),
           status: "sending",
           failure: null,
+          mentions: input.mentions,
+          confirmBroadcast: input.confirmBroadcast,
         };
         queryClient.setQueryData<PendingMessage[]>(
           pendingKey,
@@ -280,9 +305,19 @@ export function createChatHooks(deps: ChatHookDeps) {
     });
 
     /** Starts a send; returns the clientMessageId so a retry can reuse it. */
-    function send(content: string, replyToId?: string | null): string {
+    function send(
+      content: string,
+      replyToId?: string | null,
+      mentionPayload?: ChatMentionPayload,
+    ): string {
       const clientMessageId = newClientMessageId();
-      mutation.mutate({ clientMessageId, content, replyToId });
+      mutation.mutate({
+        clientMessageId,
+        content,
+        replyToId,
+        mentions: mentionPayload?.mentions,
+        confirmBroadcast: mentionPayload?.confirmBroadcast,
+      });
       return clientMessageId;
     }
 
@@ -291,6 +326,8 @@ export function createChatHooks(deps: ChatHookDeps) {
       mutation.mutate({
         clientMessageId: entry.clientMessageId,
         content: entry.content,
+        mentions: entry.mentions,
+        confirmBroadcast: entry.confirmBroadcast,
       });
     }
 
@@ -316,7 +353,15 @@ export function createChatHooks(deps: ChatHookDeps) {
         messageId: string;
         content: string;
         expectedVersion: number;
-      }) => service.editMessage(workspaceId, input.messageId, input),
+        mentions?: readonly ChatMentionInput[];
+        confirmBroadcast?: boolean;
+      }) =>
+        service.editMessage(workspaceId, input.messageId, {
+          content: input.content,
+          expectedVersion: input.expectedVersion,
+          mentions: input.mentions,
+          confirmBroadcast: input.confirmBroadcast,
+        }),
       onSuccess: (message: ChatMessage) => {
         queryClient.setQueriesData<ChatMessagesCache>(
           { queryKey: messagesKey },
@@ -560,6 +605,10 @@ export function createChatHooks(deps: ChatHookDeps) {
         void queryClient.invalidateQueries({
           queryKey: chatQueryKeys.channel(workspaceId, channelId),
         });
+        // The people just added are in the space now: the picker and its warnings follow.
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.mentionables(workspaceId, channelId),
+        });
       },
     });
   }
@@ -633,11 +682,15 @@ export function createChatHooks(deps: ChatHookDeps) {
         content: string;
         alsoSendToChannel: boolean;
         clientMessageId?: string;
+        mentions?: readonly ChatMentionInput[];
+        confirmBroadcast?: boolean;
       }) =>
         service.replyInThread(workspaceId, rootId, {
           content: input.content,
           clientMessageId: input.clientMessageId ?? newClientMessageId(),
           alsoSendToChannel: input.alsoSendToChannel,
+          mentions: input.mentions,
+          confirmBroadcast: input.confirmBroadcast,
         }),
       onSuccess: (reply: ChatMessage) => {
         applyStoredReply(queryClient, workspaceId, reply);
@@ -866,6 +919,7 @@ export function createChatHooks(deps: ChatHookDeps) {
     useUnreadSummary,
     useMessages,
     usePendingSends,
+    useMentionables,
     useSendMessage,
     useEditMessage,
     useDeleteMessage,

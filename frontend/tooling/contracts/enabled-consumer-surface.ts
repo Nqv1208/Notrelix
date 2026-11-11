@@ -4373,6 +4373,13 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "Hide or show a conversation in the caller's list",
     ],
     [
+      "Chat.Mentions.ListMentionables",
+      "GET",
+      "/workspaces/{workspaceId}/chat/spaces/{spaceId}/mentionables",
+      false,
+      "List the people a message can mention and whether the caller may broadcast",
+    ],
+    [
       "Chat.Blocks.Set",
       "PUT",
       "/workspaces/{workspaceId}/chat/me/blocks",

@@ -12,6 +12,8 @@ import {
 export interface ChannelUnread {
   readonly count: number;
   readonly muted: boolean;
+  /** Unread messages that mention the caller (UC-CHT-D04): a badge apart from the unread count. */
+  readonly mentions?: number;
 }
 
 export type ChannelListStatus = "loading" | "ready" | "error";
@@ -276,6 +278,9 @@ function ChannelButton({
 }) {
   const badge = unread && !unread.muted ? unreadBadge(unread.count) : null;
   const muted = unread?.muted === true || channel.notificationLevel === "none";
+  // A mention in a muted channel counts but does not badge (UC-CHT-D04).
+  const mentionBadge =
+    unread && !muted ? unreadBadge(unread.mentions ?? 0) : null;
   const isPrivate = channel.kind === "channel_private";
   const unreadHere = !muted && unread !== undefined && unread.count > 0;
   return (
@@ -290,6 +295,7 @@ function ChannelButton({
         unread?.count ?? 0,
         muted,
         copy,
+        unread?.mentions ?? 0,
       )}
       className={cn(
         "flex h-8 w-full items-center gap-2 rounded-md px-2 text-start text-sm outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
@@ -308,6 +314,15 @@ function ChannelButton({
       <span className="min-w-0 flex-1 truncate">{channel.name}</span>
       {muted ? (
         <BellOff className="size-3.5 shrink-0" aria-hidden="true" />
+      ) : null}
+      {mentionBadge ? (
+        <span
+          aria-hidden="true"
+          data-testid="chat-mention-badge"
+          className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-destructive px-1.5 text-xs font-bold text-destructive-foreground tabular-nums"
+        >
+          @{mentionBadge}
+        </span>
       ) : null}
       {badge ? (
         <span
@@ -328,6 +343,7 @@ function channelLabel(
   count: number,
   muted: boolean,
   copy: ChatCopy,
+  mentions = 0,
 ): string {
   const parts = [
     `${isPrivate ? copy.sidebar.privateLabel : copy.sidebar.publicLabel}: ${name}`,
@@ -340,6 +356,17 @@ function channelLabel(
           other: copy.sidebar.unreadCount_other,
         },
         count,
+      ),
+    );
+  }
+  if (!muted && mentions > 0) {
+    parts.push(
+      pluralCopy(
+        {
+          one: copy.mentions.sidebarBadge_one,
+          other: copy.mentions.sidebarBadge_other,
+        },
+        mentions,
       ),
     );
   }

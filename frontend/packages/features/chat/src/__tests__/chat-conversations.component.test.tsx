@@ -409,7 +409,7 @@ describe("ChatWorkspace with a conversation", () => {
       ),
     ).toBeTruthy();
     expect(
-      screen.getByRole("textbox", { name: `Message ${otherName}` }),
+      screen.getByRole("combobox", { name: `Message ${otherName}` }),
     ).toBeTruthy();
 
     // Details panel: the profile of the other person.
@@ -430,7 +430,7 @@ describe("ChatWorkspace with a conversation", () => {
     await waitFor(() =>
       expect(
         screen
-          .getByRole("textbox", { name: `Message ${otherName}` })
+          .getByRole("combobox", { name: `Message ${otherName}` })
           .hasAttribute("disabled"),
       ).toBe(true),
     );
