@@ -11,6 +11,9 @@ public static class ChatLimits
     public const int GroupCap = 8;
     public const int PinLimit = 50;
 
+    /// <summary>Days without a reply after which a thread is archived (UC-CHT-F05; foundation spec section 34).</summary>
+    public const int ThreadInactivityDays = 7;
+
     /// <summary>The longest client message id, in characters. The client picks it; the server only keeps it.</summary>
     public const int ClientMessageIdMaxLength = 128;
 

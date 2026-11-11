@@ -36,4 +36,7 @@ public static class ChatRuleCodes
 
     /// <summary>A system message announces a change and cannot be edited or deleted by a person (CHT-007, UC-CHT-B09).</summary>
     public const string SystemMessageImmutable = "system-message-immutable";
+
+    /// <summary>A reply targets a message that is not a root of a thread: a reply itself or a system message (UC-CHT-F01).</summary>
+    public const string ThreadRootInvalid = "thread-root-invalid";
 }

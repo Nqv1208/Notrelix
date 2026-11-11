@@ -31,8 +31,14 @@ public class Message : AggregateRoot, IWorkspaceScoped
     /// <summary>The message this one quotes in the main flow (UC-CHT-F02). Column only in this slice.</summary>
     public Guid? ReplyToId { get; private set; }
 
-    /// <summary>The root of the thread this message belongs to (CHT-013). Column only in this slice; no thread logic yet.</summary>
+    /// <summary>The root of the thread this message belongs to (CHT-013). Null for a message of the main flow.</summary>
     public Guid? ThreadRootId { get; private set; }
+
+    /// <summary>The reply's place in its thread: 1 for the first reply, gap-free and never reused (UC-CHT-F01). Null outside a thread.</summary>
+    public long? ThreadSequence { get; private set; }
+
+    /// <summary>A thread reply the author also sent to the channel's main flow ("also send to channel"). Always false outside a thread.</summary>
+    public bool AlsoSentToChannel { get; private set; }
 
     public DateTimeOffset? EditedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
@@ -41,6 +47,7 @@ public class Message : AggregateRoot, IWorkspaceScoped
     public bool IsDeleted => DeletedAt is not null;
     public bool IsEdited => EditedAt is not null;
     public bool IsSystem => Kind == MessageKind.System;
+    public bool IsThreadReply => ThreadRootId is not null;
 
     private Message() : base() { }
 
@@ -61,6 +68,35 @@ public class Message : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(ChatRuleCodes.MessageContentInvalid, "The client message id is too long.");
 
         return Create(accountId, workspaceId, spaceId, sequence, authorId, MessageKind.User, content, createdAt, clientMessageId.Trim(), replyToId);
+    }
+
+    /// <summary>
+    /// A reply in the thread of a root message (UC-CHT-F01). The space sequence orders it with the rest of the space;
+    /// the thread sequence orders it inside its thread. Replies to a reply or to a system message are refused by the
+    /// handler, which knows the root.
+    /// </summary>
+    public static Message CreateThreadReply(
+        Guid accountId,
+        Guid workspaceId,
+        Guid spaceId,
+        long sequence,
+        Guid rootMessageId,
+        long threadSequence,
+        Guid authorId,
+        string content,
+        string clientMessageId,
+        bool alsoSentToChannel,
+        DateTimeOffset createdAt)
+    {
+        Guard.NotEmpty(rootMessageId);
+        if (threadSequence < 1)
+            throw new BusinessRuleException(ChatRuleCodes.MessageSequenceInvalid, "A thread reply sequence starts at 1.");
+        Guard.NotNullOrWhiteSpace(clientMessageId);
+        if (clientMessageId.Trim().Length > ChatLimits.ClientMessageIdMaxLength)
+            throw new BusinessRuleException(ChatRuleCodes.MessageContentInvalid, "The client message id is too long.");
+
+        return Create(accountId, workspaceId, spaceId, sequence, authorId, MessageKind.User, content, createdAt,
+            clientMessageId.Trim(), replyToId: null, rootMessageId, threadSequence, alsoSentToChannel);
     }
 
     /// <summary>A system message, attributed to the person whose change it announces (UC-CHT-B09).</summary>
@@ -84,7 +120,10 @@ public class Message : AggregateRoot, IWorkspaceScoped
         string content,
         DateTimeOffset createdAt,
         string? clientMessageId = null,
-        Guid? replyToId = null)
+        Guid? replyToId = null,
+        Guid? threadRootId = null,
+        long? threadSequence = null,
+        bool alsoSentToChannel = false)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
@@ -105,6 +144,9 @@ public class Message : AggregateRoot, IWorkspaceScoped
             Content = normalized,
             ClientMessageId = clientMessageId,
             ReplyToId = replyToId,
+            ThreadRootId = threadRootId,
+            ThreadSequence = threadSequence,
+            AlsoSentToChannel = alsoSentToChannel,
         };
 
         message.SetAuditOnCreate(authorId, createdAt);
@@ -120,7 +162,9 @@ public class Message : AggregateRoot, IWorkspaceScoped
             message.ClientMessageId,
             message.Version,
             createdAt,
-            replyToId));
+            replyToId,
+            threadRootId,
+            threadSequence));
 
         return message;
     }
@@ -137,7 +181,7 @@ public class Message : AggregateRoot, IWorkspaceScoped
         EditedAt = editedAt;
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new MessageUpdatedDomainEvent(AccountId, WorkspaceId, Id, SpaceId, Sequence, AuthorId, normalized, Version, editedAt));
+        RaiseDomainEvent(new MessageUpdatedDomainEvent(AccountId, WorkspaceId, Id, SpaceId, Sequence, AuthorId, normalized, Version, editedAt, ThreadRootId));
         return true;
     }
 
@@ -160,7 +204,7 @@ public class Message : AggregateRoot, IWorkspaceScoped
         DeletedBy = deletedBy;
         ApplyAuditUpdate(pending);
         IncrementVersion();
-        RaiseDomainEvent(new MessageDeletedDomainEvent(AccountId, WorkspaceId, Id, SpaceId, Sequence, AuthorId, deletedBy, Version, deletedAt));
+        RaiseDomainEvent(new MessageDeletedDomainEvent(AccountId, WorkspaceId, Id, SpaceId, Sequence, AuthorId, deletedBy, Version, deletedAt, ThreadRootId));
         return true;
     }
 

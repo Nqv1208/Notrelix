@@ -1919,6 +1919,16 @@
           "nullable": true
         },
         {
+          "name": "threadRootId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "threadSequence",
+          "type": "Int64?",
+          "nullable": true
+        },
+        {
           "name": "eventId",
           "type": "Guid",
           "nullable": false
@@ -2024,6 +2034,11 @@
           "nullable": false
         },
         {
+          "name": "threadRootId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
           "name": "eventId",
           "type": "Guid",
           "nullable": false
@@ -2127,6 +2142,11 @@
           "name": "version",
           "type": "Int64",
           "nullable": false
+        },
+        {
+          "name": "threadRootId",
+          "type": "Guid?",
+          "nullable": true
         },
         {
           "name": "eventId",

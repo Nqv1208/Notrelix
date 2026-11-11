@@ -93,9 +93,11 @@
             "createdAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
             "editedAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
             "replyToId": { "oneOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }] },
+            "threadRootId": { "oneOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }] },
+            "threadSequence": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
             "version": { "type": "integer" }
           },
-          "required": ["id", "sequence", "authorId", "kind", "content", "contentOmitted", "deleted", "createdAt", "editedAt", "replyToId", "version"]
+          "required": ["id", "sequence", "authorId", "kind", "content", "contentOmitted", "deleted", "createdAt", "editedAt", "replyToId", "threadRootId", "threadSequence", "version"]
         }
       },
       "ChatMessageUpdated": {
@@ -115,9 +117,11 @@
             "createdAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
             "editedAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
             "replyToId": { "oneOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }] },
+            "threadRootId": { "oneOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }] },
+            "threadSequence": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
             "version": { "type": "integer" }
           },
-          "required": ["id", "sequence", "authorId", "kind", "content", "contentOmitted", "deleted", "createdAt", "editedAt", "replyToId", "version"]
+          "required": ["id", "sequence", "authorId", "kind", "content", "contentOmitted", "deleted", "createdAt", "editedAt", "replyToId", "threadRootId", "threadSequence", "version"]
         }
       },
       "ChatMessageDeleted": {
@@ -137,9 +141,11 @@
             "createdAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
             "editedAt": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
             "replyToId": { "oneOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }] },
+            "threadRootId": { "oneOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }] },
+            "threadSequence": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
             "version": { "type": "integer" }
           },
-          "required": ["id", "sequence", "authorId", "kind", "content", "contentOmitted", "deleted", "createdAt", "editedAt", "replyToId", "version"]
+          "required": ["id", "sequence", "authorId", "kind", "content", "contentOmitted", "deleted", "createdAt", "editedAt", "replyToId", "threadRootId", "threadSequence", "version"]
         }
       },
       "ChatUnreadChanged": {

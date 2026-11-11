@@ -10,5 +10,6 @@ public sealed record MessageDeletedDomainEvent(
     Guid AuthorId,
     Guid DeletedBy,
     long Version,
-    DateTimeOffset OccurredAt
+    DateTimeOffset OccurredAt,
+    Guid? ThreadRootId = null
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

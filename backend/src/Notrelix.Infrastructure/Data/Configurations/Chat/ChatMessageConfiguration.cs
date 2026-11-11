@@ -26,6 +26,8 @@ public class ChatMessageConfiguration : IEntityTypeConfiguration<Message>
         builder.Property(x => x.ClientMessageId).HasColumnName("client_message_id").HasMaxLength(ChatLimits.ClientMessageIdMaxLength);
         builder.Property(x => x.ReplyToId).HasColumnName("reply_to_id");
         builder.Property(x => x.ThreadRootId).HasColumnName("thread_root_id");
+        builder.Property(x => x.ThreadSequence).HasColumnName("thread_sequence");
+        builder.Property(x => x.AlsoSentToChannel).HasColumnName("also_sent_to_channel").IsRequired().HasDefaultValue(false);
         builder.Property(x => x.EditedAt).HasColumnName("edited_at");
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");
@@ -50,6 +52,11 @@ public class ChatMessageConfiguration : IEntityTypeConfiguration<Message>
         builder.HasIndex(x => new { x.SpaceId, x.AuthorId, x.ClientMessageId })
             .IsUnique()
             .HasDatabaseName("ux_messages_space_author_client_message");
+
+        // One sequence per thread, gap-free and never reused (UC-CHT-F01). Null outside a thread, so the rule is per root.
+        builder.HasIndex(x => new { x.ThreadRootId, x.ThreadSequence })
+            .IsUnique()
+            .HasDatabaseName("ux_messages_thread_sequence");
 
         builder.HasOne<Notrelix.Domain.Chat.Spaces.Space>()
             .WithMany()

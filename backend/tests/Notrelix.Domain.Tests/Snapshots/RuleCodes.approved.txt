@@ -123,6 +123,7 @@ name-conflict|Chat|NameConflict
 rate-limited|Chat|RateLimited
 space-not-found|Chat|SpaceNotFound
 system-message-immutable|Chat|SystemMessageImmutable
+thread-root-invalid|Chat|ThreadRootInvalid
 version-conflict|Chat|VersionConflict
 Collaboration_Attachment_FileSizeExceeded|Collaboration|Collaboration_Attachment_FileSizeExceeded
 Collaboration_Attachment_FileSizeMustBePositive|Collaboration|Collaboration_Attachment_FileSizeMustBePositive

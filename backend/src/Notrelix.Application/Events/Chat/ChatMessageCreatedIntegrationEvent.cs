@@ -18,7 +18,9 @@ public sealed record ChatMessageCreatedIntegrationEvent(
     Guid? ActorUserId = null,
     Guid? CausationId = null,
     DateTimeOffset OccurredAt = default,
-    Guid? ReplyToId = null
+    Guid? ReplyToId = null,
+    Guid? ThreadRootId = null,
+    long? ThreadSequence = null
 ) : IntegrationEvent(
     eventId: EventId,
     messageName: "chat.message.created",

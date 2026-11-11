@@ -2553,6 +2553,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("account_id");
 
+                    b.Property<bool>("AlsoSentToChannel")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("also_sent_to_channel");
+
                     b.Property<Guid>("AuthorId")
                         .HasColumnType("uuid")
                         .HasColumnName("author_id");
@@ -2609,6 +2615,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("thread_root_id");
 
+                    b.Property<long?>("ThreadSequence")
+                        .HasColumnType("bigint")
+                        .HasColumnName("thread_sequence");
+
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -2636,11 +2646,99 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .IsDescending(false, true)
                         .HasDatabaseName("ux_messages_space_sequence");
 
+                    b.HasIndex("ThreadRootId", "ThreadSequence")
+                        .IsUnique()
+                        .HasDatabaseName("ux_messages_thread_sequence");
+
                     b.HasIndex("SpaceId", "AuthorId", "ClientMessageId")
                         .IsUnique()
                         .HasDatabaseName("ux_messages_space_author_client_message");
 
                     b.ToTable("messages", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.MessageThread", b =>
+                {
+                    b.Property<Guid>("RootMessageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("root_message_id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset?>("ArchivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("archived_at");
+
+                    b.Property<DateTimeOffset>("LastReplyAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_reply_at");
+
+                    b.Property<long>("ReplyCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(0L)
+                        .HasColumnName("reply_count");
+
+                    b.Property<Guid>("SpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("space_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("RootMessageId")
+                        .HasName("pk_threads");
+
+                    b.HasIndex("SpaceId")
+                        .HasDatabaseName("ix_threads_space_id");
+
+                    b.HasIndex("WorkspaceId", "LastReplyAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_threads_workspace_last_reply");
+
+                    b.ToTable("threads", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.ThreadFollower", b =>
+                {
+                    b.Property<Guid>("RootMessageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("root_message_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<bool>("Muted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("muted");
+
+                    b.Property<long>("ReadReplySequence")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(0L)
+                        .HasColumnName("read_reply_sequence");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("RootMessageId", "UserId")
+                        .HasName("pk_thread_followers");
+
+                    b.HasIndex("UserId", "WorkspaceId")
+                        .HasDatabaseName("ix_thread_followers_user_workspace");
+
+                    b.ToTable("thread_followers", "chat");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.ChannelGroup", b =>
@@ -12745,6 +12843,33 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_messages_chat_spaces_space_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.MessageThread", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Messages.Message", null)
+                        .WithMany()
+                        .HasForeignKey("RootMessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_threads_messages_root_message_id");
+
+                    b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
+                        .WithMany()
+                        .HasForeignKey("SpaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_threads_spaces_space_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.ThreadFollower", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Messages.MessageThread", null)
+                        .WithMany()
+                        .HasForeignKey("RootMessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_thread_followers_threads_root_message_id");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.Membership", b =>

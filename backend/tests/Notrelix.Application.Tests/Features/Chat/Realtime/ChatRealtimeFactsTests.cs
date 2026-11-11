@@ -63,6 +63,32 @@ public class ChatRealtimeFactsTests
     }
 
     [Fact]
+    public void A_thread_reply_is_a_channel_frame_that_names_its_root_and_its_thread_sequence()
+    {
+        // The reply goes to the channel stream like any message; the root and the thread sequence let a client route it
+        // to the thread and count the replies it holds (UC-CHT-F01, C02).
+        var root = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        var reply = Created("in thread") with { ThreadRootId = root, ThreadSequence = 3 };
+
+        var change = ChatRealtime.ForCreated(reply, Now);
+
+        change.ChangeKind.Should().Be("chat.message.created");
+        change.StreamKey.Should().Be($"chat:Channel:{SpaceId:N}");
+        var payload = Payload(change);
+        payload.GetProperty("threadRootId").GetGuid().Should().Be(root);
+        payload.GetProperty("threadSequence").GetInt64().Should().Be(3);
+    }
+
+    [Fact]
+    public void A_channel_message_has_no_thread_fields_in_its_payload()
+    {
+        var payload = Payload(ChatRealtime.ForCreated(Created("plain"), Now));
+
+        payload.GetProperty("threadRootId").ValueKind.Should().Be(JsonValueKind.Null);
+        payload.GetProperty("threadSequence").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
     public void An_edit_carries_the_new_content_and_the_edit_time_and_the_version()
     {
         var edited = new ChatMessageUpdatedIntegrationEvent(

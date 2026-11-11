@@ -1,6 +1,7 @@
 using Notrelix.API.Endpoints.Chat.ChannelGroups;
 using Notrelix.API.Endpoints.Chat.Channels;
 using Notrelix.API.Endpoints.Chat.Members;
+using Notrelix.API.Endpoints.Chat.Threads;
 using Notrelix.API.Endpoints.Chat.Messages;
 using Notrelix.API.Endpoints.Chat.ReadState;
 using Notrelix.API.Endpoints.Admin;
@@ -148,6 +149,7 @@ public static class EndpointRouteBuilderExtensions
         app.MapChannelMemberRoutes();
         app.MapChannelGroupRoutes();
         app.MapMessageRoutes();
+        app.MapThreadRoutes();
         app.MapReadStateRoutes();
         app.MapWatchersEndpoints();
         app.RegisterNotificationPreferenceEndpoints();

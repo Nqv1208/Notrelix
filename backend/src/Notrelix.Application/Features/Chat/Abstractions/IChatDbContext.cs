@@ -10,4 +10,6 @@ public interface IChatDbContext
     DbSet<Membership> ChatMemberships { get; }
     DbSet<ChannelGroup> ChatChannelGroups { get; }
     DbSet<Message> ChatMessages { get; }
+    DbSet<MessageThread> ChatThreads { get; }
+    DbSet<ThreadFollower> ChatThreadFollowers { get; }
 }
