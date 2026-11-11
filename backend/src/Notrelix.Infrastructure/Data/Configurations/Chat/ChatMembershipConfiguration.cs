@@ -25,10 +25,19 @@ public class ChatMembershipConfiguration : IEntityTypeConfiguration<Membership>
             .HasMaxLength(16);
         builder.Property(x => x.JoinedAt).HasColumnName("joined_at").IsRequired();
         builder.Property(x => x.LeftAt).HasColumnName("left_at");
+        builder.Property(x => x.ReadSequence).HasColumnName("read_sequence").IsRequired().HasDefaultValue(0L);
+        builder.Property(x => x.MentionCount).HasColumnName("mention_count").IsRequired().HasDefaultValue(0);
+        builder.Property(x => x.MutedUntil).HasColumnName("muted_until");
 
         builder.Ignore(x => x.IsActive);
         builder.Ignore(x => x.IsManager);
 
         builder.HasIndex(x => x.UserId).HasDatabaseName("idx_memberships_user");
+
+        // The unread summary reads one person's active memberships in a Workspace, with their read boundary (UC-CHT-D01).
+        builder.HasIndex(x => new { x.UserId, x.WorkspaceId })
+            .HasDatabaseName("idx_memberships_user_workspace_active")
+            .IncludeProperties(x => new { x.SpaceId, x.ReadSequence })
+            .HasFilter("left_at IS NULL");
     }
 }

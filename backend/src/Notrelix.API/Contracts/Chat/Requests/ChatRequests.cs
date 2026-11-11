@@ -32,3 +32,12 @@ public record SendMessageRequest(string? Content, string? ClientMessageId, Guid?
 
 /// <summary>The new text, with the version the editor read. A stale version is refused with 412.</summary>
 public record EditMessageRequest(string? Content, long? ExpectedVersion);
+
+/// <summary>The sequence the person has read up to in a space (UC-CHT-D02). A lower sequence than the boundary changes nothing.</summary>
+public record MarkSpaceReadRequest(long? UpToSequence);
+
+/// <summary>
+/// How the person is notified in a space: all, mentions or none (UC-CHT-D06). With none, an optional until time makes it a
+/// timed mute (UC-CHT-D05). An until time with another level is refused.
+/// </summary>
+public record SetNotificationLevelRequest(string? Level, DateTimeOffset? MutedUntil);

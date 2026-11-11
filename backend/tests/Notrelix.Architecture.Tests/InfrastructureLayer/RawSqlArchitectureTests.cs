@@ -95,6 +95,9 @@ public class RawSqlArchitectureTests
         // of the account id (a parameterized key, no user input) serializing the last-seat check and the
         // membership insert of one account inside the request transaction.
         "src/Notrelix.Infrastructure/Billing/BillingUsageReader.cs",
+        // Chat read boundaries (CHT-009): one UPDATE per request on the caller's membership rows, with GREATEST so a
+        // boundary never moves backwards under concurrent requests. The row lock of the UPDATE serializes them.
+        "src/Notrelix.Infrastructure/Data/Chat/ChatReadStateStore.cs",
     };
 
     [Fact]

@@ -1,3 +1,5 @@
+using Notrelix.Domain.Chat.ReadStates;
+
 namespace Notrelix.Domain.Chat.Spaces;
 
 public enum MembershipRole
@@ -27,6 +29,15 @@ public sealed class Membership : IWorkspaceScoped
     public NotificationLevel NotificationLevel { get; private set; } = NotificationLevel.All;
     public DateTimeOffset JoinedAt { get; private set; }
     public DateTimeOffset? LeftAt { get; private set; }
+
+    /// <summary>The highest sequence the person has seen in the space (CHT-009). Moves forward only; see <see cref="ReadStates.ReadBoundary"/>.</summary>
+    public long ReadSequence { get; private set; }
+
+    /// <summary>Mentions of the person not yet read (CHT-010, S2.4). No mention facts exist in Phase 1, so this stays 0.</summary>
+    public int MentionCount { get; private set; }
+
+    /// <summary>When a mute ends. Only set with <see cref="NotificationLevel.None"/>; null is a permanent mute or no mute.</summary>
+    public DateTimeOffset? MutedUntil { get; private set; }
 
     public bool IsActive => LeftAt is null;
     public bool IsManager => IsActive && Role == MembershipRole.Manager;
@@ -60,4 +71,52 @@ public sealed class Membership : IWorkspaceScoped
     }
 
     internal void Leave(DateTimeOffset at) => LeftAt = at;
+
+    /// <summary>
+    /// Sets how the person is notified in this space (UC-CHT-D05, D06). A mute is the level None with an optional until.
+    /// A level other than None clears the until. An until that is not after <paramref name="now"/> is a no-op. Returns
+    /// false and changes nothing when the stored settings already match.
+    /// </summary>
+    public bool SetNotificationLevel(NotificationLevel level, DateTimeOffset? mutedUntil, DateTimeOffset now)
+    {
+        if (mutedUntil is not null && level != NotificationLevel.None)
+            throw new ArgumentException("Only a muted space takes an until time.", nameof(mutedUntil));
+
+        var until = mutedUntil?.ToUniversalTime();
+        if (until is { } at && at <= now.ToUniversalTime())
+            return false;
+
+        if (NotificationLevel == level && MutedUntil == until)
+            return false;
+
+        NotificationLevel = level;
+        MutedUntil = until;
+        return true;
+    }
+
+    /// <summary>The level in force at <paramref name="now"/>: a mute whose until has passed is over, so the level is All.</summary>
+    public NotificationLevel EffectiveNotificationLevel(DateTimeOffset now) =>
+        EffectiveLevel(NotificationLevel, MutedUntil, now);
+
+    /// <summary>
+    /// Moves the read sequence to the target when it is ahead, never back (CHT-009). The store applies the same rule in one
+    /// UPDATE for the concurrent path; this is the in-memory form, for a membership loaded and changed as a whole.
+    /// </summary>
+    public bool AdvanceReadSequence(long target)
+    {
+        var next = ReadBoundary.Advance(ReadSequence, target);
+        if (next == ReadSequence) return false;
+
+        ReadSequence = next;
+        return true;
+    }
+
+    /// <summary>The level in force for stored settings at <paramref name="now"/> (see <see cref="EffectiveNotificationLevel"/>).</summary>
+    public static NotificationLevel EffectiveLevel(NotificationLevel stored, DateTimeOffset? mutedUntil, DateTimeOffset now) =>
+        stored == NotificationLevel.None && mutedUntil is { } until && until <= now.ToUniversalTime()
+            ? NotificationLevel.All
+            : stored;
+
+    /// <summary>Muted at <paramref name="now"/>: no badge and no notification for the space (CHT-019).</summary>
+    public bool IsMuted(DateTimeOffset now) => EffectiveNotificationLevel(now) == NotificationLevel.None;
 }
