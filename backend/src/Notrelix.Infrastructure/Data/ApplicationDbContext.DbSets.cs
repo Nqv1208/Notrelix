@@ -235,6 +235,8 @@ public partial class ApplicationDbContext
     public DbSet<Notrelix.Domain.Chat.Spaces.Membership> ChatMemberships => Set<Notrelix.Domain.Chat.Spaces.Membership>();
     public DbSet<Notrelix.Domain.Chat.Spaces.ChannelGroup> ChatChannelGroups => Set<Notrelix.Domain.Chat.Spaces.ChannelGroup>();
     public DbSet<Notrelix.Domain.Chat.Messages.Message> ChatMessages => Set<Notrelix.Domain.Chat.Messages.Message>();
+    public DbSet<Notrelix.Domain.Chat.Messages.MessageThread> ChatThreads => Set<Notrelix.Domain.Chat.Messages.MessageThread>();
+    public DbSet<Notrelix.Domain.Chat.Messages.ThreadFollower> ChatThreadFollowers => Set<Notrelix.Domain.Chat.Messages.ThreadFollower>();
 
     // Collaboration
     public DbSet<Comment> Comments => Set<Comment>();
