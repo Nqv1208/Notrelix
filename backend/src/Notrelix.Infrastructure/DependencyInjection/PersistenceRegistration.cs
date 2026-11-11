@@ -6,6 +6,7 @@ using Notrelix.Infrastructure.Data.Audit;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Integrations.Abstractions;
@@ -96,6 +97,7 @@ public static class PersistenceRegistration
         services.AddScoped<IWorkManagementDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IDocumentDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ICollaborationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IChatDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAutomationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IIntegrationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 

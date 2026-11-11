@@ -121,6 +121,8 @@ public class ApiArchitectureTests
         var endpointsDir = Path.Combine(apiPath, "Endpoints");
         var dirs = Directory.GetDirectories(endpointsDir);
 
+        // Chat has no Endpoints/Chat folder until S1.1 adds its first endpoint (git does not track
+        // empty folders), so it is added to this list in that slice.
         var expectedBcs = new[]
         {
             "Collaboration",

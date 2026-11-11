@@ -7,6 +7,7 @@ using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Integrations.Abstractions;
@@ -30,6 +31,7 @@ public partial class ApplicationDbContext : DbContext,
     IAccountDbContext,
     IDocumentDbContext,
     ICollaborationDbContext,
+    IChatDbContext,
     IAutomationDbContext,
     IGovernanceDbContext,
     IIntegrationDbContext,
