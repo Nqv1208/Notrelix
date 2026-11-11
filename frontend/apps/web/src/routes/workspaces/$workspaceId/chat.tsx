@@ -8,6 +8,7 @@ import {
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
+import { useRealtimeConnection } from "../../../realtime/use-realtime-connection";
 
 const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -28,6 +29,14 @@ export function ChatPage() {
   const navigate = useNavigate();
   const { api: runtimeClient } = useAppRuntime();
   const viewer = useWorkspaceViewer(workspaceId);
+  const realtime = useRealtimeConnection();
+  // Only a connection that is down (not one that has not started yet) reads as reconnecting.
+  const connection =
+    realtime.state === "idle" ||
+    realtime.state === "connected" ||
+    realtime.state === "connecting"
+      ? "live"
+      : "reconnecting";
 
   const deps = useMemo(
     () => ({ api: runtimeClient.api, endpoints: runtimeClient.endpoints }),
@@ -64,6 +73,7 @@ export function ChatPage() {
         viewerRole={(viewer.role as ChatViewerRole | null) ?? null}
         channelId={channelId ?? null}
         people={people}
+        connection={connection}
         onOpenChannel={(id) =>
           void navigate({
             to: "/workspaces/$workspaceId/chat/$channelId",

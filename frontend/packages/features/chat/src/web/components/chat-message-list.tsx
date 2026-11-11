@@ -1,5 +1,11 @@
 import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
-import { ArrowDown, Lock, MessageSquareText, RotateCw } from "lucide-react";
+import {
+  ArrowDown,
+  ChevronLeft,
+  Lock,
+  MessageSquareText,
+  RotateCw,
+} from "lucide-react";
 import {
   Button,
   Empty,
@@ -69,6 +75,8 @@ export interface ChatMessageListProps {
   readonly onRetryPending: (pending: PendingMessage) => void;
   readonly onDiscardPending: (clientMessageId: string) => void;
   readonly pendingEntries: readonly PendingMessage[];
+  /** Shown on the no-access and error states on narrow screens, to return to the channel list. */
+  readonly onBackToList?: () => void;
 }
 
 function dayLabel(dayKey: string, locale: string, copy: ChatCopy): string {
@@ -178,14 +186,20 @@ export function ChatMessageList(props: ChatMessageListProps) {
 
   if (status === "loading") {
     return (
-      <div className="flex flex-1 flex-col gap-4 p-6" role="status">
+      <div
+        className="flex flex-1 flex-col gap-5 overflow-hidden px-4 py-5"
+        role="status"
+      >
         <span className="sr-only">{copy.list.loading}</span>
         {[0, 1, 2, 3].map((index) => (
           <div key={index} className="flex gap-3" aria-hidden="true">
-            <Skeleton className="size-8 shrink-0 rounded-full" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-3 w-40" />
-              <Skeleton className="h-4 w-full max-w-md" />
+            <Skeleton className="size-9 shrink-0 rounded-full" />
+            <div className="flex-1 space-y-2.5 pt-1">
+              <Skeleton className="h-3 w-32" />
+              <Skeleton className="h-3 w-full max-w-md" />
+              {index % 2 === 0 ? (
+                <Skeleton className="h-3 w-2/5 max-w-xs" />
+              ) : null}
             </div>
           </div>
         ))}
@@ -195,24 +209,33 @@ export function ChatMessageList(props: ChatMessageListProps) {
 
   if (status === "error") {
     return (
-      <Empty className="flex-1">
+      <Empty className="flex-1 px-6 py-10">
         <EmptyHeader>
-          <EmptyMedia variant="icon">
+          <EmptyMedia variant="icon" className="text-destructive">
             <MessageSquareText aria-hidden="true" />
           </EmptyMedia>
           <EmptyTitle>{copy.list.error}</EmptyTitle>
+          <EmptyDescription>{copy.list.errorBody}</EmptyDescription>
         </EmptyHeader>
-        <Button variant="outline" onClick={props.onRetryLoad}>
-          <RotateCw aria-hidden="true" />
-          {copy.list.retry}
-        </Button>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <Button onClick={props.onRetryLoad}>
+            <RotateCw aria-hidden="true" />
+            {copy.list.retry}
+          </Button>
+          {props.onBackToList ? (
+            <BackToList
+              label={copy.list.backToList}
+              onClick={props.onBackToList}
+            />
+          ) : null}
+        </div>
       </Empty>
     );
   }
 
   if (status === "no-access") {
     return (
-      <Empty className="flex-1">
+      <Empty className="flex-1 px-6 py-10">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <Lock aria-hidden="true" />
@@ -220,6 +243,12 @@ export function ChatMessageList(props: ChatMessageListProps) {
           <EmptyTitle>{copy.list.noAccess}</EmptyTitle>
           <EmptyDescription>{copy.list.noAccessBody}</EmptyDescription>
         </EmptyHeader>
+        {props.onBackToList ? (
+          <BackToList
+            label={copy.list.backToList}
+            onClick={props.onBackToList}
+          />
+        ) : null}
       </Empty>
     );
   }
@@ -227,12 +256,14 @@ export function ChatMessageList(props: ChatMessageListProps) {
   const hasMessages = rows.some((row) => row.kind === "message");
   if (!hasMessages && props.pendingEntries.length === 0) {
     return (
-      <Empty className="flex-1">
+      <Empty className="flex-1 px-6 py-10">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <MessageSquareText aria-hidden="true" />
           </EmptyMedia>
-          <EmptyTitle>{copy.list.empty}</EmptyTitle>
+          <EmptyTitle>
+            {fillCopy(copy.list.startOf, { channel: channelName })}
+          </EmptyTitle>
           <EmptyDescription>{copy.list.emptyBody}</EmptyDescription>
         </EmptyHeader>
       </Empty>
@@ -244,7 +275,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
       {props.staleNotice ? (
         <p
           role="status"
-          className="mx-4 mt-2 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground"
+          className="mx-4 mt-2 rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground"
         >
           {props.staleNotice}
         </p>
@@ -257,7 +288,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
         aria-busy={props.isLoadingOlder || props.isLoadingNewer}
         tabIndex={0}
         onScroll={handleScroll}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-2 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-inset"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-3 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-inset"
         data-testid="chat-message-list"
       >
         {props.isLoadingOlder ? (
@@ -272,10 +303,12 @@ export function ChatMessageList(props: ChatMessageListProps) {
                 <li
                   key={row.key}
                   role="presentation"
-                  className="my-3 flex items-center gap-3 px-4 text-xs font-medium text-muted-foreground"
+                  className="my-4 flex items-center gap-3 px-4 text-xs font-semibold text-muted-foreground"
                 >
                   <span className="h-px flex-1 bg-border" aria-hidden="true" />
-                  <span>{dayLabel(row.dayKey, locale, copy)}</span>
+                  <span className="rounded-full border border-border bg-background px-2.5 py-0.5">
+                    {dayLabel(row.dayKey, locale, copy)}
+                  </span>
                   <span className="h-px flex-1 bg-border" aria-hidden="true" />
                 </li>
               );
@@ -287,15 +320,17 @@ export function ChatMessageList(props: ChatMessageListProps) {
                   role="separator"
                   aria-label={copy.list.newDivider}
                   data-unread-divider=""
-                  className="my-2 flex items-center gap-3 px-4 text-xs font-semibold text-destructive"
+                  className="my-2 flex items-center gap-3 px-4 text-xs font-bold text-destructive"
                 >
                   <span
-                    className="h-px flex-1 bg-destructive/60"
+                    className="h-px flex-1 bg-destructive/50"
                     aria-hidden="true"
                   />
-                  <span>{copy.list.newDivider}</span>
+                  <span className="rounded-full bg-destructive/10 px-2.5 py-0.5">
+                    {copy.list.newDivider}
+                  </span>
                   <span
-                    className="h-px flex-1 bg-destructive/60"
+                    className="h-px flex-1 bg-destructive/50"
                     aria-hidden="true"
                   />
                 </li>
@@ -407,6 +442,22 @@ function useIncomingAnnouncement(
   return line;
 }
 
+/** The narrow-screen way back from a channel that cannot be shown. */
+function BackToList({
+  label,
+  onClick,
+}: {
+  readonly label: string;
+  readonly onClick: () => void;
+}) {
+  return (
+    <Button type="button" variant="outline" onClick={onClick}>
+      <ChevronLeft aria-hidden="true" />
+      {label}
+    </Button>
+  );
+}
+
 function isAtBottom(el: HTMLElement): boolean {
   return el.scrollHeight - el.scrollTop - el.clientHeight < BOTTOM_SLACK_PX;
 }
@@ -426,12 +477,12 @@ function JumpLatest({
 }) {
   if (!visible) return null;
   return (
-    <div className="flex shrink-0 justify-center border-t border-border bg-background px-4 py-2">
+    <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center px-4">
       <Button
         type="button"
         variant="secondary"
         size="sm"
-        className="max-w-full rounded-full shadow-sm"
+        className="pointer-events-auto max-w-full rounded-full border border-border shadow-md"
         onClick={onClick}
       >
         <ArrowDown aria-hidden="true" />
@@ -469,7 +520,7 @@ function EditForm({
   }
   return (
     <form
-      className="mx-4 my-1 flex flex-col gap-2"
+      className="mx-4 my-1 flex flex-col gap-2 rounded-xl border border-input bg-card p-2 shadow-xs"
       onSubmit={(event) => {
         event.preventDefault();
         onSave();

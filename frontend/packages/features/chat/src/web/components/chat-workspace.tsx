@@ -15,7 +15,7 @@ import {
   SheetTitle,
   useIsMobile,
 } from "@notrelix/ui-web";
-import { MessageSquareText, Plus } from "lucide-react";
+import { Archive, MessageSquareText, Plus, WifiOff } from "lucide-react";
 import {
   chatFailureOf,
   type ChatFailureKind,
@@ -46,6 +46,7 @@ import {
   type ChatScrollRequest,
 } from "./chat-message-list";
 import { ChatHeader } from "./chat-header";
+import { ChatStatusBanner } from "./chat-status-banner";
 import {
   ChatSidebar,
   type ChannelListStatus,
@@ -61,6 +62,9 @@ import { useChatCopy } from "./use-chat-copy";
 
 export type ChatViewerRole = "owner" | "admin" | "member" | "guest";
 
+/** Whether the realtime stream is live; the host reports a drop while it reconnects. */
+export type ChatConnectionState = "live" | "reconnecting";
+
 export interface ChatWorkspaceProps {
   readonly deps: ChatHookDeps;
   readonly workspaceId: string;
@@ -72,6 +76,10 @@ export interface ChatWorkspaceProps {
   /** Names of the Workspace members by user id (the host supplies them). */
   readonly people: ReadonlyMap<string, string>;
   readonly onOpenChannel: (channelId: string) => void;
+  /** Narrow screens: returns to the channel list (the host's route). Without it the list opens as a sheet. */
+  readonly onBackToList?: () => void;
+  /** The realtime stream state; a reconnecting stream shows a banner above the messages. */
+  readonly connection?: ChatConnectionState;
   readonly timeZone?: string;
 }
 
@@ -123,6 +131,8 @@ export function ChatWorkspace({
   channelId,
   people,
   onOpenChannel,
+  onBackToList,
+  connection = "live",
   timeZone,
 }: ChatWorkspaceProps) {
   const copy = useChatCopy();
@@ -478,6 +488,14 @@ export function ChatWorkspace({
             : "ready";
   const canManage = canManageWorkspace || channel?.role === "manager";
 
+  const viewerName = people.get(viewerId);
+  const viewer =
+    viewerId && viewerName ? { id: viewerId, name: viewerName } : null;
+  // On a narrow screen with no channel open, the list is the page.
+  const listOnly =
+    isMobile && channelId === null && (channels.data?.length ?? 0) > 0;
+  const openList = () => (onBackToList ? onBackToList() : setListOpen(true));
+
   const sidebar = (
     <ChatSidebar
       channels={channels.data ?? []}
@@ -498,12 +516,15 @@ export function ChatWorkspace({
       }}
       onJoin={(id) => handleJoin(id, () => onOpenChannel(id))}
       onRetry={() => void channels.refetch()}
+      viewer={viewer}
     />
   );
 
   return (
     <div className="flex h-full min-h-0 w-full">
-      {isMobile ? (
+      {listOnly ? (
+        <div className="flex min-h-0 w-full flex-col bg-sidebar">{sidebar}</div>
+      ) : isMobile ? (
         <Sheet open={listOpen} onOpenChange={setListOpen}>
           <SheetContent side="left" className="w-72 p-0">
             <SheetHeader className="sr-only">
@@ -514,135 +535,149 @@ export function ChatWorkspace({
           </SheetContent>
         </Sheet>
       ) : (
-        <aside className="flex w-64 shrink-0 flex-col border-e border-border bg-sidebar">
+        <aside className="flex w-64 shrink-0 flex-col border-e border-border bg-sidebar xl:w-72">
           {sidebar}
         </aside>
       )}
 
-      <section
-        className="flex min-h-0 min-w-0 flex-1 flex-col"
-        aria-label={copy.page.title}
-      >
-        {!channelId ? (
-          <div className="flex flex-1 items-center justify-center p-6">
-            {channels.data && channels.data.length === 0 ? (
-              <Empty>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <MessageSquareText aria-hidden="true" />
-                  </EmptyMedia>
-                  <EmptyTitle>{copy.page.noChannelsTitle}</EmptyTitle>
-                  <EmptyDescription>
-                    {copy.page.noChannelsBody}
-                  </EmptyDescription>
-                </EmptyHeader>
-                {viewerRole !== null && viewerRole !== "guest" ? (
-                  <Button onClick={() => setCreateOpen(true)}>
-                    <Plus aria-hidden="true" />
-                    {copy.page.createChannel}
-                  </Button>
-                ) : null}
-              </Empty>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                {copy.page.chooseChannel}
-              </p>
-            )}
-          </div>
-        ) : channel === null && detailFailure !== null ? (
-          <Empty className="flex-1">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <MessageSquareText aria-hidden="true" />
-              </EmptyMedia>
-              <EmptyTitle>{copy.list.noAccess}</EmptyTitle>
-              <EmptyDescription>{copy.list.noAccessBody}</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        ) : channel === null ? (
-          <div
-            role="status"
-            className="flex flex-1 items-center justify-center text-sm text-muted-foreground"
-          >
-            {copy.page.loadingChannel}
-          </div>
-        ) : (
-          <>
-            <ChatHeader
-              channel={channel}
-              members={members}
-              viewerId={viewerId}
-              canManage={canManage}
-              joining={joiner.isPending}
-              authorName={authorName}
-              copy={copy}
-              onOpenList={() => setListOpen(true)}
-              onRename={() => {
-                setRenameError(null);
-                setRenameOpen(true);
-              }}
-              onToggleArchive={() => setArchiveOpen(true)}
-              onJoin={() => handleJoin(ch)}
-              onSetLevel={handleLevel}
-            />
-            <ChatMessageList
-              channelName={channel.name}
-              rows={rows}
-              status={listStatus}
-              hasOlder={messages.hasPreviousPage === true}
-              isLoadingOlder={messages.isFetchingPreviousPage}
-              hasNewer={hasNewer}
-              isLoadingNewer={messages.isFetchingNextPage}
-              scrollRequest={scrollRequest}
-              editing={
-                editing
-                  ? {
-                      messageId: editing.messageId,
-                      draft: editing.draft,
-                      busy: editor.isPending,
-                    }
-                  : null
-              }
-              staleNotice={notice}
-              viewerId={viewerId}
-              authorName={authorName}
-              locale={locale}
-              timeZone={timeZone}
-              copy={copy}
-              pendingEntries={pendingHere}
-              onRetryLoad={() => void messages.refetch()}
-              onOlderNeeded={() => {
-                if (!messages.isFetchingPreviousPage)
-                  void messages.fetchPreviousPage();
-              }}
-              onNewerNeeded={() => {
-                if (!messages.isFetchingNextPage) void messages.fetchNextPage();
-              }}
-              onAtBottomChange={setAtBottom}
-              onJumpLatest={jumpToLatest}
-              onEdit={handleEditStart}
-              onEditDraftChange={(value) =>
-                setEditing((current) =>
-                  current ? { ...current, draft: value } : current,
-                )
-              }
-              onEditSave={handleEditSave}
-              onEditCancel={() => setEditing(null)}
-              onDelete={(message) => setConfirmDelete(message)}
-              onRetryPending={(entry: PendingMessage) => sender.retry(entry)}
-              onDiscardPending={(id) => sender.discard(id)}
-            />
-            <ChatComposer
-              channelName={channel.name}
-              value={draft}
-              disabledReason={composerDisabledReason}
-              copy={copy}
-              onChange={setDraft}
-              onSend={handleSend}
-            />
-          </>
-        )}
-      </section>
+      {listOnly ? null : (
+        <section
+          className="flex min-h-0 min-w-0 flex-1 flex-col"
+          aria-label={copy.page.title}
+        >
+          {!channelId ? (
+            <div className="flex flex-1 items-center justify-center p-6">
+              {channels.data && channels.data.length === 0 ? (
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <MessageSquareText aria-hidden="true" />
+                    </EmptyMedia>
+                    <EmptyTitle>{copy.page.noChannelsTitle}</EmptyTitle>
+                    <EmptyDescription>
+                      {copy.page.noChannelsBody}
+                    </EmptyDescription>
+                  </EmptyHeader>
+                  {viewerRole !== null && viewerRole !== "guest" ? (
+                    <Button onClick={() => setCreateOpen(true)}>
+                      <Plus aria-hidden="true" />
+                      {copy.page.createChannel}
+                    </Button>
+                  ) : null}
+                </Empty>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {copy.page.chooseChannel}
+                </p>
+              )}
+            </div>
+          ) : channel === null && detailFailure !== null ? (
+            <Empty className="flex-1">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <MessageSquareText aria-hidden="true" />
+                </EmptyMedia>
+                <EmptyTitle>{copy.list.noAccess}</EmptyTitle>
+                <EmptyDescription>{copy.list.noAccessBody}</EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : channel === null ? (
+            <div
+              role="status"
+              className="flex flex-1 items-center justify-center text-sm text-muted-foreground"
+            >
+              {copy.page.loadingChannel}
+            </div>
+          ) : (
+            <>
+              <ChatHeader
+                channel={channel}
+                members={members}
+                viewerId={viewerId}
+                canManage={canManage}
+                joining={joiner.isPending}
+                authorName={authorName}
+                copy={copy}
+                onOpenList={openList}
+                onRename={() => {
+                  setRenameError(null);
+                  setRenameOpen(true);
+                }}
+                onToggleArchive={() => setArchiveOpen(true)}
+                onJoin={() => handleJoin(ch)}
+                onSetLevel={handleLevel}
+              />
+              {connection === "reconnecting" ? (
+                <ChatStatusBanner tone="warning" icon={<WifiOff />}>
+                  {copy.list.reconnecting}
+                </ChatStatusBanner>
+              ) : null}
+              {channel.isArchived ? (
+                <ChatStatusBanner tone="info" icon={<Archive />}>
+                  {copy.header.archivedNotice}
+                </ChatStatusBanner>
+              ) : null}
+              <ChatMessageList
+                channelName={channel.name}
+                rows={rows}
+                status={listStatus}
+                hasOlder={messages.hasPreviousPage === true}
+                isLoadingOlder={messages.isFetchingPreviousPage}
+                hasNewer={hasNewer}
+                isLoadingNewer={messages.isFetchingNextPage}
+                scrollRequest={scrollRequest}
+                editing={
+                  editing
+                    ? {
+                        messageId: editing.messageId,
+                        draft: editing.draft,
+                        busy: editor.isPending,
+                      }
+                    : null
+                }
+                staleNotice={notice}
+                viewerId={viewerId}
+                authorName={authorName}
+                locale={locale}
+                timeZone={timeZone}
+                copy={copy}
+                pendingEntries={pendingHere}
+                onRetryLoad={() => void messages.refetch()}
+                onOlderNeeded={() => {
+                  if (!messages.isFetchingPreviousPage)
+                    void messages.fetchPreviousPage();
+                }}
+                onNewerNeeded={() => {
+                  if (!messages.isFetchingNextPage)
+                    void messages.fetchNextPage();
+                }}
+                onAtBottomChange={setAtBottom}
+                onJumpLatest={jumpToLatest}
+                onEdit={handleEditStart}
+                onEditDraftChange={(value) =>
+                  setEditing((current) =>
+                    current ? { ...current, draft: value } : current,
+                  )
+                }
+                onEditSave={handleEditSave}
+                onEditCancel={() => setEditing(null)}
+                onDelete={(message) => setConfirmDelete(message)}
+                onRetryPending={(entry: PendingMessage) => sender.retry(entry)}
+                onDiscardPending={(id) => sender.discard(id)}
+                onBackToList={isMobile ? openList : undefined}
+              />
+              <ChatComposer
+                channelName={channel.name}
+                value={draft}
+                disabledReason={composerDisabledReason}
+                copy={copy}
+                onChange={setDraft}
+                onSend={handleSend}
+              />
+            </>
+          )}
+        </section>
+      )}
 
       <CreateChannelDialog
         open={createOpen}
