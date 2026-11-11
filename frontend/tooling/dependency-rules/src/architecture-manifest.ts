@@ -433,6 +433,19 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
     allowedInternalImports: [...FEATURE_WEB_BASE],
   },
   {
+    // Chat (S1.7): channels, messages and read state. The copy is owned here (vi/en catalog, FE-ADR-006);
+    // the host passes the current user, the Workspace role and the member names in, so no auth import.
+    packageName: "@notrelix/features-chat",
+    relativePath: "packages/features/chat",
+    layer: "feature",
+    freezeScope: "core-production",
+    allowedInternalImports: [...FEATURE_WEB_BASE, "@notrelix/i18n"],
+    allowedVerificationInternalImports: [
+      "@notrelix/testing",
+      "@notrelix/dev-mock-backend",
+    ],
+  },
+  {
     packageName: "@notrelix/features-notifications",
     relativePath: "packages/features/notifications",
     layer: "feature",
@@ -522,6 +535,7 @@ const ARCHITECTURE_MANIFEST_SOURCE = [
       "@notrelix/features-workspace",
       "@notrelix/features-account",
       "@notrelix/features-billing",
+      "@notrelix/features-chat",
       "@notrelix/features-integrations",
       "@notrelix/features-notifications",
       "@notrelix/features-activity",

@@ -1,0 +1,447 @@
+import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import { ArrowDown, Lock, MessageSquareText, RotateCw } from "lucide-react";
+import {
+  Button,
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  Skeleton,
+  Textarea,
+  cn,
+} from "@notrelix/ui-web";
+import type { ChatMessage } from "../../core/types/chat";
+import {
+  dayKeyOf,
+  type ChatRow,
+  type PendingMessage,
+} from "../../core/model/chat-model";
+import type { ChatCopy } from "./chat.copy";
+import { fillCopy } from "./use-chat-copy";
+import { ChatMessageRow, ChatPendingRow } from "./chat-message-row";
+
+/** Within this many pixels of the bottom the list counts as at the bottom. */
+const BOTTOM_SLACK_PX = 48;
+/** Within this many pixels of the top the next older page is requested. */
+const TOP_TRIGGER_PX = 160;
+
+export type ChatListStatus = "loading" | "ready" | "error" | "no-access";
+
+export interface ChatEditingState {
+  readonly messageId: string;
+  readonly draft: string;
+  readonly busy: boolean;
+}
+
+export interface ChatScrollRequest {
+  /** A new request scrolls even when the target did not change. */
+  readonly nonce: number;
+  readonly target: "divider" | "bottom";
+}
+
+export interface ChatMessageListProps {
+  readonly channelName: string;
+  readonly rows: readonly ChatRow[];
+  readonly status: ChatListStatus;
+  readonly hasOlder: boolean;
+  readonly isLoadingOlder: boolean;
+  readonly hasNewer: boolean;
+  readonly isLoadingNewer: boolean;
+  readonly scrollRequest: ChatScrollRequest | null;
+  readonly editing: ChatEditingState | null;
+  readonly staleNotice: string | null;
+  readonly viewerId: string;
+  readonly authorName: (userId: string) => string;
+  readonly locale: string;
+  readonly timeZone?: string;
+  readonly copy: ChatCopy;
+  readonly onRetryLoad: () => void;
+  readonly onOlderNeeded: () => void;
+  readonly onNewerNeeded: () => void;
+  readonly onAtBottomChange: (atBottom: boolean) => void;
+  readonly onJumpLatest: () => void;
+  readonly onEdit: (message: ChatMessage) => void;
+  readonly onEditDraftChange: (draft: string) => void;
+  readonly onEditSave: () => void;
+  readonly onEditCancel: () => void;
+  readonly onDelete: (message: ChatMessage) => void;
+  readonly onRetryPending: (pending: PendingMessage) => void;
+  readonly onDiscardPending: (clientMessageId: string) => void;
+  readonly pendingEntries: readonly PendingMessage[];
+}
+
+function dayLabel(dayKey: string, locale: string, copy: ChatCopy): string {
+  const today = dayKeyOf(new Date().toISOString());
+  if (dayKey === today) return copy.time.today;
+  const [year, month, day] = dayKey.split("-").map(Number);
+  const date = new Date(Date.UTC(year!, month! - 1, day!, 12));
+  return new Intl.DateTimeFormat(locale, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
+/** The message list (UC-CHT-B02, B03, D03): a log of the window, newest at the bottom. */
+export function ChatMessageList(props: ChatMessageListProps) {
+  const {
+    channelName,
+    rows,
+    status,
+    copy,
+    locale,
+    timeZone,
+    scrollRequest,
+    editing,
+  } = props;
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [atBottom, setAtBottom] = useState(true);
+  const memo = useRef<{
+    firstKey: string | null;
+    height: number;
+    atBottom: boolean;
+    request: number | null;
+  }>({ firstKey: null, height: 0, atBottom: true, request: null });
+
+  // Keeps the reading position. Older messages added above the view move the
+  // reader's place down by the height they added; a new message follows the
+  // reader only when they were already at the bottom.
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const firstKey = rows.find((row) => row.kind === "message")?.key ?? null;
+    const prev = memo.current;
+    const prepended =
+      prev.firstKey !== null &&
+      firstKey !== null &&
+      firstKey !== prev.firstKey &&
+      rows.findIndex((row) => row.key === prev.firstKey) > 0;
+    if (prepended) {
+      el.scrollTop += el.scrollHeight - prev.height;
+    } else if (el.scrollHeight !== prev.height && prev.atBottom) {
+      el.scrollTop = el.scrollHeight;
+    }
+    memo.current = {
+      firstKey,
+      height: el.scrollHeight,
+      atBottom: isAtBottom(el),
+      request: memo.current.request,
+    };
+  }, [rows]);
+
+  // An explicit request: open at the first unread message, or go to the newest.
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !scrollRequest) return;
+    if (memo.current.request === scrollRequest.nonce) return;
+    memo.current.request = scrollRequest.nonce;
+    if (scrollRequest.target === "divider") {
+      const divider = el.querySelector<HTMLElement>("[data-unread-divider]");
+      if (divider) {
+        divider.scrollIntoView({ block: "center" });
+        return;
+      }
+    }
+    el.scrollTop = el.scrollHeight;
+    memo.current.atBottom = true;
+  }, [scrollRequest, rows]);
+
+  function handleScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    const bottom = isAtBottom(el);
+    memo.current.atBottom = bottom;
+    setAtBottom(bottom);
+    props.onAtBottomChange(bottom);
+    if (
+      el.scrollTop < TOP_TRIGGER_PX &&
+      props.hasOlder &&
+      !props.isLoadingOlder
+    ) {
+      props.onOlderNeeded();
+    }
+    if (bottom && props.hasNewer && !props.isLoadingNewer) {
+      props.onNewerNeeded();
+    }
+  }
+
+  const label = fillCopy(copy.list.label, { channel: channelName });
+
+  if (status === "loading") {
+    return (
+      <div className="flex flex-1 flex-col gap-4 p-6" role="status">
+        <span className="sr-only">{copy.list.loading}</span>
+        {[0, 1, 2, 3].map((index) => (
+          <div key={index} className="flex gap-3" aria-hidden="true">
+            <Skeleton className="size-8 shrink-0 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-3 w-40" />
+              <Skeleton className="h-4 w-full max-w-md" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <Empty className="flex-1">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <MessageSquareText aria-hidden="true" />
+          </EmptyMedia>
+          <EmptyTitle>{copy.list.error}</EmptyTitle>
+        </EmptyHeader>
+        <Button variant="outline" onClick={props.onRetryLoad}>
+          <RotateCw aria-hidden="true" />
+          {copy.list.retry}
+        </Button>
+      </Empty>
+    );
+  }
+
+  if (status === "no-access") {
+    return (
+      <Empty className="flex-1">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <Lock aria-hidden="true" />
+          </EmptyMedia>
+          <EmptyTitle>{copy.list.noAccess}</EmptyTitle>
+          <EmptyDescription>{copy.list.noAccessBody}</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    );
+  }
+
+  const hasMessages = rows.some((row) => row.kind === "message");
+  if (!hasMessages && props.pendingEntries.length === 0) {
+    return (
+      <Empty className="flex-1">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <MessageSquareText aria-hidden="true" />
+          </EmptyMedia>
+          <EmptyTitle>{copy.list.empty}</EmptyTitle>
+          <EmptyDescription>{copy.list.emptyBody}</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    );
+  }
+
+  return (
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      {props.staleNotice ? (
+        <p
+          role="status"
+          className="mx-4 mt-2 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground"
+        >
+          {props.staleNotice}
+        </p>
+      ) : null}
+      <div
+        ref={scrollRef}
+        role="log"
+        aria-live="polite"
+        aria-label={label}
+        aria-busy={props.isLoadingOlder || props.isLoadingNewer}
+        tabIndex={0}
+        onScroll={handleScroll}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-2 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-inset"
+        data-testid="chat-message-list"
+      >
+        {props.isLoadingOlder ? (
+          <p className="px-4 py-2 text-center text-xs text-muted-foreground">
+            {copy.list.loadingOlder}
+          </p>
+        ) : null}
+        <ol className="flex flex-col">
+          {rows.map((row) => {
+            if (row.kind === "day") {
+              return (
+                <li
+                  key={row.key}
+                  role="presentation"
+                  className="my-3 flex items-center gap-3 px-4 text-xs font-medium text-muted-foreground"
+                >
+                  <span className="h-px flex-1 bg-border" aria-hidden="true" />
+                  <span>{dayLabel(row.dayKey, locale, copy)}</span>
+                  <span className="h-px flex-1 bg-border" aria-hidden="true" />
+                </li>
+              );
+            }
+            if (row.kind === "unread") {
+              return (
+                <li
+                  key={row.key}
+                  role="separator"
+                  aria-label={copy.list.newDivider}
+                  data-unread-divider=""
+                  className="my-2 flex items-center gap-3 px-4 text-xs font-semibold text-destructive"
+                >
+                  <span
+                    className="h-px flex-1 bg-destructive/60"
+                    aria-hidden="true"
+                  />
+                  <span>{copy.list.newDivider}</span>
+                  <span
+                    className="h-px flex-1 bg-destructive/60"
+                    aria-hidden="true"
+                  />
+                </li>
+              );
+            }
+            if (row.kind === "pending") {
+              return (
+                <li key={row.key}>
+                  <ChatPendingRow
+                    pending={row.pending}
+                    author={{ name: props.authorName(row.pending.authorId) }}
+                    locale={locale}
+                    timeZone={timeZone}
+                    copy={copy}
+                    onRetry={props.onRetryPending}
+                    onDiscard={props.onDiscardPending}
+                  />
+                </li>
+              );
+            }
+            const isEditing = editing?.messageId === row.message.id;
+            return (
+              <li
+                key={row.key}
+                id={`message-${row.message.id}`}
+                className={cn(row.message.kind === "system" && "my-1")}
+              >
+                {isEditing ? (
+                  <EditForm
+                    copy={copy}
+                    editing={editing}
+                    onChange={props.onEditDraftChange}
+                    onSave={props.onEditSave}
+                    onCancel={props.onEditCancel}
+                  />
+                ) : (
+                  <ChatMessageRow
+                    message={row.message}
+                    author={{ name: props.authorName(row.message.authorId) }}
+                    continued={row.continued}
+                    isOwn={row.message.authorId === props.viewerId}
+                    locale={locale}
+                    timeZone={timeZone}
+                    copy={copy}
+                    onEdit={props.onEdit}
+                    onDelete={props.onDelete}
+                  />
+                )}
+              </li>
+            );
+          })}
+        </ol>
+        {props.isLoadingNewer ? (
+          <p className="px-4 py-2 text-center text-xs text-muted-foreground">
+            {copy.list.loadingOlder}
+          </p>
+        ) : null}
+      </div>
+      <JumpLatest
+        visible={!atBottom || props.hasNewer}
+        label={copy.list.jumpLatest}
+        onClick={() => {
+          props.onJumpLatest();
+          const el = scrollRef.current;
+          if (el) el.scrollTop = el.scrollHeight;
+        }}
+      />
+    </div>
+  );
+}
+
+function isAtBottom(el: HTMLElement): boolean {
+  return el.scrollHeight - el.scrollTop - el.clientHeight < BOTTOM_SLACK_PX;
+}
+
+function JumpLatest({
+  visible,
+  label,
+  onClick,
+}: {
+  readonly visible: boolean;
+  readonly label: string;
+  readonly onClick: () => void;
+}) {
+  if (!visible) return null;
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        className="pointer-events-auto rounded-full shadow-sm"
+        onClick={onClick}
+      >
+        <ArrowDown aria-hidden="true" />
+        {label}
+      </Button>
+    </div>
+  );
+}
+
+function EditForm({
+  copy,
+  editing,
+  onChange,
+  onSave,
+  onCancel,
+}: {
+  readonly copy: ChatCopy;
+  readonly editing: ChatEditingState;
+  readonly onChange: (draft: string) => void;
+  readonly onSave: () => void;
+  readonly onCancel: () => void;
+}) {
+  function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onCancel();
+    } else if (
+      event.key === "Enter" &&
+      !event.shiftKey &&
+      !event.nativeEvent.isComposing
+    ) {
+      event.preventDefault();
+      onSave();
+    }
+  }
+  return (
+    <form
+      className="mx-4 my-1 flex flex-col gap-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSave();
+      }}
+    >
+      <Textarea
+        aria-label={copy.list.editLabel}
+        value={editing.draft}
+        onChange={(event) => onChange(event.target.value)}
+        onKeyDown={handleKeyDown}
+        rows={2}
+        autoFocus
+        disabled={editing.busy}
+      />
+      <div className="flex gap-2">
+        <Button type="submit" size="sm" disabled={editing.busy}>
+          {copy.list.save}
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
+          {copy.list.cancel}
+        </Button>
+      </div>
+    </form>
+  );
+}

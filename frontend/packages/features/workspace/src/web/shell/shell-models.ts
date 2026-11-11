@@ -49,6 +49,8 @@ export interface ShellCurrentWorkspace extends ShellWorkspace {
 export interface ShellSidebarCounts {
   readonly myWork: number | null;
   readonly inbox: number | null;
+  /** Total unread Chat messages in muted-free channels; absent or null = no badge. */
+  readonly chat?: number | null;
 }
 
 /**
@@ -199,6 +201,7 @@ export function workspaceBreadcrumbLabels(
       home: copy.sections.home,
       "my-work": copy.sections.myWork,
       inbox: copy.sections.inbox,
+      chat: copy.sections.chat,
       search: copy.sections.search,
       library: copy.sections.library,
       reports: copy.sections.reports,

@@ -7,6 +7,7 @@ import {
   File,
   House,
   Inbox,
+  MessageSquareText,
   Keyboard,
   LogOut,
   Palette,
@@ -136,7 +137,7 @@ const NAV_ROW =
   "h-8.5 gap-2.5 rounded-[7px] px-2.5 py-0 text-nav text-muted-foreground [&_svg]:stroke-[1.8] group-data-[tablet=true]:h-11 group-data-[tablet=true]:gap-3 group-data-[tablet=true]:rounded-[10px] group-data-[tablet=true]:px-3 group-data-[tablet=true]:text-label group-data-[tablet=true]:[&_svg]:size-5 group-data-[collapsible=icon]:size-11! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!";
 const LABEL_HIDE = "group-data-[collapsible=icon]:sr-only";
 
-type CountKind = "myWork" | "inbox";
+type CountKind = "myWork" | "inbox" | "chat";
 
 interface NavItem {
   readonly id: string;
@@ -196,7 +197,7 @@ function CountBadge({
       aria-hidden="true"
       className={cn(
         "ml-auto flex h-4.25 shrink-0 items-center text-metadata font-medium tabular-nums group-data-[tablet=true]:text-compact group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:top-0.5 group-data-[collapsible=icon]:right-0 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:h-4.5 group-data-[collapsible=icon]:min-w-4.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-full group-data-[collapsible=icon]:bg-sidebar-accent group-data-[collapsible=icon]:px-1.25 group-data-[collapsible=icon]:text-key! group-data-[collapsible=icon]:font-bold",
-        kind === "inbox"
+        kind === "inbox" || kind === "chat"
           ? "rounded-full bg-brand-solid px-1.75 font-semibold text-brand-solid-foreground group-data-[collapsible=icon]:bg-brand-solid"
           : "text-meta-foreground",
       )}
@@ -229,7 +230,7 @@ function PrimaryNav({
         const active =
           isDestinationActive(item.destination, location) ||
           (item.id === "library" && location?.section === "doc");
-        const count = item.count ? counts[item.count] : null;
+        const count = item.count ? (counts[item.count] ?? null) : null;
         const badge = sidebarCountBadge(count);
         const label =
           item.count && badge !== null && count !== null
@@ -239,10 +240,15 @@ function PrimaryNav({
                       one: copy.sidebar.inboxCount_one,
                       other: copy.sidebar.inboxCount_other,
                     }
-                  : {
-                      one: copy.sidebar.myWorkCount_one,
-                      other: copy.sidebar.myWorkCount_other,
-                    },
+                  : item.count === "chat"
+                    ? {
+                        one: copy.sidebar.chatCount_one,
+                        other: copy.sidebar.chatCount_other,
+                      }
+                    : {
+                        one: copy.sidebar.myWorkCount_one,
+                        other: copy.sidebar.myWorkCount_other,
+                      },
                 count,
                 { label: item.label },
               )
@@ -830,6 +836,13 @@ export function WorkspaceSidebarSurface(props: WorkspaceSidebarSurfaceProps) {
       icon: Inbox,
       destination: { section: "inbox" },
       count: "inbox",
+    },
+    {
+      id: "chat",
+      label: copy.nav.chat,
+      icon: MessageSquareText,
+      destination: { section: "chat" },
+      count: "chat",
     },
     {
       id: "library",
