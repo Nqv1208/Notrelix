@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
 using Notrelix.API.Contracts.Chat.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Chat.ChannelGroups.Commands.CreateChannelGroup;

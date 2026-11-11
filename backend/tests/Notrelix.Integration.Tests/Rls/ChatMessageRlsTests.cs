@@ -1,9 +1,6 @@
-using Moq;
 using Npgsql;
-using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.Chat.Messages.Queries.ListMessages;
 using Notrelix.Application.Features.Workspaces.Public.Members;
-using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Spaces;
 using Notrelix.Domain.Identity.Users;

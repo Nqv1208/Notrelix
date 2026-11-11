@@ -1,11 +1,8 @@
-using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.DTOs;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
-using Notrelix.Domain.Chat.Rules;
-using Notrelix.Domain.Chat.Spaces;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
 
 namespace Notrelix.Application.Features.Chat.Channels.Commands.ReorderChannels;

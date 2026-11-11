@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Events.Chat;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Realtime;

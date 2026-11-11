@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Features.Chat.Abstractions;
 
 namespace Notrelix.Application.Features.Chat.Members.Services;

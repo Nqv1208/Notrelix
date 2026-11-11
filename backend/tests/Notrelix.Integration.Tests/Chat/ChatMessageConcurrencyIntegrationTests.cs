@@ -1,13 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Common.Time;
 using Notrelix.Application.EventMappers.Chat;
 using Notrelix.Application.Features.Chat.Messages.Commands.SendMessage;
 using Notrelix.Application.Features.Chat.Messages.DTOs;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Spaces;
-using Notrelix.Domain.Common;
 using Notrelix.Infrastructure.Data.Chat;
 using Notrelix.Infrastructure.Data.Interceptors;
 using Notrelix.Infrastructure.Data.Messaging;

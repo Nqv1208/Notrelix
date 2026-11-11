@@ -2,7 +2,6 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.API.Realtime;
-using Notrelix.Application.Common.Context;
 using Notrelix.Application.Common.Realtime.Gateway;
 
 namespace Notrelix.API.Tests.Realtime;

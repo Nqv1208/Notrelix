@@ -1,7 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Services;
-using Notrelix.Application.Features.Chat.Messages.DTOs;
 using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Chat.Threads.DTOs;
 using Notrelix.Application.Features.Chat.Threads.Services;

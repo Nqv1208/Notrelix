@@ -2,7 +2,6 @@ using FluentAssertions;
 using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Messages.Events;
 using Notrelix.Domain.Chat.Rules;
-using Notrelix.Domain.Common.Exceptions;
 
 namespace Notrelix.Domain.Tests.Chat.Messages;
 
