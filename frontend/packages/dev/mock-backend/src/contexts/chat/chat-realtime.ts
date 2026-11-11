@@ -62,6 +62,9 @@ function messagePayload(
     editedAt: message.editedAt,
     replyToId: message.replyToId,
     version: message.version,
+    // The mock has no threads yet: every message is a channel message.
+    threadRootId: null,
+    threadSequence: null,
   };
   if (eventType === "chat.message.created") {
     return base;
