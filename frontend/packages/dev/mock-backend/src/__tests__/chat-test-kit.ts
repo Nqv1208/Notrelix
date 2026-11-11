@@ -19,6 +19,16 @@ export function storeAs(persona: MockPersona = "owner"): MockStore {
   return new MockStore({ ...defaultConfig, persona });
 }
 
+/**
+ * Acts as another persona on the same store, so one world holds the writes of several people. Same as the
+ * forms and saved-filters tests: the persona is the config field the current user is read from.
+ */
+export function actAs(store: MockStore, persona: MockPersona): MockStore {
+  (store as unknown as { config: { persona: MockPersona } }).config.persona =
+    persona;
+  return store;
+}
+
 export interface ChatCall {
   readonly status: number;
   readonly body: any;

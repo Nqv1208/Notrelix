@@ -26,7 +26,7 @@ import {
   type ChatCaller,
 } from "./chat-access";
 import { CHAT_ERROR, CHAT_LIMITS, type ChatMessageRecord } from "./chat-model";
-import { appendUserMessage } from "./chat-writes";
+import { appendUserMessage, removePin } from "./chat-writes";
 import { announceMessageEvent } from "./chat-realtime";
 import type { MockChatState } from "./chat-state";
 
@@ -157,11 +157,11 @@ export const messagesOperations = [
         }
         const space = liveSpace(state, params.workspaceId, params.spaceId);
         requireVisible(state, space, caller);
-        const page = messagePage(
-          state.messagesOf(space.id),
-          { before, after, around },
-          limit,
-        );
+        // The channel's main flow: a thread reply shows here only when it was also sent to the channel.
+        const mainFlow = state
+          .messagesOf(space.id)
+          .filter((m) => m.threadRootId === null || m.alsoSentToChannel);
+        const page = messagePage(mainFlow, { before, after, around }, limit);
         return ok({
           items: page.items.map(messageView),
           hasOlder: page.hasOlder,
@@ -319,6 +319,8 @@ export const messagesOperations = [
           message.deletedBy = caller.userId;
           message.version += 1;
           announceMessageEvent(state, space, message, "chat.message.deleted");
+          // A pin ends with the deletion of its message (UC-CHT-F06).
+          removePin(state, space, message.id);
         }
         return { status: 204 };
       });

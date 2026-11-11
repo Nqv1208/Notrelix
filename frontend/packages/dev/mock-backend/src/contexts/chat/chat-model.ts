@@ -58,11 +58,47 @@ export interface ChatMessageRecord {
   /** Null for system messages. */
   readonly clientMessageId: string | null;
   readonly replyToId: string | null;
+  /** The root of the thread a reply belongs to; null for a message of the main flow. */
+  readonly threadRootId: string | null;
+  /** The reply's place in its thread: 1 for the first reply, gap-free; null outside a thread. */
+  readonly threadSequence: number | null;
+  /** A thread reply the author also sent to the channel's main flow. */
+  readonly alsoSentToChannel: boolean;
   readonly createdAt: string;
   editedAt: string | null;
   deletedAt: string | null;
   deletedBy: string | null;
   version: number;
+}
+
+/** A thread: the replies of one root message (backend MessageThread, keyed by the root). */
+export interface ChatThreadRecord {
+  readonly rootMessageId: string;
+  readonly workspaceId: string;
+  readonly spaceId: string;
+  /** Replies stored so far, which is also the sequence of the last reply. */
+  replyCount: number;
+  lastReplyAt: string;
+}
+
+/** A person's follow state on a thread (backend ThreadFollower, keyed by root and person). */
+export interface ChatThreadFollowerRecord {
+  readonly rootMessageId: string;
+  readonly workspaceId: string;
+  readonly userId: string;
+  muted: boolean;
+  /** The highest thread sequence the person has read; replies above it are unread. */
+  readReplySequence: number;
+}
+
+/** A message pinned in its space (backend Pin): at most one per message. */
+export interface ChatPinRecord {
+  readonly id: string;
+  readonly workspaceId: string;
+  readonly spaceId: string;
+  readonly messageId: string;
+  readonly pinnedBy: string;
+  readonly pinnedAt: string;
 }
 
 export interface ChatGroupRecord {
@@ -84,6 +120,10 @@ export const CHAT_LIMITS = {
   channelTopicMaxLength: 250,
   channelGroupNameMaxLength: 60,
   reorderMax: 200,
+  /** Pins a space holds at most (backend ChatLimits.PinLimit). */
+  pinLimit: 50,
+  /** Days without a reply after which a thread is archived (backend ChatLimits.ThreadInactivityDays). */
+  threadInactivityDays: 7,
   /** The largest message payload of a realtime frame, in UTF-8 bytes (ChatRealtime.MaxPayloadBytes). */
   realtimePayloadMaxBytes: 3000,
   /** Recipients of one message's unread fan-out (ChatRealtime.MaxUnreadRecipients). */
@@ -102,6 +142,9 @@ export const CHAT_ERROR = {
   validation: "validation.failed",
   precondition: "common.precondition-failed",
   idempotencyPayloadMismatch: "idempotency_payload_mismatch",
+  limitReached: "limit-reached",
+  messageNotPinnable: "message-not-pinnable",
+  threadRootInvalid: "thread-root-invalid",
 } as const;
 
 /** The announcements the backend writes as system messages (ChatSystemMessages). */
@@ -113,4 +156,5 @@ export const CHAT_SYSTEM_TEXT = {
   archived: "archived the channel",
   unarchived: "unarchived the channel",
   renamed: (name: string) => `renamed the channel to ${name}`,
+  pinned: "pinned a message",
 } as const;

@@ -13,10 +13,12 @@ import type { MockMembershipRecord } from "../../state/records";
 import type { MockChatState } from "./chat-state";
 import {
   CHAT_ERROR,
+  CHAT_LIMITS,
   type ChatGroupRecord,
   type ChatMembershipRecord,
   type ChatMessageRecord,
   type ChatNotificationLevel,
+  type ChatPinRecord,
   type ChatSpaceRecord,
   type ChatWorkspaceRole,
 } from "./chat-model";
@@ -122,6 +124,7 @@ export function callerIn(store: MockStore, workspaceId: string): ChatCaller {
 export type ChatAction =
   | "viewWorkspace"
   | "messagePost"
+  | "messagePin"
   | "channelCreate"
   | "channelManage"
   | "groupManage"
@@ -131,6 +134,7 @@ export type ChatAction =
 const DENIED_ROLES: Record<ChatAction, readonly ChatWorkspaceRole[]> = {
   viewWorkspace: [],
   messagePost: [],
+  messagePin: ["Guest"],
   channelCreate: ["Guest"],
   channelManage: ["Guest"],
   groupManage: ["Member", "Guest"],
@@ -435,12 +439,52 @@ export function messageView(message: ChatMessageRecord) {
     content: message.content,
     clientMessageId: message.clientMessageId,
     replyToId: message.replyToId,
+    threadRootId: message.threadRootId,
+    threadSequence: message.threadSequence,
+    alsoSentToChannel: message.alsoSentToChannel,
     edited: message.editedAt !== null,
     deleted: message.deletedAt !== null,
     createdAt: message.createdAt,
     editedAt: message.editedAt,
     deletedAt: message.deletedAt,
     version: message.version,
+  };
+}
+
+/** ThreadSummaryDto: the reply count and last reply of the root's thread, and the viewer's follow state. */
+export function threadSummaryView(
+  state: MockChatState,
+  root: ChatMessageRecord,
+  viewerUserId: string,
+  now: Date,
+) {
+  const thread = state.threads.get(root.id);
+  const follower = state.threadFollowerOf(root.id, viewerUserId);
+  const replyCount = thread?.replyCount ?? 0;
+  const inactiveMs = CHAT_LIMITS.threadInactivityDays * 24 * 60 * 60 * 1000;
+  return {
+    rootMessageId: root.id,
+    spaceId: root.spaceId,
+    replyCount,
+    lastReplyAt: thread?.lastReplyAt ?? null,
+    // The archive sweep is not in the mock: an inactive thread is archived by the derived rule only.
+    archived: thread
+      ? now.getTime() - Date.parse(thread.lastReplyAt) >= inactiveMs
+      : false,
+    following: follower !== undefined,
+    muted: follower?.muted ?? false,
+    unreadReplies: follower
+      ? Math.max(0, replyCount - follower.readReplySequence)
+      : 0,
+  };
+}
+
+/** PinDto: the pinned message as readers see it, with who pinned it and when. */
+export function pinView(state: MockChatState, pin: ChatPinRecord) {
+  return {
+    message: messageView(state.messages.get(pin.messageId)!),
+    pinnedBy: pin.pinnedBy,
+    pinnedAt: pin.pinnedAt,
   };
 }
 

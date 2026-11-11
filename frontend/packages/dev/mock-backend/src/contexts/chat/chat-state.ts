@@ -12,16 +12,20 @@ import type {
   ChatGroupRecord,
   ChatMembershipRecord,
   ChatMessageRecord,
+  ChatPinRecord,
   ChatSpaceRecord,
+  ChatThreadFollowerRecord,
+  ChatThreadRecord,
 } from "./chat-model";
 
-export type ChatIdKind = "space" | "group" | "message";
+export type ChatIdKind = "space" | "group" | "message" | "pin";
 
 /** The tag of each id family: a GUID whose first group names the family. */
 const ID_TAG: Record<ChatIdKind, string> = {
   space: "c1000000",
   group: "c2000000",
   message: "c3000000",
+  pin: "c4000000",
 };
 
 /** A deterministic GUID-shaped id of a family, numbered from 1. */
@@ -47,12 +51,19 @@ export class MockChatState {
     string,
     { fingerprint: string; status: number; body: unknown }
   >();
+  /** Threads by root message id: a root has at most one thread, created by its first reply. */
+  readonly threads = new Map<string, ChatThreadRecord>();
+  /** Follow states keyed by `${rootMessageId}|${userId}`. */
+  readonly threadFollowers = new Map<string, ChatThreadFollowerRecord>();
+  /** Pins keyed by the pinned message id: a message has at most one pin. */
+  readonly pins = new Map<string, ChatPinRecord>();
 
   private readonly streamVersions = new Map<string, number>();
   private readonly idCounters: Record<ChatIdKind, number> = {
     space: 0,
     group: 0,
     message: 0,
+    pin: 0,
   };
   private writeTick = 0;
   private eventCounter = 0;
@@ -67,10 +78,14 @@ export class MockChatState {
     this.messages.clear();
     this.messageIdsBySpace.clear();
     this.idempotentReplies.clear();
+    this.threads.clear();
+    this.threadFollowers.clear();
+    this.pins.clear();
     this.streamVersions.clear();
     this.idCounters.space = 0;
     this.idCounters.group = 0;
     this.idCounters.message = 0;
+    this.idCounters.pin = 0;
     this.writeTick = 0;
     this.eventCounter = 0;
   }
@@ -151,6 +166,28 @@ export class MockChatState {
   messagesOf(spaceId: string): ChatMessageRecord[] {
     const ids = this.messageIdsBySpace.get(spaceId) ?? [];
     return ids.map((id) => this.messages.get(id)!);
+  }
+
+  threadFollowerOf(
+    rootMessageId: string,
+    userId: string,
+  ): ChatThreadFollowerRecord | undefined {
+    return this.threadFollowers.get(`${rootMessageId}|${userId}`);
+  }
+
+  /** The pins of a space, newest pin first (pin time, then pin id: the order of ListPins). */
+  pinsOfSpace(spaceId: string): ChatPinRecord[] {
+    return Array.from(this.pins.values())
+      .filter((pin) => pin.spaceId === spaceId)
+      .sort(
+        (a, b) =>
+          Date.parse(b.pinnedAt) - Date.parse(a.pinnedAt) ||
+          (streamIdOf(a.id) < streamIdOf(b.id)
+            ? 1
+            : streamIdOf(a.id) > streamIdOf(b.id)
+              ? -1
+              : 0),
+      );
   }
 
   /** Appends a message to its space's order; the sequence is the caller's (already allocated). */
