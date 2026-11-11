@@ -208,6 +208,18 @@ public class Message : AggregateRoot, IWorkspaceScoped
         return true;
     }
 
+    /// <summary>
+    /// Refuses a pin of a message that cannot be pinned: a system message (announcements are not content) or a tombstone
+    /// (CHT-006, UC-CHT-F06). The space and membership checks belong to the handler.
+    /// </summary>
+    public void EnsurePinnable()
+    {
+        if (IsSystem)
+            throw new BusinessRuleException(ChatRuleCodes.MessageNotPinnable, "A system message cannot be pinned.");
+        if (IsDeleted)
+            throw new BusinessRuleException(ChatRuleCodes.MessageDeleted, "A deleted message cannot be pinned.");
+    }
+
     private void EnsureEditable(Guid editedBy)
     {
         Guard.NotEmpty(editedBy);
