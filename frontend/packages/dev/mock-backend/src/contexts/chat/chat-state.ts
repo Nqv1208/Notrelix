@@ -11,6 +11,7 @@ import type { MockStore } from "../../state/mock-store";
 import type {
   ChatGroupRecord,
   ChatMembershipRecord,
+  ChatMentionRecord,
   ChatMessageRecord,
   ChatPinRecord,
   ChatReactionRecord,
@@ -61,6 +62,8 @@ export class MockChatState {
   readonly pins = new Map<string, ChatPinRecord>();
   /** Reactions keyed by `${messageId}|${userId}|${kind}`: one per message, person and kind. */
   readonly reactions = new Map<string, ChatReactionRecord>();
+  /** The stored mentions of each message, in text order; a message with none has no entry. */
+  readonly mentions = new Map<string, ChatMentionRecord[]>();
 
   private readonly streamVersions = new Map<string, number>();
   private readonly idCounters: Record<ChatIdKind, number> = {
@@ -87,6 +90,7 @@ export class MockChatState {
     this.threadFollowers.clear();
     this.pins.clear();
     this.reactions.clear();
+    this.mentions.clear();
     this.streamVersions.clear();
     this.idCounters.space = 0;
     this.idCounters.group = 0;

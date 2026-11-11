@@ -9,11 +9,13 @@ import type { MockHttpResult } from "../../transport/create-response";
 import type { MockChatState } from "./chat-state";
 import {
   CHAT_ERROR,
+  type ChatMentionRecord,
   type ChatMessageRecord,
   type ChatSpaceRecord,
 } from "./chat-model";
 import { announceMessageCreated, announcePinChanged } from "./chat-realtime";
 import { fail } from "./chat-access";
+import { storeMentions } from "./chat-mentions";
 
 /** Stores a user message: the sequence is the space's next one, the space row moves with it. */
 export function appendUserMessage(
@@ -23,6 +25,7 @@ export function appendUserMessage(
   content: string,
   clientMessageId: string,
   replyToId: string | null,
+  mentions: readonly ChatMentionRecord[] = [],
 ): ChatMessageRecord {
   const message = storeMessage(state, space, {
     authorId,
@@ -34,6 +37,8 @@ export function appendUserMessage(
     threadSequence: null,
     alsoSentToChannel: false,
   });
+  // The mentions are stored with the message, before the unread frames count them.
+  storeMentions(state, message.id, mentions);
   announceMessageCreated(state, space, message);
   return message;
 }
@@ -51,6 +56,7 @@ export function appendThreadReply(
   content: string,
   clientMessageId: string,
   alsoSendToChannel: boolean,
+  mentions: readonly ChatMentionRecord[] = [],
 ): ChatMessageRecord {
   const thread = state.threads.get(root.id);
   const threadSequence = (thread?.replyCount ?? 0) + 1;
@@ -80,6 +86,7 @@ export function appendThreadReply(
   ) {
     ensureThreadFollower(state, root.id, space.workspaceId, root.authorId, 0);
   }
+  storeMentions(state, message.id, mentions);
   ensureThreadFollower(
     state,
     root.id,
@@ -143,6 +150,14 @@ export function removeReactionsOf(
       state.reactionKey(row.messageId, row.userId, row.kind),
     );
   }
+}
+
+/** Clears the mentions of a message whose content is deleted (backend DeleteMessage): a tombstone carries none and never counts. */
+export function removeMentionsOf(
+  state: MockChatState,
+  messageId: string,
+): void {
+  state.mentions.delete(messageId);
 }
 
 /** Stores the system message that announces a change, attributed to the person who made it. */
