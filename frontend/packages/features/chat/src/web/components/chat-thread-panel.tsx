@@ -26,6 +26,8 @@ export interface ChatThreadPanelProps {
   readonly onClose: () => void;
   readonly onReact: (message: ChatMessage, emoji: string, add: boolean) => void;
   readonly onTogglePin: (message: ChatMessage, pinned: boolean) => void;
+  /** An archived channel is read-only: its files cannot be removed. */
+  readonly attachmentsReadOnly?: boolean;
 }
 
 /**
@@ -47,6 +49,7 @@ export function ChatThreadPanel({
   onClose,
   onReact,
   onTogglePin,
+  attachmentsReadOnly = false,
 }: ChatThreadPanelProps) {
   const thread = hooks.useThreadReplies(workspaceId, rootId);
   const replier = hooks.useReplyInThread(workspaceId, rootId);
@@ -67,11 +70,16 @@ export function ChatThreadPanel({
     mentionBase !== undefined && root !== null,
   );
 
-  function send(content: string, payload?: ChatMentionPayload) {
+  function send(
+    content: string,
+    payload?: ChatMentionPayload,
+    files?: readonly File[],
+  ) {
     setNotice(null);
     replier.mutate(
       {
         content,
+        files,
         alsoSendToChannel: alsoSend,
         mentions: payload?.mentions,
         confirmBroadcast: payload?.confirmBroadcast,
@@ -235,6 +243,7 @@ export function ChatThreadPanel({
                 authorName={authorName}
                 onReact={onReact}
                 onTogglePin={onTogglePin}
+                attachmentsReadOnly={attachmentsReadOnly}
               />
             </div>
           ) : null}
@@ -270,6 +279,7 @@ export function ChatThreadPanel({
                     authorName={authorName}
                     onReact={onReact}
                     onTogglePin={onTogglePin}
+                    attachmentsReadOnly={attachmentsReadOnly}
                   />
                 </li>
               );
@@ -312,6 +322,7 @@ export function ChatThreadPanel({
         busy={replier.isPending}
         onChange={setDraft}
         onSend={send}
+        attachments={{ draftKey: `thread-${rootId}` }}
         mentions={
           mentionBase
             ? {

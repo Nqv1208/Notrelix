@@ -20,6 +20,7 @@ import { avatarToneOf, initialsOf } from "./chat-initials";
 import { mentionsViewer } from "../../core/model/mention-model";
 import { ChatMentionText } from "./chat-mention-text";
 import { useChatMentions } from "./chat-mention-context";
+import { MessageAttachments } from "./chat-attachments";
 import { ReactionChips, ReactionPicker } from "./chat-reactions";
 import { fillCopy, pluralCopy } from "./use-chat-copy";
 
@@ -75,6 +76,8 @@ export interface ChatMessageRowProps {
   readonly onOpenThread?: (message: ChatMessage) => void;
   readonly onTogglePin?: (message: ChatMessage, pinned: boolean) => void;
   readonly onOpenQuote?: (messageId: string) => void;
+  /** An archived channel is read-only: its files cannot be removed. */
+  readonly attachmentsReadOnly?: boolean;
 }
 
 export function formatClock(iso: string, locale: string, timeZone?: string) {
@@ -111,6 +114,7 @@ export function ChatMessageRow({
   onOpenThread,
   onTogglePin,
   onOpenQuote,
+  attachmentsReadOnly = false,
 }: ChatMessageRowProps) {
   const time = formatClock(message.createdAt, locale, timeZone);
   const isSystem = message.kind === "system";
@@ -257,6 +261,16 @@ export function ChatMessageRow({
             ) : null}
           </p>
         )}
+        {live && hooks && workspaceId ? (
+          <MessageAttachments
+            message={message}
+            workspaceId={workspaceId}
+            hooks={hooks}
+            isOwn={isOwn}
+            readOnly={attachmentsReadOnly}
+            copy={copy}
+          />
+        ) : null}
         {live && isOwn ? <SentNotices message={message} copy={copy} /> : null}
         {live && hooks && workspaceId && authorName ? (
           <ReactionChips

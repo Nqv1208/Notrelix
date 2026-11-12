@@ -1,5 +1,6 @@
 import type {
   ChatAddMembersResult,
+  ChatAttachment,
   ChatChannel,
   ChatChannelDetail,
   ChatConversation,
@@ -33,7 +34,30 @@ export interface ChatRequestOptions {
   readonly signal?: AbortSignal;
 }
 
+/** What a multipart upload reports while it runs. */
+export interface ChatUploadProgress {
+  readonly loaded: number;
+  readonly total: number;
+}
+
+export interface ChatUploadOptions {
+  /** One per user action; the same key only to retry that action. */
+  readonly idempotencyKey: string;
+  readonly signal?: AbortSignal;
+  readonly onProgress?: (progress: ChatUploadProgress) => void;
+}
+
 export interface ChatApiClient {
+  /**
+   * The generated client's multipart upload and authenticated binary read (the same transport Documents
+   * and Board attachments use). A host that does not give them cannot attach or download files.
+   */
+  upload?<T>(
+    url: string,
+    form: FormData,
+    options: ChatUploadOptions,
+  ): Promise<T>;
+  getBlob?(url: string): Promise<Blob>;
   get<T>(url: string, options?: ChatRequestOptions): Promise<T>;
   post<T>(
     url: string,
@@ -73,6 +97,17 @@ export interface ChatEndpoints {
     threadFollow: (workspaceId: string, threadId: string) => string;
     threadRead: (workspaceId: string, threadId: string) => string;
     followedThreads: (workspaceId: string) => string;
+    messageAttachments: (workspaceId: string, messageId: string) => string;
+    messageAttachment: (
+      workspaceId: string,
+      messageId: string,
+      attachmentId: string,
+    ) => string;
+    messageAttachmentContent: (
+      workspaceId: string,
+      messageId: string,
+      attachmentId: string,
+    ) => string;
     messagePin: (workspaceId: string, messageId: string) => string;
     spacePins: (workspaceId: string, spaceId: string) => string;
     messageReaction: (
@@ -286,6 +321,67 @@ export function createChatService(
     ): Promise<ChatMentionables> {
       return api.get<ChatMentionables>(
         paths.spaceMentionables(workspaceId, spaceId),
+      );
+    },
+
+    /** `Chat.Attachments.List`: the files of a message, oldest first. */
+    listAttachments(
+      workspaceId: string,
+      messageId: string,
+    ): Promise<ChatAttachment[]> {
+      return api.get<ChatAttachment[]>(
+        paths.messageAttachments(workspaceId, messageId),
+      );
+    },
+
+    /**
+     * `Chat.Attachments.Upload`: multipart part `file`, streamed, for the caller's own message (sent first).
+     * The Idempotency-Key belongs to one file of one user action; a retry reuses it. 415 blocked type, 413
+     * too large, 409 attachment.limit_exceeded.
+     */
+    uploadAttachment(
+      workspaceId: string,
+      messageId: string,
+      file: File,
+      options: ChatUploadOptions,
+    ): Promise<ChatAttachment> {
+      if (!api.upload) {
+        return Promise.reject(new Error("The API client cannot upload files."));
+      }
+      const form = new FormData();
+      form.append("file", file, file.name);
+      return api.upload<ChatAttachment>(
+        paths.messageAttachments(workspaceId, messageId),
+        form,
+        options,
+      );
+    },
+
+    /**
+     * `Chat.Attachments.GetContent`: the bytes, read with the session. The route is built from the ids (the
+     * `downloadPath` of the view carries the API prefix the client already adds).
+     */
+    getAttachmentContent(
+      workspaceId: string,
+      messageId: string,
+      attachmentId: string,
+    ): Promise<Blob> {
+      if (!api.getBlob) {
+        return Promise.reject(new Error("The API client cannot read files."));
+      }
+      return api.getBlob(
+        paths.messageAttachmentContent(workspaceId, messageId, attachmentId),
+      );
+    },
+
+    /** `Chat.Attachments.Delete`: the author removes a file of their own message. */
+    deleteAttachment(
+      workspaceId: string,
+      messageId: string,
+      attachmentId: string,
+    ): Promise<void> {
+      return api.delete<void>(
+        paths.messageAttachment(workspaceId, messageId, attachmentId),
       );
     },
 

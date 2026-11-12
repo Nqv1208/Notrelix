@@ -493,10 +493,14 @@ export function ChatWorkspace({
     setPanel(null);
   }, [channelId]);
 
-  function handleSend(content: string, payload?: ChatMentionPayload) {
+  function handleSend(
+    content: string,
+    payload?: ChatMentionPayload,
+    files?: readonly File[],
+  ) {
     if (!channelId) return;
     if (hasNewer) jumpToLatest();
-    sender.send(content, replyTo?.id ?? null, payload);
+    sender.send(content, replyTo?.id ?? null, payload, files);
     setReplyTo(null);
     setDraft("");
     request("bottom");
@@ -1293,6 +1297,7 @@ export function ChatWorkspace({
                   onReply={(message) => setReplyTo(message)}
                   onOpenThread={handleOpenThread}
                   onTogglePin={handleTogglePin}
+                  attachmentsReadOnly={channel?.isArchived === true}
                   onOpenQuote={(id) =>
                     document
                       .getElementById(`message-${id}`)
@@ -1321,6 +1326,7 @@ export function ChatWorkspace({
                   onTyping={ephemeral ? notifyTyping : undefined}
                   onSend={handleSend}
                   mentions={composerMentions}
+                  attachments={{ draftKey: ch }}
                   leading={
                     replyTo ? (
                       <ReplyChip
@@ -1490,6 +1496,7 @@ export function ChatWorkspace({
                 onClose={() => setPanel(null)}
                 onReact={handleReact}
                 onTogglePin={handleTogglePin}
+                attachmentsReadOnly={channel?.isArchived === true}
               />
             ) : null}
             {panel.kind === "pins" ? (

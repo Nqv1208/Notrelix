@@ -23,6 +23,10 @@ export const CHAT_LIMITS = {
   pageSizeMax: 100,
   /** The most mentions one message holds (ChatLimits.MentionsPerMessageMax). */
   mentionsPerMessageMax: 50,
+  /** Files one message holds at most (ChatLimits / AttachmentUploadOptions.MaxAttachmentsPerMessage). */
+  attachmentsPerMessageMax: 10,
+  /** The size cap of one file in bytes (AttachmentUploadOptions.MaxFileSizeBytes, 100 MB). */
+  attachmentMaxBytes: 100 * 1024 * 1024,
 } as const;
 
 export type ChatChannelKind = "channel_public" | "channel_private";
@@ -104,6 +108,18 @@ export interface ChatChannelDetail {
   readonly members: readonly ChatChannelMember[];
 }
 
+/** MessageAttachmentDto: a file of a message. `downloadPath` is the permission-checked content route. */
+export interface ChatAttachment {
+  readonly id: string;
+  readonly messageId?: string;
+  readonly fileName: string;
+  readonly sizeBytes: number;
+  readonly contentType: string;
+  readonly uploadedBy: string;
+  readonly createdAt: string;
+  readonly downloadPath: string;
+}
+
 /** MessageDto. A tombstone keeps its author, time and sequence, with null content. */
 export interface ChatMessage {
   readonly id: string;
@@ -128,6 +144,8 @@ export interface ChatMessage {
   readonly mentions?: readonly ChatMention[];
   /** What the send or edit that returned this message did not do for the sender; empty on every other read. */
   readonly mentionNotices?: readonly ChatMentionNotice[];
+  /** The files of the message (UC-CHT-G08); a tombstone has none. */
+  readonly attachments?: readonly ChatAttachment[];
   readonly edited: boolean;
   readonly deleted: boolean;
   readonly createdAt: string;

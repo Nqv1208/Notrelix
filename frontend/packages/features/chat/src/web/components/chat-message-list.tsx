@@ -103,6 +103,8 @@ export interface ChatMessageListProps {
   readonly onOpenThread?: (message: ChatMessage) => void;
   readonly onTogglePin?: (message: ChatMessage, pinned: boolean) => void;
   readonly onOpenQuote?: (messageId: string) => void;
+  /** An archived channel is read-only: its files cannot be removed. */
+  readonly attachmentsReadOnly?: boolean;
 }
 
 function dayLabel(dayKey: string, locale: string, copy: ChatCopy): string {
@@ -418,6 +420,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
                     onOpenThread={props.onOpenThread}
                     onTogglePin={props.onTogglePin}
                     onOpenQuote={props.onOpenQuote}
+                    attachmentsReadOnly={props.attachmentsReadOnly}
                   />
                 )}
               </li>

@@ -56,6 +56,14 @@ import {
   type ThreadCounts,
 } from "./interaction-cache";
 import { applyStoredReply, seedThreadCount } from "./thread-writes";
+import {
+  detachFromCachedMessage,
+  dismissUpload,
+  enqueueUploads,
+  retryUpload,
+  type UploadContext,
+} from "./attachment-uploads";
+import type { ChatUploadItem } from "../../core/model/attachment-model";
 import { createConversationHooks } from "./create-conversation-hooks";
 
 export interface ChatHookDeps {
@@ -226,6 +234,8 @@ export function createChatHooks(deps: ChatHookDeps) {
     const queryClient = useQueryClient();
     const pendingKey = chatQueryKeys.pending(workspaceId, channelId);
     const messagesKey = chatQueryKeys.messages(workspaceId, channelId);
+    /** The files of each unconfirmed send; they go to the message once the server stored it. */
+    const filesRef = useRef(new Map<string, readonly File[]>());
 
     const mutation = useMutation({
       mutationFn: (input: {
@@ -281,6 +291,12 @@ export function createChatHooks(deps: ChatHookDeps) {
           { queryKey: messagesKey },
           (cache) => (cache ? appendToNewest(cache, message) : cache),
         );
+        // The message is stored (and shown): its files go to it now, even if one of them fails later.
+        const files = filesRef.current.get(input.clientMessageId);
+        if (files) {
+          filesRef.current.delete(input.clientMessageId);
+          enqueueUploads({ queryClient, service, workspaceId }, message, files);
+        }
         // A conversation's list row shows its newest message: refresh it (a no-op when no list is mounted).
         void queryClient.invalidateQueries({
           queryKey: chatQueryKeys.conversations(workspaceId),
@@ -309,8 +325,12 @@ export function createChatHooks(deps: ChatHookDeps) {
       content: string,
       replyToId?: string | null,
       mentionPayload?: ChatMentionPayload,
+      files?: readonly File[],
     ): string {
       const clientMessageId = newClientMessageId();
+      if (files && files.length > 0) {
+        filesRef.current.set(clientMessageId, files);
+      }
       mutation.mutate({
         clientMessageId,
         content,
@@ -333,6 +353,7 @@ export function createChatHooks(deps: ChatHookDeps) {
 
     /** Drops a pending entry the user no longer wants to send. */
     function discard(clientMessageId: string): void {
+      filesRef.current.delete(clientMessageId);
       queryClient.setQueryData<PendingMessage[]>(
         pendingKey,
         readPending(queryClient, pendingKey).filter(
@@ -684,6 +705,8 @@ export function createChatHooks(deps: ChatHookDeps) {
         clientMessageId?: string;
         mentions?: readonly ChatMentionInput[];
         confirmBroadcast?: boolean;
+        /** Sent to the reply once it is stored. */
+        files?: readonly File[];
       }) =>
         service.replyInThread(workspaceId, rootId, {
           content: input.content,
@@ -692,8 +715,13 @@ export function createChatHooks(deps: ChatHookDeps) {
           mentions: input.mentions,
           confirmBroadcast: input.confirmBroadcast,
         }),
-      onSuccess: (reply: ChatMessage) => {
+      onSuccess: (reply: ChatMessage, input) => {
         applyStoredReply(queryClient, workspaceId, reply);
+        enqueueUploads(
+          { queryClient, service, workspaceId },
+          reply,
+          input.files ?? [],
+        );
       },
     });
   }
@@ -910,9 +938,88 @@ export function createChatHooks(deps: ChatHookDeps) {
     });
   }
 
+  // ─── Attachments (UC-CHT-G08) ──────────────────────────────────────────────
+
+  /** The files on their way to stored messages: uploading, queued or failed (client-only). */
+  function useUploads(workspaceId: string) {
+    return useQuery<ChatUploadItem[]>({
+      queryKey: chatQueryKeys.uploads(workspaceId),
+      queryFn: () => [],
+      initialData: [],
+      staleTime: Infinity,
+      gcTime: Infinity,
+      enabled: false,
+    });
+  }
+
+  /** Retry or dismiss one file's upload, and remove a stored file of the caller's own message. */
+  function useAttachmentActions(workspaceId: string) {
+    const queryClient = useQueryClient();
+    const ctx: UploadContext = { queryClient, service, workspaceId };
+    const remove = useMutation({
+      mutationFn: (input: { messageId: string; attachmentId: string }) =>
+        service.deleteAttachment(
+          workspaceId,
+          input.messageId,
+          input.attachmentId,
+        ),
+      onSuccess: (_result, input) =>
+        detachFromCachedMessage(ctx, input.messageId, input.attachmentId),
+      onError: (error, input) => {
+        // A file that is already gone is gone here too.
+        if (chatFailureOf(error).kind === "not-found") {
+          detachFromCachedMessage(ctx, input.messageId, input.attachmentId);
+        }
+      },
+    });
+    return {
+      retry: (uploadId: string) => retryUpload(ctx, uploadId),
+      dismiss: (uploadId: string) => dismissUpload(ctx, uploadId),
+      remove,
+    };
+  }
+
+  /** The bytes of one file, read with the session (the inline preview of an image). */
+  function useAttachmentContent(
+    workspaceId: string,
+    messageId: string,
+    attachmentId: string,
+    enabled = true,
+  ) {
+    return useQuery({
+      queryKey: chatQueryKeys.attachmentContent(
+        workspaceId,
+        messageId,
+        attachmentId,
+      ),
+      queryFn: () =>
+        service.getAttachmentContent(workspaceId, messageId, attachmentId),
+      enabled,
+      staleTime: Infinity,
+      gcTime: 5 * 60_000,
+      retry: false,
+    });
+  }
+
+  /** Reads the bytes of a file for saving (permission checked on every request, never cached). */
+  function useDownloadAttachment(workspaceId: string) {
+    return useMutation({
+      mutationFn: (input: { messageId: string; attachmentId: string }) =>
+        service.getAttachmentContent(
+          workspaceId,
+          input.messageId,
+          input.attachmentId,
+        ),
+    });
+  }
+
   return {
     service,
     ...createConversationHooks(service),
+    useUploads,
+    useAttachmentActions,
+    useAttachmentContent,
+    useDownloadAttachment,
     useChannels,
     useBrowseChannels,
     useChannel,

@@ -371,6 +371,23 @@ export const endpoints = {
     /** GET lists the people a message in the space can mention, and whether the caller may broadcast. */
     spaceMentionables: (workspaceId: string, spaceId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/mentionables`,
+    /** Files of a message: GET lists them, POST (multipart, streamed) attaches one to the caller's own message. */
+    messageAttachments: (workspaceId: string, messageId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/attachments`,
+    /** DELETE removes one file of the caller's own message. */
+    messageAttachment: (
+      workspaceId: string,
+      messageId: string,
+      attachmentId: string,
+    ) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`,
+    /** GET streams the bytes (permission checked on every request). */
+    messageAttachmentContent: (
+      workspaceId: string,
+      messageId: string,
+      attachmentId: string,
+    ) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}/content`,
     /** Pins: PUT pins a message and DELETE unpins it (the message id). */
     messagePin: (workspaceId: string, messageId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/pin`,
