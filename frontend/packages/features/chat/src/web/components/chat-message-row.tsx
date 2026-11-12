@@ -21,6 +21,7 @@ import { mentionsViewer } from "../../core/model/mention-model";
 import { ChatMentionText } from "./chat-mention-text";
 import { useChatMentions } from "./chat-mention-context";
 import { MessageAttachments } from "./chat-attachments";
+import { MessageLinkPreviews } from "./chat-link-previews";
 import { ReactionChips, ReactionPicker } from "./chat-reactions";
 import { fillCopy, pluralCopy } from "./use-chat-copy";
 
@@ -261,6 +262,14 @@ export function ChatMessageRow({
             ) : null}
           </p>
         )}
+        {live && hooks && workspaceId ? (
+          <MessageLinkPreviews
+            content={message.content}
+            workspaceId={workspaceId}
+            hooks={hooks}
+            copy={copy}
+          />
+        ) : null}
         {live && hooks && workspaceId ? (
           <MessageAttachments
             message={message}
