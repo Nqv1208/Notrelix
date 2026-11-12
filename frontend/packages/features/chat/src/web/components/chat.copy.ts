@@ -117,6 +117,7 @@ export const en = {
     idle: "Away",
     offline: "Offline",
     label: "{{name}}, {{state}}",
+  },
   attachments: {
     attach: "Attach files",
     pendingLabel: "Files to send ({{count}} of {{max}})",
@@ -547,6 +548,7 @@ export const vi: ChatCopy = {
     idle: "Vắng mặt",
     offline: "Ngoại tuyến",
     label: "{{name}}, {{state}}",
+  },
   attachments: {
     attach: "Đính kèm tệp",
     pendingLabel: "Tệp sẽ gửi ({{count}} / {{max}})",
