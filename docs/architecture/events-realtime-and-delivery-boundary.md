@@ -937,7 +937,7 @@ Full snapshots are not required.
 
 Decided in `SYS-ADR-001` (Accepted): the Chat context may publish realtime events that carry a compact payload (for example a message) instead of only an invalidation hint, because a chat reader needs the content without a round trip. This does not change the rule that realtime is not authoritative: the REST read remains the source of truth, clients reconcile by `clientMessageId` and `sequence`, and recovery is by query from the last known sequence.
 
-The Chat scope kind `Channel`, the `typing` and `presence` client frames and the per-user unread stream are additive to protocol v1 and are specified in `docs/workstreams/specs/chat-foundation.md` section 17. A durable write never travels over the socket.
+The Chat scope kind `Channel`, the `typing` and `presence` client frames and the per-user unread stream are additive to protocol v1 and are specified in `docs/workstreams/specs/chat-foundation.md` section 17. A durable write never travels over the socket. The `typing` and `presence` frames are ephemeral: no `streamVersion`, no outbox, no storage, fan-out on a separate bus; the AsyncAPI contract lists their schemas (contract 1.1.1).
 
 ---
 

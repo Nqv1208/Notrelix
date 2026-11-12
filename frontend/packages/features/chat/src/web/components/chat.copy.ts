@@ -107,6 +107,17 @@ export const en = {
     notMember: "Join the channel to post.",
     send: "Send",
   },
+  typing: {
+    one: "{{name}} is typing…",
+    two: "{{first}} and {{second}} are typing…",
+    several: "Several people are typing…",
+  },
+  presence: {
+    online: "Online",
+    idle: "Away",
+    offline: "Offline",
+    label: "{{name}}, {{state}}",
+  },
   attachments: {
     attach: "Attach files",
     pendingLabel: "Files to send ({{count}} of {{max}})",
@@ -526,6 +537,17 @@ export const vi: ChatCopy = {
     archived: "Kênh đã được lưu trữ nên không ai gửi được tin.",
     notMember: "Tham gia kênh để gửi tin nhắn.",
     send: "Gửi",
+  },
+  typing: {
+    one: "{{name}} đang nhập…",
+    two: "{{first}} và {{second}} đang nhập…",
+    several: "Nhiều người đang nhập…",
+  },
+  presence: {
+    online: "Đang hoạt động",
+    idle: "Vắng mặt",
+    offline: "Ngoại tuyến",
+    label: "{{name}}, {{state}}",
   },
   attachments: {
     attach: "Đính kèm tệp",

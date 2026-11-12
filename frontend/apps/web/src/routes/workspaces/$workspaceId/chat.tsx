@@ -5,6 +5,7 @@ import {
   createChatHooks,
   type ChatViewerRole,
 } from "@notrelix/features-chat/web";
+import type { ChatEphemeralPort } from "@notrelix/features-chat";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
@@ -33,7 +34,7 @@ export function ChatPage() {
       ? rawConversationId
       : undefined;
   const navigate = useNavigate();
-  const { api: runtimeClient } = useAppRuntime();
+  const { api: runtimeClient, realtime: realtimeClient } = useAppRuntime();
   const viewer = useWorkspaceViewer(workspaceId);
   const realtime = useRealtimeConnection();
   // Only a connection that is down (not one that has not started yet) reads as reconnecting.
@@ -49,6 +50,19 @@ export function ChatPage() {
     [runtimeClient],
   );
   const hooks = useMemo(() => createChatHooks(deps), [deps]);
+  // Typing and presence travel over the runtime's realtime client (FE-RT-004); the feature never opens a socket.
+  const ephemeral = useMemo<ChatEphemeralPort>(
+    () => ({
+      subscribe: (spaceId, listener) =>
+        realtimeClient.subscribeEphemeral(
+          { workspaceId, channelId: spaceId },
+          listener,
+        ),
+      sendTyping: (spaceId) => realtimeClient.sendTyping(spaceId),
+      sendPresence: (state) => realtimeClient.sendPresence(state),
+    }),
+    [realtimeClient, workspaceId],
+  );
   const channels = hooks.useChannels(workspaceId);
   const firstChannelId = channels.data?.[0]?.id ?? null;
 
@@ -93,6 +107,7 @@ export function ChatPage() {
         }
         people={people}
         connection={connection}
+        ephemeral={ephemeral}
         onOpenChannel={(id) =>
           void navigate({
             to: "/workspaces/$workspaceId/chat/$channelId",

@@ -87,6 +87,31 @@ export interface ChatUnreadChangedPayload {
   "unread": number;
 }
 
+export interface RealtimePresenceClientFrame {
+  "state": "online" | "idle" | "offline";
+  "type": "presence";
+}
+
+export interface RealtimePresenceServerFrame {
+  "state": "online" | "idle" | "offline";
+  "subscriptionId": string;
+  "ttlMs": number;
+  "type": "presence";
+  "userId": string;
+}
+
+export interface RealtimeTypingClientFrame {
+  "subscriptionId": string;
+  "type": "typing";
+}
+
+export interface RealtimeTypingServerFrame {
+  "expiresInMs": number;
+  "subscriptionId": string;
+  "type": "typing";
+  "userId": string;
+}
+
 export type GeneratedRealtimeMessage =
   | { eventType: "board.item.created"; payload: BoardItemCreatedPayload }
   | { eventType: "board.item.moved"; payload: BoardItemMovedPayload }

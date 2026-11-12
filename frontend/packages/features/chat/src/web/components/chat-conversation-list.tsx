@@ -8,6 +8,8 @@ import type { ChatConversation } from "../../core/types/chat";
 import type { ChatCopy } from "./chat.copy";
 import { avatarToneOf, initialsOf } from "./chat-initials";
 import { pluralCopy } from "./use-chat-copy";
+import type { ChatPresenceState } from "../../core/model/ephemeral-model";
+import { PresenceDot, presenceText } from "./chat-presence";
 
 export type ConversationListStatus = "loading" | "ready" | "error";
 
@@ -22,6 +24,8 @@ export interface ChatConversationListView {
   readonly nameOf: (userId: string) => string;
   /** The unread count of a conversation (the unread summary is fresher than the list). */
   readonly unreadOf: (conversation: ChatConversation) => number;
+  /** The presence of a person (the dot of a direct conversation). Without it no dot is shown. */
+  readonly presenceOf?: (userId: string) => ChatPresenceState;
   readonly onSelect: (conversationId: string) => void;
   readonly onNewMessage: () => void;
   readonly onRetry: () => void;
@@ -159,6 +163,10 @@ function ConversationRow({
   const unreadHere = count > 0 && !muted;
   const badge = unreadHere ? (count > 99 ? "99+" : String(count)) : null;
   const counterpart = directCounterpart(conversation, view.viewerId);
+  const presence =
+    counterpart && conversation.kind === "direct"
+      ? view.presenceOf?.(counterpart)
+      : undefined;
   const when = conversation.lastMessage
     ? activityLabel(
         conversation.lastActivityAt,
@@ -169,6 +177,7 @@ function ConversationRow({
     : "";
   const label = [
     `${conversation.kind === "group" ? copy.dm.sidebar.groupLabel : copy.dm.sidebar.directLabel}: ${title}`,
+    presence ? presenceText(presence, copy) : null,
     badge
       ? pluralCopy(
           {
@@ -200,6 +209,7 @@ function ConversationRow({
         title={title}
         id={counterpart ?? conversation.id}
         group={conversation.kind === "group"}
+        presence={presence}
       />
       <span className="flex min-w-0 flex-1 flex-col">
         <span
@@ -248,17 +258,27 @@ export function ConversationAvatar({
   id,
   group,
   className,
+  presence,
 }: {
   readonly title: string;
   readonly id: string;
   readonly group: boolean;
   readonly className?: string;
+  /** The presence dot at the corner; only a person (not a group) has one. */
+  readonly presence?: ChatPresenceState;
 }) {
-  return (
+  const avatar = (
     <Avatar className={cn("size-8 shrink-0", className)} aria-hidden="true">
       <AvatarFallback className={cn("text-xs font-semibold", avatarToneOf(id))}>
         {group ? <Users className="size-4" /> : initialsOf(title)}
       </AvatarFallback>
     </Avatar>
+  );
+  if (!presence) return avatar;
+  return (
+    <span className="relative inline-flex shrink-0">
+      {avatar}
+      <PresenceDot state={presence} />
+    </span>
   );
 }

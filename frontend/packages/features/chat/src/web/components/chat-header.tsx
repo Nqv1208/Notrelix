@@ -31,6 +31,8 @@ import type {
   ChatChannelMember,
   ChatNotificationLevel,
 } from "../../core/types/chat";
+import type { ChatPresenceState } from "../../core/model/ephemeral-model";
+import { PresenceDot, presenceText } from "./chat-presence";
 import type { ChatCopy } from "./chat.copy";
 import { avatarToneOf, initialsOf } from "./chat-initials";
 import { fillCopy } from "./use-chat-copy";
@@ -42,6 +44,8 @@ export interface ChatHeaderProps {
   readonly canManage: boolean;
   readonly joining: boolean;
   readonly authorName: (userId: string) => string;
+  /** The presence of a person; the member list shows a dot with it. */
+  readonly presenceOf?: (userId: string) => ChatPresenceState;
   readonly copy: ChatCopy;
   /** Shown on narrow screens: leaves the room for the channel list. */
   readonly onOpenList: () => void;
@@ -66,6 +70,7 @@ export function ChatHeader({
   canManage,
   joining,
   authorName,
+  presenceOf,
   copy,
   onOpenList,
   onRename,
@@ -143,26 +148,38 @@ export function ChatHeader({
               <ul className="flex flex-col">
                 {members.map((member) => {
                   const name = authorName(member.userId);
+                  const presence =
+                    member.userId === viewerId
+                      ? undefined
+                      : presenceOf?.(member.userId);
                   return (
                     <li
                       key={member.userId}
                       className="flex items-center gap-2 px-2 py-1.5 text-sm"
                     >
-                      <Avatar className="size-6" aria-hidden="true">
-                        <AvatarFallback
-                          className={cn(
-                            "text-xs font-semibold",
-                            avatarToneOf(member.userId),
-                          )}
-                        >
-                          {initialsOf(name)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <span className="relative inline-flex shrink-0">
+                        <Avatar className="size-6" aria-hidden="true">
+                          <AvatarFallback
+                            className={cn(
+                              "text-xs font-semibold",
+                              avatarToneOf(member.userId),
+                            )}
+                          >
+                            {initialsOf(name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        {presence ? <PresenceDot state={presence} /> : null}
+                      </span>
                       <span className="min-w-0 flex-1 truncate">
                         {name}
                         {member.userId === viewerId
                           ? ` (${copy.header.you})`
                           : ""}
+                        {presence ? (
+                          <span className="sr-only">
+                            {`, ${presenceText(presence, copy)}`}
+                          </span>
+                        ) : null}
                       </span>
                       {member.role === "manager" ? (
                         <span className="text-xs text-muted-foreground">

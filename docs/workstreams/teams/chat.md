@@ -76,7 +76,7 @@ backend/src/Notrelix.Domain/Chat/
   ReadStates/    read boundary and notification level are on Membership
   Rules/         ChatRuleCodes, limits, permission names
 backend/src/Notrelix.Application/Features/Chat/
-  Abstractions/  IChatDbContext, ISpaceSequenceAllocator, IChatPresenceStore (port)
+  Abstractions/  IChatDbContext, ISpaceSequenceAllocator
   Public/        facts and queries other contexts may call (member-of-space check)
   Channels/ Conversations/ Messages/ Threads/ ReadState/ Mentions/ Reactions/ Search/
     Commands/<UseCase>  Queries/<UseCase>  DTOs  Ports  Services
