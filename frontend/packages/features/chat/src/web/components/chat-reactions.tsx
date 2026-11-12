@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ComponentProps } from "react";
 import { ArrowLeft, Plus, SmilePlus, Users } from "lucide-react";
 import {
   Button,
@@ -24,11 +24,14 @@ export interface ReactionChipsProps {
   readonly authorName: (userId: string) => string;
   readonly copy: ChatCopy;
   readonly onToggle: (emoji: string, add: boolean) => void;
+  /** The side of the bubble the pills hug: the end for the caller's own message, the start otherwise. */
+  readonly align?: "start" | "end";
 }
 
 /**
- * The reaction summary under a message: one toggle chip per emoji (aria-pressed
- * says whether the caller reacted), and a "who reacted" popover.
+ * The reaction summary of a message: compact pills that overlap the bottom edge of the bubble (Messenger
+ * style), one toggle per emoji (aria-pressed says whether the caller reacted; the count shows above one),
+ * and a "who reacted" popover.
  */
 export function ReactionChips({
   messageId,
@@ -38,14 +41,19 @@ export function ReactionChips({
   authorName,
   copy,
   onToggle,
+  align = "start",
 }: ReactionChipsProps) {
   if (reactions.length === 0) return null;
   return (
     <div
       role="group"
       aria-label={copy.reactions.pickerLabel}
-      className="mt-1 flex flex-wrap items-center gap-1.5"
+      className={cn(
+        "relative z-0 -mt-1.5 flex max-w-full flex-wrap items-center gap-1",
+        align === "end" ? "justify-end pe-2" : "justify-start ps-2",
+      )}
       data-testid="chat-reactions"
+      data-align={align}
     >
       {reactions.map((reaction) => {
         const label = fillCopy(
@@ -65,14 +73,20 @@ export function ReactionChips({
             }
             onClick={() => onToggle(reaction.emoji, !reaction.reactedByMe)}
             className={cn(
-              "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs tabular-nums transition-colors focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none",
+              "inline-flex h-6 items-center gap-1 rounded-full border px-1.5 text-xs font-medium tabular-nums shadow-sm ring-2 ring-background transition-colors focus-visible:ring-focus-ring focus-visible:outline-none motion-reduce:transition-none",
               reaction.reactedByMe
-                ? "border-primary/40 bg-primary/10 text-foreground"
-                : "border-border bg-background text-muted-foreground hover:bg-muted",
+                ? "border-primary bg-state-selected text-state-selected-foreground"
+                : "border-border bg-popover text-popover-foreground hover:bg-muted",
             )}
           >
-            <span aria-hidden="true">{reaction.emoji}</span>
-            <span>{reaction.count}</span>
+            <span aria-hidden="true" className="text-sm leading-none">
+              {reaction.emoji}
+            </span>
+            {reaction.count > 1 || reaction.reactedByMe ? (
+              <span>{reaction.count}</span>
+            ) : (
+              <span className="sr-only">{reaction.count}</span>
+            )}
           </button>
         );
       })}
@@ -106,6 +120,7 @@ function WhoReactedPopover({
           type="button"
           variant="ghost"
           size="icon-xs"
+          className="rounded-full text-muted-foreground opacity-70 hover:opacity-100 focus-visible:opacity-100"
           aria-label={copy.reactions.who}
           title={copy.reactions.who}
         >
@@ -218,15 +233,31 @@ export interface ReactionPickerProps {
   readonly copy: ChatCopy;
   readonly onPick: (emoji: string) => void;
   readonly reacted: readonly string[];
+  /** Told when the popover opens and closes (the message action bar stays visible while it is open). */
+  readonly onOpenChange?: (open: boolean) => void;
+  /** Extra props of the trigger button (the action bar's roving tab stop). */
+  readonly triggerProps?: Partial<ComponentProps<typeof Button>> & {
+    readonly "data-bar-button"?: string;
+  };
 }
 
 /**
  * The reaction picker of a message toolbar: the quick row of six palette emoji, and a "more" button that
  * opens the full emoji picker in the same popover. Each is a button; a pick the caller already has is a remove, shown pressed.
  */
-export function ReactionPicker({ copy, onPick, reacted }: ReactionPickerProps) {
-  const [open, setOpen] = useState(false);
+export function ReactionPicker({
+  copy,
+  onPick,
+  reacted,
+  onOpenChange,
+  triggerProps,
+}: ReactionPickerProps) {
+  const [open, setOpenState] = useState(false);
   const [full, setFull] = useState(false);
+  function setOpen(next: boolean) {
+    setOpenState(next);
+    onOpenChange?.(next);
+  }
   return (
     <Popover
       open={open}
@@ -242,13 +273,18 @@ export function ReactionPicker({ copy, onPick, reacted }: ReactionPickerProps) {
           size="icon-sm"
           aria-label={copy.toolbar.react}
           title={copy.toolbar.react}
+          {...triggerProps}
         >
           <SmilePlus aria-hidden="true" />
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        align="end"
-        className={cn("p-1.5", full ? "w-80 gap-2" : "w-auto")}
+        align="center"
+        side="top"
+        className={cn(
+          "p-1.5 duration-100 motion-reduce:animate-none",
+          full ? "w-80 gap-2" : "w-auto rounded-full",
+        )}
       >
         {full ? (
           <>
