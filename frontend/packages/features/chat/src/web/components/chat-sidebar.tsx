@@ -35,6 +35,8 @@ export interface ChatSidebarProps {
     readonly status: ChannelListStatus;
   } | null;
   readonly canCreate: boolean;
+  /** A Guest sees only the channels they were added to; an empty list says so (UC-CHT-H02). */
+  readonly guest?: boolean;
   readonly copy: ChatCopy;
   readonly onSelect: (channelId: string) => void;
   readonly onCreate: () => void;
@@ -101,6 +103,7 @@ export function ChatSidebar({
   unreadBySpace,
   browse,
   canCreate,
+  guest = false,
   copy,
   onSelect,
   onCreate,
@@ -159,7 +162,7 @@ export function ChatSidebar({
           </div>
         ) : channels.length === 0 ? (
           <p className="px-2 pt-2 text-sm text-muted-foreground">
-            {copy.page.noChannelsTitle}
+            {guest ? copy.sidebar.guestEmpty : copy.page.noChannelsTitle}
           </p>
         ) : (
           groups.map((group, index) => {

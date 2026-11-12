@@ -70,6 +70,9 @@ export interface PendingMessage {
   readonly status: "sending" | "failed";
   /** The failure of a failed send: a retry may succeed, or the send is refused. */
   readonly failure: "retryable" | "refused" | null;
+  /** A 429 only: the seconds the server asked to wait, and whether a rate limit or the slow mode answered. */
+  readonly retryAfterSeconds?: number | null;
+  readonly limit?: "rate-limited" | "slow-mode" | null;
   /** The mentions that travel with the content, kept so a retry sends the same ones. */
   readonly mentions?: readonly ChatMentionInput[];
   readonly confirmBroadcast?: boolean;

@@ -71,11 +71,11 @@ export interface ChatAttachmentFramePayload {
 
 /**
  * chat.space.v1: a pin of the space changed (readers refetch the pins) or the channel's permission overrides changed (readers
- * refetch the channel and its permissions; `messageId` is then the empty id).
+ * refetch the channel and its permissions; `messageId` is then the empty id) or its slow mode changed (readers refetch the channel; the empty id again).
  */
 export interface ChatSpaceFramePayload {
   readonly messageId: string;
-  readonly change: "pinned" | "unpinned" | "permissions";
+  readonly change: "pinned" | "unpinned" | "permissions" | "slow-mode";
 }
 
 /** The unread payload (chat.unread.v1): the counts of one space for this person. */
@@ -209,7 +209,10 @@ export function parseChatSpaceFrame(
   const { messageId, change } = payload;
   if (
     !isNonEmpty(messageId) ||
-    (change !== "pinned" && change !== "unpinned" && change !== "permissions")
+    (change !== "pinned" &&
+      change !== "unpinned" &&
+      change !== "permissions" &&
+      change !== "slow-mode")
   ) {
     return null;
   }

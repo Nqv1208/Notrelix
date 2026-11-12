@@ -81,6 +81,7 @@ import {
 } from "./chat-message-list";
 import { ChatHeader } from "./chat-header";
 import { ChatStatusBanner } from "./chat-status-banner";
+import { ChatRateLimitNotice } from "./chat-rate-limit";
 import {
   ChatSidebar,
   type ChannelListStatus,
@@ -231,7 +232,8 @@ export function ChatWorkspace({
   const channelId = conversationId ?? channelProp;
   const ch = channelId ?? "";
   const offersConversations = onOpenConversation !== undefined;
-  const canBrowse = viewerRole !== null && viewerRole !== "guest";
+  const isGuest = viewerRole === "guest";
+  const canBrowse = viewerRole !== null && !isGuest;
   const canManageWorkspace = viewerRole === "owner" || viewerRole === "admin";
 
   const [permissionsOpen, setPermissionsOpen] = useState(false);
@@ -313,6 +315,14 @@ export function ChatWorkspace({
         flat,
       ),
     [pendingAll, flat, ch],
+  );
+  // Sends the server answered with 429: held as they are, retried when the wait is over (UC-CHT-H08).
+  const limitedEntries = useMemo(
+    () =>
+      pendingHere.filter(
+        (entry) => entry.status === "failed" && entry.limit != null,
+      ),
+    [pendingHere],
   );
   // The divider stays where the visit found it, even as messages arrive.
   const firstUnread = lock ? lock.firstUnread : null;
@@ -729,13 +739,18 @@ export function ChatWorkspace({
     );
   }
 
-  function handleRename(values: { name: string; topic: string }) {
+  function handleRename(values: {
+    name: string;
+    topic: string;
+    slowModeSeconds: number;
+  }) {
     if (!channel) return;
     setRenameError(null);
     updater.mutate(
       {
         name: values.name,
         topic: values.topic.length > 0 ? values.topic : null,
+        slowModeSeconds: values.slowModeSeconds,
         expectedVersion: channel.version,
       },
       {
@@ -1038,10 +1053,13 @@ export function ChatWorkspace({
           setListOpen(false);
           onOpenConversation?.(id);
         },
-        onNewMessage: () => {
-          setNewMessageError(null);
-          setNewMessageOpen(true);
-        },
+        // A Guest starts no conversation (UC-CHT-H02): the entry point is not offered.
+        onNewMessage: isGuest
+          ? undefined
+          : () => {
+              setNewMessageError(null);
+              setNewMessageOpen(true);
+            },
         onRetry: () => void conversationsQuery.refetch(),
       }
     : null;
@@ -1059,7 +1077,8 @@ export function ChatWorkspace({
       activeChannelId={conversationId ? null : channelProp}
       unreadBySpace={unreadBySpace}
       browse={browseView}
-      canCreate={viewerRole !== null && viewerRole !== "guest"}
+      canCreate={viewerRole !== null && !isGuest}
+      guest={isGuest}
       copy={copy}
       joiningId={joiner.isPending ? ch : null}
       onSelect={(id) => {
@@ -1115,12 +1134,18 @@ export function ChatWorkspace({
                       <EmptyMedia variant="icon">
                         <MessageSquareText aria-hidden="true" />
                       </EmptyMedia>
-                      <EmptyTitle>{copy.page.noChannelsTitle}</EmptyTitle>
+                      <EmptyTitle>
+                        {isGuest
+                          ? copy.page.guestNoChannelsTitle
+                          : copy.page.noChannelsTitle}
+                      </EmptyTitle>
                       <EmptyDescription>
-                        {copy.page.noChannelsBody}
+                        {isGuest
+                          ? copy.page.guestNoChannelsBody
+                          : copy.page.noChannelsBody}
                       </EmptyDescription>
                     </EmptyHeader>
-                    {viewerRole !== null && viewerRole !== "guest" ? (
+                    {viewerRole !== null && !isGuest ? (
                       <Button onClick={() => setCreateOpen(true)}>
                         <Plus aria-hidden="true" />
                         {copy.page.createChannel}
@@ -1413,6 +1438,25 @@ export function ChatWorkspace({
                     copy={copy}
                   />
                 ) : null}
+                {limitedEntries.length > 0 ? (
+                  <ChatRateLimitNotice
+                    key={
+                      limitedEntries[limitedEntries.length - 1]!.clientMessageId
+                    }
+                    seconds={
+                      limitedEntries[limitedEntries.length - 1]!
+                        .retryAfterSeconds ?? 1
+                    }
+                    limit={
+                      limitedEntries[limitedEntries.length - 1]!.limit ??
+                      "rate-limited"
+                    }
+                    copy={copy}
+                    onRetry={() => {
+                      for (const entry of limitedEntries) sender.retry(entry);
+                    }}
+                  />
+                ) : null}
                 <ChatComposer
                   channelName={spaceName}
                   labelOverride={
@@ -1428,6 +1472,7 @@ export function ChatWorkspace({
                   onSend={handleSend}
                   mentions={composerMentions}
                   attachments={{ draftKey: ch }}
+                  slowModeSeconds={channel?.slowModeSeconds ?? 0}
                   leading={
                     replyTo ? (
                       <ReplyChip
@@ -1668,6 +1713,7 @@ export function ChatWorkspace({
             busy={updater.isPending}
             initialName={channel.name}
             initialTopic={channel.topic}
+            initialSlowMode={channel.slowModeSeconds ?? 0}
             error={renameError}
             copy={copy}
             onOpenChange={setRenameOpen}
