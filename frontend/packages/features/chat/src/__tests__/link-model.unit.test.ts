@@ -50,6 +50,13 @@ describe("findProductLinks (UC-CHT-G05)", () => {
     expect(findProductLinks(many, WS)).toHaveLength(CHAT_LINK_PREVIEWS_MAX);
   });
 
+  it("reads a long run of marks and of host characters in linear time", () => {
+    const started = Date.now();
+    findProductLinks(`/workspaces/${WS}/docs/p-1${"!".repeat(50_000)}`, WS);
+    findProductLinks(`https://${"a".repeat(50_000)}`, WS);
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
   it("names a link to the resolver by kind and resource", () => {
     expect(linkRefKey({ kind: "documents.page", resourceId: "p-1" })).toBe(
       "documents.page:p-1",

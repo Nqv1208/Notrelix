@@ -18,13 +18,16 @@ export interface ChatProductLink {
 /** An id is a token of letters, digits and dashes (the backend's are GUIDs; the mock's are shorter words). */
 const GUID = "[\\w-]{1,64}";
 const LINK_PATTERN = new RegExp(
-  `(?:https?://[^\\s/<>"')]+)?/workspaces/(${GUID})/(docs|boards)/(${GUID})(\\?[^\\s<>"')]*)?`,
+  `(?:https?://[^\\s/<>"')]{1,255})?/workspaces/(${GUID})/(docs|boards)/(${GUID})(\\?[^\\s<>"')]{0,512})?`,
   "g",
 );
 
 /** A trailing sentence mark is not part of the link. */
 function trimTrail(text: string): string {
-  return text.replace(/[.,;:!?]+$/, "");
+  // A scan from the end, not a regex: `[..]+$` backtracks quadratically on a long run of marks.
+  let end = text.length;
+  while (end > 0 && ".,;:!?".includes(text.charAt(end - 1))) end -= 1;
+  return text.slice(0, end);
 }
 
 function itemOf(search: string | undefined): string | null {
