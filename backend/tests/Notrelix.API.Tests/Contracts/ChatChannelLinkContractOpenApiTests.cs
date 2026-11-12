@@ -33,11 +33,13 @@ public class ChatChannelLinkContractOpenApiTests
     }
 
     [Fact]
-    public void TheChannelCarriesItsLink()
+    public void TheLinkRequest_NamesTheKindTheResourceAndTheVersion()
     {
-        var channel = Document.GetProperty("components").GetProperty("schemas").GetProperty("ChannelDto").GetProperty("properties");
+        var request = Document.GetProperty("components").GetProperty("schemas")
+            .GetProperty("Notrelix.API.Contracts.Chat.Requests.LinkChannelRequest").GetProperty("properties");
 
-        channel.TryGetProperty("link", out _).Should().BeTrue();
+        var names = request.EnumerateObject().Select(p => p.Name).ToList();
+        names.Should().BeEquivalentTo(["kind", "resourceId", "expectedVersion"]);
     }
 
     private static JsonElement Load([System.Runtime.CompilerServices.CallerFilePath] string sourceFile = "")

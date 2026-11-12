@@ -12,7 +12,6 @@ using Notrelix.Application.Features.Documents.Public.PageViewAccess;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Application.Features.WorkManagement.Public.BoardTitles;
 using Notrelix.Application.Tests.Features.Collaboration;
-using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Spaces;
 using Notrelix.Testing.Application.Fakes;
 using Space = Notrelix.Domain.Chat.Spaces.Space;

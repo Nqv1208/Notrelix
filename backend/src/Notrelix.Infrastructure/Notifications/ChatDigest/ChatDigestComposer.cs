@@ -1,6 +1,7 @@
 using Notrelix.Application.Features.Chat.Public.Digest;
 using Notrelix.Application.Features.Collaboration.Notifications.ChatDigest;
 using Notrelix.Application.Features.Collaboration.Public.Notifications;
+using Notrelix.Application.Features.Identity.Public.DeliveryAddresses;
 using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Domain.Collaboration.Preferences;
 using Notrelix.Infrastructure.Configuration;

@@ -2,7 +2,6 @@ using FluentAssertions;
 using Notrelix.Domain.Chat.Rules;
 using Notrelix.Domain.Chat.Spaces;
 using Notrelix.Domain.Chat.Spaces.Events;
-using Notrelix.Domain.Common.Exceptions;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
 
 namespace Notrelix.Domain.Tests.Chat.Spaces;

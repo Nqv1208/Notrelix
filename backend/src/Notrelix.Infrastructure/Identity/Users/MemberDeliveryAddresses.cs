@@ -1,4 +1,4 @@
-using Notrelix.Application.Features.Identity.Public.Queries;
+using Notrelix.Application.Features.Identity.Public.DeliveryAddresses;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Infrastructure.Data;
