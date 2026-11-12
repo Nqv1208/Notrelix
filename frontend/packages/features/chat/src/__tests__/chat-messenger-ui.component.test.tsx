@@ -11,6 +11,8 @@ import {
   replyCaption,
 } from "../web/components/chat-message-row";
 import { ChatTypingIndicator } from "../web/components/chat-typing-indicator";
+import { ChatConversationHeader } from "../web/components/chat-conversation-view";
+import type { ChatConversation } from "../core/types/chat";
 import { buildChatRows, type PendingMessage } from "../core/model/chat-model";
 import type { ChatMessage } from "../core/types/chat";
 import { en } from "../web/components/chat.copy";
@@ -554,5 +556,58 @@ describe("Messenger typing bubble", () => {
   it("shows no typing bubble when nobody types", () => {
     render(<ChatMessageList {...props({ messages: [message(1)] })} />);
     expect(screen.queryByTestId("chat-typing-bubble")).toBeNull();
+  });
+});
+
+describe("Messenger conversation header", () => {
+  const conversation: ChatConversation = {
+    id: "dm-1",
+    kind: "direct",
+    name: null,
+    participants: [
+      { userId: ME, role: "member", joinedAt: "2026-11-01T00:00:00.000Z" },
+      { userId: OTHER, role: "member", joinedAt: "2026-11-01T00:00:00.000Z" },
+    ],
+    isHidden: false,
+    notificationLevel: "all",
+    unreadCount: 0,
+    lastMessage: null,
+    lastActivityAt: "2026-11-10T09:00:00.000Z",
+    version: 1,
+    createdAt: "2026-11-01T00:00:00.000Z",
+  };
+
+  function header(presence?: "online" | "idle" | "offline") {
+    return render(
+      <ChatConversationHeader
+        conversation={conversation}
+        viewerId={ME}
+        nameOf={(id) => (id === ME ? "Me" : "Minh Quân")}
+        copy={en}
+        detailsOpen={false}
+        blocked={false}
+        presenceOf={presence ? () => presence : undefined}
+        onOpenList={vi.fn()}
+        onToggleDetails={vi.fn()}
+        onHide={vi.fn()}
+      />,
+    );
+  }
+
+  it("says Active now for a person who is online, Away when idle, and Direct message otherwise", () => {
+    const online = header("online");
+    expect(screen.getByTestId("chat-conversation-subtitle").textContent).toBe(
+      "Active now",
+    );
+    online.unmount();
+    const idle = header("idle");
+    expect(screen.getByTestId("chat-conversation-subtitle").textContent).toBe(
+      "Away",
+    );
+    idle.unmount();
+    header();
+    expect(screen.getByTestId("chat-conversation-subtitle").textContent).toBe(
+      "Direct message",
+    );
   });
 });

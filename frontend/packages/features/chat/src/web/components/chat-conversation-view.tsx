@@ -69,8 +69,20 @@ export function ChatConversationHeader({
   const title = conversationTitle(conversation, viewerId, nameOf);
   const counterpart = directCounterpart(conversation, viewerId);
   const group = conversation.kind === "group";
+  const presence =
+    counterpart && !group ? presenceOf?.(counterpart) : undefined;
+  // The presence line of a 1-1 conversation: "Active now" or "Away" when the presence is known.
+  const subtitle = group
+    ? fillCopy(copy.dm.view.groupSubtitle, {
+        count: conversation.participants.length,
+      })
+    : presence === "online"
+      ? copy.dm.view.activeNow
+      : presence === "idle"
+        ? copy.presence.idle
+        : copy.dm.view.directSubtitle;
   return (
-    <header className="flex min-h-14 flex-wrap items-center gap-x-2 gap-y-1 border-b border-border bg-background px-3 py-2 md:px-5">
+    <header className="flex min-h-14 flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-border bg-background px-3 py-2 md:px-4">
       <Button
         variant="ghost"
         size="icon-sm"
@@ -84,7 +96,8 @@ export function ChatConversationHeader({
         title={title}
         id={counterpart ?? conversation.id}
         group={group}
-        presence={counterpart && !group ? presenceOf?.(counterpart) : undefined}
+        presence={presence}
+        className="size-9"
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <h1 className="flex min-w-0 items-center gap-2 text-base font-semibold text-foreground">
@@ -95,12 +108,11 @@ export function ChatConversationHeader({
             </span>
           ) : null}
         </h1>
-        <p className="truncate text-xs text-muted-foreground">
-          {group
-            ? fillCopy(copy.dm.view.groupSubtitle, {
-                count: conversation.participants.length,
-              })
-            : copy.dm.view.directSubtitle}
+        <p
+          className="truncate text-xs text-muted-foreground"
+          data-testid="chat-conversation-subtitle"
+        >
+          {subtitle}
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-1">
