@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Collaboration.Public.Attachments;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Chat.Pins.DTOs;
@@ -30,7 +31,8 @@ public class PinMessageCommandHandler(
     IWorkspaceMemberFacts members,
     ISpaceSequenceAllocator sequences,
     ChatSystemMessages systemMessages,
-    IDateTimeProvider clock) : IRequestHandler<PinMessageCommand, Result<PinResultDto>>
+    IDateTimeProvider clock,
+    IChatMessageAttachments attachments) : IRequestHandler<PinMessageCommand, Result<PinResultDto>>
 {
     public async Task<Result<PinResultDto>> Handle(PinMessageCommand request, CancellationToken cancellationToken)
     {
@@ -75,7 +77,7 @@ public class PinMessageCommandHandler(
         if (existing is not null)
         {
             var existingDto = new PinDto(
-                await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, current, cancellationToken),
+                await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, current, cancellationToken),
                 existing.PinnedBy,
                 existing.PinnedAt);
             return Result<PinResultDto>.Success(new PinResultDto(existingDto, Created: false));
@@ -89,7 +91,7 @@ public class PinMessageCommandHandler(
         db.ChatPins.Add(pin);
         await systemMessages.AnnounceAsync(space, userId, ChatSystemMessages.MessagePinned, cancellationToken);
 
-        var dto = new PinDto(await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, current, cancellationToken), userId, now);
+        var dto = new PinDto(await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, current, cancellationToken), userId, now);
         return Result<PinResultDto>.Success(new PinResultDto(dto, Created: true));
     }
 }

@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Collaboration.Public.Attachments;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Mentions.DTOs;
 using Notrelix.Application.Features.Chat.Mentions.Services;
@@ -36,7 +37,8 @@ public class EditMessageCommandHandler(
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
     IDateTimeProvider clock,
-    IBroadcastAuthorizer broadcast) : IRequestHandler<EditMessageCommand, Result<MessageDto>>
+    IBroadcastAuthorizer broadcast,
+    IChatMessageAttachments attachments) : IRequestHandler<EditMessageCommand, Result<MessageDto>>
 {
     public async Task<Result<MessageDto>> Handle(EditMessageCommand request, CancellationToken cancellationToken)
     {
@@ -61,10 +63,10 @@ public class EditMessageCommandHandler(
         if (message.Edit(request.Content, userId, clock.UtcNow))
         {
             await MessageMentions.ReplaceAsync(db, message, resolution.Spans, hadBefore: true, cancellationToken);
-            return Result<MessageDto>.Success(await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, message, cancellationToken, resolution));
+            return Result<MessageDto>.Success(await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, message, cancellationToken, resolution));
         }
 
-        return Result<MessageDto>.Success(await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, message, cancellationToken));
+        return Result<MessageDto>.Success(await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, message, cancellationToken));
     }
 }
 

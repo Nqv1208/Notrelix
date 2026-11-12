@@ -19,6 +19,9 @@ public sealed class AttachmentUploadOptions
     /// <summary>Maximum number of (non-deleted) attachments on one Documents page, links included. Default 500.</summary>
     public int MaxAttachmentsPerPage { get; init; } = 500;
 
+    /// <summary>Maximum number of (non-deleted) attachments on one Chat message. Default 10.</summary>
+    public int MaxAttachmentsPerMessage { get; init; } = 10;
+
     /// <summary>
     /// File name extensions (lower case, without the dot) that are refused regardless of the
     /// sniffed content: executables and script types. Executable content signatures are
@@ -56,6 +59,12 @@ public sealed class AttachmentUploadOptionsValidator : IValidateOptions<Attachme
         {
             failures.Add(
                 $"{AttachmentUploadOptions.SectionName}:MaxAttachmentsPerPage must be between 1 and {MaxConfigurableAttachments}.");
+        }
+
+        if (options.MaxAttachmentsPerMessage is < 1 or > MaxConfigurableAttachments)
+        {
+            failures.Add(
+                $"{AttachmentUploadOptions.SectionName}:MaxAttachmentsPerMessage must be between 1 and {MaxConfigurableAttachments}.");
         }
 
         if (options.BlockedExtensions is null

@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Testing.Application.Fakes;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Mentions.DTOs;
 using Notrelix.Application.Features.Chat.Messages.DTOs;
@@ -101,11 +102,11 @@ public class MentionHandlerTests
         return space;
     }
 
-    private SendMessageCommandHandler SendHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object);
-    private EditMessageCommandHandler EditHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, _broadcast.Object);
-    private ReplyInThreadCommandHandler ReplyHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object);
-    private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object);
-    private ListMessagesQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object);
+    private SendMessageCommandHandler SendHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments());
+    private EditMessageCommandHandler EditHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments());
+    private ReplyInThreadCommandHandler ReplyHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments());
+    private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments());
+    private ListMessagesQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments());
     private ListMentionablesQueryHandler MentionablesHandler() => new(_db.Object, _context.Object, _members.Object, _broadcast.Object);
 
     private static MentionInput Person(int start, int length, Guid id) => new(MentionKindWire.UserKind, start, length, id, null);

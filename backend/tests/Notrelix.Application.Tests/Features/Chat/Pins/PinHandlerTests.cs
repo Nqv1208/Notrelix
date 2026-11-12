@@ -15,6 +15,7 @@ using AppValidationException = Notrelix.Application.Common.Exceptions.Validation
 using Space = Notrelix.Domain.Chat.Spaces.Space;
 using AppConflictException = Notrelix.Application.Common.Exceptions.ConflictException;
 using AppNotFoundException = Notrelix.Application.Common.Exceptions.NotFoundException;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Application.Tests.Features.Chat.Pins;
 
@@ -96,12 +97,12 @@ public class PinHandlerTests
     }
 
     private PinMessageCommandHandler PinHandler() =>
-        new(_db.Object, _context.Object, _members.Object, _sequences.Object, new ChatSystemMessages(_db.Object, _sequences.Object, _clock.Object), _clock.Object);
+        new(_db.Object, _context.Object, _members.Object, _sequences.Object, new ChatSystemMessages(_db.Object, _sequences.Object, _clock.Object), _clock.Object, new InMemoryChatMessageAttachments());
     private UnpinMessageCommandHandler UnpinHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object);
-    private ListPinsQueryHandler ListPinsHandler() => new(_db.Object, _context.Object, _members.Object);
-    private ListMessagesQueryHandler ListMessagesHandler() => new(_db.Object, _context.Object, _members.Object);
-    private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object);
-    private SendMessageCommandHandler SendHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object);
+    private ListPinsQueryHandler ListPinsHandler() => new(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments());
+    private ListMessagesQueryHandler ListMessagesHandler() => new(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments());
+    private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments());
+    private SendMessageCommandHandler SendHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments());
 
     private int SystemMessageCount(Space space) => _messages.Count(m => m.SpaceId == space.Id && m.IsSystem);
 

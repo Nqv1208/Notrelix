@@ -9,6 +9,7 @@
 
 import type { MockStore } from "../../state/mock-store";
 import type {
+  ChatAttachmentRecord,
   ChatGroupRecord,
   ChatMembershipRecord,
   ChatMentionRecord,
@@ -20,7 +21,8 @@ import type {
   ChatThreadRecord,
 } from "./chat-model";
 
-export type ChatIdKind = "space" | "group" | "message" | "pin" | "reaction";
+export type ChatIdKind =
+  "space" | "group" | "message" | "pin" | "reaction" | "attachment";
 
 /** The tag of each id family: a GUID whose first group names the family. */
 const ID_TAG: Record<ChatIdKind, string> = {
@@ -29,6 +31,7 @@ const ID_TAG: Record<ChatIdKind, string> = {
   message: "c3000000",
   pin: "c4000000",
   reaction: "c5000000",
+  attachment: "c6000000",
 };
 
 /** A deterministic GUID-shaped id of a family, numbered from 1. */
@@ -62,6 +65,8 @@ export class MockChatState {
   readonly pins = new Map<string, ChatPinRecord>();
   /** Reactions keyed by `${messageId}|${userId}|${kind}`: one per message, person and kind. */
   readonly reactions = new Map<string, ChatReactionRecord>();
+  /** Files on messages by attachment id (Collaboration attachments with target kind chat.message). */
+  readonly attachments = new Map<string, ChatAttachmentRecord>();
   /** The stored mentions of each message, in text order; a message with none has no entry. */
   readonly mentions = new Map<string, ChatMentionRecord[]>();
   /** The direct conversation of each pair, keyed by `${workspaceId}|${low}|${high}` (backend DirectPair). */
@@ -76,6 +81,7 @@ export class MockChatState {
     message: 0,
     pin: 0,
     reaction: 0,
+    attachment: 0,
   };
   private writeTick = 0;
   private eventCounter = 0;
@@ -94,6 +100,7 @@ export class MockChatState {
     this.threadFollowers.clear();
     this.pins.clear();
     this.reactions.clear();
+    this.attachments.clear();
     this.mentions.clear();
     this.directPairs.clear();
     this.blocks.clear();
@@ -103,6 +110,7 @@ export class MockChatState {
     this.idCounters.message = 0;
     this.idCounters.pin = 0;
     this.idCounters.reaction = 0;
+    this.idCounters.attachment = 0;
     this.writeTick = 0;
     this.eventCounter = 0;
   }
@@ -228,6 +236,21 @@ export class MockChatState {
   /** The reactions of one message, in the order they were made (the order of ListReactors). */
   reactionsOfMessage(messageId: string): ChatReactionRecord[] {
     return Array.from(this.reactions.values())
+      .filter((row) => row.messageId === messageId)
+      .sort(
+        (a, b) =>
+          Date.parse(a.createdAt) - Date.parse(b.createdAt) ||
+          (streamIdOf(a.id) < streamIdOf(b.id)
+            ? -1
+            : streamIdOf(a.id) > streamIdOf(b.id)
+              ? 1
+              : 0),
+      );
+  }
+
+  /** The files of one message, oldest first (the order of the file list). */
+  attachmentsOfMessage(messageId: string): ChatAttachmentRecord[] {
+    return Array.from(this.attachments.values())
       .filter((row) => row.messageId === messageId)
       .sort(
         (a, b) =>

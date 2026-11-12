@@ -144,7 +144,7 @@ public sealed class ChatPinRlsTests : IAsyncLifetime
         var members = MembersFor(_outsider.Id);
 
         await using var db = _fixture.CreateAppContext(tenant);
-        var handler = new ListPinsQueryHandler(db, context.Object, members.Object);
+        var handler = new ListPinsQueryHandler(db, context.Object, members.Object, new InMemoryChatMessageAttachments());
 
         var act = () => handler.Handle(new ListPinsQuery(_a.WorkspaceId, _spaceId, null, 50), CancellationToken.None);
 
@@ -164,7 +164,7 @@ public sealed class ChatPinRlsTests : IAsyncLifetime
         var clock = new FixedClock(Now);
 
         var pin = () => new PinMessageCommandHandler(db, context.Object, members.Object, sequences,
-                new Notrelix.Application.Features.Chat.Messages.Services.ChatSystemMessages(db, sequences, clock), clock)
+                new Notrelix.Application.Features.Chat.Messages.Services.ChatSystemMessages(db, sequences, clock), clock, new InMemoryChatMessageAttachments())
             .Handle(new PinMessageCommand(_a.WorkspaceId, _messageId), CancellationToken.None);
         var unpin = () => new UnpinMessageCommandHandler(db, context.Object, members.Object, sequences, clock)
             .Handle(new UnpinMessageCommand(_a.WorkspaceId, _messageId), CancellationToken.None);

@@ -18,6 +18,7 @@ using Notrelix.Domain.Chat.Rules;
 using Notrelix.Domain.Chat.Spaces;
 using BusinessRuleException = Notrelix.Domain.Common.Exceptions.BusinessRuleException;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Application.Tests.Features.Chat.Conversations;
 
@@ -478,7 +479,7 @@ public class ConversationHandlerTests
         await VisibilityHandler().Handle(new SetConversationVisibilityCommand(_workspaceId, direct.Id, true), CancellationToken.None);
 
         AsCaller(_alice, "Member");
-        var send = new SendMessageCommandHandler(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new Mock<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer>().Object);
+        var send = new SendMessageCommandHandler(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new Mock<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer>().Object, new InMemoryChatMessageAttachments());
         await send.Handle(new SendMessageCommand(_workspaceId, direct.Id, "are you there?", "client-1", null), CancellationToken.None);
 
         direct.GetActiveMembership(_bob)!.IsHidden.Should().BeFalse("the message restores the conversation for bob");

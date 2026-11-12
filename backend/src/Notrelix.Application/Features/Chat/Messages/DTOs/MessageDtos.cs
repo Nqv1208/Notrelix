@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Chat.Attachments.DTOs;
 using Notrelix.Application.Features.Chat.Mentions.DTOs;
 using Notrelix.Application.Features.Chat.Reactions.DTOs;
 using Notrelix.Domain.Chat.Messages;
@@ -26,7 +27,8 @@ public sealed record MessageDto(
     ReplyPreviewDto? ReplyPreview = null,
     IReadOnlyList<ReactionSummaryDto>? Reactions = null,
     IReadOnlyList<MentionDto>? Mentions = null,
-    IReadOnlyList<MentionNoticeDto>? MentionNotices = null)
+    IReadOnlyList<MentionNoticeDto>? MentionNotices = null,
+    IReadOnlyList<MessageAttachmentDto>? Attachments = null)
 {
     /// <summary>
     /// The message as readers see it. <paramref name="replyPreview"/> is the live quote of <see cref="ReplyToId"/>, read by the
@@ -40,7 +42,8 @@ public sealed record MessageDto(
         ReplyPreviewDto? replyPreview = null,
         IReadOnlyList<ReactionSummaryDto>? reactions = null,
         IReadOnlyList<MentionDto>? mentions = null,
-        IReadOnlyList<MentionNoticeDto>? mentionNotices = null) => new(
+        IReadOnlyList<MentionNoticeDto>? mentionNotices = null,
+        IReadOnlyList<MessageAttachmentDto>? attachments = null) => new(
         message.Id,
         message.SpaceId,
         message.Sequence,
@@ -61,7 +64,8 @@ public sealed record MessageDto(
         replyPreview,
         reactions ?? [],
         mentions ?? [],
-        mentionNotices ?? []);
+        mentionNotices ?? [],
+        attachments ?? []);
 }
 
 /// <summary>

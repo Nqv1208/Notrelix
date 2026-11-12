@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Collaboration.Public.Attachments;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Messages.DTOs;
 using Notrelix.Application.Features.Chat.Messages.Services;
@@ -28,7 +29,8 @@ public record ListMessagesQuery(Guid WorkspaceId, Guid SpaceId, long? Before, lo
 public class ListMessagesQueryHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
-    IWorkspaceMemberFacts members) : IRequestHandler<ListMessagesQuery, Result<MessagePageDto>>
+    IWorkspaceMemberFacts members,
+    IChatMessageAttachments attachments) : IRequestHandler<ListMessagesQuery, Result<MessagePageDto>>
 {
     public async Task<Result<MessagePageDto>> Handle(ListMessagesQuery request, CancellationToken cancellationToken)
     {
@@ -43,39 +45,39 @@ public class ListMessagesQueryHandler(
         var limit = request.Limit;
 
         if (request.Before is { } before)
-            return Result<MessagePageDto>.Success(await OlderAsync(db, request.WorkspaceId, userId, messages, before, limit, cancellationToken));
+            return Result<MessagePageDto>.Success(await OlderAsync(db, attachments, request.WorkspaceId, userId, messages, before, limit, cancellationToken));
         if (request.After is { } after)
-            return Result<MessagePageDto>.Success(await NewerAsync(db, request.WorkspaceId, userId, messages, after, limit, cancellationToken));
+            return Result<MessagePageDto>.Success(await NewerAsync(db, attachments, request.WorkspaceId, userId, messages, after, limit, cancellationToken));
         if (request.Around is { } around)
-            return Result<MessagePageDto>.Success(await AroundAsync(db, request.WorkspaceId, userId, messages, around, limit, cancellationToken));
+            return Result<MessagePageDto>.Success(await AroundAsync(db, attachments, request.WorkspaceId, userId, messages, around, limit, cancellationToken));
 
-        return Result<MessagePageDto>.Success(await LatestAsync(db, request.WorkspaceId, userId, messages, limit, cancellationToken));
+        return Result<MessagePageDto>.Success(await LatestAsync(db, attachments, request.WorkspaceId, userId, messages, limit, cancellationToken));
     }
 
-    private static async Task<MessagePageDto> LatestAsync(IChatDbContext db, Guid workspaceId, Guid viewerId, IQueryable<Message> messages, int limit, CancellationToken ct)
+    private static async Task<MessagePageDto> LatestAsync(IChatDbContext db, IChatMessageAttachments attachments, Guid workspaceId, Guid viewerId, IQueryable<Message> messages, int limit, CancellationToken ct)
     {
         var rows = await messages.OrderByDescending(m => m.Sequence).Take(limit + 1).ToListAsync(ct);
         var hasOlder = rows.Count > limit;
-        return await PageAsync(db, workspaceId, viewerId, rows.Take(limit).Reverse().ToList(), hasOlder, hasNewer: false, ct);
+        return await PageAsync(db, attachments, workspaceId, viewerId, rows.Take(limit).Reverse().ToList(), hasOlder, hasNewer: false, ct);
     }
 
-    private static async Task<MessagePageDto> OlderAsync(IChatDbContext db, Guid workspaceId, Guid viewerId, IQueryable<Message> messages, long before, int limit, CancellationToken ct)
+    private static async Task<MessagePageDto> OlderAsync(IChatDbContext db, IChatMessageAttachments attachments, Guid workspaceId, Guid viewerId, IQueryable<Message> messages, long before, int limit, CancellationToken ct)
     {
         var rows = await messages.Where(m => m.Sequence < before)
             .OrderByDescending(m => m.Sequence).Take(limit + 1).ToListAsync(ct);
         var hasNewer = await messages.AnyAsync(m => m.Sequence >= before, ct);
-        return await PageAsync(db, workspaceId, viewerId, rows.Take(limit).Reverse().ToList(), rows.Count > limit, hasNewer, ct);
+        return await PageAsync(db, attachments, workspaceId, viewerId, rows.Take(limit).Reverse().ToList(), rows.Count > limit, hasNewer, ct);
     }
 
-    private static async Task<MessagePageDto> NewerAsync(IChatDbContext db, Guid workspaceId, Guid viewerId, IQueryable<Message> messages, long after, int limit, CancellationToken ct)
+    private static async Task<MessagePageDto> NewerAsync(IChatDbContext db, IChatMessageAttachments attachments, Guid workspaceId, Guid viewerId, IQueryable<Message> messages, long after, int limit, CancellationToken ct)
     {
         var rows = await messages.Where(m => m.Sequence > after)
             .OrderBy(m => m.Sequence).Take(limit + 1).ToListAsync(ct);
         var hasOlder = await messages.AnyAsync(m => m.Sequence <= after, ct);
-        return await PageAsync(db, workspaceId, viewerId, rows.Take(limit).ToList(), hasOlder, rows.Count > limit, ct);
+        return await PageAsync(db, attachments, workspaceId, viewerId, rows.Take(limit).ToList(), hasOlder, rows.Count > limit, ct);
     }
 
-    private static async Task<MessagePageDto> AroundAsync(IChatDbContext db, Guid workspaceId, Guid viewerId, IQueryable<Message> messages, long around, int limit, CancellationToken ct)
+    private static async Task<MessagePageDto> AroundAsync(IChatDbContext db, IChatMessageAttachments attachments, Guid workspaceId, Guid viewerId, IQueryable<Message> messages, long around, int limit, CancellationToken ct)
     {
         var lowerTake = Math.Max(1, limit / 2);
         var lowerRows = await messages.Where(m => m.Sequence <= around)
@@ -87,11 +89,11 @@ public class ListMessagesQueryHandler(
             .OrderBy(m => m.Sequence).Take(upperTake + 1).ToListAsync(ct);
         var upper = upperRows.Take(upperTake).ToList();
 
-        return await PageAsync(db, workspaceId, viewerId, [.. lower, .. upper], lowerRows.Count > lowerTake, upperRows.Count > upperTake, ct);
+        return await PageAsync(db, attachments, workspaceId, viewerId, [.. lower, .. upper], lowerRows.Count > lowerTake, upperRows.Count > upperTake, ct);
     }
 
-    private static async Task<MessagePageDto> PageAsync(IChatDbContext db, Guid workspaceId, Guid viewerId, IReadOnlyList<Message> rows, bool hasOlder, bool hasNewer, CancellationToken ct) =>
-        new(await ReplyPreviews.DtosAsync(db, workspaceId, viewerId, rows, ct), hasOlder, hasNewer);
+    private static async Task<MessagePageDto> PageAsync(IChatDbContext db, IChatMessageAttachments attachments, Guid workspaceId, Guid viewerId, IReadOnlyList<Message> rows, bool hasOlder, bool hasNewer, CancellationToken ct) =>
+        new(await ReplyPreviews.DtosAsync(db, attachments, workspaceId, viewerId, rows, ct), hasOlder, hasNewer);
 }
 
 public class ListMessagesQueryValidator : AbstractValidator<ListMessagesQuery>

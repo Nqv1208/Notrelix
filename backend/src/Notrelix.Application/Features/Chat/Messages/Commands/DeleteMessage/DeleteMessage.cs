@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Collaboration.Public.Attachments;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Rules;
@@ -10,7 +11,7 @@ namespace Notrelix.Application.Features.Chat.Messages.Commands.DeleteMessage;
 /// <summary>
 /// Deletes the caller's own message, leaving a tombstone (UC-CHT-B05). The content goes; the author, the time and the
 /// sequence stay, so a thread keeps its place. Deleting a message that is already a tombstone changes nothing.
-/// A deleted message loses its pin (UC-CHT-F06) and its reactions (UC-CHT-G06). The delete takes the space lock, as a pin does, so a pin and a delete of one
+/// A deleted message loses its pin (UC-CHT-F06), its reactions (UC-CHT-G06) and its files (UC-CHT-G08). The delete takes the space lock, as a pin does, so a pin and a delete of one
 /// message cannot both commit.
 /// </summary>
 public record DeleteMessageCommand(Guid WorkspaceId, Guid MessageId, long ExpectedVersion)
@@ -26,7 +27,8 @@ public class DeleteMessageCommandHandler(
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
     ISpaceSequenceAllocator sequences,
-    IDateTimeProvider clock) : IRequestHandler<DeleteMessageCommand, Result>
+    IDateTimeProvider clock,
+    IChatMessageAttachments attachments) : IRequestHandler<DeleteMessageCommand, Result>
 {
     public async Task<Result> Handle(DeleteMessageCommand request, CancellationToken cancellationToken)
     {
@@ -71,6 +73,10 @@ public class DeleteMessageCommandHandler(
             var mentions = await db.ChatMessageMentions.Where(m => m.MessageId == message.Id).ToListAsync(cancellationToken);
             foreach (var mention in mentions)
                 db.ChatMessageMentions.Remove(mention);
+
+            // A tombstone carries no files either (UC-CHT-G08): the attachments of the message are removed with it, and the retention
+            // job purges the stored objects. Nobody can open them from now on, because the shared flow no longer finds them.
+            await attachments.RemoveAllAsync(message.Id, cancellationToken);
         }
         return Result.Success();
     }

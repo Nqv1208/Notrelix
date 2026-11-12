@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Collaboration.Public.Attachments;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Mentions.DTOs;
 using Notrelix.Application.Features.Chat.Mentions.Services;
@@ -42,7 +43,8 @@ public class ReplyInThreadCommandHandler(
     IWorkspaceMemberFacts members,
     ISpaceSequenceAllocator sequences,
     IDateTimeProvider clock,
-    IBroadcastAuthorizer broadcast) : IRequestHandler<ReplyInThreadCommand, Result<SendMessageResultDto>>
+    IBroadcastAuthorizer broadcast,
+    IChatMessageAttachments attachments) : IRequestHandler<ReplyInThreadCommand, Result<SendMessageResultDto>>
 {
     public async Task<Result<SendMessageResultDto>> Handle(ReplyInThreadCommand request, CancellationToken cancellationToken)
     {
@@ -91,7 +93,7 @@ public class ReplyInThreadCommandHandler(
                 .Select(m => m.ToSpan()).ToList();
             var again = new MentionResolution(storedMentions, MentionResolver.StoredWarnings(space, storedMentions));
             return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-                await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, stored, cancellationToken, again), Created: false));
+                await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, stored, cancellationToken, again), Created: false));
         }
 
         // The root is read again under the lock: a delete that committed while this request waited is respected.
@@ -141,7 +143,7 @@ public class ReplyInThreadCommandHandler(
         await EnsureFollowerAsync(db, accountId, request.WorkspaceId, root.Id, userId, readReplySequence: threadSequence, cancellationToken);
 
         return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-            await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, reply, cancellationToken, resolution), Created: true));
+            await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, reply, cancellationToken, resolution), Created: true));
     }
 
     /// <summary>Adds a default follow (not muted) when the person has no follow row yet. An existing row is never overwritten.</summary>

@@ -174,6 +174,19 @@ export function removeMentionsOf(
 }
 
 /** Stores the system message that announces a change, attributed to the person who made it. */
+/**
+ * Removes the files of a message whose content is deleted (backend DeleteMessage through the Collaboration port). The delete fact of
+ * the message already tells readers, so there is no frame of its own.
+ */
+export function removeAttachmentsOf(
+  state: MockChatState,
+  messageId: string,
+): void {
+  for (const row of state.attachmentsOfMessage(messageId)) {
+    state.attachments.delete(row.id);
+  }
+}
+
 export function appendSystemMessage(
   state: MockChatState,
   space: ChatSpaceRecord,

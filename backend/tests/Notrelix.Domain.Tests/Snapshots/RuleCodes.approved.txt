@@ -121,6 +121,7 @@ mention-invalid|Chat|MentionInvalid
 mention-limit-exceeded|Chat|MentionLimitExceeded
 message-content-invalid|Chat|MessageContentInvalid
 message-deleted|Chat|MessageDeleted
+message-not-attachable|Chat|MessageNotAttachable
 message-not-author|Chat|MessageNotAuthor
 message-not-pinnable|Chat|MessageNotPinnable
 message-not-reactable|Chat|MessageNotReactable

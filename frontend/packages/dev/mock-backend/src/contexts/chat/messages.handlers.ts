@@ -28,6 +28,7 @@ import {
 import { CHAT_ERROR, CHAT_LIMITS, type ChatMessageRecord } from "./chat-model";
 import {
   appendUserMessage,
+  removeAttachmentsOf,
   removeMentionsOf,
   removePin,
   removeReactionsOf,
@@ -377,6 +378,8 @@ export const messagesOperations = [
           removePin(state, space, message.id);
           // A tombstone carries no reactions; the delete fact already tells readers (no reaction frame).
           removeReactionsOf(state, message.id);
+          // A tombstone carries no files either: the attachments go with the message (UC-CHT-G08).
+          removeAttachmentsOf(state, message.id);
           // A tombstone carries no mentions either, so a deleted message never counts as a mention.
           removeMentionsOf(state, message.id);
         }

@@ -155,7 +155,7 @@ public sealed class ChatThreadRlsTests : IAsyncLifetime
         var members = MembersFor(_outsider.Id);
 
         await using var db = _fixture.CreateAppContext(tenant);
-        var handler = new ListThreadRepliesQueryHandler(db, context.Object, members.Object, new FixedClock(Now));
+        var handler = new ListThreadRepliesQueryHandler(db, context.Object, members.Object, new FixedClock(Now), new InMemoryChatMessageAttachments());
 
         var act = () => handler.Handle(new ListThreadRepliesQuery(_a.WorkspaceId, _rootId, null, 50), CancellationToken.None);
 
@@ -172,11 +172,11 @@ public sealed class ChatThreadRlsTests : IAsyncLifetime
 
         await using var db = _fixture.CreateAppContext(tenant);
 
-        var reply = () => new ReplyInThreadCommandHandler(db, context.Object, members.Object, new FakeSequences(), new FixedClock(Now), Mock.Of<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer>())
+        var reply = () => new ReplyInThreadCommandHandler(db, context.Object, members.Object, new FakeSequences(), new FixedClock(Now), Mock.Of<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer>(), new InMemoryChatMessageAttachments())
             .Handle(new ReplyInThreadCommand(_a.WorkspaceId, _rootId, "sneak", "sneak-1", false), CancellationToken.None);
         var follow = () => new FollowThreadCommandHandler(db, context.Object, members.Object)
             .Handle(new FollowThreadCommand(_a.WorkspaceId, _rootId, true, false), CancellationToken.None);
-        var listed = await new ListFollowedThreadsQueryHandler(db, context.Object, members.Object, new FixedClock(Now))
+        var listed = await new ListFollowedThreadsQueryHandler(db, context.Object, members.Object, new FixedClock(Now), new InMemoryChatMessageAttachments())
             .Handle(new ListFollowedThreadsQuery(_a.WorkspaceId, null, 50), CancellationToken.None);
 
         await reply.Should().ThrowAsync<NotFoundException>();
