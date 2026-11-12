@@ -2892,6 +2892,42 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("thread_followers", "chat");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Chat.Permissions.ChannelPermissionOverride", b =>
+                {
+                    b.Property<Guid>("SpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("space_id");
+
+                    b.Property<string>("Subject")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("subject");
+
+                    b.Property<string>("Action")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("action");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<string>("Effect")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("effect");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("SpaceId", "Subject", "Action")
+                        .HasName("pk_permission_overrides");
+
+                    b.ToTable("permission_overrides", "chat");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.ChannelGroup", b =>
                 {
                     b.Property<Guid>("Id")
@@ -13140,6 +13176,16 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasConstraintName("fk_thread_followers_threads_root_message_id");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Chat.Permissions.ChannelPermissionOverride", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
+                        .WithMany("PermissionOverrides")
+                        .HasForeignKey("SpaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_permission_overrides_chat_spaces_space_id");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.DirectPair", b =>
                 {
                     b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
@@ -14989,6 +15035,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
             modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.Space", b =>
                 {
                     b.Navigation("Memberships");
+
+                    b.Navigation("PermissionOverrides");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Collaboration.Preferences.NotificationPreferenceSet", b =>

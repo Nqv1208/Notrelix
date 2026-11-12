@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.Audit.Services;
 using Notrelix.Application.Features.Chat.Channels.DTOs;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Messages.Services;
@@ -25,7 +26,8 @@ public class ArchiveChannelCommandHandler(
     IWorkspaceMemberFacts members,
     IDateTimeProvider clock,
     ChatSystemMessages systemMessages,
-    IAccessChangeSignal access) : IRequestHandler<ArchiveChannelCommand, Result<ChannelDto>>
+    IAccessChangeSignal access,
+    ChatAuditFacts audit) : IRequestHandler<ArchiveChannelCommand, Result<ChannelDto>>
 {
     public async Task<Result<ChannelDto>> Handle(ArchiveChannelCommand request, CancellationToken cancellationToken)
     {
@@ -42,10 +44,11 @@ public class ArchiveChannelCommandHandler(
         {
             var content = request.Archived ? ChatSystemMessages.Archived : ChatSystemMessages.Unarchived;
             await systemMessages.AnnounceAsync(space, userId, content, cancellationToken);
+            await audit.ChannelArchivedAsync(space, request.Archived, cancellationToken);
             // An archived channel is read-only for everyone: its live subscriptions close (UC-CHT-C06).
             if (request.Archived) access.Channel(request.WorkspaceId, request.ChannelId);
         }
-        return Result<ChannelDto>.Success(ChannelDto.From(space, space.GetActiveMembership(userId)));
+        return Result<ChannelDto>.Success(ChannelDto.From(space, space.GetActiveMembership(userId), caller.Role));
     }
 }
 

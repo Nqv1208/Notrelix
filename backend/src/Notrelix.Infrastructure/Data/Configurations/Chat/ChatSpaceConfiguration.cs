@@ -45,6 +45,12 @@ public class ChatSpaceConfiguration : IEntityTypeConfiguration<Space>
             .OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(x => x.Memberships).UsePropertyAccessMode(PropertyAccessMode.Field);
 
+        builder.HasMany(x => x.PermissionOverrides)
+            .WithOne()
+            .HasForeignKey(o => o.SpaceId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(x => x.PermissionOverrides).UsePropertyAccessMode(PropertyAccessMode.Field);
+
         builder.HasOne<ChannelGroup>()
             .WithMany()
             .HasForeignKey(x => x.GroupId)

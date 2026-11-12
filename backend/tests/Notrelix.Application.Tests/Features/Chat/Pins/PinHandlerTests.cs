@@ -1,3 +1,4 @@
+using Notrelix.Domain.Chat.Permissions;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Messages.Commands.DeleteMessage;
 using Notrelix.Application.Features.Chat.Messages.Commands.SendMessage;
@@ -58,6 +59,7 @@ public class PinHandlerTests
 
         _db.Setup(d => d.ChatSpaces).Returns(() => TestDbSet.Create(_spaces).Object);
         _db.Setup(d => d.ChatMemberships).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.Memberships).ToList()).Object);
+        _db.Setup(d => d.ChatPermissionOverrides).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.PermissionOverrides).ToList()).Object);
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(new List<ChannelGroup>()).Object);
         _db.Setup(d => d.ChatMessages).Returns(() => TestDbSet.Create(_messages).Object);
         _db.Setup(d => d.ChatReactions).Returns(() => TestDbSet.Create(_reactions).Object);
@@ -355,5 +357,35 @@ public class PinHandlerTests
         var act = () => SendHandler().Handle(new SendMessageCommand(_workspaceId, space.Id, "x", "q-3", elsewhere.Id), CancellationToken.None);
 
         await act.Should().ThrowAsync<AppNotFoundException>();
+    }
+
+    // ---- Channel permission overrides (UC-CHT-H01) ----------------------------------------------
+
+    [Fact]
+    public async Task A_channel_that_turns_pinning_off_for_members_refuses_pin_and_unpin()
+    {
+        var space = Channel();
+        var message = Text(space);
+        space.SetPermissionOverrides([new ChannelPermissionEntry(ChannelPermissionSubject.Member, ChannelAction.Pin, ChannelPermissionEffect.Deny)], _owner, Now);
+
+        var pin = () => PinHandler().Handle(new PinMessageCommand(_workspaceId, message.Id), CancellationToken.None);
+        var unpin = () => UnpinHandler().Handle(new UnpinMessageCommand(_workspaceId, message.Id), CancellationToken.None);
+
+        await pin.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ForbiddenException>();
+        await unpin.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ForbiddenException>();
+        _pins.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_deny_of_pinning_does_not_reach_a_workspace_owner()
+    {
+        var space = Channel();
+        var message = Text(space);
+        space.SetPermissionOverrides([new ChannelPermissionEntry(ChannelPermissionSubject.Member, ChannelAction.Pin, ChannelPermissionEffect.Deny)], _owner, Now);
+        AsUser(_owner);
+
+        var result = await PinHandler().Handle(new PinMessageCommand(_workspaceId, message.Id), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
     }
 }

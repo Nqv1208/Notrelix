@@ -26,6 +26,12 @@ public static class ChatLimits
     /// <summary>The longest client message id, in characters. The client picks it; the server only keeps it.</summary>
     public const int ClientMessageIdMaxLength = 128;
 
+    /// <summary>The longest reason a moderator gives for removing a message, in characters after trim (UC-CHT-H03).</summary>
+    public const int ModerationReasonMaxLength = 500;
+
+    /// <summary>The most overrides one channel holds: every role for every action.</summary>
+    public const int PermissionOverridesMax = 18;
+
     /// <summary>The longest channel name, in characters (UC-CHT-A01).</summary>
     public const int ChannelNameMaxLength = 80;
 

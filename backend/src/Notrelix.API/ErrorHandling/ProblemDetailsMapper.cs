@@ -126,6 +126,20 @@ public static class ProblemDetailsMapper
                 ex.Message,
                 null
             ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.PermissionLockout } ex => (
+                StatusCodes.Status422UnprocessableEntity,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.PermissionLockout,
+                "Permission lockout",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.PermissionExceedsRole } ex => (
+                StatusCodes.Status422UnprocessableEntity,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.PermissionExceedsRole,
+                "Permission exceeds role",
+                ex.Message,
+                null
+            ),
             Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.LastManager } ex => (
                 StatusCodes.Status422UnprocessableEntity,
                 Notrelix.Domain.Chat.Rules.ChatRuleCodes.LastManager,

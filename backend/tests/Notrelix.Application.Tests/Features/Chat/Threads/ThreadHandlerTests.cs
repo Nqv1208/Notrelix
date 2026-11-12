@@ -1,3 +1,4 @@
+using Notrelix.Domain.Chat.Permissions;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Messages.Queries.ListMessages;
 using Notrelix.Application.Features.Chat.Threads.Commands.FollowThread;
@@ -58,6 +59,7 @@ public class ThreadHandlerTests
 
         _db.Setup(d => d.ChatSpaces).Returns(() => TestDbSet.Create(_spaces).Object);
         _db.Setup(d => d.ChatMemberships).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.Memberships).ToList()).Object);
+        _db.Setup(d => d.ChatPermissionOverrides).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.PermissionOverrides).ToList()).Object);
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(new List<ChannelGroup>()).Object);
         _db.Setup(d => d.ChatMessages).Returns(() => TestDbSet.Create(_messages).Object);
         _db.Setup(d => d.ChatReactions).Returns(() => TestDbSet.Create(_reactions).Object);
@@ -589,5 +591,20 @@ public class ThreadHandlerTests
             follower.MarkReadThrough(target);
             return Task.FromResult(true);
         }
+    }
+
+    // ---- Channel permission overrides (UC-CHT-H01) ----------------------------------------------
+
+    [Fact]
+    public async Task A_reply_in_a_read_only_channel_is_forbidden_for_a_member()
+    {
+        var space = Channel();
+        var root = Root(space);
+        space.SetPermissionOverrides([new ChannelPermissionEntry(ChannelPermissionSubject.Member, ChannelAction.Post, ChannelPermissionEffect.Deny)], _owner, Now);
+
+        var act = () => ReplyHandler().Handle(Command(_workspaceId, root.Id), CancellationToken.None);
+
+        await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ForbiddenException>();
+        _threads.Should().BeEmpty("nothing was allocated");
     }
 }

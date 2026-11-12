@@ -55,10 +55,14 @@ public class ListChannelsQueryHandler(
                 .ToListAsync(cancellationToken);
         }
 
+        // The overrides of the listed channels are read in one query so each row carries the viewer's capabilities.
+        var spaceIds = spaces.Select(s => s.Id).ToArray();
+        await db.ChatPermissionOverrides.Where(o => spaceIds.Contains(o.SpaceId)).ToListAsync(cancellationToken);
+
         var result = spaces
             .OrderBy(s => s.Position)
             .ThenBy(s => s.Name, StringComparer.Ordinal)
-            .Select(s => ChannelDto.From(s, mine.GetValueOrDefault(s.Id)))
+            .Select(s => ChannelDto.From(s, mine.GetValueOrDefault(s.Id), caller.Role))
             .ToList();
 
         return Result<IReadOnlyList<ChannelDto>>.Success(result);

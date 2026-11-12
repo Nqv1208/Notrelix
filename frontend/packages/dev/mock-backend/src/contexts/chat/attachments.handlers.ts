@@ -24,6 +24,7 @@ import {
   requireVisible,
   validationProblem,
 } from "./chat-access";
+import { requireChannelAction } from "./chat-permissions";
 import {
   CHAT_ERROR,
   CHAT_LIMITS,
@@ -102,6 +103,7 @@ export const attachmentsOperations = [
           );
         }
         if (space.archivedAt !== null) archivedProblem();
+        requireChannelAction(state, space, caller, "attach");
         if (message.kind === "system") {
           fail(
             409,

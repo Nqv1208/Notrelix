@@ -1,3 +1,4 @@
+using Notrelix.Domain.Chat.Permissions;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Testing.Application.Fakes;
 using Notrelix.Application.Common.Models;
@@ -62,6 +63,7 @@ public class MentionHandlerTests
 
         _db.Setup(d => d.ChatSpaces).Returns(() => TestDbSet.Create(_spaces).Object);
         _db.Setup(d => d.ChatMemberships).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.Memberships).ToList()).Object);
+        _db.Setup(d => d.ChatPermissionOverrides).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.PermissionOverrides).ToList()).Object);
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(new List<ChannelGroup>()).Object);
         _db.Setup(d => d.ChatMessages).Returns(() => TestDbSet.Create(_messages).Object);
         _db.Setup(d => d.ChatReactions).Returns(() => TestDbSet.Create(new List<Reaction>()).Object);
@@ -704,5 +706,19 @@ public class MentionHandlerTests
         inGroup.Data.CanBroadcast.Should().BeTrue();
         inDirect.Data!.People.Should().OnlyContain(p => p.InSpace);
         inDirect.Data.CanBroadcast.Should().BeFalse();
+    }
+
+    // ── Channel permission overrides (UC-CHT-H01) ────────────────────────────
+
+    [Fact]
+    public async Task Send_WithABroadcastInAChannelThatTurnsBroadcastOffForMembers_IsPlainTextWithANotice()
+    {
+        var space = Channel();
+        space.SetPermissionOverrides([new ChannelPermissionEntry(ChannelPermissionSubject.Member, ChannelAction.Broadcast, ChannelPermissionEffect.Deny)], _owner, Now);
+
+        var result = await Send(space, "hey @channel", [Channel(4)]);
+
+        result.Data!.Message.Mentions.Should().BeEmpty();
+        result.Data.Message.MentionNotices.Single().Code.Should().Be(MentionResolver.BroadcastNotAllowed);
     }
 }

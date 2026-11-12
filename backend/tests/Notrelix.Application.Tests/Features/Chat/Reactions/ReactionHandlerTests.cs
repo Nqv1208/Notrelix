@@ -1,3 +1,4 @@
+using Notrelix.Domain.Chat.Permissions;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Messages.Commands.DeleteMessage;
 using Notrelix.Application.Features.Chat.Reactions.Commands.AddReaction;
@@ -58,6 +59,7 @@ public class ReactionHandlerTests
 
         _db.Setup(d => d.ChatSpaces).Returns(() => TestDbSet.Create(_spaces).Object);
         _db.Setup(d => d.ChatMemberships).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.Memberships).ToList()).Object);
+        _db.Setup(d => d.ChatPermissionOverrides).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.PermissionOverrides).ToList()).Object);
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(new List<ChannelGroup>()).Object);
         _db.Setup(d => d.ChatMessages).Returns(() => TestDbSet.Create(_messages).Object);
         _db.Setup(d => d.ChatReactions).Returns(() => TestDbSet.Create(_reactions).Object);
@@ -491,5 +493,20 @@ public class ReactionHandlerTests
     {
         Notrelix.Domain.Chat.Messages.ReactionKinds.Palette
             .Should().Equal(Notrelix.Application.Features.Collaboration.Reactions.ReactionPalette.Emojis);
+    }
+
+    // ---- Channel permission overrides (UC-CHT-H01) ----------------------------------------------
+
+    [Fact]
+    public async Task A_channel_that_turns_reacting_off_for_members_refuses_the_reaction()
+    {
+        var space = Channel();
+        var message = Text(space);
+        space.SetPermissionOverrides([new ChannelPermissionEntry(ChannelPermissionSubject.Member, ChannelAction.React, ChannelPermissionEffect.Deny)], _owner, Now);
+
+        var act = () => AddHandler().Handle(new AddReactionCommand(_workspaceId, message.Id, "👍"), CancellationToken.None);
+
+        await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ForbiddenException>();
+        _reactions.Should().BeEmpty();
     }
 }

@@ -1,6 +1,9 @@
+using Notrelix.Domain.Chat.Permissions;
+using Notrelix.Application.Common.Auditing;
 using Notrelix.Application.Common.Realtime;
 using FluentValidation.TestHelper;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.Audit.Services;
 using Notrelix.Application.Features.Chat.Channels.Commands.UpdateChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.ArchiveChannel;
 using Notrelix.Application.Features.Chat.Members.Commands.JoinChannel;
@@ -56,6 +59,7 @@ public class MessageHandlerTests
         _db.Setup(d => d.ChatSpaces).Returns(TestDbSet.Create(_spaces).Object);
         // Read on every access, so a membership that changes after the handler started (a concurrent leave) shows up like it would in the database.
         _db.Setup(d => d.ChatMemberships).Returns(() => TestDbSet.Create(_memberships.Concat(_spaces.SelectMany(s => s.Memberships)).ToList()).Object);
+        _db.Setup(d => d.ChatPermissionOverrides).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.PermissionOverrides).ToList()).Object);
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(new List<ChannelGroup>()).Object);
         _db.Setup(d => d.ChatMessages).Returns(TestDbSet.Create(_messages).Object);
         _db.Setup(d => d.ChatReactions).Returns(() => TestDbSet.Create(_reactions).Object);
@@ -112,9 +116,10 @@ public class MessageHandlerTests
     private ListMessagesQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments());
     private ChatSystemMessages SystemMessages() => new(_db.Object, _sequences.Object, _clock.Object);
     private JoinChannelCommandHandler JoinHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
-    private RemoveChannelMemberCommandHandler RemoveHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages(), _access.Object);
+    private RemoveChannelMemberCommandHandler RemoveHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages(), _access.Object, AuditFacts());
     private UpdateChannelCommandHandler UpdateHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
-    private ArchiveChannelCommandHandler ArchiveHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages(), _access.Object);
+    private ArchiveChannelCommandHandler ArchiveHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages(), _access.Object, AuditFacts());
+    private ChatAuditFacts AuditFacts() => new(new Mock<IAuditService>().Object, _context.Object);
 
     private static SendMessageCommand Send(Guid workspaceId, Guid spaceId, string content, string clientMessageId = "client-1") =>
         new(workspaceId, spaceId, content, clientMessageId, null);
@@ -681,5 +686,49 @@ public class MessageHandlerTests
             .Which.RuleCode.Should().Be(ChatRuleCodes.SystemMessageImmutable);
         (await delete.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
             .Which.RuleCode.Should().Be(ChatRuleCodes.SystemMessageImmutable);
+    }
+
+    // ── Channel permission overrides (UC-CHT-H01) ─────────────────────────────
+
+    [Fact]
+    public async Task Send_InAReadOnlyChannel_IsForbiddenForAMemberAndAllowedForAnOwner()
+    {
+        var space = Channel();
+        space.AddMember(_member, MembershipRole.Member, Now);
+        space.SetPermissionOverrides([new ChannelPermissionEntry(ChannelPermissionSubject.Member, ChannelAction.Post, ChannelPermissionEffect.Deny)], _owner, Now);
+
+        AsUser(_member);
+        var act = () => SendHandler().Handle(Send(_workspaceId, space.Id, "hello"), CancellationToken.None);
+        await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ForbiddenException>();
+        _messages.Should().BeEmpty("nothing is stored for a refused send");
+
+        AsUser(_owner);
+        var result = await SendHandler().Handle(Send(_workspaceId, space.Id, "hello"), CancellationToken.None);
+        result.Succeeded.Should().BeTrue("a Workspace Owner is never locked out by an override");
+    }
+
+    [Fact]
+    public async Task Send_InAReadOnlyChannel_StillWorksForTheChannelManager()
+    {
+        var space = Channel();
+        space.AddMember(_member, MembershipRole.Manager, Now);
+        space.SetPermissionOverrides([new ChannelPermissionEntry(ChannelPermissionSubject.Member, ChannelAction.Post, ChannelPermissionEffect.Deny)], _owner, Now);
+
+        AsUser(_member);
+        var result = await SendHandler().Handle(Send(_workspaceId, space.Id, "hello"), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue("the override addresses plain members, and a manager is matched as a manager");
+    }
+
+    [Fact]
+    public async Task Send_WithoutOverrides_BehavesAsBefore()
+    {
+        var space = Channel();
+        space.AddMember(_member, MembershipRole.Member, Now);
+        AsUser(_member);
+
+        var result = await SendHandler().Handle(Send(_workspaceId, space.Id, "hello"), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
     }
 }

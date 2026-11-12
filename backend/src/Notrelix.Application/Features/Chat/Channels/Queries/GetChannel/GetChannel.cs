@@ -33,7 +33,7 @@ public class GetChannelQueryHandler(
             .Select(m => new ChannelMemberDto(m.UserId, m.Role.ToWire(), m.JoinedAt))
             .ToList();
 
-        var detail = new ChannelDetailDto(ChannelDto.From(space, space.GetActiveMembership(userId)), memberRows);
+        var detail = new ChannelDetailDto(ChannelDto.From(space, space.GetActiveMembership(userId), caller.Role), memberRows);
         return Result<ChannelDetailDto>.Success(detail);
     }
 }

@@ -8,6 +8,7 @@
  */
 
 import type { MockStore } from "../../state/mock-store";
+import type { ChatPermissionEntryRecord } from "./chat-permissions";
 import type {
   ChatAttachmentRecord,
   ChatGroupRecord,
@@ -69,6 +70,11 @@ export class MockChatState {
   readonly attachments = new Map<string, ChatAttachmentRecord>();
   /** The stored mentions of each message, in text order; a message with none has no entry. */
   readonly mentions = new Map<string, ChatMentionRecord[]>();
+  /** The permission overrides of each channel, in enum order; a channel with none has no entry (UC-CHT-H01). */
+  readonly permissionOverrides = new Map<
+    string,
+    readonly ChatPermissionEntryRecord[]
+  >();
   /** The direct conversation of each pair, keyed by `${workspaceId}|${low}|${high}` (backend DirectPair). */
   readonly directPairs = new Map<string, string>();
   /** Blocks keyed by `${workspaceId}|${blockerId}|${blockedId}` (backend PersonBlock). */
@@ -103,6 +109,7 @@ export class MockChatState {
     this.attachments.clear();
     this.mentions.clear();
     this.directPairs.clear();
+    this.permissionOverrides.clear();
     this.blocks.clear();
     this.streamVersions.clear();
     this.idCounters.space = 0;

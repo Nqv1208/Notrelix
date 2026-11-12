@@ -102,8 +102,9 @@ public static class ChatRealtime
     }
 
     /// <summary>
-    /// A pin changed in a space (UC-CHT-F06, F07): the change ("pinned" or "unpinned") and the message. It carries no content;
-    /// a reader that needs the pinned message refetches the pins over REST.
+    /// A pin changed in a space (UC-CHT-F06, F07): the change ("pinned" or "unpinned") and the message; or the channel's permission
+    /// overrides changed (UC-CHT-H01): the change "permissions" and an empty message id. It carries no content; a reader that needs the
+    /// pinned message refetches the pins, and one that needs the permissions refetches the channel, over REST.
     /// </summary>
     public static RealtimeResourceChangedV1 ForSpaceChanged(ChatSpaceChangedIntegrationEvent e, DateTimeOffset now)
         => Channel(e.EventId, e.AccountId, e.WorkspaceId, e.SpaceId, e.ActorUserId, e.CorrelationId, e.CausationId,

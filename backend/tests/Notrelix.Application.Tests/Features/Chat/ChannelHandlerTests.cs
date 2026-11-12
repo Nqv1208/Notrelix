@@ -1,5 +1,8 @@
+using Notrelix.Domain.Chat.Permissions;
+using Notrelix.Application.Common.Auditing;
 using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.Audit.Services;
 using Notrelix.Application.Features.Chat.Channels.Commands.CreateChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.UpdateChannel;
 using Notrelix.Application.Features.Chat.Channels.Queries.ListChannels;
@@ -47,6 +50,7 @@ public class ChannelHandlerTests
 
         _db.Setup(d => d.ChatSpaces).Returns(TestDbSet.Create(_spaces).Object);
         _db.Setup(d => d.ChatMemberships).Returns(TestDbSet.Create(_memberships).Object);
+        _db.Setup(d => d.ChatPermissionOverrides).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.PermissionOverrides).ToList()).Object);
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(_groups).Object);
         _db.Setup(d => d.ChatMessages).Returns(TestDbSet.Create(_messages).Object);
         _sequences.Setup(s => s.LockAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
@@ -84,10 +88,16 @@ public class ChannelHandlerTests
         return space;
     }
 
-    private CreateChannelCommandHandler CreateHandler() => new(_db.Object, _context.Object, _clock.Object);
+    private CreateChannelCommandHandler CreateHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, AuditFacts());
+    private readonly Mock<IAuditService> _auditService = new();
+    private ChatAuditFacts AuditFacts() => new(_auditService.Object, _context.Object);
+    private void VerifyAudit(string action, Times times) =>
+        _auditService.Verify(a => a.RecordAsync(
+            It.IsAny<Guid>(), It.IsAny<Guid>(), action, It.IsAny<ResourceRef>(), It.IsAny<Notrelix.Domain.Common.Auditing.AuditMetadata>(),
+            It.IsAny<Notrelix.Domain.Common.Auditing.AuditSeverity>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<AuditChange?>()), times);
     private ChatSystemMessages SystemMessages() => new(_db.Object, _sequences.Object, _clock.Object);
     private JoinChannelCommandHandler JoinHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
-    private RemoveChannelMemberCommandHandler RemoveHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages(), new Mock<IAccessChangeSignal>().Object);
+    private RemoveChannelMemberCommandHandler RemoveHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages(), new Mock<IAccessChangeSignal>().Object, AuditFacts());
     private UpdateChannelCommandHandler UpdateHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
     private ListChannelsQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object);
 
@@ -261,5 +271,87 @@ public class ChannelHandlerTests
 
         await act.Should().ThrowAsync<ForbiddenException>();
         general.IsActiveMember(third).Should().BeTrue();
+    }
+
+    // ── Channel permission overrides (UC-CHT-H01) ─────────────────────────────
+
+    [Fact]
+    public async Task CreateChannel_ReturnsTheCreatorsCapabilities()
+    {
+        var result = await CreateHandler().Handle(
+            new CreateChannelCommand(_workspaceId, "design", null, false, null), CancellationToken.None);
+
+        result.Data!.Capabilities.Should().BeEquivalentTo(new Notrelix.Application.Features.Chat.Permissions.DTOs.ChannelCapabilitiesDto(
+            CanPost: true, CanReact: true, CanAttach: true, CanPin: true, CanBroadcast: true, CanInvite: true, CanModerate: true, CanManagePermissions: true));
+    }
+
+    [Fact]
+    public async Task ListChannels_ShowsAMemberOfAReadOnlyChannelThatTheyCannotPostButCanReact()
+    {
+        var space = PublicChannel();
+        space.AddMember(_member, MembershipRole.Member, Now);
+        space.SetPermissionOverrides([new ChannelPermissionEntry(ChannelPermissionSubject.Member, ChannelAction.Post, ChannelPermissionEffect.Deny)], _owner, Now);
+        _memberships.AddRange(space.Memberships);
+        AsCaller(_member);
+
+        var result = await ListHandler().Handle(new ListChannelsQuery(_workspaceId), CancellationToken.None);
+
+        var caps = result.Data!.Single().Capabilities;
+        caps.CanPost.Should().BeFalse();
+        caps.CanAttach.Should().BeTrue("attaching is a separate action");
+        caps.CanReact.Should().BeTrue();
+        caps.CanModerate.Should().BeFalse("a Member does not moderate");
+        caps.CanManagePermissions.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ListChannels_AnArchivedChannelIsReadOnlyForEveryone()
+    {
+        var space = PublicChannel();
+        space.SetArchived(true, _owner, Now);
+        _memberships.AddRange(space.Memberships);
+
+        var result = await ListHandler().Handle(new ListChannelsQuery(_workspaceId), CancellationToken.None);
+
+        result.Data!.Single().Capabilities.CanPost.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task AddMembers_InAChannelThatTurnsInvitingOffForMembers_IsForbidden_ForAMemberOfAPrivateChannel()
+    {
+        var space = PrivateChannel();
+        space.AddMember(_member, MembershipRole.Member, Now);
+        space.SetPermissionOverrides([new ChannelPermissionEntry(ChannelPermissionSubject.Member, ChannelAction.Invite, ChannelPermissionEffect.Deny)], _owner, Now);
+        AsCaller(_member);
+
+        var act = () => new Notrelix.Application.Features.Chat.Members.Commands.AddChannelMembers.AddChannelMembersCommandHandler(
+            _db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages(), AuditFacts())
+            .Handle(new Notrelix.Application.Features.Chat.Members.Commands.AddChannelMembers.AddChannelMembersCommand(_workspaceId, space.Id, [_outsider]), CancellationToken.None);
+
+        await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ForbiddenException>();
+    }
+
+    [Fact]
+    public async Task CreateChannel_WritesOneAuditFact()
+    {
+        await CreateHandler().Handle(new CreateChannelCommand(_workspaceId, "design", null, false, null), CancellationToken.None);
+
+        VerifyAudit(ChatAuditFacts.ChannelCreated, Times.Once());
+    }
+
+    [Fact]
+    public async Task RemoveMember_ByAManagerWritesAFact_AndALeaveByThePersonDoesNot()
+    {
+        var general = PublicChannel();
+        general.AddMember(_member, MembershipRole.Member, Now);
+        _memberships.AddRange(general.Memberships);
+
+        await RemoveHandler().Handle(new RemoveChannelMemberCommand(_workspaceId, general.Id, _member), CancellationToken.None);
+        VerifyAudit(ChatAuditFacts.MemberRemoved, Times.Once());
+
+        general.AddMember(_member, MembershipRole.Member, Now);
+        AsCaller(_member);
+        await RemoveHandler().Handle(new RemoveChannelMemberCommand(_workspaceId, general.Id, _member), CancellationToken.None);
+        VerifyAudit(ChatAuditFacts.MemberRemoved, Times.Once());
     }
 }

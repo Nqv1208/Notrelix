@@ -25,6 +25,7 @@ export * from "./model/conversation-model";
 export * from "./model/mention-model";
 export * from "./model/ephemeral-model";
 export * from "./model/attachment-model";
+export * from "./model/permission-model";
 export * from "./model/link-model";
 export * from "./model/emoji-data";
 export * from "./model/emoji-model";

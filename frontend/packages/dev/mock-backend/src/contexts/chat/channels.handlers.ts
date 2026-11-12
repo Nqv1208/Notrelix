@@ -10,7 +10,6 @@ import { ok } from "../../transport/create-response";
 import {
   archivedProblem,
   callerIn,
-  channelView,
   groupIn,
   guarded,
   isConversationKind,
@@ -29,6 +28,7 @@ import {
   requiredText,
   validationProblem,
 } from "./chat-access";
+import { channelViewOf } from "./chat-permissions";
 import {
   CHAT_LIMITS,
   CHAT_SYSTEM_TEXT,
@@ -142,9 +142,7 @@ export const channelsOperations = [
             );
         }
         spaces.sort(sidebarOrder);
-        return ok(
-          spaces.map((space) => channelView(state, space, caller.userId)),
-        );
+        return ok(spaces.map((space) => channelViewOf(state, space, caller)));
       });
     },
   }),
@@ -219,7 +217,7 @@ export const channelsOperations = [
             );
             return {
               status: 201,
-              body: channelView(state, space, caller.userId),
+              body: channelViewOf(state, space, caller),
             };
           },
         );
@@ -242,7 +240,7 @@ export const channelsOperations = [
         const space = liveChannel(state, params.workspaceId, params.channelId);
         requireVisible(state, space, caller);
         return ok({
-          channel: channelView(state, space, caller.userId),
+          channel: channelViewOf(state, space, caller),
           members: activeMembersOldestFirst(state, space.id),
         });
       });
@@ -357,7 +355,7 @@ export const channelsOperations = [
           space.version += 1;
         }
         if (renamed) announceRename(state, space, caller.userId);
-        return ok(channelView(state, space, caller.userId));
+        return ok(channelViewOf(state, space, caller));
       });
     },
   }),
@@ -401,7 +399,7 @@ export const channelsOperations = [
             archive ? CHAT_SYSTEM_TEXT.archived : CHAT_SYSTEM_TEXT.unarchived,
           );
         }
-        return ok(channelView(state, space, caller.userId));
+        return ok(channelViewOf(state, space, caller));
       });
     },
   }),

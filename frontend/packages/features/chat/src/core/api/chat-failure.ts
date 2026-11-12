@@ -21,6 +21,10 @@ export type ChatFailureKind =
   | "broadcast-confirmation"
   /** 409 without a stable code (for example a reused Idempotency-Key with another payload). */
   | "conflict"
+  /** 422 permission-lockout: a channel manager cannot be denied inviting people. */
+  | "permission-lockout"
+  /** 422 permission-exceeds-role: an allow above what the role (or the caller) holds. */
+  | "permission-exceeds-role"
   /** 403: the caller may not do this. */
   | "forbidden"
   /** 400: the input was refused. */
@@ -55,6 +59,8 @@ const CODE_KINDS: Readonly<Record<string, ChatFailureKind>> = {
   "system-message-immutable": "message-locked",
   "resource.not_found": "not-found",
   "broadcast-confirmation-required": "broadcast-confirmation",
+  "permission-lockout": "permission-lockout",
+  "permission-exceeds-role": "permission-exceeds-role",
 };
 
 /** Classifies a thrown value from the Chat API (anything that is not an AppError is `server`). */

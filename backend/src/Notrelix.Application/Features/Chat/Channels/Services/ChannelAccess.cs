@@ -16,6 +16,8 @@ public static class ChannelAccess
 {
     public const string GuestRole = "Guest";
 
+    public static bool IsGuest(WorkspaceMemberFact caller) => string.Equals(caller.Role, GuestRole, StringComparison.Ordinal);
+
     /// <summary>The caller's standing in the Workspace. The pipeline already admitted them, so a missing fact is a missing channel.</summary>
     public static async Task<WorkspaceMemberFact> CallerAsync(
         IWorkspaceMemberFacts members, Guid workspaceId, Guid userId, CancellationToken ct) =>
@@ -31,6 +33,7 @@ public static class ChannelAccess
 
         // Loading the rows through the DbSet lets EF fix up the aggregate's membership collection.
         await db.ChatMemberships.Where(m => m.SpaceId == channelId).ToListAsync(ct);
+        await db.ChatPermissionOverrides.Where(o => o.SpaceId == channelId).ToListAsync(ct);
         return space;
     }
 

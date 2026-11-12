@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Collaboration.Public.Attachments;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Messages;
@@ -55,29 +56,7 @@ public class DeleteMessageCommandHandler(
 
         var now = clock.UtcNow;
         if (message.Delete(userId, now))
-        {
-            var pins = await db.ChatPins.Where(p => p.MessageId == message.Id).ToListAsync(cancellationToken);
-            foreach (var pin in pins)
-            {
-                pin.Remove(userId, now);
-                db.ChatPins.Remove(pin);
-            }
-
-            // A tombstone carries no reactions. The message's delete fact already tells readers; the reaction rows go without
-            // a fact of their own, so one deletion is one announcement.
-            var reactions = await db.ChatReactions.Where(r => r.MessageId == message.Id).ToListAsync(cancellationToken);
-            foreach (var reaction in reactions)
-                db.ChatReactions.Remove(reaction);
-
-            // A tombstone carries no mentions either, so a deleted message never counts as a mention.
-            var mentions = await db.ChatMessageMentions.Where(m => m.MessageId == message.Id).ToListAsync(cancellationToken);
-            foreach (var mention in mentions)
-                db.ChatMessageMentions.Remove(mention);
-
-            // A tombstone carries no files either (UC-CHT-G08): the attachments of the message are removed with it, and the retention
-            // job purges the stored objects. Nobody can open them from now on, because the shared flow no longer finds them.
-            await attachments.RemoveAllAsync(message.Id, cancellationToken);
-        }
+            await MessageTombstones.ClearAttachedAsync(db, attachments, message, userId, now, cancellationToken);
         return Result.Success();
     }
 }

@@ -8,6 +8,7 @@ import {
   PinOff,
   Reply,
   RotateCw,
+  ShieldX,
   Trash2,
   X,
 } from "lucide-react";
@@ -57,6 +58,8 @@ export interface ChatMessageRowProps {
   /** Edit and delete of the caller's own message; without a handler the action is not offered. */
   readonly onEdit?: (message: ChatMessage) => void;
   readonly onDelete?: (message: ChatMessage) => void;
+  /** Delete as a moderator (UC-CHT-H03): offered on another person's live message; without a handler it is not offered. */
+  readonly onModerate?: (message: ChatMessage) => void;
   /** The message this one replies to (quote preview), when it replies. */
   readonly quote?: QuoteView | null;
   /** The reply count and the latest reply of a thread root; no chip when absent or zero. */
@@ -103,6 +106,7 @@ export function ChatMessageRow({
   copy,
   onEdit,
   onDelete,
+  onModerate,
   quote,
   thread,
   pinned = false,
@@ -146,13 +150,15 @@ export function ChatMessageRow({
     .filter((entry) => entry.reactedByMe)
     .map((entry) => entry.emoji);
   const canReact = live && Boolean(onReact);
+  const canModerate = live && !isOwn && Boolean(onModerate);
   const showToolbar =
     live &&
     (Boolean(onReply) ||
       Boolean(onOpenThread) ||
       Boolean(onTogglePin) ||
       canReact ||
-      isOwn);
+      isOwn ||
+      canModerate);
 
   // Arrow keys move between the toolbar buttons (the toolbar is one Tab stop).
   function handleToolbarKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -243,7 +249,9 @@ export function ChatMessageRow({
         {message.deleted ? (
           <p className="flex items-center gap-1.5 text-sm italic text-muted-foreground">
             <Ban className="size-3.5 shrink-0" aria-hidden="true" />
-            {copy.list.deleted}
+            {message.removedByModerator
+              ? copy.list.removedByModerator
+              : copy.list.deleted}
           </p>
         ) : (
           <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
@@ -406,6 +414,18 @@ export function ChatMessageRow({
                 <Trash2 aria-hidden="true" />
               </Button>
             </>
+          ) : null}
+          {canModerate ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="text-destructive hover:text-destructive"
+              aria-label={copy.toolbar.moderate}
+              title={copy.toolbar.moderate}
+              onClick={() => onModerate?.(message)}
+            >
+              <ShieldX aria-hidden="true" />
+            </Button>
           ) : null}
         </div>
       ) : null}

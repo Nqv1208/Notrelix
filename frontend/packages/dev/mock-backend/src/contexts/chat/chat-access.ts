@@ -151,7 +151,8 @@ export type ChatAction =
   | "channelCreate"
   | "channelManage"
   | "groupManage"
-  | "memberInvite";
+  | "memberInvite"
+  | "messageModerate";
 
 /** The roles the baseline denies each Chat action (WorkspaceRoleBaseline, Chat section). */
 const DENIED_ROLES: Record<ChatAction, readonly ChatWorkspaceRole[]> = {
@@ -164,7 +165,16 @@ const DENIED_ROLES: Record<ChatAction, readonly ChatWorkspaceRole[]> = {
   channelManage: ["Guest"],
   groupManage: ["Member", "Guest"],
   memberInvite: ["Guest"],
+  messageModerate: ["Member", "Guest"],
 };
+
+/** Whether the Workspace role holds the Chat action by default (the baseline cell, not an override). */
+export function roleHolds(
+  role: ChatWorkspaceRole,
+  action: ChatAction,
+): boolean {
+  return !DENIED_ROLES[action].includes(role);
+}
 
 /** The pipeline's permission check: runs before the handler looks at the channel. */
 export function requireAction(caller: ChatCaller, action: ChatAction): void {
@@ -536,6 +546,10 @@ export function messageView(
     alsoSentToChannel: message.alsoSentToChannel,
     edited: message.editedAt !== null,
     deleted: message.deletedAt !== null,
+    removedByModerator:
+      message.deletedAt !== null &&
+      message.deletedBy !== null &&
+      message.deletedBy !== message.authorId,
     createdAt: message.createdAt,
     editedAt: message.editedAt,
     deletedAt: message.deletedAt,

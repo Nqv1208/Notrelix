@@ -39,7 +39,7 @@ public class UpdateChannelCommandHandler(
         if (space.Name != previousName)
             await systemMessages.AnnounceAsync(space, userId, ChatSystemMessages.Renamed(space.Name), cancellationToken);
 
-        return Result<ChannelDto>.Success(ChannelDto.From(space, space.GetActiveMembership(userId)));
+        return Result<ChannelDto>.Success(ChannelDto.From(space, space.GetActiveMembership(userId), caller.Role));
     }
 }
 

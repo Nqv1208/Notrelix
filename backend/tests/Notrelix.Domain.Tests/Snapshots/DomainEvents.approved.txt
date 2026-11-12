@@ -298,6 +298,8 @@ chat.message-updated|1|Notrelix.Domain.Chat.Messages.Events.MessageUpdatedDomain
 chat.message-updated|1|Notrelix.Domain.Chat.Messages.Events.MessageUpdatedDomainEvent|Workspace|SpaceId|System.Guid|False
 chat.message-updated|1|Notrelix.Domain.Chat.Messages.Events.MessageUpdatedDomainEvent|Workspace|ThreadRootId|System.Guid|True
 chat.message-updated|1|Notrelix.Domain.Chat.Messages.Events.MessageUpdatedDomainEvent|Workspace|Version|System.Int64|False
+chat.permissions-changed|1|Notrelix.Domain.Chat.Permissions.Events.ChannelPermissionsChangedDomainEvent|Workspace|ActorId|System.Guid|False
+chat.permissions-changed|1|Notrelix.Domain.Chat.Permissions.Events.ChannelPermissionsChangedDomainEvent|Workspace|SpaceId|System.Guid|False
 chat.pin-changed|1|Notrelix.Domain.Chat.Messages.Events.MessagePinChangedDomainEvent|Workspace|ActorId|System.Guid|False
 chat.pin-changed|1|Notrelix.Domain.Chat.Messages.Events.MessagePinChangedDomainEvent|Workspace|MessageId|System.Guid|False
 chat.pin-changed|1|Notrelix.Domain.Chat.Messages.Events.MessagePinChangedDomainEvent|Workspace|Pinned|System.Boolean|False

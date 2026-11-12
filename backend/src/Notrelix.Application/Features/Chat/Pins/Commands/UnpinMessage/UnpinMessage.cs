@@ -1,8 +1,11 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.Permissions.Services;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Messages;
+using Notrelix.Domain.Chat.Permissions;
+
 using Notrelix.Domain.Chat.Rules;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
 
@@ -30,7 +33,7 @@ public class UnpinMessageCommandHandler(
     public async Task<Result> Handle(UnpinMessageCommand request, CancellationToken cancellationToken)
     {
         var userId = requestContext.UserId;
-        await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
+        var caller = await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
 
         var message = await db.ChatMessages.AsNoTracking().FirstOrDefaultAsync(
             m => m.Id == request.MessageId && m.WorkspaceId == request.WorkspaceId, cancellationToken)
@@ -54,6 +57,7 @@ public class UnpinMessageCommandHandler(
             .FirstOrDefaultAsync(cancellationToken);
         if (archived)
             throw new ConflictException("The channel is archived and read-only.", ChatRuleCodes.ChannelArchived);
+        await ChannelPermissionChecks.RequireAsync(db, space, caller, userId, ChannelAction.Pin, cancellationToken);
 
         // Tracked on purpose: the pin is removed and its end is raised as a fact.
         var pin = await db.ChatPins.FirstOrDefaultAsync(p => p.MessageId == request.MessageId, cancellationToken);

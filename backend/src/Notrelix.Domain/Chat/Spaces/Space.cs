@@ -1,3 +1,5 @@
+using Notrelix.Domain.Chat.Permissions;
+using Notrelix.Domain.Chat.Permissions.Events;
 using Notrelix.Domain.Chat.Rules;
 
 namespace Notrelix.Domain.Chat.Spaces;
@@ -15,6 +17,7 @@ namespace Notrelix.Domain.Chat.Spaces;
 public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
     private readonly List<Membership> _memberships = [];
+    private readonly List<ChannelPermissionOverride> _permissionOverrides = [];
 
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
@@ -29,6 +32,9 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
     public long LastSequence { get; private set; }
 
     public IReadOnlyCollection<Membership> Memberships => _memberships.AsReadOnly();
+
+    /// <summary>The channel's overrides of the default permission set (UC-CHT-H01). Empty means every role keeps its default.</summary>
+    public IReadOnlyCollection<ChannelPermissionOverride> PermissionOverrides => _permissionOverrides.AsReadOnly();
 
     public bool IsArchived => ArchivedAt is not null;
     public bool IsPublic => Kind == SpaceKind.ChannelPublic;
@@ -231,6 +237,43 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
         ApplyDeletion(pending);
         IncrementVersion();
     }
+
+    /// <summary>
+    /// Replaces the channel's overrides with the given set (UC-CHT-H01); an empty set clears them. Only a channel can be overridden: a
+    /// conversation keeps its fixed rules. The set is normalized first (deny beats allow, one entry per role and action) and may not
+    /// lock a manager out. Returns false and changes nothing when the stored set already equals the normalized one.
+    /// </summary>
+    public bool SetPermissionOverrides(IEnumerable<ChannelPermissionEntry> requested, Guid changedBy, DateTimeOffset changedAt)
+    {
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(changedBy);
+        if (IsConversation)
+            throw new BusinessRuleException(ChatRuleCodes.KindNotSupported, "Only a channel has permission overrides.");
+
+        var wanted = ChannelPermissionResolver.Normalize(requested);
+        var current = _permissionOverrides.Select(o => o.ToEntry()).OrderBy(e => e.Subject).ThenBy(e => e.Action).ToList();
+        if (current.SequenceEqual(wanted)) return false;
+
+        _permissionOverrides.RemoveAll(o => !wanted.Any(w => w.Subject == o.Subject && w.Action == o.Action));
+        foreach (var entry in wanted)
+        {
+            var existing = _permissionOverrides.SingleOrDefault(o => o.Subject == entry.Subject && o.Action == entry.Action);
+            if (existing is null)
+                _permissionOverrides.Add(ChannelPermissionOverride.Create(Id, AccountId, WorkspaceId, entry));
+            else
+                existing.SetEffect(entry.Effect);
+        }
+
+        var pending = PrepareAuditUpdate(changedBy, changedAt);
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new ChannelPermissionsChangedDomainEvent(AccountId, WorkspaceId, Id, changedBy, changedAt));
+        return true;
+    }
+
+    /// <summary>The overrides as plain entries, for the resolver.</summary>
+    public IReadOnlyList<ChannelPermissionEntry> PermissionEntries() => _permissionOverrides.Select(o => o.ToEntry()).ToList();
 
     /// <summary>Moves the channel in the sidebar. Returns false when it already sits there.</summary>
     public bool MoveTo(Guid? groupId, double position, Guid movedBy, DateTimeOffset movedAt)

@@ -1350,6 +1350,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Chat.Messages.Commands.ModerateDeleteMessage.ModerateDeleteMessageCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Messages.Commands.ModerateDeleteMessage.ModerateDeleteMessageCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Chat.Messages.Commands.SendMessage.SendMessageCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -1397,6 +1422,81 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Chat.Messages.Queries.ListMessages.ListMessagesQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Permissions.Commands.ClearChannelPermissions.ClearChannelPermissionsCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Permissions.Commands.ClearChannelPermissions.ClearChannelPermissionsCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Permissions.Commands.SetChannelPermissions.SetChannelPermissionsCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Permissions.Commands.SetChannelPermissions.SetChannelPermissionsCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Permissions.Queries.GetChannelPermissions.GetChannelPermissionsQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Permissions.Queries.GetChannelPermissions.GetChannelPermissionsQueryHandler"
     ]
   },
   {

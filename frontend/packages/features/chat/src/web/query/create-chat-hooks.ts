@@ -36,6 +36,7 @@ import {
   type ChatMessageCursor,
   type ChatMessagePage,
   type ChatNotificationLevel,
+  type ChatPermissionEntry,
   type ChatPinPage,
   type ChatReactorPage,
   type ChatThreadCursor,
@@ -421,6 +422,89 @@ export function createChatHooks(deps: ChatHookDeps) {
       onError: (error) => {
         if (chatFailureOf(error).kind === "stale") {
           void queryClient.invalidateQueries({ queryKey: messagesKey });
+        }
+      },
+    });
+  }
+
+  /**
+   * Moderator delete (UC-CHT-H03): removes another person's message with a reason. The tombstone shows it was removed by a
+   * moderator, so the history is read again rather than patched.
+   */
+  function useModerateMessage(workspaceId: string, channelId: string) {
+    const queryClient = useQueryClient();
+    const messagesKey = chatQueryKeys.messages(workspaceId, channelId);
+    return useMutation({
+      mutationFn: (input: {
+        messageId: string;
+        reason: string;
+        expectedVersion: number;
+      }) =>
+        service.moderateDeleteMessage(workspaceId, input.messageId, {
+          reason: input.reason,
+          expectedVersion: input.expectedVersion,
+        }),
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: messagesKey });
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.pins(workspaceId, channelId),
+        });
+      },
+      onError: (error) => {
+        if (chatFailureOf(error).kind === "stale") {
+          void queryClient.invalidateQueries({ queryKey: messagesKey });
+        }
+      },
+    });
+  }
+
+  // ─── Channel permissions (UC-CHT-H01) ──────────────────────────────────────
+
+  /** The overrides of a channel (a read any member who sees the channel may do). */
+  function useChannelPermissions(
+    workspaceId: string,
+    channelId: string | undefined,
+    enabled = true,
+  ) {
+    return useQuery({
+      queryKey: chatQueryKeys.permissions(workspaceId, channelId ?? ""),
+      queryFn: () => service.getChannelPermissions(workspaceId, channelId!),
+      staleTime: CHANNEL_STALE_MS,
+      enabled: enabled && Boolean(channelId) && workspaceId.length > 0,
+    });
+  }
+
+  /**
+   * Replaces the whole set (entries) or clears it (an empty set sends the clear). The answer carries the new version, which
+   * seeds the permissions cache; the channel views are read again because the capabilities and the version moved.
+   */
+  function useSetChannelPermissions(workspaceId: string, channelId: string) {
+    const queryClient = useQueryClient();
+    const key = chatQueryKeys.permissions(workspaceId, channelId);
+    return useMutation({
+      mutationFn: (input: {
+        entries: readonly ChatPermissionEntry[];
+        expectedVersion: number;
+      }) =>
+        input.entries.length === 0
+          ? service.clearChannelPermissions(
+              workspaceId,
+              channelId,
+              input.expectedVersion,
+            )
+          : service.setChannelPermissions(workspaceId, channelId, input),
+      onSuccess: (result) => {
+        queryClient.setQueryData(key, result);
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.channel(workspaceId, channelId),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.channels(workspaceId),
+        });
+      },
+      onError: (error) => {
+        if (chatFailureOf(error).kind === "stale") {
+          void queryClient.invalidateQueries({ queryKey: key });
         }
       },
     });
@@ -1048,6 +1132,9 @@ export function createChatHooks(deps: ChatHookDeps) {
     useSendMessage,
     useEditMessage,
     useDeleteMessage,
+    useModerateMessage,
+    useChannelPermissions,
+    useSetChannelPermissions,
     useMarkRead,
     useMarkAllRead,
     useSetNotificationLevel,

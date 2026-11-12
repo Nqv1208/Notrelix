@@ -66,6 +66,7 @@ public class ConversationHandlerTests
 
         _db.Setup(d => d.ChatSpaces).Returns(TestDbSet.Create(_spaces).Object);
         _db.Setup(d => d.ChatMemberships).Returns(TestDbSet.Create(_memberships).Object);
+        _db.Setup(d => d.ChatPermissionOverrides).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.PermissionOverrides).ToList()).Object);
         _db.Setup(d => d.ChatMessages).Returns(TestDbSet.Create(_messages).Object);
         _db.Setup(d => d.ChatMessageMentions).Returns(TestDbSet.Create(new List<MessageMention>()).Object);
         _db.Setup(d => d.ChatDirectPairs).Returns(TestDbSet.Create(_pairs).Object);
