@@ -8,7 +8,7 @@ export const EMOJI_ONLY_MAX = 3;
 const PICTOGRAPHIC = /\p{Extended_Pictographic}/u;
 /** Joiners, variation selectors, skin tones and keycap marks that belong to an emoji. */
 const EMOJI_PARTS =
-  /^(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indicator}|[‍︎️⃣#*0-9])+$/u;
+  /^(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indicator}|‍|︎|️|⃣|[#*0-9])+$/u;
 
 function graphemes(text: string): string[] {
   const Segmenter = (
