@@ -20,7 +20,12 @@ public class ChatAttachmentRealtimeTests
 
     private static ChatMessageAttachmentChangedIntegrationEvent Removed() => Added() with
     {
-        ChangeKind = "removed", FileName = null, SizeBytes = null, ContentType = null, UploadedBy = null, AttachmentCreatedAt = null,
+        ChangeKind = "removed",
+        FileName = null,
+        SizeBytes = null,
+        ContentType = null,
+        UploadedBy = null,
+        AttachmentCreatedAt = null,
     };
 
     [Fact]
