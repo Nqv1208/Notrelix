@@ -393,6 +393,12 @@ export const endpoints = {
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/pin`,
     spacePins: (workspaceId: string, spaceId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/pins`,
+    /** Channel permission overrides: GET reads, PUT replaces the set, DELETE (expectedVersion in the query) clears it. */
+    channelPermissions: (workspaceId: string, channelId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/permissions`,
+    /** POST removes another person's message as a moderator (the reason goes to the Audit record). */
+    messageModeration: (workspaceId: string, messageId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/moderation`,
     /** Reactions: PUT adds and DELETE removes the caller's palette emoji; GET lists who reacted. */
     messageReaction: (workspaceId: string, messageId: string, kind: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/reactions/${encodeURIComponent(kind)}`,

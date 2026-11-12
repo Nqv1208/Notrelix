@@ -22,6 +22,8 @@ describe("chat endpoint paths", () => {
       chat.threadRead("w", hostile),
       chat.messagePin("w", hostile),
       chat.spacePins("w", hostile),
+      chat.channelPermissions("w", hostile),
+      chat.messageModeration("w", hostile),
       chat.messageReaction("w", "m", hostile),
       chat.messageReactors("w", hostile),
       chat.conversationParticipants("w", hostile),
@@ -52,6 +54,12 @@ describe("chat endpoint paths", () => {
       "/workspaces/w/chat/messages/m1/pin",
     );
     expect(chat.spacePins("w", "s1")).toBe("/workspaces/w/chat/spaces/s1/pins");
+    expect(chat.channelPermissions("w", "c1")).toBe(
+      "/workspaces/w/chat/channels/c1/permissions",
+    );
+    expect(chat.messageModeration("w", "m1")).toBe(
+      "/workspaces/w/chat/messages/m1/moderation",
+    );
     expect(chat.messageReaction("w", "m1", "👍")).toBe(
       `/workspaces/w/chat/messages/m1/reactions/${encodeURIComponent("👍")}`,
     );
