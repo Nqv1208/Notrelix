@@ -8,6 +8,7 @@ using Notrelix.Application.Features.Chat.Messages.Commands.EditMessage;
 using Notrelix.Application.Features.Chat.Messages.Commands.ModerateDeleteMessage;
 using Notrelix.Application.Features.Chat.Permissions.Commands.ClearChannelPermissions;
 using Notrelix.Application.Features.Chat.Permissions.Commands.SetChannelPermissions;
+using Notrelix.Application.Features.Chat.Retention.Commands.SetRetentionPolicy;
 using Notrelix.Application.Features.Accounts.Accounts.Commands.RenameAccount;
 using Notrelix.Application.Features.Analytics.Dashboards.Commands.ArchiveDashboard;
 using Notrelix.Application.Features.Analytics.Dashboards.Commands.DeleteDashboard;
@@ -212,6 +213,7 @@ public sealed class ExpectedVersionTargetMap
     private const string ChatChannelKind = "chat.channel";
     private const string ChatChannelGroupKind = "chat.channel-group";
     private const string ChatMessageKind = "chat.message";
+    private const string ChatRetentionKind = "chat.retention";
     private const string BoardKind = "work-management.board";
     private const string BoardFieldKind = "work-management.board-field";
     private const string LabelKind = "work-management.label";
@@ -372,6 +374,7 @@ public sealed class ExpectedVersionTargetMap
         [typeof(ModerateDeleteMessageCommand)] = new(ChatMessageKind, typeof(Notrelix.Domain.Chat.Messages.Message)),
         [typeof(SetChannelPermissionsCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
         [typeof(ClearChannelPermissionsCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
+        [typeof(SetRetentionPolicyCommand)] = new(ChatRetentionKind, typeof(Notrelix.Domain.Chat.Retention.RetentionPolicy)),
         [typeof(DeleteChannelGroupCommand)] = new(ChatChannelGroupKind, typeof(Notrelix.Domain.Chat.Spaces.ChannelGroup)),
 
         // Documents — Space placement of a root page (docs/product/workspaces.md §79)

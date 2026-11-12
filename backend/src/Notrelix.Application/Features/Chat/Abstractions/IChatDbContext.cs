@@ -18,4 +18,6 @@ public interface IChatDbContext
     DbSet<DirectPair> ChatDirectPairs { get; }
     DbSet<PersonBlock> ChatBlocks { get; }
     DbSet<Notrelix.Domain.Chat.Permissions.ChannelPermissionOverride> ChatPermissionOverrides { get; }
+    DbSet<Notrelix.Domain.Chat.Retention.RetentionPolicy> ChatRetentionPolicies { get; }
+    DbSet<Notrelix.Domain.Chat.Exports.ChatExportJob> ChatExportJobs { get; }
 }

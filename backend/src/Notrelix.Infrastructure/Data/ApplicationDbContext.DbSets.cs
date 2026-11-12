@@ -243,6 +243,8 @@ public partial class ApplicationDbContext
     public DbSet<Notrelix.Domain.Chat.Permissions.ChannelPermissionOverride> ChatPermissionOverrides => Set<Notrelix.Domain.Chat.Permissions.ChannelPermissionOverride>();
     public DbSet<Notrelix.Domain.Chat.Spaces.DirectPair> ChatDirectPairs => Set<Notrelix.Domain.Chat.Spaces.DirectPair>();
     public DbSet<Notrelix.Domain.Chat.Spaces.PersonBlock> ChatBlocks => Set<Notrelix.Domain.Chat.Spaces.PersonBlock>();
+    public DbSet<Notrelix.Domain.Chat.Retention.RetentionPolicy> ChatRetentionPolicies => Set<Notrelix.Domain.Chat.Retention.RetentionPolicy>();
+    public DbSet<Notrelix.Domain.Chat.Exports.ChatExportJob> ChatExportJobs => Set<Notrelix.Domain.Chat.Exports.ChatExportJob>();
 
     // Collaboration
     public DbSet<Comment> Comments => Set<Comment>();

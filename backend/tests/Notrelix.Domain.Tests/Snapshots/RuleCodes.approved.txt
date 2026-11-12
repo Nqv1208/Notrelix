@@ -112,6 +112,8 @@ Billing_Usage_StartMustBeBeforeEnd|Billing|Billing_Usage_StartMustBeBeforeEnd
 Billing_Usage_ValueCannotBeNegative|Billing|Billing_Usage_ValueCannotBeNegative
 broadcast-confirmation-required|Chat|BroadcastConfirmationRequired
 channel-archived|Chat|ChannelArchived
+export-invalid|Chat|ExportInvalid
+export-too-large|Chat|ExportTooLarge
 group-too-small|Chat|GroupTooSmall
 invalid-position|Chat|InvalidPosition
 kind-not-supported|Chat|KindNotSupported
@@ -131,6 +133,7 @@ permission-exceeds-role|Chat|PermissionExceedsRole
 permission-lockout|Chat|PermissionLockout
 rate-limited|Chat|RateLimited
 reaction-kind-invalid|Chat|ReactionKindInvalid
+retention-invalid|Chat|RetentionInvalid
 self-target|Chat|SelfTarget
 slow-mode|Chat|SlowMode
 slow-mode-invalid|Chat|SlowModeInvalid
