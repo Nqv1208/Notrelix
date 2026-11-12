@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SmilePlus, Users } from "lucide-react";
+import { ArrowLeft, Plus, SmilePlus, Users } from "lucide-react";
 import {
   Button,
   Popover,
@@ -14,6 +14,7 @@ import {
 import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
 import { fillCopy } from "./use-chat-copy";
+import { EmojiPicker } from "./chat-emoji-picker";
 
 export interface ReactionChipsProps {
   readonly messageId: string;
@@ -220,13 +221,20 @@ export interface ReactionPickerProps {
 }
 
 /**
- * The emoji picker of a message toolbar: the six palette emoji and nothing else.
- * Each is a button; a pick the caller already has is a remove, shown pressed.
+ * The reaction picker of a message toolbar: the quick row of six palette emoji, and a "more" button that
+ * opens the full emoji picker in the same popover. Each is a button; a pick the caller already has is a remove, shown pressed.
  */
 export function ReactionPicker({ copy, onPick, reacted }: ReactionPickerProps) {
   const [open, setOpen] = useState(false);
+  const [full, setFull] = useState(false);
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setFull(false);
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           type="button"
@@ -238,38 +246,78 @@ export function ReactionPicker({ copy, onPick, reacted }: ReactionPickerProps) {
           <SmilePlus aria-hidden="true" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-auto p-1.5">
-        <div
-          role="group"
-          aria-label={copy.reactions.pickerLabel}
-          className="flex items-center gap-0.5"
-        >
-          {CHAT_REACTION_PALETTE.map((emoji) => {
-            const mine = reacted.includes(emoji);
-            return (
-              <Button
-                key={emoji}
-                type="button"
-                variant={mine ? "secondary" : "ghost"}
-                size="icon-sm"
-                aria-pressed={mine}
-                aria-label={
-                  mine
-                    ? fillCopy(copy.reactions.unpick, { emoji })
-                    : fillCopy(copy.reactions.pick, { emoji })
-                }
-                onClick={() => {
-                  onPick(emoji);
-                  setOpen(false);
-                }}
-              >
-                <span aria-hidden="true" className="text-base">
-                  {emoji}
-                </span>
-              </Button>
-            );
-          })}
-        </div>
+      <PopoverContent
+        align="end"
+        className={cn("p-1.5", full ? "w-80 gap-2" : "w-auto")}
+      >
+        {full ? (
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              className="self-start"
+              onClick={() => setFull(false)}
+            >
+              <ArrowLeft aria-hidden="true" />
+              {copy.emoji.back}
+            </Button>
+            <EmojiPicker
+              copy={copy}
+              pressed={reacted}
+              label={copy.reactions.pickerLabel}
+              onPick={(emoji) => {
+                onPick(emoji);
+                setOpen(false);
+                setFull(false);
+              }}
+            />
+          </>
+        ) : (
+          <div className="flex items-center gap-0.5">
+            <div
+              role="group"
+              aria-label={copy.reactions.pickerLabel}
+              className="flex items-center gap-0.5"
+            >
+              {CHAT_REACTION_PALETTE.map((emoji) => {
+                const mine = reacted.includes(emoji);
+                return (
+                  <Button
+                    key={emoji}
+                    type="button"
+                    variant={mine ? "secondary" : "ghost"}
+                    size="icon-sm"
+                    aria-pressed={mine}
+                    aria-label={
+                      mine
+                        ? fillCopy(copy.reactions.unpick, { emoji })
+                        : fillCopy(copy.reactions.pick, { emoji })
+                    }
+                    onClick={() => {
+                      onPick(emoji);
+                      setOpen(false);
+                    }}
+                  >
+                    <span aria-hidden="true" className="text-base">
+                      {emoji}
+                    </span>
+                  </Button>
+                );
+              })}
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={copy.emoji.more}
+              title={copy.emoji.more}
+              onClick={() => setFull(true)}
+            >
+              <Plus aria-hidden="true" />
+            </Button>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );
