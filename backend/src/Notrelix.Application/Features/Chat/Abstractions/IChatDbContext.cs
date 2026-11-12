@@ -17,4 +17,5 @@ public interface IChatDbContext
     DbSet<MessageMention> ChatMessageMentions { get; }
     DbSet<DirectPair> ChatDirectPairs { get; }
     DbSet<PersonBlock> ChatBlocks { get; }
+    DbSet<Notrelix.Domain.Chat.Permissions.ChannelPermissionOverride> ChatPermissionOverrides { get; }
 }

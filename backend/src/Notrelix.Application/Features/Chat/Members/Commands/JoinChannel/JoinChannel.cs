@@ -40,6 +40,6 @@ public class JoinChannelCommandHandler(
 
         if (space.AddMember(userId, MembershipRole.Member, clock.UtcNow))
             await systemMessages.AnnounceAsync(space, userId, ChatSystemMessages.MemberJoined, cancellationToken);
-        return Result<ChannelDto>.Success(ChannelDto.From(space, space.GetActiveMembership(userId)));
+        return Result<ChannelDto>.Success(ChannelDto.From(space, space.GetActiveMembership(userId), caller.Role));
     }
 }

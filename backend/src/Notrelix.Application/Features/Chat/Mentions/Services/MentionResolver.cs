@@ -1,8 +1,10 @@
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Mentions.DTOs;
+using Notrelix.Application.Features.Chat.Permissions.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Messages;
+using Notrelix.Domain.Chat.Permissions;
 using Notrelix.Domain.Chat.Rules;
 using Notrelix.Domain.Chat.Spaces;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
@@ -94,7 +96,9 @@ public static class MentionResolver
                 default:
                     {
                         // @channel and @here.
-                        canBroadcast ??= !isGuest && await broadcast.CanBroadcastAsync(space.WorkspaceId, cancellationToken);
+                        canBroadcast ??= !isGuest
+                            && await ChannelPermissionChecks.AllowsAsync(db, space, caller, caller.UserId, ChannelAction.Broadcast, cancellationToken)
+                            && await broadcast.CanBroadcastAsync(space.WorkspaceId, cancellationToken);
                         if (canBroadcast != true)
                         {
                             notices.Add(new MentionNoticeDto(BroadcastNotAllowed, span.Start, span.Length, null));

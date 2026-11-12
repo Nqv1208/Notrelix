@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.Permissions.Services;
 using Notrelix.Application.Features.Collaboration.Public.Attachments;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Mentions.DTOs;
@@ -9,6 +10,8 @@ using Notrelix.Application.Features.Chat.Messages.DTOs;
 using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Messages;
+using Notrelix.Domain.Chat.Permissions;
+
 using Notrelix.Domain.Chat.Rules;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
 
@@ -75,6 +78,7 @@ public class SendMessageCommandHandler(
             throw new NotFoundException(nameof(Space), request.SpaceId);
         if (live.Archived)
             throw new ConflictException("The channel is archived and read-only.", ChatRuleCodes.ChannelArchived);
+        await ChannelPermissionChecks.RequireAsync(db, space, caller, userId, ChannelAction.Post, cancellationToken);
 
         var clientMessageId = request.ClientMessageId.Trim();
         var stored = await db.ChatMessages.AsNoTracking().FirstOrDefaultAsync(

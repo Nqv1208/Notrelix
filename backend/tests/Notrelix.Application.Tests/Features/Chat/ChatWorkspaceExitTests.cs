@@ -58,6 +58,7 @@ public class ChatWorkspaceExitTests
 
         _spaces.AddRange([_general, _ops, _alreadyLeft, _otherGeneral, _otherUnrelated]);
         _db.Setup(d => d.ChatMemberships).Returns(TestDbSet.Create(_spaces.SelectMany(s => s.Memberships).ToList()).Object);
+        _db.Setup(d => d.ChatPermissionOverrides).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.PermissionOverrides).ToList()).Object);
         _db.Setup(d => d.ChatSpaces).Returns(TestDbSet.Create(_spaces).Object);
     }
 

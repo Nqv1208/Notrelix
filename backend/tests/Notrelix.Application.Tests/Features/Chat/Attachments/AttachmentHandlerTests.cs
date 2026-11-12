@@ -1,3 +1,4 @@
+using Notrelix.Domain.Chat.Permissions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Storage;
@@ -69,6 +70,7 @@ public class AttachmentHandlerTests
 
         _db.Setup(d => d.ChatSpaces).Returns(() => TestDbSet.Create(_spaces).Object);
         _db.Setup(d => d.ChatMemberships).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.Memberships).ToList()).Object);
+        _db.Setup(d => d.ChatPermissionOverrides).Returns(() => TestDbSet.Create(_spaces.SelectMany(s => s.PermissionOverrides).ToList()).Object);
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(new List<ChannelGroup>()).Object);
         _db.Setup(d => d.ChatMessages).Returns(() => TestDbSet.Create(_messages).Object);
         _db.Setup(d => d.ChatMessageMentions).Returns(TestDbSet.Create(new List<MessageMention>()).Object);
@@ -550,5 +552,19 @@ public class AttachmentHandlerTests
             await Task.CompletedTask;
             yield break;
         }
+    }
+
+    // ---- Channel permission overrides (UC-CHT-H01) ----------------------------------------------
+
+    [Fact]
+    public async Task A_channel_that_turns_attaching_off_refuses_the_upload_before_any_byte_is_stored()
+    {
+        var space = Channel();
+        var message = Text(space);
+        space.SetPermissionOverrides([new ChannelPermissionEntry(ChannelPermissionSubject.Member, ChannelAction.Attach, ChannelPermissionEffect.Deny)], _owner, Now);
+
+        var act = () => Upload(message);
+
+        await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ForbiddenException>();
     }
 }

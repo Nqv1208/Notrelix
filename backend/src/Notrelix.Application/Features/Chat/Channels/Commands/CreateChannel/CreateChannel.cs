@@ -1,7 +1,9 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.Audit.Services;
 using Notrelix.Application.Features.Chat.Channels.DTOs;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Rules;
 using Notrelix.Domain.Chat.Spaces;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
@@ -23,12 +25,15 @@ public record CreateChannelCommand(Guid WorkspaceId, string Name, string? Topic,
 public class CreateChannelCommandHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
-    IDateTimeProvider clock) : IRequestHandler<CreateChannelCommand, Result<ChannelDto>>
+    IWorkspaceMemberFacts members,
+    IDateTimeProvider clock,
+    ChatAuditFacts audit) : IRequestHandler<CreateChannelCommand, Result<ChannelDto>>
 {
     public async Task<Result<ChannelDto>> Handle(CreateChannelCommand request, CancellationToken cancellationToken)
     {
         var userId = requestContext.UserId;
         var accountId = requestContext.RequireAccountId();
+        var caller = await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
         var name = request.Name.Trim();
 
         await ChannelAccess.RequireUniqueNameAsync(db, request.WorkspaceId, name, null, cancellationToken);
@@ -41,7 +46,8 @@ public class CreateChannelCommandHandler(
             accountId, request.WorkspaceId, kind, name, request.Topic, request.GroupId, position, userId, clock.UtcNow);
 
         db.ChatSpaces.Add(space);
-        return Result<ChannelDto>.Success(ChannelDto.From(space, space.GetActiveMembership(userId)));
+        await audit.ChannelCreatedAsync(space, cancellationToken);
+        return Result<ChannelDto>.Success(ChannelDto.From(space, space.GetActiveMembership(userId), caller.Role));
     }
 }
 

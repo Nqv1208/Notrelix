@@ -1,9 +1,12 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.Audit.Services;
+using Notrelix.Application.Features.Chat.Permissions.Services;
 using Notrelix.Application.Features.Chat.Channels.DTOs;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
+using Notrelix.Domain.Chat.Permissions;
 using Notrelix.Domain.Chat.Spaces;
 
 namespace Notrelix.Application.Features.Chat.Members.Commands.AddChannelMembers;
@@ -25,7 +28,8 @@ public class AddChannelMembersCommandHandler(
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
     IDateTimeProvider clock,
-    ChatSystemMessages systemMessages) : IRequestHandler<AddChannelMembersCommand, Result<AddChannelMembersResultDto>>
+    ChatSystemMessages systemMessages,
+    ChatAuditFacts audit) : IRequestHandler<AddChannelMembersCommand, Result<AddChannelMembersResultDto>>
 {
     public async Task<Result<AddChannelMembersResultDto>> Handle(AddChannelMembersCommand request, CancellationToken cancellationToken)
     {
@@ -35,6 +39,7 @@ public class AddChannelMembersCommandHandler(
         ChannelAccess.RequireVisible(space, caller, userId);
         if (space.IsPublic)
             ChannelAccess.RequireManager(space, caller, userId);
+        await ChannelPermissionChecks.RequireAsync(db, space, caller, userId, ChannelAction.Invite, cancellationToken);
 
         var added = new List<Guid>();
         var skipped = new List<Guid>();
@@ -51,6 +56,7 @@ public class AddChannelMembersCommandHandler(
             if (space.AddMember(candidate, MembershipRole.Member, now))
             {
                 added.Add(candidate);
+                await audit.MemberAddedAsync(space, candidate, cancellationToken);
                 await systemMessages.AnnounceAsync(space, userId, ChatSystemMessages.MemberAdded, cancellationToken);
             }
         }

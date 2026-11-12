@@ -104,6 +104,7 @@ public static class DependencyInjection
         services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Teams.ITeamMembershipFacts, Notrelix.Application.Features.Workspaces.Teams.Services.TeamMembershipFacts>();
         services.AddScoped<Notrelix.Application.Features.Governance.Roles.CustomRoleChangeRecorder>();
         services.AddScoped<Notrelix.Application.Features.Chat.Messages.Services.ChatSystemMessages>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Audit.Services.ChatAuditFacts>();
         services.AddScoped<Notrelix.Application.Features.Chat.Members.Services.ChatWorkspaceExit>();
         services.AddScoped<Notrelix.Application.Common.Realtime.IAccessChangeSignal, Notrelix.Application.Common.Realtime.AccessChangeSignal>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Public.BoardRealtime.IBoardRealtimeNotifier, Notrelix.Application.Features.WorkManagement.Realtime.BoardRealtimeNotifier>();

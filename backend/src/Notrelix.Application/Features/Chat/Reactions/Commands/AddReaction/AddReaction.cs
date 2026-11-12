@@ -1,10 +1,13 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.Permissions.Services;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Reactions.DTOs;
 using Notrelix.Application.Features.Chat.Reactions.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Messages;
+using Notrelix.Domain.Chat.Permissions;
+
 using Notrelix.Domain.Chat.Rules;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
 using Reaction = Notrelix.Domain.Chat.Messages.Reaction;
@@ -37,7 +40,7 @@ public class AddReactionCommandHandler(
         Reaction.EnsureKind(request.Kind);
         var userId = requestContext.UserId;
         var accountId = requestContext.RequireAccountId();
-        await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
+        var caller = await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
 
         var message = await db.ChatMessages.AsNoTracking().FirstOrDefaultAsync(
             m => m.Id == request.MessageId && m.WorkspaceId == request.WorkspaceId, cancellationToken)
@@ -64,6 +67,7 @@ public class AddReactionCommandHandler(
             throw new NotFoundException(nameof(Space), message.SpaceId);
         if (live.Archived)
             throw new ConflictException("The channel is archived and read-only.", ChatRuleCodes.ChannelArchived);
+        await ChannelPermissionChecks.RequireAsync(db, space, caller, userId, ChannelAction.React, cancellationToken);
 
         var current = await db.ChatMessages.AsNoTracking().FirstOrDefaultAsync(
             m => m.Id == request.MessageId && m.WorkspaceId == request.WorkspaceId, cancellationToken)

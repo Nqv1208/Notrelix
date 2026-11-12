@@ -4,9 +4,12 @@ using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Attachments.DTOs;
 using Notrelix.Application.Features.Chat.Attachments.Services;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Chat.Permissions.Services;
 using Notrelix.Application.Features.Collaboration.Public.Attachments;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Messages;
+using Notrelix.Domain.Chat.Permissions;
+
 using Notrelix.Domain.Chat.Rules;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
 
@@ -43,7 +46,7 @@ public class UploadMessageAttachmentCommandHandler(
     public async Task<Result<MessageAttachmentDto>> Handle(UploadMessageAttachmentCommand request, CancellationToken cancellationToken)
     {
         var userId = requestContext.UserId;
-        await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
+        var caller = await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
 
         var message = await db.ChatMessages.AsNoTracking().FirstOrDefaultAsync(
             m => m.Id == request.MessageId && m.WorkspaceId == request.WorkspaceId, cancellationToken)
@@ -57,6 +60,8 @@ public class UploadMessageAttachmentCommandHandler(
         if (space.IsArchived)
             throw new ConflictException("The channel is archived and read-only.", ChatRuleCodes.ChannelArchived);
         message.EnsureAttachable();
+        // A channel that turns attaching off refuses before any byte is stored, and again under the lock below.
+        await ChannelPermissionChecks.RequireAsync(db, space, caller, userId, ChannelAction.Attach, cancellationToken);
 
         // The bytes stream before any lock (a long upload must not hold the space). The file policy runs inside the shared flow.
         var stored = await attachments.UploadAsync(message.Id, request.FileName, request.Content, cancellationToken);
@@ -75,6 +80,7 @@ public class UploadMessageAttachmentCommandHandler(
             throw new NotFoundException(nameof(Space), message.SpaceId);
         if (live.Archived)
             throw new ConflictException("The channel is archived and read-only.", ChatRuleCodes.ChannelArchived);
+        await ChannelPermissionChecks.RequireAsync(db, space, caller, userId, ChannelAction.Attach, cancellationToken);
 
         var current = await db.ChatMessages.AsNoTracking().FirstOrDefaultAsync(
             m => m.Id == request.MessageId && m.WorkspaceId == request.WorkspaceId, cancellationToken)
