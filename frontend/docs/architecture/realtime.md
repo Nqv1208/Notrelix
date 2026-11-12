@@ -116,10 +116,40 @@ The backend realtime gateway (`GET /api/v1/realtime`, upgraded to WebSocket,
 session-cookie authenticated) speaks protocol v1 (v1.1 adds the Chat scopes):
 
 ```text
-client → server: subscribe | unsubscribe | ping | pong
+client → server: subscribe | unsubscribe | ping | pong | typing | presence
 server → client: ready | subscribed | unsubscribed | subscription-error
                  | access-changed | ping | pong | event (no payload)
+                 | typing | presence
 ```
+
+`typing` and `presence` are ephemeral frames of the Chat channel scope (protocol v1.1, UC-CHT-C07, C08, CHT-016).
+They carry no resource data, are never stored or replayed, have no `streamVersion`, no `eventId` and no checkpoint, and
+never grant access. They count in the 4096-byte and 20-frames-per-second limits of the connection.
+
+- Client `{ type: "typing", subscriptionId }`: the caller is typing in the space of that channel subscription. The
+  client sends at most one per 3 seconds per space (`REALTIME_TYPING_THROTTLE_MS`); the gateway drops one that comes
+  sooner than 2 seconds after the last (`TypingMinInterval`), and ignores without any reply a frame for a subscription
+  the connection does not hold or for a space the Chat channel-scope authorizer no longer grants (removed, left,
+  archived).
+- Client `{ type: "presence", state: "online" | "idle" | "offline" }`: a heartbeat about every 30 seconds and on a
+  state change. The gateway keeps the state in the memory of the connection only (no table, no Redis key), drops a
+  frame with an unchanged state sooner than 5 seconds after the last, and reports `offline` for a connection whose
+  state was not renewed within 75 seconds or that closed.
+- Server `{ type: "typing", subscriptionId, userId, expiresInMs: 5000 }` and
+  `{ type: "presence", subscriptionId, userId, state, ttlMs: 75000 }` go to the other subscribers of the space (never
+  to the sender, including the sender's other tabs). A client treats the typing indicator as gone `expiresInMs` after
+  the frame (or when that person's message arrives) and the person as offline `ttlMs` after the last presence frame.
+- Presence is delivered to the subscribers of the spaces the sender is subscribed to; a Guest hears it only in spaces
+  they were added to, because the space subscription is what authorizes it. A subscriber that joins is told who is
+  here: the gateway asks the other connections of the space to announce once, addressed to the new subscriber only, so
+  a restarted gateway rebuilds presence from the next heartbeats with nothing to recover from storage.
+- Signals travel between gateway instances on their own bus (`IRealtimeEphemeralBus`: in process in Development and
+  Testing, Redis pub/sub otherwise, channel `notrelix:realtime:ephemeral:channel:<spaceId>`), never on the gap-free
+  event stream of the space.
+
+The client API is `RealtimeTransport.subscribeEphemeral`, `sendTyping` and `sendPresence`; the Chat feature reaches it
+through a host-supplied `ChatEphemeralPort` (FE-RT-004), never a transport of its own. Both stores of the feature
+(who is typing, who is online) are bounded in memory, expire on their own and never touch browser storage.
 
 `access-changed` carries only the workspace id. The gateway sends it to the person whose own access changed
 (role, custom role, suspension, board role, resource grant or revoke) after the change committed. The client
@@ -146,7 +176,15 @@ or refetches the pins over REST (UC-CHT-F06, F07). A reaction change is a
 `chat.reaction.changed` frame on the channel stream of its space (payloadContract
 `chat.reaction.v1`, payload `{ messageId, kind, change: "added" | "removed", actorId }`,
 no content and no counts); a reader applies it or refetches the message's reactions over
-REST (UC-CHT-G06, G07). A thread reply is a `chat.message.created` frame on the
+REST (UC-CHT-G06, G07). A file added to or removed from a message is a
+`chat.message.attachment.changed` frame on the same channel stream (payloadContract
+`chat.attachment.v1`, payload `{ messageId, change: "added" | "removed", attachmentId, fileName, sizeBytes,
+contentType, uploadedBy, createdAt, downloadPath, detailsOmitted }`; a removal carries only the ids,
+and the frame never carries bytes). The Chat adapter patches the message's file list by file id in
+every loaded cache (history, thread, pins), so a replay is a no-op and an unknown message is ignored;
+`detailsOmitted` (a file name that does not fit the frame) makes it read the files over REST. The
+message does not change (no version bump). The in-progress upload of a person is not announced:
+others see the file when it is stored (UC-CHT-G08). A thread reply is a `chat.message.created` frame on the
 channel stream of its space with `threadRootId` and `threadSequence` set; the
 frame is not a separate kind (UC-CHT-F01). Its generated payload types
 (`GeneratedRealtimeMessage`, `RealtimeEventMessage` in `@notrelix/contracts`)
@@ -154,7 +192,7 @@ have no consumer yet. Replacing the hand-written types with a generated producer
 is an open contract-owner decision.
 
 ```text
-artifacts/contracts/realtime.v1.json   (AsyncAPI 2.6, protocol v1.1)
+artifacts/contracts/realtime.v1.json   (AsyncAPI 2.6, protocol v1.1, contract 1.1.1: typing and presence frame schemas)
 ```
 
 Work Management announces every material change of a Board on one Board

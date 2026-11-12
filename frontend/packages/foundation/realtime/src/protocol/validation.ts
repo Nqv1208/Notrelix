@@ -1,6 +1,7 @@
 import type { RealtimeEnvelope } from "./envelope";
 import type {
   RealtimeControlMessage,
+  RealtimeEphemeralFrame,
   RealtimeSubscriptionScope,
 } from "./control-message";
 
@@ -34,6 +35,10 @@ export type ParsedRealtimeMessage =
   | {
       readonly kind: "domain";
       readonly envelope: RealtimeEnvelope;
+    }
+  | {
+      readonly kind: "ephemeral";
+      readonly frame: RealtimeEphemeralFrame;
     };
 
 export type RealtimeParseResult =
@@ -203,6 +208,44 @@ function parseControlFrame(
   }
 }
 
+function parseEphemeralFrame(
+  record: Record<string, unknown>,
+): RealtimeEphemeralFrame | null {
+  if (
+    !isNonEmptyString(record.subscriptionId) ||
+    !isNonEmptyString(record.userId)
+  ) {
+    return null;
+  }
+  if (record.type === "typing") {
+    const expiresInMs = optionalNumber(record.expiresInMs);
+    if (expiresInMs === undefined || expiresInMs < 0) return null;
+    return {
+      type: "typing",
+      subscriptionId: record.subscriptionId,
+      userId: record.userId,
+      expiresInMs,
+    };
+  }
+  const ttlMs = optionalNumber(record.ttlMs);
+  if (
+    (record.state !== "online" &&
+      record.state !== "idle" &&
+      record.state !== "offline") ||
+    ttlMs === undefined ||
+    ttlMs < 0
+  ) {
+    return null;
+  }
+  return {
+    type: "presence",
+    subscriptionId: record.subscriptionId,
+    userId: record.userId,
+    state: record.state,
+    ttlMs,
+  };
+}
+
 const CONTROL_TYPES = new Set([
   "ready",
   "subscribed",
@@ -256,6 +299,21 @@ export function parseRealtimeMessage(input: unknown): RealtimeParseResult {
         rawData: record,
       },
     };
+  }
+
+  if (record.type === "typing" || record.type === "presence") {
+    const frame = parseEphemeralFrame(record);
+    if (!frame) {
+      return {
+        ok: false,
+        error: {
+          reason: "invalid-control-message",
+          message: `Malformed ephemeral message of type '${record.type}'.`,
+          rawData: record,
+        },
+      };
+    }
+    return { ok: true, value: { kind: "ephemeral", frame } };
   }
 
   if (record.type === "event") {

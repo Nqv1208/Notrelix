@@ -99,6 +99,15 @@ import {
 } from "./chat-conversation-view";
 import type { ChatConversationListView } from "./chat-conversation-list";
 import { fillCopy, pluralCopy, useChatCopy } from "./use-chat-copy";
+import { ChatTypingIndicator } from "./chat-typing-indicator";
+import type { ChatEphemeralPort } from "../../core/model/ephemeral-model";
+import {
+  usePresenceHeartbeat,
+  usePresenceOf,
+  useChatEphemeral,
+  useTypingPeople,
+  useTypingSignal,
+} from "../realtime/use-ephemeral";
 
 export type ChatViewerRole = "owner" | "admin" | "member" | "guest";
 
@@ -126,6 +135,11 @@ export interface ChatWorkspaceProps {
   readonly onBackToList?: () => void;
   /** The realtime stream state; a reconnecting stream shows a banner above the messages. */
   readonly connection?: ChatConnectionState;
+  /**
+   * Typing and presence (UC-CHT-C07, C08), supplied by the host over its realtime client. Without it the workspace
+   * shows no typing row and no presence dots, and sends nothing.
+   */
+  readonly ephemeral?: ChatEphemeralPort;
   readonly timeZone?: string;
 }
 
@@ -195,6 +209,7 @@ export function ChatWorkspace({
   onOpenChannel,
   onBackToList,
   connection = "live",
+  ephemeral,
   timeZone,
 }: ChatWorkspaceProps) {
   const copy = useChatCopy();
@@ -439,6 +454,28 @@ export function ChatWorkspace({
   );
   const mentionables = mentionablesQuery.data;
   const [addMemberFailed, setAddMemberFailed] = useState<string | null>(null);
+
+  // Typing and presence: the open space plus the direct conversations in the list are listened to; the
+  // stores live in memory only and expire on their own.
+  const conversationIds = (conversationsQuery.data ?? [])
+    .filter((entry) => !entry.isHidden && entry.kind === "direct")
+    .slice(0, 30)
+    .map((entry) => entry.id);
+  const ephemeralStores = useChatEphemeral(
+    ephemeral,
+    channelId ? [channelId, ...conversationIds] : conversationIds,
+  );
+  usePresenceHeartbeat(ephemeral, ephemeral !== undefined);
+  const presenceOf = usePresenceOf(ephemeralStores.presence);
+  const newestMessage = flat[flat.length - 1];
+  const typingIds = useTypingPeople(
+    ephemeralStores.typing,
+    channelId,
+    newestMessage
+      ? { id: newestMessage.id, authorId: newestMessage.authorId }
+      : null,
+  );
+  const notifyTyping = useTypingSignal(ephemeral, channelId);
 
   function setDraft(value: string) {
     if (!channelId) return;
@@ -918,6 +955,7 @@ export function ChatWorkspace({
         // The unread summary is refreshed by the realtime stream: it is fresher than the list.
         unreadOf: (entry) =>
           unreadBySpace.get(entry.id)?.count ?? entry.unreadCount,
+        presenceOf: ephemeral ? presenceOf : undefined,
         onSelect: (id) => {
           setListOpen(false);
           onOpenConversation?.(id);
@@ -1075,6 +1113,7 @@ export function ChatWorkspace({
                     copy={copy}
                     detailsOpen={panel?.kind === "details"}
                     blocked={counterpartBlocked}
+                    presenceOf={ephemeral ? presenceOf : undefined}
                     onOpenList={openList}
                     onToggleDetails={() => togglePanel({ kind: "details" })}
                     onHide={() => handleVisibility(true)}
@@ -1087,6 +1126,7 @@ export function ChatWorkspace({
                     canManage={canManage}
                     joining={joiner.isPending}
                     authorName={authorName}
+                    presenceOf={ephemeral ? presenceOf : undefined}
                     copy={copy}
                     onOpenList={openList}
                     onRename={() => {
@@ -1264,6 +1304,14 @@ export function ChatWorkspace({
                       ?.scrollIntoView({ block: "center" })
                   }
                 />
+                {ephemeral ? (
+                  <ChatTypingIndicator
+                    names={typingIds
+                      .filter((id) => id !== viewerId)
+                      .map((id) => authorName(id))}
+                    copy={copy}
+                  />
+                ) : null}
                 <ChatComposer
                   channelName={spaceName}
                   labelOverride={
@@ -1275,6 +1323,7 @@ export function ChatWorkspace({
                   disabledReason={composerDisabledReason}
                   copy={copy}
                   onChange={setDraft}
+                  onTyping={ephemeral ? notifyTyping : undefined}
                   onSend={handleSend}
                   mentions={composerMentions}
                   attachments={{ draftKey: ch }}
@@ -1409,6 +1458,7 @@ export function ChatWorkspace({
                 copy={copy}
                 locale={locale}
                 blocked={counterpartBlocked}
+                presenceOf={ephemeral ? presenceOf : undefined}
                 busy={visibility.isPending || leaver.isPending}
                 onBlock={() =>
                   counterpartId &&
