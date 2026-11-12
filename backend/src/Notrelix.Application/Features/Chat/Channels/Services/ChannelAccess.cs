@@ -67,6 +67,21 @@ public static class ChannelAccess
             throw new NotFoundException(nameof(Space), space.Id);
     }
 
+    /// <summary>
+    /// The SQL twin of <see cref="RequireVisible"/>: the live spaces of the Workspace the caller may see now. A public channel is
+    /// seen by every non-guest member, anything else (a private channel, a conversation, and a public channel for a Guest) by an
+    /// active member only. Owner and Admin get nothing by role (CHT-004). Search reads through this so it cannot drift from the
+    /// history handlers; a test runs both over the same matrix.
+    /// </summary>
+    public static IQueryable<Space> VisibleSpaces(IChatDbContext db, Guid workspaceId, Guid userId, bool isGuest)
+    {
+        var active = db.ChatMemberships.Where(m => m.UserId == userId && m.LeftAt == null).Select(m => m.SpaceId);
+        return db.ChatSpaces.Where(s =>
+            s.WorkspaceId == workspaceId
+            && s.DeletedAt == null
+            && ((!isGuest && s.Kind == SpaceKind.ChannelPublic) || active.Contains(s.Id)));
+    }
+
     /// <summary>Renaming, archiving, moving and removing others belong to a channel manager, a Workspace Owner or Admin.</summary>
     public static void RequireManager(Space space, WorkspaceMemberFact caller, Guid userId)
     {

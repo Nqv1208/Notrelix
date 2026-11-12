@@ -8,6 +8,10 @@ public static class ChatLimits
     public const int MessageMaxLength = 4000;
     public const int PageSizeDefault = 50;
     public const int PageSizeMax = 100;
+
+    /// <summary>The page size of a message search when the caller names none, and the most it may name (UC-CHT-H07).</summary>
+    public const int SearchPageDefault = 20;
+    public const int SearchPageMax = 50;
     public const int GroupCap = 8;
     public const int PinLimit = 50;
 

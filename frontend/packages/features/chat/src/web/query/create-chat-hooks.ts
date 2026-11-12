@@ -24,6 +24,7 @@ import {
 } from "../../core/model/chat-model";
 import {
   CHAT_LIMITS,
+  CHAT_SEARCH_LIMITS,
   type ChatChannel,
   type ChatChannelDetail,
   type ChatCreateChannelInput,
@@ -40,6 +41,8 @@ import {
   type ChatRetentionMode,
   type ChatPinPage,
   type ChatReactorPage,
+  type ChatSearchFilters,
+  type ChatSearchPage,
   type ChatThreadCursor,
   type ChatThreadRepliesPage,
   type ChatThreadSummary,
@@ -68,6 +71,7 @@ import {
   type UploadContext,
 } from "./attachment-uploads";
 import type { ChatUploadItem } from "../../core/model/attachment-model";
+import { canonicalFilters } from "../../core/model/search-model";
 import { createConversationHooks } from "./create-conversation-hooks";
 
 export interface ChatHookDeps {
@@ -974,6 +978,45 @@ export function createChatHooks(deps: ChatHookDeps) {
     });
   }
 
+  // ─── Search (UC-CHT-H07) ─────────────────────────────────────────────────────
+
+  /**
+   * The hits of one search, newest first, paged by the server's cursor. Always asks the server again (no stale time, a short cache
+   * life) so a removal or a delete shows at the next search; a failure is not retried here, the panel offers the retry. The results are
+   * never persisted by the host (the key carries the typed text).
+   */
+  function useSearchMessages(
+    workspaceId: string,
+    filters: ChatSearchFilters,
+    enabled: boolean,
+  ) {
+    const clean = canonicalFilters(filters);
+    return useInfiniteQuery<
+      ChatSearchPage,
+      Error,
+      InfiniteData<ChatSearchPage, string | null>,
+      QueryKey,
+      string | null
+    >({
+      queryKey: chatQueryKeys.search(workspaceId, clean),
+      queryFn: ({ pageParam, signal }) =>
+        service.searchMessages(
+          workspaceId,
+          clean,
+          pageParam,
+          CHAT_SEARCH_LIMITS.pageSize,
+          signal,
+        ),
+      initialPageParam: null,
+      getNextPageParam: (last: ChatSearchPage) => last.nextCursor ?? undefined,
+      enabled: enabled && workspaceId.length > 0,
+      staleTime: 0,
+      gcTime: 30_000,
+      retry: false,
+      refetchOnWindowFocus: false,
+    });
+  }
+
   // ─── Pins ──────────────────────────────────────────────────────────────────
 
   /**
@@ -1229,6 +1272,7 @@ export function createChatHooks(deps: ChatHookDeps) {
     useFollowThread,
     useMarkThreadRead,
     useFollowedThreads,
+    useSearchMessages,
     usePins,
     usePinMessage,
     useReactors,

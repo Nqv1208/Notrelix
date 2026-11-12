@@ -35,6 +35,7 @@ public class ChatRateLimiterTests
     [InlineData(ChatRateLimitPolicy.Upload, "chat.upload")]
     [InlineData(ChatRateLimitPolicy.Broadcast, "chat.broadcast")]
     [InlineData(ChatRateLimitPolicy.Export, "chat.export")]
+    [InlineData(ChatRateLimitPolicy.Search, "chat.search")]
     public async Task Every_policy_counts_the_person_and_the_space_under_its_chat_name(ChatRateLimitPolicy policy, string name)
     {
         await Limiter().RequireAsync(policy, Space, User, CancellationToken.None);

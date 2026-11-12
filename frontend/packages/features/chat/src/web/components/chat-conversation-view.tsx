@@ -1,5 +1,13 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, EyeOff, Info, LogOut, Ban, UserPlus } from "lucide-react";
+import {
+  ChevronLeft,
+  EyeOff,
+  Info,
+  LogOut,
+  Ban,
+  Search,
+  UserPlus,
+} from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
@@ -40,6 +48,8 @@ export interface ChatConversationHeaderProps {
   readonly onOpenList: () => void;
   readonly onToggleDetails: () => void;
   readonly onHide: () => void;
+  /** Opens the message search (UC-CHT-H07). */
+  readonly onSearch?: () => void;
 }
 
 /** The header of an open conversation: who it is with, the details toggle and the hide action. */
@@ -54,6 +64,7 @@ export function ChatConversationHeader({
   onOpenList,
   onToggleDetails,
   onHide,
+  onSearch,
 }: ChatConversationHeaderProps) {
   const title = conversationTitle(conversation, viewerId, nameOf);
   const counterpart = directCounterpart(conversation, viewerId);
@@ -93,6 +104,17 @@ export function ChatConversationHeader({
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-1">
+        {onSearch ? (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={copy.search.open}
+            title={copy.search.open}
+            onClick={onSearch}
+          >
+            <Search aria-hidden="true" />
+          </Button>
+        ) : null}
         <Button
           variant="ghost"
           size="icon-sm"

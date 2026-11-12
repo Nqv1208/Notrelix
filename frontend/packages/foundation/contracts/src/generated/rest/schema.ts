@@ -1141,6 +1141,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/chat/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search messages in the spaces the caller can read
+         * @description q is required, 2 to 100 characters, matched as a phrase ignoring case and Vietnamese marks. Only messages of spaces the caller can read now are searched: public channels for a non-guest member, and a private channel, a direct or group conversation, or (for a Guest) any space only while the caller is an active member. A Workspace Owner or Admin gets nothing by role. Filters: spaceId, authorId, from (inclusive) and to (exclusive), hasAttachment, mentionsMe. Newest first by cursor; limit is 1 to 50, default 20. Each hit has a plain-text snippet with the match ranges (never HTML) and the jump target: spaceId, messageId and threadRootId for a thread reply. A space the caller cannot read gives an empty result, like a space with no hit; there is no total. Tombstones, system messages and messages past the retention window are never returned. Counted per person and per Workspace (chat.search); 429 over the limit. The text of q is never logged or audited.
+         */
+        get: operations["Chat.Search.Query"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/chat/messages/{rootId}/replies": {
         parameters: {
             query?: never;
@@ -15505,6 +15525,65 @@ export interface operations {
             };
             /** @description Precondition Failed */
             412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Search.Query": {
+        parameters: {
+            query?: {
+                q?: string;
+                spaceId?: string;
+                authorId?: string;
+                from?: string;
+                to?: string;
+                hasAttachment?: boolean;
+                mentionsMe?: boolean;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

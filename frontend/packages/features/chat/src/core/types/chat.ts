@@ -500,3 +500,60 @@ export interface ChatExport {
   readonly expiresAt: string | null;
   readonly downloadPath: string | null;
 }
+
+// ─── Search (UC-CHT-H07) ─────────────────────────────────────────────────────
+
+/** A matched stretch of a snippet, in UTF-16 code units of the snippet text. */
+export interface ChatSearchRange {
+  readonly start: number;
+  readonly length: number;
+}
+
+/** ChatSearchSnippetDto: plain text and the ranges to highlight; never markup. */
+export interface ChatSearchSnippet {
+  readonly text: string;
+  readonly ranges: readonly ChatSearchRange[];
+  readonly cutBefore: boolean;
+  readonly cutAfter: boolean;
+}
+
+/** ChatSearchHitDto: one message hit and where to jump to. */
+export interface ChatSearchHit {
+  readonly messageId: string;
+  readonly spaceId: string;
+  /** The channel or group name; empty for a direct conversation (name it by its people). */
+  readonly spaceName: string;
+  readonly spaceKind: "channel_public" | "channel_private" | "direct" | "group";
+  readonly spaceArchived: boolean;
+  readonly authorId: string;
+  readonly createdAt: string;
+  readonly sequence: number;
+  /** The root of the thread when the hit is a thread reply. */
+  readonly threadRootId: string | null;
+  readonly alsoSentToChannel: boolean;
+  readonly snippet: ChatSearchSnippet;
+}
+
+/** ChatSearchPageDto: newest first; `nextCursor` is null on the last page. There is no total. */
+export interface ChatSearchPage {
+  readonly items: readonly ChatSearchHit[];
+  readonly nextCursor: string | null;
+}
+
+/** The query and filters of a search. Dates are ISO instants; `from` is inclusive and `to` exclusive. */
+export interface ChatSearchFilters {
+  readonly q: string;
+  readonly spaceId?: string;
+  readonly authorId?: string;
+  readonly from?: string;
+  readonly to?: string;
+  readonly hasAttachment?: boolean;
+  readonly mentionsMe?: boolean;
+}
+
+export const CHAT_SEARCH_LIMITS = {
+  /** The least and most characters of the typed text (the server answers 400 outside it). */
+  minLength: 2,
+  maxLength: 100,
+  pageSize: 20,
+} as const;

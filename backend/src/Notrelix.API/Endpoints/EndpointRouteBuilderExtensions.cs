@@ -10,6 +10,7 @@ using Notrelix.API.Endpoints.Chat.Permissions;
 using Notrelix.API.Endpoints.Chat.Retention;
 using Notrelix.API.Endpoints.Chat.Exports;
 using Notrelix.API.Endpoints.Chat.Pins;
+using Notrelix.API.Endpoints.Chat.Search;
 using Notrelix.API.Endpoints.Chat.Attachments;
 using Notrelix.API.Endpoints.Chat.Mentions;
 using Notrelix.API.Endpoints.Chat.Reactions;
@@ -166,6 +167,7 @@ public static class EndpointRouteBuilderExtensions
         app.MapChannelPermissionRoutes();
         app.MapChatRetentionRoutes();
         app.MapChatExportRoutes();
+        app.MapChatSearchRoutes();
         app.MapChatLinkRoutes();
         app.MapMentionRoutes();
         app.MapConversationRoutes();

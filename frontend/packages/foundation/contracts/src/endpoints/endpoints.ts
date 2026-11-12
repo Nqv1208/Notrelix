@@ -411,6 +411,9 @@ export const endpoints = {
     /** The export file, read with the session (permission checked on every request). */
     chatExportContent: (workspaceId: string, exportId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/exports/${encodeURIComponent(exportId)}/content`,
+    /** Message search: GET with q and the filters in the query string (the caller's readable spaces only). */
+    search: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/search`,
     /** POST removes another person's message as a moderator (the reason goes to the Audit record). */
     messageModeration: (workspaceId: string, messageId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/moderation`,

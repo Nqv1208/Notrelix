@@ -1875,6 +1875,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Chat.Search.Queries.SearchChatMessages.SearchChatMessagesQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Search.Queries.SearchChatMessages.SearchChatMessagesQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Chat.Threads.Commands.FollowThread.FollowThreadCommand",
     "kind": "Command",
     "principalMarkers": [

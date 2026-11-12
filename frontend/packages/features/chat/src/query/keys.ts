@@ -67,6 +67,9 @@ export const chatQueryKeys = {
   /** The Workspace retention rule (Chat settings). */
   retention: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "chat", "retention"),
+  /** The results of one search (the filters and the typed text are in the key; never persisted). */
+  search: (workspaceId: string, filters: unknown) =>
+    workspaceQueryKey(workspaceId, "chat", "search", filters),
   /** One export's status (polled while it runs). */
   chatExport: (workspaceId: string, exportId: string) =>
     workspaceQueryKey(workspaceId, "chat", "export", exportId),

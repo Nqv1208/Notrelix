@@ -50,6 +50,8 @@ export interface ChatSidebarProps {
   readonly onCreate: () => void;
   /** Opens the Chat admin settings (retention and export); only an Owner or an Admin is offered it. */
   readonly onOpenSettings?: () => void;
+  /** Opens the message search (UC-CHT-H07). */
+  readonly onSearch?: () => void;
   readonly onJoin: (channelId: string) => void;
   readonly onRetry: () => void;
   readonly joiningId: string | null;
@@ -118,6 +120,7 @@ export function ChatSidebar({
   onSelect,
   onCreate,
   onOpenSettings,
+  onSearch,
   onJoin,
   onRetry,
   joiningId,
@@ -134,6 +137,17 @@ export function ChatSidebar({
       <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
         <h2 className="text-sm font-semibold">{copy.sidebar.listTitle}</h2>
         <div className="flex items-center gap-1">
+          {onSearch ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={copy.search.sidebarEntry}
+              title={copy.search.sidebarEntry}
+              onClick={onSearch}
+            >
+              <Search aria-hidden="true" />
+            </Button>
+          ) : null}
           {onOpenSettings ? (
             <Button
               variant="ghost"
