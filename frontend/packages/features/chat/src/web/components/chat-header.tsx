@@ -4,6 +4,8 @@ import {
   Bell,
   ChevronLeft,
   Hash,
+  Link2,
+  Link2Off,
   Lock,
   Pencil,
   Search,
@@ -36,6 +38,7 @@ import type {
 import type { ChatPresenceState } from "../../core/model/ephemeral-model";
 import { PresenceDot, presenceText } from "./chat-presence";
 import type { ChatCopy } from "./chat.copy";
+import { ChatLinkChip } from "./chat-resource-link";
 import { avatarToneOf, initialsOf } from "./chat-initials";
 import { fillCopy } from "./use-chat-copy";
 
@@ -56,6 +59,12 @@ export interface ChatHeaderProps {
   /** Whether the caller may open the channel's permissions (a manager, an Owner or an Admin of a live channel). */
   readonly canManagePermissions?: boolean;
   readonly onPermissions?: () => void;
+  /** The Workspace, for the address of the linked resource. */
+  readonly workspaceId?: string;
+  /** Opens the "Link a resource" dialog (a manager); without it the menu has no link entries. */
+  readonly onLinkResource?: () => void;
+  /** Removes the link (a manager). */
+  readonly onUnlinkResource?: () => void;
   readonly onJoin: () => void;
   /** Opens the message search (UC-CHT-H07). Without it the header has no search button. */
   readonly onSearch?: () => void;
@@ -84,6 +93,9 @@ export function ChatHeader({
   onToggleArchive,
   canManagePermissions = false,
   onPermissions,
+  workspaceId,
+  onLinkResource,
+  onUnlinkResource,
   onJoin,
   onSearch,
   onSetLevel,
@@ -124,6 +136,13 @@ export function ChatHeader({
           {channel.topic ?? copy.header.topicEmpty}
         </p>
       </div>
+      {channel.link && workspaceId ? (
+        <ChatLinkChip
+          link={channel.link}
+          workspaceId={workspaceId}
+          copy={copy}
+        />
+      ) : null}
 
       <div className="flex shrink-0 items-center gap-1">
         {canJoin ? (
@@ -265,6 +284,20 @@ export function ChatHeader({
                 <DropdownMenuItem onSelect={onPermissions}>
                   <ShieldCheck aria-hidden="true" />
                   {copy.header.permissions}
+                </DropdownMenuItem>
+              ) : null}
+              {onLinkResource ? (
+                <DropdownMenuItem onSelect={onLinkResource}>
+                  <Link2 aria-hidden="true" />
+                  {channel.link
+                    ? copy.header.changeLink
+                    : copy.header.linkResource}
+                </DropdownMenuItem>
+              ) : null}
+              {channel.link && onUnlinkResource ? (
+                <DropdownMenuItem onSelect={onUnlinkResource}>
+                  <Link2Off aria-hidden="true" />
+                  {copy.header.unlinkResource}
                 </DropdownMenuItem>
               ) : null}
               <DropdownMenuSeparator />

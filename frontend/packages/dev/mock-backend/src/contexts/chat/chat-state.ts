@@ -11,6 +11,7 @@ import type { MockStore } from "../../state/mock-store";
 import type { ChatPermissionEntryRecord } from "./chat-permissions";
 import type {
   ChatAttachmentRecord,
+  ChatDigestMail,
   ChatExportJobRecord,
   ChatGroupRecord,
   ChatMembershipRecord,
@@ -88,6 +89,10 @@ export class MockChatState {
   >();
   /** The export jobs by id (UC-CHT-H06). */
   readonly exportJobs = new Map<string, ChatExportJobRecord>();
+  /** The digest emails the mock "queued" (UC-CHT-H09): no real mail, a test reads them here. */
+  readonly digestOutbox: ChatDigestMail[] = [];
+  /** `${workspaceId}|${userId}|${windowKey}`: one digest per person and window, whatever the number of passes. */
+  readonly digestSent = new Set<string>();
   exportCounter = 0;
   /** The direct conversation of each pair, keyed by `${workspaceId}|${low}|${high}` (backend DirectPair). */
   readonly directPairs = new Map<string, string>();
@@ -136,6 +141,8 @@ export class MockChatState {
     this.limitOverrides.clear();
     this.retentionPolicies.clear();
     this.exportJobs.clear();
+    this.digestOutbox.length = 0;
+    this.digestSent.clear();
     this.exportCounter = 0;
     this.streamVersions.clear();
     this.idCounters.space = 0;

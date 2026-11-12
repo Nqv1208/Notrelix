@@ -123,6 +123,18 @@ describe("chat endpoint paths", () => {
     );
   });
 
+  it("builds the channel link and linked-channels paths and encodes the ids", () => {
+    expect(endpoints.chat.channelLink("w", "c1")).toBe(
+      "/workspaces/w/chat/channels/c1/link",
+    );
+    expect(endpoints.chat.channelLink("a/b", "c d")).toBe(
+      "/workspaces/a%2Fb/chat/channels/c%20d/link",
+    );
+    expect(endpoints.chat.linkedChannels("a/b")).toBe(
+      "/workspaces/a%2Fb/chat/links/linked-channels",
+    );
+  });
+
   it("keeps a plain id as it is", () => {
     expect(endpoints.chat.channel("w-1", "c_2")).toBe(
       "/workspaces/w-1/chat/channels/c_2",

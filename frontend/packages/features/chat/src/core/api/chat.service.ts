@@ -6,6 +6,9 @@ import type {
   ChatConversation,
   ChatLinkPreview,
   ChatLinkRef,
+  ChatLinkKind,
+  ChatLinkChannelInput,
+  ChatLinkedChannel,
   ChatConversationVisibility,
   ChatPersonBlock,
   ChatStartConversationInput,
@@ -118,6 +121,8 @@ export interface ChatEndpoints {
       attachmentId: string,
     ) => string;
     linkResolve: (workspaceId: string) => string;
+    channelLink: (workspaceId: string, channelId: string) => string;
+    linkedChannels: (workspaceId: string) => string;
     messagePin: (workspaceId: string, messageId: string) => string;
     spacePins: (workspaceId: string, spaceId: string) => string;
     channelPermissions: (workspaceId: string, channelId: string) => string;
@@ -358,6 +363,46 @@ export function createChatService(
             : { kind: ref.kind, resourceId: ref.resourceId },
         ),
         options,
+      );
+    },
+
+    /**
+     * `Chat.Channels.Link`: links a channel to a Board or Page the manager can view (403 otherwise; the resource is never
+     * changed). A stale expectedVersion is 412.
+     */
+    linkChannel(
+      workspaceId: string,
+      channelId: string,
+      input: ChatLinkChannelInput,
+    ): Promise<ChatChannel> {
+      return api.put<ChatChannel>(paths.channelLink(workspaceId, channelId), {
+        kind: input.kind,
+        resourceId: input.resourceId,
+        expectedVersion: input.expectedVersion,
+      });
+    },
+
+    /** `Chat.Channels.Unlink`: the version travels in the query string. */
+    unlinkChannel(
+      workspaceId: string,
+      channelId: string,
+      expectedVersion: number,
+    ): Promise<ChatChannel> {
+      return api.delete<ChatChannel>(
+        withQuery(paths.channelLink(workspaceId, channelId), {
+          expectedVersion,
+        }),
+      );
+    },
+
+    /** `Chat.Channels.ListLinked`: the channels the caller can see that are linked to one resource. */
+    listLinkedChannels(
+      workspaceId: string,
+      kind: ChatLinkKind,
+      resourceId: string,
+    ): Promise<ChatLinkedChannel[]> {
+      return api.get<ChatLinkedChannel[]>(
+        withQuery(paths.linkedChannels(workspaceId), { kind, id: resourceId }),
       );
     },
 

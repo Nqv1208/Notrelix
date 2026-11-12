@@ -49,6 +49,12 @@ export const chatQueryKeys = {
   /** The preview of one link, resolved with the viewer's own access (the url or kind and id it names). */
   linkPreview: (workspaceId: string, ref: string) =>
     workspaceQueryKey(workspaceId, "chat", "link-preview", ref),
+  /** The channels the caller can see that are linked to one resource (UC-CHT-H10). */
+  linkedChannels: (workspaceId: string, kind: string, resourceId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "linked-channels", kind, resourceId),
+  /** Every linked-channel list of the Workspace (a link change refreshes them all). */
+  allLinkedChannels: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "linked-channels"),
   /** The threads the caller follows (most recent reply first). */
   followedThreads: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "chat", "followed-threads"),

@@ -33,6 +33,7 @@ import { BoardExportDialog } from "../../../../shell/workspace/board-export-dial
 import { BoardImportDialog } from "../../../../shell/workspace/board-import-dialog";
 import { useWorkspaceViewer } from "../../../../shell/workspace/use-workspace-viewer";
 import { BoardLeaveDialog } from "../../../../shell/workspace/board-leave-dialog";
+import { BoardDiscuss } from "../../../../shell/workspace/board-discuss";
 import { BoardShareDialog } from "../../../../shell/workspace/board-share-dialog";
 import { useBoardHeaderData } from "../../../../shell/workspace/use-board-header-data";
 
@@ -296,13 +297,16 @@ export function BoardPage() {
             ) : undefined
           }
           notice={
-            <BoardConnectionNotice
-              state={connection.state}
-              lostAt={connection.lostAt}
-              copy={headerCopy}
-              locale={locale}
-              onReconnect={connection.reconnect}
-            />
+            <>
+              <BoardConnectionNotice
+                state={connection.state}
+                lostAt={connection.lostAt}
+                copy={headerCopy}
+                locale={locale}
+                onReconnect={connection.reconnect}
+              />
+              <BoardDiscuss workspaceId={workspaceId} boardId={boardId} />
+            </>
           }
           onOpenSettings={() =>
             navigate({

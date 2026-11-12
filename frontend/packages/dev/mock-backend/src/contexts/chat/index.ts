@@ -30,6 +30,11 @@ export {
 } from "./chat-world";
 export { MockChatState, chatGuid, streamIdOf } from "./chat-state";
 export { runExport, runRetention } from "./chat-retention";
+export {
+  runDigest,
+  DIGEST_MAX_ITEMS,
+  DIGEST_WINDOW_SECONDS,
+} from "./chat-digest";
 
 export const chatOperations = [
   ...attachmentsOperations,

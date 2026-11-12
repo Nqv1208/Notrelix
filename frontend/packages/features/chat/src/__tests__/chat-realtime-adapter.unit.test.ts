@@ -597,6 +597,25 @@ describe("ChatRealtimeAdapter: threads, reactions and pins", () => {
     expect(spy).toHaveBeenCalledWith({ queryKey: chatQueryKeys.channels(WS) });
   });
 
+  it("a link frame reads the channel views and every linked-channel list again", async () => {
+    const { adapter, context, queryClient } = setup([]);
+    const spy = vi.spyOn(queryClient, "invalidateQueries");
+    await adapter.validateAndHandle(
+      envelope("chat.space.changed", {
+        messageId: "00000000-0000-0000-0000-000000000000",
+        change: "link",
+      }),
+      context,
+    );
+    expect(spy).toHaveBeenCalledWith({
+      queryKey: chatQueryKeys.channel(WS, CH),
+    });
+    expect(spy).toHaveBeenCalledWith({ queryKey: chatQueryKeys.channels(WS) });
+    expect(spy).toHaveBeenCalledWith({
+      queryKey: chatQueryKeys.allLinkedChannels(WS),
+    });
+  });
+
   it("a space frame with an unknown change is ignored", async () => {
     const { adapter, context, queryClient } = setup([]);
     const spy = vi.spyOn(queryClient, "invalidateQueries");

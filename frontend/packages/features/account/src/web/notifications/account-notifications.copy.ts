@@ -32,7 +32,8 @@ export const en = {
     overdue: "Items assigned to you or that you follow",
     watching: "Status, due date or assignee changed",
     invitation: "To a workspace, department, board or page",
-    digest: "Sent at 08:00 · items due and items that need you",
+    digest:
+      "Once a day · items due, items that need you and chat messages you missed",
   },
   mentionRule:
     "Someone you mention who can't see the item doesn't get a notification (COL-030).",
@@ -72,7 +73,8 @@ export const vi: AccountNotificationsCopy = {
     overdue: "Việc giao cho bạn hoặc bạn theo dõi",
     watching: "Trạng thái, hạn hoặc người phụ trách đổi",
     invitation: "Vào workspace, phòng ban, board hoặc trang",
-    digest: "Gửi lúc 08:00 · việc đến hạn và việc cần bạn",
+    digest:
+      "Mỗi ngày một lần · việc đến hạn, việc cần bạn và tin nhắn trò chuyện bạn đã bỏ lỡ",
   },
   mentionRule:
     "Nhắc tên người không xem được việc thì họ không nhận thông báo (COL-030).",

@@ -20,6 +20,10 @@ export {
   type ChatViewerRole,
   type ChatWorkspaceProps,
 } from "./components/chat-workspace";
+export {
+  DiscussButton,
+  type DiscussButtonProps,
+} from "./components/chat-discuss-button";
 export { chatCatalog } from "./components/chat.catalog";
 export {
   en as chatCopyEn,

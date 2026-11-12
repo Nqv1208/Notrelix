@@ -14,6 +14,7 @@ import {
   type ChatAction,
   type ChatCaller,
 } from "./chat-access";
+import { linkViewOf } from "./chat-links";
 import type { ChatSpaceRecord, ChatWorkspaceRole } from "./chat-model";
 import type { MockChatState } from "./chat-state";
 
@@ -176,6 +177,7 @@ export function channelViewOf(
   return {
     ...channelView(state, space, caller.userId),
     capabilities: capabilitiesOf(state, space, caller),
+    link: linkViewOf(state, space),
   };
 }
 

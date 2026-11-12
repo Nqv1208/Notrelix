@@ -391,6 +391,12 @@ export const endpoints = {
     /** GET resolves the preview of a Board item or Page link (query: `url`, or `kind` with `resourceId`). */
     linkResolve: (workspaceId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/links/resolve`,
+    /** A channel's link to a Board or Page: PUT sets it, DELETE (expectedVersion in the query) clears it. */
+    channelLink: (workspaceId: string, channelId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/link`,
+    /** GET lists the channels the caller can see that are linked to one resource (query: `kind` and `id`). */
+    linkedChannels: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/links/linked-channels`,
     /** Pins: PUT pins a message and DELETE unpins it (the message id). */
     messagePin: (workspaceId: string, messageId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/pin`,

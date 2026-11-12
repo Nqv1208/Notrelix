@@ -216,7 +216,8 @@ export function announcePinChanged(
   state: MockChatState,
   space: ChatSpaceRecord,
   messageId: string,
-  change: "pinned" | "unpinned" | "permissions" | "slow-mode" | "retention",
+  change:
+    "pinned" | "unpinned" | "permissions" | "slow-mode" | "retention" | "link",
 ): void {
   publishMockScopeFrame(
     frame({
@@ -247,6 +248,22 @@ export function announcePermissionsChanged(
     space,
     "00000000-0000-0000-0000-000000000000",
     "permissions",
+  );
+}
+
+/**
+ * The channel's link to a Board or Page was set or cleared (backend ChatLinkEventMapper): the same chat.space.changed frame with the
+ * change `link` and the empty message id. Notify-only: readers refetch the channel views and the linked-channel lists.
+ */
+export function announceLinkChanged(
+  state: MockChatState,
+  space: ChatSpaceRecord,
+): void {
+  announcePinChanged(
+    state,
+    space,
+    "00000000-0000-0000-0000-000000000000",
+    "link",
   );
 }
 

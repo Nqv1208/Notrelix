@@ -4394,6 +4394,27 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "Resolve the preview of a link to a Board item or a Page",
     ],
     [
+      "Chat.Channels.Link",
+      "PUT",
+      "/workspaces/{workspaceId}/chat/channels/{channelId}/link",
+      true,
+      "Link a channel to a Board or a Page the manager can view",
+    ],
+    [
+      "Chat.Channels.Unlink",
+      "DELETE",
+      "/workspaces/{workspaceId}/chat/channels/{channelId}/link",
+      true,
+      "Remove a channel's link to a Board or a Page",
+    ],
+    [
+      "Chat.Channels.ListLinked",
+      "GET",
+      "/workspaces/{workspaceId}/chat/links/linked-channels",
+      false,
+      "List the channels the caller can see that are linked to a Board or a Page",
+    ],
+    [
       "Chat.Attachments.List",
       "GET",
       "/workspaces/{workspaceId}/chat/messages/{messageId}/attachments",

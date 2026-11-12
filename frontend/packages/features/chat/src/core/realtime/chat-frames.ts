@@ -72,12 +72,13 @@ export interface ChatAttachmentFramePayload {
 /**
  * chat.space.v1: a pin of the space changed (readers refetch the pins) or the channel's permission overrides changed (readers
  * refetch the channel and its permissions; `messageId` is then the empty id) or its slow mode changed (readers refetch the channel; the empty id
- * again) or a retention batch removed messages of the space (`retention`, UC-CHT-H05: readers refetch its messages, pins and channel views).
+ * again) or a retention batch removed messages of the space (`retention`, UC-CHT-H05: readers refetch its messages, pins and channel views) or the channel's
+ * link to a Board or Page was set or cleared (`link`, UC-CHT-H10: readers refetch the channel views and the linked-channel lists).
  */
 export interface ChatSpaceFramePayload {
   readonly messageId: string;
   readonly change:
-    "pinned" | "unpinned" | "permissions" | "slow-mode" | "retention";
+    "pinned" | "unpinned" | "permissions" | "slow-mode" | "retention" | "link";
 }
 
 /** The unread payload (chat.unread.v1): the counts of one space for this person. */
@@ -215,7 +216,8 @@ export function parseChatSpaceFrame(
       change !== "unpinned" &&
       change !== "permissions" &&
       change !== "slow-mode" &&
-      change !== "retention")
+      change !== "retention" &&
+      change !== "link")
   ) {
     return null;
   }

@@ -30,6 +30,8 @@ import {
   type ChatCreateChannelInput,
   type ChatFollowedThreadPage,
   type ChatHistoryAnchor,
+  type ChatLinkChannelInput,
+  type ChatLinkKind,
   type ChatLinkRef,
   type ChatMentionInput,
   type ChatMentionPayload,
@@ -1187,14 +1189,92 @@ export function createChatHooks(deps: ChatHookDeps) {
    * The preview of a Board item or Page link, resolved with the viewer's own access (UC-CHT-G05). Read on render, never
    * stored on the message; a link nobody can view comes back generic, a failed read is an error the chip shows plainly.
    */
-  function useLinkPreview(workspaceId: string, ref: ChatLinkRef) {
+  function useLinkPreview(
+    workspaceId: string,
+    ref: ChatLinkRef,
+    enabled = true,
+  ) {
     return useQuery({
       queryKey: chatQueryKeys.linkPreview(workspaceId, linkRefKey(ref)),
       queryFn: ({ signal }) =>
         service.resolveLink(workspaceId, ref, { signal }),
-      enabled: workspaceId.length > 0,
+      enabled: enabled && workspaceId.length > 0,
       staleTime: CHANNEL_STALE_MS,
       retry: false,
+    });
+  }
+
+  // ─── Linked resource (UC-CHT-H10) ──────────────────────────────────────────
+
+  function invalidateLinkViews(
+    queryClient: QueryClient,
+    workspaceId: string,
+    channelId: string,
+  ) {
+    void queryClient.invalidateQueries({
+      queryKey: chatQueryKeys.channel(workspaceId, channelId),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: chatQueryKeys.channels(workspaceId),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: chatQueryKeys.allLinkedChannels(workspaceId),
+    });
+  }
+
+  /**
+   * The channels the caller can see that are linked to one Board or Page: the "Discuss" side of a link. Empty when the caller
+   * cannot view the resource or nothing is linked. Disabled without a resource (a host page that has not loaded yet).
+   */
+  function useLinkedChannels(
+    workspaceId: string,
+    resource: { kind: ChatLinkKind; resourceId: string } | null | undefined,
+  ) {
+    return useQuery({
+      queryKey: chatQueryKeys.linkedChannels(
+        workspaceId,
+        resource?.kind ?? "",
+        resource?.resourceId ?? "",
+      ),
+      queryFn: () =>
+        service.listLinkedChannels(
+          workspaceId,
+          resource!.kind,
+          resource!.resourceId,
+        ),
+      enabled: workspaceId.length > 0 && Boolean(resource),
+      staleTime: CHANNEL_STALE_MS,
+      retry: false,
+    });
+  }
+
+  /** Links the channel (manager); the answer is the channel with its link, so the views and reverse lists are read again. */
+  function useLinkChannel(workspaceId: string, channelId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (input: ChatLinkChannelInput) =>
+        service.linkChannel(workspaceId, channelId, input),
+      onSuccess: () => invalidateLinkViews(queryClient, workspaceId, channelId),
+      onError: (error) => {
+        if (chatFailureOf(error).kind === "stale") {
+          invalidateLinkViews(queryClient, workspaceId, channelId);
+        }
+      },
+    });
+  }
+
+  /** Removes the link (manager); the resource is not touched. */
+  function useUnlinkChannel(workspaceId: string, channelId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (expectedVersion: number) =>
+        service.unlinkChannel(workspaceId, channelId, expectedVersion),
+      onSuccess: () => invalidateLinkViews(queryClient, workspaceId, channelId),
+      onError: (error) => {
+        if (chatFailureOf(error).kind === "stale") {
+          invalidateLinkViews(queryClient, workspaceId, channelId);
+        }
+      },
     });
   }
 
@@ -1240,6 +1320,9 @@ export function createChatHooks(deps: ChatHookDeps) {
     useAttachmentContent,
     useDownloadAttachment,
     useLinkPreview,
+    useLinkedChannels,
+    useLinkChannel,
+    useUnlinkChannel,
     useChannels,
     useBrowseChannels,
     useChannel,
