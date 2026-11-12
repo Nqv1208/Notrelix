@@ -25,6 +25,7 @@ import {
   fail,
   type ChatCaller,
 } from "./chat-access";
+import { requireChannelAction } from "./chat-permissions";
 import { CHAT_ERROR, CHAT_LIMITS, type ChatMessageRecord } from "./chat-model";
 import {
   appendUserMessage,
@@ -237,6 +238,7 @@ export const messagesOperations = [
             ),
           );
         }
+        requireChannelAction(state, space, caller, "post");
         const replyToId =
           typeof body?.replyToId === "string" ? body.replyToId : null;
         if (

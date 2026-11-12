@@ -215,7 +215,7 @@ export function announcePinChanged(
   state: MockChatState,
   space: ChatSpaceRecord,
   messageId: string,
-  change: "pinned" | "unpinned",
+  change: "pinned" | "unpinned" | "permissions",
 ): void {
   publishMockScopeFrame(
     frame({
@@ -230,6 +230,22 @@ export function announcePinChanged(
       payloadContract: CHAT_SPACE_CONTRACT,
       payload: { change, messageId } as Readonly<Record<string, unknown>>,
     }),
+  );
+}
+
+/**
+ * The channel's permission overrides changed (backend ChatPermissionsEventMapper): the same chat.space.changed frame with the change
+ * `permissions` and the empty message id. Notify-only: readers refetch the channel and its permissions over REST.
+ */
+export function announcePermissionsChanged(
+  state: MockChatState,
+  space: ChatSpaceRecord,
+): void {
+  announcePinChanged(
+    state,
+    space,
+    "00000000-0000-0000-0000-000000000000",
+    "permissions",
   );
 }
 

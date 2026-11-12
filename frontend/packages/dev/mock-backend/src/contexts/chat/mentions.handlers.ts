@@ -64,7 +64,7 @@ export const mentionsOperations = [
         return ok({
           people: people.slice(0, CHAT_LIMITS.mentionablesMax),
           canBroadcast:
-            canBroadcast(caller) &&
+            canBroadcast(state, space, caller) &&
             inSpace.length > 1 &&
             space.kind !== "direct",
           broadcastConfirmAbove: CHAT_LIMITS.broadcastConfirmThreshold,

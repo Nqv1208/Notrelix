@@ -19,6 +19,7 @@ import {
   requireVisible,
   validationProblem,
 } from "./chat-access";
+import { requireChannelAction } from "./chat-permissions";
 import {
   CHAT_ERROR,
   CHAT_LIMITS,
@@ -120,6 +121,7 @@ export const reactionsOperations = [
           notFoundProblem();
         }
         if (space.archivedAt !== null) archivedProblem();
+        requireChannelAction(state, space, caller, "react");
         if (message.kind === "system") {
           fail(
             409,

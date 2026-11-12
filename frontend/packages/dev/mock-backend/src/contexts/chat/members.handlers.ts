@@ -10,7 +10,6 @@ import type { MockStore } from "../../state/mock-store";
 import {
   archivedProblem,
   callerIn,
-  channelView,
   fail,
   forbiddenProblem,
   guarded,
@@ -21,6 +20,8 @@ import {
   requireVisible,
   validationProblem,
 } from "./chat-access";
+import { channelViewOf } from "./chat-permissions";
+import { requireChannelAction } from "./chat-permissions";
 import {
   CHAT_ERROR,
   CHAT_SYSTEM_TEXT,
@@ -95,6 +96,7 @@ export const membersOperations = [
         requireVisible(state, space, caller);
         if (space.kind === "channel_public")
           requireManager(state, space, caller);
+        requireChannelAction(state, space, caller, "invite");
         const candidates = Array.from(new Set(body.userIds));
         const added: string[] = [];
         const skipped: string[] = [];
@@ -153,7 +155,7 @@ export const membersOperations = [
             CHAT_SYSTEM_TEXT.memberJoined,
           );
         }
-        return ok(channelView(state, space, caller.userId));
+        return ok(channelViewOf(state, space, caller));
       });
     },
   }),

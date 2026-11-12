@@ -19,6 +19,7 @@ import {
   requireVisible,
   validationProblem,
 } from "./chat-access";
+import { requireChannelAction } from "./chat-permissions";
 import {
   CHAT_ERROR,
   CHAT_LIMITS,
@@ -84,6 +85,7 @@ export const pinsOperations = [
           notFoundProblem();
         }
         if (space.archivedAt !== null) archivedProblem();
+        requireChannelAction(state, space, caller, "pin");
         if (message.kind === "system") {
           fail(
             409,
@@ -153,6 +155,7 @@ export const pinsOperations = [
           notFoundProblem();
         }
         if (space.archivedAt !== null) archivedProblem();
+        requireChannelAction(state, space, caller, "pin");
         // A message that is not pinned is a success that changes nothing.
         removePin(state, space, message.id);
         return { status: 204 };

@@ -16,6 +16,7 @@ import {
   requireAction,
   type ChatCaller,
 } from "./chat-access";
+import { allowsAction } from "./chat-permissions";
 import {
   CHAT_ERROR,
   CHAT_LIMITS,
@@ -218,7 +219,7 @@ export function resolveMentions(
           userId: null,
         });
       }
-    } else if (!canBroadcast(caller)) {
+    } else if (!canBroadcast(state, space, caller)) {
       notices.push({
         code: CHAT_MENTION_NOTICE.broadcastNotAllowed,
         start: span.start,
@@ -254,8 +255,13 @@ export function resolveMentions(
 }
 
 /** The broadcast action (chat.mention.broadcast): Owner and Admin by the baseline; a Member or a Guest is denied (a Guest never broadcasts). */
-export function canBroadcast(caller: ChatCaller): boolean {
+export function canBroadcast(
+  state: MockChatState,
+  space: ChatSpaceRecord,
+  caller: ChatCaller,
+): boolean {
   if (caller.role === "Guest") return false;
+  if (!allowsAction(state, space, caller, "broadcast")) return false;
   try {
     requireAction(caller, "mentionBroadcast");
     return true;

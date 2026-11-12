@@ -24,6 +24,7 @@ import {
   threadSummaryView,
   validationProblem,
 } from "./chat-access";
+import { requireChannelAction } from "./chat-permissions";
 import { CHAT_ERROR, CHAT_LIMITS } from "./chat-model";
 import { appendThreadReply, idempotentCreate } from "./chat-writes";
 import {
@@ -144,6 +145,7 @@ export const threadsOperations = [
                   ),
                 ),
               };
+            requireChannelAction(state, space, caller, "post");
             if (
               root.deletedAt !== null &&
               (state.threads.get(root.id)?.replyCount ?? 0) === 0
