@@ -939,6 +939,8 @@ Decided in `SYS-ADR-001` (Accepted): the Chat context may publish realtime event
 
 The Chat scope kind `Channel`, the `typing` and `presence` client frames and the per-user unread stream are additive to protocol v1 and are specified in `docs/workstreams/specs/chat-foundation.md` section 17. A durable write never travels over the socket. The `typing` and `presence` frames are ephemeral: no `streamVersion`, no outbox, no storage, fan-out on a separate bus; the AsyncAPI contract lists their schemas (contract 1.1.1).
 
+A file added to or removed from a message is the opposite case: a durable fact, so it is a normal outbox integration event (`chat.message.attachment.changed`, payloadContract `chat.attachment.v1`) on the same channel stream with a gap-free `streamVersion`. It carries file metadata only (never bytes), is readable by exactly the readers of the message, and follows the 4096-byte rule by dropping the file details (`detailsOmitted`) so the client refetches the file list over REST. The uploader's in-progress state is not broadcast.
+
 ---
 
 # 58. Realtime snapshot

@@ -25,14 +25,16 @@ public class DeleteMessageAttachmentCommandHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
-    IChatMessageAttachments attachments) : IRequestHandler<DeleteMessageAttachmentCommand, Result>
+    IChatMessageAttachments attachments,
+    IDateTimeProvider clock) : IRequestHandler<DeleteMessageAttachmentCommand, Result>
 {
     public async Task<Result> Handle(DeleteMessageAttachmentCommand request, CancellationToken cancellationToken)
     {
         var userId = requestContext.UserId;
         await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
 
-        var message = await db.ChatMessages.AsNoTracking().FirstOrDefaultAsync(
+        // Tracked on purpose: the message raises the file fact (no column changes), which reaches the channel stream.
+        var message = await db.ChatMessages.FirstOrDefaultAsync(
             m => m.Id == request.MessageId && m.WorkspaceId == request.WorkspaceId, cancellationToken)
             ?? throw new NotFoundException(nameof(Message), request.MessageId);
 
@@ -46,6 +48,7 @@ public class DeleteMessageAttachmentCommandHandler(
 
         if (!await attachments.RemoveAsync(message.Id, request.AttachmentId, cancellationToken))
             throw new NotFoundException("Attachment", request.AttachmentId);
+        message.RecordAttachmentRemoved(userId, request.AttachmentId, clock.UtcNow);
         return Result.Success();
     }
 }

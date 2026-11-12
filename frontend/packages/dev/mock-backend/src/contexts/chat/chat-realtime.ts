@@ -34,6 +34,7 @@ export const CHAT_MESSAGE_CONTRACT = "chat.message.v1";
 export const CHAT_UNREAD_CONTRACT = "chat.unread.v1";
 export const CHAT_SPACE_CONTRACT = "chat.space.v1";
 export const CHAT_REACTION_CONTRACT = "chat.reaction.v1";
+export const CHAT_ATTACHMENT_CONTRACT = "chat.attachment.v1";
 
 export type ChatMessageEventType =
   "chat.message.created" | "chat.message.updated" | "chat.message.deleted";
@@ -259,6 +260,53 @@ export function announceReactionChanged(
       payload: { messageId, kind, change, actorId } as Readonly<
         Record<string, unknown>
       >,
+    }),
+  );
+}
+
+/**
+ * A file of a message was added or removed (backend ChatMessageAttachmentEventMapper and ChatRealtime.ForAttachmentChanged): `added`
+ * carries the file's metadata and its authorized download route, `removed` only its id. Never bytes.
+ */
+export function announceAttachmentChanged(
+  state: MockChatState,
+  space: ChatSpaceRecord,
+  messageId: string,
+  change: "added" | "removed",
+  file: {
+    readonly id: string;
+    readonly fileName?: string;
+    readonly sizeBytes?: number;
+    readonly contentType?: string;
+    readonly uploadedBy?: string;
+    readonly createdAt?: string;
+    readonly downloadPath?: string;
+  },
+): void {
+  const added = change === "added";
+  publishMockScopeFrame(
+    frame({
+      state,
+      eventType: "chat.message.attachment.changed",
+      subscriptionId: `channel:${space.id}`,
+      streamKey: channelStreamKey(space.id),
+      resourceKind: "Channel",
+      resourceId: space.id,
+      workspaceId: space.workspaceId,
+      occurredAt: state.store().getClock().isoNow(),
+      payloadContract: CHAT_ATTACHMENT_CONTRACT,
+      payload: {
+        messageId,
+        change,
+        attachmentId: file.id,
+        fileName: added ? (file.fileName ?? null) : null,
+        sizeBytes: added ? (file.sizeBytes ?? null) : null,
+        contentType: added ? (file.contentType ?? null) : null,
+        uploadedBy: added ? (file.uploadedBy ?? null) : null,
+        createdAt: added ? (file.createdAt ?? null) : null,
+        downloadPath: added ? (file.downloadPath ?? null) : null,
+        detailsOmitted: false,
+      } as Readonly<Record<string, unknown>>,
     }),
   );
 }

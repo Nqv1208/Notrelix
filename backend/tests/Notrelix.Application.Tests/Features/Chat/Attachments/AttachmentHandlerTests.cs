@@ -115,7 +115,7 @@ public class AttachmentHandlerTests
     }
 
     private UploadMessageAttachmentCommandHandler UploadHandler(IChatMessageAttachments? attachments = null) =>
-        new(_db.Object, _context.Object, _members.Object, _sequences.Object, attachments ?? _files);
+        new(_db.Object, _context.Object, _members.Object, _sequences.Object, attachments ?? _files, _clock.Object);
 
     private Task<Notrelix.Application.Common.Models.Result<Notrelix.Application.Features.Chat.Attachments.DTOs.MessageAttachmentDto>> Upload(
         Message message, string name = "report.pdf", byte[]? bytes = null, IChatMessageAttachments? attachments = null) =>
@@ -412,6 +412,71 @@ public class AttachmentHandlerTests
         _files.ListCalls.Should().Be(1, "the whole page is one attachment query, not one per message");
     }
 
+    // ---- Realtime fact -----------------------------------------------------------------------
+
+    private static List<Notrelix.Domain.Chat.Messages.Events.MessageAttachmentChangedDomainEvent> Facts(Message message) =>
+        message.DomainEvents.OfType<Notrelix.Domain.Chat.Messages.Events.MessageAttachmentChangedDomainEvent>().ToList();
+
+    [Fact]
+    public async Task An_upload_raises_one_added_fact_with_the_file_metadata_and_leaves_the_message_version()
+    {
+        var message = Text(Channel());
+        ((Notrelix.Domain.Common.IHasDomainEvents)message).ClearDomainEvents();
+        var version = message.Version;
+
+        var result = await Upload(message);
+
+        var fact = Facts(message).Should().ContainSingle().Subject;
+        fact.Added.Should().BeTrue();
+        fact.AttachmentId.Should().Be(result.Data!.Id);
+        fact.FileName.Should().Be("report.pdf");
+        fact.SpaceId.Should().Be(message.SpaceId);
+        fact.ActorId.Should().Be(_member);
+        message.Version.Should().Be(version, "a file does not change the message text or version");
+    }
+
+    [Fact]
+    public async Task A_refused_upload_raises_no_fact()
+    {
+        var message = Text(Channel());
+        ((Notrelix.Domain.Common.IHasDomainEvents)message).ClearDomainEvents();
+
+        var act = () => Upload(message, "run.exe", attachments: RealFlow());
+
+        await act.Should().ThrowAsync<UnsupportedMediaTypeException>();
+        Facts(message).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_removal_raises_one_removed_fact_with_only_the_file_id()
+    {
+        var space = Channel();
+        var message = Text(space);
+        var file = _files.Seed(message.Id);
+        ((Notrelix.Domain.Common.IHasDomainEvents)message).ClearDomainEvents();
+
+        await new DeleteMessageAttachmentCommandHandler(_db.Object, _context.Object, _members.Object, _files, _clock.Object)
+            .Handle(new DeleteMessageAttachmentCommand(_workspaceId, message.Id, file.Id), CancellationToken.None);
+
+        var fact = Facts(message).Should().ContainSingle().Subject;
+        fact.Added.Should().BeFalse();
+        fact.AttachmentId.Should().Be(file.Id);
+        fact.FileName.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task A_removal_of_a_file_that_is_not_on_the_message_raises_no_fact()
+    {
+        var message = Text(Channel());
+        ((Notrelix.Domain.Common.IHasDomainEvents)message).ClearDomainEvents();
+
+        var act = () => new DeleteMessageAttachmentCommandHandler(_db.Object, _context.Object, _members.Object, _files, _clock.Object)
+            .Handle(new DeleteMessageAttachmentCommand(_workspaceId, message.Id, Guid.NewGuid()), CancellationToken.None);
+
+        await act.Should().ThrowAsync<AppNotFoundException>();
+        Facts(message).Should().BeEmpty();
+    }
+
     // ---- Remove and delete -------------------------------------------------------------------
 
     [Fact]
@@ -420,7 +485,7 @@ public class AttachmentHandlerTests
         var space = Channel();
         var message = Text(space);
         var file = _files.Seed(message.Id);
-        var handler = new DeleteMessageAttachmentCommandHandler(_db.Object, _context.Object, _members.Object, _files);
+        var handler = new DeleteMessageAttachmentCommandHandler(_db.Object, _context.Object, _members.Object, _files, _clock.Object);
 
         AsUser(_otherMember);
         var denied = () => handler.Handle(new DeleteMessageAttachmentCommand(_workspaceId, message.Id, file.Id), CancellationToken.None);
@@ -437,7 +502,7 @@ public class AttachmentHandlerTests
     {
         var space = Channel();
         var message = Text(space);
-        var handler = new DeleteMessageAttachmentCommandHandler(_db.Object, _context.Object, _members.Object, _files);
+        var handler = new DeleteMessageAttachmentCommandHandler(_db.Object, _context.Object, _members.Object, _files, _clock.Object);
 
         var act = () => handler.Handle(new DeleteMessageAttachmentCommand(_workspaceId, message.Id, Guid.NewGuid()), CancellationToken.None);
 
@@ -452,7 +517,7 @@ public class AttachmentHandlerTests
         var file = _files.Seed(message.Id);
         space.SetArchived(true, _owner, Now);
 
-        var act = () => new DeleteMessageAttachmentCommandHandler(_db.Object, _context.Object, _members.Object, _files)
+        var act = () => new DeleteMessageAttachmentCommandHandler(_db.Object, _context.Object, _members.Object, _files, _clock.Object)
             .Handle(new DeleteMessageAttachmentCommand(_workspaceId, message.Id, file.Id), CancellationToken.None);
 
         (await act.Should().ThrowAsync<AppConflictException>()).Which.ErrorCode.Should().Be(ChatRuleCodes.ChannelArchived);
