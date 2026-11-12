@@ -145,7 +145,7 @@ Integration events (outbox): `chat.channel.created|updated|archived|deleted`, `c
 
 # 13. Migrations
 
-Expand-only migrations per phase (`backend/docs/operations/migrations-and-data-change.md`): Phase 1 creates `spaces`, `channel_groups`, `memberships`, `messages`; Phase 2 adds `threads`, `thread_followers`, `pins`, `reactions`, `blocks`, `direct_pairs`; Phase 3 adds `permission_overrides`, `retention_policies`, search structures. Each migration is immutable once applied, with the RLS script lines and `011_verification.sql` coverage in the same change.
+Expand-only migrations per phase (`backend/docs/operations/migrations-and-data-change.md`): Phase 1 creates `spaces`, `channel_groups`, `memberships`, `messages`; Phase 2 adds `threads`, `thread_followers`, `pins`, `reactions`, `blocks`, `direct_pairs`; Phase 3 adds `permission_overrides`, `retention_policies`, `export_jobs`, search structures. Each migration is immutable once applied, with the RLS script lines and `011_verification.sql` coverage in the same change.
 
 # 14. Test and evidence matrix
 

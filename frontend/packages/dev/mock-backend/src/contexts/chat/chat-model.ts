@@ -270,3 +270,24 @@ export const CHAT_SYSTEM_TEXT = {
   renamed: (name: string) => `renamed the channel to ${name}`,
   pinned: "pinned a message",
 } as const;
+
+/** An export of one person's chat data (backend ChatExportJob). The file is kept as text; the real one is an object in storage. */
+export interface ChatExportJobRecord {
+  readonly id: string;
+  readonly workspaceId: string;
+  readonly requestedBy: string;
+  readonly subjectUserId: string;
+  readonly rangeFrom: string | null;
+  readonly rangeTo: string | null;
+  status: "queued" | "running" | "ready" | "failed" | "expired";
+  messageCount: number;
+  spaceCount: number;
+  excludedSpaceCount: number;
+  tombstoneCount: number;
+  sizeBytes: number;
+  failureCode: string | null;
+  readonly createdAt: string;
+  completedAt: string | null;
+  expiresAt: string | null;
+  file: string | null;
+}

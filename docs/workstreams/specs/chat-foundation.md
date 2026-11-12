@@ -147,11 +147,13 @@ Prefix `/api/v1/workspaces/{workspaceId}/chat` (the Workspace is in the path, va
 | Reactions | `PUT/DELETE /messages/{id}/reactions/{kind}`, `GET /messages/{id}/reactions` |
 | Read state | `GET /me/unread`, `PUT /spaces/{id}/read`, `POST /me/read-all`, `PUT /spaces/{id}/notification-level` |
 | Mentions, links | `GET /spaces/{id}/mentionables`, `GET /links/resolve` |
-| Search, export | `GET /search`, `POST /exports` |
+| Search | `GET /search` (not built, UC-CHT-H07) |
+| Retention | `GET/PUT /retention` (Workspace rule: Owner sets, every member reads; `expectedVersion`, 412) |
+| Export | `POST /exports` (Owner or Admin; 202), `GET /exports/{id}` (status), `GET /exports/{id}/content` (the JSON file, the requester only, while it has not expired) |
 
 Error codes are stable (`space-not-found`, `channel-archived`, `name-conflict`, `version-conflict` (HTTP 412, the codebase convention for a stale expected version), `rate-limited`, `limit-reached`). Responses for no-access and missing are identical.
 
-A rate limit or a channel's slow mode is HTTP 429 with a `Retry-After` header, `errorCode` `rate_limit.exceeded` and `ruleCode` `rate-limited` or `slow-mode`; the body also has `retryAfter` (whole seconds), and `policy`, `scope` and `limit` (a rate limit) or `slowModeSeconds` (slow mode). The policies are `chat.send`, `chat.react`, `chat.thread-reply`, `chat.upload` and `chat.broadcast`, per person and per space (UC-CHT-H08). A channel's slow mode is `slowModeSeconds` (0 to 3600) on the channel and is set with `PATCH /channels/{id}`.
+A rate limit or a channel's slow mode is HTTP 429 with a `Retry-After` header, `errorCode` `rate_limit.exceeded` and `ruleCode` `rate-limited` or `slow-mode`; the body also has `retryAfter` (whole seconds), and `policy`, `scope` and `limit` (a rate limit) or `slowModeSeconds` (slow mode). The policies are `chat.send`, `chat.react`, `chat.thread-reply`, `chat.upload` and `chat.broadcast`, per person and per space (UC-CHT-H08), and `chat.export` (5 per person and 20 per Workspace per hour, UC-CHT-H06). A channel's slow mode is `slowModeSeconds` (0 to 3600) on the channel and is set with `PATCH /channels/{id}`.
 
 ## 16. Generated client and frontend contract
 
@@ -160,7 +162,7 @@ OpenAPI is exported from the backend and the client regenerated with `pnpm codeg
 ## 17. Realtime contract (protocol v1.1, additive)
 
 - Scope kind `channel` (value is the space id). Subscribe is authorized by a Chat-owned query; failure returns `subscription-error` with no detail.
-- Server frame `event` with `eventType` in `chat.message.created|updated|deleted`, `chat.reaction.changed`, `chat.message.attachment.changed`, `chat.membership.changed`, `chat.space.changed` (the change is `pinned`, `unpinned`, `permissions` or `slow-mode`); `streamKey` per space, gap-free `streamVersion`; payload compact (id, sequence, author, content, edited).
+- Server frame `event` with `eventType` in `chat.message.created|updated|deleted`, `chat.reaction.changed`, `chat.message.attachment.changed`, `chat.membership.changed`, `chat.space.changed` (the change is `pinned`, `unpinned`, `permissions`, `slow-mode` or `retention`; a retention batch sends one `retention` frame per space, not one delete frame per message, and readers refetch the messages, pins and channel views of the space); `streamKey` per space, gap-free `streamVersion`; payload compact (id, sequence, author, content, edited).
 - `chat.message.attachment.changed` (payloadContract `chat.attachment.v1`) is emitted by Chat.Attachments.Upload and Delete in the same transaction as the file change (domain fact on the message, outbox, the shared chat message consumer partitioned by space), so it rides the gap-free channel stream and resumes like any message frame. An added file carries `{ messageId, change, attachmentId, fileName, sizeBytes, contentType, uploadedBy, createdAt, downloadPath }`, a removed file only the ids; no bytes; `detailsOmitted` when the name does not fit the 3000-byte payload budget (the reader refetches `GET .../attachments`). Readers are exactly the readers of the message; the message version does not change. A rejected upload emits nothing. The uploader's in-progress state is not broadcast (no frame): others see the file once stored.
 - Per-user stream `chat.unread.changed` (space id, unread, mentions) using the existing per-user notification stream channel.
 - Client frames `typing` (`{ type, subscriptionId }`, the id of a channel subscription) and `presence` (`{ type, state }`, state online, idle or offline); both ephemeral, throttled (typing at most one per 3 seconds from the client, the gateway drops one sooner than 2 seconds; presence a heartbeat about every 30 seconds), counted inside the 4096-byte and 20 frames per second limits, and never stored.
@@ -193,7 +195,7 @@ Indexes: `messages (space_id, sequence desc)`, unique `(space_id, sequence)`, un
 
 ## 20. Schema and migration impact
 
-Additive. Phase 1 creates the first four tables; later phases add the rest. RLS policy lines are added to `008_policies_workspace_scoped_domain.sql`, grants to `005_grants.sql`, verification to `011_verification.sql`.
+Additive. Phase 1 creates the first four tables; later phases add the rest. Phase 3 (S3.3) adds `chat.retention_policies` (one row per Workspace, the id is the Workspace id) and `chat.export_jobs`, both with RLS lines, in the migration `AddChatRetentionAndExports` (expand-only). RLS policy lines are added to `008_policies_workspace_scoped_domain.sql`, grants to `005_grants.sql`, verification to `011_verification.sql`.
 
 ## 21. Failure semantics
 
@@ -217,7 +219,7 @@ RLS by Workspace; membership checks in the Application layer for private spaces 
 
 ## 26. Observability and operations
 
-Metrics: sends per second, send latency, send-to-receive latency, active subscriptions, gaps recovered, rate limited sends, outbox lag for chat facts. Logs carry space id and Workspace id, never message content. Alerts on outbox lag and gap-recovery rate.
+Background jobs: `Chat.Retention.Apply` (hosted service, `Chat:Retention`, batches of 200 messages per space, each under a transaction advisory lock on the space; one System Audit fact per batch with counts only) and the export worker (builds the JSON file into platform object storage; a sweep expires files after 24 hours and requeues a job stuck Running for 15 minutes). Metrics: sends per second, send latency, send-to-receive latency, active subscriptions, gaps recovered, rate limited sends, outbox lag for chat facts. Logs carry space id and Workspace id, never message content. Alerts on outbox lag and gap-recovery rate.
 
 ## 27. Notifications, activity and collaboration
 

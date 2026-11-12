@@ -37,6 +37,7 @@ import {
   type ChatMessagePage,
   type ChatNotificationLevel,
   type ChatPermissionEntry,
+  type ChatRetentionMode,
   type ChatPinPage,
   type ChatReactorPage,
   type ChatThreadCursor,
@@ -509,6 +510,78 @@ export function createChatHooks(deps: ChatHookDeps) {
           void queryClient.invalidateQueries({ queryKey: key });
         }
       },
+    });
+  }
+
+  // ─── Retention and export (UC-CHT-H05, H06) ────────────────────────────────
+
+  /** The Workspace retention rule (any member reads it; `canChange` is the Owner). */
+  function useRetention(workspaceId: string, enabled = true) {
+    return useQuery({
+      queryKey: chatQueryKeys.retention(workspaceId),
+      queryFn: () => service.getRetention(workspaceId),
+      staleTime: CHANNEL_STALE_MS,
+      enabled: enabled && workspaceId.length > 0,
+    });
+  }
+
+  /** Sets the rule; the answer carries the new version and seeds the cache; a stale version reads the rule again. */
+  function useSetRetention(workspaceId: string) {
+    const queryClient = useQueryClient();
+    const key = chatQueryKeys.retention(workspaceId);
+    return useMutation({
+      mutationFn: (input: {
+        retentionDays: number | null;
+        mode: ChatRetentionMode;
+        expectedVersion: number;
+      }) => service.setRetention(workspaceId, input),
+      onSuccess: (result) => {
+        queryClient.setQueryData(key, result);
+      },
+      onError: (error) => {
+        if (chatFailureOf(error).kind === "stale") {
+          void queryClient.invalidateQueries({ queryKey: key });
+        }
+      },
+    });
+  }
+
+  /** Asks for an export; the queued job seeds its status cache, which the status hook then polls. */
+  function useCreateExport(workspaceId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (input: {
+        subjectUserId: string;
+        rangeFrom?: string | null;
+        rangeTo?: string | null;
+      }) => service.createExport(workspaceId, input),
+      onSuccess: (job) => {
+        queryClient.setQueryData(
+          chatQueryKeys.chatExport(workspaceId, job.id),
+          job,
+        );
+      },
+    });
+  }
+
+  /** The status of an export, polled every few seconds while it is queued or running. */
+  function useExport(workspaceId: string, exportId: string | null) {
+    return useQuery({
+      queryKey: chatQueryKeys.chatExport(workspaceId, exportId ?? ""),
+      queryFn: () => service.getExport(workspaceId, exportId!),
+      enabled: Boolean(exportId) && workspaceId.length > 0,
+      refetchInterval: (query) => {
+        const status = query.state.data?.status;
+        return status === "queued" || status === "running" ? 3000 : false;
+      },
+    });
+  }
+
+  /** Reads the export file for saving (permission checked on every request, never cached). */
+  function useDownloadExport(workspaceId: string) {
+    return useMutation({
+      mutationFn: (exportId: string) =>
+        service.getExportContent(workspaceId, exportId),
     });
   }
 
@@ -1137,6 +1210,11 @@ export function createChatHooks(deps: ChatHookDeps) {
     useModerateMessage,
     useChannelPermissions,
     useSetChannelPermissions,
+    useRetention,
+    useSetRetention,
+    useCreateExport,
+    useExport,
+    useDownloadExport,
     useMarkRead,
     useMarkAllRead,
     useSetNotificationLevel,

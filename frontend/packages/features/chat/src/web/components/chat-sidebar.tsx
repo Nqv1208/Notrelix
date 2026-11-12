@@ -1,4 +1,12 @@
-import { BellOff, Hash, Lock, Plus, RotateCw, Search } from "lucide-react";
+import {
+  BellOff,
+  Hash,
+  Lock,
+  Plus,
+  RotateCw,
+  Search,
+  Settings,
+} from "lucide-react";
 import { Avatar, AvatarFallback, Button, Skeleton, cn } from "@notrelix/ui-web";
 import type { ChatChannel } from "../../core/types/chat";
 import type { ChatCopy } from "./chat.copy";
@@ -40,6 +48,8 @@ export interface ChatSidebarProps {
   readonly copy: ChatCopy;
   readonly onSelect: (channelId: string) => void;
   readonly onCreate: () => void;
+  /** Opens the Chat admin settings (retention and export); only an Owner or an Admin is offered it. */
+  readonly onOpenSettings?: () => void;
   readonly onJoin: (channelId: string) => void;
   readonly onRetry: () => void;
   readonly joiningId: string | null;
@@ -107,6 +117,7 @@ export function ChatSidebar({
   copy,
   onSelect,
   onCreate,
+  onOpenSettings,
   onJoin,
   onRetry,
   joiningId,
@@ -122,17 +133,30 @@ export function ChatSidebar({
     >
       <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
         <h2 className="text-sm font-semibold">{copy.sidebar.listTitle}</h2>
-        {canCreate ? (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={copy.sidebar.newChannel}
-            title={copy.sidebar.newChannel}
-            onClick={onCreate}
-          >
-            <Plus aria-hidden="true" />
-          </Button>
-        ) : null}
+        <div className="flex items-center gap-1">
+          {onOpenSettings ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={copy.admin.open}
+              title={copy.admin.open}
+              onClick={onOpenSettings}
+            >
+              <Settings aria-hidden="true" />
+            </Button>
+          ) : null}
+          {canCreate ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={copy.sidebar.newChannel}
+              title={copy.sidebar.newChannel}
+              onClick={onCreate}
+            >
+              <Plus aria-hidden="true" />
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       {/* A jump-to field with no handler yet: visual only, so it is not a control. */}

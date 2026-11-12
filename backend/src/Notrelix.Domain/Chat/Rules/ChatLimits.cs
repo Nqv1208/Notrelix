@@ -55,4 +55,22 @@ public static class ChatLimits
     /// Zero turns it off.
     /// </summary>
     public const int SlowModeMaxSeconds = 3600;
+
+    /// <summary>The shortest retention window a Workspace can set, in days (UC-CHT-H05): a one-day window would remove a conversation before anyone read it.</summary>
+    public const int RetentionMinDays = 7;
+
+    /// <summary>The longest retention window a Workspace can set, in days (ten years, UC-CHT-H05).</summary>
+    public const int RetentionMaxDays = 3650;
+
+    /// <summary>The most messages one retention batch removes from one space (UC-CHT-H05). The job repeats until nothing expired is left.</summary>
+    public const int RetentionBatchSize = 200;
+
+    /// <summary>The most messages one chat export holds (UC-CHT-H06). A request that finds more fails with export-too-large and the Admin narrows the range.</summary>
+    public const int ExportMaxMessages = 50_000;
+
+    /// <summary>The most bytes one chat export file holds (UC-CHT-H06): 20 MiB.</summary>
+    public const long ExportMaxBytes = 20L * 1024 * 1024;
+
+    /// <summary>How long a ready export can be downloaded, in hours (UC-CHT-H06). After that the file is deleted.</summary>
+    public const int ExportLifetimeHours = 24;
 }

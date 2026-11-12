@@ -241,6 +241,27 @@ public class Message : AggregateRoot, IWorkspaceScoped
         return Tombstone(moderatorId, deletedAt);
     }
 
+    /// <summary>
+    /// Turns the message into a tombstone because it is older than the Workspace's retention window (UC-CHT-H05): the content goes, the
+    /// author, the time and the sequence stay, and nobody is recorded as the one who deleted it (DeletedBy stays empty, so it is not a
+    /// moderator's removal). It raises no fact of its own: the retention job announces a whole batch with one fact per space. A system
+    /// message is never expired. Returns false when it is already a tombstone.
+    /// </summary>
+    public bool ExpireByRetention(DateTimeOffset expiredAt)
+    {
+        if (IsSystem)
+            throw new BusinessRuleException(ChatRuleCodes.SystemMessageImmutable, "A system message cannot be deleted.");
+        if (IsDeleted) return false;
+
+        var pending = PrepareAuditUpdate(null, expiredAt);
+        Content = null;
+        DeletedAt = expiredAt;
+        DeletedBy = null;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        return true;
+    }
+
     /// <summary>True when the tombstone was left by someone other than the author, a moderator (UC-CHT-H03).</summary>
     public bool IsRemovedByModerator => IsDeleted && DeletedBy is { } by && by != AuthorId;
 

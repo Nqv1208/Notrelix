@@ -96,6 +96,7 @@ import {
   type CreateChannelValues,
 } from "./chat-dialogs";
 import { ChatPermissionsDialog } from "./chat-permissions-dialog";
+import { ChatAdminSettings } from "./chat-admin-settings-host";
 import { ChatNewMessageDialog } from "./chat-new-message-dialog";
 import {
   ChatAddPeopleDialog,
@@ -237,6 +238,7 @@ export function ChatWorkspace({
   const canManageWorkspace = viewerRole === "owner" || viewerRole === "admin";
 
   const [permissionsOpen, setPermissionsOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
 
   // ─── Server state ─────────────────────────────────────────────────────────
   const channels = hooks.useChannels(ws);
@@ -1085,6 +1087,9 @@ export function ChatWorkspace({
         setListOpen(false);
         onOpenChannel(id);
       }}
+      onOpenSettings={
+        canManageWorkspace && !isGuest ? () => setAdminOpen(true) : undefined
+      }
       onCreate={() => {
         setCreateError(null);
         setCreateOpen(true);
@@ -1822,6 +1827,16 @@ export function ChatWorkspace({
             onSave={handleSavePermissions}
           />
         ) : null}
+        <ChatAdminSettings
+          open={adminOpen}
+          onOpenChange={setAdminOpen}
+          hooks={hooks}
+          workspaceId={ws}
+          viewerRole={viewerRole}
+          people={people}
+          locale={locale}
+          copy={copy}
+        />
         <ModerateMessageDialog
           open={moderateTarget !== null}
           busy={moderator.isPending}

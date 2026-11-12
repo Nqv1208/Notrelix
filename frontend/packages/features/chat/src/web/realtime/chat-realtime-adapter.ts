@@ -405,6 +405,23 @@ export function createChatRealtimeAdapter(
         }),
       ]).then(() => undefined);
     }
+    if (frame.change === "retention") {
+      // A retention batch removed or tombstoned messages (UC-CHT-H05): everything the space shows is read again.
+      return Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.messages(workspaceId, channelId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.pins(workspaceId, channelId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.channel(workspaceId, channelId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.channels(workspaceId),
+        }),
+      ]).then(() => undefined);
+    }
     if (frame.change === "slow-mode") {
       // The slow mode rides on the channel views (UC-CHT-H08): the composer's indicator follows them.
       return Promise.all([

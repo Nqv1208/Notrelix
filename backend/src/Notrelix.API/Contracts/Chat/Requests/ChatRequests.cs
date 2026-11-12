@@ -101,3 +101,9 @@ public record SetChannelPermissionsRequest(IReadOnlyList<ChannelPermissionEntryR
 
 /// <summary>A moderator's removal of another person's message: the reason (1 to 500 characters) and the version the moderator read. A stale version is 412.</summary>
 public record ModerateMessageRequest(string? Reason, long? ExpectedVersion);
+
+/// <summary>The Workspace's chat retention rule: keep messages this many days (7 to 3650; null for no retention) and then turn them into tombstones or purge them (mode tombstone or purge), with the version the Owner read. A stale version is 412.</summary>
+public record SetRetentionPolicyRequest(int? RetentionDays, string? Mode, long? ExpectedVersion);
+
+/// <summary>An export of one person's chat data: whose, and optionally the range (from inclusive, to exclusive; the range ends after it starts).</summary>
+public record CreateChatExportRequest(Guid? SubjectUserId, DateTimeOffset? RangeFrom, DateTimeOffset? RangeTo);

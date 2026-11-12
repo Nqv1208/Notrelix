@@ -78,4 +78,13 @@ public static class ChatRuleCodes
 
     /// <summary>A slow mode is not between 0 and the most the Workspace allows, or the space is a conversation (400, UC-CHT-H08).</summary>
     public const string SlowModeInvalid = "slow-mode-invalid";
+
+    /// <summary>A retention window outside the limits or an unknown retention mode (400, UC-CHT-H05).</summary>
+    public const string RetentionInvalid = "retention-invalid";
+
+    /// <summary>An export asks for an unknown person, a range that ends before it starts, or a state that does not allow the change (400, UC-CHT-H06).</summary>
+    public const string ExportInvalid = "export-invalid";
+
+    /// <summary>An export would hold more than the limits allow; narrow the range (the job fails with this code, UC-CHT-H06).</summary>
+    public const string ExportTooLarge = "export-too-large";
 }

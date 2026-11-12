@@ -305,6 +305,16 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
         return true;
     }
 
+    /// <summary>
+    /// Records that the retention job removed messages from this space (UC-CHT-H05). Nothing on the space changes (no version bump); the
+    /// fact only tells the clients of the space to refetch. Only a live space is announced.
+    /// </summary>
+    public void RecordRetentionApplied(DateTimeOffset appliedAt)
+    {
+        EnsureNotDeleted();
+        RaiseDomainEvent(new ChannelRetentionAppliedDomainEvent(AccountId, WorkspaceId, Id, appliedAt));
+    }
+
     /// <summary>Moves the channel in the sidebar. Returns false when it already sits there.</summary>
     public bool MoveTo(Guid? groupId, double position, Guid movedBy, DateTimeOffset movedAt)
     {

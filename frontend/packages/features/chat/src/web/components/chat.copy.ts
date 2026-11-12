@@ -498,6 +498,74 @@ export const en = {
     forbidden: "You cannot remove this message.",
     stale: "The message changed. The latest version is shown.",
   },
+  admin: {
+    open: "Chat settings",
+    title: "Chat settings",
+    description: "Retention and exports for this Workspace.",
+    close: "Close",
+    retention: {
+      heading: "Retention",
+      description:
+        "Decide how long messages are kept. Messages older than the window are removed in the background. Messages in spaces that were deleted and are still inside their recovery window are left alone.",
+      loading: "Loading the retention rule",
+      loadFailed: "The retention rule could not load.",
+      retry: "Try again",
+      daysLabel: "Keep messages for (days)",
+      daysHint: "From 7 to 3650 days. Leave empty to keep everything.",
+      daysInvalid: "Enter a whole number from 7 to 3650, or leave it empty.",
+      modeLabel: "When a message is past the window",
+      tombstone: "Replace it with a removed-message notice",
+      tombstoneHint:
+        "The text, files, reactions and pin are removed. The notice stays in the conversation.",
+      purge: "Delete it for good",
+      purgeHint:
+        "The message is removed completely, with the replies of a thread that is entirely past the window. This cannot be undone.",
+      current: "Current rule: {{days}} days, {{mode}}.",
+      currentNone: "No retention: every message is kept.",
+      modeName: { tombstone: "replace with a notice", purge: "delete" },
+      readOnly: "Only the Workspace Owner can change the retention rule.",
+      save: "Save rule",
+      saved: "Retention rule saved.",
+      failed: "The retention rule was not saved.",
+      stale: "The rule changed while you were editing. The latest is shown.",
+      forbidden: "Only the Workspace Owner can change this.",
+      confirmTitle: "Delete old messages for good?",
+      confirmBody:
+        "Messages older than {{days}} days will be deleted permanently, together with their files, reactions and pins. A thread goes when its last reply is older than the window. Deleted messages cannot be restored, and this also applies to messages that are already past the window.",
+      confirm: "Delete for good",
+      cancel: "Cancel",
+    },
+    export: {
+      heading: "Export a person's chat data",
+      description:
+        "Creates a JSON file with the person's messages in the spaces you can see. Private spaces you are not in, removed messages and other people's content are left out. The file can be downloaded for 24 hours.",
+      personLabel: "Person",
+      personPlaceholder: "Choose a person",
+      fromLabel: "From (optional)",
+      toLabel: "Until (optional)",
+      rangeInvalid: "The end must be after the start.",
+      request: "Request export",
+      queued: "The export is waiting to start.",
+      running: "The export is being prepared.",
+      ready:
+        "The export is ready: {{messages}} messages in {{spaces}} spaces ({{size}}).",
+      readyOmitted:
+        "{{excluded}} spaces you cannot see and {{tombstones}} removed messages are not included.",
+      expiresAt: "Available until {{time}}.",
+      download: "Download",
+      downloadFailed: "The file could not be downloaded.",
+      expired: "The export has expired. Request a new one.",
+      failed: "The export failed.",
+      failedReasons: {
+        "export-too-large":
+          "The export is too large. Choose a shorter range and try again.",
+        "no-access": "You can no longer export chat data in this Workspace.",
+      },
+      createFailed: "The export could not be requested.",
+      rateLimited: "Too many exports. Try again in a while.",
+      forbidden: "Only an Owner or an Admin can export chat data.",
+    },
+  },
   permissions: {
     title: "Channel permissions",
     description:
@@ -1034,6 +1102,76 @@ export const vi: ChatCopy = {
     failed: "Chưa gỡ được tin nhắn.",
     forbidden: "Bạn không gỡ được tin nhắn này.",
     stale: "Tin nhắn đã thay đổi. Đang hiện bản mới nhất.",
+  },
+  admin: {
+    open: "Cài đặt chat",
+    title: "Cài đặt chat",
+    description: "Lưu giữ và xuất dữ liệu cho Workspace này.",
+    close: "Đóng",
+    retention: {
+      heading: "Lưu giữ tin nhắn",
+      description:
+        "Chọn thời gian giữ tin nhắn. Tin nhắn cũ hơn khoảng này sẽ được xóa ngầm. Tin nhắn trong không gian đã xóa và còn trong thời gian khôi phục sẽ không bị đụng tới.",
+      loading: "Đang tải quy tắc lưu giữ",
+      loadFailed: "Không tải được quy tắc lưu giữ.",
+      retry: "Thử lại",
+      daysLabel: "Giữ tin nhắn trong (ngày)",
+      daysHint: "Từ 7 đến 3650 ngày. Để trống để giữ tất cả.",
+      daysInvalid: "Nhập số nguyên từ 7 đến 3650, hoặc để trống.",
+      modeLabel: "Khi tin nhắn quá hạn",
+      tombstone: "Thay bằng thông báo tin nhắn đã xóa",
+      tombstoneHint:
+        "Nội dung, tệp, biểu cảm và ghim bị xóa. Thông báo vẫn nằm trong cuộc trò chuyện.",
+      purge: "Xóa vĩnh viễn",
+      purgeHint:
+        "Tin nhắn bị xóa hoàn toàn, cùng các phản hồi của luồng đã quá hạn hoàn toàn. Không thể hoàn tác.",
+      current: "Quy tắc hiện tại: {{days}} ngày, {{mode}}.",
+      currentNone: "Không lưu giữ: mọi tin nhắn được giữ lại.",
+      modeName: { tombstone: "thay bằng thông báo", purge: "xóa" },
+      readOnly: "Chỉ Chủ sở hữu Workspace mới đổi được quy tắc lưu giữ.",
+      save: "Lưu quy tắc",
+      saved: "Đã lưu quy tắc lưu giữ.",
+      failed: "Chưa lưu được quy tắc lưu giữ.",
+      stale: "Quy tắc đã đổi khi bạn đang sửa. Đang hiển thị bản mới nhất.",
+      forbidden: "Chỉ Chủ sở hữu Workspace mới đổi được mục này.",
+      confirmTitle: "Xóa vĩnh viễn tin nhắn cũ?",
+      confirmBody:
+        "Tin nhắn cũ hơn {{days}} ngày sẽ bị xóa vĩnh viễn, cùng với tệp, biểu cảm và ghim. Một luồng bị xóa khi phản hồi cuối cùng cũ hơn khoảng này. Tin nhắn đã xóa không thể khôi phục, kể cả những tin đã quá hạn từ trước.",
+      confirm: "Xóa vĩnh viễn",
+      cancel: "Hủy",
+    },
+    export: {
+      heading: "Xuất dữ liệu chat của một người",
+      description:
+        "Tạo tệp JSON chứa tin nhắn của người đó trong các không gian bạn nhìn thấy. Không gian riêng tư bạn không tham gia, tin nhắn đã xóa và nội dung của người khác sẽ không có trong tệp. Tệp tải được trong 24 giờ.",
+      personLabel: "Người",
+      personPlaceholder: "Chọn một người",
+      fromLabel: "Từ (tùy chọn)",
+      toLabel: "Đến (tùy chọn)",
+      rangeInvalid: "Ngày kết thúc phải sau ngày bắt đầu.",
+      request: "Yêu cầu xuất",
+      queued: "Bản xuất đang chờ bắt đầu.",
+      running: "Bản xuất đang được chuẩn bị.",
+      ready:
+        "Bản xuất đã sẵn sàng: {{messages}} tin nhắn trong {{spaces}} không gian ({{size}}).",
+      readyOmitted:
+        "{{excluded}} không gian bạn không nhìn thấy và {{tombstones}} tin nhắn đã xóa không có trong tệp.",
+      expiresAt: "Tải được đến {{time}}.",
+      download: "Tải xuống",
+      downloadFailed: "Không tải được tệp.",
+      expired: "Bản xuất đã hết hạn. Hãy yêu cầu bản mới.",
+      failed: "Bản xuất thất bại.",
+      failedReasons: {
+        "export-too-large":
+          "Bản xuất quá lớn. Hãy chọn khoảng thời gian ngắn hơn rồi thử lại.",
+        "no-access":
+          "Bạn không còn quyền xuất dữ liệu chat trong Workspace này.",
+      },
+      createFailed: "Không yêu cầu được bản xuất.",
+      rateLimited: "Yêu cầu xuất quá nhiều. Thử lại sau ít phút.",
+      forbidden:
+        "Chỉ Chủ sở hữu hoặc Quản trị viên mới xuất được dữ liệu chat.",
+    },
   },
   permissions: {
     title: "Quyền hạn của kênh",

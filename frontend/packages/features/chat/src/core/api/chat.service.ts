@@ -21,6 +21,9 @@ import type {
   ChatNotificationLevel,
   ChatNotificationState,
   ChatChannelPermissions,
+  ChatExport,
+  ChatRetentionMode,
+  ChatRetentionPolicy,
   ChatPermissionEntry,
   ChatPin,
   ChatPinPage,
@@ -117,6 +120,10 @@ export interface ChatEndpoints {
     spacePins: (workspaceId: string, spaceId: string) => string;
     channelPermissions: (workspaceId: string, channelId: string) => string;
     messageModeration: (workspaceId: string, messageId: string) => string;
+    retention: (workspaceId: string) => string;
+    exports: (workspaceId: string) => string;
+    chatExport: (workspaceId: string, exportId: string) => string;
+    chatExportContent: (workspaceId: string, exportId: string) => string;
     messageReaction: (
       workspaceId: string,
       messageId: string,
@@ -546,6 +553,48 @@ export function createChatService(
           expectedVersion,
         }),
       );
+    },
+
+    /** `Chat.Retention.Get`: the Workspace rule; any member reads it, `canChange` tells who may set it. */
+    getRetention(workspaceId: string): Promise<ChatRetentionPolicy> {
+      return api.get<ChatRetentionPolicy>(paths.retention(workspaceId));
+    },
+
+    /** `Chat.Retention.Set`: Owner only; a stale expectedVersion is 412. */
+    setRetention(
+      workspaceId: string,
+      input: {
+        retentionDays: number | null;
+        mode: ChatRetentionMode;
+        expectedVersion: number;
+      },
+    ): Promise<ChatRetentionPolicy> {
+      return api.put<ChatRetentionPolicy>(paths.retention(workspaceId), input);
+    },
+
+    /** `Chat.Exports.Create`: Owner or Admin asks for the export of one person's chat data (202, queued). */
+    createExport(
+      workspaceId: string,
+      input: {
+        subjectUserId: string;
+        rangeFrom?: string | null;
+        rangeTo?: string | null;
+      },
+    ): Promise<ChatExport> {
+      return api.post<ChatExport>(paths.exports(workspaceId), input);
+    },
+
+    /** `Chat.Exports.Get`: the status of an export the caller asked for. */
+    getExport(workspaceId: string, exportId: string): Promise<ChatExport> {
+      return api.get<ChatExport>(paths.chatExport(workspaceId, exportId));
+    },
+
+    /** `Chat.Exports.GetContent`: the file bytes, read with the session. */
+    getExportContent(workspaceId: string, exportId: string): Promise<Blob> {
+      if (!api.getBlob) {
+        return Promise.reject(new Error("The API client cannot read files."));
+      }
+      return api.getBlob(paths.chatExportContent(workspaceId, exportId));
     },
 
     /** `Chat.Messages.Moderate`: removes another person's message; the reason goes to the Audit record. */

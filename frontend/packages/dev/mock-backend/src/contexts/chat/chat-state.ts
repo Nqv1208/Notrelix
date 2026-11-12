@@ -11,6 +11,7 @@ import type { MockStore } from "../../state/mock-store";
 import type { ChatPermissionEntryRecord } from "./chat-permissions";
 import type {
   ChatAttachmentRecord,
+  ChatExportJobRecord,
   ChatGroupRecord,
   ChatMembershipRecord,
   ChatMentionRecord,
@@ -75,6 +76,19 @@ export class MockChatState {
     string,
     readonly ChatPermissionEntryRecord[]
   >();
+  /** The retention rule of each Workspace (UC-CHT-H05); a Workspace with none reads as no retention at version 1. */
+  readonly retentionPolicies = new Map<
+    string,
+    {
+      retentionDays: number | null;
+      mode: "tombstone" | "purge";
+      version: number;
+      updatedAt: string | null;
+    }
+  >();
+  /** The export jobs by id (UC-CHT-H06). */
+  readonly exportJobs = new Map<string, ChatExportJobRecord>();
+  exportCounter = 0;
   /** The direct conversation of each pair, keyed by `${workspaceId}|${low}|${high}` (backend DirectPair). */
   readonly directPairs = new Map<string, string>();
   /** Blocks keyed by `${workspaceId}|${blockerId}|${blockedId}` (backend PersonBlock). */
@@ -120,6 +134,9 @@ export class MockChatState {
     this.blocks.clear();
     this.limitHits.clear();
     this.limitOverrides.clear();
+    this.retentionPolicies.clear();
+    this.exportJobs.clear();
+    this.exportCounter = 0;
     this.streamVersions.clear();
     this.idCounters.space = 0;
     this.idCounters.group = 0;

@@ -83,6 +83,8 @@ SELECT ops.apply_scoped_business_policies('chat', 'message_mentions', true);
 SELECT ops.apply_scoped_business_policies('chat', 'permission_overrides', true);
 SELECT ops.apply_scoped_business_policies('chat', 'direct_pairs', true);
 SELECT ops.apply_scoped_business_policies('chat', 'blocks', true);
+SELECT ops.apply_scoped_business_policies('chat', 'retention_policies', true);
+SELECT ops.apply_scoped_business_policies('chat', 'export_jobs', true);
 SELECT ops.apply_scoped_business_policies('automation', 'automation_rules', true);
 SELECT ops.apply_scoped_business_policies('automation', 'automation_executions', true);
 SELECT ops.apply_scoped_business_policies('automation', 'scheduled_jobs', true);

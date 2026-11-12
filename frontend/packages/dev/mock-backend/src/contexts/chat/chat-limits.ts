@@ -11,7 +11,7 @@ import { ChatFailure, type ChatProblemBody } from "./chat-access";
 import type { MockChatState } from "./chat-state";
 
 export type ChatLimitPolicy =
-  "send" | "react" | "thread-reply" | "upload" | "broadcast";
+  "send" | "react" | "thread-reply" | "upload" | "broadcast" | "export";
 
 interface Limit {
   readonly person: number;
@@ -26,6 +26,8 @@ export const CHAT_LIMIT_DEFAULTS: Readonly<Record<ChatLimitPolicy, Limit>> = {
   "thread-reply": { person: 30, space: 300, windowSeconds: 60 },
   upload: { person: 10, space: 100, windowSeconds: 60 },
   broadcast: { person: 3, space: 10, windowSeconds: 60 },
+  /** The export counts per person and per Workspace (the workspace id travels where the space id does). */
+  export: { person: 5, space: 20, windowSeconds: 3600 },
 };
 
 function tooMany(

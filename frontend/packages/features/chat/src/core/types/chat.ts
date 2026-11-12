@@ -456,3 +456,47 @@ export interface ChatMentionPayload {
   readonly mentions?: readonly ChatMentionInput[];
   readonly confirmBroadcast?: boolean;
 }
+
+/** The two things retention does to a message past the window (UC-CHT-H05). */
+export const CHAT_RETENTION_MODES = ["tombstone", "purge"] as const;
+export type ChatRetentionMode = (typeof CHAT_RETENTION_MODES)[number];
+
+/** The window the backend accepts (ChatLimits.RetentionMinDays / RetentionMaxDays). */
+export const CHAT_RETENTION_DAYS = { min: 7, max: 3650 } as const;
+
+/** RetentionPolicyDto: the Workspace rule. `retentionDays` null is no retention; `canChange` is true for the Owner only. */
+export interface ChatRetentionPolicy {
+  readonly retentionDays: number | null;
+  readonly mode: ChatRetentionMode;
+  readonly version: number;
+  readonly updatedAt: string | null;
+  readonly canChange: boolean;
+}
+
+export const CHAT_EXPORT_STATUSES = [
+  "queued",
+  "running",
+  "ready",
+  "failed",
+  "expired",
+] as const;
+export type ChatExportStatus = (typeof CHAT_EXPORT_STATUSES)[number];
+
+/** ChatExportDto: counts only, no names and no content. `downloadPath` is set only while the file can be downloaded. */
+export interface ChatExport {
+  readonly id: string;
+  readonly subjectUserId: string;
+  readonly rangeFrom: string | null;
+  readonly rangeTo: string | null;
+  readonly status: ChatExportStatus;
+  readonly messageCount: number;
+  readonly spaceCount: number;
+  readonly excludedSpaceCount: number;
+  readonly tombstoneCount: number;
+  readonly sizeBytes: number;
+  readonly failureCode: string | null;
+  readonly createdAt: string;
+  readonly completedAt: string | null;
+  readonly expiresAt: string | null;
+  readonly downloadPath: string | null;
+}

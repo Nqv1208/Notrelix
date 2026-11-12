@@ -158,7 +158,9 @@ export type ChatAction =
   | "channelManage"
   | "groupManage"
   | "memberInvite"
-  | "messageModerate";
+  | "messageModerate"
+  | "manageWorkspace"
+  | "manageWorkspaceSettings";
 
 /** The roles the baseline denies each Chat action (WorkspaceRoleBaseline, Chat section). */
 const DENIED_ROLES: Record<ChatAction, readonly ChatWorkspaceRole[]> = {
@@ -172,6 +174,10 @@ const DENIED_ROLES: Record<ChatAction, readonly ChatWorkspaceRole[]> = {
   groupManage: ["Member", "Guest"],
   memberInvite: ["Guest"],
   messageModerate: ["Member", "Guest"],
+  /** Retention Set: the Workspace Owner only (PermissionAction.ManageWorkspace). */
+  manageWorkspace: ["Admin", "Member", "Guest"],
+  /** Export create, status and download: Owner and Admin (PermissionAction.ManageWorkspaceSettings). */
+  manageWorkspaceSettings: ["Member", "Guest"],
 };
 
 /** Whether the Workspace role holds the Chat action by default (the baseline cell, not an override). */
