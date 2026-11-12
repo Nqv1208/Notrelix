@@ -399,6 +399,18 @@ export const endpoints = {
     /** Channel permission overrides: GET reads, PUT replaces the set, DELETE (expectedVersion in the query) clears it. */
     channelPermissions: (workspaceId: string, channelId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/permissions`,
+    /** The Workspace retention rule: GET reads it, PUT sets it (Owner only, expectedVersion in the body). */
+    retention: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/retention`,
+    /** Exports of a person's chat data: POST asks for one. */
+    exports: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/exports`,
+    /** One export: its status. */
+    chatExport: (workspaceId: string, exportId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/exports/${encodeURIComponent(exportId)}`,
+    /** The export file, read with the session (permission checked on every request). */
+    chatExportContent: (workspaceId: string, exportId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/exports/${encodeURIComponent(exportId)}/content`,
     /** POST removes another person's message as a moderator (the reason goes to the Audit record). */
     messageModeration: (workspaceId: string, messageId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/moderation`,

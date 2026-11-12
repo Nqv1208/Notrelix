@@ -24,6 +24,8 @@ describe("chat endpoint paths", () => {
       chat.spacePins("w", hostile),
       chat.channelPermissions("w", hostile),
       chat.messageModeration("w", hostile),
+      chat.chatExport("w", hostile),
+      chat.chatExportContent("w", hostile),
       chat.messageReaction("w", "m", hostile),
       chat.messageReactors("w", hostile),
       chat.conversationParticipants("w", hostile),
