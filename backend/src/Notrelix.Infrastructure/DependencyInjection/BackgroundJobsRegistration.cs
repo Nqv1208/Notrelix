@@ -98,6 +98,13 @@ public static class BackgroundJobsRegistration
         services.AddScoped<Notrelix.Application.Features.Chat.Exports.ChatExportBuilder>();
         services.AddScoped<ChatExportRunner>();
         services.AddHostedService<ChatExportService>();
+        services.AddOptions<ChatDigestOptions>()
+            .Bind(configuration.GetSection(ChatDigestOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<ChatDigestOptions>, ChatDigestOptionsValidator>();
+        services.AddScoped<Notrelix.Infrastructure.Notifications.ChatDigest.ChatDigestComposer>();
+        services.AddScoped<ChatDigestRunner>();
+        services.AddHostedService<ChatDigestService>();
 
         return services;
     }

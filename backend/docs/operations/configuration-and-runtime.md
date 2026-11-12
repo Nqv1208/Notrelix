@@ -338,6 +338,22 @@ builds the JSON file into platform object storage (`IStorageService`), bounded t
 (`ChatLimits.ExportMaxMessages`, `ExportMaxBytes`), keeps it for 24 hours (`ExportLifetimeHours`), and its sweep expires
 files and requeues a job stuck Running for more than 15 minutes. The request is limited by the chat rate limit policy
 `Export` (`RateLimiting:Chat:Export`, default 5 per person and 20 per Workspace per hour).
+`Chat:Digest` (Infrastructure, `ChatDigestOptions`, validated on start by `ChatDigestOptionsValidator`) configures the missed-mention email digest
+`Chat.Notifications.Digest` (`ChatDigestService`, a hosted service; UC-CHT-H09). Each pass looks at the unread chat notifications
+(mention, direct message, thread reply, broadcast) created in the latest completed window, and for each person who turned the `digest` email
+preference on queues ONE email on the shared email outbox (the same `EmailDispatcher` and retries as every other mail; no second mail path). The
+deduplication key `chat-digest:{workspace}:{user}:{window}` makes a repeated pass add nothing, and a failed send is retried by the dispatcher.
+Chat supplies the facts through `IChatDigestFacts` (membership, level, mute, read and permission are re-checked at send); the address comes from
+Identity's `IMemberDeliveryAddresses` (a Guest has none). It runs under the system context with the RLS worker scope.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `true` | When false nothing is queued. |
+| `Interval` | `00:15:00` | Time between passes. Range 10 seconds to 1 day. |
+| `Window` | `1.00:00:00` | Length of one digest window (a person gets at most one digest per window). |
+| `MaxItems` | 10 | Message lines in one digest; the rest read "and N more". Range 1 to 50. |
+| `BatchSize` | 200 | People looked at per batch. Range 1 to 5000. |
+
 The chat search (UC-CHT-H07) reads `Search` (`RateLimiting:Chat:Search`, default 30 per minute per person and 300 per minute per Workspace). It has no other options: it reads the live message table, with no index and no worker.
 
 `WorkManagement:Boards:Purge` (Infrastructure, `DeletedBoardPurgeOptions`, validated on start by
