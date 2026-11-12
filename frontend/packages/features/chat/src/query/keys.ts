@@ -64,4 +64,10 @@ export const chatQueryKeys = {
   /** The permission overrides of one channel (the settings Permissions tab). */
   permissions: (workspaceId: string, channelId: string) =>
     workspaceQueryKey(workspaceId, "chat", "permissions", channelId),
+  /** The Workspace retention rule (Chat settings). */
+  retention: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "retention"),
+  /** One export's status (polled while it runs). */
+  chatExport: (workspaceId: string, exportId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "export", exportId),
 } as const;

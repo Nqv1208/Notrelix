@@ -61,7 +61,7 @@ export function AttachmentGlyphIcon({
 }
 
 /** Hands a downloaded Blob to the browser as a saved file (same approach as the other features). */
-function saveBlobAs(blob: Blob, filename: string): void {
+export function saveBlobAs(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
