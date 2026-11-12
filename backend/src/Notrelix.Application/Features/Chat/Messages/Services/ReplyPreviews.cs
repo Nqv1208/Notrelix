@@ -35,7 +35,7 @@ public static class ReplyPreviews
     /// not in the database yet, so its mentions and the sender's notices come from <paramref name="resolution"/>.
     /// </summary>
     public static async Task<MessageDto> DtoAsync(
-        IChatDbContext db, IChatMessageAttachments attachments, Guid workspaceId, Guid viewerId, Message message, CancellationToken cancellationToken, MentionResolution? resolution = null)
+        IChatDbContext db, IChatMessageAttachments attachments, Guid workspaceId, Guid viewerId, bool viewerIsGuest, Message message, CancellationToken cancellationToken, MentionResolution? resolution = null)
     {
         var previews = await LoadAsync(db, workspaceId, message.ReplyToId is { } quoted ? [quoted] : [], cancellationToken);
         var reactions = await ReactionSummaries.ForMessageAsync(db, workspaceId, viewerId, message.Id, cancellationToken);
@@ -43,17 +43,17 @@ public static class ReplyPreviews
         if (resolution is not null)
             return MessageDto.From(message, PreviewOf(message, previews), reactions, resolution.Spans.Select(MessageMentions.ToDto).ToList(), resolution.Notices, files);
 
-        var mentions = await MessageMentions.LoadAsync(db, workspaceId, viewerId, [message.Id], cancellationToken);
+        var mentions = await MessageMentions.LoadAsync(db, workspaceId, viewerId, viewerIsGuest, [message.Id], cancellationToken);
         return MessageDto.From(message, PreviewOf(message, previews), reactions, mentions.TryGetValue(message.Id, out var list) ? list : [], null, files);
     }
 
     /// <summary>A page of messages as DTOs, each with its live quote and reaction summary, in two lookups for the whole page.</summary>
     public static async Task<IReadOnlyList<MessageDto>> DtosAsync(
-        IChatDbContext db, IChatMessageAttachments attachments, Guid workspaceId, Guid viewerId, IReadOnlyList<Message> messages, CancellationToken cancellationToken)
+        IChatDbContext db, IChatMessageAttachments attachments, Guid workspaceId, Guid viewerId, bool viewerIsGuest, IReadOnlyList<Message> messages, CancellationToken cancellationToken)
     {
         var previews = await LoadAsync(db, workspaceId, messages.Where(m => m.ReplyToId is not null).Select(m => m.ReplyToId!.Value), cancellationToken);
         var reactions = await ReactionSummaries.LoadAsync(db, workspaceId, viewerId, messages.Select(m => m.Id), cancellationToken);
-        var mentions = await MessageMentions.LoadAsync(db, workspaceId, viewerId, messages.Select(m => m.Id), cancellationToken);
+        var mentions = await MessageMentions.LoadAsync(db, workspaceId, viewerId, viewerIsGuest, messages.Select(m => m.Id), cancellationToken);
         var files = await MessageAttachments.LoadAsync(attachments, workspaceId, messages.Select(m => m.Id), cancellationToken);
         return messages
             .Select(m => MessageDto.From(

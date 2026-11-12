@@ -8,8 +8,11 @@ using Notrelix.Domain.Chat.Rules;
 
 namespace Notrelix.Application.Features.Chat.Channels.Commands.UpdateChannel;
 
-/// <summary>Renames a channel and sets its topic. Needs a channel manager, a Workspace Owner or Admin (UC-CHT-A03).</summary>
-public record UpdateChannelCommand(Guid WorkspaceId, Guid ChannelId, string Name, string? Topic, long ExpectedVersion)
+/// <summary>
+/// Renames a channel, sets its topic and, when given, its slow mode in seconds (0 turns it off, UC-CHT-H08). Needs a channel manager, a
+/// Workspace Owner or Admin (UC-CHT-A03). A slow mode left out stays as it is.
+/// </summary>
+public record UpdateChannelCommand(Guid WorkspaceId, Guid ChannelId, string Name, string? Topic, long ExpectedVersion, int? SlowModeSeconds = null)
     : ICommand<Result<ChannelDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ChatChannelManage;
@@ -38,6 +41,8 @@ public class UpdateChannelCommandHandler(
         space.UpdateDetails(name, request.Topic, userId, clock.UtcNow);
         if (space.Name != previousName)
             await systemMessages.AnnounceAsync(space, userId, ChatSystemMessages.Renamed(space.Name), cancellationToken);
+        if (request.SlowModeSeconds is { } slowMode)
+            space.SetSlowMode(slowMode, userId, clock.UtcNow);
 
         return Result<ChannelDto>.Success(ChannelDto.From(space, space.GetActiveMembership(userId), caller.Role));
     }
@@ -50,6 +55,10 @@ public class UpdateChannelCommandValidator : AbstractValidator<UpdateChannelComm
         RuleFor(x => x.ChannelId).NotEmpty();
         RuleFor(x => x.Name).NotEmpty().MaximumLength(ChatLimits.ChannelNameMaxLength);
         RuleFor(x => x.Topic).MaximumLength(ChatLimits.ChannelTopicMaxLength).When(x => x.Topic is not null);
+        RuleFor(x => x.SlowModeSeconds)
+            .InclusiveBetween(0, ChatLimits.SlowModeMaxSeconds)
+            .When(x => x.SlowModeSeconds is not null)
+            .WithMessage($"slowModeSeconds is 0 to {ChatLimits.SlowModeMaxSeconds}.");
         RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
     }
 }

@@ -33,6 +33,7 @@ public class ThreadHandlerTests
 
     private readonly Mock<ICurrentRequestContext> _context = new();
     private readonly Mock<IDateTimeProvider> _clock = new();
+    private readonly Notrelix.Application.Tests.Features.Chat.RateLimits.FakeChatRateLimiter _limits = new();
     private readonly Mock<IWorkspaceMemberFacts> _members = new();
     private readonly List<Space> _spaces = [];
     private readonly List<Message> _messages = [];
@@ -119,7 +120,7 @@ public class ThreadHandlerTests
         return reply;
     }
 
-    private ReplyInThreadCommandHandler ReplyHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments());
+    private ReplyInThreadCommandHandler ReplyHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments(), _limits);
     private FollowThreadCommandHandler FollowHandler() => new(_db.Object, _context.Object, _members.Object);
     private MarkThreadReadCommandHandler MarkHandler() => new(_db.Object, _context.Object, _members.Object, _readStore);
     private ListThreadRepliesQueryHandler RepliesHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, new InMemoryChatMessageAttachments());
@@ -606,5 +607,37 @@ public class ThreadHandlerTests
 
         await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ForbiddenException>();
         _threads.Should().BeEmpty("nothing was allocated");
+    }
+
+    // ---- Rate limit and slow mode (UC-CHT-H08) ----------------------------------------------------
+
+    [Fact]
+    public async Task A_reply_is_counted_under_the_thread_reply_limit_and_over_it_is_429_with_nothing_stored()
+    {
+        var space = Channel();
+        var root = Root(space);
+        _limits.Refuse(Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitPolicy.ThreadReply);
+
+        var error = await FluentActions.Awaiting(() => ReplyHandler().Handle(Command(_workspaceId, root.Id), CancellationToken.None))
+            .Should().ThrowAsync<Notrelix.Application.Common.Exceptions.TooManyRequestsException>();
+
+        error.Which.RuleCode.Should().Be(Notrelix.Domain.Chat.Rules.ChatRuleCodes.RateLimited);
+        _messages.Should().ContainSingle("only the root");
+        _limits.Calls.Single().Should().Be((Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitPolicy.ThreadReply, space.Id, _member));
+    }
+
+    [Fact]
+    public async Task A_reply_waits_for_the_slow_mode_of_the_channel_like_a_send_does()
+    {
+        var space = Channel();
+        space.SetSlowMode(45, _owner, Now);
+        var root = Root(space);
+        _messages.Add(Message.CreateUserMessage(_accountId, _workspaceId, space.Id, ++_lastSequence, _member, "just wrote", "c-last", null, Now.AddSeconds(-5)));
+
+        var error = await FluentActions.Awaiting(() => ReplyHandler().Handle(Command(_workspaceId, root.Id), CancellationToken.None))
+            .Should().ThrowAsync<Notrelix.Application.Common.Exceptions.TooManyRequestsException>();
+
+        error.Which.RuleCode.Should().Be(Notrelix.Domain.Chat.Rules.ChatRuleCodes.SlowMode);
+        error.Which.RetryAfter.Should().Be(TimeSpan.FromSeconds(40));
     }
 }

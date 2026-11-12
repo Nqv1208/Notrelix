@@ -105,7 +105,7 @@ public sealed class ChatThreadIntegrationTests : IAsyncLifetime
             new ChatSpaceSequenceAllocator(context),
             new FixedClock(Now),
             Mock.Of<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer>(),
-            new InMemoryChatMessageAttachments());
+            new InMemoryChatMessageAttachments(), Moq.Mock.Of<Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter>());
 
         var result = await handler.Handle(
             new ReplyInThreadCommand(_workspaceId, _rootId, content, clientMessageId, AlsoSendToChannel: false),

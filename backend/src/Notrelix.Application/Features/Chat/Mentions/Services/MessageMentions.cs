@@ -7,12 +7,12 @@ namespace Notrelix.Application.Features.Chat.Mentions.Services;
 /// <summary>
 /// The mentions of messages as readers see them (UC-CHT-G01, G04): in one query for the rows and one for the channels they link,
 /// whatever the page size. A channel link the reader cannot see is left out, so a private channel is never revealed to someone
-/// outside it; the text stays and renders as plain text.
+/// outside it, and a public one a Guest was not added to is not revealed to them (CHT-004); the text stays and renders as plain text.
 /// </summary>
 public static class MessageMentions
 {
     public static async Task<IReadOnlyDictionary<Guid, IReadOnlyList<MentionDto>>> LoadAsync(
-        IChatDbContext db, Guid workspaceId, Guid viewerId, IEnumerable<Guid> messageIds, CancellationToken cancellationToken)
+        IChatDbContext db, Guid workspaceId, Guid viewerId, bool viewerIsGuest, IEnumerable<Guid> messageIds, CancellationToken cancellationToken)
     {
         var ids = messageIds.Distinct().ToList();
         if (ids.Count == 0)
@@ -26,7 +26,7 @@ public static class MessageMentions
             return new Dictionary<Guid, IReadOnlyList<MentionDto>>();
 
         var links = rows.Where(r => r.Kind == MentionKind.ChannelLink).Select(r => r.TargetId!.Value).Distinct().ToList();
-        var visible = await MentionResolver.VisibleChannelsAsync(db, workspaceId, viewerId, isGuest: false, links, cancellationToken);
+        var visible = await MentionResolver.VisibleChannelsAsync(db, workspaceId, viewerId, viewerIsGuest, links, cancellationToken);
 
         return rows
             .Where(r => r.Kind != MentionKind.ChannelLink || visible.Contains(r.TargetId!.Value))

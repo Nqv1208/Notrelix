@@ -63,10 +63,10 @@ public class EditMessageCommandHandler(
         if (message.Edit(request.Content, userId, clock.UtcNow))
         {
             await MessageMentions.ReplaceAsync(db, message, resolution.Spans, hadBefore: true, cancellationToken);
-            return Result<MessageDto>.Success(await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, message, cancellationToken, resolution));
+            return Result<MessageDto>.Success(await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, ChannelAccess.IsGuest(caller), message, cancellationToken, resolution));
         }
 
-        return Result<MessageDto>.Success(await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, message, cancellationToken));
+        return Result<MessageDto>.Success(await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, ChannelAccess.IsGuest(caller), message, cancellationToken));
     }
 }
 

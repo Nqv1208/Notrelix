@@ -213,6 +213,13 @@ public static class ProblemDetailsMapper
                 exception.Message,
                 null
             ),
+            Notrelix.Application.Common.Exceptions.TooManyRequestsException => (
+                StatusCodes.Status429TooManyRequests,
+                ErrorCodes.TooManyRequests,
+                "Too Many Requests",
+                exception.Message,
+                null
+            ),
             Notrelix.Application.Common.Exceptions.PreconditionFailedException precondition => (
                 StatusCodes.Status412PreconditionFailed,
                 precondition.ErrorCode,
@@ -278,6 +285,17 @@ public static class ProblemDetailsMapper
             }
         }
 
+        // A limit of a feature (a Chat rate limit, a slow mode): the stable rule and the wait, so a client shows a countdown.
+        if (exception is Notrelix.Application.Common.Exceptions.TooManyRequestsException tooMany)
+        {
+            problemDetails.Extensions["ruleCode"] = tooMany.RuleCode;
+            problemDetails.Extensions["retryAfter"] = RetryAfterSeconds(tooMany);
+            foreach (var (key, value) in tooMany.Extensions)
+            {
+                problemDetails.Extensions[key] = value;
+            }
+        }
+
         if (exception is Notrelix.Application.Common.Exceptions.PreconditionFailedException { Extensions.Count: > 0 } stale)
         {
             foreach (var (key, value) in stale.Extensions)
@@ -301,4 +319,8 @@ public static class ProblemDetailsMapper
 
         return problemDetails;
     }
+
+    /// <summary>The whole seconds a client waits, at least one (the Retry-After header and the problem member).</summary>
+    public static int RetryAfterSeconds(Notrelix.Application.Common.Exceptions.TooManyRequestsException exception) =>
+        Math.Max(1, (int)Math.Ceiling(exception.RetryAfter.TotalSeconds));
 }

@@ -35,7 +35,7 @@ public class ListFollowedThreadsQueryHandler(
     public async Task<Result<FollowedThreadPageDto>> Handle(ListFollowedThreadsQuery request, CancellationToken cancellationToken)
     {
         var userId = requestContext.UserId;
-        await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
+        var caller = await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
 
         DateTimeOffset? before = null;
         if (request.Cursor is not null)
@@ -65,7 +65,7 @@ public class ListFollowedThreadsQueryHandler(
         var roots = await db.ChatMessages.AsNoTracking()
             .Where(m => rootIds.Contains(m.Id))
             .ToDictionaryAsync(m => m.Id, cancellationToken);
-        var rootDtos = await ReplyPreviews.DtosAsync(db, attachments, request.WorkspaceId, userId, rootIds.Select(id => roots[id]).ToList(), cancellationToken);
+        var rootDtos = await ReplyPreviews.DtosAsync(db, attachments, request.WorkspaceId, userId, ChannelAccess.IsGuest(caller), rootIds.Select(id => roots[id]).ToList(), cancellationToken);
         var rootById = rootDtos.ToDictionary(r => r.Id);
 
         var now = clock.UtcNow;

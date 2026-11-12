@@ -39,7 +39,7 @@ public static class MapChatAttachmentEndpoints
             .WithIdempotencyKey()
             .WithName("Chat.Attachments.Upload")
             .WithSummary("Attach a file to your own message (multipart/form-data, streamed)")
-            .WithDescription("Only the author of the message, as an active member of its space, attaches. The shared file policy applies: a blocked extension or an executable file is 415 before any byte is stored, a file over the size cap is 413, a message with the maximum number of files is 409 attachment.limit_exceeded; an empty file is 400. A system or deleted message is 409; an archived channel is 409 channel-archived; another person's message is 403; a space the caller is not a member of is 404.")
+            .WithDescription("Only the author of the message, as an active member of its space, attaches. The shared file policy applies: a blocked extension or an executable file is 415 before any byte is stored, a file over the size cap is 413, a message with the maximum number of files is 409 attachment.limit_exceeded; an empty file is 400. A system or deleted message is 409; an archived channel is 409 channel-archived; another person's message is 403; a space the caller is not a member of is 404. An upload is counted per person and per space (chat.upload): over the limit the answer is 429 with Retry-After and ruleCode rate-limited, before any byte is stored.")
             .Accepts<UploadChatAttachmentForm>("multipart/form-data")
             .Produces<MessageAttachmentDto>(StatusCodes.Status201Created, "application/json")
             .ProducesProblems(
@@ -48,7 +48,8 @@ public static class MapChatAttachmentEndpoints
                 StatusCodes.Status404NotFound,
                 StatusCodes.Status409Conflict,
                 StatusCodes.Status413PayloadTooLarge,
-                StatusCodes.Status415UnsupportedMediaType);
+                StatusCodes.Status415UnsupportedMediaType,
+                StatusCodes.Status429TooManyRequests);
 
         group.MapWorkspaceGet("/messages/{messageId:guid}/attachments/{attachmentId:guid}/content", GetContentAsync)
             .WithName("Chat.Attachments.GetContent")

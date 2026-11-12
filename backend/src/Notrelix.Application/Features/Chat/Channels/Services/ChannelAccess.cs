@@ -18,11 +18,17 @@ public static class ChannelAccess
 
     public static bool IsGuest(WorkspaceMemberFact caller) => string.Equals(caller.Role, GuestRole, StringComparison.Ordinal);
 
-    /// <summary>The caller's standing in the Workspace. The pipeline already admitted them, so a missing fact is a missing channel.</summary>
+    /// <summary>
+    /// The caller's standing in the Workspace. The pipeline already admitted them, so a missing fact is a missing channel. A member who
+    /// is not active (suspended, a deactivated Guest included) has no access either: the same NotFound, so access ends at the next call
+    /// even when a gateway or a job reaches a handler without the pipeline's check (CHT-004).
+    /// </summary>
     public static async Task<WorkspaceMemberFact> CallerAsync(
-        IWorkspaceMemberFacts members, Guid workspaceId, Guid userId, CancellationToken ct) =>
-        await members.FindAsync(workspaceId, userId, ct)
-        ?? throw new NotFoundException(nameof(Space), workspaceId);
+        IWorkspaceMemberFacts members, Guid workspaceId, Guid userId, CancellationToken ct)
+    {
+        var fact = await members.FindAsync(workspaceId, userId, ct);
+        return fact is { IsActive: true } ? fact : throw new NotFoundException(nameof(Space), workspaceId);
+    }
 
     /// <summary>A live channel of the Workspace with its memberships loaded, or the same NotFound as a missing one.</summary>
     public static async Task<Space> LoadLiveAsync(IChatDbContext db, Guid workspaceId, Guid channelId, CancellationToken ct)

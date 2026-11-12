@@ -102,7 +102,7 @@ public sealed class ChatReactionIntegrationTests : IAsyncLifetime
         await using var context = _db.CreateOwnerContext(SystemTenant());
         await using var transaction = await context.Database.BeginTransactionAsync();
         var allocator = new ChatSpaceSequenceAllocator(context);
-        var handler = new AddReactionCommandHandler(context, RequestAs(userId).Object, ActiveMembers(userId).Object, allocator, new FixedClock(Now));
+        var handler = new AddReactionCommandHandler(context, RequestAs(userId).Object, ActiveMembers(userId).Object, allocator, new FixedClock(Now), Moq.Mock.Of<Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter>());
 
         try
         {

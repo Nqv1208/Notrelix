@@ -172,7 +172,7 @@ public sealed class ChatThreadRlsTests : IAsyncLifetime
 
         await using var db = _fixture.CreateAppContext(tenant);
 
-        var reply = () => new ReplyInThreadCommandHandler(db, context.Object, members.Object, new FakeSequences(), new FixedClock(Now), Mock.Of<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer>(), new InMemoryChatMessageAttachments())
+        var reply = () => new ReplyInThreadCommandHandler(db, context.Object, members.Object, new FakeSequences(), new FixedClock(Now), Mock.Of<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer>(), new InMemoryChatMessageAttachments(), Moq.Mock.Of<Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter>())
             .Handle(new ReplyInThreadCommand(_a.WorkspaceId, _rootId, "sneak", "sneak-1", false), CancellationToken.None);
         var follow = () => new FollowThreadCommandHandler(db, context.Object, members.Object)
             .Handle(new FollowThreadCommand(_a.WorkspaceId, _rootId, true, false), CancellationToken.None);

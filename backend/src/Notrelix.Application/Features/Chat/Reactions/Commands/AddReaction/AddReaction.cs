@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.RateLimits;
 using Notrelix.Application.Features.Chat.Permissions.Services;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Reactions.DTOs;
@@ -33,7 +34,8 @@ public class AddReactionCommandHandler(
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
     ISpaceSequenceAllocator sequences,
-    IDateTimeProvider clock) : IRequestHandler<AddReactionCommand, Result<ReactionResultDto>>
+    IDateTimeProvider clock,
+    IChatRateLimiter rateLimits) : IRequestHandler<AddReactionCommand, Result<ReactionResultDto>>
 {
     public async Task<Result<ReactionResultDto>> Handle(AddReactionCommand request, CancellationToken cancellationToken)
     {
@@ -79,6 +81,9 @@ public class AddReactionCommandHandler(
             r => r.MessageId == current.Id && r.UserId == userId && r.Kind == request.Kind, cancellationToken);
         if (alreadyHas)
             return Result<ReactionResultDto>.Success(new ReactionResultDto(new MessageReactionsDto(current.Id, summary), Created: false));
+
+        // Only a reaction that would be stored is counted per person and per space (UC-CHT-H08).
+        await rateLimits.RequireAsync(ChatRateLimitPolicy.React, space.Id, userId, cancellationToken);
 
         var distinctKinds = await db.ChatReactions.AsNoTracking()
             .Where(r => r.MessageId == current.Id)

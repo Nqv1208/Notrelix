@@ -99,7 +99,7 @@ public sealed class ChatMentionIntegrationTests : IAsyncLifetime
         await using var context = _db.CreateOwnerContext(SystemTenant());
         await using var transaction = await context.Database.BeginTransactionAsync();
         var handler = new SendMessageCommandHandler(
-            context, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now), Broadcasters(true), new InMemoryChatMessageAttachments());
+            context, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now), Broadcasters(true), new InMemoryChatMessageAttachments(), Moq.Mock.Of<Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter>());
 
         var result = await handler.Handle(
             new SendMessageCommand(_workspaceId, _spaceId, content, clientMessageId, null, mentions), CancellationToken.None);
@@ -210,7 +210,7 @@ public sealed class ChatMentionIntegrationTests : IAsyncLifetime
         {
             await using var transaction = await context.Database.BeginTransactionAsync();
             var handler = new SendMessageCommandHandler(
-                context, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now), Broadcasters(true), new InMemoryChatMessageAttachments());
+                context, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now), Broadcasters(true), new InMemoryChatMessageAttachments(), Moq.Mock.Of<Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter>());
             result = await handler.Handle(
                 new SendMessageCommand(_workspaceId, direct.Id, "hi @Bob and @Carol", "d-1", null, [Person(3, 4, _bob), Person(12, 6, _carol)]),
                 CancellationToken.None);

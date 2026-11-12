@@ -59,9 +59,9 @@ public class ListThreadRepliesQueryHandler(
             .ToListAsync(cancellationToken);
 
         var now = clock.UtcNow;
-        var items = await ReplyPreviews.DtosAsync(db, attachments, request.WorkspaceId, userId, rows.Take(request.Limit).ToList(), cancellationToken);
+        var items = await ReplyPreviews.DtosAsync(db, attachments, request.WorkspaceId, userId, ChannelAccess.IsGuest(caller), rows.Take(request.Limit).ToList(), cancellationToken);
         return Result<ThreadRepliesPageDto>.Success(new ThreadRepliesPageDto(
-            await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, root, cancellationToken),
+            await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, ChannelAccess.IsGuest(caller), root, cancellationToken),
             ThreadSummaries.For(root.Id, root.SpaceId, thread, follower, now),
             items,
             HasNewer: rows.Count > request.Limit));

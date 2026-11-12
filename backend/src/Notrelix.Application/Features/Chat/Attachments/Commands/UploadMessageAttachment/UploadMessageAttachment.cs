@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.RateLimits;
 using Notrelix.Application.Features.Chat.Attachments.DTOs;
 using Notrelix.Application.Features.Chat.Attachments.Services;
 using Notrelix.Application.Features.Chat.Channels.Services;
@@ -42,7 +43,8 @@ public class UploadMessageAttachmentCommandHandler(
     IWorkspaceMemberFacts members,
     ISpaceSequenceAllocator sequences,
     IChatMessageAttachments attachments,
-    IDateTimeProvider clock) : IRequestHandler<UploadMessageAttachmentCommand, Result<MessageAttachmentDto>>
+    IDateTimeProvider clock,
+    IChatRateLimiter rateLimits) : IRequestHandler<UploadMessageAttachmentCommand, Result<MessageAttachmentDto>>
 {
     public async Task<Result<MessageAttachmentDto>> Handle(UploadMessageAttachmentCommand request, CancellationToken cancellationToken)
     {
@@ -64,6 +66,9 @@ public class UploadMessageAttachmentCommandHandler(
         message.EnsureAttachable();
         // A channel that turns attaching off refuses before any byte is stored, and again under the lock below.
         await ChannelPermissionChecks.RequireAsync(db, space, caller, userId, ChannelAction.Attach, cancellationToken);
+
+        // An upload is counted per person and per space before any byte is stored (UC-CHT-H08).
+        await rateLimits.RequireAsync(ChatRateLimitPolicy.Upload, space.Id, userId, cancellationToken);
 
         // The bytes stream before any lock (a long upload must not hold the space). The file policy runs inside the shared flow.
         var stored = await attachments.UploadAsync(message.Id, request.FileName, request.Content, cancellationToken);

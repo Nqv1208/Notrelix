@@ -19,10 +19,10 @@ public static class MapReactionEndpoints
         group.MapWorkspacePut("/messages/{messageId:guid}/reactions/{kind}", AddAsync)
             .WithName("Chat.Reactions.Add")
             .WithSummary("React to a message with a palette emoji")
-            .WithDescription("Idempotent: a reaction the caller already has returns the message's reaction summary with 200 and changes nothing; a new one returns 201. The kind is one of the six palette emoji; any other kind is 400. A system or deleted message is 409 (message-not-reactable or message-deleted). An archived channel is 409 channel-archived. A message the caller cannot see, or a space the caller is not a member of, is 404.")
+            .WithDescription("Idempotent: a reaction the caller already has returns the message's reaction summary with 200 and changes nothing; a new one returns 201. The kind is one of the six palette emoji; any other kind is 400. A system or deleted message is 409 (message-not-reactable or message-deleted). An archived channel is 409 channel-archived. A message the caller cannot see, or a space the caller is not a member of, is 404. A new reaction is counted per person and per space (chat.react): over the limit the answer is 429 with Retry-After and ruleCode rate-limited.")
             .Produces<MessageReactionsDto>(StatusCodes.Status200OK)
             .Produces<MessageReactionsDto>(StatusCodes.Status201Created)
-            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict, StatusCodes.Status422UnprocessableEntity);
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict, StatusCodes.Status422UnprocessableEntity, StatusCodes.Status429TooManyRequests);
 
         group.MapWorkspaceDelete("/messages/{messageId:guid}/reactions/{kind}", RemoveAsync)
             .WithName("Chat.Reactions.Remove")

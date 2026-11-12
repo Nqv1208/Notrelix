@@ -93,6 +93,17 @@ public static class DependencyInjection
             IValidateOptions<Notrelix.Application.Features.Collaboration.Attachments.AttachmentUploadOptions>,
             Notrelix.Application.Features.Collaboration.Attachments.AttachmentUploadOptionsValidator>();
 
+        // Chat rate limits (UC-CHT-H08): per person and per space, on the shared limiter store.
+        services.AddOptions<Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitOptions>()
+            .Bind(builder.Configuration.GetSection(Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<
+            IValidateOptions<Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitOptions>,
+            Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitOptionsValidator>();
+        services.AddScoped<
+            Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter,
+            Notrelix.Application.Features.Chat.RateLimits.ChatRateLimiter>();
+
         // Scoped execution context: one instance is exposed as both the read and
         // the write contract so the transport can bind the key and the pipeline
         // can require it.

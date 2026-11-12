@@ -81,7 +81,7 @@ public class PinMessageCommandHandler(
         if (existing is not null)
         {
             var existingDto = new PinDto(
-                await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, current, cancellationToken),
+                await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, ChannelAccess.IsGuest(caller), current, cancellationToken),
                 existing.PinnedBy,
                 existing.PinnedAt);
             return Result<PinResultDto>.Success(new PinResultDto(existingDto, Created: false));
@@ -95,7 +95,7 @@ public class PinMessageCommandHandler(
         db.ChatPins.Add(pin);
         await systemMessages.AnnounceAsync(space, userId, ChatSystemMessages.MessagePinned, cancellationToken);
 
-        var dto = new PinDto(await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, current, cancellationToken), userId, now);
+        var dto = new PinDto(await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, ChannelAccess.IsGuest(caller), current, cancellationToken), userId, now);
         return Result<PinResultDto>.Success(new PinResultDto(dto, Created: true));
     }
 }

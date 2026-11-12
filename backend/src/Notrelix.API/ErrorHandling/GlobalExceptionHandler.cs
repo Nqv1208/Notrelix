@@ -33,6 +33,11 @@ public class GlobalExceptionHandler : IExceptionHandler
                 ((int)_idempotencyOptions.IncompleteStateRetryAfter.TotalSeconds).ToString();
         }
 
+        if (exception is Notrelix.Application.Common.Exceptions.TooManyRequestsException tooMany)
+        {
+            context.Response.Headers.RetryAfter = ProblemDetailsMapper.RetryAfterSeconds(tooMany).ToString();
+        }
+
         if (exception is Notrelix.Application.Common.Exceptions.RevocationStoreUnavailableException)
         {
             context.Response.Headers.RetryAfter = RevocationRetryAfterSeconds;
