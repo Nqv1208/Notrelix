@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.RateLimits;
 using Notrelix.Application.Features.Chat.Permissions.Services;
 using Notrelix.Application.Features.Collaboration.Public.Attachments;
 using Notrelix.Application.Features.Chat.Channels.Services;
@@ -47,7 +48,8 @@ public class ReplyInThreadCommandHandler(
     ISpaceSequenceAllocator sequences,
     IDateTimeProvider clock,
     IBroadcastAuthorizer broadcast,
-    IChatMessageAttachments attachments) : IRequestHandler<ReplyInThreadCommand, Result<SendMessageResultDto>>
+    IChatMessageAttachments attachments,
+    IChatRateLimiter rateLimits) : IRequestHandler<ReplyInThreadCommand, Result<SendMessageResultDto>>
 {
     public async Task<Result<SendMessageResultDto>> Handle(ReplyInThreadCommand request, CancellationToken cancellationToken)
     {
@@ -97,7 +99,7 @@ public class ReplyInThreadCommandHandler(
                 .Select(m => m.ToSpan()).ToList();
             var again = new MentionResolution(storedMentions, MentionResolver.StoredWarnings(space, storedMentions));
             return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-                await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, stored, cancellationToken, again), Created: false));
+                await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, ChannelAccess.IsGuest(caller), stored, cancellationToken, again), Created: false));
         }
 
         // The root is read again under the lock: a delete that committed while this request waited is respected.
@@ -110,10 +112,16 @@ public class ReplyInThreadCommandHandler(
         if (rootDeleted && (thread?.ReplyCount ?? 0) == 0)
             throw new ConflictException("The message was deleted and has no replies.", ChatRuleCodes.MessageDeleted);
 
+        var now = clock.UtcNow;
+        // A repeat above costs nothing. A new reply is counted per person and per space and waits for the slow mode (UC-CHT-H08).
+        await rateLimits.RequireAsync(ChatRateLimitPolicy.ThreadReply, space.Id, userId, cancellationToken);
+        await SlowMode.RequireAsync(db, space, userId, now, cancellationToken);
+
         var resolution = await MentionResolver.ResolveAsync(
             db, members, broadcast, space, caller, request.Content, request.Mentions, request.ConfirmBroadcast, cancellationToken);
+        if (resolution.Spans.Any(s => s.Kind is MentionKind.BroadcastChannel or MentionKind.BroadcastHere))
+            await rateLimits.RequireAsync(ChatRateLimitPolicy.Broadcast, space.Id, userId, cancellationToken);
 
-        var now = clock.UtcNow;
         if (thread is null)
         {
             thread = MessageThread.Open(accountId, request.WorkspaceId, space.Id, root.Id, now);
@@ -147,7 +155,7 @@ public class ReplyInThreadCommandHandler(
         await EnsureFollowerAsync(db, accountId, request.WorkspaceId, root.Id, userId, readReplySequence: threadSequence, cancellationToken);
 
         return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-            await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, reply, cancellationToken, resolution), Created: true));
+            await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, ChannelAccess.IsGuest(caller), reply, cancellationToken, resolution), Created: true));
     }
 
     /// <summary>Adds a default follow (not muted) when the person has no follow row yet. An existing row is never overwritten.</summary>

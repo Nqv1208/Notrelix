@@ -37,6 +37,7 @@ public class MessageHandlerTests
 
     private readonly Mock<ICurrentRequestContext> _context = new();
     private readonly Mock<IDateTimeProvider> _clock = new();
+    private readonly Notrelix.Application.Tests.Features.Chat.RateLimits.FakeChatRateLimiter _limits = new();
     private readonly Mock<IWorkspaceMemberFacts> _members = new();
     private readonly List<Space> _spaces = [];
     private readonly List<Membership> _memberships = [];
@@ -110,7 +111,7 @@ public class MessageHandlerTests
         return message;
     }
 
-    private SendMessageCommandHandler SendHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments());
+    private SendMessageCommandHandler SendHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments(), _limits);
     private EditMessageCommandHandler EditHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments());
     private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments());
     private ListMessagesQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments());
@@ -730,5 +731,144 @@ public class MessageHandlerTests
         var result = await SendHandler().Handle(Send(_workspaceId, space.Id, "hello"), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
+    }
+
+    // ── Rate limit and slow mode (UC-CHT-H08, CHT-020) ────────────────────────
+
+    private Space SlowChannel(int seconds)
+    {
+        var space = Channel();
+        space.AddMember(_member, MembershipRole.Member, Now);
+        space.AddMember(_guest, MembershipRole.Member, Now);
+        space.SetSlowMode(seconds, _owner, Now);
+        return space;
+    }
+
+    [Fact]
+    public async Task Send_IsCountedPerPersonAndPerSpace_AndARetryCostsNothing()
+    {
+        var space = Channel();
+        space.AddMember(_member, MembershipRole.Member, Now);
+        AsUser(_member);
+
+        await SendHandler().Handle(Send(_workspaceId, space.Id, "hello", "c-1"), CancellationToken.None);
+        await SendHandler().Handle(Send(_workspaceId, space.Id, "hello", "c-1"), CancellationToken.None);
+
+        _limits.Calls.Should().ContainSingle().Which.Should().Be((Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitPolicy.Send, space.Id, _member));
+    }
+
+    [Fact]
+    public async Task Send_OverTheLimit_Is429WithTheWait_AndStoresNothing()
+    {
+        var space = Channel();
+        space.AddMember(_member, MembershipRole.Member, Now);
+        AsUser(_member);
+        _limits.Refuse(Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitPolicy.Send);
+
+        var error = await FluentActions.Awaiting(() => SendHandler().Handle(Send(_workspaceId, space.Id, "hello"), CancellationToken.None))
+            .Should().ThrowAsync<Notrelix.Application.Common.Exceptions.TooManyRequestsException>();
+
+        error.Which.RuleCode.Should().Be(ChatRuleCodes.RateLimited);
+        _messages.Should().BeEmpty("the text stays with the sender, who retries after the wait");
+    }
+
+    [Fact]
+    public async Task ASlowMode_RefusesASecondMessageOfTheSamePersonUntilTheWaitIsOver_AndAnotherPersonIsNotHeld()
+    {
+        var space = SlowChannel(30);
+        AsUser(_member);
+        await SendHandler().Handle(Send(_workspaceId, space.Id, "one", "c-1"), CancellationToken.None);
+
+        _clock.Setup(c => c.UtcNow).Returns(() => Now.AddSeconds(12));
+        var held = await FluentActions.Awaiting(() => SendHandler().Handle(Send(_workspaceId, space.Id, "two", "c-2"), CancellationToken.None))
+            .Should().ThrowAsync<Notrelix.Application.Common.Exceptions.TooManyRequestsException>();
+        held.Which.RuleCode.Should().Be(ChatRuleCodes.SlowMode);
+        held.Which.RetryAfter.Should().Be(TimeSpan.FromSeconds(18));
+        held.Which.Extensions["slowModeSeconds"].Should().Be(30);
+
+        AsUser(_guest);
+        (await SendHandler().Handle(Send(_workspaceId, space.Id, "mine", "c-3"), CancellationToken.None)).Succeeded.Should().BeTrue();
+
+        AsUser(_member);
+        _clock.Setup(c => c.UtcNow).Returns(() => Now.AddSeconds(30));
+        (await SendHandler().Handle(Send(_workspaceId, space.Id, "two", "c-2"), CancellationToken.None)).Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ASlowMode_HoldsAWorkspaceOwnerAndAChannelManagerToo()
+    {
+        var space = SlowChannel(60);
+        AsUser(_owner);
+        await SendHandler().Handle(Send(_workspaceId, space.Id, "one", "c-1"), CancellationToken.None);
+
+        await FluentActions.Awaiting(() => SendHandler().Handle(Send(_workspaceId, space.Id, "two", "c-2"), CancellationToken.None))
+            .Should().ThrowAsync<Notrelix.Application.Common.Exceptions.TooManyRequestsException>("the use case names no exemption");
+    }
+
+    [Fact]
+    public async Task ADeletedMessage_DoesNotResetTheSlowMode()
+    {
+        var space = SlowChannel(60);
+        AsUser(_member);
+        var first = await SendHandler().Handle(Send(_workspaceId, space.Id, "one", "c-1"), CancellationToken.None);
+        _messages.Single(m => m.Id == first.Data!.Message.Id).Delete(_member, Now.AddSeconds(1));
+
+        await FluentActions.Awaiting(() => SendHandler().Handle(Send(_workspaceId, space.Id, "two", "c-2"), CancellationToken.None))
+            .Should().ThrowAsync<Notrelix.Application.Common.Exceptions.TooManyRequestsException>();
+    }
+
+    [Fact]
+    public async Task ARepeatOfAStoredSend_IsNotHeldBySlowMode()
+    {
+        var space = SlowChannel(60);
+        AsUser(_member);
+        await SendHandler().Handle(Send(_workspaceId, space.Id, "one", "c-1"), CancellationToken.None);
+
+        var again = await SendHandler().Handle(Send(_workspaceId, space.Id, "one", "c-1"), CancellationToken.None);
+
+        again.Data!.Created.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SlowModeOff_HoldsNoOne()
+    {
+        var space = SlowChannel(0);
+        AsUser(_member);
+
+        await SendHandler().Handle(Send(_workspaceId, space.Id, "one", "c-1"), CancellationToken.None);
+        (await SendHandler().Handle(Send(_workspaceId, space.Id, "two", "c-2"), CancellationToken.None)).Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task UpdatingTheSlowMode_NeedsAManager_BumpsTheVersion_AndTurnsOffWithZero()
+    {
+        var space = Channel();
+        space.AddMember(_member, MembershipRole.Member, Now);
+        var version = space.Version;
+
+        AsUser(_member);
+        await FluentActions.Awaiting(() => UpdateHandler().Handle(new UpdateChannelCommand(_workspaceId, space.Id, space.Name, null, version, 30), CancellationToken.None))
+            .Should().ThrowAsync<ForbiddenException>();
+
+        AsUser(_owner);
+        var set = await UpdateHandler().Handle(new UpdateChannelCommand(_workspaceId, space.Id, space.Name, null, version, 30), CancellationToken.None);
+        set.Data!.SlowModeSeconds.Should().Be(30);
+        set.Data.Version.Should().BeGreaterThan(version);
+
+        var same = await UpdateHandler().Handle(new UpdateChannelCommand(_workspaceId, space.Id, space.Name, null, space.Version), CancellationToken.None);
+        same.Data!.SlowModeSeconds.Should().Be(30, "a request that leaves it out keeps it");
+
+        var off = await UpdateHandler().Handle(new UpdateChannelCommand(_workspaceId, space.Id, space.Name, null, space.Version, 0), CancellationToken.None);
+        off.Data!.SlowModeSeconds.Should().Be(0);
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(ChatLimits.SlowModeMaxSeconds + 1)]
+    public void TheSlowModeIsBetweenZeroAndTheLongestWait(int seconds)
+    {
+        new UpdateChannelCommandValidator()
+            .TestValidate(new UpdateChannelCommand(Guid.NewGuid(), Guid.NewGuid(), "general", null, 1, seconds))
+            .ShouldHaveValidationErrorFor(x => x.SlowModeSeconds);
     }
 }

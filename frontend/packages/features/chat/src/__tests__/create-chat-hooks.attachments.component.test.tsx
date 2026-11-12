@@ -34,7 +34,7 @@ function setup() {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
-  return { hooks, service, viewer, wrapper };
+  return { hooks, service, viewer, wrapper, store };
 }
 
 async function generalId(service: ReturnType<typeof setup>["service"]) {
@@ -140,6 +140,12 @@ describe("sending a message with files", () => {
 
   it("answers the 11th file with the limit reason (409) after the 10 stored ones", async () => {
     const s = setup();
+    // Eleven uploads in one minute would meet the upload rate limit (10 a minute) first; this test is about the per-message cap.
+    s.store.chat.limitOverrides.set("upload", {
+      person: 100,
+      space: 100,
+      windowSeconds: 60,
+    });
     const general = await generalId(s.service);
     const { result } = mount(s, general);
     await waitFor(() => expect(result.current.list.isSuccess).toBe(true));

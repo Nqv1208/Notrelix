@@ -37,6 +37,7 @@ public class ReactionHandlerTests
 
     private readonly Mock<ICurrentRequestContext> _context = new();
     private readonly Mock<IDateTimeProvider> _clock = new();
+    private readonly Notrelix.Application.Tests.Features.Chat.RateLimits.FakeChatRateLimiter _limits = new();
     private readonly Mock<IWorkspaceMemberFacts> _members = new();
     private readonly List<Space> _spaces = [];
     private readonly List<Message> _messages = [];
@@ -119,7 +120,7 @@ public class ReactionHandlerTests
         return reaction;
     }
 
-    private AddReactionCommandHandler AddHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object);
+    private AddReactionCommandHandler AddHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _limits);
     private RemoveReactionCommandHandler RemoveHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object);
     private ListReactorsQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object);
     private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments());
@@ -508,5 +509,25 @@ public class ReactionHandlerTests
 
         await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ForbiddenException>();
         _reactions.Should().BeEmpty();
+    }
+
+    // ---- Rate limit (UC-CHT-H08) ------------------------------------------------------------------
+
+    [Fact]
+    public async Task A_new_reaction_is_counted_and_over_the_limit_is_429_with_nothing_stored_while_a_repeat_is_free()
+    {
+        var space = Channel();
+        var message = Text(space);
+
+        await AddHandler().Handle(new AddReactionCommand(_workspaceId, message.Id, "👍"), CancellationToken.None);
+        await AddHandler().Handle(new AddReactionCommand(_workspaceId, message.Id, "👍"), CancellationToken.None);
+        _limits.Calls.Should().ContainSingle("the repeat changes nothing, so it is not counted");
+
+        _limits.Refuse(Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitPolicy.React);
+        var error = await FluentActions.Awaiting(() => AddHandler().Handle(new AddReactionCommand(_workspaceId, message.Id, "🎉"), CancellationToken.None))
+            .Should().ThrowAsync<Notrelix.Application.Common.Exceptions.TooManyRequestsException>();
+
+        error.Which.RuleCode.Should().Be(ChatRuleCodes.RateLimited);
+        _reactions.Should().ContainSingle();
     }
 }

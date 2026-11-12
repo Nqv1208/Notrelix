@@ -405,6 +405,17 @@ export function createChatRealtimeAdapter(
         }),
       ]).then(() => undefined);
     }
+    if (frame.change === "slow-mode") {
+      // The slow mode rides on the channel views (UC-CHT-H08): the composer's indicator follows them.
+      return Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.channel(workspaceId, channelId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.channels(workspaceId),
+        }),
+      ]).then(() => undefined);
+    }
     return queryClient
       .invalidateQueries({
         queryKey: chatQueryKeys.pins(workspaceId, channelId),

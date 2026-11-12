@@ -9,6 +9,9 @@ export const en = {
     chooseChannel: "Choose a channel to read its messages.",
     noChannelsTitle: "No channels yet",
     noChannelsBody: "Create a channel to start talking with your team.",
+    guestNoChannelsTitle: "You have not been added to a channel",
+    guestNoChannelsBody:
+      "As a guest you see only the channels you are added to. Ask a member to add you.",
     createChannel: "Create channel",
     openChannelList: "Show channels",
     loadingChannel: "Opening the channel",
@@ -16,6 +19,7 @@ export const en = {
   sidebar: {
     navLabel: "Channels",
     listTitle: "Channels",
+    guestEmpty: "Channels you are added to appear here.",
     unreadCount_one: "{{count}} unread message",
     unreadCount_other: "{{count}} unread messages",
     mutedLabel: "Muted",
@@ -108,7 +112,17 @@ export const en = {
     archived: "This channel is archived, so nobody can post.",
     readOnly: "Posting is turned off for your role in this channel.",
     notMember: "Join the channel to post.",
+    slowMode: "Slow mode: one message every {{wait}}.",
     send: "Send",
+  },
+  rateLimit: {
+    seconds: "{{count}} s",
+    minutes: "{{count}} min",
+    hours: "{{count}} h",
+    limited: "You are sending too fast. Try again in {{wait}}.",
+    slowMode: "Slow mode is on. You can write again in {{wait}}.",
+    ready: "You can send again. Your message and files are kept.",
+    retry: "Send again",
   },
   links: {
     listLabel: "Links in this message",
@@ -222,6 +236,10 @@ export const en = {
     nameTaken: "A channel with this name already exists.",
     stale: "The channel changed. Its latest version is shown.",
     failed: "The channel could not be saved.",
+    slowModeLabel: "Slow mode",
+    slowModeHelp:
+      "The least time between two messages of one person. It applies to everyone, managers and admins included.",
+    slowModeOff: "Off",
   },
   archive: {
     titleArchive: "Archive this channel?",
@@ -535,6 +553,9 @@ export const vi: ChatCopy = {
     chooseChannel: "Chọn một kênh để đọc tin nhắn.",
     noChannelsTitle: "Chưa có kênh nào",
     noChannelsBody: "Tạo một kênh để bắt đầu trò chuyện với nhóm.",
+    guestNoChannelsTitle: "Bạn chưa được thêm vào kênh nào",
+    guestNoChannelsBody:
+      "Là khách, bạn chỉ thấy các kênh bạn được thêm vào. Hãy nhờ một thành viên thêm bạn.",
     createChannel: "Tạo kênh",
     openChannelList: "Hiện danh sách kênh",
     loadingChannel: "Đang mở kênh",
@@ -542,6 +563,7 @@ export const vi: ChatCopy = {
   sidebar: {
     navLabel: "Kênh",
     listTitle: "Kênh",
+    guestEmpty: "Các kênh bạn được thêm vào sẽ hiện ở đây.",
     unreadCount_one: "{{count}} tin chưa đọc",
     unreadCount_other: "{{count}} tin chưa đọc",
     mutedLabel: "Đã tắt thông báo",
@@ -634,7 +656,17 @@ export const vi: ChatCopy = {
     archived: "Kênh đã được lưu trữ nên không ai gửi được tin.",
     readOnly: "Vai trò của bạn không được gửi tin trong kênh này.",
     notMember: "Tham gia kênh để gửi tin nhắn.",
+    slowMode: "Chế độ chậm: mỗi {{wait}} một tin nhắn.",
     send: "Gửi",
+  },
+  rateLimit: {
+    seconds: "{{count}} giây",
+    minutes: "{{count}} phút",
+    hours: "{{count}} giờ",
+    limited: "Bạn gửi quá nhanh. Thử lại sau {{wait}}.",
+    slowMode: "Kênh đang ở chế độ chậm. Bạn viết tiếp được sau {{wait}}.",
+    ready: "Bạn có thể gửi lại. Tin nhắn và tệp vẫn được giữ.",
+    retry: "Gửi lại",
   },
   links: {
     listLabel: "Liên kết trong tin nhắn",
@@ -743,6 +775,10 @@ export const vi: ChatCopy = {
     nameTaken: "Đã có kênh với tên này.",
     stale: "Kênh đã thay đổi. Đang hiện bản mới nhất.",
     failed: "Không lưu được kênh.",
+    slowModeLabel: "Chế độ chậm",
+    slowModeHelp:
+      "Thời gian tối thiểu giữa hai tin nhắn của một người. Áp dụng cho mọi người, kể cả quản lý và quản trị viên.",
+    slowModeOff: "Tắt",
   },
   archive: {
     titleArchive: "Lưu trữ kênh này?",

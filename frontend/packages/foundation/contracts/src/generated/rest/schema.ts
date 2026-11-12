@@ -404,7 +404,7 @@ export interface paths {
         put?: never;
         /**
          * Attach a file to your own message (multipart/form-data, streamed)
-         * @description Only the author of the message, as an active member of its space, attaches. The shared file policy applies: a blocked extension or an executable file is 415 before any byte is stored, a file over the size cap is 413, a message with the maximum number of files is 409 attachment.limit_exceeded; an empty file is 400. A system or deleted message is 409; an archived channel is 409 channel-archived; another person's message is 403; a space the caller is not a member of is 404.
+         * @description Only the author of the message, as an active member of its space, attaches. The shared file policy applies: a blocked extension or an executable file is 415 before any byte is stored, a file over the size cap is 413, a message with the maximum number of files is 409 attachment.limit_exceeded; an empty file is 400. A system or deleted message is 409; an archived channel is 409 channel-archived; another person's message is 403; a space the caller is not a member of is 404. An upload is counted per person and per space (chat.upload): over the limit the answer is 429 with Retry-After and ruleCode rate-limited, before any byte is stored.
          */
         post: operations["Chat.Attachments.Upload"];
         delete?: never;
@@ -563,8 +563,8 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Rename a channel or set its topic
-         * @description Needs a channel manager, a Workspace Owner or Admin. A stale expectedVersion is 412; an archived channel is 409 channel-archived.
+         * Rename a channel, set its topic or its slow mode
+         * @description Needs a channel manager, a Workspace Owner or Admin. slowModeSeconds (0 to 3600) is the least time between two messages of one person; 0 turns it off and a request that leaves it out keeps it; a change is announced to the channel as chat.space.changed with the change slow-mode. A stale expectedVersion is 412; an archived channel is 409 channel-archived.
          */
         patch: operations["Chat.Channels.Update"];
         trace?: never;
@@ -808,7 +808,7 @@ export interface paths {
         put?: never;
         /**
          * Send a message to a space
-         * @description clientMessageId is the sender's key for the message: a retry with the same one returns the stored message with 200 and stores nothing. The first send returns 201. Idempotency-Key is the transport key and is required on this endpoint. An archived channel is 409 channel-archived; a space the caller is not a member of is 404. mentions are the structured mentions of the text (person, channel link, @channel, @here): each is checked against the channel on the server and the response lists the stored ones in mentions and the ones not stored in mentionNotices (cannot-view: stored, nobody is notified; unknown, link-not-visible, broadcast-not-allowed, no-audience: shown as text). A malformed mention is 400 (mention-invalid, mention-limit-exceeded). An @channel or @here in a channel of more than 50 members needs confirmBroadcast true, otherwise 409 broadcast-confirmation-required.
+         * @description clientMessageId is the sender's key for the message: a retry with the same one returns the stored message with 200 and stores nothing. The first send returns 201. Idempotency-Key is the transport key and is required on this endpoint. An archived channel is 409 channel-archived; a space the caller is not a member of is 404. mentions are the structured mentions of the text (person, channel link, @channel, @here): each is checked against the channel on the server and the response lists the stored ones in mentions and the ones not stored in mentionNotices (cannot-view: stored, nobody is notified; unknown, link-not-visible, broadcast-not-allowed, no-audience: shown as text). A malformed mention is 400 (mention-invalid, mention-limit-exceeded). An @channel or @here in a channel of more than 50 members needs confirmBroadcast true, otherwise 409 broadcast-confirmation-required. A new message is counted per person and per space (chat.send) and an @channel or @here also under chat.broadcast, from which a Workspace Admin is not exempt; a repeat of a stored send costs nothing. Over a limit the answer is 429 with a Retry-After header, errorCode rate_limit.exceeded and ruleCode rate-limited; a channel in slow mode answers 429 with ruleCode slow-mode and the seconds to wait. The sender keeps the text and retries after the wait.
          */
         post: operations["Chat.Messages.Send"];
         delete?: never;
@@ -943,7 +943,7 @@ export interface paths {
         get?: never;
         /**
          * React to a message with a palette emoji
-         * @description Idempotent: a reaction the caller already has returns the message's reaction summary with 200 and changes nothing; a new one returns 201. The kind is one of the six palette emoji; any other kind is 400. A system or deleted message is 409 (message-not-reactable or message-deleted). An archived channel is 409 channel-archived. A message the caller cannot see, or a space the caller is not a member of, is 404.
+         * @description Idempotent: a reaction the caller already has returns the message's reaction summary with 200 and changes nothing; a new one returns 201. The kind is one of the six palette emoji; any other kind is 400. A system or deleted message is 409 (message-not-reactable or message-deleted). An archived channel is 409 channel-archived. A message the caller cannot see, or a space the caller is not a member of, is 404. A new reaction is counted per person and per space (chat.react): over the limit the answer is 429 with Retry-After and ruleCode rate-limited.
          */
         put: operations["Chat.Reactions.Add"];
         post?: never;
@@ -1072,7 +1072,7 @@ export interface paths {
         put?: never;
         /**
          * Reply in the thread of a message
-         * @description clientMessageId is the sender's key: a retry with the same one returns the stored reply with 200 and stores nothing; the first reply returns 201. alsoSendToChannel also shows the reply in the channel's main flow. The reply takes the next thread sequence. Replying reopens an archived thread and makes the replier and the root's author followers. An archived channel is 409 channel-archived; a reply to a reply or a system message is 409 thread-root-invalid; a deleted root with no replies is 409 message-deleted. A space the caller is not a member of is 404. mentions and confirmBroadcast work as in a send.
+         * @description clientMessageId is the sender's key: a retry with the same one returns the stored reply with 200 and stores nothing; the first reply returns 201. alsoSendToChannel also shows the reply in the channel's main flow. The reply takes the next thread sequence. Replying reopens an archived thread and makes the replier and the root's author followers. An archived channel is 409 channel-archived; a reply to a reply or a system message is 409 thread-root-invalid; a deleted root with no replies is 409 message-deleted. A space the caller is not a member of is 404. mentions and confirmBroadcast work as in a send. A new reply is counted per person and per space (chat.thread-reply), a broadcast in it under chat.broadcast, and it waits for the channel's slow mode: over a limit the answer is 429 with Retry-After and ruleCode rate-limited or slow-mode.
          */
         post: operations["Chat.Threads.Reply"];
         delete?: never;
@@ -7838,6 +7838,8 @@ export interface components {
             topic?: string | null;
             /** Format: int64 */
             expectedVersion?: number | null;
+            /** Format: int32 */
+            slowModeSeconds?: number | null;
         };
         "Notrelix.API.Contracts.Chat.Requests.UploadChatAttachmentForm": {
             /** Format: binary */
@@ -12773,6 +12775,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
             /** @description Operation still being processed; retry after the indicated delay */
             503: {
                 headers: {
@@ -14174,6 +14185,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
             /** @description Operation still being processed; retry after the indicated delay */
             503: {
                 headers: {
@@ -14836,6 +14856,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
         };
     };
     "Chat.Reactions.Remove": {
@@ -15252,6 +15281,15 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

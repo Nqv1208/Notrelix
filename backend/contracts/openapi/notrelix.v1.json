@@ -1678,7 +1678,7 @@
           "Chat.Attachments"
         ],
         "summary": "Attach a file to your own message (multipart/form-data, streamed)",
-        "description": "Only the author of the message, as an active member of its space, attaches. The shared file policy applies: a blocked extension or an executable file is 415 before any byte is stored, a file over the size cap is 413, a message with the maximum number of files is 409 attachment.limit_exceeded; an empty file is 400. A system or deleted message is 409; an archived channel is 409 channel-archived; another person's message is 403; a space the caller is not a member of is 404.",
+        "description": "Only the author of the message, as an active member of its space, attaches. The shared file policy applies: a blocked extension or an executable file is 415 before any byte is stored, a file over the size cap is 413, a message with the maximum number of files is 409 attachment.limit_exceeded; an empty file is 400. A system or deleted message is 409; an archived channel is 409 channel-archived; another person's message is 403; a space the caller is not a member of is 404. An upload is counted per person and per space (chat.upload): over the limit the answer is 429 with Retry-After and ruleCode rate-limited, before any byte is stored.",
         "operationId": "Chat.Attachments.Upload",
         "parameters": [
           {
@@ -1792,6 +1792,16 @@
           },
           "415": {
             "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2576,8 +2586,8 @@
         "tags": [
           "Chat.Channels"
         ],
-        "summary": "Rename a channel or set its topic",
-        "description": "Needs a channel manager, a Workspace Owner or Admin. A stale expectedVersion is 412; an archived channel is 409 channel-archived.",
+        "summary": "Rename a channel, set its topic or its slow mode",
+        "description": "Needs a channel manager, a Workspace Owner or Admin. slowModeSeconds (0 to 3600) is the least time between two messages of one person; 0 turns it off and a request that leaves it out keeps it; a change is announced to the channel as chat.space.changed with the change slow-mode. A stale expectedVersion is 412; an archived channel is 409 channel-archived.",
         "operationId": "Chat.Channels.Update",
         "parameters": [
           {
@@ -3916,7 +3926,7 @@
           "Chat.Messages"
         ],
         "summary": "Send a message to a space",
-        "description": "clientMessageId is the sender's key for the message: a retry with the same one returns the stored message with 200 and stores nothing. The first send returns 201. Idempotency-Key is the transport key and is required on this endpoint. An archived channel is 409 channel-archived; a space the caller is not a member of is 404. mentions are the structured mentions of the text (person, channel link, @channel, @here): each is checked against the channel on the server and the response lists the stored ones in mentions and the ones not stored in mentionNotices (cannot-view: stored, nobody is notified; unknown, link-not-visible, broadcast-not-allowed, no-audience: shown as text). A malformed mention is 400 (mention-invalid, mention-limit-exceeded). An @channel or @here in a channel of more than 50 members needs confirmBroadcast true, otherwise 409 broadcast-confirmation-required.",
+        "description": "clientMessageId is the sender's key for the message: a retry with the same one returns the stored message with 200 and stores nothing. The first send returns 201. Idempotency-Key is the transport key and is required on this endpoint. An archived channel is 409 channel-archived; a space the caller is not a member of is 404. mentions are the structured mentions of the text (person, channel link, @channel, @here): each is checked against the channel on the server and the response lists the stored ones in mentions and the ones not stored in mentionNotices (cannot-view: stored, nobody is notified; unknown, link-not-visible, broadcast-not-allowed, no-audience: shown as text). A malformed mention is 400 (mention-invalid, mention-limit-exceeded). An @channel or @here in a channel of more than 50 members needs confirmBroadcast true, otherwise 409 broadcast-confirmation-required. A new message is counted per person and per space (chat.send) and an @channel or @here also under chat.broadcast, from which a Workspace Admin is not exempt; a repeat of a stored send costs nothing. Over a limit the answer is 429 with a Retry-After header, errorCode rate_limit.exceeded and ruleCode rate-limited; a channel in slow mode answers 429 with ruleCode slow-mode and the seconds to wait. The sender keeps the text and retries after the wait.",
         "operationId": "Chat.Messages.Send",
         "parameters": [
           {
@@ -4006,6 +4016,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4901,7 +4921,7 @@
           "Chat.Reactions"
         ],
         "summary": "React to a message with a palette emoji",
-        "description": "Idempotent: a reaction the caller already has returns the message's reaction summary with 200 and changes nothing; a new one returns 201. The kind is one of the six palette emoji; any other kind is 400. A system or deleted message is 409 (message-not-reactable or message-deleted). An archived channel is 409 channel-archived. A message the caller cannot see, or a space the caller is not a member of, is 404.",
+        "description": "Idempotent: a reaction the caller already has returns the message's reaction summary with 200 and changes nothing; a new one returns 201. The kind is one of the six palette emoji; any other kind is 400. A system or deleted message is 409 (message-not-reactable or message-deleted). An archived channel is 409 channel-archived. A message the caller cannot see, or a space the caller is not a member of, is 404. A new reaction is counted per person and per space (chat.react): over the limit the answer is 429 with Retry-After and ruleCode rate-limited.",
         "operationId": "Chat.Reactions.Add",
         "parameters": [
           {
@@ -4984,6 +5004,16 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5493,7 +5523,7 @@
           "Chat.Threads"
         ],
         "summary": "Reply in the thread of a message",
-        "description": "clientMessageId is the sender's key: a retry with the same one returns the stored reply with 200 and stores nothing; the first reply returns 201. alsoSendToChannel also shows the reply in the channel's main flow. The reply takes the next thread sequence. Replying reopens an archived thread and makes the replier and the root's author followers. An archived channel is 409 channel-archived; a reply to a reply or a system message is 409 thread-root-invalid; a deleted root with no replies is 409 message-deleted. A space the caller is not a member of is 404. mentions and confirmBroadcast work as in a send.",
+        "description": "clientMessageId is the sender's key: a retry with the same one returns the stored reply with 200 and stores nothing; the first reply returns 201. alsoSendToChannel also shows the reply in the channel's main flow. The reply takes the next thread sequence. Replying reopens an archived thread and makes the replier and the root's author followers. An archived channel is 409 channel-archived; a reply to a reply or a system message is 409 thread-root-invalid; a deleted root with no replies is 409 message-deleted. A space the caller is not a member of is 404. mentions and confirmBroadcast work as in a send. A new reply is counted per person and per space (chat.thread-reply), a broadcast in it under chat.broadcast, and it waits for the channel's slow mode: over a limit the answer is 429 with Retry-After and ruleCode rate-limited or slow-mode.",
         "operationId": "Chat.Threads.Reply",
         "parameters": [
           {
@@ -5583,6 +5613,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -33209,6 +33249,11 @@
           "expectedVersion": {
             "type": "integer",
             "format": "int64",
+            "nullable": true
+          },
+          "slowModeSeconds": {
+            "type": "integer",
+            "format": "int32",
             "nullable": true
           }
         },

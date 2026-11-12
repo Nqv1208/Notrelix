@@ -151,6 +151,8 @@ Prefix `/api/v1/workspaces/{workspaceId}/chat` (the Workspace is in the path, va
 
 Error codes are stable (`space-not-found`, `channel-archived`, `name-conflict`, `version-conflict` (HTTP 412, the codebase convention for a stale expected version), `rate-limited`, `limit-reached`). Responses for no-access and missing are identical.
 
+A rate limit or a channel's slow mode is HTTP 429 with a `Retry-After` header, `errorCode` `rate_limit.exceeded` and `ruleCode` `rate-limited` or `slow-mode`; the body also has `retryAfter` (whole seconds), and `policy`, `scope` and `limit` (a rate limit) or `slowModeSeconds` (slow mode). The policies are `chat.send`, `chat.react`, `chat.thread-reply`, `chat.upload` and `chat.broadcast`, per person and per space (UC-CHT-H08). A channel's slow mode is `slowModeSeconds` (0 to 3600) on the channel and is set with `PATCH /channels/{id}`.
+
 ## 16. Generated client and frontend contract
 
 OpenAPI is exported from the backend and the client regenerated with `pnpm codegen`; hand-maintained route entries in `endpoints.ts`. The frontend never builds a Workspace id from the client; it uses the active Workspace.
@@ -158,7 +160,7 @@ OpenAPI is exported from the backend and the client regenerated with `pnpm codeg
 ## 17. Realtime contract (protocol v1.1, additive)
 
 - Scope kind `channel` (value is the space id). Subscribe is authorized by a Chat-owned query; failure returns `subscription-error` with no detail.
-- Server frame `event` with `eventType` in `chat.message.created|updated|deleted`, `chat.reaction.changed`, `chat.message.attachment.changed`, `chat.membership.changed`, `chat.space.changed`; `streamKey` per space, gap-free `streamVersion`; payload compact (id, sequence, author, content, edited).
+- Server frame `event` with `eventType` in `chat.message.created|updated|deleted`, `chat.reaction.changed`, `chat.message.attachment.changed`, `chat.membership.changed`, `chat.space.changed` (the change is `pinned`, `unpinned`, `permissions` or `slow-mode`); `streamKey` per space, gap-free `streamVersion`; payload compact (id, sequence, author, content, edited).
 - `chat.message.attachment.changed` (payloadContract `chat.attachment.v1`) is emitted by Chat.Attachments.Upload and Delete in the same transaction as the file change (domain fact on the message, outbox, the shared chat message consumer partitioned by space), so it rides the gap-free channel stream and resumes like any message frame. An added file carries `{ messageId, change, attachmentId, fileName, sizeBytes, contentType, uploadedBy, createdAt, downloadPath }`, a removed file only the ids; no bytes; `detailsOmitted` when the name does not fit the 3000-byte payload budget (the reader refetches `GET .../attachments`). Readers are exactly the readers of the message; the message version does not change. A rejected upload emits nothing. The uploader's in-progress state is not broadcast (no frame): others see the file once stored.
 - Per-user stream `chat.unread.changed` (space id, unread, mentions) using the existing per-user notification stream channel.
 - Client frames `typing` (`{ type, subscriptionId }`, the id of a channel subscription) and `presence` (`{ type, state }`, state online, idle or offline); both ephemeral, throttled (typing at most one per 3 seconds from the client, the gateway drops one sooner than 2 seconds; presence a heartbeat about every 30 seconds), counted inside the 4096-byte and 20 frames per second limits, and never stored.

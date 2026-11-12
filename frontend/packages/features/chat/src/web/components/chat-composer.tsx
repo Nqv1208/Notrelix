@@ -52,6 +52,7 @@ import { rememberEmoji } from "./chat-emoji-recent";
 import { EmojiPickerButton } from "./chat-emoji-picker";
 import { AttachmentGlyphIcon } from "./chat-attachments";
 import { fillCopy } from "./use-chat-copy";
+import { formatWait } from "./chat-rate-limit";
 
 /** What the composer needs to mention people and link channels (UC-CHT-G01 to G04); without it @ and # are plain text. */
 export interface ChatComposerMentions {
@@ -115,6 +116,8 @@ export interface ChatComposerProps {
   readonly busy?: boolean;
   /** Called on each edit of a non-empty draft (the typing signal; the host throttles it). */
   readonly onTyping?: () => void;
+  /** The channel's slow mode in seconds (UC-CHT-H08); above 0 the hint line says so. */
+  readonly slowModeSeconds?: number;
 }
 
 /**
@@ -136,6 +139,7 @@ export function ChatComposer({
   mentions,
   onTyping,
   attachments,
+  slowModeSeconds = 0,
 }: ChatComposerProps) {
   const hintId = useId();
   const listId = useId();
@@ -617,7 +621,12 @@ export function ChatComposer({
               role={message ? "status" : undefined}
               className="min-w-0 truncate"
             >
-              {message ?? copy.composer.hint}
+              {message ??
+                (slowModeSeconds > 0
+                  ? fillCopy(copy.composer.slowMode, {
+                      wait: formatWait(copy, slowModeSeconds),
+                    })
+                  : copy.composer.hint)}
             </span>
             {showsCounter(value) ? (
               <span className="shrink-0 tabular-nums" aria-live="off">

@@ -58,7 +58,7 @@ public class ListPinsQueryHandler(
             .ToListAsync(cancellationToken);
         var pinnedMessages = messages.ToDictionary(m => m.Id);
         var ordered = page.Where(p => pinnedMessages.ContainsKey(p.MessageId)).Select(p => pinnedMessages[p.MessageId]).ToList();
-        var dtos = await ReplyPreviews.DtosAsync(db, attachments, request.WorkspaceId, userId, ordered, cancellationToken);
+        var dtos = await ReplyPreviews.DtosAsync(db, attachments, request.WorkspaceId, userId, ChannelAccess.IsGuest(caller), ordered, cancellationToken);
         var dtoById = dtos.ToDictionary(d => d.Id);
 
         var items = page

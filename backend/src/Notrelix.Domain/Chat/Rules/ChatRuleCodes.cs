@@ -72,4 +72,10 @@ public static class ChatRuleCodes
 
     /// <summary>An allow would give a role more than its Workspace role may do, or more than the caller holds (422, UC-CHT-H01).</summary>
     public const string PermissionExceedsRole = "permission-exceeds-role";
+
+    /// <summary>A person wrote again before the space's slow mode allowed it (429 with Retry-After, UC-CHT-H08).</summary>
+    public const string SlowMode = "slow-mode";
+
+    /// <summary>A slow mode is not between 0 and the most the Workspace allows, or the space is a conversation (400, UC-CHT-H08).</summary>
+    public const string SlowModeInvalid = "slow-mode-invalid";
 }

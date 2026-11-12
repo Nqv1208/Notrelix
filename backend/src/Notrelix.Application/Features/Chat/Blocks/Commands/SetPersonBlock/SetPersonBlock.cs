@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Blocks.DTOs;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Chat.Conversations.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Spaces;
 using DomainBusinessRuleException = Notrelix.Domain.Common.Exceptions.BusinessRuleException;
@@ -32,7 +33,7 @@ public class SetPersonBlockCommandHandler(
     {
         var userId = requestContext.UserId;
         var accountId = requestContext.RequireAccountId();
-        await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
+        var caller = await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
 
         if (request.UserId == userId)
             throw new DomainBusinessRuleException(Notrelix.Domain.Chat.Rules.ChatRuleCodes.SelfTarget, "A person cannot block themselves.");
@@ -42,6 +43,11 @@ public class SetPersonBlockCommandHandler(
 
         var existing = await db.ChatBlocks.FirstOrDefaultAsync(
             b => b.WorkspaceId == request.WorkspaceId && b.BlockerId == userId && b.BlockedId == request.UserId, cancellationToken);
+        // A Guest reaches a person only through a space they share (CHT-004): blocking anyone else is the same NotFound as a person who
+        // is not in the Workspace, so the call cannot be used to learn who is. A block the Guest already holds can always be lifted.
+        if (existing is null
+            && !ConversationAccess.MayReach(caller, await ConversationAccess.SharesSpaceAsync(db, request.WorkspaceId, userId, request.UserId, cancellationToken)))
+            throw new NotFoundException(nameof(Space), request.UserId);
         if (request.Blocked && existing is null)
             db.ChatBlocks.Add(PersonBlock.Create(accountId, request.WorkspaceId, userId, request.UserId, clock.UtcNow));
         else if (!request.Blocked && existing is not null)

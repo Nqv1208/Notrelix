@@ -21,7 +21,9 @@ import {
   Textarea,
 } from "@notrelix/ui-web";
 import { CHAT_LIMITS } from "../../core/types/chat";
+import { slowModeChoices } from "../../core/model/rate-limit-model";
 import type { ChatCopy } from "./chat.copy";
+import { formatWait } from "./chat-rate-limit";
 
 export interface CreateChannelValues {
   readonly name: string;
@@ -138,10 +140,16 @@ export interface RenameChannelDialogProps {
   readonly busy: boolean;
   readonly initialName: string;
   readonly initialTopic: string | null;
+  /** The channel's slow mode in seconds (UC-CHT-H08). */
+  readonly initialSlowMode?: number;
   readonly error: string | null;
   readonly copy: ChatCopy;
   readonly onOpenChange: (open: boolean) => void;
-  readonly onSubmit: (values: { name: string; topic: string }) => void;
+  readonly onSubmit: (values: {
+    name: string;
+    topic: string;
+    slowModeSeconds: number;
+  }) => void;
 }
 
 /** Rename a channel or set its topic (UC-CHT-A03). Only a manager, an Owner or an Admin. */
@@ -150,6 +158,7 @@ export function RenameChannelDialog({
   busy,
   initialName,
   initialTopic,
+  initialSlowMode = 0,
   error,
   copy,
   onOpenChange,
@@ -157,12 +166,13 @@ export function RenameChannelDialog({
 }: RenameChannelDialogProps) {
   const [name, setName] = useState(initialName);
   const [topic, setTopic] = useState(initialTopic ?? "");
+  const [slowMode, setSlowMode] = useState(initialSlowMode);
   const trimmed = name.trim();
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (trimmed.length === 0 || busy) return;
-    onSubmit({ name: trimmed, topic: topic.trim() });
+    onSubmit({ name: trimmed, topic: topic.trim(), slowModeSeconds: slowMode });
   }
 
   return (
@@ -191,6 +201,33 @@ export function RenameChannelDialog({
               onChange={(event) => setTopic(event.target.value)}
               rows={2}
             />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="chat-edit-slow-mode">
+              {copy.edit.slowModeLabel}
+            </Label>
+            <select
+              id="chat-edit-slow-mode"
+              aria-describedby="chat-edit-slow-mode-help"
+              value={slowMode}
+              disabled={busy}
+              onChange={(event) => setSlowMode(Number(event.target.value))}
+              className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60"
+            >
+              {slowModeChoices(initialSlowMode).map((seconds) => (
+                <option key={seconds} value={seconds}>
+                  {seconds === 0
+                    ? copy.edit.slowModeOff
+                    : formatWait(copy, seconds)}
+                </option>
+              ))}
+            </select>
+            <p
+              id="chat-edit-slow-mode-help"
+              className="text-xs text-muted-foreground"
+            >
+              {copy.edit.slowModeHelp}
+            </p>
           </div>
           {error ? (
             <p role="alert" className="text-sm text-destructive">

@@ -3,8 +3,11 @@ namespace Notrelix.API.Contracts.Chat.Requests;
 /// <summary>A new channel. A private channel is seen by its members only. Idempotency-Key makes a retry return the same channel.</summary>
 public record CreateChannelRequest(string Name, string? Topic, bool IsPrivate, Guid? GroupId);
 
-/// <summary>The new name and topic, with the version the editor read. A stale version is refused with 412.</summary>
-public record UpdateChannelRequest(string Name, string? Topic, long? ExpectedVersion);
+/// <summary>
+/// The new name and topic, with the version the editor read. A stale version is refused with 412. SlowModeSeconds is the least
+/// time between two messages of one person (0 turns it off); left out, it stays as it is.
+/// </summary>
+public record UpdateChannelRequest(string Name, string? Topic, long? ExpectedVersion, int? SlowModeSeconds = null);
 
 /// <summary>Archives (true) or unarchives (false) a channel, with the version the client read.</summary>
 public record ArchiveChannelRequest(bool? Archived, long? ExpectedVersion);

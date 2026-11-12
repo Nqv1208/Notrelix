@@ -480,7 +480,7 @@ public class ConversationHandlerTests
         await VisibilityHandler().Handle(new SetConversationVisibilityCommand(_workspaceId, direct.Id, true), CancellationToken.None);
 
         AsCaller(_alice, "Member");
-        var send = new SendMessageCommandHandler(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new Mock<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer>().Object, new InMemoryChatMessageAttachments());
+        var send = new SendMessageCommandHandler(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new Mock<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer>().Object, new InMemoryChatMessageAttachments(), Moq.Mock.Of<Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter>());
         await send.Handle(new SendMessageCommand(_workspaceId, direct.Id, "are you there?", "client-1", null), CancellationToken.None);
 
         direct.GetActiveMembership(_bob)!.IsHidden.Should().BeFalse("the message restores the conversation for bob");

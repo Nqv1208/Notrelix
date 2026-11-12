@@ -27,7 +27,8 @@ export interface ChatConversationListView {
   /** The presence of a person (the dot of a direct conversation). Without it no dot is shown. */
   readonly presenceOf?: (userId: string) => ChatPresenceState;
   readonly onSelect: (conversationId: string) => void;
-  readonly onNewMessage: () => void;
+  /** Absent for a Guest: a Guest starts no conversation (UC-CHT-H02). */
+  readonly onNewMessage?: () => void;
   readonly onRetry: () => void;
 }
 
@@ -97,15 +98,17 @@ export function ChatConversationSection({
         <h3 id="chat-dm-heading" className={HEADING}>
           {copy.dm.sidebar.heading}
         </h3>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label={copy.dm.sidebar.newMessage}
-          title={copy.dm.sidebar.newMessage}
-          onClick={view.onNewMessage}
-        >
-          <SquarePen aria-hidden="true" />
-        </Button>
+        {view.onNewMessage ? (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={copy.dm.sidebar.newMessage}
+            title={copy.dm.sidebar.newMessage}
+            onClick={view.onNewMessage}
+          >
+            <SquarePen aria-hidden="true" />
+          </Button>
+        ) : null}
       </div>
       {view.status === "loading" ? (
         <div role="status" className="space-y-2 px-1 pt-1">

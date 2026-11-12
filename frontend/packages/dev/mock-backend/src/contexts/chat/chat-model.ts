@@ -25,6 +25,8 @@ export interface ChatSpaceRecord {
   position: number;
   archivedAt: string | null;
   deletedAt: string | null;
+  /** The least seconds between two messages of one person (UC-CHT-H08); absent or 0 is off. */
+  slowModeSeconds?: number;
   /** Sequence of the last message stored in the space; starts at 0. */
   lastSequence: number;
   version: number;
@@ -166,6 +168,8 @@ export interface ChatGroupRecord {
 /** The limits of ChatLimits (backend/src/Notrelix.Domain/Chat/Rules/ChatLimits.cs). */
 export const CHAT_LIMITS = {
   messageMaxLength: 4000,
+  /** The longest slow mode a channel can set, in seconds (ChatLimits.SlowModeMaxSeconds). */
+  slowModeMaxSeconds: 3600,
   pageSizeDefault: 50,
   pageSizeMax: 100,
   clientMessageIdMaxLength: 128,
@@ -222,6 +226,8 @@ export const CHAT_ERROR = {
   /** The errorCode of a 400 business rule the backend does not map by name; the rule itself travels as ruleCode. */
   businessRule: "business_rule.violation",
   broadcastConfirmationRequired: "broadcast-confirmation-required",
+  /** 429 of a rate limit or a slow mode (backend TooManyRequestsException); the rule is ruleCode. */
+  rateLimited: "rate_limit.exceeded",
 } as const;
 
 /** What a send did not do for a mention (backend MentionResolver codes), shown to the sender only. */

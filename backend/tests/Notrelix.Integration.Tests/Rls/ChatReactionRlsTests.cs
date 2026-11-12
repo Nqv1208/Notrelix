@@ -163,7 +163,7 @@ public sealed class ChatReactionRlsTests : IAsyncLifetime
         var sequences = new SequenceNoop();
         var clock = new FixedClock(Now);
 
-        var add = () => new AddReactionCommandHandler(db, context.Object, members.Object, sequences, clock)
+        var add = () => new AddReactionCommandHandler(db, context.Object, members.Object, sequences, clock, Moq.Mock.Of<Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter>())
             .Handle(new AddReactionCommand(_a.WorkspaceId, _messageId, "👍"), CancellationToken.None);
         var remove = () => new RemoveReactionCommandHandler(db, context.Object, members.Object, sequences, clock)
             .Handle(new RemoveReactionCommand(_a.WorkspaceId, _messageId, "👍"), CancellationToken.None);

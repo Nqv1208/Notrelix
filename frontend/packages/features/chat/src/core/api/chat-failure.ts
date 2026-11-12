@@ -42,12 +42,27 @@ export interface ChatFailure {
   readonly retryable: boolean;
   readonly status: number | undefined;
   readonly code: string | undefined;
+  /** A 429 only: whole seconds to wait before the retry (the problem's retryAfter, else the Retry-After header), or null. */
+  readonly retryAfterSeconds: number | null;
+  /** A 429 only: a rate limit, or the channel's slow mode (the problem's ruleCode); null for any other failure. */
+  readonly limit: "rate-limited" | "slow-mode" | null;
 }
 
 interface FailureLike {
   readonly kind?: unknown;
   readonly status?: unknown;
   readonly code?: unknown;
+  readonly ruleCode?: unknown;
+  readonly details?: unknown;
+}
+
+/** The seconds a 429 asks to wait; anything that is not a positive number is ignored. */
+function retryAfterOf(details: unknown): number | null {
+  const body = details && typeof details === "object" ? details : {};
+  const value = (body as { retryAfter?: unknown }).retryAfter;
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.ceil(value)
+    : null;
 }
 
 const CODE_KINDS: Readonly<Record<string, ChatFailureKind>> = {
@@ -70,12 +85,19 @@ export function chatFailureOf(error: unknown): ChatFailure {
   const status = typeof like.status === "number" ? like.status : undefined;
   const code = typeof like.code === "string" ? like.code : undefined;
   const kind = classify(status, code, like.kind);
+  const limited = kind === "rate-limited";
   return {
     kind,
     retryable:
       kind === "network" || kind === "rate-limited" || kind === "server",
     status,
     code,
+    retryAfterSeconds: limited ? retryAfterOf(like.details) : null,
+    limit: limited
+      ? like.ruleCode === "slow-mode"
+        ? "slow-mode"
+        : "rate-limited"
+      : null,
   };
 }
 

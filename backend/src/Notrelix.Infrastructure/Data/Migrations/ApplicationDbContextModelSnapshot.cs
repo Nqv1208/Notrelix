@@ -3180,6 +3180,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("double precision")
                         .HasColumnName("position");
 
+                    b.Property<int>("SlowModeSeconds")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("slow_mode_seconds");
+
                     b.Property<string>("Topic")
                         .HasMaxLength(250)
                         .HasColumnType("character varying(250)")

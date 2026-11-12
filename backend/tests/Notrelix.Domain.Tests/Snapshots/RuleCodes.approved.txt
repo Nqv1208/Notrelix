@@ -132,6 +132,8 @@ permission-lockout|Chat|PermissionLockout
 rate-limited|Chat|RateLimited
 reaction-kind-invalid|Chat|ReactionKindInvalid
 self-target|Chat|SelfTarget
+slow-mode|Chat|SlowMode
+slow-mode-invalid|Chat|SlowModeInvalid
 space-not-found|Chat|SpaceNotFound
 system-message-immutable|Chat|SystemMessageImmutable
 thread-root-invalid|Chat|ThreadRootInvalid

@@ -25,6 +25,7 @@ import {
   validationProblem,
 } from "./chat-access";
 import { requireChannelAction } from "./chat-permissions";
+import { requireSlowModeClear, requireWithinLimit } from "./chat-limits";
 import { CHAT_ERROR, CHAT_LIMITS } from "./chat-model";
 import { appendThreadReply, idempotentCreate } from "./chat-writes";
 import {
@@ -146,6 +147,8 @@ export const threadsOperations = [
                 ),
               };
             requireChannelAction(state, space, caller, "post");
+            requireWithinLimit(state, "thread-reply", space.id, caller.userId);
+            requireSlowModeClear(state, space, caller.userId);
             if (
               root.deletedAt !== null &&
               (state.threads.get(root.id)?.replyCount ?? 0) === 0
@@ -165,6 +168,15 @@ export const threadsOperations = [
               body?.mentions,
               body?.confirmBroadcast === true,
             );
+            if (
+              resolution.spans.some(
+                (span) =>
+                  span.kind === "broadcast-channel" ||
+                  span.kind === "broadcast-here",
+              )
+            ) {
+              requireWithinLimit(state, "broadcast", space.id, caller.userId);
+            }
             const reply = appendThreadReply(
               state,
               space,

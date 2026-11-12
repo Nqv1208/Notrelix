@@ -49,6 +49,7 @@ public class AttachmentHandlerTests
 
     private readonly Mock<ICurrentRequestContext> _context = new();
     private readonly Mock<IDateTimeProvider> _clock = new();
+    private readonly Notrelix.Application.Tests.Features.Chat.RateLimits.FakeChatRateLimiter _limits = new();
     private readonly Mock<IWorkspaceMemberFacts> _members = new();
     private readonly List<Space> _spaces = [];
     private readonly List<Message> _messages = [];
@@ -117,7 +118,7 @@ public class AttachmentHandlerTests
     }
 
     private UploadMessageAttachmentCommandHandler UploadHandler(IChatMessageAttachments? attachments = null) =>
-        new(_db.Object, _context.Object, _members.Object, _sequences.Object, attachments ?? _files, _clock.Object);
+        new(_db.Object, _context.Object, _members.Object, _sequences.Object, attachments ?? _files, _clock.Object, _limits);
 
     private Task<Notrelix.Application.Common.Models.Result<Notrelix.Application.Features.Chat.Attachments.DTOs.MessageAttachmentDto>> Upload(
         Message message, string name = "report.pdf", byte[]? bytes = null, IChatMessageAttachments? attachments = null) =>
@@ -631,5 +632,21 @@ public class AttachmentHandlerTests
         var act = () => Upload(message);
 
         await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ForbiddenException>();
+    }
+
+    // ---- Rate limit (UC-CHT-H08) ------------------------------------------------------------------
+
+    [Fact]
+    public async Task An_upload_over_the_limit_is_429_before_any_byte_is_stored()
+    {
+        var space = Channel();
+        var message = Text(space);
+        _limits.Refuse(Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitPolicy.Upload);
+
+        var error = await FluentActions.Awaiting(() => Upload(message)).Should().ThrowAsync<Notrelix.Application.Common.Exceptions.TooManyRequestsException>();
+
+        error.Which.RuleCode.Should().Be(Notrelix.Domain.Chat.Rules.ChatRuleCodes.RateLimited);
+        _limits.Calls.Single().Policy.Should().Be(Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitPolicy.Upload);
+        _files.Files.Should().BeEmpty();
     }
 }

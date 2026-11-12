@@ -25,6 +25,7 @@ import {
   validationProblem,
 } from "./chat-access";
 import { requireChannelAction } from "./chat-permissions";
+import { requireWithinLimit } from "./chat-limits";
 import {
   CHAT_ERROR,
   CHAT_LIMITS,
@@ -135,6 +136,7 @@ export const attachmentsOperations = [
             body: attachmentView(replay),
           };
         }
+        requireWithinLimit(state, "upload", space.id, caller.userId);
 
         const part = request.formData?.get("file");
         if (!part || typeof part === "string" || !part.name) {

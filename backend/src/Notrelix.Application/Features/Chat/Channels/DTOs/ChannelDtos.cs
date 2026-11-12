@@ -6,7 +6,7 @@ using Space = Notrelix.Domain.Chat.Spaces.Space;
 namespace Notrelix.Application.Features.Chat.Channels.DTOs;
 
 /// <summary>
-/// A channel as one viewer sees it. <see cref="IsMember"/>, the membership fields and <see cref="Capabilities"/> are the viewer's own.
+/// A channel as one viewer sees it. <see cref="SlowModeSeconds"/> is the least time between two messages of one person (0 means off, UC-CHT-H08). <see cref="IsMember"/>, the membership fields and <see cref="Capabilities"/> are the viewer's own.
 /// </summary>
 public sealed record ChannelDto(
     Guid Id,
@@ -21,7 +21,8 @@ public sealed record ChannelDto(
     string? NotificationLevel,
     long Version,
     DateTimeOffset CreatedAt,
-    ChannelCapabilitiesDto Capabilities)
+    ChannelCapabilitiesDto Capabilities,
+    int SlowModeSeconds = 0)
 {
     public static ChannelDto From(Space space, Membership? viewerMembership, string workspaceRole) => new(
         space.Id,
@@ -36,7 +37,8 @@ public sealed record ChannelDto(
         viewerMembership is { IsActive: true } ? viewerMembership.NotificationLevel.ToWire() : null,
         space.Version,
         space.CreatedAt,
-        ChannelPermissionChecks.Capabilities(space, workspaceRole, viewerMembership));
+        ChannelPermissionChecks.Capabilities(space, workspaceRole, viewerMembership),
+        space.SlowModeSeconds);
 }
 
 public sealed record ChannelMemberDto(Guid UserId, string Role, DateTimeOffset JoinedAt);

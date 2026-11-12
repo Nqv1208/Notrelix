@@ -1,5 +1,6 @@
 using Notrelix.Domain.Chat.Permissions;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.RateLimits;
 using Notrelix.Testing.Application.Fakes;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Mentions.DTOs;
@@ -44,6 +45,7 @@ public class MentionHandlerTests
 
     private readonly Mock<ICurrentRequestContext> _context = new();
     private readonly Mock<IDateTimeProvider> _clock = new();
+    private readonly Notrelix.Application.Tests.Features.Chat.RateLimits.FakeChatRateLimiter _limits = new();
     private readonly Mock<IWorkspaceMemberFacts> _members = new();
     private readonly Mock<IBroadcastAuthorizer> _broadcast = new();
     private readonly List<Space> _spaces = [];
@@ -104,9 +106,9 @@ public class MentionHandlerTests
         return space;
     }
 
-    private SendMessageCommandHandler SendHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments());
+    private SendMessageCommandHandler SendHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments(), _limits);
     private EditMessageCommandHandler EditHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments());
-    private ReplyInThreadCommandHandler ReplyHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments());
+    private ReplyInThreadCommandHandler ReplyHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments(), _limits);
     private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments());
     private ListMessagesQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments());
     private ListMentionablesQueryHandler MentionablesHandler() => new(_db.Object, _context.Object, _members.Object, _broadcast.Object);
@@ -306,6 +308,46 @@ public class MentionHandlerTests
         result.Data!.Message.Mentions.Should().ContainSingle()
             .Which.Should().BeEquivalentTo(new MentionDto("broadcast-channel", 4, 8, null, null));
         result.Data.Message.MentionNotices.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ABroadcast_IsCountedUnderTheBroadcastLimit_AndAPlainMessageIsNot()
+    {
+        var space = Channel();
+
+        await Send(space, "hey @channel", [Channel(4)], "c-1");
+        await Send(space, "hello", null, "c-2");
+
+        _limits.Calls.Select(c => c.Policy).Should().Equal(
+            ChatRateLimitPolicy.Send, ChatRateLimitPolicy.Broadcast, ChatRateLimitPolicy.Send);
+    }
+
+    [Fact]
+    public async Task ABroadcastOverItsLimit_IsRefusedWithTheRetryWait_AndStoresNothing_ForAWorkspaceOwnerToo()
+    {
+        var space = Channel();
+        _limits.Refuse(ChatRateLimitPolicy.Broadcast);
+        AsUser(_owner);
+
+        var error = await FluentActions.Awaiting(() => Send(space, "hey @channel", [Channel(4)]))
+            .Should().ThrowAsync<TooManyRequestsException>();
+
+        error.Which.RuleCode.Should().Be(ChatRuleCodes.RateLimited);
+        error.Which.RetryAfter.Should().Be(TimeSpan.FromSeconds(7));
+        _messages.Should().BeEmpty();
+        _limits.Calls.Should().Contain(c => c.Policy == ChatRateLimitPolicy.Broadcast && c.UserId == _owner, "an Owner is not exempt");
+    }
+
+    [Fact]
+    public async Task AReplyWithABroadcast_IsCountedUnderTheBroadcastLimit()
+    {
+        var space = Channel();
+        var root = (await Send(space, "root", null, "c-root")).Data!.Message;
+        _limits.Calls.Clear();
+
+        await ReplyHandler().Handle(new ReplyInThreadCommand(_workspaceId, root.Id, "hey @channel", "c-reply", false, [Channel(4)]), CancellationToken.None);
+
+        _limits.Calls.Select(c => c.Policy).Should().Equal(ChatRateLimitPolicy.ThreadReply, ChatRateLimitPolicy.Broadcast);
     }
 
     [Fact]

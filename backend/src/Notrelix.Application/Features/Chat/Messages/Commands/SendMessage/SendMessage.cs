@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Permissions.Services;
+using Notrelix.Application.Features.Chat.RateLimits;
 using Notrelix.Application.Features.Collaboration.Public.Attachments;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Mentions.DTOs;
@@ -46,7 +47,8 @@ public class SendMessageCommandHandler(
     ISpaceSequenceAllocator sequences,
     IDateTimeProvider clock,
     IBroadcastAuthorizer broadcast,
-    IChatMessageAttachments attachments) : IRequestHandler<SendMessageCommand, Result<SendMessageResultDto>>
+    IChatMessageAttachments attachments,
+    IChatRateLimiter rateLimits) : IRequestHandler<SendMessageCommand, Result<SendMessageResultDto>>
 {
     public async Task<Result<SendMessageResultDto>> Handle(SendMessageCommand request, CancellationToken cancellationToken)
     {
@@ -92,7 +94,7 @@ public class SendMessageCommandHandler(
                 .Select(m => m.ToSpan()).ToList();
             var again = new MentionResolution(storedMentions, MentionResolver.StoredWarnings(space, storedMentions));
             return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-                await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, stored, cancellationToken, again), Created: false));
+                await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, ChannelAccess.IsGuest(caller), stored, cancellationToken, again), Created: false));
         }
 
         if (request.ReplyToId is { } replyToId)
@@ -103,8 +105,15 @@ public class SendMessageCommandHandler(
                 throw new NotFoundException(nameof(Message), replyToId);
         }
 
+        // A repeat above costs nothing. A new message is counted per person and per space and waits for the slow mode (UC-CHT-H08).
+        await rateLimits.RequireAsync(ChatRateLimitPolicy.Send, space.Id, userId, cancellationToken);
+        await SlowMode.RequireAsync(db, space, userId, clock.UtcNow, cancellationToken);
+
         var resolution = await MentionResolver.ResolveAsync(
             db, members, broadcast, space, caller, request.Content, request.Mentions, request.ConfirmBroadcast, cancellationToken);
+        // An @channel or @here has its own, lower limit; a Workspace Admin is not exempt from it.
+        if (resolution.Spans.Any(s => s.Kind is MentionKind.BroadcastChannel or MentionKind.BroadcastHere))
+            await rateLimits.RequireAsync(ChatRateLimitPolicy.Broadcast, space.Id, userId, cancellationToken);
 
         var sequence = await sequences.NextAsync(space.Id, cancellationToken);
         var message = Message.CreateUserMessage(
@@ -123,7 +132,7 @@ public class SendMessageCommandHandler(
         // A new message brings a hidden conversation back to every list that hid it (UC-CHT-E07).
         ConversationVisibility.ShowAgain(space);
         return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-            await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, message, cancellationToken, resolution), Created: true));
+            await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, ChannelAccess.IsGuest(caller), message, cancellationToken, resolution), Created: true));
     }
 }
 

@@ -19,6 +19,8 @@ export const CHAT_LIMITS = {
   clientMessageIdMaxLength: 128,
   channelNameMaxLength: 80,
   channelTopicMaxLength: 250,
+  /** The longest slow mode in seconds (ChatLimits.SlowModeMaxSeconds). */
+  slowModeMaxSeconds: 3600,
   /** The reason of a moderator delete (ChatLimits.ModerationReasonMaxLength). */
   moderationReasonMaxLength: 500,
   pageSize: 50,
@@ -143,6 +145,8 @@ export interface ChatChannel {
   readonly notificationLevel: ChatNotificationLevel | null;
   readonly version: number;
   readonly createdAt: string;
+  /** The least seconds between two messages of one person (UC-CHT-H08); 0 or absent is off. */
+  readonly slowModeSeconds?: number;
   /** What the caller can do here; absent from older servers (the UI then keeps today's behaviour). */
   readonly capabilities?: ChatChannelCapabilities;
 }
@@ -349,6 +353,8 @@ export interface ChatCreateChannelInput {
 export interface ChatUpdateChannelInput {
   readonly name?: string;
   readonly topic?: string | null;
+  /** 0 to 3600; 0 turns the slow mode off and leaving it out keeps it. */
+  readonly slowModeSeconds?: number;
   readonly expectedVersion: number;
 }
 

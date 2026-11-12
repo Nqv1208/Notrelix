@@ -66,4 +66,36 @@ describe("chatFailureOf", () => {
     expect(chatFailureOf(new Error("boom")).kind).toBe("server");
     expect(chatFailureOf(undefined).kind).toBe("server");
   });
+
+  it("reads the wait and the rule of a 429", () => {
+    const limited = chatFailureOf({
+      status: 429,
+      code: "rate_limit.exceeded",
+      ruleCode: "rate-limited",
+      details: { retryAfter: 12 },
+    });
+    expect(limited.kind).toBe("rate-limited");
+    expect(limited.retryable).toBe(true);
+    expect(limited.limit).toBe("rate-limited");
+    expect(limited.retryAfterSeconds).toBe(12);
+
+    const slow = chatFailureOf({
+      status: 429,
+      ruleCode: "slow-mode",
+      details: { retryAfter: 4.2, slowModeSeconds: 30 },
+    });
+    expect(slow.limit).toBe("slow-mode");
+    expect(slow.retryAfterSeconds).toBe(5);
+  });
+
+  it("has no wait or limit for a 429 without a usable retryAfter, nor for other failures", () => {
+    expect(
+      chatFailureOf({ status: 429, details: { retryAfter: "soon" } })
+        .retryAfterSeconds,
+    ).toBeNull();
+    expect(chatFailureOf({ status: 429 }).limit).toBe("rate-limited");
+    const other = chatFailureOf({ status: 404, details: { retryAfter: 9 } });
+    expect(other.retryAfterSeconds).toBeNull();
+    expect(other.limit).toBeNull();
+  });
 });

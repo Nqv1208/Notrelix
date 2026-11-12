@@ -36,6 +36,7 @@ public class PinHandlerTests
 
     private readonly Mock<ICurrentRequestContext> _context = new();
     private readonly Mock<IDateTimeProvider> _clock = new();
+    private readonly Notrelix.Application.Tests.Features.Chat.RateLimits.FakeChatRateLimiter _limits = new();
     private readonly Mock<IWorkspaceMemberFacts> _members = new();
     private readonly List<Space> _spaces = [];
     private readonly List<Message> _messages = [];
@@ -104,7 +105,7 @@ public class PinHandlerTests
     private ListPinsQueryHandler ListPinsHandler() => new(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments());
     private ListMessagesQueryHandler ListMessagesHandler() => new(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments());
     private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments());
-    private SendMessageCommandHandler SendHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments());
+    private SendMessageCommandHandler SendHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments(), _limits);
 
     private int SystemMessageCount(Space space) => _messages.Count(m => m.SpaceId == space.Id && m.IsSystem);
 

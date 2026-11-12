@@ -316,6 +316,8 @@ export function createChatHooks(deps: ChatHookDeps) {
                   ...entry,
                   status: "failed",
                   failure: failure.retryable ? "retryable" : "refused",
+                  retryAfterSeconds: failure.retryAfterSeconds,
+                  limit: failure.limit,
                 }
               : entry,
           ),
