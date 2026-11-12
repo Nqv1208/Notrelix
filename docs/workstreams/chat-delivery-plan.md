@@ -71,6 +71,17 @@ Entry: Phase 1 exit. Exit: all Phase 2 use cases HARDENING; mention privacy test
 
 Entry: Phase 2 exit and the owner decisions in `docs/product/chat.md` section 34. Exit: all use cases HARDENING; operations runbook; performance budgets met.
 
+# Status of Phase 3 (2026-11-12)
+
+Built to HARDENING (the owner tests and sets DONE): S3.1 to S3.4 (H01 to H07), H08 (rate limits and slow mode), and, in the last slice, H09 (the email digest, the job `Chat.Notifications.Digest` on the shared email outbox) and H10 (resource links: `Chat.Channels.Link`, `Unlink`, `ListLinked`, the header chip, the Link resource dialog and the Discuss entry). The last slice delivered S3.5 and S3.6 together, so no Phase 3 use case is DEFINED any more.
+
+Not built or not done (the exit gate of Phase 3 is not met until these are):
+- The operations runbook (jobs, the digest window, retention, export, the Chat settings).
+- Performance budgets and the load test (typing and presence included); the limits and the 50,000-message export bound are not tuned against load.
+- Browser verification of every Phase 3 surface (no browser check was made for the link dialog, the digest preference copy or the Discuss entry), design records, axe records, real e2e, and the owner's own check.
+- Gaps recorded in the use-case catalog: a Team cannot be linked (Governance publishes no Team visibility fact); the Discuss entry is on the Board header only (the Page header needs a slot in the docs host); the digest has no per-person frequency, no catch-up of missed windows, no Guest digest, and its link opens the channel, not the message; no real mail was sent in any test.
+- Rows of capabilities A to F in the use-case catalog still read DEFINED although their code exists; their evidence rows are not updated by this slice.
+
 # Cross-phase rules
 
 - Contract first, then backend, mock, frontend, e2e.
