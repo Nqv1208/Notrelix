@@ -119,6 +119,7 @@ invalid-position|Chat|InvalidPosition
 kind-not-supported|Chat|KindNotSupported
 last-manager|Chat|LastManager
 limit-reached|Chat|LimitReached
+link-invalid|Chat|LinkInvalid
 mention-invalid|Chat|MentionInvalid
 mention-limit-exceeded|Chat|MentionLimitExceeded
 message-content-invalid|Chat|MessageContentInvalid

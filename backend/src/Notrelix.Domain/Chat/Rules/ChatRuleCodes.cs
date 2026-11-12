@@ -87,4 +87,7 @@ public static class ChatRuleCodes
 
     /// <summary>An export would hold more than the limits allow; narrow the range (the job fails with this code, UC-CHT-H06).</summary>
     public const string ExportTooLarge = "export-too-large";
+
+    /// <summary>A channel link does not name a Board, Page or Team by kind and id, or the space is a conversation (400, UC-CHT-H10).</summary>
+    public const string LinkInvalid = "link-invalid";
 }

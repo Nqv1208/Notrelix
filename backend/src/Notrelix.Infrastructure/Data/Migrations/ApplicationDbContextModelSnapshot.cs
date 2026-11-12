@@ -3355,6 +3355,15 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDefaultValue(0L)
                         .HasColumnName("last_sequence");
 
+                    b.Property<Guid?>("LinkId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("link_id");
+
+                    b.Property<string>("LinkKind")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("link_kind");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(80)
@@ -3408,6 +3417,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_spaces_workspace_name_live")
                         .HasFilter("archived_at IS NULL AND deleted_at IS NULL AND kind IN ('channel_public', 'channel_private')");
+
+                    b.HasIndex("WorkspaceId", "LinkKind", "LinkId")
+                        .HasDatabaseName("idx_spaces_workspace_link")
+                        .HasFilter("link_id IS NOT NULL AND deleted_at IS NULL");
 
                     b.ToTable("spaces", "chat");
                 });
