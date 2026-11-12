@@ -106,6 +106,8 @@ public static class DependencyInjection
         services.AddScoped<Notrelix.Application.Features.Chat.Messages.Services.ChatSystemMessages>();
         services.AddScoped<Notrelix.Application.Features.Chat.Audit.Services.ChatAuditFacts>();
         services.AddScoped<Notrelix.Application.Features.Chat.Members.Services.ChatWorkspaceExit>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Notifications.Services.ChatNotificationHandoff>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Public.SpaceViewFacts.IChatSpaceViewFacts, Notrelix.Application.Features.Chat.Notifications.Services.ChatSpaceViewFacts>();
         services.AddScoped<Notrelix.Application.Common.Realtime.IAccessChangeSignal, Notrelix.Application.Common.Realtime.AccessChangeSignal>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Public.BoardRealtime.IBoardRealtimeNotifier, Notrelix.Application.Features.WorkManagement.Realtime.BoardRealtimeNotifier>();
         // Integration event collector (scoped per request)

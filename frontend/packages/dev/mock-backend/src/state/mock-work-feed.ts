@@ -123,12 +123,16 @@ export type InboxType =
   | "board_invited"
   | "followed_status"
   | "followed_comment"
-  | "followed_assignee";
+  | "followed_assignee"
+  | "chat_mention"
+  | "chat_direct"
+  | "chat_thread"
+  | "chat_broadcast";
 
 export type InboxNeed = "approve" | "reply" | "overdue";
 
 export interface InboxTargetDto {
-  kind: "item" | "doc" | "board";
+  kind: "item" | "doc" | "board" | "chat";
   id: string | null;
   key: string | null;
   title: string;
@@ -286,6 +290,10 @@ interface InboxRecord {
   dueAt: string | null;
   permission: "view" | "comment" | "edit" | null;
   mentionId: string | null;
+  /** The chat space a chat notification is about (UC-CHT-G09); null for every other kind. */
+  chatSpaceId: string | null;
+  /** Whose Inbox a chat notification is in; null for the signed-in member's own entries. */
+  recipientId: string | null;
   snoozedUntil: string | null;
   done: boolean;
   bundle: {
@@ -334,6 +342,44 @@ export class MockWorkFeedState {
   waiting: WaitingRecord[] = [];
   events: EventRecord[] = [];
   inbox: InboxRecord[] = [];
+
+  /**
+   * A chat notification the way Collaboration writes one (UC-CHT-G09): one entry per message, person and reason (a repeat adds
+   * nothing). The mock inbox is the signed-in member's own, so the chat side hands only their intents over.
+   */
+  addChatNotification(record: {
+    readonly id: string;
+    readonly recipientId: string;
+    readonly createdAt: string;
+    readonly type: Extract<
+      InboxType,
+      "chat_mention" | "chat_direct" | "chat_thread" | "chat_broadcast"
+    >;
+    readonly actorId: string;
+    readonly chatSpaceId: string;
+    readonly excerpt: string | null;
+  }): boolean {
+    if (this.inbox.some((entry) => entry.id === record.id)) return false;
+    this.inbox.push({
+      unread: true,
+      need: null,
+      following: false,
+      muted: false,
+      itemId: null,
+      docId: null,
+      boardTitle: null,
+      departmentId: null,
+      dueAt: null,
+      permission: null,
+      mentionId: null,
+      snoozedUntil: null,
+      done: false,
+      bundle: null,
+      ...record,
+    });
+    return true;
+  }
+
   /** Items whose notifications the member turned off. */
   mutedItemIds = new Set<string>();
 
@@ -519,6 +565,8 @@ export class MockWorkFeedState {
       dueAt: null,
       permission: null,
       mentionId: null,
+      chatSpaceId: null,
+      recipientId: null,
       snoozedUntil: null,
       done: false,
       bundle: null,
@@ -841,6 +889,23 @@ export function buildMyWorkExtended(
   return { items: open, done, waiting, departments };
 }
 
+function isConversation(kind: string): boolean {
+  return kind === "direct" || kind === "group";
+}
+
+/** A chat notification shows only while the member is still an active member of the space (COL-023). */
+function chatEntryVisible(store: MockStore, record: InboxRecord): boolean {
+  if (!record.chatSpaceId) return true;
+  if (record.recipientId !== store.getCurrentUser().id) return false;
+  const space = store.chat.spaces.get(record.chatSpaceId);
+  return (
+    space !== undefined &&
+    space.deletedAt === null &&
+    store.chat.activeMembershipOf(space.id, store.getCurrentUser().id) !==
+      undefined
+  );
+}
+
 function targetOf(store: MockStore, record: InboxRecord): InboxTargetDto {
   if (record.itemId) {
     const card = store.getCard(record.itemId);
@@ -857,6 +922,20 @@ function targetOf(store: MockStore, record: InboxRecord): InboxTargetDto {
       boardName: board?.title ?? null,
       departmentId: departmentOf(store, board?.spaceId),
       owner: person(store, owners[0]),
+    };
+  }
+  if (record.chatSpaceId) {
+    const space = store.chat.spaces.get(record.chatSpaceId);
+    return {
+      kind: "chat",
+      id: record.chatSpaceId,
+      key: null,
+      // A direct or group conversation has no name.
+      title: space && !isConversation(space.kind) ? space.name : "",
+      boardId: null,
+      boardName: null,
+      departmentId: null,
+      owner: null,
     };
   }
   if (record.docId) {
@@ -1004,6 +1083,7 @@ export function buildInbox(
   const snoozed = (record: InboxRecord) =>
     Boolean(record.snoozedUntil && record.snoozedUntil > now);
   const visible = feed.inbox
+    .filter((record) => chatEntryVisible(store, record))
     .filter((record) =>
       state === "done"
         ? record.done
@@ -1438,6 +1518,7 @@ export function markAllInboxRead(store: MockStore): void {
   const now = store.getClock().isoNow();
   for (const record of store.feed.inbox) {
     // Done and snoozed entries are not in the inbox, so read-all leaves them.
+    if (!chatEntryVisible(store, record)) continue;
     if (record.done || (record.snoozedUntil && record.snoozedUntil > now))
       continue;
     record.unread = false;
@@ -1471,6 +1552,7 @@ export function buildInboxSummary(store: MockStore): InboxSummaryDto {
           ? store.feed.inbox.filter(
               (record) =>
                 record.unread &&
+                chatEntryVisible(store, record) &&
                 (!record.snoozedUntil ||
                   record.snoozedUntil <= store.getClock().isoNow()),
             ).length

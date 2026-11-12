@@ -14,6 +14,7 @@ import {
   type ChatEndpoints,
 } from "../../core/api/chat.service";
 import { chatFailureOf, type ChatFailure } from "../../core/api/chat-failure";
+import { linkRefKey } from "../../core/model/link-model";
 import {
   mergeMessages,
   nextReadBoundary,
@@ -28,6 +29,7 @@ import {
   type ChatCreateChannelInput,
   type ChatFollowedThreadPage,
   type ChatHistoryAnchor,
+  type ChatLinkRef,
   type ChatMentionInput,
   type ChatMentionPayload,
   type ChatMessage,
@@ -1063,6 +1065,21 @@ export function createChatHooks(deps: ChatHookDeps) {
     };
   }
 
+  /**
+   * The preview of a Board item or Page link, resolved with the viewer's own access (UC-CHT-G05). Read on render, never
+   * stored on the message; a link nobody can view comes back generic, a failed read is an error the chip shows plainly.
+   */
+  function useLinkPreview(workspaceId: string, ref: ChatLinkRef) {
+    return useQuery({
+      queryKey: chatQueryKeys.linkPreview(workspaceId, linkRefKey(ref)),
+      queryFn: ({ signal }) =>
+        service.resolveLink(workspaceId, ref, { signal }),
+      enabled: workspaceId.length > 0,
+      staleTime: CHANNEL_STALE_MS,
+      retry: false,
+    });
+  }
+
   /** The bytes of one file, read with the session (the inline preview of an image). */
   function useAttachmentContent(
     workspaceId: string,
@@ -1104,6 +1121,7 @@ export function createChatHooks(deps: ChatHookDeps) {
     useAttachmentActions,
     useAttachmentContent,
     useDownloadAttachment,
+    useLinkPreview,
     useChannels,
     useBrowseChannels,
     useChannel,

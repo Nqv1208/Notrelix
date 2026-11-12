@@ -236,6 +236,25 @@ export interface ChatReactorPage {
   readonly nextCursor: string | null;
 }
 
+/** The kinds of resource a message link can point to (the ResourceRef kind of the producer). */
+export type ChatLinkKind = "work-management.board-item" | "documents.page";
+
+/** What names a link to resolve: a product URL of this Workspace, or its ResourceRef. */
+export type ChatLinkRef =
+  | { readonly url: string }
+  | { readonly kind: ChatLinkKind; readonly resourceId: string };
+
+/**
+ * LinkPreviewDto: the preview of a link to a Board item or Page. `title` is there only when the caller can view the
+ * resource now; `accessible` false is a generic link (hidden, trashed and missing look the same).
+ */
+export interface ChatLinkPreview {
+  readonly kind: ChatLinkKind;
+  readonly resourceId: string;
+  readonly accessible: boolean;
+  readonly title: string | null;
+}
+
 /** ThreadSummaryDto: the reply count and the caller's follow state of one thread. */
 export interface ChatThreadSummary {
   readonly rootMessageId: string;
