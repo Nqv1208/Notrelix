@@ -147,13 +147,13 @@ Prefix `/api/v1/workspaces/{workspaceId}/chat` (the Workspace is in the path, va
 | Reactions | `PUT/DELETE /messages/{id}/reactions/{kind}`, `GET /messages/{id}/reactions` |
 | Read state | `GET /me/unread`, `PUT /spaces/{id}/read`, `POST /me/read-all`, `PUT /spaces/{id}/notification-level` |
 | Mentions, links | `GET /spaces/{id}/mentionables`, `GET /links/resolve` |
-| Search | `GET /search` (not built, UC-CHT-H07) |
+| Search | `GET /search` (Chat.Search.Query, UC-CHT-H07; live phrase match, no index) |
 | Retention | `GET/PUT /retention` (Workspace rule: Owner sets, every member reads; `expectedVersion`, 412) |
 | Export | `POST /exports` (Owner or Admin; 202), `GET /exports/{id}` (status), `GET /exports/{id}/content` (the JSON file, the requester only, while it has not expired) |
 
 Error codes are stable (`space-not-found`, `channel-archived`, `name-conflict`, `version-conflict` (HTTP 412, the codebase convention for a stale expected version), `rate-limited`, `limit-reached`). Responses for no-access and missing are identical.
 
-A rate limit or a channel's slow mode is HTTP 429 with a `Retry-After` header, `errorCode` `rate_limit.exceeded` and `ruleCode` `rate-limited` or `slow-mode`; the body also has `retryAfter` (whole seconds), and `policy`, `scope` and `limit` (a rate limit) or `slowModeSeconds` (slow mode). The policies are `chat.send`, `chat.react`, `chat.thread-reply`, `chat.upload` and `chat.broadcast`, per person and per space (UC-CHT-H08), and `chat.export` (5 per person and 20 per Workspace per hour, UC-CHT-H06). A channel's slow mode is `slowModeSeconds` (0 to 3600) on the channel and is set with `PATCH /channels/{id}`.
+A rate limit or a channel's slow mode is HTTP 429 with a `Retry-After` header, `errorCode` `rate_limit.exceeded` and `ruleCode` `rate-limited` or `slow-mode`; the body also has `retryAfter` (whole seconds), and `policy`, `scope` and `limit` (a rate limit) or `slowModeSeconds` (slow mode). The policies are `chat.send`, `chat.react`, `chat.thread-reply`, `chat.upload`, `chat.broadcast` and `chat.search`, per person and per space (UC-CHT-H08), and `chat.export` (5 per person and 20 per Workspace per hour, UC-CHT-H06). A channel's slow mode is `slowModeSeconds` (0 to 3600) on the channel and is set with `PATCH /channels/{id}`.
 
 ## 16. Generated client and frontend contract
 

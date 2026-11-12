@@ -338,6 +338,7 @@ builds the JSON file into platform object storage (`IStorageService`), bounded t
 (`ChatLimits.ExportMaxMessages`, `ExportMaxBytes`), keeps it for 24 hours (`ExportLifetimeHours`), and its sweep expires
 files and requeues a job stuck Running for more than 15 minutes. The request is limited by the chat rate limit policy
 `Export` (`RateLimiting:Chat:Export`, default 5 per person and 20 per Workspace per hour).
+The chat search (UC-CHT-H07) reads `Search` (`RateLimiting:Chat:Search`, default 30 per minute per person and 300 per minute per Workspace). It has no other options: it reads the live message table, with no index and no worker.
 
 `WorkManagement:Boards:Purge` (Infrastructure, `DeletedBoardPurgeOptions`, validated on start by
 `DeletedBoardPurgeOptionsValidator`) configures the purge of deleted boards (`DeletedBoardPurgeService`, a hosted
