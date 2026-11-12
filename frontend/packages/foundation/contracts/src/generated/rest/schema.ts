@@ -693,6 +693,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/chat/links/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resolve the preview of a link to a Board item or a Page
+         * @description Send either url (a product URL of this Workspace, at most 2048 characters: /workspaces/{id}/boards/{id}?item={id} or /workspaces/{id}/docs/{id}) or kind (work-management.board-item or documents.page) with resourceId. The title is returned only when the caller can view the resource now; otherwise accessible is false and there is no title, the same answer whether the resource is hidden, trashed or missing. A URL that is not a Board item or Page of this Workspace is 400. Nothing is changed or granted.
+         */
+        get: operations["Chat.Links.Resolve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/chat/channels/{channelId}/members": {
         parameters: {
             query?: never;
@@ -9325,6 +9345,13 @@ export interface components {
             created?: boolean;
             skipped?: string[] | null;
         };
+        "Notrelix.Application.Features.Chat.Links.DTOs.LinkPreviewDto": {
+            kind?: string | null;
+            /** Format: uuid */
+            resourceId?: string;
+            accessible?: boolean;
+            title?: string | null;
+        };
         "Notrelix.Application.Features.Chat.Mentions.DTOs.MentionableDto": {
             /** Format: uuid */
             userId?: string;
@@ -13714,6 +13741,50 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Links.Resolve": {
+        parameters: {
+            query?: {
+                url?: string;
+                kind?: string;
+                resourceId?: string;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Links.DTOs.LinkPreviewDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
