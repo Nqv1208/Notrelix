@@ -198,6 +198,32 @@ public class Message : AggregateRoot, IWorkspaceScoped
         if (deletedBy != AuthorId)
             throw new BusinessRuleException(ChatRuleCodes.MessageNotAuthor, "Only the author can delete this message.");
 
+        return Tombstone(deletedBy, deletedAt);
+    }
+
+    /// <summary>
+    /// Removes another person's message as a moderator (UC-CHT-H03): the same tombstone as an author's delete, so the content goes and
+    /// the author, the time and the sequence stay. The moderator is kept as <see cref="DeletedBy"/>, which is how readers see that a
+    /// moderator removed it. The author's own delete goes through <see cref="Delete"/>. Who may moderate and the reason (which belongs
+    /// to the Audit fact, not to the message) are decided by the caller. Returns false when already deleted.
+    /// </summary>
+    public bool DeleteAsModerator(Guid moderatorId, DateTimeOffset deletedAt)
+    {
+        Guard.NotEmpty(moderatorId);
+        if (IsSystem)
+            throw new BusinessRuleException(ChatRuleCodes.SystemMessageImmutable, "A system message cannot be deleted.");
+        if (IsDeleted) return false;
+        if (moderatorId == AuthorId)
+            throw new BusinessRuleException(ChatRuleCodes.SelfTarget, "Delete your own message as its author, not as a moderator.");
+
+        return Tombstone(moderatorId, deletedAt);
+    }
+
+    /// <summary>True when the tombstone was left by someone other than the author, a moderator (UC-CHT-H03).</summary>
+    public bool IsRemovedByModerator => IsDeleted && DeletedBy is { } by && by != AuthorId;
+
+    private bool Tombstone(Guid deletedBy, DateTimeOffset deletedAt)
+    {
         var pending = PrepareAuditUpdate(deletedBy, deletedAt);
         Content = null;
         DeletedAt = deletedAt;

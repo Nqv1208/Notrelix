@@ -35,6 +35,7 @@ public class ChatMessageConfiguration : IEntityTypeConfiguration<Message>
         builder.Ignore(x => x.IsDeleted);
         builder.Ignore(x => x.IsEdited);
         builder.Ignore(x => x.IsSystem);
+        builder.Ignore(x => x.IsRemovedByModerator);
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");

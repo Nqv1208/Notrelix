@@ -66,4 +66,10 @@ public static class ChatRuleCodes
 
     /// <summary>A group conversation needs at least three participants, the caller included (400, UC-CHT-E02).</summary>
     public const string GroupTooSmall = "group-too-small";
+
+    /// <summary>An override would lock a channel manager out of running the channel, for instance denying them invites (422, UC-CHT-H01).</summary>
+    public const string PermissionLockout = "permission-lockout";
+
+    /// <summary>An allow would give a role more than its Workspace role may do, or more than the caller holds (422, UC-CHT-H01).</summary>
+    public const string PermissionExceedsRole = "permission-exceeds-role";
 }
