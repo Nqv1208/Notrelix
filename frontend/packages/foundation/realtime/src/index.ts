@@ -26,6 +26,7 @@ export {
   type RealtimeRecoveryReason,
   type RealtimeRecoverySignal,
   type RealtimeEventListener,
+  type RealtimeEphemeralListener,
   type RealtimeStateListener,
   type RealtimeRecoveryListener,
   type RealtimeTransport,

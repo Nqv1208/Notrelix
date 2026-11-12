@@ -2,8 +2,8 @@
   "asyncapi": "2.6.0",
   "info": {
     "title": "Notrelix Realtime Protocol Specification",
-    "version": "1.1.0",
-    "description": "Realtime gateway protocol, schema version 1 (protocol v1.1). Event frames are notify-only, except the chat channel stream (payloadContract chat.message.v1) and the per-user stream (payloadContract chat.unread.v1), which carry a compact payload. The chat channel stream also carries chat.space.changed (payloadContract chat.space.v1: the change and the message id), a small pin frame that readers apply or answer by refetching the pins. The chat channel stream also carries chat.reaction.changed (payloadContract chat.reaction.v1: the message, the palette kind, the change added or removed and the person; no counts), a compact frame that readers apply or answer by refetching the message reactions. A payload that does not fit the 4096-byte frame limit is dropped and the frame carries payloadOmitted true; the client refetches over REST. Board frames stay hand-written in the client and are not produced by the gateway contract yet."
+    "version": "1.1.1",
+    "description": "Realtime gateway protocol, schema version 1 (protocol v1.1). Event frames are notify-only, except the chat channel stream (payloadContract chat.message.v1) and the per-user stream (payloadContract chat.unread.v1), which carry a compact payload. The chat channel stream also carries chat.space.changed (payloadContract chat.space.v1: the change and the message id), a small pin frame that readers apply or answer by refetching the pins. The chat channel stream also carries chat.reaction.changed (payloadContract chat.reaction.v1: the message, the palette kind, the change added or removed and the person; no counts), a compact frame that readers apply or answer by refetching the message reactions. A payload that does not fit the 4096-byte frame limit is dropped and the frame carries payloadOmitted true; the client refetches over REST. Two ephemeral frames travel on the channel scope and are never stored: the client frames typing (at most one per 3 seconds per subscription; the gateway drops faster ones and ignores a subscription it does not hold or a space it no longer authorizes) and presence (state online, idle or offline, a heartbeat about every 30 seconds), and the server frames typing (expiresInMs 5000) and presence (ttlMs; a state with no heartbeat for that long counts as offline) sent to the other subscribers of the space, never to the sender. They count in the 4096-byte and 20-frames-per-second limits, carry no resource data and never grant access. Board frames stay hand-written in the client and are not produced by the gateway contract yet."
   },
   "channels": {
     "workspace/{workspaceId}": {
@@ -18,6 +18,10 @@
       }
     },
     "chat/channel/{spaceId}": {
+      "publish": {
+        "description": "Ephemeral client frames: typing and presence (schemas RealtimeTypingClientFrame, RealtimePresenceClientFrame). The matching server frames are RealtimeTypingServerFrame and RealtimePresenceServerFrame.",
+        "message": { "oneOf": [{ "$ref": "#/components/schemas/RealtimeTypingClientFrame" }, { "$ref": "#/components/schemas/RealtimePresenceClientFrame" }] }
+      },
       "subscribe": {
         "message": {
           "oneOf": [
@@ -226,6 +230,51 @@
           "payloadOmitted": { "type": "boolean" }
         },
         "required": ["type", "subscriptionId", "schemaVersion", "eventId", "eventType", "changeKind", "streamKey", "streamVersion", "resourceKind", "resourceId", "resourceVersion", "workspaceId", "correlationId", "occurredAt", "payloadContract"]
+      },
+      "RealtimeTypingClientFrame": {
+        "type": "object",
+        "x-frame": true,
+        "description": "Client to server (type typing): the caller is typing in the space of a channel subscription. Ephemeral; throttled to one per 3 seconds; ignored without an answer when unauthorized.",
+        "properties": {
+          "type": { "type": "string", "enum": ["typing"] },
+          "subscriptionId": { "type": "string" }
+        },
+        "required": ["type", "subscriptionId"]
+      },
+      "RealtimePresenceClientFrame": {
+        "type": "object",
+        "x-frame": true,
+        "description": "Client to server (type presence): the caller's presence heartbeat, about every 30 seconds and on a state change. Held in gateway memory only.",
+        "properties": {
+          "type": { "type": "string", "enum": ["presence"] },
+          "state": { "type": "string", "enum": ["online", "idle", "offline"] }
+        },
+        "required": ["type", "state"]
+      },
+      "RealtimeTypingServerFrame": {
+        "type": "object",
+        "x-frame": true,
+        "description": "Server to client (type typing): another person is typing in the space of the subscription. The indicator lasts expiresInMs after this frame.",
+        "properties": {
+          "type": { "type": "string", "enum": ["typing"] },
+          "subscriptionId": { "type": "string" },
+          "userId": { "type": "string", "format": "uuid" },
+          "expiresInMs": { "type": "integer" }
+        },
+        "required": ["type", "subscriptionId", "userId", "expiresInMs"]
+      },
+      "RealtimePresenceServerFrame": {
+        "type": "object",
+        "x-frame": true,
+        "description": "Server to client (type presence): another person's presence in the space of the subscription. After ttlMs without a newer frame the client treats the person as offline. Never used for authorization.",
+        "properties": {
+          "type": { "type": "string", "enum": ["presence"] },
+          "subscriptionId": { "type": "string" },
+          "userId": { "type": "string", "format": "uuid" },
+          "state": { "type": "string", "enum": ["online", "idle", "offline"] },
+          "ttlMs": { "type": "integer" }
+        },
+        "required": ["type", "subscriptionId", "userId", "state", "ttlMs"]
       }
     }
   }

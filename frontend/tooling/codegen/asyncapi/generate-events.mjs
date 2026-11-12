@@ -101,6 +101,14 @@ try {
     );
   }
 
+  // Ephemeral protocol frames (typing, presence) are not events: they get their own interfaces.
+  const schemas = spec.components?.schemas ?? {};
+  for (const schemaKey of stableKeys(schemas)) {
+    if (schemas[schemaKey]["x-frame"] !== true) continue;
+    lines.push(`export interface ${sanitizeTypeName(schemaKey)} ${schemaToTs(schemas[schemaKey], 0)}`);
+    lines.push("");
+  }
+
   lines.push("export type GeneratedRealtimeMessage =");
   lines.push(
     unionMembers.length > 0 ? unionMembers.join("\n") + ";" : "  never;",
