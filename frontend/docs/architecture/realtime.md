@@ -176,7 +176,15 @@ or refetches the pins over REST (UC-CHT-F06, F07). A reaction change is a
 `chat.reaction.changed` frame on the channel stream of its space (payloadContract
 `chat.reaction.v1`, payload `{ messageId, kind, change: "added" | "removed", actorId }`,
 no content and no counts); a reader applies it or refetches the message's reactions over
-REST (UC-CHT-G06, G07). A thread reply is a `chat.message.created` frame on the
+REST (UC-CHT-G06, G07). A file added to or removed from a message is a
+`chat.message.attachment.changed` frame on the same channel stream (payloadContract
+`chat.attachment.v1`, payload `{ messageId, change: "added" | "removed", attachmentId, fileName, sizeBytes,
+contentType, uploadedBy, createdAt, downloadPath, detailsOmitted }`; a removal carries only the ids,
+and the frame never carries bytes). The Chat adapter patches the message's file list by file id in
+every loaded cache (history, thread, pins), so a replay is a no-op and an unknown message is ignored;
+`detailsOmitted` (a file name that does not fit the frame) makes it read the files over REST. The
+message does not change (no version bump). The in-progress upload of a person is not announced:
+others see the file when it is stored (UC-CHT-G08). A thread reply is a `chat.message.created` frame on the
 channel stream of its space with `threadRootId` and `threadSequence` set; the
 frame is not a separate kind (UC-CHT-F01). Its generated payload types
 (`GeneratedRealtimeMessage`, `RealtimeEventMessage` in `@notrelix/contracts`)
