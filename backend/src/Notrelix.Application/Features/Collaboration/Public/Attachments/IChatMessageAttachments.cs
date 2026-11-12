@@ -27,6 +27,12 @@ public interface IChatMessageAttachments
 
     /// <summary>Removes every file of the message, as when the message is deleted. Returns how many were removed.</summary>
     Task<int> RemoveAllAsync(Guid messageId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Removes the files of many messages at once, for the retention job (UC-CHT-H05): the job has no request principal, so the soft delete
+    /// is recorded for the person named. The stored objects are purged by the attachment retention job. Returns how many files were removed.
+    /// </summary>
+    Task<int> RemoveAllAsync(IReadOnlyCollection<Guid> messageIds, Guid deletedBy, CancellationToken cancellationToken);
 }
 
 /// <summary>One stored file of a message. There is no URL: the bytes are read through an authorized request for the message.</summary>

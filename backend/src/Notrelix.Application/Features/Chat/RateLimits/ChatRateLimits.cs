@@ -11,6 +11,7 @@ public enum ChatRateLimitPolicy
     ThreadReply,
     Upload,
     Broadcast,
+    Export,
 }
 
 public static class ChatRateLimitPolicies
@@ -22,6 +23,7 @@ public static class ChatRateLimitPolicies
         ChatRateLimitPolicy.ThreadReply => "chat.thread-reply",
         ChatRateLimitPolicy.Upload => "chat.upload",
         ChatRateLimitPolicy.Broadcast => "chat.broadcast",
+        ChatRateLimitPolicy.Export => "chat.export",
         _ => throw new ArgumentOutOfRangeException(nameof(policy), policy, "Unknown Chat rate limit policy."),
     };
 }
@@ -54,6 +56,9 @@ public sealed class ChatRateLimitOptions
     public ChatRateLimitPair Upload { get; set; } = Pair(10, 60, 100, 60);
     public ChatRateLimitPair Broadcast { get; set; } = Pair(3, 60, 10, 60);
 
+    /// <summary>An export of a person's chat data (UC-CHT-H06): the second limit counts the Workspace, not a space.</summary>
+    public ChatRateLimitPair Export { get; set; } = Pair(5, 3600, 20, 3600);
+
     public ChatRateLimitPair For(ChatRateLimitPolicy policy) => policy switch
     {
         ChatRateLimitPolicy.Send => Send,
@@ -61,6 +66,7 @@ public sealed class ChatRateLimitOptions
         ChatRateLimitPolicy.ThreadReply => ThreadReply,
         ChatRateLimitPolicy.Upload => Upload,
         ChatRateLimitPolicy.Broadcast => Broadcast,
+        ChatRateLimitPolicy.Export => Export,
         _ => throw new ArgumentOutOfRangeException(nameof(policy), policy, "Unknown Chat rate limit policy."),
     };
 

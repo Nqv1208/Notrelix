@@ -85,4 +85,21 @@ public sealed class ChatMessageAttachments(
             attachment.Delete(requestContext.UserId, now);
         return attachments.Count;
     }
+
+    public async Task<int> RemoveAllAsync(IReadOnlyCollection<Guid> messageIds, Guid deletedBy, CancellationToken cancellationToken)
+    {
+        if (messageIds.Count == 0)
+            return 0;
+
+        var kind = AttachmentTargets.ChatMessage;
+        var ids = messageIds.Distinct().ToList();
+        var attachments = await context.Attachments
+            .Where(a => a.Target.Kind == kind && ids.Contains(a.Target.ResourceId))
+            .ToListAsync(cancellationToken);
+
+        var now = clock.UtcNow;
+        foreach (var attachment in attachments)
+            attachment.Delete(deletedBy, now);
+        return attachments.Count;
+    }
 }

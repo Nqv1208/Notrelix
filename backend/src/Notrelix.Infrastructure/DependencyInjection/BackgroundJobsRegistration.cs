@@ -5,7 +5,7 @@ using Notrelix.Infrastructure.Storage;
 namespace Notrelix.Infrastructure;
 
 /// <summary>
-/// Background workers: outbox dispatcher, email dispatcher and attachment object reaper and security activity retention.
+/// Background workers: outbox dispatcher, email dispatcher and attachment object reaper, security activity retention and the Chat retention and export jobs.
 /// Business automation dispatch is durable outbox/broker-driven — no process-local queue.
 /// </summary>
 public static class BackgroundJobsRegistration
@@ -85,6 +85,19 @@ public static class BackgroundJobsRegistration
         // Work Management: run queued board file imports and exports, and remove expired export files.
         services.AddScoped<BoardTransferRunner>();
         services.AddHostedService<BoardTransferService>();
+
+        // Chat: apply each Workspace's retention rule (UC-CHT-H05, Chat.Retention.Apply) and build the exports of a person's chat data (UC-CHT-H06).
+        services.AddOptions<ChatRetentionOptions>()
+            .Bind(configuration.GetSection(ChatRetentionOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<ChatRetentionOptions>, ChatRetentionOptionsValidator>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Audit.Services.IChatSystemAudit, ChatSystemAudit>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Retention.Services.ChatRetentionApplier>();
+        services.AddScoped<ChatRetentionRunner>();
+        services.AddHostedService<ChatRetentionService>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Exports.ChatExportBuilder>();
+        services.AddScoped<ChatExportRunner>();
+        services.AddHostedService<ChatExportService>();
 
         return services;
     }

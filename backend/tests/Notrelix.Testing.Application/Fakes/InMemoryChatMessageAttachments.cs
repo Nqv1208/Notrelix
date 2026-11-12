@@ -68,4 +68,7 @@ public sealed class InMemoryChatMessageAttachments : IChatMessageAttachments
 
     public Task<int> RemoveAllAsync(Guid messageId, CancellationToken cancellationToken) =>
         Task.FromResult(_files.RemoveAll(f => f.Fact.MessageId == messageId));
+
+    public Task<int> RemoveAllAsync(IReadOnlyCollection<Guid> messageIds, Guid deletedBy, CancellationToken cancellationToken) =>
+        Task.FromResult(_files.RemoveAll(f => messageIds.Contains(f.Fact.MessageId)));
 }
