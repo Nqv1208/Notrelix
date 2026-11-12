@@ -89,7 +89,6 @@ export function useTypingPeople(
   return useMemo(
     () => (spaceId ? typing.typingIn(spaceId) : []),
     // `version` changes whenever the store does; the expiry timer bumps it too.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [typing, spaceId, version],
   );
 }
@@ -101,7 +100,6 @@ export function usePresenceOf(
   const version = useSyncExternalStore(presence.subscribe, presence.getVersion);
   return useCallback(
     (userId: string) => presence.stateOf(userId),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [presence, version],
   );
 }

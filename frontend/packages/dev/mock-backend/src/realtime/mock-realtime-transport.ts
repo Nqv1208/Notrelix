@@ -45,11 +45,11 @@ export const MOCK_VIEWER_ID = "mock-viewer";
 /** At most this many personas keep a presence entry in the mock (the real gateway also bounds its state). */
 const MAX_MOCK_PRESENCE_ENTRIES = 200;
 
-let ephemeralNow: () => number = () => Date.now();
+let ephemeralNow: () => number = () => performance.now();
 
-/** Test helper: the clock the mock uses for the typing/presence rate limits and expiry. */
+/** Test helper: the (monotonic, millisecond) clock the mock uses for the typing/presence rate limits and expiry. */
 export function setMockEphemeralClock(now: (() => number) | null): void {
-  ephemeralNow = now ?? (() => Date.now());
+  ephemeralNow = now ?? (() => performance.now());
 }
 
 interface MockPresenceEntry {
