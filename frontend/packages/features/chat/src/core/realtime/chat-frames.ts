@@ -11,6 +11,7 @@ export type ChatMessageEventType =
 export const CHAT_UNREAD_EVENT = "chat.unread.changed";
 export const CHAT_REACTION_EVENT = "chat.reaction.changed";
 export const CHAT_SPACE_EVENT = "chat.space.changed";
+export const CHAT_ATTACHMENT_EVENT = "chat.message.attachment.changed";
 
 export function isChatMessageEvent(
   eventType: string,
@@ -49,6 +50,23 @@ export interface ChatReactionFramePayload {
   readonly kind: string;
   readonly change: "added" | "removed";
   readonly actorId: string;
+}
+
+/**
+ * chat.attachment.v1: a file of a message was added or removed. An added file carries its metadata and the authorized download
+ * route (never bytes); a removed file carries only its id. `detailsOmitted` means the details did not fit the frame: refetch the files.
+ */
+export interface ChatAttachmentFramePayload {
+  readonly messageId: string;
+  readonly change: "added" | "removed";
+  readonly attachmentId: string;
+  readonly detailsOmitted: boolean;
+  readonly fileName: string | null;
+  readonly sizeBytes: number | null;
+  readonly contentType: string | null;
+  readonly uploadedBy: string | null;
+  readonly createdAt: string | null;
+  readonly downloadPath: string | null;
 }
 
 /** chat.space.v1: a pin of the space changed; readers refetch the pins. */
@@ -138,6 +156,47 @@ export function parseChatReactionFrame(
     return null;
   }
   return { messageId, kind, change, actorId };
+}
+
+export function parseChatAttachmentFrame(
+  payload: unknown,
+): ChatAttachmentFramePayload | null {
+  if (!isRecord(payload)) return null;
+  const { messageId, change, attachmentId } = payload;
+  if (
+    !isNonEmpty(messageId) ||
+    !isNonEmpty(attachmentId) ||
+    (change !== "added" && change !== "removed")
+  ) {
+    return null;
+  }
+  const detailsOmitted = payload.detailsOmitted === true;
+  const { fileName, sizeBytes, contentType, uploadedBy, createdAt } = payload;
+  const downloadPath = payload.downloadPath;
+  if (
+    change === "added" &&
+    !detailsOmitted &&
+    (!isNonEmpty(fileName) ||
+      !isCount(sizeBytes) ||
+      !isNonEmpty(contentType) ||
+      !isNonEmpty(uploadedBy) ||
+      !isNonEmpty(createdAt) ||
+      !isNonEmpty(downloadPath))
+  ) {
+    return null;
+  }
+  return {
+    messageId,
+    change,
+    attachmentId,
+    detailsOmitted,
+    fileName: isNonEmpty(fileName) ? fileName : null,
+    sizeBytes: isCount(sizeBytes) ? sizeBytes : null,
+    contentType: isNonEmpty(contentType) ? contentType : null,
+    uploadedBy: isNonEmpty(uploadedBy) ? uploadedBy : null,
+    createdAt: isNonEmpty(createdAt) ? createdAt : null,
+    downloadPath: isNonEmpty(downloadPath) ? downloadPath : null,
+  };
 }
 
 export function parseChatSpaceFrame(

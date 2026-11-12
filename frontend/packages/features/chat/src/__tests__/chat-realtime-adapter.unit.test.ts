@@ -116,6 +116,9 @@ describe("ChatRealtimeAdapter: channel frames", () => {
     expect(adapter.supports(envelope("chat.unread.changed", {}))).toBe(true);
     expect(adapter.supports(envelope("chat.reaction.changed", {}))).toBe(true);
     expect(adapter.supports(envelope("chat.space.changed", {}))).toBe(true);
+    expect(
+      adapter.supports(envelope("chat.message.attachment.changed", {})),
+    ).toBe(true);
     expect(adapter.supports(envelope("board.board", {}))).toBe(false);
   });
 
@@ -531,5 +534,173 @@ describe("ChatRealtimeAdapter: threads, reactions and pins", () => {
     );
     expect(spy).toHaveBeenCalledWith({ queryKey: chatQueryKeys.pins(WS, CH) });
     expect(invalidateQueries).not.toHaveBeenCalled();
+  });
+});
+
+describe("ChatRealtimeAdapter: message attachments (UC-CHT-G08)", () => {
+  const added = (id = "f-1", over: Record<string, unknown> = {}) => ({
+    messageId: "m-2",
+    change: "added",
+    attachmentId: id,
+    fileName: `${id}.pdf`,
+    sizeBytes: 12,
+    contentType: "application/pdf",
+    uploadedBy: "user-a",
+    createdAt: AT,
+    downloadPath: `/api/v1/workspaces/${WS}/chat/messages/m-2/attachments/${id}/content`,
+    detailsOmitted: false,
+    ...over,
+  });
+  const removed = (id = "f-1") => ({
+    messageId: "m-2",
+    change: "removed",
+    attachmentId: id,
+    detailsOmitted: false,
+  });
+  const files = (read: () => ChatMessagesCache) =>
+    read().pages[0]!.items.find((item) => item.id === "m-2")!.attachments;
+
+  it("an added frame puts the file on the message once, and a replay changes nothing", async () => {
+    const { adapter, context, read } = setup([message(1), message(2)]);
+    const frame = envelope("chat.message.attachment.changed", added());
+    await adapter.validateAndHandle(frame, context);
+    const first = read().pages[0]!.items;
+    await adapter.validateAndHandle(frame, context);
+
+    expect(files(read)?.map((file) => file.id)).toEqual(["f-1"]);
+    expect(files(read)?.[0]).toMatchObject({
+      messageId: "m-2",
+      fileName: "f-1.pdf",
+      downloadPath: expect.stringContaining("/attachments/f-1/content"),
+    });
+    expect(read().pages[0]!.items[1]).toBe(first[1]);
+  });
+
+  it("a removed frame takes the file off, and a removal of an unknown file is a no-op", async () => {
+    const { adapter, context, read } = setup([message(1), message(2)]);
+    await adapter.validateAndHandle(
+      envelope("chat.message.attachment.changed", added("f-1")),
+      context,
+    );
+    await adapter.validateAndHandle(
+      envelope("chat.message.attachment.changed", added("f-2")),
+      context,
+    );
+    await adapter.validateAndHandle(
+      envelope("chat.message.attachment.changed", removed("f-1")),
+      context,
+    );
+    await adapter.validateAndHandle(
+      envelope("chat.message.attachment.changed", removed("f-1")),
+      context,
+    );
+    await adapter.validateAndHandle(
+      envelope("chat.message.attachment.changed", removed("nope")),
+      context,
+    );
+    expect(files(read)?.map((file) => file.id)).toEqual(["f-2"]);
+  });
+
+  it("patches a message in a loaded thread and in the pins as well", async () => {
+    const { adapter, context, queryClient } = setup([message(1)]);
+    const threadKey = chatQueryKeys.thread(WS, "m-1");
+    queryClient.setQueryData(threadKey, {
+      pageParams: [{}],
+      pages: [{ root: message(1), items: [message(2)], hasNewer: false }],
+    });
+    const pinsKey = chatQueryKeys.pins(WS, CH);
+    queryClient.setQueryData(pinsKey, {
+      pageParams: [{}],
+      pages: [
+        {
+          items: [{ message: message(2), pinnedBy: "user-a", pinnedAt: AT }],
+        },
+      ],
+    });
+    await adapter.validateAndHandle(
+      envelope("chat.message.attachment.changed", added()),
+      context,
+    );
+    const thread = queryClient.getQueryData<{
+      pages: { items: ChatMessage[] }[];
+    }>(threadKey)!;
+    const pins = queryClient.getQueryData<{
+      pages: { items: { message: ChatMessage }[] }[];
+    }>(pinsKey)!;
+    expect(thread.pages[0]!.items[0]!.attachments).toHaveLength(1);
+    expect(pins.pages[0]!.items[0]!.message.attachments).toHaveLength(1);
+  });
+
+  it("ignores a message that is not loaded, a malformed frame, another channel and an omitted payload", async () => {
+    const { adapter, context, read } = setup([message(1), message(2)]);
+    const before = read();
+    await adapter.validateAndHandle(
+      envelope(
+        "chat.message.attachment.changed",
+        added("f-1", { messageId: "unknown" }),
+      ),
+      context,
+    );
+    await adapter.validateAndHandle(
+      envelope("chat.message.attachment.changed", { messageId: "m-2" }),
+      context,
+    );
+    await adapter.validateAndHandle(
+      envelope(
+        "chat.message.attachment.changed",
+        added("f-3", { fileName: null }),
+      ),
+      context,
+    );
+    await adapter.validateAndHandle(
+      envelope("chat.message.attachment.changed", added(), {
+        resourceId: "other-space",
+      }),
+      context,
+    );
+    await adapter.validateAndHandle(
+      envelope("chat.message.attachment.changed", undefined, {
+        payloadOmitted: true,
+      }),
+      context,
+    );
+    expect(read()).toEqual(before);
+  });
+
+  it("a frame whose details did not fit reads the message's files over REST", async () => {
+    const { queryClient, context, read } = setup([message(1), message(2)]);
+    const listAttachments = vi.fn().mockResolvedValue([
+      {
+        id: "f-9",
+        messageId: "m-2",
+        fileName: "long.pdf",
+        sizeBytes: 3,
+        contentType: "application/pdf",
+        uploadedBy: "user-a",
+        createdAt: AT,
+        downloadPath: "/x",
+      },
+    ]);
+    const adapterWithList = createChatRealtimeAdapter({
+      queryClient,
+      service: { listMessages: vi.fn(), listAttachments } as never,
+    });
+    await adapterWithList.validateAndHandle(
+      envelope(
+        "chat.message.attachment.changed",
+        added("f-9", {
+          fileName: null,
+          sizeBytes: null,
+          contentType: null,
+          uploadedBy: null,
+          createdAt: null,
+          downloadPath: null,
+          detailsOmitted: true,
+        }),
+      ),
+      context,
+    );
+    expect(listAttachments).toHaveBeenCalledWith(WS, "m-2");
+    expect(files(read)?.map((file) => file.id)).toEqual(["f-9"]);
   });
 });
