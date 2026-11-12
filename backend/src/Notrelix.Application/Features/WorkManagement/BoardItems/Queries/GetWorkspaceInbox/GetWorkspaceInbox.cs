@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Chat.Public.SpaceViewFacts;
 using Notrelix.Application.Features.Collaboration.Public.Notifications;
 using Notrelix.Application.Features.Documents.Public.PageTitles;
 using Notrelix.Application.Features.Governance.Public.Visibility;
@@ -56,11 +57,13 @@ public class GetWorkspaceInboxQueryHandler(
     IResourceVisibility visibility,
     INotificationInbox inbox,
     IActorLookupService actors,
-    IPageTitleFacts pageTitles) : IRequestHandler<GetWorkspaceInboxQuery, Result<WorkspaceInboxDto>>
+    IPageTitleFacts pageTitles,
+    IChatSpaceViewFacts chatSpaces) : IRequestHandler<GetWorkspaceInboxQuery, Result<WorkspaceInboxDto>>
 {
     private const string BoardItemKind = "work-management.board-item";
     private const string PageKind = "documents.page";
     private const string BoardKind = "work-management.board";
+    private const string ChatSpaceKind = "chat.space";
 
     /// <summary>The notification type Collaboration stores for "someone asked you to approve an item".</summary>
     private const string ApprovalRequestedType = "approval.requested";
@@ -147,13 +150,25 @@ public class GetWorkspaceInboxQueryHandler(
             readablePages = titles.ToDictionary(t => t.Key, t => t.Value);
         }
 
+        // A chat notification names its channel while the caller is still a member of the space; once they left it, it is not shown.
+        var chatSpaceIds = scanned
+            .Where(n => n.ResourceKind == ChatSpaceKind && n.ResourceId is not null)
+            .Select(n => n.ResourceId!.Value)
+            .Distinct()
+            .ToList();
+        var viewableSpaces = chatSpaceIds.Count == 0
+            ? new Dictionary<Guid, string?>()
+            : (await chatSpaces.ViewableSpacesAsync(request.WorkspaceId, userId, chatSpaceIds, cancellationToken))
+                .ToDictionary(s => s.Key, s => s.Value);
+
         // A notification without a target, or about an Item or Page the caller reads, is shown; about one they do not read, not.
         var shown = scanned
             .Where(n => n.ResourceId is null
                         || (n.ResourceKind == BoardItemKind && readable.ContainsKey(n.ResourceId.Value))
                         || (n.ResourceKind == PageKind && readablePages.ContainsKey(n.ResourceId.Value))
                         || (n.ResourceKind == BoardKind && readableBoards.ContainsKey(n.ResourceId.Value))
-                        || (n.ResourceKind != BoardItemKind && n.ResourceKind != PageKind && n.ResourceKind != BoardKind))
+                        || (n.ResourceKind == ChatSpaceKind && viewableSpaces.ContainsKey(n.ResourceId.Value))
+                        || (n.ResourceKind != BoardItemKind && n.ResourceKind != PageKind && n.ResourceKind != BoardKind && n.ResourceKind != ChatSpaceKind))
             .ToList();
         var page = shown.Take(limit).ToList();
 
@@ -201,6 +216,11 @@ public class GetWorkspaceInboxQueryHandler(
             else if (n.ResourceKind == BoardKind && n.ResourceId is { } boardId && readableBoards.TryGetValue(boardId, out var boardName))
             {
                 target = new InboxTargetDto("board", boardId, boardId, null, boardName);
+            }
+
+            else if (n.ResourceKind == ChatSpaceKind && n.ResourceId is { } spaceId && viewableSpaces.TryGetValue(spaceId, out var spaceName))
+            {
+                target = new InboxTargetDto("chat", spaceId, null, null, spaceName);
             }
 
             return new InboxEntryDto(

@@ -847,6 +847,16 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "ChatNotificationIntentConsumer",
+                EventName = "chat.message.created",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-notification-intent-v1",
+                BoundedContext = "Chat",
+                Description = "Maps a new message to notification intents (mention, direct or group message, followed thread reply, @channel) and hands them to Collaboration, which applies preferences and writes the Inbox notification once per message, recipient and reason",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "ChatWorkspaceMemberRemovedConsumer",
                 EventName = "workspace.member.removed",
                 EventVersion = 1,
