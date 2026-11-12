@@ -20,6 +20,7 @@ import {
   validationProblem,
 } from "./chat-access";
 import { requireChannelAction } from "./chat-permissions";
+import { requireWithinLimit } from "./chat-limits";
 import {
   CHAT_ERROR,
   CHAT_LIMITS,
@@ -143,6 +144,7 @@ export const reactionsOperations = [
         if (state.reactions.has(key)) {
           return ok(summaryBody(state, message.id, caller.userId));
         }
+        requireWithinLimit(state, "react", space.id, caller.userId);
         const rows = state.reactionsOfMessage(message.id);
         const distinctKinds = new Set(rows.map((row) => row.kind)).size;
         const kindIsNew = !rows.some((row) => row.kind === kind);

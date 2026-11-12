@@ -165,6 +165,12 @@ describe("MFB-CHAT-S2.6: Chat mock handlers (attachments)", () => {
     it("holds at most ten files on a message (409 attachment.limit_exceeded)", async () => {
       const store = storeAs("owner");
       const message = ownMessage(store);
+      // Eleven uploads in a minute meet the upload rate limit first; this case is about the per-message cap.
+      store.chat.limitOverrides.set("upload", {
+        person: 100,
+        space: 100,
+        windowSeconds: 60,
+      });
       for (let i = 0; i < 10; i += 1) {
         expect((await upload(store, message.id, `f${i}.png`)).status).toBe(201);
       }
@@ -173,6 +179,20 @@ describe("MFB-CHAT-S2.6: Chat mock handlers (attachments)", () => {
 
       expect(res.status).toBe(409);
       expect(res.body.errorCode).toBe("attachment.limit_exceeded");
+    });
+
+    it("answers 429 with the retry seconds when a person uploads more than ten files in a minute (UC-CHT-H08)", async () => {
+      const store = storeAs("owner");
+      const message = ownMessage(store);
+      let refused: Awaited<ReturnType<typeof upload>> | null = null;
+      for (let i = 0; i < 11; i += 1) {
+        const res = await upload(store, message.id, `r${i}.png`);
+        if (res.status === 429) refused = res;
+      }
+
+      expect(refused).not.toBeNull();
+      expect(refused!.body.policy).toBe("chat.upload");
+      expect(refused!.body.retryAfter).toBeGreaterThan(0);
     });
 
     it("refuses another person's message with 403", async () => {

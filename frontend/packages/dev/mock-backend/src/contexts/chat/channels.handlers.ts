@@ -29,6 +29,7 @@ import {
   validationProblem,
 } from "./chat-access";
 import { channelViewOf } from "./chat-permissions";
+import { announceSlowModeChanged } from "./chat-realtime";
 import {
   CHAT_LIMITS,
   CHAT_SYSTEM_TEXT,
@@ -58,6 +59,7 @@ interface UpdateChannelBody {
   name?: string | null;
   topic?: string | null;
   expectedVersion?: number | null;
+  slowModeSeconds?: number | null;
 }
 
 interface ArchiveChannelBody {
@@ -341,20 +343,36 @@ export const channelsOperations = [
           CHAT_LIMITS.channelTopicMaxLength,
         );
         const expected = parseVersion(body?.expectedVersion, "expectedVersion");
+        const slowMode = body?.slowModeSeconds ?? null;
+        if (
+          slowMode !== null &&
+          (!Number.isInteger(slowMode) ||
+            slowMode < 0 ||
+            slowMode > CHAT_LIMITS.slowModeMaxSeconds)
+        ) {
+          validationProblem(
+            `slowModeSeconds must be between 0 and ${CHAT_LIMITS.slowModeMaxSeconds}.`,
+          );
+        }
         const space = liveChannel(state, params.workspaceId, params.channelId);
         requireVisible(state, space, caller);
         requireManager(state, space, caller);
         requireUniqueChannelName(state, params.workspaceId, name, space.id);
         if (space.archivedAt !== null) archivedProblem();
         const renamed = name !== space.name;
-        const changed = renamed || topic !== space.topic;
+        // A request that leaves slowModeSeconds out keeps it.
+        const slowChanged =
+          slowMode !== null && slowMode !== (space.slowModeSeconds ?? 0);
+        const changed = renamed || topic !== space.topic || slowChanged;
         requireVersion(expected, space.version);
         if (changed) {
           space.name = name;
           space.topic = topic;
+          if (slowChanged) space.slowModeSeconds = slowMode!;
           space.version += 1;
         }
         if (renamed) announceRename(state, space, caller.userId);
+        if (slowChanged) announceSlowModeChanged(state, space);
         return ok(channelViewOf(state, space, caller));
       });
     },

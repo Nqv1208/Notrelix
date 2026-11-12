@@ -37,6 +37,12 @@ export interface ChatProblemBody {
   errorCode: string;
   /** The stable rule behind a business-rule problem (additive to errorCode). */
   ruleCode?: string;
+  /** A 429 only: whole seconds to wait, and what was limited. */
+  retryAfter?: number;
+  policy?: string;
+  scope?: string;
+  limit?: number;
+  slowModeSeconds?: number;
 }
 
 /** Thrown inside a handler to answer with a problem; `guarded` turns it into the response. */
@@ -481,6 +487,7 @@ export function channelView(
     notificationLevel: mine ? mine.notificationLevel : null,
     version: space.version,
     createdAt: space.createdAt,
+    slowModeSeconds: space.slowModeSeconds ?? 0,
   };
 }
 

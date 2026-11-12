@@ -89,6 +89,13 @@ export class MockChatState {
     reaction: 0,
     attachment: 0,
   };
+  /** Attempts counted by the chat limits, by `${policy}|${scope}|${id}`, as virtual seconds (UC-CHT-H08). */
+  readonly limitHits = new Map<string, number[]>();
+  /** A test can raise or lower a policy's limits (by policy name); absent means the backend defaults. */
+  readonly limitOverrides = new Map<
+    string,
+    { person: number; space: number; windowSeconds: number }
+  >();
   private writeTick = 0;
   private eventCounter = 0;
 
@@ -111,6 +118,8 @@ export class MockChatState {
     this.directPairs.clear();
     this.permissionOverrides.clear();
     this.blocks.clear();
+    this.limitHits.clear();
+    this.limitOverrides.clear();
     this.streamVersions.clear();
     this.idCounters.space = 0;
     this.idCounters.group = 0;
@@ -136,6 +145,16 @@ export class MockChatState {
   stampWrite(): string {
     this.writeTick += 1;
     return this.storeOf().getClock().offsetSeconds(this.writeTick);
+  }
+
+  /** The virtual time in seconds: one per write, plus what a test moved forward. Never the wall clock. */
+  virtualSeconds(): number {
+    return this.writeTick;
+  }
+
+  /** Moves the virtual time forward (a test waits out a Retry-After without sleeping). */
+  advanceVirtualSeconds(seconds: number): void {
+    this.writeTick += Math.max(0, Math.floor(seconds));
   }
 
   /** The current instant of the mock clock. */

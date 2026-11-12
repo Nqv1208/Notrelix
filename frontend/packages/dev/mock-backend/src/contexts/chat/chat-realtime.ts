@@ -216,7 +216,7 @@ export function announcePinChanged(
   state: MockChatState,
   space: ChatSpaceRecord,
   messageId: string,
-  change: "pinned" | "unpinned" | "permissions",
+  change: "pinned" | "unpinned" | "permissions" | "slow-mode",
 ): void {
   publishMockScopeFrame(
     frame({
@@ -381,4 +381,20 @@ export function announceOwnReadState(
       row.mentionCount,
     );
   }
+}
+
+/**
+ * The channel's slow mode changed (backend ChatSlowModeEventMapper): the same chat.space.changed frame with the change `slow-mode`
+ * and the empty message id. Notify-only: readers refetch the channel.
+ */
+export function announceSlowModeChanged(
+  state: MockChatState,
+  space: ChatSpaceRecord,
+): void {
+  announcePinChanged(
+    state,
+    space,
+    "00000000-0000-0000-0000-000000000000",
+    "slow-mode",
+  );
 }

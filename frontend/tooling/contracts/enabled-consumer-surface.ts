@@ -4160,7 +4160,7 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "PATCH",
       "/workspaces/{workspaceId}/chat/channels/{channelId}",
       true,
-      "Rename a channel or set its topic",
+      "Rename a channel, set its topic or its slow mode",
     ],
     [
       "Chat.Channels.Delete",

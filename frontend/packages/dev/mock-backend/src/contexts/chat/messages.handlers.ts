@@ -26,6 +26,7 @@ import {
   type ChatCaller,
 } from "./chat-access";
 import { requireChannelAction } from "./chat-permissions";
+import { requireSlowModeClear, requireWithinLimit } from "./chat-limits";
 import { CHAT_ERROR, CHAT_LIMITS, type ChatMessageRecord } from "./chat-model";
 import {
   appendUserMessage,
@@ -239,6 +240,8 @@ export const messagesOperations = [
           );
         }
         requireChannelAction(state, space, caller, "post");
+        requireWithinLimit(state, "send", space.id, caller.userId);
+        requireSlowModeClear(state, space, caller.userId);
         const replyToId =
           typeof body?.replyToId === "string" ? body.replyToId : null;
         if (
@@ -255,6 +258,15 @@ export const messagesOperations = [
           body?.mentions,
           body?.confirmBroadcast === true,
         );
+        if (
+          resolution.spans.some(
+            (span) =>
+              span.kind === "broadcast-channel" ||
+              span.kind === "broadcast-here",
+          )
+        ) {
+          requireWithinLimit(state, "broadcast", space.id, caller.userId);
+        }
         const message = appendUserMessage(
           state,
           space,
