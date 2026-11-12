@@ -20,8 +20,7 @@ public class PermissionActionInventoryTests
     private static readonly string[] DocumentedUnconsumedActions =
     [
         "ArchiveWorkspace",
-        // Chat actions reserved for later slices (moderation, search); nothing consumes them yet.
-        "ChatMessageModerate",
+        // Chat actions reserved for later slices (search); nothing consumes them yet.
         "ChatSearch",
     ];
 

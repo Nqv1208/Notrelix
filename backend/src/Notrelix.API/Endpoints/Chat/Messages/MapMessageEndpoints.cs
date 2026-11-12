@@ -2,6 +2,7 @@ using Notrelix.API.Contracts.Chat.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Chat.Messages.Commands.DeleteMessage;
 using Notrelix.Application.Features.Chat.Messages.Commands.EditMessage;
+using Notrelix.Application.Features.Chat.Messages.Commands.ModerateDeleteMessage;
 using Notrelix.Application.Features.Chat.Messages.Commands.SendMessage;
 using Notrelix.Application.Features.Chat.Messages.Queries.ListMessages;
 
@@ -40,6 +41,12 @@ public static class MapMessageEndpoints
             .WithName("Chat.Messages.Delete")
             .WithSummary("Delete your own message, leaving a tombstone")
             .WithDescription("The content is removed; the author, the time and the sequence stay. Pass expectedVersion as a query parameter; 412 when it is stale. Deleting an existing tombstone changes nothing.")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict, StatusCodes.Status412PreconditionFailed);
+
+        group.MapWorkspacePost("/messages/{messageId:guid}/moderation", ModerateAsync)
+            .WithName("Chat.Messages.Moderate")
+            .WithSummary("Remove another person's message as a moderator")
+            .WithDescription("Needs the moderate action (a Workspace Owner or Admin by default). The reason (1 to 500 characters) goes to the Audit record with the moderator and the message; the message text does not. The message becomes a tombstone that shows it was removed by a moderator (removedByModerator). A stale expectedVersion is 412. A moderator does not read a private channel by role: it is 404. Removing your own message is 400 (use Delete), a system message or an archived channel is 409. A message that is already a tombstone returns 204 and changes nothing.")
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict, StatusCodes.Status412PreconditionFailed);
 
         return app;
@@ -88,6 +95,17 @@ public static class MapMessageEndpoints
             return EndpointExtensions.InvalidInput("expectedVersion is required as a query parameter.");
 
         var result = await sender.Send(new DeleteMessageCommand(workspaceId, messageId, version));
+        return result.ToNoContentResult();
+    }
+
+    private static async Task<IResult> ModerateAsync(Guid workspaceId, Guid messageId, ModerateMessageRequest body, ISender sender)
+    {
+        if (body.ExpectedVersion is not { } version)
+            return EndpointExtensions.InvalidInput("expectedVersion is required.");
+        if (string.IsNullOrWhiteSpace(body.Reason))
+            return EndpointExtensions.InvalidInput("reason is required.");
+
+        var result = await sender.Send(new ModerateDeleteMessageCommand(workspaceId, messageId, body.Reason, version));
         return result.ToNoContentResult();
     }
 }

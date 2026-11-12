@@ -89,3 +89,12 @@ public record SetConversationVisibilityRequest(bool? Hidden);
 
 /// <summary>Blocks (true) or unblocks (false) a person of the Workspace for the caller (UC-CHT-E06).</summary>
 public record SetPersonBlockRequest(Guid? UserId, bool? Blocked);
+
+/// <summary>One override of a channel: subject is manager, member or guest; action is post, react, attach, pin, broadcast or invite; effect is allow or deny.</summary>
+public record ChannelPermissionEntryRequest(string? Subject, string? Action, string? Effect);
+
+/// <summary>The whole set of overrides of a channel, with the version the editor read. Sending fewer entries removes the rest. A stale version is 412.</summary>
+public record SetChannelPermissionsRequest(IReadOnlyList<ChannelPermissionEntryRequest>? Entries, long? ExpectedVersion);
+
+/// <summary>A moderator's removal of another person's message: the reason (1 to 500 characters) and the version the moderator read. A stale version is 412.</summary>
+public record ModerateMessageRequest(string? Reason, long? ExpectedVersion);
