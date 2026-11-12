@@ -900,6 +900,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Chat.Channels.Commands.LinkChannel.LinkChannelCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Channels.Commands.LinkChannel.LinkChannelCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Chat.Channels.Commands.ReorderChannels.ReorderChannelsCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -922,6 +947,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Chat.Channels.Commands.ReorderChannels.ReorderChannelsCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Channels.Commands.UnlinkChannel.UnlinkChannelCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Channels.Commands.UnlinkChannel.UnlinkChannelCommandHandler"
     ]
   },
   {
@@ -1222,6 +1272,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Chat.Exports.Queries.GetChatExportContent.GetChatExportContentQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Links.Queries.ListLinkedChannels.ListLinkedChannelsQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Links.Queries.ListLinkedChannels.ListLinkedChannelsQueryHandler"
     ]
   },
   {

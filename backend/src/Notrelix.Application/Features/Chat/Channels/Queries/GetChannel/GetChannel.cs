@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.DTOs;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Chat.Links.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Spaces;
 
@@ -18,7 +19,8 @@ public record GetChannelQuery(Guid WorkspaceId, Guid ChannelId)
 public class GetChannelQueryHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
-    IWorkspaceMemberFacts members) : IRequestHandler<GetChannelQuery, Result<ChannelDetailDto>>
+    IWorkspaceMemberFacts members,
+    ChatResourceViews views) : IRequestHandler<GetChannelQuery, Result<ChannelDetailDto>>
 {
     public async Task<Result<ChannelDetailDto>> Handle(GetChannelQuery request, CancellationToken cancellationToken)
     {
@@ -33,7 +35,10 @@ public class GetChannelQueryHandler(
             .Select(m => new ChannelMemberDto(m.UserId, m.Role.ToWire(), m.JoinedAt))
             .ToList();
 
-        var detail = new ChannelDetailDto(ChannelDto.From(space, space.GetActiveMembership(userId), caller.Role), memberRows);
+        var channel = (await views.WithLinksAsync(
+            [ChannelDto.From(space, space.GetActiveMembership(userId), caller.Role)],
+            requestContext.RequireAccountId(), request.WorkspaceId, userId, cancellationToken))[0];
+        var detail = new ChannelDetailDto(channel, memberRows);
         return Result<ChannelDetailDto>.Success(detail);
     }
 }

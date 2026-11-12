@@ -1,8 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Links.DTOs;
 using Notrelix.Application.Features.Chat.Links.Services;
-using Notrelix.Application.Features.Documents.Public.PageTitles;
-using Notrelix.Application.Features.Documents.Public.PageViewAccess;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Public.ItemNotifications;
 
@@ -25,8 +23,7 @@ public class ResolveLinkQueryHandler(
     ICurrentRequestContext requestContext,
     IWorkItemNotificationFacts items,
     IResourceVisibility visibility,
-    IPageViewAccess pageAccess,
-    IPageTitleFacts pageTitles) : IRequestHandler<ResolveLinkQuery, Result<LinkPreviewDto>>
+    ChatResourceViews views) : IRequestHandler<ResolveLinkQuery, Result<LinkPreviewDto>>
 {
     public async Task<Result<LinkPreviewDto>> Handle(ResolveLinkQuery request, CancellationToken cancellationToken)
     {
@@ -39,7 +36,7 @@ public class ResolveLinkQueryHandler(
         var userId = requestContext.UserId;
         var title = kind == ChatLinkTargets.BoardItemKind
             ? await ItemTitleAsync(request.WorkspaceId, userId, resourceId, cancellationToken)
-            : await PageTitleAsync(requestContext.RequireAccountId(), request.WorkspaceId, userId, resourceId, cancellationToken);
+            : await views.TitleAsync(requestContext.RequireAccountId(), request.WorkspaceId, userId, kind, resourceId, cancellationToken);
 
         return Result<LinkPreviewDto>.Success(new LinkPreviewDto(kind, resourceId, title is not null, title));
     }
@@ -52,15 +49,6 @@ public class ResolveLinkQueryHandler(
 
         var boards = await visibility.VisibleBoardIdsAsync(workspaceId, userId, cancellationToken);
         return boards.Contains(facts.BoardId) ? facts.Title : null;
-    }
-
-    private async Task<string?> PageTitleAsync(Guid accountId, Guid workspaceId, Guid userId, Guid pageId, CancellationToken cancellationToken)
-    {
-        if (!await pageAccess.CanViewAsync(accountId, workspaceId, pageId, userId, cancellationToken))
-            return null;
-
-        var titles = await pageTitles.TitlesAsync(workspaceId, [pageId], cancellationToken);
-        return titles.TryGetValue(pageId, out var title) ? title : null;
     }
 }
 
@@ -75,7 +63,7 @@ public class ResolveLinkQueryValidator : AbstractValidator<ResolveLinkQuery>
         RuleFor(x => x.Url).MaximumLength(ChatLinkTargets.MaxUrlLength).When(x => x.Url is not null);
         RuleFor(x => x.Kind).Must(ChatLinkTargets.IsSupported)
             .When(x => x.Kind is not null)
-            .WithMessage("The kind must be work-management.board-item or documents.page.");
+            .WithMessage("The kind must be work-management.board-item, work-management.board or documents.page.");
         RuleFor(x => x.ResourceId).NotEmpty().When(x => x.Kind is not null);
         RuleFor(x => x.Kind).NotEmpty().When(x => x.ResourceId is not null);
     }

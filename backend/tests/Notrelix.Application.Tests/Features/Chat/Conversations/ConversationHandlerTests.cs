@@ -128,6 +128,12 @@ public class ConversationHandlerTests
         return message;
     }
 
+    private static Notrelix.Application.Features.Chat.Links.Services.ChatResourceViews NoLinkViews() => new(
+        new Notrelix.Testing.Application.Fakes.FakeResourceVisibility(),
+        new Mock<Notrelix.Application.Features.Documents.Public.PageViewAccess.IPageViewAccess>().Object,
+        new Mock<Notrelix.Application.Features.Documents.Public.PageTitles.IPageTitleFacts>().Object,
+        new Mock<Notrelix.Application.Features.WorkManagement.Public.BoardTitles.IBoardTitleFacts>().Object);
+
     private static async Task<T> Expect<T>(Func<Task<T>> act) where T : notnull => await act();
 
     [Fact]
@@ -561,7 +567,7 @@ public class ConversationHandlerTests
     {
         var direct = Direct(_alice, _bob);
         var join = new JoinChannelCommandHandler(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
-        var get = new GetChannelQueryHandler(_db.Object, _context.Object, _members.Object);
+        var get = new GetChannelQueryHandler(_db.Object, _context.Object, _members.Object, NoLinkViews());
 
         AsCaller(_carol, "Member");
         var joinAct = () => join.Handle(new JoinChannelCommand(_workspaceId, direct.Id), CancellationToken.None);
@@ -575,7 +581,7 @@ public class ConversationHandlerTests
     public async Task ListChannels_DoesNotListConversations()
     {
         Direct(_alice, _bob);
-        var channels = new ListChannelsQueryHandler(_db.Object, _context.Object, _members.Object);
+        var channels = new ListChannelsQueryHandler(_db.Object, _context.Object, _members.Object, NoLinkViews());
 
         var result = await channels.Handle(new ListChannelsQuery(_workspaceId), CancellationToken.None);
 

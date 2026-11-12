@@ -158,6 +158,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.Documents.Blocks.PostgresPageBlockWriteLock>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.SpacePlacement.IBoardSpacePlacementFacts,
             global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.BoardSpacePlacementFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.BoardTitles.IBoardTitleFacts,
+            global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.BoardTitleFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Public.SpacePlacement.IPageSpacePlacementFacts,
             global::Notrelix.Infrastructure.CrossContext.Workspaces.Documents.PageSpacePlacementFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Public.PageTitles.IPageTitleFacts,

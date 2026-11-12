@@ -11,10 +11,16 @@ public static class ChatLinkTargets
     public const string BoardItemKind = "work-management.board-item";
     public const string PageKind = "documents.page";
 
+    /// <summary>
+    /// A Board itself, named by a kind and an id (UC-CHT-H10). It is accepted by the resolver only as a ResourceRef (the preview a channel
+    /// link shows); a product URL of a Board without an item is still not a message link.
+    /// </summary>
+    public const string BoardKind = "work-management.board";
+
     /// <summary>The longest URL the resolver accepts.</summary>
     public const int MaxUrlLength = 2048;
 
-    public static readonly IReadOnlyList<string> SupportedKinds = [BoardItemKind, PageKind];
+    public static readonly IReadOnlyList<string> SupportedKinds = [BoardItemKind, PageKind, BoardKind];
 
     public static bool IsSupported(string? kind) => kind is not null && SupportedKinds.Contains(kind, StringComparer.Ordinal);
 

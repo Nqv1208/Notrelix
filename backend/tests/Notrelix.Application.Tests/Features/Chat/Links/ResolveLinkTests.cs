@@ -21,6 +21,7 @@ public class ResolveLinkTests
     private readonly Mock<IWorkItemNotificationFacts> _items = new();
     private readonly Mock<IPageViewAccess> _pageAccess = new();
     private readonly Mock<IPageTitleFacts> _pageTitles = new();
+    private readonly Mock<Notrelix.Application.Features.WorkManagement.Public.BoardTitles.IBoardTitleFacts> _boardTitles = new();
     private readonly FakeResourceVisibility _visibility = new();
 
     public ResolveLinkTests()
@@ -36,7 +37,7 @@ public class ResolveLinkTests
 
     private Task<Notrelix.Application.Common.Models.Result<Notrelix.Application.Features.Chat.Links.DTOs.LinkPreviewDto>> Resolve(
         string? url = null, string? kind = null, Guid? id = null) =>
-        new ResolveLinkQueryHandler(_context.Object, _items.Object, _visibility, _pageAccess.Object, _pageTitles.Object)
+        new ResolveLinkQueryHandler(_context.Object, _items.Object, _visibility, new ChatResourceViews(_visibility, _pageAccess.Object, _pageTitles.Object, _boardTitles.Object))
             .Handle(new ResolveLinkQuery(_workspaceId, url, kind, id), CancellationToken.None);
 
     [Fact]

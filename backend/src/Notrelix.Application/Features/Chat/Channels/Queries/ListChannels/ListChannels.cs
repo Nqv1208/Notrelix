@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Channels.DTOs;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Chat.Links.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Spaces;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
@@ -23,7 +24,8 @@ public record ListChannelsQuery(Guid WorkspaceId, bool Browse = false)
 public class ListChannelsQueryHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
-    IWorkspaceMemberFacts members) : IRequestHandler<ListChannelsQuery, Result<IReadOnlyList<ChannelDto>>>
+    IWorkspaceMemberFacts members,
+    ChatResourceViews views) : IRequestHandler<ListChannelsQuery, Result<IReadOnlyList<ChannelDto>>>
 {
     public async Task<Result<IReadOnlyList<ChannelDto>>> Handle(ListChannelsQuery request, CancellationToken cancellationToken)
     {
@@ -65,6 +67,7 @@ public class ListChannelsQueryHandler(
             .Select(s => ChannelDto.From(s, mine.GetValueOrDefault(s.Id), caller.Role))
             .ToList();
 
-        return Result<IReadOnlyList<ChannelDto>>.Success(result);
+        return Result<IReadOnlyList<ChannelDto>>.Success(
+            await views.WithLinksAsync(result, requestContext.RequireAccountId(), request.WorkspaceId, userId, cancellationToken));
     }
 }

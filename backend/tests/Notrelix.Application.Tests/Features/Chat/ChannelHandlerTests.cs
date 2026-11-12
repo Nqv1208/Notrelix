@@ -99,7 +99,12 @@ public class ChannelHandlerTests
     private JoinChannelCommandHandler JoinHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
     private RemoveChannelMemberCommandHandler RemoveHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages(), new Mock<IAccessChangeSignal>().Object, AuditFacts());
     private UpdateChannelCommandHandler UpdateHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
-    private ListChannelsQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object);
+    private ListChannelsQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object, Views());
+    private Notrelix.Application.Features.Chat.Links.Services.ChatResourceViews Views() => new(
+        new Notrelix.Testing.Application.Fakes.FakeResourceVisibility(),
+        new Mock<Notrelix.Application.Features.Documents.Public.PageViewAccess.IPageViewAccess>().Object,
+        new Mock<Notrelix.Application.Features.Documents.Public.PageTitles.IPageTitleFacts>().Object,
+        new Mock<Notrelix.Application.Features.WorkManagement.Public.BoardTitles.IBoardTitleFacts>().Object);
 
     [Fact]
     public async Task CreateChannel_AddsAPublicChannelWithTheCallerAsManager()
