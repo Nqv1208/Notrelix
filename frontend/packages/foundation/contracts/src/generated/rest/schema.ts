@@ -821,6 +821,54 @@ export interface paths {
         patch: operations["Chat.Messages.Edit"];
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/chat/messages/{messageId}/moderation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove another person's message as a moderator
+         * @description Needs the moderate action (a Workspace Owner or Admin by default). The reason (1 to 500 characters) goes to the Audit record with the moderator and the message; the message text does not. The message becomes a tombstone that shows it was removed by a moderator (removedByModerator). A stale expectedVersion is 412. A moderator does not read a private channel by role: it is 404. Removing your own message is 400 (use Delete), a system message or an archived channel is 409. A message that is already a tombstone returns 204 and changes nothing.
+         */
+        post: operations["Chat.Messages.Moderate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/channels/{channelId}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a channel's permission overrides
+         * @description Anyone who can see the channel reads the overrides and the version to send back. A channel the caller cannot see is 404.
+         */
+        get: operations["Chat.Permissions.Get"];
+        /**
+         * Replace a channel's permission overrides
+         * @description The set is the whole truth: sending fewer entries removes the rest. Needs a channel manager, a Workspace Owner or Admin. A deny beats an allow given for the same role and action. An allow above what the role (or the caller) holds is 422 permission-exceeds-role; denying a manager invites is 422 permission-lockout. A stale expectedVersion is 412; an archived channel is 409 channel-archived. A change refreshes the channel's clients (chat.space.changed).
+         */
+        put: operations["Chat.Permissions.Set"];
+        post?: never;
+        /**
+         * Remove every permission override of a channel
+         * @description Every role is back on its default. Pass expectedVersion as a query parameter; 412 when it is stale. A channel with no overrides changes nothing. Returns the permissions with the new version.
+         */
+        delete: operations["Chat.Permissions.Delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/chat/messages/{messageId}/pin": {
         parameters: {
             query?: never;
@@ -7653,6 +7701,11 @@ export interface components {
             /** Format: int64 */
             expectedVersion?: number | null;
         };
+        "Notrelix.API.Contracts.Chat.Requests.ChannelPermissionEntryRequest": {
+            subject?: string | null;
+            action?: string | null;
+            effect?: string | null;
+        };
         "Notrelix.API.Contracts.Chat.Requests.ChannelPlacementRequest": {
             /** Format: uuid */
             channelId?: string;
@@ -7705,6 +7758,11 @@ export interface components {
             /** Format: uuid */
             spaceId?: string | null;
         };
+        "Notrelix.API.Contracts.Chat.Requests.ModerateMessageRequest": {
+            reason?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number | null;
+        };
         "Notrelix.API.Contracts.Chat.Requests.ReorderChannelsRequest": {
             placements?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.ChannelPlacementRequest"][] | null;
         };
@@ -7722,6 +7780,11 @@ export interface components {
             replyToId?: string | null;
             mentions?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.MentionRequest"][] | null;
             confirmBroadcast?: boolean | null;
+        };
+        "Notrelix.API.Contracts.Chat.Requests.SetChannelPermissionsRequest": {
+            entries?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.ChannelPermissionEntryRequest"][] | null;
+            /** Format: int64 */
+            expectedVersion?: number | null;
         };
         "Notrelix.API.Contracts.Chat.Requests.SetConversationVisibilityRequest": {
             hidden?: boolean | null;
@@ -14134,6 +14197,270 @@ export interface operations {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.EditMessageRequest"];
             };
         };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Messages.Moderate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                messageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.ModerateMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Permissions.Get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                channelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Permissions.Set": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                channelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.SetChannelPermissionsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Permissions.Delete": {
+        parameters: {
+            query?: {
+                expectedVersion?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+                channelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
