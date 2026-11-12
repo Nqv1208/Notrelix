@@ -220,6 +220,10 @@ export interface ChatMessage {
   readonly threadSequence?: number | null;
   /** A thread reply the author also sent to the channel is in the main flow too. */
   readonly alsoSentToChannel?: boolean;
+  /** For a thread root: the replies stored so far (0 for a message with no thread). Never decreases: a deleted reply stays counted. */
+  readonly threadReplyCount?: number;
+  /** For a thread root: the time of the last reply; null when there is none. */
+  readonly threadLastReplyAt?: string | null;
   /** The live quote of `replyToId`; null when the message quotes nothing. */
   readonly replyPreview?: ChatReplyPreview | null;
   /** The reaction summary, one entry per palette emoji that has reactions. */

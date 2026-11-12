@@ -412,7 +412,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
                     onDelete={props.onDelete}
                     onModerate={props.onModerate}
                     quote={props.quoteOf?.(row.message) ?? null}
-                    thread={threadView(props.threadCounts, row.message.id)}
+                    thread={threadView(props.threadCounts, row.message)}
                     pinned={props.pinnedIds?.has(row.message.id) ?? false}
                     reactions={row.message.reactions ?? []}
                     workspaceId={props.workspaceId}
@@ -452,10 +452,20 @@ export function ChatMessageList(props: ChatMessageListProps) {
   );
 }
 
-function threadView(counts: ThreadCounts | undefined, messageId: string) {
-  const entry = counts?.[messageId];
-  if (!entry || entry.replyCount === 0) return null;
-  return { replyCount: entry.replyCount, lastReplyAt: entry.lastReplyAt };
+/**
+ * The thread chip of a root: the live projection (replies learned from realtime
+ * frames) or the count the server sent with the message, whichever is higher.
+ * History alone is enough to show "N replies" after a reload.
+ */
+function threadView(counts: ThreadCounts | undefined, message: ChatMessage) {
+  const entry = counts?.[message.id];
+  const stored = message.threadReplyCount ?? 0;
+  const live = entry?.replyCount ?? 0;
+  if (live === 0 && stored === 0) return null;
+  if (live >= stored) {
+    return { replyCount: live, lastReplyAt: entry?.lastReplyAt ?? null };
+  }
+  return { replyCount: stored, lastReplyAt: message.threadLastReplyAt ?? null };
 }
 
 /**

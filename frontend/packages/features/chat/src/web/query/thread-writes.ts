@@ -12,8 +12,38 @@ import { appendToNewest, type ChatMessagesCache } from "./message-cache";
 import {
   appendThreadMessage,
   bumpThreadCount,
+  patchMessageInData,
   type ThreadCounts,
 } from "./interaction-cache";
+
+/**
+ * Moves the count and last reply carried by a cached root message (history, thread
+ * page, pins): the highest count and the latest reply time win, so a stale frame
+ * never lowers what the server already told this client.
+ */
+function patchRoot(
+  queryClient: QueryClient,
+  workspaceId: string,
+  summary: ChatThreadSummary,
+): void {
+  const patch = (root: ChatMessage): ChatMessage => {
+    const current = root.threadReplyCount ?? 0;
+    if (current >= summary.replyCount) return root;
+    return {
+      ...root,
+      threadReplyCount: summary.replyCount,
+      threadLastReplyAt: summary.lastReplyAt,
+    };
+  };
+  for (const key of [
+    chatQueryKeys.messages(workspaceId, summary.spaceId),
+    chatQueryKeys.thread(workspaceId, summary.rootMessageId),
+  ]) {
+    queryClient.setQueriesData({ queryKey: key }, (data: unknown) =>
+      patchMessageInData(data, summary.rootMessageId, patch),
+    );
+  }
+}
 
 /** Records a thread's reply count and last reply in the channel's client-side count projection. */
 export function seedThreadCount(
@@ -31,6 +61,7 @@ export function seedThreadCount(
         summary.lastReplyAt,
       ),
   );
+  patchRoot(queryClient, workspaceId, summary);
 }
 
 /**

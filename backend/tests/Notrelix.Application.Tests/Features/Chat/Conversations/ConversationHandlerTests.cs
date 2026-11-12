@@ -53,6 +53,7 @@ public class ConversationHandlerTests
     private readonly List<PersonBlock> _blocks = [];
     private readonly List<ChannelGroup> _groups = [];
     private readonly List<Reaction> _reactions = [];
+    private readonly List<MessageThread> _threads = [];
     private readonly RecordingPairLock _pairLock = new();
     private long _lastSequence;
 
@@ -73,6 +74,7 @@ public class ConversationHandlerTests
         _db.Setup(d => d.ChatBlocks).Returns(TestDbSet.Create(_blocks).Object);
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(_groups).Object);
         _db.Setup(d => d.ChatReactions).Returns(TestDbSet.Create(_reactions).Object);
+        _db.Setup(d => d.ChatThreads).Returns(() => TestDbSet.Create(_threads).Object);
 
         AsCaller(_alice, "Member");
         Fact(_bob, "Member", true);

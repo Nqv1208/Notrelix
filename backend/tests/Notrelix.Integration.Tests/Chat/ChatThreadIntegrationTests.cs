@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Chat.Messages.Queries.ListMessages;
 using Notrelix.Application.Features.Chat.Threads.Commands.FollowThread;
 using Notrelix.Application.Features.Chat.Threads.Commands.MarkThreadRead;
 using Notrelix.Application.Features.Chat.Threads.Commands.ReplyInThread;
@@ -195,6 +196,21 @@ public sealed class ChatThreadIntegrationTests : IAsyncLifetime
         item.Thread.ReplyCount.Should().Be(2);
         item.Thread.Following.Should().BeTrue();
         item.Thread.UnreadReplies.Should().Be(0, "the replier has read every reply they posted");
+    }
+
+    [Fact]
+    public async Task TheHistoryRoot_CarriesTheStoredReplyCountThroughOneBatchedThreadQuery()
+    {
+        for (var i = 0; i < 3; i++) await ReplyInOwnTransactionAsync($"reply {i}", $"count-{i}");
+
+        await using var context = _db.CreateOwnerContext(SystemTenant());
+        var handler = new ListMessagesQueryHandler(context, RequestAs(_member).Object, ActiveMembers(_member).Object, new InMemoryChatMessageAttachments());
+
+        var page = await handler.Handle(new ListMessagesQuery(_workspaceId, _spaceId, null, null, null, 50), CancellationToken.None);
+
+        var root = page.Data!.Items.Single(m => m.Id == _rootId);
+        root.ThreadReplyCount.Should().Be(3);
+        root.ThreadLastReplyAt.Should().Be(Now);
     }
 
     [Fact]
