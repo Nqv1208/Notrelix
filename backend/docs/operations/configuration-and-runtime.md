@@ -318,6 +318,27 @@ object storage are reclaimed by the attachment orphan sweep once no row referenc
 | `Interval` | `01:00:00` (1 hour) | Time between passes. Range 10 seconds to 1 day. |
 | `BatchSize` | 10 | Workspaces purged per pass, each in its own transaction. Range 1 to 1000. |
 
+`Chat:Retention` (Infrastructure, `ChatRetentionOptions`, validated on start by `ChatRetentionOptionsValidator`)
+configures the Chat retention job `Chat.Retention.Apply` (`ChatRetentionService`, a hosted service; UC-CHT-H05). Each
+pass lists the Workspaces that have a retention window, and for
+each space that is not deleted applies the rule (tombstone or purge) to the messages past the window in batches of 200
+(`ChatLimits.RetentionBatchSize`), each batch in its own transaction under the system context with the RLS worker scope.
+A batch takes a transaction advisory lock on the space (two instances never work on one space together), writes one Audit fact `ChatRetentionApplied` (actor type System, counts only) and one `chat.space.changed`
+frame with the change `retention`. A failed batch rolls back and the next pass selects the same rows again. A space
+deleted and still inside its recovery window is skipped.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `true` | When false nothing is retained or purged. |
+| `Interval` | `01:00:00` (1 hour) | Time between passes. Range 10 seconds to 1 day. |
+| `MaxBatchesPerSpace` | 50 | Batches one space gets per pass; the rest waits for the next pass. Range 1 to 10000. |
+
+The export of a person's chat data (UC-CHT-H06) uses a worker (`ChatExportService`) with no options of its own: it
+builds the JSON file into platform object storage (`IStorageService`), bounded to 50,000 messages or 20 MiB
+(`ChatLimits.ExportMaxMessages`, `ExportMaxBytes`), keeps it for 24 hours (`ExportLifetimeHours`), and its sweep expires
+files and requeues a job stuck Running for more than 15 minutes. The request is limited by the chat rate limit policy
+`Export` (`RateLimiting:Chat:Export`, default 5 per person and 20 per Workspace per hour).
+
 `WorkManagement:Boards:Purge` (Infrastructure, `DeletedBoardPurgeOptions`, validated on start by
 `DeletedBoardPurgeOptionsValidator`) configures the purge of deleted boards (`DeletedBoardPurgeService`, a hosted
 service; the window is the Domain constant of 30 days after the delete, `Board.RestoreWindow`, and restore after it is
