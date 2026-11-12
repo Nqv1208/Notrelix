@@ -847,6 +847,16 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "ChatMessageAttachmentRealtimeConsumer",
+                EventName = "chat.message.attachment.changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-realtime-v1",
+                BoundedContext = "Chat",
+                Description = "Publishes a file added to or removed from a channel message to the realtime gateway (compact channel frame; readers patch the message's file list or refetch it)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "ChatWorkspaceMemberRemovedConsumer",
                 EventName = "workspace.member.removed",
                 EventVersion = 1,

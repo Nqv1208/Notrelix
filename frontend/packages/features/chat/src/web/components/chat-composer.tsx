@@ -39,7 +39,17 @@ import {
   type ChatMentionPayload,
   type ChatMentionables,
 } from "../../core/types/chat";
+import {
+  activeShortcode,
+  insertAtSelection,
+  insertShortcode,
+  shortcodeSuggestions,
+  type ShortcodeTrigger,
+} from "../../core/model/emoji-model";
+import type { EmojiEntry } from "../../core/model/emoji-data";
 import type { ChatCopy } from "./chat.copy";
+import { rememberEmoji } from "./chat-emoji-recent";
+import { EmojiPickerButton } from "./chat-emoji-picker";
 import { AttachmentGlyphIcon } from "./chat-attachments";
 import { fillCopy } from "./use-chat-copy";
 
@@ -137,6 +147,10 @@ export function ChatComposer({
     readonly start: number;
     readonly query: string;
   } | null>(null);
+  /** The `:shortcode` the user closed: it stays closed until its text changes. */
+  const [dismissedCode, setDismissedCode] = useState<ShortcodeTrigger | null>(
+    null,
+  );
   const [trackedByDraft, setTrackedByDraft] = useState<
     Readonly<Record<string, readonly TrackedMention[]>>
   >({});
@@ -197,7 +211,31 @@ export function ChatComposer({
   const open = trigger !== null && items.length > 0;
   const status =
     trigger?.trigger === "@" && mentions ? mentions.status : "ready";
-  const safeIndex = Math.min(activeIndex, Math.max(items.length - 1, 0));
+
+  // :shortcode and @ / # are exclusive: the emoji list opens only while the mention list shows nothing.
+  const shortcode: ShortcodeTrigger | null = useMemo(() => {
+    if (disabled || open) return null;
+    if (
+      trigger !== null &&
+      !(status === "ready" && trigger.query.includes(" "))
+    ) {
+      return null;
+    }
+    const found = activeShortcode(value, caret);
+    if (!found) return null;
+    return dismissedCode &&
+      dismissedCode.start === found.start &&
+      dismissedCode.query === found.query
+      ? null
+      : found;
+  }, [disabled, open, trigger, status, value, caret, dismissedCode]);
+  const emojiItems: readonly EmojiEntry[] = useMemo(
+    () => (shortcode ? shortcodeSuggestions(shortcode.query) : []),
+    [shortcode],
+  );
+  const emojiOpen = emojiItems.length > 0;
+  const listCount = open ? items.length : emojiItems.length;
+  const safeIndex = Math.min(activeIndex, Math.max(listCount - 1, 0));
   const optionId = (index: number) => `${listId}-option-${index}`;
 
   const trimmed = value.trim();
@@ -245,6 +283,33 @@ export function ChatComposer({
     setDismissed(after ? { start: after.start, query: after.query } : null);
     setActiveIndex(0);
     onChange(next.text);
+  }
+
+  function pickShortcode(entry: EmojiEntry) {
+    if (!shortcode) return;
+    const next = insertShortcode(value, shortcode, caret, entry.char);
+    rememberEmoji(entry.char);
+    pendingCaret.current = next.caret;
+    setCaret(next.caret);
+    setDismissedCode(null);
+    setActiveIndex(0);
+    onChange(next.text);
+  }
+
+  /** Puts the emoji from the toolbar picker at the caret (or over the selection). */
+  function insertEmoji(char: string) {
+    const box = textareaRef.current;
+    const next = insertAtSelection(
+      value,
+      box?.selectionStart ?? value.length,
+      box?.selectionEnd ?? value.length,
+      char,
+    );
+    pendingCaret.current = next.caret;
+    setCaret(next.caret);
+    setActiveIndex(0);
+    onChange(next.text);
+    if (next.text.trim().length > 0) onTyping?.();
   }
 
   function addFiles(incoming: readonly File[]) {
@@ -321,6 +386,27 @@ export function ChatComposer({
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.nativeEvent.isComposing) return;
+    if (emojiOpen) {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        const step = event.key === "ArrowDown" ? 1 : -1;
+        setActiveIndex(
+          (safeIndex + step + emojiItems.length) % emojiItems.length,
+        );
+        return;
+      }
+      if ((event.key === "Enter" || event.key === "Tab") && !event.shiftKey) {
+        event.preventDefault();
+        const entry = emojiItems[safeIndex];
+        if (entry) pickShortcode(entry);
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (shortcode) setDismissedCode(shortcode);
+        return;
+      }
+    }
     if (open) {
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         event.preventDefault();
@@ -402,6 +488,17 @@ export function ChatComposer({
           onHover={setActiveIndex}
         />
       ) : null}
+      {emojiOpen ? (
+        <ShortcodePopover
+          id={listId}
+          items={emojiItems}
+          activeIndex={safeIndex}
+          optionId={optionId}
+          copy={copy}
+          onPick={pickShortcode}
+          onHover={setActiveIndex}
+        />
+      ) : null}
       <form
         className={cn(
           "flex flex-col rounded-xl border border-input bg-card shadow-xs transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/30",
@@ -449,10 +546,10 @@ export function ChatComposer({
         <Textarea
           ref={textareaRef}
           role={mentions ? "combobox" : undefined}
-          aria-expanded={mentions ? open : undefined}
-          aria-controls={mentions && open ? listId : undefined}
+          aria-expanded={mentions ? open || emojiOpen : undefined}
+          aria-controls={mentions && (open || emojiOpen) ? listId : undefined}
           aria-activedescendant={
-            mentions && open ? optionId(safeIndex) : undefined
+            mentions && (open || emojiOpen) ? optionId(safeIndex) : undefined
           }
           aria-autocomplete={mentions ? "list" : undefined}
           aria-haspopup={mentions ? "listbox" : undefined}
@@ -502,6 +599,12 @@ export function ChatComposer({
               </Button>
             </>
           ) : null}
+          <EmojiPickerButton
+            copy={copy}
+            disabled={disabled}
+            onPick={insertEmoji}
+            onClosed={() => textareaRef.current?.focus()}
+          />
           {footerExtra}
           <div
             id={hintId}
@@ -817,6 +920,57 @@ function MentionPopover({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/** The `:shortcode` suggestions above the composer: the same listbox pattern as the mention list. */
+function ShortcodePopover({
+  id,
+  items,
+  activeIndex,
+  optionId,
+  copy,
+  onPick,
+  onHover,
+}: {
+  readonly id: string;
+  readonly items: readonly EmojiEntry[];
+  readonly activeIndex: number;
+  readonly optionId: (index: number) => string;
+  readonly copy: ChatCopy;
+  readonly onPick: (entry: EmojiEntry) => void;
+  readonly onHover: (index: number) => void;
+}) {
+  return (
+    <div
+      id={id}
+      role="listbox"
+      aria-label={copy.emoji.shortcodeLabel}
+      className="absolute inset-x-3 bottom-full z-20 mb-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md md:inset-x-5 md:max-w-sm"
+    >
+      {items.map((entry, index) => (
+        <div
+          key={entry.id}
+          id={optionId(index)}
+          role="option"
+          aria-selected={index === activeIndex}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => onPick(entry)}
+          onMouseEnter={() => onHover(index)}
+          className={cn(
+            "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm",
+            index === activeIndex && "bg-accent text-accent-foreground",
+          )}
+        >
+          <span aria-hidden="true" className="text-base">
+            {entry.char}
+          </span>
+          <span className="min-w-0 flex-1 truncate font-medium">
+            :{entry.id}:
+          </span>
+        </div>
+      ))}
     </div>
   );
 }

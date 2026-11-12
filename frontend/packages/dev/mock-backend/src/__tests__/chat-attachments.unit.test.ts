@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import type { RealtimeEnvelope } from "@notrelix/realtime";
+import { MockRealtimeTransport } from "../realtime/mock-realtime-transport";
 import { createMockFetch } from "../transport/create-mock-fetch";
 import { SPACES, WORKSPACE_ID, actAs, chat, storeAs } from "./chat-test-kit";
 
@@ -361,6 +363,76 @@ describe("MFB-CHAT-S2.6: Chat mock handlers (attachments)", () => {
         `/messages/${message.id}/attachments`,
       );
       expect(list.body).toEqual([]);
+    });
+  });
+
+  describe("realtime (UC-CHT-G08)", () => {
+    async function captureChannelFrames(
+      run: () => Promise<void>,
+    ): Promise<RealtimeEnvelope[]> {
+      const transport = new MockRealtimeTransport();
+      const frames: RealtimeEnvelope[] = [];
+      const stop = transport.subscribeScope(
+        { kind: "channel", id: GENERAL },
+        (envelope) => {
+          frames.push(envelope);
+        },
+      );
+      try {
+        await run();
+      } finally {
+        stop();
+        transport.dispose();
+      }
+      return frames.filter(
+        (f) => f.eventType === "chat.message.attachment.changed",
+      );
+    }
+
+    it("sends an added frame with the file metadata (no bytes) and a removed frame with only the id", async () => {
+      const store = storeAs("owner");
+      const message = ownMessage(store);
+      let fileId = "";
+
+      const frames = await captureChannelFrames(async () => {
+        const up = await upload(store, message.id, "photo.png");
+        fileId = up.body.id;
+        await chat(
+          store,
+          "DELETE",
+          `/messages/${message.id}/attachments/${fileId}`,
+        );
+      });
+
+      expect(frames).toHaveLength(2);
+      expect(frames[0]!.payloadContract).toBe("chat.attachment.v1");
+      expect(frames[0]!.payload).toMatchObject({
+        messageId: message.id,
+        change: "added",
+        attachmentId: fileId,
+        fileName: "photo.png",
+        detailsOmitted: false,
+        downloadPath: `/api/v1/workspaces/${WORKSPACE_ID}/chat/messages/${message.id}/attachments/${fileId}/content`,
+      });
+      expect(JSON.stringify(frames[0]!.payload)).not.toContain("bytes");
+      expect(frames[1]!.payload).toMatchObject({
+        change: "removed",
+        attachmentId: fileId,
+        fileName: null,
+      });
+    });
+
+    it("sends nothing for a refused upload or an idempotent replay", async () => {
+      const store = storeAs("owner");
+      const message = ownMessage(store);
+
+      const frames = await captureChannelFrames(async () => {
+        await upload(store, message.id, "setup.exe");
+        await upload(store, message.id, "a.png", PNG, "same-key");
+        await upload(store, message.id, "a.png", PNG, "same-key");
+      });
+
+      expect(frames).toHaveLength(1);
     });
   });
 });

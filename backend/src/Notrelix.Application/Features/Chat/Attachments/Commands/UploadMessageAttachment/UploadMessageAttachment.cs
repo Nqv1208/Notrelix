@@ -41,14 +41,16 @@ public class UploadMessageAttachmentCommandHandler(
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
     ISpaceSequenceAllocator sequences,
-    IChatMessageAttachments attachments) : IRequestHandler<UploadMessageAttachmentCommand, Result<MessageAttachmentDto>>
+    IChatMessageAttachments attachments,
+    IDateTimeProvider clock) : IRequestHandler<UploadMessageAttachmentCommand, Result<MessageAttachmentDto>>
 {
     public async Task<Result<MessageAttachmentDto>> Handle(UploadMessageAttachmentCommand request, CancellationToken cancellationToken)
     {
         var userId = requestContext.UserId;
         var caller = await ChannelAccess.CallerAsync(members, request.WorkspaceId, userId, cancellationToken);
 
-        var message = await db.ChatMessages.AsNoTracking().FirstOrDefaultAsync(
+        // Tracked on purpose: the message raises the file fact (no column changes), which reaches the channel stream.
+        var message = await db.ChatMessages.FirstOrDefaultAsync(
             m => m.Id == request.MessageId && m.WorkspaceId == request.WorkspaceId, cancellationToken)
             ?? throw new NotFoundException(nameof(Message), request.MessageId);
 
@@ -86,6 +88,9 @@ public class UploadMessageAttachmentCommandHandler(
             m => m.Id == request.MessageId && m.WorkspaceId == request.WorkspaceId, cancellationToken)
             ?? throw new NotFoundException(nameof(Message), request.MessageId);
         current.EnsureAttachable();
+
+        message.RecordAttachmentAdded(
+            userId, stored.Id, stored.FileName, stored.SizeBytes, stored.ContentType, stored.UploadedBy, stored.CreatedAt, clock.UtcNow);
 
         return Result<MessageAttachmentDto>.Success(MessageAttachments.ToDto(request.WorkspaceId, stored));
     }

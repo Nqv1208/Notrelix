@@ -17,14 +17,20 @@
 
 import type { QueryClient } from "@tanstack/react-query";
 import { CHAT_LIMITS, type ChatService } from "../../core";
-import type { ChatMessage, ChatUnreadSummary } from "../../core/types/chat";
+import type {
+  ChatAttachment,
+  ChatMessage,
+  ChatUnreadSummary,
+} from "../../core/types/chat";
 import type { PendingMessage } from "../../core/model/chat-model";
 import {
   isChatMessageEvent,
   parseChatMessageFrame,
+  parseChatAttachmentFrame,
   parseChatReactionFrame,
   parseChatSpaceFrame,
   parseChatUnreadFrame,
+  CHAT_ATTACHMENT_EVENT,
   CHAT_REACTION_EVENT,
   CHAT_SPACE_EVENT,
   CHAT_UNREAD_EVENT,
@@ -48,6 +54,7 @@ import {
   patchMessageInData,
 } from "../query/interaction-cache";
 import { applyStoredReply } from "../query/thread-writes";
+import { mergeAttachment } from "../../core/model/attachment-model";
 
 export interface ChatRealtimeEnvelope {
   readonly eventType: string;
@@ -84,7 +91,8 @@ export interface ChatRecoverySignal {
 
 export interface ChatRealtimeAdapterOptions {
   readonly queryClient: QueryClient;
-  readonly service: Pick<ChatService, "listMessages">;
+  readonly service: Pick<ChatService, "listMessages"> &
+    Partial<Pick<ChatService, "listAttachments">>;
   /** The caller's user id: a reaction frame of the caller is already applied by the caller's own write. */
   readonly viewerId?: string;
 }
@@ -308,6 +316,71 @@ export function createChatRealtimeAdapter(
     );
   }
 
+  /**
+   * A file of a message was added or removed (UC-CHT-G08): the message's file list moves in every loaded cache (history, thread,
+   * pins). Keyed by file id, so a replay or the caller's own write is a no-op; a message that is not loaded is ignored. A frame whose
+   * details did not fit reads the message's files over REST instead.
+   */
+  async function applyAttachmentFrame(
+    envelope: ChatRealtimeEnvelope,
+    workspaceId: string,
+  ): Promise<void> {
+    const frame = envelope.payloadOmitted
+      ? null
+      : parseChatAttachmentFrame(envelope.payload);
+    if (!frame) return;
+    const patchAll = (patch: (message: ChatMessage) => ChatMessage): void => {
+      queryClient.setQueriesData(
+        { queryKey: chatQueryKeys.all(workspaceId) },
+        (data: unknown) => patchMessageInData(data, frame.messageId, patch),
+      );
+    };
+    if (frame.change === "removed") {
+      patchAll((message) =>
+        (message.attachments ?? []).some(
+          (item) => item.id === frame.attachmentId,
+        )
+          ? {
+              ...message,
+              attachments: (message.attachments ?? []).filter(
+                (item) => item.id !== frame.attachmentId,
+              ),
+            }
+          : message,
+      );
+      return;
+    }
+    if (frame.detailsOmitted) {
+      if (!service.listAttachments) return;
+      try {
+        const files = await service.listAttachments(
+          workspaceId,
+          frame.messageId,
+        );
+        patchAll((message) => ({ ...message, attachments: files }));
+      } catch {
+        // The next history read brings the files; a failed advisory read changes nothing.
+      }
+      return;
+    }
+    const attachment: ChatAttachment = {
+      id: frame.attachmentId,
+      messageId: frame.messageId,
+      fileName: frame.fileName!,
+      sizeBytes: frame.sizeBytes!,
+      contentType: frame.contentType!,
+      uploadedBy: frame.uploadedBy!,
+      createdAt: frame.createdAt!,
+      downloadPath: frame.downloadPath!,
+    };
+    patchAll((message) => {
+      const next = mergeAttachment(message.attachments, attachment);
+      return next === message.attachments
+        ? message
+        : { ...message, attachments: next };
+    });
+  }
+
   /** A pin of the channel changed: the pin list is read again (the header and the Pins panel follow it). */
   function applySpaceFrame(
     envelope: ChatRealtimeEnvelope,
@@ -346,6 +419,7 @@ export function createChatRealtimeAdapter(
         isChatMessageEvent(envelope.eventType) ||
         envelope.eventType === CHAT_UNREAD_EVENT ||
         envelope.eventType === CHAT_REACTION_EVENT ||
+        envelope.eventType === CHAT_ATTACHMENT_EVENT ||
         envelope.eventType === CHAT_SPACE_EVENT
       );
     },
@@ -355,6 +429,7 @@ export function createChatRealtimeAdapter(
       if (
         isChatMessageEvent(envelope.eventType) ||
         envelope.eventType === CHAT_REACTION_EVENT ||
+        envelope.eventType === CHAT_ATTACHMENT_EVENT ||
         envelope.eventType === CHAT_SPACE_EVENT
       ) {
         // Only the open channel's stream is subscribed; any other channel is ignored.
@@ -362,6 +437,10 @@ export function createChatRealtimeAdapter(
           return;
         if (envelope.eventType === CHAT_REACTION_EVENT) {
           applyReactionFrame(envelope, context.workspaceId);
+          return;
+        }
+        if (envelope.eventType === CHAT_ATTACHMENT_EVENT) {
+          await applyAttachmentFrame(envelope, context.workspaceId);
           return;
         }
         if (envelope.eventType === CHAT_SPACE_EVENT) {

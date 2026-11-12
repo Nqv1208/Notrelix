@@ -186,6 +186,28 @@ public class Message : AggregateRoot, IWorkspaceScoped
     }
 
     /// <summary>
+    /// Records that a file was added to this message (UC-CHT-G08): the message does not change (no version bump), the fact only
+    /// lets other readers patch its file list. The caller has stored the file and checked the standing.
+    /// </summary>
+    public void RecordAttachmentAdded(
+        Guid actorId, Guid attachmentId, string fileName, long sizeBytes, string contentType, Guid uploadedBy, DateTimeOffset createdAt, DateTimeOffset now)
+    {
+        Guard.NotEmpty(actorId);
+        Guard.NotEmpty(attachmentId);
+        RaiseDomainEvent(new MessageAttachmentChangedDomainEvent(
+            AccountId, WorkspaceId, SpaceId, Id, actorId, Added: true, attachmentId, fileName, sizeBytes, contentType, uploadedBy, createdAt, now));
+    }
+
+    /// <summary>Records that a file was removed from this message (UC-CHT-G08); the message does not change.</summary>
+    public void RecordAttachmentRemoved(Guid actorId, Guid attachmentId, DateTimeOffset now)
+    {
+        Guard.NotEmpty(actorId);
+        Guard.NotEmpty(attachmentId);
+        RaiseDomainEvent(new MessageAttachmentChangedDomainEvent(
+            AccountId, WorkspaceId, SpaceId, Id, actorId, Added: false, attachmentId, null, null, null, null, null, now));
+    }
+
+    /// <summary>
     /// Turns the message into a tombstone: the content goes, the author, the time and the sequence stay. Only the
     /// author deletes, and a system message is never deleted by a person. Returns false when already deleted.
     /// </summary>

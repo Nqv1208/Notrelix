@@ -30,6 +30,7 @@ import {
   CHAT_LIMITS,
   type ChatAttachmentRecord,
 } from "./chat-model";
+import { announceAttachmentChanged } from "./chat-realtime";
 import type { MockChatState } from "./chat-state";
 
 type MessageParams = { workspaceId: string; messageId: string };
@@ -185,6 +186,15 @@ export const attachmentsOperations = [
         };
         state.attachments.set(row.id, row);
         const view = attachmentView(row);
+        announceAttachmentChanged(state, space, message.id, "added", {
+          id: row.id,
+          fileName: view.fileName,
+          sizeBytes: view.sizeBytes,
+          contentType: view.contentType,
+          uploadedBy: view.uploadedBy,
+          createdAt: view.createdAt,
+          downloadPath: view.downloadPath,
+        });
         return {
           status: 201,
           headers: { Location: view.downloadPath },
@@ -257,6 +267,9 @@ export const attachmentsOperations = [
         const file = state.attachments.get(params.attachmentId);
         if (!file || file.messageId !== message.id) notFoundProblem();
         state.attachments.delete(file.id);
+        announceAttachmentChanged(state, space, message.id, "removed", {
+          id: file.id,
+        });
         return noContent();
       });
     },

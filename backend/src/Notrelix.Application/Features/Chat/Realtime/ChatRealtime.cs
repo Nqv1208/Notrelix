@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Notrelix.Application.Common.Realtime.Gateway;
 using Notrelix.Application.Events.Chat;
+using Notrelix.Application.Features.Chat.Attachments.Services;
 using Notrelix.Domain.Chat.Messages;
 
 namespace Notrelix.Application.Features.Chat.Realtime;
@@ -24,11 +25,13 @@ public static class ChatRealtime
     public const string UnreadChangedEvent = "chat.unread.changed";
     public const string SpaceChangedEvent = "chat.space.changed";
     public const string ReactionChangedEvent = "chat.reaction.changed";
+    public const string AttachmentChangedEvent = "chat.message.attachment.changed";
 
     public const string MessagePayloadContract = "chat.message.v1";
     public const string UnreadPayloadContract = "chat.unread.v1";
     public const string SpaceChangedPayloadContract = "chat.space.v1";
     public const string ReactionPayloadContract = "chat.reaction.v1";
+    public const string AttachmentPayloadContract = "chat.attachment.v1";
 
     /// <summary>
     /// The largest message payload in bytes. The frame envelope (ids, stream key, names, timestamps) is under 1 KiB,
@@ -121,6 +124,45 @@ public static class ChatRealtime
 
     /// <summary>The reaction payload (contract <see cref="ReactionPayloadContract"/>).</summary>
     public sealed record ReactionChangedFrame(Guid MessageId, string Kind, string Change, Guid ActorId);
+
+    /// <summary>
+    /// A file was added to or removed from a message of a space (UC-CHT-G08). An added file carries its metadata and the authorized
+    /// download route (no bytes, no URL that works without a permission check); a removed file carries only its id. A reader applies
+    /// the change by file id, so a replay is harmless. A file name so long that the frame would not fit is left out (DetailsOmitted)
+    /// and the reader refetches the message's files over REST. Contract <see cref="AttachmentPayloadContract"/>.
+    /// </summary>
+    public static RealtimeResourceChangedV1 ForAttachmentChanged(ChatMessageAttachmentChangedIntegrationEvent e, DateTimeOffset now)
+    {
+        var added = e.ChangeKind == "added";
+        var frame = new AttachmentChangedFrame(
+            e.MessageId, e.ChangeKind, e.AttachmentId,
+            added ? e.FileName : null,
+            added ? e.SizeBytes : null,
+            added ? e.ContentType : null,
+            added ? e.UploadedBy : null,
+            added ? e.AttachmentCreatedAt : null,
+            added && e.WorkspaceId is { } workspaceId ? MessageAttachments.DownloadPath(workspaceId, e.MessageId, e.AttachmentId) : null,
+            DetailsOmitted: false);
+        var payload = Serialize(frame);
+        if (Encoding.UTF8.GetByteCount(payload.GetRawText()) > MaxPayloadBytes)
+            payload = Serialize(new AttachmentChangedFrame(e.MessageId, e.ChangeKind, e.AttachmentId, null, null, null, null, null, null, DetailsOmitted: true));
+
+        return Channel(e.EventId, e.AccountId, e.WorkspaceId, e.SpaceId, e.ActorUserId, e.CorrelationId, e.CausationId,
+            e.OccurredAt, AttachmentChangedEvent, payload, now, AttachmentPayloadContract);
+    }
+
+    /// <summary>The file payload (contract <see cref="AttachmentPayloadContract"/>). Only the fields of an added file are set; a removal has the ids and the change.</summary>
+    public sealed record AttachmentChangedFrame(
+        Guid MessageId,
+        string Change,
+        Guid AttachmentId,
+        string? FileName,
+        long? SizeBytes,
+        string? ContentType,
+        Guid? UploadedBy,
+        DateTimeOffset? CreatedAt,
+        string? DownloadPath,
+        bool DetailsOmitted);
 
     /// <summary>One space's unread counts for one person, for the per-user stream (the badge refresh).</summary>
     public static RealtimeResourceChangedV1 Unread(
