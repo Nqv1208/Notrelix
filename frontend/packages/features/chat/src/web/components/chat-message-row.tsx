@@ -116,26 +116,44 @@ export interface ChatMessageRowProps {
   readonly attachmentsReadOnly?: boolean;
 }
 
+/** Formatters are costly to build and every row formats twice: one per locale, zone and style. */
+const FORMATTERS = new Map<string, Intl.DateTimeFormat>();
+
+function formatter(
+  style: "clock" | "full",
+  locale: string,
+  timeZone?: string,
+): Intl.DateTimeFormat {
+  const key = `${style}|${locale}|${timeZone ?? ""}`;
+  let found = FORMATTERS.get(key);
+  if (!found) {
+    found = new Intl.DateTimeFormat(
+      locale,
+      style === "clock"
+        ? { hour: "numeric", minute: "2-digit", timeZone }
+        : {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+            timeZone,
+          },
+    );
+    FORMATTERS.set(key, found);
+  }
+  return found;
+}
+
 /** The clock time of a message on one line ("9:05 AM", "09:05"), in the viewer's locale and zone. */
 export function formatClock(iso: string, locale: string, timeZone?: string) {
-  return new Intl.DateTimeFormat(locale, {
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone,
-  }).format(new Date(iso));
+  return formatter("clock", locale, timeZone).format(new Date(iso));
 }
 
 /** The full date and time of a message, for its tooltip. */
 export function formatFullTime(iso: string, locale: string, timeZone?: string) {
-  return new Intl.DateTimeFormat(locale, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone,
-  }).format(new Date(iso));
+  return formatter("full", locale, timeZone).format(new Date(iso));
 }
 
 /**
@@ -153,7 +171,7 @@ export function bubbleShape(
 }
 
 /** The width a side action bar needs beside the bubble; with less room it sits above the bubble. */
-const BAR_ROOM_PX = 184;
+const BAR_ROOM_PX = 208;
 /** How long a touch must rest on a message to open its action sheet. */
 const LONG_PRESS_MS = 450;
 /** A touch that moves further than this is a scroll, not a long press. */
