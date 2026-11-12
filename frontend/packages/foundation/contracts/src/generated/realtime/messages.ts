@@ -21,6 +21,19 @@ export interface BoardItemUpdatedPayload {
   "value"?: string;
 }
 
+export interface ChatMessageAttachmentChangedPayload {
+  "attachmentId": string;
+  "change": string;
+  "contentType"?: string | null;
+  "createdAt"?: string | null;
+  "detailsOmitted": boolean;
+  "downloadPath"?: string | null;
+  "fileName"?: string | null;
+  "messageId": string;
+  "sizeBytes"?: number | null;
+  "uploadedBy"?: string | null;
+}
+
 export interface ChatMessageCreatedPayload {
   "authorId": string;
   "content": string | null;
@@ -116,6 +129,7 @@ export type GeneratedRealtimeMessage =
   | { eventType: "board.item.created"; payload: BoardItemCreatedPayload }
   | { eventType: "board.item.moved"; payload: BoardItemMovedPayload }
   | { eventType: "board.item.updated"; payload: BoardItemUpdatedPayload }
+  | { eventType: "chat.message.attachment.changed"; payload: ChatMessageAttachmentChangedPayload }
   | { eventType: "chat.message.created"; payload: ChatMessageCreatedPayload }
   | { eventType: "chat.message.deleted"; payload: ChatMessageDeletedPayload }
   | { eventType: "chat.message.updated"; payload: ChatMessageUpdatedPayload }
