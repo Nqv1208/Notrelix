@@ -105,6 +105,14 @@ function followersOf(store: MockStore, cardId: string, memberFollows: boolean) {
   });
 }
 
+/** The notification types of the chat producer by the mock inbox's own type (the producer's literals, UC-CHT-G09). */
+const CHAT_NOTIFICATION_TYPES: Readonly<Record<string, string>> = {
+  chat_mention: "chat.mention",
+  chat_direct: "chat.direct-message",
+  chat_thread: "chat.thread-reply",
+  chat_broadcast: "chat.broadcast",
+};
+
 export const workFeedOperations = [
   // ── Command palette search ────────────────────────────────────────────────
   defineMockOperation<{ workspaceId: string }>({
@@ -477,7 +485,7 @@ export const workFeedOperations = [
           state: ["The state must be inbox, done or snoozed."],
         });
       }
-      // The real producer lists notifications: a mention is the one kind it has.
+      // The real producer lists notifications: a mention is the one kind it has, and a chat message may notify (UC-CHT-G09).
       const inbox = buildInbox(
         store,
         params.workspaceId,
@@ -485,10 +493,13 @@ export const workFeedOperations = [
       );
       return ok({
         items: inbox.items
-          .filter((entry) => entry.type === "mention")
+          .filter(
+            (entry) =>
+              entry.type === "mention" || entry.type in CHAT_NOTIFICATION_TYPES,
+          )
           .map((entry) => ({
             id: entry.id,
-            type: "mention.created",
+            type: CHAT_NOTIFICATION_TYPES[entry.type] ?? "mention.created",
             createdAt: entry.createdAt,
             unread: entry.unread,
             actor: entry.actor,
@@ -496,13 +507,20 @@ export const workFeedOperations = [
             needsReply: entry.need === "reply",
             muted: entry.muted,
             snoozedUntil: entry.snoozedUntil,
-            target: {
-              kind: "item",
-              id: entry.target.id,
-              boardId: entry.target.boardId,
-              key: entry.target.key,
-              title: entry.target.title,
-            },
+            target:
+              entry.target.kind === "chat"
+                ? {
+                    kind: "chat",
+                    id: entry.target.id,
+                    title: entry.target.title,
+                  }
+                : {
+                    kind: "item",
+                    id: entry.target.id,
+                    boardId: entry.target.boardId,
+                    key: entry.target.key,
+                    title: entry.target.title,
+                  },
           })),
         nextCursor: null,
       });

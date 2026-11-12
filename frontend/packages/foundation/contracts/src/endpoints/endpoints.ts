@@ -388,6 +388,9 @@ export const endpoints = {
       attachmentId: string,
     ) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}/content`,
+    /** GET resolves the preview of a Board item or Page link (query: `url`, or `kind` with `resourceId`). */
+    linkResolve: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/links/resolve`,
     /** Pins: PUT pins a message and DELETE unpins it (the message id). */
     messagePin: (workspaceId: string, messageId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/pin`,

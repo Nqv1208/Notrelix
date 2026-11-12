@@ -4,6 +4,8 @@ import type {
   ChatChannel,
   ChatChannelDetail,
   ChatConversation,
+  ChatLinkPreview,
+  ChatLinkRef,
   ChatConversationVisibility,
   ChatPersonBlock,
   ChatStartConversationInput,
@@ -108,6 +110,7 @@ export interface ChatEndpoints {
       messageId: string,
       attachmentId: string,
     ) => string;
+    linkResolve: (workspaceId: string) => string;
     messagePin: (workspaceId: string, messageId: string) => string;
     spacePins: (workspaceId: string, spaceId: string) => string;
     messageReaction: (
@@ -321,6 +324,26 @@ export function createChatService(
     ): Promise<ChatMentionables> {
       return api.get<ChatMentionables>(
         paths.spaceMentionables(workspaceId, spaceId),
+      );
+    },
+
+    /**
+     * `Chat.Links.Resolve`: the preview of a link to a Board item or Page, with the caller's own access. The title is
+     * there only when the caller can view the resource now; otherwise `accessible` is false. Never changes the resource.
+     */
+    resolveLink(
+      workspaceId: string,
+      ref: ChatLinkRef,
+      options?: ChatRequestOptions,
+    ): Promise<ChatLinkPreview> {
+      return api.get<ChatLinkPreview>(
+        withQuery(
+          paths.linkResolve(workspaceId),
+          "url" in ref
+            ? { url: ref.url }
+            : { kind: ref.kind, resourceId: ref.resourceId },
+        ),
+        options,
       );
     },
 

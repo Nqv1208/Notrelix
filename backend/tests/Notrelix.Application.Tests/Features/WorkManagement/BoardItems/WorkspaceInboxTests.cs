@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Chat.Public.SpaceViewFacts;
 using Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryRead;
 using Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryDone;
 using Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead;
@@ -18,6 +19,7 @@ public class WorkspaceInboxTests : WorkManagementHandlerTestBase
     private readonly Mock<IActorLookupService> _actors = new();
     private readonly Mock<INotificationInbox> _inbox = new();
     private readonly Mock<IPageTitleFacts> _pageTitles = new();
+    private readonly Mock<IChatSpaceViewFacts> _chatSpaces = new();
 
     public WorkspaceInboxTests()
     {
@@ -28,10 +30,37 @@ public class WorkspaceInboxTests : WorkManagementHandlerTestBase
     }
 
     private GetWorkspaceInboxQueryHandler Handler() =>
-        new(DbContextMock.Object, RequestContextMock.Object, _visibility, _inbox.Object, _actors.Object, _pageTitles.Object);
+        new(DbContextMock.Object, RequestContextMock.Object, _visibility, _inbox.Object, _actors.Object, _pageTitles.Object, _chatSpaces.Object);
 
     private static InboxNotification Note(Guid? actor, Guid? resource, string? kind = ItemKind, bool unread = true) =>
         new(Guid.CreateVersion7(), "mention.created", actor, DateTimeOffset.UtcNow, "Mention", "You were mentioned", kind, resource, unread);
+
+    [Fact]
+    public async Task Inbox_NamesTheChannelOfAChatNotification_AndDropsOneWhoseSpaceTheCallerLeft()
+    {
+        var kept = Guid.CreateVersion7();
+        var left = Guid.CreateVersion7();
+        var direct = Guid.CreateVersion7();
+        _chatSpaces
+            .Setup(c => c.ViewableSpacesAsync(TestWorkspaceId, TestUserId, It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, string?> { [kept] = "general", [direct] = null });
+        _inbox
+            .Setup(i => i.ListAsync(TestWorkspaceId, TestUserId, InboxView.Inbox, null, null, GetWorkspaceInboxQuery.ScanLimit, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<InboxNotification>
+            {
+                Note(Guid.CreateVersion7(), kept, kind: "chat.space"),
+                Note(Guid.CreateVersion7(), left, kind: "chat.space"),
+                Note(Guid.CreateVersion7(), direct, kind: "chat.space"),
+            });
+
+        var result = await Handler().Handle(new GetWorkspaceInboxQuery(TestWorkspaceId, false, null, null), CancellationToken.None);
+
+        result.Data!.Items.Select(i => i.Target).Should().BeEquivalentTo(
+        [
+            new InboxTargetDto("chat", kept, null, null, "general"),
+            new InboxTargetDto("chat", direct, null, null, null),
+        ]);
+    }
 
     [Fact]
     public async Task Inbox_NamesTheReadablePageOfAMention_AndDropsOneTheCallerCannotRead()

@@ -148,6 +148,10 @@ const KIND: Record<InboxEntryDto["type"], InboxKind> = {
   due_reminder: "overdue",
   nudge: "assign",
   form_response: "assign",
+  chat_mention: "mention",
+  chat_direct: "mention",
+  chat_thread: "change",
+  chat_broadcast: "mention",
   system: "system",
 };
 
@@ -295,6 +299,34 @@ export function toInboxEntries(
         );
         context = null;
         break;
+      case "chat_mention":
+      case "chat_direct":
+      case "chat_thread":
+      case "chat_broadcast": {
+        // A chat notification names the channel; a conversation has no name.
+        const chatTemplates = {
+          chat_mention: [copy.feed.chatMention, copy.feed.chatMentionPlain],
+          chat_direct: [copy.feed.chatDirect, copy.feed.chatDirectPlain],
+          chat_thread: [copy.feed.chatThread, copy.feed.chatThreadPlain],
+          chat_broadcast: [
+            copy.feed.chatBroadcast,
+            copy.feed.chatBroadcastPlain,
+          ],
+        } as const;
+        const [withText, plain] = chatTemplates[entry.type];
+        segments = sentence(
+          copy,
+          entry.excerpt ? withText : plain,
+          {
+            actor: actorName,
+            title: target.title || copy.feed.chatConversation,
+            excerpt: entry.excerpt ?? "",
+          },
+          ["actor", "title"],
+        );
+        context = null;
+        break;
+      }
       case "system":
         // A type this page does not know: its own text when it has one.
         segments = sentence(
