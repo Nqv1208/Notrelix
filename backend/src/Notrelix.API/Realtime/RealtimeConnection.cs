@@ -21,8 +21,13 @@ public sealed class RealtimeConnection
     private readonly IRealtimeNotificationSource _source;
     private readonly IRealtimeAccessSignalSource? _accessSource;
     private readonly Dictionary<Guid, IAsyncDisposable> _accessHandles = new();
+    private readonly IRealtimeEphemeralBus? _ephemeral;
     private readonly ILogger _logger;
     private readonly TimeProvider _clock;
+    private readonly object _presenceSync = new();
+    private string? _presenceState;
+    private long _presenceReportedTicks;
+    private long _presenceAcceptedTicks;
 
     private readonly Channel<byte[]> _outbox;
     private readonly SemaphoreSlim _subscriptionGate = new(1, 1);
@@ -47,9 +52,11 @@ public sealed class RealtimeConnection
         IRealtimeNotificationSource source,
         ILogger logger,
         TimeProvider? clock = null,
-        IRealtimeAccessSignalSource? accessSource = null)
+        IRealtimeAccessSignalSource? accessSource = null,
+        IRealtimeEphemeralBus? ephemeralBus = null)
     {
         _accessSource = accessSource;
+        _ephemeral = ephemeralBus;
         _socket = socket;
         _principal = principal;
         _options = options;
@@ -320,6 +327,12 @@ public sealed class RealtimeConnection
                 break;
             case RealtimeProtocol.PongMessage:
                 break;
+            case RealtimeProtocol.TypingMessage typing:
+                await TypingAsync(typing, token).ConfigureAwait(false);
+                break;
+            case RealtimeProtocol.PresenceMessage presence:
+                PresenceHeartbeat(presence.State);
+                break;
             case RealtimeProtocol.InvalidMessage invalid:
                 Enqueue(RealtimeProtocol.SubscriptionError(invalid.SubscriptionId, invalid.Code));
                 break;
@@ -387,6 +400,12 @@ public sealed class RealtimeConnection
         subscription.Handle = await _source.SubscribeAsync(
             message.Scope, notification => OnNotification(subscription, notification), token).ConfigureAwait(false);
 
+        if (_ephemeral is not null && message.Scope.Kind == RealtimeScopeKind.Channel)
+        {
+            subscription.EphemeralHandle = await _ephemeral.SubscribeAsync(
+                message.Scope, signal => OnEphemeral(subscription, signal), token).ConfigureAwait(false);
+        }
+
         lock (_subscriptions)
         {
             _subscriptions[subscription.Id] = subscription;
@@ -398,6 +417,14 @@ public sealed class RealtimeConnection
         {
             Enqueue(RealtimeProtocol.Subscribed(subscription.Id, subscription.Scope));
             subscription.Acknowledged = true;
+        }
+
+        if (subscription.EphemeralHandle is not null)
+        {
+            // Tell the space who is here: our own state, and a request that the others answer once, only to us.
+            AnnouncePresenceTo(subscription, _presenceState);
+            PublishEphemeral(subscription.Scope, new RealtimeEphemeralSignal(
+                RealtimeEphemeralKinds.PresenceRequest, subscription.WorkspaceId, _principal.UserId));
         }
 
         _logger.LogDebug(
@@ -495,6 +522,11 @@ public sealed class RealtimeConnection
         }
 
         subscription.Cancelled = true;
+        if (subscription.EphemeralHandle is not null)
+        {
+            await subscription.EphemeralHandle.DisposeAsync().ConfigureAwait(false);
+        }
+
         if (subscription.Handle is not null)
         {
             await subscription.Handle.DisposeAsync().ConfigureAwait(false);
@@ -505,6 +537,9 @@ public sealed class RealtimeConnection
 
     private async Task ReleaseSubscriptionsAsync()
     {
+        // A closing connection tells its spaces the person left (another tab of theirs re-announces within a heartbeat).
+        AnnouncePresenceOffline();
+
         foreach (var handle in _accessHandles.Values)
         {
             try
@@ -571,6 +606,202 @@ public sealed class RealtimeConnection
         return ValueTask.CompletedTask;
     }
 
+    // ── Typing and presence (ephemeral: nothing is stored, nothing grants access) ──
+
+    /// <summary>
+    /// A typing frame. Ignored (no reply) unless the named subscription is a channel one that this connection holds;
+    /// dropped when it comes sooner than the minimum interval; and ignored again when the channel scope authorizer no
+    /// longer grants the person the space (removed, archived, left).
+    /// </summary>
+    private async Task TypingAsync(RealtimeProtocol.TypingMessage message, CancellationToken token)
+    {
+        if (_ephemeral is null)
+        {
+            return;
+        }
+
+        Subscription? subscription;
+        lock (_subscriptions)
+        {
+            _subscriptions.TryGetValue(message.SubscriptionId, out subscription);
+        }
+
+        if (subscription is null || subscription.Scope.Kind != RealtimeScopeKind.Channel || subscription.Cancelled)
+        {
+            return;
+        }
+
+        var now = _clock.GetTimestamp();
+        lock (subscription.Sync)
+        {
+            if (subscription.HasTyped && _clock.GetElapsedTime(subscription.LastTypingTicks, now) < _options.TypingMinInterval)
+            {
+                return;
+            }
+
+            subscription.HasTyped = true;
+            subscription.LastTypingTicks = now;
+        }
+
+        var authorization = await _authorizer.AuthorizeAsync(_principal, subscription.Scope, token).ConfigureAwait(false);
+        if (authorization is not { Outcome: RealtimeAuthorizationOutcome.Granted, Grant: { } grant }
+            || grant.WorkspaceId != subscription.WorkspaceId)
+        {
+            return;
+        }
+
+        PublishEphemeral(subscription.Scope, new RealtimeEphemeralSignal(
+            RealtimeEphemeralKinds.Typing, subscription.WorkspaceId, _principal.UserId));
+    }
+
+    /// <summary>A presence heartbeat: remembered in memory only, and announced to the channel subscriptions of this connection.</summary>
+    private void PresenceHeartbeat(string state)
+    {
+        if (_ephemeral is null)
+        {
+            return;
+        }
+
+        var now = _clock.GetTimestamp();
+        lock (_presenceSync)
+        {
+            if (_presenceState == state && _clock.GetElapsedTime(_presenceAcceptedTicks, now) < _options.PresenceMinInterval)
+            {
+                return;
+            }
+
+            _presenceState = state;
+            _presenceAcceptedTicks = now;
+            _presenceReportedTicks = now;
+        }
+
+        foreach (var subscription in EphemeralSubscriptions())
+        {
+            AnnouncePresenceTo(subscription, state);
+        }
+    }
+
+    private Subscription[] EphemeralSubscriptions()
+    {
+        lock (_subscriptions)
+        {
+            return [.. _subscriptions.Values.Where(s => s.EphemeralHandle is not null && !s.Cancelled)];
+        }
+    }
+
+    private void AnnouncePresenceTo(Subscription subscription, string? state, Guid? to = null)
+    {
+        if (state is null)
+        {
+            return;
+        }
+
+        PublishEphemeral(subscription.Scope, new RealtimeEphemeralSignal(
+            RealtimeEphemeralKinds.Presence, subscription.WorkspaceId, _principal.UserId, state, to));
+    }
+
+    private void AnnouncePresenceOffline()
+    {
+        lock (_presenceSync)
+        {
+            if (_presenceState is null or RealtimePresenceStates.Offline)
+            {
+                return;
+            }
+
+            _presenceState = RealtimePresenceStates.Offline;
+        }
+
+        foreach (var subscription in EphemeralSubscriptions())
+        {
+            AnnouncePresenceTo(subscription, RealtimePresenceStates.Offline);
+        }
+    }
+
+    /// <summary>Without a heartbeat for the presence time-to-live the person counts as offline: announce it once and forget the state.</summary>
+    private void ExpirePresence(long now)
+    {
+        lock (_presenceSync)
+        {
+            if (_presenceState is null or RealtimePresenceStates.Offline
+                || _clock.GetElapsedTime(_presenceReportedTicks, now) < _options.PresenceTtl)
+            {
+                return;
+            }
+        }
+
+        AnnouncePresenceOffline();
+    }
+
+    private void PublishEphemeral(RealtimeScope scope, RealtimeEphemeralSignal signal)
+    {
+        var bus = _ephemeral;
+        if (bus is null)
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await bus.PublishAsync(scope, signal, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                // Ephemeral signals are best effort; losing one is invisible after the next heartbeat.
+                _logger.LogDebug(ex, "Realtime ephemeral publish failed connection {ConnectionId}", ConnectionId);
+            }
+        });
+    }
+
+    private ValueTask OnEphemeral(Subscription subscription, RealtimeEphemeralSignal signal)
+    {
+        // Same bounds as events, and never echoed to the person who sent it (their other tabs hear nothing either).
+        if (subscription.Cancelled
+            || signal.WorkspaceId != subscription.WorkspaceId
+            || signal.UserId == _principal.UserId
+            || (signal.To is { } to && to != _principal.UserId))
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        switch (signal.Kind)
+        {
+            case RealtimeEphemeralKinds.Typing:
+                EnqueueEphemeral(subscription, RealtimeProtocol.Typing(
+                    subscription.Id, signal.UserId, (long)_options.TypingExpiry.TotalMilliseconds));
+                break;
+            case RealtimeEphemeralKinds.Presence when RealtimePresenceStates.IsValid(signal.State):
+                EnqueueEphemeral(subscription, RealtimeProtocol.Presence(
+                    subscription.Id, signal.UserId, signal.State!, (long)_options.PresenceTtl.TotalMilliseconds));
+                break;
+            case RealtimeEphemeralKinds.PresenceRequest:
+                string? state;
+                lock (_presenceSync)
+                {
+                    state = _presenceState is null or RealtimePresenceStates.Offline ? null : _presenceState;
+                }
+
+                AnnouncePresenceTo(subscription, state, signal.UserId);
+                break;
+        }
+
+        return ValueTask.CompletedTask;
+    }
+
+    private void EnqueueEphemeral(Subscription subscription, byte[] frame)
+    {
+        // A signal never outruns the subscribed ack, and a slow consumer drops it instead of being closed for it.
+        lock (subscription.Sync)
+        {
+            if (subscription.Acknowledged && !subscription.Cancelled)
+            {
+                _outbox.Writer.TryWrite(frame);
+            }
+        }
+    }
+
     // ── Maintenance: heartbeat, idle, lifetime, re-authorization ──
 
     private async Task MaintenanceLoopAsync(CancellationToken token)
@@ -594,6 +825,8 @@ public sealed class RealtimeConnection
                     RequestClose(RealtimeProtocol.CloseCodes.HeartbeatTimeout, "heartbeat_timeout");
                     return;
                 }
+
+                ExpirePresence(now);
 
                 var utcNow = _clock.GetUtcNow();
                 if (utcNow - _startedAt >= _options.MaxConnectionLifetime)
@@ -688,6 +921,9 @@ public sealed class RealtimeConnection
         public Guid WorkspaceId { get; } = workspaceId;
         public object Sync { get; } = new();
         public IAsyncDisposable? Handle { get; set; }
+        public IAsyncDisposable? EphemeralHandle { get; set; }
+        public bool HasTyped { get; set; }
+        public long LastTypingTicks { get; set; }
         public volatile bool Acknowledged;
         public volatile bool Cancelled;
     }
