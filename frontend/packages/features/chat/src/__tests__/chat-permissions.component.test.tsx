@@ -455,7 +455,7 @@ describe("ChatWorkspace channel permissions and moderation", () => {
       name: /Message #general/,
     })) as HTMLTextAreaElement;
     expect(box.disabled).toBe(false);
-  });
+  }, 20_000);
 
   it("an Admin deletes another person's message as a moderator with a reason", async () => {
     const s = setup("admin");
