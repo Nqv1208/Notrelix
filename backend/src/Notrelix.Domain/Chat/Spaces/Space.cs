@@ -1,6 +1,7 @@
 using Notrelix.Domain.Chat.Permissions;
 using Notrelix.Domain.Chat.Permissions.Events;
 using Notrelix.Domain.Chat.Rules;
+using Notrelix.Domain.Chat.Spaces.Events;
 
 namespace Notrelix.Domain.Chat.Spaces;
 
@@ -27,6 +28,12 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
     public Guid? GroupId { get; private set; }
     public double Position { get; private set; }
     public DateTimeOffset? ArchivedAt { get; private set; }
+
+    /// <summary>
+    /// The least number of seconds between two messages of one person in the channel (UC-CHT-H08). Zero means no slow mode. A
+    /// conversation has none.
+    /// </summary>
+    public int SlowModeSeconds { get; private set; }
 
     /// <summary>The sequence of the last message stored in the space. Starts at 0; system messages (S1.2) advance it.</summary>
     public long LastSequence { get; private set; }
@@ -274,6 +281,29 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     /// <summary>The overrides as plain entries, for the resolver.</summary>
     public IReadOnlyList<ChannelPermissionEntry> PermissionEntries() => _permissionOverrides.Select(o => o.ToEntry()).ToList();
+
+    /// <summary>
+    /// Sets the channel's slow mode, in seconds between two messages of one person (UC-CHT-H08); zero turns it off. Only a live,
+    /// unarchived channel has one. Returns false and changes nothing when it already is that value.
+    /// </summary>
+    public bool SetSlowMode(int seconds, Guid changedBy, DateTimeOffset changedAt)
+    {
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(changedBy);
+        if (IsConversation)
+            throw new BusinessRuleException(ChatRuleCodes.SlowModeInvalid, "Only a channel has a slow mode.");
+        if (seconds is < 0 or > ChatLimits.SlowModeMaxSeconds)
+            throw new BusinessRuleException(ChatRuleCodes.SlowModeInvalid, $"The slow mode is 0 to {ChatLimits.SlowModeMaxSeconds} seconds.");
+        if (seconds == SlowModeSeconds) return false;
+
+        var pending = PrepareAuditUpdate(changedBy, changedAt);
+        SlowModeSeconds = seconds;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new ChannelSlowModeChangedDomainEvent(AccountId, WorkspaceId, Id, changedBy, changedAt));
+        return true;
+    }
 
     /// <summary>Moves the channel in the sidebar. Returns false when it already sits there.</summary>
     public bool MoveTo(Guid? groupId, double position, Guid movedBy, DateTimeOffset movedAt)

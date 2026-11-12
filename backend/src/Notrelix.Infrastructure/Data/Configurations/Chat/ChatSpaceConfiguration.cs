@@ -25,6 +25,7 @@ public class ChatSpaceConfiguration : IEntityTypeConfiguration<Space>
         builder.Property(x => x.Position).HasColumnName("position").IsRequired();
         builder.Property(x => x.ArchivedAt).HasColumnName("archived_at");
         builder.Property(x => x.LastSequence).HasColumnName("last_sequence").IsRequired().HasDefaultValue(0L);
+        builder.Property(x => x.SlowModeSeconds).HasColumnName("slow_mode_seconds").IsRequired().HasDefaultValue(0);
 
         builder.Ignore(x => x.IsDeleted);
         builder.Ignore(x => x.IsArchived);

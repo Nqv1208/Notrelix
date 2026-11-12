@@ -309,6 +309,8 @@ chat.reaction-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageReactionChan
 chat.reaction-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageReactionChangedDomainEvent|Workspace|Kind|System.String|False
 chat.reaction-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageReactionChangedDomainEvent|Workspace|MessageId|System.Guid|False
 chat.reaction-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageReactionChangedDomainEvent|Workspace|SpaceId|System.Guid|False
+chat.slow-mode-changed|1|Notrelix.Domain.Chat.Spaces.Events.ChannelSlowModeChangedDomainEvent|Workspace|ActorId|System.Guid|False
+chat.slow-mode-changed|1|Notrelix.Domain.Chat.Spaces.Events.ChannelSlowModeChangedDomainEvent|Workspace|SpaceId|System.Guid|False
 collaboration.attachment-created|1|Notrelix.Domain.Collaboration.Attachments.Events.AttachmentCreatedDomainEvent|Workspace|AttachmentId|System.Guid|False
 collaboration.attachment-created|1|Notrelix.Domain.Collaboration.Attachments.Events.AttachmentCreatedDomainEvent|Workspace|Target|Notrelix.Domain.SharedKernel.ResourceRef|False
 collaboration.attachment-deleted|1|Notrelix.Domain.Collaboration.Attachments.Events.AttachmentDeletedDomainEvent|Workspace|AttachmentId|System.Guid|False

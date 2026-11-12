@@ -49,4 +49,10 @@ public static class ChatLimits
     /// UC-CHT-G03). The Workspace limit is not configurable yet, so this is the default.
     /// </summary>
     public const int BroadcastConfirmThreshold = 50;
+
+    /// <summary>
+    /// The longest slow mode a space can set, in seconds (UC-CHT-H08): the minimum time between two messages of one person.
+    /// Zero turns it off.
+    /// </summary>
+    public const int SlowModeMaxSeconds = 3600;
 }
