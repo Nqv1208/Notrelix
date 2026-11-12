@@ -130,8 +130,14 @@ public class GuestAccessHandlerTests
         return message;
     }
 
-    private ListChannelsQueryHandler ListChannels() => new(_db.Object, _context.Object, _members.Object);
-    private GetChannelQueryHandler GetChannel() => new(_db.Object, _context.Object, _members.Object);
+    private static Notrelix.Application.Features.Chat.Links.Services.ChatResourceViews NoLinkViews() => new(
+        new Notrelix.Testing.Application.Fakes.FakeResourceVisibility(),
+        new Mock<Notrelix.Application.Features.Documents.Public.PageViewAccess.IPageViewAccess>().Object,
+        new Mock<Notrelix.Application.Features.Documents.Public.PageTitles.IPageTitleFacts>().Object,
+        new Mock<Notrelix.Application.Features.WorkManagement.Public.BoardTitles.IBoardTitleFacts>().Object);
+
+    private ListChannelsQueryHandler ListChannels() => new(_db.Object, _context.Object, _members.Object, NoLinkViews());
+    private GetChannelQueryHandler GetChannel() => new(_db.Object, _context.Object, _members.Object, NoLinkViews());
 
     private static async Task<NotFoundException> NotFound(Func<Task> call) =>
         (await FluentActions.Awaiting(call).Should().ThrowAsync<NotFoundException>()).Which;

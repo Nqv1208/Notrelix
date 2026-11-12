@@ -28,6 +28,8 @@ public sealed class ChatAuditFacts(IAuditService audit, ICurrentRequestContext r
     public const string MessageModerated = "ChatMessageModerated";
     public const string RetentionChanged = "ChatRetentionChanged";
     public const string ExportRequested = "ChatExportRequested";
+    public const string LinkSet = "ChatChannelLinkSet";
+    public const string LinkCleared = "ChatChannelLinkCleared";
 
     public Task ChannelCreatedAsync(Space space, CancellationToken ct) =>
         RecordAsync(ChannelCreated, ChannelTarget(space), space.WorkspaceId, new AuditChange(null, null, null, new { kind = space.Kind.ToWire(), name = space.Name }), ct);
@@ -52,6 +54,18 @@ public sealed class ChatAuditFacts(IAuditService audit, ICurrentRequestContext r
             ChannelTarget(space),
             space.WorkspaceId,
             new AuditChange(null, null, Describe(before), Describe(after)),
+            ct);
+
+    /// <summary>
+    /// A channel manager linked the channel to a Board, Page or Team, or removed the link (UC-CHT-H10): the link before and after as kind and
+    /// id only, never a title. The linked resource is not changed and writes no fact of its own.
+    /// </summary>
+    public Task ChannelLinkChangedAsync(Space space, string? beforeKind, Guid? beforeId, string? afterKind, Guid? afterId, CancellationToken ct) =>
+        RecordAsync(
+            afterKind is null ? LinkCleared : LinkSet,
+            ChannelTarget(space),
+            space.WorkspaceId,
+            new AuditChange(null, null, beforeKind is null ? null : new { kind = beforeKind, id = beforeId }, afterKind is null ? null : new { kind = afterKind, id = afterId }),
             ct);
 
     /// <summary>

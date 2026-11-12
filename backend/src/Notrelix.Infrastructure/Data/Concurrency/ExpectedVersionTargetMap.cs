@@ -1,5 +1,7 @@
 using Notrelix.Application.Features.Chat.Channels.Commands.ArchiveChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.DeleteChannel;
+using Notrelix.Application.Features.Chat.Channels.Commands.LinkChannel;
+using Notrelix.Application.Features.Chat.Channels.Commands.UnlinkChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.UpdateChannel;
 using Notrelix.Application.Features.Chat.ChannelGroups.Commands.DeleteChannelGroup;
 using Notrelix.Application.Features.Chat.ChannelGroups.Commands.UpdateChannelGroup;
@@ -374,6 +376,8 @@ public sealed class ExpectedVersionTargetMap
         [typeof(ModerateDeleteMessageCommand)] = new(ChatMessageKind, typeof(Notrelix.Domain.Chat.Messages.Message)),
         [typeof(SetChannelPermissionsCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
         [typeof(ClearChannelPermissionsCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
+        [typeof(LinkChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
+        [typeof(UnlinkChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
         [typeof(SetRetentionPolicyCommand)] = new(ChatRetentionKind, typeof(Notrelix.Domain.Chat.Retention.RetentionPolicy)),
         [typeof(DeleteChannelGroupCommand)] = new(ChatChannelGroupKind, typeof(Notrelix.Domain.Chat.Spaces.ChannelGroup)),
 

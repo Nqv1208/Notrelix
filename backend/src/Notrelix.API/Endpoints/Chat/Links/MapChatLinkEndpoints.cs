@@ -1,5 +1,6 @@
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Chat.Links.DTOs;
+using Notrelix.Application.Features.Chat.Links.Queries.ListLinkedChannels;
 using Notrelix.Application.Features.Chat.Links.Queries.ResolveLink;
 
 namespace Notrelix.API.Endpoints.Chat.Links;
@@ -24,7 +25,20 @@ public static class MapChatLinkEndpoints
             .Produces<LinkPreviewDto>(StatusCodes.Status200OK)
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden);
 
+        group.MapWorkspaceGet("/links/linked-channels", ListLinkedAsync)
+            .WithName("Chat.Channels.ListLinked")
+            .WithSummary("List the channels linked to a Board or a Page that the caller can see")
+            .WithDescription("kind is work-management.board or documents.page and id the resource. Only channels the caller can see are returned (a public channel, or any channel the caller is in); a caller who cannot view the resource gets an empty list. Nothing is changed.")
+            .Produces<IReadOnlyList<LinkedChannelDto>>(StatusCodes.Status200OK)
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden);
+
         return app;
+    }
+
+    private static async Task<IResult> ListLinkedAsync(Guid workspaceId, string kind, Guid id, ISender sender)
+    {
+        var result = await sender.Send(new ListLinkedChannelsQuery(workspaceId, kind, id));
+        return result.ToApiResult();
     }
 
     private static async Task<IResult> ResolveAsync(Guid workspaceId, string? url, string? kind, Guid? resourceId, ISender sender)

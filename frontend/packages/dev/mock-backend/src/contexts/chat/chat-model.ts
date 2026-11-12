@@ -27,6 +27,8 @@ export interface ChatSpaceRecord {
   deletedAt: string | null;
   /** The least seconds between two messages of one person (UC-CHT-H08); absent or 0 is off. */
   slowModeSeconds?: number;
+  /** The Board or Page this channel is linked to (UC-CHT-H10); absent or null when not linked. */
+  link?: { readonly kind: string; readonly resourceId: string } | null;
   /** Sequence of the last message stored in the space; starts at 0. */
   lastSequence: number;
   version: number;
@@ -290,4 +292,27 @@ export interface ChatExportJobRecord {
   completedAt: string | null;
   expiresAt: string | null;
   file: string | null;
+}
+
+/** One digest email the mock queued (UC-CHT-H09): what the backend writes to the shared email outbox, with no mail sent. */
+export interface ChatDigestMail {
+  readonly workspaceId: string;
+  readonly userId: string;
+  /** The window the digest reports, as yyyyMMddHHmm of its start (UTC). */
+  readonly windowKey: string;
+  readonly subject: string;
+  /** The newest items first, at most the cap. */
+  readonly lines: readonly {
+    readonly spaceId: string;
+    readonly spaceName: string;
+    readonly messageId: string;
+    readonly reason:
+      "mention" | "direct-message" | "thread-reply" | "broadcast";
+    readonly excerpt: string | null;
+    /** The deep link: the space path only (there is no message-level route). */
+    readonly path: string;
+  }[];
+  /** The items past the cap: "and N more". */
+  readonly more: number;
+  readonly createdAt: string;
 }

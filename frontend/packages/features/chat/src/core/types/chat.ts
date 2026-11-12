@@ -149,6 +149,35 @@ export interface ChatChannel {
   readonly slowModeSeconds?: number;
   /** What the caller can do here; absent from older servers (the UI then keeps today's behaviour). */
   readonly capabilities?: ChatChannelCapabilities;
+  /** The Board, Page or Team this channel is linked to (UC-CHT-H10); absent or null when it is not linked. */
+  readonly link?: ChatChannelLink | null;
+}
+
+/**
+ * ChannelLinkDto: where a channel is discussed from. `title` is there only when the viewer can view the resource now;
+ * `accessible` false is the generic chip (hidden, deleted and missing look the same).
+ */
+export interface ChatChannelLink {
+  readonly kind: ChatLinkKind;
+  readonly resourceId: string;
+  readonly accessible: boolean;
+  readonly title: string | null;
+}
+
+/** LinkedChannelDto: one channel linked to a resource, as the reverse lookup lists it (only channels the caller can see). */
+export interface ChatLinkedChannel {
+  readonly id: string;
+  readonly name: string;
+  readonly kind: ChatChannelKind;
+  readonly isMember: boolean;
+  readonly isArchived: boolean;
+}
+
+/** The body of `PUT .../channels/{id}/link`. */
+export interface ChatLinkChannelInput {
+  readonly kind: ChatLinkKind;
+  readonly resourceId: string;
+  readonly expectedVersion: number;
 }
 
 export interface ChatChannelMember {
@@ -241,7 +270,11 @@ export interface ChatReactorPage {
 }
 
 /** The kinds of resource a message link can point to (the ResourceRef kind of the producer). */
-export type ChatLinkKind = "work-management.board-item" | "documents.page";
+export type ChatLinkKind =
+  | "work-management.board-item"
+  | "work-management.board"
+  | "documents.page"
+  | "governance.team";
 
 /** What names a link to resolve: a product URL of this Workspace, or its ResourceRef. */
 export type ChatLinkRef =

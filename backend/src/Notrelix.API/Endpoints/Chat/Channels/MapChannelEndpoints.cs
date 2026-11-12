@@ -3,7 +3,9 @@ using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Chat.Channels.Commands.ArchiveChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.CreateChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.DeleteChannel;
+using Notrelix.Application.Features.Chat.Channels.Commands.LinkChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.ReorderChannels;
+using Notrelix.Application.Features.Chat.Channels.Commands.UnlinkChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.UpdateChannel;
 using Notrelix.Application.Features.Chat.Channels.DTOs;
 using Notrelix.Application.Features.Chat.Channels.Queries.GetChannel;
@@ -50,6 +52,18 @@ public static class MapChannelEndpoints
             .WithName("Chat.Channels.Update")
             .WithSummary("Rename a channel, set its topic or its slow mode")
             .WithDescription("Needs a channel manager, a Workspace Owner or Admin. slowModeSeconds (0 to 3600) is the least time between two messages of one person; 0 turns it off and a request that leaves it out keeps it; a change is announced to the channel as chat.space.changed with the change slow-mode. A stale expectedVersion is 412; an archived channel is 409 channel-archived.")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict, StatusCodes.Status412PreconditionFailed);
+
+        group.MapWorkspacePut("/{channelId:guid}/link", LinkAsync)
+            .WithName("Chat.Channels.Link")
+            .WithSummary("Link a channel to a Board or a Page")
+            .WithDescription("Needs a channel manager, a Workspace Owner or Admin who can also view the resource now: kind is work-management.board or documents.page (a Team cannot be linked yet) and resourceId its id. A resource the caller cannot view, trashed or missing is 403. The resource is never changed. A channel has one link; a second replaces it, and the same link is a no-op. The change is announced to the channel as chat.space.changed with the change link. A stale expectedVersion is 412; an archived channel is 409 channel-archived.")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict, StatusCodes.Status412PreconditionFailed);
+
+        group.MapWorkspaceDelete("/{channelId:guid}/link", UnlinkAsync)
+            .WithName("Chat.Channels.Unlink")
+            .WithSummary("Remove the link of a channel")
+            .WithDescription("Needs a channel manager, a Workspace Owner or Admin. The resource is not touched and need not be viewable. A channel with no link answers as it is. Pass expectedVersion as a query parameter; 412 when it is stale.")
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict, StatusCodes.Status412PreconditionFailed);
 
         group.MapWorkspacePost("/{channelId:guid}/archive", ArchiveAsync)
@@ -108,6 +122,24 @@ public static class MapChannelEndpoints
             return EndpointExtensions.InvalidInput("expectedVersion is required.");
 
         var result = await sender.Send(new UpdateChannelCommand(workspaceId, channelId, body.Name, body.Topic, expectedVersion, body.SlowModeSeconds));
+        return result.ToApiResult();
+    }
+
+    private static async Task<IResult> LinkAsync(Guid workspaceId, Guid channelId, LinkChannelRequest body, ISender sender)
+    {
+        if (body.ExpectedVersion is not { } expectedVersion)
+            return EndpointExtensions.InvalidInput("expectedVersion is required.");
+
+        var result = await sender.Send(new LinkChannelCommand(workspaceId, channelId, body.Kind, body.ResourceId, expectedVersion));
+        return result.ToApiResult();
+    }
+
+    private static async Task<IResult> UnlinkAsync(Guid workspaceId, Guid channelId, [FromQuery] long? expectedVersion, ISender sender)
+    {
+        if (expectedVersion is not { } version)
+            return EndpointExtensions.InvalidInput("expectedVersion is required as a query parameter.");
+
+        var result = await sender.Send(new UnlinkChannelCommand(workspaceId, channelId, version));
         return result.ToApiResult();
     }
 

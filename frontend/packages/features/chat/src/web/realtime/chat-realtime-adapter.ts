@@ -422,6 +422,20 @@ export function createChatRealtimeAdapter(
         }),
       ]).then(() => undefined);
     }
+    if (frame.change === "link") {
+      // The link rides on the channel views and the reverse lists (UC-CHT-H10): all are read again.
+      return Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.channel(workspaceId, channelId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.channels(workspaceId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.allLinkedChannels(workspaceId),
+        }),
+      ]).then(() => undefined);
+    }
     if (frame.change === "slow-mode") {
       // The slow mode rides on the channel views (UC-CHT-H08): the composer's indicator follows them.
       return Promise.all([

@@ -9,6 +9,9 @@ public record CreateChannelRequest(string Name, string? Topic, bool IsPrivate, G
 /// </summary>
 public record UpdateChannelRequest(string Name, string? Topic, long? ExpectedVersion, int? SlowModeSeconds = null);
 
+/// <summary>Links a channel to a Board or Page by kind (work-management.board or documents.page) and id, with the version the client read (UC-CHT-H10).</summary>
+public record LinkChannelRequest(string Kind, Guid ResourceId, long? ExpectedVersion);
+
 /// <summary>Archives (true) or unarchives (false) a channel, with the version the client read.</summary>
 public record ArchiveChannelRequest(bool? Archived, long? ExpectedVersion);
 

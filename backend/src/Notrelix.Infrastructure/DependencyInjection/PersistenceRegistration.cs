@@ -158,6 +158,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.Documents.Blocks.PostgresPageBlockWriteLock>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.SpacePlacement.IBoardSpacePlacementFacts,
             global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.BoardSpacePlacementFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.BoardTitles.IBoardTitleFacts,
+            global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.BoardTitleFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Public.SpacePlacement.IPageSpacePlacementFacts,
             global::Notrelix.Infrastructure.CrossContext.Workspaces.Documents.PageSpacePlacementFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Public.PageTitles.IPageTitleFacts,
@@ -234,6 +236,7 @@ public static class PersistenceRegistration
         services.AddScoped<global::Notrelix.Application.Features.Identity.OAuth.Abstractions.IOAuthIdentityProbe, Notrelix.Infrastructure.Identity.OAuth.OAuthIdentityProbe>();
         services.AddScoped<global::Notrelix.Application.Features.Identity.Registration.Ports.IEmailRegistrationProbe, Notrelix.Infrastructure.Identity.Registration.EmailRegistrationProbe>();
         services.AddScoped<global::Notrelix.Application.Features.Identity.Users.Ports.IMemberEmailReadPort, Notrelix.Infrastructure.Identity.Users.MemberEmailReader>();
+        services.AddScoped<global::Notrelix.Application.Features.Identity.Public.DeliveryAddresses.IMemberDeliveryAddresses, Notrelix.Infrastructure.Identity.Users.MemberDeliveryAddresses>();
         services.AddScoped<global::Notrelix.Application.Features.Identity.Profiles.Ports.IAvatarStorageKeyReadPort, Notrelix.Infrastructure.Identity.Profiles.AvatarStorageKeyLookup>();
         services.AddScoped<Notrelix.Application.Features.Governance.Abstractions.IResourceAccessChangeReader, Notrelix.Infrastructure.Data.Authz.EfResourceAccessChangeReader>();
         services.AddScoped(sp => ActivatorUtilities.CreateInstance<ApplicationDbContextInitialiser>(

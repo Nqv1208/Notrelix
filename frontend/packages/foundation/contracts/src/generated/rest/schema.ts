@@ -589,6 +589,30 @@ export interface paths {
         patch: operations["Chat.Channels.Reorder"];
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/chat/channels/{channelId}/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Link a channel to a Board or a Page
+         * @description Needs a channel manager, a Workspace Owner or Admin who can also view the resource now: kind is work-management.board or documents.page (a Team cannot be linked yet) and resourceId its id. A resource the caller cannot view, trashed or missing is 403. The resource is never changed. A channel has one link; a second replaces it, and the same link is a no-op. The change is announced to the channel as chat.space.changed with the change link. A stale expectedVersion is 412; an archived channel is 409 channel-archived.
+         */
+        put: operations["Chat.Channels.Link"];
+        post?: never;
+        /**
+         * Remove the link of a channel
+         * @description Needs a channel manager, a Workspace Owner or Admin. The resource is not touched and need not be viewable. A channel with no link answers as it is. Pass expectedVersion as a query parameter; 412 when it is stale.
+         */
+        delete: operations["Chat.Channels.Unlink"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/chat/channels/{channelId}/archive": {
         parameters: {
             query?: never;
@@ -765,6 +789,26 @@ export interface paths {
          * @description Send either url (a product URL of this Workspace, at most 2048 characters: /workspaces/{id}/boards/{id}?item={id} or /workspaces/{id}/docs/{id}) or kind (work-management.board-item or documents.page) with resourceId. The title is returned only when the caller can view the resource now; otherwise accessible is false and there is no title, the same answer whether the resource is hidden, trashed or missing. A URL that is not a Board item or Page of this Workspace is 400. Nothing is changed or granted.
          */
         get: operations["Chat.Links.Resolve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/links/linked-channels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the channels linked to a Board or a Page that the caller can see
+         * @description kind is work-management.board or documents.page and id the resource. Only channels the caller can see are returned (a public channel, or any channel the caller is in); a caller who cannot view the resource gets an empty list. Nothing is changed.
+         */
+        get: operations["Chat.Channels.ListLinked"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7871,6 +7915,13 @@ export interface components {
             following?: boolean | null;
             muted?: boolean | null;
         };
+        "Notrelix.API.Contracts.Chat.Requests.LinkChannelRequest": {
+            kind?: string | null;
+            /** Format: uuid */
+            resourceId?: string;
+            /** Format: int64 */
+            expectedVersion?: number | null;
+        };
         "Notrelix.API.Contracts.Chat.Requests.MarkSpaceReadRequest": {
             /** Format: int64 */
             upToSequence?: number | null;
@@ -9535,6 +9586,14 @@ export interface components {
             resourceId?: string;
             accessible?: boolean;
             title?: string | null;
+        };
+        "Notrelix.Application.Features.Chat.Links.DTOs.LinkedChannelDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            kind?: string | null;
+            isMember?: boolean;
+            isArchived?: boolean;
         };
         "Notrelix.Application.Features.Chat.Mentions.DTOs.MentionableDto": {
             /** Format: uuid */
@@ -13581,6 +13640,148 @@ export interface operations {
             };
         };
     };
+    "Chat.Channels.Link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                channelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.LinkChannelRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Channels.Unlink": {
+        parameters: {
+            query?: {
+                expectedVersion?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+                channelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
     "Chat.Channels.Archive": {
         parameters: {
             query?: never;
@@ -14109,6 +14310,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Links.DTOs.LinkPreviewDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Channels.ListLinked": {
+        parameters: {
+            query: {
+                kind: string;
+                id: string;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Links.DTOs.LinkedChannelDto"][];
                 };
             };
             /** @description Bad Request */

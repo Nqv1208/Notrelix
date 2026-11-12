@@ -26,9 +26,12 @@ public class ChatSpaceConfiguration : IEntityTypeConfiguration<Space>
         builder.Property(x => x.ArchivedAt).HasColumnName("archived_at");
         builder.Property(x => x.LastSequence).HasColumnName("last_sequence").IsRequired().HasDefaultValue(0L);
         builder.Property(x => x.SlowModeSeconds).HasColumnName("slow_mode_seconds").IsRequired().HasDefaultValue(0);
+        builder.Property(x => x.LinkKind).HasColumnName("link_kind").HasMaxLength(40);
+        builder.Property(x => x.LinkId).HasColumnName("link_id");
 
         builder.Ignore(x => x.IsDeleted);
         builder.Ignore(x => x.IsArchived);
+        builder.Ignore(x => x.HasLink);
         builder.Ignore(x => x.IsPublic);
         builder.Ignore(x => x.IsPrivate);
         builder.Ignore(x => x.IsConversation);
@@ -58,6 +61,9 @@ public class ChatSpaceConfiguration : IEntityTypeConfiguration<Space>
             .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasIndex(x => new { x.WorkspaceId, x.Kind }).HasDatabaseName("idx_spaces_workspace_kind");
+        builder.HasIndex(x => new { x.WorkspaceId, x.LinkKind, x.LinkId })
+            .HasDatabaseName("idx_spaces_workspace_link")
+            .HasFilter("link_id IS NOT NULL AND deleted_at IS NULL");
 
         // A name is unique among the channels that are live: not archived and not deleted. Conversations carry no channel name
         // (a direct one has none, a group one may share a channel's name), so only the channel kinds take part.

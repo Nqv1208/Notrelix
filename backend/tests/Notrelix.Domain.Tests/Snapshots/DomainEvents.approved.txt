@@ -263,6 +263,8 @@ billing.workspace-feature-usage-limits-reconfigured|1|Notrelix.Domain.Billing.Us
 billing.workspace-feature-usage-limits-reconfigured|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageLimitsReconfiguredDomainEvent|Workspace|HardLimit|System.Decimal|True
 billing.workspace-feature-usage-limits-reconfigured|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageLimitsReconfiguredDomainEvent|Workspace|SoftLimit|System.Decimal|True
 billing.workspace-feature-usage-reset|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageResetDomainEvent|Workspace|Feature|Notrelix.Domain.Billing.Plans.FeatureCode|False
+chat.link-changed|1|Notrelix.Domain.Chat.Spaces.Events.ChannelLinkChangedDomainEvent|Workspace|ActorId|System.Guid|False
+chat.link-changed|1|Notrelix.Domain.Chat.Spaces.Events.ChannelLinkChangedDomainEvent|Workspace|SpaceId|System.Guid|False
 chat.message-attachment-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageAttachmentChangedDomainEvent|Workspace|ActorId|System.Guid|False
 chat.message-attachment-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageAttachmentChangedDomainEvent|Workspace|Added|System.Boolean|False
 chat.message-attachment-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageAttachmentChangedDomainEvent|Workspace|AttachmentCreatedAt|System.DateTimeOffset|True

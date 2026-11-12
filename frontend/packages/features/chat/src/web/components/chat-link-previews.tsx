@@ -12,11 +12,20 @@ import { fillCopy } from "./use-chat-copy";
 const CHIP =
   "inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-1 text-xs";
 
-function kindLabel(kind: ChatLinkKind, copy: ChatCopy): string {
-  return kind === "documents.page" ? copy.links.page : copy.links.item;
+export function kindLabel(kind: ChatLinkKind, copy: ChatCopy): string {
+  switch (kind) {
+    case "documents.page":
+      return copy.links.page;
+    case "work-management.board":
+      return copy.links.board;
+    case "governance.team":
+      return copy.links.team;
+    default:
+      return copy.links.item;
+  }
 }
 
-function KindIcon({ kind }: { readonly kind: ChatLinkKind }) {
+export function KindIcon({ kind }: { readonly kind: ChatLinkKind }) {
   const Icon = kind === "documents.page" ? FileText : SquareKanban;
   return <Icon className="size-3.5 shrink-0" aria-hidden="true" />;
 }

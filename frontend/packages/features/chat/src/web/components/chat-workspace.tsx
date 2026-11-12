@@ -51,6 +51,7 @@ import {
 import {
   CHAT_LIMITS,
   type ChatChannel,
+  type ChatLinkKind,
   type ChatMentionPayload,
   type ChatConversation,
   type ChatStartConversationInput,
@@ -99,6 +100,7 @@ import {
   type CreateChannelValues,
 } from "./chat-dialogs";
 import { ChatPermissionsDialog } from "./chat-permissions-dialog";
+import { ChatLinkDialog } from "./chat-resource-link";
 import { ChatAdminSettings } from "./chat-admin-settings-host";
 import { ChatNewMessageDialog } from "./chat-new-message-dialog";
 import {
@@ -250,6 +252,8 @@ export function ChatWorkspace({
   const canManageWorkspace = viewerRole === "owner" || viewerRole === "admin";
 
   const [permissionsOpen, setPermissionsOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
   const [adminOpen, setAdminOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [jump, setJump] = useState<SearchJump | null>(null);
@@ -361,6 +365,8 @@ export function ChatWorkspace({
   const deleter = hooks.useDeleteMessage(ws, ch);
   const moderator = hooks.useModerateMessage(ws, ch);
   const permissionsWriter = hooks.useSetChannelPermissions(ws, ch);
+  const linker = hooks.useLinkChannel(ws, ch);
+  const unlinker = hooks.useUnlinkChannel(ws, ch);
   const reader = hooks.useMarkRead(ws);
   const levelWriter = hooks.useSetNotificationLevel(ws);
   const starter = hooks.useStartConversation(ws);
@@ -752,6 +758,43 @@ export function ChatWorkspace({
         },
       },
     );
+  }
+
+  function handleLink(target: { kind: ChatLinkKind; resourceId: string }) {
+    if (!channel) return;
+    setLinkError(null);
+    linker.mutate(
+      { ...target, expectedVersion: channel.version },
+      {
+        onSuccess: () => {
+          setLinkOpen(false);
+          setNotice(copy.resourceLink.saved);
+        },
+        onError: (error) => {
+          const kind = chatFailureOf(error).kind;
+          setLinkError(
+            kind === "stale"
+              ? copy.resourceLink.dialog.stale
+              : kind === "forbidden"
+                ? copy.resourceLink.dialog.forbidden
+                : copy.resourceLink.dialog.failed,
+          );
+        },
+      },
+    );
+  }
+
+  function handleUnlink() {
+    if (!channel) return;
+    unlinker.mutate(channel.version, {
+      onSuccess: () => setNotice(copy.resourceLink.unlinked),
+      onError: (error) =>
+        setNotice(
+          chatFailureOf(error).kind === "stale"
+            ? copy.resourceLink.unlinkStale
+            : copy.resourceLink.unlinkFailed,
+        ),
+    });
   }
 
   function handleSavePermissions(
@@ -1334,6 +1377,20 @@ export function ChatWorkspace({
                         setPermissionsError(null);
                         setPermissionsOpen(true);
                       }}
+                      workspaceId={ws}
+                      onLinkResource={
+                        canManage && !channel.isArchived
+                          ? () => {
+                              setLinkError(null);
+                              setLinkOpen(true);
+                            }
+                          : undefined
+                      }
+                      onUnlinkResource={
+                        canManage && !channel.isArchived
+                          ? handleUnlink
+                          : undefined
+                      }
                       onJoin={() => handleJoin(ch)}
                       onSearch={() => setSearchOpen(true)}
                       onSetLevel={handleLevel}
@@ -1914,6 +1971,19 @@ export function ChatWorkspace({
               onOpenChange={setPermissionsOpen}
               onRetry={() => void permissionsQuery.refetch()}
               onSave={handleSavePermissions}
+            />
+          ) : null}
+          {channel ? (
+            <ChatLinkDialog
+              key={`${channel.id}:${linkOpen ? "open" : "closed"}`}
+              open={linkOpen}
+              copy={copy}
+              workspaceId={ws}
+              hooks={hooks}
+              busy={linker.isPending}
+              error={linkError}
+              onOpenChange={setLinkOpen}
+              onConfirm={handleLink}
             />
           ) : null}
           <ChatSearchPanel

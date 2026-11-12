@@ -35,6 +35,14 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
     /// </summary>
     public int SlowModeSeconds { get; private set; }
 
+    /// <summary>The kind of the product resource the channel is linked to (UC-CHT-H10, CHT-023), or null. See <see cref="ChannelLinkKinds"/>.</summary>
+    public string? LinkKind { get; private set; }
+
+    /// <summary>The id of the product resource the channel is linked to, or null. The link is a reference only: the resource is never changed.</summary>
+    public Guid? LinkId { get; private set; }
+
+    public bool HasLink => LinkKind is not null && LinkId is not null;
+
     /// <summary>The sequence of the last message stored in the space. Starts at 0; system messages (S1.2) advance it.</summary>
     public long LastSequence { get; private set; }
 
@@ -313,6 +321,47 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         RaiseDomainEvent(new ChannelRetentionAppliedDomainEvent(AccountId, WorkspaceId, Id, appliedAt));
+    }
+
+    /// <summary>
+    /// Links the channel to a Board, Page or Team by reference (UC-CHT-H10, CHT-023). A channel has at most one link; setting another
+    /// replaces it. Only a live, unarchived channel is linked. Returns false and changes nothing when it already holds this link.
+    /// </summary>
+    public bool SetLink(string kind, Guid resourceId, Guid changedBy, DateTimeOffset changedAt)
+    {
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(changedBy);
+        if (IsConversation)
+            throw new BusinessRuleException(ChatRuleCodes.LinkInvalid, "Only a channel can be linked to a resource.");
+        if (!ChannelLinkKinds.IsKnown(kind) || resourceId == Guid.Empty)
+            throw new BusinessRuleException(ChatRuleCodes.LinkInvalid, "A link names a Board, a Page or a Team by kind and id.");
+        if (HasLink && LinkKind == kind && LinkId == resourceId) return false;
+
+        var pending = PrepareAuditUpdate(changedBy, changedAt);
+        LinkKind = kind;
+        LinkId = resourceId;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new ChannelLinkChangedDomainEvent(AccountId, WorkspaceId, Id, changedBy, changedAt));
+        return true;
+    }
+
+    /// <summary>Removes the channel's link (UC-CHT-H10). Returns false and changes nothing when there is none.</summary>
+    public bool ClearLink(Guid changedBy, DateTimeOffset changedAt)
+    {
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(changedBy);
+        if (!HasLink) return false;
+
+        var pending = PrepareAuditUpdate(changedBy, changedAt);
+        LinkKind = null;
+        LinkId = null;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new ChannelLinkChangedDomainEvent(AccountId, WorkspaceId, Id, changedBy, changedAt));
+        return true;
     }
 
     /// <summary>Moves the channel in the sidebar. Returns false when it already sits there.</summary>
