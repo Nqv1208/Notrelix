@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using System.Security.Cryptography;
 using Notrelix.Application.Common.SystemOperations;
 using Notrelix.Application.Features.Chat.Retention.Services;
 using Notrelix.Infrastructure.Data;

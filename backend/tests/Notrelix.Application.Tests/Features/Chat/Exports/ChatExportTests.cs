@@ -14,7 +14,6 @@ using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Rules;
 using Notrelix.Domain.Chat.Spaces;
 using Notrelix.Domain.Common.Auditing;
-using Notrelix.Testing.Application.Fakes;
 using Notrelix.Application.Tests.Features.Collaboration;
 using AppNotFoundException = Notrelix.Application.Common.Exceptions.NotFoundException;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
