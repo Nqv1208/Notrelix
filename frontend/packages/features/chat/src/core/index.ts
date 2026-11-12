@@ -25,3 +25,4 @@ export * from "./model/conversation-model";
 export * from "./model/mention-model";
 export * from "./model/ephemeral-model";
 export * from "./model/attachment-model";
+export * from "./model/permission-model";

@@ -80,6 +80,8 @@ export interface ChatMessageListProps {
   readonly onEditSave: () => void;
   readonly onEditCancel: () => void;
   readonly onDelete: (message: ChatMessage) => void;
+  /** Delete as a moderator: set only when the caller may moderate this channel. */
+  readonly onModerate?: (message: ChatMessage) => void;
   readonly onRetryPending: (pending: PendingMessage) => void;
   readonly onDiscardPending: (clientMessageId: string) => void;
   readonly pendingEntries: readonly PendingMessage[];
@@ -408,6 +410,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
                     copy={copy}
                     onEdit={props.onEdit}
                     onDelete={props.onDelete}
+                    onModerate={props.onModerate}
                     quote={props.quoteOf?.(row.message) ?? null}
                     thread={threadView(props.threadCounts, row.message.id)}
                     pinned={props.pinnedIds?.has(row.message.id) ?? false}

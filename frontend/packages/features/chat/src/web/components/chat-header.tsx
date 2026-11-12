@@ -7,6 +7,7 @@ import {
   Lock,
   Pencil,
   Settings,
+  ShieldCheck,
   Users,
 } from "lucide-react";
 import {
@@ -51,6 +52,9 @@ export interface ChatHeaderProps {
   readonly onOpenList: () => void;
   readonly onRename: () => void;
   readonly onToggleArchive: () => void;
+  /** Whether the caller may open the channel's permissions (a manager, an Owner or an Admin of a live channel). */
+  readonly canManagePermissions?: boolean;
+  readonly onPermissions?: () => void;
   readonly onJoin: () => void;
   readonly onSetLevel: (level: ChatNotificationLevel) => void;
 }
@@ -75,6 +79,8 @@ export function ChatHeader({
   onOpenList,
   onRename,
   onToggleArchive,
+  canManagePermissions = false,
+  onPermissions,
   onJoin,
   onSetLevel,
 }: ChatHeaderProps) {
@@ -239,6 +245,12 @@ export function ChatHeader({
                 <Pencil aria-hidden="true" />
                 {copy.header.rename}
               </DropdownMenuItem>
+              {canManagePermissions && onPermissions ? (
+                <DropdownMenuItem onSelect={onPermissions}>
+                  <ShieldCheck aria-hidden="true" />
+                  {copy.header.permissions}
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={onToggleArchive}>
                 {channel.isArchived ? (

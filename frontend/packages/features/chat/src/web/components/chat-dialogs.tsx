@@ -11,6 +11,7 @@ import {
   Button,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -260,5 +261,106 @@ export function ConfirmDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+export interface ModerateMessageDialogProps {
+  readonly open: boolean;
+  readonly busy: boolean;
+  /** An error from the last attempt, already worded for the user. */
+  readonly error: string | null;
+  readonly copy: ChatCopy;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly onSubmit: (reason: string) => void;
+}
+
+/**
+ * Delete another person's message as a moderator (UC-CHT-H03). The reason is required (1 to 500 characters); it goes to the Audit
+ * record, never onto the message.
+ */
+export function ModerateMessageDialog({
+  open,
+  busy,
+  error,
+  copy,
+  onOpenChange,
+  onSubmit,
+}: ModerateMessageDialogProps) {
+  const [reason, setReason] = useState("");
+  const trimmed = reason.trim();
+  const text = copy.moderation;
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (trimmed.length === 0 || busy) return;
+    onSubmit(trimmed);
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) setReason("");
+        onOpenChange(next);
+      }}
+    >
+      <DialogContent>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle>{text.title}</DialogTitle>
+            <DialogDescription>{text.body}</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="chat-moderate-reason">{text.reasonLabel}</Label>
+            <Textarea
+              id="chat-moderate-reason"
+              value={reason}
+              maxLength={CHAT_LIMITS.moderationReasonMaxLength}
+              onChange={(event) => setReason(event.target.value)}
+              rows={3}
+              autoFocus
+              required
+              aria-describedby="chat-moderate-reason-hint"
+            />
+            <p
+              id="chat-moderate-reason-hint"
+              className="text-xs text-muted-foreground"
+            >
+              {text.reasonHint.replace(
+                "{{max}}",
+                String(CHAT_LIMITS.moderationReasonMaxLength),
+              )}{" "}
+              {text.counter
+                .replace("{{count}}", String(reason.length))
+                .replace(
+                  "{{max}}",
+                  String(CHAT_LIMITS.moderationReasonMaxLength),
+                )}
+            </p>
+          </div>
+          {error ? (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          ) : null}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+            >
+              {text.cancel}
+            </Button>
+            <Button
+              type="submit"
+              variant="destructive"
+              disabled={trimmed.length === 0 || busy}
+            >
+              {text.confirm}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

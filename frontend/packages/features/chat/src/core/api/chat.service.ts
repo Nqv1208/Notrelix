@@ -18,6 +18,8 @@ import type {
   ChatMessageReactions,
   ChatNotificationLevel,
   ChatNotificationState,
+  ChatChannelPermissions,
+  ChatPermissionEntry,
   ChatPin,
   ChatPinPage,
   ChatReactorPage,
@@ -110,6 +112,8 @@ export interface ChatEndpoints {
     ) => string;
     messagePin: (workspaceId: string, messageId: string) => string;
     spacePins: (workspaceId: string, spaceId: string) => string;
+    channelPermissions: (workspaceId: string, channelId: string) => string;
+    messageModeration: (workspaceId: string, messageId: string) => string;
     messageReaction: (
       workspaceId: string,
       messageId: string,
@@ -480,6 +484,56 @@ export function createChatService(
           cursor: cursor ?? undefined,
           limit,
         }),
+      );
+    },
+
+    /** `Chat.Permissions.Get`: the overrides of a channel; any member who can see it reads them. */
+    getChannelPermissions(
+      workspaceId: string,
+      channelId: string,
+    ): Promise<ChatChannelPermissions> {
+      return api.get<ChatChannelPermissions>(
+        paths.channelPermissions(workspaceId, channelId),
+      );
+    },
+
+    /** `Chat.Permissions.Set`: the set is the whole truth; a stale expectedVersion is 412. */
+    setChannelPermissions(
+      workspaceId: string,
+      channelId: string,
+      input: {
+        entries: readonly ChatPermissionEntry[];
+        expectedVersion: number;
+      },
+    ): Promise<ChatChannelPermissions> {
+      return api.put<ChatChannelPermissions>(
+        paths.channelPermissions(workspaceId, channelId),
+        { entries: [...input.entries], expectedVersion: input.expectedVersion },
+      );
+    },
+
+    /** `Chat.Permissions.Delete`: every role back on its default; the version travels in the query string. */
+    clearChannelPermissions(
+      workspaceId: string,
+      channelId: string,
+      expectedVersion: number,
+    ): Promise<ChatChannelPermissions> {
+      return api.delete<ChatChannelPermissions>(
+        withQuery(paths.channelPermissions(workspaceId, channelId), {
+          expectedVersion,
+        }),
+      );
+    },
+
+    /** `Chat.Messages.Moderate`: removes another person's message; the reason goes to the Audit record. */
+    moderateDeleteMessage(
+      workspaceId: string,
+      messageId: string,
+      input: { reason: string; expectedVersion: number },
+    ): Promise<void> {
+      return api.post<void>(
+        paths.messageModeration(workspaceId, messageId),
+        input,
       );
     },
 

@@ -532,4 +532,36 @@ describe("ChatRealtimeAdapter: threads, reactions and pins", () => {
     expect(spy).toHaveBeenCalledWith({ queryKey: chatQueryKeys.pins(WS, CH) });
     expect(invalidateQueries).not.toHaveBeenCalled();
   });
+
+  it("a permissions frame reads the channel, the channel list and the permissions again, not the pins", async () => {
+    const { adapter, context, queryClient } = setup([]);
+    const spy = vi.spyOn(queryClient, "invalidateQueries");
+    await adapter.validateAndHandle(
+      envelope("chat.space.changed", {
+        messageId: "00000000-0000-0000-0000-000000000000",
+        change: "permissions",
+      }),
+      context,
+    );
+    expect(spy).toHaveBeenCalledWith({
+      queryKey: chatQueryKeys.channel(WS, CH),
+    });
+    expect(spy).toHaveBeenCalledWith({ queryKey: chatQueryKeys.channels(WS) });
+    expect(spy).toHaveBeenCalledWith({
+      queryKey: chatQueryKeys.permissions(WS, CH),
+    });
+    expect(spy).not.toHaveBeenCalledWith({
+      queryKey: chatQueryKeys.pins(WS, CH),
+    });
+  });
+
+  it("a space frame with an unknown change is ignored", async () => {
+    const { adapter, context, queryClient } = setup([]);
+    const spy = vi.spyOn(queryClient, "invalidateQueries");
+    await adapter.validateAndHandle(
+      envelope("chat.space.changed", { messageId: "m-1", change: "renamed" }),
+      context,
+    );
+    expect(spy).not.toHaveBeenCalled();
+  });
 });

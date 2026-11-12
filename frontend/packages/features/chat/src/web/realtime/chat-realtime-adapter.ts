@@ -318,6 +318,20 @@ export function createChatRealtimeAdapter(
       ? null
       : parseChatSpaceFrame(envelope.payload);
     if (!frame) return Promise.resolve();
+    if (frame.change === "permissions") {
+      // The capabilities ride on the channel views and the overrides have their own read: both are read again.
+      return Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.channel(workspaceId, channelId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.channels(workspaceId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.permissions(workspaceId, channelId),
+        }),
+      ]).then(() => undefined);
+    }
     return queryClient
       .invalidateQueries({
         queryKey: chatQueryKeys.pins(workspaceId, channelId),

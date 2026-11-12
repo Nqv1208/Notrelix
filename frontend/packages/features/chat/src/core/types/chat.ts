@@ -19,6 +19,8 @@ export const CHAT_LIMITS = {
   clientMessageIdMaxLength: 128,
   channelNameMaxLength: 80,
   channelTopicMaxLength: 250,
+  /** The reason of a moderator delete (ChatLimits.ModerationReasonMaxLength). */
+  moderationReasonMaxLength: 500,
   pageSize: 50,
   pageSizeMax: 100,
   /** The most mentions one message holds (ChatLimits.MentionsPerMessageMax). */
@@ -80,6 +82,53 @@ export interface ChatMentionables {
   readonly memberCount: number;
 }
 
+/** The roles a channel permission override names (managers, members and guests; Owner and Admin are never subjects). */
+export type ChatPermissionSubject = "manager" | "member" | "guest";
+/** The channel actions an override can change. */
+export type ChatChannelAction =
+  "post" | "react" | "attach" | "pin" | "broadcast" | "invite";
+export type ChatPermissionEffect = "allow" | "deny";
+
+export const CHAT_PERMISSION_SUBJECTS: readonly ChatPermissionSubject[] = [
+  "manager",
+  "member",
+  "guest",
+];
+export const CHAT_CHANNEL_ACTIONS: readonly ChatChannelAction[] = [
+  "post",
+  "react",
+  "attach",
+  "pin",
+  "broadcast",
+  "invite",
+];
+
+/** One stored override (ChannelPermissionEntryDto); a pair with no entry is on its default. */
+export interface ChatPermissionEntry {
+  readonly subject: ChatPermissionSubject;
+  readonly action: ChatChannelAction;
+  readonly effect: ChatPermissionEffect;
+}
+
+/** ChannelPermissionsDto: the whole set of a channel and its version. */
+export interface ChatChannelPermissions {
+  readonly channelId: string;
+  readonly entries: readonly ChatPermissionEntry[];
+  readonly version: number;
+}
+
+/** ChannelCapabilitiesDto: what the caller can do in the channel, resolved by the server. */
+export interface ChatChannelCapabilities {
+  readonly canPost: boolean;
+  readonly canReact: boolean;
+  readonly canAttach: boolean;
+  readonly canPin: boolean;
+  readonly canBroadcast: boolean;
+  readonly canInvite: boolean;
+  readonly canModerate: boolean;
+  readonly canManagePermissions: boolean;
+}
+
 /** ChannelDto: the membership fields are the caller's own. */
 export interface ChatChannel {
   readonly id: string;
@@ -94,6 +143,8 @@ export interface ChatChannel {
   readonly notificationLevel: ChatNotificationLevel | null;
   readonly version: number;
   readonly createdAt: string;
+  /** What the caller can do here; absent from older servers (the UI then keeps today's behaviour). */
+  readonly capabilities?: ChatChannelCapabilities;
 }
 
 export interface ChatChannelMember {
@@ -148,6 +199,8 @@ export interface ChatMessage {
   readonly attachments?: readonly ChatAttachment[];
   readonly edited: boolean;
   readonly deleted: boolean;
+  /** A tombstone left by a moderator rather than the author (UC-CHT-H03). */
+  readonly removedByModerator?: boolean;
   readonly createdAt: string;
   readonly editedAt: string | null;
   readonly deletedAt: string | null;

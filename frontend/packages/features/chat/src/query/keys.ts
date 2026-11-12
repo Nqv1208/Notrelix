@@ -58,4 +58,7 @@ export const chatQueryKeys = {
     workspaceQueryKey(workspaceId, "chat", "blocks"),
   pins: (workspaceId: string, channelId: string) =>
     workspaceQueryKey(workspaceId, "chat", "pins", channelId),
+  /** The permission overrides of one channel (the settings Permissions tab). */
+  permissions: (workspaceId: string, channelId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "permissions", channelId),
 } as const;

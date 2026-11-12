@@ -19,6 +19,7 @@ import {
   Archive,
   Ban,
   EyeOff,
+  Lock,
   MessageSquareText,
   MessagesSquare,
   Pin,
@@ -55,6 +56,7 @@ import {
   type ChatStartConversationInput,
   type ChatHistoryAnchor,
   type ChatMessage,
+  type ChatPermissionEntry,
   type ChatNotificationLevel,
 } from "../../core/types/chat";
 import { cn } from "@notrelix/ui-web";
@@ -88,9 +90,11 @@ import {
 import {
   ConfirmDialog,
   CreateChannelDialog,
+  ModerateMessageDialog,
   RenameChannelDialog,
   type CreateChannelValues,
 } from "./chat-dialogs";
+import { ChatPermissionsDialog } from "./chat-permissions-dialog";
 import { ChatNewMessageDialog } from "./chat-new-message-dialog";
 import {
   ChatAddPeopleDialog,
@@ -230,6 +234,8 @@ export function ChatWorkspace({
   const canBrowse = viewerRole !== null && viewerRole !== "guest";
   const canManageWorkspace = viewerRole === "owner" || viewerRole === "admin";
 
+  const [permissionsOpen, setPermissionsOpen] = useState(false);
+
   // ─── Server state ─────────────────────────────────────────────────────────
   const channels = hooks.useChannels(ws);
   const browse = hooks.useBrowseChannels(ws, canBrowse);
@@ -326,6 +332,8 @@ export function ChatWorkspace({
   const channelAdder = hooks.useAddMembers(ws, ch);
   const editor = hooks.useEditMessage(ws, ch);
   const deleter = hooks.useDeleteMessage(ws, ch);
+  const moderator = hooks.useModerateMessage(ws, ch);
+  const permissionsWriter = hooks.useSetChannelPermissions(ws, ch);
   const reader = hooks.useMarkRead(ws);
   const levelWriter = hooks.useSetNotificationLevel(ws);
   const starter = hooks.useStartConversation(ws);
@@ -340,6 +348,11 @@ export function ChatWorkspace({
   const reactor = hooks.useReaction(ws);
   const pinner = hooks.usePinMessage(ws, ch);
   const pinQuery = hooks.usePins(ws, ch);
+  const permissionsQuery = hooks.useChannelPermissions(
+    ws,
+    channelId ?? undefined,
+    permissionsOpen && !conversationId,
+  );
   const threadCountQuery = hooks.useThreadCounts(ws, ch);
   const pinnedNewest = pinQuery.data?.pages[0]?.items[0]?.message ?? null;
   const pinnedIds = useMemo(
@@ -370,6 +383,11 @@ export function ChatWorkspace({
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [permissionsError, setPermissionsError] = useState<string | null>(null);
+  const [moderateTarget, setModerateTarget] = useState<ChatMessage | null>(
+    null,
+  );
+  const [moderateError, setModerateError] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState(false);
   const [newMessageOpen, setNewMessageOpen] = useState(false);
   const [newMessageError, setNewMessageError] = useState<string | null>(null);
@@ -443,7 +461,9 @@ export function ChatWorkspace({
         ? copy.composer.archived
         : !channel.isMember
           ? copy.composer.notMember
-          : null;
+          : channel.capabilities?.canPost === false
+            ? copy.composer.readOnly
+            : null;
   const draft = drafts[ch] ?? "";
   // The mention picker of the open space (UC-CHT-G01); only where the caller may post.
   const mentionablesQuery = hooks.useMentionables(
@@ -627,6 +647,64 @@ export function ChatWorkspace({
         onError: (error) => {
           setConfirmDelete(null);
           setNotice(failureText(chatFailureOf(error).kind, copy));
+        },
+      },
+    );
+  }
+
+  function handleModerate(reason: string) {
+    if (!moderateTarget) return;
+    const target = moderateTarget;
+    setModerateError(null);
+    moderator.mutate(
+      { messageId: target.id, reason, expectedVersion: target.version },
+      {
+        onSuccess: () => {
+          setModerateTarget(null);
+          setNotice(null);
+        },
+        onError: (error) => {
+          const kind = chatFailureOf(error).kind;
+          if (kind === "stale") {
+            setModerateTarget(null);
+            setNotice(copy.moderation.stale);
+            return;
+          }
+          setModerateError(
+            kind === "forbidden"
+              ? copy.moderation.forbidden
+              : copy.moderation.failed,
+          );
+        },
+      },
+    );
+  }
+
+  function handleSavePermissions(
+    entries: readonly ChatPermissionEntry[],
+    expectedVersion: number,
+  ) {
+    setPermissionsError(null);
+    permissionsWriter.mutate(
+      { entries, expectedVersion },
+      {
+        onSuccess: () => {
+          setPermissionsOpen(false);
+          setNotice(copy.permissions.saved);
+        },
+        onError: (error) => {
+          const kind = chatFailureOf(error).kind;
+          setPermissionsError(
+            kind === "stale"
+              ? copy.permissions.stale
+              : kind === "permission-exceeds-role"
+                ? copy.permissions.exceedsRole
+                : kind === "permission-lockout"
+                  ? copy.permissions.lockout
+                  : kind === "forbidden"
+                    ? copy.permissions.forbidden
+                    : copy.permissions.failed,
+          );
         },
       },
     );
@@ -1134,6 +1212,13 @@ export function ChatWorkspace({
                       setRenameOpen(true);
                     }}
                     onToggleArchive={() => setArchiveOpen(true)}
+                    canManagePermissions={
+                      channel.capabilities?.canManagePermissions ?? false
+                    }
+                    onPermissions={() => {
+                      setPermissionsError(null);
+                      setPermissionsOpen(true);
+                    }}
                     onJoin={() => handleJoin(ch)}
                     onSetLevel={handleLevel}
                   />
@@ -1146,6 +1231,14 @@ export function ChatWorkspace({
                 {channel?.isArchived ? (
                   <ChatStatusBanner tone="info" icon={<Archive />}>
                     {copy.header.archivedNotice}
+                  </ChatStatusBanner>
+                ) : null}
+                {channel &&
+                !channel.isArchived &&
+                channel.isMember &&
+                channel.capabilities?.canPost === false ? (
+                  <ChatStatusBanner tone="info" icon={<Lock />}>
+                    {copy.composer.readOnly}
                   </ChatStatusBanner>
                 ) : null}
                 {conversation?.isHidden ? (
@@ -1283,6 +1376,14 @@ export function ChatWorkspace({
                   onEditSave={handleEditSave}
                   onEditCancel={() => setEditing(null)}
                   onDelete={(message) => setConfirmDelete(message)}
+                  onModerate={
+                    channel?.capabilities?.canModerate
+                      ? (message) => {
+                          setModerateError(null);
+                          setModerateTarget(message);
+                        }
+                      : undefined
+                  }
                   onRetryPending={(entry: PendingMessage) =>
                     sender.retry(entry)
                   }
@@ -1661,6 +1762,30 @@ export function ChatWorkspace({
             onConfirm={handleBlockConfirm}
           />
         ) : null}
+        {channel ? (
+          <ChatPermissionsDialog
+            open={permissionsOpen}
+            copy={copy}
+            permissions={permissionsQuery.data}
+            loading={permissionsQuery.isPending}
+            loadFailed={permissionsQuery.isError}
+            busy={permissionsWriter.isPending}
+            error={permissionsError}
+            onOpenChange={setPermissionsOpen}
+            onRetry={() => void permissionsQuery.refetch()}
+            onSave={handleSavePermissions}
+          />
+        ) : null}
+        <ModerateMessageDialog
+          open={moderateTarget !== null}
+          busy={moderator.isPending}
+          error={moderateError}
+          copy={copy}
+          onOpenChange={(open) => {
+            if (!open) setModerateTarget(null);
+          }}
+          onSubmit={handleModerate}
+        />
         <ConfirmDialog
           open={confirmDelete !== null}
           title={copy.list.deleteTitle}
