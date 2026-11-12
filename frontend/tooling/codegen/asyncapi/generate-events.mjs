@@ -105,7 +105,9 @@ try {
   const schemas = spec.components?.schemas ?? {};
   for (const schemaKey of stableKeys(schemas)) {
     if (schemas[schemaKey]["x-frame"] !== true) continue;
-    lines.push(`export interface ${sanitizeTypeName(schemaKey)} ${schemaToTs(schemas[schemaKey], 0)}`);
+    lines.push(
+      `export interface ${sanitizeTypeName(schemaKey)} ${schemaToTs(schemas[schemaKey], 0)}`,
+    );
     lines.push("");
   }
 
