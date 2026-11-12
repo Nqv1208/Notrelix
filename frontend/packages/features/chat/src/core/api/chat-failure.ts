@@ -17,6 +17,8 @@ export type ChatFailureKind =
   | "message-locked"
   /** 404: a missing channel, a private one the caller is not in, or no access. */
   | "not-found"
+  /** 409 broadcast-confirmation-required: @channel or @here in a large channel needs the confirmation. */
+  | "broadcast-confirmation"
   /** 409 without a stable code (for example a reused Idempotency-Key with another payload). */
   | "conflict"
   /** 403: the caller may not do this. */
@@ -52,6 +54,7 @@ const CODE_KINDS: Readonly<Record<string, ChatFailureKind>> = {
   "message-deleted": "message-locked",
   "system-message-immutable": "message-locked",
   "resource.not_found": "not-found",
+  "broadcast-confirmation-required": "broadcast-confirmation",
 };
 
 /** Classifies a thrown value from the Chat API (anything that is not an AppError is `server`). */

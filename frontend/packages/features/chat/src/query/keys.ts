@@ -19,6 +19,9 @@ export const chatQueryKeys = {
   /** Client-only projection of the sends not yet confirmed (converges on the server copy). */
   pending: (workspaceId: string, channelId: string) =>
     workspaceQueryKey(workspaceId, "chat", "pending", channelId),
+  /** The mention picker of one space (people, broadcast permission, member count). */
+  mentionables: (workspaceId: string, spaceId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "mentionables", spaceId),
   unread: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "chat", "unread"),
   /** The replies of one thread (the root message id); the thread summary rides with its pages. */

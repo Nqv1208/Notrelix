@@ -9,6 +9,8 @@ import type {
   ChatStartConversationResult,
   ChatCreateChannelInput,
   ChatFollowedThreadPage,
+  ChatMentionables,
+  ChatMentionPayload,
   ChatMessage,
   ChatMessagePage,
   ChatMessageCursor,
@@ -61,6 +63,7 @@ export interface ChatEndpoints {
       userId: string,
     ) => string;
     messages: (workspaceId: string, spaceId: string) => string;
+    spaceMentionables: (workspaceId: string, spaceId: string) => string;
     message: (workspaceId: string, messageId: string) => string;
     unread: (workspaceId: string) => string;
     markRead: (workspaceId: string, spaceId: string) => string;
@@ -238,7 +241,7 @@ export function createChatService(
         content: string;
         clientMessageId: string;
         replyToId?: string | null;
-      },
+      } & ChatMentionPayload,
     ): Promise<ChatMessage> {
       return api.post<ChatMessage>(
         paths.messages(workspaceId, spaceId),
@@ -251,7 +254,10 @@ export function createChatService(
     editMessage(
       workspaceId: string,
       messageId: string,
-      input: { content: string; expectedVersion: number },
+      input: {
+        content: string;
+        expectedVersion: number;
+      } & ChatMentionPayload,
     ): Promise<ChatMessage> {
       return api.patch<ChatMessage>(
         paths.message(workspaceId, messageId),
@@ -267,6 +273,19 @@ export function createChatService(
     ): Promise<void> {
       return api.delete<void>(
         withQuery(paths.message(workspaceId, messageId), { expectedVersion }),
+      );
+    },
+
+    /**
+     * `Chat.Mentions.ListMentionables`: the people a message in the space can mention (inSpace false: not notified),
+     * whether the caller may broadcast and the member count above which a broadcast needs confirmation.
+     */
+    listMentionables(
+      workspaceId: string,
+      spaceId: string,
+    ): Promise<ChatMentionables> {
+      return api.get<ChatMentionables>(
+        paths.spaceMentionables(workspaceId, spaceId),
       );
     },
 
@@ -320,7 +339,7 @@ export function createChatService(
         content: string;
         clientMessageId: string;
         alsoSendToChannel: boolean;
-      },
+      } & ChatMentionPayload,
     ): Promise<ChatMessage> {
       return api.post<ChatMessage>(
         paths.threadReplies(workspaceId, rootId),
