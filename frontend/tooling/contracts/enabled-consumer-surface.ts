@@ -4484,6 +4484,13 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       false,
       "Download the file of a chat export",
     ],
+    [
+      "Chat.Search.Query",
+      "GET",
+      "/workspaces/{workspaceId}/chat/search",
+      false,
+      "Search the messages the caller can read",
+    ],
   ].map(([operationId, method, pathTemplate, mutation, capability]) => ({
     context: "Chat",
     classification: "CANONICAL_MOCKED" as const,

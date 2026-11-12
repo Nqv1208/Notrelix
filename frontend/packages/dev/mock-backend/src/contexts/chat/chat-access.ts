@@ -159,6 +159,7 @@ export type ChatAction =
   | "groupManage"
   | "memberInvite"
   | "messageModerate"
+  | "search"
   | "manageWorkspace"
   | "manageWorkspaceSettings";
 
@@ -174,6 +175,8 @@ const DENIED_ROLES: Record<ChatAction, readonly ChatWorkspaceRole[]> = {
   groupManage: ["Member", "Guest"],
   memberInvite: ["Guest"],
   messageModerate: ["Member", "Guest"],
+  /** Search: the baseline lets every role call it; what each finds is decided by `visibleSpaceIds`. */
+  search: [],
   /** Retention Set: the Workspace Owner only (PermissionAction.ManageWorkspace). */
   manageWorkspace: ["Admin", "Member", "Guest"],
   /** Export create, status and download: Owner and Admin (PermissionAction.ManageWorkspaceSettings). */
@@ -236,6 +239,26 @@ export function requireVisible(
   if (mustBeMember && !state.activeMembershipOf(space.id, caller.userId)) {
     notFoundProblem();
   }
+}
+
+/**
+ * The live spaces of the Workspace the caller may see now: the one rule `requireVisible` applies, as a set (backend
+ * ChannelAccess.VisibleSpaces). Search reads through it, so a message is found only where it could be read.
+ */
+export function visibleSpaceIds(
+  state: MockChatState,
+  caller: ChatCaller,
+): ReadonlySet<string> {
+  const ids = new Set<string>();
+  for (const space of state.spacesOfWorkspace(caller.workspaceId)) {
+    if (space.deletedAt !== null) continue;
+    const mustBeMember =
+      space.kind !== "channel_public" || caller.role === "Guest";
+    if (!mustBeMember || state.activeMembershipOf(space.id, caller.userId)) {
+      ids.add(space.id);
+    }
+  }
+  return ids;
 }
 
 /** Renaming, archiving, moving and removing others: a channel manager, a Workspace Owner or Admin. */

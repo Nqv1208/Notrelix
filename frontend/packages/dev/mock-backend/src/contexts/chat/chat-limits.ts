@@ -11,7 +11,13 @@ import { ChatFailure, type ChatProblemBody } from "./chat-access";
 import type { MockChatState } from "./chat-state";
 
 export type ChatLimitPolicy =
-  "send" | "react" | "thread-reply" | "upload" | "broadcast" | "export";
+  | "send"
+  | "react"
+  | "thread-reply"
+  | "upload"
+  | "broadcast"
+  | "export"
+  | "search";
 
 interface Limit {
   readonly person: number;
@@ -28,6 +34,8 @@ export const CHAT_LIMIT_DEFAULTS: Readonly<Record<ChatLimitPolicy, Limit>> = {
   broadcast: { person: 3, space: 10, windowSeconds: 60 },
   /** The export counts per person and per Workspace (the workspace id travels where the space id does). */
   export: { person: 5, space: 20, windowSeconds: 3600 },
+  /** A message search counts per person and per Workspace (the workspace id travels where the space id does). */
+  search: { person: 30, space: 300, windowSeconds: 60 },
 };
 
 function tooMany(

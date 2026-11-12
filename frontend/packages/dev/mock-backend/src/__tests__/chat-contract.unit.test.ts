@@ -59,7 +59,7 @@ describe("MFB-CHAT-S1.6: Chat mock handlers match the generated contract", () =>
   }));
 
   it("finds the Chat operations in the generated schema", () => {
-    expect(schema.length).toBe(53);
+    expect(schema.length).toBe(54);
   });
 
   it("has a handler for every Chat operation of the schema, with its method and route", () => {

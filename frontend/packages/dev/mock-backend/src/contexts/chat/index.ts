@@ -20,6 +20,7 @@ import { pinsOperations } from "./pins.handlers";
 import { reactionsOperations } from "./reactions.handlers";
 import { readStateOperations } from "./read-state.handlers";
 import { retentionOperations } from "./retention.handlers";
+import { searchOperations } from "./search.handlers";
 import { threadsOperations } from "./threads.handlers";
 
 export {
@@ -45,5 +46,6 @@ export const chatOperations = [
   ...reactionsOperations,
   ...readStateOperations,
   ...retentionOperations,
+  ...searchOperations,
   ...threadsOperations,
 ];
