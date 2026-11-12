@@ -216,7 +216,7 @@ export function announcePinChanged(
   state: MockChatState,
   space: ChatSpaceRecord,
   messageId: string,
-  change: "pinned" | "unpinned" | "permissions" | "slow-mode",
+  change: "pinned" | "unpinned" | "permissions" | "slow-mode" | "retention",
 ): void {
   publishMockScopeFrame(
     frame({

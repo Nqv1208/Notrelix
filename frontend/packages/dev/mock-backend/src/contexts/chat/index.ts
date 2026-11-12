@@ -19,6 +19,7 @@ import { permissionsOperations } from "./permissions.handlers";
 import { pinsOperations } from "./pins.handlers";
 import { reactionsOperations } from "./reactions.handlers";
 import { readStateOperations } from "./read-state.handlers";
+import { retentionOperations } from "./retention.handlers";
 import { threadsOperations } from "./threads.handlers";
 
 export {
@@ -27,6 +28,7 @@ export {
   GENERAL_MESSAGE_COUNT,
 } from "./chat-world";
 export { MockChatState, chatGuid, streamIdOf } from "./chat-state";
+export { runExport, runRetention } from "./chat-retention";
 
 export const chatOperations = [
   ...attachmentsOperations,
@@ -42,5 +44,6 @@ export const chatOperations = [
   ...pinsOperations,
   ...reactionsOperations,
   ...readStateOperations,
+  ...retentionOperations,
   ...threadsOperations,
 ];
