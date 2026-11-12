@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Chat.Search.Queries.SearchChatMessages;
 
