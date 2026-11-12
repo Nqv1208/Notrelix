@@ -6,6 +6,7 @@ import {
   Hash,
   Lock,
   Pencil,
+  Search,
   Settings,
   ShieldCheck,
   Users,
@@ -56,6 +57,8 @@ export interface ChatHeaderProps {
   readonly canManagePermissions?: boolean;
   readonly onPermissions?: () => void;
   readonly onJoin: () => void;
+  /** Opens the message search (UC-CHT-H07). Without it the header has no search button. */
+  readonly onSearch?: () => void;
   readonly onSetLevel: (level: ChatNotificationLevel) => void;
 }
 
@@ -82,6 +85,7 @@ export function ChatHeader({
   canManagePermissions = false,
   onPermissions,
   onJoin,
+  onSearch,
   onSetLevel,
 }: ChatHeaderProps) {
   const isPrivate = channel.kind === "channel_private";
@@ -125,6 +129,18 @@ export function ChatHeader({
         {canJoin ? (
           <Button size="sm" onClick={onJoin} disabled={joining}>
             {copy.header.join}
+          </Button>
+        ) : null}
+
+        {onSearch ? (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={copy.search.open}
+            title={copy.search.open}
+            onClick={onSearch}
+          >
+            <Search aria-hidden="true" />
           </Button>
         ) : null}
 

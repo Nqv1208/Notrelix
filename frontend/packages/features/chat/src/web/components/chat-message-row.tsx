@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent } from "react";
+import { useEffect, useRef, type KeyboardEvent } from "react";
 import {
   Ban,
   MessagesSquare,
@@ -21,6 +21,7 @@ import { avatarToneOf, initialsOf } from "./chat-initials";
 import { mentionsViewer } from "../../core/model/mention-model";
 import { ChatMentionText } from "./chat-mention-text";
 import { useChatMentions } from "./chat-mention-context";
+import { useChatHighlight } from "./chat-highlight-context";
 import { MessageAttachments } from "./chat-attachments";
 import { MessageLinkPreviews } from "./chat-link-previews";
 import { ReactionChips, ReactionPicker } from "./chat-reactions";
@@ -124,6 +125,14 @@ export function ChatMessageRow({
   const time = formatClock(message.createdAt, locale, timeZone);
   const isSystem = message.kind === "system";
   const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const highlighted = useChatHighlight() === message.id;
+  // The message a search hit points at: scroll to it and move the reading focus there once.
+  useEffect(() => {
+    if (!highlighted) return;
+    rowRef.current?.scrollIntoView?.({ block: "center" });
+    rowRef.current?.focus({ preventScroll: true });
+  }, [highlighted]);
   const mentionContext = useChatMentions();
   const mentionsMe =
     mentionContext.viewerId !== null &&
@@ -183,12 +192,16 @@ export function ChatMessageRow({
 
   return (
     <div
+      ref={rowRef}
+      tabIndex={highlighted ? -1 : undefined}
       className={cn(
         "group relative flex gap-3 px-4 hover:bg-muted/50",
         continued ? "py-0.5" : "mt-3 pt-0.5 pb-0.5",
         mentionsMe && "border-s-2 border-warning bg-warning-subtle/40",
+        highlighted && "bg-accent/60 outline-2 outline-ring",
       )}
       data-message-id={message.id}
+      data-highlighted={highlighted ? "true" : undefined}
       data-mentions-me={mentionsMe ? "true" : undefined}
     >
       <div className={GUTTER}>

@@ -26,6 +26,8 @@ import type {
   ChatRetentionPolicy,
   ChatPermissionEntry,
   ChatPin,
+  ChatSearchFilters,
+  ChatSearchPage,
   ChatPinPage,
   ChatReactorPage,
   ChatReadBoundary,
@@ -121,6 +123,7 @@ export interface ChatEndpoints {
     channelPermissions: (workspaceId: string, channelId: string) => string;
     messageModeration: (workspaceId: string, messageId: string) => string;
     retention: (workspaceId: string) => string;
+    search: (workspaceId: string) => string;
     exports: (workspaceId: string) => string;
     chatExport: (workspaceId: string, exportId: string) => string;
     chatExportContent: (workspaceId: string, exportId: string) => string;
@@ -570,6 +573,33 @@ export function createChatService(
       },
     ): Promise<ChatRetentionPolicy> {
       return api.put<ChatRetentionPolicy>(paths.retention(workspaceId), input);
+    },
+
+    /**
+     * `Chat.Search.Query`: the messages of the spaces the caller can read now, newest first. The server never reveals a space the caller
+     * cannot read; a filter on one gives an empty page.
+     */
+    searchMessages(
+      workspaceId: string,
+      filters: ChatSearchFilters,
+      cursor: string | null,
+      limit: number,
+      signal?: AbortSignal,
+    ): Promise<ChatSearchPage> {
+      return api.get<ChatSearchPage>(
+        withQuery(paths.search(workspaceId), {
+          q: filters.q,
+          spaceId: filters.spaceId,
+          authorId: filters.authorId,
+          from: filters.from,
+          to: filters.to,
+          hasAttachment: filters.hasAttachment ? true : undefined,
+          mentionsMe: filters.mentionsMe ? true : undefined,
+          cursor: cursor ?? undefined,
+          limit,
+        }),
+        signal ? { signal } : undefined,
+      );
     },
 
     /** `Chat.Exports.Create`: Owner or Admin asks for the export of one person's chat data (202, queued). */
