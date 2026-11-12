@@ -5,10 +5,12 @@ import {
   useMemo,
   useRef,
   useState,
+  type ClipboardEvent,
+  type DragEvent,
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-import { Hash, Megaphone, Send, UserPlus } from "lucide-react";
+import { Hash, Megaphone, Paperclip, Send, UserPlus, X } from "lucide-react";
 import { Button, Textarea, cn } from "@notrelix/ui-web";
 import {
   checkMessageContent,
@@ -28,11 +30,17 @@ import {
   type TrackedMention,
 } from "../../core/model/mention-model";
 import {
+  checkPendingFiles,
+  formatFileSize,
+  type PendingFileRefusal,
+} from "../../core/model/attachment-model";
+import {
   CHAT_LIMITS,
   type ChatMentionPayload,
   type ChatMentionables,
 } from "../../core/types/chat";
 import type { ChatCopy } from "./chat.copy";
+import { AttachmentGlyphIcon } from "./chat-attachments";
 import { fillCopy } from "./use-chat-copy";
 
 /** What the composer needs to mention people and link channels (UC-CHT-G01 to G04); without it @ and # are plain text. */
@@ -63,6 +71,12 @@ type PickerItem = {
   readonly tracked: TrackedMention | null;
 };
 
+/** Files can be attached to the message (UC-CHT-G08); without it the composer has no attach control. */
+export interface ChatComposerAttachments {
+  /** Keeps the pending files of each draft apart while the page is open. */
+  readonly draftKey: string;
+}
+
 export interface ChatComposerProps {
   readonly channelName: string;
   readonly value: string;
@@ -70,9 +84,17 @@ export interface ChatComposerProps {
   readonly disabledReason: string | null;
   readonly copy: ChatCopy;
   readonly onChange: (value: string) => void;
-  /** The trimmed content; the payload is given only when the content carries mentions. */
-  readonly onSend: (content: string, payload?: ChatMentionPayload) => void;
+  /**
+   * The trimmed content; the payload is given only when the content carries mentions and the files only
+   * when some are attached (they are sent to the message once it is stored).
+   */
+  readonly onSend: (
+    content: string,
+    payload?: ChatMentionPayload,
+    files?: readonly File[],
+  ) => void;
   readonly mentions?: ChatComposerMentions;
+  readonly attachments?: ChatComposerAttachments;
   /** Above the text: the reply chip of a quote reply. */
   readonly leading?: ReactNode;
   /** In the footer before Send: the thread composer's "also send to channel". */
@@ -100,6 +122,7 @@ export function ChatComposer({
   labelOverride,
   busy = false,
   mentions,
+  attachments,
 }: ChatComposerProps) {
   const hintId = useId();
   const listId = useId();
@@ -120,6 +143,16 @@ export function ChatComposer({
     readonly token: string;
   } | null>(null);
   const pendingCaret = useRef<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [filesByDraft, setFilesByDraft] = useState<
+    Readonly<Record<string, readonly File[]>>
+  >({});
+  const [refusals, setRefusals] = useState<
+    readonly { readonly name: string; readonly reason: PendingFileRefusal }[]
+  >([]);
+  const [dragging, setDragging] = useState(false);
+  const filesKey = attachments?.draftKey ?? "";
+  const files = filesByDraft[filesKey] ?? [];
   const draftKey = mentions?.draftKey ?? "";
   const tracked = trackedByDraft[draftKey] ?? [];
   const length = chatTextLength(value);
@@ -211,10 +244,44 @@ export function ChatComposer({
     onChange(next.text);
   }
 
-  function dispatch(content: string, payload: ChatMentionPayload) {
-    const carries = (payload.mentions?.length ?? 0) > 0;
-    if (carries) onSend(content, payload);
+  function addFiles(incoming: readonly File[]) {
+    if (!attachments || disabled || incoming.length === 0) return;
+    const result = checkPendingFiles(files.length, incoming);
+    setRefusals(result.refused);
+    if (result.accepted.length > 0) {
+      setFilesByDraft((prev) => ({
+        ...prev,
+        [filesKey]: [...(prev[filesKey] ?? []), ...result.accepted],
+      }));
+    }
+  }
+
+  function removeFile(index: number) {
+    setRefusals([]);
+    setFilesByDraft((prev) => ({
+      ...prev,
+      [filesKey]: (prev[filesKey] ?? []).filter((_, at) => at !== index),
+    }));
+  }
+
+  /** Sends the text with the pending files (when there are some) and empties the strip. */
+  function emit(content: string, payload?: ChatMentionPayload) {
+    const carries = (payload?.mentions?.length ?? 0) > 0;
+    const held = files;
+    if (held.length > 0) {
+      onSend(content, carries ? payload : undefined, held);
+      setFilesByDraft((prev) => {
+        const next = { ...prev };
+        delete next[filesKey];
+        return next;
+      });
+      setRefusals([]);
+    } else if (carries) onSend(content, payload);
     else onSend(content);
+  }
+
+  function dispatch(content: string, payload: ChatMentionPayload) {
+    emit(content, payload);
     setTrackedByDraft((prev) => {
       if (!(draftKey in prev)) return prev;
       const next = { ...prev };
@@ -228,7 +295,7 @@ export function ChatComposer({
     const result = checkMessageContent(value);
     if (!result.ok) return;
     if (!mentions || inputs.length === 0) {
-      onSend(result.content);
+      emit(result.content);
       return;
     }
     if (needsBroadcastConfirm(inputs, mentions.mentionables) && !confirming) {
@@ -291,6 +358,31 @@ export function ChatComposer({
     message = fillCopy(copy.composer.tooLong, {
       max: CHAT_LIMITS.messageMaxLength,
     });
+  // The backend needs text on a message: files alone are not sent (the text is the message they belong to).
+  else if (files.length > 0 && !check.ok) message = copy.attachments.needsText;
+
+  function handleDragOver(event: DragEvent<HTMLElement>) {
+    if (!attachments || disabled) return;
+    if (!Array.from(event.dataTransfer.types).includes("Files")) return;
+    event.preventDefault();
+    setDragging(true);
+  }
+
+  function handleDrop(event: DragEvent<HTMLElement>) {
+    if (!attachments || disabled) return;
+    if (!Array.from(event.dataTransfer.types).includes("Files")) return;
+    event.preventDefault();
+    setDragging(false);
+    addFiles(Array.from(event.dataTransfer.files));
+  }
+
+  function handlePaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    if (!attachments) return;
+    const pasted = Array.from(event.clipboardData.files);
+    if (pasted.length === 0) return;
+    event.preventDefault();
+    addFiles(pasted);
+  }
 
   return (
     <div className="relative shrink-0 bg-background px-3 pt-2 pb-3 md:px-5 md:pb-4">
@@ -311,7 +403,11 @@ export function ChatComposer({
         className={cn(
           "flex flex-col rounded-xl border border-input bg-card shadow-xs transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/30",
           disabled && "opacity-60",
+          dragging && "border-ring ring-[3px] ring-ring/30",
         )}
+        onDragOver={handleDragOver}
+        onDragLeave={() => setDragging(false)}
+        onDrop={handleDrop}
         onSubmit={(event) => {
           event.preventDefault();
           submit();
@@ -330,6 +426,22 @@ export function ChatComposer({
               textareaRef.current?.focus();
             }}
           />
+        ) : null}
+        {attachments && (files.length > 0 || refusals.length > 0) ? (
+          <PendingFiles
+            files={files}
+            refusals={refusals}
+            copy={copy}
+            onRemove={removeFile}
+          />
+        ) : null}
+        {dragging ? (
+          <p
+            role="status"
+            className="border-b border-border px-3 py-2 text-xs text-muted-foreground"
+          >
+            {copy.attachments.dropHint}
+          </p>
         ) : null}
         <Textarea
           ref={textareaRef}
@@ -354,9 +466,38 @@ export function ChatComposer({
           }}
           onSelect={(event) => syncCaret(event.currentTarget)}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           className="max-h-40 min-h-11 resize-none border-0 bg-transparent px-3 py-2.5 shadow-none focus-visible:border-0 focus-visible:ring-0 md:text-sm"
         />
         <div className="flex flex-wrap items-center gap-2 border-t border-border px-2 py-1.5">
+          {attachments ? (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                hidden
+                tabIndex={-1}
+                aria-hidden="true"
+                data-testid="chat-file-input"
+                onChange={(event) => {
+                  addFiles(Array.from(event.target.files ?? []));
+                  event.target.value = "";
+                }}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                disabled={disabled}
+                aria-label={copy.attachments.attach}
+                title={copy.attachments.attach}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Paperclip aria-hidden="true" />
+              </Button>
+            </>
+          ) : null}
           {footerExtra}
           <div
             id={hintId}
@@ -392,6 +533,86 @@ export function ChatComposer({
           </Button>
         </div>
       </form>
+    </div>
+  );
+}
+
+/** The files waiting for Send, and the ones the pre-check left out with the reason. */
+function PendingFiles({
+  files,
+  refusals,
+  copy,
+  onRemove,
+}: {
+  readonly files: readonly File[];
+  readonly refusals: readonly {
+    readonly name: string;
+    readonly reason: PendingFileRefusal;
+  }[];
+  readonly copy: ChatCopy;
+  readonly onRemove: (index: number) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5 border-b border-border px-3 py-2">
+      {files.length > 0 ? (
+        <ul
+          aria-label={fillCopy(copy.attachments.pendingLabel, {
+            count: files.length,
+            max: CHAT_LIMITS.attachmentsPerMessageMax,
+          })}
+          className="flex flex-wrap gap-1.5"
+          data-testid="chat-pending-files"
+        >
+          {files.map((file, index) => (
+            <li
+              key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+              className="flex max-w-full items-center gap-1.5 rounded-md border border-border bg-muted/50 py-0.5 ps-2 pe-0.5 text-xs"
+            >
+              <AttachmentGlyphIcon
+                contentType={file.type}
+                fileName={file.name}
+                className="text-muted-foreground"
+              />
+              <span className="max-w-40 truncate font-medium text-foreground">
+                {file.name}
+              </span>
+              <span className="tabular-nums text-muted-foreground">
+                {formatFileSize(file.size)}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                aria-label={fillCopy(copy.attachments.removePending, {
+                  name: file.name,
+                })}
+                title={copy.attachments.removeShort}
+                onClick={() => onRemove(index)}
+              >
+                <X aria-hidden="true" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {refusals.length > 0 ? (
+        <ul
+          role="alert"
+          className="flex flex-col gap-0.5 text-xs text-destructive"
+        >
+          {refusals.map((refusal, index) => (
+            <li key={`${refusal.name}-${index}`}>
+              {fillCopy(copy.attachments.refused[refusal.reason], {
+                name: refusal.name,
+                max:
+                  refusal.reason === "too-large"
+                    ? formatFileSize(CHAT_LIMITS.attachmentMaxBytes)
+                    : CHAT_LIMITS.attachmentsPerMessageMax,
+              })}
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   );
 }
