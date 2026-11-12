@@ -26,6 +26,10 @@ public static class RealtimeProtocol
         public const string Unsubscribe = "unsubscribe";
         public const string Ping = "ping";
         public const string Pong = "pong";
+        /// <summary>Ephemeral: the person is typing in the space of a subscription. Never stored.</summary>
+        public const string Typing = "typing";
+        /// <summary>Ephemeral: the person's presence state (online, idle, offline). Never stored.</summary>
+        public const string Presence = "presence";
     }
 
     public static class ServerTypes
@@ -38,6 +42,10 @@ public static class RealtimeProtocol
         public const string AccessChanged = "access-changed";
         public const string Ping = "ping";
         public const string Pong = "pong";
+        /// <summary>Someone else is typing in the space of a subscription; carries the person and how long it lasts.</summary>
+        public const string Typing = "typing";
+        /// <summary>Someone else's presence state in the space of a subscription.</summary>
+        public const string Presence = "presence";
     }
 
     /// <summary>Stable error codes carried by <c>subscription-error</c> frames.</summary>
@@ -83,6 +91,12 @@ public static class RealtimeProtocol
 
     public sealed record PongMessage : ClientMessage;
 
+    /// <summary>The caller is typing in the space of the named subscription.</summary>
+    public sealed record TypingMessage(string SubscriptionId) : ClientMessage;
+
+    /// <summary>The caller's presence heartbeat (state online, idle or offline).</summary>
+    public sealed record PresenceMessage(string State) : ClientMessage;
+
     public sealed record InvalidMessage(string Code, string? SubscriptionId = null) : ClientMessage;
 
     /// <summary>Parses one client text frame. Never throws; malformed input becomes <see cref="InvalidMessage"/>.</summary>
@@ -125,6 +139,14 @@ public static class RealtimeProtocol
                     return new PingMessage(ReadString(root, "sentAt"));
                 case ClientTypes.Pong:
                     return new PongMessage();
+                case ClientTypes.Typing:
+                    return IsValidSubscriptionId(subscriptionId)
+                        ? new TypingMessage(subscriptionId!)
+                        : new InvalidMessage(ErrorCodes.InvalidMessage);
+                case ClientTypes.Presence:
+                    return ReadString(root, "state") is { } state && RealtimePresenceStates.IsValid(state)
+                        ? new PresenceMessage(state)
+                        : new InvalidMessage(ErrorCodes.InvalidMessage);
                 default:
                     return new InvalidMessage(ErrorCodes.InvalidMessage);
             }
@@ -210,7 +232,45 @@ public static class RealtimeProtocol
         sentAt,
     });
 
-    public static byte[] Event(string subscriptionId, RealtimeNotification notification) => Serialize(new
+    /// <summary>Someone else is typing; the indicator lasts <paramref name="expiresInMs"/> after this frame.</summary>
+    public static byte[] Typing(string subscriptionId, Guid userId, long expiresInMs) => Serialize(new
+    {
+        type = ServerTypes.Typing,
+        subscriptionId,
+        userId,
+        expiresInMs,
+    });
+
+    /// <summary>Someone else's presence; a client treats the state as offline <paramref name="ttlMs"/> after the last frame.</summary>
+    public static byte[] Presence(string subscriptionId, Guid userId, string state, long ttlMs) => Serialize(new
+    {
+        type = ServerTypes.Presence,
+        subscriptionId,
+        userId,
+        state,
+        ttlMs,
+    });
+
+    /// <summary>The largest server frame in bytes (the same cap the client applies to frames it sends).</summary>
+    public const int MaxFrameBytes = 4096;
+
+    /// <summary>
+    /// One event frame. A notification with a payload carries it under <c>payload</c>; when the frame would exceed
+    /// <see cref="MaxFrameBytes"/> the payload is dropped and <c>payloadOmitted</c> is set, so the client refetches the
+    /// resource over REST instead of receiving a frame it cannot hold.
+    /// </summary>
+    public static byte[] Event(string subscriptionId, RealtimeNotification notification)
+    {
+        var frame = Serialize(EventFrame(subscriptionId, notification, payload: notification.Payload, payloadOmitted: false));
+        if (frame.Length <= MaxFrameBytes || notification.Payload is null)
+        {
+            return frame;
+        }
+
+        return Serialize(EventFrame(subscriptionId, notification, payload: null, payloadOmitted: true));
+    }
+
+    private static object EventFrame(string subscriptionId, RealtimeNotification notification, JsonElement? payload, bool payloadOmitted) => new
     {
         type = ServerTypes.Event,
         subscriptionId,
@@ -227,7 +287,9 @@ public static class RealtimeProtocol
         correlationId = notification.CorrelationId,
         occurredAt = notification.OccurredAt.ToString("O"),
         payloadContract = notification.PayloadContract,
-    });
+        payload,
+        payloadOmitted = payloadOmitted ? true : (bool?)null,
+    };
 
     private static byte[] Serialize<T>(T value) => Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value, JsonOptions));
 }

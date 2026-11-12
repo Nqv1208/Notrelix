@@ -16,6 +16,7 @@ import { normalizeMockRequest } from "./normalize-request";
 import { buildOperationRegistry } from "../operations/build-registry";
 import { MockOperationRegistry } from "../operations/operation-registry";
 import type { MockBackendConfig } from "../config/mock-config";
+import { injectIncomingMessage } from "../contexts/chat/chat-writes";
 import {
   notFound,
   serverError,
@@ -100,6 +101,17 @@ function applyGoneScript(store: MockStore, request: { method: string }): void {
 
 export function createMockFetch(store: MockStore): typeof fetch {
   const registry = getRegistry();
+  // Dev only: a browser check makes another member write a Chat message (realtime frames included).
+  (
+    globalThis as {
+      __notrelixMockInjectChat?: (
+        spaceId: string,
+        authorId: string,
+        content: string,
+      ) => boolean;
+    }
+  ).__notrelixMockInjectChat = (spaceId, authorId, content) =>
+    injectIncomingMessage(store.chat, spaceId, authorId, content) !== null;
 
   return async function mockFetch(
     input: RequestInfo | URL,

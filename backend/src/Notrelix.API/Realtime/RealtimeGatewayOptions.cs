@@ -44,6 +44,18 @@ public sealed class RealtimeGatewayOptions
     public TimeSpan MaxConnectionLifetime { get; set; } = TimeSpan.FromHours(1);
 
     public TimeSpan SendTimeout { get; set; } = TimeSpan.FromSeconds(10);
+
+    /// <summary>Shortest accepted gap between two typing frames of one subscription; a frame sooner is dropped (clients send one per 3 s).</summary>
+    public TimeSpan TypingMinInterval { get; set; } = TimeSpan.FromSeconds(2);
+
+    /// <summary>How long a typing indicator lasts after the last signal (told to clients in each frame).</summary>
+    public TimeSpan TypingExpiry { get; set; } = TimeSpan.FromSeconds(5);
+
+    /// <summary>Shortest accepted gap between two presence frames with the same state; a frame sooner is dropped.</summary>
+    public TimeSpan PresenceMinInterval { get; set; } = TimeSpan.FromSeconds(5);
+
+    /// <summary>How long a presence state lasts without a heartbeat before it counts as offline (clients heartbeat about every 30 s).</summary>
+    public TimeSpan PresenceTtl { get; set; } = TimeSpan.FromSeconds(75);
 }
 
 public sealed class RealtimeGatewayOptionsValidator : IValidateOptions<RealtimeGatewayOptions>
@@ -68,6 +80,10 @@ public sealed class RealtimeGatewayOptionsValidator : IValidateOptions<RealtimeG
         PositiveSpan(options.ReauthorizationInterval, nameof(options.ReauthorizationInterval), failures);
         PositiveSpan(options.MaxConnectionLifetime, nameof(options.MaxConnectionLifetime), failures);
         PositiveSpan(options.SendTimeout, nameof(options.SendTimeout), failures);
+        PositiveSpan(options.TypingMinInterval, nameof(options.TypingMinInterval), failures);
+        PositiveSpan(options.TypingExpiry, nameof(options.TypingExpiry), failures);
+        PositiveSpan(options.PresenceMinInterval, nameof(options.PresenceMinInterval), failures);
+        PositiveSpan(options.PresenceTtl, nameof(options.PresenceTtl), failures);
 
         if (options.IdleTimeout <= options.PingInterval)
         {

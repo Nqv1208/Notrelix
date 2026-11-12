@@ -43,5 +43,17 @@ public enum PermissionAction
     ManageApiTokens,
     ManageAutomation,
     ReadAudit,
-    ViewBilling
+    ViewBilling,
+
+    // Chat (docs/workstreams/teams/chat.md section 9). Appended: the names are the persisted action identity.
+    ChatChannelCreate,
+    ChatChannelManage,
+    ChatGroupManage,
+    ChatMemberInvite,
+    ChatMessagePost,
+    ChatMessageModerate,
+    ChatMentionBroadcast,
+    ChatMessagePin,
+    ChatMessageReact,
+    ChatSearch,
 }

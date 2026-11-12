@@ -93,6 +93,17 @@ public static class DependencyInjection
             IValidateOptions<Notrelix.Application.Features.Collaboration.Attachments.AttachmentUploadOptions>,
             Notrelix.Application.Features.Collaboration.Attachments.AttachmentUploadOptionsValidator>();
 
+        // Chat rate limits (UC-CHT-H08): per person and per space, on the shared limiter store.
+        services.AddOptions<Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitOptions>()
+            .Bind(builder.Configuration.GetSection(Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<
+            IValidateOptions<Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitOptions>,
+            Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitOptionsValidator>();
+        services.AddScoped<
+            Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter,
+            Notrelix.Application.Features.Chat.RateLimits.ChatRateLimiter>();
+
         // Scoped execution context: one instance is exposed as both the read and
         // the write contract so the transport can bind the key and the pipeline
         // can require it.
@@ -103,6 +114,11 @@ public static class DependencyInjection
         services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Members.IWorkspaceMemberFacts, Notrelix.Application.Features.Workspaces.Members.Services.WorkspaceMemberFacts>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Teams.ITeamMembershipFacts, Notrelix.Application.Features.Workspaces.Teams.Services.TeamMembershipFacts>();
         services.AddScoped<Notrelix.Application.Features.Governance.Roles.CustomRoleChangeRecorder>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Messages.Services.ChatSystemMessages>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Audit.Services.ChatAuditFacts>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Members.Services.ChatWorkspaceExit>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Notifications.Services.ChatNotificationHandoff>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Public.SpaceViewFacts.IChatSpaceViewFacts, Notrelix.Application.Features.Chat.Notifications.Services.ChatSpaceViewFacts>();
         services.AddScoped<Notrelix.Application.Common.Realtime.IAccessChangeSignal, Notrelix.Application.Common.Realtime.AccessChangeSignal>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Public.BoardRealtime.IBoardRealtimeNotifier, Notrelix.Application.Features.WorkManagement.Realtime.BoardRealtimeNotifier>();
         // Integration event collector (scoped per request)
@@ -159,6 +175,8 @@ public static class DependencyInjection
         services.AddScoped<IBoardItemSummaryBuilder, BoardItemSummaryBuilder>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Transfer.BoardExportBuilder>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Transfer.ImportPeopleDirectory>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer,
+            Notrelix.Application.Features.Chat.Mentions.Services.BroadcastAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceTargetAuthorizer,
             Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceTargetAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceContentReader,
@@ -174,6 +192,8 @@ public static class DependencyInjection
             Notrelix.Application.Features.Documents.Pages.Services.PageSubtreeAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Collaboration.Comments.Services.ICommentTargetAccess,
             Notrelix.Application.Features.Collaboration.Comments.Services.CommentTargetAccess>();
+        services.AddScoped<Notrelix.Application.Features.Collaboration.Public.Attachments.IChatMessageAttachments,
+            Notrelix.Application.Features.Collaboration.Attachments.Services.ChatMessageAttachments>();
         services.AddScoped<Notrelix.Application.Features.Documents.Public.PageViewAccess.IPageViewAccess,
             Notrelix.Application.Features.Documents.Pages.Services.PageViewAccess>();
         services.AddScoped<Notrelix.Application.Features.Documents.Versions.Services.IPageVersionRecorder,

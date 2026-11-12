@@ -31,7 +31,7 @@ review_on:
 > This file is generated discovery evidence.
 > Rule meaning remains owned by the canonical source document in which the rule is declared.
 
-Rule count: 2706
+Rule count: 2730
 
 ## Namespace summary
 
@@ -51,6 +51,7 @@ Rule count: 2706
 | `BE-SEC` | 59 |
 | `BE-TST` | 67 |
 | `BIL` | 33 |
+| `CHT` | 24 |
 | `COL` | 30 |
 | `DCT` | 31 |
 | `DEC` | 26 |
@@ -809,6 +810,30 @@ Rule count: 2706
 | `BIL-031` | `BIL` | Usage is recorded from successful source facts | [`docs/product/billing.md`](../product/billing.md) |
 | `BIL-032` | `BIL` | Hard quota concurrency is designed explicitly | [`docs/product/billing.md`](../product/billing.md) |
 | `BIL-033` | `BIL` | Commercial retention is independent of ordinary product deletion | [`docs/product/billing.md`](../product/billing.md) |
+| `CHT-001` | `CHT` | A space is the unit of scope and access | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-002` | `CHT` | Chat is Workspace-scoped and the Workspace is derived | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-003` | `CHT` | Space kinds | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-004` | `CHT` | Membership and access | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-005` | `CHT` | Order is server-assigned | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-006` | `CHT` | Sending is idempotent | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-007` | `CHT` | Edit and delete | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-008` | `CHT` | Content limits and safe rendering | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-009` | `CHT` | Read state is a monotonic boundary | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-010` | `CHT` | Mentions reuse Collaboration identity rules | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-011` | `CHT` | Reactions reuse Collaboration uniqueness | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-012` | `CHT` | Attachments reuse the shared file policy | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-013` | `CHT` | Threads | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-014` | `CHT` | Conversation identity | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-015` | `CHT` | Realtime is a freshness channel with a compact payload | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-016` | `CHT` | Typing and presence are ephemeral and never authority | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-017` | `CHT` | Access change is immediate for live connections | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-018` | `CHT` | Archived and deleted spaces | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-019` | `CHT` | Notifications are intents; Collaboration delivers | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-020` | `CHT` | Rate limits and abuse controls | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-021` | `CHT` | Retention and anonymization | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-022` | `CHT` | Search is derived and authorization-scoped | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-023` | `CHT` | Links to resources never mutate them | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-024` | `CHT` | Chat does not own Audit | [`docs/product/chat.md`](../product/chat.md) |
 | `COL-001` | `COL` | Collaboration target is explicit and scoped | [`docs/product/collaboration.md`](../product/collaboration.md) |
 | `COL-002` | `COL` | Collaboration never mutates target aggregate implicitly | [`docs/product/collaboration.md`](../product/collaboration.md) |
 | `COL-003` | `COL` | Comment target existence/access is validated outside pure Domain | [`docs/product/collaboration.md`](../product/collaboration.md) |

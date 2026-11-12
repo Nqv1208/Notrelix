@@ -16,6 +16,9 @@ function makeMockRealtime() {
       capturedHandler = cb;
       return unsubscribeMock;
     }),
+    subscribeEphemeral: vi.fn(),
+    sendTyping: vi.fn(),
+    sendPresence: vi.fn(),
     subscribeState: vi.fn(),
     subscribeRecovery: vi.fn(),
     getState: vi.fn().mockReturnValue("connected"),
@@ -90,6 +93,9 @@ describe("createDocsCollaborationAdapter", () => {
       connect: vi.fn(),
       disconnect: vi.fn(),
       subscribe: vi.fn(() => (callCount++ === 0 ? unsubscribe1 : unsubscribe2)),
+      subscribeEphemeral: vi.fn(),
+      sendTyping: vi.fn(),
+      sendPresence: vi.fn(),
       subscribeState: vi.fn(),
       subscribeRecovery: vi.fn(),
       getState: vi.fn().mockReturnValue("connected"),

@@ -19,6 +19,7 @@ import { workReportOperations } from "../contexts/analytics/work-report.handlers
 import { billingOperations } from "../contexts/billing/billing.handlers";
 import { integrationsOperations } from "../contexts/integrations/integrations.handlers";
 import { workFeedOperations } from "../contexts/work-feed/work-feed.handlers";
+import { chatOperations } from "../contexts/chat";
 
 export function buildOperationRegistry(): MockOperationRegistry {
   const registry = new MockOperationRegistry();
@@ -46,6 +47,8 @@ export function buildOperationRegistry(): MockOperationRegistry {
     ...billingOperations,
     // Integrations: the connections, the OAuth redirect and the outgoing webhook
     ...integrationsOperations,
+    // Chat (S1.6): channels, groups, members, messages, read state (the Chat contract, no consumer yet)
+    ...chatOperations,
     // Note: Search is CONTRACT-BLOCKED (CTR-GAP-SEARCH) until authoritative producer contract lands.
   ]);
 

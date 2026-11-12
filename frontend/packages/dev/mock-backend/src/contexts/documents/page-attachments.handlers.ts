@@ -38,7 +38,7 @@ const BLOCKED_EXTENSIONS = new Set([
   "htm",
 ]);
 
-function isBlocked(name: string): boolean {
+export function isBlocked(name: string): boolean {
   const dot = name.lastIndexOf(".");
   return (
     dot >= 0 &&
@@ -51,7 +51,7 @@ function isBlocked(name: string): boolean {
   );
 }
 
-function problem(
+export function problem(
   status: number,
   errorCode: string,
   detail: string,
@@ -74,7 +74,7 @@ function startsWith(bytes: Uint8Array, ...head: number[]): boolean {
 }
 
 /** The type the producer stores: images by their bytes, anything else as sent. */
-function classify(bytes: Uint8Array, sent: string): string {
+export function classify(bytes: Uint8Array, sent: string): string {
   if (startsWith(bytes, 0x89, 0x50, 0x4e, 0x47)) return "image/png";
   if (startsWith(bytes, 0xff, 0xd8, 0xff)) return "image/jpeg";
   if (startsWith(bytes, 0x47, 0x49, 0x46, 0x38)) return "image/gif";

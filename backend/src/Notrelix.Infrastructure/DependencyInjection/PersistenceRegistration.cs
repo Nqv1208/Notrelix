@@ -6,6 +6,7 @@ using Notrelix.Infrastructure.Data.Audit;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Integrations.Abstractions;
@@ -96,6 +97,11 @@ public static class PersistenceRegistration
         services.AddScoped<IWorkManagementDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IDocumentDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ICollaborationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IChatDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.ISpaceSequenceAllocator, Notrelix.Infrastructure.Data.Chat.ChatSpaceSequenceAllocator>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IDirectConversationLock, Notrelix.Infrastructure.Data.Chat.ChatDirectConversationLock>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IChatReadStateStore, Notrelix.Infrastructure.Data.Chat.ChatReadStateStore>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IChatThreadReadStore, Notrelix.Infrastructure.Data.Chat.ChatThreadReadStore>();
         services.AddScoped<IAutomationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IIntegrationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
@@ -133,6 +139,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Collaboration.Watchers.PostgresResourceFollowers>();
         services.AddScoped<global::Notrelix.Application.Features.Collaboration.Public.Notifications.INotificationInbox,
             global::Notrelix.Infrastructure.CrossContext.Collaboration.Notifications.PostgresNotificationInbox>();
+        services.AddScoped<global::Notrelix.Application.Features.Collaboration.Public.Notifications.IChatNotificationIntents,
+            global::Notrelix.Infrastructure.CrossContext.Collaboration.Notifications.PostgresChatNotificationIntents>();
         services.AddScoped<global::Notrelix.Application.Features.Automation.Ports.IAutomationMessagePort,
             global::Notrelix.Infrastructure.CrossContext.Automation.Messaging.AutomationMessageAdapter>();
         services.AddScoped<IWorkspaceGrantProjectionService, WorkspaceGrantProjectionServiceAdapter>();

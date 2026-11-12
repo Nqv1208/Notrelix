@@ -409,3 +409,7 @@ Until staging exists, the candidate runs from the tagged commit on a stack the o
 | No service extraction during normal feature sequencing | [`capability-extraction-strategy.md`](../architecture/capability-extraction-strategy.md) |
 
 What it no longer is: a delivery plan with its own phase exits and certification summaries. Those are replaced by the release exits of section 4 and DEL-014.
+
+## Chat (not yet allocated to a release)
+
+Chat (`SYS-ADR-001`, Accepted) is delivered in three phases (`docs/workstreams/chat-delivery-plan.md`): core, interaction, advanced. It is not allocated to a numbered release; the owner assigns phases to releases after accepting the ADR. The 68 use cases of `docs/workstreams/use-cases/chat.md` are all DEFINED.

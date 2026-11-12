@@ -1182,6 +1182,44 @@ docs/decisions/
 
 ---
 
+## PROD-CHAT — Chat semantics
+
+**Canonical owner**
+
+```text
+docs/product/chat.md
+```
+
+**Scope**
+
+```text
+channels
+channel groups
+direct and group conversations
+messages
+threads
+pins
+chat read state
+chat notification levels
+chat realtime scope
+```
+
+**Primary evidence**
+
+```text
+backend Chat source/tests (planned)
+frontend chat package source/tests (planned)
+realtime evidence
+```
+
+**Decision registry**
+
+```text
+docs/decisions/
+```
+
+---
+
 ## PROD-AUTOMATION — Automation semantics
 
 **Canonical owner**
@@ -3409,6 +3447,7 @@ Before changing this registry:
 | PROD-WORK-MANAGEMENT | Work Management | `docs/product/work-management.md` |
 | PROD-DOCUMENTS | Documents | `docs/product/documents.md` |
 | PROD-COLLABORATION | Collaboration | `docs/product/collaboration.md` |
+| PROD-CHAT | Chat | `docs/product/chat.md` |
 | PROD-AUTOMATION | Automation | `docs/product/automation.md` |
 | PROD-INTEGRATIONS | Integrations | `docs/product/integrations.md` |
 | PROD-BILLING | Billing | `docs/product/billing.md` |

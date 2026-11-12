@@ -94,6 +94,11 @@ Current source has first-class Attachments, Comments, Mentions, Presence, Reacti
 # 3. Does not own
 
 ```text
+free-standing conversation (channels, direct and group conversations, messages, threads)
+→ Chat (docs/product/chat.md, SYS-ADR-001)
+```
+
+```text
 target Board/Item/Field/View
 → Work Management
 
@@ -336,9 +341,12 @@ Attachment target kinds today:
 ```text
 work-management.board-item   view: ViewBoard,  upload/link/delete: UpdateItem
 documents.page               view: ViewPage,   upload/link/delete: UpdatePage
+chat.message                 view: reader of the space, upload/remove: the message author in an unarchived space (decided by Chat)
 ```
 
 A page attachment backs an image or file block. It is listed, read, uploaded and deleted only through the page's own routes, authorised by the page's view/edit permission; an attachment id of another target (another page, a board item) is not found through those routes. The file policy (size cap, blocked extensions, sniffed content type, inline only for png/jpeg/gif/webp) is the same for every target, and there is no public address. Deleting a block does not delete the attachment; retention follows section 90.
+
+A chat message attachment (CHT-012) is a row of the same table with target kind `chat.message`, reached through the Collaboration-owned port `IChatMessageAttachments`: Chat decides who may attach, read or remove (space membership, authorship, archive state) and calls the shared flow, which applies the same file policy and the per-message cap `Collaboration:Attachments:MaxAttachmentsPerMessage` (default 10). Deleting the message removes its attachments in the same transaction; the retention job purges the objects (section 90).
 
 # 34. COL-011 — Attachment download capability is scoped and short-lived where appropriate
 

@@ -230,6 +230,22 @@ public partial class ApplicationDbContext
     public DbSet<WorkspacePolicy> WorkspacePolicies => Set<WorkspacePolicy>();
     public DbSet<PermissionTemplate> PermissionTemplates => Set<PermissionTemplate>();
 
+    // Chat (the Workspaces Space keeps the name Spaces; the Chat space is ChatSpaces)
+    public DbSet<Notrelix.Domain.Chat.Spaces.Space> ChatSpaces => Set<Notrelix.Domain.Chat.Spaces.Space>();
+    public DbSet<Notrelix.Domain.Chat.Spaces.Membership> ChatMemberships => Set<Notrelix.Domain.Chat.Spaces.Membership>();
+    public DbSet<Notrelix.Domain.Chat.Spaces.ChannelGroup> ChatChannelGroups => Set<Notrelix.Domain.Chat.Spaces.ChannelGroup>();
+    public DbSet<Notrelix.Domain.Chat.Messages.Message> ChatMessages => Set<Notrelix.Domain.Chat.Messages.Message>();
+    public DbSet<Notrelix.Domain.Chat.Messages.MessageThread> ChatThreads => Set<Notrelix.Domain.Chat.Messages.MessageThread>();
+    public DbSet<Notrelix.Domain.Chat.Messages.ThreadFollower> ChatThreadFollowers => Set<Notrelix.Domain.Chat.Messages.ThreadFollower>();
+    public DbSet<Notrelix.Domain.Chat.Messages.Pin> ChatPins => Set<Notrelix.Domain.Chat.Messages.Pin>();
+    public DbSet<Notrelix.Domain.Chat.Messages.Reaction> ChatReactions => Set<Notrelix.Domain.Chat.Messages.Reaction>();
+    public DbSet<Notrelix.Domain.Chat.Messages.MessageMention> ChatMessageMentions => Set<Notrelix.Domain.Chat.Messages.MessageMention>();
+    public DbSet<Notrelix.Domain.Chat.Permissions.ChannelPermissionOverride> ChatPermissionOverrides => Set<Notrelix.Domain.Chat.Permissions.ChannelPermissionOverride>();
+    public DbSet<Notrelix.Domain.Chat.Spaces.DirectPair> ChatDirectPairs => Set<Notrelix.Domain.Chat.Spaces.DirectPair>();
+    public DbSet<Notrelix.Domain.Chat.Spaces.PersonBlock> ChatBlocks => Set<Notrelix.Domain.Chat.Spaces.PersonBlock>();
+    public DbSet<Notrelix.Domain.Chat.Retention.RetentionPolicy> ChatRetentionPolicies => Set<Notrelix.Domain.Chat.Retention.RetentionPolicy>();
+    public DbSet<Notrelix.Domain.Chat.Exports.ChatExportJob> ChatExportJobs => Set<Notrelix.Domain.Chat.Exports.ChatExportJob>();
+
     // Collaboration
     public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<Mention> PageMentions => Set<Mention>();

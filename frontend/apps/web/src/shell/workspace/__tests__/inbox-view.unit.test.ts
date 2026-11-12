@@ -267,6 +267,58 @@ describe("approval notifications", () => {
   });
 });
 
+describe("chat message notifications (UC-CHT-G09)", () => {
+  const chat = (type: string, title: string, excerpt: string | null) =>
+    toInboxDto("ws-1", {
+      items: [
+        {
+          id: "c1",
+          type,
+          createdAt: "2026-10-12T03:28:00.000Z",
+          unread: true,
+          actor: { id: "u2", name: "Lan" },
+          excerpt,
+          target: { kind: "chat", id: "space-1", title },
+        },
+      ],
+    } as never);
+  const text = (dto: ReturnType<typeof chat>) =>
+    toInboxEntries(dto.items, deps)[0]
+      ?.segments.map((s) => s.text)
+      .join("");
+
+  it("draws a mention, a direct message, a thread reply and a broadcast with the channel and a short preview", () => {
+    const mention = chat("chat.mention", "general", "xin chào");
+    expect(mention.items[0]?.type).toBe("chat_mention");
+    expect(mention.items[0]?.target.kind).toBe("chat");
+    expect(mention.counts.mention).toBe(1);
+    expect(text(mention)).toBe("Lan nhắc tên bạn trong general: “xin chào”");
+    expect(text(chat("chat.direct-message", "general", "hi"))).toContain(
+      "Lan nhắn cho bạn trong general",
+    );
+    expect(text(chat("chat.thread-reply", "general", "ok"))).toContain(
+      "chuỗi bạn theo dõi",
+    );
+    expect(text(chat("chat.broadcast", "general", "all"))).toContain(
+      "gửi cho mọi người trong general",
+    );
+  });
+
+  it("names a conversation without a name by the word for one", () => {
+    expect(text(chat("chat.direct-message", "", "hi"))).toBe(
+      `Lan nhắn cho bạn trong ${copy.feed.chatConversation}: “hi”`,
+    );
+  });
+
+  it("opens a chat notification through the host link of its target", () => {
+    const [row] = toInboxEntries(chat("chat.mention", "general", "a").items, {
+      ...deps,
+      hrefFor: (target) => (target.kind === "chat" ? "/chat" : null),
+    });
+    expect(row?.detail?.openHref).toBe("/chat");
+  });
+});
+
 describe("snoozeUntil", () => {
   const monday = new Date(2026, 9, 12, 14, 0, 0).getTime();
   it("is an hour, the next morning or the next Monday morning", () => {

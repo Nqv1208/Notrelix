@@ -1,5 +1,6 @@
 import * as React from "react";
 import {
+  MessageSquareText,
   ArrowRight,
   BarChart3,
   ChevronDown,
@@ -131,6 +132,7 @@ const ICONS: Readonly<Record<PaletteIcon, LucideIcon>> = {
   home: House,
   "my-work": UserRoundCheck,
   inbox: Inbox,
+  chat: MessageSquareText,
   search: Search,
   library: Library,
   reports: BarChart3,

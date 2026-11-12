@@ -23,6 +23,13 @@ export function routerTarget(
       return { to: "/workspaces/$workspaceId/my-work", params };
     case "inbox":
       return { to: "/workspaces/$workspaceId/inbox", params };
+    case "chat":
+      return destination.channelId
+        ? {
+            to: "/workspaces/$workspaceId/chat/$channelId",
+            params: { ...params, channelId: destination.channelId },
+          }
+        : { to: "/workspaces/$workspaceId/chat", params };
     case "search":
       return { to: "/workspaces/$workspaceId/search", params };
     case "library":
@@ -116,6 +123,7 @@ const SECTION_BY_ROUTE_ID: Readonly<Record<string, WorkspaceDestination>> = {
   "/workspaces/$workspaceId/dashboard": { section: "home" },
   "/workspaces/$workspaceId/my-work": { section: "my-work" },
   "/workspaces/$workspaceId/inbox": { section: "inbox" },
+  "/workspaces/$workspaceId/chat": { section: "chat" },
   "/workspaces/$workspaceId/search": { section: "search" },
   "/workspaces/$workspaceId/library": { section: "library" },
   "/workspaces/$workspaceId/reports": { section: "reports" },
@@ -171,6 +179,12 @@ export function resolveShellLocation(
       match.params.teamId
     ) {
       return { section: "teams", teamId: match.params.teamId };
+    }
+    if (
+      match.routeId === "/workspaces/$workspaceId/chat/$channelId" &&
+      match.params.channelId
+    ) {
+      return { section: "chat", channelId: match.params.channelId };
     }
     if (match.routeId.startsWith("/workspaces/$workspaceId/account")) {
       return { section: "account" };

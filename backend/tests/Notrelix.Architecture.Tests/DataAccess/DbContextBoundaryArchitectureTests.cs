@@ -40,6 +40,7 @@ public class DbContextBoundaryArchitectureTests
         ["Identity"] = "IIdentityDbContext",
         ["Documents"] = "IDocumentDbContext",
         ["Collaboration"] = "ICollaborationDbContext",
+        ["Chat"] = "IChatDbContext",
         ["Governance"] = "IGovernanceDbContext",
         ["Automation"] = "IAutomationDbContext",
         ["Integrations"] = "IIntegrationDbContext",
@@ -66,6 +67,12 @@ public class DbContextBoundaryArchitectureTests
     [InlineData("Collaboration", "IWorkspaceDbContext")]
     [InlineData("Collaboration", "IDocumentDbContext")]
     [InlineData("Collaboration", "IIdentityDbContext")]
+    [InlineData("Collaboration", "IChatDbContext")]
+    [InlineData("Chat", "IWorkManagementDbContext")]
+    [InlineData("Chat", "IWorkspaceDbContext")]
+    [InlineData("Chat", "IDocumentDbContext")]
+    [InlineData("Chat", "IIdentityDbContext")]
+    [InlineData("Chat", "ICollaborationDbContext")]
     [InlineData("Governance", "IWorkManagementDbContext")]
     [InlineData("Governance", "IWorkspaceDbContext")]
     [InlineData("Governance", "ICollaborationDbContext")]

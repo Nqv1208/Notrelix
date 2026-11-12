@@ -327,6 +327,114 @@ export const endpoints = {
     preferences: (workspaceId: string) =>
       `/workspaces/${workspaceId}/notification-preferences`,
   },
+  // Chat.* (REST prefix /api/v1/workspaces/{workspaceId}/chat). A channel is a space: the same GUID.
+  chat: {
+    channels: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels`,
+    channel: (workspaceId: string, channelId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}`,
+    channelOrder: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/order`,
+    channelArchive: (workspaceId: string, channelId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/archive`,
+    channelMembers: (workspaceId: string, channelId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/members`,
+    channelJoin: (workspaceId: string, channelId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/members/me`,
+    channelMember: (workspaceId: string, channelId: string, userId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/members/${encodeURIComponent(userId)}`,
+    channelGroups: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channel-groups`,
+    channelGroup: (workspaceId: string, groupId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channel-groups/${encodeURIComponent(groupId)}`,
+    messages: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/messages`,
+    message: (workspaceId: string, messageId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}`,
+    unread: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/unread`,
+    markRead: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/read`,
+    markAllRead: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/read-all`,
+    notificationLevel: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/notification-level`,
+    /** Threads: GET reads a thread's replies, POST replies in it (the root message id). */
+    threadReplies: (workspaceId: string, rootId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(rootId)}/replies`,
+    threadFollow: (workspaceId: string, threadId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/threads/${encodeURIComponent(threadId)}/follow`,
+    threadRead: (workspaceId: string, threadId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/threads/${encodeURIComponent(threadId)}/read`,
+    followedThreads: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/threads`,
+    /** GET lists the people a message in the space can mention, and whether the caller may broadcast. */
+    spaceMentionables: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/mentionables`,
+    /** Files of a message: GET lists them, POST (multipart, streamed) attaches one to the caller's own message. */
+    messageAttachments: (workspaceId: string, messageId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/attachments`,
+    /** DELETE removes one file of the caller's own message. */
+    messageAttachment: (
+      workspaceId: string,
+      messageId: string,
+      attachmentId: string,
+    ) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`,
+    /** GET streams the bytes (permission checked on every request). */
+    messageAttachmentContent: (
+      workspaceId: string,
+      messageId: string,
+      attachmentId: string,
+    ) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}/content`,
+    /** GET resolves the preview of a Board item or Page link (query: `url`, or `kind` with `resourceId`). */
+    linkResolve: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/links/resolve`,
+    /** Pins: PUT pins a message and DELETE unpins it (the message id). */
+    messagePin: (workspaceId: string, messageId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/pin`,
+    spacePins: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/pins`,
+    /** Channel permission overrides: GET reads, PUT replaces the set, DELETE (expectedVersion in the query) clears it. */
+    channelPermissions: (workspaceId: string, channelId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/permissions`,
+    /** The Workspace retention rule: GET reads it, PUT sets it (Owner only, expectedVersion in the body). */
+    retention: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/retention`,
+    /** Exports of a person's chat data: POST asks for one. */
+    exports: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/exports`,
+    /** One export: its status. */
+    chatExport: (workspaceId: string, exportId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/exports/${encodeURIComponent(exportId)}`,
+    /** The export file, read with the session (permission checked on every request). */
+    chatExportContent: (workspaceId: string, exportId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/exports/${encodeURIComponent(exportId)}/content`,
+    /** POST removes another person's message as a moderator (the reason goes to the Audit record). */
+    messageModeration: (workspaceId: string, messageId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/moderation`,
+    /** Reactions: PUT adds and DELETE removes the caller's palette emoji; GET lists who reacted. */
+    messageReaction: (workspaceId: string, messageId: string, kind: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/reactions/${encodeURIComponent(kind)}`,
+    messageReactors: (workspaceId: string, messageId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/reactions`,
+    /** Conversations: GET lists the caller's direct and group conversations, POST starts one. */
+    conversations: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/conversations`,
+    /** POST adds people to a group conversation. */
+    conversationParticipants: (workspaceId: string, conversationId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/conversations/${encodeURIComponent(conversationId)}/participants`,
+    /** DELETE leaves a group conversation. */
+    conversationLeave: (workspaceId: string, conversationId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/conversations/${encodeURIComponent(conversationId)}/participants/me`,
+    /** PUT hides or shows a conversation in the caller's list. */
+    conversationVisibility: (workspaceId: string, conversationId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/conversations/${encodeURIComponent(conversationId)}/visibility`,
+    /** PUT blocks or unblocks a person for the caller. */
+    blocks: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/blocks`,
+  },
 
   boardGroups: {
     create: (boardId: string) => `/boards/${boardId}/groups`,

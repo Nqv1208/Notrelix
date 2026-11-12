@@ -77,6 +77,76 @@ public static class ProblemDetailsMapper
                 ex.Message,
                 null
             ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.ChannelArchived } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.ChannelArchived,
+                "Channel archived",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageDeleted } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageDeleted,
+                "Message deleted",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageNotPinnable } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageNotPinnable,
+                "Message not pinnable",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageNotReactable } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageNotReactable,
+                "Message not reactable",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageNotAttachable } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageNotAttachable,
+                "Message not attachable",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.LimitReached } ex => (
+                StatusCodes.Status422UnprocessableEntity,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.LimitReached,
+                "Limit reached",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.SystemMessageImmutable } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.SystemMessageImmutable,
+                "System message",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.PermissionLockout } ex => (
+                StatusCodes.Status422UnprocessableEntity,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.PermissionLockout,
+                "Permission lockout",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.PermissionExceedsRole } ex => (
+                StatusCodes.Status422UnprocessableEntity,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.PermissionExceedsRole,
+                "Permission exceeds role",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.LastManager } ex => (
+                StatusCodes.Status422UnprocessableEntity,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.LastManager,
+                "Last manager",
+                ex.Message,
+                null
+            ),
             Notrelix.Domain.Common.Exceptions.BusinessRuleException ex => (
                 StatusCodes.Status400BadRequest,
                 ErrorCodes.BusinessRuleViolation,
@@ -140,6 +210,13 @@ public static class ProblemDetailsMapper
                 StatusCodes.Status409Conflict,
                 ErrorCodes.Conflict,
                 "Conflict",
+                exception.Message,
+                null
+            ),
+            Notrelix.Application.Common.Exceptions.TooManyRequestsException => (
+                StatusCodes.Status429TooManyRequests,
+                ErrorCodes.TooManyRequests,
+                "Too Many Requests",
                 exception.Message,
                 null
             ),
@@ -208,6 +285,17 @@ public static class ProblemDetailsMapper
             }
         }
 
+        // A limit of a feature (a Chat rate limit, a slow mode): the stable rule and the wait, so a client shows a countdown.
+        if (exception is Notrelix.Application.Common.Exceptions.TooManyRequestsException tooMany)
+        {
+            problemDetails.Extensions["ruleCode"] = tooMany.RuleCode;
+            problemDetails.Extensions["retryAfter"] = RetryAfterSeconds(tooMany);
+            foreach (var (key, value) in tooMany.Extensions)
+            {
+                problemDetails.Extensions[key] = value;
+            }
+        }
+
         if (exception is Notrelix.Application.Common.Exceptions.PreconditionFailedException { Extensions.Count: > 0 } stale)
         {
             foreach (var (key, value) in stale.Extensions)
@@ -231,4 +319,8 @@ public static class ProblemDetailsMapper
 
         return problemDetails;
     }
+
+    /// <summary>The whole seconds a client waits, at least one (the Retry-After header and the problem member).</summary>
+    public static int RetryAfterSeconds(Notrelix.Application.Common.Exceptions.TooManyRequestsException exception) =>
+        Math.Max(1, (int)Math.Ceiling(exception.RetryAfter.TotalSeconds));
 }

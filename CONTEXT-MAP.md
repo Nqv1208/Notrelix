@@ -368,6 +368,39 @@ frontend/docs/architecture/realtime.md
 
 ---
 
+## 4.7.1 Chat
+
+Read:
+
+```text
+PRODUCT.md
+docs/product/chat.md
+docs/decisions/SYS-ADR-001-chat-bounded-context.md
+```
+
+Use for:
+
+- channels and channel groups;
+- direct and group conversations;
+- messages, threads, pins;
+- per-space read state and notification level;
+- chat realtime scope and typing/presence.
+
+For comments on resources, mentions, reactions, attachments and notification delivery rules:
+
+```text
+docs/product/collaboration.md
+```
+
+For realtime behavior:
+
+```text
+docs/architecture/events-realtime-and-delivery-boundary.md
+frontend/docs/architecture/realtime.md
+```
+
+---
+
 ## 4.8 Automation
 
 Read:

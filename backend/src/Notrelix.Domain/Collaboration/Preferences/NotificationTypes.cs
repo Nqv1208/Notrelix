@@ -73,13 +73,29 @@ public static class NotificationTypes
     /// </summary>
     public const string FormSubmissionCreatedProducedType = "work.form.submission-created";
 
+    /// <summary>A person was mentioned in a chat message; maps to <see cref="Mention"/>.</summary>
+    public const string ChatMentionProducedType = "chat.mention";
+
+    /// <summary>A direct or group conversation received a message; maps to <see cref="Mention"/>, the "someone wrote to me" type.</summary>
+    public const string ChatDirectMessageProducedType = "chat.direct-message";
+
+    /// <summary>A reply arrived in a chat thread the person follows; maps to <see cref="Watching"/>.</summary>
+    public const string ChatThreadReplyProducedType = "chat.thread-reply";
+
+    /// <summary>A chat message carried an @channel broadcast; maps to <see cref="Mention"/>.</summary>
+    public const string ChatBroadcastProducedType = "chat.broadcast";
+
+    /// <summary>The resource kind of a chat notification: the space the message was sent in.</summary>
+    public const string ChatSpaceResourceKind = "chat.space";
+
     /// <summary>
     /// Maps the type literal a producer stores on a notification to the preference type, or null when the
     /// literal has no preference type.
     /// </summary>
     public static string? FromProducedType(string? producedType) => producedType switch
     {
-        MentionProducedType => Mention,
+        MentionProducedType or ChatMentionProducedType or ChatDirectMessageProducedType or ChatBroadcastProducedType => Mention,
+        ChatThreadReplyProducedType => Watching,
         ItemAssignedProducedType or AutomationProducedType or ItemReminderProducedType or ExportReadyProducedType
             or FormSubmissionCreatedProducedType => Assigned,
         ItemDueTomorrowProducedType or ItemOverdueProducedType or ItemDueReminderProducedType => Overdue,

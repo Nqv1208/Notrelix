@@ -15,7 +15,6 @@ import {
   Home,
   Inbox,
   LifeBuoy,
-  MessageSquareText,
   Settings,
   UserRoundCheck,
 } from "lucide-react";
@@ -57,12 +56,6 @@ export const PRIMARY_NAV_CONTRIBUTIONS: readonly NavigationContribution[] = [
     id: "nav-notifications",
     label: "Notifications",
     icon: Bell,
-    to: "/workspaces/$workspaceId",
-  },
-  {
-    id: "nav-chat-rooms",
-    label: "Chat Rooms",
-    icon: MessageSquareText,
     to: "/workspaces/$workspaceId",
   },
 ] as const;

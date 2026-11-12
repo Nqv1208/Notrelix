@@ -34,6 +34,8 @@ Notrelix.Domain.Billing.BillingEvents.BillingEventType|System.Int32|InvoicePayme
 Notrelix.Domain.Billing.Payments.PaymentProvider|System.Int32|Stripe|0
 Notrelix.Domain.Billing.Payments.PaymentProvider|System.Int32|PayPal|1
 Notrelix.Domain.Billing.Payments.PaymentProvider|System.Int32|Manual|2
+Notrelix.Domain.Chat.Messages.MessageKind|System.Int32|User|0
+Notrelix.Domain.Chat.Messages.MessageKind|System.Int32|System|1
 Notrelix.Domain.Collaboration.Presence.PresenceStatus|System.Int32|Online|0
 Notrelix.Domain.Collaboration.Presence.PresenceStatus|System.Int32|Idle|1
 Notrelix.Domain.Collaboration.Presence.PresenceStatus|System.Int32|Offline|2

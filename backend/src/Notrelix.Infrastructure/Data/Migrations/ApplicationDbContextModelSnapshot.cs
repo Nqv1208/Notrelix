@@ -2543,6 +2543,875 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("workspace_feature_usages", "billing");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Chat.Exports.ChatExportJob", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("ExcludedSpaceCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("excluded_space_count");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("FailureCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("failure_code");
+
+                    b.Property<int>("MessageCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("message_count");
+
+                    b.Property<DateTimeOffset?>("RangeFrom")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("range_from");
+
+                    b.Property<DateTimeOffset?>("RangeTo")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("range_to");
+
+                    b.Property<Guid>("RequestedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_by");
+
+                    b.Property<long>("SizeBytes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(0L)
+                        .HasColumnName("size_bytes");
+
+                    b.Property<int>("SpaceCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("space_count");
+
+                    b.Property<DateTimeOffset?>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("StorageKey")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("storage_key");
+
+                    b.Property<Guid>("SubjectUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_user_id");
+
+                    b.Property<int>("TombstoneCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("tombstone_count");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("version");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_export_jobs");
+
+                    b.HasIndex("Status", "CreatedAt")
+                        .HasDatabaseName("ix_export_jobs_status_created");
+
+                    b.HasIndex("WorkspaceId", "RequestedBy", "CreatedAt")
+                        .IsDescending(false, false, true)
+                        .HasDatabaseName("ix_export_jobs_workspace_requester");
+
+                    b.ToTable("export_jobs", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.Message", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<bool>("AlsoSentToChannel")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("also_sent_to_channel");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("author_id");
+
+                    b.Property<string>("ClientMessageId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("client_message_id");
+
+                    b.Property<string>("Content")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("content");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<DateTimeOffset?>("EditedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("edited_at");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("kind");
+
+                    b.Property<Guid?>("ReplyToId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reply_to_id");
+
+                    b.Property<long>("Sequence")
+                        .HasColumnType("bigint")
+                        .HasColumnName("sequence");
+
+                    b.Property<Guid>("SpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("space_id");
+
+                    b.Property<Guid?>("ThreadRootId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("thread_root_id");
+
+                    b.Property<long?>("ThreadSequence")
+                        .HasColumnType("bigint")
+                        .HasColumnName("thread_sequence");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("version");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_messages");
+
+                    b.HasIndex("SpaceId", "Sequence")
+                        .IsUnique()
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ux_messages_space_sequence");
+
+                    b.HasIndex("ThreadRootId", "ThreadSequence")
+                        .IsUnique()
+                        .HasDatabaseName("ux_messages_thread_sequence");
+
+                    b.HasIndex("SpaceId", "AuthorId", "ClientMessageId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_messages_space_author_client_message");
+
+                    b.ToTable("messages", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.MessageMention", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("kind");
+
+                    b.Property<int>("Length")
+                        .HasColumnType("integer")
+                        .HasColumnName("length");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("message_id");
+
+                    b.Property<Guid>("SpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("space_id");
+
+                    b.Property<int>("Start")
+                        .HasColumnType("integer")
+                        .HasColumnName("start");
+
+                    b.Property<Guid?>("TargetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_message_mentions");
+
+                    b.HasIndex("MessageId")
+                        .HasDatabaseName("ix_message_mentions_message");
+
+                    b.HasIndex("SpaceId", "Kind")
+                        .HasDatabaseName("ix_message_mentions_space_kind");
+
+                    b.HasIndex("TargetId", "Kind")
+                        .HasDatabaseName("ix_message_mentions_target");
+
+                    b.ToTable("message_mentions", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.MessageThread", b =>
+                {
+                    b.Property<Guid>("RootMessageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("root_message_id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset?>("ArchivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("archived_at");
+
+                    b.Property<DateTimeOffset>("LastReplyAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_reply_at");
+
+                    b.Property<long>("ReplyCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(0L)
+                        .HasColumnName("reply_count");
+
+                    b.Property<Guid>("SpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("space_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("RootMessageId")
+                        .HasName("pk_threads");
+
+                    b.HasIndex("SpaceId")
+                        .HasDatabaseName("ix_threads_space_id");
+
+                    b.HasIndex("WorkspaceId", "LastReplyAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_threads_workspace_last_reply");
+
+                    b.ToTable("threads", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.Pin", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("message_id");
+
+                    b.Property<DateTimeOffset>("PinnedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("pinned_at");
+
+                    b.Property<Guid>("PinnedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pinned_by");
+
+                    b.Property<Guid>("SpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("space_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pins");
+
+                    b.HasIndex("MessageId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_pins_message");
+
+                    b.HasIndex("SpaceId", "PinnedAt", "Id")
+                        .IsDescending(false, true, true)
+                        .HasDatabaseName("ix_pins_space_pinned_at");
+
+                    b.ToTable("pins", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.Reaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("kind");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("message_id");
+
+                    b.Property<Guid>("SpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("space_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_reactions");
+
+                    b.HasIndex("SpaceId")
+                        .HasDatabaseName("ix_reactions_space_id");
+
+                    b.HasIndex("MessageId", "CreatedAt", "UserId")
+                        .HasDatabaseName("ix_reactions_message_created_at");
+
+                    b.HasIndex("MessageId", "UserId", "Kind")
+                        .IsUnique()
+                        .HasDatabaseName("ux_reactions_message_user_kind");
+
+                    b.ToTable("reactions", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.ThreadFollower", b =>
+                {
+                    b.Property<Guid>("RootMessageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("root_message_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<bool>("Muted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("muted");
+
+                    b.Property<long>("ReadReplySequence")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(0L)
+                        .HasColumnName("read_reply_sequence");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("RootMessageId", "UserId")
+                        .HasName("pk_thread_followers");
+
+                    b.HasIndex("UserId", "WorkspaceId")
+                        .HasDatabaseName("ix_thread_followers_user_workspace");
+
+                    b.ToTable("thread_followers", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Permissions.ChannelPermissionOverride", b =>
+                {
+                    b.Property<Guid>("SpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("space_id");
+
+                    b.Property<string>("Subject")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("subject");
+
+                    b.Property<string>("Action")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("action");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<string>("Effect")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("effect");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("SpaceId", "Subject", "Action")
+                        .HasName("pk_permission_overrides");
+
+                    b.ToTable("permission_overrides", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Retention.RetentionPolicy", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("mode");
+
+                    b.Property<int?>("RetentionDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("retention_days");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("version");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_retention_policies");
+
+                    b.HasIndex("RetentionDays")
+                        .HasDatabaseName("ix_retention_policies_enabled")
+                        .HasFilter("retention_days IS NOT NULL");
+
+                    b.HasIndex("WorkspaceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_retention_policies_workspace");
+
+                    b.ToTable("retention_policies", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.ChannelGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("name");
+
+                    b.Property<double>("Position")
+                        .HasColumnType("double precision")
+                        .HasColumnName("position");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("version");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_channel_groups");
+
+                    b.HasIndex("WorkspaceId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_channel_groups_workspace_name");
+
+                    b.ToTable("channel_groups", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.DirectPair", b =>
+                {
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.Property<Guid>("UserLow")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_low");
+
+                    b.Property<Guid>("UserHigh")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_high");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid>("SpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("space_id");
+
+                    b.HasKey("WorkspaceId", "UserLow", "UserHigh")
+                        .HasName("pk_direct_pairs");
+
+                    b.HasIndex("SpaceId")
+                        .HasDatabaseName("ix_direct_pairs_space_id");
+
+                    b.ToTable("direct_pairs", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.Membership", b =>
+                {
+                    b.Property<Guid>("SpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("space_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset?>("HiddenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("hidden_at");
+
+                    b.Property<DateTimeOffset>("JoinedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("joined_at");
+
+                    b.Property<DateTimeOffset?>("LeftAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("left_at");
+
+                    b.Property<int>("MentionCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("mention_count");
+
+                    b.Property<DateTimeOffset?>("MutedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("muted_until");
+
+                    b.Property<string>("NotificationLevel")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("notification_level");
+
+                    b.Property<long>("ReadSequence")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(0L)
+                        .HasColumnName("read_sequence");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("role");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("SpaceId", "UserId")
+                        .HasName("pk_memberships");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("idx_memberships_user");
+
+                    b.HasIndex("UserId", "WorkspaceId")
+                        .HasDatabaseName("idx_memberships_user_workspace_active")
+                        .HasFilter("left_at IS NULL");
+
+                    NpgsqlIndexBuilderExtensions.IncludeProperties(b.HasIndex("UserId", "WorkspaceId"), new[] { "SpaceId", "ReadSequence" });
+
+                    b.ToTable("memberships", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.PersonBlock", b =>
+                {
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.Property<Guid>("BlockerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("blocker_id");
+
+                    b.Property<Guid>("BlockedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("blocked_id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.HasKey("WorkspaceId", "BlockerId", "BlockedId")
+                        .HasName("pk_blocks");
+
+                    b.HasIndex("WorkspaceId", "BlockedId")
+                        .HasDatabaseName("ix_blocks_workspace_blocked");
+
+                    b.ToTable("blocks", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.Space", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset?>("ArchivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("archived_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DeleteReason")
+                        .HasColumnType("text")
+                        .HasColumnName("delete_reason");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<Guid?>("GroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("group_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("kind");
+
+                    b.Property<long>("LastSequence")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(0L)
+                        .HasColumnName("last_sequence");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("name");
+
+                    b.Property<double>("Position")
+                        .HasColumnType("double precision")
+                        .HasColumnName("position");
+
+                    b.Property<int>("SlowModeSeconds")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("slow_mode_seconds");
+
+                    b.Property<string>("Topic")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)")
+                        .HasColumnName("topic");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("version");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_spaces");
+
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_spaces_group_id");
+
+                    b.HasIndex("WorkspaceId", "Kind")
+                        .HasDatabaseName("idx_spaces_workspace_kind");
+
+                    b.HasIndex("WorkspaceId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_spaces_workspace_name_live")
+                        .HasFilter("archived_at IS NULL AND deleted_at IS NULL AND kind IN ('channel_public', 'channel_private')");
+
+                    b.ToTable("spaces", "chat");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Collaboration.Attachments.Attachment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -12410,6 +13279,133 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasConstraintName("fk_usage_metric_history_usage_metrics_metric_id");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.Message", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
+                        .WithMany()
+                        .HasForeignKey("SpaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_messages_chat_spaces_space_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.MessageMention", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Messages.Message", null)
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_message_mentions_messages_message_id");
+
+                    b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
+                        .WithMany()
+                        .HasForeignKey("SpaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_message_mentions_chat_spaces_space_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.MessageThread", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Messages.Message", null)
+                        .WithMany()
+                        .HasForeignKey("RootMessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_threads_messages_root_message_id");
+
+                    b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
+                        .WithMany()
+                        .HasForeignKey("SpaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_threads_spaces_space_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.Pin", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Messages.Message", null)
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_pins_messages_message_id");
+
+                    b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
+                        .WithMany()
+                        .HasForeignKey("SpaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_pins_chat_spaces_space_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.Reaction", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Messages.Message", null)
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_reactions_messages_message_id");
+
+                    b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
+                        .WithMany()
+                        .HasForeignKey("SpaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_reactions_chat_spaces_space_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Messages.ThreadFollower", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Messages.MessageThread", null)
+                        .WithMany()
+                        .HasForeignKey("RootMessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_thread_followers_threads_root_message_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Permissions.ChannelPermissionOverride", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
+                        .WithMany("PermissionOverrides")
+                        .HasForeignKey("SpaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_permission_overrides_chat_spaces_space_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.DirectPair", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
+                        .WithMany()
+                        .HasForeignKey("SpaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_direct_pairs_chat_spaces_space_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.Membership", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
+                        .WithMany("Memberships")
+                        .HasForeignKey("SpaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_memberships_chat_spaces_space_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.Space", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Spaces.ChannelGroup", null)
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_spaces_channel_groups_group_id");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Collaboration.Attachments.Attachment", b =>
                 {
                     b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
@@ -14225,6 +15221,13 @@ namespace Notrelix.Infrastructure.Data.Migrations
             modelBuilder.Entity("Notrelix.Domain.Billing.Usage.UsageMetric", b =>
                 {
                     b.Navigation("History");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.Space", b =>
+                {
+                    b.Navigation("Memberships");
+
+                    b.Navigation("PermissionOverrides");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Collaboration.Preferences.NotificationPreferenceSet", b =>
