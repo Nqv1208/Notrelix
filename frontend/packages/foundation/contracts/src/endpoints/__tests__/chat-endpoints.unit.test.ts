@@ -112,6 +112,15 @@ describe("chat endpoint paths", () => {
     expect(chat.messageAttachments("a/b", "c d")).toContain("c%20d");
   });
 
+  it("builds the link resolve path and encodes the workspace id", () => {
+    expect(endpoints.chat.linkResolve("w")).toBe(
+      "/workspaces/w/chat/links/resolve",
+    );
+    expect(endpoints.chat.linkResolve("a/b")).toBe(
+      "/workspaces/a%2Fb/chat/links/resolve",
+    );
+  });
+
   it("keeps a plain id as it is", () => {
     expect(endpoints.chat.channel("w-1", "c_2")).toBe(
       "/workspaces/w-1/chat/channels/c_2",

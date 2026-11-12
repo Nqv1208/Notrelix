@@ -16,6 +16,7 @@ import {
 import { announceMessageCreated, announcePinChanged } from "./chat-realtime";
 import { fail } from "./chat-access";
 import { storeMentions } from "./chat-mentions";
+import { deliverChatNotifications } from "./chat-notifications";
 
 /** Stores a user message: the sequence is the space's next one, the space row moves with it. */
 export function appendUserMessage(
@@ -41,6 +42,7 @@ export function appendUserMessage(
   storeMentions(state, message.id, mentions);
   showConversationAgain(state, space);
   announceMessageCreated(state, space, message);
+  deliverChatNotifications(state, space, message);
   return message;
 }
 
@@ -108,6 +110,7 @@ export function appendThreadReply(
     threadSequence,
   );
   announceMessageCreated(state, space, message);
+  deliverChatNotifications(state, space, message);
   return message;
 }
 

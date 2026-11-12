@@ -48,9 +48,9 @@ The product rules are in `docs/product/chat.md` (CHT-001 to CHT-024). The capabi
 | D | CHT-004 Read state and notification levels | 7 | 7 | 0 | 0 | 0 | 0 | 0 |
 | E | CHT-005 Direct and group conversations | 7 | 7 | 0 | 0 | 0 | 0 | 0 |
 | F | CHT-006 Threads, replies and pins | 8 | 8 | 0 | 0 | 0 | 0 | 0 |
-| G | CHT-007 Mentions, reactions, attachments and notification handoff | 9 | 9 | 0 | 0 | 0 | 0 | 0 |
+| G | CHT-007 Mentions, reactions, attachments and notification handoff | 9 | 7 | 0 | 0 | 2 | 0 | 0 |
 | H | CHT-008 Access, moderation, retention, search and hardening | 10 | 7 | 0 | 0 | 3 | 0 | 0 |
-| | Total | 68 | 65 | 0 | 0 | 3 | 0 | 0 |
+| | Total | 68 | 63 | 0 | 0 | 5 | 0 | 0 |
 
 ### 1.2 Gaps
 
@@ -128,11 +128,11 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 | UC-CHT-G02 | Warn when a mention cannot be seen | G | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
 | UC-CHT-G03 | Broadcast with @channel or @here | G | Workspace Owner, Admin, Member with the broadcast action | no | no | no | no | DEFINED | Phase 2; not built. |
 | UC-CHT-G04 | Link to another channel with # | G | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-G05 | Link a Board item or Page in a message | G | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
+| UC-CHT-G05 | Link a Board item or Page in a message | G | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | Built (S2.8); the owner tests and sets DONE. |
 | UC-CHT-G06 | React to a message | G | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
 | UC-CHT-G07 | Remove a reaction and see who reacted | G | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
 | UC-CHT-G08 | Attach a file to a message | G | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-G09 | Hand a notification intent to the Inbox | G | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
+| UC-CHT-G09 | Hand a notification intent to the Inbox | G | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | Built (S2.8); @here gives no Inbox notification (no presence); the owner tests and sets DONE. |
 | UC-CHT-H01 | Override channel permissions by role | H | Workspace Owner, Admin, Channel manager | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. An allow override is accepted but changes nothing (a deny is the only effect); custom-role grants are not in the capability flags. |
 | UC-CHT-H02 | Guest access to chat | H | Owner, Admin | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. Chat search (UC-CHT-H07) is not built, so a search-by-name check is not testable yet. Three leaks were found and fixed (see Readings). |
 | UC-CHT-H03 | Delete another person's message as a moderator | H | Roles per owner decision | yes | yes | no | no | HARDENING | Owner decision open: moderators are Workspace Owner and Admin (and a custom role with the moderate action); channel managers are not. The author is not notified (UC-CHT-G09 is not built). No real e2e, design record, owner check or axe record. |
@@ -913,8 +913,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-023.
 - Acceptance: Given a link to an item the reader cannot see, then the preview shows no title.
-- Evidence: BE planned GET /api/v1/workspaces/{workspaceId}/chat/links/resolve (Chat.Links.Resolve) · FE planned link preview · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE GET /api/v1/workspaces/{workspaceId}/chat/links/resolve (Chat.Links.Resolve; Board items and Pages through cross-context public contracts, a title only when the caller can view the resource) · FE link preview chip in messages (loading, no access, resolved) · Design none yet · Tests unit (Application, API contract, mock, features-chat) · Real e2e none yet
+- State: HARDENING — built; the owner tests and sets DONE.
 
 ### UC-CHT-G06 React to a message
 - Capability: G, CHT-007 Mentions, reactions, attachments and notification handoff
@@ -969,8 +969,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-019, CHT-010.
 - Acceptance: Given a mention of a person who left the channel before delivery, then no notification is delivered.
-- Evidence: BE planned (consumer) Chat.Notifications.Intent · FE planned Inbox item for a chat message · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE consumer ChatNotificationIntentConsumer (ChatMessageCreated) maps mention, direct or group message, followed thread reply and @channel to intents; Collaboration writes the Inbox notification through IChatNotificationIntents on the existing notification path, one per message, recipient and reason · FE Inbox rows for chat notifications · Design none yet · Tests unit, consumer, integration against Postgres · Real e2e none yet
+- State: HARDENING — built; @here gives no Inbox notification (presence is not in this base); the owner tests and sets DONE.
 
 ### Capability H: CHT-008 Access, moderation, retention, search and hardening
 

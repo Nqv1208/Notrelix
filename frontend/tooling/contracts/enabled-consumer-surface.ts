@@ -4387,6 +4387,13 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "Block or unblock a person for the caller",
     ],
     [
+      "Chat.Links.Resolve",
+      "GET",
+      "/workspaces/{workspaceId}/chat/links/resolve",
+      false,
+      "Resolve the preview of a link to a Board item or a Page",
+    ],
+    [
       "Chat.Attachments.List",
       "GET",
       "/workspaces/{workspaceId}/chat/messages/{messageId}/attachments",
