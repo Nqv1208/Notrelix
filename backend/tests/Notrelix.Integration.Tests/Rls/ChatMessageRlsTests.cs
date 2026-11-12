@@ -103,7 +103,7 @@ public sealed class ChatMessageRlsTests : IAsyncLifetime
             .ReturnsAsync(new WorkspaceMemberFact(_outsider.Id, "Member", true));
 
         await using var db = _fixture.CreateAppContext(tenant);
-        var handler = new ListMessagesQueryHandler(db, context.Object, members.Object);
+        var handler = new ListMessagesQueryHandler(db, context.Object, members.Object, new InMemoryChatMessageAttachments());
 
         var act = () => handler.Handle(
             new ListMessagesQuery(_a.WorkspaceId, _spaceId, null, null, null, 50), CancellationToken.None);

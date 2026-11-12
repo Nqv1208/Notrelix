@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Collaboration.Public.Attachments;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Chat.Threads.DTOs;
@@ -28,7 +29,8 @@ public class ListFollowedThreadsQueryHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
-    IDateTimeProvider clock) : IRequestHandler<ListFollowedThreadsQuery, Result<FollowedThreadPageDto>>
+    IDateTimeProvider clock,
+    IChatMessageAttachments attachments) : IRequestHandler<ListFollowedThreadsQuery, Result<FollowedThreadPageDto>>
 {
     public async Task<Result<FollowedThreadPageDto>> Handle(ListFollowedThreadsQuery request, CancellationToken cancellationToken)
     {
@@ -63,7 +65,7 @@ public class ListFollowedThreadsQueryHandler(
         var roots = await db.ChatMessages.AsNoTracking()
             .Where(m => rootIds.Contains(m.Id))
             .ToDictionaryAsync(m => m.Id, cancellationToken);
-        var rootDtos = await ReplyPreviews.DtosAsync(db, request.WorkspaceId, userId, rootIds.Select(id => roots[id]).ToList(), cancellationToken);
+        var rootDtos = await ReplyPreviews.DtosAsync(db, attachments, request.WorkspaceId, userId, rootIds.Select(id => roots[id]).ToList(), cancellationToken);
         var rootById = rootDtos.ToDictionary(r => r.Id);
 
         var now = clock.UtcNow;

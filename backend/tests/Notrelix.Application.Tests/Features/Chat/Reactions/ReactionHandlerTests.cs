@@ -14,6 +14,7 @@ using AppConflictException = Notrelix.Application.Common.Exceptions.ConflictExce
 using AppNotFoundException = Notrelix.Application.Common.Exceptions.NotFoundException;
 using AppValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Application.Tests.Features.Chat.Reactions;
 
@@ -119,7 +120,7 @@ public class ReactionHandlerTests
     private AddReactionCommandHandler AddHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object);
     private RemoveReactionCommandHandler RemoveHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object);
     private ListReactorsQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object);
-    private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object);
+    private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments());
 
     private static ReactionSummaryDto Summary(MessageReactionsDto dto, string kind) =>
         dto.Reactions.Single(r => r.Emoji == kind);

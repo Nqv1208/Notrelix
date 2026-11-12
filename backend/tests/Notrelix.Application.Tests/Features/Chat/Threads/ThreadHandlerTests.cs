@@ -10,6 +10,7 @@ using Notrelix.Application.Tests.Features.Collaboration;
 using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Spaces;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Application.Tests.Features.Chat.Threads;
 
@@ -116,12 +117,12 @@ public class ThreadHandlerTests
         return reply;
     }
 
-    private ReplyInThreadCommandHandler ReplyHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object);
+    private ReplyInThreadCommandHandler ReplyHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments());
     private FollowThreadCommandHandler FollowHandler() => new(_db.Object, _context.Object, _members.Object);
     private MarkThreadReadCommandHandler MarkHandler() => new(_db.Object, _context.Object, _members.Object, _readStore);
-    private ListThreadRepliesQueryHandler RepliesHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object);
-    private ListFollowedThreadsQueryHandler FollowedHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object);
-    private ListMessagesQueryHandler ListMessagesHandler() => new(_db.Object, _context.Object, _members.Object);
+    private ListThreadRepliesQueryHandler RepliesHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, new InMemoryChatMessageAttachments());
+    private ListFollowedThreadsQueryHandler FollowedHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, new InMemoryChatMessageAttachments());
+    private ListMessagesQueryHandler ListMessagesHandler() => new(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments());
 
     private static ReplyInThreadCommand Command(Guid workspaceId, Guid rootId, string content = "hello", string clientId = "c-1", bool alsoSend = false) =>
         new(workspaceId, rootId, content, clientId, alsoSend);

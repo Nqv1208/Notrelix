@@ -112,7 +112,8 @@ public sealed class ChatPinIntegrationTests : IAsyncLifetime
             ActiveMembers(_member).Object,
             allocator,
             new ChatSystemMessages(context, allocator, clock),
-            clock);
+            clock,
+            new InMemoryChatMessageAttachments());
 
         try
         {

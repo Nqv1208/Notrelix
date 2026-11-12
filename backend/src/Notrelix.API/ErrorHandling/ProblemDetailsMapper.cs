@@ -105,6 +105,13 @@ public static class ProblemDetailsMapper
                 ex.Message,
                 null
             ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageNotAttachable } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageNotAttachable,
+                "Message not attachable",
+                ex.Message,
+                null
+            ),
             Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.LimitReached } ex => (
                 StatusCodes.Status422UnprocessableEntity,
                 Notrelix.Domain.Chat.Rules.ChatRuleCodes.LimitReached,

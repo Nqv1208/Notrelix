@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Collaboration.Public.Attachments;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Mentions.DTOs;
 using Notrelix.Application.Features.Chat.Mentions.Services;
@@ -41,7 +42,8 @@ public class SendMessageCommandHandler(
     IWorkspaceMemberFacts members,
     ISpaceSequenceAllocator sequences,
     IDateTimeProvider clock,
-    IBroadcastAuthorizer broadcast) : IRequestHandler<SendMessageCommand, Result<SendMessageResultDto>>
+    IBroadcastAuthorizer broadcast,
+    IChatMessageAttachments attachments) : IRequestHandler<SendMessageCommand, Result<SendMessageResultDto>>
 {
     public async Task<Result<SendMessageResultDto>> Handle(SendMessageCommand request, CancellationToken cancellationToken)
     {
@@ -86,7 +88,7 @@ public class SendMessageCommandHandler(
                 .Select(m => m.ToSpan()).ToList();
             var again = new MentionResolution(storedMentions, MentionResolver.StoredWarnings(space, storedMentions));
             return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-                await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, stored, cancellationToken, again), Created: false));
+                await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, stored, cancellationToken, again), Created: false));
         }
 
         if (request.ReplyToId is { } replyToId)
@@ -117,7 +119,7 @@ public class SendMessageCommandHandler(
         // A new message brings a hidden conversation back to every list that hid it (UC-CHT-E07).
         ConversationVisibility.ShowAgain(space);
         return Result<SendMessageResultDto>.Success(new SendMessageResultDto(
-            await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, message, cancellationToken, resolution), Created: true));
+            await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, message, cancellationToken, resolution), Created: true));
     }
 }
 

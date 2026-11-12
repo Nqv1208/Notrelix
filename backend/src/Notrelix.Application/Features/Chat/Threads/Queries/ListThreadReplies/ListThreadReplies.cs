@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Collaboration.Public.Attachments;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Chat.Threads.DTOs;
@@ -29,7 +30,8 @@ public class ListThreadRepliesQueryHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
-    IDateTimeProvider clock) : IRequestHandler<ListThreadRepliesQuery, Result<ThreadRepliesPageDto>>
+    IDateTimeProvider clock,
+    IChatMessageAttachments attachments) : IRequestHandler<ListThreadRepliesQuery, Result<ThreadRepliesPageDto>>
 {
     public async Task<Result<ThreadRepliesPageDto>> Handle(ListThreadRepliesQuery request, CancellationToken cancellationToken)
     {
@@ -57,9 +59,9 @@ public class ListThreadRepliesQueryHandler(
             .ToListAsync(cancellationToken);
 
         var now = clock.UtcNow;
-        var items = await ReplyPreviews.DtosAsync(db, request.WorkspaceId, userId, rows.Take(request.Limit).ToList(), cancellationToken);
+        var items = await ReplyPreviews.DtosAsync(db, attachments, request.WorkspaceId, userId, rows.Take(request.Limit).ToList(), cancellationToken);
         return Result<ThreadRepliesPageDto>.Success(new ThreadRepliesPageDto(
-            await ReplyPreviews.DtoAsync(db, request.WorkspaceId, userId, root, cancellationToken),
+            await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, root, cancellationToken),
             ThreadSummaries.For(root.Id, root.SpaceId, thread, follower, now),
             items,
             HasNewer: rows.Count > request.Limit));

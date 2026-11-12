@@ -15,6 +15,7 @@ import {
   CHAT_ERROR,
   CHAT_LIMITS,
   CHAT_REACTION_PALETTE,
+  type ChatAttachmentRecord,
   type ChatGroupRecord,
   type ChatMembershipRecord,
   type ChatMessageRecord,
@@ -497,6 +498,20 @@ export function reactionSummaryOf(
   });
 }
 
+/** MessageAttachmentDto: the metadata of a file and the path that streams its bytes (a permission-checked request). */
+export function attachmentView(row: ChatAttachmentRecord) {
+  return {
+    id: row.id,
+    messageId: row.messageId,
+    fileName: row.filename,
+    sizeBytes: row.sizeBytes,
+    contentType: row.contentType,
+    uploadedBy: row.uploadedBy,
+    createdAt: row.createdAt,
+    downloadPath: `/api/v1/workspaces/${row.workspaceId}/chat/messages/${row.messageId}/attachments/${row.id}/content`,
+  };
+}
+
 /**
  * MessageDto: a tombstone keeps its author, time and sequence, with null content, the reaction summary of the viewer and the mentions the
  * viewer may see. `mentionNotices` is what a send or an edit did not do for the sender; every other view leaves it empty.
@@ -526,6 +541,7 @@ export function messageView(
     deletedAt: message.deletedAt,
     version: message.version,
     reactions: reactionSummaryOf(state, message.id, viewerUserId),
+    attachments: state.attachmentsOfMessage(message.id).map(attachmentView),
     mentions: mentionViewsOf(
       state,
       message.workspaceId,

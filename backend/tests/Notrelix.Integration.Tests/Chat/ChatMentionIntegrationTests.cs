@@ -99,7 +99,7 @@ public sealed class ChatMentionIntegrationTests : IAsyncLifetime
         await using var context = _db.CreateOwnerContext(SystemTenant());
         await using var transaction = await context.Database.BeginTransactionAsync();
         var handler = new SendMessageCommandHandler(
-            context, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now), Broadcasters(true));
+            context, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now), Broadcasters(true), new InMemoryChatMessageAttachments());
 
         var result = await handler.Handle(
             new SendMessageCommand(_workspaceId, _spaceId, content, clientMessageId, null, mentions), CancellationToken.None);
@@ -128,7 +128,7 @@ public sealed class ChatMentionIntegrationTests : IAsyncLifetime
         var rows = await context.ChatMessageMentions.IgnoreQueryFilters().Where(m => m.MessageId == sent.Data!.Message.Id).ToListAsync();
         rows.Select(r => r.Kind).Should().BeEquivalentTo([MentionKind.User, MentionKind.BroadcastHere]);
 
-        var page = await new ListMessagesQueryHandler(context, RequestAs(_bob).Object, Members().Object)
+        var page = await new ListMessagesQueryHandler(context, RequestAs(_bob).Object, Members().Object, new InMemoryChatMessageAttachments())
             .Handle(new ListMessagesQuery(_workspaceId, _spaceId, null, null, null, 50), CancellationToken.None);
         page.Data!.Items.Single().Mentions.Select(m => m.Kind).Should().Equal("user", "broadcast-here");
     }
@@ -183,7 +183,7 @@ public sealed class ChatMentionIntegrationTests : IAsyncLifetime
         await using (var transaction = await context.Database.BeginTransactionAsync())
         {
             var delete = await new DeleteMessageCommandHandler(
-                    context, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now))
+                    context, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now), new InMemoryChatMessageAttachments())
                 .Handle(new DeleteMessageCommand(_workspaceId, sent.Data!.Message.Id, sent.Data.Message.Version), CancellationToken.None);
             delete.Succeeded.Should().BeTrue();
             await context.SaveChangesAsync();
@@ -210,7 +210,7 @@ public sealed class ChatMentionIntegrationTests : IAsyncLifetime
         {
             await using var transaction = await context.Database.BeginTransactionAsync();
             var handler = new SendMessageCommandHandler(
-                context, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now), Broadcasters(true));
+                context, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now), Broadcasters(true), new InMemoryChatMessageAttachments());
             result = await handler.Handle(
                 new SendMessageCommand(_workspaceId, direct.Id, "hi @Bob and @Carol", "d-1", null, [Person(3, 4, _bob), Person(12, 6, _carol)]),
                 CancellationToken.None);
