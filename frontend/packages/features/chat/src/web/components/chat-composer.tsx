@@ -81,6 +81,8 @@ export interface ChatComposerProps {
   readonly labelOverride?: string;
   /** Sends are refused while a send is in flight. */
   readonly busy?: boolean;
+  /** Called on each edit of a non-empty draft (the typing signal; the host throttles it). */
+  readonly onTyping?: () => void;
 }
 
 /**
@@ -100,6 +102,7 @@ export function ChatComposer({
   labelOverride,
   busy = false,
   mentions,
+  onTyping,
 }: ChatComposerProps) {
   const hintId = useId();
   const listId = useId();
@@ -350,6 +353,7 @@ export function ChatComposer({
           rows={1}
           onChange={(event) => {
             onChange(event.target.value);
+            if (event.target.value.trim().length > 0) onTyping?.();
             syncCaret(event.target);
           }}
           onSelect={(event) => syncCaret(event.currentTarget)}

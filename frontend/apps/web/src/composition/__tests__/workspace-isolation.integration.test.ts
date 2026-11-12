@@ -10,6 +10,9 @@ function createFakeRealtime() {
     subscribe: vi.fn(() => () => undefined),
     subscribeState: vi.fn(() => () => undefined),
     subscribeRecovery: vi.fn(() => () => undefined),
+    subscribeEphemeral: vi.fn(() => () => undefined),
+    sendTyping: vi.fn(),
+    sendPresence: vi.fn(),
     getState: vi.fn(() => "connected" as const),
     dispose: vi.fn(),
   };

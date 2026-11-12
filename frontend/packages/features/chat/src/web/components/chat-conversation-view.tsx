@@ -20,6 +20,8 @@ import {
 import { CHAT_LIMITS, type ChatConversation } from "../../core/types/chat";
 import type { ChatCopy } from "./chat.copy";
 import { ConversationAvatar } from "./chat-conversation-list";
+import type { ChatPresenceState } from "../../core/model/ephemeral-model";
+import { PresenceDot, presenceText } from "./chat-presence";
 import { avatarToneOf, initialsOf } from "./chat-initials";
 import { ChatPersonPicker, type PickablePerson } from "./chat-person-picker";
 import { fillCopy, pluralCopy } from "./use-chat-copy";
@@ -33,6 +35,7 @@ export interface ChatConversationHeaderProps {
   readonly copy: ChatCopy;
   readonly detailsOpen: boolean;
   readonly blocked: boolean;
+  readonly presenceOf?: (userId: string) => ChatPresenceState;
   /** Narrow screens: leaves the conversation for the list. */
   readonly onOpenList: () => void;
   readonly onToggleDetails: () => void;
@@ -47,6 +50,7 @@ export function ChatConversationHeader({
   copy,
   detailsOpen,
   blocked,
+  presenceOf,
   onOpenList,
   onToggleDetails,
   onHide,
@@ -69,6 +73,7 @@ export function ChatConversationHeader({
         title={title}
         id={counterpart ?? conversation.id}
         group={group}
+        presence={counterpart && !group ? presenceOf?.(counterpart) : undefined}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <h1 className="flex min-w-0 items-center gap-2 text-base font-semibold text-foreground">
@@ -122,6 +127,8 @@ export interface ChatConversationDetailsProps {
   readonly locale: string;
   readonly blocked: boolean;
   readonly busy: boolean;
+  /** The presence of a person; the member list shows a dot with it. */
+  readonly presenceOf?: (userId: string) => ChatPresenceState;
   readonly onBlock: () => void;
   readonly onUnblock: () => void;
   readonly onAddPeople: () => void;
@@ -235,6 +242,7 @@ function GroupDetails({
   nameOf,
   copy,
   busy,
+  presenceOf,
   onAddPeople,
   onLeave,
   onHide,
@@ -279,23 +287,35 @@ function GroupDetails({
         <ul className="flex flex-col">
           {conversation.participants.map((participant) => {
             const name = nameOf(participant.userId);
+            const presence =
+              participant.userId === viewerId
+                ? undefined
+                : presenceOf?.(participant.userId);
             return (
               <li
                 key={participant.userId}
                 className="flex min-h-11 items-center gap-3 py-1 text-sm"
               >
-                <Avatar className="size-8" aria-hidden="true">
-                  <AvatarFallback
-                    className={cn(
-                      "text-xs font-semibold",
-                      avatarToneOf(participant.userId),
-                    )}
-                  >
-                    {initialsOf(name)}
-                  </AvatarFallback>
-                </Avatar>
+                <span className="relative inline-flex shrink-0">
+                  <Avatar className="size-8" aria-hidden="true">
+                    <AvatarFallback
+                      className={cn(
+                        "text-xs font-semibold",
+                        avatarToneOf(participant.userId),
+                      )}
+                    >
+                      {initialsOf(name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {presence ? <PresenceDot state={presence} /> : null}
+                </span>
                 <span className="min-w-0 flex-1 truncate font-medium text-foreground">
                   {name}
+                  {presence ? (
+                    <span className="sr-only">
+                      {`, ${presenceText(presence, copy)}`}
+                    </span>
+                  ) : null}
                 </span>
                 {participant.userId === viewerId ? (
                   <span className="shrink-0 text-xs text-muted-foreground">
