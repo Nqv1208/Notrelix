@@ -2070,6 +2070,51 @@
       }
     },
     "/api/v1/workspaces/{workspaceId}/chat/channel-groups": {
+      "get": {
+        "tags": [
+          "Chat.ChannelGroups"
+        ],
+        "summary": "List the sidebar categories with their names",
+        "description": "In sidebar order. Every Workspace member reads all categories; a Guest reads only the categories that hold a channel they are in.",
+        "operationId": "Chat.ChannelGroups.List",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
       "post": {
         "tags": [
           "Chat.ChannelGroups"
