@@ -192,7 +192,7 @@ export interface ChatChannelDetail {
   readonly members: readonly ChatChannelMember[];
 }
 
-/** MessageAttachmentDto: a file of a message. `downloadPath` is the permission-checked content route. */
+/** MessageAttachmentDto: a file of a message. `downloadPath` is the permission-checked content route; width and height are an image's pixel size. */
 export interface ChatAttachment {
   readonly id: string;
   readonly messageId?: string;
@@ -202,6 +202,9 @@ export interface ChatAttachment {
   readonly uploadedBy: string;
   readonly createdAt: string;
   readonly downloadPath: string;
+  /** The pixel size of an image file, read from its header at upload; absent or null for any other file. */
+  readonly width?: number | null;
+  readonly height?: number | null;
 }
 
 /** MessageDto. A tombstone keeps its author, time and sequence, with null content. */

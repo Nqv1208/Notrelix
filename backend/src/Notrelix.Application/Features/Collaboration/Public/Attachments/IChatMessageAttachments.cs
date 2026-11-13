@@ -43,7 +43,9 @@ public sealed record ChatMessageAttachmentFact(
     long SizeBytes,
     string ContentType,
     Guid UploadedBy,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    int? Width = null,
+    int? Height = null);
 
 /// <summary>An opened file. The consumer owns the stream and disposes it.</summary>
 public sealed record ChatMessageAttachmentContent(Stream Content, string FileName, string ContentType, long SizeBytes);

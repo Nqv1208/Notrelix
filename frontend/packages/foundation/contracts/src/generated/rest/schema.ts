@@ -9525,6 +9525,10 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
             downloadPath?: string | null;
+            /** Format: int32 */
+            width?: number | null;
+            /** Format: int32 */
+            height?: number | null;
         };
         "Notrelix.Application.Features.Chat.Blocks.DTOs.PersonBlockDto": {
             /** Format: uuid */
@@ -9684,6 +9688,10 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
             kind?: string | null;
+            /** Format: int32 */
+            width?: number | null;
+            /** Format: int32 */
+            height?: number | null;
         };
         "Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentAnchorDto": {
             /** Format: uuid */

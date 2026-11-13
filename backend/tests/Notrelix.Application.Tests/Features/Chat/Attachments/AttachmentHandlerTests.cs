@@ -160,6 +160,56 @@ public class AttachmentHandlerTests
     }
 
     [Fact]
+    public async Task An_uploaded_png_carries_the_pixel_size_read_from_its_header()
+    {
+        var message = Text(Channel());
+
+        var result = await Upload(message, "photo.png", PngOf(640, 480), RealFlow());
+
+        result.Succeeded.Should().BeTrue();
+        result.Data!.Width.Should().Be(640);
+        result.Data.Height.Should().Be(480);
+        var row = _rows.Should().ContainSingle().Subject;
+        row.Metadata.Width.Should().Be(640);
+        row.Metadata.Height.Should().Be(480);
+    }
+
+    [Fact]
+    public async Task A_text_file_carries_no_pixel_size()
+    {
+        var message = Text(Channel());
+
+        var result = await Upload(message, "notes.txt", "plain text, not an image"u8.ToArray(), RealFlow());
+
+        result.Succeeded.Should().BeTrue();
+        result.Data!.Width.Should().BeNull();
+        result.Data.Height.Should().BeNull();
+        _rows.Should().ContainSingle().Subject.Metadata.Width.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task A_name_that_claims_a_size_is_ignored_and_an_unreadable_png_has_no_size()
+    {
+        var message = Text(Channel());
+
+        var result = await Upload(message, "huge-99999x99999.png", Png, RealFlow());
+
+        result.Succeeded.Should().BeTrue();
+        result.Data!.Width.Should().BeNull();
+        result.Data.Height.Should().BeNull();
+    }
+
+    private static byte[] PngOf(uint width, uint height)
+    {
+        var header = new List<byte>([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D]);
+        header.AddRange("IHDR"u8.ToArray());
+        header.AddRange([(byte)(width >> 24), (byte)(width >> 16), (byte)(width >> 8), (byte)width]);
+        header.AddRange([(byte)(height >> 24), (byte)(height >> 16), (byte)(height >> 8), (byte)height]);
+        header.AddRange(new byte[] { 8, 6, 0, 0, 0, 0, 0, 0, 0, 0 });
+        return header.ToArray();
+    }
+
+    [Fact]
     public async Task A_blocked_extension_is_refused_before_any_byte_is_stored()
     {
         var message = Text(Channel());
