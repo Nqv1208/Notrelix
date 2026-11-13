@@ -30,14 +30,14 @@ review_on:
 > This file is generated discovery evidence.
 > It does not replace the canonical authority described by each source document.
 
-Document count: 99
+Document count: 100
 
 ## Documents by type
 
 | Value | Count |
 |:---|---:|
 | `architecture` | 22 |
-| `architecture-decision` | 18 |
+| `architecture-decision` | 19 |
 | `architecture-policy` | 1 |
 | `decision-registry` | 3 |
 | `delivery-handbook` | 1 |
@@ -61,6 +61,7 @@ Document count: 99
 | `Accepted` | 16 |
 | `active` | 78 |
 | `generated` | 3 |
+| `Proposed` | 1 |
 | `Superseded` | 2 |
 
 ## Document inventory
@@ -154,6 +155,7 @@ Document count: 99
 | `QLT-SECURITY` | `quality-standard` | `active` | `engineering-security` | `repository`, `backend`, `frontend`, `api`, `background-processing`, `integrations`, `ci` | [`docs/quality/security-quality-standard.md`](../quality/security-quality-standard.md) |
 | `QLT-TESTING` | `testing-strategy` | `active` | `engineering-quality` | `repository`, `backend`, `frontend`, `ci` | [`docs/quality/testing-strategy.md`](../quality/testing-strategy.md) |
 | `SYS-ADR-001` | `architecture-decision` | `Accepted` | `architecture` | `chat`, `collaboration`, `bounded-context-map`, `realtime-gateway`, `backend`, `frontend` | [`docs/decisions/SYS-ADR-001-chat-bounded-context.md`](../decisions/SYS-ADR-001-chat-bounded-context.md) |
+| `SYS-ADR-002` | `architecture-decision` | `Proposed` | `architecture` | `chat`, `collaboration`, `realtime-gateway`, `platform`, `backend`, `frontend` | [`docs/decisions/SYS-ADR-002-chat-rich-media-and-calls.md`](../decisions/SYS-ADR-002-chat-rich-media-and-calls.md) |
 | `SYS-BOUNDED-CONTEXT-MAP` | `architecture` | `active` | `system-architecture` | `product`, `backend`, `frontend`, `cross-context-contracts` | [`docs/architecture/bounded-context-map.md`](../architecture/bounded-context-map.md) |
 | `SYS-CAPABILITY-EXTRACTION` | `architecture` | `active` | `system-architecture` | `repository`, `backend`, `frontend`, `bounded-contexts`, `deployment`, `data-ownership`, `public-contracts`, `operations` | [`docs/architecture/capability-extraction-strategy.md`](../architecture/capability-extraction-strategy.md) |
 | `SYS-CONTRACT-BOUNDARIES` | `architecture` | `active` | `system-architecture` | `repository`, `backend`, `frontend`, `public-contracts`, `integration-contracts`, `realtime-contracts`, `generated-contracts` | [`docs/architecture/contract-boundaries.md`](../architecture/contract-boundaries.md) |

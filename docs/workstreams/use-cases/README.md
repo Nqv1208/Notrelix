@@ -124,7 +124,7 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 | Work Management | 171 | 10 | 1 | 9 | 105 | 45 | 1 |
 | Documents | 82 | 12 | 4 | 43 | 20 | 0 | 3 |
 | Collaboration | 85 | 19 | 7 | 37 | 17 | 0 | 5 |
-| Chat | 68 | 68 | 0 | 0 | 0 | 0 | 0 |
+| Chat | 84 | 84 | 0 | 0 | 0 | 0 | 0 |
 | Automation | 79 | 11 | 26 | 21 | 20 | 0 | 1 |
 | Integrations | 55 | 13 | 20 | 11 | 11 | 0 | 0 |
 | Billing | 99 | 56 | 27 | 7 | 7 | 1 | 1 |

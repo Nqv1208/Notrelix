@@ -549,6 +549,13 @@ If purely frontend, use `FE-ADR-*`.
 
 Use `SYS-ADR-*` only when the system-level choice genuinely needs repository authority.
 
+Current system registry contains:
+
+```text
+SYS-ADR-001 Chat is a twelfth bounded context, separate from Collaboration
+SYS-ADR-002 Chat rich media, voice messages and calls (Proposed)
+```
+
 ---
 
 # 36. Backend ADR

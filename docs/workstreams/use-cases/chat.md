@@ -50,7 +50,9 @@ The product rules are in `docs/product/chat.md` (CHT-001 to CHT-024). The capabi
 | F | CHT-006 Threads, replies and pins | 8 | 8 | 0 | 0 | 0 | 0 | 0 |
 | G | CHT-007 Mentions, reactions, attachments and notification handoff | 9 | 7 | 0 | 0 | 2 | 0 | 0 |
 | H | CHT-008 Access, moderation, retention, search and hardening | 10 | 0 | 0 | 0 | 10 | 0 | 0 |
-| | Total | 68 | 56 | 0 | 0 | 12 | 0 | 0 |
+| I | CHT-009 Rich media | 8 | 8 | 0 | 0 | 0 | 0 | 0 |
+| J | CHT-010 Calls | 8 | 8 | 0 | 0 | 0 | 0 | 0 |
+| | Total | 84 | 72 | 0 | 0 | 12 | 0 | 0 |
 
 The counts are those of the index below (section 2). Rows A01 to F08 and G01 to G04, G06 to G08 still read DEFINED, "not built", although Phase 1 and Phase 2 code exists; the slices that built them did not update these rows, and this slice did not either.
 
@@ -145,6 +147,22 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 | UC-CHT-H08 | Rate limit and abuse controls | H | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. The limits are the defaults of RateLimiting:Chat, not tuned against load; a thread reply and a reaction show the generic slow-down notice, not the countdown. |
 | UC-CHT-H09 | Email digest for missed mentions | H | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check, axe record or ops runbook. No real mail was sent (the digest is queued on the shared outbox and checked there; the dispatcher send is the existing path and was not run against a real mail server); a Guest gets no digest; one window is reported, with no catch-up of windows the job missed; the link opens the channel, not the message. |
 | UC-CHT-H10 | Link a channel to a Board, Page or Team | H | Channel manager | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. A Team cannot be linked yet (Governance publishes no Team visibility fact); the Discuss entry is wired on the Board header only, the Page header has no slot for it (see Readings). |
+| UC-CHT-I01 | Send several images as a gallery | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
+| UC-CHT-I02 | Show upload progress, cancel and retry | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
+| UC-CHT-I03 | View images in a full-screen viewer | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
+| UC-CHT-I04 | Record and send a voice message | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
+| UC-CHT-I05 | Play a voice message | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
+| UC-CHT-I06 | Send a sticker or GIF | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
+| UC-CHT-I07 | Copy a message link and mark unread from here | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
+| UC-CHT-I08 | Create a task from a message | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
+| UC-CHT-J01 | Start a one-to-one voice call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; documented in SYS-ADR-002, not built. |
+| UC-CHT-J02 | Start a one-to-one video call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; documented in SYS-ADR-002, not built. |
+| UC-CHT-J03 | Answer or decline an incoming call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; documented in SYS-ADR-002, not built. |
+| UC-CHT-J04 | Missed call, busy and call log | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; documented in SYS-ADR-002, not built. |
+| UC-CHT-J05 | Control audio, camera and devices in a call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; documented in SYS-ADR-002, not built. |
+| UC-CHT-J06 | Share a screen | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 6; documented in SYS-ADR-002, not built. |
+| UC-CHT-J07 | Start and join a group call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 6; documented in SYS-ADR-002, not built. |
+| UC-CHT-J08 | Reconnect and recover a call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; documented in SYS-ADR-002, not built. |
 
 ## 3. Use cases
 
@@ -1126,11 +1144,236 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - Readings: (1) A channel has one link; a second replaces the first. Boards and Pages are linkable. A Team is in the domain kinds (`governance.team`) but the app cannot set it (400): Governance publishes no Team visibility fact, so the manager's right to view a Team could not be checked. It is a recorded gap; a link of that kind, if stored, shows as a generic chip. (2) The manager must be a channel manager, an Owner or an Admin of a live, unarchived channel, and must be able to view the resource now (Board: through the Board title fact with the viewer's own access; Page: the Documents page view access); otherwise 403, the same answer for a hidden, deleted or missing resource. A Guest cannot link. The resource is never changed, and unlinking needs no access to the resource. (3) The link is stored on the space (kind and id only, no title); RLS is unchanged (the columns are on an RLS-protected table). A stale expectedVersion is 412 (the pipeline decides it, listed in the expected-version inventory). Setting the same link again changes nothing. (4) The channel view carries the link: kind, id, and the title only when the viewer can view the resource now; otherwise accessible is false with no title (a deleted, hidden or missing resource look the same). (5) The reverse lookup returns only the channels the caller can see (a public channel, or any channel the caller is in), and an empty list to a caller who cannot view the resource; archived channels are returned with a flag and the Discuss button hides them. (6) The dialog takes a pasted product address (/workspaces/{id}/boards/{id} or /docs/{id}) or an id with the kind chosen, resolves it with the existing Chat.Links.Resolve (which gained the Board kind by reference; its URL form is unchanged and still needs a Board item), shows the preview and links only after it. (7) Discuss is exported from features-chat (hooks.useLinkedChannels(workspaceId, resource) and DiscussButton) and wired on the Board page through the existing notice slot, a host-only edit. The Page header has no slot for a host action in the docs package, so the wiring is a recorded gap (a slot in DocPageHost is the needed edit). (8) The audit fact for a link or unlink is written through the Chat audit helper (resource, kind and id, no title).
 - State: HARDENING — Built to the use case with the readings above. Not done: real e2e, design record, owner check, axe record; Team linking; the Discuss entry on the Page header.
 
+### UC-CHT-I01 Send several images as a gallery
+- Capability: I, CHT-009 Rich media
+- Actors and permission: Workspace Owner, Admin, Member who can view and write in the space.
+- Preconditions: Several images selected, pasted or dropped.
+- Input: As described by the flow.
+- Output: One message with a gallery grid (up to 4 tiles and +N).
+- Main flow: 1. Caller adds images. 2. The composer shows a tray with a caption field. 3. Send creates one message with the attachments in order.
+- No-op / rejection / concurrency / retry: More than the attachment limit per message: rejected with the limit. One failed upload: the tile shows retry, others still send.
+- UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
+- Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
+- Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 4 — not built.
+
+### UC-CHT-I02 Show upload progress, cancel and retry
+- Capability: I, CHT-009 Rich media
+- Actors and permission: Workspace Owner, Admin, Member who can view and write in the space.
+- Preconditions: An image is uploading.
+- Input: As described by the flow.
+- Output: A tile with a progress ring, cancel and retry.
+- Main flow: 1. The tile appears at once from the local file at the right aspect ratio. 2. Progress updates. 3. Cancel removes it before send.
+- No-op / rejection / concurrency / retry: Network loss: the tile keeps its state and offers retry. Size over 100 MB: rejected before upload.
+- UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
+- Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
+- Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 4 — not built.
+
+### UC-CHT-I03 View images in a full-screen viewer
+- Capability: I, CHT-009 Rich media
+- Actors and permission: Workspace Owner, Admin, Member who can view and write in the space.
+- Preconditions: A message has image attachments.
+- Input: As described by the flow.
+- Output: A full-screen viewer with previous and next, download, forward and close.
+- Main flow: 1. Caller opens an image. 2. Arrow keys or swipe page through the message images. 3. Esc or swipe down closes.
+- No-op / rejection / concurrency / retry: The image was removed meanwhile: the viewer skips it. No permission to download: the button is hidden.
+- UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
+- Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
+- Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 4 — not built.
+
+### UC-CHT-I04 Record and send a voice message
+- Capability: I, CHT-009 Rich media
+- Actors and permission: Workspace Owner, Admin, Member who can view and write in the space.
+- Preconditions: Microphone permission granted.
+- Input: As described by the flow.
+- Output: A message with one audio attachment, duration and waveform.
+- Main flow: 1. Caller holds the record button. 2. Slide left cancels, slide up locks. 3. Release sends or lock then Send.
+- No-op / rejection / concurrency / retry: Permission denied: a notice explains how to allow it. Over the limit: recording stops at the limit and sends. Too short (under 1 second): discarded.
+- UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
+- Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
+- Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 4 — not built.
+
+### UC-CHT-I05 Play a voice message
+- Capability: I, CHT-009 Rich media
+- Actors and permission: Workspace Owner, Admin, Member who can view and write in the space.
+- Preconditions: A voice message exists.
+- Input: As described by the flow.
+- Output: Playback with seek and speed.
+- Main flow: 1. Caller presses play. 2. Seek by the waveform. 3. Speed cycles 1x, 1.5x, 2x.
+- No-op / rejection / concurrency / retry: Only one voice message plays at a time. Loading failure: retry control.
+- UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
+- Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
+- Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 4 — not built.
+
+### UC-CHT-I06 Send a sticker or GIF
+- Capability: I, CHT-009 Rich media
+- Actors and permission: Workspace Owner, Admin, Member who can view and write in the space.
+- Preconditions: Sticker packs available; GIF provider enabled for the Workspace.
+- Input: As described by the flow.
+- Output: A sticker or GIF message.
+- Main flow: 1. Caller opens the picker. 2. Searches or browses. 3. Selects; the message sends with the idempotency key.
+- No-op / rejection / concurrency / retry: Provider unreachable: the GIF tab shows an error and stickers still work. Reduced motion: GIFs do not animate until activated.
+- UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
+- Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
+- Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 4 — not built.
+
+### UC-CHT-I07 Copy a message link and mark unread from here
+- Capability: I, CHT-009 Rich media
+- Actors and permission: Workspace Owner, Admin, Member who can view and write in the space.
+- Preconditions: Caller can view the space.
+- Input: As described by the flow.
+- Output: The in-app link is copied; the read boundary moves back.
+- Main flow: 1. Caller opens More on a message. 2. Copy link or Mark unread from here.
+- No-op / rejection / concurrency / retry: No access to the target space: the link opens a no-permission state. Mark unread only moves the caller's own boundary.
+- UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
+- Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
+- Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 4 — not built.
+
+### UC-CHT-I08 Create a task from a message
+- Capability: I, CHT-009 Rich media
+- Actors and permission: Workspace Owner, Admin, Member who can view and write in the space.
+- Preconditions: Caller can create items on a linked Board.
+- Input: As described by the flow.
+- Output: A task prefilled from the message with a link back.
+- Main flow: 1. Caller chooses Create task. 2. A dialog prefills the title from the text. 3. Submit creates the item through Work Management.
+- No-op / rejection / concurrency / retry: The space has no linked Board: the action asks for a Board. The message is deleted later: the task keeps a plain-text snapshot.
+- UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
+- Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
+- Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 4 — not built.
+
+### UC-CHT-J01 Start a one-to-one voice call
+- Capability: J, CHT-010 Calls
+- Actors and permission: Workspace Owner, Admin, Member who can view and write in the space.
+- Preconditions: Direct or group conversation with an online counterpart; calls enabled.
+- Input: As described by the flow.
+- Output: An outgoing call that rings, then connects with audio.
+- Main flow: 1. Caller presses the call button. 2. The call rings up to 45 seconds. 3. On answer both join the room.
+- No-op / rejection / concurrency / retry: Counterpart blocked, Guest or read-only caller: rejected. SFU unavailable: a clear error and no ring.
+- UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
+- Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
+- Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 5 — not built.
+
+### UC-CHT-J02 Start a one-to-one video call
+- Capability: J, CHT-010 Calls
+- Actors and permission: Workspace Owner, Admin, Member who can view and write in the space.
+- Preconditions: As J01 with a camera.
+- Input: As described by the flow.
+- Output: As J01 with video and a self view.
+- Main flow: 1. Caller chooses video. 2. Permissions are requested. 3. On answer both see video.
+- No-op / rejection / concurrency / retry: No camera: the call starts with audio only and says so.
+- UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
+- Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
+- Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 5 — not built.
+
+### UC-CHT-J03 Answer or decline an incoming call
+- Capability: J, CHT-010 Calls
+- Actors and permission: Workspace Owner, Admin, Member who can view and write in the space.
+- Preconditions: An incoming call exists.
+- Input: As described by the flow.
+- Output: The call connects or ends declined.
+- Main flow: 1. A call alert shows the caller and kind. 2. Answer with video, answer voice only, or decline.
+- No-op / rejection / concurrency / retry: Already in another call: the caller hears busy. The alert is dismissed when the caller cancels.
+- UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
+- Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
+- Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 5 — not built.
+
+### UC-CHT-J04 Missed call, busy and call log
+- Capability: J, CHT-010 Calls
+- Actors and permission: Workspace Owner, Admin, Member who can view and write in the space.
+- Preconditions: A call ended without being answered, or was busy.
+- Input: As described by the flow.
+- Output: A system message with the result and one notification for a missed call.
+- Main flow: 1. Ring times out. 2. The server writes one call message. 3. The callee is notified once.
+- No-op / rejection / concurrency / retry: A retry never writes two messages. Calling back from the message starts a new call.
+- UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
+- Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
+- Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 5 — not built.
+
+### UC-CHT-J05 Control audio, camera and devices in a call
+- Capability: J, CHT-010 Calls
+- Actors and permission: Workspace Owner, Admin, Member who can view and write in the space.
+- Preconditions: The caller is in a call.
+- Input: As described by the flow.
+- Output: Mute, camera and device selection reflected to others.
+- Main flow: 1. Caller toggles a control. 2. The server stores the media state. 3. Others see the state frame.
+- No-op / rejection / concurrency / retry: Device unplugged: the call falls back to the default device and says so.
+- UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
+- Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
+- Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 5 — not built.
+
+### UC-CHT-J06 Share a screen
+- Capability: J, CHT-010 Calls
+- Actors and permission: Workspace Owner, Admin, Member who can view and write in the space.
+- Preconditions: The caller is in a call and the browser supports sharing.
+- Input: As described by the flow.
+- Output: A shared screen tile for everyone.
+- Main flow: 1. Caller chooses share. 2. Picks a source. 3. Others see the tile; stopping ends the share.
+- No-op / rejection / concurrency / retry: Only one share at a time; a second share request replaces the first after confirmation.
+- UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
+- Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
+- Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 6 — not built.
+
+### UC-CHT-J07 Start and join a group call
+- Capability: J, CHT-010 Calls
+- Actors and permission: Workspace Owner, Admin, Member who can view and write in the space.
+- Preconditions: A channel or group conversation; caller may start calls.
+- Input: As described by the flow.
+- Output: A group call with a participant list.
+- Main flow: 1. Caller starts a call. 2. Members see an active-call banner and join. 3. The call ends when the last person leaves.
+- No-op / rejection / concurrency / retry: Participant cap reached: join is refused with the cap. Everyone leaves: ends after 60 seconds.
+- UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
+- Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
+- Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 6 — not built.
+
+### UC-CHT-J08 Reconnect and recover a call
+- Capability: J, CHT-010 Calls
+- Actors and permission: Workspace Owner, Admin, Member who can view and write in the space.
+- Preconditions: A participant loses the connection.
+- Input: As described by the flow.
+- Output: The participant reconnects or is removed after the grace period.
+- Main flow: 1. The client retries with a fresh token. 2. The server keeps the seat for 30 seconds. 3. After that the participant is marked Left.
+- No-op / rejection / concurrency / retry: Call ended while offline: the client shows the result and the call message.
+- UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
+- Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
+- Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 5 — not built.
+
 ## 4. Product decisions applied
 
 - Product decision (owner, 2026-11-10): item 1, Chat is Discord-style: channels in categories, public and private, direct and group conversations, threads, mentions, reactions, attachments, unread state and presence.
 - Product decision (owner, 2026-11-10): item 2, realtime extends the existing gateway (Channel scope, message payload frames, typing and presence); writes stay REST.
-- Product decision (owner, 2026-11-10): item 3, delivery in three phases: core (1), interaction (2), advanced (3). Voice and video are out of scope.
+- Product decision (owner, 2026-11-10): item 3, delivery in three phases: core (1), interaction (2), advanced (3). Voice and video were out of scope for these phases.
+- Product decision (owner, 2026-11-13): rich images, voice messages, stickers and calls are added as capabilities I and J (SYS-ADR-002, Proposed): Phase 4 media, Phase 5 one-to-one calls, Phase 6 group calls and screen sharing.
 - Lead decision (2026-11-10) L1: Chat is a separate bounded context (SYS-ADR-001).
 - Lead decision (2026-11-10) L2: presence and typing stay in gateway memory or Redis, in line with Collaboration L16.
 
@@ -1144,4 +1387,4 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 
 ## 6. Not covered
 
-Voice, video, stage channels, screen sharing and calls; bots and incoming webhooks; end-to-end encryption; cross-Workspace shared channels; message scheduling and reminders; message translation; mobile push delivery details (handled by Notifications).
+Call recording, stage channels, calls across Workspaces; bots and incoming webhooks; end-to-end encryption; cross-Workspace shared channels; message scheduling and reminders; message translation; mobile push delivery details (handled by Notifications).
