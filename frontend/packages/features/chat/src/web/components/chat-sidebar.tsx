@@ -339,7 +339,7 @@ function ChannelButton({
         unread?.mentions ?? 0,
       )}
       className={cn(
-        "flex h-8 w-full items-center gap-2 rounded-md px-2 text-start text-sm outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+        "flex h-8 w-full items-center gap-2 rounded-lg px-2 text-start text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus-ring motion-reduce:transition-none",
         active
           ? "bg-state-selected font-semibold text-state-selected-foreground"
           : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
@@ -352,7 +352,9 @@ function ChannelButton({
       ) : (
         <Hash className="size-3.5 shrink-0" aria-hidden="true" />
       )}
-      <span className="min-w-0 flex-1 truncate">{channel.name}</span>
+      <span className="min-w-0 flex-1 truncate" title={channel.name}>
+        {channel.name}
+      </span>
       {muted ? (
         <BellOff className="size-3.5 shrink-0" aria-hidden="true" />
       ) : null}

@@ -8,11 +8,18 @@ import { fillCopy } from "./use-chat-copy";
 
 const CHIP =
   "rounded-sm bg-warning-subtle px-1 font-semibold text-warning-subtle-foreground";
+/**
+ * On the caller's own (accent) bubble a mention keeps the bubble's text colour, bold and underlined, so its
+ * contrast is the bubble's own (primary-foreground on primary, AA in every theme).
+ */
+const OWN_CHIP = "font-semibold underline decoration-2 underline-offset-2";
 
 export interface ChatMentionTextProps {
   readonly content: string;
   readonly mentions: readonly ChatMention[] | undefined;
   readonly copy: ChatCopy;
+  /** "own" on the caller's accent bubble. */
+  readonly tone?: "own" | "default";
 }
 
 /**
@@ -24,8 +31,10 @@ export function ChatMentionText({
   content,
   mentions,
   copy,
+  tone = "default",
 }: ChatMentionTextProps) {
   const context = useChatMentions();
+  const chip = tone === "own" ? OWN_CHIP : CHIP;
   if (!mentions || mentions.length === 0) return <>{content}</>;
   return (
     <>
@@ -40,7 +49,7 @@ export function ChatMentionText({
           return (
             <span
               key={index}
-              className={CHIP}
+              className={chip}
               data-mention="user"
               data-mention-self={
                 mention.userId === context.viewerId ? "true" : undefined
@@ -57,7 +66,7 @@ export function ChatMentionText({
           const open = context.onOpenChannel;
           if (!open) {
             return (
-              <span key={index} className={CHIP} data-mention="channel-link">
+              <span key={index} className={chip} data-mention="channel-link">
                 {shown}
               </span>
             );
@@ -72,7 +81,10 @@ export function ChatMentionText({
               })}
               onClick={() => open(spaceId)}
               className={cn(
-                "inline rounded-sm bg-accent px-1 font-semibold text-accent-foreground hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none",
+                "inline rounded-sm font-semibold focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none",
+                tone === "own"
+                  ? "underline decoration-2 underline-offset-2"
+                  : "bg-accent px-1 text-accent-foreground hover:underline",
               )}
             >
               {shown}
@@ -80,7 +92,7 @@ export function ChatMentionText({
           );
         }
         return (
-          <span key={index} className={CHIP} data-mention="broadcast">
+          <span key={index} className={chip} data-mention="broadcast">
             {segment.text}
           </span>
         );

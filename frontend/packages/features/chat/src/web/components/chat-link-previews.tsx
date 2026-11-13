@@ -10,7 +10,7 @@ import type { ChatCopy } from "./chat.copy";
 import { fillCopy } from "./use-chat-copy";
 
 const CHIP =
-  "inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-1 text-xs";
+  "inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-1.5 text-xs shadow-xs";
 
 export function kindLabel(kind: ChatLinkKind, copy: ChatCopy): string {
   switch (kind) {
@@ -115,18 +115,24 @@ export function MessageLinkPreviews({
   workspaceId,
   hooks,
   copy,
+  align = "start",
 }: {
   readonly content: string | null;
   readonly workspaceId: string;
   readonly hooks: ChatHooks;
   readonly copy: ChatCopy;
+  /** The side of the column the chips hug: the end under the caller's own bubble. */
+  readonly align?: "start" | "end";
 }) {
   const links = content ? findProductLinks(content, workspaceId) : [];
   if (links.length === 0) return null;
   return (
     <ul
       aria-label={copy.links.listLabel}
-      className="mt-1 flex flex-col items-start gap-1"
+      className={cn(
+        "mt-1 flex max-w-full flex-col gap-1",
+        align === "end" ? "items-end" : "items-start",
+      )}
       data-testid="chat-link-previews"
     >
       {links.map((link) => (

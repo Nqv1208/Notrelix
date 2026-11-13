@@ -178,7 +178,7 @@ describe("ChatMessageList", () => {
     expect(screen.getByText(/^System:/)).not.toBeNull();
   });
 
-  it("offers edit and delete in a toolbar only on the caller's own message", () => {
+  it("offers edit and delete in the More menu only on the caller's own message", async () => {
     const messages = [
       message(1, { authorId: ME }),
       message(2, { authorId: OTHER }),
@@ -186,13 +186,29 @@ describe("ChatMessageList", () => {
     const onEdit = vi.fn();
     const onDelete = vi.fn();
     render(<ChatMessageList {...props({ messages, onEdit, onDelete })} />);
-    expect(screen.getAllByRole("toolbar")).toHaveLength(1);
-    expect(
-      screen.getAllByRole("button", { name: "Edit message" }),
-    ).toHaveLength(1);
-    fireEvent.click(screen.getByRole("button", { name: "Edit message" }));
+    const own = document.querySelector(
+      '[data-message-id="m-1"]',
+    ) as HTMLElement;
+    const other = document.querySelector(
+      '[data-message-id="m-2"]',
+    ) as HTMLElement;
+    // Nothing but edit and delete is offered here, so the other person's message has no actions.
+    expect(within(other).queryByRole("toolbar")).toBeNull();
+    fireEvent.keyDown(
+      within(own).getByRole("button", { name: "More actions" }),
+      { key: "Enter" },
+    );
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Edit message" }),
+    );
     expect(onEdit).toHaveBeenCalledWith(expect.objectContaining({ id: "m-1" }));
-    fireEvent.click(screen.getByRole("button", { name: "Delete message" }));
+    fireEvent.keyDown(
+      within(own).getByRole("button", { name: "More actions" }),
+      { key: "Enter" },
+    );
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Delete message" }),
+    );
     expect(onDelete).toHaveBeenCalledWith(
       expect.objectContaining({ id: "m-1" }),
     );

@@ -22,6 +22,7 @@ import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ThreadCounts } from "../query/interaction-cache";
 import {
   dayKeyOf,
+  previousDayKey,
   type ChatRow,
   type PendingMessage,
 } from "../../core/model/chat-model";
@@ -30,8 +31,14 @@ import { fillCopy } from "./use-chat-copy";
 import {
   ChatMessageRow,
   ChatPendingRow,
+  formatClock,
   type QuoteView,
 } from "./chat-message-row";
+import {
+  RowActivityProvider,
+  createRowActivityStore,
+} from "./chat-row-activity";
+import { ChatTypingBubble } from "./chat-typing-indicator";
 
 /** Within this many pixels of the bottom the list counts as at the bottom. */
 const BOTTOM_SLACK_PX = 48;
@@ -75,11 +82,11 @@ export interface ChatMessageListProps {
   readonly onNewerNeeded: () => void;
   readonly onAtBottomChange: (atBottom: boolean) => void;
   readonly onJumpLatest: () => void;
-  readonly onEdit: (message: ChatMessage) => void;
+  readonly onEdit?: (message: ChatMessage) => void;
   readonly onEditDraftChange: (draft: string) => void;
   readonly onEditSave: () => void;
   readonly onEditCancel: () => void;
-  readonly onDelete: (message: ChatMessage) => void;
+  readonly onDelete?: (message: ChatMessage) => void;
   /** Delete as a moderator: set only when the caller may moderate this channel. */
   readonly onModerate?: (message: ChatMessage) => void;
   readonly onRetryPending: (pending: PendingMessage) => void;
@@ -107,11 +114,25 @@ export interface ChatMessageListProps {
   readonly onOpenQuote?: (messageId: string) => void;
   /** An archived channel is read-only: its files cannot be removed. */
   readonly attachmentsReadOnly?: boolean;
+  /** Names above groups of other people's messages: on in channels and groups, off in a 1-1 conversation. */
+  readonly showNames?: boolean;
+  /** The people typing now (not the caller): a typing bubble closes the list. */
+  readonly typingIds?: readonly string[];
 }
 
-function dayLabel(dayKey: string, locale: string, copy: ChatCopy): string {
-  const today = dayKeyOf(new Date().toISOString());
+/** The width of the conversation column: a comfortable measure on wide screens, fluid below it. */
+export const CHAT_COLUMN = "mx-auto w-full max-w-3xl";
+
+export function dayLabel(
+  dayKey: string,
+  locale: string,
+  copy: ChatCopy,
+  timeZone?: string,
+  now: Date = new Date(),
+): string {
+  const today = dayKeyOf(now.toISOString(), timeZone);
   if (dayKey === today) return copy.time.today;
+  if (dayKey === previousDayKey(today)) return copy.time.yesterday;
   const [year, month, day] = dayKey.split("-").map(Number);
   const date = new Date(Date.UTC(year!, month! - 1, day!, 12));
   return new Intl.DateTimeFormat(locale, {
@@ -137,6 +158,24 @@ export function ChatMessageList(props: ChatMessageListProps) {
   } = props;
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [atBottom, setAtBottom] = useState(true);
+  const [activity] = useState(createRowActivityStore);
+  const typingIds = props.typingIds ?? [];
+  // Messages newer than the newest one at the first render fade in; the history already there does not.
+  const baseline = useRef<{ space: string; sequence: number } | null>(null);
+  const firstMessage = rows.find((row) => row.kind === "message");
+  const space =
+    firstMessage?.kind === "message" ? firstMessage.message.spaceId : "";
+  let newestSequence = 0;
+  for (const row of rows) {
+    if (row.kind === "message" && row.message.sequence > newestSequence)
+      newestSequence = row.message.sequence;
+  }
+  useLayoutEffect(() => {
+    if (status !== "ready" || space === "") return;
+    if (baseline.current === null || baseline.current.space !== space) {
+      baseline.current = { space, sequence: newestSequence };
+    }
+  }, [status, space, newestSequence]);
   const memo = useRef<{
     firstKey: string | null;
     height: number;
@@ -168,7 +207,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
       atBottom: isAtBottom(el),
       request: memo.current.request,
     };
-  }, [rows]);
+  }, [rows, typingIds.length]);
 
   // An explicit request: open at the first unread message, or go to the newest.
   useLayoutEffect(() => {
@@ -221,18 +260,31 @@ export function ChatMessageList(props: ChatMessageListProps) {
         role="status"
       >
         <span className="sr-only">{copy.list.loading}</span>
-        {[0, 1, 2, 3].map((index) => (
-          <div key={index} className="flex gap-3" aria-hidden="true">
-            <Skeleton className="size-9 shrink-0 rounded-full" />
-            <div className="flex-1 space-y-2.5 pt-1">
-              <Skeleton className="h-3 w-32" />
-              <Skeleton className="h-3 w-full max-w-md" />
-              {index % 2 === 0 ? (
-                <Skeleton className="h-3 w-2/5 max-w-xs" />
-              ) : null}
-            </div>
-          </div>
-        ))}
+        <div className={cn(CHAT_COLUMN, "flex flex-col gap-3")}>
+          {[0, 1, 2, 3, 4].map((index) => {
+            const own = index % 3 === 2;
+            return (
+              <div
+                key={index}
+                className={cn(
+                  "flex items-end gap-2",
+                  own ? "flex-row-reverse" : "flex-row",
+                )}
+                aria-hidden="true"
+              >
+                {own ? null : (
+                  <Skeleton className="size-7 shrink-0 rounded-full" />
+                )}
+                <Skeleton
+                  className={cn(
+                    "h-9 rounded-2xl",
+                    index % 2 === 0 ? "w-2/5 max-w-xs" : "w-3/5 max-w-md",
+                  )}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   }
@@ -284,6 +336,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
   }
 
   const hasMessages = rows.some((row) => row.kind === "message");
+  const lastOwnKey = latestOwnKey(rows, props.viewerId);
   if (!hasMessages && props.pendingEntries.length === 0) {
     return (
       <Empty className="flex-1 px-6 py-10">
@@ -329,107 +382,144 @@ export function ChatMessageList(props: ChatMessageListProps) {
             {copy.list.loadingOlder}
           </p>
         ) : null}
-        <ol className="flex flex-col">
-          {rows.map((row) => {
-            if (row.kind === "day") {
+        <RowActivityProvider value={activity}>
+          <ol className={cn(CHAT_COLUMN, "flex flex-col pb-2")}>
+            {rows.map((row) => {
+              if (row.kind === "day") {
+                return (
+                  <li
+                    key={row.key}
+                    role="presentation"
+                    className="mt-6 mb-2 flex justify-center px-4 first:mt-2"
+                  >
+                    <span className="text-xs font-medium whitespace-nowrap text-muted-foreground">
+                      {dayLabel(row.dayKey, locale, copy, timeZone)}
+                    </span>
+                  </li>
+                );
+              }
+              if (row.kind === "time") {
+                return (
+                  <li
+                    key={row.key}
+                    role="presentation"
+                    className="mt-5 mb-1 flex justify-center px-4"
+                    data-testid="chat-time-separator"
+                  >
+                    <time
+                      dateTime={row.at}
+                      className="text-xs whitespace-nowrap tabular-nums text-muted-foreground"
+                    >
+                      {formatClock(row.at, locale, timeZone)}
+                    </time>
+                  </li>
+                );
+              }
+              if (row.kind === "unread") {
+                return (
+                  <li
+                    key={row.key}
+                    role="separator"
+                    aria-label={copy.list.newDivider}
+                    data-unread-divider=""
+                    className="mt-4 mb-1 flex items-center gap-3 px-4 text-xs font-semibold text-destructive"
+                  >
+                    <span
+                      className="h-px flex-1 bg-destructive/40"
+                      aria-hidden="true"
+                    />
+                    <span>{copy.list.newDivider}</span>
+                    <span
+                      className="h-px flex-1 bg-destructive/40"
+                      aria-hidden="true"
+                    />
+                  </li>
+                );
+              }
+              if (row.kind === "pending") {
+                return (
+                  <li key={row.key}>
+                    <ChatPendingRow
+                      pending={row.pending}
+                      author={{ name: props.authorName(row.pending.authorId) }}
+                      locale={locale}
+                      timeZone={timeZone}
+                      copy={copy}
+                      continued={row.continued}
+                      groupEnd={row.groupEnd}
+                      onRetry={props.onRetryPending}
+                      onDiscard={props.onDiscardPending}
+                    />
+                  </li>
+                );
+              }
+              const isEditing = editing?.messageId === row.message.id;
+              const isOwn = row.message.authorId === props.viewerId;
+              const fresh =
+                baseline.current !== null &&
+                baseline.current.space === row.message.spaceId &&
+                row.message.sequence > baseline.current.sequence &&
+                !isOwn;
               return (
                 <li
                   key={row.key}
-                  role="presentation"
-                  className="my-4 flex items-center gap-3 px-4 text-xs font-semibold text-muted-foreground"
+                  id={`message-${row.message.id}`}
+                  className={cn(row.message.kind === "system" && "my-2")}
                 >
-                  <span className="h-px flex-1 bg-border" aria-hidden="true" />
-                  <span className="rounded-full border border-border bg-background px-2.5 py-0.5">
-                    {dayLabel(row.dayKey, locale, copy)}
-                  </span>
-                  <span className="h-px flex-1 bg-border" aria-hidden="true" />
+                  {isEditing ? (
+                    <EditForm
+                      copy={copy}
+                      editing={editing}
+                      continued={row.continued}
+                      onChange={props.onEditDraftChange}
+                      onSave={props.onEditSave}
+                      onCancel={props.onEditCancel}
+                    />
+                  ) : (
+                    <ChatMessageRow
+                      message={row.message}
+                      author={{ name: props.authorName(row.message.authorId) }}
+                      continued={row.continued}
+                      groupEnd={row.groupEnd}
+                      showName={props.showNames ?? true}
+                      showSent={row.key === lastOwnKey}
+                      fresh={fresh}
+                      isOwn={isOwn}
+                      locale={locale}
+                      timeZone={timeZone}
+                      copy={copy}
+                      onEdit={props.onEdit}
+                      onDelete={props.onDelete}
+                      onModerate={props.onModerate}
+                      quote={props.quoteOf?.(row.message) ?? null}
+                      thread={threadView(props.threadCounts, row.message)}
+                      pinned={props.pinnedIds?.has(row.message.id) ?? false}
+                      reactions={row.message.reactions ?? []}
+                      workspaceId={props.workspaceId}
+                      hooks={props.hooks}
+                      authorName={props.authorName}
+                      onReact={props.onReact}
+                      onReply={props.onReply}
+                      onOpenThread={props.onOpenThread}
+                      onTogglePin={props.onTogglePin}
+                      onOpenQuote={props.onOpenQuote}
+                      attachmentsReadOnly={props.attachmentsReadOnly}
+                    />
+                  )}
                 </li>
               );
-            }
-            if (row.kind === "unread") {
-              return (
-                <li
-                  key={row.key}
-                  role="separator"
-                  aria-label={copy.list.newDivider}
-                  data-unread-divider=""
-                  className="my-2 flex items-center gap-3 px-4 text-xs font-bold text-destructive"
-                >
-                  <span
-                    className="h-px flex-1 bg-destructive/50"
-                    aria-hidden="true"
-                  />
-                  <span className="rounded-full bg-destructive/10 px-2.5 py-0.5">
-                    {copy.list.newDivider}
-                  </span>
-                  <span
-                    className="h-px flex-1 bg-destructive/50"
-                    aria-hidden="true"
-                  />
-                </li>
-              );
-            }
-            if (row.kind === "pending") {
-              return (
-                <li key={row.key}>
-                  <ChatPendingRow
-                    pending={row.pending}
-                    author={{ name: props.authorName(row.pending.authorId) }}
-                    locale={locale}
-                    timeZone={timeZone}
-                    copy={copy}
-                    onRetry={props.onRetryPending}
-                    onDiscard={props.onDiscardPending}
-                  />
-                </li>
-              );
-            }
-            const isEditing = editing?.messageId === row.message.id;
-            return (
-              <li
-                key={row.key}
-                id={`message-${row.message.id}`}
-                className={cn(row.message.kind === "system" && "my-1")}
-              >
-                {isEditing ? (
-                  <EditForm
-                    copy={copy}
-                    editing={editing}
-                    onChange={props.onEditDraftChange}
-                    onSave={props.onEditSave}
-                    onCancel={props.onEditCancel}
-                  />
-                ) : (
-                  <ChatMessageRow
-                    message={row.message}
-                    author={{ name: props.authorName(row.message.authorId) }}
-                    continued={row.continued}
-                    isOwn={row.message.authorId === props.viewerId}
-                    locale={locale}
-                    timeZone={timeZone}
-                    copy={copy}
-                    onEdit={props.onEdit}
-                    onDelete={props.onDelete}
-                    onModerate={props.onModerate}
-                    quote={props.quoteOf?.(row.message) ?? null}
-                    thread={threadView(props.threadCounts, row.message)}
-                    pinned={props.pinnedIds?.has(row.message.id) ?? false}
-                    reactions={row.message.reactions ?? []}
-                    workspaceId={props.workspaceId}
-                    hooks={props.hooks}
-                    authorName={props.authorName}
-                    onReact={props.onReact}
-                    onReply={props.onReply}
-                    onOpenThread={props.onOpenThread}
-                    onTogglePin={props.onTogglePin}
-                    onOpenQuote={props.onOpenQuote}
-                    attachmentsReadOnly={props.attachmentsReadOnly}
-                  />
-                )}
+            })}
+            {typingIds.length > 0 ? (
+              <li aria-hidden="true">
+                <ChatTypingBubble
+                  ids={typingIds}
+                  authorName={props.authorName}
+                  copy={copy}
+                />
               </li>
-            );
-          })}
-        </ol>
+            ) : null}
+          </ol>
+        </RowActivityProvider>
         {props.isLoadingNewer ? (
           <p className="px-4 py-2 text-center text-xs text-muted-foreground">
             {copy.list.loadingOlder}
@@ -450,6 +540,23 @@ export function ChatMessageList(props: ChatMessageListProps) {
       />
     </div>
   );
+}
+
+/** The caller's newest stored message, when nothing of theirs is still sending after it ("Sent" shows under it). */
+function latestOwnKey(
+  rows: readonly ChatRow[],
+  viewerId: string,
+): string | null {
+  for (let index = rows.length - 1; index >= 0; index--) {
+    const row = rows[index]!;
+    if (row.kind === "pending") return null;
+    if (row.kind === "message" && row.message.authorId === viewerId) {
+      return row.message.deleted || row.message.kind === "system"
+        ? null
+        : row.key;
+    }
+  }
+  return null;
 }
 
 /**
@@ -527,7 +634,8 @@ function isAtBottom(el: HTMLElement): boolean {
 
 /**
  * The jump-to-latest control sits in the flow between the message log and the
- * composer, so it never covers a message (it used to float over the last one at 390 px).
+ * composer, so it never covers a message: a small floating pill, centred on the
+ * conversation column, that takes its own line while it shows.
  */
 function JumpLatest({
   visible,
@@ -540,12 +648,12 @@ function JumpLatest({
 }) {
   if (!visible) return null;
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center px-4">
+    <div className="flex shrink-0 justify-center px-4 pt-1 pb-1.5">
       <Button
         type="button"
         variant="secondary"
         size="sm"
-        className="pointer-events-auto max-w-full rounded-full border border-border shadow-md"
+        className="max-w-full rounded-full border border-border bg-popover text-popover-foreground shadow-md hover:bg-muted motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150"
         onClick={onClick}
       >
         <ArrowDown aria-hidden="true" />
@@ -558,12 +666,14 @@ function JumpLatest({
 function EditForm({
   copy,
   editing,
+  continued,
   onChange,
   onSave,
   onCancel,
 }: {
   readonly copy: ChatCopy;
   readonly editing: ChatEditingState;
+  readonly continued: boolean;
   readonly onChange: (draft: string) => void;
   readonly onSave: () => void;
   readonly onCancel: () => void;
@@ -582,30 +692,49 @@ function EditForm({
     }
   }
   return (
-    <form
-      className="mx-4 my-1 flex flex-col gap-2 rounded-xl border border-input bg-card p-2 shadow-xs"
-      onSubmit={(event) => {
-        event.preventDefault();
-        onSave();
-      }}
+    <div
+      className={cn(
+        "flex w-full justify-end px-3 md:px-4",
+        continued ? "mt-0.5" : "mt-3",
+      )}
     >
-      <Textarea
-        aria-label={copy.list.editLabel}
-        value={editing.draft}
-        onChange={(event) => onChange(event.target.value)}
-        onKeyDown={handleKeyDown}
-        rows={2}
-        autoFocus
-        disabled={editing.busy}
-      />
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={editing.busy}>
-          {copy.list.save}
-        </Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
-          {copy.list.cancel}
-        </Button>
-      </div>
-    </form>
+      <form
+        className="flex w-full max-w-[min(75%,36rem)] min-w-64 flex-col gap-1.5 rounded-2xl border border-ring bg-card p-1.5 shadow-sm"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSave();
+        }}
+      >
+        <Textarea
+          aria-label={copy.list.editLabel}
+          value={editing.draft}
+          onChange={(event) => onChange(event.target.value)}
+          onKeyDown={handleKeyDown}
+          rows={1}
+          autoFocus
+          disabled={editing.busy}
+          className="max-h-40 min-h-9 resize-none border-0 bg-transparent px-2 py-1.5 shadow-none focus-visible:ring-0 dark:bg-transparent"
+        />
+        <div className="flex items-center justify-end gap-1.5">
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="rounded-full"
+            onClick={onCancel}
+          >
+            {copy.list.cancel}
+          </Button>
+          <Button
+            type="submit"
+            size="sm"
+            className="rounded-full"
+            disabled={editing.busy}
+          >
+            {copy.list.save}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 }

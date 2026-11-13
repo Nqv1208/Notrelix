@@ -18,7 +18,10 @@ export function ChatStatusBanner({
   icon,
   children,
   action,
+  placement = "bar",
 }: {
+  /** "bar" spans the pane under the header; "composer" is a rounded notice on the conversation column, above the composer. */
+  readonly placement?: "bar" | "composer";
   readonly tone: ChatBannerTone;
   readonly icon: ReactNode;
   readonly children: ReactNode;
@@ -28,7 +31,10 @@ export function ChatStatusBanner({
     <div
       role="status"
       className={cn(
-        "flex min-h-9 shrink-0 flex-wrap items-center gap-2 border-b border-border px-4 py-1.5 text-sm",
+        "flex min-h-9 shrink-0 flex-wrap items-center gap-2 py-1.5 text-sm",
+        placement === "bar"
+          ? "border-b border-border px-4"
+          : "mx-3 mb-1 rounded-2xl border border-border px-3 md:mx-auto md:w-[calc(100%-2rem)] md:max-w-3xl",
         TONE_CLASS[tone],
       )}
     >

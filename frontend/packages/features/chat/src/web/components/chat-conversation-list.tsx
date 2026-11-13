@@ -201,7 +201,7 @@ function ConversationRow({
       aria-current={active ? "page" : undefined}
       aria-label={label}
       className={cn(
-        "flex min-h-12 w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-start outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+        "flex min-h-14 w-full items-center gap-3 rounded-lg px-2 py-1.5 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus-ring motion-reduce:transition-none",
         active
           ? "bg-state-selected text-state-selected-foreground"
           : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
@@ -213,44 +213,57 @@ function ConversationRow({
         id={counterpart ?? conversation.id}
         group={conversation.kind === "group"}
         presence={presence}
+        className="size-10"
       />
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span
-          className={cn(
-            "truncate text-sm",
-            unreadHere || active
-              ? "font-semibold text-foreground"
-              : "font-medium",
-          )}
-        >
-          {title}
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="flex min-w-0 items-baseline gap-2">
+          <span
+            className={cn(
+              "min-w-0 flex-1 truncate text-sm",
+              unreadHere || active
+                ? "font-semibold text-foreground"
+                : "font-medium",
+            )}
+            title={title}
+          >
+            {title}
+          </span>
+          {when ? (
+            <span
+              aria-hidden="true"
+              className={cn(
+                "shrink-0 text-xs whitespace-nowrap tabular-nums",
+                unreadHere
+                  ? "font-semibold text-foreground"
+                  : "text-muted-foreground",
+              )}
+            >
+              {when}
+            </span>
+          ) : null}
         </span>
-        <span
-          className={cn(
-            "truncate text-xs",
-            unreadHere
-              ? "font-semibold text-foreground"
-              : "text-muted-foreground",
-          )}
-        >
-          {preview}
+        <span className="flex min-w-0 items-center gap-2">
+          <span
+            className={cn(
+              "min-w-0 flex-1 truncate text-xs",
+              unreadHere
+                ? "font-semibold text-foreground"
+                : "text-muted-foreground",
+            )}
+            title={preview || undefined}
+          >
+            {preview}
+          </span>
+          {badge ? (
+            <span
+              aria-hidden="true"
+              className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-brand-solid px-1.5 text-xs font-bold text-brand-solid-foreground tabular-nums"
+            >
+              {badge}
+            </span>
+          ) : null}
         </span>
       </span>
-      {badge ? (
-        <span
-          aria-hidden="true"
-          className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-brand-solid px-1.5 text-xs font-bold text-brand-solid-foreground tabular-nums"
-        >
-          {badge}
-        </span>
-      ) : when ? (
-        <span
-          aria-hidden="true"
-          className="shrink-0 text-xs text-muted-foreground"
-        >
-          {when}
-        </span>
-      ) : null}
     </button>
   );
 }

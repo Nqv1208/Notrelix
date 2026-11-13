@@ -233,34 +233,49 @@ function row(
 }
 
 describe("ChatMessageRow moderation", () => {
-  it("offers Delete as moderator on another person's live message, and calls the handler", () => {
+  it("offers Delete as moderator on another person's live message, and calls the handler", async () => {
     const onModerate = vi.fn();
     row({ onModerate });
+    fireEvent.keyDown(screen.getByRole("button", { name: "More actions" }), {
+      key: "Enter",
+    });
     fireEvent.click(
-      screen.getByRole("button", { name: "Delete as moderator" }),
+      await screen.findByRole("menuitem", { name: "Delete as moderator" }),
     );
     expect(onModerate).toHaveBeenCalledWith(
       expect.objectContaining({ id: "m-1" }),
     );
   });
 
-  it("does not offer it on your own message, on a tombstone, or without a handler", () => {
+  it("does not offer it on your own message (the menu has Edit and Delete instead)", async () => {
     row({
       onModerate: vi.fn(),
       isOwn: true,
       onEdit: vi.fn(),
       onDelete: vi.fn(),
     });
-    expect(
-      screen.queryByRole("button", { name: "Delete as moderator" }),
-    ).toBeNull();
+    fireEvent.keyDown(screen.getByRole("button", { name: "More actions" }), {
+      key: "Enter",
+    });
+    const items = await screen.findAllByRole("menuitem");
+    expect(items.map((item) => item.textContent)).toEqual([
+      "Edit message",
+      "Delete message",
+    ]);
   });
 
-  it("does not offer it without a handler", () => {
+  it("does not offer it without a handler, nor any menu when nothing else is offered", () => {
     row({ onReact: vi.fn() });
-    expect(
-      screen.queryByRole("button", { name: "Delete as moderator" }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "More actions" })).toBeNull();
+    expect(screen.getByRole("button", { name: "React" })).toBeTruthy();
+  });
+
+  it("offers no actions at all on a tombstone", () => {
+    row(
+      { onModerate: vi.fn(), onReact: vi.fn(), onReply: vi.fn() },
+      { deleted: true, content: null },
+    );
+    expect(screen.queryByRole("toolbar")).toBeNull();
   });
 
   it("says a moderator removed the message, and says plain deleted for an author's own delete", () => {
@@ -464,8 +479,12 @@ describe("ChatWorkspace channel permissions and moderation", () => {
     const target = text.closest("[data-message-id]") as HTMLElement;
     const id = target.getAttribute("data-message-id")!;
 
+    fireEvent.keyDown(
+      within(target).getByRole("button", { name: "More actions" }),
+      { key: "Enter" },
+    );
     fireEvent.click(
-      within(target).getByRole("button", { name: "Delete as moderator" }),
+      await screen.findByRole("menuitem", { name: "Delete as moderator" }),
     );
     const moderation = within(await screen.findByRole("dialog"));
     fireEvent.change(moderation.getByLabelText("Reason"), {
@@ -486,9 +505,15 @@ describe("ChatWorkspace channel permissions and moderation", () => {
   it("a Member is not offered Delete as moderator", async () => {
     const s = setup("member");
     await openGeneral(s, "member");
-    await screen.findByText(/Tin nhắn 300\./);
+    const text = await screen.findByText(/Tin nhắn 300\./);
+    const target = text.closest("[data-message-id]") as HTMLElement;
+    fireEvent.keyDown(
+      within(target).getByRole("button", { name: "More actions" }),
+      { key: "Enter" },
+    );
+    await screen.findByRole("menu");
     expect(
-      screen.queryByRole("button", { name: "Delete as moderator" }),
+      screen.queryByRole("menuitem", { name: "Delete as moderator" }),
     ).toBeNull();
   });
 });
