@@ -113,6 +113,8 @@ export interface MessageAttachmentsProps {
   /** An archived channel is read-only: no remove. */
   readonly readOnly?: boolean;
   readonly copy: ChatCopy;
+  /** The side of the column the files hug: the end under the caller's own bubble. */
+  readonly align?: "start" | "end";
 }
 
 /**
@@ -127,6 +129,7 @@ export function MessageAttachments({
   isOwn,
   readOnly = false,
   copy,
+  align = "start",
 }: MessageAttachmentsProps) {
   const uploadsQuery = hooks.useUploads(workspaceId);
   const actions = hooks.useAttachmentActions(workspaceId);
@@ -186,13 +189,22 @@ export function MessageAttachments({
 
   return (
     <div
-      className="mt-1.5 flex flex-col gap-1.5"
+      className={cn(
+        "mt-1 flex max-w-full flex-col gap-1",
+        align === "end" ? "items-end" : "items-start",
+      )}
+      data-align={align}
       role="group"
       aria-label={copy.attachments.listLabel}
       data-testid="chat-attachments"
     >
       {images.length > 0 ? (
-        <ul className="flex flex-wrap gap-2">
+        <ul
+          className={cn(
+            "flex max-w-full flex-wrap gap-1",
+            align === "end" && "justify-end",
+          )}
+        >
           {images.map((attachment) => (
             <li key={attachment.id}>
               <ImagePreview
@@ -210,7 +222,12 @@ export function MessageAttachments({
         </ul>
       ) : null}
       {files.length > 0 ? (
-        <ul className="flex flex-wrap gap-2">
+        <ul
+          className={cn(
+            "flex max-w-full flex-col gap-1",
+            align === "end" ? "items-end" : "items-start",
+          )}
+        >
           {files.map((attachment) => (
             <li key={attachment.id} className="min-w-0 max-w-full">
               <FileCard
@@ -276,8 +293,8 @@ function FileCard({
   readonly onRemove: (attachment: ChatAttachment) => void;
 }) {
   return (
-    <div className="flex max-w-full items-center gap-2 rounded-lg border border-border bg-card py-1.5 ps-2 pe-1 text-sm">
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+    <div className="flex max-w-full items-center gap-2.5 rounded-2xl border border-border bg-card py-2 ps-2 pe-1 text-sm shadow-xs">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
         <AttachmentGlyphIcon
           contentType={attachment.contentType}
           fileName={attachment.fileName}
@@ -392,19 +409,19 @@ function ImagePreview({
           aria-label={fillCopy(copy.attachments.download, {
             name: attachment.fileName,
           })}
-          className="overflow-hidden rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none"
+          className="block overflow-hidden rounded-2xl border border-border bg-muted focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none"
         >
           <img
             src={url}
             alt={attachment.fileName}
-            className="block max-h-64 max-w-full object-contain"
+            className="block max-h-72 min-h-24 max-w-full min-w-24 object-cover sm:max-w-80"
           />
         </button>
       ) : (
         <div
           role="status"
           aria-label={copy.attachments.previewLoading}
-          className="flex h-24 w-40 animate-pulse items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground"
+          className="flex aspect-[4/3] w-56 max-w-full animate-pulse items-center justify-center rounded-2xl border border-border bg-muted text-muted-foreground motion-reduce:animate-none"
         >
           <ImageIcon className="size-5" aria-hidden="true" />
         </div>

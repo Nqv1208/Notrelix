@@ -46,6 +46,7 @@ export function ChatRateLimitNotice({
     limit === "slow-mode" ? copy.rateLimit.slowMode : copy.rateLimit.limited;
   return (
     <ChatStatusBanner
+      placement="composer"
       tone="warning"
       icon={limit === "slow-mode" ? <Clock /> : <Hourglass />}
       action={

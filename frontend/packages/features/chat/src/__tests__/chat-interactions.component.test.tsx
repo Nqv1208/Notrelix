@@ -108,7 +108,7 @@ describe("ReactionPicker", () => {
 });
 
 describe("ChatMessageRow toolbar and thread chip", () => {
-  it("offers react, reply, thread and pin on a message of someone else, and keeps edit to the author", () => {
+  it("offers react, reply and a More menu (thread, pin) on a message of someone else, and keeps edit to the author", async () => {
     const onReply = vi.fn();
     const onOpenThread = vi.fn();
     const onTogglePin = vi.fn();
@@ -131,20 +131,31 @@ describe("ChatMessageRow toolbar and thread chip", () => {
       />,
     );
     const toolbar = screen.getByRole("toolbar");
+    // Three inline actions only: React, Reply, More.
+    expect(
+      within(toolbar)
+        .getAllByRole("button")
+        .map((button) => button.getAttribute("aria-label")),
+    ).toEqual(["React", "Reply", "More actions"]);
     fireEvent.click(within(toolbar).getByRole("button", { name: "Reply" }));
     expect(onReply).toHaveBeenCalledWith(
       expect.objectContaining({ id: "m-1" }),
     );
-    fireEvent.click(
-      within(toolbar).getByRole("button", { name: "Pin message" }),
+    fireEvent.keyDown(
+      within(toolbar).getByRole("button", { name: "More actions" }),
+      { key: "Enter" },
     );
+    const items = await screen.findAllByRole("menuitem");
+    expect(items.map((item) => item.textContent)).toEqual([
+      "Reply in thread",
+      "Pin message",
+    ]);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Pin message" }));
     expect(onTogglePin).toHaveBeenCalledWith(
       expect.objectContaining({ id: "m-1" }),
       true,
     );
-    expect(
-      within(toolbar).queryByRole("button", { name: "Edit message" }),
-    ).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Edit message" })).toBeNull();
     fireEvent.click(screen.getByTestId("chat-thread-chip"));
     expect(onOpenThread).toHaveBeenCalledWith(
       expect.objectContaining({ id: "m-1" }),
@@ -172,12 +183,18 @@ describe("ChatMessageRow toolbar and thread chip", () => {
     );
     const toolbar = screen.getByRole("toolbar");
     const reply = within(toolbar).getByRole("button", { name: "Reply" });
-    const thread = within(toolbar).getByRole("button", { name: "Open thread" });
+    const more = within(toolbar).getByRole("button", { name: "More actions" });
+    // One Tab stop: only the current button is in the tab order.
+    expect(reply.getAttribute("tabindex")).toBe("0");
+    expect(more.getAttribute("tabindex")).toBe("-1");
     reply.focus();
     fireEvent.keyDown(toolbar, { key: "ArrowRight" });
-    expect(document.activeElement).toBe(thread);
+    expect(document.activeElement).toBe(more);
+    expect(more.getAttribute("tabindex")).toBe("0");
     fireEvent.keyDown(toolbar, { key: "ArrowLeft" });
     expect(document.activeElement).toBe(reply);
+    fireEvent.keyDown(toolbar, { key: "End" });
+    expect(document.activeElement).toBe(more);
   });
 
   it("shows a quote of the message it answers and no toolbar on a deleted message", () => {

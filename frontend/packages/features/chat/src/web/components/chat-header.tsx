@@ -106,7 +106,7 @@ export function ChatHeader({
   const canJoin = !channel.isMember && !isPrivate && !channel.isArchived;
 
   return (
-    <header className="flex min-h-14 flex-wrap items-center gap-x-2 gap-y-1 border-b border-border bg-background px-3 py-2 md:px-5">
+    <header className="flex min-h-14 flex-wrap items-center gap-x-2 gap-y-1 border-b border-border bg-background px-3 py-2 md:px-4">
       <Button
         variant="ghost"
         size="icon-sm"
@@ -125,14 +125,19 @@ export function ChatHeader({
           <span className="sr-only">
             {isPrivate ? copy.header.privateMark : copy.header.publicMark}:{" "}
           </span>
-          <span className="truncate">{channel.name}</span>
+          <span className="truncate" title={channel.name}>
+            {channel.name}
+          </span>
           {channel.isArchived ? (
             <span className="ms-2 shrink-0 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">
               {copy.header.archivedBadge}
             </span>
           ) : null}
         </h1>
-        <p className="truncate text-xs text-muted-foreground">
+        <p
+          className="truncate text-xs text-muted-foreground"
+          title={channel.topic ?? undefined}
+        >
           {channel.topic ?? copy.header.topicEmpty}
         </p>
       </div>

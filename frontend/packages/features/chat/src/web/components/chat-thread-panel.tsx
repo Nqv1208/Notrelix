@@ -6,6 +6,11 @@ import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
 import { ChatComposer, type ChatComposerMentions } from "./chat-composer";
 import { ChatMessageRow } from "./chat-message-row";
+import { AUTHOR_RUN_MINUTES } from "../../core/model/chat-model";
+import {
+  RowActivityProvider,
+  createRowActivityStore,
+} from "./chat-row-activity";
 import { fillCopy, pluralCopy } from "./use-chat-copy";
 
 export interface ChatThreadPanelProps {
@@ -24,8 +29,13 @@ export interface ChatThreadPanelProps {
     "selfId" | "people" | "channels"
   >;
   readonly onClose: () => void;
-  readonly onReact: (message: ChatMessage, emoji: string, add: boolean) => void;
-  readonly onTogglePin: (message: ChatMessage, pinned: boolean) => void;
+  /** Without a handler (an archived or read-only space) the action is not offered. */
+  readonly onReact?: (
+    message: ChatMessage,
+    emoji: string,
+    add: boolean,
+  ) => void;
+  readonly onTogglePin?: (message: ChatMessage, pinned: boolean) => void;
   /** An archived channel is read-only: its files cannot be removed. */
   readonly attachmentsReadOnly?: boolean;
 }
@@ -58,6 +68,7 @@ export function ChatThreadPanel({
   const [draft, setDraft] = useState("");
   const [alsoSend, setAlsoSend] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [activity] = useState(createRowActivityStore);
 
   const root = thread.data?.pages[0]?.root ?? null;
   const summary = thread.data?.pages[0]?.thread ?? null;
@@ -226,81 +237,78 @@ export function ChatThreadPanel({
           className="min-h-0 flex-1 overflow-y-auto py-2"
           data-testid="chat-thread-replies"
         >
-          {root ? (
-            <div className="border-b border-border pb-2">
-              <ChatMessageRow
-                message={root}
-                author={{ name: authorName(root.authorId) }}
-                continued={false}
-                isOwn={root.authorId === viewerId}
-                locale={locale}
-                timeZone={timeZone}
-                copy={copy}
-                pinned={pinnedIds.has(root.id)}
-                reactions={root.reactions ?? []}
-                workspaceId={workspaceId}
-                hooks={hooks}
-                authorName={authorName}
-                onReact={onReact}
-                onTogglePin={onTogglePin}
-                attachmentsReadOnly={attachmentsReadOnly}
-              />
-            </div>
-          ) : null}
-          {replies.length === 0 && !thread.isFetching ? (
-            <p className="px-4 py-3 text-sm text-muted-foreground">
-              {copy.thread.empty}
-            </p>
-          ) : null}
-          <ol className="flex flex-col">
-            {replies.map((reply, index) => {
-              const previous = replies[index - 1];
-              const continued =
-                previous !== undefined &&
-                previous.authorId === reply.authorId &&
-                Date.parse(reply.createdAt) - Date.parse(previous.createdAt) <
-                  5 * 60 * 1000;
-              return (
-                <li key={reply.id} id={`thread-reply-${reply.id}`}>
-                  <ChatMessageRow
-                    message={reply}
-                    author={{ name: authorName(reply.authorId) }}
-                    continued={continued}
-                    isOwn={reply.authorId === viewerId}
-                    locale={locale}
-                    timeZone={timeZone}
-                    copy={copy}
-                    onEdit={() => undefined}
-                    onDelete={() => undefined}
-                    pinned={pinnedIds.has(reply.id)}
-                    reactions={reply.reactions ?? []}
-                    workspaceId={workspaceId}
-                    hooks={hooks}
-                    authorName={authorName}
-                    onReact={onReact}
-                    onTogglePin={onTogglePin}
-                    attachmentsReadOnly={attachmentsReadOnly}
-                  />
-                </li>
-              );
-            })}
-          </ol>
-          {thread.hasNextPage ? (
-            <div className="flex justify-center px-4 py-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                disabled={thread.isFetchingNextPage}
-                onClick={() => void thread.fetchNextPage()}
-              >
-                {thread.isFetchingNextPage ? (
-                  <Loader2 className="animate-spin" aria-hidden="true" />
-                ) : null}
-                {copy.thread.loadMore}
-              </Button>
-            </div>
-          ) : null}
+          <RowActivityProvider value={activity}>
+            {root ? (
+              <div className="border-b border-border pb-2">
+                <ChatMessageRow
+                  message={root}
+                  author={{ name: authorName(root.authorId) }}
+                  continued={false}
+                  isOwn={root.authorId === viewerId}
+                  locale={locale}
+                  timeZone={timeZone}
+                  copy={copy}
+                  pinned={pinnedIds.has(root.id)}
+                  reactions={root.reactions ?? []}
+                  workspaceId={workspaceId}
+                  hooks={hooks}
+                  authorName={authorName}
+                  onReact={onReact}
+                  onTogglePin={onTogglePin}
+                  attachmentsReadOnly={attachmentsReadOnly}
+                />
+              </div>
+            ) : null}
+            {replies.length === 0 && !thread.isFetching ? (
+              <p className="px-4 py-3 text-sm text-muted-foreground">
+                {copy.thread.empty}
+              </p>
+            ) : null}
+            <ol className="flex flex-col pb-2">
+              {replies.map((reply, index) => {
+                const continued = sameGroup(replies[index - 1], reply);
+                const groupEnd = !sameGroup(reply, replies[index + 1]);
+                return (
+                  <li key={reply.id} id={`thread-reply-${reply.id}`}>
+                    <ChatMessageRow
+                      message={reply}
+                      author={{ name: authorName(reply.authorId) }}
+                      continued={continued}
+                      groupEnd={groupEnd}
+                      isOwn={reply.authorId === viewerId}
+                      locale={locale}
+                      timeZone={timeZone}
+                      copy={copy}
+                      pinned={pinnedIds.has(reply.id)}
+                      reactions={reply.reactions ?? []}
+                      workspaceId={workspaceId}
+                      hooks={hooks}
+                      authorName={authorName}
+                      onReact={onReact}
+                      onTogglePin={onTogglePin}
+                      attachmentsReadOnly={attachmentsReadOnly}
+                    />
+                  </li>
+                );
+              })}
+            </ol>
+            {thread.hasNextPage ? (
+              <div className="flex justify-center px-4 py-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={thread.isFetchingNextPage}
+                  onClick={() => void thread.fetchNextPage()}
+                >
+                  {thread.isFetchingNextPage ? (
+                    <Loader2 className="animate-spin" aria-hidden="true" />
+                  ) : null}
+                  {copy.thread.loadMore}
+                </Button>
+              </div>
+            ) : null}
+          </RowActivityProvider>
         </div>
       )}
 
@@ -355,4 +363,16 @@ export function ChatThreadPanel({
       />
     </section>
   );
+}
+
+/** Two replies in a row of one author within five minutes share a group. */
+function sameGroup(
+  previous: ChatMessage | undefined,
+  next: ChatMessage | undefined,
+): boolean {
+  if (!previous || !next) return false;
+  if (previous.kind !== "user" || next.kind !== "user") return false;
+  if (previous.authorId !== next.authorId) return false;
+  const gap = Date.parse(next.createdAt) - Date.parse(previous.createdAt);
+  return gap >= 0 && gap <= AUTHOR_RUN_MINUTES * 60_000;
 }

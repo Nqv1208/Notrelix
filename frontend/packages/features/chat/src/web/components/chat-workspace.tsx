@@ -38,6 +38,7 @@ import {
   unconfirmedPending,
   type PendingMessage,
 } from "../../core/model/chat-model";
+import { messageActionGrants } from "../../core/model/message-display-model";
 import {
   conversationTitle,
   directCounterpart,
@@ -545,6 +546,14 @@ export function ChatWorkspace({
             ? copy.composer.readOnly
             : null;
   const draft = drafts[ch] ?? "";
+  // What the message actions offer here: archived is read-only, and the server's capabilities decide the rest.
+  const grants = messageActionGrants({
+    archived: channel?.isArchived === true,
+    postRefused: composerDisabledReason !== null,
+    canReact: channel?.capabilities?.canReact,
+    canPin: channel?.capabilities?.canPin,
+    canModerate: channel?.capabilities?.canModerate,
+  });
   // The mention picker of the open space (UC-CHT-G01); only where the caller may post.
   const mentionablesQuery = hooks.useMentionables(
     ws,
@@ -642,6 +651,7 @@ export function ChatWorkspace({
         text: target.deleted ? null : target.content,
         deleted: target.deleted,
         unavailable: false,
+        authorId: target.authorId,
       };
     }
     if (message.replyPreview) {
@@ -650,6 +660,7 @@ export function ChatWorkspace({
         text: message.replyPreview.content,
         deleted: message.replyPreview.deleted,
         unavailable: false,
+        authorId: message.replyPreview.authorId,
       };
     }
     return {
@@ -1540,7 +1551,7 @@ export function ChatWorkspace({
                     }}
                     onAtBottomChange={setAtBottom}
                     onJumpLatest={jumpToLatest}
-                    onEdit={handleEditStart}
+                    onEdit={grants.editOwn ? handleEditStart : undefined}
                     onEditDraftChange={(value) =>
                       setEditing((current) =>
                         current ? { ...current, draft: value } : current,
@@ -1548,9 +1559,13 @@ export function ChatWorkspace({
                     }
                     onEditSave={handleEditSave}
                     onEditCancel={() => setEditing(null)}
-                    onDelete={(message) => setConfirmDelete(message)}
+                    onDelete={
+                      grants.deleteOwn
+                        ? (message) => setConfirmDelete(message)
+                        : undefined
+                    }
                     onModerate={
-                      channel?.capabilities?.canModerate
+                      grants.moderate
                         ? (message) => {
                             setModerateError(null);
                             setModerateTarget(message);
@@ -1567,11 +1582,21 @@ export function ChatWorkspace({
                     pinnedIds={pinnedIds}
                     threadCounts={threadCountQuery.data}
                     quoteOf={quoteOf}
-                    onReact={handleReact}
-                    onReply={(message) => setReplyTo(message)}
+                    onReact={grants.react ? handleReact : undefined}
+                    onReply={
+                      grants.reply
+                        ? (message) => setReplyTo(message)
+                        : undefined
+                    }
                     onOpenThread={handleOpenThread}
-                    onTogglePin={handleTogglePin}
+                    onTogglePin={grants.pin ? handleTogglePin : undefined}
                     attachmentsReadOnly={channel?.isArchived === true}
+                    showNames={conversation?.kind !== "direct"}
+                    typingIds={
+                      ephemeral
+                        ? typingIds.filter((id) => id !== viewerId)
+                        : undefined
+                    }
                     onOpenQuote={(id) =>
                       document
                         .getElementById(`message-${id}`)
@@ -1789,8 +1814,8 @@ export function ChatWorkspace({
                     channels: mentionChannels,
                   }}
                   onClose={() => setPanel(null)}
-                  onReact={handleReact}
-                  onTogglePin={handleTogglePin}
+                  onReact={grants.react ? handleReact : undefined}
+                  onTogglePin={grants.pin ? handleTogglePin : undefined}
                   attachmentsReadOnly={channel?.isArchived === true}
                 />
               ) : null}
