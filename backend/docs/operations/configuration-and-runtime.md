@@ -23,6 +23,10 @@ evidence:
   - docker-compose.yml
   - docker-compose.staging.yml
   - docker-compose.prod.yml
+  - infra/pgbouncer/pgbouncer.ini
+  - infra/nginx/nginx.prod.conf
+  - backend/src/Notrelix.API/Endpoints/Health/HealthEndpoints.cs
+  - backend/src/Notrelix.Infrastructure/Options/RuntimeRoles.cs
   - Makefile
 review_on:
   - backend-configuration-source-change
@@ -1491,7 +1495,7 @@ Do not reproduce every production infrastructure component merely for symmetry.
 
 Current repository has staging/production Compose overlays.
 
-They are current deployment evidence.
+They are current deployment evidence. They run the backend as three roles (`backend-api`, `backend-realtime`, `backend-worker`) behind PgBouncer; sections 23C to 23G describe that split, its health probes, the pooler and the shared key ring.
 
 Repository Infrastructure docs own the canonical deployment-runtime model.
 
@@ -1907,3 +1911,106 @@ The objective is a runtime whose technical variability is explicit and replaceab
 Several API instances may run the reaper at the same time: purge rows are claimed with `FOR UPDATE SKIP LOCKED` and the orphan sweep is elected with a transaction-scoped try-advisory lock. The reaper runs under the explicit system (worker) tenant context and RLS worker scope; it touches only `collab.attachments`.
 
 Known gap (slice 1): no malware scanning. Mitigations: server-derived content type, forced `Content-Disposition: attachment` and `nosniff` for everything except sniffed raster images, executable refusal. A scan hook needs its own decision.
+
+# 23C. Runtime roles (`Runtime:Roles`)
+
+One image runs every process role. `Runtime:Roles` selects the planes a process serves (`RuntimeRoles`, `Notrelix.Infrastructure.Options`):
+
+| Role | Serves | Hosted services | Readiness depends on |
+|---|---|---|---|
+| `api` | every REST endpoint (`MapEndpoints` → API endpoints) and the health probes | none | database, Redis |
+| `realtime` | the WebSocket gateway (`Realtime:Gateway:Path`, default `/api/v1/realtime`) and the health probes | none | database, Redis |
+| `worker` | the health probes; the 14 background jobs (outbox relay, email dispatch, retention and purge sweeps, Chat retention, export and digest, board transfers, due-date notices, object reapers); the MassTransit consumers | all 14 | database, Redis, outbox backlog, broker reachability |
+
+Rules:
+
+- Absent `Runtime:Roles` means every role, so a single process behaves as it did before roles existed.
+- Forms: `Runtime__Roles=api,realtime` (comma-separated scalar) or `Runtime__Roles__0=api` (list). Names are case-insensitive and trimmed.
+- Unknown names, an empty value or an empty list stop the host at startup with an `InvalidOperationException` that names the bad value and lists the valid roles. Validation runs before any service is registered.
+- Without the `worker` role no background hosted service is registered, and MassTransit registers no consumers, so the process publishes to the bus but creates no receive endpoints. Options, validators and the scoped runners stay registered in every role; they start no work.
+- `RuntimeDatabaseRoleGuard` (registered by the persistence layer, not by the worker) is the one hosted service every role keeps. It refuses a serving login that row-level security cannot constrain; it is a safety check for a process that touches the database, not a background job.
+- The OpenAPI export always describes every role, whatever `Runtime:Roles` says.
+
+Verification: `Notrelix.Infrastructure.Tests/Runtime/RuntimeRolesTests` (parsing, failure cases) and `RuntimeRolesRegistrationTests` (no worker hosted service without `worker`, fourteen with it). Route mapping follows the same switch in `EndpointRouteBuilderExtensions.MapEndpoints`.
+
+BE-OPS-CFG-051: a role is a deployment decision, not a product one. The same endpoint code and the same bounded contexts run in every role; a role only decides which planes are mounted in a process.
+
+---
+
+# 23D. Health probes
+
+| Probe | Path | Meaning | Checks |
+|---|---|---|---|
+| Liveness | `/health/live` | the process is up and serving HTTP | none (never calls a dependency) |
+| Readiness | `/health/ready` | the process can take traffic for the roles it runs | the checks tagged `ready` whose role tag matches a running role |
+| Full status | `/health` | every registered check, for operators | all checks; 503 only when a check is Unhealthy |
+
+Checks and the roles that need them (tags `role:api`, `role:realtime`, `role:worker`):
+
+| Check | Tags | Registered when | Unhealthy means |
+|---|---|---|---|
+| `database` | `ready`, every role | always | `ApplicationDbContext` cannot reach PostgreSQL |
+| `redis` | `ready`, every role | always | Redis ping fails |
+| `outbox` | `ready`, `role:worker` | the worker role runs | the outbox backlog passes `HealthChecks:Outbox` thresholds |
+| `broker` | `ready`, `role:worker` | the worker role runs and `Messaging:Transport=RabbitMQ` | a TCP connect to `Messaging:RabbitMQ:Host`:`Port` fails within 2 s (reachability only; MassTransit reconnects by itself) |
+
+Readiness is role-aware on purpose: an api process does not go unready because the worker's outbox is behind. Readiness with every role running keeps the earlier set plus the broker probe on RabbitMQ.
+
+The backend image's `HEALTHCHECK` calls `/health/live`. Compose does not gate `depends_on` on readiness for the backend services; nginx starts after them and returns 502 until the upstream answers. The `/health/` prefix is routed to `backend-api` at the edge in both gateways.
+
+BE-OPS-CFG-052: a probe answers for the process it runs in. Liveness never depends on a dependency, so a database outage restarts nothing; readiness removes a process from rotation without restarting it.
+
+---
+
+# 23E. Connection pooling (PgBouncer) and the migration path
+
+Production and staging send application traffic through PgBouncer (`edoburu/pgbouncer`, pinned in `delivery/images.lock.toml` as `images.pgbouncer` and in the overlays by `NOTRELIX_PGBOUNCER_IMAGE`). Configuration: `infra/pgbouncer/pgbouncer.ini`.
+
+| Setting | Value | Why |
+|---|---|---|
+| `pool_mode` | `transaction` | a server connection serves one transaction at a time, so the server-side pool is far smaller than the sum of the Npgsql pools |
+| `auth_type` | `scram-sha-256` | the userlist holds the two runtime passwords in plain text, which PgBouncer accepts for any server-side password method |
+| `default_pool_size` | 30 per login | two runtime logins give 60 server connections, leaving headroom under PostgreSQL's default `max_connections` of 100 for owner-direct work |
+| `max_client_conn` | 600 | three backend processes, each with an Npgsql pool of up to 100 |
+| `max_prepared_statements` | 0 | the backend uses no protocol-level prepared statements (Npgsql auto-prepare is off) |
+| `ignore_startup_parameters` | `extra_float_digits` | the parameter Npgsql sends that PgBouncer would otherwise reject |
+
+Npgsql keys on the two runtime strings (`ConnectionStrings__NotrelixDb`, `ConnectionStrings__NotrelixWorkerDb`): `Host=pgbouncer;Port=6432`, `No Reset On Close=true` (transaction pooling makes the reset commands meaningless, and everything the backend sets is transaction-scoped), `Max Auto Prepare=0`.
+
+What transaction pooling requires of the backend, all true today:
+
+- RLS session values use `set_config(..., true)` (transaction-local). They are set inside the request transaction and do not outlive it.
+- Advisory locks are the `pg_advisory_xact_lock` form only.
+- No session `SET`, `LISTEN`, temp tables or `SET ROLE` in application code. The function-level `SET search_path` clauses in the RLS scripts are per function and safe.
+
+BE-OPS-CFG-053: a change that adds a session-scoped feature (a session advisory lock, a temp table, `LISTEN`, a session `SET`, a named prepared statement) breaks under transaction pooling. It must run on the owner connection, or move the pooler to session mode for that login.
+
+Migration path (bypasses the pooler on purpose):
+
+- `ConnectionStrings__NotrelixMigrationDb` points straight at `postgres:5432` with the owner login. `--migrate`, `--seed` and `--rls-apply` use it, and the `backend-api` service runs `--migrate` from the release.
+- The pooler and the runtime logins never run DDL.
+
+Password rule: the runtime passwords must not contain `;`, `=` or `"`. The pooler writes them into its userlist in a tmpfs at start, with `printf`, so nothing is persisted.
+
+---
+
+# 23F. Shared Data Protection key ring across roles
+
+`api`, `realtime` and `worker` decrypt what another role wrote: integration secrets (`DataProtectionIntegrationSecretStore`) are written by the API and read by the worker, and MFA secrets and OAuth state use the same ring. All three services therefore set `DataProtection__PersistKeys=true` and mount one named volume at `/var/lib/notrelix/dataprotection-keys` (created in the backend image, owned by `notrelix`). `DataProtectionOptionsValidator` requires `PersistKeys` in Production; the overlays set it.
+
+Keys are stored as files, not encrypted at rest by this setting. Protecting the key volume is part of the host's secret handling (section 13 and BE-OPS-CFG-032).
+
+---
+
+# 23G. Compose topology after the split (staging and production)
+
+| Service | Role | Public route | Networks |
+|---|---|---|---|
+| `backend-api` | `api` | nginx `/api/` (except realtime), `/health` | backend, egress |
+| `backend-realtime` | `realtime` | nginx `/api/v1/realtime` (WebSocket upgrade, 3700 s timeouts) | backend |
+| `backend-worker` | `worker` | none | backend, egress |
+| `pgbouncer` | pooler | none | backend |
+
+The three backend services share one image: `image: ${NOTRELIX_BACKEND_IMAGE:-notrelix-backend:local}` with `build` on each. The release generator pins `backend-api` by compose service name (`delivery/catalog.toml`), and the worker and realtime services take the same digest from `NOTRELIX_BACKEND_IMAGE`. `scripts/ci/validate-infra.py` checks the topology: one image, each role's `Runtime__Roles`, pgbouncer on every application login, the migration login straight to postgres, the shared key volume, and the realtime route.
+
+Development (`docker-compose.dev.yml`) is unchanged: one backend, no pooler, all roles.
