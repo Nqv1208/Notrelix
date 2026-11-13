@@ -251,6 +251,7 @@ public partial class ApplicationDbContext
     public DbSet<Mention> PageMentions => Set<Mention>();
     public DbSet<Reaction> Reactions => Set<Reaction>();
     public DbSet<Attachment> Attachments => Set<Attachment>();
+    public DbSet<PendingAttachmentUpload> PendingAttachmentUploads => Set<PendingAttachmentUpload>();
     public DbSet<ResourceWatcher> ResourceWatchers => Set<ResourceWatcher>();
     public DbSet<PresenceSession> PresenceSessions => Set<PresenceSession>();
 

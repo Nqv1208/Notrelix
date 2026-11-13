@@ -24,3 +24,20 @@ public sealed record MessageAttachmentDto(
 
 /// <summary>An opened file of a message. The consumer owns the stream and disposes it.</summary>
 public sealed record MessageAttachmentContentDto(Stream Content, string FileName, string ContentType, long SizeBytes);
+
+/// <summary>
+/// The answer to a two-step upload create (UC-CHT-G08, two-step): the pending upload id, the pre-signed PUT the client sends the bytes to
+/// (with <see cref="ContentType"/> and <see cref="ContentLength"/> bound by the signature), the upload window and the commit path that
+/// finishes it. The URL is a secret for its window only: it is never logged and is not a download address.
+/// </summary>
+public sealed record MessageAttachmentUploadDto(
+    Guid UploadId,
+    string Method,
+    string UploadUrl,
+    string ContentType,
+    long ContentLength,
+    DateTimeOffset ExpiresAt,
+    string CommitPath);
+
+/// <summary>A pre-signed download of one file. Valid until <see cref="ExpiresAt"/>; authorised at the moment it was issued.</summary>
+public sealed record MessageAttachmentUrlDto(Guid AttachmentId, string FileName, string ContentType, long SizeBytes, string Url, DateTimeOffset ExpiresAt);

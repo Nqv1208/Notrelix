@@ -3494,6 +3494,108 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("attachments", "collab");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Collaboration.Attachments.PendingAttachmentUpload", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid?>("AttachmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("attachment_id");
+
+                    b.Property<long>("CeilingBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("ceiling_bytes");
+
+                    b.Property<DateTimeOffset?>("CommittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("committed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DeclaredContentType")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("declared_content_type");
+
+                    b.Property<long>("DeclaredSize")
+                        .HasColumnType("bigint")
+                        .HasColumnName("declared_size");
+
+                    b.Property<int?>("DurationHintMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_hint_ms");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("storage_key");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("version");
+
+                    b.Property<bool>("Voice")
+                        .HasColumnType("boolean")
+                        .HasColumnName("voice");
+
+                    b.Property<byte[]>("Waveform")
+                        .HasMaxLength(64)
+                        .HasColumnType("bytea")
+                        .HasColumnName("waveform");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_attachment_pending_uploads");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_attachment_pending_uploads_expiry")
+                        .HasFilter("attachment_id IS NULL");
+
+                    b.HasIndex("StorageKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_attachment_pending_uploads_storage_key");
+
+                    b.ToTable("attachment_pending_uploads", "collab");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Collaboration.Comments.Comment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -13518,6 +13620,44 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.Navigation("Metadata")
                         .IsRequired();
+
+                    b.Navigation("Target")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Collaboration.Attachments.PendingAttachmentUpload", b =>
+                {
+                    b.OwnsOne("Notrelix.Domain.SharedKernel.ResourceRef", "Target", b1 =>
+                        {
+                            b1.Property<Guid>("PendingAttachmentUploadId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Kind")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("resource_type");
+
+                            b1.Property<Guid>("ResourceId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("resource_id");
+
+                            b1.Property<Guid?>("WorkspaceId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("target_workspace_id");
+
+                            b1.HasKey("PendingAttachmentUploadId");
+
+                            b1.HasIndex("Kind", "ResourceId")
+                                .HasDatabaseName("idx_attachment_pending_uploads_resource");
+
+                            b1.ToTable("attachment_pending_uploads", "collab");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PendingAttachmentUploadId")
+                                .HasConstraintName("fk_attachment_pending_uploads_attachment_pending_uploads_id");
+                        });
 
                     b.Navigation("Target")
                         .IsRequired();

@@ -27,6 +27,17 @@ internal interface IAttachmentReaperStore
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Claims up to <paramref name="batchSize"/> pending (uncommitted) two-step uploads whose window closed before <paramref name="now"/>.
+    /// For each one <paramref name="deleteObject"/> removes its object; a row whose object is gone (or was never written) is deleted too.
+    /// Committed uploads are never claimed: their row points at an attachment.
+    /// </summary>
+    Task<int> ExpirePendingUploadsAsync(
+        DateTimeOffset now,
+        int batchSize,
+        Func<string, CancellationToken, Task<bool>> deleteObject,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Under an exclusive sweep claim, removes through <paramref name="deleteObject"/> every key of
     /// <paramref name="keys"/> that no non-purged attachment row references. Returns the number of
     /// objects deleted, or null when another instance holds the sweep claim and nothing was done.
