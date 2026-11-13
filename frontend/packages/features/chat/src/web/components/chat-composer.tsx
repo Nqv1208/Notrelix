@@ -13,6 +13,7 @@ import {
 import {
   Hash,
   Megaphone,
+  Mic,
   Paperclip,
   SendHorizontal,
   UserPlus,
@@ -36,6 +37,9 @@ import {
   type MentionWarning,
   type TrackedMention,
 } from "../../core/model/mention-model";
+import type { ChatVoiceRecorder } from "../../core/api/chat-voice-recorder";
+import { createBrowserVoiceRecorder } from "../voice/browser-voice-recorder";
+import { VoiceRecorderPanel } from "./chat-voice-recorder";
 import {
   checkPendingFiles,
   formatFileSize,
@@ -93,6 +97,10 @@ type PickerItem = {
 export interface ChatComposerAttachments {
   /** Keeps the pending files of each draft apart while the page is open. */
   readonly draftKey: string;
+  /** The voice recorder port (UC-CHT-I04); the browser recorder when the host gives none. Tests pass a fake. */
+  readonly voiceRecorder?: ChatVoiceRecorder;
+  /** False where a voice message cannot be sent (a thread reply): the composer shows no microphone. */
+  readonly voice?: boolean;
 }
 
 export interface ChatComposerProps {
@@ -181,12 +189,21 @@ export function ChatComposer({
   const [dragging, setDragging] = useState(false);
   const filesKey = attachments?.draftKey ?? "";
   const files = filesByDraft[filesKey] ?? [];
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const browserRecorder = useMemo(() => createBrowserVoiceRecorder(), []);
+  const voiceRecorder = attachments?.voiceRecorder ?? browserRecorder;
   const draftKey = mentions?.draftKey ?? "";
   const tracked = trackedByDraft[draftKey] ?? [];
   const length = chatTextLength(value);
   const check = checkMessageContent(value);
   const tooLong = length > CHAT_LIMITS.messageMaxLength;
   const disabled = disabledReason !== null;
+  // The microphone shows while the input is empty and there is no pending file; with text it is the send button.
+  const showMic =
+    attachments !== undefined &&
+    attachments.voice !== false &&
+    !check.ok &&
+    files.length === 0;
   const label =
     labelOverride ?? fillCopy(copy.composer.label, { channel: channelName });
 
@@ -511,134 +528,165 @@ export function ChatComposer({
             onHover={setActiveIndex}
           />
         ) : null}
-        <form
-          className={cn(
-            "flex flex-col overflow-hidden rounded-3xl border border-input bg-card shadow-xs transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/30 motion-reduce:transition-none",
-            disabled && "opacity-60",
-            dragging && "border-ring ring-[3px] ring-ring/30",
-          )}
-          onDragOver={handleDragOver}
-          onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
-          onSubmit={(event) => {
-            event.preventDefault();
-            submit();
-          }}
-        >
-          {leading}
-          <MentionWarnings
-            warnings={warnings}
-            mentions={mentions}
-            copy={copy}
-          />
-          {confirming ? (
-            <BroadcastConfirm
-              count={mentions?.mentionables?.memberCount ?? 0}
-              token={confirming.token}
+        {voiceOpen && attachments ? (
+          <div className="flex items-center overflow-hidden rounded-3xl border border-input bg-card shadow-xs">
+            <VoiceRecorderPanel
+              recorder={voiceRecorder}
               copy={copy}
-              onConfirm={() => dispatch(confirming.content, confirming.payload)}
-              onCancel={() => {
-                setConfirming(null);
+              onSend={(file) => onSend("", undefined, [file])}
+              onClose={() => {
+                setVoiceOpen(false);
                 textareaRef.current?.focus();
               }}
             />
-          ) : null}
-          {attachments && (files.length > 0 || refusals.length > 0) ? (
-            <PendingFiles
-              files={files}
-              refusals={refusals}
+          </div>
+        ) : (
+          <form
+            className={cn(
+              "flex flex-col overflow-hidden rounded-3xl border border-input bg-card shadow-xs transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/30 motion-reduce:transition-none",
+              disabled && "opacity-60",
+              dragging && "border-ring ring-[3px] ring-ring/30",
+            )}
+            onDragOver={handleDragOver}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            onSubmit={(event) => {
+              event.preventDefault();
+              submit();
+            }}
+          >
+            {leading}
+            <MentionWarnings
+              warnings={warnings}
+              mentions={mentions}
               copy={copy}
-              onRemove={removeFile}
             />
-          ) : null}
-          {dragging ? (
-            <p
-              role="status"
-              className="border-b border-border px-3 py-2 text-xs text-muted-foreground"
-            >
-              {copy.attachments.dropHint}
-            </p>
-          ) : null}
-          <div className="flex items-end gap-0.5 px-1.5 py-1">
-            {attachments ? (
-              <>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  hidden
-                  tabIndex={-1}
-                  aria-hidden="true"
-                  data-testid="chat-file-input"
-                  onChange={(event) => {
-                    addFiles(Array.from(event.target.files ?? []));
-                    event.target.value = "";
-                  }}
-                />
+            {confirming ? (
+              <BroadcastConfirm
+                count={mentions?.mentionables?.memberCount ?? 0}
+                token={confirming.token}
+                copy={copy}
+                onConfirm={() =>
+                  dispatch(confirming.content, confirming.payload)
+                }
+                onCancel={() => {
+                  setConfirming(null);
+                  textareaRef.current?.focus();
+                }}
+              />
+            ) : null}
+            {attachments && (files.length > 0 || refusals.length > 0) ? (
+              <PendingFiles
+                files={files}
+                refusals={refusals}
+                copy={copy}
+                onRemove={removeFile}
+              />
+            ) : null}
+            {dragging ? (
+              <p
+                role="status"
+                className="border-b border-border px-3 py-2 text-xs text-muted-foreground"
+              >
+                {copy.attachments.dropHint}
+              </p>
+            ) : null}
+            <div className="flex items-end gap-0.5 px-1.5 py-1">
+              {attachments ? (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    hidden
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    data-testid="chat-file-input"
+                    onChange={(event) => {
+                      addFiles(Array.from(event.target.files ?? []));
+                      event.target.value = "";
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="mb-0.5 rounded-full text-muted-foreground hover:text-foreground"
+                    disabled={disabled}
+                    aria-label={copy.attachments.attach}
+                    title={copy.attachments.attach}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Paperclip aria-hidden="true" />
+                  </Button>
+                </>
+              ) : null}
+              <EmojiPickerButton
+                copy={copy}
+                disabled={disabled}
+                onPick={insertEmoji}
+                onClosed={() => textareaRef.current?.focus()}
+              />
+              <Textarea
+                ref={textareaRef}
+                role={mentions ? "combobox" : undefined}
+                aria-expanded={mentions ? open || emojiOpen : undefined}
+                aria-controls={
+                  mentions && (open || emojiOpen) ? listId : undefined
+                }
+                aria-activedescendant={
+                  mentions && (open || emojiOpen)
+                    ? optionId(safeIndex)
+                    : undefined
+                }
+                aria-autocomplete={mentions ? "list" : undefined}
+                aria-haspopup={mentions ? "listbox" : undefined}
+                aria-label={label}
+                aria-describedby={hintId}
+                aria-invalid={tooLong || undefined}
+                placeholder={label}
+                value={value}
+                disabled={disabled}
+                rows={1}
+                onChange={(event) => {
+                  onChange(event.target.value);
+                  if (event.target.value.trim().length > 0) onTyping?.();
+                  syncCaret(event.target);
+                }}
+                onSelect={(event) => syncCaret(event.currentTarget)}
+                onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
+                className="max-h-36 min-h-9 flex-1 resize-none self-center rounded-none border-0 bg-transparent px-1.5 py-2 leading-5 shadow-none focus-visible:border-0 focus-visible:ring-0 md:text-sm dark:bg-transparent"
+              />
+              {showMic ? (
                 <Button
                   type="button"
+                  size="icon"
                   variant="ghost"
-                  size="icon-sm"
-                  className="mb-0.5 rounded-full text-muted-foreground hover:text-foreground"
-                  disabled={disabled}
-                  aria-label={copy.attachments.attach}
-                  title={copy.attachments.attach}
-                  onClick={() => fileInputRef.current?.click()}
+                  className="mb-0.5 size-9 shrink-0 rounded-full text-muted-foreground hover:text-foreground"
+                  aria-label={copy.voice.record}
+                  title={copy.voice.record}
+                  disabled={disabled || busy}
+                  onClick={() => setVoiceOpen(true)}
                 >
-                  <Paperclip aria-hidden="true" />
+                  <Mic aria-hidden="true" />
                 </Button>
-              </>
-            ) : null}
-            <EmojiPickerButton
-              copy={copy}
-              disabled={disabled}
-              onPick={insertEmoji}
-              onClosed={() => textareaRef.current?.focus()}
-            />
-            <Textarea
-              ref={textareaRef}
-              role={mentions ? "combobox" : undefined}
-              aria-expanded={mentions ? open || emojiOpen : undefined}
-              aria-controls={
-                mentions && (open || emojiOpen) ? listId : undefined
-              }
-              aria-activedescendant={
-                mentions && (open || emojiOpen)
-                  ? optionId(safeIndex)
-                  : undefined
-              }
-              aria-autocomplete={mentions ? "list" : undefined}
-              aria-haspopup={mentions ? "listbox" : undefined}
-              aria-label={label}
-              aria-describedby={hintId}
-              aria-invalid={tooLong || undefined}
-              placeholder={label}
-              value={value}
-              disabled={disabled}
-              rows={1}
-              onChange={(event) => {
-                onChange(event.target.value);
-                if (event.target.value.trim().length > 0) onTyping?.();
-                syncCaret(event.target);
-              }}
-              onSelect={(event) => syncCaret(event.currentTarget)}
-              onKeyDown={handleKeyDown}
-              onPaste={handlePaste}
-              className="max-h-36 min-h-9 flex-1 resize-none self-center rounded-none border-0 bg-transparent px-1.5 py-2 leading-5 shadow-none focus-visible:border-0 focus-visible:ring-0 md:text-sm dark:bg-transparent"
-            />
-            <Button
-              type="submit"
-              size="icon"
-              className="mb-0.5 size-9 shrink-0 rounded-full"
-              aria-label={copy.composer.send}
-              title={copy.composer.send}
-              disabled={disabled || busy || tooLong || !check.ok}
-              data-has-content={check.ok ? "true" : "false"}
-            >
-              <SendHorizontal aria-hidden="true" />
-            </Button>
-          </div>
-        </form>
+              ) : (
+                <Button
+                  type="submit"
+                  size="icon"
+                  className="mb-0.5 size-9 shrink-0 rounded-full"
+                  aria-label={copy.composer.send}
+                  title={copy.composer.send}
+                  disabled={disabled || busy || tooLong || !check.ok}
+                  data-has-content={check.ok ? "true" : "false"}
+                >
+                  <SendHorizontal aria-hidden="true" />
+                </Button>
+              )}
+            </div>
+          </form>
+        )}
         <div
           id={hintId}
           className={cn(

@@ -75,6 +75,7 @@ import {
 import type { ChatUploadItem } from "../../core/model/attachment-model";
 import { canonicalFilters } from "../../core/model/search-model";
 import { createConversationHooks } from "./create-conversation-hooks";
+import { voiceFactsOf } from "../../core/model/voice-model";
 
 export interface ChatHookDeps {
   readonly api: ChatApiClient;
@@ -264,6 +265,7 @@ export function createChatHooks(deps: ChatHookDeps) {
         replyToId?: string | null;
         mentions?: readonly ChatMentionInput[];
         confirmBroadcast?: boolean;
+        voiceMessage?: boolean;
       }) =>
         service.sendMessage(workspaceId, channelId, {
           content: input.content,
@@ -271,6 +273,7 @@ export function createChatHooks(deps: ChatHookDeps) {
           replyToId: input.replyToId ?? null,
           mentions: input.mentions,
           confirmBroadcast: input.confirmBroadcast,
+          voiceMessage: input.voiceMessage ?? false,
         }),
       onMutate: async (input) => {
         await queryClient.cancelQueries({ queryKey: messagesKey });
@@ -359,6 +362,7 @@ export function createChatHooks(deps: ChatHookDeps) {
         replyToId,
         mentions: mentionPayload?.mentions,
         confirmBroadcast: mentionPayload?.confirmBroadcast,
+        voiceMessage: (files ?? []).some((file) => voiceFactsOf(file) !== null),
       });
       return clientMessageId;
     }

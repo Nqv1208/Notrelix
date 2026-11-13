@@ -14,7 +14,7 @@ public readonly record struct ClassifiedContent(string ContentType, AttachmentTy
 public static class AttachmentContentClassifier
 {
     /// <summary>Number of leading bytes the handler reads before classifying.</summary>
-    public const int SniffLength = 512;
+    public const int SniffLength = 4096;
 
     public const string OctetStream = "application/octet-stream";
 
@@ -27,6 +27,11 @@ public static class AttachmentContentClassifier
         if (StartsWithAscii(head, 0, "GIF87a") || StartsWithAscii(head, 0, "GIF89a")) return new("image/gif", AttachmentType.Image);
         if (StartsWithAscii(head, 0, "RIFF") && StartsWithAscii(head, 8, "WEBP")) return new("image/webp", AttachmentType.Image);
         if (StartsWithAscii(head, 0, "%PDF-")) return new("application/pdf", AttachmentType.PDF);
+
+        // Audio. A voice message is one of these (UC-CHT-I04); the duration is read separately from the same leading bytes.
+        if (StartsWithAscii(head, 0, "RIFF") && StartsWithAscii(head, 8, "WAVE")) return new("audio/wav", AttachmentType.Audio);
+        if (StartsWithAscii(head, 0, "OggS")) return new("audio/ogg", AttachmentType.Audio);
+        if (StartsWithAscii(head, 0, "ID3") || LooksLikeMpegFrame(head)) return new("audio/mpeg", AttachmentType.Audio);
 
         if (StartsWith(head, 0x50, 0x4B, 0x03, 0x04) || StartsWith(head, 0x50, 0x4B, 0x05, 0x06))
         {
@@ -42,12 +47,24 @@ public static class AttachmentContentClassifier
         if (StartsWith(head, 0x1F, 0x8B)) return new("application/gzip", AttachmentType.Archive);
         if (StartsWith(head, 0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C)) return new("application/x-7z-compressed", AttachmentType.Archive);
         if (StartsWithAscii(head, 0, "Rar!")) return new("application/vnd.rar", AttachmentType.Archive);
-        if (StartsWith(head, 0x1A, 0x45, 0xDF, 0xA3)) return new("video/webm", AttachmentType.Video);
+        if (StartsWith(head, 0x1A, 0x45, 0xDF, 0xA3))
+        {
+            // An EBML file with only an audio track is audio (Opus in WebM from a browser recorder); a video track or an
+            // undecidable header keeps the video label, as before.
+            var tracks = AudioMetadataReader.TryReadTracks(head, isWebM: true);
+            return tracks is { HasAudio: true, HasVideo: false }
+                ? new("audio/webm", AttachmentType.Audio)
+                : new("video/webm", AttachmentType.Video);
+        }
+
         if (StartsWithAscii(head, 4, "ftyp"))
         {
             var brand = head.Length >= 12 ? Encoding.ASCII.GetString(head.Slice(8, 4)) : string.Empty;
-            return brand is "heic" or "heix" or "mif1" or "msf1"
-                ? new("image/heif", AttachmentType.Image)
+            if (brand is "heic" or "heix" or "mif1" or "msf1")
+                return new("image/heif", AttachmentType.Image);
+            var tracks = AudioMetadataReader.TryReadTracks(head, isWebM: false);
+            return brand is "M4A " or "M4B " || tracks is { HasAudio: true, HasVideo: false }
+                ? new("audio/mp4", AttachmentType.Audio)
                 : new("video/mp4", AttachmentType.Video);
         }
 
@@ -92,6 +109,10 @@ public static class AttachmentContentClassifier
     /// <summary>Inline rendering is allowed only for sniffed raster images (never SVG, never client-declared types).</summary>
     public static bool IsInlineSafe(string contentType) =>
         contentType is "image/png" or "image/jpeg" or "image/gif" or "image/webp";
+
+    /// <summary>An MPEG-1 or MPEG-2 Layer III frame sync (the first frame of an MP3 without an ID3 tag).</summary>
+    private static bool LooksLikeMpegFrame(ReadOnlySpan<byte> head) =>
+        head.Length >= 4 && head[0] == 0xFF && (head[1] & 0xE0) == 0xE0 && ((head[1] >> 1) & 0x3) == 1 && ((head[2] >> 2) & 0x3) != 3;
 
     private static bool LooksLikeText(ReadOnlySpan<byte> head)
     {

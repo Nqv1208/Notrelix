@@ -39,7 +39,7 @@ public static class MapChatAttachmentEndpoints
             .WithIdempotencyKey()
             .WithName("Chat.Attachments.Upload")
             .WithSummary("Attach a file to your own message (multipart/form-data, streamed)")
-            .WithDescription("Only the author of the message, as an active member of its space, attaches. The shared file policy applies: a blocked extension or an executable file is 415 before any byte is stored, a file over the size cap is 413, a message with the maximum number of files is 409 attachment.limit_exceeded; an empty file is 400. A system or deleted message is 409; an archived channel is 409 channel-archived; another person's message is 403; a space the caller is not a member of is 404. An upload is counted per person and per space (chat.upload): over the limit the answer is 429 with Retry-After and ruleCode rate-limited, before any byte is stored.")
+            .WithDescription("Only the author of the message, as an active member of its space, attaches. Optional small fields before the file part make it a voice message (voice=true, durationMs hint, waveform as comma-separated peaks; UC-CHT-I04): one audio file within the Workspace voice limit, else 413 voice-too-long or 400 voice-invalid. The shared file policy applies: a blocked extension or an executable file is 415 before any byte is stored, a file over the size cap is 413, a message with the maximum number of files is 409 attachment.limit_exceeded; an empty file is 400. A system or deleted message is 409; an archived channel is 409 channel-archived; another person's message is 403; a space the caller is not a member of is 404. An upload is counted per person and per space (chat.upload): over the limit the answer is 429 with Retry-After and ruleCode rate-limited, before any byte is stored.")
             .Accepts<UploadChatAttachmentForm>("multipart/form-data")
             .Produces<MessageAttachmentDto>(StatusCodes.Status201Created, "application/json")
             .ProducesProblems(
@@ -86,11 +86,17 @@ public static class MapChatAttachmentEndpoints
             options.Value.MaxFileSizeBytes,
             ErrorCodes.AttachmentUnsupportedMediaType,
             ErrorCodes.AttachmentPayloadTooLarge,
-            cancellationToken);
+            cancellationToken,
+            ChatVoiceUploadFields.Names);
         if (part.Failure is not null)
             return part.Failure;
 
-        var result = await sender.Send(new UploadMessageAttachmentCommand(workspaceId, messageId, part.FileName, part.Body!), cancellationToken);
+        if (!ChatVoiceUploadFields.TryParse(part.Fields, out var voice, out var voiceError))
+            return EndpointExtensions.InvalidInput(voiceError!);
+
+        var result = await sender.Send(
+            new UploadMessageAttachmentCommand(workspaceId, messageId, part.FileName, part.Body!, voice.Voice, voice.DurationHintMs, voice.Waveform),
+            cancellationToken);
         if (!result.Succeeded)
             return result.ToApiResult();
 

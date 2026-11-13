@@ -175,6 +175,13 @@ export interface ChatUploadItem {
   readonly reason: UploadFailureReason | null;
   /** One per file: the same key replays the stored file when a retry follows an answer that was lost. */
   readonly idempotencyKey: string;
+  /**
+   * A voice message with no text (UC-CHT-I04): the message holds nothing but this audio, so dismissing its failed
+   * upload deletes the message too (no empty message is left behind).
+   */
+  readonly voiceOnly?: boolean;
+  /** The message's version, for the delete that goes with dismissing a voice-only upload. */
+  readonly messageVersion?: number;
 }
 
 /** The files of a message, once per id, oldest first. */

@@ -37,6 +37,8 @@ import {
   singleImageBoxStyle,
 } from "./chat-image-gallery";
 import { fillCopy } from "./use-chat-copy";
+import { VoiceMessagePlayer } from "./chat-voice-message";
+import { isAudioAttachment } from "../../core/model/voice-model";
 
 const GLYPHS: Readonly<Record<AttachmentGlyph, typeof FileIcon>> = {
   image: ImageIcon,
@@ -154,7 +156,11 @@ export function MessageAttachments({
 
   const canRemove = isOwn && !readOnly;
   const images = attachments.filter((item) => isInlineImage(item.contentType));
-  const files = attachments.filter((item) => !isInlineImage(item.contentType));
+  // Audio is a voice message (UC-CHT-I04, I05): it plays in its own player, not as a file card.
+  const voices = attachments.filter((item) => isAudioAttachment(item));
+  const files = attachments.filter(
+    (item) => !isInlineImage(item.contentType) && !isAudioAttachment(item),
+  );
 
   function download(attachment: ChatAttachment) {
     setNotice(null);
@@ -228,6 +234,16 @@ export function MessageAttachments({
           copy={copy}
         />
       ) : null}
+      {voices.map((voice) => (
+        <VoiceMessagePlayer
+          key={voice.id}
+          attachment={voice}
+          workspaceId={workspaceId}
+          messageId={message.id}
+          hooks={hooks}
+          copy={copy}
+        />
+      ))}
       {files.length > 0 ? (
         <ul
           className={cn(

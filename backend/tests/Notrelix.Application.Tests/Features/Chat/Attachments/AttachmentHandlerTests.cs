@@ -13,6 +13,7 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Attachments;
 using Notrelix.Application.Features.Collaboration.Attachments.Services;
 using Notrelix.Application.Features.Collaboration.Public.Attachments;
+using Notrelix.Application.Features.Chat.Voice;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Application.Tests.Features.Collaboration;
 using Notrelix.Domain.Chat.Messages;
@@ -117,8 +118,9 @@ public class AttachmentHandlerTests
             Options.Create(options ?? new AttachmentUploadOptions()), NullLogger<ChatMessageAttachments>.Instance);
     }
 
-    private UploadMessageAttachmentCommandHandler UploadHandler(IChatMessageAttachments? attachments = null) =>
-        new(_db.Object, _context.Object, _members.Object, _sequences.Object, attachments ?? _files, _clock.Object, _limits);
+    private UploadMessageAttachmentCommandHandler UploadHandler(IChatMessageAttachments? attachments = null, ChatVoiceOptions? voice = null) =>
+        new(_db.Object, _context.Object, _members.Object, _sequences.Object, attachments ?? _files, _clock.Object, _limits,
+            Options.Create(voice ?? new ChatVoiceOptions()));
 
     private Task<Notrelix.Application.Common.Models.Result<Notrelix.Application.Features.Chat.Attachments.DTOs.MessageAttachmentDto>> Upload(
         Message message, string name = "report.pdf", byte[]? bytes = null, IChatMessageAttachments? attachments = null) =>
@@ -699,4 +701,142 @@ public class AttachmentHandlerTests
         _limits.Calls.Single().Policy.Should().Be(Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitPolicy.Upload);
         _files.Files.Should().BeEmpty();
     }
+
+    // ---- Voice messages (UC-CHT-I04) ----------------------------------------------------------------
+
+    /// <summary>An audio-only WebM header with the given Duration (null = none), padded to a plausible recording size.</summary>
+    private static byte[] Voice(double? durationMs, int padding = 2048) =>
+        [.. Notrelix.Application.Tests.Features.Collaboration.Attachments.AudioHeaderBuilder.WebM(durationMs, 2), .. new byte[padding]];
+
+    private Task<Notrelix.Application.Common.Models.Result<Notrelix.Application.Features.Chat.Attachments.DTOs.MessageAttachmentDto>> UploadVoice(
+        Message message, byte[] bytes, int? hintMs = null, int[]? waveform = null, ChatVoiceOptions? voice = null, IChatMessageAttachments? attachments = null) =>
+        UploadHandler(attachments ?? RealFlow(), voice).Handle(
+            new UploadMessageAttachmentCommand(_workspaceId, message.Id, "voice.webm", new MemoryStream(bytes), true, hintMs, waveform),
+            CancellationToken.None);
+
+    [Fact]
+    public async Task A_voice_message_keeps_the_duration_read_from_its_header_and_its_waveform()
+    {
+        var message = Text(Channel());
+
+        var result = await UploadVoice(message, Voice(durationMs: 2_500), waveform: [0, 128, 255]);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data!.ContentType.Should().Be("audio/webm");
+        result.Data.DurationMs.Should().Be(2_500);
+        result.Data.Waveform.Should().Equal(0, 128, 255);
+    }
+
+    [Fact]
+    public async Task A_client_hint_is_clamped_and_stored_only_when_the_header_has_no_duration_and_never_refuses_the_message()
+    {
+        var message = Text(Channel());
+
+        var result = await UploadVoice(message, Voice(durationMs: null), hintMs: 999_999);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data!.DurationMs.Should().Be(ChatLimits.VoiceDurationHintMaxMs);
+    }
+
+    [Fact]
+    public async Task A_voice_message_whose_header_says_it_is_longer_than_the_limit_is_refused()
+    {
+        var message = Text(Channel());
+
+        var act = () => UploadVoice(message, Voice(durationMs: 301_000), hintMs: 1_000);
+
+        // The row is added to the request unit of work, which a refused request never commits; the stored object is removed by the
+        // compensation. The unit test checks the refusal itself.
+        var error = await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+        error.Which.RuleCode.Should().Be(ChatRuleCodes.VoiceTooLong);
+    }
+
+    [Fact]
+    public async Task A_hint_that_understates_the_length_does_not_get_a_long_recording_past_the_limit()
+    {
+        // The header says 10 minutes; the client hints 5 seconds. The header decides.
+        var message = Text(Channel());
+
+        var act = () => UploadVoice(message, Voice(durationMs: 600_000), hintMs: 5_000);
+
+        var error = await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+        error.Which.RuleCode.Should().Be(ChatRuleCodes.VoiceTooLong);
+    }
+
+    [Fact]
+    public async Task A_voice_message_over_the_byte_ceiling_of_its_length_is_refused_while_it_streams()
+    {
+        var message = Text(Channel());
+        var voice = new ChatVoiceOptions { MaxDurationSeconds = 1, MaxBytesPerSecond = 1_000 };
+
+        var act = () => UploadVoice(message, Voice(durationMs: null, padding: 4_000), voice: voice, attachments: RealFlow());
+
+        await act.Should().ThrowAsync<PayloadTooLargeException>();
+        _rows.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_voice_message_that_is_not_audio_is_refused_with_voice_invalid()
+    {
+        var message = Text(Channel());
+
+        var act = () => UploadVoice(message, Png);
+
+        var error = await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+        error.Which.RuleCode.Should().Be(ChatRuleCodes.VoiceInvalid);
+    }
+
+    [Fact]
+    public async Task A_plain_audio_file_that_is_not_a_voice_message_carries_no_duration_or_waveform()
+    {
+        var message = Text(Channel());
+
+        var result = await Upload(message, "clip.webm", Voice(durationMs: 2_500), RealFlow());
+
+        result.Succeeded.Should().BeTrue();
+        result.Data!.DurationMs.Should().BeNull();
+        result.Data.Waveform.Should().BeNull();
+    }
 }
+
+public class VoiceUploadValidationTests
+{
+    private static UploadMessageAttachmentCommandValidator Validator => new();
+
+    private static UploadMessageAttachmentCommand Command(int[]? waveform) =>
+        new(Guid.NewGuid(), Guid.NewGuid(), "voice.webm", new MemoryStream(), true, 1_000, waveform);
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(new[] { 0 })]
+    [InlineData(new[] { 0, 255 })]
+    public void A_null_or_a_short_valid_waveform_passes(int[]? waveform) =>
+        Validator.Validate(Command(waveform)).IsValid.Should().BeTrue();
+
+    [Fact]
+    public void A_waveform_of_65_peaks_is_refused()
+    {
+        var peaks = Enumerable.Repeat(10, 65).ToArray();
+
+        Validator.Validate(Command(peaks)).IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void A_waveform_of_64_peaks_is_the_most_allowed()
+    {
+        Validator.Validate(Command(Enumerable.Repeat(10, 64).ToArray())).IsValid.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(256)]
+    public void A_peak_outside_0_to_255_is_refused(int peak) =>
+        Validator.Validate(Command([10, peak])).IsValid.Should().BeFalse();
+
+    [Fact]
+    public void An_empty_waveform_is_refused()
+    {
+        Validator.Validate(Command([])).IsValid.Should().BeFalse();
+    }
+}
+

@@ -77,4 +77,7 @@ public static class ChatLimits
 
     /// <summary>How long a ready export can be downloaded, in hours (UC-CHT-H06). After that the file is deleted.</summary>
     public const int ExportLifetimeHours = 24;
+
+    /// <summary>The longest duration a client may hint for a voice message, in milliseconds. Clamped, never trusted for policy (UC-CHT-I04).</summary>
+    public const int VoiceDurationHintMaxMs = 300_000;
 }

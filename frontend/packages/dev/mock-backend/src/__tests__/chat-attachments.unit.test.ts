@@ -70,6 +70,63 @@ async function download(store: Store, messageId: string, attachmentId: string) {
 
 describe("MFB-CHAT-S2.6: Chat mock handlers (attachments)", () => {
   describe("upload (UC-CHT-G08)", () => {
+    it("stores a voice message's audio with its duration hint and waveform, and sends them back on the view (UC-CHT-I04)", async () => {
+      const store = storeAs("owner");
+      const message = ownMessage(store);
+      const form = new FormData();
+      form.append("voice", "true");
+      form.append("durationMs", "2500");
+      form.append("waveform", "0,128,255");
+      form.append(
+        "file",
+        new File([new Uint8Array(4000) as BlobPart], "voice.webm", {
+          type: "audio/webm",
+        }),
+      );
+
+      const response = await createMockFetch(store)(
+        `${BASE}/messages/${message.id}/attachments`,
+        {
+          method: "POST",
+          headers: { "Idempotency-Key": "voice-key-1" },
+          body: form,
+        },
+      );
+      const body = JSON.parse(await response.text());
+
+      expect(response.status).toBe(201);
+      expect(body).toMatchObject({
+        contentType: "audio/webm",
+        durationMs: 2500,
+        waveform: [0, 128, 255],
+      });
+    });
+
+    it("refuses a voice message over the five-minute ceiling with 413 voice-too-long", async () => {
+      const store = storeAs("owner");
+      const message = ownMessage(store);
+      const form = new FormData();
+      form.append("voice", "true");
+      form.append(
+        "file",
+        new File([new Uint8Array(300 * 16_000 + 1) as BlobPart], "long.webm", {
+          type: "audio/webm",
+        }),
+      );
+
+      const response = await createMockFetch(store)(
+        `${BASE}/messages/${message.id}/attachments`,
+        {
+          method: "POST",
+          headers: { "Idempotency-Key": "voice-long-1" },
+          body: form,
+        },
+      );
+
+      expect(response.status).toBe(413);
+      expect(await response.text()).toContain("voice-too-long");
+    });
+
     it("stores a file on the author's own message and answers 201 with its metadata and a download path", async () => {
       const store = storeAs("owner");
       const message = ownMessage(store);

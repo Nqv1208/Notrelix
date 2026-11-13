@@ -560,6 +560,8 @@ export function attachmentView(row: ChatAttachmentRecord) {
     downloadPath: `/api/v1/workspaces/${row.workspaceId}/chat/messages/${row.messageId}/attachments/${row.id}/content`,
     width: size?.width ?? null,
     height: size?.height ?? null,
+    durationMs: row.durationMs ?? null,
+    waveform: row.waveform ? [...row.waveform] : null,
   };
 }
 

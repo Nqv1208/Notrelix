@@ -48,6 +48,60 @@ function messageIn(
   return message;
 }
 
+/** The longest voice message in the mock, in milliseconds, and its byte ceiling per second (the backend defaults). */
+const MOCK_VOICE_MAX_MS = 300_000;
+const MOCK_VOICE_MAX_BYTES_PER_SECOND = 16_000;
+const MOCK_WAVEFORM_PEAKS = 48;
+
+/**
+ * The voice fields of an upload (UC-CHT-I04): `voice`, `durationMs` (a hint, clamped) and `waveform` (comma-separated peaks). With no
+ * waveform the mock fakes one from the bytes, and with no hint it fakes a length from the size at the byte rate.
+ */
+function voiceFieldsOf(
+  form: FormData | null | undefined,
+  sizeBytes: number,
+): {
+  isVoice: boolean;
+  durationMs: number | null;
+  waveform: number[] | null;
+  refusal?: { status: number; code: string; title: string; detail: string };
+} {
+  if (!form || form.get("voice") !== "true") {
+    return { isVoice: false, durationMs: null, waveform: null };
+  }
+  if (
+    sizeBytes >
+    (MOCK_VOICE_MAX_MS / 1000) * MOCK_VOICE_MAX_BYTES_PER_SECOND
+  ) {
+    return {
+      isVoice: true,
+      durationMs: null,
+      waveform: null,
+      refusal: {
+        status: 413,
+        code: "voice-too-long",
+        title: "Voice message too long",
+        detail: "A voice message is at most 300 seconds long.",
+      },
+    };
+  }
+  const hint = Number(form.get("durationMs"));
+  const durationMs =
+    Number.isFinite(hint) && hint >= 0
+      ? Math.min(Math.round(hint), MOCK_VOICE_MAX_MS)
+      : Math.min(Math.round(sizeBytes / 16), MOCK_VOICE_MAX_MS);
+  const sent = String(form.get("waveform") ?? "").trim();
+  const waveform = sent
+    ? sent
+        .split(",")
+        .map((peak) => Math.min(255, Math.max(0, Math.round(Number(peak)))))
+    : Array.from(
+        { length: MOCK_WAVEFORM_PEAKS },
+        (_, index) => 40 + ((index * 37) % 180),
+      );
+  return { isVoice: true, durationMs, waveform };
+}
+
 /** The sanitised name the producer stores: no path, no control or reserved characters. */
 function sanitise(name: string): string {
   const base = name.split(/[\\/]/).pop() ?? "";
@@ -173,18 +227,31 @@ export const attachmentsOperations = [
           );
         }
         const bytes = new Uint8Array(await part.arrayBuffer());
+        // A voice message (UC-CHT-I05): the fields arrive before the file; the mock reads the hint and fakes the header.
+        const voice = voiceFieldsOf(request.formData, bytes.byteLength);
+        if (voice.refusal)
+          fail(
+            voice.refusal.status,
+            voice.refusal.code,
+            voice.refusal.title,
+            voice.refusal.detail,
+          );
         const row: ChatAttachmentRecord = {
           id: state.nextId("attachment"),
           workspaceId: params.workspaceId,
           spaceId: space.id,
           messageId: message.id,
           filename,
-          contentType: classify(bytes, part.type),
+          contentType: voice.isVoice
+            ? part.type || "audio/webm"
+            : classify(bytes, part.type),
           sizeBytes: bytes.byteLength,
           bytes,
           uploadedBy: caller.userId,
           createdAt: state.stampWrite(),
           idempotencyKey: key,
+          durationMs: voice.isVoice ? voice.durationMs : null,
+          waveform: voice.isVoice ? voice.waveform : null,
         };
         state.attachments.set(row.id, row);
         const view = attachmentView(row);

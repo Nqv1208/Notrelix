@@ -51,7 +51,7 @@ public class ChatAttachmentContractOpenApiTests
     {
         Document.GetProperty("components").GetProperty("schemas").GetProperty(AttachmentSchema).GetProperty("properties")
             .EnumerateObject().Select(p => p.Name)
-            .Should().BeEquivalentTo(["id", "messageId", "fileName", "sizeBytes", "contentType", "uploadedBy", "createdAt", "downloadPath", "width", "height"]);
+            .Should().BeEquivalentTo(["id", "messageId", "fileName", "sizeBytes", "contentType", "uploadedBy", "createdAt", "downloadPath", "width", "height", "durationMs", "waveform"]);
     }
 
     [Fact]

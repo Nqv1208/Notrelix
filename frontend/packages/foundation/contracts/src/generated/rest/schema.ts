@@ -404,7 +404,7 @@ export interface paths {
         put?: never;
         /**
          * Attach a file to your own message (multipart/form-data, streamed)
-         * @description Only the author of the message, as an active member of its space, attaches. The shared file policy applies: a blocked extension or an executable file is 415 before any byte is stored, a file over the size cap is 413, a message with the maximum number of files is 409 attachment.limit_exceeded; an empty file is 400. A system or deleted message is 409; an archived channel is 409 channel-archived; another person's message is 403; a space the caller is not a member of is 404. An upload is counted per person and per space (chat.upload): over the limit the answer is 429 with Retry-After and ruleCode rate-limited, before any byte is stored.
+         * @description Only the author of the message, as an active member of its space, attaches. Optional small fields before the file part make it a voice message (voice=true, durationMs hint, waveform as comma-separated peaks; UC-CHT-I04): one audio file within the Workspace voice limit, else 413 voice-too-long or 400 voice-invalid. The shared file policy applies: a blocked extension or an executable file is 415 before any byte is stored, a file over the size cap is 413, a message with the maximum number of files is 409 attachment.limit_exceeded; an empty file is 400. A system or deleted message is 409; an archived channel is 409 channel-archived; another person's message is 403; a space the caller is not a member of is 404. An upload is counted per person and per space (chat.upload): over the limit the answer is 429 with Retry-After and ruleCode rate-limited, before any byte is stored.
          */
         post: operations["Chat.Attachments.Upload"];
         delete?: never;
@@ -7971,6 +7971,7 @@ export interface components {
             replyToId?: string | null;
             mentions?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.MentionRequest"][] | null;
             confirmBroadcast?: boolean | null;
+            voiceMessage?: boolean | null;
         };
         "Notrelix.API.Contracts.Chat.Requests.SetChannelPermissionsRequest": {
             entries?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.ChannelPermissionEntryRequest"][] | null;
@@ -8022,6 +8023,9 @@ export interface components {
         "Notrelix.API.Contracts.Chat.Requests.UploadChatAttachmentForm": {
             /** Format: binary */
             file: string | null;
+            voice?: string | null;
+            durationMs?: string | null;
+            waveform?: string | null;
         };
         "Notrelix.API.Contracts.Collaboration.Attachments.Requests.CreateBoardItemAttachmentRequest": {
             filename?: string | null;
@@ -9537,6 +9541,9 @@ export interface components {
             width?: number | null;
             /** Format: int32 */
             height?: number | null;
+            /** Format: int32 */
+            durationMs?: number | null;
+            waveform?: number[] | null;
         };
         "Notrelix.Application.Features.Chat.Blocks.DTOs.BlockedPersonDto": {
             /** Format: uuid */

@@ -41,6 +41,7 @@ import type {
   ChatUnreadSummary,
   ChatUpdateChannelInput,
 } from "../types/chat";
+import { voiceFactsOf } from "../model/voice-model";
 
 /** The transport the host passes in: the generated client's `api` (`createNotrelixClient`). */
 export interface ChatRequestOptions {
@@ -306,6 +307,8 @@ export function createChatService(
         content: string;
         clientMessageId: string;
         replyToId?: string | null;
+        /** A voice message carries no text; its audio is uploaded to it next (UC-CHT-I04). */
+        voiceMessage?: boolean;
       } & ChatMentionPayload,
     ): Promise<ChatMessage> {
       return api.post<ChatMessage>(
@@ -439,6 +442,13 @@ export function createChatService(
         return Promise.reject(new Error("The API client cannot upload files."));
       }
       const form = new FormData();
+      // The voice fields go before the file part: the server reads them only ahead of it (UC-CHT-I04).
+      const voice = voiceFactsOf(file);
+      if (voice) {
+        form.append("voice", "true");
+        form.append("durationMs", String(voice.durationMs));
+        form.append("waveform", voice.waveform.join(","));
+      }
       form.append("file", file, file.name);
       return api.upload<ChatAttachment>(
         paths.messageAttachments(workspaceId, messageId),

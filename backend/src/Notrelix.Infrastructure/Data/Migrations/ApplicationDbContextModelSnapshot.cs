@@ -13465,6 +13465,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .HasColumnType("character varying(128)")
                                 .HasColumnName("mime_type");
 
+                            b1.Property<int?>("DurationMs")
+                                .HasColumnType("integer")
+                                .HasColumnName("audio_duration_ms");
+
                             b1.Property<string>("FileName")
                                 .IsRequired()
                                 .HasMaxLength(512)
@@ -13488,6 +13492,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .HasMaxLength(2048)
                                 .HasColumnType("character varying(2048)")
                                 .HasColumnName("url");
+
+                            b1.Property<byte[]>("Waveform")
+                                .HasMaxLength(64)
+                                .HasColumnType("bytea")
+                                .HasColumnName("audio_waveform");
 
                             b1.Property<int?>("Width")
                                 .HasColumnType("integer")
