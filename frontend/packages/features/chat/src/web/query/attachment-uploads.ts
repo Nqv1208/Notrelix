@@ -16,6 +16,7 @@ import {
 } from "../../core/model/attachment-model";
 import type { ChatAttachment } from "../../core/types/chat";
 import { chatQueryKeys } from "../../query/keys";
+import { voiceFactsOf } from "../../core/model/voice-model";
 import { patchMessageInData } from "./interaction-cache";
 
 export interface UploadContext {
@@ -142,7 +143,12 @@ async function reconcileAttachments(
 /** Queues the files of a message that is stored and uploads them one after the other. */
 export function enqueueUploads(
   ctx: UploadContext,
-  message: { readonly id: string; readonly spaceId: string },
+  message: {
+    readonly id: string;
+    readonly spaceId: string;
+    readonly content?: string | null;
+    readonly version?: number;
+  },
   files: readonly File[],
 ): void {
   if (files.length === 0) return;
@@ -155,6 +161,9 @@ export function enqueueUploads(
     progress: 0,
     reason: null,
     idempotencyKey: crypto.randomUUID(),
+    voiceOnly:
+      (message.content ?? "").trim() === "" && voiceFactsOf(file) !== null,
+    messageVersion: message.version,
   }));
   writeUploads(ctx, (held) => [...held, ...items]);
   void (async () => {
@@ -170,7 +179,34 @@ export function retryUpload(ctx: UploadContext, id: string): void {
   void runOne(ctx, id);
 }
 
-/** Drops a failed upload the author no longer wants. */
+/**
+ * Drops a failed upload the author no longer wants. A voice-only message is deleted with it, so no empty message
+ * stays; when that delete fails the upload comes back as failed, so the author can dismiss it again.
+ */
 export function dismissUpload(ctx: UploadContext, id: string): void {
+  const item = readUploads(ctx).find((entry) => entry.id === id);
   writeUploads(ctx, (items) => items.filter((entry) => entry.id !== id));
+  if (item?.voiceOnly && item.messageVersion !== undefined) {
+    void deleteVoiceOnlyMessage(ctx, item, item.messageVersion);
+  }
+}
+
+async function deleteVoiceOnlyMessage(
+  ctx: UploadContext,
+  item: ChatUploadItem,
+  messageVersion: number,
+): Promise<void> {
+  try {
+    await ctx.service.deleteMessage(
+      ctx.workspaceId,
+      item.messageId,
+      messageVersion,
+    );
+    void ctx.queryClient.invalidateQueries({
+      queryKey: chatQueryKeys.all(ctx.workspaceId),
+      refetchType: "active",
+    });
+  } catch {
+    writeUploads(ctx, (items) => [...items, { ...item, status: "failed" }]);
+  }
 }
