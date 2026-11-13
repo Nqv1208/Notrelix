@@ -1155,7 +1155,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
 - State: DEFINED, Phase 4 — not built.
 
 ### UC-CHT-I02 Show upload progress, cancel and retry
@@ -1169,7 +1169,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
 - State: DEFINED, Phase 4 — not built.
 
 ### UC-CHT-I03 View images in a full-screen viewer
@@ -1183,7 +1183,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
 - State: DEFINED, Phase 4 — not built.
 
 ### UC-CHT-I04 Record and send a voice message
@@ -1197,7 +1197,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
 - State: DEFINED, Phase 4 — not built.
 
 ### UC-CHT-I05 Play a voice message
@@ -1211,7 +1211,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
 - State: DEFINED, Phase 4 — not built.
 
 ### UC-CHT-I06 Send a sticker or GIF
@@ -1225,7 +1225,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
 - State: DEFINED, Phase 4 — not built.
 
 ### UC-CHT-I07 Copy a message link and mark unread from here
@@ -1239,7 +1239,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
 - State: DEFINED, Phase 4 — not built.
 
 ### UC-CHT-I08 Create a task from a message
@@ -1253,7 +1253,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
 - State: DEFINED, Phase 4 — not built.
 
 ### UC-CHT-J01 Start a one-to-one voice call
@@ -1267,7 +1267,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
 - State: DEFINED, Phase 5 — not built.
 
 ### UC-CHT-J02 Start a one-to-one video call
@@ -1281,7 +1281,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
 - State: DEFINED, Phase 5 — not built.
 
 ### UC-CHT-J03 Answer or decline an incoming call
@@ -1295,7 +1295,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
 - State: DEFINED, Phase 5 — not built.
 
 ### UC-CHT-J04 Missed call, busy and call log
@@ -1309,7 +1309,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
 - State: DEFINED, Phase 5 — not built.
 
 ### UC-CHT-J05 Control audio, camera and devices in a call
@@ -1323,7 +1323,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
 - State: DEFINED, Phase 5 — not built.
 
 ### UC-CHT-J06 Share a screen
@@ -1337,7 +1337,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
 - State: DEFINED, Phase 6 — not built.
 
 ### UC-CHT-J07 Start and join a group call
@@ -1351,7 +1351,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
 - State: DEFINED, Phase 6 — not built.
 
 ### UC-CHT-J08 Reconnect and recover a call
@@ -1365,7 +1365,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: Notrelix Chat canvas boards for media and calls · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
 - State: DEFINED, Phase 5 — not built.
 
 ## 4. Product decisions applied

@@ -92,7 +92,7 @@ Additive only. New columns are nullable. Existing clients ignore the new attachm
 
 ## Evidence
 
-The blueprint is `docs/workstreams/specs/chat-media-and-calls.md`. The use cases are capabilities I and J in `docs/workstreams/use-cases/chat.md`. The design boards are in the Notrelix Chat canvas (boards "Mới: ảnh, lightbox, tin thoại, GIF" and "Mới: gọi thoại và video").
+The blueprint is `docs/workstreams/specs/chat-media-and-calls.md`. The use cases are capabilities I and J in `docs/workstreams/use-cases/chat.md`. The design boards are in the system design canvas, the claude.ai artifact `18L4jUXGfdXh7Wn9YQvA2x`, boards `Chat-Media` and `Chat-Call`.
 
 ## Supersedes
 
