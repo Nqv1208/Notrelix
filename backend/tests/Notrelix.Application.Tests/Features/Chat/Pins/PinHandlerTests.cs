@@ -41,6 +41,7 @@ public class PinHandlerTests
     private readonly List<Space> _spaces = [];
     private readonly List<Message> _messages = [];
     private readonly List<Reaction> _reactions = [];
+    private readonly List<MessageThread> _threads = [];
     private readonly List<MessageMention> _mentions = [];
     private readonly Mock<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer> _broadcast = new();
     private readonly List<Pin> _pins = [];
@@ -64,6 +65,7 @@ public class PinHandlerTests
         _db.Setup(d => d.ChatChannelGroups).Returns(TestDbSet.Create(new List<ChannelGroup>()).Object);
         _db.Setup(d => d.ChatMessages).Returns(() => TestDbSet.Create(_messages).Object);
         _db.Setup(d => d.ChatReactions).Returns(() => TestDbSet.Create(_reactions).Object);
+        _db.Setup(d => d.ChatThreads).Returns(() => TestDbSet.Create(_threads).Object);
         _db.Setup(d => d.ChatMessageMentions).Returns(() => TestDbSet.Create(_mentions).Object);
         _db.Setup(d => d.ChatPins).Returns(() => TestDbSet.Create(_pins).Object);
 

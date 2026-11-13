@@ -40,11 +40,13 @@ public static class ReplyPreviews
         var previews = await LoadAsync(db, workspaceId, message.ReplyToId is { } quoted ? [quoted] : [], cancellationToken);
         var reactions = await ReactionSummaries.ForMessageAsync(db, workspaceId, viewerId, message.Id, cancellationToken);
         var files = await MessageAttachments.ForMessageAsync(attachments, workspaceId, message.Id, cancellationToken);
+        var threads = await LoadThreadsAsync(db, workspaceId, message.ThreadRootId is null ? [message.Id] : [], cancellationToken);
+        var thread = threads.GetValueOrDefault(message.Id);
         if (resolution is not null)
-            return MessageDto.From(message, PreviewOf(message, previews), reactions, resolution.Spans.Select(MessageMentions.ToDto).ToList(), resolution.Notices, files);
+            return MessageDto.From(message, PreviewOf(message, previews), reactions, resolution.Spans.Select(MessageMentions.ToDto).ToList(), resolution.Notices, files, thread);
 
         var mentions = await MessageMentions.LoadAsync(db, workspaceId, viewerId, viewerIsGuest, [message.Id], cancellationToken);
-        return MessageDto.From(message, PreviewOf(message, previews), reactions, mentions.TryGetValue(message.Id, out var list) ? list : [], null, files);
+        return MessageDto.From(message, PreviewOf(message, previews), reactions, mentions.TryGetValue(message.Id, out var list) ? list : [], null, files, thread);
     }
 
     /// <summary>A page of messages as DTOs, each with its live quote and reaction summary, in two lookups for the whole page.</summary>
@@ -55,6 +57,7 @@ public static class ReplyPreviews
         var reactions = await ReactionSummaries.LoadAsync(db, workspaceId, viewerId, messages.Select(m => m.Id), cancellationToken);
         var mentions = await MessageMentions.LoadAsync(db, workspaceId, viewerId, viewerIsGuest, messages.Select(m => m.Id), cancellationToken);
         var files = await MessageAttachments.LoadAsync(attachments, workspaceId, messages.Select(m => m.Id), cancellationToken);
+        var threads = await LoadThreadsAsync(db, workspaceId, messages.Where(m => m.ThreadRootId is null).Select(m => m.Id), cancellationToken);
         return messages
             .Select(m => MessageDto.From(
                 m,
@@ -62,8 +65,26 @@ public static class ReplyPreviews
                 reactions.TryGetValue(m.Id, out var summary) ? summary : [],
                 mentions.TryGetValue(m.Id, out var list) ? list : [],
                 null,
-                files.TryGetValue(m.Id, out var fileList) ? fileList : []))
+                files.TryGetValue(m.Id, out var fileList) ? fileList : [],
+                threads.GetValueOrDefault(m.Id)))
             .ToList();
+    }
+
+    /// <summary>
+    /// The stored threads of the given root messages, in one query for the whole page (the thread is keyed by its root id and holds the
+    /// reply count and the last reply, so no reply is counted per message). A root with no reply has no row.
+    /// </summary>
+    public static async Task<IReadOnlyDictionary<Guid, MessageThread>> LoadThreadsAsync(
+        IChatDbContext db, Guid workspaceId, IEnumerable<Guid> rootIds, CancellationToken cancellationToken)
+    {
+        var ids = rootIds.Distinct().ToList();
+        if (ids.Count == 0)
+            return new Dictionary<Guid, MessageThread>();
+
+        var rows = await db.ChatThreads.AsNoTracking()
+            .Where(t => t.WorkspaceId == workspaceId && ids.Contains(t.RootMessageId))
+            .ToListAsync(cancellationToken);
+        return rows.ToDictionary(t => t.RootMessageId);
     }
 
     private static ReplyPreviewDto? PreviewOf(Message message, IReadOnlyDictionary<Guid, ReplyPreviewDto> previews) =>

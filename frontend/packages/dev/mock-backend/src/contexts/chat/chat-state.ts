@@ -97,7 +97,8 @@ export class MockChatState {
   /** The direct conversation of each pair, keyed by `${workspaceId}|${low}|${high}` (backend DirectPair). */
   readonly directPairs = new Map<string, string>();
   /** Blocks keyed by `${workspaceId}|${blockerId}|${blockedId}` (backend PersonBlock). */
-  readonly blocks = new Set<string>();
+  /** Blocks as `workspaceId|blocker|blocked`, with the time the block was made (newest first on read). */
+  readonly blocks = new Map<string, string>();
 
   private readonly streamVersions = new Map<string, number>();
   private readonly idCounters: Record<ChatIdKind, number> = {

@@ -276,6 +276,39 @@ describe("MFB-CHAT-S2.2: Chat mock handlers (threads)", () => {
       expect(missing.status).toBe(404);
     });
 
+    it("gives a root its reply count and last reply in every message view, and a reply or plain message none", async () => {
+      const store = storeAs("owner");
+      const root = await sendRoot(store, "thr-count-root");
+      const plain = await sendRoot(store, "thr-count-plain");
+      expect(root).toMatchObject({
+        threadReplyCount: 0,
+        threadLastReplyAt: null,
+      });
+      await reply(store, root.id, "thr-count-1");
+      const second = await reply(store, root.id, "thr-count-2");
+
+      const history = await chat(store, "GET", `/spaces/${GENERAL}/messages`);
+      const items = history.body.items as {
+        id: string;
+        threadReplyCount: number;
+        threadLastReplyAt: string | null;
+      }[];
+      const rootItem = items.find((m) => m.id === root.id)!;
+      expect(rootItem.threadReplyCount).toBe(2);
+      expect(rootItem.threadLastReplyAt).toBe(second.body.createdAt);
+      expect(items.find((m) => m.id === plain.id)).toMatchObject({
+        threadReplyCount: 0,
+        threadLastReplyAt: null,
+      });
+      expect(second.body).toMatchObject({
+        threadReplyCount: 0,
+        threadLastReplyAt: null,
+      });
+
+      const thread = await repliesOf(store, root.id);
+      expect(thread.body.root.threadReplyCount).toBe(2);
+    });
+
     it("keeps replies out of the channel history unless they were also sent to the channel", async () => {
       const store = storeAs("owner");
       const root = await sendRoot(store, "thr-root-history");

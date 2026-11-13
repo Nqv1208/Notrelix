@@ -583,6 +583,40 @@ public class ThreadHandlerTests
         page.Data!.Items.Select(m => m.Id).Should().BeEquivalentTo(new[] { root.Id, alsoSent.Id });
     }
 
+    [Fact]
+    public async Task A_root_in_the_history_carries_its_reply_count_and_last_reply_and_a_plain_message_carries_none()
+    {
+        var space = Channel();
+        var root = Root(space);
+        var plain = Root(space);
+        var lastReply = Now.AddMinutes(-5);
+        Thread(space, root, replies: 3, lastReplyAt: lastReply);
+
+        var page = await ListMessagesHandler().Handle(new ListMessagesQuery(_workspaceId, space.Id, null, null, null, 50), CancellationToken.None);
+
+        var rootDto = page.Data!.Items.Single(m => m.Id == root.Id);
+        rootDto.ThreadReplyCount.Should().Be(3);
+        rootDto.ThreadLastReplyAt.Should().Be(lastReply);
+        var plainDto = page.Data.Items.Single(m => m.Id == plain.Id);
+        plainDto.ThreadReplyCount.Should().Be(0);
+        plainDto.ThreadLastReplyAt.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task A_thread_reply_never_carries_a_thread_of_its_own_and_the_thread_page_root_carries_the_count()
+    {
+        var space = Channel();
+        var root = Root(space);
+        Thread(space, root, replies: 2);
+        Reply(space, root, 1, _other);
+        Reply(space, root, 2, _other);
+
+        var page = await RepliesHandler().Handle(new ListThreadRepliesQuery(_workspaceId, root.Id, null, 10), CancellationToken.None);
+
+        page.Data!.Root.ThreadReplyCount.Should().Be(2);
+        page.Data.Items.Should().OnlyContain(m => m.ThreadReplyCount == 0 && m.ThreadLastReplyAt == null);
+    }
+
     private sealed class FakeThreadReadStore(List<ThreadFollower> followers) : IChatThreadReadStore
     {
         public Task<bool> AdvanceAsync(Guid workspaceId, Guid rootMessageId, Guid userId, long target, CancellationToken cancellationToken)

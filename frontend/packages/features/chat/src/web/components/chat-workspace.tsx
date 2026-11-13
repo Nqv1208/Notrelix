@@ -103,6 +103,7 @@ import {
 import { ChatPermissionsDialog } from "./chat-permissions-dialog";
 import { ChatLinkDialog } from "./chat-resource-link";
 import { ChatAdminSettings } from "./chat-admin-settings-host";
+import { ChatBlockedPeopleDialog } from "./chat-blocked-people";
 import { ChatNewMessageDialog } from "./chat-new-message-dialog";
 import {
   ChatAddPeopleDialog,
@@ -269,7 +270,13 @@ export function ChatWorkspace({
     conversationId ? undefined : (channelId ?? undefined),
   );
   const conversationsQuery = hooks.useConversations(ws);
-  const blockedPeople = hooks.useBlockedPeople(ws).data;
+  const channelGroups = hooks.useChannelGroups(ws);
+  const groupNames = useMemo(
+    () => new Map((channelGroups.data ?? []).map((g) => [g.id, g.name])),
+    [channelGroups.data],
+  );
+  const blockedQuery = hooks.useBlockedPeople(ws);
+  const blockedPeople = blockedQuery.data;
   const channel: ChatChannel | null =
     detail.data?.channel ??
     channels.data?.find((entry) => entry.id === channelId) ??
@@ -428,6 +435,7 @@ export function ChatWorkspace({
   const [addPeopleOpen, setAddPeopleOpen] = useState(false);
   const [addPeopleError, setAddPeopleError] = useState<string | null>(null);
   const [leaveOpen, setLeaveOpen] = useState(false);
+  const [blockedOpen, setBlockedOpen] = useState(false);
   const [blockTarget, setBlockTarget] = useState<{
     readonly userId: string;
     readonly blocked: boolean;
@@ -1179,6 +1187,8 @@ export function ChatWorkspace({
               setNewMessageOpen(true);
             },
         onRetry: () => void conversationsQuery.refetch(),
+        blockedCount: blockedPeople?.length ?? 0,
+        onOpenBlocked: () => setBlockedOpen(true),
       }
     : null;
   const spaceName = conversation
@@ -1208,6 +1218,7 @@ export function ChatWorkspace({
   const sidebar = (
     <ChatSidebar
       conversations={conversationList}
+      groupNames={groupNames}
       channels={channels.data ?? []}
       status={channelsStatus}
       activeChannelId={conversationId ? null : channelProp}
@@ -2023,6 +2034,29 @@ export function ChatWorkspace({
             people={people}
             authorName={authorName}
             onOpenHit={openSearchHit}
+          />
+          <ChatBlockedPeopleDialog
+            open={blockedOpen}
+            userIds={blockedPeople ?? []}
+            status={
+              blockedQuery.isError
+                ? "error"
+                : blockedQuery.isPending
+                  ? "loading"
+                  : "ready"
+            }
+            nameOf={nameOf}
+            busyId={
+              blocker.isPending ? (blocker.variables?.userId ?? null) : null
+            }
+            copy={copy}
+            onOpenChange={setBlockedOpen}
+            onUnblock={(userId) =>
+              blocker.mutate(
+                { userId, blocked: false },
+                { onError: () => setNotice(copy.dm.blocked.unblockFailed) },
+              )
+            }
           />
           <ChatAdminSettings
             open={adminOpen}

@@ -29,7 +29,9 @@ public sealed record MessageDto(
     IReadOnlyList<ReactionSummaryDto>? Reactions = null,
     IReadOnlyList<MentionDto>? Mentions = null,
     IReadOnlyList<MentionNoticeDto>? MentionNotices = null,
-    IReadOnlyList<MessageAttachmentDto>? Attachments = null)
+    IReadOnlyList<MessageAttachmentDto>? Attachments = null,
+    long ThreadReplyCount = 0,
+    DateTimeOffset? ThreadLastReplyAt = null)
 {
     /// <summary>
     /// The message as readers see it. <paramref name="replyPreview"/> is the live quote of <see cref="ReplyToId"/>, read by the
@@ -37,6 +39,8 @@ public sealed record MessageDto(
     /// summary (UC-CHT-G06), empty when nothing reacted.
     /// <paramref name="mentions"/> are the stored mentions this reader may see (UC-CHT-G01, G04), empty when none. <paramref name="mentionNotices"/>
     /// are what a send or an edit did not do for the sender (UC-CHT-G02); they are empty in every other view.
+    /// <paramref name="thread"/> is the stored thread of a root message (UC-CHT-F03): its reply count and last reply, which a root shows as its
+    /// "N replies" chip; it is null (count 0, no last reply) for a message with no thread.
     /// </summary>
     public static MessageDto From(
         Message message,
@@ -44,7 +48,8 @@ public sealed record MessageDto(
         IReadOnlyList<ReactionSummaryDto>? reactions = null,
         IReadOnlyList<MentionDto>? mentions = null,
         IReadOnlyList<MentionNoticeDto>? mentionNotices = null,
-        IReadOnlyList<MessageAttachmentDto>? attachments = null) => new(
+        IReadOnlyList<MessageAttachmentDto>? attachments = null,
+        MessageThread? thread = null) => new(
         message.Id,
         message.SpaceId,
         message.Sequence,
@@ -67,7 +72,9 @@ public sealed record MessageDto(
         reactions ?? [],
         mentions ?? [],
         mentionNotices ?? [],
-        attachments ?? []);
+        attachments ?? [],
+        thread?.ReplyCount ?? 0,
+        thread is { ReplyCount: > 0 } ? thread.LastReplyAt : null);
 }
 
 /// <summary>

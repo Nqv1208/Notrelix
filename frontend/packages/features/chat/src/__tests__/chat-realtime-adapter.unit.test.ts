@@ -451,6 +451,23 @@ describe("ChatRealtimeAdapter: threads, reactions and pins", () => {
     );
   });
 
+  it("a thread reply moves the count the cached root message carries, and a stale frame never lowers it", async () => {
+    const { adapter, context, read } = setup([
+      message(1, { threadReplyCount: 1 }),
+    ]);
+    await adapter.validateAndHandle(
+      envelope("chat.message.created", threadFrame(3, 2)),
+      context,
+    );
+    const root = () => read().pages[0]!.items.find((m) => m.id === "m-1")!;
+    expect(root().threadReplyCount).toBe(2);
+    await adapter.validateAndHandle(
+      envelope("chat.message.created", threadFrame(4, 1, { id: "reply-1" })),
+      context,
+    );
+    expect(root().threadReplyCount).toBe(2);
+  });
+
   it("a thread reply joins a loaded thread once, in order", async () => {
     const { adapter, context, queryClient } = setup([message(1)]);
     const threadKey = chatQueryKeys.thread(WS, "m-1");

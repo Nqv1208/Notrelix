@@ -120,6 +120,16 @@ export function createChatHooks(deps: ChatHookDeps) {
     });
   }
 
+  /** The sidebar categories with their names; a failed read leaves the numbered fallback. */
+  function useChannelGroups(workspaceId: string) {
+    return useQuery({
+      queryKey: chatQueryKeys.channelGroups(workspaceId),
+      queryFn: () => service.listChannelGroups(workspaceId),
+      staleTime: CHANNEL_STALE_MS,
+      enabled: workspaceId.length > 0,
+    });
+  }
+
   /** The public channels the caller is not in (browse=true). */
   function useBrowseChannels(workspaceId: string, enabled: boolean) {
     return useQuery({
@@ -1324,6 +1334,7 @@ export function createChatHooks(deps: ChatHookDeps) {
     useLinkChannel,
     useUnlinkChannel,
     useChannels,
+    useChannelGroups,
     useBrowseChannels,
     useChannel,
     useUnreadSummary,

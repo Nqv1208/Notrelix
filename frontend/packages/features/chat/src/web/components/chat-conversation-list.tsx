@@ -30,6 +30,9 @@ export interface ChatConversationListView {
   /** Absent for a Guest: a Guest starts no conversation (UC-CHT-H02). */
   readonly onNewMessage?: () => void;
   readonly onRetry: () => void;
+  /** How many people the caller blocked; the "Blocked people" entry shows only above zero. */
+  readonly blockedCount?: number;
+  readonly onOpenBlocked?: () => void;
 }
 
 const HEADING =
@@ -143,6 +146,17 @@ export function ChatConversationSection({
           ))}
         </ul>
       )}
+      {view.onOpenBlocked && (view.blockedCount ?? 0) > 0 ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mt-1 justify-start text-xs text-muted-foreground"
+          data-testid="chat-open-blocked"
+          onClick={view.onOpenBlocked}
+        >
+          {copy.dm.sidebar.blockedPeople} ({view.blockedCount})
+        </Button>
+      ) : null}
     </section>
   );
 }
