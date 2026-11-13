@@ -80,7 +80,16 @@ Not built or not done (the exit gate of Phase 3 is not met until these are):
 - Performance budgets and the load test (typing and presence included); the limits and the 50,000-message export bound are not tuned against load.
 - Browser verification of every Phase 3 surface (no browser check was made for the link dialog, the digest preference copy or the Discuss entry), design records, axe records, real e2e, and the owner's own check.
 - Gaps recorded in the use-case catalog: a Team cannot be linked (Governance publishes no Team visibility fact); the Discuss entry is on the Board header only (the Page header needs a slot in the docs host); the digest has no per-person frequency, no catch-up of missed windows, no Guest digest, and its link opens the channel, not the message; no real mail was sent in any test.
-- Rows of capabilities A to F in the use-case catalog still read DEFINED although their code exists; their evidence rows are not updated by this slice.
+
+# Status of the catalog (2026-11-13)
+
+Built to HARDENING (59 of 68 use cases; the owner tests and sets DONE): Phase 1 (S1.0 to S1.8: A01, A03, A05, A06; B01 to B06, B09; C01 to C06, C09; D01 to D06), Phase 2 (S2.1 to S2.8: C07, C08; E01 to E07; F01 to F04, F06 to F08; G01 to G09) and Phase 3 (H01 to H10). The catalog rows were recounted against the code in this slice (S3.6, a stacked polish slice): a row is HARDENING only where its backend, mock handler, UI and tests all exist.
+
+Built in S3.6 (small gaps left by earlier slices): the thread root carries `threadReplyCount` and `threadLastReplyAt` on every message view (read in one batched query per page); the sidebar reads the category names (`Chat.ChannelGroups.List`) and shows them with a numbered fallback; the caller's blocks are read from the server (`Chat.Blocks.List`) with a Blocked people dialog to unblock.
+
+Still DEFINED (9 use cases, each with what is missing in its State line): A02 (no UI to create, rename or delete a category), A04 (no reorder or collapse UI), A07 (no member removal or channel leave UI), A08 (no unarchive or delete UI), B07 (draft kept in memory only, untested), B08 (plain text only: no markup, autolinks or host previews), B10 (no Copy link action), D07 (no Mark all as read entry), F05 (no persisted sweep, no archived chip).
+
+Capabilities I and J are specified in the catalog change of their own pull request and are DEFINED and not built; they are not in the counts above.
 
 # Cross-phase rules
 
