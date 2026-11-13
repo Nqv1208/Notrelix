@@ -32,6 +32,42 @@ type GroupParams = {
 const GROUPS = "/workspaces/:workspaceId/chat/channel-groups";
 
 export const channelGroupsOperations = [
+  // ─── GET /channel-groups ──────────────────────────────────────────────────
+  // Every Workspace member reads all categories; a Guest only the ones that hold a channel they are in.
+  defineMockOperation<{ workspaceId: string }>({
+    id: "chat.channelGroups.list",
+    contract: { kind: "openapi", operationId: "Chat.ChannelGroups.List" },
+    method: "GET",
+    route: GROUPS,
+    async handle({ params, store }) {
+      return guarded(async () => {
+        const state = store.chat;
+        const caller = callerIn(store, params.workspaceId);
+        requireAction(caller, "viewWorkspace");
+        const visibleGroupIds = new Set(
+          state
+            .spacesOfWorkspace(params.workspaceId)
+            .filter(
+              (space) =>
+                space.deletedAt === null &&
+                space.groupId !== null &&
+                state.activeMembershipOf(space.id, caller.userId) !== undefined,
+            )
+            .map((space) => space.groupId),
+        );
+        const groups = [...state.groups.values()]
+          .filter((group) => group.workspaceId === params.workspaceId)
+          .filter(
+            (group) => caller.role !== "Guest" || visibleGroupIds.has(group.id),
+          )
+          .sort(
+            (a, b) => a.position - b.position || a.name.localeCompare(b.name),
+          );
+        return ok(groups.map(groupView));
+      });
+    },
+  }),
+
   // ─── POST /channel-groups ─────────────────────────────────────────────────
 
   defineMockOperation<

@@ -4114,6 +4114,13 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   // Chat (S1.7): the web package features-chat, core/api/chat.service.ts.
   ...[
     [
+      "Chat.ChannelGroups.List",
+      "GET",
+      "/workspaces/{workspaceId}/chat/channel-groups",
+      false,
+      "Read the sidebar categories with their names",
+    ],
+    [
       "Chat.ChannelGroups.Create",
       "POST",
       "/workspaces/{workspaceId}/chat/channel-groups",
@@ -4378,6 +4385,13 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "/workspaces/{workspaceId}/chat/spaces/{spaceId}/mentionables",
       false,
       "List the people a message can mention and whether the caller may broadcast",
+    ],
+    [
+      "Chat.Blocks.List",
+      "GET",
+      "/workspaces/{workspaceId}/chat/me/blocks",
+      false,
+      "List the people the caller has blocked",
     ],
     [
       "Chat.Blocks.Set",

@@ -467,6 +467,18 @@ export const en = {
       noMessages: "No messages yet",
       participants_one: "{{count}} person",
       participants_other: "{{count}} people",
+      blockedPeople: "Blocked people",
+    },
+    blocked: {
+      title: "Blocked people",
+      description:
+        "People you blocked cannot start a direct message with you, and you cannot start one with them. Channel messages are not hidden.",
+      empty: "You have not blocked anyone.",
+      loading: "Loading blocked people",
+      error: "The blocked people could not load.",
+      unblock: "Unblock",
+      unblockLabel: "Unblock {{name}}",
+      unblockFailed: "The person could not be unblocked.",
     },
     dialog: {
       title: "New message",
@@ -1183,6 +1195,18 @@ export const vi: ChatCopy = {
       noMessages: "Chưa có tin nhắn",
       participants_one: "{{count}} người",
       participants_other: "{{count}} người",
+      blockedPeople: "Người đã chặn",
+    },
+    blocked: {
+      title: "Người đã chặn",
+      description:
+        "Người bạn chặn không thể bắt đầu tin nhắn trực tiếp với bạn và bạn cũng không thể nhắn cho họ. Tin nhắn trong kênh không bị ẩn.",
+      empty: "Bạn chưa chặn ai.",
+      loading: "Đang tải danh sách người đã chặn",
+      error: "Không tải được danh sách người đã chặn.",
+      unblock: "Bỏ chặn",
+      unblockLabel: "Bỏ chặn {{name}}",
+      unblockFailed: "Chưa bỏ chặn được người này.",
     },
     dialog: {
       title: "Tin nhắn mới",

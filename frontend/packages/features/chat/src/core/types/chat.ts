@@ -474,6 +474,20 @@ export interface ChatConversationVisibility {
   readonly hidden: boolean;
 }
 
+/** ChannelGroupDto: a sidebar category with its name (`Chat.ChannelGroups.List`). */
+export interface ChatChannelGroup {
+  readonly id: string;
+  readonly name: string;
+  readonly position: number;
+  readonly version: number;
+}
+
+/** BlockedPersonDto: one person the caller blocked (`Chat.Blocks.List`; the caller's own list only). */
+export interface ChatBlockedPerson {
+  readonly userId: string;
+  readonly blockedAt: string;
+}
+
 export interface ChatPersonBlock {
   readonly userId: string;
   readonly blocked: boolean;

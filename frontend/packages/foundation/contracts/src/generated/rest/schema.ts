@@ -460,7 +460,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List the people the caller has blocked
+         * @description The caller's own blocks only, newest first. A Guest sees only the blocks of people they share a space with.
+         */
+        get: operations["Chat.Blocks.List"];
         /**
          * Block or unblock a person for the caller
          * @description A block stops a direct conversation between the caller and that person from being started by either side (404). It does not hide channel messages. Idempotent. Blocking yourself is 400; a person who is not in the Workspace is 404.
@@ -480,7 +484,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List the sidebar categories with their names
+         * @description In sidebar order. Every Workspace member reads all categories; a Guest reads only the categories that hold a channel they are in.
+         */
+        get: operations["Chat.ChannelGroups.List"];
         put?: never;
         /**
          * Create a sidebar category
@@ -9526,6 +9534,12 @@ export interface components {
             createdAt?: string;
             downloadPath?: string | null;
         };
+        "Notrelix.Application.Features.Chat.Blocks.DTOs.BlockedPersonDto": {
+            /** Format: uuid */
+            userId?: string;
+            /** Format: date-time */
+            blockedAt?: string;
+        };
         "Notrelix.Application.Features.Chat.Blocks.DTOs.PersonBlockDto": {
             /** Format: uuid */
             userId?: string;
@@ -13064,6 +13078,37 @@ export interface operations {
             };
         };
     };
+    "Chat.Blocks.List": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Blocks.DTOs.BlockedPersonDto"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
     "Chat.Blocks.Set": {
         parameters: {
             query?: never;
@@ -13108,6 +13153,37 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.ChannelGroups.List": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

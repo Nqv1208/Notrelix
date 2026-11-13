@@ -1,4 +1,6 @@
 import type {
+  ChatBlockedPerson,
+  ChatChannelGroup,
   ChatAddMembersResult,
   ChatAttachment,
   ChatChannel,
@@ -149,6 +151,7 @@ export interface ChatEndpoints {
       conversationId: string,
     ) => string;
     blocks: (workspaceId: string) => string;
+    channelGroups: (workspaceId: string) => string;
   };
 }
 
@@ -178,6 +181,11 @@ export function createChatService(
     /** `Chat.Channels.List`: the caller's own channels in sidebar order. */
     listChannels(workspaceId: string): Promise<ChatChannel[]> {
       return api.get<ChatChannel[]>(paths.channels(workspaceId));
+    },
+
+    /** `Chat.ChannelGroups.List`: the sidebar categories with their names, in sidebar order. */
+    listChannelGroups(workspaceId: string): Promise<ChatChannelGroup[]> {
+      return api.get<ChatChannelGroup[]>(paths.channelGroups(workspaceId));
     },
 
     /** `Chat.Channels.List` with browse=true: the public channels the caller is not in. */
@@ -819,6 +827,11 @@ export function createChatService(
         paths.conversationVisibility(workspaceId, conversationId),
         { hidden },
       );
+    },
+
+    /** `Chat.Blocks.List`: the people the caller blocked, newest first (the caller's own list only). */
+    listPersonBlocks(workspaceId: string): Promise<ChatBlockedPerson[]> {
+      return api.get<ChatBlockedPerson[]>(paths.blocks(workspaceId));
     },
 
     /** `Chat.Blocks.Set`: blocks or unblocks a person for the caller; idempotent. */

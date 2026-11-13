@@ -193,6 +193,20 @@ describe("conversation hooks", () => {
     expect(blockedOf(queryClient)).toEqual([]);
   });
 
+  it("reads the blocks the server already holds on load, so a reload keeps them", async () => {
+    const { hooks, wrapper, store, others } = setup();
+    await hooks.service.setPersonBlock(WORKSPACE, others[0]!, true);
+    expect(store.chat.blocks.size).toBe(1);
+
+    const blocked = renderHook(() => hooks.useBlockedPeople(WORKSPACE), {
+      wrapper,
+    });
+
+    await waitFor(() =>
+      expect(blocked.result.current.data).toEqual([others[0]]),
+    );
+  });
+
   it("rolls the block back when the server refuses", async () => {
     const { hooks, wrapper, queryClient, others } = setup({ fail: true });
     renderHook(() => hooks.useBlockedPeople(WORKSPACE), { wrapper });
