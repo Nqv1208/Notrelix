@@ -322,6 +322,32 @@ object storage are reclaimed by the attachment orphan sweep once no row referenc
 | `Interval` | `01:00:00` (1 hour) | Time between passes. Range 10 seconds to 1 day. |
 | `BatchSize` | 10 | Workspaces purged per pass, each in its own transaction. Range 1 to 1000. |
 
+`Storage` (Infrastructure, `StorageOptions`, validated on start by `StorageOptionsValidator`) selects the object storage
+provider with `Provider`: `FileSystem` (default, development and tests; bytes stream through the API and no URL is ever
+issued) or `S3` (an S3-compatible private bucket: AWS S3, MinIO or Cloudflare R2). The S3 provider serves the byte port
+and the pre-signed capability (`IPresignedObjectStorage`); the filesystem provider reports no pre-signed support, and
+the two-step upload and the signed download answer 409 there, so clients use the streaming routes.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Storage:Provider` | `FileSystem` | `FileSystem` or `S3`. `S3` requires `S3:Bucket`. |
+| `Storage:S3:Bucket` | empty | The private bucket that holds every object. Required for `S3`. |
+| `Storage:S3:ServiceUrl` | empty | Endpoint of an S3-compatible service (`http` or `https`). Empty for AWS S3. |
+| `Storage:S3:Region` | `us-east-1` | Signing region. |
+| `Storage:S3:ForcePathStyle` | `true` | Path-style addressing (MinIO and most self-hosted services). |
+| `Storage:S3:AccessKeyId` / `SecretAccessKey` | empty | A static key pair, set together. When both are empty the SDK default credential chain applies. Runtime secrets only; never committed and never logged. |
+
+`Storage:Presign` (`PresignedUrlOptions`, validated on start) bounds the pre-signed URLs the S3 provider issues. The
+upload window is the lifetime of a signed PUT and the download window that of a signed GET. Both default to 300 seconds
+and must be between 1 and 3600 seconds. A signed URL is a bearer secret for its window: it is issued only after the
+owning use case has authorized the caller, and it is neither logged nor cached.
+
+`Collaboration:Attachments:PendingUploadLifetimeSeconds` (default 900, range 60 to 86400) is how long a declared two-step
+upload may wait for its bytes. A pending upload past that window is refused at commit (`attachment-upload-expired`) and
+the attachment object reaper removes its row and its object on its next pass (the expiry sweep runs before the purge and
+orphan sweep in each pass). A bucket that serves browsers must allow `PUT` and `GET` from the web origin with the
+`Content-Type` and `Content-Length` headers (CORS).
+
 `Chat:Retention` (Infrastructure, `ChatRetentionOptions`, validated on start by `ChatRetentionOptionsValidator`)
 configures the Chat retention job `Chat.Retention.Apply` (`ChatRetentionService`, a hosted service; UC-CHT-H05). Each
 pass lists the Workspaces that have a retention window, and for

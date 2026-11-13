@@ -211,6 +211,30 @@ export interface ChatAttachment {
   readonly waveform?: readonly number[] | null;
 }
 
+/**
+ * `Chat.Attachments.CreateUpload` (two-step, UC-CHT-G08): the pending upload and the pre-signed PUT the bytes go to. The URL is a secret
+ * for its window only; it is never stored or shown.
+ */
+export interface ChatAttachmentUpload {
+  readonly uploadId: string;
+  readonly method: string;
+  readonly uploadUrl: string;
+  readonly contentType: string;
+  readonly contentLength: number;
+  readonly expiresAt: string;
+  readonly commitPath: string;
+}
+
+/** `Chat.Attachments.GetUrl`: a pre-signed download of one file, valid until `expiresAt`. */
+export interface ChatAttachmentUrl {
+  readonly attachmentId: string;
+  readonly fileName: string;
+  readonly contentType: string;
+  readonly sizeBytes: number;
+  readonly url: string;
+  readonly expiresAt: string;
+}
+
 /** MessageDto. A tombstone keeps its author, time and sequence, with null content. */
 export interface ChatMessage {
   readonly id: string;

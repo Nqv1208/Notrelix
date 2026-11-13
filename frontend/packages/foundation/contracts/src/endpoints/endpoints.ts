@@ -388,6 +388,23 @@ export const endpoints = {
       attachmentId: string,
     ) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}/content`,
+    /** POST declares a two-step upload (pre-signed PUT) of one file of the caller's own message. */
+    messageAttachmentUploads: (workspaceId: string, messageId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/attachments/uploads`,
+    /** POST commits a two-step upload once its bytes are stored. */
+    messageAttachmentUploadCommit: (
+      workspaceId: string,
+      messageId: string,
+      uploadId: string,
+    ) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/attachments/uploads/${encodeURIComponent(uploadId)}/commit`,
+    /** GET issues a short-lived pre-signed download URL for one file of a message. */
+    messageAttachmentUrl: (
+      workspaceId: string,
+      messageId: string,
+      attachmentId: string,
+    ) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}/url`,
     /** GET resolves the preview of a Board item or Page link (query: `url`, or `kind` with `resourceId`). */
     linkResolve: (workspaceId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/links/resolve`,

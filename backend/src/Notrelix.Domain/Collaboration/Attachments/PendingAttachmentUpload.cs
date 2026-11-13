@@ -8,7 +8,7 @@ namespace Notrelix.Domain.Collaboration.Attachments;
 /// the commit verifies the stored bytes, so an expired or abandoned upload never shows up as a file. Once committed it records the id of
 /// the attachment it produced, which makes a repeated commit a replay instead of a second file.
 /// </summary>
-public class PendingAttachmentUpload : AggregateRoot
+public class PendingAttachmentUpload : AggregateRoot, IWorkspaceScoped
 {
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }

@@ -29,6 +29,12 @@ public class ChatMessagePartitionArchitectureTests : ArchitectureTestBase
             "Looks the message up by its id within the workspace, then authorises against message.SpaceId (ChannelAccess.LoadLiveAsync and RequireVisible) before any effect. Target: a space-scoped message read helper.",
         ["src/Notrelix.Application/Features/Chat/Reactions/Commands/AddReaction/AddReaction.cs::Handle"] =
             "Looks the message up by its id within the workspace, then authorises against message.SpaceId (ChannelAccess.LoadLiveAsync and RequireVisible) before any effect. Target: a space-scoped message read helper.",
+        ["src/Notrelix.Application/Features/Chat/Attachments/Services/MessageAttachmentAccess.cs::RequireAuthorAsync"] =
+            "Looks the message up by its id within the workspace, then authorises against message.SpaceId (ChannelAccess.LoadLiveAsync and RequireVisible) before any effect. Target: a space-scoped message read helper.",
+        ["src/Notrelix.Application/Features/Chat/Attachments/Queries/GetMessageAttachmentUrl/GetMessageAttachmentUrl.cs::Handle"] =
+            "Looks the message up by its id within the workspace, then authorises against message.SpaceId (ChannelAccess.LoadLiveAsync and RequireVisible) before any effect. Target: a space-scoped message read helper.",
+        ["src/Notrelix.Application/Features/Chat/Attachments/Commands/CommitMessageAttachmentUpload/CommitMessageAttachmentUpload.cs::Handle"] =
+            "Looks the message up by its id within the workspace, then authorises against message.SpaceId (ChannelAccess.LoadLiveAsync and RequireVisible) before any effect. Target: a space-scoped message read helper.",
         ["src/Notrelix.Application/Features/Chat/Threads/Commands/ReplyInThread/ReplyInThread.cs::Handle"] =
             "Loads the root by id within the workspace and authorises root.SpaceId (LoadLiveAsync, membership) before use. The second read re-reads that same authorised root under the send lock. Target: a space-scoped read helper.",
         ["src/Notrelix.Application/Features/Chat/Attachments/Queries/GetMessageAttachmentContent/GetMessageAttachmentContent.cs::Handle"] =

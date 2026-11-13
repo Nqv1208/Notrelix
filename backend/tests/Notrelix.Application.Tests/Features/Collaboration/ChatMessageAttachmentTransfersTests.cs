@@ -79,11 +79,11 @@ public class ChatMessageAttachmentTransfersTests
     {
         var ticket = await Transfers().CreateUploadAsync(_messageId, "photo.png", 12, "image/png", null, CancellationToken.None);
 
-        ticket.Put.Method.Should().Be("PUT");
-        ticket.Put.ContentType.Should().Be("image/png");
-        ticket.Put.ContentLength.Should().Be(12);
-        ticket.Put.Url.Should().StartWith("https://storage.test/put/");
-        ticket.ExpiresAt.Should().Be(ticket.Put.ExpiresAt);
+        ticket.Method.Should().Be("PUT");
+        ticket.ContentType.Should().Be("image/png");
+        ticket.ContentLength.Should().Be(12);
+        ticket.Url.Should().StartWith("https://storage.test/put/");
+        ticket.ExpiresAt.Should().BeCloseTo(_start.AddSeconds(300), TimeSpan.FromSeconds(1));
         _pending.Should().ContainSingle(p => p.Id == ticket.UploadId && p.ExpiresAt == _start.AddSeconds(900));
         _rows.Should().BeEmpty();
     }

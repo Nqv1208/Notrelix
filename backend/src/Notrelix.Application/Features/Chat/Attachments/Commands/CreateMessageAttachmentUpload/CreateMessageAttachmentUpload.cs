@@ -75,11 +75,11 @@ public class CreateMessageAttachmentUploadCommandHandler(
 
         var dto = new MessageAttachmentUploadDto(
             ticket.UploadId,
-            ticket.Put.Method,
-            ticket.Put.Url,
-            ticket.Put.ContentType,
-            ticket.Put.ContentLength,
-            ticket.Put.ExpiresAt,
+            ticket.Method,
+            ticket.Url,
+            ticket.ContentType,
+            ticket.ContentLength,
+            ticket.ExpiresAt,
             MessageAttachments.CommitPath(request.WorkspaceId, message.Id, ticket.UploadId));
         return Result<MessageAttachmentUploadDto>.Success(dto);
     }

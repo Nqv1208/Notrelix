@@ -1,5 +1,3 @@
-using Notrelix.Application.Common.Storage;
-
 namespace Notrelix.Application.Features.Collaboration.Public.Attachments;
 
 /// <summary>
@@ -33,7 +31,8 @@ public interface IChatMessageAttachmentTransfers
 }
 
 /// <summary>The answer to a create: the pending upload id, the pre-signed PUT and when the upload window closes.</summary>
-public sealed record ChatMessageAttachmentUploadTicket(Guid UploadId, PresignedObjectUpload Put, DateTimeOffset ExpiresAt);
+public sealed record ChatMessageAttachmentUploadTicket(
+    Guid UploadId, string Method, string Url, string ContentType, long ContentLength, DateTimeOffset ExpiresAt);
 
 /// <summary>
 /// A commit result. <see cref="VerifiedDurationMs"/> is the duration read from the stored header (null for a non-audio file or when the header

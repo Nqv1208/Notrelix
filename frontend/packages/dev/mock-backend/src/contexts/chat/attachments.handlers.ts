@@ -113,7 +113,59 @@ function sanitise(name: string): string {
   return cleaned === "" ? "file" : cleaned;
 }
 
+/** The problem the API answers when the storage provider signs no URLs (a ConflictException with a stable error code). */
+function directUploadUnsupported(
+  errorCode: string,
+): MockHttpResult<{ message: string; errorCode: string }> {
+  return {
+    status: 409,
+    body: {
+      message: "The storage provider does not issue pre-signed URLs.",
+      errorCode,
+    },
+  };
+}
+
 export const attachmentsOperations = [
+  // ─── Two-step (pre-signed) transfer ───────────────────────────────────────
+  //
+  // The mock backend has no object storage that a browser PUT can reach (the byte leg is an XHR to the signed URL, which the fetch
+  // interceptor does not serve). It therefore reports the same state as a server whose storage provider signs no URLs: every two-step
+  // route answers 409 storage-direct-upload-unsupported (or -download-unsupported), and the client keeps the streaming upload, which the
+  // mock serves in full above. A request for a message the caller cannot see is still answered by the streaming path's own checks.
+
+  defineMockOperation<MessageParams>({
+    id: "chat.attachments.create-upload",
+    contract: { kind: "openapi", operationId: "Chat.Attachments.CreateUpload" },
+    method: "POST",
+    route: "/workspaces/:workspaceId/chat/messages/:messageId/attachments/uploads",
+    async handle() {
+      return directUploadUnsupported("storage-direct-upload-unsupported");
+    },
+  }),
+
+  defineMockOperation<MessageParams & { uploadId: string }>({
+    id: "chat.attachments.commit-upload",
+    contract: { kind: "openapi", operationId: "Chat.Attachments.CommitUpload" },
+    method: "POST",
+    route:
+      "/workspaces/:workspaceId/chat/messages/:messageId/attachments/uploads/:uploadId/commit",
+    async handle() {
+      return directUploadUnsupported("storage-direct-upload-unsupported");
+    },
+  }),
+
+  defineMockOperation<FileParams>({
+    id: "chat.attachments.get-url",
+    contract: { kind: "openapi", operationId: "Chat.Attachments.GetUrl" },
+    method: "GET",
+    route:
+      "/workspaces/:workspaceId/chat/messages/:messageId/attachments/:attachmentId/url",
+    async handle() {
+      return directUploadUnsupported("storage-direct-download-unsupported");
+    },
+  }),
+
   // ─── GET /messages/:messageId/attachments ─────────────────────────────────
 
   defineMockOperation<MessageParams>({

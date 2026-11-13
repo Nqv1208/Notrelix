@@ -78,7 +78,7 @@ public sealed class ChatMessageAttachmentTransfers(
 
         var put = await presigned.CreateUploadUrlAsync(
             storageKey, pending.DeclaredContentType, declaredSize, TimeSpan.FromSeconds(presignOptions.Value.UploadExpirySeconds), cancellationToken);
-        return new ChatMessageAttachmentUploadTicket(pending.Id, put, put.ExpiresAt);
+        return new ChatMessageAttachmentUploadTicket(pending.Id, put.Method, put.Url, put.ContentType, put.ContentLength, put.ExpiresAt);
     }
 
     public async Task<ChatMessageAttachmentCommit> CommitUploadAsync(Guid messageId, Guid uploadId, CancellationToken cancellationToken)
