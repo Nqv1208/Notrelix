@@ -205,6 +205,10 @@ export interface ChatAttachment {
   /** The pixel size of an image file, read from its header at upload; absent or null for any other file. */
   readonly width?: number | null;
   readonly height?: number | null;
+  /** Voice messages only (UC-CHT-I04): the length in milliseconds, from the header or the recorder's hint. */
+  readonly durationMs?: number | null;
+  /** Voice messages only: up to 64 peaks, each 0 to 255. */
+  readonly waveform?: readonly number[] | null;
 }
 
 /** MessageDto. A tombstone keeps its author, time and sequence, with null content. */
