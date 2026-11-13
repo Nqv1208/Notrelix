@@ -159,6 +159,74 @@ describe("message attachments", () => {
     expect(image.getAttribute("src")).toBe("blob:preview");
   });
 
+  it("shows several images as one grid with a +N tile, and one image alone without a grid", async () => {
+    const s = setup();
+    const five = await messageWithFiles(
+      s,
+      ["a", "b", "c", "d", "e"].map(
+        (name) => new File([PNG], `${name}.png`, { type: "image/png" }),
+      ),
+    );
+    render(
+      <Row s={s} messageId={five.id} spaceId={five.spaceId} isOwn={false} />,
+      { wrapper: s.wrapper },
+    );
+    const grid = await screen.findByTestId("chat-gallery");
+    expect(grid.getAttribute("data-count")).toBe("5");
+    // Four tiles, the last one says one more.
+    expect(grid.querySelectorAll("li")).toHaveLength(4);
+    expect(
+      within(grid).getByRole("button", {
+        name: "1 more images, open the gallery",
+      }),
+    ).not.toBeNull();
+    expect(within(grid).getByText("+1")).not.toBeNull();
+  });
+
+  it("opens an image in the viewer, pages with the arrow keys and the buttons, and closes on Escape", async () => {
+    const s = setup();
+    const message = await messageWithFiles(
+      s,
+      ["one", "two", "three"].map(
+        (name) => new File([PNG], `${name}.png`, { type: "image/png" }),
+      ),
+    );
+    render(
+      <Row s={s} messageId={message.id} spaceId={message.spaceId} isOwn />,
+      { wrapper: s.wrapper },
+    );
+    const grid = await screen.findByTestId("chat-gallery");
+    expect(grid.querySelectorAll("li")).toHaveLength(3);
+    fireEvent.click(
+      within(grid).getAllByRole("button", { name: /^Open .*\.png$/ })[1]!,
+    );
+    const viewer = await screen.findByTestId("chat-image-viewer");
+    expect(within(viewer).getByText("2 of 3")).not.toBeNull();
+    const previous = within(viewer).getByRole("button", {
+      name: "Previous image",
+    });
+    const next = within(viewer).getByRole("button", { name: "Next image" });
+    fireEvent.keyDown(viewer, { key: "ArrowRight" });
+    await waitFor(() =>
+      expect(within(viewer).getByText("3 of 3")).not.toBeNull(),
+    );
+    // At the end there is no next; at the start there is no previous.
+    expect((next as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(previous);
+    await waitFor(() =>
+      expect(within(viewer).getByText("2 of 3")).not.toBeNull(),
+    );
+    fireEvent.keyDown(viewer, { key: "ArrowLeft" });
+    await waitFor(() =>
+      expect(within(viewer).getByText("1 of 3")).not.toBeNull(),
+    );
+    expect((previous as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.keyDown(viewer, { key: "Escape" });
+    await waitFor(() =>
+      expect(screen.queryByTestId("chat-image-viewer")).toBeNull(),
+    );
+  });
+
   it("offers remove only to the author, asks first, then removes the file", async () => {
     const s = setup();
     const message = await messageWithFiles(s, [

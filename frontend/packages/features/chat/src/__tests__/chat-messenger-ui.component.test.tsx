@@ -182,6 +182,27 @@ describe("Messenger layout: own messages right, others left", () => {
     ).toContain("rounded-ss-sm");
   });
 
+  it("puts the clock time beside the author name at the start of a group and beside Sent, as machine-readable time elements", () => {
+    render(
+      <ChatMessageList
+        {...props({
+          messages: [message(1), message(2), message(3, { authorId: ME })],
+        })}
+      />,
+    );
+    const start = rowOf("m-1").querySelector("p time") as HTMLTimeElement;
+    expect(start).not.toBeNull();
+    expect(start.getAttribute("datetime")).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(start.getAttribute("title")).toBeTruthy();
+    expect(start.className).toContain("tabular-nums");
+    // Inside the group the name line, and so its time, is not repeated.
+    expect(rowOf("m-2").querySelector("p time")).toBeNull();
+    const sent = within(rowOf("m-3")).getByText("Sent").parentElement;
+    expect(sent?.querySelector("time")?.getAttribute("datetime")).toMatch(
+      /^\d{4}-\d{2}-\d{2}T/,
+    );
+  });
+
   it("shows no names in a 1-1 conversation", () => {
     render(
       <ChatMessageList
