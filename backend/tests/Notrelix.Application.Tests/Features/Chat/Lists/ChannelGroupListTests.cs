@@ -3,7 +3,6 @@ using Notrelix.Application.Features.Chat.ChannelGroups.Queries.ListChannelGroups
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Spaces;
 using Notrelix.Application.Tests.Features.Collaboration;
-using Notrelix.Testing.Application.Fakes;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
 
 namespace Notrelix.Application.Tests.Features.Chat.Lists;
