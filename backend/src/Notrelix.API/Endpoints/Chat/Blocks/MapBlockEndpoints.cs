@@ -1,6 +1,7 @@
 using Notrelix.API.Contracts.Chat.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Chat.Blocks.Commands.SetPersonBlock;
+using Notrelix.Application.Features.Chat.Blocks.Queries.ListPersonBlocks;
 
 namespace Notrelix.API.Endpoints.Chat.Blocks;
 
@@ -14,6 +15,13 @@ public static class MapBlockEndpoints
             .WithTags("Chat.Blocks")
             .WithOpenApi();
 
+        group.MapWorkspaceGet("/", ListAsync)
+            .WithName("Chat.Blocks.List")
+            .WithSummary("List the people the caller has blocked")
+            .WithDescription("The caller's own blocks only, newest first. A Guest sees only the blocks of people they share a space with.")
+            .Produces<IReadOnlyList<Application.Features.Chat.Blocks.DTOs.BlockedPersonDto>>(StatusCodes.Status200OK)
+            .ProducesProblems(StatusCodes.Status403Forbidden);
+
         group.MapWorkspacePut("/", SetAsync)
             .WithName("Chat.Blocks.Set")
             .WithSummary("Block or unblock a person for the caller")
@@ -22,6 +30,12 @@ public static class MapBlockEndpoints
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound);
 
         return app;
+    }
+
+    private static async Task<IResult> ListAsync(Guid workspaceId, ISender sender)
+    {
+        var result = await sender.Send(new ListPersonBlocksQuery(workspaceId));
+        return result.ToApiResult();
     }
 
     private static async Task<IResult> SetAsync(Guid workspaceId, SetPersonBlockRequest body, ISender sender)

@@ -1989,6 +1989,58 @@
       }
     },
     "/api/v1/workspaces/{workspaceId}/chat/me/blocks": {
+      "get": {
+        "tags": [
+          "Chat.Blocks"
+        ],
+        "summary": "List the people the caller has blocked",
+        "description": "The caller's own blocks only, newest first. A Guest sees only the blocks of people they share a space with.",
+        "operationId": "Chat.Blocks.List",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Chat.Blocks.DTOs.BlockedPersonDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
       "put": {
         "tags": [
           "Chat.Blocks"
@@ -38721,6 +38773,20 @@
           "downloadPath": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Chat.Blocks.DTOs.BlockedPersonDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "blockedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false
