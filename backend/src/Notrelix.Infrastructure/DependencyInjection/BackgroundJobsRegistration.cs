@@ -1,5 +1,6 @@
 using Notrelix.Infrastructure.BackgroundJobs;
 using Notrelix.Infrastructure.Messaging.Options;
+using Notrelix.Infrastructure.Options;
 using Notrelix.Infrastructure.Storage;
 
 namespace Notrelix.Infrastructure;
@@ -10,15 +11,28 @@ namespace Notrelix.Infrastructure;
 /// </summary>
 public static class BackgroundJobsRegistration
 {
+    /// <summary>
+    /// Registers the worker's hosted services only when the <c>worker</c> role is selected. Options,
+    /// validators and the scoped runners stay registered in every role: they start no background activity.
+    /// </summary>
     public static IServiceCollection AddBackgroundJobs(
-        this IServiceCollection services, IConfiguration configuration)
+        this IServiceCollection services, IConfiguration configuration, RuntimeRoles? roles = null)
     {
+        var runsWorker = (roles ?? RuntimeRoles.All).RunsWorker;
+        void AddWorker<THosted>() where THosted : class, IHostedService
+        {
+            if (runsWorker)
+            {
+                services.AddHostedService<THosted>();
+            }
+        }
+
         services.AddOptions<OutboxDispatchOptions>()
             .Bind(configuration.GetSection(OutboxDispatchOptions.SectionName))
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<OutboxDispatchOptions>, OutboxDispatchOptionsValidator>();
-        services.AddHostedService<OutboxDispatcher>();
-        services.AddHostedService<EmailDispatcher>();
+        AddWorker<OutboxDispatcher>();
+        AddWorker<EmailDispatcher>();
 
         // Attachment object lifecycle: purge after retention + orphan reconciliation.
         services.AddOptions<AttachmentRetentionOptions>()
@@ -27,12 +41,12 @@ public static class BackgroundJobsRegistration
         services.AddSingleton<IValidateOptions<AttachmentRetentionOptions>, AttachmentRetentionOptionsValidator>();
         services.AddScoped<IAttachmentReaperStore, PostgresAttachmentReaperStore>();
         services.AddScoped<AttachmentObjectReaper>();
-        services.AddHostedService<AttachmentObjectReaperService>();
+        AddWorker<AttachmentObjectReaperService>();
 
         // Identity: remove profile photo objects that no user references (replaced, removed or never committed).
         services.AddScoped<IAvatarReaperStore, PostgresAvatarReaperStore>();
         services.AddScoped<AvatarObjectReaper>();
-        services.AddHostedService<AvatarObjectReaperService>();
+        AddWorker<AvatarObjectReaperService>();
 
         // User-visible security activity feed: delete entries past the retention (default 90 days).
         services.AddOptions<SecurityActivityRetentionOptions>()
@@ -40,7 +54,7 @@ public static class BackgroundJobsRegistration
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SecurityActivityRetentionOptions>, SecurityActivityRetentionOptionsValidator>();
         services.AddScoped<SecurityActivityRetentionSweeper>();
-        services.AddHostedService<SecurityActivityRetentionService>();
+        AddWorker<SecurityActivityRetentionService>();
 
         // Governance: delete Board access-change rows past their 90-day retention (reads already hide them).
         services.AddOptions<ResourceAccessChangeRetentionOptions>()
@@ -48,7 +62,7 @@ public static class BackgroundJobsRegistration
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<ResourceAccessChangeRetentionOptions>, ResourceAccessChangeRetentionOptionsValidator>();
         services.AddScoped<ResourceAccessChangeRetentionSweeper>();
-        services.AddHostedService<ResourceAccessChangeRetentionService>();
+        AddWorker<ResourceAccessChangeRetentionService>();
 
         // Workspaces: delete onboarding drafts past their 30-day expiry (reads already treat them as absent).
         services.AddOptions<OnboardingDraftSweepOptions>()
@@ -56,7 +70,7 @@ public static class BackgroundJobsRegistration
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<OnboardingDraftSweepOptions>, OnboardingDraftSweepOptionsValidator>();
         services.AddScoped<OnboardingDraftSweeper>();
-        services.AddHostedService<OnboardingDraftSweepService>();
+        AddWorker<OnboardingDraftSweepService>();
 
         // Workspaces: purge the data of workspaces deleted more than 30 days ago (restore is over by then).
         services.AddOptions<DeletedWorkspacePurgeOptions>()
@@ -64,7 +78,7 @@ public static class BackgroundJobsRegistration
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<DeletedWorkspacePurgeOptions>, DeletedWorkspacePurgeOptionsValidator>();
         services.AddScoped<DeletedWorkspacePurger>();
-        services.AddHostedService<DeletedWorkspacePurgeService>();
+        AddWorker<DeletedWorkspacePurgeService>();
 
         // Work Management: purge the boards deleted more than 30 days ago (restore is over by then). Off by default.
         services.AddOptions<DeletedBoardPurgeOptions>()
@@ -72,7 +86,7 @@ public static class BackgroundJobsRegistration
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<DeletedBoardPurgeOptions>, DeletedBoardPurgeOptionsValidator>();
         services.AddScoped<DeletedBoardPurger>();
-        services.AddHostedService<DeletedBoardPurgeService>();
+        AddWorker<DeletedBoardPurgeService>();
 
         // Collaboration: tell assignees about Items due tomorrow and overdue Items, once per Item and due day.
         services.AddOptions<DueDateNotificationOptions>()
@@ -80,11 +94,11 @@ public static class BackgroundJobsRegistration
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<DueDateNotificationOptions>, DueDateNotificationOptionsValidator>();
         services.AddScoped<DueDateNotificationSweeper>();
-        services.AddHostedService<DueDateNotificationService>();
+        AddWorker<DueDateNotificationService>();
 
         // Work Management: run queued board file imports and exports, and remove expired export files.
         services.AddScoped<BoardTransferRunner>();
-        services.AddHostedService<BoardTransferService>();
+        AddWorker<BoardTransferService>();
 
         // Chat: apply each Workspace's retention rule (UC-CHT-H05, Chat.Retention.Apply) and build the exports of a person's chat data (UC-CHT-H06).
         services.AddOptions<ChatRetentionOptions>()
@@ -94,17 +108,17 @@ public static class BackgroundJobsRegistration
         services.AddScoped<Notrelix.Application.Features.Chat.Audit.Services.IChatSystemAudit, ChatSystemAudit>();
         services.AddScoped<Notrelix.Application.Features.Chat.Retention.Services.ChatRetentionApplier>();
         services.AddScoped<ChatRetentionRunner>();
-        services.AddHostedService<ChatRetentionService>();
+        AddWorker<ChatRetentionService>();
         services.AddScoped<Notrelix.Application.Features.Chat.Exports.ChatExportBuilder>();
         services.AddScoped<ChatExportRunner>();
-        services.AddHostedService<ChatExportService>();
+        AddWorker<ChatExportService>();
         services.AddOptions<ChatDigestOptions>()
             .Bind(configuration.GetSection(ChatDigestOptions.SectionName))
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<ChatDigestOptions>, ChatDigestOptionsValidator>();
         services.AddScoped<Notrelix.Infrastructure.Notifications.ChatDigest.ChatDigestComposer>();
         services.AddScoped<ChatDigestRunner>();
-        services.AddHostedService<ChatDigestService>();
+        AddWorker<ChatDigestService>();
 
         return services;
     }

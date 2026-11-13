@@ -2,14 +2,21 @@ using Notrelix.Application.Common.Exceptions;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Infrastructure.Messaging;
 using Notrelix.Infrastructure.Messaging.Options;
+using Notrelix.Infrastructure.Options;
 
 namespace Notrelix.Infrastructure;
 
 public static class MessagingRegistration
 {
+    /// <summary>
+    /// Bus wiring. Consumers are registered only with the <c>worker</c> role, so an api or realtime
+    /// process publishes through the bus but creates no receive endpoints.
+    /// </summary>
     public static IServiceCollection AddMessaging(
-        this IServiceCollection services, IConfiguration configuration)
+        this IServiceCollection services, IConfiguration configuration, RuntimeRoles? roles = null)
     {
+        var runsWorker = (roles ?? RuntimeRoles.All).RunsWorker;
+
         services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Collaboration.ItemFollowerNotifier>();
         services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Collaboration.ItemAudience>();
         services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Collaboration.ItemActivityRecorder>();
@@ -75,7 +82,10 @@ public static class MessagingRegistration
                 services.AddMassTransit(cfg =>
                 {
                     cfg.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter(endpointPrefix, false));
-                    cfg.AddConsumers(typeof(MessagingRegistration).Assembly);
+                    if (runsWorker)
+                    {
+                        cfg.AddConsumers(typeof(MessagingRegistration).Assembly);
+                    }
 
                     cfg.UsingInMemory((ctx, mem) =>
                     {
@@ -98,7 +108,10 @@ public static class MessagingRegistration
                 services.AddMassTransit(cfg =>
                 {
                     cfg.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("notrelix", false));
-                    cfg.AddConsumers(typeof(MessagingRegistration).Assembly);
+                    if (runsWorker)
+                    {
+                        cfg.AddConsumers(typeof(MessagingRegistration).Assembly);
+                    }
 
                     cfg.UsingRabbitMq((ctx, rbt) =>
                     {

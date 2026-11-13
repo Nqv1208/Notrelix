@@ -2454,7 +2454,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Readiness probe — checks database connectivity */
+        /** Readiness probe — checks the dependencies of the roles this process runs (database, Redis, and for the worker the outbox and broker) */
         get: operations["ReadinessProbe"];
         put?: never;
         post?: never;
