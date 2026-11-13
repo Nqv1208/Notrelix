@@ -846,7 +846,7 @@ function MentionPopover({
   readonly onHover: (index: number) => void;
 }) {
   const shell =
-    "absolute inset-x-3 bottom-full z-20 mb-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md md:inset-x-5 md:max-w-sm";
+    "absolute inset-x-0 bottom-full z-20 mb-2 max-h-64 overflow-y-auto rounded-2xl border border-border bg-popover p-1.5 text-popover-foreground shadow-md md:max-w-sm";
   if (items.length === 0) {
     const text =
       status === "loading"
@@ -975,7 +975,7 @@ function ShortcodePopover({
       id={id}
       role="listbox"
       aria-label={copy.emoji.shortcodeLabel}
-      className="absolute inset-x-3 bottom-full z-20 mb-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md md:inset-x-5 md:max-w-sm"
+      className="absolute inset-x-0 bottom-full z-20 mb-2 max-h-64 overflow-y-auto rounded-2xl border border-border bg-popover p-1.5 text-popover-foreground shadow-md md:max-w-sm"
     >
       {items.map((entry, index) => (
         <div

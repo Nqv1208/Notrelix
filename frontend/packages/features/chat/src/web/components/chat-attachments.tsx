@@ -30,6 +30,7 @@ import {
 import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
 import { ConfirmDialog } from "./chat-dialogs";
+import { ImageGallery, ImageViewer } from "./chat-image-gallery";
 import { fillCopy } from "./use-chat-copy";
 
 const GLYPHS: Readonly<Record<AttachmentGlyph, typeof FileIcon>> = {
@@ -136,6 +137,7 @@ export function MessageAttachments({
   const downloader = hooks.useDownloadAttachment(workspaceId);
   const [removing, setRemoving] = useState<ChatAttachment | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<number | null>(null);
 
   if (message.deleted) return null;
   const attachments = message.attachments ?? [];
@@ -198,28 +200,28 @@ export function MessageAttachments({
       aria-label={copy.attachments.listLabel}
       data-testid="chat-attachments"
     >
-      {images.length > 0 ? (
-        <ul
-          className={cn(
-            "flex max-w-full flex-wrap gap-1",
-            align === "end" && "justify-end",
-          )}
-        >
-          {images.map((attachment) => (
-            <li key={attachment.id}>
-              <ImagePreview
-                attachment={attachment}
-                messageId={message.id}
-                workspaceId={workspaceId}
-                hooks={hooks}
-                copy={copy}
-                canRemove={canRemove}
-                onDownload={download}
-                onRemove={setRemoving}
-              />
-            </li>
-          ))}
-        </ul>
+      {images.length === 1 && images[0] ? (
+        <ImagePreview
+          attachment={images[0]}
+          messageId={message.id}
+          workspaceId={workspaceId}
+          hooks={hooks}
+          copy={copy}
+          canRemove={canRemove}
+          onOpen={() => setViewing(0)}
+          onDownload={download}
+          onRemove={setRemoving}
+        />
+      ) : images.length > 1 ? (
+        <ImageGallery
+          images={images}
+          onOpen={setViewing}
+          align={align}
+          messageId={message.id}
+          workspaceId={workspaceId}
+          hooks={hooks}
+          copy={copy}
+        />
       ) : null}
       {files.length > 0 ? (
         <ul
@@ -259,6 +261,19 @@ export function MessageAttachments({
         <p role="status" className="text-xs text-muted-foreground">
           {notice}
         </p>
+      ) : null}
+      {images.length > 0 ? (
+        <ImageViewer
+          images={images}
+          index={viewing}
+          onIndexChange={setViewing}
+          onClose={() => setViewing(null)}
+          onDownload={download}
+          messageId={message.id}
+          workspaceId={workspaceId}
+          hooks={hooks}
+          copy={copy}
+        />
       ) : null}
       <ConfirmDialog
         open={removing !== null}
@@ -360,6 +375,7 @@ function ImagePreview({
   hooks,
   copy,
   canRemove,
+  onOpen,
   onDownload,
   onRemove,
 }: {
@@ -369,6 +385,7 @@ function ImagePreview({
   readonly hooks: ChatHooks;
   readonly copy: ChatCopy;
   readonly canRemove: boolean;
+  readonly onOpen: () => void;
   readonly onDownload: (attachment: ChatAttachment) => void;
   readonly onRemove: (attachment: ChatAttachment) => void;
 }) {
@@ -405,8 +422,8 @@ function ImagePreview({
       {url ? (
         <button
           type="button"
-          onClick={() => onDownload(attachment)}
-          aria-label={fillCopy(copy.attachments.download, {
+          onClick={onOpen}
+          aria-label={fillCopy(copy.attachments.viewer.open, {
             name: attachment.fileName,
           })}
           className="block overflow-hidden rounded-2xl border border-border bg-muted focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none"
