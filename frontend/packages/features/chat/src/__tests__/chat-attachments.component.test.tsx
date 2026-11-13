@@ -46,6 +46,16 @@ const PNG = new Uint8Array([
   0x44, 0x52,
 ]);
 
+/** A PNG whose IHDR carries the given pixel size, so the server reads it at upload (UC-CHT-I01). */
+function pngOf(width: number, height: number): Uint8Array<ArrayBuffer> {
+  const bytes = new Uint8Array(new ArrayBuffer(24));
+  bytes.set(PNG.subarray(0, 16), 0);
+  const view = new DataView(bytes.buffer);
+  view.setUint32(16, width);
+  view.setUint32(20, height);
+  return bytes;
+}
+
 /** A message of the caller with the given files stored, written through the service. */
 async function messageWithFiles(
   s: ReturnType<typeof setup>,
@@ -181,6 +191,27 @@ describe("message attachments", () => {
       }),
     ).not.toBeNull();
     expect(within(grid).getByText("+1")).not.toBeNull();
+  });
+
+  it("reserves each gallery tile at its image's own ratio, clamped to 3:4 to 2:1", async () => {
+    const s = setup();
+    const message = await messageWithFiles(s, [
+      new File([pngOf(640, 480)], "photo.png", { type: "image/png" }),
+      new File([pngOf(4000, 1000)], "panorama.png", { type: "image/png" }),
+      new File([pngOf(300, 1000)], "tall.png", { type: "image/png" }),
+    ]);
+    render(
+      <Row s={s} messageId={message.id} spaceId={message.spaceId} isOwn />,
+      { wrapper: s.wrapper },
+    );
+    const grid = await screen.findByTestId("chat-gallery");
+    const tiles = within(grid).getAllByRole("listitem");
+
+    expect(tiles.map((tile) => tile.style.aspectRatio)).toEqual([
+      String(640 / 480),
+      "2",
+      "0.75",
+    ]);
   });
 
   it("opens an image in the viewer, pages with the arrow keys and the buttons, and closes on Escape", async () => {

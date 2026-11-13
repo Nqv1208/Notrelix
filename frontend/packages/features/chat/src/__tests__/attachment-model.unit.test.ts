@@ -3,6 +3,7 @@ import {
   checkPendingFiles,
   formatFileSize,
   glyphOf,
+  imageBoxRatio,
   isInlineImage,
   isRetryableUpload,
   mergeAttachment,
@@ -117,5 +118,26 @@ describe("mergeAttachment", () => {
     expect(mergeAttachment(undefined, item)).toEqual([item]);
     const held = mergeAttachment([], item);
     expect(mergeAttachment(held, item)).toBe(held);
+  });
+});
+
+describe("imageBoxRatio (UC-CHT-I01)", () => {
+  it("is the width over the height of an image that fits the 3:4 to 2:1 range", () => {
+    expect(imageBoxRatio({ width: 640, height: 480 })).toBeCloseTo(4 / 3);
+    expect(imageBoxRatio({ width: 300, height: 400 })).toBeCloseTo(0.75);
+    expect(imageBoxRatio({ width: 800, height: 400 })).toBe(2);
+  });
+
+  it("clamps a wider or taller image to 2:1 and 3:4", () => {
+    expect(imageBoxRatio({ width: 4000, height: 1000 })).toBe(2);
+    expect(imageBoxRatio({ width: 300, height: 1000 })).toBe(0.75);
+  });
+
+  it("is null when the size is missing, null or not a usable size", () => {
+    expect(imageBoxRatio({})).toBeNull();
+    expect(imageBoxRatio({ width: null, height: null })).toBeNull();
+    expect(imageBoxRatio({ width: 640 })).toBeNull();
+    expect(imageBoxRatio({ width: 0, height: 480 })).toBeNull();
+    expect(imageBoxRatio({ width: 640, height: -1 })).toBeNull();
   });
 });

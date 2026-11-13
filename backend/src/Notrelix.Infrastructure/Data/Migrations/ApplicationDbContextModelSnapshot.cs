@@ -13471,6 +13471,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .HasColumnType("character varying(512)")
                                 .HasColumnName("file_name");
 
+                            b1.Property<int?>("Height")
+                                .HasColumnType("integer")
+                                .HasColumnName("image_height");
+
                             b1.Property<long>("Size")
                                 .HasColumnType("bigint")
                                 .HasColumnName("file_size");
@@ -13484,6 +13488,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                                 .HasMaxLength(2048)
                                 .HasColumnType("character varying(2048)")
                                 .HasColumnName("url");
+
+                            b1.Property<int?>("Width")
+                                .HasColumnType("integer")
+                                .HasColumnName("image_width");
 
                             b1.HasKey("AttachmentId");
 

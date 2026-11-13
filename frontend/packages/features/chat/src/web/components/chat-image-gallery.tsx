@@ -1,4 +1,9 @@
-import { useEffect, useState, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+} from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -14,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@notrelix/ui-web";
+import { imageBoxRatio } from "../../core/model/attachment-model";
 import type { ChatAttachment } from "../../core/types/chat";
 import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
@@ -21,6 +27,21 @@ import { fillCopy } from "./use-chat-copy";
 
 /** The most tiles a gallery draws; a fifth image and beyond show as +N on the last tile. */
 export const GALLERY_MAX_TILES = 4;
+
+/** The height cap of a single image preview, as the box of the viewer's preview reads it (18rem), and its preview width (20rem). */
+const SINGLE_IMAGE_MAX_HEIGHT_REM = 18;
+const SINGLE_IMAGE_MAX_WIDTH_REM = 20;
+
+/**
+ * The reserved box of a single image preview: its ratio, and a width that stops at the preview width or at the
+ * height cap, so the box is the same size before and after the bytes arrive.
+ */
+export function singleImageBoxStyle(ratio: number): CSSProperties {
+  return {
+    aspectRatio: String(ratio),
+    width: `min(${SINGLE_IMAGE_MAX_WIDTH_REM}rem, calc(${SINGLE_IMAGE_MAX_HEIGHT_REM}rem * ${ratio}))`,
+  };
+}
 
 /**
  * The bytes of an attachment, read with the session into an object URL (a plain address would carry no
@@ -100,10 +121,13 @@ export function ImageGallery({
             key={attachment.id}
             className={cn(
               "relative",
-              layout.wideFirst && index === 0
-                ? "col-span-2 aspect-[2/1]"
-                : "aspect-square",
+              layout.wideFirst && index === 0 && "col-span-2",
+              imageBoxRatio(attachment) === null &&
+                (layout.wideFirst && index === 0
+                  ? "aspect-[2/1]"
+                  : "aspect-square"),
             )}
+            style={imageTileStyle(attachment)}
           >
             <GalleryTile
               attachment={attachment}
@@ -117,6 +141,12 @@ export function ImageGallery({
       })}
     </ul>
   );
+}
+
+/** The tile's own box when its pixel size is known, so it is reserved before the image arrives. */
+function imageTileStyle(attachment: ChatAttachment): CSSProperties | undefined {
+  const ratio = imageBoxRatio(attachment);
+  return ratio === null ? undefined : { aspectRatio: String(ratio) };
 }
 
 function GalleryTile({

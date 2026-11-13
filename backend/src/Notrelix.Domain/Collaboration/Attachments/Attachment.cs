@@ -45,7 +45,9 @@ public class Attachment : SoftDeletableAggregateRoot, IWorkspaceScoped
         int currentAttachmentCount,
         int maxAttachments,
         Guid createdBy,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        int? width = null,
+        int? height = null)
     {
         if (type == AttachmentType.Link)
             throw new ArgumentException("A stored file cannot be a link attachment.", nameof(type));
@@ -56,7 +58,7 @@ public class Attachment : SoftDeletableAggregateRoot, IWorkspaceScoped
         AttachmentRules.EnsureValidFileSize(sizeBytes, maxFileSizeBytes);
         AttachmentRules.EnsureMaxAttachments(currentAttachmentCount, maxAttachments);
 
-        var metadata = FileMetadata.Create(fileName, sizeBytes, contentType, storageKey: storageKey);
+        var metadata = FileMetadata.Create(fileName, sizeBytes, contentType, storageKey: storageKey, width: width, height: height);
         return Create(accountId, workspaceId, target, type, metadata, createdBy, createdAt);
     }
 

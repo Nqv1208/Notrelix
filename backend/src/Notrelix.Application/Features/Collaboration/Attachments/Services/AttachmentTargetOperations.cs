@@ -15,6 +15,9 @@ namespace Notrelix.Application.Features.Collaboration.Attachments.Services;
 /// </summary>
 internal static class AttachmentTargetOperations
 {
+    /// <summary>Leading bytes kept for an image header. Covers the frame header of a JPEG behind its EXIF and ICC segments.</summary>
+    private const int ImageHeaderCapacity = 64 * 1024;
+
     public static async Task<List<AttachmentDto>> ListAsync(
         ICollaborationDbContext context,
         IActorLookupService actorLookup,
@@ -170,10 +173,12 @@ internal static class AttachmentTargetOperations
             $"delete attachment object {storageKey}",
             token => storage.DeleteAsync(storageKey, token));
 
-        using var limited = new SizeLimitedReadStream(
-            new PrefixedReadStream(head.AsMemory(0, headLength), body),
-            options.MaxFileSizeBytes);
+        // The leading bytes of the body are kept while they are copied to storage (one read, no second pass), so an image's pixel
+        // size can be read from its header. The header reader decides which types have one; everything else keeps no size.
+        var leading = new LeadingBytesCaptureStream(new PrefixedReadStream(head.AsMemory(0, headLength), body), ImageHeaderCapacity);
+        using var limited = new SizeLimitedReadStream(leading, options.MaxFileSizeBytes);
         await storage.WriteAsync(storageKey, limited, classified.ContentType, ct);
+        var imageSize = ImageDimensionReader.TryRead(leading.Captured, classified.ContentType);
 
         var now = dateTimeProvider.UtcNow;
         var target = ResourceRef.Create(kind, targetId, workspaceId);
@@ -201,7 +206,9 @@ internal static class AttachmentTargetOperations
             currentCount,
             maxAttachments,
             requestContext.UserId,
-            now);
+            now,
+            imageSize?.Width,
+            imageSize?.Height);
 
         context.Attachments.Add(attachment);
 

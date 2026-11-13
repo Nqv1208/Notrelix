@@ -33,6 +33,10 @@ public class AttachmentConfiguration : IEntityTypeConfiguration<Attachment>
             metadata.Property(m => m.StorageKey).HasColumnName("storage_key").HasMaxLength(1024);
             metadata.Property(m => m.Url).HasColumnName("url").HasMaxLength(2048);
 
+            // Pixel size of an image file, read from its header at upload. Nullable: every row written before the column exists is null.
+            metadata.Property(m => m.Width).HasColumnName("image_width");
+            metadata.Property(m => m.Height).HasColumnName("image_height");
+
             // A stored object is referenced by exactly one attachment row. Existing rows are link
             // attachments with a null key, so the partial unique index is additive and always valid.
             metadata.HasIndex(m => m.StorageKey)

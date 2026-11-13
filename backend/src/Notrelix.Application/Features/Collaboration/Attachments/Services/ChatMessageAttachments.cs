@@ -27,7 +27,8 @@ public sealed class ChatMessageAttachments(
 
         var dto = result.Data!;
         return new ChatMessageAttachmentFact(
-            dto.Id, messageId, dto.Filename, dto.SizeBytes, dto.ContentType, dto.UploadedBy, new DateTimeOffset(dto.CreatedAt, TimeSpan.Zero));
+            dto.Id, messageId, dto.Filename, dto.SizeBytes, dto.ContentType, dto.UploadedBy, new DateTimeOffset(dto.CreatedAt, TimeSpan.Zero),
+            dto.Width, dto.Height);
     }
 
     public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<ChatMessageAttachmentFact>>> ListAsync(
@@ -50,7 +51,8 @@ public sealed class ChatMessageAttachments(
                 g => g.Key,
                 g => (IReadOnlyList<ChatMessageAttachmentFact>)g
                     .Select(a => new ChatMessageAttachmentFact(
-                        a.Id, a.Target.ResourceId, a.Metadata.FileName, a.Metadata.Size, a.Metadata.ContentType, a.CreatedBy!.Value, a.CreatedAt))
+                        a.Id, a.Target.ResourceId, a.Metadata.FileName, a.Metadata.Size, a.Metadata.ContentType, a.CreatedBy!.Value, a.CreatedAt,
+                        a.Metadata.Width, a.Metadata.Height))
                     .ToList());
     }
 

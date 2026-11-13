@@ -37,5 +37,7 @@ public static class MessageAttachments
         fact.ContentType,
         fact.UploadedBy,
         fact.CreatedAt,
-        DownloadPath(workspaceId, fact.MessageId, fact.Id));
+        DownloadPath(workspaceId, fact.MessageId, fact.Id),
+        fact.Width,
+        fact.Height);
 }

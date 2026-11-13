@@ -16,6 +16,7 @@ import { Button, cn } from "@notrelix/ui-web";
 import {
   formatFileSize,
   glyphOf,
+  imageBoxRatio,
   isInlineImage,
   isRetryableUpload,
   type AttachmentGlyph,
@@ -30,7 +31,11 @@ import {
 import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
 import { ConfirmDialog } from "./chat-dialogs";
-import { ImageGallery, ImageViewer } from "./chat-image-gallery";
+import {
+  ImageGallery,
+  ImageViewer,
+  singleImageBoxStyle,
+} from "./chat-image-gallery";
 import { fillCopy } from "./use-chat-copy";
 
 const GLYPHS: Readonly<Record<AttachmentGlyph, typeof FileIcon>> = {
@@ -417,6 +422,9 @@ function ImagePreview({
       />
     );
   }
+  // A known pixel size reserves the preview box before the bytes arrive; an unknown one keeps the fallback sizes.
+  const ratio = imageBoxRatio(attachment);
+  const box = ratio === null ? null : singleImageBoxStyle(ratio);
   return (
     <figure className="group/image relative m-0 inline-flex max-w-full flex-col gap-1">
       {url ? (
@@ -426,19 +434,28 @@ function ImagePreview({
           aria-label={fillCopy(copy.attachments.viewer.open, {
             name: attachment.fileName,
           })}
-          className="block overflow-hidden rounded-2xl border border-border bg-muted focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none"
+          style={box ?? undefined}
+          className="block max-w-full overflow-hidden rounded-2xl border border-border bg-muted focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none"
         >
           <img
             src={url}
             alt={attachment.fileName}
-            className="block max-h-72 min-h-24 max-w-full min-w-24 object-cover sm:max-w-80"
+            className={
+              box
+                ? "block size-full object-cover"
+                : "block max-h-72 min-h-24 max-w-full min-w-24 object-cover sm:max-w-80"
+            }
           />
         </button>
       ) : (
         <div
           role="status"
           aria-label={copy.attachments.previewLoading}
-          className="flex aspect-[4/3] w-56 max-w-full animate-pulse items-center justify-center rounded-2xl border border-border bg-muted text-muted-foreground motion-reduce:animate-none"
+          style={box ?? undefined}
+          className={cn(
+            "flex max-w-full animate-pulse items-center justify-center rounded-2xl border border-border bg-muted text-muted-foreground motion-reduce:animate-none",
+            !box && "aspect-[4/3] w-56",
+          )}
         >
           <ImageIcon className="size-5" aria-hidden="true" />
         </div>
