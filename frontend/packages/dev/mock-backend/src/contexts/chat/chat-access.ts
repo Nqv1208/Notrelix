@@ -573,6 +573,9 @@ export function messageView(
   message: ChatMessageRecord,
   mentionNotices: readonly MentionNotice[] = [],
 ) {
+  // A root shows the count and the last reply of its stored thread; a reply and a plain message show none.
+  const thread =
+    message.threadRootId === null ? state.threads.get(message.id) : undefined;
   return {
     id: message.id,
     spaceId: message.spaceId,
@@ -604,6 +607,9 @@ export function messageView(
       message.id,
     ),
     mentionNotices: [...mentionNotices],
+    threadReplyCount: thread?.replyCount ?? 0,
+    threadLastReplyAt:
+      thread && thread.replyCount > 0 ? thread.lastReplyAt : null,
   };
 }
 

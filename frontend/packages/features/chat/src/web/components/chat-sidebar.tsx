@@ -59,6 +59,8 @@ export interface ChatSidebarProps {
   readonly viewer?: ChatSidebarViewer | null;
   /** The direct and group conversations section; left out when the host does not offer conversations. */
   readonly conversations?: ChatConversationListView | null;
+  /** The category names by group id (`Chat.ChannelGroups.List`); a group without one keeps the numbered fallback. */
+  readonly groupNames?: ReadonlyMap<string, string>;
 }
 
 /** A badge count: nothing for zero, 99+ above 99 (UC-CHT-D01). */
@@ -126,6 +128,7 @@ export function ChatSidebar({
   joiningId,
   viewer = null,
   conversations = null,
+  groupNames,
 }: ChatSidebarProps) {
   const groups = groupChannels(channels);
 
@@ -207,9 +210,12 @@ export function ChatSidebar({
             const heading =
               group.groupId === null
                 ? copy.sidebar.channelsHeading
-                : fillCopy(copy.sidebar.groupNumbered, {
-                    number: groupNumber(groups, index),
-                  });
+                : groupHeading(
+                    groupNames?.get(group.groupId),
+                    fillCopy(copy.sidebar.groupNumbered, {
+                      number: groupNumber(groups, index),
+                    }),
+                  );
             return (
               <section
                 key={group.groupId ?? "ungrouped"}
@@ -299,6 +305,12 @@ export function ChatSidebar({
 }
 
 /** Groups are numbered in the order they appear, counting only the named ones. */
+/** The category's real name, or the numbered fallback while the names are unread or the group is not in them. */
+export function groupHeading(name: string | undefined, fallback: string) {
+  const trimmed = name?.trim();
+  return trimmed ? trimmed : fallback;
+}
+
 function groupNumber(groups: readonly ChannelGroup[], index: number): number {
   return groups.slice(0, index + 1).filter((group) => group.groupId !== null)
     .length;

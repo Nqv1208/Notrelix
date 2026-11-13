@@ -8,6 +8,7 @@ import type {
 import { chatQueryKeys } from "../../query/keys";
 
 const CONVERSATION_STALE_MS = 30_000;
+const BLOCKS_STALE_MS = 30_000;
 /** The list refreshes on this interval until the realtime stream pushes previews. */
 const CONVERSATION_REFRESH_MS = 60_000;
 
@@ -129,15 +130,16 @@ export function createConversationHooks(service: ChatService) {
     });
   }
 
-  /** The people the caller blocked in this session (client-only: the API has no read of blocks). */
+  /** The people the caller blocked, read from the server (`Chat.Blocks.List`); the ids, newest first. */
   function useBlockedPeople(workspaceId: string) {
     return useQuery<readonly string[]>({
       queryKey: chatQueryKeys.blocks(workspaceId),
-      queryFn: () => [],
-      initialData: [],
-      staleTime: Infinity,
-      gcTime: Infinity,
-      enabled: false,
+      queryFn: async () =>
+        (await service.listPersonBlocks(workspaceId)).map(
+          (block) => block.userId,
+        ),
+      staleTime: BLOCKS_STALE_MS,
+      enabled: workspaceId.length > 0,
     });
   }
 
@@ -160,6 +162,9 @@ export function createConversationHooks(service: ChatService) {
       },
       onError: (_error, _input, context) => {
         if (context) queryClient.setQueryData(key, context.previous);
+      },
+      onSettled: () => {
+        void queryClient.invalidateQueries({ queryKey: key });
       },
     });
   }

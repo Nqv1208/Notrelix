@@ -1989,6 +1989,58 @@
       }
     },
     "/api/v1/workspaces/{workspaceId}/chat/me/blocks": {
+      "get": {
+        "tags": [
+          "Chat.Blocks"
+        ],
+        "summary": "List the people the caller has blocked",
+        "description": "The caller's own blocks only, newest first. A Guest sees only the blocks of people they share a space with.",
+        "operationId": "Chat.Blocks.List",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Chat.Blocks.DTOs.BlockedPersonDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
       "put": {
         "tags": [
           "Chat.Blocks"
@@ -2070,6 +2122,51 @@
       }
     },
     "/api/v1/workspaces/{workspaceId}/chat/channel-groups": {
+      "get": {
+        "tags": [
+          "Chat.ChannelGroups"
+        ],
+        "summary": "List the sidebar categories with their names",
+        "description": "In sidebar order. Every Workspace member reads all categories; a Guest reads only the categories that hold a channel they are in.",
+        "operationId": "Chat.ChannelGroups.List",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
       "post": {
         "tags": [
           "Chat.ChannelGroups"
@@ -38686,6 +38783,20 @@
             "type": "integer",
             "format": "int32",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Chat.Blocks.DTOs.BlockedPersonDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "blockedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false

@@ -133,6 +133,28 @@ describe("ChatSidebar", () => {
     expect(screen.getByRole("button", { name: /erp-rollout/ })).not.toBeNull();
   });
 
+  it("shows the real category name, and the numbered fallback for a group whose name is not read", () => {
+    render(
+      <ChatSidebar
+        {...props({
+          channels: [
+            channel("c-general", "general"),
+            channel("c-erp", "erp-rollout", { groupId: "g-2" }),
+            channel("c-ke-toan", "ke-toan", { groupId: "g-9" }),
+          ],
+          groupNames: new Map([
+            ["g-2", "  Projects "],
+            ["g-9", "   "],
+          ]),
+        })}
+      />,
+    );
+    const headings = screen
+      .getAllByRole("heading", { level: 3 })
+      .map((node) => node.textContent);
+    expect(headings).toEqual(["Channels", "Projects", "Group 2"]);
+  });
+
   it("shows the jump-to field as plain text, not as a control", () => {
     render(<ChatSidebar {...props()} />);
     expect(
