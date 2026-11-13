@@ -37,6 +37,10 @@ public class AttachmentConfiguration : IEntityTypeConfiguration<Attachment>
             metadata.Property(m => m.Width).HasColumnName("image_width");
             metadata.Property(m => m.Height).HasColumnName("image_height");
 
+            // Voice message facts of an audio file (UC-CHT-I04): the duration in milliseconds and up to 64 peaks. Nullable: every other file has none.
+            metadata.Property(m => m.DurationMs).HasColumnName("audio_duration_ms");
+            metadata.Property(m => m.Waveform).HasColumnName("audio_waveform").HasMaxLength(64);
+
             // A stored object is referenced by exactly one attachment row. Existing rows are link
             // attachments with a null key, so the partial unique index is additive and always valid.
             metadata.HasIndex(m => m.StorageKey)

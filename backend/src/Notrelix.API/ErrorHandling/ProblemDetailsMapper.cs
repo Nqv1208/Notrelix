@@ -77,6 +77,20 @@ public static class ProblemDetailsMapper
                 ex.Message,
                 null
             ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.VoiceTooLong } ex => (
+                StatusCodes.Status413PayloadTooLarge,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.VoiceTooLong,
+                "Voice message too long",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.VoiceInvalid } ex => (
+                StatusCodes.Status400BadRequest,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.VoiceInvalid,
+                "Voice message invalid",
+                ex.Message,
+                null
+            ),
             Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.ChannelArchived } ex => (
                 StatusCodes.Status409Conflict,
                 Notrelix.Domain.Chat.Rules.ChatRuleCodes.ChannelArchived,

@@ -39,5 +39,7 @@ public static class MessageAttachments
         fact.CreatedAt,
         DownloadPath(workspaceId, fact.MessageId, fact.Id),
         fact.Width,
-        fact.Height);
+        fact.Height,
+        fact.DurationMs,
+        fact.Waveform?.Select(peak => (int)peak).ToArray());
 }

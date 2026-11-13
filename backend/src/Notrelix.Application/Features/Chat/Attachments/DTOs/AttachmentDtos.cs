@@ -5,7 +5,8 @@ namespace Notrelix.Application.Features.Chat.Attachments.DTOs;
 /// bytes; each request to it is permission checked (a reader of the space) and the response is never cacheable, so there is no durable
 /// public address and nothing to expire or leak. <c>Width</c> and <c>Height</c> are the pixel size of an image, read from its stored
 /// header at upload, so a reader can reserve its box before the bytes load; null for any other file and for an image whose header
-/// could not be read.
+/// could not be read. <c>DurationMs</c> and <c>Waveform</c> are set on an audio file that is a voice message (UC-CHT-I04): the duration is
+/// read from the header when it carries one, else the client's clamped hint; the waveform is the client's peaks, each 0 to 255.
 /// </summary>
 public sealed record MessageAttachmentDto(
     Guid Id,
@@ -17,7 +18,9 @@ public sealed record MessageAttachmentDto(
     DateTimeOffset CreatedAt,
     string DownloadPath,
     int? Width = null,
-    int? Height = null);
+    int? Height = null,
+    int? DurationMs = null,
+    int[]? Waveform = null);
 
 /// <summary>An opened file of a message. The consumer owns the stream and disposes it.</summary>
 public sealed record MessageAttachmentContentDto(Stream Content, string FileName, string ContentType, long SizeBytes);

@@ -9,4 +9,13 @@ public sealed class UploadChatAttachmentForm
 {
     /// <summary>The file part. Its filename is sanitised server-side and used for display only.</summary>
     public required IFormFile File { get; init; }
+
+    /// <summary>Optional, before the file part: "true" makes the file a voice message (one audio file, within the voice limit).</summary>
+    public string? Voice { get; init; }
+
+    /// <summary>Optional, before the file part: the length in milliseconds the browser measured. A hint only; clamped, never trusted for policy.</summary>
+    public string? DurationMs { get; init; }
+
+    /// <summary>Optional, before the file part: 1 to 64 comma-separated waveform peaks, each 0 to 255.</summary>
+    public string? Waveform { get; init; }
 }
