@@ -19,4 +19,9 @@ public sealed class SmtpOptions
     public string Password { get; init; } = string.Empty;
 
     public bool EnableSsl { get; init; } = true;
+
+    // Cleartext SMTP is only acceptable on loopback (local dev catcher).
+    public bool IsEncryptionSatisfied() =>
+        EnableSsl
+        || Host.Trim().Trim('[', ']').ToLowerInvariant() is "localhost" or "127.0.0.1" or "::1";
 }
