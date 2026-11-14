@@ -19,42 +19,9 @@ export function MainTableError({
   /** Loads the board again; absent = no button. */
   onRetry?: () => void;
 }) {
-  const t = copy.toolbar;
   return (
     <div data-slot="main-table-unavailable">
-      {/* The toolbar stays where it is drawn, switched off: nothing on it can act on a board that did not load. */}
-      <div
-        data-table-toolbar=""
-        aria-hidden="true"
-        className="flex items-center gap-1.5 px-4 py-2.5 max-sm:hidden sm:px-6"
-      >
-        <span className="flex h-8 w-50 items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-compact text-meta-foreground dark:bg-card">
-          <Search className="size-4 shrink-0" />
-          {t.search.placeholder}
-        </span>
-        {[t.filter.trigger, t.sort.label, t.groupBy.label].map((label) => (
-          <Button
-            key={label}
-            variant="ghost"
-            size="sm"
-            disabled
-            tabIndex={-1}
-            className={kanbanPillClass}
-          >
-            {label}
-          </Button>
-        ))}
-        <span className="flex-1" />
-        <Button
-          size="sm"
-          disabled
-          tabIndex={-1}
-          className={kanbanPrimaryButtonClass}
-        >
-          <Plus className="size-4" />
-          {t.addItem}
-        </Button>
-      </div>
+      <MainTableToolbarPlaceholder copy={copy} />
       <BoardStateBlock
         role="alert"
         className="py-9"
@@ -77,6 +44,49 @@ export function MainTableError({
           ) : undefined
         }
       />
+    </div>
+  );
+}
+
+/** The toolbar where it is drawn, switched off: nothing on it can act on a board that is not there (BC-Shell L and Er). */
+export function MainTableToolbarPlaceholder({
+  copy = mainTableCopy("vi"),
+}: {
+  copy?: MainTableCopy;
+}) {
+  const t = copy.toolbar;
+  return (
+    <div
+      data-table-toolbar=""
+      aria-hidden="true"
+      className="flex items-center gap-1.5 px-4 py-2.5 max-sm:hidden sm:px-6 tablet:gap-2 tablet:py-2"
+    >
+      <span className="flex h-8 w-50 items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-compact text-meta-foreground dark:bg-card">
+        <Search className="size-4 shrink-0" />
+        {t.search.placeholder}
+      </span>
+      {[t.filter.trigger, t.sort.label, t.groupBy.label].map((label) => (
+        <Button
+          key={label}
+          variant="ghost"
+          size="sm"
+          disabled
+          tabIndex={-1}
+          className={kanbanPillClass}
+        >
+          {label}
+        </Button>
+      ))}
+      <span className="flex-1" />
+      <Button
+        size="sm"
+        disabled
+        tabIndex={-1}
+        className={kanbanPrimaryButtonClass}
+      >
+        <Plus className="size-4" />
+        {t.addItem}
+      </Button>
     </div>
   );
 }
