@@ -150,6 +150,8 @@ export interface InboxItemView {
   readonly done?: boolean;
   /** It is hidden until a later time; "Done" is true too, so it can be taken back. */
   readonly snoozed?: boolean;
+  /** When a snoozed row returns, in words ("08:00 tomorrow"); drawn as the clock pill. */
+  readonly snoozedWhen?: string | null;
   /** The item the notification is about, when the reply can go to it. */
   readonly itemId?: string | null;
   /** The page the notification is about, when the reply can go to it. */

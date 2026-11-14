@@ -78,6 +78,18 @@ function sentence(
   return out;
 }
 
+function snoozeWords(deps: InboxViewDeps, until: string | null): string | null {
+  if (!until) return null;
+  const days = Math.round(
+    (startOfDay(Date.parse(until)) - startOfDay(deps.now)) / 86_400_000,
+  );
+  const w = deps.copy.snoozedWhen;
+  const time = clock(until);
+  if (days === 0) return formatCopy(w.today, { time });
+  if (days === 1) return formatCopy(w.tomorrow, { time });
+  return formatCopy(w.date, { time, date: shortDate(until) });
+}
+
 function dueWords(deps: InboxViewDeps, dueAt: string | null): string | null {
   if (!dueAt) return null;
   const today = startOfDay(deps.now);
@@ -542,6 +554,7 @@ export function toInboxEntries(
       muted: entry.muted,
       done: entry.done,
       snoozed: entry.snoozed,
+      snoozedWhen: entry.snoozed ? snoozeWords(deps, entry.snoozedUntil) : null,
       itemId: target.kind === "item" ? target.id : null,
       docId: target.kind === "doc" ? target.id : null,
       bundle: entry.bundle

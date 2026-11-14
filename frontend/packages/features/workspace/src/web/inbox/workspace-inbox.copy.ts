@@ -25,6 +25,12 @@ export const en = {
   unreadOnly: "Unread only",
   doneFilter: "Done",
   snoozedFilter: "Snoozed",
+  snoozedBack: "Back {{when}}",
+  snoozedWhen: {
+    today: "{{time}} today",
+    tomorrow: "{{time}} tomorrow",
+    date: "{{time}} {{date}}",
+  },
   snoozedEmpty: {
     title: "Nothing is snoozed",
     text: "Notifications you remind yourself of later wait here until their time.",
@@ -237,6 +243,12 @@ export const vi: WorkspaceInboxCopy = {
   unreadOnly: "Chỉ chưa đọc",
   doneFilter: "Đã xử lý",
   snoozedFilter: "Tạm hoãn",
+  snoozedBack: "Quay lại {{when}}",
+  snoozedWhen: {
+    today: "{{time}} hôm nay",
+    tomorrow: "{{time}} ngày mai",
+    date: "{{time}} {{date}}",
+  },
   snoozedEmpty: {
     title: "Chưa có thông báo nào tạm hoãn",
     text: "Thông báo bạn nhắc lại sau được giữ ở đây đến giờ hẹn.",

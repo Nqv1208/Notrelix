@@ -207,6 +207,15 @@ export function InboxRow({
             <span className="truncate">{item.context.label}</span>
           </span>
         ) : null}
+        {item.snoozedWhen ? (
+          <span
+            data-f="snoozed-when"
+            className="mt-[5px] inline-flex h-5 items-center gap-1 rounded-full bg-state-selected px-[7px] text-micro leading-[1.45] font-semibold text-state-selected-foreground"
+          >
+            <Clock aria-hidden="true" className="size-3" />
+            {formatCopy(copy.snoozedBack, { when: item.snoozedWhen })}
+          </span>
+        ) : null}
         {item.need ? (
           <span
             data-f="need"

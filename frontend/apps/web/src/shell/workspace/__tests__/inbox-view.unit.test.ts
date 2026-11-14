@@ -319,6 +319,20 @@ describe("chat message notifications (UC-CHT-G09)", () => {
   });
 });
 
+describe("snoozed row time", () => {
+  it("says when a snoozed row returns: tomorrow, today or a date", () => {
+    const when = (until: string | null) =>
+      toInboxEntries(
+        [{ ...base, snoozed: true, snoozedUntil: until }],
+        deps,
+      )[0]?.snoozedWhen;
+    expect(when("2026-10-13T01:00:00.000Z")).toBe("08:00 ngày mai");
+    expect(when("2026-10-12T05:00:00.000Z")).toBe("12:00 hôm nay");
+    expect(when("2026-10-19T01:00:00.000Z")).toContain("08:00");
+    expect(when(null)).toBeNull();
+  });
+});
+
 describe("snoozeUntil", () => {
   const monday = new Date(2026, 9, 12, 14, 0, 0).getTime();
   it("is an hour, the next morning or the next Monday morning", () => {
