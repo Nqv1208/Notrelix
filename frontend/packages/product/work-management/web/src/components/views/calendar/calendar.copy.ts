@@ -55,6 +55,9 @@ export const en = {
     label: "Order by",
     span: "Start → Due",
     due: "Due",
+    /** Shown when the saved date field was deleted or is no longer a Date field. */
+    fallbackNotice:
+      "The date field this Calendar was set to is gone. Items are placed by Start → Due until you choose another.",
   },
   filter: {
     ...kanbanToolbarEn.filter,
@@ -281,6 +284,8 @@ export const vi: CalendarCopy = {
     label: "Xếp theo",
     span: "Bắt đầu → Hạn",
     due: "Hạn",
+    fallbackNotice:
+      "Trường ngày mà Lịch này đã chọn không còn. Việc đang xếp theo Bắt đầu → Hạn cho đến khi bạn chọn trường khác.",
   },
   filter: {
     ...kanbanToolbarVi.filter,

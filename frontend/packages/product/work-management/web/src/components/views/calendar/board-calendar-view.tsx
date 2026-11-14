@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocale } from "@notrelix/i18n";
+import { cn } from "@notrelix/ui-web";
 import {
   useBoardKanban,
   useBoardPlanItems,
@@ -174,6 +175,9 @@ export function BoardCalendarView({
     localBasis ?? savedBasis,
     dateFields,
   );
+  // A saved field that no longer exists falls back to Start → Due, and the member is told (product section 48).
+  const basisFellBack =
+    board !== undefined && (localBasis ?? savedBasis) !== dateBasis;
   const setDateBasis = (basis: CalendarDateBasis) => {
     if (capabilities.canEditFields) {
       setLocalBasis(null);
@@ -452,62 +456,75 @@ export function BoardCalendarView({
     <div
       ref={rootRef}
       tabIndex={-1}
-      className="relative h-full focus:outline-hidden"
+      className={cn(
+        "relative h-full focus:outline-hidden",
+        basisFellBack && "flex flex-col",
+      )}
     >
-      <BoardCalendarSurface
-        copy={copy}
-        locale={locale}
-        range={range}
-        onRangeChange={setRange}
-        anchorDay={anchorDay}
-        onAnchorChange={setAnchorDay}
-        today={today}
-        nowMinutes={nowMinutes}
-        zoneLabel={zoneLabel}
-        zoneName={zoneName}
-        dateBasis={dateBasis}
-        onDateBasisChange={setDateBasis}
-        dateFields={dateFields}
-        entries={shownEntries}
-        undatedTotal={undatedTotal}
-        undated={built.undated}
-        filterActive={kanban.filterActive}
-        onClearFilter={() =>
-          view.setFilter({ ...view.state.filter, conditions: [] })
-        }
-        viewBar={
-          <ViewStateBar
-            canSave={capabilities.canEditFields}
-            copy={filtersCopy}
-            view={view}
-            fields={kanban.filterFields}
-            memberName={kanban.memberName}
-            people={kanban.filterChoices.assignees}
-            counts={{ shown: kanban.visibleCount, total: kanban.totalCount }}
-            now={now}
-            savedFilters={(save) => (
-              <SavedFiltersControl
-                compact
-                workspaceId={workspaceId}
-                boardId={boardId}
-                filter={serializeCompoundFilter(view.applied.filter)}
-                canEdit={capabilities.canEditFields}
-                onApply={view.applyCriteria}
-                {...save}
-              />
-            )}
-          />
-        }
-        hiddenCount={Math.max(0, kanban.totalCount - kanban.visibleCount)}
-        canEdit={canEdit}
-        onOpenItem={(id) => onSelectedItemChange?.(id)}
-        onReschedule={handleReschedule}
-        onSetDue={handleSetDue}
-        onChangeDates={handleChangeDates}
-        onUnschedule={handleUnschedule}
-        onCreateItem={handleCreate}
-        onAddItem={setCreateDay}
-      />
+      {basisFellBack ? (
+        <p
+          role="status"
+          className="mx-4 mt-3 shrink-0 rounded-[10px] bg-warning-subtle px-3 py-2 text-[12.5px] leading-[1.45] text-warning-subtle-foreground ring-1 ring-warning/50 ring-inset sm:mx-6"
+        >
+          {copy.basis.fallbackNotice}
+        </p>
+      ) : null}
+      <div className={basisFellBack ? "min-h-0 flex-1" : "h-full"}>
+        <BoardCalendarSurface
+          copy={copy}
+          locale={locale}
+          range={range}
+          onRangeChange={setRange}
+          anchorDay={anchorDay}
+          onAnchorChange={setAnchorDay}
+          today={today}
+          nowMinutes={nowMinutes}
+          zoneLabel={zoneLabel}
+          zoneName={zoneName}
+          dateBasis={dateBasis}
+          onDateBasisChange={setDateBasis}
+          dateFields={dateFields}
+          entries={shownEntries}
+          undatedTotal={undatedTotal}
+          undated={built.undated}
+          filterActive={kanban.filterActive}
+          onClearFilter={() =>
+            view.setFilter({ ...view.state.filter, conditions: [] })
+          }
+          viewBar={
+            <ViewStateBar
+              canSave={capabilities.canEditFields}
+              copy={filtersCopy}
+              view={view}
+              fields={kanban.filterFields}
+              memberName={kanban.memberName}
+              people={kanban.filterChoices.assignees}
+              counts={{ shown: kanban.visibleCount, total: kanban.totalCount }}
+              now={now}
+              savedFilters={(save) => (
+                <SavedFiltersControl
+                  compact
+                  workspaceId={workspaceId}
+                  boardId={boardId}
+                  filter={serializeCompoundFilter(view.applied.filter)}
+                  canEdit={capabilities.canEditFields}
+                  onApply={view.applyCriteria}
+                  {...save}
+                />
+              )}
+            />
+          }
+          hiddenCount={Math.max(0, kanban.totalCount - kanban.visibleCount)}
+          canEdit={canEdit}
+          onOpenItem={(id) => onSelectedItemChange?.(id)}
+          onReschedule={handleReschedule}
+          onSetDue={handleSetDue}
+          onChangeDates={handleChangeDates}
+          onUnschedule={handleUnschedule}
+          onCreateItem={handleCreate}
+          onAddItem={setCreateDay}
+        />
+      </div>
       {board && capabilities.canCreateCard ? (
         <CardCreatePopup
           open={createDay !== null}
