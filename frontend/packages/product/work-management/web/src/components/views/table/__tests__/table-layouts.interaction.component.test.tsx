@@ -145,6 +145,7 @@ describe("the table on a phone", () => {
     expect(props.onStatusChange).toHaveBeenCalledWith(
       id("ERP-144"),
       expect.any(String),
+      true,
     );
   });
 
@@ -159,6 +160,7 @@ describe("the table on a phone", () => {
     expect(props.onStatusChange).toHaveBeenCalledWith(
       id("ERP-151"),
       expect.any(String),
+      true,
     );
 
     open("ERP-151");
@@ -167,6 +169,7 @@ describe("the table on a phone", () => {
     expect(props.editors.onAssignee).toHaveBeenCalledWith(
       id("ERP-151"),
       "u-quan",
+      true,
     );
 
     open("ERP-151");
@@ -186,6 +189,7 @@ describe("the table on a phone", () => {
     expect(props.editors.onPriority).toHaveBeenCalledWith(
       id("ERP-151"),
       "p-urgent",
+      true,
     );
   });
 
