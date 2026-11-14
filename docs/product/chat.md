@@ -223,7 +223,19 @@ A channel may be linked to a Board, Page or Team by `ResourceRef`, and a message
 
 Chat emits facts for Governance Audit (channel created, privacy changed, member added or removed, moderator delete). The Audit record is Governance's. A message history is not an audit log.
 
-# 29. Actors and permissions
+# 29. CHT-025 — Images are shown in a gallery and never move the layout
+
+A message may carry several images. They are shown as one gallery: one image at its own aspect ratio, two to four as a grid, and from five images four tiles with a `+N` tile. The box of an image is reserved from its dimensions (or from the local file while uploading), so the list does not jump when the image loads. An uploading image shows progress and can be cancelled. A full-screen viewer pages through the images of the message. Size and type policy stay with Collaboration (COL-010, COL-011).
+
+# 30. CHT-026 — A voice message is a message with one audio attachment
+
+A voice message has one audio attachment, a duration and a waveform, and is at most five minutes (owner decision pending). It is edited and deleted like any message. A sticker is a message with no text and no attachment. GIFs come only from a provider the server calls on the person's behalf, enabled per Workspace; the browser never contacts a third party.
+
+# 31. CHT-027 — A call belongs to a space and follows its access
+
+A voice or video call is started in a space the caller can write to and is offered only to its members who are not blocked. A space has at most one ringing or active call and a person is in at most one active call; a second invitation is answered as busy. Ringing ends as missed after 45 seconds. Every ended call leaves one system message with the result and the duration, and a missed call notifies the callee once. Notrelix does not record, store or transcribe call media. Calls require the media infrastructure of SYS-ADR-002; when it is unavailable, the call cannot start and the space is unaffected.
+
+# 32. Actors and permissions
 
 | Actor | Can |
 |---|---|
@@ -235,7 +247,7 @@ Chat emits facts for Governance Audit (channel created, privacy changed, member 
 
 Permission actions are modeled in Governance as `chat.*` actions on resource kinds `chat.channel` and `chat.conversation` (see the team spec).
 
-# 30. State models
+# 33. State models
 
 ```text
 Channel:       Active -> Archived -> Active
@@ -245,7 +257,7 @@ Thread:        Open -> Archived (inactive) -> Open (new reply)
 Membership:    Invited -> Member -> Left | Removed
 ```
 
-# 31. Capabilities and phases
+# 34. Capabilities and phases
 
 | Capability | Scope | Phase |
 |---|---|---|
@@ -257,10 +269,12 @@ Membership:    Invited -> Member -> Left | Removed
 | F, CHT-006 | Threads, replies, pins | 2 |
 | G, CHT-007 | Mentions, reactions, attachments, notification handoff | 2 |
 | H, CHT-008 | Access hardening, moderation, retention, search, digest | 3 |
+| I, CHT-009 | Rich media: gallery, viewer, voice messages, stickers, GIFs | 4 |
+| J, CHT-010 | Calls: one-to-one voice and video, then group and screen sharing | 5 and 6 |
 
 The team capability IDs `CHT-001` to `CHT-008` are catalog coordinates; they are not the product rule IDs above, in the same way as `COL-001` to `COL-008` in the Collaboration team spec.
 
-# 32. Boundaries with neighbors
+# 35. Boundaries with neighbors
 
 | Neighbor | Chat gets | Chat gives |
 |---|---|---|
@@ -271,11 +285,11 @@ The team capability IDs `CHT-001` to `CHT-008` are catalog coordinates; they are
 | Platform | Realtime transport, outbox, rate limiting, object storage | Scope kind, authorization query, event mappers |
 | Search | Index infrastructure | Indexable facts, authorization filter inputs |
 
-# 33. Current source alignment
+# 36. Current source alignment
 
 At the time of writing there is no Chat code. Only a placeholder route (`/workspaces/$workspaceId/chat`), a navigation entry in the unmounted legacy sidebar and a `"chat"` recent-item type exist in the frontend.
 
-# 34. Open decisions (owner)
+# 37. Open decisions (owner)
 
 1. Who may moderate (delete others' messages): Workspace Owner and Admin only, or a delegated role.
 2. Retention window and whether a person who left a group conversation keeps history.
@@ -283,7 +297,7 @@ At the time of writing there is no Chat code. Only a placeholder route (`/worksp
 4. Per-Workspace limits: channels, members per channel, group size, broadcast confirmation threshold, message rate.
 5. Whether a public channel can be joined without notification to members.
 
-# 35. Stop conditions
+# 38. Stop conditions
 
 Stop and ask the owner before implementing if a change would:
 
@@ -295,7 +309,7 @@ Stop and ask the owner before implementing if a change would:
 - notify or grant access to a mentioned person who cannot view the space,
 - purge history without an explicit, audited rule.
 
-# 36. Change impact
+# 39. Change impact
 
 | Change | Also update |
 |---|---|
@@ -304,14 +318,14 @@ Stop and ask the owner before implementing if a change would:
 | Realtime frames | Events and realtime boundary, frontend realtime doc, realtime contract |
 | Retention | Operations recovery doc, retention jobs, tests |
 
-# 37. Testing and evidence
+# 40. Testing and evidence
 
 Each use case in `docs/workstreams/use-cases/chat.md` names its backend, frontend, design and real e2e evidence. Cross-tenant and cross-space negative tests are required for every read and write path. Realtime tests cover duplicate, out-of-order, gap, reconnect and access-change.
 
-# 38. Related canonical owners
+# 41. Related canonical owners
 
 Collaboration `docs/product/collaboration.md`, Governance `docs/product/governance.md`, Workspaces `docs/product/workspaces.md`, bounded contexts `docs/architecture/bounded-context-map.md`, realtime `docs/architecture/events-realtime-and-delivery-boundary.md`.
 
-# 39. Final rule
+# 42. Final rule
 
 If a conversation is about a product resource, it is a Collaboration comment. If it is about the team, it is Chat. Neither context owns the other's messages, and neither lets access follow anything but its own rule.
