@@ -2125,8 +2125,8 @@ docs/architecture/data-ownership-and-consistency.md
 docs/architecture/events-realtime-and-delivery-boundary.md
 
 docs/delivery/change-classification.md
-docs/delivery/change-impact-and-migration.md
-docs/delivery/release-rollout-and-recovery.md
+docs/delivery/migration-policy.md
+docs/delivery/release-and-rollout.md
 
 docs/infrastructure/deployment-runtime.md
 docs/operations/observability.md

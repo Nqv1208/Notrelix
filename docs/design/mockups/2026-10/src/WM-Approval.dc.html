@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Duyệt yêu cầu — 3 góc nhìn</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--side:#EFF1F4;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--sel:#EEF4FD;--danger:#C42340;--danger-soft:#FCEBEE;--ok:#1E7A4C;--ok-soft:#E5F4EC;--warn-text:#8A5A00;--warn-soft:#FDF3DC;--pop-shadow:0 12px 32px rgba(15,23,42,.16);font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn{height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.dng{background:var(--danger);border-color:var(--danger);color:#fff;font-weight:600}
+.btn.txt{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.sm{height:28px;padding:0 10px;font-size:12.5px}
+.iconbtn{width:30px;height:30px;border-radius:7px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.inp{height:34px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);padding:0 10px;font:inherit;font-size:13.5px;color:var(--text);box-sizing:border-box}
+.inp.focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.inp.err{border-color:var(--danger)}
+.chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600;white-space:nowrap}
+.c-blue{background:#E6F0FB;color:#245BA6}.c-teal{background:#E2F3EE;color:#24685A}.c-violet{background:#F0E9FB;color:#6A3DB3}.c-amber{background:#FBF1D6;color:#7A5810}.c-rose{background:#FBE5EA;color:#A3283F}.c-gray{background:#EEF0F4;color:#4B5263}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.cap{font-size:12px;font-weight:600;color:var(--meta);margin:0}
+.state{font-size:12px;font-weight:600;color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:3px 10px;align-self:flex-start}
+h1{margin:0;font-size:22px;line-height:1.3;font-weight:650;letter-spacing:-0.01em}
+h2{margin:0;font-size:16px;font-weight:650}
+.av{width:26px;height:26px;border-radius:999px;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</helmet>
+<div class="nx" style="width: 1440px; height: 900px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 24px">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <h1>Duyệt yêu cầu · mục Phê duyệt trên trang việc và sheet bên</h1>
+    <p style="margin: 0; color: var(--meta); font-size: 13.5px; max-width: 86ch">Việc ERP-142 "Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP". Lê An gửi yêu cầu, Trần Minh là người duyệt. Cùng một mục, mỗi người thấy nút theo vai của mình.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span class="state">Người duyệt · Trần Minh</span>
+      <section class="card" aria-label="Phê duyệt" style="padding: 16px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; align-items: center; gap: 8px"><h2 style="font-size: 14px">Phê duyệt</h2><span style="margin-left: auto; font-size: 12px; color: var(--meta)">Gửi 09:40 · 12/10/2026</span></div>
+        <div style="display: flex; align-items: center; gap: 10px"><span class="av" style="background: #1666CC">LA</span><p style="margin: 0; font-size: 13px"><b>Lê An</b> nhờ bạn duyệt</p></div>
+        <p style="margin: 0; font-size: 13px; color: var(--muted); background: var(--bg); border-radius: 8px; padding: 10px 12px">"Đã đối soát 12.480 khách hàng, lệch 3 bản ghi đã ghi chú trong file đính kèm."</p>
+        <div style="display: flex; gap: 8px"><button class="btn pri"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg> Duyệt</button><button class="btn"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg> Từ chối</button></div>
+      </section>
+      <span class="state" style="margin-top: 8px">Người duyệt · bấm Từ chối, ô lý do mở tại chỗ</span>
+      <section class="card" aria-label="Phê duyệt" style="padding: 16px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; align-items: center; gap: 8px"><h2 style="font-size: 14px">Phê duyệt</h2><span style="margin-left: auto; font-size: 12px; color: var(--meta)">Gửi 09:40 · 12/10/2026</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><label for="why" style="font-size: 12.5px; font-weight: 600; color: var(--muted)">Lý do từ chối</label><textarea id="why" class="inp focus" style="height: 72px; padding: 8px 10px; resize: none">Còn 3 bản ghi lệch chưa xử lý, cần làm sạch trước khi duyệt.</textarea><span style="font-size: 12px; color: var(--meta)">Lê An sẽ thấy lý do này.</span></div>
+        <div style="display: flex; gap: 8px; justify-content: flex-end"><button class="btn txt">Huỷ</button><button class="btn dng">Từ chối yêu cầu</button></div>
+      </section>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span class="state">Người gửi · Lê An</span>
+      <section class="card" aria-label="Phê duyệt" style="padding: 16px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; align-items: center; gap: 8px"><h2 style="font-size: 14px">Phê duyệt</h2><span style="margin-left: auto; font-size: 12px; color: var(--meta)">Gửi 09:40 · 12/10/2026</span></div>
+        <div style="display: flex; align-items: center; gap: 10px; color: var(--warn-text); background: var(--warn-soft); border-radius: 8px; padding: 10px 12px; font-size: 13px; font-weight: 500"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Đang chờ Trần Minh duyệt</div>
+        <div style="display: flex; gap: 8px"><button class="btn">Huỷ yêu cầu</button></div>
+      </section>
+      <span class="state" style="margin-top: 8px">Kết quả · đã duyệt</span>
+      <section class="card" aria-label="Phê duyệt" style="padding: 16px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 8px"><h2 style="font-size: 14px">Phê duyệt</h2><span style="margin-left: auto; font-size: 12px; color: var(--meta)">Gửi 09:40 · 12/10/2026</span></div>
+        <div style="display: flex; align-items: center; gap: 10px; color: var(--ok); background: var(--ok-soft); border-radius: 8px; padding: 10px 12px; font-size: 13px; font-weight: 600"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg> Trần Minh đã duyệt · 10:15</div>
+        <button class="btn txt" style="align-self: flex-start; padding: 0">Gửi yêu cầu duyệt mới</button>
+      </section>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span class="state">Thành viên khác · Phạm Hà</span>
+      <section class="card" aria-label="Phê duyệt" style="padding: 16px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; align-items: center; gap: 8px"><h2 style="font-size: 14px">Phê duyệt</h2><span style="margin-left: auto; font-size: 12px; color: var(--meta)">Gửi 09:40 · 12/10/2026</span></div>
+        <div style="display: flex; align-items: center; gap: 10px; color: var(--warn-text); background: var(--warn-soft); border-radius: 8px; padding: 10px 12px; font-size: 13px; font-weight: 500"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Đang chờ Trần Minh duyệt</div>
+        <p style="margin: 0; font-size: 12.5px; color: var(--meta)">Lê An gửi yêu cầu. Chỉ người duyệt mới duyệt hoặc từ chối được.</p>
+      </section>
+      <span class="state" style="margin-top: 8px">Kết quả · bị từ chối</span>
+      <section class="card" aria-label="Phê duyệt" style="padding: 16px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 8px"><h2 style="font-size: 14px">Phê duyệt</h2><span style="margin-left: auto; font-size: 12px; color: var(--meta)">Gửi 09:40 · 12/10/2026</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; color: var(--danger); background: var(--danger-soft); border-radius: 8px; padding: 10px 12px; font-size: 13px"><span style="display: flex; align-items: center; gap: 8px; font-weight: 600"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg> Trần Minh đã từ chối · 10:15</span><span style="color: var(--text)">"Còn 3 bản ghi lệch chưa xử lý, cần làm sạch trước khi duyệt."</span></div>
+        <button class="btn txt" style="align-self: flex-start; padding: 0">Gửi yêu cầu duyệt mới</button>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

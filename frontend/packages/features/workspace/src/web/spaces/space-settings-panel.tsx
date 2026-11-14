@@ -500,7 +500,10 @@ export function SpaceSettingsPanel({
             className="flex flex-col gap-2 rounded-[10px] border border-danger-text bg-danger-subtle p-3 text-crumb leading-[1.45] text-foreground"
           >
             <b id="space-delete-q" className="font-semibold">
-              {formatCopy(s.deleteConfirmTitle, { name: space.name })}
+              {formatCopy(s.deleteConfirmTitle, {
+                name: space.name,
+                workspace: workspaceName,
+              })}
             </b>
             <span>
               {formatCopy(s.deleteConfirmText, { content: deleteContent })}

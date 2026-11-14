@@ -68,7 +68,7 @@ public class PublicAuthEndpointTests : IClassFixture<NotrelixApiFactory>
     }
 
     [Fact]
-    public async Task Register_DuplicateEmail_ReturnsConflict()
+    public async Task Register_Twice_AnswersTheSameBothTimes()
     {
         var body = new { Email = "duplicate@test.com", Password = "Test@123456", Name = "First" };
 
@@ -77,9 +77,9 @@ public class PublicAuthEndpointTests : IClassFixture<NotrelixApiFactory>
 
         var second = await _client.PostAsJsonAsync("/api/v1/auth/register", body);
 
-        // Handler mock always returns success; duplicate detection requires
-        // real handler logic tested at the Application layer.
-        second.StatusCode.Should().Be(HttpStatusCode.OK);
+        // The neutral answer for a new and an existing address is proven in RegisterEndpointContractTests
+        // and RegisterTests (Application); here only the transport answers alike.
+        second.StatusCode.Should().Be(first.StatusCode);
     }
 
     // ── Login ────────────────────────────────────────────────

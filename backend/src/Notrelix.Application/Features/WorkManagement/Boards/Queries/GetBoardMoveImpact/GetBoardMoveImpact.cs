@@ -30,6 +30,7 @@ public record GetBoardMoveImpactQuery(Guid BoardId, Guid? TargetSpaceId)
 /// <param name="StrandedOverdue">Of those, the ones past due.</param>
 /// <param name="KeptNames">Up to a few people who keep access on their own entry.</param>
 /// <param name="KeptCount">All people who keep access on their own entry.</param>
+/// <param name="IsPrivate">The Board is Private: only its own entries reach it, so a move changes where it sits and nobody's access.</param>
 public sealed record BoardMoveImpactDto(
     Guid BoardId,
     Guid? TargetSpaceId,
@@ -47,7 +48,8 @@ public sealed record BoardMoveImpactDto(
     IReadOnlyList<string> KeptNames,
     int KeptCount,
     int KeptTeamCount,
-    long BoardVersion);
+    long BoardVersion,
+    bool IsPrivate);
 
 public sealed record BoardMoveStrandedPersonDto(Guid UserId, string Name, int Items, int Overdue);
 
@@ -149,6 +151,7 @@ public class GetBoardMoveImpactQueryHandler : IRequestHandler<GetBoardMoveImpact
             keptIds.Select(id => names.GetValueOrDefault(id)).Where(n => n is not null).Select(n => n!).ToList(),
             reach.KeptUserIds.Count,
             reach.KeptTeamCount,
-            board.Version));
+            board.Version,
+            board.Visibility == global::Notrelix.Domain.WorkManagement.Boards.BoardVisibility.Private));
     }
 }

@@ -75,11 +75,11 @@ export const en = {
     description: "Actions that take the workspace away from everyone.",
     archiveTitle: "Archive this workspace",
     archiveDescription:
-      "Archiving hides {{workspace}} from every member and stops all work in it. An owner can restore it later.",
+      "Archiving makes {{workspace}} read-only for every member and stops all work in it. An owner can restore it later.",
     archiveAction: "Archive workspace",
     confirmTitle: "Archive {{workspace}}?",
     confirmDescription:
-      "Every member loses access until an owner restores the workspace. Type the workspace name to confirm.",
+      "Every member can still read this workspace, but nothing in it can change until an owner restores it. Type the workspace name to confirm.",
     confirmLabel: "Workspace name",
     confirmMismatch: "Type {{workspace}} exactly to continue.",
     confirmAction: "Archive workspace",
@@ -192,11 +192,11 @@ export const vi: WorkspaceSettingsCopy = {
       "Các thao tác khiến mọi người mất quyền vào không gian làm việc.",
     archiveTitle: "Lưu trữ không gian làm việc này",
     archiveDescription:
-      "Lưu trữ sẽ ẩn {{workspace}} với mọi thành viên và dừng mọi công việc trong đó. Chủ sở hữu có thể khôi phục sau.",
+      "Lưu trữ sẽ chuyển {{workspace}} sang chỉ đọc với mọi thành viên và dừng mọi công việc trong đó. Chủ sở hữu có thể khôi phục sau.",
     archiveAction: "Lưu trữ không gian làm việc",
     confirmTitle: "Lưu trữ {{workspace}}?",
     confirmDescription:
-      "Mọi thành viên sẽ mất quyền truy cập cho đến khi chủ sở hữu khôi phục. Nhập tên không gian làm việc để xác nhận.",
+      "Mọi thành viên vẫn xem được không gian làm việc này nhưng không ai chỉnh sửa được cho đến khi chủ sở hữu khôi phục. Nhập tên không gian làm việc để xác nhận.",
     confirmLabel: "Tên không gian làm việc",
     confirmMismatch: "Nhập chính xác {{workspace}} để tiếp tục.",
     confirmAction: "Lưu trữ không gian làm việc",

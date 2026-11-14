@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Bình luận — trả lời và cảm xúc</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--side:#EFF1F4;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--sel:#EEF4FD;--danger:#C42340;--danger-soft:#FCEBEE;--ok:#1E7A4C;--ok-soft:#E5F4EC;--warn-text:#8A5A00;--warn-soft:#FDF3DC;--pop-shadow:0 12px 32px rgba(15,23,42,.16);font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn{height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.dng{background:var(--danger);border-color:var(--danger);color:#fff;font-weight:600}
+.btn.txt{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.sm{height:28px;padding:0 10px;font-size:12.5px}
+.iconbtn{width:30px;height:30px;border-radius:7px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.inp{height:34px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);padding:0 10px;font:inherit;font-size:13.5px;color:var(--text);box-sizing:border-box}
+.inp.focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.inp.err{border-color:var(--danger)}
+.chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600;white-space:nowrap}
+.c-blue{background:#E6F0FB;color:#245BA6}.c-teal{background:#E2F3EE;color:#24685A}.c-violet{background:#F0E9FB;color:#6A3DB3}.c-amber{background:#FBF1D6;color:#7A5810}.c-rose{background:#FBE5EA;color:#A3283F}.c-gray{background:#EEF0F4;color:#4B5263}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.cap{font-size:12px;font-weight:600;color:var(--meta);margin:0}
+.state{font-size:12px;font-weight:600;color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:3px 10px;align-self:flex-start}
+h1{margin:0;font-size:22px;line-height:1.3;font-weight:650;letter-spacing:-0.01em}
+h2{margin:0;font-size:16px;font-weight:650}
+.av{width:26px;height:26px;border-radius:999px;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</helmet>
+<div class="nx" style="width: 1440px; height: 1100px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 24px">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <h1>Bình luận · trả lời một tầng và thả cảm xúc</h1>
+    <p style="margin: 0; color: var(--meta); font-size: 13.5px; max-width: 90ch">Trả lời luôn nằm dưới bình luận gốc (trả lời một câu trả lời cũng gắn vào bình luận gốc), cũ trước mới sau, quá 3 câu thì gập lại. Cảm xúc chọn trong 6 biểu tượng cố định, bấm lần nữa để bỏ. Người chỉ xem thấy cảm xúc nhưng không thả được.</p>
+  </div>
+  <div style="display: flex; gap: 32px; align-items: flex-start">
+    <section class="card" aria-label="Bình luận của việc ERP-142" style="flex: 1; min-width: 0; padding: 20px; display: flex; flex-direction: column; gap: 18px">
+      <h2 style="font-size: 14px">Bình luận · 6</h2>
+      <article style="display: flex; gap: 12px">
+        <span class="av" style="background: #1E7A4C">TM</span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+          <p style="margin: 0; font-size: 13px"><b>Trần Minh</b> <span style="color: var(--meta)">· 09:12</span></p>
+          <p style="margin: 0; font-size: 13.5px">Đợt chuyển thử chạy xong, tổng 12.480 khách hàng. Mọi người kiểm giúp phần mã số thuế nhé.</p>
+          <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap">
+            <button aria-pressed="true" aria-label="Thích, 3 người, có bạn" style="height: 26px; padding: 0 8px; border-radius: 999px; border: 1px solid; background: var(--accent-soft); border-color: var(--accent); color: var(--accent-text); font: 600 12.5px/1 'Be Vietnam Pro', system-ui, sans-serif; display: inline-flex; align-items: center; gap: 5px; cursor: pointer">👍 <span>3</span></button> <button aria-pressed="false" aria-label="Chúc mừng, 1 người" style="height: 26px; padding: 0 8px; border-radius: 999px; border: 1px solid; background: var(--panel); border-color: var(--line2); color: var(--muted); font: 600 12.5px/1 'Be Vietnam Pro', system-ui, sans-serif; display: inline-flex; align-items: center; gap: 5px; cursor: pointer">🎉 <span>1</span></button> <button aria-pressed="false" aria-label="Đang xem, 2 người" style="height: 26px; padding: 0 8px; border-radius: 999px; border: 1px solid; background: var(--panel); border-color: var(--line2); color: var(--muted); font: 600 12.5px/1 'Be Vietnam Pro', system-ui, sans-serif; display: inline-flex; align-items: center; gap: 5px; cursor: pointer">👀 <span>2</span></button> <button class="iconbtn" aria-label="Thêm cảm xúc" style="width: 26px; height: 26px; border: 1px dashed var(--line2); border-radius: 999px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 14a4 4 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/><path d="M19 3v4M17 5h4"/></svg></button>
+            <button class="btn txt sm" style="margin-left: 4px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v3"/></svg> Trả lời</button>
+          </div>
+          <div style="margin-top: 6px; padding-left: 16px; border-left: 2px solid var(--line); display: flex; flex-direction: column; gap: 14px">
+            <article style="display: flex; gap: 10px">
+              <span class="av" style="background: #1666CC; width: 22px; height: 22px; font-size: 10px">LA</span>
+              <div style="display: flex; flex-direction: column; gap: 6px"><p style="margin: 0; font-size: 13px"><b>Lê An</b> <span style="color: var(--meta)">· 09:20</span></p><p style="margin: 0; font-size: 13.5px">Có 3 bản ghi trùng mã số thuế, em ghi trong file đính kèm.</p><div style="display: flex; gap: 6px; align-items: center"><button aria-pressed="false" aria-label="Thích, 1 người" style="height: 26px; padding: 0 8px; border-radius: 999px; border: 1px solid; background: var(--panel); border-color: var(--line2); color: var(--muted); font: 600 12.5px/1 'Be Vietnam Pro', system-ui, sans-serif; display: inline-flex; align-items: center; gap: 5px; cursor: pointer">👍 <span>1</span></button> <button class="iconbtn" aria-label="Thêm cảm xúc" style="width: 26px; height: 26px; border: 1px dashed var(--line2); border-radius: 999px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 14a4 4 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/><path d="M19 3v4M17 5h4"/></svg></button> <button class="btn txt sm">Trả lời</button></div></div>
+            </article>
+            <button class="btn txt sm" style="align-self: flex-start; color: var(--accent-text); padding: 0">Xem thêm 2 trả lời</button>
+            <article style="display: flex; gap: 10px">
+              <span class="av" style="background: #8A5A00; width: 22px; height: 22px; font-size: 10px">PH</span>
+              <div style="display: flex; flex-direction: column; gap: 6px"><p style="margin: 0; font-size: 13px"><b>Phạm Hà</b> <span style="color: var(--meta)">· 10:02</span></p><p style="margin: 0; font-size: 13.5px"><span style="color: var(--accent-text); font-weight: 600">@Lê An</span> đã gộp 3 bản ghi, chạy lại được rồi.</p><div style="display: flex; gap: 6px; align-items: center"><button class="iconbtn" aria-label="Thêm cảm xúc" style="width: 26px; height: 26px; border: 1px dashed var(--line2); border-radius: 999px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 14a4 4 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/><path d="M19 3v4M17 5h4"/></svg></button> <button class="btn txt sm">Trả lời</button></div></div>
+            </article>
+            <div style="display: flex; gap: 10px; align-items: flex-start">
+              <span class="av" style="background: #6A3DB3; width: 22px; height: 22px; font-size: 10px">NV</span>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+                <label for="rep" class="sr">Trả lời Trần Minh</label>
+                <textarea id="rep" class="inp focus" style="height: 64px; padding: 8px 10px; resize: none; width: 100%">Cảm ơn chị, em chạy lại đợt 2 chiều nay.</textarea>
+                <div style="display: flex; gap: 8px; justify-content: flex-end"><button class="btn txt sm">Huỷ</button><button class="btn pri sm">Gửi trả lời</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article style="display: flex; gap: 12px; border-top: 1px solid var(--line); padding-top: 18px">
+        <span class="av" style="background: #A3283F">VY</span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+          <p style="margin: 0; font-size: 13px"><b>Nguyễn Vy</b> <span style="color: var(--meta)">· 11:30</span></p>
+          <p style="margin: 0; font-size: 13.5px">Phần hoá đơn đầu kỳ để sang tuần sau nhé.</p>
+          <div style="display: flex; gap: 6px; align-items: center"><button class="iconbtn" aria-label="Thêm cảm xúc" style="width: 26px; height: 26px; border: 1px dashed var(--line2); border-radius: 999px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 14a4 4 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/><path d="M19 3v4M17 5h4"/></svg></button> <button class="btn txt sm"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v3"/></svg> Trả lời</button></div>
+        </div>
+      </article>
+    </section>
+    <div style="width: 420px; flex: none; display: flex; flex-direction: column; gap: 14px">
+      <span class="state">Bấm nút thêm cảm xúc</span>
+      <div class="card" role="group" aria-label="Chọn cảm xúc" style="box-shadow: var(--pop-shadow); padding: 6px; display: flex; gap: 2px; align-self: flex-start">
+        <button class="iconbtn" aria-label="Thích" aria-pressed="true" style="width: 40px; height: 40px; font-size: 20px; background: var(--accent-soft)">👍</button>
+        <button class="iconbtn" aria-label="Yêu thích" style="width: 40px; height: 40px; font-size: 20px">❤️</button>
+        <button class="iconbtn" aria-label="Vui" style="width: 40px; height: 40px; font-size: 20px">😄</button>
+        <button class="iconbtn" aria-label="Chúc mừng" style="width: 40px; height: 40px; font-size: 20px">🎉</button>
+        <button class="iconbtn" aria-label="Đang xem" style="width: 40px; height: 40px; font-size: 20px">👀</button>
+        <button class="iconbtn" aria-label="Triển khai" style="width: 40px; height: 40px; font-size: 20px">🚀</button>
+      </div>
+      <span class="state" style="margin-top: 10px">Rê chuột lên cảm xúc</span>
+      <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px">
+        <div role="tooltip" style="background: #161A21; color: #fff; font-size: 12px; border-radius: 6px; padding: 6px 10px">Bạn, Lê An và Phạm Hà đã thích</div>
+        <button aria-pressed="true" aria-label="Thích, 3 người, có bạn" style="height: 26px; padding: 0 8px; border-radius: 999px; border: 1px solid; background: var(--accent-soft); border-color: var(--accent); color: var(--accent-text); font: 600 12.5px/1 'Be Vietnam Pro', system-ui, sans-serif; display: inline-flex; align-items: center; gap: 5px; cursor: pointer">👍 <span>3</span></button>
+      </div>
+      <span class="state" style="margin-top: 10px; background: var(--hover2); color: var(--muted)">Người chỉ xem</span>
+      <div class="card" style="padding: 14px; display: flex; flex-direction: column; gap: 8px">
+        <div style="display: flex; gap: 6px">
+          <span style="height: 26px; padding: 0 8px; border-radius: 999px; border: 1px solid var(--line2); display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 600; color: var(--muted)">👍 3</span>
+          <span style="height: 26px; padding: 0 8px; border-radius: 999px; border: 1px solid var(--line2); display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 600; color: var(--muted)">🎉 1</span>
+        </div>
+        <p style="margin: 0; font-size: 12.5px; color: var(--meta)">Không có nút thêm cảm xúc và nút Trả lời. Rê chuột vẫn xem được ai đã thả.</p>
+      </div>
+      <span class="state" style="margin-top: 10px">Sheet bên · menu của một bình luận</span>
+      <div class="card" role="menu" aria-label="Thao tác bình luận" style="box-shadow: var(--pop-shadow); padding: 6px; width: 200px; display: flex; flex-direction: column">
+        <button role="menuitem" class="btn txt" style="justify-content: flex-start; color: var(--text)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v3"/></svg> Trả lời</button>
+        <button role="menuitem" class="btn txt" style="justify-content: flex-start; color: var(--text)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 14a4 4 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/><path d="M19 3v4M17 5h4"/></svg> Thả cảm xúc</button>
+        <button role="menuitem" class="btn txt" style="justify-content: flex-start; color: var(--text)">Sửa</button>
+        <button role="menuitem" class="btn txt" style="justify-content: flex-start; color: var(--danger)">Xoá</button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

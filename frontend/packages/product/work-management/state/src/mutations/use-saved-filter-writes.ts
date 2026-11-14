@@ -5,12 +5,20 @@ import type {
   SavedFilterCriteria,
 } from "@notrelix/work-management-core";
 import { wmQueryKeys } from "../queries/keys";
+import {
+  changedByNameOf,
+  isVersionConflict,
+} from "../queries/use-item-conflict";
 import { useWorkManagementServices } from "../services";
 
-/** How a saved-filter write ended; `forbidden` and `missing` tell the page why it did not apply. */
+/** How a saved-filter write ended; `forbidden`, `missing` and `conflict` (someone saved first, `by` names them) tell the page why it did not apply. */
 export type SavedFilterWriteResult =
   | { readonly ok: true; readonly id?: string }
-  | { readonly ok: false; readonly reason: "forbidden" | "missing" | "failed" };
+  | {
+      readonly ok: false;
+      readonly reason: "forbidden" | "missing" | "conflict" | "failed";
+      readonly by?: string | null;
+    };
 
 function failure(error: unknown): SavedFilterWriteResult {
   const status =
@@ -19,6 +27,8 @@ function failure(error: unknown): SavedFilterWriteResult {
       : null;
   if (status === 403) return { ok: false, reason: "forbidden" };
   if (status === 404) return { ok: false, reason: "missing" };
+  if (isVersionConflict(error))
+    return { ok: false, reason: "conflict", by: changedByNameOf(error) };
   return { ok: false, reason: "failed" };
 }
 

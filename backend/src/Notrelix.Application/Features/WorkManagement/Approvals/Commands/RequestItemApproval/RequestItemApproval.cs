@@ -69,6 +69,14 @@ public class RequestItemApprovalCommandHandler(
                 "work.approval.already-requested", "This person was already asked to approve this item.", ApplicationErrorType.Conflict));
         }
 
+        // Asking again after a rejection or a cancel links to that request; a Pending or Approved latest one is no re-request.
+        var latest = await context.ApprovalRequests.AsNoTracking()
+            .Where(r => r.Target.Kind == kind && r.Target.ResourceId == item.Id && r.DeletedAt == null)
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new { r.Id, r.Status })
+            .FirstOrDefaultAsync(ct);
+        Guid? previousId = latest is { Status: ApprovalStatus.Rejected or ApprovalStatus.Cancelled } ? latest.Id : null;
+
         var now = clock.UtcNow;
         var title = item.Name.Length > 200 ? item.Name[..200] : item.Name;
         var approval = ApprovalRequest.Create(
@@ -78,7 +86,8 @@ public class RequestItemApprovalCommandHandler(
             title,
             userId,
             now,
-            request.Note);
+            request.Note,
+            previousId);
         approval.AddStep(1, userId, now, request.ApproverUserId);
 
         context.ApprovalRequests.Add(approval);

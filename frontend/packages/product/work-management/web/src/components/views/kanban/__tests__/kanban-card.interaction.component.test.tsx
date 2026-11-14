@@ -588,6 +588,114 @@ describe("KanbanCard row 2 (checklist, files, blocked, crowding)", () => {
     expect(article.querySelector("[data-due]")!.textContent).toContain("→");
   });
 
+  it("keeps the due date's icon inside the row: no pull to the left", () => {
+    const { article } = renderCard({ dueAt: dueOn(16, 10) });
+    const chip = article.querySelector("[data-due=date]") as HTMLElement;
+    expect(chip.className).not.toMatch(/(^|\s)-ml-/);
+    expect(chip.className).toContain("px-0");
+    expect(chip.className).not.toContain("px-1 ");
+  });
+
+  it("draws one bar only when the card has child items and a checklist", () => {
+    const { article } = renderCard({
+      checklistProgress: { done: 1, total: 2 },
+      childProgress: { done: 1, total: 3 },
+    });
+    expect(article.querySelector("[data-child-progress]")).not.toBeNull();
+    expect(article.querySelector("[data-checklist-bar]")).toBeNull();
+  });
+
+  it("puts priority and key on the title's line when the card has no label", () => {
+    const { article } = renderCard({
+      labels: [],
+      priority: "high",
+      itemKey: "ERP-142",
+    });
+    const title = article.querySelector("h3")!;
+    const line = title.parentElement!;
+    expect(line.querySelector("[data-priority]")).not.toBeNull();
+    expect(line.textContent).toContain("ERP-142");
+    // no band of its own above the title
+    expect(article.querySelector("div[id$='-top']")).toBeNull();
+  });
+
+  it("keeps priority and key in the label row when the card has a label", () => {
+    const { article } = renderCard({
+      labels: [labelFixture({ name: "Dữ liệu" })],
+      priority: "high",
+      itemKey: "ERP-142",
+    });
+    const top = article.querySelector("div[id$='-top']")!;
+    expect(top.querySelector("[data-priority]")).not.toBeNull();
+    expect(top.textContent).toContain("ERP-142");
+    expect(article.querySelector("span[id$='-top']")).toBeNull();
+  });
+
+  it("a card with neither label, priority nor key has no top row at all", () => {
+    const { article } = renderCard({
+      labels: [],
+      priority: undefined,
+      itemKey: null,
+    });
+    expect(article.querySelector("[id$='-top']")).toBeNull();
+  });
+
+  it("grows the label row in only when a label is added to a card already drawn", () => {
+    const bare = cardFixture({ title: "Thẻ", labels: [], priority: "high" });
+    const labelled = { ...bare, labels: [labelFixture({ name: "Dữ liệu" })] };
+    const tree = (card: Card) => (
+      <DndContext>
+        <SortableContext items={[card.id]}>
+          <KanbanCard
+            card={card}
+            now={NOW}
+            copy={VI}
+            onOpenDetails={() => undefined}
+          />
+        </SortableContext>
+      </DndContext>
+    );
+    const view = renderPureUi(tree(bare));
+    // first paint with a label: no animation
+    const first = renderPureUi(tree(labelled));
+    expect(
+      first.container.querySelector("div[id$='-top']")!.className,
+    ).not.toContain("card-row-grow");
+    first.unmount();
+    // a label arrives on the drawn card: the row grows in
+    view.rerender(tree(labelled));
+    expect(
+      view.container.querySelector("div[id$='-top']")!.className,
+    ).toContain("card-row-grow");
+  });
+
+  it("draws a checklist progress bar filled to the share done", () => {
+    const { article } = renderCard({
+      checklistProgress: { done: 1, total: 4 },
+    });
+    const fill = article.querySelector(
+      "[data-checklist-bar] > span",
+    ) as HTMLElement;
+    expect(fill.style.width).toBe("25%");
+    expect(fill.className).toContain("bg-primary");
+  });
+
+  it("turns the checklist bar full and green when every item is done", () => {
+    const { article } = renderCard({
+      checklistProgress: { done: 4, total: 4 },
+    });
+    const fill = article.querySelector(
+      "[data-checklist-bar] > span",
+    ) as HTMLElement;
+    expect(fill.style.width).toBe("100%");
+    expect(fill.className).toContain("bg-work-status-done");
+  });
+
+  it("draws no checklist bar on a card without a checklist", () => {
+    const { article } = renderCard({});
+    expect(article.querySelector("[data-checklist-bar]")).toBeNull();
+  });
+
   it("keeps the word Bị chặn when the row has room", () => {
     const { article } = renderCard({ openBlockerCount: 1 });
     expect(article.querySelector("[data-blocked]")!.textContent).toContain(
@@ -604,5 +712,26 @@ describe("KanbanCard row 2 (checklist, files, blocked, crowding)", () => {
       article.querySelector("[data-comment-count]")!.textContent,
     ).toContain("99+");
     expect(article.querySelector("[data-blocked]")).toBeNull();
+  });
+
+  it("names a child archived with its parent and mutes the title", () => {
+    const { article } = renderCard({ isArchived: true, parentItemId: "p-1" });
+    expect(
+      article.querySelector("[data-archived-with-parent]")!.textContent,
+    ).toBe(VI.archivedWithParent);
+    expect(article.querySelector("h3")!.className).toContain(
+      "text-muted-foreground",
+    );
+  });
+
+  it("shows the done chip instead of a due date", () => {
+    const { article } = renderCard({
+      statusCategory: "done",
+      dueAt: dueOn(10, 20),
+    });
+    expect(article.querySelector("[data-completed]")!.textContent).toBe(
+      VI.completed,
+    );
+    expect(article.querySelector("[data-due]")).toBeNull();
   });
 });

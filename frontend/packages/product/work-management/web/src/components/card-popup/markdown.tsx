@@ -207,7 +207,7 @@ export function Markdown({
             return (
               <List
                 key={n}
-                className={`m-0 mb-1.5 pl-5 ${b.kind === "ul" ? "list-disc" : "list-decimal"}`}
+                className={`m-0 pl-5 ${b.kind === "ul" ? "list-disc" : "list-decimal"}`}
               >
                 {b.items.map((item, k) => {
                   const task = /^\[( |x|X)\]\s+(.*)$/.exec(item);

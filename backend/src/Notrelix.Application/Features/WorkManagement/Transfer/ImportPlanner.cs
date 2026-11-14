@@ -28,10 +28,15 @@ public sealed record ImportEvaluation(
     int ErrorCount,
     int ErrorRows,
     IReadOnlyList<PlannedItem> Items,
-    IReadOnlyList<SampleRow> Sample);
+    IReadOnlyList<SampleRow> Sample,
+    IReadOnlyList<int> UnmatchedPersonRows);
 
 /// <summary>What the board looks like to an import: its live fields and groups.</summary>
-public sealed record ImportSchema(IReadOnlyList<BoardField> Fields, IReadOnlyList<BoardGroup> Groups)
+/// <param name="People">
+/// Who a file cell may name by exact e-mail (lower-case): only people the assignee picker offers on this board.
+/// Null when the importer may not match people at all, which keeps every Person field locked.
+/// </param>
+public sealed record ImportSchema(IReadOnlyList<BoardField> Fields, IReadOnlyList<BoardGroup> Groups, IReadOnlyDictionary<string, Guid>? People = null)
 {
     public BoardField? TitleField => Fields.FirstOrDefault(f => f.IsSystem && f.Type == FieldType.Text);
 }
@@ -51,6 +56,7 @@ public static class ImportPlanner
     public const string LockedPerson = "person";
     public const string LockedComputed = "computed";
     public const string LockedVote = "vote";
+    public const string LockedRelation = "relation";
 
     public static IReadOnlyList<ImportTarget> Targets(ImportSchema schema)
     {
@@ -61,12 +67,14 @@ public static class ImportPlanner
             if (title is not null && f.Id == title.Id) continue;
             var locked = f.Type switch
             {
-                FieldType.Person => LockedPerson,
+                FieldType.Person => schema.People is null ? LockedPerson : null,
                 FieldType.Formula or FieldType.Rollup => LockedComputed,
                 FieldType.Vote => LockedVote,
-                _ => f.IsSystem && f.Type is not (FieldType.Status or FieldType.Date) ? LockedPerson : null,
+                // Links to items of another board are made in the item, never by an import row.
+                FieldType.Relation => LockedRelation,
+                _ => f.IsSystem && f.Type is not (FieldType.Status or FieldType.Date or FieldType.Person) ? LockedPerson : null,
             };
-            targets.Add(new ImportTarget(f.Id.ToString(), f.Name, f.Type.ToString(), false, locked));
+            targets.Add(new ImportTarget(f.Id.ToString(), f.Name, f.Type.ToString(), f.IsRequired, locked));
         }
 
         return targets;
@@ -111,10 +119,17 @@ public static class ImportPlanner
             map = map.Select(m => m.Target == titleField.Id.ToString() ? m with { Target = Title } : m).ToList();
 
         var defaultGroup = schema.Groups.Where(g => !g.IsArchived && g.DeletedAt is null).OrderBy(g => g.Position).FirstOrDefault();
+        // An imported item is created like any other (WM-008, D78.7): a field the row leaves empty gets the field's
+        // default, and a required field with neither a value nor a default fails the row naming the field.
+        var creationFields = schema.Fields
+            .Where(f => !f.IsSystem && f.Type is not (FieldType.Formula or FieldType.Rollup))
+            .OrderBy(f => f.Position)
+            .ToList();
         var errors = new List<ImportRowError>();
         var errorCount = 0;
         var errorRows = new HashSet<int>();
         var items = new List<PlannedItem>();
+        var unmatchedRows = new List<int>();
         var sample = new List<SampleRow>();
         var firstErrorRows = new List<SampleRow>();
         var unknown = map.ToDictionary(m => m.Target, _ => new Dictionary<string, int>());
@@ -159,11 +174,30 @@ public static class ImportPlanner
 
                 if (string.IsNullOrEmpty(raw)) continue;
                 var field = fields[m.Target];
+                if (field.Type == FieldType.Person)
+                {
+                    var (people, unmatched) = MatchPeople(field, raw, schema.People!);
+                    if (unmatched && !unmatchedRows.Contains(row.Number)) unmatchedRows.Add(row.Number);
+                    if (people is not null) values.Add((field, people));
+                    continue;
+                }
+
                 var (value, code) = Convert(field, raw);
                 if (code is not null) { Fail(m, raw, code); continue; }
                 try { FieldValueValidator.Validate(value!, field.Type, field.Settings); }
                 catch (Notrelix.Domain.Common.Exceptions.BusinessRuleException) { Fail(m, raw, "invalid-value"); continue; }
                 values.Add((field, value!));
+            }
+
+            foreach (var field in creationFields)
+            {
+                if (values.Any(v => v.Item1.Id == field.Id)) continue;
+                if (field.DefaultValue is { IsEmpty: false } fallback) values.Add((field, fallback));
+                else if (field.IsRequired && field.Type != FieldType.Checkbox)
+                {
+                    var column = map.FirstOrDefault(m => m.Target == field.Id.ToString());
+                    rowErrors.Add(new ImportRowError(row.Number, column is null ? field.Name : data.Headers[column.Column], field.Id.ToString(), null, "required"));
+                }
             }
 
             if (defaultGroup is null) rowErrors.Add(new ImportRowError(row.Number, "", Group, null, "no-group"));
@@ -193,7 +227,29 @@ public static class ImportPlanner
         }).ToList();
 
         var preview = firstErrorRows.Count > 0 ? sample.Take(2).Concat(firstErrorRows).OrderBy(r => r.Row).ToList() : sample;
-        return new ImportEvaluation(checks, errors, errorCount, errorRows.Count, items, preview);
+        return new ImportEvaluation(checks, errors, errorCount, errorRows.Count, items, preview, unmatchedRows);
+    }
+
+    /// <summary>
+    /// A person cell names people by exact e-mail only (several for a multiple field, split like options). An e-mail
+    /// that is not among the offered people leaves that place empty and is reported by row, never as an error and
+    /// never saying whether the address exists anywhere else.
+    /// </summary>
+    private static (FieldValue? Value, bool Unmatched) MatchPeople(BoardField field, string raw, IReadOnlyDictionary<string, Guid> people)
+    {
+        using var settings = JsonDocument.Parse(field.Settings.Data.Value);
+        var multiple = settings.RootElement.TryGetProperty("multiple", out var flag) && flag.ValueKind == JsonValueKind.True;
+        var ids = new List<string>();
+        var unmatched = false;
+        var parts = multiple ? raw.Split([';', '|', '\n'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries) : [raw];
+        foreach (var part in parts)
+        {
+            if (people.TryGetValue(part.Trim().ToLowerInvariant(), out var id)) { if (!ids.Contains(id.ToString())) ids.Add(id.ToString()); }
+            else unmatched = true;
+        }
+
+        if (ids.Count == 0) return (null, unmatched);
+        return (multiple ? Raw(JsonSerializer.Serialize(ids)) : Json(ids[0]), unmatched);
     }
 
     private static (FieldValue? Value, string? Code) Convert(BoardField field, string raw)

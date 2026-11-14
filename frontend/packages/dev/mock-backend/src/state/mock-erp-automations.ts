@@ -160,6 +160,19 @@ const DATA: [string, string] = ["ChangeStatus", "NotifyMember"];
 const item = (n: number) => `mock-erp-item-${n}`;
 
 export const ERP_AUTOMATION_EXECUTIONS: MockAutomationExecution[] = [
+  // Waiting for a worker: the one run the history can cancel.
+  {
+    id: "mock-execution-review-queued",
+    workspaceId,
+    ruleId: REVIEW_RULE_ID,
+    status: "Queued",
+    attemptCount: 0,
+    payload: JSON.stringify({ itemId: item(155) }),
+    error: null,
+    createdAt: "2026-10-13T08:30:00.000Z",
+    ruleVersion: 2,
+    steps: [],
+  },
   run(
     "mock-execution-review-1",
     REVIEW_RULE_ID,

@@ -7,6 +7,7 @@ using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveBoar
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RestoreBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Queries.ListDeletedBoardFields;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Queries.PreviewFormula;
 using Notrelix.Application.Features.WorkManagement.BoardSchema.Queries.GetBoardSchema;
 
 namespace Notrelix.API.Endpoints.WorkManagement.BoardFields;
@@ -35,6 +36,7 @@ public static class MapBoardFieldEndpoints
         group.MapResourcePost("/{fieldId:guid}/restore", HandleRestoreBoardField)
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.Restore")
+            .Produces<RestoredBoardFieldDto>(StatusCodes.Status200OK, "application/json")
             .WithSummary("Restore a field deleted in the last 30 days");
         group.MapResourceGet("/deleted", HandleListDeletedBoardFields)
             .WithName("WorkManagement.BoardFields.Deleted")
@@ -44,6 +46,11 @@ public static class MapBoardFieldEndpoints
             .WithIdempotencyKey()
             .WithName("WorkManagement.BoardFields.Move")
             .WithSummary("Move a field relative to its neighbors");
+
+        group.MapResourceGet("/preview-formula", HandlePreviewFormula)
+            .WithName("WorkManagement.BoardFields.PreviewFormula")
+            .Produces<FormulaPreviewDto>(StatusCodes.Status200OK, "application/json")
+            .WithSummary("Evaluate a draft formula or rollup against one item of the board, without saving it");
 
         group.MapFieldOptionEndpoints();
 
@@ -99,9 +106,20 @@ public static class MapBoardFieldEndpoints
             fieldId,
             body.Name,
             body.SettingsJson,
-            body.ExpectedVersion), cancellationToken);
+            body.ExpectedVersion,
+            body.DefaultValueJson), cancellationToken);
         return result.ToApiResult();
     }
+
+    private static async Task<IResult> HandlePreviewFormula(
+        Guid boardId,
+        Guid itemId,
+        string? expression,
+        string? rollupFunction,
+        Guid? rollupFieldId,
+        ISender sender,
+        CancellationToken cancellationToken) =>
+        Results.Ok(await sender.Send(new PreviewFormulaQuery(boardId, itemId, expression, rollupFunction, rollupFieldId), cancellationToken));
 
     private static async Task<IResult> HandleDeleteBoardField(
         Guid boardId,
@@ -120,8 +138,8 @@ public static class MapBoardFieldEndpoints
         ISender sender,
         CancellationToken cancellationToken)
     {
-        await sender.Send(new RestoreBoardFieldCommand(boardId, fieldId), cancellationToken);
-        return Results.NoContent();
+        var result = await sender.Send(new RestoreBoardFieldCommand(boardId, fieldId), cancellationToken);
+        return Results.Ok(result.Data);
     }
 
     private static async Task<IResult> HandleListDeletedBoardFields(

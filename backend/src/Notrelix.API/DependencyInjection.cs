@@ -6,7 +6,9 @@ using Notrelix.API.Middleware;
 using Notrelix.API.OpenApi;
 using Notrelix.API.Options;
 using Notrelix.API.RateLimiting;
+using Notrelix.API.Endpoints.Health;
 using Notrelix.API.Realtime;
+using Notrelix.Infrastructure.Options;
 using Notrelix.Infrastructure.Auth.Csrf;
 using Notrelix.Infrastructure.Observability.HealthChecks;
 
@@ -17,15 +19,33 @@ public static class DependencyInjection
     public static IServiceCollection AddApiLayer(
         this IServiceCollection services,
         IConfiguration configuration,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        RuntimeRoles? roles = null)
     {
+        var runtime = roles ?? RuntimeRoles.All;
+
         services.Configure<OutboxHealthCheckOptions>(
             configuration.GetSection("HealthChecks:Outbox"));
 
-        services.AddHealthChecks()
-            .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"])
-            .AddCheck<RedisHealthCheck>("redis", tags: ["ready"])
-            .AddCheck<OutboxHealthCheck>("outbox", tags: ["ready"]);
+        // Every role reaches the database (RLS, requests, subscription authorization) and Redis (cache, fan-out).
+        // The outbox backlog and the broker are the worker's dependencies, so only a worker probes them.
+        var health = services.AddHealthChecks()
+            .AddCheck<DatabaseHealthCheck>("database", tags: [RuntimeHealthTags.Ready, .. RuntimeHealthTags.ForRoles(runtime)])
+            .AddCheck<RedisHealthCheck>("redis", tags: [RuntimeHealthTags.Ready, .. RuntimeHealthTags.ForRoles(runtime)]);
+
+        if (runtime.RunsWorker)
+        {
+            health.AddCheck<OutboxHealthCheck>("outbox", tags: [RuntimeHealthTags.Ready, RuntimeHealthTags.For(RuntimeRole.Worker)]);
+
+            if (string.Equals(configuration["Messaging:Transport"], "RabbitMQ", StringComparison.OrdinalIgnoreCase))
+            {
+                services.AddOptions<Notrelix.Infrastructure.Messaging.Options.RabbitMqOptions>()
+                    .Bind(configuration.GetSection("Messaging:RabbitMQ"));
+                health.AddCheck<RabbitMqBrokerHealthCheck>(
+                    "broker",
+                    tags: [RuntimeHealthTags.Ready, RuntimeHealthTags.For(RuntimeRole.Worker)]);
+            }
+        }
 
         services.AddApiProblemDetails();
         services.AddApiCors(configuration, environment);

@@ -38,7 +38,7 @@ export const SMALL_PRIMARY_BUTTON_CLASS =
 const PILL_CLASS =
   "inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-[7px] border-0 bg-transparent px-2.5 text-compact leading-[1.45] whitespace-nowrap text-muted-foreground outline-none hover:bg-state-hover-strong hover:text-foreground aria-expanded:bg-state-hover-strong aria-expanded:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-not-allowed aria-disabled:hover:bg-transparent aria-disabled:hover:text-muted-foreground";
 
-const POP_CLASS =
+export const POP_CLASS =
   "absolute z-dropdown box-content rounded-[10px] border border-line-strong bg-popover p-1.5 whitespace-normal text-foreground shadow-popover dark:bg-card";
 
 /** A popover that closes on Escape and on a press outside it and its anchor. */
@@ -63,7 +63,7 @@ function usePopoverDismiss(open: boolean, onClose: () => void) {
 }
 
 /** The anchor of a popover: relative, closes the popover on dismissal. */
-function Anchor({
+export function Anchor({
   open,
   onClose,
   children,
@@ -206,7 +206,7 @@ export function MyWorkTabs({
 }
 
 export type MyWorkMenu =
-  "group" | "department" | "board" | "priority" | "create" | null;
+  "group" | "department" | "board" | "priority" | "create" | "filter" | null;
 
 export interface MyWorkBoardOption {
   readonly id: string;
@@ -271,8 +271,6 @@ export function MyWorkBar({
 }) {
   const close = () => onMenu(null);
   const groupLabel = copy.list.groupBy[groupBy];
-  const [moreBoards, setMoreBoards] = useState(false);
-  const shownBoards = moreBoards ? createBoards : createBoards.slice(0, 3);
   return (
     <div
       data-f="bar"
@@ -452,157 +450,217 @@ export function MyWorkBar({
           className="w-full min-w-0 border-0 bg-transparent px-0.5 py-px text-compact leading-[1.45] text-foreground outline-none placeholder:text-meta-foreground"
         />
       </label>
-      <Anchor open={menu === "create"} onClose={close}>
-        <button
-          data-f="add"
-          type="button"
-          aria-haspopup="dialog"
-          aria-expanded={menu === "create"}
-          onClick={() => onMenu(menu === "create" ? null : "create")}
-          className={PRIMARY_BUTTON_CLASS}
-        >
-          <Plus aria-hidden="true" className="size-4" strokeWidth={1.8} />
-          {copy.list.add}
-        </button>
-        {menu === "create" ? (
-          <div
-            data-f="createpop"
-            role="dialog"
-            aria-modal="false"
-            aria-labelledby="my-work-create-title"
-            className={cn(
-              POP_CLASS,
-              "top-10 right-0 flex w-[340px] flex-col gap-3 p-3.5",
-            )}
-          >
-            <h2 id="my-work-create-title" className="m-0 text-item-heading">
-              {copy.list.addTitle}
-            </h2>
-            <label className="flex flex-col gap-1.5 text-crumb leading-[1.45] font-semibold text-muted-foreground">
-              {copy.list.addName}
-              <input
-                type="text"
-                value={createName}
-                onChange={(event) => onCreateName(event.target.value)}
-                placeholder={copy.list.addNamePlaceholder}
-                className="box-content h-[34px] rounded-[8px] border border-primary bg-popover px-2.5 text-nav leading-[1.45] font-normal text-foreground shadow-[0_0_0_2px_var(--color-state-selected)] outline-none placeholder:text-meta-foreground dark:bg-card"
-              />
-            </label>
-            <div className="flex flex-col gap-1.5 text-crumb leading-[1.45] font-semibold text-muted-foreground">
-              <span id="my-work-create-board">{copy.list.addBoard}</span>
-              <div
-                role="radiogroup"
-                aria-labelledby="my-work-create-board"
-                className="flex flex-col gap-0.5 rounded-[9px] border border-border p-1"
-              >
-                {shownBoards.map((board) => {
-                  const on = createBoardId === board.id;
-                  return (
-                    <div
-                      key={board.id}
-                      role="radio"
-                      aria-checked={on}
-                      tabIndex={on ? 0 : -1}
-                      onClick={() => onCreateBoard(board.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === " " || event.key === "Enter") {
-                          event.preventDefault();
-                          onCreateBoard(board.id);
-                        }
-                      }}
-                      className={cn(
-                        "box-content flex min-h-[38px] cursor-pointer items-center gap-[9px] rounded-[7px] px-2 py-1 text-compact leading-[1.45] font-medium text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring",
-                        on && "bg-state-selected",
-                      )}
-                    >
-                      {board.department ? (
-                        <DepartmentMark
-                          small
-                          name={board.department.name}
-                          markTone={board.department.markTone}
-                        />
-                      ) : (
-                        <span
-                          aria-hidden="true"
-                          className="grid size-4 place-items-center text-meta-foreground"
-                        >
-                          <SquareKanban className="size-4" strokeWidth={1.8} />
-                        </span>
-                      )}
-                      <span>
-                        {board.name}
-                        {board.detail ? (
-                          <small
-                            className={cn(
-                              "block text-micro leading-[1.45] font-normal",
-                              on
-                                ? "text-state-selected-foreground"
-                                : "text-meta-foreground",
-                            )}
-                          >
-                            {board.detail}
-                          </small>
-                        ) : null}
-                      </span>
-                      <span
-                        aria-hidden="true"
-                        className={cn(
-                          "ml-auto box-border size-4 shrink-0 rounded-full border-[1.5px] border-work-status-todo",
-                          on && "border-[5px] border-primary",
-                        )}
-                      />
-                    </div>
-                  );
-                })}
-                {createBoards.length > shownBoards.length ? (
-                  <button
-                    type="button"
-                    onClick={() => setMoreBoards(true)}
-                    className="flex min-h-[38px] w-full cursor-pointer items-center rounded-[7px] border-0 bg-transparent px-2 py-1 text-left text-compact leading-[1.45] font-semibold text-state-selected-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring"
-                  >
-                    {copy.list.addBoardOther}
-                  </button>
-                ) : null}
-              </div>
-            </div>
-            <p className="m-0 text-crumb leading-[1.5] font-normal text-meta-foreground">
-              {copy.list.addNote}
-            </p>
-            <div className="flex items-center justify-end gap-1.5">
-              {onOpenForm ? (
-                <button
-                  type="button"
-                  onClick={onOpenForm}
-                  className={cn(SMALL_OUTLINE_CLASS, "mr-auto")}
-                >
-                  {copy.list.addMore}
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={close}
-                className={SMALL_OUTLINE_CLASS}
-              >
-                {copy.list.addCancel}
-              </button>
-              <button
-                type="button"
-                aria-disabled={onCreate ? undefined : true}
-                title={onCreate ? undefined : copy.list.addUnavailable}
-                onClick={onCreate ?? undefined}
-                className={SMALL_PRIMARY_BUTTON_CLASS}
-              >
-                {copy.list.addSubmit}
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </Anchor>
+      <MyWorkCreate
+        copy={copy}
+        menu={menu}
+        onMenu={onMenu}
+        createBoards={createBoards}
+        createBoardId={createBoardId}
+        onCreateBoard={onCreateBoard}
+        createName={createName}
+        onCreateName={onCreateName}
+        onCreate={onCreate}
+        onOpenForm={onOpenForm}
+      />
     </div>
   );
 }
 
-function GroupIcon({ id }: { id: MyWorkGroupBy }) {
+/** "Thêm việc": the button and the popover that picks the Board first. `icon` draws the 44 px tablet button. */
+export function MyWorkCreate({
+  copy,
+  menu,
+  onMenu,
+  createBoards,
+  createBoardId,
+  onCreateBoard,
+  createName,
+  onCreateName,
+  onCreate,
+  onOpenForm,
+  icon = false,
+}: {
+  copy: WorkspaceHomeCopy;
+  menu: MyWorkMenu;
+  onMenu: (menu: MyWorkMenu) => void;
+  createBoards: readonly MyWorkBoardOption[];
+  createBoardId: string | null;
+  onCreateBoard: (id: string) => void;
+  createName: string;
+  onCreateName: (value: string) => void;
+  onCreate: (() => void) | null;
+  onOpenForm: (() => void) | null;
+  icon?: boolean | "plain";
+}) {
+  const close = () => onMenu(null);
+  const [moreBoards, setMoreBoards] = useState(false);
+  const shownBoards = moreBoards ? createBoards : createBoards.slice(0, 3);
+  return (
+    <Anchor open={menu === "create"} onClose={close}>
+      <button
+        data-f="add"
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={menu === "create"}
+        onClick={() => onMenu(menu === "create" ? null : "create")}
+        aria-label={icon ? copy.list.add : undefined}
+        className={
+          icon
+            ? icon === "plain"
+              ? "relative grid size-11 shrink-0 cursor-pointer place-items-center rounded-[10px] border-0 bg-transparent p-0 text-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring"
+              : "relative grid size-11 shrink-0 cursor-pointer place-items-center rounded-[10px] border-0 bg-primary p-0 text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-focus-ring"
+            : PRIMARY_BUTTON_CLASS
+        }
+      >
+        <Plus
+          aria-hidden="true"
+          className={icon ? "size-5" : "size-4"}
+          strokeWidth={1.8}
+        />
+        {icon ? null : copy.list.add}
+      </button>
+      {menu === "create" ? (
+        <div
+          data-f="createpop"
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby="my-work-create-title"
+          className={cn(
+            POP_CLASS,
+            icon === "plain"
+              ? "fixed top-[112px] right-4 left-4 flex max-h-[calc(100dvh-136px)] flex-col gap-3 overflow-y-auto p-3.5"
+              : icon
+                ? "top-12 right-0 flex w-[344px] flex-col gap-3 p-3.5"
+                : "top-10 right-0 flex w-[340px] flex-col gap-3 p-3.5",
+          )}
+        >
+          <h2 id="my-work-create-title" className="m-0 text-item-heading">
+            {copy.list.addTitle}
+          </h2>
+          <label className="flex flex-col gap-1.5 text-crumb leading-[1.45] font-semibold text-muted-foreground">
+            {copy.list.addName}
+            <input
+              type="text"
+              value={createName}
+              onChange={(event) => onCreateName(event.target.value)}
+              placeholder={copy.list.addNamePlaceholder}
+              className="box-content h-[34px] rounded-[8px] border border-primary bg-popover px-2.5 text-nav leading-[1.45] font-normal text-foreground shadow-[0_0_0_2px_var(--color-state-selected)] outline-none placeholder:text-meta-foreground dark:bg-card"
+            />
+          </label>
+          <div className="flex flex-col gap-1.5 text-crumb leading-[1.45] font-semibold text-muted-foreground">
+            <span id="my-work-create-board">{copy.list.addBoard}</span>
+            <div
+              role="radiogroup"
+              aria-labelledby="my-work-create-board"
+              className="flex flex-col gap-0.5 rounded-[9px] border border-border p-1"
+            >
+              {shownBoards.map((board) => {
+                const on = createBoardId === board.id;
+                return (
+                  <div
+                    key={board.id}
+                    role="radio"
+                    aria-checked={on}
+                    tabIndex={on ? 0 : -1}
+                    onClick={() => onCreateBoard(board.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === " " || event.key === "Enter") {
+                        event.preventDefault();
+                        onCreateBoard(board.id);
+                      }
+                    }}
+                    className={cn(
+                      "box-content flex min-h-[38px] cursor-pointer items-center gap-[9px] rounded-[7px] px-2 py-1 text-compact leading-[1.45] font-medium text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring",
+                      on && "bg-state-selected",
+                    )}
+                  >
+                    {board.department ? (
+                      <DepartmentMark
+                        small
+                        name={board.department.name}
+                        markTone={board.department.markTone}
+                      />
+                    ) : (
+                      <span
+                        aria-hidden="true"
+                        className="grid size-4 place-items-center text-meta-foreground"
+                      >
+                        <SquareKanban className="size-4" strokeWidth={1.8} />
+                      </span>
+                    )}
+                    <span>
+                      {board.name}
+                      {board.detail ? (
+                        <small
+                          className={cn(
+                            "block text-micro leading-[1.45] font-normal",
+                            on
+                              ? "text-state-selected-foreground"
+                              : "text-meta-foreground",
+                          )}
+                        >
+                          {board.detail}
+                        </small>
+                      ) : null}
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "ml-auto box-border size-4 shrink-0 rounded-full border-[1.5px] border-work-status-todo",
+                        on && "border-[5px] border-primary",
+                      )}
+                    />
+                  </div>
+                );
+              })}
+              {createBoards.length > shownBoards.length ? (
+                <button
+                  type="button"
+                  onClick={() => setMoreBoards(true)}
+                  className="flex min-h-[38px] w-full cursor-pointer items-center rounded-[7px] border-0 bg-transparent px-2 py-1 text-left text-compact leading-[1.45] font-semibold text-state-selected-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring"
+                >
+                  {copy.list.addBoardOther}
+                </button>
+              ) : null}
+            </div>
+          </div>
+          <p className="m-0 text-crumb leading-[1.5] font-normal text-meta-foreground">
+            {copy.list.addNote}
+          </p>
+          <div className="flex items-center justify-end gap-1.5">
+            {onOpenForm ? (
+              <button
+                type="button"
+                onClick={onOpenForm}
+                className={cn(SMALL_OUTLINE_CLASS, "mr-auto")}
+              >
+                {copy.list.addMore}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={close}
+              className={SMALL_OUTLINE_CLASS}
+            >
+              {copy.list.addCancel}
+            </button>
+            <button
+              type="button"
+              aria-disabled={onCreate ? undefined : true}
+              title={onCreate ? undefined : copy.list.addUnavailable}
+              onClick={onCreate ?? undefined}
+              className={SMALL_PRIMARY_BUTTON_CLASS}
+            >
+              {copy.list.addSubmit}
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </Anchor>
+  );
+}
+
+export function GroupIcon({ id }: { id: MyWorkGroupBy }) {
   const Icon =
     id === "due" ? Calendar : id === "board" ? SquareKanban : CircleCheck;
   return (
@@ -674,7 +732,7 @@ function FilterPill({
   );
 }
 
-function FilterOption({
+export function FilterOption({
   label,
   selected,
   onToggle,

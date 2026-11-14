@@ -46,6 +46,8 @@ export interface TableColumnState {
   saveToViewFailed: boolean;
   /** Someone saved the shared view first: saving again overwrites their change. */
   saveToViewConflict: boolean;
+  /** Who saved first, when the server named them. */
+  saveToViewConflictBy?: string | null;
   /** The shared view just took the member's columns. */
   savedToView: boolean;
 }
@@ -173,13 +175,16 @@ export function TableColumnsMenu({
           variant="ghost"
           size="sm"
           aria-label={triggerLabel}
-          className={kanbanPillClass}
+          className={`${kanbanPillClass} tablet:size-11 tablet:justify-center tablet:px-0`}
         >
           <Columns3 className="size-4" aria-hidden="true" />
-          {t.columns.label}{" "}
-          <b className="font-semibold leading-[1.45] text-foreground">
-            {shown}/{ordered.length}
-          </b>
+          {/* The tablet button is the icon alone (44 px); the name and count stay for assistive tech. */}
+          <span className="tablet:sr-only">
+            {t.columns.label}{" "}
+            <b className="font-semibold leading-[1.45] text-foreground untablet:@max-[820px]/bar:sr-only">
+              {shown}/{ordered.length}
+            </b>
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -345,7 +350,13 @@ export function TableColumnsMenu({
                 tone="warn"
                 alert
                 icon={<TriangleAlert className="size-4" aria-hidden="true" />}
-                title={t.columns.conflict}
+                title={
+                  c.saveToViewConflictBy
+                    ? fillTableCopy(t.columns.conflictBy, {
+                        name: c.saveToViewConflictBy,
+                      })
+                    : t.columns.conflict
+                }
                 body={t.columns.conflictBody}
                 action={
                   <button

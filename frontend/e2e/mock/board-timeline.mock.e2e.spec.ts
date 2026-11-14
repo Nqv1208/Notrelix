@@ -144,19 +144,22 @@ test.describe("Board Timeline (owner)", () => {
     );
   });
 
-  test("controls without data are inert and say why; the dependencies and the critical path work", async ({
+  test("the grouping and bar span are choices; the empty controls say why; the dependencies and the critical path work", async ({
     page,
   }) => {
     await openTimeline(page);
     const links = page.getByRole("button", { name: /^Phụ thuộc/ });
     const critical = page.getByRole("button", { name: /^Đường găng/ });
-    const groupBy = page.getByRole("button", { name: /^Nhóm theo/ });
-    const barSpan = page.getByRole("button", { name: /^Thanh dài từ/ });
     const add = page.getByRole("button", { name: /^Thêm công việc/ });
-    for (const control of [groupBy, barSpan]) {
-      await expect(control).toHaveAttribute("aria-disabled", "true");
-      await expect(control).toHaveAttribute("title", /.+/);
-    }
+    // Grouping and bar span are real choices in the Thêm menu.
+    await page.getByRole("button", { name: "Thêm", exact: true }).click();
+    await expect(
+      page.getByRole("menuitemradio", { name: "Nhóm việc" }),
+    ).toBeChecked();
+    await expect(
+      page.getByRole("menuitemradio", { name: "Ngày tạo → Hạn" }),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
     // Adding works from the Timeline: it opens the create dialog.
     await expect(add).not.toHaveAttribute("aria-disabled", "true");
     await add.click();

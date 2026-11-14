@@ -1886,7 +1886,7 @@ backend/docs/operations/migrations-and-data-change.md
 frontend/docs/architecture/state-query-mutations.md
 frontend/docs/architecture/realtime.md
 
-docs/delivery/change-impact-and-migration.md
+docs/delivery/migration-policy.md
 docs/operations/recovery-and-data-safety.md
 ```
 

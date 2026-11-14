@@ -7,9 +7,10 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
-import { Button } from "@notrelix/ui-web";
+import { Button, cn, useIsTablet, useMediaQuery } from "@notrelix/ui-web";
 import { calendarOutlineButtonClass } from "./calendar-chrome";
 import { CalendarAgenda } from "./calendar-agenda";
+import { CalendarPhone } from "./calendar-phone";
 import { CalendarDatesDialog } from "./calendar-dates-dialog";
 import { CalendarAside } from "./calendar-aside";
 import { calendarGridLabel, calendarHeading } from "./calendar-format";
@@ -60,6 +61,7 @@ export interface BoardCalendarSurfaceProps {
   zoneName: string;
   dateBasis: CalendarDateBasis;
   onDateBasisChange: (basis: CalendarDateBasis) => void;
+  dateFields?: readonly { id: string; name: string }[];
   /** The dated entries the filter leaves. */
   entries: readonly CalendarEntry[];
   undatedTotal: number;
@@ -115,6 +117,7 @@ export function BoardCalendarSurface({
   zoneName,
   dateBasis,
   onDateBasisChange,
+  dateFields,
   entries,
   undatedTotal,
   undated,
@@ -148,10 +151,13 @@ export function BoardCalendarSurface({
     null,
   );
   const root = useRef<HTMLDivElement>(null);
+  // The phone draws its own month, week strip and agenda (Final-M-Calendar).
+  const phone = useMediaQuery("(max-width: 639px)");
+  const touch = useIsTablet();
 
   const shownEntries = useMemo(() => {
     const base =
-      dateBasis === "due"
+      dateBasis !== "span"
         ? entries.map((entry) => ({ ...entry, startDay: entry.endDay }))
         : entries;
     if (!resize) return base;
@@ -356,11 +362,68 @@ export function BoardCalendarSurface({
     zoneName.toLocaleLowerCase(locale),
   );
 
+  if (phone)
+    return (
+      <div
+        data-calendar-view=""
+        className="flex h-full min-h-0 flex-col bg-background font-body"
+      >
+        <div className="flex flex-wrap items-center gap-1.5 px-4 pt-2.5 pb-1">
+          {viewBar}
+          <span className="flex-1" />
+          {canEdit ? (
+            <Button
+              size="sm"
+              className={calendarOutlineButtonClass}
+              variant="outline"
+              onClick={addItem}
+            >
+              {copy.addItem}
+            </Button>
+          ) : null}
+        </div>
+        <CalendarPhone
+          copy={copy}
+          locale={locale}
+          range={range}
+          onRangeChange={onRangeChange}
+          anchorDay={anchorDay}
+          onAnchorChange={onAnchorChange}
+          today={today}
+          entries={shownEntries}
+          undatedTotal={undatedTotal}
+          undated={undated}
+          filterActive={filterActive}
+          canEdit={canEdit}
+          onOpenItem={onOpenItem}
+          onSetDue={onSetDue}
+          onEditDates={
+            canEdit && onChangeDates ? (entry) => setDatesFor(entry) : undefined
+          }
+        />
+        {datesFor && onChangeDates ? (
+          <CalendarDatesDialog
+            copy={copy}
+            entry={datesFor}
+            onSave={(startDay, dueDay) =>
+              onChangeDates(datesFor, { startDay, dueDay })
+            }
+            onClose={() => setDatesFor(null)}
+          />
+        ) : null}
+      </div>
+    );
+
   return (
     <div
       ref={root}
       data-calendar-view=""
-      className="flex h-full min-h-0 flex-col bg-background font-body select-none"
+      className={cn(
+        "flex h-full min-h-0 flex-col bg-background font-body select-none",
+        // Final-T-Calendar: the bar sits over the grid only, the tray runs the full height beside both.
+        touch &&
+          "lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:grid-rows-[3.5rem_minmax(0,1fr)]",
+      )}
     >
       <CalendarToolbar
         copy={copy}
@@ -373,17 +436,27 @@ export function BoardCalendarSurface({
         }
         dateBasis={dateBasis}
         onDateBasisChange={onDateBasisChange}
+        dateFields={dateFields}
         viewBar={viewBar}
         zoneLabel={zoneLabel}
         canAdd={canEdit}
         onAddItem={addItem}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-5 sm:px-6 lg:flex-row lg:overflow-visible">
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-visible",
+          // Final-T-Calendar: the grid keeps 16 px and 14 px around it, the tray is flush to its right.
+          touch ? "gap-0 lg:contents" : "gap-4 px-4 pb-5 sm:px-6",
+        )}
+      >
         <div
           role="grid"
           aria-label={gridLabel}
-          className="relative flex min-h-[520px] min-w-0 flex-1 flex-col overflow-hidden rounded-[12px] border border-border bg-popover lg:min-h-0 dark:bg-card"
+          className={cn(
+            "relative flex min-h-[520px] min-w-0 flex-1 flex-col overflow-hidden rounded-[12px] border border-border bg-popover lg:min-h-0 dark:bg-card",
+            touch && "mx-4 mb-3.5 lg:col-start-1 lg:row-start-2 lg:min-h-0",
+          )}
         >
           {range === "day" ? (
             <>
@@ -501,6 +574,7 @@ export function BoardCalendarSurface({
           onSetDue={(id) => onSetDue(id, anchorDay)}
           onDragStart={startUndatedDrag}
           onDragEnd={endDrag}
+          basis={{ dateBasis, onDateBasisChange, dateFields }}
         />
       </div>
     </div>

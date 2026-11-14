@@ -146,8 +146,13 @@ public class AnalyticsProjectionSourceOwnershipArchitectureTests
             .GetWorkspacePlacementsQueryHandler);
 
         ConstructorParameterTypes(handler).Should().BeEquivalentTo(
-            [typeof(Notrelix.Application.Features.Analytics.Abstractions.IReportingDbContext)],
-            "AR-FLOW-02: the production placement query reads only the Analytics local projection");
+            [
+                typeof(Notrelix.Application.Features.Analytics.Abstractions.IReportingDbContext),
+                typeof(Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility),
+                typeof(Notrelix.Application.Common.Context.ICurrentRequestContext),
+            ],
+            "AR-FLOW-02: the production placement query reads the Analytics local projection; it asks Governance only " +
+            "which Boards the caller may read (the same visibility the reports use), so no Work Management store is read");
     }
 
     [Fact]

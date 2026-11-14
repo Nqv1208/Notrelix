@@ -133,4 +133,40 @@ describe("workspace automation rules in the mock world", () => {
         .every((run) => run.steps.every((s) => s.status === "succeeded")),
     ).toBe(true);
   });
+
+  it("cancels a queued run, and refuses a run that already started or finished and a run that does not exist", async () => {
+    const api = setup();
+    const erp = mockIds.boards.erp;
+    const review = (await api.list(workspaceId, erp)).find(
+      (rule) => rule.version === 2,
+    )!;
+    const runs = await api.runs(erp, review.id);
+    const queued = runs.find((run) => run.status === "queued")!;
+    const finished = runs.find((run) => run.status === "succeeded")!;
+    expect(queued).toBeDefined();
+
+    await api.cancelRun(workspaceId, erp, review.id, queued.id);
+    const after = await api.runs(erp, review.id);
+    expect(after.find((run) => run.id === queued.id)?.status).toBe("cancelled");
+
+    await expect(
+      api.cancelRun(workspaceId, erp, review.id, finished.id),
+    ).rejects.toMatchObject({ kind: "conflict" });
+    await expect(
+      api.cancelRun(workspaceId, erp, review.id, "no-such-run"),
+    ).rejects.toMatchObject({ kind: "not_found" });
+  });
+
+  it("closes the run cancel to a member who does not manage the workspace", async () => {
+    const api = setup("viewer");
+    const erp = mockIds.boards.erp;
+    await expect(
+      api.cancelRun(
+        workspaceId,
+        erp,
+        "mock-automation-erp-review",
+        "mock-execution-review-queued",
+      ),
+    ).rejects.toMatchObject({ kind: "forbidden" });
+  });
 });

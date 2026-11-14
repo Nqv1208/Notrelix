@@ -13,7 +13,7 @@ public record PreviewBoardImportQuery(Guid BoardId, Guid JobId, IReadOnlyList<Co
 }
 
 public class PreviewBoardImportQueryHandler(
-    IWorkManagementDbContext context, IBoardTransferJobs jobs, IStorageService storage, ICurrentRequestContext me)
+    IWorkManagementDbContext context, IBoardTransferJobs jobs, IStorageService storage, ICurrentRequestContext me, ImportPeopleDirectory directory)
     : IRequestHandler<PreviewBoardImportQuery, ImportPreviewDto>
 {
     public async Task<ImportPreviewDto> Handle(PreviewBoardImportQuery request, CancellationToken ct)
@@ -21,10 +21,11 @@ public class PreviewBoardImportQueryHandler(
         var job = await ImportJobs.OwnAsync(jobs, me, request.BoardId, request.JobId, ct);
         if (job.Status != TransferStatus.Uploaded) throw new ConflictException("The import was already sent.");
         var data = await ImportJobs.ReadAsync(storage, job.Options<ImportOptions>(), ct);
-        var schema = await ImportJobs.SchemaAsync(context, request.BoardId, ct);
+        var people = await directory.ResolveAsync(me.RequireWorkspaceId(), request.BoardId, me.UserId, data, ct);
+        var schema = await ImportJobs.SchemaAsync(context, request.BoardId, ct, people);
         var missing = !request.Mapping.Any(m => m.Target == ImportPlanner.Title || (schema.TitleField is { } t && m.Target == t.Id.ToString()));
         var result = ImportPlanner.Evaluate(data, schema, request.Mapping, collectItems: false);
         return new ImportPreviewDto(
-            data.TotalRows, missing, result.Checks, result.ErrorCount, result.ErrorRows, result.Errors.Take(request.AllErrors ? ImportPlanner.MaxStoredErrors : 20).ToList(), result.Sample);
+            data.TotalRows, missing, result.Checks, result.ErrorCount, result.ErrorRows, result.Errors.Take(request.AllErrors ? ImportPlanner.MaxStoredErrors : 20).ToList(), result.Sample, result.UnmatchedPersonRows);
     }
 }

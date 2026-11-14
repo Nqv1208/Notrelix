@@ -95,6 +95,20 @@ public class AuthenticatedAuthEndpointTests : IClassFixture<NotrelixApiFactory>
     }
 
     [Fact]
+    public async Task GetCurrentUser_WithAuth_HoldsOnlyTheCallersIdentityFields()
+    {
+        var client = _factory.CreateAuthenticatedClient();
+
+        var response = await client.GetAsync("/api/v1/auth/me");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        using var body = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        body.RootElement.EnumerateObject().Select(p => p.Name).Should()
+            .BeEquivalentTo(["id", "email", "name", "avatarUrl", "emailConfirmed"],
+                "no workspace role, entitlement or other person's fact belongs in the answer");
+    }
+
+    [Fact]
     public async Task GetBootstrap_WithAuth_ReturnsSuccess()
     {
         var client = _factory.CreateAuthenticatedClient();

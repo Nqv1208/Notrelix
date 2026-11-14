@@ -241,6 +241,48 @@ public class CreateCommentResourceRefTests
     }
 
     [Fact]
+    public async Task PageCommentMentioningSomeoneWhoCannotViewThePage_KeepsTheCommentAndCreatesNoMention()
+    {
+        // UC-COL-B02: a page mention is decided by the Page's visibility, not by the Item Board rule.
+        var (sut, comments, mentions, _) = CreateSut();
+        var pageId = Guid.CreateVersion7();
+        var outsider = Guid.CreateVersion7();
+        var viewer = Guid.CreateVersion7();
+        _visibilityMock
+            .Setup(v => v.VisiblePageIdsAsync(It.IsAny<Guid>(), outsider, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([Guid.CreateVersion7()]);
+        _visibilityMock
+            .Setup(v => v.VisiblePageIdsAsync(It.IsAny<Guid>(), viewer, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([pageId]);
+
+        var result = await sut.Handle(
+            CreateCommentCommand.ForPage(pageId, "hi @outsider @viewer", null, [outsider, viewer]),
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        comments.Verify(c => c.Add(It.IsAny<Comment>()), Times.Once);
+        mentions.Verify(m => m.Add(It.Is<Mention>(x => x.MentionedId == outsider)), Times.Never);
+        mentions.Verify(m => m.Add(It.Is<Mention>(x => x.MentionedId == viewer)), Times.Once);
+    }
+
+    [Fact]
+    public async Task PageCommentMentioningNobodyWhoCanViewThePage_CreatesNoMention()
+    {
+        var (sut, _, mentions, _) = CreateSut();
+        var pageId = Guid.CreateVersion7();
+        _visibilityMock
+            .Setup(v => v.VisiblePageIdsAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        var result = await sut.Handle(
+            CreateCommentCommand.ForPage(pageId, "hi", null, [Guid.CreateVersion7(), Guid.CreateVersion7()]),
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        mentions.Verify(m => m.Add(It.IsAny<Mention>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Reply_WithAnchor_IsRejected()
     {
         var (sut, comments, _, _) = CreateSut();

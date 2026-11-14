@@ -4,7 +4,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
-using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure;
 using Notrelix.Infrastructure.Data;
@@ -251,14 +250,8 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
 
         var passwordHasher = new Mock<IPasswordHasher>();
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
-        var jwtService = new Mock<IJwtService>();
-        jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>(), It.IsAny<Guid?>())).Returns("access-token");
-        jwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var sessionIssuer = new AuthSessionIssuer(
-            jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>());
-
         var provisioning = new AccountProvisioningService(
             context,
             new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context, rls, principal)));
@@ -267,9 +260,9 @@ public sealed class RegistrationWorkspaceRuntimeChainIntegrationTests : IAsyncLi
             context,
             provisioning,
             passwordHasher.Object,
-            sessionIssuer,
             dateTimeProvider.Object,
             collector,
+            Mock.Of<Notrelix.Application.Common.RateLimiting.IRateLimitService>(),
             registrationProbe: scope.ServiceProvider.GetService<Notrelix.Application.Features.Identity.Registration.Ports.IEmailRegistrationProbe>(),
             registrationScope: new Notrelix.Application.Features.Identity.Registration.Services.RegistrationScope(rls));
 

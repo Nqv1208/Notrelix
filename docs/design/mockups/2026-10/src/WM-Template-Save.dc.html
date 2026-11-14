@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Lưu board thành mẫu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--side:#EFF1F4;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--sel:#EEF4FD;--danger:#C42340;--danger-soft:#FCEBEE;--ok:#1E7A4C;--ok-soft:#E5F4EC;--warn-text:#8A5A00;--warn-soft:#FDF3DC;--pop-shadow:0 12px 32px rgba(15,23,42,.16);font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn{height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.txt{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.sm{height:28px;padding:0 10px;font-size:12.5px}
+.inp{height:34px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);padding:0 10px;font:inherit;font-size:13.5px;color:var(--text);box-sizing:border-box}
+.inp.focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.inp.err{border-color:var(--danger)}
+.chip{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.c-gray{background:#EEF0F4;color:#4B5263}.c-blue{background:#E6F0FB;color:#245BA6}.c-amber{background:#FBF1D6;color:#7A5810}.c-green{background:#E5F4EC;color:#1E6A44}.c-violet{background:#F0E9FB;color:#6A3DB3}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.cap{font-size:12px;font-weight:600;color:var(--meta);margin:0}
+.state{font-size:12px;font-weight:600;color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:3px 10px;align-self:flex-start}
+h1{margin:0;font-size:22px;line-height:1.3;font-weight:650;letter-spacing:-0.01em}
+h2{margin:0;font-size:16px;font-weight:650}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.dlg{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--pop-shadow);padding:22px;display:flex;flex-direction:column;gap:16px;box-sizing:border-box}
+.tpl{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:10px;border:1px solid var(--line2);background:var(--panel);text-align:left;font:inherit;color:var(--text);cursor:pointer;box-sizing:border-box;min-width:0}
+.tpl[aria-checked="true"]{border-color:var(--accent);background:var(--sel);box-shadow:0 0 0 1px var(--accent)}
+.tpl b{font-size:13.5px;font-weight:600}
+.tpl span.d{font-size:12px;color:var(--meta)}
+.tpl .row{display:flex;gap:4px;flex-wrap:wrap}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.lbl{font-size:12.5px;font-weight:600;color:var(--muted)}
+.nav{height:34px;display:flex;align-items:center;gap:9px;padding:0 10px;border-radius:7px;color:var(--muted);font-size:13.5px;font-weight:500}
+.nav.on{background:var(--panel);box-shadow:0 0 0 1px var(--line);font-weight:600;color:var(--text)}
+.nav small{margin-left:auto;font-size:12px;color:var(--meta)}
+.iconbtn{width:30px;height:30px;border-radius:7px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) 120px 200px;align-items:center;gap:10px;min-height:52px;padding:0 14px;border-top:1px solid var(--line)}
+.chk{width:16px;height:16px;border-radius:4px;background:var(--accent);display:grid;place-items:center;flex:none}
+</style>
+</helmet>
+<div class="nx" style="width: 1440px; height: 1000px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 24px">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <h1>Lưu board thành mẫu · ngay trong Thiết lập board › Mẫu board</h1>
+    <p style="margin: 0; color: var(--meta); font-size: 13.5px; max-width: 92ch">Cần cùng quyền quản lý board như mở Thiết lập. Mặc định chỉ lưu cấu trúc: trường, trạng thái, nhóm việc, nhãn và view. Không lưu bình luận, tệp, thành viên hay lịch sử. Muốn kèm các việc hiện có thì tích ô riêng. Nút "Lưu board này thành mẫu" mở form tại chỗ, không nhảy trang.</p>
+  </div>
+  <div style="display: flex; gap: 32px; align-items: flex-start">
+    <section class="card" aria-label="Thiết lập board, mục Mẫu board" style="width: 760px; flex: none; display: flex; overflow: hidden">
+      <nav aria-label="Mục thiết lập" style="width: 196px; flex: none; padding: 16px 12px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; background: var(--bg)">
+        <a href="#" class="nav">Chung</a><a href="#" class="nav">Trường<small>9</small></a><a href="#" class="nav">View<small>3</small></a><a href="#" class="nav">Nhóm việc<small>4</small></a><a href="#" class="nav">Nhãn<small>6</small></a><a href="#" class="nav on" aria-current="page">Mẫu board<small>4</small></a><a href="#" class="nav">Tự động hoá</a>
+      </nav>
+      <div style="flex: 1; min-width: 0; padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; align-items: flex-start; gap: 12px"><div style="flex: 1"><h2>Mẫu board</h2><p style="margin: 2px 0 0; color: var(--meta); font-size: 13px">Mẫu thuộc về workspace. Mẫu mới ở dạng bản nháp; khi quản trị viên xuất bản, mọi người tạo board mới mới chọn được.</p></div></div>
+        <div class="card" style="padding: 16px; display: flex; flex-direction: column; gap: 14px; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft)">
+          <p class="cap">Lưu "Triển khai ERP" thành mẫu · form mở rộng tại chỗ</p>
+          <div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="s1n">Tên mẫu</label><input id="s1n" class="inp focus" value="Triển khai ERP"></div>
+          <div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="s1d">Mô tả (tuỳ chọn)</label><input id="s1d" class="inp" value="Các giai đoạn triển khai ERP cho chi nhánh mới" style="width: 100%"></div>
+          <div style="display: flex; align-items: flex-start; gap: 10px"><span class="chk" role="checkbox" aria-checked="true" aria-labelledby="s1c" style="margin-top: 2px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span><span style="display: flex; flex-direction: column; gap: 2px"><b id="s1c" style="font-size: 13.5px; font-weight: 600">Kèm các việc hiện có (24 việc)</b><span style="font-size: 12.5px; color: var(--meta)">Chép tên, mô tả và giá trị trường của từng việc cấp 1. Không chép bình luận, việc con hay tệp. Tối đa 500 việc.</span></span></div>
+          <div style="display: flex; gap: 8px; justify-content: flex-end"><button class="btn txt">Huỷ</button><button class="btn pri">Lưu mẫu</button></div>
+        </div>
+        <div class="card" style="overflow: hidden">
+          <div class="srow" style="min-height: 34px; border-top: 0; background: var(--bg); font-size: 12px; font-weight: 600; color: var(--meta)"><span>Mẫu</span><span>Trạng thái</span><span></span></div>
+          <div class="srow"><span style="display: flex; flex-direction: column"><b style="font-size: 13.5px; font-weight: 600">Sprint 2 tuần</b><span style="font-size: 12px; color: var(--meta)">Gồm 12 việc</span></span><span><span class="chip c-green">Đã xuất bản</span></span><span style="display: flex; justify-content: flex-end; gap: 6px"></span></div>
+          <div class="srow"><span style="display: flex; flex-direction: column"><b style="font-size: 13.5px; font-weight: 600">Quy trình tuyển dụng</b><span style="font-size: 12px; color: var(--meta)">Chỉ cấu trúc</span></span><span><span class="chip c-gray">Đã lưu trữ</span></span><span style="display: flex; justify-content: flex-end; gap: 6px"></span></div>
+        </div>
+      </div>
+    </section>
+    <div style="width: 560px; flex: none; display: flex; flex-direction: column; gap: 14px">
+      <span class="state" style="background: var(--ok-soft); color: var(--ok)">Đã lưu · form thu lại, mẫu vào danh sách</span>
+      <section class="card" aria-label="Sau khi lưu mẫu" style="padding: 16px; display: flex; flex-direction: column; gap: 12px">
+        <div role="status" style="display: flex; gap: 10px; align-items: flex-start; background: var(--ok-soft); color: var(--ok); border-radius: 8px; padding: 10px 12px; font-size: 13px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span style="flex: 1">Đã lưu mẫu <b>Triển khai ERP</b> ở dạng bản nháp. Quản trị viên workspace xuất bản thì mọi người mới chọn được khi tạo board.</span></div>
+        <div style="display: flex; gap: 8px"><button class="btn sm">Lưu thêm một mẫu</button></div>
+      </section>
+      <span class="state" style="background: var(--danger-soft); color: var(--danger)">Lưu thất bại · giữ chữ đã gõ</span>
+      <section class="card" aria-label="Lưu mẫu thất bại" style="padding: 16px; display: flex; flex-direction: column; gap: 10px">
+        <label class="lbl" for="s3n">Tên mẫu</label><input id="s3n" class="inp err" value="Triển khai ERP" aria-invalid="true" aria-describedby="s3e">
+        <div id="s3e" role="alert" style="display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: var(--danger)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span style="flex: 1">Chưa lưu được: mất kết nối tới máy chủ. Thay đổi của bạn vẫn còn ở đây.</span></div>
+        <div style="display: flex; gap: 8px; justify-content: flex-end"><button class="btn txt sm">Huỷ</button><button class="btn sm"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg> Thử lại</button></div>
+      </section>
+      <span class="state" style="background: var(--hover2); color: var(--muted)">Không có quyền quản lý board</span>
+      <div class="card" style="padding: 12px 14px; font-size: 13px; color: var(--muted)">Trang Thiết lập board chỉ mở cho người quản lý board. Người chỉ biên tập hoặc xem gặp thẻ "Bạn chưa có quyền" và không thấy mục này.</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

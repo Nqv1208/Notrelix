@@ -78,6 +78,7 @@ internal sealed class DueDateNotificationSweeper
     private readonly IRlsSessionContext _rls;
     private readonly IDateTimeProvider _clock;
     private readonly ItemFollowerNotifier _notifier;
+    private readonly ItemAudience _audience;
     private readonly IResourceFollowers _followers;
     private readonly DueDateNotificationOptions _options;
     private readonly ILogger<DueDateNotificationSweeper> _logger;
@@ -88,6 +89,7 @@ internal sealed class DueDateNotificationSweeper
         IRlsSessionContext rls,
         IDateTimeProvider clock,
         ItemFollowerNotifier notifier,
+        ItemAudience audience,
         IResourceFollowers followers,
         IOptions<DueDateNotificationOptions> options,
         ILogger<DueDateNotificationSweeper> logger)
@@ -97,6 +99,7 @@ internal sealed class DueDateNotificationSweeper
         _rls = rls;
         _clock = clock;
         _notifier = notifier;
+        _audience = audience;
         _followers = followers;
         _options = options.Value;
         _logger = logger;
@@ -206,10 +209,12 @@ internal sealed class DueDateNotificationSweeper
             sends.Add((NotificationTypes.ItemOverdueProducedType, "An item you work on or follow is overdue", $"{item.Id:N}:{due:yyyy-MM-dd}"));
         if (sends.Count == 0) return;
 
-        var recipients = item.Assignees
-            .Concat(await _followers.FollowerIdsAsync(ItemFollowerNotifier.BoardItemKind, item.Id, ct))
-            .Distinct()
-            .ToList();
+        // Only people who can still see the Item's Board are told (a person who lost access hears nothing).
+        var recipients = await _audience.WhoCanSeeAsync(
+            item.WorkspaceId,
+            item.Id,
+            item.Assignees.Concat(await _followers.FollowerIdsAsync(ItemFollowerNotifier.BoardItemKind, item.Id, ct)).Distinct().ToList(),
+            ct);
         foreach (var (type, title, scope) in sends)
         {
             await _notifier.NotifyAsync(

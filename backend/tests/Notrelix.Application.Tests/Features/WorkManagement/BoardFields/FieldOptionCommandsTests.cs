@@ -101,6 +101,17 @@ public class FieldOptionCommandsTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
+    public async Task Update_ARenamedOptionKeepsItsId_SoValuesStoredAgainstItStillPointAtIt()
+    {
+        var id = _high.Id;
+
+        await Update().Handle(new UpdateFieldOptionCommand(_boardId, _field.Id, id, "Critical", _high.Color.Value, _field.Version), CancellationToken.None);
+
+        _field.Options.Should().ContainSingle(o => o.Id == id && o.Name == "Critical");
+        _field.Options.Count.Should().Be(2);
+    }
+
+    [Fact]
     public async Task Update_WithTheSameNameAndColour_IsANoOpWithoutVersionBumpOrEvent()
     {
         var before = _field.Version;

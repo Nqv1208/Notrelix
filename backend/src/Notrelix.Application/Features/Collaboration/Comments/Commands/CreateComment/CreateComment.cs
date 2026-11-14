@@ -97,9 +97,16 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
         var boardId = await ResolveMentionBoardAsync(request, workspaceId, ct);
         foreach (var mentionedUserId in DistinctMentionedUsers(request.MentionedUserIds))
         {
-            // A mention of someone who cannot view the Item's Board stays in the comment text but creates no
-            // Mention, so no Inbox notification reaches a person who could not open the Item.
-            if (boardId is { } board && !await CanViewBoardAsync(workspaceId, mentionedUserId, board, ct))
+            // A mention of someone who cannot view the target (the Item's Board, or the Page) stays in the comment
+            // text but creates no Mention, so no Inbox notification reaches a person who could not open it.
+            if (request.IsPageComment)
+            {
+                if (!await CanViewPageAsync(workspaceId, mentionedUserId, request.ResourceId, ct))
+                {
+                    continue;
+                }
+            }
+            else if (boardId is { } board && !await CanViewBoardAsync(workspaceId, mentionedUserId, board, ct))
             {
                 continue;
             }
@@ -127,7 +134,7 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
     /// <summary>
     /// For an Item comment, the Board that decides who may be notified (Work Management fact). An Item that no
     /// longer exists yields <see cref="Guid.Empty"/>, which no one can view, so nobody is notified (fail closed).
-    /// Page comments have no Board and keep their existing behaviour.
+    /// Page comments have no Board; their mentions are decided by the Page's visibility instead.
     /// </summary>
     private async Task<Guid?> ResolveMentionBoardAsync(CreateCommentCommand request, Guid workspaceId, CancellationToken ct)
     {
@@ -144,6 +151,12 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
     {
         var visible = await _visibility.VisibleBoardIdsAsync(workspaceId, userId, ct);
         return visible.Contains(boardId);
+    }
+
+    private async Task<bool> CanViewPageAsync(Guid workspaceId, Guid userId, Guid pageId, CancellationToken ct)
+    {
+        var visible = await _visibility.VisiblePageIdsAsync(workspaceId, userId, ct);
+        return visible.Contains(pageId);
     }
 
     /// <summary>

@@ -18,14 +18,22 @@ internal static class MultipartUpload
     public const string FilePartName = "file";
 
     /// <summary>The open file part, or the problem response to return when the request is not a usable upload.</summary>
-    internal readonly record struct FilePart(Stream? Body, string FileName, IResult? Failure);
+    internal readonly record struct FilePart(Stream? Body, string FileName, IResult? Failure, IReadOnlyDictionary<string, string>? Fields = null);
 
+    /// <summary>Longest text value read from a small named field that comes before the file part.</summary>
+    public const int MaxFieldBytes = 2048;
+
+    /// <summary>
+    /// Reads the file part. When <paramref name="fieldNames"/> is given, the small text parts with those names that come before the file
+    /// part are read too (at most <see cref="MaxFieldBytes"/> each) and returned in <see cref="FilePart.Fields"/>; parts after the file are not read.
+    /// </summary>
     public static async Task<FilePart> ReadFilePartAsync(
         HttpContext httpContext,
         long maxFileBytes,
         string unsupportedMediaTypeCode,
         string payloadTooLargeCode,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IReadOnlySet<string>? fieldNames = null)
     {
         var request = httpContext.Request;
         var maxRequestBytes = maxFileBytes + MultipartOverheadBytes;
@@ -57,14 +65,26 @@ internal static class MultipartUpload
             HeadersLengthLimit = 16 * 1024,
         };
 
+        var fields = new Dictionary<string, string>(StringComparer.Ordinal);
         MultipartSection? section;
         try
         {
-            do
+            while (true)
             {
                 section = await reader.ReadNextSectionAsync(cancellationToken);
+                if (section is null || IsFilePart(section, out _))
+                    break;
+
+                var name = fieldNames is null ? null : FieldName(section);
+                if (name is null || !fieldNames!.Contains(name))
+                    continue;
+
+                var buffer = new byte[MaxFieldBytes + 1];
+                var read = await section.Body.ReadAtLeastAsync(buffer, buffer.Length, throwOnEndOfStream: false, cancellationToken);
+                if (read > MaxFieldBytes)
+                    return Fail(EndpointExtensions.InvalidInput($"The multipart field '{name}' is too long."));
+                fields[name] = System.Text.Encoding.UTF8.GetString(buffer, 0, read);
             }
-            while (section is not null && !IsFilePart(section, out _));
         }
         catch (Exception ex) when (IsMalformedBody(ex))
         {
@@ -76,7 +96,7 @@ internal static class MultipartUpload
             return Fail(EndpointExtensions.InvalidInput("A multipart part named 'file' with a file name is required."));
         }
 
-        return new FilePart(new MalformedBodyAsInvalidDataStream(section.Body), fileName, null);
+        return new FilePart(new MalformedBodyAsInvalidDataStream(section.Body), fileName, null, fields);
     }
 
     private static FilePart Fail(IResult failure) => new(null, string.Empty, failure);
@@ -147,6 +167,18 @@ internal static class MultipartUpload
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
         public override void SetLength(long value) => throw new NotSupportedException();
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
+    /// <summary>The name of a form-data part, or null when the part is not form data.</summary>
+    private static string? FieldName(MultipartSection section)
+    {
+        if (!ContentDispositionHeaderValue.TryParse(section.ContentDisposition, out var disposition)
+            || !disposition.DispositionType.Equals("form-data", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return HeaderUtilities.RemoveQuotes(disposition.Name).Value;
     }
 
     internal static bool IsFilePart(MultipartSection section, out string fileName)

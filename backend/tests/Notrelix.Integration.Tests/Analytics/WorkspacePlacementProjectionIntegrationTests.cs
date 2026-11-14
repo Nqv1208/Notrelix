@@ -4,6 +4,7 @@ using Notrelix.Application.Features.Analytics.Abstractions;
 using Notrelix.Application.Features.Analytics.Placements.Commands.RebuildWorkspacePlacements;
 using Notrelix.Application.Features.Analytics.Placements.Queries.GetWorkspacePlacements;
 using Notrelix.Application.Features.Analytics.Placements.Services;
+using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Public.ItemPlacement;
 using Notrelix.Infrastructure.Data;
@@ -574,15 +575,60 @@ public sealed class WorkspacePlacementProjectionIntegrationTests : IAsyncLifetim
         await context.SaveChangesAsync();
         context.ChangeTracker.Clear();
 
-        var handler = new GetWorkspacePlacementsQueryHandler(context);
+        var visibility = new Mock<IResourceVisibility>();
+        visibility.Setup(v => v.VisibleBoardIdsAsync(workspaceA, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([boardId]);
+        visibility.Setup(v => v.VisibleArchivedBoardIdsAsync(workspaceA, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<Guid>());
+        var handler = new GetWorkspacePlacementsQueryHandler(context, visibility.Object, new FakeCurrentRequestContext());
         var result = await handler.Handle(new GetWorkspacePlacementsQuery(workspaceA), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
-        var placement = result.Data!.Should().ContainSingle().Subject;
+        var placement = result.Data!.Items.Should().ContainSingle().Subject;
         placement.ItemId.Should().Be(itemA);
         placement.GroupId.Should().Be(groupA);
         placement.LastOccurredAt.Should().Be(Now);
         placement.SourceRevision.Should().Be(1, "the query exposes the same producer revision the projection was projected with");
+    }
+
+    [Fact]
+    public async Task GetWorkspacePlacements_ReadsBoundedCursorPages_AndOnlyBoardsTheCallerMayRead()
+    {
+        // The placement list is a cursor page (default 50, max 200) and never lists an item on a Board the caller
+        // cannot read, so a Workspace member does not learn the placement of a hidden Board's items.
+        var (context, service) = CreateService();
+        var accountId = Guid.CreateVersion7();
+        var workspaceId = Guid.CreateVersion7();
+        var visibleBoard = Guid.CreateVersion7();
+        var hiddenBoard = Guid.CreateVersion7();
+        var group = Guid.CreateVersion7();
+        var visibleItems = Enumerable.Range(0, 3).Select(_ => Guid.CreateVersion7()).ToList();
+        foreach (var item in visibleItems)
+            await service.ApplyPlacementAsync(accountId, workspaceId, item, visibleBoard, group, false, revision: 1, Now, CancellationToken.None);
+        var hiddenItem = Guid.CreateVersion7();
+        await service.ApplyPlacementAsync(accountId, workspaceId, hiddenItem, hiddenBoard, group, false, revision: 1, Now, CancellationToken.None);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var visibility = new Mock<IResourceVisibility>();
+        visibility.Setup(v => v.VisibleBoardIdsAsync(workspaceId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([visibleBoard]);
+        visibility.Setup(v => v.VisibleArchivedBoardIdsAsync(workspaceId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<Guid>());
+        var handler = new GetWorkspacePlacementsQueryHandler(context, visibility.Object, new FakeCurrentRequestContext());
+
+        var seen = new List<Guid>();
+        string? cursor = null;
+        do
+        {
+            var page = (await handler.Handle(new GetWorkspacePlacementsQuery(workspaceId, cursor, 2), CancellationToken.None)).Data!;
+            page.Items.Length.Should().BeLessThanOrEqualTo(2);
+            seen.AddRange(page.Items.Select(i => i.ItemId));
+            cursor = page.NextCursor;
+        } while (cursor is not null);
+
+        seen.Should().BeEquivalentTo(visibleItems, "every visible item appears exactly once across the pages");
+        seen.Should().NotContain(hiddenItem, "an item on a Board the caller cannot read is never listed");
     }
 
     [Fact]

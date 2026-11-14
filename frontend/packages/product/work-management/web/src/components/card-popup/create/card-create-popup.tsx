@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { CloudOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -10,7 +10,9 @@ import {
 } from "@notrelix/ui-web";
 import {
   useCreateItemWithDetails,
+  useRetryItemDetails,
   type CreateItemDetail,
+  type ItemDetailRemainder,
 } from "@notrelix/work-management-state";
 import type { Board, BoardGroup } from "@notrelix/work-management-core";
 import type { TaskDetailCapabilities } from "../../card-detail/task-detail-types";
@@ -19,8 +21,14 @@ import { fillPopupCopy } from "../card-popup.copy";
 import { PanelBtn } from "../popup-ui";
 import { useCardPopupModel } from "../use-card-popup-model";
 import { useCardPopupCopy } from "../use-card-popup-copy";
-import { useCardDraft, type CardDraftDefaults } from "./use-card-draft";
+import { announceCreated } from "./created-notice";
+import {
+  keepDraft,
+  useCardDraft,
+  type CardDraftDefaults,
+} from "./use-card-draft";
 import { findItemFields } from "../../card-detail/item-field-editors";
+import { useLimitMessage } from "../../shared/use-limit-message";
 
 const FULL: TaskDetailCapabilities = {
   canCreateCard: true,
@@ -34,13 +42,22 @@ const FULL: TaskDetailCapabilities = {
 /** `YYYY-MM-DD` as the instant that day starts in UTC (the backend keeps UTC days). */
 const dayInstant = (day?: string) => (day ? `${day}T00:00:00.000Z` : null);
 
+/** The item exists but some of its details did not save: what is still missing, and the version to chain from. */
+interface PartialCreate {
+  readonly itemId: string;
+  readonly version: number;
+  readonly failed: readonly CreateItemDetail[];
+  readonly remaining: ItemDetailRemainder;
+}
+
 export interface CardCreatePopupProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly workspaceId: string;
   /** Undefined while a board chosen elsewhere loads: nothing opens yet. */
   readonly board: Board | undefined;
-  readonly groups: readonly BoardGroup[];
+  /** The groups the dialog can name: only the id and title are read. */
+  readonly groups: readonly Pick<BoardGroup, "id" | "title">[];
   readonly defaultGroupId: string;
   readonly defaultStatusId: string | null;
   /** `YYYY-MM-DD` prefilled in the dates (Calendar and Timeline). */
@@ -71,6 +88,16 @@ export interface CardCreatePopupProps {
   }) => void | Promise<void>;
   /** The popup stays on the new card: the host opens it. */
   readonly onOpenItem?: (itemId: string) => void;
+  /**
+   * A sub-item: the new item goes under this parent, in the parent's group,
+   * which this dialog does not change. The parent is shown above the title.
+   */
+  readonly parent?: {
+    readonly itemId: string;
+    readonly key?: string | null;
+    readonly title: string;
+    readonly groupId: string;
+  };
 }
 
 /**
@@ -104,14 +131,17 @@ function CreateBody({
   laneValue,
   onCreated,
   onOpenItem,
+  parent,
 }: CardCreatePopupProps & { board: Board }) {
   const copy = useCardPopupCopy();
   const t = copy.create;
   const create = useCreateItemWithDetails(board.id, workspaceId);
+  const retry = useRetryItemDetails(board.id, workspaceId);
+  const [partial, setPartial] = useState<PartialCreate | null>(null);
   const [defaults] = useState<CardDraftDefaults>(() => ({
     title: defaultTitle,
     descriptionMd: defaultDescription,
-    listId: defaultGroupId || groups[0]?.id || "",
+    listId: parent?.groupId || defaultGroupId || groups[0]?.id || "",
     statusOptionId:
       defaultStatusId ?? findItemFields(board).status?.options[0]?.id ?? null,
     priorityOptionId: defaultPriorityId ?? null,
@@ -125,15 +155,25 @@ function CreateBody({
     defaults,
     laneValue,
     viewerUserId: currentUserId,
+    groupLocked: Boolean(parent),
   });
   const [another, setAnother] = useState(false);
   const [failed, setFailed] = useState(false);
+  // The board is at its published item limit (D78.8): say so; the same create would be refused again.
+  const [limited, setLimited] = useState<string | null>(null);
+  const limitMessage = useLimitMessage();
   const [attempted, setAttempted] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const attempt = useRef<{ key: string; signature: string } | null>(null);
   const sending = useRef(false);
-  const pending = create.isPending;
-  const blank = d.draft.title.trim() === "";
+  const pending = create.isPending || retry.isPending;
+  const blank = !partial && d.draft.title.trim() === "";
+  const introText = parent
+    ? fillPopupCopy(t.subitemOf, {
+        key: parent.key ?? "",
+        title: parent.title,
+      })
+    : intro;
 
   const groupsForSheet = useMemo(
     () => groups.map((group) => ({ id: group.id, title: group.title })),
@@ -152,17 +192,28 @@ function CreateBody({
     readOnly: pending ? "creating" : undefined,
     slots: {
       coverBanner:
-        intro || failed ? (
+        introText || failed || partial ? (
           <>
-            {intro ? (
+            {introText ? (
               <div className="mx-6 mt-3 text-[13.5px] leading-[1.45] text-muted-foreground">
-                {intro}
+                {introText}
               </div>
+            ) : null}
+            {partial ? (
+              <PartialBanner
+                failed={partial.failed}
+                onRetry={retryMissing}
+                onOpen={() => openCreated(partial.itemId)}
+              />
             ) : null}
             {failed ? (
               <FailedBanner
+                limit={limited}
                 onRetry={() => submit()}
-                onClose={() => onOpenChange(false)}
+                onClose={() => {
+                  keepDraft(board.id, d.draft);
+                  onOpenChange(false);
+                }}
               />
             ) : null}
           </>
@@ -181,52 +232,118 @@ function CreateBody({
       p.dates ||
       p.checklists ||
       p.attachments > 0 ||
+      p.dependencies > 0 ||
       p.fields;
     if (dirty) setConfirming(true);
     else onOpenChange(false);
   };
 
+  /** The success path: the toast, then the next card, the new card, or closing. */
+  function finishCreated(itemId: string | undefined) {
+    toast.success(successMessage ?? t.created);
+    if (another && !hideAnother) {
+      d.resetKeeping();
+      setAttempted(false);
+      return;
+    }
+    if (itemId && onOpenItem) openCreated(itemId);
+    else onOpenChange(false);
+  }
+
+  /** Opens the new card: the host shows it, and this dialog closes. */
+  function openCreated(itemId: string) {
+    if (onOpenItem) {
+      announceCreated({
+        itemId,
+        // The lane the header names: the Status option, or the group of a board not grouped by Status.
+        groupTitle:
+          findItemFields(board).status?.options.find(
+            (option) => option.id === d.draft.statusOptionId,
+          )?.label ??
+          groups.find((group) => group.id === d.draft.listId)?.title ??
+          "",
+      });
+      onOpenItem(itemId);
+    }
+    onOpenChange(false);
+  }
+
+  /** Writes only the missing part of the item the create made: nothing is created again. */
+  function retryMissing() {
+    const current = partial;
+    if (!current || retry.isPending) return;
+    retry.mutate(
+      {
+        itemId: current.itemId,
+        version: current.version,
+        remaining: current.remaining,
+      },
+      {
+        onSuccess: (outcome) => {
+          if (outcome.failed.length > 0) {
+            setPartial({
+              ...current,
+              version: outcome.version,
+              failed: outcome.failed,
+              remaining: outcome.remaining,
+            });
+            return;
+          }
+          setPartial(null);
+          finishCreated(current.itemId);
+        },
+      },
+    );
+  }
+
   function submit() {
+    if (partial) {
+      retryMissing();
+      return;
+    }
     if (pending || sending.current) return;
     if (blank) {
       setAttempted(true);
       return;
     }
     setFailed(false);
+    setLimited(null);
     // A retry of the same draft reuses its key; an edited draft is a new request.
     const signature = JSON.stringify({
       ...d.toInput(""),
       files: d.draft.files.map((f) => f.id),
+      parent: parent?.itemId ?? null,
     });
     if (attempt.current?.signature !== signature)
       attempt.current = { key: crypto.randomUUID(), signature };
     sending.current = true;
-    create.mutate(d.toInput(attempt.current.key), {
-      onSettled: () => {
-        sending.current = false;
+    create.mutate(
+      { ...d.toInput(attempt.current.key), parentItemId: parent?.itemId },
+      {
+        onSettled: () => {
+          sending.current = false;
+        },
+        onSuccess: (result) => {
+          attempt.current = null;
+          void onCreated?.({ boardId: board.id, itemId: result.itemId });
+          if (result.failed.length > 0 && result.itemId) {
+            // The item exists: the dialog stays, names what is missing, and a retry writes only that.
+            setPartial({
+              itemId: result.itemId,
+              version: result.version,
+              failed: result.failed,
+              remaining: result.remaining,
+            });
+            return;
+          }
+          finishCreated(result.itemId);
+        },
+        onError: (error) => {
+          setLimited(limitMessage(error));
+          setFailed(true);
+        },
       },
-      onSuccess: ({ failed: missing, itemId }) => {
-        attempt.current = null;
-        void onCreated?.({ boardId: board.id, itemId });
-        if (missing.length > 0)
-          toast.warning(
-            fillPopupCopy(t.createdWithout, {
-              details: missing
-                .map((detail: CreateItemDetail) => t.detailNames[detail])
-                .join(", "),
-            }),
-          );
-        else toast.success(successMessage ?? t.created);
-        if (another && !hideAnother) {
-          d.resetKeeping();
-          setAttempted(false);
-          return;
-        }
-        if (itemId) onOpenItem?.(itemId);
-        onOpenChange(false);
-      },
-      onError: () => setFailed(true),
-    });
+    );
   }
 
   const footer = (
@@ -234,12 +351,14 @@ function CreateBody({
       {pending ? (
         <span className="inline-flex items-center gap-1.5 text-[12.5px] leading-[1.45] text-meta-foreground">
           <Loader2 aria-hidden="true" className="size-[13px] animate-spin" />
-          {t.submittingNote}
-          <span className="max-md:hidden">{t.submittingNoteMore}</span>
+          <span>
+            {t.submittingNote}
+            <span className="max-md:hidden"> {t.submittingNoteMore}</span>
+          </span>
         </span>
       ) : (
         <>
-          {hideAnother ? null : (
+          {hideAnother || partial ? null : (
             <label className="inline-flex min-h-9 items-center gap-[9px] text-[13.5px] max-md:min-h-11">
               <input
                 type="checkbox"
@@ -288,6 +407,8 @@ function CreateBody({
               <Loader2 aria-hidden="true" className="size-4 animate-spin" />
               {t.submitting}
             </>
+          ) : partial ? (
+            t.retryMissing
           ) : (
             (submitLabel ?? t.submit)
           )}
@@ -314,10 +435,54 @@ function CreateBody({
   );
 }
 
+/** The item was created but a detail did not save: names the missing parts; a retry writes only those. */
+function PartialBanner({
+  failed,
+  onRetry,
+  onOpen,
+}: {
+  failed: readonly CreateItemDetail[];
+  onRetry: () => void;
+  onOpen: () => void;
+}) {
+  const t = useCardPopupCopy().create;
+  return (
+    <div
+      role="alert"
+      className="mx-6 mt-3 box-border flex items-start gap-3 rounded-[10px] bg-danger-subtle px-4 py-3 text-[13.5px] leading-[1.45] ring-1 ring-danger ring-inset"
+    >
+      <CloudOff
+        aria-hidden="true"
+        className="mt-px size-5 shrink-0 text-danger-text"
+      />
+      <div className="flex-1">
+        <b className="font-[650]">{t.partialTitle}</b>
+        <br />
+        {fillPopupCopy(t.partialBody, {
+          details: failed.map((detail) => t.detailNames[detail]).join(", "),
+        })}
+        <br />
+        {t.partialKept}
+        <div className="mt-2 flex flex-wrap gap-2">
+          <PanelBtn small variant="primary" onClick={onRetry}>
+            {t.retryMissing}
+          </PanelBtn>
+          <PanelBtn small onClick={onOpen}>
+            {t.openItem}
+          </PanelBtn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function FailedBanner({
+  limit,
   onRetry,
   onClose,
 }: {
+  /** The limit the create would go over, told instead of the generic body, without Retry. */
+  limit?: string | null;
   onRetry: () => void;
   onClose: () => void;
 }) {
@@ -327,18 +492,20 @@ function FailedBanner({
       role="alert"
       className="mx-6 mt-3 box-border flex items-start gap-3 rounded-[10px] bg-danger-subtle px-4 py-3 text-[13.5px] leading-[1.45] ring-1 ring-danger ring-inset"
     >
-      <AlertCircle
+      <CloudOff
         aria-hidden="true"
-        className="mt-px size-4 shrink-0 text-danger-text"
+        className="mt-px size-5 shrink-0 text-danger-text"
       />
       <div className="flex-1">
         <b className="font-[650]">{t.failedTitle}</b>
         <br />
-        {t.failedBody}
+        {limit ?? t.failedBody}
         <div className="mt-2 flex flex-wrap gap-2">
-          <PanelBtn small variant="primary" onClick={onRetry}>
-            {t.retry}
-          </PanelBtn>
+          {limit ? null : (
+            <PanelBtn small variant="primary" onClick={onRetry}>
+              {t.retry}
+            </PanelBtn>
+          )}
           <PanelBtn small onClick={onClose}>
             {t.keepDraft}
           </PanelBtn>
@@ -401,12 +568,16 @@ function DiscardConfirm({
           {body}
         </AlertDialogDescription>
         <div className="mt-4 flex justify-end gap-2">
-          <PanelBtn autoFocus onClick={() => onOpenChange(false)}>
+          <PanelBtn
+            autoFocus
+            className="leading-[1.45]"
+            onClick={() => onOpenChange(false)}
+          >
             {t.discardKeep}
           </PanelBtn>
           <PanelBtn
             variant="primary"
-            className="border-danger bg-danger text-danger-foreground"
+            className="border-danger bg-danger leading-[1.45] text-danger-foreground"
             onClick={() => {
               onOpenChange(false);
               onDiscard();

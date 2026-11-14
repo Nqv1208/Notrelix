@@ -7,8 +7,15 @@ export function useUpdateCardUpdate(cardId: string, workspaceId: string) {
   const { comments } = useWorkManagementServices();
 
   return useMutation({
-    mutationFn: ({ updateId, body }: { updateId: string; body: string }) =>
-      comments.updateCardUpdate(updateId, body),
+    mutationFn: ({
+      updateId,
+      body,
+      expectedVersion,
+    }: {
+      updateId: string;
+      body: string;
+      expectedVersion: number;
+    }) => comments.updateCardUpdate(updateId, body, expectedVersion),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: wmQueryKeys.cardUpdates(workspaceId, cardId),

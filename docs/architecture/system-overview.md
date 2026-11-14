@@ -196,6 +196,7 @@ Current host model:
 apps/web
 apps/mobile
 apps/marketing
+apps/operator   (internal platform operator console)
 ```
 
 Current workspace families:
@@ -1151,7 +1152,7 @@ Detailed rules:
 
 ```text
 contract-boundaries.md
-delivery/change-impact-and-migration.md
+delivery/migration-policy.md
 ```
 
 ---

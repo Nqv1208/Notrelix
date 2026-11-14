@@ -81,7 +81,11 @@ export async function findClippedText(
         if (
           hostStyle.visibility === "hidden" ||
           hostStyle.display === "none" ||
-          Number(hostStyle.opacity) === 0
+          Number(hostStyle.opacity) === 0 ||
+          // `sr-only`: 1px, clipped on purpose, read by assistive tech only.
+          (hostStyle.position === "absolute" &&
+            host.getBoundingClientRect().width <= 1 &&
+            hostStyle.overflow === "hidden")
         )
           continue;
         const range = document.createRange();

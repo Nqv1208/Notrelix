@@ -196,6 +196,51 @@ public sealed class RealtimeConnectionTests
     }
 
     [Fact]
+    public async Task A_workspace_access_signal_revokes_the_subscription_at_once_without_waiting_for_the_periodic_pass()
+    {
+        var authorizer = new FakeAuthorizer();
+        var access = new FakeAccessSource();
+        var options = RealtimeGatewayHarness.FastOptions();
+        options.ReauthorizationInterval = TimeSpan.FromHours(1);
+        await using var harness = new RealtimeGatewayHarness(options, authorizer, accessSource: access);
+        await harness.ReceiveAsync("ready");
+        await harness.SubscribeAsync("ws", "workspace", WorkspaceScope.Id);
+
+        // The workspace was deleted: the authorization query now answers NotFound, which the authorizer reports as Denied.
+        authorizer.Set(WorkspaceScope, RealtimeAuthorizationResult.Denied);
+        await access.SignalAsync(WorkspaceScope.Id);
+
+        var error = await harness.ReceiveAsync("subscription-error");
+        error.GetProperty("code").GetString().Should().Be("subscription_revoked");
+        error.GetProperty("subscriptionId").GetString().Should().Be("ws");
+        harness.Connection.SubscriptionCount.Should().Be(0);
+        harness.Source.OpenChannelCount.Should().Be(0);
+    }
+
+    private sealed class FakeAccessSource : Notrelix.Application.Common.Realtime.Gateway.IRealtimeAccessSignalSource
+    {
+        private Func<Notrelix.Application.Common.Realtime.Gateway.RealtimeNotification, ValueTask>? _on;
+
+        public Task<IAsyncDisposable> SubscribeAccessAsync(
+            Guid workspaceId,
+            Func<Notrelix.Application.Common.Realtime.Gateway.RealtimeNotification, ValueTask> onSignal,
+            CancellationToken cancellationToken)
+        {
+            _on = onSignal;
+            return Task.FromResult<IAsyncDisposable>(new Handle());
+        }
+
+        public ValueTask SignalAsync(Guid workspaceId) => _on!(new Notrelix.Application.Common.Realtime.Gateway.RealtimeNotification(
+            Guid.NewGuid().ToString("N"), "access.changed", "AccessChanged", "access:Workspace:" + workspaceId.ToString("N"), 1,
+            "Workspace", workspaceId, workspaceId, Guid.NewGuid().ToString("N"), DateTimeOffset.UtcNow, 0, 1, "access.changed.v1"));
+
+        private sealed class Handle : IAsyncDisposable
+        {
+            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        }
+    }
+
+    [Fact]
     public async Task Revoked_membership_ends_the_subscription_at_the_next_reauthorization()
     {
         var authorizer = new FakeAuthorizer();

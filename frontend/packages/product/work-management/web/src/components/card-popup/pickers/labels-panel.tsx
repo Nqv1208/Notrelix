@@ -47,6 +47,13 @@ function LabelChip({
   );
 }
 
+/** One row of the list: the 32 px chip and the 6 px under it. */
+const LABEL_ROW = 38;
+const LABEL_LIST_HEIGHT = 300;
+/** Past this many labels only the rows in view (and a few more) are mounted. */
+const LABEL_WINDOW_THRESHOLD = 100;
+const LABEL_OVERSCAN = 8;
+
 type View =
   | { readonly kind: "list" }
   | { readonly kind: "create" }
@@ -197,6 +204,27 @@ export function LabelsPanel({ onClose }: { onClose: () => void }) {
       ? all.filter((label) => foldForSearch(label.name).includes(needle))
       : all;
   }, [all, query]);
+  const typed = query.trim();
+  // Typed text no label is named: offer to create it and put it on the card, in the next palette colour.
+  const quickCreate =
+    canEdit &&
+    callbacks.onCreateLabel &&
+    typed !== "" &&
+    !all.some((label) => foldForSearch(label.name) === foldForSearch(typed))
+      ? LABEL_PALETTE[all.length % LABEL_PALETTE.length]![1]
+      : null;
+  const [quickBusy, setQuickBusy] = useState(false);
+  const [scrollTop, setScrollTop] = useState(0);
+  const windowed = shown.length > LABEL_WINDOW_THRESHOLD;
+  const first = windowed
+    ? Math.max(0, Math.floor(scrollTop / LABEL_ROW) - LABEL_OVERSCAN)
+    : 0;
+  const last = windowed
+    ? Math.min(
+        shown.length,
+        Math.ceil((scrollTop + LABEL_LIST_HEIGHT) / LABEL_ROW) + LABEL_OVERSCAN,
+      )
+    : shown.length;
   const usedOn = (labelId: string) =>
     groups.reduce(
       (sum, group) =>
@@ -226,9 +254,49 @@ export function LabelsPanel({ onClose }: { onClose: () => void }) {
         label={t.searchLabel}
         placeholder={t.search}
       />
+      {quickCreate ? (
+        <>
+          <Hint className="mt-2 mb-1 px-2.5">
+            {fillPopupCopy(t.noLabelNamed, { name: typed })}
+          </Hint>
+          <PanelBtn
+            className="h-9 w-full justify-start bg-state-hover"
+            disabled={quickBusy}
+            onClick={() => {
+              setQuickBusy(true);
+              void Promise.resolve(
+                callbacks.onCreateLabel?.(typed, quickCreate),
+              )
+                .catch(() => false)
+                .then(() => {
+                  setQuickBusy(false);
+                  setQuery("");
+                });
+            }}
+          >
+            <span>{fillPopupCopy(t.quickCreate, { name: typed })}</span>
+            <span className="ml-auto">
+              <LabelChip
+                label={{ name: typed, color: quickCreate }}
+                className="h-[22px] px-2 text-[12px]"
+              />
+            </span>
+          </PanelBtn>
+        </>
+      ) : null}
       <Caption>{t.boardLabels}</Caption>
-      <div className="max-h-[300px] overflow-y-auto">
-        {shown.map((label) => (
+      <div
+        className="max-h-[300px] overflow-y-auto"
+        onScroll={
+          windowed
+            ? (event) => setScrollTop(event.currentTarget.scrollTop)
+            : undefined
+        }
+      >
+        {windowed ? (
+          <div aria-hidden="true" style={{ height: first * LABEL_ROW }} />
+        ) : null}
+        {shown.slice(first, last).map((label) => (
           <div key={label.id} className="mb-1.5 flex items-center gap-2.5">
             <input
               type="checkbox"
@@ -251,6 +319,12 @@ export function LabelsPanel({ onClose }: { onClose: () => void }) {
             ) : null}
           </div>
         ))}
+        {windowed ? (
+          <div
+            aria-hidden="true"
+            style={{ height: (shown.length - last) * LABEL_ROW }}
+          />
+        ) : null}
         {shown.length === 0 ? (
           <Hint className="px-1 py-2">{fillPopupCopy(t.empty, { query })}</Hint>
         ) : null}
@@ -262,6 +336,14 @@ export function LabelsPanel({ onClose }: { onClose: () => void }) {
         >
           {t.create}
         </PanelBtn>
+      ) : null}
+      {canEdit ? (
+        <a
+          href={`/workspaces/${card.workspaceId}/boards/${card.boardId}/settings?section=labels`}
+          className="mt-2 block border-t border-line px-2.5 pt-2 pb-1 text-crumb font-medium text-brand-subtle-foreground"
+        >
+          {t.manage}
+        </a>
       ) : null}
       {slots.labelMarks ? (
         <>

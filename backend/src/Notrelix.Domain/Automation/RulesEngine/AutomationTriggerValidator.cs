@@ -6,6 +6,8 @@ public static class AutomationTriggerValidator
 {
     public static void Validate(AutomationTriggerDefinition trigger)
     {
+        AutomationSecretFieldGuard.Ensure(trigger.Configuration);
+
         switch (trigger.Type)
         {
             case "ScheduleTrigger":

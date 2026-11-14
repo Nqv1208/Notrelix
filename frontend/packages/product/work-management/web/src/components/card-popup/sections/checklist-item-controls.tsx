@@ -50,13 +50,22 @@ function usePeople(): Person[] {
   }, [board.members, card.members, data.people, viewerId, you]);
 }
 
+/** What the two buttons read of an item: a row of the list, or the new item the composer is still writing. */
+export type ItemDraft = Pick<ChecklistItem, "title" | "assigneeId" | "dueAt">;
+
+const TEXT_TRIGGER =
+  "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[8px] border-0 bg-transparent px-2.5 text-[13.5px] font-medium text-muted-foreground hover:bg-state-hover-strong hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary max-md:h-11";
+
 /** `Giao mục này`: gives one checklist item to a person, or to nobody. */
 export function ItemAssignButton({
   item,
   onAssign,
+  labelled = false,
 }: {
-  item: ChecklistItem;
+  item: ItemDraft;
   onAssign: (assigneeId: string | null) => void;
+  /** A button with its word (the composer), not a bare icon (a row). */
+  labelled?: boolean;
 }) {
   const { copy } = useCardPopup();
   const t = copy.related.checklists;
@@ -66,6 +75,10 @@ export function ItemAssignButton({
     onAssign(id);
     setOpen(false);
   };
+  const chosen = item.assigneeId
+    ? people.find((person) => person.userId === item.assigneeId)
+    : undefined;
+  const label = item.title ? `${t.assignItem}: ${item.title}` : t.assignItem;
   return (
     <PanelPopover
       open={open}
@@ -73,14 +86,32 @@ export function ItemAssignButton({
       width={300}
       trigger={
         <PopoverTrigger asChild>
-          <IconBtn
-            small
-            aria-label={`${t.assignItem}: ${item.title}`}
-            title={t.assignItem}
-            aria-haspopup="dialog"
-          >
-            <UserRound aria-hidden="true" className="size-4" />
-          </IconBtn>
+          {labelled ? (
+            <button
+              type="button"
+              aria-label={label}
+              aria-haspopup="dialog"
+              className={TEXT_TRIGGER}
+            >
+              {chosen ? (
+                <PersonMark member={chosen} size={20} />
+              ) : (
+                <UserRound aria-hidden="true" className="size-4" />
+              )}
+              <span className="max-w-28 truncate">
+                {chosen ? chosen.name : t.assign}
+              </span>
+            </button>
+          ) : (
+            <IconBtn
+              small
+              aria-label={label}
+              title={t.assignItem}
+              aria-haspopup="dialog"
+            >
+              <UserRound aria-hidden="true" className="size-4" />
+            </IconBtn>
+          )}
         </PopoverTrigger>
       }
     >
@@ -170,9 +201,12 @@ export function itemDueText(
 export function ItemDueButton({
   item,
   onDue,
+  labelled = false,
 }: {
-  item: ChecklistItem;
+  item: ItemDraft;
   onDue: (dueAt: string | null) => void;
+  /** A button with its word or the chosen day (the composer), not a bare icon (a row). */
+  labelled?: boolean;
 }) {
   const { copy, now, timeZone } = useCardPopup();
   const t = copy.related.checklists;
@@ -201,14 +235,32 @@ export function ItemDueButton({
       width={300}
       trigger={
         <PopoverTrigger asChild>
-          <IconBtn
-            small
-            aria-label={`${t.dueItem}: ${item.title}`}
-            title={t.dueItem}
-            aria-haspopup="dialog"
-          >
-            <Calendar aria-hidden="true" className="size-4" />
-          </IconBtn>
+          {labelled ? (
+            <button
+              type="button"
+              aria-label={
+                item.title ? `${t.dueItem}: ${item.title}` : t.dueItem
+              }
+              aria-haspopup="dialog"
+              className={TEXT_TRIGGER}
+            >
+              <Calendar aria-hidden="true" className="size-4" />
+              <span>
+                {current
+                  ? `${pad(current.day)}/${pad(current.month)}`
+                  : t.dueLabel}
+              </span>
+            </button>
+          ) : (
+            <IconBtn
+              small
+              aria-label={`${t.dueItem}: ${item.title}`}
+              title={t.dueItem}
+              aria-haspopup="dialog"
+            >
+              <Calendar aria-hidden="true" className="size-4" />
+            </IconBtn>
+          )}
         </PopoverTrigger>
       }
     >

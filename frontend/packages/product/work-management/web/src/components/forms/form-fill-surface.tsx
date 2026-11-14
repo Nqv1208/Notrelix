@@ -1,11 +1,14 @@
 import { useId, useRef, useState, type ReactNode } from "react";
 import {
+  Ban,
   CalendarDays,
   ChevronLeft,
-  CircleCheck,
+  Check,
+  CircleAlert,
   Info,
   Lock,
   TriangleAlert,
+  type LucideIcon,
 } from "lucide-react";
 import { Skeleton, cn } from "@notrelix/ui-web";
 import type {
@@ -82,19 +85,20 @@ export function FormFillSurface(props: FormFillSurfaceProps) {
         <div
           role="status"
           aria-label={copy.common.loading}
-          className="flex flex-col gap-3"
+          className="flex flex-col gap-3 rounded-[12px] border border-line bg-popover p-6 max-sm:border-0 max-sm:bg-transparent max-sm:p-0"
         >
-          <Skeleton className="h-7 w-2/3" />
-          <Skeleton className="h-11" />
-          <Skeleton className="h-11" />
-          <Skeleton className="h-11" />
+          <Skeleton className="h-7 w-3/5" />
+          <Skeleton className="h-4" />
+          <Skeleton className="h-10" />
+          <Skeleton className="h-10" />
+          <Skeleton className="h-[90px]" />
         </div>
       </Frame>
     );
   if (status === "error")
     return (
       <Frame {...props}>
-        <div className="rounded-[12px] border border-line bg-popover p-4">
+        <div className="rounded-[12px] border border-line bg-popover p-6 max-sm:border-0 max-sm:bg-transparent max-sm:p-0">
           <FormAlert
             message={f.loadError}
             onRetry={props.onReload}
@@ -130,6 +134,7 @@ export function FormFillSurface(props: FormFillSurfaceProps) {
     return (
       <Frame {...props}>
         <Notice
+          icon={Ban}
           title={f.closedTitle}
           body={fillFormsCopy(f.closedBody, { title: form.title })}
           action={props.onBack}
@@ -180,7 +185,7 @@ function Frame({
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto bg-background text-foreground">
       <main
         aria-label={form?.title ?? copy.common.back}
-        className="mx-auto flex w-full max-w-[668px] flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8"
+        className="mx-auto flex w-full max-w-[668px] flex-col gap-4 px-4 py-6 max-sm:px-[15px] sm:px-6 sm:py-8"
       >
         {preview ? null : (
           <nav
@@ -223,26 +228,31 @@ function Notice({
   action,
   actionLabel,
   tone,
+  icon: Icon = Lock,
 }: {
   title: string;
   body: string;
   action: () => void;
   actionLabel: string;
   tone?: "danger";
+  icon?: LucideIcon;
 }) {
   return (
     <section
       role={tone === "danger" ? "alert" : "status"}
-      className="flex flex-col items-start gap-3 rounded-[12px] border border-line bg-popover p-5"
+      className="flex flex-col items-start gap-2.5 rounded-[12px] border border-line bg-popover p-6 max-sm:border-0 max-sm:bg-transparent max-sm:p-0"
     >
-      <span
-        aria-hidden="true"
-        className="grid size-10 place-items-center rounded-[12px] border border-line bg-background text-muted-foreground"
-      >
-        <Lock className="size-4" />
+      <span className="flex h-[21.3px] items-center">
+        <Icon
+          aria-hidden="true"
+          className={cn(
+            "size-4",
+            tone === "danger" ? "text-danger-text" : "text-meta-foreground",
+          )}
+        />
       </span>
-      <h1 className="m-0 text-[19px] leading-[1.35] font-[650]">{title}</h1>
-      <p className="m-0 text-item-ui text-muted-foreground">{body}</p>
+      <h1 className="m-0 text-[16px] leading-[1.45] font-[650]">{title}</h1>
+      <p className="m-0 text-[13px] text-meta-foreground">{body}</p>
       <button type="button" onClick={action} className={BUTTON_CLASS.outline}>
         {actionLabel}
       </button>
@@ -319,19 +329,21 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
     return (
       <section
         role="status"
-        className="flex flex-col items-start gap-3 rounded-[12px] border border-line bg-popover p-5"
+        className="flex flex-col items-start gap-3.5 rounded-[12px] border border-line bg-popover p-8 max-sm:gap-3 max-sm:border-0 max-sm:bg-transparent max-sm:p-0 max-sm:pt-5"
       >
-        <CircleCheck aria-hidden="true" className="size-6 text-success-text" />
-        <h1 className="m-0 text-[19px] leading-[1.35] font-[650]">
+        <span className="grid size-10 place-items-center rounded-full bg-success-subtle text-success-text">
+          <Check aria-hidden="true" className="size-4" />
+        </span>
+        <h1 className="m-0 text-[22px] leading-[1.3] font-[650] tracking-[-0.01em] max-sm:text-[16px] max-sm:leading-[1.45]">
           {f.thanks}
         </h1>
-        <p className="m-0 text-item-ui text-muted-foreground">
+        <p className="m-0 text-[13.5px] leading-[1.45] text-muted-foreground max-sm:text-[13px]">
           {fillFormsCopy(f.thanksBody, {
             title: String(answers.title ?? form.title),
             board: props.boardTitle,
           })}
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-full gap-2 sm:w-auto">
           <button
             type="button"
             onClick={() => {
@@ -339,14 +351,17 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
               setErrors({});
               setDone(false);
             }}
-            className={BUTTON_CLASS.outline}
+            className={cn(
+              BUTTON_CLASS.primary,
+              "max-md:h-10 max-sm:w-full max-sm:justify-center max-sm:text-label",
+            )}
           >
             {f.another}
           </button>
           <button
             type="button"
             onClick={props.onBack}
-            className={BUTTON_CLASS.ghost}
+            className={cn(BUTTON_CLASS.outline, "max-sm:hidden")}
           >
             {f.toBoard}
           </button>
@@ -389,10 +404,10 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
       <form
         onSubmit={(event) => void submit(event)}
         noValidate
-        className="flex flex-col gap-4.5 rounded-[12px] border border-line bg-popover p-5 sm:p-7"
+        className="flex flex-col gap-4.5 rounded-[12px] border border-line bg-popover p-5 max-sm:gap-3.5 max-sm:border-0 max-sm:bg-transparent max-sm:p-0 sm:p-7"
       >
-        <div className="flex flex-col gap-1">
-          <h1 className="m-0 text-[22px] leading-[1.3] font-[650] tracking-[-0.01em]">
+        <div className="-order-2 flex flex-col gap-1 max-sm:gap-3.5">
+          <h1 className="m-0 text-[22px] leading-[1.3] font-[650] tracking-[-0.01em] max-sm:text-[16px]">
             {form.title}
           </h1>
           {form.description ? (
@@ -403,16 +418,10 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
         </div>
 
         {failure === "closed" ? (
-          <div
-            role="alert"
-            className="flex flex-col gap-2 rounded-[10px] bg-danger-subtle px-3.5 py-2.5"
-          >
-            <div className="flex items-start gap-2 text-item-small text-danger-text">
-              <TriangleAlert
-                aria-hidden="true"
-                className="mt-0.5 size-3.5 shrink-0"
-              />
-              <span>
+          <div role="alert" className="flex flex-col gap-2.5">
+            <div className="flex items-start gap-2 text-crumb text-warning-text">
+              <CircleAlert aria-hidden="true" className="size-4 shrink-0" />
+              <span className="flex-1">
                 <b>{f.closedMidwayTitle}</b> {f.closedMidwayBody}
               </span>
             </div>
@@ -427,7 +436,10 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
                   )
                   .then((copied) => setCopiedAnswers(copied));
               }}
-              className={cn(BUTTON_CLASS.outline, "h-7 self-start")}
+              className={cn(
+                BUTTON_CLASS.outline,
+                "h-7 self-start px-2.5 text-crumb max-md:h-11",
+              )}
             >
               {copiedAnswers ? copy.builder.copied : f.copyAnswers}
             </button>
@@ -451,7 +463,7 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
         {errorQuestions.length > 0 ? (
           <div
             role="alert"
-            className="flex items-start gap-2 rounded-[12px] bg-danger-subtle p-3.25 text-item-small text-danger-text"
+            className="flex items-start gap-2 rounded-[12px] bg-danger-subtle p-3.25 text-item-small text-danger-text max-sm:-order-1 max-sm:border max-sm:border-transparent max-sm:p-2.5"
           >
             <TriangleAlert
               aria-hidden="true"
@@ -563,7 +575,7 @@ function Question({
           maxLength={q.maxLength ?? 2000}
           placeholder={q.placeholder ?? undefined}
           onChange={(e) => onChange(e.target.value)}
-          className={cn(TEXTAREA_CLASS, "h-21")}
+          className={cn(TEXTAREA_CLASS, "h-21 max-md:h-17.5")}
         />
       );
       break;

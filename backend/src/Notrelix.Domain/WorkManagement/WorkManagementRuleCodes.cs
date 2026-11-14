@@ -62,6 +62,10 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_FieldSettings_TextMaxLengthMustBeNumber = "WorkManagement_FieldSettings_TextMaxLengthMustBeNumber";
     public const string WorkManagement_FieldSettings_DateIncludeTimeMustBeBoolean = "WorkManagement_FieldSettings_DateIncludeTimeMustBeBoolean";
     public const string WorkManagement_FieldSettings_StatusMustIncludeTransitions = "WorkManagement_FieldSettings_StatusMustIncludeTransitions";
+    public const string WorkManagement_FieldSettings_RequiredMustBeBoolean = "WorkManagement_FieldSettings_RequiredMustBeBoolean";
+    public const string WorkManagement_FieldSettings_GuidanceInvalid = "WorkManagement_FieldSettings_GuidanceInvalid";
+    public const string WorkManagement_FieldSettings_RequiredNeedsDefault = "WorkManagement_FieldSettings_RequiredNeedsDefault";
+    public const string WorkManagement_FieldValue_Required = "WorkManagement_FieldValue_Required";
     public const string WorkManagement_FieldSettings_FormulaExpressionRequired = "WorkManagement_FieldSettings_FormulaExpressionRequired";
     public const string WorkManagement_FieldSettings_FormulaSyntaxInvalid = "WorkManagement_FieldSettings_FormulaSyntaxInvalid";
     public const string WorkManagement_FieldSettings_FormulaTooComplex = "WorkManagement_FieldSettings_FormulaTooComplex";
@@ -130,9 +134,9 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Kanban_SwimlaneFieldIdCannotBeEmpty = "WorkManagement_Kanban_SwimlaneFieldIdCannotBeEmpty";
     public const string WorkManagement_Kanban_WipLimitOutOfRange = "WorkManagement_Kanban_WipLimitOutOfRange";
     public const string WorkManagement_Kanban_WipLimitsInvalid = "WorkManagement_Kanban_WipLimitsInvalid";
+    public const string WorkManagement_View_PresentationConfigInvalid = "WorkManagement_View_PresentationConfigInvalid";
 
     // ── Form ──────────────────────────────────────────────────────────────
-    public const string WorkManagement_Form_CannotPublishClosed = "WorkManagement_Form_CannotPublishClosed";
     public const string WorkManagement_Form_CannotPublishNoQuestions = "WorkManagement_Form_CannotPublishNoQuestions";
     public const string WorkManagement_Form_CannotSubmitToDraft = "WorkManagement_Form_CannotSubmitToDraft";
     public const string WorkManagement_Form_CannotSubmitToClosed = "WorkManagement_Form_CannotSubmitToClosed";
@@ -178,7 +182,6 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Approval_DuplicateStepPosition = "WorkManagement_Approval_DuplicateStepPosition";
     public const string WorkManagement_Approval_DuplicateApprover = "WorkManagement_Approval_DuplicateApprover";
     public const string WorkManagement_Approval_StepNotAssignedToYou = "WorkManagement_Approval_StepNotAssignedToYou";
-    public const string WorkManagement_Approval_TeamDecisionNotSupported = "WorkManagement_Approval_TeamDecisionNotSupported";
 
     // ── Template ──────────────────────────────────────────────────────────
     public const string WorkManagement_BoardTemplate_TooManyItems = "WorkManagement_BoardTemplate_TooManyItems";
@@ -199,6 +202,11 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Relation_CannotResumeBroken = "WorkManagement_Relation_CannotResumeBroken";
     public const string WorkManagement_Relation_DuplicateNotAllowed = "WorkManagement_Relation_DuplicateNotAllowed";
     public const string WorkManagement_Relation_CardinalityExceeded = "WorkManagement_Relation_CardinalityExceeded";
+    public const string WorkManagement_Relation_LinkToSelf = "WorkManagement_Relation_LinkToSelf";
+    public const string WorkManagement_Relation_TargetBoardRequired = "WorkManagement_Relation_TargetBoardRequired";
+    public const string WorkManagement_Relation_TargetBoardNotFound = "WorkManagement_Relation_TargetBoardNotFound";
+    public const string WorkManagement_Relation_TargetItemNotFound = "WorkManagement_Relation_TargetItemNotFound";
+    public const string WorkManagement_FieldValue_InvalidRelationValue = "WorkManagement_FieldValue_InvalidRelationValue";
 
     // ── Scope ────────────────────────────────────────────────────────────
     public const string WorkManagement_BoardScopeMismatch = "WorkManagement_BoardScopeMismatch";

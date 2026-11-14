@@ -649,8 +649,16 @@ function githubLikeSlug(heading) {
       /\[([^\]]+)\]\([^)]+\)/g,
       "$1",
     )
-    .replace(/<[^>]+>/g, "")
-    .replace(/[`*_~]/g, "")
+    .trim();
+
+  let previous;
+  do {
+    previous = value;
+    value = value.replace(/<[^>]+>/g, "");
+  } while (value !== previous);
+
+  value = value
+    .replace(/[<>`*_~]/g, "")
     .trim()
     .toLowerCase();
 

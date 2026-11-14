@@ -1,6 +1,6 @@
 # Notrelix mockups, October 2026 (reference copy)
 
-Source canvas: https://claude.ai/artifact/18L4jUXGfdXh7Wn9YQvA2x, version 46.
+Source canvas: https://claude.ai/artifact/18L4jUXGfdXh7Wn9YQvA2x, version 46; the other artboards of the canvas added from version 1793934513-82f7 (2026-11-06).
 
 **Reference only. Product docs and code are authoritative; these files never ship.** They exist so the built UI can be compared with the approved design. Mockup world data (Minh An Group, Nguyễn Thu Hà, ...) may appear only in `src/verification/*` fixtures and stories of the product, never in product code.
 
@@ -11,8 +11,8 @@ README.md        this index
 render.py        renders one screen state to static HTML
 decisions.md     shared review decisions from the design review
 briefs/          the design briefs the screens were produced from
-  mobile.md  tablet.md  group4.md  group4-rules.md
-src/             the 43 Final-*.dc.html screen sources, copied unchanged
+  mobile.md  tablet.md  group4.md
+src/             every artboard of the canvas (191 .dc.html: the Final-* screens, the BC-*, WM-*, Kanban-*, Gov-Roles-* and Acc-Admin-* state boards), copied unchanged
 ```
 
 ## Render a state
@@ -40,7 +40,8 @@ Device comes from the file's preview size. Phase and owner come from the roadmap
 | `Final-Calendar.dc.html` | Desktop 1440 | `state`: `keo-tha`, `tao-nhanh`, `binh-thuong`, `khong-ket-qua`; `range`: `thang`, `tuan`, `ngay`; `nav`: `an`, `hien-de`, `hien-day` | P5 | product/work-management/web |
 | `Final-Command.dc.html` | Desktop 1440 | `state`: `tim-kiem`, `chua-go`, `lenh`, `khong-thay`, `dang-chay`; `nav`: `an`, `hien-de`, `hien-day` | P7 | features/workspace shell + features/search |
 | `Final-Detail.dc.html` | Desktop 1440 | `state`: `tong-quan`, `lich-su`, `xung-dot`, `chi-xem`, `binh-luan`; `nav`: `an`, `hien-de`, `hien-day` | P3 | product/work-management/web + apps/web route |
-| `Final-Docs.dc.html` | Desktop 1440 | `state`: `binh-thuong`, `menu-tep`, `go-lenh`, `nhac-viec`, `binh-luan`, `muc-luc`, `loi-luu`, `chia-se`, `phien-ban`; `nav`: `an`, `hien-de`, `hien-day` | P11 | product/docs/web |
+| `Final-Docs-2.dc.html` | Desktop 1440 | none (static, normal state, nav pinned; drawn from the shipped page) | P11 | product/docs/web |
+| `Final-Docs-2-Dem.dc.html` | Desktop 1440 | none (static, dark twin of `Final-Docs-2`) | P11 | product/docs/web |
 | `Final-Home.dc.html` | Desktop 1440 | `state`: `binh-thuong`, `xong-viec`, `dang-tai`; `nav`: `an`, `hien-de`, `hien-day` | P6 | features/workspace |
 | `Final-Inbox.dc.html` | Desktop 1440 | `state`: `binh-thuong`, `het-viec`, `tat-ca`; `nav`: `an`, `hien-de`, `hien-day` | P6 | features/notifications |
 | `Final-Integrations.dc.html` | Desktop 1440 | `state`: `danh-sach`, `chi-tiet`, `uy-quyen-lai`, `webhook`, `ket-noi`, `ngat-ket-noi`, `can-nang-cap`, `khong-co-quyen`; `nav`: `an`, `hien-de`, `hien-day` | P15 | features/integrations |
@@ -75,6 +76,16 @@ Device comes from the file's preview size. Phase and owner come from the roadmap
 | `Final-M-Search.dc.html` | Mobile 390 | `state`: `gan-day`, `ket-qua`, `khong-co`, `nguoi`, `dang-tim` | P17+ | apps/mobile + product/*/mobile (web owner: features/search) |
 | `Final-M-Share.dc.html` | Mobile 390 | `state`: `chia-se`, `doi-quyen`, `rieng-tu`, `nhat-ky`, `da-sao-chep` | P17+ | apps/mobile + product/*/mobile (web owner: features/governance) |
 | `Final-M-Space.dc.html` | Mobile 390 | `state`: `danh-sach`, `phong`, `tao-moi`, `chi-xem`, `thiet-lap` | P17+ | apps/mobile + product/*/mobile (web owner: features/workspace) |
+
+## State boards (static)
+
+Three boards of the owner canvas carry every state of one component side by side, light (`sang`) and dark (`dem`), as fixed frames. They have no props and `render.py` does not apply: open the file in a browser and read a frame by its `data-frame` attribute (for example `wmmoveboard3-sang`). The specs measure boxes inside a frame the same way as for the screens above.
+
+| File | Frames (`data-frame`) | Roadmap phase | Owner package |
+|---|---|---|---|
+| `WM-MoveBoard.dc.html` | `wmmoveboard1` to `wmmoveboard11` at 700 px, `wmmoveboard12` to `wmmoveboard14` at 390 px: move a board to a department, the access impact and who is left behind | P3 | product/work-management/web |
+| `BC-Shell-1280-768.dc.html` | `sh1280-<state>-<mode>` (1022 px content column of the 1280 px window) and `sh768-<state>-<mode>`; nine states per width and mode (codes R, L, Er, NP, RO, E, Ev, NG, VM; R is the ready board) | P2 | product/work-management/web + apps/web shell |
+| `BC-Shell-320.dc.html` | `sh320-<state>-<mode>`: the same nine states at 320 px | P2 | product/work-management/web + apps/web shell |
 
 ## Related
 

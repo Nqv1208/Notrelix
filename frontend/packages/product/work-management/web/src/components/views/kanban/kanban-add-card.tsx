@@ -1,8 +1,10 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { ArrowUpRight, Plus, X } from "lucide-react";
 import { Button, Input } from "@notrelix/ui-web";
+import { ITEM_TITLE_MAX_LENGTH } from "@notrelix/work-management-core";
 import { fillCopy } from "./kanban-card.copy";
 import type { KanbanLaneCopy } from "./kanban-lane.copy";
+import { limitOf } from "@notrelix/work-management-state";
 
 /**
  * "Thêm vào {lane}": a lane footer button that opens an inline title field.
@@ -32,6 +34,8 @@ export function KanbanAddCard({
   // The title of a write that failed: it stays in the field with an inline
   // error and a retry, so nothing typed is lost.
   const [failed, setFailed] = useState<string | null>(null);
+  // Over the board's published item limit (D78.8): the limit is told instead, without a retry.
+  const [limited, setLimited] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const openerRef = useRef<HTMLButtonElement>(null);
   const restoreFocus = useRef(false);
@@ -57,9 +61,14 @@ export function KanbanAddCard({
 
   function send(nextTitle: string) {
     setFailed(null);
+    setLimited(null);
     const written = onSubmit(nextTitle);
     if (written instanceof Promise) {
-      written.catch(() => {
+      written.catch((error: unknown) => {
+        const named = limitOf(error);
+        setLimited(
+          named ? fillCopy(copy.addLimit, { max: named.max ?? "" }) : null,
+        );
         setFailed(nextTitle);
         setTitle((current) => current || nextTitle);
       });
@@ -92,6 +101,7 @@ export function KanbanAddCard({
   function cancel() {
     setTitle("");
     setFailed(null);
+    setLimited(null);
     restoreFocus.current = true;
     setIsOpen(false);
   }
@@ -125,6 +135,7 @@ export function KanbanAddCard({
       <Input
         ref={inputRef}
         value={title}
+        maxLength={ITEM_TITLE_MAX_LENGTH}
         onChange={(event) => setTitle(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === "Escape") {
@@ -150,11 +161,13 @@ export function KanbanAddCard({
           className="flex items-center gap-1.5 px-1 text-compact text-destructive"
         >
           <span className="min-w-0 flex-1">
-            {fillCopy(copy.createFailed, { title: failed })}
+            {limited ?? fillCopy(copy.createFailed, { title: failed })}
           </span>
-          <Button type="button" variant="ghost" size="sm" onClick={retry}>
-            {copy.addRetry}
-          </Button>
+          {limited ? null : (
+            <Button type="button" variant="ghost" size="sm" onClick={retry}>
+              {copy.addRetry}
+            </Button>
+          )}
         </p>
       ) : null}
       <div className="flex items-center gap-1.5">

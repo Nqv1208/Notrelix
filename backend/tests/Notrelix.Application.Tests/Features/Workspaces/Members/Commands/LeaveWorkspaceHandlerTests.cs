@@ -141,6 +141,19 @@ public class LeaveWorkspaceHandlerTests : WorkspaceHandlerTestBase
     }
 
     [Fact]
+    public async Task SetDefault_ForAnArchivedWorkspace_IsRefused_AndTheStoredDefaultIsUnchanged()
+    {
+        SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId, isArchived: true));
+        SetupMembers(CreateMember(WorkspaceRole.Member), CreateMember(WorkspaceRole.Owner, Guid.CreateVersion7()));
+
+        var act = () => SetDefault().Handle(new SetDefaultWorkspaceCommand(TestWorkspaceId), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.BusinessRuleException>())
+            .Which.Message.Should().Contain("archived");
+        _defaults.Verify(d => d.SetAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task SetDefault_ForARemovedOrSuspendedOrAbsentMember_IsNotFound_AndNothingIsStored()
     {
         SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId));

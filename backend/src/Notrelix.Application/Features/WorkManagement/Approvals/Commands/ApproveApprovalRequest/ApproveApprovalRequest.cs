@@ -1,5 +1,7 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Approvals.Services;
+using Notrelix.Application.Features.Workspaces.Public.Teams;
 
 namespace Notrelix.Application.Features.WorkManagement.Approvals.Commands.ApproveApprovalRequest;
 
@@ -21,18 +23,21 @@ public class ApproveApprovalRequestCommandHandler : IRequestHandler<ApproveAppro
     private readonly IWorkManagementDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ITeamMembershipFacts _teams;
     private readonly IBoardRealtimeNotifier? _realtime;
 
     public ApproveApprovalRequestCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
+        ITeamMembershipFacts teams,
         IBoardRealtimeNotifier? realtime = null)
     {
         _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _teams = teams;
     }
 
     public async Task<Result> Handle(ApproveApprovalRequestCommand request, CancellationToken ct)
@@ -50,12 +55,16 @@ public class ApproveApprovalRequestCommandHandler : IRequestHandler<ApproveAppro
 
         var userId = _requestContext.UserId;
         var now = _dateTimeProvider.UtcNow;
-        var step = approvalRequest.Steps
-            .FirstOrDefault(s => s.Status == ApprovalStatus.Pending && s.ApproverUserId == userId);
+        var (step, myTeams) = await ApprovalDeciders.FindAsync(approvalRequest, approvalRequest.WorkspaceId, userId, _teams, ct);
+        // Only an assigned approver (or a current member of the named Team) learns the state of a request that was already decided.
+        if (approvalRequest.Status != ApprovalStatus.Pending && step is not null)
+            return Result.Failure(new ApplicationError(
+                "work.approval.already-decided", $"This approval is already {approvalRequest.Status}.", ApplicationErrorType.Conflict));
+        if (step is not null && step.Status != ApprovalStatus.Pending) step = null;
         if (step is null)
             return Result.Failure(new ApplicationError("work.approval.no-pending-step", "No pending approval step assigned to the current user.", ApplicationErrorType.BusinessRule));
 
-        approvalRequest.Approve(step.Id, userId, now, request.Note);
+        approvalRequest.Approve(step.Id, userId, now, request.Note, myTeams);
         return Result.Success();
     }
 }

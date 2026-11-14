@@ -6,6 +6,9 @@ import {
   authForgotScenario,
   authInviteScenario,
   authRegisterDefaultScenario,
+  authRegisterErrorScenario,
+  authRegisterPendingScenario,
+  authRegisterSentScenario,
   authResetScenario,
   authSignInScenario,
   authSsoStep,
@@ -586,36 +589,145 @@ describe("auth shell", () => {
 });
 
 describe("auth register surface", () => {
-  it("FUI[auth.register:submit] submits register credentials through the injected callback", () => {
-    const onSubmit = vi.fn();
+  const fill = (label: string, value: string) =>
+    fireEvent.change(screen.getByLabelText(label), { target: { value } });
+  const fillAll = (password = NEW_PASSWORD) => {
+    fill(copy.register.firstName, "Ada");
+    fill(copy.register.lastName, "Lovelace");
+    fill(copy.register.email, " ada@notrelix.dev ");
+    fill(copy.register.password, password);
+    fireEvent.click(screen.getByLabelText(/Tôi đồng ý/));
+  };
+  const submit = () =>
+    fireEvent.click(screen.getByRole("button", { name: copy.register.submit }));
 
+  it("FUI[auth.register:submit] submits the trimmed values through the injected callback", () => {
+    const onSubmit = vi.fn();
     renderPureUi(
       <AuthRegisterFormSurface
-        {...authRegisterDefaultScenario()}
-        onSubmit={onSubmit}
+        {...authRegisterDefaultScenario({ onSubmit })}
       />,
     );
-
-    fireEvent.change(screen.getByLabelText("First name"), {
-      target: { value: "Ada" },
-    });
-    fireEvent.change(screen.getByLabelText("Last name"), {
-      target: { value: "Lovelace" },
-    });
-    fireEvent.change(screen.getByLabelText("Work email"), {
-      target: { value: "ada@notrelix.dev" },
-    });
-    fireEvent.change(screen.getByLabelText("Password"), {
-      target: { value: "very-secure" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Create account" }));
-
+    fillAll();
+    submit();
     expect(onSubmit).toHaveBeenCalledWith({
       firstName: "Ada",
       lastName: "Lovelace",
       email: "ada@notrelix.dev",
-      password: "very-secure",
+      password: NEW_PASSWORD,
     });
+  });
+
+  it("FUI[auth.register:submit] refuses an empty form and names each missing field", () => {
+    const onSubmit = vi.fn();
+    renderPureUi(
+      <AuthRegisterFormSurface
+        {...authRegisterDefaultScenario({ onSubmit })}
+      />,
+    );
+    submit();
+    expect(onSubmit).not.toHaveBeenCalled();
+    for (const message of [
+      copy.register.firstRequired,
+      copy.register.lastRequired,
+      copy.register.emailInvalid,
+      copy.register.termsRequired,
+    ])
+      expect(screen.getByText(message)).toBeTruthy();
+    expect(
+      screen.getByText(
+        copy.register.passwordShort.replace(
+          "{{count}}",
+          String(PASSWORD_MIN_LENGTH),
+        ),
+      ),
+    ).toBeTruthy();
+  });
+
+  it("FUI[auth.register:submit] refuses a password one character short and takes the minimum", () => {
+    const onSubmit = vi.fn();
+    renderPureUi(
+      <AuthRegisterFormSurface
+        {...authRegisterDefaultScenario({ onSubmit })}
+      />,
+    );
+    fillAll("x".repeat(PASSWORD_MIN_LENGTH - 1));
+    submit();
+    expect(onSubmit).not.toHaveBeenCalled();
+    fill(copy.register.password, "x".repeat(PASSWORD_MIN_LENGTH));
+    submit();
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it("FUI[auth.register:submit] refuses a form whose terms are not agreed", () => {
+    const onSubmit = vi.fn();
+    renderPureUi(
+      <AuthRegisterFormSurface
+        {...authRegisterDefaultScenario({ onSubmit })}
+      />,
+    );
+    fillAll();
+    fireEvent.click(screen.getByLabelText(/Tôi đồng ý/));
+    submit();
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByText(copy.register.termsRequired)).toBeTruthy();
+  });
+
+  it("FUI[auth.register:submit] shows the server's word under the field, a limit and an unreachable server", () => {
+    const { rerender } = renderPureUi(
+      <AuthRegisterFormSurface
+        {...authRegisterDefaultScenario({
+          step: { kind: "form", fieldErrors: { password: "Too weak." } },
+        })}
+      />,
+    );
+    expect(screen.getByText("Too weak.")).toBeTruthy();
+    rerender(
+      <AuthRegisterFormSurface
+        {...authRegisterDefaultScenario({
+          step: { kind: "form", error: "limited" },
+        })}
+      />,
+    );
+    expect(screen.getByText(copy.register.limited)).toBeTruthy();
+    rerender(<AuthRegisterFormSurface {...authRegisterErrorScenario()} />);
+    expect(screen.getByText(copy.register.unreachable)).toBeTruthy();
+  });
+
+  it("FUI[auth.register:submit] disables the button while the request is pending", () => {
+    renderPureUi(
+      <AuthRegisterFormSurface {...authRegisterPendingScenario()} />,
+    );
+    const button = screen.getByRole("button", {
+      name: copy.register.submitting,
+    }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+  });
+
+  it("FUI[auth.register:sent] says the same neutral thing and offers sign-in and another email", () => {
+    const onSignIn = vi.fn();
+    const onOtherEmail = vi.fn();
+    renderPureUi(
+      <AuthRegisterFormSurface
+        {...authRegisterSentScenario()}
+        onSignIn={onSignIn}
+        onOtherEmail={onOtherEmail}
+      />,
+    );
+    expect(
+      screen.getByRole("heading", { name: copy.register.sentTitle }),
+    ).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toContain(
+      AUTH_PERSONAL_EMAIL,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.register.sentSignIn }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.register.sentOther }),
+    );
+    expect(onSignIn).toHaveBeenCalledTimes(1);
+    expect(onOtherEmail).toHaveBeenCalledTimes(1);
   });
 });
 

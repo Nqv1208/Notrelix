@@ -28,6 +28,7 @@
  */
 
 import { projectComputedValues } from "../../state/mock-computed-values";
+import { mockIds } from "../../state/mock-ids";
 import type { OperationResponse } from "@notrelix/contracts";
 import type {
   BoardDtoApi,
@@ -219,6 +220,19 @@ export function projectItemMembers(card: MockCardRecord, store: MockStore) {
   });
 }
 
+/** The open blockers of an item; the mock links are same-board, so each is named like the server does. */
+function projectOpenBlockers(card: MockCardRecord, store: MockStore) {
+  if (!store.readsBlockers()) return {};
+  const open = store
+    .getItemLinks(card.id)
+    .filter((link) => link.relation === "blocked-by" && !link.card.completedAt);
+  const keys = open
+    .map((link) => link.card.itemKey)
+    .filter((key): key is string => Boolean(key))
+    .sort();
+  return { openBlockerCount: open.length, openBlockerKey: keys[0] ?? null };
+}
+
 function projectItemSummary(
   card: MockCardRecord,
   index: number,
@@ -247,6 +261,7 @@ function projectItemSummary(
     updatedAt: card.updatedAt,
     version: card.version ?? 1,
     ...projectItemReadValues(card, store),
+    ...projectOpenBlockers(card, store),
     // The stored custom values and the Formula results, evaluated on each read.
     ...projectCardSettings(store, card.id),
     fieldValues: {
@@ -282,7 +297,7 @@ function projectField(
     name: column.name,
     fieldType,
     settings: column.settings ?? "{}",
-    defaultValue: null,
+    defaultValue: column.defaultValue ?? null,
     position: positionKey(index + 1),
     isSystem: fieldType === "Status",
     isDeleted: false,
@@ -357,6 +372,7 @@ function projectFullBoard(
     version: board.version ?? 1,
     spaceId: visibleSpaceId(store, board.workspaceId, board.spaceId),
     itemKeyPrefix: board.itemKeyPrefix ?? null,
+    isArchived: board.isArchived,
   };
 }
 
@@ -566,6 +582,46 @@ export function keepViewConfig(boardId: string, config: string): void {
   }
 }
 
+type RetiredBoardApi =
+  OperationResponse<"WorkManagement.Boards.ListDeleted">[number];
+
+const RESTORE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+
+interface MockDeletedBoardSeed {
+  readonly id: string;
+  readonly title: string;
+  readonly spaceId?: string | null;
+  readonly daysAgo: number;
+  /** Deleted by someone else: listed only to whoever manages it. */
+  readonly byOther?: boolean;
+}
+
+function seedDeletedBoardsFromHook(store: MockStore, workspaceId: string) {
+  const seeds = (globalThis as { __mockDeletedBoards?: MockDeletedBoardSeed[] })
+    .__mockDeletedBoards;
+  if (!Array.isArray(seeds)) return;
+  for (const seed of seeds) {
+    if (store.getDeletedBoard(seed.id) || store.getBoard(seed.id)) continue;
+    const at = store.getClock().offsetDays(-seed.daysAgo);
+    store.seedDeletedBoard(
+      {
+        id: seed.id,
+        workspaceId,
+        title: seed.title,
+        background: { type: "color", value: "#0079BF" },
+        visibility: "workspace",
+        isArchived: false,
+        createdAt: at,
+        updatedAt: at,
+        version: 2,
+        spaceId: seed.spaceId ?? null,
+      } as MockBoardRecord,
+      at,
+      seed.byOther ? "mock-user-someone-else" : store.getCurrentUser().id,
+    );
+  }
+}
+
 export const boardsOperations = [
   // ─── GET /workspaces/:workspaceId/boards ──────────────────────────────────
 
@@ -594,6 +650,7 @@ export const boardsOperations = [
           createdAt: b.createdAt,
           version: b.version ?? 1,
           spaceId: visibleSpaceId(store, params.workspaceId, b.spaceId),
+          itemKeyPrefix: b.itemKeyPrefix ?? null,
           ...departmentOfBoard(store, b),
           // Gap field `canAddItems` (CTR-GAP-WM-TABLE-BULK): whether the
           // caller may add items, for the table's "Chuyển board" targets.
@@ -701,6 +758,135 @@ export const boardsOperations = [
       if (!canManageBoard(board.id, store)) return forbidden();
       store.deleteBoard(board.id);
       return ok<void>(undefined);
+    },
+  }),
+
+  // ─── GET /workspaces/:workspaceId/boards/archived ─────────────────────────
+  // The archived boards the caller can read (the archived tab of the same page).
+
+  defineMockOperation<{ workspaceId: string }, never, RetiredBoardApi[]>({
+    id: "boards.listArchived",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Boards.ListArchived",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/boards/archived",
+    async handle({ params, store }) {
+      const rows = store
+        .getBoards(params.workspaceId)
+        .filter(
+          (board) =>
+            board.isArchived && projectBoardAccess(board, store) !== null,
+        )
+        .map((board) => ({
+          id: board.id,
+          workspaceId: board.workspaceId,
+          title: board.title,
+          background: board.background.value,
+          visibility: board.visibility,
+          version: board.version ?? 1,
+          spaceId: visibleSpaceId(store, params.workspaceId, board.spaceId),
+          itemKeyPrefix: board.itemKeyPrefix ?? null,
+          retiredAt: board.updatedAt ?? board.createdAt,
+          restorableUntil: null,
+        }));
+      return ok(rows as RetiredBoardApi[]);
+    },
+  }),
+
+  // ─── GET /workspaces/:workspaceId/boards/deleted (UC-WM-A07) ──────────────
+  // The boards deleted in the last 30 days that the caller can restore: the deleter, and whoever
+  // manages the board (a workspace Owner, a Space manager, a board Owner or Admin). `?spaceId=`
+  // narrows to one Space. Test hook: `globalThis.__mockDeletedBoards` seeds deleted boards
+  // ({ id, title, spaceId?, daysAgo, byOther? }) once per page load.
+
+  defineMockOperation<{ workspaceId: string }, never, RetiredBoardApi[]>({
+    id: "boards.listDeleted",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Boards.ListDeleted",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/boards/deleted",
+    async handle({ params, query, store }) {
+      seedDeletedBoardsFromHook(store, params.workspaceId);
+      const me = store.getCurrentUser().id;
+      const now = Date.parse(store.getClock().isoNow());
+      const spaceFilter = query.spaceId ?? null;
+      const rows = store
+        .getDeletedBoards(params.workspaceId)
+        .filter(
+          (entry) =>
+            now - Date.parse(entry.deletedAt) <= RESTORE_WINDOW_MS &&
+            (!spaceFilter || entry.board.spaceId === spaceFilter) &&
+            (entry.deletedBy === me ||
+              projectBoardAccess(entry.board, store)?.myLevel === "manager"),
+        )
+        .map((entry) => ({
+          id: entry.board.id,
+          workspaceId: entry.board.workspaceId,
+          title: entry.board.title,
+          background: entry.board.background.value,
+          visibility: entry.board.visibility,
+          version: entry.board.version ?? 1,
+          spaceId: visibleSpaceId(
+            store,
+            params.workspaceId,
+            entry.board.spaceId,
+          ),
+          itemKeyPrefix: entry.board.itemKeyPrefix ?? null,
+          retiredAt: entry.deletedAt,
+          restorableUntil: store
+            .getClock()
+            .offsetSeconds(
+              (Date.parse(entry.deletedAt) + RESTORE_WINDOW_MS - now) / 1000,
+            ),
+        }));
+      return ok(rows as RetiredBoardApi[]);
+    },
+  }),
+
+  // ─── POST /boards/:id/restore (UC-WM-A07) ──────────────────────────────────
+  // Test hook: `globalThis.__mockBoardRestoreWindowElapsed` refuses with the window rule code.
+
+  defineMockOperation<{ id: string }, { expectedVersion?: number }, void>({
+    id: "boards.restore",
+    contract: { kind: "openapi", operationId: "WorkManagement.Boards.Restore" },
+    method: "POST",
+    route: "/boards/:id/restore",
+    async handle({ params, body, store }) {
+      // Restoring an active board is a no-op.
+      if (store.getBoard(params.id)) return noContent();
+      const entry = store.getDeletedBoard(params.id);
+      if (!entry) return notFound("Board not found");
+      const me = store.getCurrentUser().id;
+      if (
+        entry.deletedBy !== me &&
+        projectBoardAccess(entry.board, store)?.myLevel !== "manager"
+      )
+        return notFound("Board not found");
+      if (
+        body?.expectedVersion !== undefined &&
+        body.expectedVersion !== (entry.board.version ?? 1)
+      )
+        return preconditionFailed();
+      const now = Date.parse(store.getClock().isoNow());
+      if (
+        (globalThis as { __mockBoardRestoreWindowElapsed?: boolean })
+          .__mockBoardRestoreWindowElapsed === true ||
+        now - Date.parse(entry.deletedAt) > RESTORE_WINDOW_MS
+      )
+        return {
+          status: 422,
+          body: {
+            message: "The 30-day window to restore this board has passed.",
+            errorCode: "WorkManagement_Board_RestoreWindowElapsed",
+            ruleCode: "WorkManagement_Board_RestoreWindowElapsed",
+          },
+        } as never;
+      store.restoreDeletedBoard(entry.board.id);
+      return noContent();
     },
   }),
 
@@ -815,6 +1001,28 @@ export const boardsOperations = [
       const target = body?.spaceId ?? null;
       const denied = targetSpaceDenied(store, board.workspaceId, target);
       if (denied) return denied;
+      // WM-MoveBoard frame 6 (a spec's init script sets `__mockMoveRace`): someone else moved the Board to
+      // Marketing just before, so this write is stale and the answer names them, like the producer's 412.
+      const race = globalThis as {
+        __mockMoveRace?: boolean;
+        __mockMoveDenied?: boolean;
+        __mockMoveHold?: boolean;
+      };
+      // WM-MoveBoard frame 9: the person may not move it (ManageBoard or CreateBoard on the target refused).
+      if (race.__mockMoveDenied) return forbidden();
+      // WM-MoveBoard frame 7: the request stays on its way until the spec clears the flag.
+      while (race.__mockMoveHold)
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      if (race.__mockMoveRace) {
+        race.__mockMoveRace = false;
+        const current = board.version ?? 1;
+        store.placeBoard(board.id, mockIds.spaces.marketing, current);
+        const stale = preconditionFailed();
+        return {
+          ...stale,
+          body: { ...stale.body, changedByName: "Hà Nguyễn" },
+        };
+      }
       switch (store.placeBoard(board.id, target, body?.expectedVersion)) {
         case "ok":
           return noContent();
@@ -828,8 +1036,10 @@ export const boardsOperations = [
 
   // ─── GET /boards/:boardId/move-impact ──────────────────────────────────────
 
-  // The mock world has one access model per Board, so a move never gains or strands anyone: the answer
-  // says the move is allowed and names the target Space (`unchanged` when the Board is already there).
+  // The mock world has one access model per Board, so a move gains or strands no one, except the ERP Board
+  // leaving Công nghệ for Kế toán or Marketing, which carries the numbers of the WM-MoveBoard mockup: 22 people
+  // lose it, three of them with unfinished items (Kế toán only), 18 or 12 gain it. Elsewhere the answer says the
+  // move is allowed and names the target Space (`unchanged` when the Board is already there).
   defineMockOperation<{ boardId: string }, never, Record<string, unknown>>({
     id: "boards.moveImpact",
     contract: {
@@ -846,24 +1056,65 @@ export const boardsOperations = [
         new URL(request.url).searchParams.get("targetSpaceId") ?? null;
       const denied = targetSpaceDenied(store, board.workspaceId, target);
       if (denied) return denied;
+      const fromEngineering = board.spaceId === mockIds.spaces.engineering;
+      const toAccounting = target === mockIds.spaces.accounting;
+      const toMarketing = target === mockIds.spaces.marketing;
+      // WM-MoveBoard frame 5 (a spec's init script sets `__mockMovePrivate`, or the Board is Private): a Private
+      // Board keeps everyone's access, like the producer's placement reach.
+      const isPrivate =
+        (globalThis as { __mockMovePrivate?: boolean }).__mockMovePrivate ===
+          true || board.visibility === "private";
+      const carries =
+        !isPrivate && fromEngineering && (toAccounting || toMarketing);
       return ok({
         boardId: board.id,
         targetSpaceId: target,
         targetSpaceName: target ? store.spaces.getSpace(target)?.name : null,
         unchanged: (board.spaceId ?? null) === target,
-        losingCount: 0,
-        gainingCount: 0,
+        losingCount: carries ? 22 : 0,
+        gainingCount: isPrivate ? 0 : toAccounting ? 18 : toMarketing ? 12 : 0,
         everyoneGains: false,
         everyoneLoses: false,
-        targetPeople: 0,
-        stranded: [],
-        strandedCount: 0,
-        strandedItems: 0,
-        strandedOverdue: 0,
-        keptNames: [],
-        keptCount: 0,
+        targetPeople: isPrivate ? 0 : toAccounting ? 18 : toMarketing ? 12 : 0,
+        stranded:
+          carries && toAccounting
+            ? [
+                {
+                  userId: mockIds.users.owner,
+                  name: "Trần Minh Quân",
+                  items: 2,
+                  overdue: 1,
+                },
+                {
+                  userId: mockIds.users.member,
+                  name: "Phan Ngọc Anh",
+                  items: 1,
+                  overdue: 0,
+                },
+                {
+                  userId: mockIds.users.viewer,
+                  name: "Vũ Thanh",
+                  items: 1,
+                  overdue: 0,
+                },
+              ]
+            : [],
+        strandedCount: carries && toAccounting ? 3 : 0,
+        strandedItems: carries && toAccounting ? 4 : 0,
+        strandedOverdue: carries && toAccounting ? 1 : 0,
+        keptNames: carries
+          ? [
+              "Lê Hoàng Phúc",
+              "Nguyễn Thu Hà",
+              "Nhóm Kế toán tổng hợp",
+              "Đỗ Khánh Linh",
+              "khách Đặng Minh Tuấn",
+            ]
+          : [],
+        keptCount: carries ? 5 : 0,
         keptTeamCount: 0,
         boardVersion: board.version ?? 0,
+        isPrivate,
       });
     },
   }),
@@ -997,6 +1248,8 @@ export const boardsOperations = [
       name?: string;
       fieldType?: string;
       settings?: string;
+      settingsJson?: string;
+      defaultValueJson?: string;
       isHidden?: boolean;
     },
     void
@@ -1009,9 +1262,99 @@ export const boardsOperations = [
     method: "PATCH",
     route: "/boards/:boardId/fields/:columnId",
     async handle({ params, body, store }) {
-      const updated = store.updateColumn(params.columnId, body ?? {});
+      // The producer's request names the settings `settingsJson`.
+      const { settingsJson, defaultValueJson, ...rest } = body ?? {};
+      const updated = store.updateColumn(params.columnId, {
+        ...rest,
+        ...(defaultValueJson !== undefined
+          ? { defaultValue: defaultValueJson }
+          : {}),
+        ...(settingsJson !== undefined ? { settings: settingsJson } : {}),
+      });
       if (!updated) return notFound("Column not found");
       return ok<void>(undefined);
+    },
+  }),
+
+  // ─── GET /boards/:boardId/fields/preview-formula ─────────────────────────
+
+  defineMockOperation<
+    { boardId: string },
+    never,
+    {
+      state: string;
+      value: unknown;
+      errorCode: string | null;
+      inputs: { name: string; value: { state: string; value: unknown } }[];
+      subItemCount: number | null;
+    }
+  >({
+    id: "boards.fields.previewFormula",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.PreviewFormula",
+    } as any,
+    method: "GET",
+    route: "/boards/:boardId/fields/preview-formula",
+    async handle({ params, request, store }) {
+      if (!store.getBoard(params.boardId)) return notFound("Board not found");
+      const query = new URL(request.url).searchParams;
+      const expression = (query.get("expression") ?? "").trim();
+      const result = (
+        state: string,
+        value: unknown,
+        errorCode: string | null = null,
+        inputs: { name: string; value: unknown }[] = [],
+        subItemCount: number | null = null,
+      ) =>
+        ok({
+          state,
+          value,
+          errorCode,
+          inputs: inputs.map((input) => ({
+            name: input.name,
+            value: { state: "ok", value: input.value },
+          })),
+          subItemCount,
+        });
+      // The mock does not read fields or sub-items: every field a formula names reads 13, and an item has two
+      // sub-items worth 3 and 4 (the numbers of the mockups); any other formula answers a fixed sample value.
+      const rollupFunction = query.get("rollupFunction");
+      if (rollupFunction) {
+        const values = [3, 4];
+        const sample: Record<string, number> = {
+          count: 2,
+          sum: 7,
+          avg: 3.5,
+          min: 3,
+          max: 4,
+        };
+        return result(
+          "ok",
+          sample[rollupFunction] ?? 0,
+          null,
+          rollupFunction === "count"
+            ? []
+            : values.map((value) => ({ name: "Điểm", value })),
+          2,
+        );
+      }
+      if (expression === "") return result("empty", null);
+      const names = [...expression.matchAll(/\[([^\]]+)\]/g)].map(
+        (match) => match[1] ?? "",
+      );
+      const inputs = [...new Set(names)].map((name) => ({ name, value: 13 }));
+      const arithmetic = expression.replace(/\[[^\]]+\]/g, "13");
+      if (/^[\d\s+\-*/().]+$/.test(arithmetic)) {
+        try {
+          const value = Function(`"use strict";return (${arithmetic})`)();
+          if (Number.isFinite(value)) return result("ok", value, null, inputs);
+          return result("error", null, "divide-by-zero");
+        } catch {
+          return result("error", null, "invalid-definition");
+        }
+      }
+      return result("ok", 12, null, inputs);
     },
   }),
 
@@ -1031,6 +1374,78 @@ export const boardsOperations = [
       const deleted = store.deleteColumn(params.columnId);
       if (!deleted) return notFound("Column not found");
       return ok<void>(undefined);
+    },
+  }),
+
+  // ─── GET /boards/:boardId/fields/deleted ─────────────────────────────────
+
+  defineMockOperation<{ boardId: string }, never, unknown[]>({
+    id: "boards.columns.deleted",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.Deleted",
+    } as any,
+    method: "GET",
+    route: "/boards/:boardId/fields/deleted",
+    async handle({ params, store }) {
+      // A Manager reads the list, as on the producer.
+      if (!canManageBoard(params.boardId, store)) return forbidden();
+      return ok(
+        store.getDeletedColumns(params.boardId).map((entry) => ({
+          id: entry.column.id,
+          name: entry.column.name,
+          // The producer names the type as its `FieldType` enum: "LongText" for the mock's `long_text`.
+          fieldType: entry.column.fieldType
+            .split("_")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(""),
+          deletedAt: entry.deletedAt,
+          restorableUntil: entry.restorableUntil,
+          deletedBy: null,
+          deletedByName: entry.deletedByName,
+          valueCount: entry.valueCount,
+        })),
+      );
+    },
+  }),
+
+  // ─── POST /boards/:boardId/fields/:fieldId/restore ───────────────────────
+
+  defineMockOperation<
+    { boardId: string; fieldId: string },
+    never,
+    { alreadyActive: boolean; restoredByName: string | null }
+  >({
+    id: "boards.columns.restore",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardFields.Restore",
+    } as any,
+    method: "POST",
+    route: "/boards/:boardId/fields/:fieldId/restore",
+    async handle({ params, store }) {
+      if (!canManageBoard(params.boardId, store)) return forbidden();
+      const restored = store.restoreDeletedColumn(
+        params.boardId,
+        params.fieldId,
+      );
+      if (restored === "not-found") return notFound("Field not found");
+      if (restored === "name-taken")
+        return {
+          status: 409,
+          body: {
+            message: "A field with this name is in use.",
+            code: "work-management.field.name-taken",
+            errorCode: "work-management.field.name-taken",
+          },
+        };
+      return {
+        status: 200,
+        body: {
+          alreadyActive: restored === "already-active",
+          restoredByName: restored === "already-active" ? "Hà Nguyễn" : null,
+        },
+      };
     },
   }),
 
@@ -1274,7 +1689,7 @@ export const boardsOperations = [
   defineMockOperation<
     { boardId: string },
     never,
-    { labelId: string; name: string; color: string }[]
+    { labelId: string; name: string; color: string; version: number }[]
   >({
     id: "boards.labels.list",
     contract: {
@@ -1290,6 +1705,7 @@ export const boardsOperations = [
           labelId: l.id,
           name: l.name,
           color: l.color,
+          version: l.version ?? 1,
         })),
       );
     },

@@ -111,6 +111,58 @@ describe("unknown and automation notifications", () => {
     expect(row?.segments.map((s) => s.text).join("")).toBe("Your plan changed");
   });
 
+  it("draws a nudge, a due reminder and a new form response (UC-WM-R07, D78.2)", () => {
+    const dto = toInboxDto("w1", {
+      items: [
+        {
+          id: "n10",
+          type: "work.item.reminder",
+          createdAt: "2026-10-12T03:28:00.000Z",
+          unread: true,
+          actor: { id: "u2", name: "Lê An" },
+          target: { kind: "item", id: "i1", title: "Thiết lập SSO" },
+        },
+        {
+          id: "n11",
+          type: "work.item.due-reminder",
+          createdAt: "2026-10-12T03:28:00.000Z",
+          unread: true,
+          target: { kind: "item", id: "i1", title: "Thiết lập SSO" },
+        },
+        {
+          id: "n12",
+          type: "work.form.submission-created",
+          createdAt: "2026-10-12T03:28:00.000Z",
+          unread: true,
+          excerpt: "Đăng ký tuyển dụng",
+          target: {
+            kind: "board",
+            id: "b9",
+            boardId: "b9",
+            title: "Tuyển dụng",
+          },
+        },
+      ],
+    } as never);
+    expect(dto.items.map((item) => item.type)).toEqual([
+      "nudge",
+      "due_reminder",
+      "form_response",
+    ]);
+    expect(dto.items[2]?.target).toMatchObject({
+      kind: "board",
+      boardId: "b9",
+    });
+    const text = toInboxEntries(dto.items, deps).map((row) =>
+      row.segments.map((s) => s.text).join(""),
+    );
+    expect(text).toEqual([
+      "Lê An hỏi bạn tiến độ của Thiết lập SSO",
+      "Thiết lập SSO sắp đến hạn",
+      "Có phản hồi mới cho Đăng ký tuyển dụng trong Tuyển dụng",
+    ]);
+  });
+
   it("draws an automation message about an item", () => {
     const dto = toInboxDto("w1", {
       items: [
@@ -212,6 +264,58 @@ describe("approval notifications", () => {
     expect(row?.segments.map((s) => s.text).join("")).toBe(
       "Lan yêu cầu sửa Thiết lập SSO: “Needs a budget”",
     );
+  });
+});
+
+describe("chat message notifications (UC-CHT-G09)", () => {
+  const chat = (type: string, title: string, excerpt: string | null) =>
+    toInboxDto("ws-1", {
+      items: [
+        {
+          id: "c1",
+          type,
+          createdAt: "2026-10-12T03:28:00.000Z",
+          unread: true,
+          actor: { id: "u2", name: "Lan" },
+          excerpt,
+          target: { kind: "chat", id: "space-1", title },
+        },
+      ],
+    } as never);
+  const text = (dto: ReturnType<typeof chat>) =>
+    toInboxEntries(dto.items, deps)[0]
+      ?.segments.map((s) => s.text)
+      .join("");
+
+  it("draws a mention, a direct message, a thread reply and a broadcast with the channel and a short preview", () => {
+    const mention = chat("chat.mention", "general", "xin chào");
+    expect(mention.items[0]?.type).toBe("chat_mention");
+    expect(mention.items[0]?.target.kind).toBe("chat");
+    expect(mention.counts.mention).toBe(1);
+    expect(text(mention)).toBe("Lan nhắc tên bạn trong general: “xin chào”");
+    expect(text(chat("chat.direct-message", "general", "hi"))).toContain(
+      "Lan nhắn cho bạn trong general",
+    );
+    expect(text(chat("chat.thread-reply", "general", "ok"))).toContain(
+      "chuỗi bạn theo dõi",
+    );
+    expect(text(chat("chat.broadcast", "general", "all"))).toContain(
+      "gửi cho mọi người trong general",
+    );
+  });
+
+  it("names a conversation without a name by the word for one", () => {
+    expect(text(chat("chat.direct-message", "", "hi"))).toBe(
+      `Lan nhắn cho bạn trong ${copy.feed.chatConversation}: “hi”`,
+    );
+  });
+
+  it("opens a chat notification through the host link of its target", () => {
+    const [row] = toInboxEntries(chat("chat.mention", "general", "a").items, {
+      ...deps,
+      hrefFor: (target) => (target.kind === "chat" ? "/chat" : null),
+    });
+    expect(row?.detail?.openHref).toBe("/chat");
   });
 });
 

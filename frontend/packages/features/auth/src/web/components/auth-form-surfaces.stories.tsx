@@ -8,6 +8,7 @@ import {
   authRegisterDefaultScenario,
   authRegisterErrorScenario,
   authRegisterPendingScenario,
+  authRegisterSentScenario,
   authResetScenario,
   authSignInScenario,
   authSsoStep,
@@ -24,8 +25,8 @@ import { AuthRegisterFormSurface } from "./auth-form-surfaces";
 
 /**
  * The sign-in pages inside their frame, at the mockup's 1440 x 900
- * (Final-Auth). The register form is the older single-card layout and keeps
- * its own decorator below.
+ * (Final-Auth). The register page is not drawn; it is built on the same
+ * pattern and sits in the same frame.
  */
 const meta: Meta = {
   title: "Auth/Auth Form Surfaces",
@@ -397,32 +398,38 @@ export const InviteDeclined: Story = {
   tags: ["fui-surface--auth.invite", "fui-state--Success"],
 };
 
-const registerFrame = (children: React.ReactNode) => (
-  <div className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
-    <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8">
-      {children}
-    </div>
-  </div>
-);
-
 export const RegisterDefault: Story = {
-  render: () =>
-    registerFrame(
-      <AuthRegisterFormSurface {...authRegisterDefaultScenario()} />,
-    ),
+  render: () => (
+    <Page>
+      <AuthRegisterFormSurface {...authRegisterDefaultScenario()} />
+    </Page>
+  ),
   tags: ["fui-surface--auth.register", "fui-state--Default"],
 };
 
 export const RegisterPending: Story = {
-  render: () =>
-    registerFrame(
-      <AuthRegisterFormSurface {...authRegisterPendingScenario()} />,
-    ),
+  render: () => (
+    <Page>
+      <AuthRegisterFormSurface {...authRegisterPendingScenario()} />
+    </Page>
+  ),
   tags: ["fui-surface--auth.register", "fui-state--Loading"],
 };
 
 export const RegisterError: Story = {
-  render: () =>
-    registerFrame(<AuthRegisterFormSurface {...authRegisterErrorScenario()} />),
+  render: () => (
+    <Page>
+      <AuthRegisterFormSurface {...authRegisterErrorScenario()} />
+    </Page>
+  ),
   tags: ["fui-surface--auth.register", "fui-state--Error"],
+};
+
+export const RegisterSent: Story = {
+  render: () => (
+    <Page>
+      <AuthRegisterFormSurface {...authRegisterSentScenario()} />
+    </Page>
+  ),
+  tags: ["fui-surface--auth.register", "fui-state--Success"],
 };

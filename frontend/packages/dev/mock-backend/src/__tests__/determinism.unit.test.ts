@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { MockStore } from "../state/mock-store";
 import { defaultConfig } from "../config/mock-config";
@@ -81,11 +81,11 @@ describe("MFB-FZ-05D Deterministic World Closure", () => {
     const violations: { file: string; line: number; match: string }[] = [];
 
     function scanDir(dir: string) {
-      const entries = readdirSync(dir);
-      for (const entry of entries) {
+      const entries = readdirSync(dir, { withFileTypes: true });
+      for (const dirent of entries) {
+        const entry = dirent.name;
         const fullPath = join(dir, entry);
-        const stat = statSync(fullPath);
-        if (stat.isDirectory()) {
+        if (dirent.isDirectory()) {
           if (entry !== "__tests__") {
             scanDir(fullPath);
           }

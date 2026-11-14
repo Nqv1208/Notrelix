@@ -642,7 +642,7 @@ frontend source
 frontend tests
 frontend/docs/generated/package-boundaries.md
 frontend/package.json scripts
-.github/workflows/fe-ci.yml
+.github/workflows/ci.yml
 backend/system contracts when cross-boundary
 ```
 

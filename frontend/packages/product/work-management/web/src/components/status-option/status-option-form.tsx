@@ -179,7 +179,7 @@ export function StatusOptionForm({
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           autoComplete="off"
-          className="h-8 text-label"
+          className="h-8 text-label max-md:h-11"
         />
         {error ? (
           <p
@@ -214,7 +214,7 @@ export function StatusOptionForm({
               value={option.value}
               aria-label={copy[`color_${option.id}`]}
               style={{ backgroundColor: option.value }}
-              className="size-6 border-transparent shadow-none ring-offset-2 ring-offset-popover aria-checked:ring-2 aria-checked:ring-foreground dark:bg-transparent [&_[data-slot=radio-group-indicator]]:size-6 [&_[data-slot=radio-group-indicator]]:text-white"
+              className="size-6 border-transparent shadow-none max-md:size-11 max-md:rounded-[10px] ring-offset-2 ring-offset-popover aria-checked:ring-2 aria-checked:ring-foreground dark:bg-transparent [&_[data-slot=radio-group-indicator]]:size-6 [&_[data-slot=radio-group-indicator]]:text-white"
             />
           ))}
         </RadioGroup>
@@ -239,8 +239,9 @@ export function StatusOptionForm({
             {STATUS_OPTION_CATEGORIES.map((option) => (
               <label
                 key={option}
+                data-hit-row=""
                 className={cn(
-                  "flex h-8 cursor-pointer items-center gap-2 rounded-md px-2 text-label text-foreground hover:bg-state-hover",
+                  "flex h-8 cursor-pointer items-center gap-2 rounded-md px-2 text-label text-foreground hover:bg-state-hover max-md:h-11",
                   category === option && "bg-state-hover",
                 )}
               >
@@ -253,10 +254,21 @@ export function StatusOptionForm({
       ) : null}
 
       <div className="flex items-center justify-end gap-1.5">
-        <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="max-md:h-11"
+          onClick={onCancel}
+        >
           {copy.cancel}
         </Button>
-        <Button type="submit" size="sm" disabled={pending}>
+        <Button
+          type="submit"
+          size="sm"
+          className="max-md:h-11"
+          disabled={pending}
+        >
           {pending
             ? copy.saving
             : mode === "edit"

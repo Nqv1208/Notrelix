@@ -48,6 +48,7 @@ public record WorkspaceMemberProfileDto(Guid UserId, string? JobTitle, long Vers
 /// <param name="InitialEntries">The Team/Space entries applied atomically on acceptance (Workspace invitation only).</param>
 /// <param name="Status">The invitation status enum name (<c>Pending</c>, <c>Accepted</c>, <c>Revoked</c>, <c>Expired</c> or <c>Declined</c>). A stored <c>Pending</c> invitation whose <c>ExpiresAt</c> has passed is reported as <c>Expired</c>.</param>
 /// <param name="Version">The invitation aggregate version, sent back as <c>expectedVersion</c> when its role is changed.</param>
+/// <param name="InvitedBy">The user id of the member who issued the invitation; the roster resolves the name.</param>
 public record WorkspaceInvitationDto(
     Guid Id,
     string Email,
@@ -60,7 +61,8 @@ public record WorkspaceInvitationDto(
     Guid? ResourceId = null,
     string? ResourceLevel = null,
     IReadOnlyList<WorkspaceInvitationEntryDto>? InitialEntries = null,
-    long Version = 0
+    long Version = 0,
+    Guid InvitedBy = default
 );
 
 /// <param name="Kind"><c>Team</c> or <c>Space</c>.</param>

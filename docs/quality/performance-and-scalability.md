@@ -17,12 +17,12 @@ evidence:
   - docs/quality/engineering-quality-standard.md
   - docs/quality/testing-strategy.md
   - docs/quality/security-quality-standard.md
-  - docs/product/contexts/work-management.md
-  - docs/product/contexts/documents.md
-  - docs/product/contexts/collaboration.md
-  - docs/product/contexts/automation.md
-  - docs/product/contexts/integrations.md
-  - docs/product/contexts/analytics.md
+  - docs/product/work-management.md
+  - docs/product/documents.md
+  - docs/product/collaboration.md
+  - docs/product/automation.md
+  - docs/product/integrations.md
+  - docs/product/analytics.md
   - docs/architecture/data-ownership-and-consistency.md
   - backend/docs/architecture/infrastructure-and-data.md
   - backend/docs/architecture/platform-and-messaging.md
@@ -1020,11 +1020,11 @@ docs/quality/security-quality-standard.md
 docs/quality/accessibility-standard.md
 docs/delivery/change-classification.md
 docs/architecture/data-ownership-and-consistency.md
-docs/product/contexts/work-management.md
-docs/product/contexts/documents.md
-docs/product/contexts/automation.md
-docs/product/contexts/integrations.md
-docs/product/contexts/analytics.md
+docs/product/work-management.md
+docs/product/documents.md
+docs/product/automation.md
+docs/product/integrations.md
+docs/product/analytics.md
 backend/docs/architecture/infrastructure-and-data.md
 backend/docs/architecture/platform-and-messaging.md
 frontend/docs/architecture/state-query-mutations.md

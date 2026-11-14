@@ -18,7 +18,6 @@ public record WorkspaceInfo
     public required Guid Id { get; init; }
     public required string Name { get; init; }
     public required string Slug { get; init; }
-    public required string Role { get; init; }
     public required Guid AccountId { get; init; }
 }
 

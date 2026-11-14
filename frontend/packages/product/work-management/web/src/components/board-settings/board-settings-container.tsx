@@ -5,6 +5,7 @@ import {
   useBoardLabelWrites,
   useDeletedFields,
   useBoardTemplates,
+  fieldKeyOf,
   useBoardTemplateWrites,
   useBoardSettings,
   useBoardView,
@@ -112,7 +113,10 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
     refetch,
     write,
     readLatest,
+    previewFormula,
   } = useBoardSettings(boardId, workspaceId);
+  const deletedList = useDeletedFields(boardId, workspaceId, !forbidden);
+  const readDeletedAgain = deletedList.refetch;
 
   const actions = useMemo<BoardSettingsActions>(
     () => ({
@@ -133,8 +137,14 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       reorderFields: (ids) => write((api, s) => api.reorderFields(s, ids)),
       updateField: (fieldId, changes) =>
         write((api, s) => api.updateField(s, fieldId, changes)),
+      previewFormula,
       archiveField: unsupported,
-      deleteField: (fieldId) => write((api, s) => api.deleteField(s, fieldId)),
+      // A deleted field is listed for its restore the moment it leaves the schema.
+      deleteField: async (fieldId) => {
+        const result = await write((api, s) => api.deleteField(s, fieldId));
+        if (result.ok) void readDeletedAgain();
+        return result;
+      },
       restoreField: unsupported,
       addOption: (fieldId, option) =>
         write((api, s) => api.addOption(s, fieldId, option)),
@@ -169,6 +179,9 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       },
       setDefaultView: (viewId) =>
         write((api, s) => api.setDefaultView(s, viewId)),
+      archiveView: (viewId) => write((api, s) => api.archiveView(s, viewId)),
+      unarchiveView: (viewId) =>
+        write((api, s) => api.unarchiveView(s, viewId)),
       deleteView: (viewId, newDefaultViewId) =>
         write((api, s) => api.deleteView(s, viewId, newDefaultViewId)),
       createGroup: (name) => write((api, s) => api.createGroup(s, name)),
@@ -185,10 +198,9 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
         write((api, s) => api.unarchiveGroup(s, groupId)),
       setAutomationEnabled: unsupported,
     }),
-    [copy, savedViews.views, write],
+    [copy, previewFormula, readDeletedAgain, savedViews.views, write],
   );
 
-  const deletedList = useDeletedFields(boardId, workspaceId, !forbidden);
   const deletedFields = useMemo<DeletedFieldsPanelProps>(
     () => ({
       status: deletedList.isError
@@ -202,6 +214,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
               {
                 id: field.id,
                 name: field.name ?? "",
+                key: fieldKeyOf(field.name, field.id),
                 type: (
                   field.fieldType ?? "text"
                 ).toLowerCase() as BoardSettingsFieldType,
@@ -217,8 +230,10 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       onReload: () => void deletedList.refetch(),
       onRestore: async (fieldId) => {
         try {
-          await deletedList.restore(fieldId);
-          return "restored";
+          const answer = await deletedList.restore(fieldId);
+          return answer?.alreadyActive
+            ? { kind: "already-active", by: answer.restoredByName ?? null }
+            : "restored";
         } catch (error) {
           const failure = error as { code?: string; status?: number } | null;
           if (failure?.code === "work-management.field.name-taken")
@@ -329,6 +344,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       onUpdate: rules.update,
       onDelete: rules.remove,
       onSetEnabled: rules.setEnabled,
+      onCancelRun: rules.cancelRun,
       openRuleId: rules.openRuleId,
       onOpenRuns: rules.openRuns,
       runs: {

@@ -234,9 +234,11 @@ export interface TableProjection {
 
 /**
  * The table's groups: each lane keeps its cards in the chosen sort order.
- * A lane that has cards on the board but none to show is left out; a lane
- * that is empty on the board stays (so "Thêm vào" still works) unless a
- * search or filter is active.
+ * A lane that has cards on the board but none to show is left out
+ * unless a search or filter is active, which keeps it with its note
+ * ("Không có việc khớp bộ lọc hiện tại", BC-Table) so the person sees where
+ * the items went; a lane that is empty on the board stays (so "Thêm công
+ * việc vào" still works) unless a search or filter is active.
  */
 export function projectTableLanes({
   lanes,
@@ -252,6 +254,7 @@ export function projectTableLanes({
   let totalCount = 0;
   let doneHiddenCount = 0;
   const groups: TableLane[] = [];
+  const filteredEmpty = new Set<TableLane>();
 
   for (const lane of lanes) {
     totalCount += lane.total;
@@ -268,11 +271,12 @@ export function projectTableLanes({
             lane.filteredTotal - (lane.cards.length - kept.length),
           );
     visibleCount += laneShown;
-    if (kept.length === 0 && (lane.total > 0 || narrowed)) continue;
+    if (kept.length === 0 && lane.total === 0 && narrowed) continue;
+    if (kept.length === 0 && lane.total > 0 && !narrowed) continue;
     const cards = orderCards
       ? orderCards([...kept])
       : sortTableCards(kept, sort, statusRank, customFields);
-    groups.push({
+    const group: TableLane = {
       optionId: lane.optionId,
       name: lane.name,
       category: lane.category,
@@ -282,11 +286,17 @@ export function projectTableLanes({
       overdueCount: cards.filter(isOverdue).length,
       ...(lane.filteredTotal === undefined ? {} : { filteredTotal: laneShown }),
       hasMore: lane.hasMore === true,
-    });
+    };
+    groups.push(group);
+    if (kept.length === 0 && lane.total > 0) filteredEmpty.add(group);
   }
 
   return {
-    groups,
+    // Nothing matches anywhere: the no-results state, not a column of empty groups.
+    groups:
+      visibleCount === 0
+        ? groups.filter((group) => !filteredEmpty.has(group))
+        : groups,
     visibleCount,
     totalCount,
     hiddenCount: totalCount - visibleCount,

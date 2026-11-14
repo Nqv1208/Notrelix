@@ -15,16 +15,16 @@ evidence:
   - RULE.md
   - docs/quality/engineering-quality-standard.md
   - docs/quality/testing-strategy.md
-  - docs/product/contexts/identity.md
-  - docs/product/contexts/workspaces.md
-  - docs/product/contexts/governance.md
-  - docs/product/contexts/integrations.md
-  - docs/product/contexts/billing.md
+  - docs/product/identity.md
+  - docs/product/workspaces.md
+  - docs/product/governance.md
+  - docs/product/integrations.md
+  - docs/product/billing.md
   - backend/docs/architecture/security-tenancy-authorization.md
   - backend/docs/decisions/ADR-002-rls-bootstrap-connection-lifecycle.md
   - backend/docs/decisions/ADR-003-csrf-protection.md
   - backend/docs/decisions/ADR-004-rate-limiting-architecture.md
-  - .github/workflows/be-ci.yml
+  - .github/workflows/ci.yml
 review_on:
   - authentication-boundary-change
   - authorization-boundary-change
@@ -1426,12 +1426,12 @@ Stop rather than merge if:
 docs/quality/engineering-quality-standard.md
 docs/quality/testing-strategy.md
 docs/quality/accessibility-standard.md
-docs/product/contexts/identity.md
-docs/product/contexts/accounts.md
-docs/product/contexts/workspaces.md
-docs/product/contexts/governance.md
-docs/product/contexts/integrations.md
-docs/product/contexts/billing.md
+docs/product/identity.md
+docs/product/accounts.md
+docs/product/workspaces.md
+docs/product/governance.md
+docs/product/integrations.md
+docs/product/billing.md
 docs/architecture/contract-boundaries.md
 docs/architecture/data-ownership-and-consistency.md
 backend/docs/architecture/security-tenancy-authorization.md

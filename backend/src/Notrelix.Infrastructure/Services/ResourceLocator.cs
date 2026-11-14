@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Automation.Abstractions;
+using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Governance.Abstractions;
@@ -36,6 +37,7 @@ public sealed class ResourceLocator : IResourceLocator
     private static readonly ResourceKind AutomationRule = ResourceKind.Create("automation.rule");
     private static readonly ResourceKind AutomationExecution = ResourceKind.Create("automation.execution");
     private static readonly ResourceKind CalendarIntegration = ResourceKind.Create("integrations.calendar-integration");
+    private static readonly ResourceKind ChatSpace = ResourceKind.Create("chat.space");
 
     private readonly IWorkManagementDbContext _workDb;
     private readonly IDocumentDbContext _docDb;
@@ -44,6 +46,7 @@ public sealed class ResourceLocator : IResourceLocator
     private readonly IAutomationDbContext _autoDb;
     private readonly IIntegrationDbContext _integrationDb;
     private readonly IRlsSessionContext _rls;
+    private readonly IChatDbContext? _chatDb;
 
     public ResourceLocator(
         IWorkManagementDbContext workDb,
@@ -52,9 +55,11 @@ public sealed class ResourceLocator : IResourceLocator
         IGovernanceDbContext govDb,
         IAutomationDbContext autoDb,
         IIntegrationDbContext integrationDb,
-        IRlsSessionContext rls)
+        IRlsSessionContext rls,
+        IChatDbContext? chatDb = null)
     {
         _rls = rls;
+        _chatDb = chatDb;
         _workDb = workDb;
         _docDb = docDb;
         _collabDb = collabDb;
@@ -219,6 +224,13 @@ public sealed class ResourceLocator : IResourceLocator
                 .FirstOrDefaultAsync(cancellationToken)),
 
             "integrations.calendar-integration" => ToLocation(CalendarIntegration, await _integrationDb.CalendarIntegrations
+                .IgnoreQueryFilters()
+                .Where(r => r.Id == resource.ResourceId)
+                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .FirstOrDefaultAsync(cancellationToken)),
+
+            // A Chat space (channel): located by its own tenant columns, so a realtime subscription resolves its Workspace.
+            "chat.space" => _chatDb is null ? null : ToLocation(ChatSpace, await _chatDb.ChatSpaces
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
                 .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))

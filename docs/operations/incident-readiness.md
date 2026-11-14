@@ -12,10 +12,6 @@ applies_to:
   - release-failures
   - dependency-failures
 evidence:
-  - docs/engineering/06-operations/00-incident-response.md
-  - docs/engineering/06-operations/01-operational-readiness.md
-  - docs/engineering/06-operations/04-messaging-data-pipeline-runbook.md
-  - docs/engineering/06-operations/05-contract-compatibility-runbook.md
   - docs/operations/observability.md
   - docs/delivery/release-and-rollout.md
   - docs/delivery/migration-policy.md

@@ -10,9 +10,14 @@ import { notificationsQueryKeys } from "../../../query/keys";
 interface UseMarkReadDeps {
   api: NotificationsApiClient;
   endpoints: NotificationsEndpoints;
+  workspaceId: string;
 }
 
-export function createUseMarkRead({ api, endpoints }: UseMarkReadDeps) {
+export function createUseMarkRead({
+  api,
+  endpoints,
+  workspaceId,
+}: UseMarkReadDeps) {
   const service = createNotificationsService(api, endpoints);
 
   return function useMarkRead() {
@@ -32,7 +37,7 @@ export function createUseMarkRead({ api, endpoints }: UseMarkReadDeps) {
     });
 
     const markAllReadMutation = useMutation({
-      mutationFn: () => service.markAllAsRead(),
+      mutationFn: () => service.markAllAsRead(workspaceId),
       onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: notificationsQueryKeys.all(accountId),

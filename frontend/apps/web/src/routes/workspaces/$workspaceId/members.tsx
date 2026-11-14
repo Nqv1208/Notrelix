@@ -20,6 +20,8 @@ import {
   formatCopy,
   useWorkspaceMembersCopy,
   WorkspaceMembersSurface,
+  WorkspaceSetupFrame,
+  useWorkspaceTeamsCopy,
   type MemberWriteTarget,
   type MembersTab,
   type WorkspaceMembersCopy,
@@ -36,6 +38,7 @@ import { toastFailure } from "@/shell/workspace/failure-toast";
 import { sectionState } from "@/shell/workspace/section-state";
 import { useIdSet } from "@/shell/workspace/use-id-set";
 import { useNow } from "@/shell/workspace/use-now";
+import { useSetupFrame } from "@/shell/workspace/use-setup-frame";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
 
 /** The producer refuses an invitation for a person who is already an Active member. */
@@ -90,6 +93,8 @@ export function MembersPage() {
   }, [runtimeClient]);
 
   const viewer = useWorkspaceViewer(workspaceId);
+  const teamsCopy = useWorkspaceTeamsCopy();
+  const frame = useSetupFrame("members");
   const admin = isWorkspaceAdmin(viewer.role);
   const invitations = hooks.useInvitations(workspaceId, { enabled: admin });
   const mutations = hooks.useMemberMutations(workspaceId);
@@ -315,7 +320,11 @@ export function MembersPage() {
   );
 
   return (
-    <>
+    <WorkspaceSetupFrame
+      copy={teamsCopy}
+      frame={frame}
+      hideNav={viewer.role === "guest"}
+    >
       <WorkspaceMembersSurface
         copy={copy}
         formatters={formatters}
@@ -389,6 +398,6 @@ export function MembersPage() {
         }
         createInvitation={createInvitation.mutateAsync}
       />
-    </>
+    </WorkspaceSetupFrame>
   );
 }

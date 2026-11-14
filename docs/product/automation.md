@@ -16,12 +16,12 @@ evidence:
   - PRODUCT.md
   - docs/product/product-model.md
   - docs/product/product-experience.md
-  - docs/product/contexts/governance.md
-  - docs/product/contexts/work-management.md
-  - docs/product/contexts/documents.md
-  - docs/product/contexts/collaboration.md
-  - docs/product/contexts/integrations.md
-  - docs/product/contexts/billing.md
+  - docs/product/governance.md
+  - docs/product/work-management.md
+  - docs/product/documents.md
+  - docs/product/collaboration.md
+  - docs/product/integrations.md
+  - docs/product/billing.md
   - docs/architecture/events-realtime-and-delivery-boundary.md
   - docs/architecture/data-ownership-and-consistency.md
   - backend/src/Notrelix.Domain/Automation/
@@ -92,7 +92,6 @@ Schedule intent
 Retry/recovery semantics at automation level
 Recursion/causation policy
 Automation templates
-Automation-specific service principal behavior
 ```
 
 Current source has dedicated `Actions`, `Conditions`, `Executions`, `Rules`, `Scheduled`, `Templates`, and `Triggers`, plus `RulesEngine` and `Agents`.
@@ -820,18 +819,10 @@ Rule deletion must not silently erase required history.
 
 # 60. Authorization principal
 
-Automation execution uses an explicit security principal/policy.
+Automation execution uses an explicit security principal.
 
-Possible models:
+In version one every Rule runs as one named person, its executor (see 61.2). The model is stable and reviewable.
 
-```text
-original initiating actor
-Rule owner
-Workspace automation service principal
-explicit delegated capability
-```
-
-The chosen model must be stable and reviewable.
 
 ---
 
@@ -903,9 +894,9 @@ If Action permission is revoked:
 
 # 63. Service principal
 
-If a Workspace automation principal exists, it has bounded capabilities and scope.
+Version one has no service principal; every Rule runs as one named person.
 
-It is not unrestricted system authority.
+A service principal would need its own product decision.
 
 ---
 
@@ -1638,13 +1629,13 @@ Stop rather than guess if:
 PRODUCT.md
 docs/product/product-model.md
 docs/product/product-experience.md
-docs/product/contexts/governance.md
-docs/product/contexts/work-management.md
-docs/product/contexts/documents.md
-docs/product/contexts/collaboration.md
-docs/product/contexts/integrations.md
-docs/product/contexts/billing.md
-docs/product/contexts/analytics.md
+docs/product/governance.md
+docs/product/work-management.md
+docs/product/documents.md
+docs/product/collaboration.md
+docs/product/integrations.md
+docs/product/billing.md
+docs/product/analytics.md
 docs/architecture/events-realtime-and-delivery-boundary.md
 docs/architecture/data-ownership-and-consistency.md
 docs/architecture/contract-boundaries.md

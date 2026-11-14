@@ -44,9 +44,11 @@ SELECT ops.apply_scope_expression_policies('workspace', 'recent_resources',
 SELECT ops.apply_scope_expression_policies('workspace', 'pinned_resources',
     'ops.has_workspace_access(account_id, workspace_id) AND user_id = ops.current_user_id()', true);
 
--- Onboarding: an unfinished draft is personal (user-owned, no tenant yet); the getting-started
--- dismissal is workspace scope AND row ownership, like the navigation state above.
-SELECT ops.apply_user_owned_policies('workspace', 'onboarding_drafts', 'user_id', true, false);
+-- Onboarding: an unfinished draft is personal (user-owned, no tenant yet) and the person saves it
+-- themselves, so the application login may write its own row (insert, update and delete only where
+-- user_id is the caller); the getting-started dismissal is workspace scope AND row ownership, like
+-- the navigation state above.
+SELECT ops.apply_user_owned_policies('workspace', 'onboarding_drafts', 'user_id', true, true);
 SELECT ops.apply_scope_expression_policies('workspace', 'getting_started_dismissals',
     'ops.has_workspace_access(account_id, workspace_id) AND user_id = ops.current_user_id()', true);
 SELECT ops.apply_scoped_business_policies('governance', 'custom_roles', true);

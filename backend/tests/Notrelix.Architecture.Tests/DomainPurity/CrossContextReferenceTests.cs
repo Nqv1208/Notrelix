@@ -17,6 +17,7 @@ public class CrossContextReferenceTests
         "Notrelix.Domain.WorkManagement",
         "Notrelix.Domain.Documents",
         "Notrelix.Domain.Collaboration",
+        "Notrelix.Domain.Chat",
         "Notrelix.Domain.Automation",
         "Notrelix.Domain.Integrations",
         "Notrelix.Domain.Billing",

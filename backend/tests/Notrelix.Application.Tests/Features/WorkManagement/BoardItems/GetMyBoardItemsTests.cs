@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetMyBoardItems;
+using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Application.Tests.Features.WorkManagement.BoardItems;
@@ -101,6 +102,35 @@ public class GetMyBoardItemsTests : WorkManagementHandlerTestBase
         var result = await _handler.Handle(new GetMyBoardItemsQuery(TestWorkspaceId), CancellationToken.None);
 
         result.Data!.Items.Select(i => i.Id).Should().Equal(open.Id);
+    }
+
+    [Fact]
+    public async Task Handle_ItemsInAnArchivedGroup_AreExcludedUntilTheGroupComes()
+    {
+        var board = CreateBoard();
+        SetupBoards(board);
+        _visibility.Boards.AddRange([board.Id]);
+
+        var activeGroup = BoardGroup.Create(
+            TestAccountId, TestWorkspaceId, board.Id, "Active", Color.Create("#FF0000"),
+            FractionalIndex.Create("a0"), TestUserId, TestNow);
+        var archivedGroup = BoardGroup.Create(
+            TestAccountId, TestWorkspaceId, board.Id, "Archived", Color.Create("#00FF00"),
+            FractionalIndex.Create("a1"), TestUserId, TestNow);
+        archivedGroup.Archive(TestUserId, TestNow);
+        SetupBoardGroups(activeGroup, archivedGroup);
+
+        var live = CreateBoardItem(boardId: board.Id, groupId: activeGroup.Id);
+        var inArchivedGroup = CreateBoardItem(boardId: board.Id, groupId: archivedGroup.Id);
+        SetupBoardItems(live, inArchivedGroup);
+        SetupBoardItemMembers(
+            CreateBoardItemMember(itemId: live.Id, userId: TestUserId),
+            CreateBoardItemMember(itemId: inArchivedGroup.Id, userId: TestUserId));
+
+        var result = await _handler.Handle(new GetMyBoardItemsQuery(TestWorkspaceId), CancellationToken.None);
+
+        result.Data!.Items.Select(i => i.Id).Should().Equal([live.Id],
+            "an Item leaves My Work with its archived group");
     }
 
     [Fact]

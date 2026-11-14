@@ -66,6 +66,11 @@ public sealed class DueDateNotificationsIntegrationTests
                 sp => sp.GetRequiredService<Notrelix.Infrastructure.Data.ApplicationDbContext>());
             services.AddScoped<Notrelix.Application.Features.Collaboration.Public.Watchers.IResourceFollowers,
                 Notrelix.Infrastructure.CrossContext.Collaboration.Watchers.PostgresResourceFollowers>();
+            services.AddScoped<Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility,
+                Notrelix.Infrastructure.Data.Authz.PostgresResourceVisibility>();
+            services.AddScoped<Notrelix.Application.Features.WorkManagement.Public.ItemNotifications.IWorkItemNotificationFacts,
+                Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement.WorkItemNotificationFactsAdapter>();
+            services.AddScoped<ItemAudience>();
             services.AddScoped<ItemFollowerNotifier>();
             services.AddScoped<DueDateNotificationSweeper>();
         });
@@ -136,6 +141,23 @@ public sealed class DueDateNotificationsIntegrationTests
         (await _host.ReadAsync(c => c.NotificationRecipients
                 .Where(r => r.WorkspaceId == stack.WorkspaceId).CountAsync()))
             .Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Pass_TellsNobodyWhoCannotSeeTheItemsBoard()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var boardId = await _host.SeedBoardAsync(stack, "Due board");
+        var ana = await _host.AddMemberAsync(stack, Domain.Workspaces.Members.WorkspaceRole.Member, "Ana");
+        var outsider = await _host.AddOutsiderAsync(stack);
+        await SeedItemAsync(stack, boardId, "Due tomorrow", LocalNoon(12), ana, outsider);
+
+        using var provider = ProviderFor(stack);
+        await RunAsync(provider);
+
+        var told = await _host.ReadAsync(c => c.NotificationRecipients
+            .Where(r => r.WorkspaceId == stack.WorkspaceId).Select(r => r.RecipientUserId).ToListAsync());
+        told.Should().BeEquivalentTo([ana]);
     }
 
     [Fact]

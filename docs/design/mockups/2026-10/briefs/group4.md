@@ -1,6 +1,7 @@
 # Nhóm 4 — Tự động hoá, báo cáo, thanh toán, tích hợp (2026-10-12)
 
-Read with: `review-decisions.md` (world facts, people, editing rules — all apply), `group4-rules.md` (product rules digest; cite rule IDs in small captions only where they explain a visible behaviour), and for mobile `mobile-brief.md`.
+Read with: `decisions.md` (world facts, people, editing rules — all apply), and for mobile `mobile-brief.md`.
+The run-as person is decided (2026-10-30: every rule runs as one named person). Board-scoped Email-in/webhook and OneDrive/SharePoint shown here are mockup-only (owner decision 45: workspace scope only).
 Every number, name and date below is canonical for this batch. Do not invent other counts; if you need an extra fact, keep it small and list it in your report under "Assumed".
 
 ## Global decisions for this batch
@@ -17,7 +18,7 @@ Every number, name and date below is canonical for this batch. Do not invent oth
 
 ## Shared data
 
-### People (as in review-decisions.md)
+### People (as in decisions.md)
 Hà (HA #4E8574, Quản trị workspace, current user). Lê Hoàng Phúc (HP #B4500B, Quản trị Phòng Công nghệ). Trần Minh Quân (MQ). Phan Ngọc Anh (NA #7C4DDB). Vũ Thanh (VT #0E7490). Bùi Thanh Tâm (TT #475569). Đỗ Khánh Linh (KL #9A6A12, Quản trị Phòng Kế toán). Hồ Quang Minh (HM #57534E, left Phòng Công nghệ 08/10). Trịnh Quốc Hưng (Owner, Tổng giám đốc). Copy avatar colours for MQ etc. from Final-Board.dc.html.
 
 ### ERP board "Triển khai ERP Q4" (Phòng Công nghệ) — for dashboards

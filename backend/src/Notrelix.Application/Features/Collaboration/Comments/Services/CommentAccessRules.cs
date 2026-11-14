@@ -21,6 +21,21 @@ public static class CommentAccessRules
         }
     }
 
+    /// <summary>
+    /// Deleting belongs to the author, or to a moderator of the target: a Board manager of a board item. Editing stays
+    /// with the author alone. Both need view access to the target, and a refusal keeps the author-only code.
+    /// </summary>
+    public static async Task RequireAuthorOrModeratorAsync(Comment comment, Guid actorId, ICommentTargetAccess access, CancellationToken ct)
+    {
+        await RequireViewAsync(comment, access, ct);
+        if (comment.CreatedBy == actorId || await access.HasAsync(comment.Target, CommentTargetRight.Moderate, ct))
+        {
+            return;
+        }
+
+        throw new ForbiddenException("Only the author or a moderator can delete this comment.", AuthorOnlyCode);
+    }
+
     /// <summary>Resolving and reopening belong to the thread starter or a person who may edit the target.</summary>
     public static async Task RequireThreadResolverAsync(
         Comment comment, Guid actorId, ICollaborationDbContext context, ICommentTargetAccess access, CancellationToken ct)

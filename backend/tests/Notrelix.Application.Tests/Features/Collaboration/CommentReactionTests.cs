@@ -29,6 +29,7 @@ public class CommentReactionTests
     private readonly Mock<ICurrentRequestContext> _request = new();
     private readonly Mock<ICurrentUser> _user = new();
     private readonly Mock<IDateTimeProvider> _clock = new();
+    private readonly Mock<IReactionWriteLock> _reactionLock = new();
 
     public CommentReactionTests()
     {
@@ -56,7 +57,7 @@ public class CommentReactionTests
             ResourceRef.Create(ResourceKind.Create("collaboration.comment"), comment.Id, _workspace), user, Emoji.Create(emoji), Now));
 
     private Task<Result> Add(Guid commentId, string emoji) =>
-        new AddReactionCommandHandler(_context.Object, _request.Object, _clock.Object)
+        new AddReactionCommandHandler(_context.Object, _request.Object, _clock.Object, _reactionLock.Object)
             .Handle(new AddReactionCommand(_item, commentId, emoji), CancellationToken.None);
 
     private Task<Result> Remove(Guid commentId, string emoji) =>
@@ -99,6 +100,34 @@ public class CommentReactionTests
         await Add(comment.Id, "🎉");
 
         _reactions.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Adding_TakesTheReactionLockForThatPersonEmojiAndComment_BeforeAddingTheRow()
+    {
+        var comment = OnItem();
+
+        await Add(comment.Id, "🎉");
+
+        _reactionLock.Verify(l => l.AcquireAsync(comment.Id, _me, "🎉", It.IsAny<CancellationToken>()), Times.Once);
+        _reactions.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task ConcurrentDuplicate_InsertedWhileWaitingForTheLock_IsANoOpAndNotASecondRow()
+    {
+        // The racing request commits its row while this one waits on the lock; the check made under the lock then
+        // sees it, so this add is a no-op rather than a unique-violation at commit (UC-COL-A09).
+        var comment = OnItem();
+        _reactionLock
+            .Setup(l => l.AcquireAsync(comment.Id, _me, "🎉", It.IsAny<CancellationToken>()))
+            .Callback(() => Holds(comment, _me, "🎉"))
+            .Returns(Task.CompletedTask);
+
+        var result = await Add(comment.Id, "🎉");
+
+        result.Succeeded.Should().BeTrue();
+        _reactions.Should().ContainSingle();
     }
 
     [Fact]
@@ -209,7 +238,7 @@ public class CommentReactionTests
         actors.Setup(a => a.FindManyAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([new ActorSnapshot(_me, "Me", null), new ActorSnapshot(_other, "Other", null)]);
 
-        var result = await new GetCommentsQueryHandler(_context.Object, actors.Object, _user.Object)
+        var result = await new GetCommentsQueryHandler(_context.Object, actors.Object, _user.Object, new InMemoryCommentTombstones([]))
             .Handle(GetCommentsQuery.ForBoardItem(_item), CancellationToken.None);
 
         var reactions = result.Data!.Single().Reactions.ToDictionary(r => r.Emoji);

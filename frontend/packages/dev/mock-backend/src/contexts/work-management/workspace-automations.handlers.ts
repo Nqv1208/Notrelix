@@ -10,9 +10,11 @@
  *   Automation.Rules.Delete       DELETE /workspaces/:workspaceId/automations/:automationId
  *   Automation.Rules.SetEnabled   PATCH /workspaces/:workspaceId/automations/:automationId/enabled
  *   Automation.Executions.List    GET   /automations/:automationId/executions
+ *   Automation.Executions.Cancel  POST  /workspaces/:workspaceId/automations/:automationId/executions/:executionId/cancel
  */
 import { defineMockOperation } from "../../operations/types";
 import {
+  conflict,
   created,
   forbidden,
   noContent,
@@ -217,6 +219,41 @@ export const workspaceAutomationsOperations = [
       if (!mayManageBoard(store, rule.workspaceId, query.boardId ?? null))
         return forbidden();
       return ok(store.workspaceAutomations.executions(rule.id));
+    },
+  }),
+  defineMockOperation<
+    { workspaceId: string; automationId: string; executionId: string },
+    never,
+    void
+  >({
+    id: "automation.executions.cancel",
+    contract: { kind: "openapi", operationId: "Automation.Executions.Cancel" },
+    method: "POST",
+    route:
+      "/workspaces/:workspaceId/automations/:automationId/executions/:executionId/cancel",
+    async handle({ params, query, store }) {
+      const boardId = query.boardId ?? null;
+      if (!mayManageBoard(store, params.workspaceId, boardId))
+        return forbidden() as MockHttpResult<void>;
+      const rule = store.workspaceAutomations.find(params.automationId);
+      if (
+        !rule ||
+        rule.removed ||
+        rule.workspaceId !== params.workspaceId ||
+        (boardId && rule.boardId !== boardId)
+      )
+        return notFound("Automation rule not found");
+      const execution = store.workspaceAutomations.execution(
+        rule.id,
+        params.executionId,
+      );
+      if (!execution) return notFound("Automation execution not found");
+      if (execution.status !== "Queued")
+        return conflict(
+          "Only a queued execution can be cancelled",
+        ) as MockHttpResult<void>;
+      store.workspaceAutomations.cancel(execution);
+      return noContent();
     },
   }),
 ];

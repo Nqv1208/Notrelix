@@ -8,6 +8,13 @@
 export const en = {
   /** Accessible name of the view tab list. */
   boardViews: "Views",
+  /** The 56 px board header of the tablet band (Final-T-*). */
+  tablet: {
+    collapseSidebar: "Collapse the sidebar",
+    expandSidebar: "Open the sidebar",
+    search: "Search or run a command",
+    addItem: "Add item",
+  },
   /** The live connection: shown only while it is not connected (see `BoardConnectionNotice`). */
   connection: {
     reconnecting: "Reconnecting…",
@@ -26,9 +33,45 @@ export const en = {
   untitledBoard: "Board",
   addView: "Add view",
   /** One notice when the address names a saved view that no longer exists. */
-  viewGone: "That view no longer exists. Showing the default view.",
+  viewGone: {
+    title: "The view you opened no longer exists",
+    body: "Showing the board's default view.",
+    close: "Close",
+  },
+  /** The board is missing or the person may not see it: one answer for both (BC-Shell NP). */
+  boardGone: {
+    title: "You can't view this page",
+    body: "The page doesn't exist or you don't have permission to view it. Ask the board manager if you need access.",
+    home: "Back to home",
+  },
   /** Marks a saved view only its creator sees. */
   privateView: "Private view",
+  /** The menu of the opened saved view, in the tab strip. */
+  viewMenu: {
+    open: "Options of the view {{name}}",
+    makeDefault: "Set as default view",
+    isDefault: "This is the default view",
+    privateCannotDefault: "A private view cannot be the default",
+    archive: "Archive view…",
+    delete: "Delete view…",
+    onlyShared: "The board's only shared view stays",
+    archived: "Archived views",
+    restore: "Restore {{name}}",
+    deleteTitle: "Delete the view {{name}}?",
+    deleteBody:
+      "Only the view's settings are deleted; the items stay. People on this view move to the default view.",
+    archiveTitle: "Archive the view {{name}}?",
+    archiveBody:
+      "The view leaves the tabs and keeps its settings. You can restore it from this menu.",
+    nextDefault: "Next default view",
+    nextDefaultHint:
+      "{{name}} is the default view. Pick the view that takes its place.",
+    keep: "Keep it",
+    working: "Working…",
+    conflict:
+      "Someone changed this view first. The latest is loaded, nothing was changed. Check it and try again.",
+    failed: "Not done. Try again.",
+  },
   header: {
     settings: "Settings",
     settingsUnavailable: "Board settings aren't available yet.",
@@ -37,6 +80,7 @@ export const en = {
     moreOptions: "More options",
     copyLink: "Copy board link",
     deletedItems: "Deleted items",
+    deletedItemsCount: "{{count}} that can be restored",
     archivedItems: "Archived items",
     formResponses: "Form responses",
     renameBoard: "Rename board…",
@@ -81,10 +125,11 @@ export const en = {
     moreAvatars: "+{{count}}",
     /** The archived-board banner: read-only for everyone, Unarchive for a manager. */
     archived: {
+      title: "This board is archived",
       banner:
-        "This board is archived. It is read-only until a manager unarchives it.",
+        "You can view it but not change it. A manager can unarchive it in Settings.",
       bannerManager:
-        "This board is archived and read-only. Unarchive it to let people write again.",
+        "You can view it but not change it. Unarchive it to let people write again.",
       unarchive: "Unarchive",
       unarchiving: "Unarchiving…",
       conflict:
@@ -105,6 +150,13 @@ export type BoardHeaderCopy = typeof en;
 
 export const vi: BoardHeaderCopy = {
   boardViews: "Chế độ xem",
+  /** Thanh đầu 56 px của board ở tablet (Final-T-*). */
+  tablet: {
+    collapseSidebar: "Thu gọn thanh bên",
+    expandSidebar: "Mở thanh bên",
+    search: "Tìm hoặc chạy lệnh (⌘K)",
+    addItem: "Thêm công việc",
+  },
   connection: {
     reconnecting: "Đang kết nối lại…",
     lostTitle: "Mất kết nối từ {{time}}. Dữ liệu có thể đã cũ",
@@ -119,8 +171,42 @@ export const vi: BoardHeaderCopy = {
   },
   untitledBoard: "Board",
   addView: "Thêm chế độ xem",
-  viewGone: "Chế độ xem này không còn nữa. Đang hiện chế độ xem mặc định.",
+  viewGone: {
+    title: "Chế độ xem này không còn nữa",
+    body: "Đang hiện chế độ xem mặc định.",
+    close: "Đóng",
+  },
+  boardGone: {
+    title: "Bạn không xem được trang này",
+    body: "Trang không tồn tại hoặc bạn chưa có quyền xem. Hỏi người quản lý board nếu bạn cần quyền truy cập.",
+    home: "Về trang chủ",
+  },
   privateView: "Chế độ xem riêng tư",
+  viewMenu: {
+    open: "Tuỳ chọn của chế độ xem {{name}}",
+    makeDefault: "Đặt làm chế độ xem mặc định",
+    isDefault: "Đây là chế độ xem mặc định",
+    privateCannotDefault: "Chế độ xem riêng tư không đặt làm mặc định được",
+    archive: "Lưu trữ chế độ xem…",
+    delete: "Xoá chế độ xem…",
+    onlyShared: "Chế độ xem chung duy nhất của board được giữ lại",
+    archived: "Chế độ xem đã lưu trữ",
+    restore: "Khôi phục {{name}}",
+    deleteTitle: "Xoá chế độ xem {{name}}?",
+    deleteBody:
+      "Chỉ cấu hình của chế độ xem bị xoá, các việc vẫn còn. Người đang xem chế độ này sẽ chuyển sang chế độ xem mặc định.",
+    archiveTitle: "Lưu trữ chế độ xem {{name}}?",
+    archiveBody:
+      "Chế độ xem rời khỏi thanh tab và giữ nguyên cấu hình. Bạn khôi phục lại được từ menu này.",
+    nextDefault: "Chế độ xem mặc định kế tiếp",
+    nextDefaultHint:
+      "{{name}} đang là chế độ xem mặc định. Chọn chế độ xem thay thế.",
+    keep: "Giữ lại",
+    working: "Đang xử lý…",
+    conflict:
+      "Có người vừa sửa chế độ xem này. Bản mới nhất đã được tải, chưa có gì thay đổi. Kiểm tra rồi thử lại.",
+    failed: "Chưa xong. Thử lại.",
+  },
   header: {
     settings: "Thiết lập",
     settingsUnavailable: "Chưa có trang thiết lập board.",
@@ -129,6 +215,7 @@ export const vi: BoardHeaderCopy = {
     moreOptions: "Thêm tuỳ chọn",
     copyLink: "Sao chép liên kết board",
     deletedItems: "Việc đã xoá",
+    deletedItemsCount: "{{count}} việc khôi phục được",
     archivedItems: "Việc đã lưu trữ",
     formResponses: "Phản hồi biểu mẫu",
     renameBoard: "Đổi tên board…",
@@ -169,10 +256,11 @@ export const vi: BoardHeaderCopy = {
     listLastSeparator: " và ",
     moreAvatars: "+{{count}}",
     archived: {
+      title: "Board này đã lưu trữ",
       banner:
-        "Board này đã được lưu trữ. Board chỉ đọc cho đến khi quản lý bỏ lưu trữ.",
+        "Bạn xem được nhưng không sửa được. Người quản lý có thể bỏ lưu trữ trong Thiết lập.",
       bannerManager:
-        "Board này đã lưu trữ và chỉ đọc. Bỏ lưu trữ để mọi người ghi lại được.",
+        "Bạn xem được nhưng không sửa được. Bỏ lưu trữ để mọi người ghi lại được.",
       unarchive: "Bỏ lưu trữ",
       unarchiving: "Đang bỏ lưu trữ…",
       conflict:

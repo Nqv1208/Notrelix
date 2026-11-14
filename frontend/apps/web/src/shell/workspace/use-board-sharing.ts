@@ -54,6 +54,24 @@ export function useBoardSharing(
     retry: false,
   });
   const { refetch } = query;
+  // The Board's pending guest invitations (UC-WM-A20): read only by a manager of the Board.
+  const invitationsKey = workspaceQueryKey(
+    workspaceId,
+    "board-invitations",
+    boardId,
+  );
+  const invitations = useQuery({
+    queryKey: invitationsKey,
+    queryFn: async () =>
+      await api.api.get<
+        OperationResponse<"Workspaces.Invitations.ListResourceInvitations", 200>
+      >(endpoints.resourceInvitations.list(BOARD_KIND, boardId), {
+        skipGlobalErrorToast: true,
+      }),
+    enabled: enabled && (query.data?.canManage ?? false),
+    staleTime: 10_000,
+    retry: false,
+  });
   // The Board's access, record and lists read the same facts: read them again.
   const refresh = useCallback(async () => {
     await client.invalidateQueries({
@@ -145,6 +163,13 @@ export function useBoardSharing(
       reload: () => {
         void refetch();
       },
+      pendingInvitations: (invitations.data ?? []).map((row) => ({
+        id: row.id ?? "",
+        email: row.email ?? "",
+        issuedByYou: row.issuedByYou === true,
+        invitedByName: row.invitedByName ?? "",
+        expiresAt: row.expiresAt ?? "",
+      })),
       changeLevel: async (entryId: string, level: SharingLevel) => {
         const entry = entryOf(entryId);
         if (entry) await runAll(planLevelChange(entry, level));
@@ -154,6 +179,50 @@ export function useBoardSharing(
         runAll([
           { kind: "grant", subjectType: "User", subjectId: userId, level },
         ]),
+      /** Sends a pending guest invitation again: a new link, the old one stops working (UC-WM-A20). */
+      resendInvitation: async (invitationId: string) => {
+        try {
+          await api.api.post(
+            `${endpoints.resourceInvitations.list(BOARD_KIND, boardId)}/${invitationId}/resend`,
+            {},
+            { headers: { "Idempotency-Key": crypto.randomUUID() } },
+          );
+        } finally {
+          await refresh();
+        }
+      },
+      /** Revokes a pending guest invitation: its link can no longer be accepted (UC-WM-A20). */
+      revokeInvitation: async (invitationId: string) => {
+        try {
+          await api.api.delete(
+            endpoints.resourceInvitations.detail(
+              BOARD_KIND,
+              boardId,
+              invitationId,
+            ),
+            { headers: { "Idempotency-Key": crypto.randomUUID() } },
+          );
+        } finally {
+          await refresh();
+        }
+      },
+      /**
+       * Invites an outsider by email as a Guest of this Board (UC-WM-A19): the level is Viewer, the only level a
+       * guest may hold on a resource (GOV-030). The new invitation shows in the pending list.
+       */
+      inviteGuest: async (email: string) => {
+        try {
+          const body: OperationRequestBody<"Workspaces.Invitations.InviteGuestToResource"> =
+            { email, level: "Viewer" };
+          await api.api.post(
+            endpoints.resourceInvitations.list(BOARD_KIND, boardId),
+            body,
+            { headers: { "Idempotency-Key": crypto.randomUUID() } },
+          );
+        } finally {
+          await refresh();
+        }
+      },
       /** A workspace Owner takes a board that has no owner (`WorkManagement.Boards.AddMember` as Owner). */
       claimOwner: async (userId: string) => {
         try {
@@ -192,6 +261,8 @@ export function useBoardSharing(
       api,
       boardId,
       entryOf,
+      invitations.data,
+      invitationsKey,
       query.data,
       query.isLoading,
       query.isError,

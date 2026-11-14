@@ -6,6 +6,7 @@ using Notrelix.Infrastructure.Data.Audit;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.Documents.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Governance.Abstractions;
 using Notrelix.Application.Features.Integrations.Abstractions;
@@ -96,6 +97,11 @@ public static class PersistenceRegistration
         services.AddScoped<IWorkManagementDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IDocumentDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ICollaborationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IChatDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.ISpaceSequenceAllocator, Notrelix.Infrastructure.Data.Chat.ChatSpaceSequenceAllocator>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IDirectConversationLock, Notrelix.Infrastructure.Data.Chat.ChatDirectConversationLock>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IChatReadStateStore, Notrelix.Infrastructure.Data.Chat.ChatReadStateStore>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IChatThreadReadStore, Notrelix.Infrastructure.Data.Chat.ChatThreadReadStore>();
         services.AddScoped<IAutomationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IIntegrationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
@@ -133,6 +139,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Collaboration.Watchers.PostgresResourceFollowers>();
         services.AddScoped<global::Notrelix.Application.Features.Collaboration.Public.Notifications.INotificationInbox,
             global::Notrelix.Infrastructure.CrossContext.Collaboration.Notifications.PostgresNotificationInbox>();
+        services.AddScoped<global::Notrelix.Application.Features.Collaboration.Public.Notifications.IChatNotificationIntents,
+            global::Notrelix.Infrastructure.CrossContext.Collaboration.Notifications.PostgresChatNotificationIntents>();
         services.AddScoped<global::Notrelix.Application.Features.Automation.Ports.IAutomationMessagePort,
             global::Notrelix.Infrastructure.CrossContext.Automation.Messaging.AutomationMessageAdapter>();
         services.AddScoped<IWorkspaceGrantProjectionService, WorkspaceGrantProjectionServiceAdapter>();
@@ -150,6 +158,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.Documents.Blocks.PostgresPageBlockWriteLock>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.SpacePlacement.IBoardSpacePlacementFacts,
             global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.BoardSpacePlacementFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.BoardTitles.IBoardTitleFacts,
+            global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.BoardTitleFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Public.SpacePlacement.IPageSpacePlacementFacts,
             global::Notrelix.Infrastructure.CrossContext.Workspaces.Documents.PageSpacePlacementFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Public.PageTitles.IPageTitleFacts,
@@ -162,12 +172,16 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement.FirstWorkItemFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.ItemNotifications.IWorkItemNotificationFacts,
             global::Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement.WorkItemNotificationFactsAdapter>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.FormNotifications.IFormNotificationFacts,
+            global::Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement.FormNotificationFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.ItemActivity.IWorkItemActivityFacts,
             global::Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement.WorkItemActivityFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Automation.Public.ActivityAttribution.IAutomationActivityFacts,
             global::Notrelix.Infrastructure.CrossContext.Collaboration.Automation.AutomationActivityFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Collaboration.Activity.Ports.IResourceActivityReader,
             global::Notrelix.Infrastructure.Data.Collaboration.ResourceActivityReader>();
+        services.AddScoped<global::Notrelix.Application.Features.Collaboration.Comments.Ports.ICommentTombstoneReader,
+            global::Notrelix.Infrastructure.Data.Collaboration.CommentTombstoneReader>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Public.SpaceOverview.IPageSpaceOverviewFacts,
             global::Notrelix.Infrastructure.CrossContext.Workspaces.Documents.PageSpaceOverviewFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Public.CommandSearch.IWorkSearchFacts,
@@ -178,10 +192,16 @@ public static class PersistenceRegistration
             Notrelix.Infrastructure.Data.WorkManagement.PostgresWorkOrderingScopeLock>();
         services.AddScoped<Notrelix.Application.Features.Collaboration.Abstractions.IAttachmentTargetLock,
             Notrelix.Infrastructure.Data.Collaboration.PostgresAttachmentTargetLock>();
+        services.AddScoped<Notrelix.Application.Features.Collaboration.Abstractions.IReactionWriteLock,
+            Notrelix.Infrastructure.Data.Collaboration.PostgresReactionWriteLock>();
+        services.AddScoped<Notrelix.Application.Features.Collaboration.Abstractions.IWatcherWriteLock,
+            Notrelix.Infrastructure.Data.Collaboration.PostgresWatcherWriteLock>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Transfer.IBoardTransferJobs, Notrelix.Infrastructure.Data.Ops.BoardTransferJobs>();
         services.AddSingleton<Notrelix.Application.Features.WorkManagement.Transfer.ITransferProgress, Notrelix.Infrastructure.Data.Ops.TransferProgress>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemKeyAllocator,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemKeyAllocator>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemKeyAliases,
+            Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemKeyAliases>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemReminders,
             Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemReminders>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.BoardItems.Services.IBoardItemViews,
@@ -216,6 +236,7 @@ public static class PersistenceRegistration
         services.AddScoped<global::Notrelix.Application.Features.Identity.OAuth.Abstractions.IOAuthIdentityProbe, Notrelix.Infrastructure.Identity.OAuth.OAuthIdentityProbe>();
         services.AddScoped<global::Notrelix.Application.Features.Identity.Registration.Ports.IEmailRegistrationProbe, Notrelix.Infrastructure.Identity.Registration.EmailRegistrationProbe>();
         services.AddScoped<global::Notrelix.Application.Features.Identity.Users.Ports.IMemberEmailReadPort, Notrelix.Infrastructure.Identity.Users.MemberEmailReader>();
+        services.AddScoped<global::Notrelix.Application.Features.Identity.Public.DeliveryAddresses.IMemberDeliveryAddresses, Notrelix.Infrastructure.Identity.Users.MemberDeliveryAddresses>();
         services.AddScoped<global::Notrelix.Application.Features.Identity.Profiles.Ports.IAvatarStorageKeyReadPort, Notrelix.Infrastructure.Identity.Profiles.AvatarStorageKeyLookup>();
         services.AddScoped<Notrelix.Application.Features.Governance.Abstractions.IResourceAccessChangeReader, Notrelix.Infrastructure.Data.Authz.EfResourceAccessChangeReader>();
         services.AddScoped(sp => ActivatorUtilities.CreateInstance<ApplicationDbContextInitialiser>(

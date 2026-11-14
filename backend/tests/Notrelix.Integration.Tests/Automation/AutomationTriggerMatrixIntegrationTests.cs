@@ -192,7 +192,7 @@ public sealed class AutomationTriggerMatrixIntegrationTests : IAsyncLifetime
                 var execution = AutomationExecution.Create(
                     graph.AccountId, graph.WorkspaceId, graph.RuleId, Guid.NewGuid(), failedAt.AddSeconds(i));
                 execution.Start(failedAt.AddSeconds(i));
-                execution.Fail("n8n returned HTTP 500 (provider server error).", failedAt.AddSeconds(i));
+                execution.Fail(AutomationFailureClass.TargetRejected, "n8n returned HTTP 500 (provider server error).", failedAt.AddSeconds(i));
                 seed.AutomationExecutions.Add(execution);
             }
             await seed.SaveChangesAsync();

@@ -609,7 +609,9 @@ describe("WorkspaceSpaceSurface", () => {
   it("FUI[workspace.space-page:delete-confirm] asks for the name before the red button works", () => {
     const onDelete = vi.fn();
     renderPage(spacePageSettingsScenario(), { onDelete });
-    const group = screen.getByRole("group", { name: /^Xoá Phòng Công nghệ\?/ });
+    const group = screen.getByRole("group", {
+      name: /^Xoá Phòng Công nghệ khỏi Minh An Group\?/,
+    });
     const confirm = within(group).getByRole("button", {
       name: copy.settings.delete,
     });

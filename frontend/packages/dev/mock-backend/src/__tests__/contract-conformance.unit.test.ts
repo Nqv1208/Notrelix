@@ -309,10 +309,11 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     await commentApi.updateCardUpdate(
       comment.id,
       "Updated work in progress comment.",
+      1,
     );
     const updates = await commentApi.getCardUpdates(createdCard.id);
     expect(updates.some((u: any) => u.body.includes("Updated"))).toBe(true);
-    await commentApi.deleteCardUpdate(comment.id);
+    await commentApi.deleteCardUpdate(comment.id, 1);
 
     // Relational Invariants preserved
     store.assertInvariants();
@@ -667,9 +668,11 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     const workspaceId = mockIds.workspaces.primary;
     type PageRow = { id: string; spaceId: string | null; version: number };
     const pageById = async (id: string) =>
-      (await client.api.get<PageRow[]>(endpoints.pages.list(workspaceId))).find(
-        (page) => page.id === id,
-      )!;
+      (
+        await client.api.get<{ items: PageRow[] }>(
+          endpoints.pages.list(workspaceId),
+        )
+      ).items.find((page) => page.id === id)!;
 
     // Like the producer, a create answers 201 with the new page id.
     const rootId = await client.api.post<string>(

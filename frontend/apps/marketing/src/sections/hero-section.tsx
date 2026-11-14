@@ -1,4 +1,4 @@
-import { ArrowRight, Check, Sparkles } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import type { Messages } from "../messages/en";
 
@@ -6,11 +6,11 @@ import { Badge } from "@notrelix/ui-web/components/ui/badge";
 import { env } from "../config/env";
 import { MarketingButton } from "../components/marketing-button";
 import { Reveal } from "../components/reveal";
+import { HeroOrbit } from "./hero-orbit";
 import { HeroProductPreview } from "./hero-product-preview";
 
 export async function HeroSection() {
   const t = await getTranslations("hero");
-  const floatCards = t.raw("floatCards") as Messages["hero"]["floatCards"];
   const checks = t.raw("checks") as string[];
   const preview = t.raw("preview") as Messages["hero"]["preview"];
 
@@ -19,7 +19,8 @@ export async function HeroSection() {
       id="hero"
       className="relative overflow-hidden pb-24 pt-[160px] sm:pb-32 sm:pt-[160px] lg:pt-[160px]"
     >
-      <div className="container">
+      <HeroOrbit />
+      <div className="container relative z-10">
         <div className="mx-auto max-w-4xl text-center">
           <Reveal>
             <Badge className="beta-badge">
@@ -79,29 +80,10 @@ export async function HeroSection() {
 
         <Reveal
           delay={120}
-          className="relative mx-auto mt-16 max-w-6xl pb-10 sm:mt-20 sm:pb-24"
+          className="relative mx-auto mt-16 max-w-6xl sm:mt-20"
         >
           <div className="hero-glow" aria-hidden="true" />
           <HeroProductPreview copy={preview} />
-          <p className="hero-preview__hint">{preview.hint}</p>
-          <div className="float-card float-card--left hidden sm:block">
-            <span className="flex size-8 items-center justify-center rounded-xl bg-[var(--mkt-brand-blue-100)] text-[var(--mkt-brand-blue-600)]">
-              <Check className="size-4" />
-            </span>
-            <span>
-              <strong>{floatCards.tasks.strong}</strong>
-              <small>{floatCards.tasks.small}</small>
-            </span>
-          </div>
-          <div className="float-card float-card--right hidden sm:flex">
-            <span className="flex size-8 items-center justify-center rounded-xl bg-[var(--surface-brand)] text-[var(--cobalt)]">
-              <Sparkles className="size-4" />
-            </span>
-            <span>
-              <strong>{floatCards.progress.strong}</strong>
-              <small>{floatCards.progress.small}</small>
-            </span>
-          </div>
         </Reveal>
       </div>
     </section>

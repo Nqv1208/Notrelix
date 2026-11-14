@@ -7,8 +7,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Check, ChevronDown } from "lucide-react";
-import { Skeleton, cn } from "@notrelix/ui-web";
+import { Check, ChevronDown, CloudOff } from "lucide-react";
+import { Skeleton, cn, useIsMobile, useIsTablet } from "@notrelix/ui-web";
 import { describeMyWorkDue } from "../../core/model/my-work";
 import type { MyWorkWindow } from "../../core/model/my-work";
 import { ShellLink } from "../shell/shell-link";
@@ -47,6 +47,11 @@ import {
   type MyWorkTab,
 } from "./my-work-model";
 import { MyWorkRow, type MyWorkColumns } from "./my-work-row";
+import {
+  MyWorkTouchChrome,
+  MyWorkTouchGroupHead,
+  MyWorkTouchRow,
+} from "./my-work-touch";
 import {
   MyWorkBulkBar,
   MyWorkEmpty,
@@ -141,25 +146,43 @@ function clockTime(time: number): string {
 
 const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
-function RowsSkeleton({ rows = 4 }: { rows?: number }) {
+/**
+ * The loading rows (undrawn state, built from the row grid): one group heading and rows of the list's own
+ * height. On touch the row keeps the mark, the two text lines and the due, as the touch rows do, so nothing
+ * runs past a 390 px screen.
+ */
+function RowsSkeleton({
+  rows = 4,
+  touch = null,
+}: {
+  rows?: number;
+  touch?: "tablet" | "phone" | null;
+}) {
   return (
-    <section aria-busy="true" aria-hidden="true">
+    <section aria-hidden="true" data-f="skeleton">
       <Skeleton className="mb-2 h-5 w-24 rounded-md" />
       <ul className="m-0 list-none rounded-[12px] border border-border bg-popover p-0 dark:bg-card">
         {Array.from({ length: rows }, (_, index) => (
           <li
             key={index}
             data-f="row"
-            className="box-border grid min-h-[60px] grid-cols-[18px_22px_minmax(0,1fr)_112px_112px] items-center gap-x-2.5 border-t border-border px-3.5 py-[9px] first:border-t-0"
+            className={cn(
+              "box-border grid min-h-[60px] items-center gap-x-2.5 border-t border-border px-3.5 py-[9px] first:border-t-0",
+              touch === null
+                ? "grid-cols-[18px_22px_minmax(0,1fr)_112px_112px]"
+                : "grid-cols-[22px_minmax(0,1fr)_64px]",
+            )}
           >
-            <span />
+            {touch === null ? <span /> : null}
             <Skeleton className="size-5 rounded-full" />
             <div>
               <Skeleton className="h-3 w-3/5 rounded-md" />
               <Skeleton className="mt-2 h-2.5 w-2/5 rounded-md" />
             </div>
-            <Skeleton className="h-[26px] w-24 rounded-full" />
-            <Skeleton className="h-3 w-16 rounded-md" />
+            {touch === null ? (
+              <Skeleton className="h-[26px] w-24 rounded-full" />
+            ) : null}
+            <Skeleton className="h-3 w-16 justify-self-end rounded-md" />
           </li>
         ))}
       </ul>
@@ -202,6 +225,11 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
     props.createBoards[0]?.id ??
     null;
   const panelRef = useRef<HTMLDivElement>(null);
+  // Touch screens draw Final-T-MyWork (768 to 1279 px) and Final-M-MyWork; the rail and the bulk bar are the desktop's.
+  const isPhone = useIsMobile();
+  const isTablet = useIsTablet();
+  const touch = isPhone ? "phone" : isTablet ? "tablet" : null;
+  const [rowMenuFor, setRowMenuFor] = useState<string | null>(null);
 
   const allItems = useMemo<readonly MyWorkItemView[]>(
     () => (state.status === "ready" ? state.data : []),
@@ -230,7 +258,8 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
     }),
     [visible],
   );
-  const narrow = props.sheet !== undefined && props.openItemId !== null;
+  const narrow =
+    touch === null && props.sheet !== undefined && props.openItemId !== null;
 
   const departments = useMemo(() => departmentCounts(allItems), [allItems]);
   const departmentList = useMemo(
@@ -512,6 +541,75 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
     );
   })();
 
+  const barElement = (
+    <MyWorkBar
+      copy={copy}
+      hasItems={hasItems}
+      groupBy={groupBy}
+      onGroup={setGroupBy}
+      menu={menu}
+      onMenu={setMenu}
+      departments={departmentList}
+      selectedDepartments={filters.departments}
+      onToggleDepartment={(name) =>
+        setFilters((previous) => ({
+          ...previous,
+          departments: toggled(previous.departments, name),
+        }))
+      }
+      boards={boardOptions}
+      selectedBoards={filters.boards}
+      onToggleBoard={(id) =>
+        setFilters((previous) => ({
+          ...previous,
+          boards: toggled(previous.boards, id),
+        }))
+      }
+      selectedPriorities={filters.priorities}
+      onTogglePriority={
+        allItems.some((item) => item.priority)
+          ? (priority: WorkPriority) =>
+              setFilters((previous) => ({
+                ...previous,
+                priorities: toggled(previous.priorities, priority),
+              }))
+          : undefined
+      }
+      query={filters.query}
+      onQuery={(query) => setFilters((previous) => ({ ...previous, query }))}
+      createBoards={createBoards}
+      createBoardId={createBoardId}
+      onCreateBoard={setCreateBoardId}
+      createName={createName}
+      onCreateName={setCreateName}
+      onCreate={
+        props.onCreate && createBoardId && createName.trim()
+          ? () => {
+              props.onCreate?.({
+                boardId: createBoardId,
+                name: createName.trim(),
+              });
+              setCreateName("");
+              setMenu(null);
+            }
+          : null
+      }
+      onOpenForm={
+        props.onOpenCreateForm && createBoardId
+          ? () => {
+              props.onOpenCreateForm?.({
+                boardId: createBoardId,
+                name: createName.trim(),
+              });
+              setCreateName("");
+              setMenu(null);
+            }
+          : null
+      }
+      groupAvailable={groupAvailable}
+    />
+  );
+
   return (
     <div
       data-f="main"
@@ -520,91 +618,54 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
         narrow && "pr-[560px]",
       )}
     >
-      <MyWorkHeader
-        copy={copy}
-        subline={subline}
-        calendarHref={props.calendarHref ?? null}
-      />
-      <MyWorkTabs
-        copy={copy}
-        tab={tab}
-        counts={counts}
-        available={tabAvailable}
-        onTab={(next) => {
-          setTab(next);
-          clearSelection();
-        }}
-        showCounts={hasItems}
-        narrow={narrow}
-      />
-      <MyWorkBar
-        copy={copy}
-        hasItems={hasItems}
-        groupBy={groupBy}
-        onGroup={setGroupBy}
-        menu={menu}
-        onMenu={setMenu}
-        departments={departmentList}
-        selectedDepartments={filters.departments}
-        onToggleDepartment={(name) =>
-          setFilters((previous) => ({
-            ...previous,
-            departments: toggled(previous.departments, name),
-          }))
-        }
-        boards={boardOptions}
-        selectedBoards={filters.boards}
-        onToggleBoard={(id) =>
-          setFilters((previous) => ({
-            ...previous,
-            boards: toggled(previous.boards, id),
-          }))
-        }
-        selectedPriorities={filters.priorities}
-        onTogglePriority={
-          allItems.some((item) => item.priority)
-            ? (priority: WorkPriority) =>
-                setFilters((previous) => ({
-                  ...previous,
-                  priorities: toggled(previous.priorities, priority),
-                }))
-            : undefined
-        }
-        query={filters.query}
-        onQuery={(query) => setFilters((previous) => ({ ...previous, query }))}
-        createBoards={createBoards}
-        createBoardId={createBoardId}
-        onCreateBoard={setCreateBoardId}
-        createName={createName}
-        onCreateName={setCreateName}
-        onCreate={
-          props.onCreate && createBoardId && createName.trim()
-            ? () => {
-                props.onCreate?.({
-                  boardId: createBoardId,
-                  name: createName.trim(),
-                });
-                setCreateName("");
-                setMenu(null);
-              }
-            : null
-        }
-        onOpenForm={
-          props.onOpenCreateForm && createBoardId
-            ? () => {
-                props.onOpenCreateForm?.({
-                  boardId: createBoardId,
-                  name: createName.trim(),
-                });
-                setCreateName("");
-                setMenu(null);
-              }
-            : null
-        }
-        groupAvailable={groupAvailable}
-      />
+      {touch ? null : (
+        <>
+          <MyWorkHeader
+            copy={copy}
+            subline={subline}
+            calendarHref={props.calendarHref ?? null}
+          />
+          <MyWorkTabs
+            copy={copy}
+            tab={tab}
+            counts={counts}
+            available={tabAvailable}
+            onTab={(next) => {
+              setTab(next);
+              clearSelection();
+            }}
+            showCounts={hasItems}
+            narrow={narrow}
+          />
+        </>
+      )}
+      {touch ? (
+        <MyWorkTouchChrome
+          layout={touch}
+          copy={copy}
+          subline={subline}
+          calendarHref={props.calendarHref ?? null}
+          tab={tab}
+          counts={counts}
+          available={tabAvailable}
+          onTab={(next) => {
+            setTab(next);
+            clearSelection();
+          }}
+          showCounts={hasItems}
+          bar={barElement.props}
+        />
+      ) : (
+        barElement
+      )}
 
-      <div data-f="body" className="flex min-h-0 flex-1 gap-6 px-7">
+      <div
+        data-f="body"
+        className={cn(
+          "flex min-h-0 flex-1",
+          touch === null ? "gap-6 px-7" : touch === "phone" ? "px-4" : "px-4",
+        )}
+      >
         <div
           ref={panelRef}
           id="mw-panel"
@@ -616,23 +677,49 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
         >
           {state.status === "loading" ? (
             <div
+              role="status"
+              aria-busy="true"
+              aria-label={copy.list.loading}
               data-f="scroll"
-              className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-auto px-0.5 pt-1.5 pb-[84px]"
+              className={cn(
+                "flex min-h-0 flex-1 flex-col overflow-auto",
+                touch === null
+                  ? "gap-[18px] px-0.5 pt-1.5 pb-[84px]"
+                  : touch === "tablet"
+                    ? "gap-1 pb-12 [scrollbar-width:none]"
+                    : "gap-[18px] pt-[18px] pb-6 [scrollbar-width:none]",
+              )}
             >
-              <RowsSkeleton rows={3} />
-              <RowsSkeleton rows={2} />
+              <RowsSkeleton rows={3} touch={touch} />
+              <RowsSkeleton rows={2} touch={touch} />
             </div>
           ) : state.status === "error" ? (
+            // Undrawn state, the board's load-error block (BC-Shell Er): a 44 px icon tile, a title, one line
+            // and Thử lại, centred on the page; the bar above stays so the person keeps their place.
             <div
               role="alert"
-              className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-[12px] border border-border bg-popover px-3.5 py-3 dark:bg-card"
+              data-f="error"
+              className="box-border flex flex-col items-center gap-1.5 px-6 py-10 text-center"
             >
-              <p className="m-0 text-compact text-muted-foreground">
-                {copy.list.error}
-              </p>
+              <span
+                aria-hidden="true"
+                className="grid size-11 place-items-center rounded-[12px] bg-state-hover-strong text-meta-foreground"
+              >
+                <CloudOff className="size-5" />
+              </span>
+              <b className="text-base leading-[1.45] font-[650] text-foreground">
+                {copy.list.errorTitle}
+              </b>
+              <span className="max-w-[46ch] text-compact leading-[1.45] text-muted-foreground">
+                {copy.list.errorBody}
+              </span>
               <button
                 type="button"
-                className={SMALL_OUTLINE_CLASS}
+                className={cn(
+                  SMALL_OUTLINE_CLASS,
+                  "mt-1.5",
+                  touch !== null && "h-11 px-4 text-sm",
+                )}
                 onClick={props.onRetry}
               >
                 {copy.list.retry}
@@ -650,7 +737,14 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
             <>
               <div
                 data-f="scroll"
-                className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-auto px-0.5 pt-1.5 pb-[84px]"
+                className={cn(
+                  "flex min-h-0 flex-1 flex-col overflow-auto",
+                  touch === null
+                    ? "gap-[18px] px-0.5 pt-1.5 pb-[84px]"
+                    : touch === "tablet"
+                      ? "gap-1 pb-12 [scrollbar-width:none]"
+                      : "gap-[18px] pt-[18px] pb-6 [scrollbar-width:none]",
+                )}
               >
                 {doneTab ? <MyWorkNote>{copy.list.doneNote}</MyWorkNote> : null}
                 {groups.length === 0 ? (
@@ -666,23 +760,19 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
                   const open = !collapsed.has(group.id);
                   return (
                     <section key={group.id} aria-labelledby={`g-${group.id}`}>
-                      <h2
-                        id={`g-${group.id}`}
-                        data-f="gh"
-                        className={cn(
-                          "m-0 mb-2 flex min-h-6 items-center gap-2 text-sm leading-[1.45] font-[650]",
-                          group.tone === "over" && "text-danger-text",
-                        )}
-                      >
-                        <button
-                          data-f="tog"
-                          type="button"
-                          aria-expanded={open}
-                          aria-label={formatCopy(
+                      {touch ? (
+                        <MyWorkTouchGroupHead
+                          layout={touch}
+                          id={`g-${group.id}`}
+                          name={group.board ? group.board.name : group.name}
+                          count={group.count}
+                          over={group.tone === "over"}
+                          open={open}
+                          toggleLabel={formatCopy(
                             open ? copy.list.collapse : copy.list.expand,
                             { name: group.name },
                           )}
-                          onClick={() =>
+                          onToggle={() =>
                             setCollapsed((previous) => {
                               const next = new Set(previous);
                               if (next.has(group.id)) next.delete(group.id);
@@ -690,133 +780,219 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
                               return next;
                             })
                           }
-                          className="-ml-1 grid size-6 cursor-pointer place-items-center rounded-[6px] border-0 bg-transparent p-0 text-meta-foreground outline-none hover:bg-state-hover-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
+                        />
+                      ) : (
+                        <h2
+                          id={`g-${group.id}`}
+                          data-f="gh"
+                          className={cn(
+                            "m-0 mb-2 flex min-h-6 items-center gap-2 text-sm leading-[1.45] font-[650]",
+                            group.tone === "over" && "text-danger-text",
+                          )}
                         >
-                          <ChevronDown
-                            aria-hidden="true"
-                            className={cn(
-                              "size-3.5 transition-transform",
-                              !open && "-rotate-90",
+                          <button
+                            data-f="tog"
+                            type="button"
+                            aria-expanded={open}
+                            aria-label={formatCopy(
+                              open ? copy.list.collapse : copy.list.expand,
+                              { name: group.name },
                             )}
-                            strokeWidth={1.8}
-                          />
-                        </button>
-                        {group.board ? (
-                          <>
-                            {group.board.department ? (
-                              <DepartmentMark
-                                name={group.board.department.name}
-                                markTone={group.board.department.markTone}
-                              />
-                            ) : null}
-                            <ShellLink
-                              destination={{
-                                section: "board",
-                                boardId: group.board.boardId,
-                              }}
-                              navigation={navigation}
-                              className="no-underline outline-none hover:underline focus-visible:underline"
-                            >
-                              {group.board.name}
-                            </ShellLink>
-                          </>
-                        ) : (
-                          group.name
-                        )}
-                        <span
-                          data-f="gn"
-                          className="font-medium text-meta-foreground tabular-nums"
-                        >
-                          {group.count}
-                        </span>
-                        {group.sub ? (
-                          <small className="text-crumb leading-[1.45] font-normal text-meta-foreground">
-                            {group.sub}
-                          </small>
-                        ) : null}
-                      </h2>
+                            onClick={() =>
+                              setCollapsed((previous) => {
+                                const next = new Set(previous);
+                                if (next.has(group.id)) next.delete(group.id);
+                                else next.add(group.id);
+                                return next;
+                              })
+                            }
+                            className="-ml-1 grid size-6 cursor-pointer place-items-center rounded-[6px] border-0 bg-transparent p-0 text-meta-foreground outline-none hover:bg-state-hover-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
+                          >
+                            <ChevronDown
+                              aria-hidden="true"
+                              className={cn(
+                                "size-3.5 transition-transform",
+                                !open && "-rotate-90",
+                              )}
+                              strokeWidth={1.8}
+                            />
+                          </button>
+                          {group.board ? (
+                            <>
+                              {group.board.department ? (
+                                <DepartmentMark
+                                  name={group.board.department.name}
+                                  markTone={group.board.department.markTone}
+                                />
+                              ) : null}
+                              <ShellLink
+                                destination={{
+                                  section: "board",
+                                  boardId: group.board.boardId,
+                                }}
+                                navigation={navigation}
+                                className="no-underline outline-none hover:underline focus-visible:underline"
+                              >
+                                {group.board.name}
+                              </ShellLink>
+                            </>
+                          ) : (
+                            group.name
+                          )}
+                          <span
+                            data-f="gn"
+                            className="font-medium text-meta-foreground tabular-nums"
+                          >
+                            {group.count}
+                          </span>
+                          {group.sub ? (
+                            <small className="text-crumb leading-[1.45] font-normal text-meta-foreground">
+                              {group.sub}
+                            </small>
+                          ) : null}
+                        </h2>
+                      )}
                       {open ? (
                         <ul
                           data-f="rows"
-                          className="m-0 list-none rounded-[12px] border border-border bg-popover p-0 dark:bg-card"
+                          className={cn(
+                            "m-0 list-none overflow-hidden border bg-popover p-0 dark:bg-card",
+                            touch === null
+                              ? "rounded-[12px] border-border"
+                              : cn(
+                                  "rounded-[14px] border-line",
+                                  touch === "tablet" && "mb-1.5",
+                                ),
+                          )}
                         >
-                          {group.items.map((item) => (
-                            <MyWorkRow
-                              key={item.id}
-                              item={item}
-                              copy={copy}
-                              now={now}
-                              columns={columns}
-                              narrow={narrow}
-                              showBoard={groupBy !== "board" || doneTab}
-                              selected={selected.has(item.id)}
-                              current={props.openItemId === item.id}
-                              completing={props.completingIds.has(item.id)}
-                              canComplete={canComplete}
-                              statusPopOpen={statusPopFor === item.id}
-                              done={doneTab}
-                              href={navigation.getHref({
-                                section: "board",
-                                boardId: item.boardId,
-                                item: item.id,
-                              })}
-                              actions={
-                                props.actions
-                                  ? {
-                                      busy: props.actions.pendingIds.has(
-                                        item.id,
-                                      ),
-                                      onApprove: () =>
-                                        props.actions?.onApprove(item),
-                                      onRequestChanges: () =>
-                                        props.actions?.onRequestChanges(item),
-                                      onReopen: () =>
-                                        props.actions?.onReopen(item),
-                                    }
-                                  : undefined
-                              }
-                              onToggleSelect={() => toggleSelect(item.id)}
-                              onComplete={() => completeItem?.(item)}
-                              onOpen={() => props.onOpenItem(item)}
-                              onStatusClick={
-                                props.statusOptions && props.onChangeStatus
-                                  ? () =>
-                                      setStatusPopFor(
-                                        statusPopFor === item.id
-                                          ? null
-                                          : item.id,
-                                      )
-                                  : props.statusOptions
+                          {group.items.map((item) =>
+                            touch ? (
+                              <MyWorkTouchRow
+                                key={item.id}
+                                layout={touch}
+                                item={item}
+                                copy={copy}
+                                now={now}
+                                showBoard={groupBy !== "board" || doneTab}
+                                current={props.openItemId === item.id}
+                                completing={props.completingIds.has(item.id)}
+                                canComplete={canComplete}
+                                done={doneTab}
+                                href={navigation.getHref({
+                                  section: "board",
+                                  boardId: item.boardId,
+                                  item: item.id,
+                                })}
+                                menuOpen={rowMenuFor === item.id}
+                                onMenu={() =>
+                                  setRowMenuFor(
+                                    rowMenuFor === item.id ? null : item.id,
+                                  )
+                                }
+                                actions={
+                                  props.actions
+                                    ? {
+                                        busy: props.actions.pendingIds.has(
+                                          item.id,
+                                        ),
+                                        onApprove: () =>
+                                          props.actions?.onApprove(item),
+                                        onRequestChanges: () =>
+                                          props.actions?.onRequestChanges(item),
+                                        onReopen: () =>
+                                          props.actions?.onReopen(item),
+                                      }
+                                    : undefined
+                                }
+                                onComplete={() => completeItem?.(item)}
+                                onOpen={() => props.onOpenItem(item)}
+                              />
+                            ) : (
+                              <MyWorkRow
+                                key={item.id}
+                                item={item}
+                                copy={copy}
+                                now={now}
+                                columns={columns}
+                                narrow={narrow}
+                                showBoard={groupBy !== "board" || doneTab}
+                                selected={selected.has(item.id)}
+                                current={props.openItemId === item.id}
+                                completing={props.completingIds.has(item.id)}
+                                canComplete={canComplete}
+                                statusPopOpen={statusPopFor === item.id}
+                                done={doneTab}
+                                href={navigation.getHref({
+                                  section: "board",
+                                  boardId: item.boardId,
+                                  item: item.id,
+                                })}
+                                actions={
+                                  props.actions
+                                    ? {
+                                        busy: props.actions.pendingIds.has(
+                                          item.id,
+                                        ),
+                                        onApprove: () =>
+                                          props.actions?.onApprove(item),
+                                        onRequestChanges: () =>
+                                          props.actions?.onRequestChanges(item),
+                                        onReopen: () =>
+                                          props.actions?.onReopen(item),
+                                      }
+                                    : undefined
+                                }
+                                onToggleSelect={() => toggleSelect(item.id)}
+                                onComplete={() => completeItem?.(item)}
+                                onOpen={() => props.onOpenItem(item)}
+                                onStatusClick={
+                                  props.statusOptions && props.onChangeStatus
                                     ? () =>
                                         setStatusPopFor(
                                           statusPopFor === item.id
                                             ? null
                                             : item.id,
                                         )
-                                    : null
-                              }
-                              statusPop={
-                                statusPopItem?.id === item.id &&
-                                props.statusOptions ? (
-                                  <StatusPop
-                                    copy={copy}
-                                    item={item}
-                                    options={props.statusOptions}
-                                    onPick={(bucket) => {
-                                      props.onChangeStatus?.(item, bucket);
-                                      setStatusPopFor(null);
-                                    }}
-                                    onClose={() => setStatusPopFor(null)}
-                                  />
-                                ) : null
-                              }
-                            />
-                          ))}
+                                    : props.statusOptions
+                                      ? () =>
+                                          setStatusPopFor(
+                                            statusPopFor === item.id
+                                              ? null
+                                              : item.id,
+                                          )
+                                      : null
+                                }
+                                statusPop={
+                                  statusPopItem?.id === item.id &&
+                                  props.statusOptions ? (
+                                    <StatusPop
+                                      copy={copy}
+                                      item={item}
+                                      options={props.statusOptions}
+                                      onPick={(bucket) => {
+                                        props.onChangeStatus?.(item, bucket);
+                                        setStatusPopFor(null);
+                                      }}
+                                      onClose={() => setStatusPopFor(null)}
+                                    />
+                                  ) : null
+                                }
+                              />
+                            ),
+                          )}
                         </ul>
                       ) : null}
                     </section>
                   );
                 })}
+                {touch && groups.length > 0 ? (
+                  <p
+                    data-f="foot"
+                    className="m-0 mt-1.5 text-item-small leading-[1.45] text-meta-foreground"
+                  >
+                    {copy.list.touch.foot}
+                  </p>
+                ) : null}
                 {props.hasMore ? (
                   <div className="flex justify-center">
                     <button
@@ -832,7 +1008,7 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
                   </div>
                 ) : null}
               </div>
-              {selecting ? (
+              {selecting && touch === null ? (
                 <MyWorkBulkBar
                   copy={copy}
                   count={selectedItems.length || selected.size}
@@ -873,7 +1049,7 @@ export function WorkspaceMyWorkSurface(props: WorkspaceMyWorkSurfaceProps) {
           )}
         </div>
 
-        {hasItems && !narrow ? (
+        {hasItems && !narrow && touch === null ? (
           <MyWorkRail
             copy={copy}
             navigation={navigation}

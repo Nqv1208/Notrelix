@@ -20,8 +20,7 @@ evidence:
   - docs/quality/engineering-quality-standard.md
   - docs/quality/security-quality-standard.md
   - docs/quality/performance-and-scalability.md
-  - .github/workflows/be-ci.yml
-  - .github/workflows/fe-ci.yml
+  - .github/workflows/ci.yml
 review_on:
   - release-model-change
   - rollout-strategy-change
@@ -47,6 +46,8 @@ This document owns repository-wide release and rollout policy.
 `migration-policy.md` owns schema/data/backfill/cutover mechanics.
 
 `definition-of-done.md` owns completion.
+
+`product-delivery-lifecycle.md` owns release stages, release readiness and owner acceptance of a version; this document owns how a candidate is deployed and rolled back.
 
 Operations owns concrete production SLOs, alerts, runbooks, and environment-specific incident procedures.
 
@@ -161,9 +162,9 @@ Where build-on-promotion is unavoidable, provenance must still establish:
 - deterministic generator inputs;
 - equivalent build configuration.
 
-# 10. Release readiness
+# 10. Exposure readiness
 
-Before exposure:
+Before a build is exposed to an environment (version-level release readiness is `product-delivery-lifecycle.md` DEL-014):
 
 ```text
 required CI green
@@ -692,9 +693,7 @@ A release is not certified by historical green CI for another SHA.
 
 # 83. CI evidence
 
-Current CI may produce final backend/frontend gate success for exact SHA.
-
-Deployment pipeline can consume that evidence.
+`ci.yml` produces `CI gate` success for an exact SHA. The release path is dormant (TRANSITION): `release.yml` waits for a `Notrelix CI` run containing a `release-candidate` job that `ci.yml` does not have, so it consumes no evidence until that input returns.
 
 # 84. DEL-REL-038 — Release does not bypass required gates by manual deployment
 

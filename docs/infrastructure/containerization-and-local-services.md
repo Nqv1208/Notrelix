@@ -13,8 +13,6 @@ applies_to:
   - development-tooling
   - packaging-ci
 evidence:
-  - docs/engineering/07-infrastructure/02-container-builds.md
-  - Dockerfile
   - .dockerignore
   - backend/Dockerfile
   - backend/.dockerignore
@@ -25,8 +23,8 @@ evidence:
   - docker-compose.staging.yml
   - docker-compose.prod.yml
   - Makefile
-  - .github/workflows/be-ci.yml
-  - .github/workflows/fe-packaging.yml
+  - .github/workflows/ci.yml
+  - .github/workflows/container-ci.yml
   - docs/infrastructure/environment-model.md
   - docs/infrastructure/deployment-runtime.md
   - docs/delivery/local-development.md
@@ -1189,16 +1187,7 @@ Those remain owned by their gates.
 
 # 100. Frontend packaging current evidence
 
-Current `fe-packaging.yml` builds:
-
-```text
-web Dockerfile
-marketing Dockerfile
-```
-
-from repository-root context.
-
-The job is named `Container smoke`, but current steps only execute `docker build`.
+`.github/workflows/container-ci.yml` builds the backend, web and marketing images from repository-root context and runs a Trivy gate and SBOM. It is `workflow_call` only and has no caller, so no pull-request workflow builds images today.
 
 ---
 
@@ -1613,15 +1602,11 @@ rather than maintaining independent hidden versions.
 
 # 143. Container source-debt inventory
 
-Current source evidence requiring final/incremental improvement includes:
+Current source debt:
 
 ```text
-1. root .dockerignore does not exclude .env/.env.* despite root-context frontend builds;
-2. frontend packaging job named "Container smoke" only builds images;
-3. staging/prod Compose currently builds on deployment target rather than promoting an already-built immutable image.
+root .dockerignore does not exclude .env/.env.* despite root-context frontend builds
 ```
-
-The third item is already classified in `deployment-runtime.md`.
 
 ---
 

@@ -1,13 +1,57 @@
-import { useLocation } from "@tanstack/react-router";
-import { SignInFlow } from "@notrelix/features-auth";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "@tanstack/react-router";
+import { SignInFlow, useAuth } from "@notrelix/features-auth";
+import { sanitizeInternalReturnUrl } from "../routing/sanitize-return-url";
 import { AuthLayout } from "./auth-layout";
 import { useAuthFlowDeps } from "./auth-flow-deps";
+
+/**
+ * True while this document was opened on the sign-in address (a typed address, a
+ * bookmark, a reload). Only then is a live session an answer: a sign-in page reached
+ * inside the app comes from a sign-out or an expired session, and the session the
+ * app still holds in that moment is the one that just ended.
+ */
+let openedHere =
+  typeof window !== "undefined" &&
+  window.location.pathname.startsWith("/sign-in");
 
 export function SignInPage() {
   const { service, navigation } = useAuthFlowDeps();
   // Subscribing to the location re-renders the page when the address changes in place.
   const { searchStr } = useLocation();
   const search = new URLSearchParams(searchStr);
+  const { isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
+  // "checking" until the session answers, "leaving" when a signed-in person is sent
+  // on, "form" otherwise. Only the first answer counts: a sign-in finished on this
+  // page navigates on its own, and an MFA step or a provider error needs the form.
+  // The form is not drawn before the answer, so it never flashes before the move.
+  const direct = useRef(openedHere);
+  const [phase, setPhase] = useState<"checking" | "leaving" | "form">(
+    direct.current ? "checking" : "form",
+  );
+  useEffect(() => {
+    if (isLoading || phase !== "checking") return;
+    openedHere = false;
+    if (
+      !isAuthenticated ||
+      search.get("step") === "mfa" ||
+      search.get("error") ||
+      search.get("reason")
+    ) {
+      setPhase("form");
+      return;
+    }
+    setPhase("leaving");
+    const target = search.get("returnTo") ?? search.get("redirect");
+    void navigate({
+      to: target ? sanitizeInternalReturnUrl(target) : "/home",
+      replace: true,
+    });
+  });
+  if (phase !== "form") {
+    return <div className="bg-background h-screen w-screen" aria-hidden />;
+  }
   return (
     <AuthLayout>
       <SignInFlow

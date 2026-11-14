@@ -1,6 +1,9 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Automation.Rules.Services;
+using Notrelix.Application.Features.Billing.Public.Capacity;
+using Notrelix.Domain.Automation;
+using DomainBusinessRuleException = Notrelix.Domain.Common.Exceptions.BusinessRuleException;
 
 namespace Notrelix.Application.Features.Automation.Rules.Commands.SetAutomationRuleEnabled;
 
@@ -31,13 +34,16 @@ public class SetAutomationRuleEnabledCommandHandler : IRequestHandler<SetAutomat
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly AutomationExecutorAuthority _executorAuthority;
+    private readonly IBillingCapacityActions _capacity;
 
     public SetAutomationRuleEnabledCommandHandler(
         IAutomationDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
-        AutomationExecutorAuthority executorAuthority)
+        AutomationExecutorAuthority executorAuthority,
+        IBillingCapacityActions capacity)
     {
+        _capacity = capacity;
         _executorAuthority = executorAuthority;
         _context = context;
         _currentUser = currentUser;
@@ -60,25 +66,59 @@ public class SetAutomationRuleEnabledCommandHandler : IRequestHandler<SetAutomat
         if (request.BoardId is not null && AutomationActionKinds.IsIntegration(rule.Configuration.Action.Type))
             throw new ForbiddenException("Enabling a rule with an integration action needs permission to manage integrations.");
 
+        // Only enabled rules count toward the plan limit: the slot is held from enable until disable or delete.
+        var wasHoldingSlot = AutomationRuleCapacity.HoldsSlot(rule);
+        var fromVersion = rule.Version;
+        var now = _dateTimeProvider.UtcNow;
+
         if (request.IsEnabled)
         {
             // AUT-020: enabling makes the rule executable as its bound executor, so
             // that executor must hold the action's permission on the target now.
             // A rule without an executor is rejected by the Domain on Enable.
+            // UC-AUT-D10: every action, condition and the trigger's group must still be reachable; a broken
+            // reference refuses the enable and names each one (kind, id, field) for the editor.
             if (rule.ExecutorUserId is { } executor && executor != Guid.Empty)
             {
-                await _executorAuthority.EnsureCanExecuteAsync(
+                var broken = await _executorAuthority.FindBrokenReferencesAsync(
                     rule.AccountId,
                     rule.WorkspaceId,
                     executor,
-                    rule.Configuration.Action,
-                    cancellationToken,
-                    rule.BoardId);
+                    rule.Configuration,
+                    rule.BoardId,
+                    rule.Configuration.Trigger.Configuration,
+                    cancellationToken);
+                if (broken.Count > 0)
+                    throw new DomainBusinessRuleException(
+                        AutomationRuleCodes.Automation_Rule_BrokenReference,
+                        $"The rule cannot be enabled: {broken.Count} target(s) it names are archived or deleted.",
+                        new Dictionary<string, object?>
+                        {
+                            ["brokenReferences"] = broken
+                                .Select(reference => new Dictionary<string, object?>
+                                {
+                                    ["kind"] = reference.Kind,
+                                    ["id"] = reference.Id,
+                                    ["field"] = reference.Field,
+                                })
+                                .ToList(),
+                        });
             }
 
-            rule.Enable(_currentUser.UserId, _dateTimeProvider.UtcNow);
+            rule.Enable(_currentUser.UserId, now);
+            if (!wasHoldingSlot)
+                await _capacity.ConsumeAsync(
+                    new ConsumeCapacityRequest(AutomationRuleCapacity.Identity(rule, "enable", fromVersion, _currentUser.UserId, now)),
+                    cancellationToken);
         }
-        else rule.Disable(_currentUser.UserId, _dateTimeProvider.UtcNow);
+        else
+        {
+            rule.Disable(_currentUser.UserId, now);
+            if (wasHoldingSlot)
+                await _capacity.ReleaseAsync(
+                    new ReleaseCapacityRequest(AutomationRuleCapacity.Identity(rule, "disable", fromVersion, _currentUser.UserId, now)),
+                    cancellationToken);
+        }
 
         return Result.Success();
     }

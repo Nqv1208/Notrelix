@@ -401,4 +401,29 @@ describe("WorkspaceMembersSurface invitations", () => {
     fireEvent.click(screen.getByRole("button", { name: copy.invite }));
     expect(props.onTabChange).toHaveBeenLastCalledWith("invitations");
   });
+
+  it("FUI[workspace.members:invitations-loading] shows a skeleton and no rows while the invitations load", () => {
+    renderMembers({
+      ...membersInvitationsScenario(),
+      invitations: { status: "loading" },
+    });
+    expect(
+      screen.getByRole("status", { name: copy.invitations.pendingTitle }),
+    ).toBeTruthy();
+    expect(screen.queryByText(copy.invitations.empty)).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("FUI[workspace.members:invitations-error] says the invitations did not load and retries them", () => {
+    const { props } = renderMembers({
+      ...membersInvitationsScenario(),
+      invitations: { status: "error" },
+    });
+    expect(screen.getByRole("alert").textContent).toContain(
+      copy.error.invitations,
+    );
+    fireEvent.click(screen.getByRole("button", { name: copy.error.retry }));
+    expect(props.onRetryInvitations).toHaveBeenCalledTimes(1);
+    expect(props.onRetryMembers).not.toHaveBeenCalled();
+  });
 });

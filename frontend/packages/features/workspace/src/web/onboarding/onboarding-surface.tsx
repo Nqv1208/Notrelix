@@ -101,7 +101,9 @@ export function OnboardingSurface(props: OnboardingSurfaceProps) {
     onExit,
     onEnterHome,
   } = props;
-  const [tried, setTried] = useState(false);
+  // A try belongs to the step it was made on: the next step starts without its errors.
+  const [triedStep, setTriedStep] = useState<typeof step | null>(null);
+  const tried = triedStep === step;
   const resend = props.resend ?? { status: "idle", secondsLeft: 0 };
   const t = copy.frame;
   const index =
@@ -121,7 +123,7 @@ export function OnboardingSurface(props: OnboardingSurfaceProps) {
   const boardReady = draft.board.name.trim().length > 0;
 
   const next = (ready: boolean) => () => {
-    setTried(true);
+    setTriedStep(step);
     if (ready) onNext();
   };
 
@@ -130,7 +132,7 @@ export function OnboardingSurface(props: OnboardingSurfaceProps) {
   if (step === "workspace") {
     footer = (
       <>
-        <span className="text-item-ui text-muted-foreground">
+        <span className="flex-1 text-crumb leading-[1.45] text-meta-foreground">
           {address.kind === "taken"
             ? copy.workspace.footTaken
             : address.kind === "invalid"
@@ -151,7 +153,7 @@ export function OnboardingSurface(props: OnboardingSurfaceProps) {
   } else if (step === "done") {
     footer = (
       <>
-        <span className="text-item-ui text-muted-foreground">
+        <span className="flex-1 text-crumb leading-[1.45] text-meta-foreground">
           {copy.done.foot}
         </span>
         <button
@@ -578,7 +580,7 @@ function DoneStep({
               <Check className="size-3.5" strokeWidth={3} />
             </span>
             <span className="min-w-0 flex-1">{row.title}</span>
-            <span className="text-item-ui text-muted-foreground">
+            <span className="flex-1 text-crumb leading-[1.45] text-meta-foreground">
               {row.note}
             </span>
           </li>

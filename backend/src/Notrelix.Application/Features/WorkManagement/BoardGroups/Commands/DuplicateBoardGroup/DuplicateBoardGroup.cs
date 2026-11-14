@@ -56,6 +56,8 @@ public class DuplicateBoardGroupCommandHandler : IRequestHandler<DuplicateBoardG
             source.Id,
             token => BoardGroupSiblings.LoadAsync(_context, source.BoardId, token),
             ct);
+        // Under the group ordering lock the placement just took (D78.8); the copied items are held by the key reservation.
+        await Limits.WorkLimits.EnsureGroupRoomAsync(_context, source.BoardId, 1, ct);
 
         var board = await _context.Boards
             .AsNoTracking()

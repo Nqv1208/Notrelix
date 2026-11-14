@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Thẻ gọn, giao diện Đêm</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.nx{--bg:#F7F8FA;--panel:#FFFFFF;--hover:#E6E9EE;--line:#E1E5EA;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-text:#0F56AE;--danger:#C42340;--high:#B4500B;--todo:#7A8391;--doing:#1E7BE0;--review:#D99A00;--review-g:#8A5A00;--done:#2E8B57;--c-todo:#ECEEF2;--c-doing:#E1EDFB;--c-review:#FBF0D3;--c-done:#E1F1E8;--av1:#1E6FD0;--av2:#B4500B;--av3:#7C4DDB;--av4:#9A6A12;--av5:#0E7490;--av6:#475569;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--panel:#1A2028;--hover:#232A34;--line:#232B35;--line2:#2E3743;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-text:#7DBBFF;--danger:#FF6B81;--high:#FFA060;--todo:#8C95A3;--doing:#5AA9FF;--review:#F2C14E;--review-g:#F2C14E;--done:#56C98A;--c-todo:#232A34;--c-doing:#13203A;--c-review:#272012;--c-done:#12251C}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+button:focus-visible,a:focus-visible,article:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{padding:40px;box-sizing:border-box}
+h1{margin:0;font-size:24px;font-weight:650}
+h2{margin:28px 0 10px;font-size:16px;font-weight:650}
+.sub{margin:4px 0 0;color:var(--muted);font-size:13.5px;max-width:120ch}
+.cap{font-size:12.5px;color:var(--muted);margin:0 0 6px}.cap b{color:var(--text);font-weight:600}
+.av{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none;box-shadow:0 0 0 2px var(--tint)}
+.av+.av{margin-left:-5px}
+.av.c1{background:var(--av1)}.av.c2{background:var(--av2)}.av.c3{background:var(--av3)}.av.c4{background:var(--av4)}.av.c5{background:var(--av5)}.av.c6{background:var(--av6)}
+.av.more{background:var(--hover);color:var(--muted)}
+.ppl{display:flex;flex:none}
+.pg{flex:none;display:inline-flex}
+.pg.urgent{color:var(--danger)}.pg.high{color:var(--high)}.pg.medium{color:var(--muted)}.pg.low{color:var(--meta)}
+.sg{width:13px;height:13px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sg.todo{color:var(--todo)}.sg.doing{color:var(--doing)}.sg.review{color:var(--review-g)}.sg.done{color:var(--done)}
+.ev{display:flex;align-items:center;gap:6px;min-width:0;height:26px;padding:0 6px;border-radius:6px;font-size:12px;font-weight:500;color:var(--text);box-sizing:border-box;cursor:pointer;background:var(--tint)}
+.ev.todo{--tint:var(--c-todo)}.ev.doing{--tint:var(--c-doing)}.ev.review{--tint:var(--c-review)}.ev.done{--tint:var(--c-done);color:var(--muted)}
+.ev .k{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--meta);flex:none}
+.ev .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ev.foc{outline:2px solid var(--accent);outline-offset:2px}
+.blkb{display:inline-flex;color:var(--danger);flex:none}
+.day{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:8px;display:flex;flex-direction:column;gap:4px;width:230px;box-sizing:border-box}
+.day .d{font-size:12px;font-weight:600;color:var(--muted)}
+.bar{height:28px;border-radius:7px;display:flex;align-items:center;gap:6px;padding:0 8px;font-size:12px;font-weight:500;color:var(--text);box-sizing:border-box;min-width:0;position:relative;background:var(--tint);cursor:pointer}
+.bar.todo{--tint:var(--c-todo);box-shadow:inset 0 0 0 1px var(--todo)}.bar.doing{--tint:var(--c-doing);box-shadow:inset 0 0 0 1px var(--doing)}.bar.review{--tint:var(--c-review);box-shadow:inset 0 0 0 1px var(--review-g)}.bar.done{--tint:var(--c-done);box-shadow:inset 0 0 0 1px var(--done);color:var(--muted)}
+.bar .k{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--meta);flex:none}
+.bar .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar.foc{outline:2px solid var(--accent);outline-offset:2px}
+.lbl{position:absolute;left:calc(100% + 8px);top:0;height:28px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);white-space:nowrap}
+.tl{position:relative;width:820px;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:12px;display:flex;flex-direction:column;gap:8px;box-sizing:border-box;overflow:hidden}
+.tl .hd{display:grid;grid-template-columns:repeat(7,1fr);font-size:11.5px;color:var(--meta);font-weight:600;border-bottom:1px solid var(--line);padding-bottom:6px}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--muted);align-items:center;margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.morel{border:0;background:transparent;text-align:left;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:var(--accent-text);padding:2px 4px;border-radius:4px}
+</style>
+</helmet>
+<div class="nx mode-{{mode}}" style="width:1440px;min-height:1100px;background:var(--bg)">
+<div class="wrap">
+  <h1>Thẻ gọn trong Lịch và Dòng thời gian</h1>
+  <p class="sub">Cùng nguồn dữ liệu với thẻ Kanban, chỉ giữ phần cốt lõi: biểu tượng trạng thái (cùng bộ với chấm cột Kanban: tròn rỗng, nửa, có chấm, dấu tích), mã, tiêu đề, ưu tiên (cùng bộ biểu tượng với thẻ, Bảng), avatar 20px (tối đa 2 rồi +N), biểu tượng bị chặn. Chữ tối thiểu 11px. Vòng avatar lấy màu nền của dòng. Mỗi phần tử có tên đọc đầy đủ, ví dụ "ERP-142, Chuyển dữ liệu khách hàng, Đang làm, người làm Mai Quốc Minh, ưu tiên Khẩn, bị chặn".</p>
+
+  <div class="legend" aria-label="Chú giải trạng thái">
+    <span><svg class="sg todo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle></svg>Cần làm</span>
+    <span><svg class="sg doing" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"></path></svg>Đang làm</span>
+    <span><svg class="sg review" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3" fill="currentColor"></circle></svg>Chờ duyệt</span>
+    <span><svg class="sg done" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="currentColor"></circle><path d="m8.5 12 2.5 2.5 4.5-5" stroke="var(--panel)"></path></svg>Hoàn thành</span>
+    <span class="pg urgent"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5" fill="currentColor"></path></svg>Khẩn</span>
+    <span class="pg high"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 13 5-5 5 5M7 19l5-5 5 5"></path></svg>Cao</span>
+    <span class="pg medium"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10h12M6 15h12"></path></svg>Trung bình</span>
+    <span class="pg low"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"></path></svg>Thấp</span>
+  </div>
+
+  <h2>Lịch: sự kiện một dòng 26px trong ô ngày</h2>
+  <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+    <div><p class="cap"><b>Ô ngày thường</b> Thứ Hai 12/10/2026</p>
+    <div class="day"><span class="d">12</span>
+      <article class="ev doing" tabindex="0" aria-label="ERP-142 Chuyển dữ liệu khách hàng, Đang làm, người làm Mai Quốc Minh, ưu tiên Khẩn, bị chặn" title="ERP-142 · Đang làm · Khẩn · Bị chặn"><svg class="sg doing" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"></path></svg><span class="k">ERP-142</span><span class="t">Chuyển dữ liệu khách hàng</span><span class="blkb" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m5.7 5.7 12.6 12.6"></path></svg></span><span class="pg urgent" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5" fill="currentColor"></path></svg></span><span class="ppl" aria-hidden="true"><span class="av c1">MQ</span></span></article>
+      <article class="ev review" tabindex="0" aria-label="ERP-145 Đào tạo kế toán, Chờ duyệt, người làm Lê Hoàng Phúc và Nguyễn Anh, ưu tiên Cao"><svg class="sg review" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3" fill="currentColor"></circle></svg><span class="k">ERP-145</span><span class="t">Đào tạo kế toán</span><span class="pg high" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m7 13 5-5 5 5M7 19l5-5 5 5"></path></svg></span><span class="ppl" aria-hidden="true"><span class="av c2">HP</span><span class="av c3">NA</span></span></article>
+      <article class="ev todo" tabindex="0" aria-label="ERP-153 Liên hệ nhà cung cấp máy quét mã vạch, Cần làm, chưa giao"><svg class="sg todo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle></svg><span class="k">ERP-153</span><span class="t">Liên hệ nhà cung cấp máy quét mã vạch</span></article>
+      <article class="ev done" tabindex="0" aria-label="ERP-131 Sao lưu cơ sở dữ liệu, Hoàn thành, người làm Võ Thanh Tùng"><svg class="sg done" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="currentColor"></circle><path d="m8.5 12 2.5 2.5 4.5-5" stroke="var(--tint)"></path></svg><span class="k">ERP-131</span><span class="t">Sao lưu cơ sở dữ liệu</span><span class="ppl" aria-hidden="true"><span class="av c5">VT</span></span></article>
+      <button type="button" class="morel" aria-label="Xem thêm 3 việc ngày 12/10">+3 việc nữa</button>
+    </div></div>
+    <div><p class="cap"><b>Tiêu đề dài, 3 người</b> cắt bằng …, tên đọc đủ</p>
+    <div class="day"><span class="d">13</span>
+      <article class="ev doing" tabindex="0" aria-label="ERP-160 Đối soát và chuẩn hoá toàn bộ danh mục vật tư, Đang làm, người làm Đỗ Khánh Linh, Trần Thu Trang và Nguyễn Anh, ưu tiên Thấp"><svg class="sg doing" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"></path></svg><span class="k">ERP-160</span><span class="t">Đối soát và chuẩn hoá toàn bộ danh mục vật tư và bảng giá</span><span class="pg low" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"></path></svg></span><span class="ppl" aria-hidden="true"><span class="av c4">KL</span><span class="av c6">TT</span><span class="av more">+1</span></span></article>
+      <article class="ev doing foc" tabindex="0" aria-label="ERP-144 Kiểm thử công nợ, Đang làm, tiêu điểm bàn phím"><svg class="sg doing" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"></path></svg><span class="k">ERP-144</span><span class="t">Kiểm thử công nợ</span></article>
+    </div></div>
+    <div><p class="cap"><b>Chỉ xem</b> không kéo để đổi ngày, vẫn mở được</p>
+    <div class="day"><span class="d">14</span>
+      <article class="ev review" tabindex="0" aria-label="ERP-146 Duyệt ngân sách, Chờ duyệt, ưu tiên Trung bình, chỉ xem" style="cursor:default"><svg class="sg review" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3" fill="currentColor"></circle></svg><span class="k">ERP-146</span><span class="t">Duyệt ngân sách</span><span class="pg medium" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M6 10h12M6 15h12"></path></svg></span></article>
+    </div></div>
+  </div>
+
+  <h2>Dòng thời gian: thanh 28px từ ngày bắt đầu đến hạn; tên ngoài thanh khi thanh quá hẹp</h2>
+  <div class="tl">
+    <div class="hd"><span>T2 12/10</span><span>T3 13/10</span><span>T4 14/10</span><span>T5 15/10</span><span>T6 16/10</span><span>T7 17/10</span><span>CN 18/10</span></div>
+    <div style="position:relative;height:28px"><article class="bar doing" tabindex="0" style="position:absolute;left:0;width:62%" aria-label="ERP-142 Chuyển dữ liệu khách hàng, Đang làm, từ 12/10 đến 16/10, người làm Mai Quốc Minh, ưu tiên Khẩn, bị chặn"><svg class="sg doing" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"></path></svg><span class="k">ERP-142</span><span class="t">Chuyển dữ liệu khách hàng</span><span class="blkb" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m5.7 5.7 12.6 12.6"></path></svg></span><span class="pg urgent" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5" fill="currentColor"></path></svg></span><span class="ppl" aria-hidden="true"><span class="av c1">MQ</span></span></article></div>
+    <div style="position:relative;height:28px"><article class="bar review foc" tabindex="0" style="position:absolute;left:28%;width:44%" aria-label="ERP-145 Đào tạo kế toán, Chờ duyệt, từ 14/10 đến 17/10, người làm Lê Hoàng Phúc và Nguyễn Anh, ưu tiên Cao, tiêu điểm bàn phím"><svg class="sg review" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3" fill="currentColor"></circle></svg><span class="k">ERP-145</span><span class="t">Đào tạo kế toán</span><span class="pg high" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="m7 13 5-5 5 5M7 19l5-5 5 5"></path></svg></span><span class="ppl" aria-hidden="true"><span class="av c2">HP</span><span class="av c3">NA</span></span></article></div>
+    <div style="position:relative;height:28px"><article class="bar todo" tabindex="0" style="position:absolute;left:57%;width:9%;padding:0 5px" aria-label="ERP-153 Liên hệ nhà cung cấp, Cần làm, một ngày 16/10, chưa giao"><svg class="sg todo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle></svg><span class="k">153</span><span class="lbl">ERP-153 Liên hệ nhà cung cấp</span></article></div>
+    <div style="position:relative;height:28px"><article class="bar done" tabindex="0" style="position:absolute;left:0;width:30%;cursor:default" aria-label="ERP-131 Sao lưu cơ sở dữ liệu, Hoàn thành, từ 12/10 đến 13/10, chỉ xem"><svg class="sg done" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="currentColor"></circle><path d="m8.5 12 2.5 2.5 4.5-5" stroke="var(--tint)"></path></svg><span class="k">ERP-131</span><span class="t">Sao lưu cơ sở dữ liệu</span><span class="ppl" aria-hidden="true"><span class="av c5">VT</span></span></article></div>
+  </div>
+  <p class="sub" style="margin-top:10px">Việc chỉ có hạn vẽ thanh 1 ngày; việc không có ngày nào nằm trong danh sách "Chưa lên lịch". Enter mở chi tiết. Kéo/đổi kích thước thanh và việc nhiều ngày trong Lịch thuộc đợt sau, không vẽ ở đây.</p>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["sang","dem"],"default":"dem","section":"Giao diện"},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() { return { mode: this.props.mode ?? 'dem' }; }
+}
+</script>
+</body>
+</html>

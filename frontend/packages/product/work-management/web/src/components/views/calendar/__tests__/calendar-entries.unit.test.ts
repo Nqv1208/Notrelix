@@ -228,3 +228,38 @@ describe("buildCalendarEntries: spans, finished items and plan items", () => {
     expect(markers.every((entry) => !entry.movable)).toBe(true);
   });
 });
+
+describe("buildCalendarEntries by a Date field", () => {
+  it("places each item on its own date field's day and leaves the others undated and fixed", () => {
+    const { board, groups } = erpBoardScenario();
+    const lanes = groupCardsByStatus({
+      fieldDefinitions: board.fieldDefinitions,
+      groups,
+    });
+    const target = lanes.flatMap((lane) => lane.cards)[0];
+    if (!target) throw new Error("no card");
+    const patched = lanes.map((lane) => ({
+      ...lane,
+      cards: lane.cards.map((card) =>
+        card.id === target.id
+          ? { ...card, fieldValues: { "date-field": "2026-10-20T03:00:00Z" } }
+          : { ...card, fieldValues: {} },
+      ),
+    }));
+    const { entries, undated } = buildCalendarEntries({
+      lanes: patched,
+      today: "2026-10-12",
+      copy,
+      timeZone: ZONE,
+      dateFieldId: "date-field",
+    });
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      id: target.id,
+      startDay: "2026-10-20",
+      endDay: "2026-10-20",
+      movable: false,
+    });
+    expect(undated.length).toBeGreaterThan(5);
+  });
+});

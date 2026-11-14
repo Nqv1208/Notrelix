@@ -26,6 +26,7 @@ import {
   accountSecurityCatalog,
 } from "@notrelix/features-account";
 import { authCatalog } from "@notrelix/features-auth";
+import { chatCatalog } from "@notrelix/features-chat/web";
 import { notificationBellCatalog } from "@notrelix/features-notifications";
 import { docPageCatalog } from "@notrelix/docs-web";
 import {
@@ -96,6 +97,7 @@ export const webCatalogs: readonly MessageCatalog[] = [
   boardLifecycleCatalog,
   boardShareCatalog,
   notificationBellCatalog,
+  chatCatalog,
   authCatalog,
   docPageCatalog,
   accountNavCatalog,

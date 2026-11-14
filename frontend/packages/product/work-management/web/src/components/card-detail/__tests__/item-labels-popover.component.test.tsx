@@ -79,3 +79,36 @@ describe("the item label picker", () => {
     await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
   });
 });
+
+describe("the item label picker with 200 labels", () => {
+  it("mounts only the rows in view and follows the scroll", () => {
+    const many = Array.from({ length: 200 }, (_, i) => ({
+      id: `l${i}`,
+      name: `Label ${i}`,
+      color: "#2F6FD6",
+    }));
+    renderPureUi(
+      <ItemLabelsPopover
+        labels={many}
+        selectedIds={new Set<string>()}
+        label="Labels"
+        emptyText="none"
+        readOnly={false}
+        onToggle={vi.fn()}
+      >
+        <button type="button">Add label</button>
+      </ItemLabelsPopover>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Add label" }));
+    const list = screen.getByRole("list", { name: "Labels" });
+    expect(
+      screen.getAllByRole("button", { pressed: false }).length,
+    ).toBeLessThan(60);
+    expect(screen.getByText("Label 0")).toBeTruthy();
+    expect(screen.queryByText("Label 150")).toBeNull();
+    list.scrollTop = 150 * 34;
+    fireEvent.scroll(list);
+    expect(screen.getByText("Label 150")).toBeTruthy();
+    expect(screen.queryByText("Label 0")).toBeNull();
+  });
+});

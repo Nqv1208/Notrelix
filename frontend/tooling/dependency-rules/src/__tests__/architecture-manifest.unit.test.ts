@@ -277,6 +277,15 @@ describe("closed-world architecture manifest", () => {
       "@notrelix/ui-web",
       "@notrelix/realtime",
     ]);
+    // Chat owns its vi/en catalog and takes the viewer, role and names from the host (no auth import).
+    expectExact("@notrelix/features-chat", [
+      "@notrelix/contracts",
+      "@notrelix/kernel",
+      "@notrelix/platform",
+      "@notrelix/query",
+      "@notrelix/ui-web",
+      "@notrelix/i18n",
+    ]);
     // The notification bell owns its vi/en catalog (FE-ADR-006).
     expectExact("@notrelix/features-notifications", [
       "@notrelix/contracts",

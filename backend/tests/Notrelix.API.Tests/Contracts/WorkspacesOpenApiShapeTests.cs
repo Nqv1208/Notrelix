@@ -74,6 +74,7 @@ public class WorkspacesOpenApiShapeTests
     [InlineData("WorkspaceMemberDto", "version")]
     [InlineData("WorkspaceMemberDto", "phone")]
     [InlineData("WorkspaceInvitationDto", "status")]
+    [InlineData("WorkspaceInvitationDto", "invitedBy")]
     public void WorkspaceReadDto_ExposesField(string dto, string field)
     {
         var schema = Document.GetProperty("components").GetProperty("schemas")

@@ -125,6 +125,19 @@ public sealed class BoardManagementLevelTests
         Decide(PermissionAction.ManageBoard, "documents.page", Editor() with { ParentBoardId = null }).Should().Be(AccessDecisionKind.Allowed);
     }
 
+    [Fact]
+    public void AnotherPeoplesPrivateSavedFilter_IsNotFoundForAViewerAndEveryLevel()
+    {
+        // H09: a viewer-level member asking for someone else's personal filter gets the identical NotFound,
+        // not Forbidden, so the filter's existence is not leaked.
+        var viewer = Facts("Member", audience: "Private", explicitRank: 1) with { PrivateToAnotherPerson = true };
+        const string filter = "work-management.saved-filter";
+        Decide(PermissionAction.UpdateBoardView, filter, viewer).Should().Be(AccessDecisionKind.NotFound);
+        Decide(PermissionAction.ViewBoard, filter, viewer).Should().Be(AccessDecisionKind.NotFound);
+        Decide(PermissionAction.UpdateBoardView, filter, Editor() with { PrivateToAnotherPerson = true })
+            .Should().Be(AccessDecisionKind.NotFound, "an Editor is no exception either");
+    }
+
     private static PermissionAction ActionOf(Type command) =>
         ((IRequirePermission)RuntimeHelpers.GetUninitializedObject(command)).Action;
 

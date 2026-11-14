@@ -6,6 +6,8 @@ public static class AutomationActionValidator
 {
     public static void Validate(AutomationActionDefinition action)
     {
+        AutomationSecretFieldGuard.Ensure(action.Configuration);
+
         switch (action.Type)
         {
             case "Webhook":

@@ -1,10 +1,10 @@
 using System.Text.RegularExpressions;
 using Notrelix.Application.Common.Search;
-using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Common;
 using Notrelix.Application.Features.WorkManagement.Public.CommandSearch;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
+using Notrelix.Infrastructure.Data;
 
 namespace Notrelix.Infrastructure.CrossContext.Workspaces.WorkManagement;
 
@@ -20,9 +20,9 @@ public sealed class WorkSearchFactsAdapter : IWorkSearchFacts
     private const int CandidateLimit = 100;
     private const int SnippetLength = 24;
 
-    private readonly IWorkManagementDbContext _context;
+    private readonly ApplicationDbContext _context;
 
-    public WorkSearchFactsAdapter(IWorkManagementDbContext context)
+    public WorkSearchFactsAdapter(ApplicationDbContext context)
     {
         _context = context;
     }
@@ -47,7 +47,8 @@ public sealed class WorkSearchFactsAdapter : IWorkSearchFacts
                 && !i.IsArchived
                 && readableBoardIds.Contains(i.BoardId));
         var matching = liveItems.Where(i => Regex.IsMatch(i.Name, pattern)
-            || (i.ItemKey != null && Regex.IsMatch(i.ItemKey, pattern)));
+            || (i.ItemKey != null && Regex.IsMatch(i.ItemKey, pattern))
+            || _context.BoardItemKeyAliases.Any(a => a.ItemId == i.Id && Regex.IsMatch(a.ItemKey, pattern)));
 
         var candidates = await matching
             .OrderByDescending(i => _context.BoardItemMembers.Any(m => m.ItemId == i.Id && m.UserId == userId))

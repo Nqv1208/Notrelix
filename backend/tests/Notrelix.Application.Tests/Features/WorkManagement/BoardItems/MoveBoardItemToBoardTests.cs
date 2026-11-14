@@ -10,6 +10,7 @@ public class MoveBoardItemToBoardTests : WorkManagementHandlerTestBase
 {
     private readonly Mock<IBoardItemTargetAuthorizer> _target = new();
     private readonly Mock<IResourceVisibility> _visibility = new();
+    private readonly Mock<IBoardItemKeyAliases> _aliases = new();
     private readonly MoveBoardItemToBoardCommandHandler _handler;
     private readonly Board _source;
     private readonly Board _destination;
@@ -24,7 +25,7 @@ public class MoveBoardItemToBoardTests : WorkManagementHandlerTestBase
         DbContextMock.Setup(c => c.ItemDependencies).Returns(CreateAsyncDbSet(new List<ItemDependency>()));
         DbContextMock.Setup(c => c.TimeTrackingEntries).Returns(CreateAsyncDbSet(new List<TimeTrackingEntry>()));
         _handler = new MoveBoardItemToBoardCommandHandler(
-            DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, Placement, KeyAllocator, _target.Object, _visibility.Object);
+            DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, Placement, KeyAllocator, _aliases.Object, _target.Object, _visibility.Object);
 
         _source = CreateBoard();
         _destination = CreateBoard();
@@ -68,6 +69,18 @@ public class MoveBoardItemToBoardTests : WorkManagementHandlerTestBase
         var status = _item.FieldValues.Single(v => v.FieldId == _destinationStatus.Id);
         var doneId = _destinationStatus.Options.First(o => o.Name == "Done").Id;
         status.Value.Data.Value.Should().Contain(doneId.ToString());
+    }
+
+    [Fact]
+    public async Task Handle_KeepsTheOldKeyAsAnAliasOnTheSourceBoard()
+    {
+        typeof(BoardItem).GetProperty(nameof(BoardItem.ItemKey))!.SetValue(_item, "KHQ-27");
+        var oldKey = _item.ItemKey;
+        var oldBoard = _item.BoardId;
+
+        await _handler.Handle(new MoveBoardItemToBoardCommand(_item.Id, _destination.Id, ExpectedVersion: 1), CancellationToken.None);
+
+        _aliases.Verify(a => a.Keep(It.Is<BoardItemKeyAlias>(x => x.ItemId == _item.Id && x.ItemKey == oldKey && x.BoardId == oldBoard)), Times.Once);
     }
 
     [Fact]
@@ -136,11 +149,17 @@ public class MoveBoardItemToBoardTests : WorkManagementHandlerTestBase
         var elsewhere = CreateBoardItem(boardId: _destination.Id);
         elsewhere.Delete(TestUserId, TestNow.AddDays(39));
         SetupBoardItems(_item, recent, stale, elsewhere);
-        var query = new ListBoardItemTrashQueryHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
+        var actors = new Mock<IActorLookupService>();
+        actors.Setup(a => a.FindManyAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ActorSnapshot> { new(TestUserId, "Hà Nguyễn", null) });
+        var query = new ListBoardItemTrashQueryHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, actors.Object);
 
-        var rows = await query.Handle(new ListBoardItemTrashQuery(_source.Id), CancellationToken.None);
+        var page = await query.Handle(new ListBoardItemTrashQuery(_source.Id), CancellationToken.None);
 
-        rows.Should().ContainSingle().Which.Id.Should().Be(recent.Id);
-        rows[0].RestorableUntil.Should().Be(TestNow.AddDays(38).AddDays(30));
+        page.Items.Should().ContainSingle().Which.Id.Should().Be(recent.Id);
+        page.Total.Should().Be(1);
+        page.NextCursor.Should().BeNull();
+        page.Items[0].RestorableUntil.Should().Be(TestNow.AddDays(38).AddDays(30));
+        page.Items[0].DeletedByName.Should().Be("Hà Nguyễn");
     }
 }

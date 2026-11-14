@@ -46,10 +46,10 @@ test.describe("owner", () => {
     const popup = page.getByRole("dialog");
     await popup.getByRole("button", { name: "Đang làm" }).first().click();
     const list = page.getByRole("listbox", { name: "Chuyển sang cột" });
-    // Each row ends with the column's count.
+    // Each row ends with the column's count; the current one draws a check instead.
     await expect(list.getByRole("option")).toHaveText([
       /^Cần làm\s*6$/,
-      /^Đang làm\s*3$/,
+      /^Đang làm$/,
       /^Chờ duyệt\s*2$/,
       /^Hoàn thành\s*5$/,
     ]);

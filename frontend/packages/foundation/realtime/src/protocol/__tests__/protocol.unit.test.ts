@@ -198,3 +198,60 @@ describe("isValidSubscriptionId", () => {
     expect(isValidSubscriptionId(42)).toBe(false);
   });
 });
+
+describe("Realtime Protocol v1.1 (Chat scopes and payload frames)", () => {
+  const chatFrame = {
+    type: "event",
+    subscriptionId: "channel:aaaaaaaa-0000-0000-0000-000000000001",
+    schemaVersion: 1,
+    eventId: "evt-200",
+    eventType: "chat.message.created",
+    changeKind: "chat.message.created",
+    streamKey: "chat:Channel:aaaaaaaa000000000000000000000001",
+    streamVersion: 4,
+    resourceKind: "Channel",
+    resourceId: "aaaaaaaa-0000-0000-0000-000000000001",
+    resourceVersion: 1,
+    workspaceId: "ws-123",
+    correlationId: "corr-789",
+    occurredAt: "2026-01-01T00:00:00.000Z",
+    payloadContract: "chat.message.v1",
+    payload: { id: "m-1", sequence: 12, content: "hi", contentOmitted: false },
+  };
+
+  it("accepts a subscribed ack for the channel and user scope kinds", () => {
+    for (const kind of ["channel", "user"] as const) {
+      const res = parseRealtimeMessage({
+        type: "subscribed",
+        subscriptionId: `${kind}:x`,
+        scope: { kind, id: "aaaaaaaa-0000-0000-0000-000000000001" },
+        streamKey: `${kind}:x`,
+      });
+      expect(res.ok).toBe(true);
+      if (!res.ok || res.value.kind !== "control") {
+        throw new Error("Expected a control result");
+      }
+      expect(res.value.message.type).toBe("subscribed");
+    }
+  });
+
+  it("keeps the payload of a chat frame and the omitted flag of a dropped one", () => {
+    const res = parseRealtimeMessage(chatFrame);
+    if (!res.ok || res.value.kind !== "domain") {
+      throw new Error("Expected ok domain result");
+    }
+    expect(res.value.envelope.payload).toEqual(chatFrame.payload);
+    expect(res.value.envelope.payloadOmitted).toBeUndefined();
+
+    const omitted = parseRealtimeMessage({
+      ...chatFrame,
+      payload: undefined,
+      payloadOmitted: true,
+    });
+    if (!omitted.ok || omitted.value.kind !== "domain") {
+      throw new Error("Expected ok domain result");
+    }
+    expect(omitted.value.envelope.payload).toBeUndefined();
+    expect(omitted.value.envelope.payloadOmitted).toBe(true);
+  });
+});

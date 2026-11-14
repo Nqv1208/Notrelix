@@ -1,6 +1,9 @@
+using System.Text.Json;
+
 using Notrelix.Application.Events.Collaboration;
 using Notrelix.Application.Events.WorkManagement;
 using Notrelix.Application.Events.Workspaces;
+using Notrelix.Application.Features.Collaboration.Activity;
 using Notrelix.Infrastructure.Data.Abstractions;
 using Notrelix.Infrastructure.Data.Projections.Activity;
 
@@ -62,7 +65,7 @@ public sealed class CommentCreatedActivityConsumer : IConsumer<CommentCreatedInt
         var record = WorkspaceActivityLogRecord.Create(
             workspaceId: msg.WorkspaceId.Value,
             sourceContext: "collaboration",
-            activityType: "collab.comment-created",
+            activityType: CommentActivity.CommentCreated,
             subjectType: "Comment",
             subjectId: msg.CommentId,
             occurredAt: msg.OccurredAt,
@@ -70,7 +73,8 @@ public sealed class CommentCreatedActivityConsumer : IConsumer<CommentCreatedInt
             actorUserId: msg.AuthorId,
             targetType: msg.TargetType,
             targetId: msg.TargetId,
-            title: $"Comment added to {msg.TargetType.ToLowerInvariant()}");
+            title: CommentActivity.CommentCreated,
+            dataJson: JsonDocument.Parse(CommentActivity.ParametersJson(CommentActivity.CommentCreated, msg.TargetType.ToLowerInvariant())));
 
         _context.WorkspaceActivityLogs.Add(record);
         await _context.SaveChangesAsync(context.CancellationToken);

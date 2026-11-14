@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Cột Bảng đầy đủ và trường tuỳ chỉnh</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--sel-row:#EEF4FD;--st-todo:#7A8391;--st-doing:#1E7BE0;--st-review:#D99A00;--st-done:#2E8B57;--danger:#C42340;--danger-soft:#FCEBEE;--warn-text:#8A5A00;--warn-soft:#FDF3DC;--high:#B4500B;--lane-todo:#ECEEF2;--lane-doing:#E2ECFA;--lane-review:#FBF0D6;--lane-done:#E2F1E7;--grp:#F3F5F8;--pop-shadow:0 12px 32px rgba(15,23,42,.16);--av1:#1E6FD0;--av2:#B4500B;--av3:#7C4DDB;--av4:#9A6A12;--av5:#0E7490;--av6:#475569;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--panel:#151A21;--hover:#1C232C;--hover2:#232A34;--line:#232B35;--line2:#2E3743;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--sel-row:#172334;--st-todo:#8C95A3;--st-doing:#5AA9FF;--st-review:#F2C14E;--st-done:#56C98A;--danger:#FF6B81;--danger-soft:rgba(255,107,129,.12);--warn-text:#F2C14E;--warn-soft:rgba(242,193,78,.12);--high:#FFA060;--lane-todo:#1E252F;--lane-doing:#16284A;--lane-review:#30281A;--lane-done:#153024;--grp:#12171D;--pop-shadow:0 12px 32px rgba(0,0,0,.5)}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+button:focus-visible,a:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.btn.sm{height:26px;padding:0 8px;font-size:12px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.pill{height:32px;padding:0 10px;border-radius:7px;border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.pill.on{background:var(--accent-soft);color:var(--accent-text);font-weight:600}
+.pill .n{height:18px;min-width:18px;padding:0 5px;border-radius:9px;background:var(--hover2);color:var(--muted);font-size:11.5px;font-weight:600;display:inline-grid;place-items:center;box-sizing:border-box}
+.field{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);width:200px;box-sizing:border-box;color:var(--meta);font-size:13px}
+.page{padding:36px 40px 56px;box-sizing:border-box}
+h1{margin:0;font-size:22px;font-weight:650;letter-spacing:-0.01em}
+h2{margin:28px 0 8px;font-size:15px;font-weight:650}
+.sub{margin:4px 0 0;color:var(--muted);font-size:13px;max-width:125ch}
+.cap2{margin:0 0 8px;font-size:12.5px;color:var(--meta)}
+/* bảng: cấu trúc y hệt Final-Table */
+.wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel);position:relative}
+.tbl{width:max-content;min-width:100%;font-size:13.5px;--row-h:40px}
+.tr{display:grid;min-width:100%}
+.td{height:var(--row-h);padding:0 10px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;align-items:center;gap:7px;white-space:nowrap;box-sizing:border-box;min-width:0;position:relative}
+.th{position:sticky;top:0;z-index:3}
+.th .td{height:36px;background:var(--grp);color:var(--meta);font-size:12px;font-weight:600;border-bottom:1px solid var(--line2);gap:6px}
+.th .td .i{width:13px;height:13px;color:var(--meta)}
+.th .td.sorted{color:var(--text)}
+.c-cb{position:sticky;left:0;z-index:2;padding:0 0 0 14px}
+.c-key{position:sticky;left:40px;z-index:2}
+.c-name{position:sticky;left:124px;z-index:2;border-right:1px solid var(--line2)}
+.cb{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--line2);background:var(--panel);display:grid;place-items:center;padding:0;cursor:pointer;color:transparent;box-sizing:border-box}
+.cb.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.row:hover .td,.row.hovered .td{background:var(--hover)}
+.row.sel .td{background:var(--sel-row)}
+.key{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--meta)}
+.name-t{overflow:hidden;text-overflow:ellipsis;font-weight:500;min-width:0}
+.open{margin-left:auto;height:24px;padding:0 8px;border-radius:6px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);font:inherit;font-size:12px;font-weight:500;display:none;align-items:center;gap:4px;cursor:pointer;flex:none}
+.row:hover .open,.row.hovered .open{display:inline-flex}
+.stp{height:24px;padding:0 9px;border-radius:999px;font:inherit;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;border:0;color:var(--text)}
+.stp.todo{background:var(--lane-todo)}.stp.doing{background:var(--lane-doing)}.stp.review{background:var(--lane-review)}.stp.done{background:var(--lane-done)}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
+.dot.todo{box-shadow:inset 0 0 0 2px var(--st-todo)}.dot.doing{background:var(--st-doing)}.dot.review{background:var(--st-review)}.dot.done{background:var(--st-done)}
+.av{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none}
+.av+.av{margin-left:-6px;box-shadow:-2px 0 0 var(--panel)}
+.av.c1{background:var(--av1)}.av.c2{background:var(--av2)}.av.c3{background:var(--av3)}.av.c4{background:var(--av4)}.av.c5{background:var(--av5)}.av.c6{background:var(--av6)}
+.av.more{background:var(--hover2);color:var(--muted)}
+.who{color:var(--muted);overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.due{font-variant-numeric:tabular-nums;color:var(--muted)}
+.due.over{color:var(--danger);font-weight:600}.due.today{color:var(--warn-text);font-weight:600}.due.unset{color:var(--meta);font-style:italic}
+.pr{font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:5px}
+.pr.urgent{color:var(--danger)}.pr.high{color:var(--high)}.pr.medium{color:var(--muted);font-weight:500}.pr.low{color:var(--meta);font-weight:500}
+.cnt{display:inline-flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums;color:var(--muted);font-size:12.5px}
+.cnt .i{width:13px;height:13px}
+.tag{height:22px;padding:0 8px;border-radius:6px;font-size:11.5px;font-weight:600;display:inline-flex;align-items:center}
+.t-data{background:#E1EEFC;color:#124C8E}.t-sec{background:#FDE5EA;color:#9E1736}.t-train{background:#E1F0EA;color:#2C5E4F}.t-rep{background:#FBF0D3;color:#6E4F0A}.t-doc{background:#ECEEF2;color:#3E4757}.t-test{background:#EEE7FB;color:#5532A8}
+.mode-dem .t-data{background:#16304F;color:#9CC8FA}.mode-dem .t-sec{background:#4A1A26;color:#FFA8B8}.mode-dem .t-train{background:#173A30;color:#9ED6C2}.mode-dem .t-rep{background:#3C3014;color:#F2D58A}.mode-dem .t-doc{background:#262E39;color:#C3CBD6}.mode-dem .t-test{background:#2E2350;color:#C9B6FA}
+.muted{color:var(--meta)}
+.fx{display:inline-flex;align-items:center;gap:5px;color:var(--muted);font-size:12.5px}
+.fxg{height:18px;padding:0 5px;border-radius:5px;background:var(--hover2);color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;display:inline-flex;align-items:center;flex:none}
+.lk{display:inline-flex;color:var(--meta);flex:none}
+.inp{height:28px;border:1px solid var(--line2);border-radius:6px;background:var(--panel);padding:0 8px;font:inherit;font-size:13px;color:var(--text);box-sizing:border-box;width:64px;text-align:right}
+.inp.focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.inp.err{border-color:var(--danger);outline:0;box-shadow:0 0 0 1px var(--danger)}
+.inp.warn{border-color:var(--warn-text);outline:0;box-shadow:0 0 0 1px var(--warn-text)}
+.cellfoc{outline:2px solid var(--accent);outline-offset:-2px}
+.pend{opacity:.72}
+.errmsg{display:inline-flex;align-items:center;gap:4px;color:var(--danger);font-size:12px;font-weight:600}
+.pop{position:absolute;left:0;top:calc(100% - 2px);z-index:6;width:290px;white-space:normal;background:var(--panel);border:1px solid var(--line2);border-radius:10px;box-shadow:var(--pop-shadow);padding:10px 12px;display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:var(--text)}
+.pop.err{border-color:var(--danger)}
+.pop.warn{border-color:var(--warn-text)}
+.menu{position:absolute;right:0;top:36px;z-index:10;width:310px;background:var(--panel);border:1px solid var(--line2);border-radius:12px;box-shadow:var(--pop-shadow);padding:8px;display:flex;flex-direction:column;gap:2px}
+.mi{display:flex;align-items:center;gap:10px;min-height:32px;padding:0 8px;border-radius:7px;font-size:13px;color:var(--text);cursor:pointer}
+.mi:hover{background:var(--hover2)}
+.mi.foc{outline:2px solid var(--accent);outline-offset:-2px}
+.mi.fixed{cursor:default;color:var(--muted)}
+.grab{color:var(--meta);cursor:grab;display:grid;place-items:center;width:20px}
+.sw{width:28px;height:16px;border-radius:999px;background:var(--line2);position:relative;margin-left:auto;flex:none}
+.sw::after{content:"";position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:var(--panel)}
+.sw.on{background:var(--accent)}.sw.on::after{left:14px}
+.sk{height:10px;border-radius:5px;background:var(--hover2);display:block}
+.note{margin:8px 0 0;font-size:12px;color:var(--meta)}
+</style>
+</helmet>
+<div class="nx mode-{{mode}}" style="width:1440px;min-height:3700px;background:var(--bg)">
+<div class="page">
+  <h1>View Bảng · đủ cột của thẻ và trường tuỳ chỉnh</h1>
+  <p class="sub">Cùng cấu trúc với Hướng chốt · View Bảng: tiêu đề cột dính trên cao 36px nền nhóm, cột chọn / Mã / Tên việc dính bên trái (0 / 40 / 124), biểu tượng đầu cột 13px, mũi tên sắp xếp. Cột mặc định theo thứ tự: Trạng thái, Người làm, Bắt đầu, Hạn, Ưu tiên, Checklist, Bình luận, Tệp, rồi các trường của board. Công thức và Tổng hợp tự tính (ƒx), tách biệt với ổ khoá "chỉ xem".</p>
+
+  <h2>Mặc định · nút "Cột" mở menu ẩn/hiện, dòng rê chuột, dòng chọn có ô điểm đang tiêu điểm, dòng đang lưu</h2>
+  <div style="display:flex;align-items:center;gap:6px;padding:6px 0 10px;position:relative">
+    <div class="field"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Tìm việc</div>
+    <span style="flex:1"></span>
+    <button type="button" class="pill on" aria-haspopup="menu" aria-expanded="true" aria-controls="colmenu"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M15 4v16"></path></svg>Cột<span class="n" aria-label="2 cột đang ẩn">+2 ẩn</span></button>
+    <div id="colmenu" class="menu" role="menu" aria-label="Cột hiển thị, 16 trên 18">
+      <div style="max-height:420px;overflow:auto;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{menu}}" as="m" hint-placeholder-count="14">
+          <div class="mi {{m.cls}}" role="menuitemcheckbox" aria-checked="{{m.on}}" tabindex="-1"><span class="grab" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1"></circle><circle cx="15" cy="6" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="9" cy="18" r="1"></circle><circle cx="15" cy="18" r="1"></circle></svg></span>{{m.name}}<sc-if value="{{m.fixed}}" hint-placeholder-val="{{ false }}"><span class="muted" style="margin-left:auto;font-size:12px">luôn hiện</span></sc-if><sc-if value="{{m.toggle}}" hint-placeholder-val="{{ true }}"><span class="sw {{m.swCls}}" aria-hidden="true"></span></sc-if></div>
+        </sc-for>
+      </div>
+      <p style="margin:6px 8px 2px;font-size:12px;color:var(--meta)">Kéo hoặc Alt+Mũi tên để đổi thứ tự. Lưu vào cấu hình View, mọi người dùng View này thấy cùng cột.</p>
+    </div>
+  </div>
+  <sc-for list="{{slices}}" as="s" hint-placeholder-count="5">
+  <h2>{{s.title}}</h2>
+  <p class="cap2">{{s.cap}}</p>
+  <div class="wrap" style="min-height:{{s.minH}}px">
+    <div class="tbl" role="table" aria-label="{{s.aria}}">
+      <div class="tr th" role="row" style="grid-template-columns:{{s.grid}}">
+        <div class="td c-cb" role="columnheader"><button class="cb" type="button" role="checkbox" aria-checked="false" aria-label="Chọn tất cả"></button></div>
+        <div class="td c-key" role="columnheader">Mã</div>
+        <div class="td c-name" role="columnheader"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"></path></svg>Tên công việc</div>
+        <div class="td" role="columnheader"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m9 12 2 2 4-4"></path></svg>Trạng thái</div>
+        <div class="td" role="columnheader"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Người làm</div>
+        <div class="td" role="columnheader"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>Bắt đầu</div>
+        <div class="td sorted" role="columnheader" aria-sort="ascending"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>Hạn<svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color:var(--accent-text)"><path d="M12 19V5M6 11l6-6 6 6"></path></svg></div>
+        <div class="td" role="columnheader"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"></path></svg>Ưu tiên</div>
+        <div class="td" role="columnheader"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="m8.5 12 2.5 2.5 4.5-5"></path></svg>Checklist</div>
+        <div class="td" role="columnheader"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"></path></svg>Bình luận</div>
+        <div class="td" role="columnheader"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9h14M5 15h14M9 4 7 20M17 4l-2 16"></path></svg>Điểm</div>
+        <sc-if value="{{s.hasNote}}" hint-placeholder-val="{{ true }}"><div class="td" role="columnheader"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"></path></svg>Ghi chú</div></sc-if>
+        <div class="td" role="columnheader"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg>Phân hệ</div>
+        <div class="td" role="columnheader"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect></svg>Nghiệm thu</div>
+        <div class="td" role="columnheader"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"></path></svg>Liên kết</div>
+        <div class="td" role="columnheader"><span class="fxg">ƒx</span>Trễ</div>
+        <div class="td" role="columnheader"><span class="fxg">ƒx</span>Tổng hợp việc con</div>
+      </div>
+      <div role="rowgroup">
+      <sc-for list="{{s.rows}}" as="r" hint-placeholder-count="4">
+      <div class="tr row {{r.rowCls}}" role="row" aria-selected="{{r.selected}}" style="grid-template-columns:{{s.grid}}">
+        <div class="td c-cb" role="cell"><button class="cb {{r.cbOn}}" type="button" role="checkbox" aria-checked="{{r.selected}}" aria-label="Chọn {{r.key}}"><sc-if value="{{r.cbOn}}" hint-placeholder-val="{{ false }}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:11px;height:11px;stroke-width:3"><path d="m4 12 5 5L20 6"></path></svg></sc-if></button></div>
+        <div class="td c-key" role="cell"><span class="key">{{r.key}}</span></div>
+        <div class="td c-name" role="cell"><span class="name-t">{{r.name}}</span><button type="button" class="open" tabindex="-1">Mở</button></div>
+        <div class="td" role="cell"><span class="stp {{r.st}}"><span class="dot {{r.st}}"></span>{{r.stText}}</span></div>
+        <div class="td" role="cell"><span style="display:inline-flex;align-items:center;gap:7px;min-width:0" role="group" aria-label="{{r.whoText}}"><span style="display:flex" aria-hidden="true"><sc-for list="{{r.people}}" as="p" hint-placeholder-count="1"><span class="av {{p.cls}}">{{p.i}}</span></sc-for></span><span class="who" aria-hidden="true">{{r.whoName}}</span></span></div>
+        <div class="td" role="cell"><span class="due {{r.startCls}}">{{r.start}}</span></div>
+        <div class="td" role="cell"><span class="due {{r.dueCls}}">{{r.due}}</span></div>
+        <div class="td" role="cell"><sc-if value="{{r.pd}}" hint-placeholder-val="{{ true }}"><span class="pr {{r.pcls}}" aria-label="Ưu tiên {{r.ptext}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px"><path d="{{r.pd}}" fill="{{r.pf}}"></path></svg>{{r.ptext}}</span></sc-if><sc-if value="{{r.noPrio}}" hint-placeholder-val="{{ false }}"><span class="muted">Chưa đặt</span></sc-if></div>
+        <div class="td" role="cell"><span class="cnt" aria-label="Checklist {{r.chk}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="m8.5 12 2.5 2.5 4.5-5"></path></svg>{{r.chk}}</span></div>
+        <div class="td" role="cell"><span class="cnt" aria-label="{{r.cm}} bình luận"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"></path></svg>{{r.cm}}</span></div>
+        <div class="td {{r.ptsCls}}" role="cell" tabindex="0" aria-label="Điểm {{r.pts}}, {{r.ptsState}}">
+          <sc-if value="{{r.psNormal}}" hint-placeholder-val="{{ true }}"><span style="font-variant-numeric:tabular-nums;margin-left:auto;margin-right:auto">{{r.pts}}</span></sc-if>
+          <sc-if value="{{r.psLock}}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums">{{r.pts}}<span class="lk" role="img" aria-label="Chỉ xem, bạn không có quyền sửa" title="Chỉ xem: bạn không có quyền sửa"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:13px;height:13px"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span></span></sc-if>
+          <sc-if value="{{r.psEdit}}" hint-placeholder-val="{{ false }}"><input class="inp focus" value="{{r.pts}}" aria-label="Điểm của {{r.key}}"></sc-if>
+          <sc-if value="{{r.psPend}}" hint-placeholder-val="{{ false }}"><span class="cnt pend" role="status"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"></path></svg>{{r.pts}} · Đang lưu</span></sc-if>
+          <sc-if value="{{r.psErr}}" hint-placeholder-val="{{ false }}"><input class="inp err" value="{{r.pts}}" aria-label="Điểm của {{r.key}}" aria-invalid="true" aria-describedby="{{r.key}}-e"><button type="button" class="btn sm"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:12px;height:12px"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>Thử lại</button>
+            <div id="{{r.key}}-e" class="pop err" role="alert"><span class="errmsg"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5M12 16h.01"></path></svg>Chưa lưu được</span><span>Mất kết nối tới máy chủ. Giá trị bạn gõ vẫn còn ở ô này.</span></div></sc-if>
+          <sc-if value="{{r.psConf}}" hint-placeholder-val="{{ false }}"><input class="inp warn" value="{{r.pts}}" aria-label="Điểm của {{r.key}}, xung đột" aria-describedby="{{r.key}}-c">
+            <div id="{{r.key}}-c" class="pop warn" role="alertdialog" aria-label="Xung đột giá trị"><span style="color:var(--warn-text);font-weight:600">Lê An vừa đổi Điểm thành 21</span><span>Giá trị của bạn: <b>{{r.pts}}</b></span><span style="display:flex;gap:8px"><button type="button" class="btn sm">Giữ giá trị của tôi</button><button type="button" class="btn sm pri">Dùng giá trị mới (21)</button></span></div></sc-if>
+        </div>
+        <sc-if value="{{s.hasNote}}" hint-placeholder-val="{{ true }}"><div class="td" role="cell"><span class="name-t" style="font-weight:400;color:var(--muted)">{{r.note}}</span><sc-if value="{{r.lock}}" hint-placeholder-val="{{ false }}"><span class="lk" role="img" aria-label="Chỉ xem, bạn không có quyền sửa" title="Chỉ xem: bạn không có quyền sửa"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:13px;height:13px"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span></sc-if></div></sc-if>
+        <div class="td" role="cell"><sc-for list="{{r.mods}}" as="m" hint-placeholder-count="1"><span class="tag {{m.cls}}">{{m.t}}</span></sc-for></div>
+        <div class="td" role="cell"><span class="cb {{r.okOn}}" role="img" aria-label="Nghiệm thu: {{r.okText}}"><sc-if value="{{r.okOn}}" hint-placeholder-val="{{ false }}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:11px;height:11px;stroke-width:3"><path d="m4 12 5 5L20 6"></path></svg></sc-if></span><sc-if value="{{r.lock}}" hint-placeholder-val="{{ false }}"><span class="lk" role="img" aria-label="Chỉ xem, bạn không có quyền sửa" title="Chỉ xem: bạn không có quyền sửa"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:13px;height:13px"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span></sc-if></div>
+        <div class="td" role="cell"><a href="#" style="color:var(--accent-text);overflow:hidden;text-overflow:ellipsis">{{r.link}}</a></div>
+        <div class="td" role="cell"><span class="fx" role="img" aria-label="Tự tính: {{r.fx}}" title="Tự tính từ các trường khác, không sửa được"><span class="fxg">ƒx</span>{{r.fx}}</span></div>
+        <div class="td" role="cell"><span class="fx" role="img" aria-label="Tự tính: {{r.roll}}" title="Tự tính từ các việc con, không sửa được"><span class="fxg">ƒx</span>{{r.roll}}</span></div>
+      </div>
+      </sc-for>
+      </div>
+    </div>
+  </div>
+  <sc-if value="{{s.foot}}" hint-placeholder-val="{{ false }}"><p class="note">{{s.foot}}</p></sc-if>
+  </sc-for>
+
+  <h2>Đang tải · khung xương giữ nguyên tiêu đề và cột dính</h2>
+  <div class="wrap" aria-busy="true" role="status" aria-label="Đang tải bảng">
+    <div class="tbl" style="--row-h:40px">
+      <div class="tr th" style="grid-template-columns:40px 84px 340px 140px 180px 110px 170px"><div class="td c-cb"></div><div class="td c-key">Mã</div><div class="td c-name">Tên công việc</div><div class="td">Trạng thái</div><div class="td">Người làm</div><div class="td">Bắt đầu</div><div class="td">Hạn</div></div>
+      <sc-for list="{{skel}}" as="k" hint-placeholder-count="4">
+      <div class="tr" style="grid-template-columns:40px 84px 340px 140px 180px 110px 170px"><div class="td c-cb"></div><div class="td c-key"><span class="sk" style="width:48px"></span></div><div class="td c-name"><span class="sk" style="width:{{k.w}}px"></span></div><div class="td"><span class="sk" style="width:70px"></span></div><div class="td"><span class="sk" style="width:100px"></span></div><div class="td"><span class="sk" style="width:60px"></span></div><div class="td"><span class="sk" style="width:80px"></span></div></div>
+      </sc-for>
+    </div>
+  </div>
+  <p class="note">Không hoạt hình quét sáng khi người dùng chọn giảm chuyển động.</p>
+
+  <h2>Lỗi cả bảng · giữ thanh công cụ, có Thử lại</h2>
+  <div class="wrap" style="padding:36px 24px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center" role="alert">
+    <svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:28px;height:28px;color:var(--danger)"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5M12 16h.01"></path></svg>
+    <b style="font-size:15px">Không tải được bảng</b>
+    <span style="color:var(--muted);font-size:13px;max-width:60ch">Mất kết nối tới máy chủ. Việc bạn đã tải vẫn được giữ; thử lại để cập nhật.</span>
+    <button type="button" class="btn"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>Thử lại</button>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["sang","dem"],"default":"sang","section":"Giao diện"},"$preview":{"width":1440,"height":3700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const AV = { MQ: 'c1', HP: 'c2', NA: 'c3', KL: 'c4', VT: 'c5', TT: 'c6' };
+    const NAME = { MQ: 'Mai Quốc Minh', HP: 'Lê Hoàng Phúc', NA: 'Nguyễn Anh', KL: 'Đỗ Khánh Linh', VT: 'Võ Thanh Tùng', TT: 'Trần Thu Trang' };
+    const ST = { todo: 'Cần làm', doing: 'Đang làm', review: 'Chờ duyệt', done: 'Hoàn thành' };
+    const PG = {
+      urgent: { d: 'M5 21V4M5 4h11l-2 4 2 4H5', f: 'currentColor', t: 'Khẩn' },
+      high: { d: 'm7 13 5-5 5 5M7 19l5-5 5 5', f: 'none', t: 'Cao' },
+      medium: { d: 'M6 10h12M6 15h12', f: 'none', t: 'Trung bình' },
+      low: { d: 'm7 10 5 5 5-5', f: 'none', t: 'Thấp' }
+    };
+    const MOD = { 'Kế toán': 't-data', 'Công nợ': 't-test', 'Mua hàng': 't-train', 'Kho': 't-rep' };
+    const row = (o) => {
+      const who = o.who || [];
+      const people = who.slice(0, 2).map((k) => ({ i: k, cls: AV[k] }));
+      if (who.length > 2) people.push({ i: '+' + (who.length - 2), cls: 'more' });
+      const g = PG[o.prio] || null;
+      const ps = o.ps || 'normal';
+      const o2 = Object.assign({ rowCls: '', cbOn: '', selected: 'false', startCls: '', dueCls: '', ptsCls: '', lock: false, ok: false, noPrio: !g }, o);
+      return Object.assign(o2, {
+        people, whoText: who.length ? 'Người làm: ' + who.map((k) => NAME[k]).join(', ') : 'Chưa giao cho ai',
+        whoName: who.length ? NAME[who[0]] + (who.length > 1 ? ' +' + (who.length - 1) : '') : 'Chưa giao',
+        stText: ST[o.st], pd: g ? g.d : '', pf: g ? g.f : 'none', ptext: g ? g.t : '', pcls: o.prio || '',
+        mods: (o.mods || []).map((t) => ({ t, cls: MOD[t] || 't-doc' })),
+        okOn: o.ok ? 'on' : '', okText: o.ok ? 'đã chọn' : 'chưa chọn',
+        psNormal: ps === 'normal' || ps === 'foc', psLock: ps === 'lock', psEdit: ps === 'edit', psPend: ps === 'pend', psErr: ps === 'err', psConf: ps === 'conf',
+        ptsState: { normal: 'có thể sửa', foc: 'đang tiêu điểm', lock: 'chỉ xem', edit: 'đang sửa', pend: 'đang lưu', err: 'lưu lỗi', conf: 'xung đột' }[ps],
+        ptsCls: ps === 'foc' ? 'cellfoc' : ''
+      });
+    };
+    const A = { key: 'ERP-142', name: 'Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP', st: 'doing', who: ['MQ'], start: '08/10/2026', due: '10/10 · Quá hạn 2 ngày', dueCls: 'over', prio: 'urgent', chk: '1/5', cm: '5', pts: '8', note: 'Cần xuất bản Excel', mods: ['Kế toán'], ok: true, link: 'erp.minhan.vn/t/142', fx: '2 ngày', roll: '3/5 xong' };
+    const B = { key: 'ERP-145', name: 'Đào tạo nhóm kế toán dùng phân hệ công nợ', st: 'review', who: ['HP', 'NA', 'KL', 'TT'], start: '14/10/2026', due: '18/10/2026', prio: 'high', chk: '0/4', cm: '12', pts: '13', note: '—', mods: ['Công nợ', 'Kế toán'], ok: false, link: 'erp.minhan.vn/t/145', fx: '0 ngày', roll: '0/4 xong' };
+    const C = { key: 'ERP-153', name: 'Liên hệ nhà cung cấp máy quét mã vạch', st: 'todo', who: [], start: 'Chưa đặt', startCls: 'unset', due: '22/10/2026', prio: '', chk: '0/0', cm: '0', pts: '3', note: '—', mods: ['Mua hàng'], ok: false, link: '—', fx: '0 ngày', roll: '—' };
+    const D = { key: 'ERP-131', name: 'Sao lưu cơ sở dữ liệu tự động hằng đêm', st: 'done', who: ['VT'], start: '01/10/2026', due: '05/10/2026', prio: 'low', chk: '4/4', cm: '1', pts: '5', note: 'Đã bật', mods: ['Kho'], ok: true, link: '—', fx: '0 ngày', roll: '—' };
+    const G = '40px 84px 340px 140px 170px 110px 190px 130px 90px 90px 150px 200px 160px 110px 190px 140px 160px';
+    const GN = '40px 84px 340px 140px 170px 110px 190px 130px 90px 90px 150px 160px 110px 190px 140px 160px';
+    const mk = (ps, extra) => Object.assign({}, extra, { ps });
+    const slices = [
+      { title: 'Bảng đầy đủ, dòng thứ tự: rê chuột, chọn + ô Điểm tiêu điểm, bình thường, đang lưu', cap: 'Cột Tệp và Tuần đang ẩn nên không có ở đây; khớp với menu "Cột" ở trên (+2 ẩn).', aria: 'Việc, đủ cột', grid: G, hasNote: true, minH: 220, foot: '',
+        rows: [row(Object.assign({}, A, { rowCls: 'hovered' })), row(Object.assign({}, B, { rowCls: 'sel', cbOn: 'on', selected: 'true', ps: 'foc' })), row(C), row(mk('pend', D))] },
+      { title: 'Lỗi lưu ô: giữ giá trị gõ, viền đỏ, biểu tượng, Thử lại ngay trong ô', cap: 'Ô Điểm của ERP-142 báo lỗi; ô của ERP-145 đang sửa tại chỗ (Enter lưu, Esc huỷ, rời ô cũng lưu).', aria: 'Việc, lỗi lưu ô', grid: G, hasNote: true, minH: 300, foot: '',
+        rows: [row(mk('err', A)), row(mk('edit', B)), row(C), row(D)] },
+      { title: 'Xung đột phiên bản trong ô: giữ giá trị của tôi hoặc dùng giá trị mới', cap: 'Không ghi đè mù: ô tải lại giá trị mới nhất, người dùng chọn.', aria: 'Việc, xung đột', grid: G, hasNote: true, minH: 300, foot: '',
+        rows: [row(mk('conf', Object.assign({}, A, { pts: '13' }))), row(B), row(C), row(D)] },
+      { title: 'Chỉ xem (Người xem / Bình luận): có giá trị, không ô nhập, không tay nắm kéo', cap: 'Mỗi ô không sửa được có ổ khoá kèm tên đọc và tooltip "Chỉ xem: bạn không có quyền sửa". Công thức ƒx khác với khoá: tự tính.', aria: 'Việc, chỉ xem', grid: G, hasNote: true, minH: 190, foot: '',
+        rows: [row(mk('lock', Object.assign({}, A, { lock: true }))), row(mk('lock', Object.assign({}, B, { lock: true }))), row(mk('lock', Object.assign({}, D, { lock: true })))] },
+      { title: 'Không có quyền xem trường Ghi chú: cột vắng hẳn, không để ô trống', cap: 'Ghi chú bị ẩn theo quyền: cột không có trong bảng và không có trong menu "Cột".', aria: 'Việc, thiếu cột Ghi chú', grid: GN, hasNote: false, minH: 190, foot: 'Một dòng giải thích ở chân bảng: "1 trường bạn không có quyền xem".',
+        rows: [row(mk('lock', Object.assign({}, A, { lock: true }))), row(mk('lock', Object.assign({}, B, { lock: true }))), row(mk('lock', Object.assign({}, C, { lock: true })))] }
+    ];
+    const names = [['Mã', 1], ['Tên công việc', 1], ['Trạng thái', 0], ['Người làm', 0], ['Bắt đầu', 0], ['Hạn', 0], ['Ưu tiên', 0], ['Checklist', 0], ['Bình luận', 0], ['Tệp', 2], ['Điểm', 0], ['Tuần', 2], ['Ghi chú', 0], ['Phân hệ', 0], ['Nghiệm thu', 0], ['Liên kết', 0], ['ƒx Trễ', 0], ['ƒx Tổng hợp việc con', 0]];
+    const menu = names.map(([name, k], idx) => ({ name, fixed: k === 1, toggle: k !== 1, on: k !== 2 ? 'true' : 'false', swCls: k === 2 ? '' : 'on', cls: (k === 1 ? 'fixed ' : '') + (name === 'Ưu tiên' ? 'foc' : '') }));
+    const skel = [{ w: 220 }, { w: 180 }, { w: 260 }, { w: 150 }];
+    return { mode: this.props.mode ?? 'sang', slices, menu, skel };
+  }
+}
+</script>
+</body>
+</html>

@@ -17,7 +17,9 @@ public record AttachmentDto(
     Guid UploadedBy,
     string? UploadedByName,
     DateTime CreatedAt,
-    string Kind = AttachmentDto.LinkKind)
+    string Kind = AttachmentDto.LinkKind,
+    int? Width = null,
+    int? Height = null)
 {
     public const string FileKind = "File";
     public const string LinkKind = "Link";
@@ -33,7 +35,9 @@ public record AttachmentDto(
         attachment.CreatedBy!.Value,
         uploadedByName,
         attachment.CreatedAt.UtcDateTime,
-        attachment.IsStoredFile ? FileKind : LinkKind);
+        attachment.IsStoredFile ? FileKind : LinkKind,
+        attachment.Metadata.Width,
+        attachment.Metadata.Height);
 }
 
 /// <summary>

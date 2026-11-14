@@ -8,6 +8,7 @@ import type {
 } from "@notrelix/docs-core";
 import type { PageDtoApi, BreadcrumbDtoApi, TrashPageDtoApi } from "../dto";
 import { mapPage, mapBreadcrumb } from "../model/page.mapper";
+import { readAllCursorPages } from "./read-all-pages";
 
 /** Per-request options the Docs adapters use (a subset of the client's). */
 export interface DocsRequestOptions {
@@ -63,6 +64,7 @@ export interface PageApiEndpoints {
     breadcrumb: (pageId: string) => string;
     blocks: (pageId: string) => string;
     comments: (pageId: string) => string;
+    commentsPage: (pageId: string) => string;
     history: (pageId: string) => string;
     search: (workspaceId: string) => string;
     move: (pageId: string) => string;
@@ -107,11 +109,17 @@ export interface PageApiEndpoints {
 
 export function createPageApi(api: DocsApiClient, endpoints: PageApiEndpoints) {
   return {
+    /**
+     * `Documents.Pages.ListWorkspacePages`, read to the end one cursor page (at
+     * most 200) at a time. The server answers in id order, so the list is sorted
+     * by title here, the order the tree and the pickers show.
+     */
     async getList(workspaceId: string): Promise<Page[]> {
-      const pages = await api.get<PageDtoApi[]>(
+      const pages = await readAllCursorPages<PageDtoApi>(
+        api,
         endpoints.pages.list(workspaceId),
       );
-      return pages.map(mapPage);
+      return pages.map(mapPage).sort((a, b) => a.title.localeCompare(b.title));
     },
 
     async getDetail(pageId: string): Promise<PageDetail> {

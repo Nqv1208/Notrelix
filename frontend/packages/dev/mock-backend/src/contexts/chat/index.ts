@@ -1,0 +1,56 @@
+/**
+ * Chat context — every operation the generated contract names under
+ * `/api/v1/workspaces/{workspaceId}/chat` (the operations of
+ * `frontend/packages/foundation/contracts/src/generated/rest/schema.ts`).
+ *
+ * Plan: docs/workstreams/chat-delivery-plan.md (S1.6), docs/workstreams/specs/chat-foundation.md §15
+ */
+
+import { attachmentsOperations } from "./attachments.handlers";
+import { blocksOperations } from "./blocks.handlers";
+import { channelsOperations } from "./channels.handlers";
+import { channelGroupsOperations } from "./channel-groups.handlers";
+import { conversationsOperations } from "./conversations.handlers";
+import { linksOperations } from "./links.handlers";
+import { membersOperations } from "./members.handlers";
+import { mentionsOperations } from "./mentions.handlers";
+import { messagesOperations } from "./messages.handlers";
+import { permissionsOperations } from "./permissions.handlers";
+import { pinsOperations } from "./pins.handlers";
+import { reactionsOperations } from "./reactions.handlers";
+import { readStateOperations } from "./read-state.handlers";
+import { retentionOperations } from "./retention.handlers";
+import { searchOperations } from "./search.handlers";
+import { threadsOperations } from "./threads.handlers";
+
+export {
+  seedChatWorld,
+  CHAT_SEED_IDS,
+  GENERAL_MESSAGE_COUNT,
+} from "./chat-world";
+export { MockChatState, chatGuid, streamIdOf } from "./chat-state";
+export { runExport, runRetention } from "./chat-retention";
+export {
+  runDigest,
+  DIGEST_MAX_ITEMS,
+  DIGEST_WINDOW_SECONDS,
+} from "./chat-digest";
+
+export const chatOperations = [
+  ...attachmentsOperations,
+  ...channelGroupsOperations,
+  ...blocksOperations,
+  ...channelsOperations,
+  ...conversationsOperations,
+  ...linksOperations,
+  ...membersOperations,
+  ...mentionsOperations,
+  ...messagesOperations,
+  ...permissionsOperations,
+  ...pinsOperations,
+  ...reactionsOperations,
+  ...readStateOperations,
+  ...retentionOperations,
+  ...searchOperations,
+  ...threadsOperations,
+];

@@ -291,6 +291,12 @@ export function timelineScenario({
     undatedCount: 1,
     undatedHref: "#undated",
     canEdit: true,
+    presentation: {
+      groupBy: "group",
+      barSpan: "start-due",
+      onGroupByChange: () => undefined,
+      onBarSpanChange: () => undefined,
+    },
     defaultDrag: state === "keo-gian" ? TIMELINE_DRAG_PREVIEW : null,
     defaultCriticalPath: state === "duong-gang",
   };

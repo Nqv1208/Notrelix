@@ -17,7 +17,7 @@ evidence:
   - docs/architecture/contract-boundaries.md
   - docs/architecture/data-ownership-and-consistency.md
   - docs/delivery/team-ownership.md
-  - docs/workstreams/capability-map.md
+  - docs/workstreams/capability-delivery-map.md
   - docs/workstreams/cross-team-dependencies.md
   - backend/docs/architecture/backend-overview.md
   - backend/docs/architecture/application-model.md

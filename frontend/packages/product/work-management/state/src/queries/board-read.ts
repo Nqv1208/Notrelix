@@ -8,11 +8,11 @@ import { wmQueryKeys } from "./keys";
 import { useWorkManagementServices } from "../services";
 
 /** Items of each Status lane a board read brings with it. */
-export const BOARD_FIRST_PAGE = 50;
-/** Items a "show more" reads from the server. */
-export const BOARD_LANE_PAGE = 50;
+export const BOARD_FIRST_PAGE = 10;
+/** Items each step of scrolling a lane to its end reads from the server. */
+export const BOARD_LANE_PAGE = 10;
 // Pages a refetch reads back to put a lane's loaded items where they were (about 2,000 items).
-const RESTORE_PAGES = 40;
+const RESTORE_PAGES = 200;
 
 /** What the open view needs of the board read. */
 export interface BoardReadNeed {
@@ -21,6 +21,31 @@ export interface BoardReadNeed {
   /** The filter and sort in the wire forms; empty: none. */
   readonly filter: string;
   readonly sort: string;
+  /** Keeps the items whose title, key or label holds the text (the board search box); empty or absent: none. */
+  readonly search?: string;
+  /** People whose name holds the search text, comma-separated ids: their items match it too. */
+  readonly searchMembers?: string;
+  /** The Select field the view lays the board out by (its option lanes are paged); absent: the Status field. */
+  readonly groupBy?: string;
+}
+
+/** The criteria a paged read is read under (what a later page repeats). */
+type ReadCriteria = Pick<
+  BoardReadNeed,
+  "filter" | "sort" | "search" | "searchMembers" | "groupBy"
+>;
+
+/** The criteria as the read sends them: only what is set. */
+function sentCriteria(need: ReadCriteria): ReadCriteria {
+  return {
+    filter: need.filter,
+    sort: need.sort,
+    ...(need.search ? { search: need.search } : {}),
+    ...(need.search && need.searchMembers
+      ? { searchMembers: need.searchMembers }
+      : {}),
+    ...(need.groupBy ? { groupBy: need.groupBy } : {}),
+  };
 }
 
 const needsByBoard = new Map<string, Map<string, BoardReadNeed>>();
@@ -29,8 +54,8 @@ const refused = new Set<string>();
 
 const boardKey = (workspaceId: string, boardId: string) =>
   `${workspaceId}:${boardId}`;
-const criteriaKeyOf = (need: Pick<BoardReadNeed, "filter" | "sort">) =>
-  `${need.filter}|${need.sort}`;
+const criteriaKeyOf = (need: ReadCriteria) =>
+  `${need.filter}|${need.sort}|${need.search ?? ""}|${need.search ? (need.searchMembers ?? "") : ""}|${need.groupBy ?? ""}`;
 
 /** What every mounted view of the board needs together: one view wanting everything reads everything. */
 export function resolveReadNeed(
@@ -40,18 +65,31 @@ export function resolveReadNeed(
   let full = false;
   let filter = "";
   let sort = "";
+  let search = "";
+  let searchMembers = "";
+  let groupBy = "";
   // A view brings the filter, another the sort (the table sorts by its own columns): each is the last one set.
+  // Two views laying the board out by different fields cannot share the pages: the board is read whole.
   for (const need of needsByBoard
     .get(boardKey(workspaceId, boardId))
     ?.values() ?? []) {
     if (need.full) full = true;
     if (need.filter) filter = need.filter;
     if (need.sort) sort = need.sort;
+    if (need.search) {
+      search = need.search;
+      searchMembers = need.searchMembers ?? "";
+    }
+    if (need.groupBy) {
+      if (groupBy && groupBy !== need.groupBy) full = true;
+      groupBy = need.groupBy;
+    }
   }
+  const resolved = { filter, sort, search, searchMembers, groupBy };
   const refusedHere = refused.has(
-    `${boardKey(workspaceId, boardId)}|${criteriaKeyOf({ filter, sort })}`,
+    `${boardKey(workspaceId, boardId)}|${criteriaKeyOf(resolved)}`,
   );
-  return { full: full || refusedHere, filter, sort };
+  return { full: full || refusedHere, ...resolved };
 }
 
 /** Whether the server refused to read a board under these criteria. */
@@ -77,10 +115,14 @@ export async function readBoard(
   try {
     read = await boards.getFullBoard(boardId, {
       workspaceId,
-      page: { size: BOARD_FIRST_PAGE, filter: need.filter, sort: need.sort },
+      page: { size: BOARD_FIRST_PAGE, ...sentCriteria(need) },
     });
   } catch (error) {
-    if (!isRefusal(error) || (!need.filter && !need.sort)) throw error;
+    if (
+      !isRefusal(error) ||
+      (!need.filter && !need.sort && !need.search && !need.groupBy)
+    )
+      throw error;
     refused.add(`${boardKey(workspaceId, boardId)}|${criteriaKeyOf(need)}`);
     return boards.getFullBoard(boardId, { workspaceId });
   }
@@ -108,13 +150,13 @@ export async function readBoard(
         const page = await boards.getLanePage(boardId, key, {
           cursor: read.paging.lanes[key]!.nextCursor!,
           limit: BOARD_LANE_PAGE,
-          ...need,
+          ...sentCriteria(need),
           board: read.board,
           fieldDefinitions: read.fieldDefinitions,
         });
         read = appendLanePage(read, key, page);
       } catch {
-        break; // what is loaded stays; the person presses "show more" again
+        break; // what is loaded stays; the lane loads the rest as it is scrolled
       }
     }
   }
@@ -133,13 +175,13 @@ export function useBoardReadNeed(
 ): void {
   const owner = useId();
   const queryClient = useQueryClient();
-  const { full, filter, sort } = need;
+  const { full, filter, sort, search, searchMembers, groupBy } = need;
   useEffect(() => {
     if (!boardId || !workspaceId) return;
     const key = boardKey(workspaceId, boardId);
     const owners = needsByBoard.get(key) ?? new Map<string, BoardReadNeed>();
     needsByBoard.set(key, owners);
-    owners.set(owner, { full, filter, sort });
+    owners.set(owner, { full, filter, sort, search, searchMembers, groupBy });
     const queryKey = wmQueryKeys.fullBoard(workspaceId, boardId);
     const cached = queryClient.getQueryData<FullBoardResponse>(queryKey);
     const resolved = resolveReadNeed(workspaceId, boardId);
@@ -153,7 +195,18 @@ export function useBoardReadNeed(
       owners.delete(owner);
       if (owners.size === 0) needsByBoard.delete(key);
     };
-  }, [boardId, workspaceId, owner, full, filter, sort, queryClient]);
+  }, [
+    boardId,
+    workspaceId,
+    owner,
+    full,
+    filter,
+    sort,
+    search,
+    searchMembers,
+    groupBy,
+    queryClient,
+  ]);
 }
 
 /** Where each lane's "show more" stands: reading, or failed (the loaded cards stay, the person can retry). */
@@ -165,7 +218,8 @@ export interface LanePagerState {
 const NO_LANES: ReadonlySet<string> = new Set();
 
 /**
- * Reads the next page of a Status lane into the board read. One read per lane at a time; a refused cursor
+ * Reads the next page of a lane (a Status option, or an option of the field the pages are grouped by) into
+ * the board read. One read per lane at a time; a refused cursor
  * (the lane changed under it) reads the board again.
  */
 export function useLanePager(
@@ -205,8 +259,7 @@ export function useLanePager(
       const page = await boards.getLanePage(boardId, laneKey, {
         cursor: lane.nextCursor,
         limit: BOARD_LANE_PAGE,
-        filter: board.paging.criteria.filter,
-        sort: board.paging.criteria.sort,
+        ...sentCriteria(board.paging.criteria),
         board: board.board,
         fieldDefinitions: board.fieldDefinitions,
       });

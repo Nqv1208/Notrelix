@@ -38,7 +38,7 @@ import {
 const CHIP =
   "inline-flex h-6.5 items-center gap-1.5 rounded-[7px] bg-state-hover px-[9px] text-crumb leading-[1.45] font-medium text-muted-foreground no-underline";
 
-/** A referenced task inside text (Final-Docs `.task`): dot, key, title. */
+/** A referenced task inside text (Final-Docs-2 `.task`): dot, key, title. */
 export function DocTaskChip({
   task,
   copy,
@@ -392,7 +392,7 @@ export function DocPageReference({
   );
 }
 
-/** The embedded live task table (Final-Docs `.live` and its note). */
+/** The embedded live task table (Final-Docs-2 `.live` and its note). */
 export function DocLiveTable({
   block,
   copy,
@@ -630,7 +630,7 @@ export interface DocArticleSurfaceProps {
   readonly callbacks?: DocPageCallbacks;
 }
 
-/** The page sheet (Final-Docs `.doc`): title, chips and the block flow. */
+/** The page sheet (Final-Docs-2 `.doc`): title, chips and the block flow. */
 export function DocArticleSurface({
   copy,
   title,

@@ -28,6 +28,7 @@ export const PALETTE_COMMAND_IDS = [
   "home",
   "my-work",
   "inbox",
+  "chat",
   "search",
   "library",
   "reports",
@@ -60,6 +61,7 @@ export type PaletteIcon =
   | "home"
   | "my-work"
   | "inbox"
+  | "chat"
   | "search"
   | "library"
   | "reports"
@@ -143,6 +145,7 @@ const NAV: Readonly<
     | "home"
     | "my-work"
     | "inbox"
+    | "chat"
     | "search"
     | "library"
     | "reports"
@@ -155,6 +158,7 @@ const NAV: Readonly<
   home: { destination: { section: "home" }, keys: ["G", "H"] },
   "my-work": { destination: { section: "my-work" }, keys: ["G", "M"] },
   inbox: { destination: { section: "inbox" }, keys: ["G", "I"] },
+  chat: { destination: { section: "chat" }, keys: [] },
   search: { destination: { section: "search" }, keys: [] },
   library: { destination: { section: "library" }, keys: [] },
   reports: { destination: { section: "reports" }, keys: [] },
@@ -226,6 +230,7 @@ function commandDefs(
     nav("home", c.home, "home"),
     nav("my-work", c.myWork, "my-work"),
     nav("inbox", c.inbox, "inbox", c.quickInbox),
+    nav("chat", c.chat, "chat"),
     nav("search", c.search, "search"),
     nav("library", c.library, "library"),
     nav("reports", c.reports, "reports"),

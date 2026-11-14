@@ -10,6 +10,30 @@ namespace Notrelix.Application.Features.WorkManagement.BoardFields;
 internal static class StaleFieldGuard
 {
     public const string DeletedCode = "work-management.field.deleted";
+    public const string OptionRemovedCode = "work-management.field.option-removed";
+
+    /// <summary>
+    /// A select value names an option the field no longer has (the client holds an old schema): a precondition failure
+    /// naming the field and the option, nothing stored. An option is hard-removed, so this cannot tell it from an id
+    /// the field never had; both are a stale or wrong client and get the same answer.
+    /// </summary>
+    public static void EnsureOptionsExist(BoardField field, FieldValue value)
+    {
+        if (value.IsEmpty || field.Type is not (FieldType.Select or FieldType.Status or FieldType.MultiSelect)) return;
+        using var doc = System.Text.Json.JsonDocument.Parse(value.Data.Value);
+        var root = doc.RootElement;
+        var named = root.ValueKind == System.Text.Json.JsonValueKind.Array ? root.EnumerateArray().ToList() : [root];
+        var known = field.Options.Select(option => option.Id).ToHashSet();
+        foreach (var element in named)
+        {
+            if (element.ValueKind != System.Text.Json.JsonValueKind.String || !Guid.TryParse(element.GetString(), out var id) || known.Contains(id)) continue;
+            throw new Notrelix.Application.Common.Exceptions.PreconditionFailedException(
+                "An option of the field was removed since this client loaded the board.", OptionRemovedCode)
+            {
+                Extensions = new Dictionary<string, object?> { ["fieldName"] = field.Name, ["optionId"] = id },
+            };
+        }
+    }
 
     public static async Task<Exception> MissingAsync(
         IWorkManagementDbContext context,

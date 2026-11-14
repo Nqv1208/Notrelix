@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 /**
@@ -204,6 +205,122 @@ test.describe("Board share dialog (owner)", () => {
     await expect(
       again.getByText("Quyền riêng trên board này · 7"),
     ).toBeVisible();
+  });
+});
+
+test.describe("Board share sheet at 390 px (owner)", () => {
+  test.skip(
+    persona !== "owner" || scenario !== "default" || faults !== "",
+    "Owner checks need the default owner world without faults",
+  );
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("a person picked in the search is added at once with the row's level, and Undo takes the add back", async ({
+    page,
+  }) => {
+    await open(page);
+    await share(page).click();
+    const dialog = page.getByRole("dialog", { name: /^Chia sẻ/ });
+    // No "Mời" button: the add is the pick itself.
+    await expect(dialog.getByRole("button", { name: "Mời" })).toHaveCount(0);
+    await dialog.getByRole("button", { name: /Quyền khi thêm/ }).click();
+    await page.getByRole("radio", { name: /Có thể bình luận/ }).click();
+    await expect(
+      dialog.getByRole("button", { name: /Quyền khi thêm/ }),
+    ).toContainText("Có thể bình luận");
+    await dialog.getByRole("combobox").fill("Jordan");
+    await dialog.getByRole("option", { name: /Jordan Lee/ }).click();
+    const rows = page.locator('[data-f="pr"]');
+    await expect(rows).toHaveCount(6);
+    await expect(rows.filter({ hasText: "Jordan Lee" })).toContainText(
+      "Bình luận",
+    );
+    const toast = page.locator('[data-f="toast"]');
+    await expect(toast).toContainText(
+      /Đã thêm Jordan Lee.* · Có thể bình luận/,
+    );
+    await toast.getByRole("button", { name: "Hoàn tác" }).click();
+    await expect(toast).toBeHidden();
+    await expect(rows).toHaveCount(5);
+    await expect(rows.filter({ hasText: "Jordan Lee" })).toHaveCount(0);
+  });
+
+  test("a level change, a removal and the Private switch run from the sheets", async ({
+    page,
+  }) => {
+    await open(page);
+    await share(page).click();
+    const dialog = page.locator('[data-f="dlg"]');
+    const rows = page.locator('[data-f="pr"]');
+    await rows
+      .nth(1)
+      .getByRole("button", { name: /Có thể xem/ })
+      .click();
+    await page.getByRole("radio", { name: /Có thể sửa/ }).click();
+    await expect(rows.nth(1)).toContainText("Sửa");
+    // A guest is view-only: the levels above view are disabled with the reason.
+    await rows
+      .nth(3)
+      .getByRole("button", { name: /Quyền của/ })
+      .click();
+    for (const level of [/Có thể bình luận/, /Có thể sửa/, /Quản lý/]) {
+      await expect(page.getByRole("radio", { name: level })).toHaveAttribute(
+        "aria-disabled",
+        "true",
+      );
+    }
+    await page.getByRole("button", { name: /Gỡ quyền/ }).click();
+    await expect(
+      dialog.getByText("Quyền riêng trên board này · 4"),
+    ).toBeVisible();
+    await dialog
+      .getByRole("button", { name: /Đổi ai vào được board|Theo Phòng/ })
+      .click();
+    await expect(
+      dialog.getByText(
+        "22 người trong Phòng Công nghệ sẽ không còn thấy board.",
+      ),
+    ).toBeVisible();
+    await dialog.getByRole("checkbox").nth(2).uncheck();
+    await dialog
+      .getByRole("button", { name: "Thêm 2 người rồi chuyển" })
+      .click();
+    await expect(dialog).toBeHidden();
+  });
+
+  test("every control is a 44 px target and axe finds no serious violation on the three views", async ({
+    page,
+  }) => {
+    await open(page);
+    await share(page).click();
+    const dialog = page.getByRole("dialog", { name: /^Chia sẻ/ });
+    await expect(dialog).toBeVisible();
+    await page.waitForTimeout(300);
+    const small = await page.evaluate(() =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>(
+          '[data-f="dlg"] button, [data-f="dlg"] input:not([type="checkbox"])',
+        ),
+      )
+        .filter((element) => element.getBoundingClientRect().height < 43.5)
+        .map((element) => element.textContent?.trim() || element.outerHTML),
+    );
+    expect(small).toEqual([]);
+    const serious = async () =>
+      (
+        await new AxeBuilder({ page }).include('[data-f="dlg"]').analyze()
+      ).violations.filter(
+        (violation) =>
+          violation.impact === "serious" || violation.impact === "critical",
+      );
+    expect(await serious()).toEqual([]);
+    await page.locator('[data-f="ga"]').first().click();
+    await page.waitForTimeout(300);
+    expect(await serious()).toEqual([]);
+    await page.getByRole("button", { name: "Quay lại Chia sẻ" }).click();
+    await page.locator('[data-f="logl"]').click();
+    await page.waitForTimeout(300);
+    expect(await serious()).toEqual([]);
   });
 });
 

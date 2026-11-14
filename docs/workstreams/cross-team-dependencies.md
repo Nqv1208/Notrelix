@@ -104,6 +104,7 @@ Platform does not own:
 | WG | Workspace & Governance |
 | WM | Work Management |
 | DC | Documents & Collaboration |
+| CH | Chat |
 | AI | Automation & Integrations |
 | BE | Billing & Entitlements |
 | AR | Analytics & Reporting |
@@ -122,6 +123,7 @@ These identifiers are delivery shorthand only. They are not rule IDs, bounded-co
 | WorkManagement | WM | board/item/field/checklist/work-state facts |
 | Documents | DC | page/block/document state |
 | Collaboration | DC | comment/collaboration state |
+| Chat | CH | channel, conversation, message, read-state facts |
 | Automation | AI | rule/execution state |
 | Integrations | AI | external connection/provider interaction state |
 | Billing | BE | plan/subscription/entitlement/usage facts |
@@ -374,6 +376,28 @@ Platform owns connection/reconnect/transport mechanisms.
 Collaboration owns user-visible collaboration semantics.
 
 If gap recovery is unresolved, realtime-critical delivery remains blocked even if simple query invalidation appears to refresh the screen.
+
+## 13A. Chat dependencies
+
+### Chat → Workspaces
+
+Member lookups, role and member-removed or Workspace-deleted facts, through `Public` queries and facts. Chat reacts to removal by ending access (CHT-017).
+
+### Chat → Governance
+
+Permission checks for the `chat.*` actions and Audit facts for administration.
+
+### Chat → Collaboration
+
+Mention identity and privacy (COL-007, COL-030), reaction rule (COL-009), attachment policy (COL-010, COL-011) and notification delivery (COL-017, COL-018) through ports and facts. Chat emits notification intents; Collaboration delivers.
+
+### Chat → Platform
+
+Realtime gateway with a new `Channel` scope and typing/presence frames, outbox, rate limiting, object storage.
+
+### Chat → Work Management and Documents
+
+Resource view checks for links by `ResourceRef` only.
 
 ## 14. Automation dependencies
 

@@ -3195,3 +3195,9 @@ no migration that ignores real old data
 ```
 
 The objective is a replaceable outer mechanism layer that makes PostgreSQL/provider behavior reliable and secure without making those technologies the owners of Notrelix business meaning.
+
+---
+
+# 185. Chat context (planned)
+
+Chat persistence (planned): schema `chat` (`DbSchemas.Chat`), tables in `docs/workstreams/specs/chat-foundation.md` section 19, tenant scoped with RLS via `ops.apply_scoped_business_policies('chat', ...)` in `008_policies_workspace_scoped_domain.sql`. The message sequence is allocated by locking the space row inside the send transaction. Migrations are expand-only per phase. Attachments reuse the Collaboration attachment table with target kind `chat.message`.

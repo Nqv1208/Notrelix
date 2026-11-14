@@ -21,7 +21,6 @@ import {
   ICON_BUTTON_CLASS,
   INPUT_CLASS,
   SectionHeader,
-  SectionLine,
 } from "./board-settings-parts";
 import type {
   BoardLabelRow,
@@ -29,7 +28,15 @@ import type {
 } from "./board-settings-types";
 import { WriteError, useWriteErrorProps } from "./board-settings-write-error";
 
-const TONES = Object.keys(ITEM_LABEL_COLORS) as ItemLabelTone[];
+/** The six tones the page offers, in the drawn order: blue, teal, violet, amber, rose, grey. */
+const TONES: readonly ItemLabelTone[] = [
+  "data",
+  "training",
+  "test",
+  "report",
+  "security",
+  "doc",
+];
 
 const taken = (labels: readonly BoardLabelRow[], name: string, skipId = "") =>
   labels.some(
@@ -37,7 +44,7 @@ const taken = (labels: readonly BoardLabelRow[], name: string, skipId = "") =>
       label.id !== skipId && label.name.toLowerCase() === name.toLowerCase(),
   );
 
-/** Six colour choices, one per label tone; the current one is marked. */
+/** Six colour choices (26 px squares), one per label tone; the current one is ringed. */
 function ColorChoices({
   current,
   onPick,
@@ -67,7 +74,7 @@ function ColorChoices({
           aria-label={copy.labels.colors[tone]}
           onClick={() => onPick(ITEM_LABEL_COLORS[tone])}
           className={cn(
-            "size-5.5 cursor-pointer rounded-[6px] border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-checked:shadow-[0_0_0_2px_var(--popover),0_0_0_4px_var(--foreground)] aria-pressed:shadow-[0_0_0_2px_var(--popover),0_0_0_4px_var(--foreground)]",
+            "size-[26px] max-md:size-11 cursor-pointer rounded-[6px] border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-checked:outline-2 aria-checked:outline-solid aria-checked:outline-offset-2 aria-checked:outline-primary aria-pressed:outline-solid aria-pressed:outline-2 aria-pressed:outline-offset-2 aria-pressed:outline-primary",
             ITEM_LABEL_TONE_CLASS[tone],
           )}
         />
@@ -75,6 +82,12 @@ function ColorChoices({
     </div>
   );
 }
+
+const CHIP =
+  "inline-flex h-5.5 max-w-full items-center truncate rounded-[6px] px-2 text-[12px] font-semibold";
+const ROW_GRID =
+  "grid grid-cols-[minmax(0,1fr)_140px_120px] items-center gap-2.5 px-3 max-md:grid-cols-[minmax(0,1fr)_auto_auto]";
+const SMALL = "h-7 px-2.5 text-[12.5px]";
 
 /** The "Nhãn" section: the labels of the board, with create, rename, recolour and delete. */
 export function LabelsSection({ panel }: { panel: BoardLabelsPanelProps }) {
@@ -112,7 +125,10 @@ export function LabelsSection({ panel }: { panel: BoardLabelsPanelProps }) {
         <SectionHeader
           id="bs-labels-h"
           title={t.title}
-          intro={t.intro}
+          intro={
+            plural(t.summary_one, t.summary_other, panel.labels.length) +
+            t.shared
+          }
           actions={
             <button
               type="button"
@@ -128,53 +144,75 @@ export function LabelsSection({ panel }: { panel: BoardLabelsPanelProps }) {
 
         {adding ? (
           <form
-            className="mb-3 flex flex-wrap items-center gap-2"
+            aria-label={t.newLabel}
+            className="mb-3.5 flex flex-col gap-3 rounded-[12px] border border-primary bg-popover p-3.5 shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_14%,transparent)]"
             onSubmit={(event) => {
               event.preventDefault();
               void add();
             }}
           >
-            <input
-              autoFocus
-              value={name}
-              aria-label={t.nameLabel}
-              placeholder={t.namePlaceholder}
-              {...(duplicate
-                ? {
-                    "aria-invalid": true,
-                    "aria-describedby": `${addErrorId}-dup`,
+            <p className="m-0 text-metadata leading-[1.45] font-semibold text-meta-foreground">
+              {t.newLabel}
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="w-16 text-crumb font-semibold text-muted-foreground">
+                {t.nameShort}
+              </span>
+              <input
+                autoFocus
+                value={name}
+                aria-label={t.nameLabel}
+                placeholder={t.namePlaceholder}
+                {...(duplicate
+                  ? {
+                      "aria-invalid": true,
+                      "aria-describedby": `${addErrorId}-dup`,
+                    }
+                  : addFailed)}
+                onChange={(event) => setName(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    event.stopPropagation();
+                    close();
                   }
-                : addFailed)}
-              onChange={(event) => setName(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") {
-                  event.stopPropagation();
-                  close();
-                }
-              }}
-              className={cn(INPUT_CLASS, "min-w-0 flex-1")}
-            />
-            <ColorChoices
-              radio
-              label={t.colorLabel}
-              current={color}
-              onPick={setColor}
-            />
-            <button
-              type="button"
-              onClick={close}
-              className={BUTTON_CLASS.outline}
-            >
-              {copy.common.cancel}
-            </button>
-            <button
-              type="submit"
-              disabled={trimmed === "" || duplicate}
-              className={BUTTON_CLASS.primary}
-            >
-              {t.addConfirm}
-            </button>
-            <div className="basis-full empty:hidden">
+                }}
+                className={cn(INPUT_CLASS, "w-[260px] max-md:w-full")}
+              />
+              <span className="text-crumb font-semibold text-muted-foreground">
+                {t.colorLabel}
+              </span>
+              <ColorChoices
+                radio
+                label={t.colorLabel}
+                current={color}
+                onPick={setColor}
+              />
+              <span
+                className={cn(
+                  CHIP,
+                  ITEM_LABEL_TONE_CLASS[itemLabelTone({ name: "", color })],
+                )}
+              >
+                {trimmed || t.namePlaceholder}
+              </span>
+              <span className="ml-auto flex gap-2">
+                <button
+                  type="button"
+                  onClick={close}
+                  className={BUTTON_CLASS.ghost}
+                >
+                  {copy.common.cancel}
+                </button>
+                <button
+                  type="submit"
+                  disabled={trimmed === "" || duplicate}
+                  className={BUTTON_CLASS.primary}
+                >
+                  {t.addConfirm}
+                </button>
+              </span>
+            </div>
+            <div className="empty:hidden">
               {duplicate ? (
                 <p
                   id={`${addErrorId}-dup`}
@@ -188,12 +226,6 @@ export function LabelsSection({ panel }: { panel: BoardLabelsPanelProps }) {
             </div>
           </form>
         ) : null}
-
-        <SectionLine
-          title={t.list}
-          count={plural(t.summary_one, t.summary_other, panel.labels.length)}
-          note=""
-        />
 
         {panel.status === "loading" ? (
           <div
@@ -224,24 +256,33 @@ export function LabelsSection({ panel }: { panel: BoardLabelsPanelProps }) {
             <span className={HINT_CLASS}>{t.emptyHint}</span>
           </div>
         ) : (
-          <ul
-            aria-label={t.list}
-            className="m-0 flex list-none flex-col overflow-hidden rounded-[10px] border border-line bg-popover p-0"
-          >
-            {panel.labels.map((label) => (
-              <LabelRow
-                key={label.id}
-                label={label}
-                all={panel.labels}
-                deleting={deleteId === label.id}
-                onDelete={() => setDeleteId(label.id)}
-                onDeleteDone={() => setDeleteId(null)}
-                panel={panel}
-              />
-            ))}
-          </ul>
+          <div className="overflow-hidden rounded-[12px] border border-line bg-popover">
+            <div
+              aria-hidden="true"
+              className={cn(
+                ROW_GRID,
+                "min-h-[34px] bg-background text-metadata leading-[1.45] font-semibold text-meta-foreground",
+              )}
+            >
+              <span>{t.columnLabel}</span>
+              <span>{t.columnCount}</span>
+              <span />
+            </div>
+            <ul aria-label={t.list} className="m-0 list-none p-0">
+              {panel.labels.map((label) => (
+                <LabelRow
+                  key={label.id}
+                  label={label}
+                  all={panel.labels}
+                  deleting={deleteId === label.id}
+                  onDelete={() => setDeleteId(label.id)}
+                  onDeleteDone={() => setDeleteId(null)}
+                  panel={panel}
+                />
+              ))}
+            </ul>
+          </div>
         )}
-        <p className={cn(HINT_CLASS, "mt-2.5 mb-0 px-0.5")}>{t.footnote}</p>
       </div>
     </section>
   );
@@ -266,6 +307,8 @@ function LabelRow({
   const t = copy.labels;
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(label.name);
+  const [color, setColor] = useState(label.color);
+  const [palette, setPalette] = useState(false);
   const scope = `label:${label.id}`;
   const errorId = useId();
   const failed = useWriteErrorProps(scope, errorId);
@@ -273,18 +316,21 @@ function LabelRow({
   const duplicate = taken(all, trimmed, label.id);
   const tone = itemLabelTone(label);
 
+  const stop = () => {
+    setName(label.name);
+    setColor(label.color);
+    setRenaming(false);
+  };
+
   async function commit() {
-    if (trimmed === "" || trimmed === label.name) {
-      setName(label.name);
-      setRenaming(false);
-      return;
-    }
+    const changes = {
+      ...(trimmed !== label.name ? { name: trimmed } : {}),
+      ...(color !== label.color ? { color } : {}),
+    };
+    if (trimmed === "" || Object.keys(changes).length === 0) return stop();
     if (duplicate) return;
-    // A failed rename stays open with the typed name; the error offers Retry.
-    const result = await run(
-      () => panel.onUpdate(label.id, { name: trimmed }),
-      scope,
-    );
+    // A failed save stays open with what was typed; the error offers Retry.
+    const result = await run(() => panel.onUpdate(label.id, changes), scope);
     if (result.ok) setRenaming(false);
   }
 
@@ -294,93 +340,131 @@ function LabelRow({
   }
 
   const count = label.itemCount;
+  const [before, after] = t.deleteQuestion.split("{{name}}");
   return (
-    <li className="border-t border-line first:border-t-0">
-      <div className="flex min-h-[47px] items-center gap-2.5 pr-2.5 pl-3.5 text-item-ui">
-        <Popover>
-          <PopoverTrigger asChild>
+    <li
+      className={cn(
+        "border-t border-line",
+        deleting && "bg-danger-subtle",
+        renaming && "bg-row-selected shadow-[inset_0_0_0_1.5px_var(--primary)]",
+      )}
+    >
+      <div
+        className={cn(
+          ROW_GRID,
+          "text-item-ui",
+          renaming ? "min-h-[52px]" : "min-h-[46px]",
+          deleting && "min-h-0 py-2.5",
+        )}
+      >
+        {renaming ? (
+          <span className="flex items-center gap-2">
+            <input
+              autoFocus
+              value={name}
+              aria-label={t.nameLabel}
+              {...(duplicate
+                ? { "aria-invalid": true, "aria-describedby": `${errorId}-dup` }
+                : failed)}
+              onChange={(event) => setName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void commit();
+                }
+                if (event.key === "Escape") {
+                  event.stopPropagation();
+                  stop();
+                }
+              }}
+              className={cn(INPUT_CLASS, "w-[220px] max-md:w-full")}
+            />
+            <Popover open={palette} onOpenChange={setPalette}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={fillCopy(t.recolor, {
+                    name: copy.labels.colors[
+                      itemLabelTone({ name: "", color })
+                    ],
+                  })}
+                  className={cn(
+                    "size-[26px] max-md:size-11 shrink-0 cursor-pointer rounded-[6px] border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+                    ITEM_LABEL_TONE_CLASS[itemLabelTone({ name: "", color })],
+                  )}
+                />
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-auto p-2">
+                <ColorChoices
+                  label={t.colorLabel}
+                  current={color}
+                  onPick={(next) => {
+                    setColor(next);
+                    setPalette(false);
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+          </span>
+        ) : (
+          <span className="min-w-0">
+            <span className={cn(CHIP, ITEM_LABEL_TONE_CLASS[tone])}>
+              {label.name || label.color}
+            </span>
+          </span>
+        )}
+        <span className="text-crumb text-meta-foreground">
+          {count === undefined
+            ? null
+            : plural(t.onItems_one, t.onItems_other, count)}
+        </span>
+        {renaming ? (
+          <span className="flex justify-end gap-1.5">
             <button
               type="button"
-              aria-label={fillCopy(t.recolor, { name: label.name })}
-              className="grid size-6 shrink-0 cursor-pointer place-items-center rounded-[6px] border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              onClick={stop}
+              className={cn(BUTTON_CLASS.ghost, SMALL)}
             >
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "size-4 rounded-[5px]",
-                  ITEM_LABEL_TONE_CLASS[tone],
-                )}
-              />
+              {copy.common.cancel}
             </button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-auto p-2">
-            <ColorChoices
-              label={t.colorLabel}
-              current={label.color}
-              onPick={(color) =>
-                void run(() => panel.onUpdate(label.id, { color }), scope)
-              }
-            />
-          </PopoverContent>
-        </Popover>
-        {renaming ? (
-          <input
-            autoFocus
-            value={name}
-            aria-label={t.nameLabel}
-            {...(duplicate
-              ? { "aria-invalid": true, "aria-describedby": `${errorId}-dup` }
-              : failed)}
-            onChange={(event) => setName(event.target.value)}
-            onBlur={() => void commit()}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") event.currentTarget.blur();
-              if (event.key === "Escape") {
-                event.stopPropagation();
-                setName(label.name);
-                setRenaming(false);
-              }
-            }}
-            className={cn(INPUT_CLASS, "h-8 min-w-0 flex-1")}
-          />
+            <button
+              type="button"
+              disabled={trimmed === "" || duplicate}
+              onClick={() => void commit()}
+              className={cn(BUTTON_CLASS.primary, SMALL)}
+            >
+              {t.save}
+            </button>
+          </span>
+        ) : deleting ? (
+          <span />
         ) : (
-          <span
-            className={cn(
-              "inline-flex h-5.5 max-w-full items-center truncate rounded-[6px] px-2 text-micro font-semibold",
-              ITEM_LABEL_TONE_CLASS[tone],
-            )}
-          >
-            {label.name || label.color}
+          <span className="flex justify-end">
+            <button
+              type="button"
+              aria-label={fillCopy(t.rename, { name: label.name })}
+              onClick={() => {
+                setName(label.name);
+                setColor(label.color);
+                setRenaming(true);
+              }}
+              className={cn(ICON_BUTTON_CLASS, "size-[30px]")}
+            >
+              <Pencil aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              aria-label={fillCopy(t.delete, { name: label.name })}
+              aria-expanded={deleting}
+              onClick={onDelete}
+              className={cn(ICON_BUTTON_CLASS, "size-[30px]")}
+            >
+              <Trash2 aria-hidden="true" />
+            </button>
           </span>
         )}
-        <span className="flex-1" />
-        {count === undefined ? null : (
-          <span className="text-crumb text-meta-foreground">
-            {plural(t.onItems_one, t.onItems_other, count)}
-          </span>
-        )}
-        <button
-          type="button"
-          aria-label={fillCopy(t.rename, { name: label.name })}
-          onClick={() => {
-            setName(label.name);
-            setRenaming(true);
-          }}
-          className={ICON_BUTTON_CLASS}
-        >
-          <Pencil aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          aria-label={fillCopy(t.delete, { name: label.name })}
-          aria-expanded={deleting}
-          onClick={onDelete}
-          className={ICON_BUTTON_CLASS}
-        >
-          <Trash2 aria-hidden="true" />
-        </button>
       </div>
-      <div className="px-3.5 empty:hidden">
+      <div className="px-3 empty:hidden">
         {duplicate ? (
           <p
             id={`${errorId}-dup`}
@@ -393,33 +477,33 @@ function LabelRow({
         )}
       </div>
       {deleting ? (
-        <div
-          role="group"
-          aria-label={fillCopy(t.deleteQuestion, { name: label.name })}
-          className="flex flex-col gap-2.5 border-t border-line bg-background px-3.5 pt-3 pb-3.5"
-        >
-          <p className="m-0 text-item-small text-muted-foreground">
-            <b className="font-semibold text-foreground">
-              {fillCopy(t.deleteQuestion, { name: label.name })}
-            </b>{" "}
-            {count === undefined
-              ? t.deleteBodyUnknown
-              : count === 0
-                ? t.deleteBodyNone
-                : plural(t.deleteBody_one, t.deleteBody_other, count)}
-          </p>
-          <div className="flex items-center justify-end gap-2">
+        <div className="px-3 pb-2.5">
+          <div
+            role="alertdialog"
+            aria-label={fillCopy(t.deleteQuestion, { name: label.name })}
+            className="flex items-center gap-3 rounded-[10px] border border-danger/30 bg-popover p-3"
+          >
+            <p className="m-0 flex-1 text-item-small">
+              {before}
+              <b className="font-semibold">{label.name}</b>
+              {after}{" "}
+              {count === undefined
+                ? t.deleteBodyUnknown
+                : count === 0
+                  ? t.deleteBodyNone
+                  : plural(t.deleteBody_one, t.deleteBody_other, count)}
+            </p>
             <button
               type="button"
               onClick={onDeleteDone}
-              className={BUTTON_CLASS.outline}
+              className={cn(BUTTON_CLASS.outline, SMALL)}
             >
-              {copy.common.cancel}
+              {t.keep}
             </button>
             <button
               type="button"
               onClick={() => void confirmDelete()}
-              className={BUTTON_CLASS.danger}
+              className={cn(BUTTON_CLASS.danger, SMALL)}
             >
               {t.deleteConfirm}
             </button>

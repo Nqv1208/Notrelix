@@ -225,7 +225,7 @@ describe("BoardCalendarView on the ERP board", () => {
     expect(screen.getAllByRole("heading", { level: 2 })[0]?.textContent).toBe(
       "Tháng 10, 2026",
     );
-    expect(screen.getByText("Giờ Hà Nội (GMT+7)")).toBeTruthy();
+    expect(screen.getByTitle("Giờ Hà Nội (GMT+7)").textContent).toBe("GMT+7");
     // 15 dated items; ERP-135 (26/09) is outside the grid and ERP-142 spans
     // 01/10 to 10/10 over two week rows.
     expect(container.querySelectorAll("[data-calendar-event]").length).toBe(15);
@@ -341,16 +341,12 @@ describe("BoardCalendarView on the ERP board", () => {
     fireEvent.change(input, { target: { value: "Họp chốt phạm vi" } });
     fireEvent.submit(input.closest("form")!);
     await waitFor(() => expect(cards.createCard).toHaveBeenCalledTimes(1));
+    // One write: the item is born with its due day, no second date write follows.
     expect(cards.createCard.mock.calls[0]?.[1]).toMatchObject({
       title: "Họp chốt phạm vi",
+      dueDate: "2026-10-23T10:00:00.000Z",
     });
-    await waitFor(() =>
-      expect(cards.updateCard).toHaveBeenCalledWith(
-        "item-new",
-        { dueDate: "2026-10-23T10:00:00.000Z" },
-        { expectedVersion: 1 },
-      ),
-    );
+    expect(cards.updateCard).not.toHaveBeenCalled();
   });
 
   it("opens the full form with the shown day when Add item is pressed, and creates the item with that due day", async () => {

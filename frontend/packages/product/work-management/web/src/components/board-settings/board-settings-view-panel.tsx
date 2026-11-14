@@ -127,6 +127,11 @@ export function ViewPanel({
     if (result.ok) onClose();
   }
 
+  async function archive() {
+    const result = await run(() => actions.archiveView(view.id));
+    if (result.ok) onClose();
+  }
+
   async function duplicate() {
     await run(() => actions.duplicateView(view.id));
   }
@@ -434,6 +439,15 @@ export function ViewPanel({
             className={BUTTON_CLASS.ghostDanger}
           >
             {broken ? t.deleteView : t.delete}
+          </button>
+        )}
+        {view.isDefault && nextChoices.length === 0 ? null : (
+          <button
+            type="button"
+            onClick={() => void archive()}
+            className={BUTTON_CLASS.ghost}
+          >
+            {t.archive}
           </button>
         )}
         {broken || view.isDefault || view.visibility === "me" ? null : (

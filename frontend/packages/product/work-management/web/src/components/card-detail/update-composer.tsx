@@ -8,6 +8,14 @@ import { itemPageCopy } from "../item-page/item-page.copy";
 import type { ItemSheetCopy } from "./item-sheet.copy";
 import type { TaskDetailCallbacks } from "./task-detail-types";
 
+/** Unsent comment text by card, kept past the composer so a card that vanishes under it does not take the text along. */
+const unsentComments = new Map<string, string>();
+
+/** What the person had typed on a card and not sent ("" when nothing). */
+export function unsentCommentOf(cardId: string): string {
+  return unsentComments.get(cardId) ?? "";
+}
+
 /**
  * The comment draft both composers share: the text, the people it mentions
  * and the send state. ⌘↵ (or Ctrl+↵) submits; a failed post keeps the text
@@ -23,7 +31,14 @@ export function useCommentDraft({
   disabled?: boolean;
   onCreateUpdate: TaskDetailCallbacks["onCreateUpdate"];
 }) {
-  const [body, setBody] = useState("");
+  const [body, setBodyState] = useState(() => unsentCommentOf(cardId));
+  const setBody = (next: string | ((current: string) => string)) =>
+    setBodyState((current) => {
+      const value = typeof next === "function" ? next(current) : next;
+      if (value) unsentComments.set(cardId, value);
+      else unsentComments.delete(cardId);
+      return value;
+    });
   const [mentionUserIds, setMentionUserIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const canSubmit = body.trim().length > 0 && !disabled && !isSubmitting;

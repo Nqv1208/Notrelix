@@ -95,6 +95,16 @@ public static class PermissionCatalog
         [PermissionAction.ArchivePage] = "pages",
         [PermissionAction.SharePage] = "pages",
         [PermissionAction.ManagePagePermission] = "pages",
+        [PermissionAction.ChatChannelCreate] = "chat",
+        [PermissionAction.ChatChannelManage] = "chat",
+        [PermissionAction.ChatGroupManage] = "chat",
+        [PermissionAction.ChatMemberInvite] = "chat",
+        [PermissionAction.ChatMessagePost] = "chat",
+        [PermissionAction.ChatMessageModerate] = "chat",
+        [PermissionAction.ChatMentionBroadcast] = "chat",
+        [PermissionAction.ChatMessagePin] = "chat",
+        [PermissionAction.ChatMessageReact] = "chat",
+        [PermissionAction.ChatSearch] = "chat",
     };
 
     public static IReadOnlyList<PermissionCatalogEntry> Entries { get; } = Enum.GetValues<PermissionAction>()

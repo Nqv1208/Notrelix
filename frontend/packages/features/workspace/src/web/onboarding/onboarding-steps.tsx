@@ -110,7 +110,7 @@ export function WorkspaceStep({
       </div>
       <div className="flex flex-col gap-1.5">
         <FieldLabel htmlFor="onb-slug">{t.slugLabel}</FieldLabel>
-        <div className="flex">
+        <div className="flex h-10 items-stretch overflow-hidden rounded-[8px] border border-line-strong bg-popover focus-within:border-focus-ring focus-within:ring-[3px] focus-within:ring-brand-subtle max-md:h-touch has-[[aria-invalid=true]]:border-danger-text has-[[aria-invalid=true]]:ring-1 has-[[aria-invalid=true]]:ring-danger-text">
           <input
             id="onb-slug"
             name="slug"
@@ -129,11 +129,11 @@ export function WorkspaceStep({
             onChange={(event) =>
               patch({ slug: event.target.value.toLowerCase().trim() })
             }
-            className={cn(FIELD_INPUT_CLASS, "rounded-r-none")}
+            className="min-w-0 flex-1 border-0 bg-transparent px-3 text-body text-foreground outline-none placeholder:text-meta-foreground"
           />
           <span
             aria-hidden="true"
-            className="inline-flex h-10 max-md:h-touch shrink-0 items-center rounded-r-[8px] border border-l-0 border-input bg-state-hover px-3 text-body text-muted-foreground"
+            className="inline-flex shrink-0 items-center border-l border-line-strong bg-state-hover px-3 text-item-ui text-muted-foreground"
           >
             {t.suffix}
           </span>
@@ -141,7 +141,7 @@ export function WorkspaceStep({
         <div
           id="onb-slug-status"
           role="status"
-          className="flex flex-wrap items-center gap-2 text-item-ui font-medium"
+          className="flex flex-wrap items-center gap-2 text-crumb leading-[1.45] font-medium"
         >
           {slugState === "free" ? (
             <span className="inline-flex items-center gap-1.5 text-success-text">
@@ -191,10 +191,10 @@ export function WorkspaceStep({
         <Hint id="onb-slug-hint">{t.slugHint}</Hint>
       </div>
       <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
-        <legend className="mb-1 p-0 text-item-ui font-semibold">
+        <legend className="mb-2 p-0 text-compact leading-[1.45] font-semibold">
           {t.sizeLabel}
         </legend>
-        <div className="flex flex-wrap gap-2.5">
+        <div className="flex flex-wrap gap-2">
           {COMPANY_SIZES.map((size) => (
             <label key={size} className={OPTION_CLASS}>
               <input
@@ -213,10 +213,10 @@ export function WorkspaceStep({
         <Hint>{t.sizeHint}</Hint>
       </fieldset>
       <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
-        <legend className="mb-1 p-0 text-item-ui font-semibold">
+        <legend className="mb-2 p-0 text-compact leading-[1.45] font-semibold">
           {t.localeLabel}
         </legend>
-        <div className="flex flex-wrap gap-2.5">
+        <div className="flex flex-wrap gap-2">
           {(["vi", "en"] as const).map((locale) => (
             <label key={locale} className={OPTION_CLASS}>
               <input
@@ -249,7 +249,7 @@ function ErrorLine({
     <p
       id={id}
       role="alert"
-      className="m-0 flex items-start gap-1.5 text-item-ui font-medium text-danger-text"
+      className="m-0 flex items-start gap-1.5 text-crumb leading-[1.45] font-medium text-danger-text"
     >
       <CircleAlert aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
       {children}

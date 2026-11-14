@@ -36,7 +36,7 @@ Current executable manifests define the exact package versions. The backend curr
 | Area | Technology |
 |---|---|
 | Runtime / language | .NET 9 / C# / `net9.0` |
-| SDK | .NET SDK `9.0.313` (`latestPatch`, no prerelease) |
+| SDK | .NET SDK `9.0.317` (`latestPatch`, no prerelease) |
 | Web host | ASP.NET Core |
 | Application messaging | MediatR |
 | Validation | FluentValidation |
@@ -113,7 +113,7 @@ For ordinary backend work, read in this order:
 2. ../RULE.md
 3. ../AGENTS.md
 4. ./AGENTS.md
-5. owning product-context document under ../docs/product/contexts/
+5. owning product-context document under ../docs/product/
 6. relevant backend architecture document under ./docs/architecture/
 7. relevant ADR if the architecture choice matters
 8. current source/tests/manifests for executable evidence
@@ -171,7 +171,7 @@ tests/
 
 Do not maintain a manually authored project inventory elsewhere as an equal authority.
 
-A generated project map may summarize the solution later:
+A generated project map summarizes the solution (produced by `scripts/docs/generate-backend-project-map.mjs`):
 
 ```text
 backend/docs/generated/project-map.md
@@ -606,7 +606,7 @@ Runtime/degradation/recovery semantics are documented at repository and backend 
 Required baseline:
 
 ```text
-.NET SDK 9.0.313-compatible installation
+.NET SDK 9.0.317-compatible installation
 Docker / Docker Compose for local dependencies/full stack
 repository environment configuration
 ```
@@ -778,17 +778,14 @@ A required suite selecting zero relevant tests is a failure.
 
 Backend CI is repository evidence, not architecture.
 
-Current CI separates concerns such as:
+`.github/workflows/ci.yml` runs these jobs behind one `CI gate`:
 
 ```text
-quality/security
-architecture
-core layer tests
-Platform tests
-API/OpenAPI
-integration
-Docker packaging
-final gate
+changes (path filter)
+backend-unit (build and unit tests)
+backend-integration (three shards)
+frontend
+dependencies (audit)
 ```
 
 Exact job names may evolve.
@@ -816,6 +813,7 @@ docs/
 │   ├── security-tenancy-authorization.md
 │   └── testing-and-quality-gates.md
 ├── operations/
+│   ├── access-facts-query-evidence.md
 │   ├── configuration-and-runtime.md
 │   └── migrations-and-data-change.md
 ├── decisions/
@@ -834,7 +832,7 @@ For backend work:
 
 ```text
 product meaning
-→ ../docs/product/contexts/**
+→ ../docs/product/**
 
 system boundary
 → ../docs/architecture/**
@@ -894,14 +892,7 @@ Backend ADRs live under:
 docs/decisions/
 ```
 
-Current backend history includes:
-
-```text
-ADR-001 Pipeline boundary
-ADR-002 RLS bootstrap connection lifecycle
-ADR-003 CSRF protection
-ADR-004 Rate limiting architecture
-```
+The ADR registry (ADR-001 onward, with status and supersession) is [`docs/decisions/README.md`](docs/decisions/README.md).
 
 ADRs preserve historical rationale.
 

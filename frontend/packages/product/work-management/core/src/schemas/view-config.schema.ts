@@ -15,7 +15,7 @@ export const sortConfigSchema = z.object({
  * Cards a Kanban lane renders before "Xem thêm N việc". A lane scrolls inside
  * its own height, so this only pages very long lanes.
  */
-export const DEFAULT_KANBAN_LANE_CARD_LIMIT = 20;
+export const DEFAULT_KANBAN_LANE_CARD_LIMIT = 10;
 /** A lane's work-in-progress limit: a warning number, never a write rule. */
 export const MIN_KANBAN_WIP_LIMIT = 1;
 export const MAX_KANBAN_WIP_LIMIT = 999;
@@ -102,6 +102,41 @@ export function resolveKanbanSettings(config: {
   };
 }
 
+/** What a Timeline groups its rows by: the board's groups (default), the Status, the assignee or nothing. */
+export const timelineGroupBySchema = z.enum([
+  "group",
+  "status",
+  "assignee",
+  "none",
+]);
+export type TimelineGroupBy = z.infer<typeof timelineGroupBySchema>;
+/** Where a Timeline bar starts: the start day (default) or the day the item was created. */
+export const timelineBarSpanSchema = z.enum(["start-due", "created-due"]);
+export type TimelineBarSpan = z.infer<typeof timelineBarSpanSchema>;
+
+/**
+ * The Calendar's date basis and the Timeline's grouping and bar span of a
+ * saved view config; a missing or bad value gives the default (Calendar:
+ * start to due; Timeline: the board's groups, start to due).
+ */
+export function resolveCalendarDateField(config: {
+  readonly calendarDateField?: unknown;
+}): string {
+  const value = config.calendarDateField;
+  return typeof value === "string" && value.length > 0 ? value : "span";
+}
+export function resolveTimelinePresentation(config: {
+  readonly timelineGroupBy?: unknown;
+  readonly timelineBarSpan?: unknown;
+}): { groupBy: TimelineGroupBy; barSpan: TimelineBarSpan } {
+  return {
+    groupBy: timelineGroupBySchema.catch("group").parse(config.timelineGroupBy),
+    barSpan: timelineBarSpanSchema
+      .catch("start-due")
+      .parse(config.timelineBarSpan),
+  };
+}
+
 export const viewConfigSchema = z.object({
   groupBy: z.string(),
   hiddenFields: z.array(z.string()),
@@ -126,6 +161,9 @@ export const viewConfigSchema = z.object({
   wipLimits: wipLimitsSchema.optional(),
   cardFieldIds: z.array(z.string()).optional(),
   cardHideEmpty: z.array(z.string()).optional(),
+  calendarDateField: z.string().min(1).max(128).optional(),
+  timelineGroupBy: timelineGroupBySchema.optional(),
+  timelineBarSpan: timelineBarSpanSchema.optional(),
 });
 
 export type ViewConfigInput = z.infer<typeof viewConfigSchema>;

@@ -33,7 +33,7 @@ public class RenameAccountCommandHandlerTests : IdentityHandlerTestBase
         RequestContextMock.Setup(c => c.RequireAccountId()).Returns(_testAccountId);
 
         var sut = CreateSut();
-        var result = await sut.Handle(new RenameAccountCommand("Acme Renamed"), CancellationToken.None);
+        var result = await sut.Handle(new RenameAccountCommand(_testAccountId, "Acme Renamed", 1), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         account.Name.Should().Be("Acme Renamed");
@@ -48,7 +48,7 @@ public class RenameAccountCommandHandlerTests : IdentityHandlerTestBase
         var originalVersion = account.Version;
 
         var sut = CreateSut();
-        var result = await sut.Handle(new RenameAccountCommand("Acme Inc"), CancellationToken.None);
+        var result = await sut.Handle(new RenameAccountCommand(_testAccountId, "Acme Inc", 1), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         account.Name.Should().Be("Acme Inc");
@@ -62,7 +62,7 @@ public class RenameAccountCommandHandlerTests : IdentityHandlerTestBase
         RequestContextMock.Setup(c => c.RequireAccountId()).Returns(_testAccountId);
 
         var sut = CreateSut();
-        var act = () => sut.Handle(new RenameAccountCommand("Acme Renamed"), CancellationToken.None);
+        var act = () => sut.Handle(new RenameAccountCommand(_testAccountId, "Acme Renamed", 1), CancellationToken.None);
 
         await act.Should().ThrowAsync<NotFoundException>();
     }

@@ -114,6 +114,8 @@ export type WorkspaceDestination =
   | { readonly section: "home" }
   | { readonly section: "my-work" }
   | { readonly section: "inbox" }
+  /** Chat (CHT-001..004): the channel column, with the open channel when there is one. */
+  | { readonly section: "chat"; readonly channelId?: string }
   | { readonly section: "search" }
   | { readonly section: "library" }
   | { readonly section: "reports" }

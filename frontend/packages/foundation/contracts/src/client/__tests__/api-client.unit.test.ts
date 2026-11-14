@@ -103,6 +103,42 @@ describe("createNotrelixClient — Instance-scoped API Client", () => {
     expect(sent[2]?.[1]).toBeUndefined();
   });
 
+  it("surfaces a reused Idempotency-Key with a different body as a conflict carrying its code", async () => {
+    const mockFetch = vi.fn().mockImplementation((url: string) =>
+      Promise.resolve(
+        url.includes("/auth/csrf")
+          ? new Response(JSON.stringify({ token: "t" }), { status: 200 })
+          : new Response(
+              JSON.stringify({
+                title: "Idempotency key reused",
+                status: 409,
+                errorCode: "idempotency_payload_mismatch",
+              }),
+              {
+                status: 409,
+                headers: { "Content-Type": "application/problem+json" },
+              },
+            ),
+      ),
+    );
+    const client = createNotrelixClient({
+      baseUrl: "http://api.test",
+      fetchImpl: mockFetch as unknown as typeof fetch,
+    });
+
+    await expect(
+      client.api.post("/commands", { title: "B" }, { idempotencyKey: "key-a" }),
+    ).rejects.toMatchObject({
+      kind: "conflict",
+      status: 409,
+      code: "idempotency_payload_mismatch",
+    });
+    const writes = mockFetch.mock.calls.filter(
+      ([url]) => !String(url).includes("/auth/csrf"),
+    );
+    expect(writes).toHaveLength(1);
+  });
+
   it("triggers refreshOnce only ONCE for multiple concurrent 401 requests", async () => {
     let refreshCallCount = 0;
 

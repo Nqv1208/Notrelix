@@ -3,7 +3,7 @@ namespace Notrelix.Application.Features.Identity.Auth.Throttling;
 /// <summary>
 /// Brute-force limits for the anonymous credential steps (password login and
 /// MFA challenge completion). The defaults are the product policy accepted on
-/// 2026-10-23 (docs/product/contexts/identity.md): 10 failures per account and 50
+/// 2026-10-23 (docs/product/identity.md): 10 failures per account and 50
 /// per IP in 15 minutes, each lock lasting 15 minutes. Every value is overridable
 /// through configuration (<see cref="SectionName"/>) and validated at startup so a
 /// misconfiguration cannot silently disable the protection. The wrong-code budget of

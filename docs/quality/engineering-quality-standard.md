@@ -17,8 +17,7 @@ evidence:
   - docs/quality/testing-strategy.md
   - backend/backend.slnx
   - frontend/package.json
-  - .github/workflows/be-ci.yml
-  - .github/workflows/fe-ci.yml
+  - .github/workflows/ci.yml
 review_on:
   - quality-bar-change
   - required-ci-gate-change

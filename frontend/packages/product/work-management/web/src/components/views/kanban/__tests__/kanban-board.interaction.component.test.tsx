@@ -1,3 +1,4 @@
+import { act } from "react";
 import { describe, expect, it, vi } from "vitest";
 import {
   fireEvent,
@@ -106,24 +107,39 @@ describe("KanbanBoard status lanes", () => {
     }
   });
 
-  it("FUI[wm.kanban.board:show-more] caps a lane at three cards and reveals the rest, focusing the first revealed card", async () => {
-    for (const [locale, copy] of LOCALES) {
+  it("FUI[wm.kanban.board:show-more] caps a lane at three cards and reveals the rest by itself when its end is scrolled to, with no button", () => {
+    for (const [locale] of LOCALES) {
       const { unmount } = renderBoard({ locale });
       const todo = laneRegion("Cần làm");
       expect(cardButtons(todo)).toHaveLength(3);
-      const more = within(todo).getByRole("button", {
-        name: copy.showMore_other.replace("{{count}}", "3"),
-      });
-      fireEvent.click(more);
-      const cards = cardButtons(laneRegion("Cần làm"));
-      expect(cards).toHaveLength(6);
-      await waitFor(() => expect(document.activeElement).toBe(cards[3]));
       expect(
-        within(laneRegion("Cần làm")).queryByRole("button", {
-          name: copy.showMore_other.replace("{{count}}", "3"),
-        }),
+        within(todo).queryByRole("button", { name: /Xem thêm|Show/ }),
       ).toBeNull();
+      expect(todo.textContent).not.toMatch(/Đã hiện|Showing/);
       unmount();
+    }
+    // The end of the lane scrolls into view: the sentinel reports it and the next cards appear.
+    const callbacks: Array<(entries: unknown[]) => void> = [];
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        constructor(callback: (entries: unknown[]) => void) {
+          callbacks.push(callback);
+        }
+        observe() {}
+        disconnect() {}
+        unobserve() {}
+      },
+    );
+    try {
+      renderBoard({});
+      expect(cardButtons(laneRegion("Cần làm"))).toHaveLength(3);
+      act(() => {
+        callbacks.forEach((callback) => callback([{ isIntersecting: true }]));
+      });
+      expect(cardButtons(laneRegion("Cần làm"))).toHaveLength(6);
+    } finally {
+      vi.unstubAllGlobals();
     }
   });
 
@@ -397,13 +413,11 @@ describe("KanbanBoard status lanes", () => {
 });
 
 describe("KanbanBoard lane limit", () => {
-  it("FUI[wm.kanban.board:lane-limit] shows as many cards as the lane limit and counts the rest in Xem thêm", () => {
+  it("FUI[wm.kanban.board:lane-limit] shows as many cards as the lane limit and keeps the rest for the scroll", () => {
     const { unmount } = renderBoard({ laneCardLimit: 2 });
     const todo = laneRegion("Cần làm");
     expect(cardButtons(todo)).toHaveLength(2);
-    expect(
-      within(todo).getByRole("button", { name: "Xem thêm 4 việc" }),
-    ).toBeTruthy();
+    expect(within(todo).queryByRole("button", { name: /Xem thêm/ })).toBeNull();
     unmount();
     renderBoard({ laneCardLimit: 20 });
     expect(cardButtons(laneRegion("Cần làm"))).toHaveLength(6);

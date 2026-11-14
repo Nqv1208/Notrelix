@@ -26,6 +26,7 @@ using Notrelix.Infrastructure.Operations.Idempotency;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
+using Notrelix.Application.Features.Billing.Public.Capacity;
 
 namespace Notrelix.Integration.Tests.Automation;
 
@@ -570,7 +571,7 @@ public sealed class AutomationMoveItemExecutorCompositionIntegrationTests : IAsy
         var clock = new Moq.Mock<Notrelix.Application.Common.Time.IDateTimeProvider>();
         clock.Setup(c => c.UtcNow).Returns(Now);
         var handler = new SetAutomationRuleEnabledCommandHandler(
-            context, currentUser.Object, clock.Object, new AutomationExecutorAuthority(port!));
+            context, currentUser.Object, clock.Object, new AutomationExecutorAuthority(port!), Mock.Of<IBillingCapacityActions>());
 
         var act = () => handler.Handle(new SetAutomationRuleEnabledCommand(graph.RuleId, true), CancellationToken.None);
 

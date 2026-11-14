@@ -86,8 +86,7 @@ public sealed class WorkQueryTenantIsolationIntegrationTests : IAsyncLifetime
         foreach (var request in new object[] { new GetBoardSchemaQuery(foreignBoard), new GetBoardItemsQuery(foreignBoard), new GetChecklistsQuery(foreignItem) })
         {
             var act = () => SendAsync(provider, request);
-            await act.Should().ThrowAsync<Exception>($"{request.GetType().Name} for a foreign workspace must be denied")
-                .Where(e => e is Notrelix.Application.Common.Exceptions.ForbiddenException || e is NotFoundException);
+            await act.Should().ThrowAsync<NotFoundException>($"{request.GetType().Name} for a foreign workspace must answer like a missing one");
         }
     }
 

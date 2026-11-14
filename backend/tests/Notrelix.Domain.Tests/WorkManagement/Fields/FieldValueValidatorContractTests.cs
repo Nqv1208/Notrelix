@@ -252,4 +252,31 @@ public class FieldValueValidatorContractTests
 
         act.Should().NotThrow();
     }
+
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("ftp://example.com/file")]
+    [InlineData("/relative/path")]
+    [InlineData("not a url")]
+    public void Link_ShouldRefuseAnythingButAbsoluteHttpOrHttps(string address)
+    {
+        var value = FieldValue.Create(JsonValue.Create($"\"{address}\""));
+
+        Action act = () => FieldValueValidator.Validate(value, FieldType.Link, FieldSettings.Empty());
+
+        act.Should().Throw<BusinessRuleException>()
+            .Which.RuleCode.Should().Be(Notrelix.Domain.WorkManagement.WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidLinkValue);
+    }
+
+    [Theory]
+    [InlineData("http://example.com")]
+    [InlineData("https://erp.minhan.vn/t/145")]
+    public void Link_ShouldAcceptAbsoluteHttpAndHttps(string address)
+    {
+        var value = FieldValue.Create(JsonValue.Create($"\"{address}\""));
+
+        Action act = () => FieldValueValidator.Validate(value, FieldType.Link, FieldSettings.Empty());
+
+        act.Should().NotThrow();
+    }
 }

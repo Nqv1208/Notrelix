@@ -39,46 +39,49 @@ test.describe("Board settings (owner)", () => {
     await expect(list.getByText("Dữ liệu").first()).toBeVisible();
 
     await page.getByRole("button", { name: "Thêm nhãn" }).click();
-    const name = page.getByRole("textbox", { name: "Tên nhãn" });
+    const form = page.getByRole("form", { name: "Nhãn mới" });
+    const name = form.getByRole("textbox", { name: "Tên nhãn" });
     await expect(name).toBeFocused();
     await name.fill("Nhãn thử");
-    await page.getByRole("radio", { name: "Tím" }).click();
-    await page.getByRole("button", { name: "Thêm", exact: true }).click();
+    await form.getByRole("radio", { name: "Tím" }).click();
+    await form.getByRole("button", { name: "Thêm nhãn" }).click();
     await expect(list.getByText("Nhãn thử")).toBeVisible();
     await expect(name).toHaveCount(0);
 
+    // Rename and recolour in the row, saved together with Lưu.
     await page.getByRole("button", { name: "Đổi tên nhãn Nhãn thử" }).click();
     const rename = page.getByRole("textbox", { name: "Tên nhãn" });
     await rename.fill("Nhãn đã đổi");
-    await rename.press("Enter");
+    await page.getByRole("button", { name: /^Đổi màu/ }).click();
+    await page.getByRole("button", { name: "Vàng" }).click();
+    await page.getByRole("button", { name: "Lưu", exact: true }).click();
     await expect(list.getByText("Nhãn đã đổi")).toBeVisible();
     await expect(list.getByText("Nhãn thử", { exact: true })).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Đổi màu của Nhãn đã đổi" }).click();
-    await page.getByRole("button", { name: "Xanh lá" }).click();
-
     await page.getByRole("button", { name: "Xoá nhãn Nhãn đã đổi" }).click();
-    const confirm = page.getByRole("group", {
-      name: "Xoá nhãn “Nhãn đã đổi”?",
+    const confirm = page.getByRole("alertdialog", {
+      name: "Xoá nhãn Nhãn đã đổi?",
     });
     await expect(confirm).toContainText("Chưa có việc nào dùng nhãn này.");
     await confirm.getByRole("button", { name: "Xoá nhãn" }).click();
     await expect(list.getByText("Nhãn đã đổi")).toHaveCount(0);
   });
 
-  test("item picker: creates a label from the typed text and puts it on the item", async ({
+  test("item picker: creates a label from the typed text, puts it on the item and takes it off", async ({
     page,
   }) => {
     await open(page, `${BOARD}/items/mock-erp-item-142`);
     await page.getByRole("button", { name: "Nhãn", exact: true }).click();
-    const search = page.getByRole("textbox", { name: "Tìm hoặc tạo nhãn" });
+    const search = page.getByRole("textbox", { name: "Tìm nhãn" });
     await search.fill("Gấp");
-    await page.getByRole("button", { name: "Tạo nhãn “Gấp”" }).click();
+    await expect(page.getByText("Chưa có nhãn “Gấp”")).toBeVisible();
+    await page.getByRole("button", { name: /^Tạo nhãn “Gấp”/ }).click();
+    const attach = page.getByRole("checkbox", { name: "Gắn nhãn Gấp" });
+    await expect(attach).toBeChecked();
+    await attach.click();
+    await expect(attach).not.toBeChecked();
     await expect(
-      page.getByRole("list", { name: "Nhãn" }).getByRole("button", {
-        name: "Gấp",
-        pressed: true,
-      }),
+      page.getByRole("link", { name: "Quản lý nhãn trong Thiết lập board" }),
     ).toBeVisible();
   });
 

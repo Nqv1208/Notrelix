@@ -16,7 +16,8 @@ public record ConfirmBoardImportCommand(Guid BoardId, Guid JobId, IReadOnlyList<
 }
 
 public class ConfirmBoardImportCommandHandler(
-    IWorkManagementDbContext context, IBoardTransferJobs jobs, IStorageService storage, ITransferProgress progress, ICurrentRequestContext me)
+    IWorkManagementDbContext context, IBoardTransferJobs jobs, IStorageService storage, ITransferProgress progress, ICurrentRequestContext me,
+    ImportPeopleDirectory directory)
     : IRequestHandler<ConfirmBoardImportCommand, ImportJobDto>
 {
     public async Task<ImportJobDto> Handle(ConfirmBoardImportCommand request, CancellationToken ct)
@@ -25,11 +26,16 @@ public class ConfirmBoardImportCommandHandler(
         if (job.Status != TransferStatus.Uploaded) return ImportJobs.ToDto(job, progress);
 
         var options = job.Options<ImportOptions>();
-        var schema = await ImportJobs.SchemaAsync(context, request.BoardId, ct);
+        var data = await ImportJobs.ReadAsync(storage, options, ct);
+        var people = await directory.ResolveAsync(me.RequireWorkspaceId(), request.BoardId, me.UserId, data, ct);
+        var schema = await ImportJobs.SchemaAsync(context, request.BoardId, ct, people);
         ImportJobs.RequireTitle(request.Mapping, schema);
-        var evaluation = ImportPlanner.Evaluate(await ImportJobs.ReadAsync(storage, options, ct), schema, request.Mapping, collectItems: false);
+        var evaluation = ImportPlanner.Evaluate(data, schema, request.Mapping, collectItems: false);
         if (evaluation.ErrorCount > 0)
             throw new Notrelix.Application.Common.Exceptions.ValidationException([new ValidationFailure("file", "has-errors")]);
+        // A file that would take the board over its active-item limit is refused before it is queued (D78.8); the
+        // run checks again under the key reservation, so a board filled in the meantime still refuses it whole.
+        await Limits.WorkLimits.EnsureItemRoomAsync(context, request.BoardId, data.Rows.Count, ct);
 
         job.OptionsJson = TransferJson.Write(options with { Mapping = request.Mapping });
         job.Status = TransferStatus.Queued;

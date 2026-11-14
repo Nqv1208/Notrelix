@@ -30,6 +30,7 @@ public static class GovernanceRuleCodes
     public const string Governance_Role_NoSeat = "Governance_Role_NoSeat";
     public const string Governance_Role_LimitReached = "Governance_Role_LimitReached";
     public const string Governance_ShareLink_PublicMustHaveExpiry = "Governance_ShareLink_PublicMustHaveExpiry";
+    public const string Governance_ShareLink_LevelAboveCommenter = "Governance_ShareLink_LevelAboveCommenter";
 
     // ── ResourcePermission ─────────────────────────────────────────────
     public const string Governance_ResourcePermission_SubjectTypeNotSupported = "Governance_ResourcePermission_SubjectTypeNotSupported";

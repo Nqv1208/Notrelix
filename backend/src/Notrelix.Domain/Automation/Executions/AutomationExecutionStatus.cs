@@ -6,5 +6,8 @@ public enum AutomationExecutionStatus
     Running,
     Succeeded,
     Failed,
-    Cancelled
+    Cancelled,
+
+    /// <summary>UC-AUT-C02: the rule's conditions were not met, so no action ran. A skip is not a failure.</summary>
+    Skipped
 }

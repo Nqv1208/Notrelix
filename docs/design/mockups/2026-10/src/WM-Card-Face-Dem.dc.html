@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Mặt thẻ Kanban, giao diện Đêm</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.nx{--bg:#F7F8FA;--panel:#FFFFFF;--hover:#E6E9EE;--line:#E1E5EA;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--danger:#C42340;--danger-soft:#FDECEF;--warn-text:#8A5A00;--warn-soft:#FFF4D6;--high:#B4500B;--lane-todo:#ECEEF2;--lane-doing:#E6EFFB;--lane-done:#E5F3EA;--card-shadow:0 1px 2px rgba(20,26,36,.08);--card-shadow-h:0 3px 10px rgba(20,26,36,.12);--av1:#1E6FD0;--av2:#B4500B;--av3:#7C4DDB;--av4:#9A6A12;--av5:#0E7490;--av6:#475569;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--panel:#1A2028;--hover:#232A34;--line:#232B35;--line2:#2E3743;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--danger:#FF6B81;--danger-soft:rgba(255,107,129,.12);--warn-text:#F2C14E;--warn-soft:rgba(242,193,78,.12);--high:#FFA060;--lane-todo:#151B23;--lane-doing:#13203A;--lane-done:#12251C;--card-shadow:0 1px 2px rgba(0,0,0,.4);--card-shadow-h:0 4px 14px rgba(0,0,0,.5)}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.s{width:13px;height:13px}
+button:focus-visible,a:focus-visible,article:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{padding:40px;box-sizing:border-box}
+h1{margin:0;font-size:24px;font-weight:650;letter-spacing:-0.01em}
+h2{margin:32px 0 12px;font-size:16px;font-weight:650}
+.sub{margin:4px 0 0;color:var(--muted);font-size:13.5px;max-width:120ch}
+.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:20px}
+.cell{display:flex;flex-direction:column;gap:8px;min-width:0}
+.cap{font-size:12.5px;color:var(--muted)}.cap b{color:var(--text);font-weight:600;font-size:13px;display:block}
+.bg{border-radius:14px;padding:12px;box-sizing:border-box}
+.bg.todo{background:var(--lane-todo)}.bg.doing{background:var(--lane-doing)}.bg.done{background:var(--lane-done)}
+.av{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none;box-shadow:0 0 0 2px var(--panel)}
+.av+.av{margin-left:-6px}
+.av.c1{background:var(--av1)}.av.c2{background:var(--av2)}.av.c3{background:var(--av3)}.av.c4{background:var(--av4)}.av.c5{background:var(--av5)}.av.c6{background:var(--av6)}
+.av.more{background:var(--hover);color:var(--muted)}
+.stack{display:flex;margin-left:auto;flex:none}
+.card{background:var(--panel);border-radius:11px;padding:11px 12px 10px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--card-shadow);position:relative;cursor:pointer;min-width:0}
+.card.dense{padding:8px 10px;gap:5px}
+.card.hov{box-shadow:var(--card-shadow-h)}
+.card.foc{outline:2px solid var(--accent);outline-offset:2px}
+.card.sel{box-shadow:inset 0 0 0 2px var(--accent),var(--card-shadow-h)}
+.card.drag{transform:rotate(2.5deg);box-shadow:0 14px 32px rgba(15,23,42,.24);cursor:grabbing}
+.card.pend{opacity:.72}
+.card.done .card-t{color:var(--muted)}
+.qact{position:absolute;top:6px;right:6px;display:flex;gap:2px;background:var(--panel);border-radius:8px;box-shadow:0 1px 6px rgba(20,26,36,.18);padding:2px;z-index:2}
+.qact button{width:28px;height:28px;border:0;background:transparent;color:var(--muted);border-radius:6px;display:grid;place-items:center;cursor:pointer;padding:0}
+.qact button:hover{background:var(--hover);color:var(--text)}
+.r1{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--meta);min-height:22px;min-width:0}
+.r1 .mono{font-size:11.5px;flex:none}
+.r1 .sp{flex:1}
+.tag{height:20px;padding:0 7px;border-radius:5px;font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.tag.more{background:var(--hover);color:var(--muted)}
+.t-data{background:#E1EEFC;color:#124C8E}.t-sec{background:#FDE5EA;color:#9E1736}.t-doc{background:#ECEEF2;color:#3E4757}.t-test{background:#EEE7FB;color:#5532A8}
+.mode-dem .t-data{background:#16304F;color:#9CC8FA}.mode-dem .t-sec{background:#4A1A26;color:#FFA8B8}.mode-dem .t-doc{background:#262E39;color:#C3CBD6}.mode-dem .t-test{background:#2E2350;color:#C9B6FA}
+.pg{display:inline-flex;flex:none}
+.pg.urgent{color:var(--danger)}.pg.high{color:var(--high)}.pg.medium{color:var(--muted)}.pg.low{color:var(--meta)}
+.card-t{margin:0;font-size:13.5px;font-weight:500;line-height:1.4;text-wrap:pretty;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.dense .card-t{font-size:13px;-webkit-line-clamp:2}
+.prog{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--meta);font-variant-numeric:tabular-nums}
+.prog .track{flex:1;height:5px;border-radius:3px;background:var(--hover);overflow:hidden;display:block}
+.prog .track span{display:block;height:100%;border-radius:3px;background:var(--accent)}
+.dense .prog .track{height:3px}
+.r2{overflow:hidden;display:flex;flex-wrap:nowrap;align-items:center;gap:4px;font-size:11.5px;color:var(--meta);min-height:24px;min-width:0}
+.dense .r2{min-height:20px}
+.due{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 4px;border-radius:6px;font-size:11.5px;font-weight:500;color:var(--muted);white-space:nowrap;flex:none}
+.due.over{background:var(--danger-soft);color:var(--danger);font-weight:600}
+.due.today{background:var(--warn-soft);color:var(--warn-text);font-weight:600}
+.cnt{display:inline-flex;align-items:center;gap:3px;font-variant-numeric:tabular-nums;white-space:nowrap;flex:none}
+.cnt.chk{height:20px;padding:0 4px;border-radius:5px;background:var(--hover);color:var(--muted);font-weight:600}
+.blk{display:inline-flex;align-items:center;justify-content:center;gap:4px;height:20px;min-width:20px;padding:0 4px;border-radius:5px;background:var(--danger-soft);color:var(--danger);font-weight:600;font-size:11.5px;white-space:nowrap;flex:none;box-sizing:border-box}
+.blk.ic{padding:0;width:20px}
+.r2.cr .due .i{display:none}
+.r2.cr .cnt.chk{background:none;padding:0 2px}
+.phone{width:320px;box-sizing:border-box;border:1px solid var(--line2);border-radius:12px;padding:12px;flex:none}
+</style>
+</helmet>
+<div class="nx mode-{{mode}}" style="width:1440px;min-height:2300px;background:var(--bg)">
+<div class="wrap">
+  <h1>Mặt thẻ Kanban đầy đủ · thoải mái và gọn</h1>
+  <p class="sub">Hàng 1: nhãn (tối đa 2, rồi +N), biểu tượng ưu tiên và mã. Hàng 2: hạn, checklist, bình luận, tệp, Bị chặn và avatar (tối đa 2, rồi +N), luôn một dòng không xuống hàng; quy tắc chật (từ 4 huy hiệu): chỉ hiện ngày hạn (khoảng bắt đầu → hạn chỉ khi hàng 2 có tối đa 3 huy hiệu), bỏ biểu tượng lịch, avatar gộp thành 1 + "+N", "Bị chặn" chỉ còn biểu tượng. Số đo thật (Chromium, Be Vietnam Pro đã nạp), phần cần so với ô chứa 208px (thoải mái) / 212px (gọn) / 270px (320px): mặc định 163, rê chuột có khoảng ngày 203, trường hợp xấu nhất 206 (cả thoải mái lẫn gọn), quá hạn + bị chặn 189; điện thoại: xấu nhất 206, đủ + "Bị chặn" có chữ 235. Không ca nào bị cắt; overflow:hidden chỉ để phòng hờ. Số đếm từ 100 trở lên hiển thị "99+". Giữa hai hàng là thanh Việc con (khác huy hiệu checklist ☑). Ưu tiên không chỉ dựa vào màu: cờ đặc (Khẩn), hai mũi tên lên (Cao), hai gạch (Trung bình), mũi tên xuống (Thấp), có tên đọc và tooltip. Phím tắt chỉ có trong tooltip, không in lên thẻ. Menu "thêm" do việc khác làm, không vẽ ở đây.</p>
+
+  <h2>Thoải mái (mặc định)</h2>
+  <div class="grid">
+    <sc-for list="{{cards}}" as="v" hint-placeholder-count="10">
+    <div class="cell">
+      <div class="cap"><b>{{v.name}}</b>{{v.note}}</div>
+      <div class="bg {{v.lane}}">
+        <article class="card {{v.cls}}" tabindex="0" aria-label="{{v.aria}}">
+          <sc-if value="{{v.quick}}" hint-placeholder-val="{{ false }}"><span class="qact"><button type="button" aria-label="Giao cho tôi" title="Giao cho tôi (A)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></button><button type="button" aria-label="Đặt ngày hạn" title="Đặt ngày hạn (D)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg></button><button type="button" aria-label="Thêm tuỳ chọn" title="Thêm tuỳ chọn"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></button></span></sc-if>
+          <div class="r1"><sc-for list="{{v.labels}}" as="l" hint-placeholder-count="1"><span class="tag {{l.cls}}">{{l.t}}</span></sc-for><span class="sp"></span><sc-if value="{{v.pd}}" hint-placeholder-val="{{ false }}"><span class="pg {{v.pcls}}" title="Ưu tiên {{v.ptext}}" aria-label="Ưu tiên {{v.ptext}}" role="img"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="{{v.pd}}" fill="{{v.pf}}"></path></svg></span></sc-if><span class="mono">{{v.key}}</span></div>
+          <h3 class="card-t">{{v.title}}</h3>
+          <sc-if value="{{v.pct}}" hint-placeholder-val="{{ false }}"><div class="prog" role="img" aria-label="Việc con {{v.sub}}" title="Việc con {{v.sub}}"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6h11M10 12h11M10 18h11M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11"></path></svg><span class="track"><span style="width:{{v.pct}}"></span></span><span aria-hidden="true">{{v.sub}}</span></div></sc-if>
+          <div class="r2 {{v.crowd}}">
+            <sc-if value="{{v.due}}" hint-placeholder-val="{{ false }}"><span class="due {{v.dueCls}}" aria-label="{{v.dueLabel}}" title="{{v.dueLabel}}"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>{{v.due}}</span></sc-if>
+            <sc-if value="{{v.chk}}" hint-placeholder-val="{{ false }}"><span class="cnt chk" role="img" aria-label="Checklist {{v.chk}}" title="Checklist {{v.chk}}"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="m8.5 12 2.5 2.5 4.5-5"></path></svg>{{v.chk}}</span></sc-if>
+            <sc-if value="{{v.cm}}" hint-placeholder-val="{{ false }}"><span class="cnt" role="img" aria-label="{{v.cm}} bình luận" title="{{v.cm}} bình luận"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"></path></svg>{{v.cm}}</span></sc-if>
+            <sc-if value="{{v.files}}" hint-placeholder-val="{{ false }}"><span class="cnt" role="img" aria-label="{{v.files}} tệp" title="{{v.files}} tệp"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"></path></svg>{{v.files}}</span></sc-if>
+            <sc-if value="{{v.blocked}}" hint-placeholder-val="{{ false }}"><span class="blk {{v.blkCls}}" role="img" aria-label="Đang bị chặn bởi {{v.blocked}} việc" title="Đang bị chặn bởi {{v.blocked}} việc"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m5.7 5.7 12.6 12.6"></path></svg><sc-if value="{{v.blkText}}" hint-placeholder-val="{{ false }}">Bị chặn</sc-if></span></sc-if>
+            <sc-if value="{{v.pending}}" hint-placeholder-val="{{ false }}"><span class="cnt" role="status"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"></path></svg>Đang lưu</span></sc-if>
+            <span class="stack" role="img" aria-label="{{v.whoText}}"><sc-for list="{{v.people}}" as="p" hint-placeholder-count="1"><span class="av {{p.cls}}" aria-hidden="true">{{p.i}}</span></sc-for></span>
+          </div>
+        </article>
+      </div>
+    </div>
+    </sc-for>
+  </div>
+
+  <h2>Gọn (mật độ cao): hàng 2 chỉ biểu tượng, thanh Việc con mảnh, tiêu đề tối đa 2 dòng</h2>
+  <div class="grid">
+    <sc-for list="{{dense}}" as="v" hint-placeholder-count="5">
+    <div class="cell">
+      <div class="cap"><b>{{v.name}}</b>{{v.note}}</div>
+      <div class="bg {{v.lane}}">
+        <article class="card dense {{v.cls}}" tabindex="0" aria-label="{{v.aria}}">
+          <div class="r1"><sc-for list="{{v.labels}}" as="l" hint-placeholder-count="1"><span class="tag {{l.cls}}">{{l.t}}</span></sc-for><span class="sp"></span><sc-if value="{{v.pd}}" hint-placeholder-val="{{ false }}"><span class="pg {{v.pcls}}" title="Ưu tiên {{v.ptext}}" aria-label="Ưu tiên {{v.ptext}}" role="img"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="{{v.pd}}" fill="{{v.pf}}"></path></svg></span></sc-if><span class="mono">{{v.key}}</span></div>
+          <h3 class="card-t">{{v.title}}</h3>
+          <sc-if value="{{v.pct}}" hint-placeholder-val="{{ false }}"><div class="prog" role="img" aria-label="Việc con {{v.sub}}" title="Việc con {{v.sub}}"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6h11M10 12h11M10 18h11M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11"></path></svg><span class="track"><span style="width:{{v.pct}}"></span></span><span aria-hidden="true">{{v.sub}}</span></div></sc-if>
+          <div class="r2 {{v.crowd}}">
+            <sc-if value="{{v.due}}" hint-placeholder-val="{{ false }}"><span class="due {{v.dueCls}}" aria-label="{{v.dueLabel}}" title="{{v.dueLabel}}">{{v.due}}</span></sc-if>
+            <sc-if value="{{v.chk}}" hint-placeholder-val="{{ false }}"><span class="cnt chk" role="img" aria-label="Checklist {{v.chk}}" title="Checklist {{v.chk}}"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="m8.5 12 2.5 2.5 4.5-5"></path></svg>{{v.chk}}</span></sc-if>
+            <sc-if value="{{v.cm}}" hint-placeholder-val="{{ false }}"><span class="cnt" role="img" aria-label="{{v.cm}} bình luận" title="{{v.cm}} bình luận"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"></path></svg>{{v.cm}}</span></sc-if>
+            <sc-if value="{{v.files}}" hint-placeholder-val="{{ false }}"><span class="cnt" role="img" aria-label="{{v.files}} tệp" title="{{v.files}} tệp"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"></path></svg>{{v.files}}</span></sc-if>
+            <sc-if value="{{v.blocked}}" hint-placeholder-val="{{ false }}"><span class="blk ic" role="img" aria-label="Đang bị chặn bởi {{v.blocked}} việc" title="Đang bị chặn bởi {{v.blocked}} việc"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m5.7 5.7 12.6 12.6"></path></svg></span></sc-if>
+            <span class="stack" role="img" aria-label="{{v.whoText}}"><sc-for list="{{v.people}}" as="p" hint-placeholder-count="1"><span class="av {{p.cls}}" aria-hidden="true">{{p.i}}</span></sc-for></span>
+          </div>
+        </article>
+      </div>
+    </div>
+    </sc-for>
+  </div>
+
+  <h2>Kanban 320px trên điện thoại: một cột, hàng 2 vẫn một dòng; trường hợp xấu nhất bên trái</h2>
+  <div style="display:flex;gap:24px;align-items:flex-start">
+    <sc-for list="{{phones}}" as="v" hint-placeholder-count="2">
+    <div class="phone bg {{v.lane}}">
+      <div class="cap" style="margin-bottom:8px"><b>{{v.name}}</b></div>
+      <article class="card" tabindex="0" aria-label="{{v.aria}}">
+        <div class="r1"><sc-for list="{{v.labels}}" as="l" hint-placeholder-count="1"><span class="tag {{l.cls}}">{{l.t}}</span></sc-for><span class="sp"></span><sc-if value="{{v.pd}}" hint-placeholder-val="{{ false }}"><span class="pg {{v.pcls}}" title="Ưu tiên {{v.ptext}}" aria-label="Ưu tiên {{v.ptext}}" role="img"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="{{v.pd}}" fill="{{v.pf}}"></path></svg></span></sc-if><span class="mono">{{v.key}}</span></div>
+        <h3 class="card-t">{{v.title}}</h3>
+        <sc-if value="{{v.pct}}" hint-placeholder-val="{{ false }}"><div class="prog" role="img" aria-label="Việc con {{v.sub}}" title="Việc con {{v.sub}}"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6h11M10 12h11M10 18h11M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11"></path></svg><span class="track"><span style="width:{{v.pct}}"></span></span><span aria-hidden="true">{{v.sub}}</span></div></sc-if>
+        <div class="r2 {{v.crowd}}">
+          <sc-if value="{{v.due}}" hint-placeholder-val="{{ false }}"><span class="due {{v.dueCls}}" aria-label="{{v.dueLabel}}" title="{{v.dueLabel}}"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>{{v.due}}</span></sc-if>
+          <sc-if value="{{v.chk}}" hint-placeholder-val="{{ false }}"><span class="cnt chk" role="img" aria-label="Checklist {{v.chk}}" title="Checklist {{v.chk}}"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="m8.5 12 2.5 2.5 4.5-5"></path></svg>{{v.chk}}</span></sc-if>
+          <sc-if value="{{v.cm}}" hint-placeholder-val="{{ false }}"><span class="cnt" role="img" aria-label="{{v.cm}} bình luận" title="{{v.cm}} bình luận"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"></path></svg>{{v.cm}}</span></sc-if>
+          <sc-if value="{{v.files}}" hint-placeholder-val="{{ false }}"><span class="cnt" role="img" aria-label="{{v.files}} tệp" title="{{v.files}} tệp"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><path d="m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"></path></svg>{{v.files}}</span></sc-if>
+          <sc-if value="{{v.blocked}}" hint-placeholder-val="{{ false }}"><span class="blk {{v.blkCls}}" role="img" aria-label="Đang bị chặn bởi {{v.blocked}} việc" title="Đang bị chặn bởi {{v.blocked}} việc"><svg class="i s" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m5.7 5.7 12.6 12.6"></path></svg><sc-if value="{{v.blkText}}" hint-placeholder-val="{{ false }}">Bị chặn</sc-if></span></sc-if>
+          <span class="stack" role="img" aria-label="{{v.whoText}}"><sc-for list="{{v.people}}" as="p" hint-placeholder-count="1"><span class="av {{p.cls}}" aria-hidden="true">{{p.i}}</span></sc-for></span>
+        </div>
+      </article>
+    </div>
+    </sc-for>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["sang","dem"],"default":"dem","section":"Giao diện"},"$preview":{"width":1440,"height":2300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const AV = { MQ: 'c1', HP: 'c2', NA: 'c3', KL: 'c4', VT: 'c5', TT: 'c6' };
+    const NAME = { MQ: 'Mai Quốc Minh', HP: 'Lê Hoàng Phúc', NA: 'Nguyễn Anh', KL: 'Đỗ Khánh Linh', VT: 'Võ Thanh Tùng', TT: 'Trần Thu Trang' };
+    const T = { 'Dữ liệu': 't-data', 'Bảo mật': 't-sec', 'Tài liệu': 't-doc', 'Kiểm thử': 't-test', 'Hạ tầng': 't-doc' };
+    // One glyph per level so priority never rests on colour alone: filled flag, double chevron up, two bars, chevron down.
+    const PG = {
+      urgent: { d: 'M5 21V4M5 4h11l-2 4 2 4H5', f: 'currentColor', t: 'Khẩn' },
+      high: { d: 'm7 13 5-5 5 5M7 19l5-5 5 5', f: 'none', t: 'Cao' },
+      medium: { d: 'M6 10h12M6 15h12', f: 'none', t: 'Trung bình' },
+      low: { d: 'm7 10 5 5 5-5', f: 'none', t: 'Thấp' }
+    };
+    const c = (o) => {
+      const who = o.who || [];
+      // Crowding rule: 4+ chips on row 2 means the avatar stack collapses to 1 avatar + "+N" and the due chip shows the due date only; the start→due range needs 3 chips or fewer.
+      const chips = [o.due, o.chk, o.cm, o.files, o.blocked].filter(Boolean).length;
+      const crowded = chips >= 4;
+      const shown = crowded ? 1 : 2;
+      const people = who.slice(0, shown).map((k) => ({ i: k, cls: AV[k] }));
+      if (who.length > shown) people.push({ i: '+' + (who.length - shown), cls: 'more' });
+      if (o.start && o.due && !crowded) o = Object.assign({}, o, { due: o.start + ' → ' + o.due });
+      const ls = o.labels || [];
+      const labels = ls.slice(0, 2).map((t) => ({ t, cls: T[t] || 't-doc' }));
+      if (ls.length > 2) labels.push({ t: '+' + (ls.length - 2), cls: 'more' });
+      const o2 = Object.assign({ lane: 'doing', cls: '', due: '', dueCls: '', pct: '', sub: '', chk: '', cm: '', files: '', blocked: '', key: 'ERP-144', quick: false, pending: false, blkText: true, blkCls: '' }, o);
+      const g = PG[o2.prio] || null;
+      return Object.assign(o2, {
+        crowd: crowded ? 'cr' : '', labels, people, blkCls: o2.blkText ? '' : 'ic',
+        pd: g ? g.d : '', pf: g ? g.f : 'none', ptext: g ? g.t : '', pcls: o2.prio || '',
+        dueLabel: o2.dueLabel || (o2.due ? 'Hạn ' + o2.due : ''),
+        whoText: who.length ? 'Người làm: ' + who.map((k) => NAME[k]).join(', ') : 'Chưa giao cho ai',
+        aria: o2.key + ' ' + o2.title
+      });
+    };
+    const full = { title: 'Kiểm thử phân hệ công nợ với số liệu tháng 9', labels: ['Kiểm thử'], who: ['HP'], prio: 'high', start: '12/10', due: '16/10', dueLabel: 'Bắt đầu 12/10, hạn 16/10', pct: '67%', sub: '6/9', chk: '3/8', cm: '2', files: '4' };
+    const worst = { name: 'Trường hợp xấu nhất', note: 'Hạn, checklist, bình luận, tệp, bị chặn, 2 avatar, 2 nhãn: vẫn một dòng, "Bị chặn" thu thành biểu tượng', key: 'ERP-142', title: 'Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP', labels: ['Dữ liệu', 'Bảo mật', 'Tài liệu'], who: ['MQ', 'HP', 'NA'], prio: 'urgent', due: '16/10', dueLabel: 'Hạn 16/10, bắt đầu 12/10', pct: '60%', sub: '3/5', chk: '3/8', cm: '12', files: '4', blocked: '2', blkText: false };
+    const cards = [
+      c(Object.assign({ name: 'Mặc định', note: 'Ngày bắt đầu → hạn, ưu tiên Cao, checklist, bình luận, tệp' }, full)),
+      c(worst),
+      c(Object.assign({ name: 'Rê chuột', note: 'Hiện thao tác nhanh: giao cho tôi, đặt hạn, thêm (menu thêm do việc khác làm)', cls: 'hov', quick: true }, full, { due: '16/10', files: '' })),
+      c(Object.assign({ name: 'Tiêu điểm bàn phím', note: ':focus-visible viền 2px, Enter mở chi tiết', cls: 'foc' }, full, { due: '16/10', files: '' })),
+      c(Object.assign({ name: 'Đang mở chi tiết', note: 'Viền nhấn trong thẻ', cls: 'sel' }, full, { due: '16/10', files: '' })),
+      c(Object.assign({ name: 'Đang kéo', note: 'Bản sao nghiêng 2,5 độ', cls: 'drag' }, full, { due: '16/10', files: '' })),
+      c(Object.assign({ name: 'Đang lưu', note: 'Mờ 72%, chữ "Đang lưu" kèm biểu tượng', cls: 'pend', pending: true, lane: 'todo', key: 'ERP-152', title: 'Chốt lịch đào tạo kế toán trưởng', labels: ['Tài liệu'], who: ['HP'], due: '16/10', prio: 'medium' })),
+      c({ name: 'Quá hạn · bị chặn có chữ', note: 'Ít huy hiệu nên "Bị chặn" còn chữ', key: 'ERP-141', title: 'Đối chiếu số dư đầu kỳ', labels: ['Dữ liệu'], who: ['MQ'], prio: 'low', due: 'Quá hạn 2 ngày', dueCls: 'over', cm: '5', blocked: '1', blkText: false }),
+      c({ name: 'Tiêu đề rất dài', note: 'Cắt ở 3 dòng, không đẩy huy hiệu', key: 'ERP-160', title: 'Đối soát và chuẩn hoá toàn bộ danh mục vật tư, đơn vị tính, nhà cung cấp và bảng giá theo quý trước khi chạy thử phân hệ mua hàng', labels: ['Dữ liệu'], who: ['KL'], prio: 'medium', due: 'Hôm nay', dueCls: 'today', lane: 'todo', cm: '1' }),
+      c({ name: 'Tối giản · đã xong', note: 'Không có gì thì không để khoảng trống; xong thì bỏ hạn, chữ nhạt', lane: 'done', cls: 'done', key: 'ERP-131', title: 'Sao lưu cơ sở dữ liệu tự động hằng đêm', labels: [], who: [] })
+    ];
+    const dense = [
+      c(Object.assign({ name: 'Đủ thông tin', note: 'Hàng 2 chỉ biểu tượng' }, full, { due: '16/10' })),
+      c(Object.assign({}, worst, { name: 'Trường hợp xấu nhất', note: 'Vẫn một dòng' })),
+      c({ name: 'Nhiều nhãn, nhiều người', note: '+N giữ nguyên', key: 'ERP-151', title: 'Cấu hình quyền truy cập theo phòng ban cho phân hệ Kế toán', labels: ['Bảo mật', 'Tài liệu', 'Hạ tầng'], who: ['NA', 'KL', 'TT'], lane: 'todo', due: '18/10', chk: '0/4', prio: 'medium' }),
+      c({ name: 'Tiêu đề dài', note: 'Cắt ở 2 dòng', key: 'ERP-160', title: 'Đối soát và chuẩn hoá toàn bộ danh mục vật tư, đơn vị tính, nhà cung cấp và bảng giá theo quý', labels: ['Dữ liệu'], who: ['KL'], lane: 'todo', prio: 'low' }),
+      c({ name: 'Tiêu điểm bàn phím', note: 'Viền 2px', cls: 'foc', key: 'ERP-144', title: 'Kiểm thử phân hệ công nợ', labels: ['Kiểm thử'], who: ['HP'], due: '16/10', cm: '2', prio: 'high' })
+    ];
+    const phones = [
+      c(Object.assign({}, worst, { name: 'Cột Đang làm · trường hợp xấu nhất', note: '', blkText: false })),
+      c(Object.assign({ name: 'Cột Cần làm · đủ thông tin, bị chặn có chữ', lane: 'todo', blocked: '2', blkText: true }, full, { key: 'ERP-145', prio: 'urgent' }))
+    ];
+    return { mode: this.props.mode ?? 'dem', cards, dense, phones };
+  }
+}
+</script>
+</body>
+</html>

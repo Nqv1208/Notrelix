@@ -4,6 +4,9 @@ import {
   type RealtimeClientMessage,
   type RealtimeControlMessage,
   type RealtimeEnvelope,
+  type RealtimeEphemeralEvent,
+  type RealtimeEphemeralFrame,
+  type RealtimePresenceState,
   type RealtimeSubscriptionFilter,
   type RealtimeSubscriptionScope,
 } from "../protocol";
@@ -114,6 +117,9 @@ export type RealtimeEventListener = (envelope: RealtimeEnvelope) => void;
 export type RealtimeStateListener = (state: RealtimeConnectionState) => void;
 export type RealtimeRecoveryListener = (signal: RealtimeRecoverySignal) => void;
 
+/** Receives the typing and presence signals of one Chat channel (never events). */
+export type RealtimeEphemeralListener = (event: RealtimeEphemeralEvent) => void;
+
 export interface RealtimeTelemetry {
   track(event: string, properties?: Record<string, unknown>): void;
   reportError(error: unknown, context?: Record<string, unknown>): void;
@@ -166,6 +172,19 @@ export interface RealtimeTransport {
     filter: RealtimeSubscriptionFilter,
     listener: RealtimeEventListener,
   ): () => void;
+  /**
+   * Ephemeral signals of a Chat channel (typing, presence): holds the channel
+   * subscription like `subscribe` does and delivers only the other people's
+   * signals. Nothing is stored or replayed.
+   */
+  subscribeEphemeral(
+    filter: { readonly workspaceId: string; readonly channelId: string },
+    listener: RealtimeEphemeralListener,
+  ): () => void;
+  /** Tells the channel's subscribers the caller is typing. The caller throttles (one per 3 s). */
+  sendTyping(channelId: string): void;
+  /** Reports the caller's presence (heartbeat about every 30 s). */
+  sendPresence(state: RealtimePresenceState): void;
   subscribeState(listener: RealtimeStateListener): () => void;
   subscribeRecovery(listener: RealtimeRecoveryListener): () => void;
   getState(): RealtimeConnectionState;
@@ -294,9 +313,10 @@ interface ListenerEntry {
 export function deriveSubscriptionScope(
   filter: RealtimeSubscriptionFilter,
 ): RealtimeSubscriptionScope {
-  return filter.boardId
-    ? { kind: "board", id: filter.boardId }
-    : { kind: "workspace", id: filter.workspaceId };
+  if (filter.boardId) return { kind: "board", id: filter.boardId };
+  if (filter.channelId) return { kind: "channel", id: filter.channelId };
+  if (filter.userId) return { kind: "user", id: filter.userId };
+  return { kind: "workspace", id: filter.workspaceId };
 }
 
 export class RealtimeClient implements RealtimeTransport {
@@ -341,6 +361,12 @@ export class RealtimeClient implements RealtimeTransport {
   private readonly dedupCache: DedupLruCache;
 
   private readonly listeners = new Set<ListenerEntry>();
+  private readonly ephemeralListeners = new Set<{
+    readonly wireId: string;
+    readonly workspaceId: string;
+    readonly channelId: string;
+    readonly listener: RealtimeEphemeralListener;
+  }>();
   private readonly wireSubscriptions = new Map<string, WireSubscription>();
   private readonly checkpoints = new StreamCheckpointTracker();
 
@@ -574,7 +600,45 @@ export class RealtimeClient implements RealtimeTransport {
       return;
     }
 
+    if (value.kind === "ephemeral") {
+      this.handleEphemeralFrame(value.frame);
+      return;
+    }
+
     this.handleDomainEnvelope(value.envelope);
+  }
+
+  /** Typing and presence: delivered to the listeners of an active channel subscription, no dedupe or checkpoint. */
+  private handleEphemeralFrame(frame: RealtimeEphemeralFrame): void {
+    const wire = this.wireSubscriptions.get(frame.subscriptionId);
+    if (!wire || wire.status !== "active" || wire.scope.kind !== "channel") {
+      return;
+    }
+    const event: RealtimeEphemeralEvent =
+      frame.type === "typing"
+        ? {
+            kind: "typing",
+            channelId: wire.scope.id,
+            userId: frame.userId,
+            expiresInMs: frame.expiresInMs,
+          }
+        : {
+            kind: "presence",
+            channelId: wire.scope.id,
+            userId: frame.userId,
+            state: frame.state,
+            ttlMs: frame.ttlMs,
+          };
+    this.ephemeralListeners.forEach((entry) => {
+      if (entry.wireId !== wire.id || entry.workspaceId !== wire.workspaceId) {
+        return;
+      }
+      try {
+        entry.listener(event);
+      } catch (err) {
+        this.telemetry?.reportError(err, { context: "ephemeralListener" });
+      }
+    });
   }
 
   private handleControlMessage(message: RealtimeControlMessage): void {
@@ -1005,6 +1069,42 @@ export class RealtimeClient implements RealtimeTransport {
     };
   }
 
+  public subscribeEphemeral(
+    filter: { readonly workspaceId: string; readonly channelId: string },
+    listener: RealtimeEphemeralListener,
+  ): () => void {
+    // The channel subscription is shared with the event listeners of the same channel.
+    const release = this.subscribe(
+      { workspaceId: filter.workspaceId, channelId: filter.channelId },
+      () => {},
+    );
+    const entry = {
+      wireId: `channel:${filter.channelId}`,
+      workspaceId: filter.workspaceId,
+      channelId: filter.channelId,
+      listener,
+    };
+    this.ephemeralListeners.add(entry);
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      this.ephemeralListeners.delete(entry);
+      release();
+    };
+  }
+
+  public sendTyping(channelId: string): void {
+    const wire = this.wireSubscriptions.get(`channel:${channelId}`);
+    if (!wire || wire.status !== "active") return;
+    this.sendFrame({ type: "typing", subscriptionId: wire.id });
+  }
+
+  public sendPresence(state: RealtimePresenceState): void {
+    if (!this.ready) return;
+    this.sendFrame({ type: "presence", state });
+  }
+
   private releaseWireSubscription(wireId: string): void {
     const wire = this.wireSubscriptions.get(wireId);
     if (!wire) return;
@@ -1039,6 +1139,7 @@ export class RealtimeClient implements RealtimeTransport {
 
     this.disconnect("Disposed");
     this.listeners.clear();
+    this.ephemeralListeners.clear();
     this.wireSubscriptions.clear();
     this.stateListeners.clear();
     this.recoveryListeners.clear();

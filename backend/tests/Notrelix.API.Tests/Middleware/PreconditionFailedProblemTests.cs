@@ -22,6 +22,20 @@ public class PreconditionFailedProblemTests
     }
 
     [Fact]
+    public void ABusinessRuleWithDetails_CarriesThemNextToItsRuleCode()
+    {
+        var cycle = new[] { "Tổng giờ", "Tỷ lệ", "Tổng giờ" };
+        var exception = new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+            "WorkManagement_Field_ComputedFieldCycle", "cycle", new Dictionary<string, object?> { ["cycle"] = cycle });
+
+        var problem = ProblemDetailsMapper.Map(new DefaultHttpContext(), exception);
+
+        problem.Status.Should().Be(StatusCodes.Status400BadRequest);
+        problem.Extensions["ruleCode"].Should().Be("WorkManagement_Field_ComputedFieldCycle");
+        problem.Extensions["cycle"].Should().BeSameAs(cycle);
+    }
+
+    [Fact]
     public void APreconditionWithoutExtensions_AddsNoExtraMembers()
     {
         var problem = ProblemDetailsMapper.Map(new DefaultHttpContext(), new PreconditionFailedException("stale"));

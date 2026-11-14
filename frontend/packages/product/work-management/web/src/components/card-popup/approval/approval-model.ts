@@ -7,7 +7,8 @@ export function approvalFailure(
 ): "conflict" | "forbidden" | "failed" | null {
   if (error === null || error === undefined) return null;
   const kind = (error as { kind?: string }).kind;
-  return kind === "conflict"
+  // A stale version (412) is the same lost race as an already-decided request (409).
+  return kind === "conflict" || (error as { status?: number }).status === 412
     ? "conflict"
     : kind === "forbidden"
       ? "forbidden"

@@ -79,6 +79,23 @@ public sealed class BlockEditingHandlerTests
     }
 
     [Fact]
+    public async Task CreatingAfterABlockOfThisPageThatIsNotASibling_IsA400_NotANotFound()
+    {
+        var page = NewPage();
+        var root = NewBlock(page, "a0");
+        var child = Block.CreateChild(AccountId, WorkspaceId, page.Id, BlockType.Text,
+            BlockContent.Create(JsonValue.Create("{\"v\":1,\"runs\":[{\"text\":\"child\",\"marks\":[]}]}")),
+            FractionalIndex.Create("a0"), UserId, Now, BlockAncestorPath.Create(AccountId, WorkspaceId, page.Id, root.Id, []));
+        var (sut, context) = CreateCreateSut(page, [root, child]);
+
+        // The child exists on this page but sits under the root block, so it is not a sibling of a new root block.
+        var act = () => sut.Handle(new CreateBlockCommand(page.Id, null, "paragraph", null, null, child.Id, null), CancellationToken.None);
+
+        await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ValidationException>();
+        context.Added.Should().BeEmpty();
+    }
+
+    [Fact]
     public void CreatingABlock_NeedsOnlyTheEditLevelOnThePage_LikeUpdatingAndDeletingOne()
     {
         var pageId = Guid.CreateVersion7();

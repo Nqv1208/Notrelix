@@ -20,6 +20,9 @@ public class BoardField : SoftDeletableAggregateRoot, IWorkspaceScoped
     private readonly List<FieldOption> _options = new();
     public IReadOnlyCollection<FieldOption> Options => _options.AsReadOnly();
 
+    /// <summary>The field's value may not be cleared and a new Item must get one (settings.required).</summary>
+    public bool IsRequired => FieldRules.IsRequired(Settings.Data.Value);
+
     private bool IsOptionBacked => Type is FieldType.Select or FieldType.MultiSelect or FieldType.Status;
 
     private BoardField() : base() { }

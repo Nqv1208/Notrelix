@@ -173,7 +173,7 @@ public class AutomationRuleEvaluatorGuardTests
     {
         var execution = AutomationExecution.Create(AccountId, WorkspaceId, rule.Id, Guid.CreateVersion7(), at);
         execution.Start(at);
-        if (failed) execution.Fail("x", at); else execution.Succeed(at);
+        if (failed) execution.Fail(AutomationFailureClass.TargetRejected, "x", at); else execution.Succeed(at);
         context.AutomationExecutions.Add(execution);
     }
 

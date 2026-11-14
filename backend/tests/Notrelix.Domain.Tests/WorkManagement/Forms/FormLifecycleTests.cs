@@ -34,14 +34,17 @@ public class FormLifecycleTests
     }
 
     [Fact]
-    public void Form_Publish_WhenClosed_ShouldThrow()
+    public void Form_Publish_WhenClosed_ReopensIt()
     {
         var form = Form.Create(Guid.NewGuid(), WsA, BoardA, "Form", "form", Actor, Now);
         form.AddQuestion(FormQuestion.Create(Guid.NewGuid(), WsA, form.Id, null, "q1", "Q1", FormQuestionType.ShortText, true, FractionalIndex.Create("a0")), Actor, Now);
         form.Close(Actor, Now);
+        var closed = form.Version;
 
-        var act = () => form.Publish(Actor, Now);
-        act.Should().Throw<BusinessRuleException>().WithMessage("*closed*");
+        form.Publish(Actor, Now);
+
+        form.Status.Should().Be(FormStatus.Published);
+        form.Version.Should().Be(closed + 1);
     }
 
     [Fact]

@@ -26,3 +26,4 @@
 \i 026_authz_access_helpers_static.sql
 \i 027_operator_console.sql
 \i 028_deleted_workspaces.sql
+\i 029_attachment_pending_uploads.sql

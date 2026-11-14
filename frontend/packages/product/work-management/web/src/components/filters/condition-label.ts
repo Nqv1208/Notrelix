@@ -3,6 +3,7 @@ import {
   type CompoundFilter,
   type FilterCondition,
   type FilterField,
+  isStaleCondition,
   type MemberNames,
 } from "@notrelix/work-management-core";
 import { fillFiltersCopy, type FiltersCopy } from "./filters.copy";
@@ -49,6 +50,9 @@ export function describeCondition(
   if (!field) {
     return fillFiltersCopy(copy.stale.chip, { name: copy.stale.unknownField });
   }
+  if (isStaleCondition(condition, new Map([[field.id, field]]))) {
+    return fillFiltersCopy(copy.stale.valueChip, { name: field.name });
+  }
   const op =
     copy.operators[condition.operator as keyof FiltersCopy["operators"]];
   const values = condition.values.map((value) =>
@@ -76,13 +80,13 @@ export function describeCondition(
   return `${field.name} ${op} ${shown}`;
 }
 
-/** The ids of fields a filter names that the board no longer has, with how many conditions use them. */
+/** How many conditions of a filter the board can no longer honour: a removed field, or only options that were deleted. */
 export function staleConditionCount(
   filter: CompoundFilter,
   fields: readonly FilterField[],
 ): number {
-  const known = new Set(fields.map((f) => f.id));
-  return filter.conditions.filter((c) => !known.has(c.fieldId)).length;
+  const byId = new Map(fields.map((f) => [f.id, f]));
+  return filter.conditions.filter((c) => isStaleCondition(c, byId)).length;
 }
 
 /** The label of a date bucket key: "Tuần 12/10 – 18/10/2026", "Tháng 10/2026", "Quý 4/2026", "2026" or a day. */

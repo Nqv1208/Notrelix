@@ -121,6 +121,21 @@ export function createUseSpaceMutations({ api, endpoints }: SpaceMutationDeps) {
       onSettled: refreshTree,
     });
 
+    // Delete and restore carry no expected version: the producer takes none for a Space.
+    const remove = useMutation({
+      mutationFn: ({ spaceId }: { spaceId: string }) =>
+        service.remove(workspaceId, spaceId),
+      retry: false,
+      onSettled: refreshTree,
+    });
+
+    const restore = useMutation({
+      mutationFn: ({ spaceId }: { spaceId: string }) =>
+        service.restore(workspaceId, spaceId),
+      retry: false,
+      onSettled: refreshTree,
+    });
+
     const addMember = useMutation({
       mutationFn: ({
         spaceId,
@@ -154,6 +169,8 @@ export function createUseSpaceMutations({ api, endpoints }: SpaceMutationDeps) {
       updateDetails,
       archive,
       unarchive,
+      remove,
+      restore,
       addMember,
       changeMemberRole,
       removeMember,

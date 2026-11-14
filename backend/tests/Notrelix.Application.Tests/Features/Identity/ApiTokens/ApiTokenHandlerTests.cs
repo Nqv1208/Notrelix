@@ -1,10 +1,12 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using Notrelix.Application.Common.Auditing;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.ApiTokens.Abstractions;
 using Notrelix.Application.Features.Identity.ApiTokens.Commands.CreateApiToken;
 using Notrelix.Application.Features.Identity.ApiTokens.Commands.RevokeApiToken;
 using Notrelix.Application.Features.Identity.ApiTokens.Queries.ListApiTokens;
 using Notrelix.Application.Features.Identity.Security.DTOs;
+using Notrelix.Domain.Common.Auditing;
 using Notrelix.Domain.Identity.Tokens;
 
 namespace Notrelix.Application.Tests.Features.Identity.ApiTokens;
@@ -29,6 +31,7 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
     private const string ValidProof = "verified-proof-token";
     private readonly Guid TestAccountId = Guid.CreateVersion7();
     private readonly Guid TestWorkspaceId = Guid.CreateVersion7();
+    private readonly Mock<IAuditService> _audit = new();
 
     private ApiToken CreateToken(
         Guid? id = null,
@@ -90,7 +93,8 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
         StepUpServiceMock.Object,
         secretService ?? new FakeApiTokenSecretService(),
         DateTimeProviderMock.Object,
-        NullLogger<CreateApiTokenCommandHandler>.Instance);
+        NullLogger<CreateApiTokenCommandHandler>.Instance,
+        _audit.Object);
 
     [Fact]
     public async Task Create_WithValidStepUp_ReturnsRawSecretOnceAndPersistsDigest()
@@ -101,7 +105,7 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
 
         var sut = CreateSut(secretService);
         var result = await sut.Handle(new CreateApiTokenCommand(
-            TestWorkspaceId, "Deploy token", null, ValidProof), CancellationToken.None);
+            TestWorkspaceId, "Deploy token", TestNow.AddDays(30), ValidProof), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         result.Data.RawSecret.Should().Be(secretService.LastGeneratedRaw);
@@ -123,7 +127,7 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
 
         var sut = CreateSut();
         var result = await sut.Handle(new CreateApiTokenCommand(
-            TestWorkspaceId, "Deploy token", null, "forged-token"), CancellationToken.None);
+            TestWorkspaceId, "Deploy token", TestNow.AddDays(30), "forged-token"), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
         IdentityContextMock.Object.ApiTokens.Should().BeEmpty();
@@ -137,7 +141,7 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
 
         var sut = CreateSut();
         var result = await sut.Handle(new CreateApiTokenCommand(
-            TestWorkspaceId, "Deploy token", null, ValidProof), CancellationToken.None);
+            TestWorkspaceId, "Deploy token", TestNow.AddDays(30), ValidProof), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
         IdentityContextMock.Object.ApiTokens.Should().BeEmpty();
@@ -154,7 +158,7 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
 
         var sut = CreateSut();
         var result = await sut.Handle(new CreateApiTokenCommand(
-            TestWorkspaceId, new string('x', 257), null, ValidProof), CancellationToken.None);
+            TestWorkspaceId, new string('x', 257), TestNow.AddDays(30), ValidProof), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain(e => e.Contains("Token name"));
@@ -193,7 +197,7 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
         SetupApiTokens(token);
 
         var sut = new RevokeApiTokenCommandHandler(
-            IdentityContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, NullLogger<RevokeApiTokenCommandHandler>.Instance);
+            IdentityContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, NullLogger<RevokeApiTokenCommandHandler>.Instance, _audit.Object);
         var result = await sut.Handle(new RevokeApiTokenCommand(TestWorkspaceId, token.Id), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
@@ -211,7 +215,7 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
         var versionBefore = token.Version;
 
         var sut = new RevokeApiTokenCommandHandler(
-            IdentityContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, NullLogger<RevokeApiTokenCommandHandler>.Instance);
+            IdentityContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, NullLogger<RevokeApiTokenCommandHandler>.Instance, _audit.Object);
         var result = await sut.Handle(new RevokeApiTokenCommand(TestWorkspaceId, token.Id), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
@@ -227,7 +231,7 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
         SetupApiTokens(token);
 
         var sut = new RevokeApiTokenCommandHandler(
-            IdentityContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, NullLogger<RevokeApiTokenCommandHandler>.Instance);
+            IdentityContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, NullLogger<RevokeApiTokenCommandHandler>.Instance, _audit.Object);
         var act = async () => await sut.Handle(new RevokeApiTokenCommand(TestWorkspaceId, token.Id), CancellationToken.None);
 
         await act.Should().ThrowAsync<NotFoundException>();
@@ -247,10 +251,10 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
         var result = await sut.Handle(new ListApiTokensQuery(TestWorkspaceId), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
-        result.Data.Should().HaveCount(2);
-        result.Data.First().Id.Should().Be(newer.Id);
-        result.Data.Select(t => t.Name).Should().Equal("Newer token", "Older token");
-        result.Data.Should().OnlyContain(t =>
+        result.Data.Items.Should().HaveCount(2);
+        result.Data.Items.First().Id.Should().Be(newer.Id);
+        result.Data.Items.Select(t => t.Name).Should().Equal("Newer token", "Older token");
+        result.Data.Items.Should().OnlyContain(t =>
             t.Scopes == null && t.Status == "Active" && t.LastUsedAt == null
             && t.RevokedAt == null && t.ExpiresAt == null);
     }
@@ -268,6 +272,154 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
         var sut = new ListApiTokensQueryHandler(IdentityContextMock.Object);
         var result = await sut.Handle(new ListApiTokensQuery(TestWorkspaceId), CancellationToken.None);
 
-        result.Data.Should().ContainSingle().Which.Id.Should().Be(own.Id);
+        result.Data.Items.Should().ContainSingle().Which.Id.Should().Be(own.Id);
+    }
+
+    [Fact]
+    public async Task Create_WithoutExpiry_IsRefusedBeforeStepUpIsConsumed()
+    {
+        SetupWorkspaceActor();
+        SetupValidStepUp(StepUpPurpose.IssueApiToken);
+
+        var result = await CreateSut().Handle(new CreateApiTokenCommand(
+            TestWorkspaceId, "Deploy token", null, ValidProof), CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse("an API token needs an expiry (Lead decision L7)");
+        result.Errors.Should().Contain(e => e.Contains("expiration"));
+        IdentityContextMock.Object.ApiTokens.Should().BeEmpty();
+        StepUpServiceMock.Verify(
+            s => s.ConsumeAsync(It.IsAny<string>(), TestUserId, TestSessionId,
+                StepUpPurpose.IssueApiToken, It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Create_WithLifetimeAboveTheDefaultMaximum_IsRefused()
+    {
+        SetupWorkspaceActor();
+        SetupValidStepUp(StepUpPurpose.IssueApiToken);
+
+        var result = await CreateSut().Handle(new CreateApiTokenCommand(
+            TestWorkspaceId, "Deploy token", TestNow.AddDays(CreateApiTokenCommandHandler.MaxTokenLifetimeDays + 1), ValidProof),
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.Contains("365 days"));
+        IdentityContextMock.Object.ApiTokens.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Create_WithLifetimeExactlyAtTheMaximum_IsAccepted()
+    {
+        SetupWorkspaceActor();
+        SetupValidStepUp(StepUpPurpose.IssueApiToken);
+
+        var result = await CreateSut().Handle(new CreateApiTokenCommand(
+            TestWorkspaceId, "Deploy token", TestNow.AddDays(CreateApiTokenCommandHandler.MaxTokenLifetimeDays), ValidProof),
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    private static bool AuditPayloadIsSecretFree(AuditChange? change, string rawSecret)
+    {
+        var payload = System.Text.Json.JsonSerializer.Serialize(change?.After);
+        return change is not null && !payload.Contains(rawSecret) && !payload.Contains("hash:");
+    }
+
+    [Fact]
+    public async Task Create_RecordsOneAuditRow_WhosePayloadHoldsNoSecret()
+    {
+        SetupWorkspaceActor();
+        SetupValidStepUp(StepUpPurpose.IssueApiToken);
+        var secretService = new FakeApiTokenSecretService();
+
+        var result = await CreateSut(secretService).Handle(new CreateApiTokenCommand(
+            TestWorkspaceId, "Deploy token", TestNow.AddDays(30), ValidProof), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        _audit.Verify(a => a.RecordAsync(TestWorkspaceId, TestUserId, "CreateApiToken", It.IsAny<ResourceRef>(),
+            It.IsAny<AuditMetadata>(), AuditSeverity.Info, It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<CancellationToken>(), It.Is<AuditChange?>(c => AuditPayloadIsSecretFree(c, secretService.LastGeneratedRaw!))), Times.Once);
+    }
+
+    [Fact]
+    public async Task Revoke_ActiveToken_RecordsOneAuditRow()
+    {
+        SetupWorkspaceActor();
+        var token = CreateToken();
+        token.GetType().GetProperty(nameof(ApiToken.Id))!.SetValue(token, Guid.CreateVersion7());
+        SetupApiTokens(token);
+
+        var sut = new RevokeApiTokenCommandHandler(
+            IdentityContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object,
+            NullLogger<RevokeApiTokenCommandHandler>.Instance, _audit.Object);
+        await sut.Handle(new RevokeApiTokenCommand(TestWorkspaceId, token.Id), CancellationToken.None);
+
+        _audit.Verify(a => a.RecordAsync(TestWorkspaceId, TestUserId, "RevokeApiToken", It.IsAny<ResourceRef>(),
+            It.IsAny<AuditMetadata>(), AuditSeverity.Info, It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<CancellationToken>(), It.IsAny<AuditChange?>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Revoke_AlreadyRevoked_RecordsNoAuditRow()
+    {
+        SetupWorkspaceActor();
+        var token = CreateToken(status: ApiTokenStatus.Revoked);
+        SetupApiTokens(token);
+
+        var sut = new RevokeApiTokenCommandHandler(
+            IdentityContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object,
+            NullLogger<RevokeApiTokenCommandHandler>.Instance, _audit.Object);
+        await sut.Handle(new RevokeApiTokenCommand(TestWorkspaceId, token.Id), CancellationToken.None);
+
+        _audit.Verify(a => a.RecordAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<ResourceRef>(),
+            It.IsAny<AuditMetadata>(), It.IsAny<AuditSeverity>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<CancellationToken>(), It.IsAny<AuditChange?>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task List_PagesNewestFirst_WithADefaultLimitAndAnExactCursor()
+    {
+        var tokens = Enumerable.Range(0, 51).Select(i =>
+        {
+            var token = CreateToken(name: $"Token {i}", tokenHash: $"hash:{i}", createdAt: TestNow.AddMinutes(i));
+            token.GetType().GetProperty(nameof(ApiToken.Id))!.SetValue(token, Guid.CreateVersion7());
+            return token;
+        }).ToArray();
+        SetupApiTokens(tokens);
+        var sut = new ListApiTokensQueryHandler(IdentityContextMock.Object);
+
+        var first = (await sut.Handle(new ListApiTokensQuery(TestWorkspaceId), CancellationToken.None)).Data!;
+        first.Items.Should().HaveCount(ListApiTokensQuery.DefaultLimit);
+        first.Items.First().Name.Should().Be("Token 50");
+        first.NextCursor.Should().NotBeNull();
+
+        var second = (await sut.Handle(new ListApiTokensQuery(TestWorkspaceId, first.NextCursor), CancellationToken.None)).Data!;
+        second.Items.Should().ContainSingle().Which.Name.Should().Be("Token 0");
+        second.NextCursor.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task List_CapsTheLimitAtTheMaximum_AndRejectsOutOfRangeLimits()
+    {
+        var tokens = Enumerable.Range(0, 3).Select(i =>
+        {
+            var token = CreateToken(name: $"Token {i}", tokenHash: $"hash:{i}", createdAt: TestNow.AddMinutes(i));
+            token.GetType().GetProperty(nameof(ApiToken.Id))!.SetValue(token, Guid.CreateVersion7());
+            return token;
+        }).ToArray();
+        SetupApiTokens(tokens);
+
+        var page = (await new ListApiTokensQueryHandler(IdentityContextMock.Object)
+            .Handle(new ListApiTokensQuery(TestWorkspaceId, null, 2), CancellationToken.None)).Data!;
+        page.Items.Should().HaveCount(2);
+        page.NextCursor.Should().NotBeNull();
+
+        var validator = new ListApiTokensQueryValidator();
+        validator.Validate(new ListApiTokensQuery(TestWorkspaceId, null, ListApiTokensQuery.MaxLimit)).IsValid.Should().BeTrue();
+        validator.Validate(new ListApiTokensQuery(TestWorkspaceId, null, ListApiTokensQuery.MaxLimit + 1)).IsValid.Should().BeFalse();
+        validator.Validate(new ListApiTokensQuery(TestWorkspaceId, null, 0)).IsValid.Should().BeFalse();
+        validator.Validate(new ListApiTokensQuery(TestWorkspaceId, "not-a-cursor", null)).IsValid.Should().BeFalse();
     }
 }

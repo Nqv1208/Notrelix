@@ -1,6 +1,6 @@
 # Hướng C · Di động (đợt C1) — quy ước chung
 
-Read together with `review-decisions.md` (world facts, product rules, editing rules — all still apply).
+Read together with `decisions.md` (world facts, product rules, editing rules — all still apply).
 
 ## Principles (DESIGN.md §40.3, §41, §47, §75.10)
 

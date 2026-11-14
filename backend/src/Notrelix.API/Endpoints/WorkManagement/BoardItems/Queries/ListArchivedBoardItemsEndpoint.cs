@@ -8,7 +8,7 @@ public static class ListArchivedBoardItemsEndpoint
     {
         group.MapResourceGet("/archived", HandleAsync)
             .WithName("WorkManagement.BoardItems.Archived")
-            .Produces<List<ArchivedBoardItemEntryDto>>(StatusCodes.Status200OK, "application/json")
+            .Produces<ArchivedBoardItemPageDto>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("List the archived items of a board");
         return group;
@@ -17,10 +17,12 @@ public static class ListArchivedBoardItemsEndpoint
     private static async Task<IResult> HandleAsync(
         Guid boardId,
         [FromQuery] string? q,
+        [FromQuery] string? cursor,
+        [FromQuery] int? limit,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new ListArchivedBoardItemsQuery(boardId, q), cancellationToken);
+        var result = await sender.Send(new ListArchivedBoardItemsQuery(boardId, q, cursor, limit), cancellationToken);
         return Results.Ok(result);
     }
 }

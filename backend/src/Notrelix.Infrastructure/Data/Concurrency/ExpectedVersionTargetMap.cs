@@ -1,3 +1,28 @@
+using Notrelix.Application.Features.Chat.Channels.Commands.ArchiveChannel;
+using Notrelix.Application.Features.Chat.Channels.Commands.DeleteChannel;
+using Notrelix.Application.Features.Chat.Channels.Commands.LinkChannel;
+using Notrelix.Application.Features.Chat.Channels.Commands.UnlinkChannel;
+using Notrelix.Application.Features.Chat.Channels.Commands.UpdateChannel;
+using Notrelix.Application.Features.Chat.ChannelGroups.Commands.DeleteChannelGroup;
+using Notrelix.Application.Features.Chat.ChannelGroups.Commands.UpdateChannelGroup;
+using Notrelix.Application.Features.Chat.Messages.Commands.DeleteMessage;
+using Notrelix.Application.Features.Chat.Messages.Commands.EditMessage;
+using Notrelix.Application.Features.Chat.Messages.Commands.ModerateDeleteMessage;
+using Notrelix.Application.Features.Chat.Permissions.Commands.ClearChannelPermissions;
+using Notrelix.Application.Features.Chat.Permissions.Commands.SetChannelPermissions;
+using Notrelix.Application.Features.Chat.Retention.Commands.SetRetentionPolicy;
+using Notrelix.Application.Features.Accounts.Accounts.Commands.RenameAccount;
+using Notrelix.Application.Features.Analytics.Dashboards.Commands.ArchiveDashboard;
+using Notrelix.Application.Features.Analytics.Dashboards.Commands.DeleteDashboard;
+using Notrelix.Application.Features.Analytics.Dashboards.Commands.MoveDashboardWidget;
+using Notrelix.Application.Features.Analytics.Dashboards.Commands.RemoveDashboardWidget;
+using Notrelix.Application.Features.Analytics.Dashboards.Commands.RestoreDashboard;
+using Notrelix.Application.Features.Analytics.Dashboards.Commands.RenameDashboard;
+using Notrelix.Domain.Analytics.Dashboards;
+using Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteComment;
+using Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment;
+using Notrelix.Domain.Accounts.Accounts;
+using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.AddFieldOption;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.MoveFieldOption;
@@ -85,7 +110,9 @@ using Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFil
 using Notrelix.Application.Features.WorkManagement.Views.Commands.UpdateSavedFilterVisibility;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Application.Features.Integrations.Connections.Commands.RegenerateWebhookSecret;
 using Notrelix.Application.Features.Workspaces.Settings.Commands.UpdateWorkspaceSettings;
+using Notrelix.Domain.Integrations.Connections;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.DeleteWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWorkspace;
@@ -184,6 +211,11 @@ public sealed class ExpectedVersionTargetMap
     public IReadOnlyCollection<KeyValuePair<Type, TargetDefinition>> Entries => [.. _targets];
 
     private const string ApprovalRequestKind = "work-management.approval-request";
+    private const string CommentKind = "collaboration.comment";
+    private const string ChatChannelKind = "chat.channel";
+    private const string ChatChannelGroupKind = "chat.channel-group";
+    private const string ChatMessageKind = "chat.message";
+    private const string ChatRetentionKind = "chat.retention";
     private const string BoardKind = "work-management.board";
     private const string BoardFieldKind = "work-management.board-field";
     private const string LabelKind = "work-management.label";
@@ -204,11 +236,14 @@ public sealed class ExpectedVersionTargetMap
             && checklist.DomainEvents.OfType<ChecklistItemRemovedDomainEvent>().Any(removed => removed.ItemId == itemId));
     private const string FormKind = "work-management.form";
     private const string SavedFilterKind = "work-management.saved-filter";
+    private const string AccountKind = "accounts.account";
     private const string WorkspaceKind = "workspaces.workspace";
+    private const string IntegrationConnectionKind = "integrations.connection";
     private const string SpaceKind = "workspaces.space";
     private const string TeamKind = "workspaces.team";
     private const string WorkspaceMemberKind = "workspaces.workspace-member";
     private const string WorkspaceInvitationKind = "workspaces.workspace-invitation";
+    private const string DashboardKind = "analytics.dashboard";
 
     // The member write loads exactly one WorkspaceMember: another member is addressed by user id,
     // the caller's own by its Workspace id (the caller's user id is not part of the request).
@@ -306,6 +341,14 @@ public sealed class ExpectedVersionTargetMap
         [typeof(UpdateSavedFilterVisibilityCommand)] = new(SavedFilterKind, typeof(SavedFilter)),
         [typeof(UpdateSavedFilterGroupCommand)] = new(SavedFilterKind, typeof(SavedFilter)),
 
+        // Analytics — dashboard lifecycle (UC-ANA-M04, M05): the Dashboard aggregate is the concurrency authority
+        [typeof(RenameDashboardCommand)] = new(DashboardKind, typeof(Dashboard)),
+        [typeof(ArchiveDashboardCommand)] = new(DashboardKind, typeof(Dashboard)),
+        [typeof(RestoreDashboardCommand)] = new(DashboardKind, typeof(Dashboard)),
+        [typeof(DeleteDashboardCommand)] = new(DashboardKind, typeof(Dashboard)),
+        [typeof(MoveDashboardWidgetCommand)] = new(DashboardKind, typeof(Dashboard)),
+        [typeof(RemoveDashboardWidgetCommand)] = new(DashboardKind, typeof(Dashboard)),
+
         // Workspaces
         [typeof(ArchiveWorkspaceCommand)] = new(WorkspaceKind, typeof(Workspace)),
         [typeof(UnarchiveWorkspaceCommand)] = new(WorkspaceKind, typeof(Workspace)),
@@ -314,12 +357,38 @@ public sealed class ExpectedVersionTargetMap
         [typeof(DeleteWorkspaceCommand)] = new(WorkspaceKind, typeof(Workspace)),
         [typeof(UpdateWorkspaceProfileCommand)] = new(WorkspaceKind, typeof(Workspace)),
         [typeof(UpdateWorkspaceSettingsCommand)] = new(WorkspaceKind, typeof(Workspace)),
+        // Integrations — regenerating a webhook secret is protected by the connection's version
+        [typeof(RegenerateWebhookSecretCommand)] = new(IntegrationConnectionKind, typeof(IntegrationConnection)),
+
+        // Collaboration — comment edit and delete quote the comment version the reader saw (UC-COL-A05, A06, C01)
+        [typeof(UpdateCommentCommand)] = new(CommentKind, typeof(Comment)),
+        [typeof(DeleteCommentCommand)] = new(CommentKind, typeof(Comment)),
+
+        // Chat — channel and sidebar group edits quote the version the client read (UC-CHT-A02, A03, A08)
+        [typeof(UpdateChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
+        [typeof(ArchiveChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
+        [typeof(DeleteChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
+        [typeof(UpdateChannelGroupCommand)] = new(ChatChannelGroupKind, typeof(Notrelix.Domain.Chat.Spaces.ChannelGroup)),
+
+        // Chat — message edit and delete quote the message version the client read (UC-CHT-B04, B05)
+        [typeof(EditMessageCommand)] = new(ChatMessageKind, typeof(Notrelix.Domain.Chat.Messages.Message)),
+        [typeof(DeleteMessageCommand)] = new(ChatMessageKind, typeof(Notrelix.Domain.Chat.Messages.Message)),
+        [typeof(ModerateDeleteMessageCommand)] = new(ChatMessageKind, typeof(Notrelix.Domain.Chat.Messages.Message)),
+        [typeof(SetChannelPermissionsCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
+        [typeof(ClearChannelPermissionsCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
+        [typeof(LinkChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
+        [typeof(UnlinkChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
+        [typeof(SetRetentionPolicyCommand)] = new(ChatRetentionKind, typeof(Notrelix.Domain.Chat.Retention.RetentionPolicy)),
+        [typeof(DeleteChannelGroupCommand)] = new(ChatChannelGroupKind, typeof(Notrelix.Domain.Chat.Spaces.ChannelGroup)),
 
         // Documents — Space placement of a root page (docs/product/workspaces.md §79)
         [typeof(MovePageToSpaceCommand)] = new("documents.page", typeof(Page)),
         // Documents — page rename and move under another parent: the page version the editor read.
         [typeof(UpdatePageCommand)] = new("documents.page", typeof(Page)),
         [typeof(MovePageCommand)] = new("documents.page", typeof(Page)),
+
+        // Accounts — Account rename quotes the Account version the settings screen read (UC-ACC-C01)
+        [typeof(RenameAccountCommand)] = new(AccountKind, typeof(Account)),
 
         // Workspaces — Space hierarchy and membership (WSP-021, WSP-024)
         [typeof(MoveSpaceCommand)] = new(SpaceKind, typeof(Space)),

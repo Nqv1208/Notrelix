@@ -5,6 +5,8 @@ import { en, vi as viCopy } from "../board-settings.copy";
 import {
   formulaNodeCount,
   formulaSettings,
+  previewDetail,
+  refusalMessage,
   rollupSettings,
 } from "../board-settings-computed-dialog";
 import type {
@@ -147,6 +149,74 @@ describe("the Formula dialog", () => {
     ).toBe("[Vòng] + 1");
   });
 
+  it("names the loop when the server refuses a cycle with its fields", async () => {
+    const actions = spyActions();
+    actions.createField!.mockResolvedValueOnce({
+      ok: false,
+      reason: "invalid",
+      code: "WorkManagement_Field_ComputedFieldCycle",
+      detail: { cycle: ["Tổng giờ", "Tỷ lệ", "Tổng giờ"] },
+    });
+    renderPage(actions, en);
+    await openDialog(en, en.picker.names.formula);
+    fireEvent.change(screen.getByLabelText(en.computedDialog.name), {
+      target: { value: "Tổng giờ" },
+    });
+    fireEvent.change(screen.getByLabelText(en.computedDialog.expression), {
+      target: { value: "[Tỷ lệ] + 1" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: en.computedDialog.save }),
+    );
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "“Tổng giờ” → “Tỷ lệ” → “Tổng giờ”",
+    );
+  });
+
+  it("names the unknown reference and the syntax position of a refused formula", async () => {
+    const actions = spyActions();
+    actions.createField!.mockResolvedValueOnce({
+      ok: false,
+      reason: "invalid",
+      code: "WorkManagement_Field_FormulaUnknownField",
+      detail: { field: "Chi phí" },
+    });
+    renderPage(actions, en);
+    await openDialog(en, en.picker.names.formula);
+    fireEvent.change(screen.getByLabelText(en.computedDialog.name), {
+      target: { value: "Gấp đôi" },
+    });
+    fireEvent.change(screen.getByLabelText(en.computedDialog.expression), {
+      target: { value: "[Chi phí] * 2" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: en.computedDialog.save }),
+    );
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "[Chi phí]",
+    );
+  });
+
+  it("says where a syntax error breaks and what it expected", () => {
+    expect(
+      refusalMessage(en.computedDialog, {
+        ok: false,
+        reason: "invalid",
+        code: "WorkManagement_FieldSettings_FormulaSyntaxInvalid",
+        detail: { position: 16, missing: ")" },
+      }),
+    ).toBe(
+      'The formula is not written correctly: ")" is missing at position 16.',
+    );
+    expect(
+      refusalMessage(en.computedDialog, {
+        ok: false,
+        reason: "invalid",
+        code: "WorkManagement_Field_ComputedFieldCycle",
+      }),
+    ).toBeNull();
+  });
+
   it("refuses to save over 200 elements and an empty formula", () => {
     const actions = spyActions();
     renderPage(actions);
@@ -217,5 +287,94 @@ describe("the Rollup dialog", () => {
     ).toEqual({
       function: "count",
     });
+  });
+});
+
+describe("the preview row of a draft", () => {
+  const draft = (
+    over: Partial<Parameters<typeof previewDetail>[2]>,
+  ): Parameters<typeof previewDetail>[2] => ({
+    state: "ok",
+    value: "7",
+    errorCode: null,
+    inputs: [],
+    subItemCount: null,
+    ...over,
+  });
+
+  it("names the fields a formula read and what a rollup summed", () => {
+    const t = viCopy.computedDialog;
+    expect(
+      previewDetail(
+        t,
+        "formula",
+        draft({ inputs: [{ name: "Điểm", value: "13" }] }),
+      ),
+    ).toBe("Điểm = 13");
+    expect(
+      previewDetail(
+        t,
+        "rollup",
+        draft({
+          subItemCount: 2,
+          inputs: [
+            { name: "Điểm", value: "3" },
+            { name: "Điểm", value: "4" },
+          ],
+        }),
+      ),
+    ).toBe("2 việc con: 3 và 4");
+    expect(
+      previewDetail(
+        t,
+        "rollup",
+        draft({
+          subItemCount: 7,
+          inputs: ["1", "2", "3", "4", "5"].map((value) => ({
+            name: "Điểm",
+            value,
+          })),
+        }),
+      ),
+    ).toBe("7 việc con: 1, 2, 3, 4, 5, …");
+    expect(previewDetail(t, "rollup", draft({ subItemCount: 0 }))).toBe(
+      "chưa có việc con",
+    );
+    expect(previewDetail(t, "rollup", draft({ subItemCount: 2 }))).toBeNull();
+    expect(
+      previewDetail(t, "formula", draft({ state: "error", value: null })),
+    ).toBeNull();
+  });
+
+  it("shows a dash and the note for an item without sub-items", async () => {
+    const actions = spyActions();
+    actions.previewFormula.mockResolvedValue(
+      draft({ state: "empty", value: null, subItemCount: 0 }),
+    );
+    renderPage(actions, viCopy as typeof en, {
+      ...erpBoardSettings(),
+      previewItem: { id: "i1", key: "ERP-153" },
+    });
+    const dialog = await openDialog(viCopy as typeof en, "Tổng hợp");
+    fireEvent.click(
+      await screen.findByRole("radio", {
+        name: viCopy.computedDialog.functionNames.sum,
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        dialog.querySelector("[data-preview-state]")?.textContent,
+      ).toContain("Xem thử với ERP-153 (chưa có việc con):"),
+    );
+    expect(dialog.querySelector("[data-preview-state]")?.textContent).toContain(
+      "—",
+    );
+    expect(
+      screen.getByText(viCopy.computedDialog.previewNoSubItemsNote),
+    ).toBeTruthy();
+    expect(actions.previewFormula).toHaveBeenCalledWith(
+      "i1",
+      expect.objectContaining({ rollupFunction: "sum" }),
+    );
   });
 });

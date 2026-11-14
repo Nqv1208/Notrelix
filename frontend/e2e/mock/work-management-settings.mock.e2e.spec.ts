@@ -243,6 +243,8 @@ test.describe("views and the item sheet", () => {
     const sheet = page.getByRole("dialog");
     await sheet.getByRole("button", { name: "Cần làm", exact: true }).click();
     await page.getByRole("option", { name: "Đang làm" }).click();
+    // The picker folds away before the sheet is closed: one dialog is left, one Close button.
+    await expect(page.getByRole("dialog")).toHaveCount(1);
     await sheet.getByRole("button", { name: "Close", exact: true }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
 

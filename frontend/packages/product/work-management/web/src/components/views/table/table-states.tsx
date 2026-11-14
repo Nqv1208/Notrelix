@@ -1,8 +1,16 @@
-import { Filter } from "lucide-react";
+import { Filter, Plus, SquareCheckBig, TriangleAlert } from "lucide-react";
 import { Button, cn } from "@notrelix/ui-web";
 import type { MainTableCopy } from "./main-table.copy";
 import { fillTableCopy } from "./main-table.copy";
 import { useTableLayout } from "./table-layout";
+import { AddGroupPopover } from "../../status-option/add-group-popover";
+import {
+  BOARD_BAND_BUTTON,
+  BoardBand,
+  BoardStateBlock,
+} from "../../board-layout/board-state-block";
+import { kanbanPrimaryButtonClass } from "../kanban/kanban-chrome";
+import type { TableAddGroupProps } from "./table-add-group";
 
 /** The line under the table: counts, "Hiện việc đã xong" and the key hints. */
 export function TableFooter({
@@ -12,6 +20,7 @@ export function TableFooter({
   archived = 0,
   canShowDone,
   onShowDone,
+  tablet = false,
 }: {
   copy: MainTableCopy;
   shown: number;
@@ -21,8 +30,42 @@ export function TableFooter({
   /** Finished items are hidden: offer to show them. */
   canShowDone: boolean;
   onShowDone: () => void;
+  /** The 56 px footer inside the tablet box (`Final-T-Table`). */
+  tablet?: boolean;
 }) {
   const f = copy.footer;
+  if (tablet) {
+    return (
+      <div
+        data-slot="tablet-table-footer"
+        className="flex h-14 flex-none items-center gap-1.5 border-t border-line pr-1.5 pl-4 text-[14px] text-muted-foreground"
+      >
+        {hidden > 0 ? (
+          <span>
+            {fillTableCopy(canShowDone ? f.tabletHiddenDone : f.tabletHidden, {
+              hidden,
+            })}
+            {archived > 0
+              ? ` · ${fillTableCopy(f.archived, { count: archived })}`
+              : ""}
+          </span>
+        ) : null}
+        {canShowDone ? (
+          <button
+            type="button"
+            onClick={onShowDone}
+            className="h-11 cursor-pointer rounded-[10px] border-0 bg-transparent px-3 text-[14px] font-semibold text-state-selected-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            {f.showDone}
+          </button>
+        ) : null}
+        <span className="flex-1" />
+        <span className="pr-2.5 text-[13.5px] whitespace-nowrap text-meta-foreground">
+          {fillTableCopy(f.tabletShown, { shown })}
+        </span>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-wrap items-center gap-4 pt-2.5 pb-3.5 text-crumb text-meta-foreground">
       <span>
@@ -129,14 +172,69 @@ export function TableNoResults({
   );
 }
 
-/** The board has no group to show yet. */
-export function TableEmpty({ copy }: { copy: MainTableCopy }) {
+/** The board has no group to put an item in: a band above the grid with "Thêm nhóm" (BC-Shell NG). */
+export function TableNoGroup({
+  copy,
+  addGroup,
+}: {
+  copy: MainTableCopy;
+  addGroup?: Omit<TableAddGroupProps, "copy">;
+}) {
+  const t = copy.noGroup;
   return (
-    <TableNote>
-      <b className="text-[0.9375rem] font-semibold text-foreground">
-        {copy.empty.title}
-      </b>
-      <span>{copy.empty.description}</span>
-    </TableNote>
+    <div className="px-4 pb-3 sm:px-6" data-slot="table-no-group">
+      <BoardBand
+        tone="warning"
+        icon={<TriangleAlert />}
+        title={t.title}
+        description={t.description}
+        action={
+          addGroup?.boardGroup ? (
+            <AddGroupPopover
+              copy={addGroup.formCopy}
+              label={t.add}
+              existingTitles={addGroup.boardGroup.existingTitles}
+              pending={addGroup.boardGroup.pending}
+              onSubmit={addGroup.boardGroup.onSubmit}
+              triggerClassName={BOARD_BAND_BUTTON}
+            />
+          ) : undefined
+        }
+      />
+    </div>
+  );
+}
+
+/** The board holds no item at all: the note and, for someone who may add, "Thêm công việc" (BC-Shell E, Ev). */
+export function TableBoardEmpty({
+  copy,
+  onAdd,
+}: {
+  copy: MainTableCopy;
+  /** Absent for a viewer: the note says they can only look. */
+  onAdd?: () => void;
+}) {
+  const t = copy.empty;
+  return (
+    <BoardStateBlock
+      icon={<SquareCheckBig />}
+      title={t.title}
+      description={onAdd ? t.description : t.viewer}
+      action={
+        onAdd ? (
+          <Button
+            size="sm"
+            className={cn(
+              kanbanPrimaryButtonClass,
+              "max-sm:h-11 max-sm:px-3.5 max-sm:text-[14px]",
+            )}
+            onClick={onAdd}
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            {t.add}
+          </Button>
+        ) : undefined
+      }
+    />
   );
 }

@@ -46,6 +46,8 @@ function schemaToTs(schema, indent = 0) {
       return "number";
     case "boolean":
       return "boolean";
+    case "null":
+      return "null";
     case "array":
       return `ReadonlyArray<${schemaToTs(schema.items, indent)}>`;
     case "object":
@@ -97,6 +99,16 @@ try {
     unionMembers.push(
       `  | { eventType: ${JSON.stringify(eventType)}; payload: ${payloadName} }`,
     );
+  }
+
+  // Ephemeral protocol frames (typing, presence) are not events: they get their own interfaces.
+  const schemas = spec.components?.schemas ?? {};
+  for (const schemaKey of stableKeys(schemas)) {
+    if (schemas[schemaKey]["x-frame"] !== true) continue;
+    lines.push(
+      `export interface ${sanitizeTypeName(schemaKey)} ${schemaToTs(schemas[schemaKey], 0)}`,
+    );
+    lines.push("");
   }
 
   lines.push("export type GeneratedRealtimeMessage =");

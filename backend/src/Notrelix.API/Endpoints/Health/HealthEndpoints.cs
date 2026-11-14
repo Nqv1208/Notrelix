@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Notrelix.Infrastructure.Options;
 
 namespace Notrelix.API.Endpoints.Health;
 
@@ -21,7 +22,7 @@ public static class HealthEndpoints
 
         group.MapInternalGet("/ready", Ready)
             .WithName("ReadinessProbe")
-            .WithSummary("Readiness probe — checks database connectivity");
+            .WithSummary("Readiness probe — checks the dependencies of the roles this process runs (database, Redis, and for the worker the outbox and broker)");
 
         return app;
     }
@@ -50,12 +51,19 @@ public static class HealthEndpoints
         return Results.Ok(new { status = "alive", timestamp = DateTime.UtcNow });
     }
 
-    private static async Task<IResult> Ready([FromServices] HealthCheckService healthCheck)
+    private static async Task<IResult> Ready(
+        [FromServices] HealthCheckService healthCheck,
+        [FromServices] RuntimeRoles roles)
     {
+        // Only the checks of the roles this process runs: an api process is not ready because the worker's outbox is behind.
+        // A ready check with no role tag is shared by every role; a role-tagged check runs only when its role is active.
+        var activeRoleTags = RuntimeHealthTags.ForRoles(roles).ToHashSet(StringComparer.Ordinal);
+        var allRoleTags = RuntimeHealthTags.ForRoles(RuntimeRoles.All).ToHashSet(StringComparer.Ordinal);
         try
         {
             var report = await healthCheck.CheckHealthAsync(
-                pred => pred.Tags.Contains("ready"));
+                pred => pred.Tags.Contains(RuntimeHealthTags.Ready)
+                    && (!pred.Tags.Any(allRoleTags.Contains) || pred.Tags.Any(activeRoleTags.Contains)));
             return Results.Json(
                 new { status = report.Status.ToString(), timestamp = DateTime.UtcNow },
                 statusCode: StatusFor(report.Status));

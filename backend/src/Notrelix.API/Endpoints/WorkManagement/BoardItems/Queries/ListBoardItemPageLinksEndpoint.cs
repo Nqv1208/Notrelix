@@ -11,7 +11,8 @@ public static class ListBoardItemPageLinksEndpoint
             .WithName("WorkManagement.BoardItems.ListLinkedPages")
             .WithTags("WorkManagement.BoardItems")
             .WithSummary("List the Documents pages linked to a board item that the caller may open")
-            .WithDescription("Pages the caller cannot see are not named; they are counted in hiddenCount.");
+            .WithDescription("Pages the caller cannot see are not named; they are counted in hiddenCount.")
+            .Produces<BoardItemPageLinkListDto>(StatusCodes.Status200OK, "application/json");
         return group;
     }
 

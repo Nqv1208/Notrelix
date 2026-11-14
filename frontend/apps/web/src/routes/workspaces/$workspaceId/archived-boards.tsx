@@ -10,22 +10,33 @@ import {
   type RetiredBoardsTab,
 } from "@notrelix/work-management-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
+import { useSpaceHooks } from "@/shell/workspace/use-workspace-spaces";
 
 /**
  * The archived and deleted boards of the workspace. A Manager unarchives an archived board or
- * restores a deleted one inside its 30-day window; each write sends the board version the list
+ * restores a deleted one inside its 30-day window (the deleted list can be narrowed to one Space with
+ * `?spaceId=`); each write sends the board version the list
  * showed, so a stale one changes nothing and the lists are read again.
  */
 export function ArchivedBoardsPage({
   tab: initialTab,
+  spaceId: initialSpaceId,
 }: {
   tab?: RetiredBoardsTab;
+  /** The deleted list narrowed to one Space (a Space manager arriving from it). */
+  spaceId?: string;
 }) {
   const { workspaceId } = useWorkspaceContext();
   const copy = useRetiredBoardsCopy();
   const formatters = useFormatters();
   const navigate = useNavigate();
-  const retired = useRetiredBoards(workspaceId);
+  const [spaceId, setSpaceId] = useState<string | null>(initialSpaceId ?? null);
+  const retired = useRetiredBoards(workspaceId, spaceId);
+  const spaceTree = useSpaceHooks().useSpaceTree(workspaceId);
+  // Named only when the person can see the Space; otherwise the scope stays unnamed.
+  const spaceName = spaceId
+    ? ((spaceTree.data ?? []).find((node) => node.id === spaceId)?.name ?? null)
+    : null;
   const [tab, setTab] = useState<RetiredBoardsTab>(initialTab ?? "archived");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [failed, setFailed] = useState<{
@@ -72,6 +83,23 @@ export function ArchivedBoardsPage({
         setTab(next);
         setFailed(null);
       }}
+      spaceScope={
+        spaceId
+          ? {
+              name: spaceName,
+              onShowAll: () => {
+                setSpaceId(null);
+                setFailed(null);
+                void navigate({
+                  to: "/workspaces/$workspaceId/archived-boards",
+                  params: { workspaceId },
+                  search: { tab: "deleted" },
+                  replace: true,
+                });
+              },
+            }
+          : null
+      }
       rows={rows}
       loading={retired.isLoading}
       error={retired.isError}

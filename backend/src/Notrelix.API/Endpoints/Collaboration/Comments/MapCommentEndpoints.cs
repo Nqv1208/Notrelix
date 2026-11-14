@@ -23,6 +23,7 @@ public static class MapCommentEndpoints
             .WithOpenApi();
 
         pageGroup.MapGetPageComments();
+        pageGroup.MapGetPageCommentsPage();
         pageGroup.MapCreatePageComment();
 
         var group = app

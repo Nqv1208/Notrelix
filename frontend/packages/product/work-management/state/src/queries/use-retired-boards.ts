@@ -56,10 +56,11 @@ export function useBoardLifecycleImpact(
 
 /**
  * The boards that left the working set: archived ones the person can see (a Manager unarchives
- * them) and deleted ones they can restore inside the 30-day window. Each write sends the board
+ * them) and deleted ones they can restore inside the 30-day window (a workspace Owner, a Space manager,
+ * the deleter, a board Owner or Admin), optionally only those of one Space. Each write sends the board
  * version the list showed; a stale one changes nothing and the lists are read again.
  */
-export function useRetiredBoards(workspaceId: string) {
+export function useRetiredBoards(workspaceId: string, spaceId?: string | null) {
   const { boardSettings } = useWorkManagementServices();
   const queryClient = useQueryClient();
   const archived = useQuery({
@@ -67,9 +68,10 @@ export function useRetiredBoards(workspaceId: string) {
     queryFn: () => boardSettings.listArchivedBoards(workspaceId),
     enabled: Boolean(workspaceId),
   });
+  // A Space-narrowed list shares the "deleted" key prefix, so a refresh reads it again too.
   const deleted = useQuery({
-    queryKey: retiredKey(workspaceId, "deleted"),
-    queryFn: () => boardSettings.listDeletedBoards(workspaceId),
+    queryKey: [...retiredKey(workspaceId, "deleted"), spaceId ?? "all"],
+    queryFn: () => boardSettings.listDeletedBoards(workspaceId, spaceId),
     enabled: Boolean(workspaceId),
   });
 

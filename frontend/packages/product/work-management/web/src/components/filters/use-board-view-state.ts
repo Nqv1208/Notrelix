@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import {
   kanbanFilterChoices,
+  useBoardTimeZoneSource,
   useFullBoard,
   type UseBoardKanbanView,
 } from "@notrelix/work-management-state";
@@ -17,6 +18,9 @@ export function useBoardViewState(
   options: Omit<UseViewStateOptions, "fieldDefinitions">,
 ) {
   const copy = useFiltersCopy();
+  const { timeZone, isDefault: timeZoneIsDefault } = useBoardTimeZoneSource(
+    options.workspaceId,
+  );
   const { board, groups } = useFullBoard(options.boardId, options.workspaceId);
   const filterChoices = useMemo(
     () => (board ? kanbanFilterChoices(board, groups) : undefined),
@@ -37,8 +41,9 @@ export function useBoardViewState(
         overdue: copy.filter.presets.overdue,
       },
       bucketLabel: (key, bucket) => bucketLabel(copy, key, bucket),
+      ...(timeZone ? { timeZone } : {}),
     }),
-    [view.applied, copy],
+    [view.applied, copy, timeZone],
   );
-  return { copy, view, kanbanView };
+  return { copy, view, kanbanView, timeZone, timeZoneIsDefault };
 }

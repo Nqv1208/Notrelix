@@ -1,5 +1,12 @@
 import { useId, useState } from "react";
-import { Check, ChevronDown, Loader2, MoreHorizontal, X } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Link as LinkIcon,
+  Loader2,
+  MoreHorizontal,
+  X,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -185,7 +192,7 @@ function GroupPicker() {
         </PopoverTrigger>
       }
     >
-      <div className="relative mb-2 flex h-8 items-center justify-center">
+      <div className="relative mb-2 flex h-11 items-center justify-center md:h-8">
         <b className="text-[14px] leading-[1.45] font-[650]">{picker.title}</b>
         <IconBtn
           small
@@ -224,12 +231,12 @@ function GroupPicker() {
                   </span>
                 ) : null}
               </span>
-              {count !== undefined ? (
+              {selected ? (
+                <Check aria-hidden="true" className="ml-auto size-4" />
+              ) : count !== undefined ? (
                 <small className="ml-auto text-[12.5px] leading-[1.45] font-normal text-meta-foreground">
                   {limit !== undefined ? `${count} / ${limit}` : count}
                 </small>
-              ) : selected ? (
-                <Check aria-hidden="true" className="ml-auto size-4" />
               ) : null}
             </button>
           );
@@ -269,8 +276,17 @@ function GroupPicker() {
   );
 }
 
-/** The header bar: column picker, key, the cover slot, "⋯" and close. */
-export function PopupHeader({ onClose }: { onClose: () => void }) {
+/**
+ * The header bar: column picker, key, the cover slot, "⋯" and close. In the tablet split pane (`pane`) it
+ * also carries a copy-link button (`Final-T-Table` chia-doi); the bar is 56 px in both.
+ */
+export function PopupHeader({
+  onClose,
+  pane = false,
+}: {
+  onClose: () => void;
+  pane?: boolean;
+}) {
   const {
     card,
     board,
@@ -306,6 +322,15 @@ export function PopupHeader({ onClose }: { onClose: () => void }) {
       ) : null}
       <span className="flex-1" />
       {slots.cover}
+      {pane && mode === "view" && callbacks.onCopyLink ? (
+        <IconBtn
+          aria-label={actionsCopy.copyLink}
+          title={actionsCopy.copyLink}
+          onClick={() => callbacks.onCopyLink?.(card.id)}
+        >
+          <LinkIcon aria-hidden="true" className="size-4" />
+        </IconBtn>
+      ) : null}
       {mode === "view" ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -321,6 +346,7 @@ export function PopupHeader({ onClose }: { onClose: () => void }) {
                 itemKey: card.itemKey,
                 archived: card.isArchived,
                 completed: Boolean(card.completedAt),
+                following: data.following,
               }}
               can={{
                 edit: capabilities.canEditFields && !frozen,
@@ -331,6 +357,7 @@ export function PopupHeader({ onClose }: { onClose: () => void }) {
               on={{
                 copyLink: callbacks.onCopyLink,
                 remind: frozen ? undefined : callbacks.onRemind,
+                follow: (_, next) => callbacks.onToggleWatch(next),
                 complete: callbacks.onComplete,
                 reopen: callbacks.onReopen,
                 duplicate: callbacks.onDuplicate,

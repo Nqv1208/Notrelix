@@ -12,6 +12,9 @@ public static class FieldValueValidator
         "yyyy-MM-ddTHH:mm:ss.FFFFFFFK",
     ];
 
+    /// <summary>The most people one multiple Person value names (the same bound the work reports use for assignees).</summary>
+    public const int MaxPeople = 50;
+
     public static void Validate(FieldValue value, FieldType type, FieldSettings settings)
     {
         if (value == null)
@@ -100,6 +103,37 @@ public static class FieldValueValidator
                 case FieldType.Checkbox:
                     if (kind != JsonValueKind.True && kind != JsonValueKind.False)
                         throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidBooleanValue, "Value for field type Checkbox must be a boolean.");
+                    break;
+
+                case FieldType.Person when settingsDoc != null
+                    && settingsDoc.RootElement.TryGetProperty("multiple", out var multipleToken) && multipleToken.ValueKind == JsonValueKind.True:
+                    // A multiple People field holds a list of principal ids; repeats collapse in BoardItem (same set = no-op).
+                    if (kind != JsonValueKind.Array)
+                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, "Value for a multiple Person field must be an array of user IDs.");
+                    if (element.GetArrayLength() > MaxPeople)
+                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, $"A Person field holds at most {MaxPeople} people.");
+                    foreach (var person in element.EnumerateArray())
+                    {
+                        if (person.ValueKind != JsonValueKind.String || !Guid.TryParse(person.GetString(), out var personId) || personId == Guid.Empty)
+                            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidSelectValue, "Person items must be valid user GUIDs.");
+                    }
+                    break;
+
+                case FieldType.Relation:
+                    // A set of target item ids. Whether each id is a live item of the target board is the
+                    // Application's check (the Domain fetches nothing); the shape, the cap and the uniqueness are here.
+                    if (kind != JsonValueKind.Array)
+                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidRelationValue, "Value for a Relation field must be an array of item IDs.");
+                    if (element.GetArrayLength() > RelationFieldSettings.MaxLinks)
+                        throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidRelationValue, $"A Relation field links at most {RelationFieldSettings.MaxLinks} items.");
+                    var linked = new HashSet<Guid>();
+                    foreach (var link in element.EnumerateArray())
+                    {
+                        if (link.ValueKind != JsonValueKind.String || !Guid.TryParse(link.GetString(), out var linkId) || linkId == Guid.Empty)
+                            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidRelationValue, "Relation items must be valid item IDs.");
+                        if (!linked.Add(linkId))
+                            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_InvalidRelationValue, "Relation value contains a duplicate item ID.");
+                    }
                     break;
 
                 case FieldType.Status:

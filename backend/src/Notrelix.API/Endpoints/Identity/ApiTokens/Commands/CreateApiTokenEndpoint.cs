@@ -11,7 +11,7 @@ public static class CreateApiTokenEndpoint
         group.MapWorkspacePost("/", HandleAsync)
             .WithName("Identity.ApiTokens.Create")
             .WithSummary("Issue a new API token for a workspace")
-            .WithDescription("Requires a single-use step-up proof for the IssueApiToken purpose. The raw secret is returned exactly once in this response.")
+            .WithDescription("Requires a single-use step-up proof for the IssueApiToken purpose. The token needs an expiry in the future, at most 365 days away (identity.api-tokens.lifetime-exceeded otherwise). The raw secret is returned exactly once in this response; the issue is recorded in the audit log.")
             .Produces<CreatedApiTokenDto>(StatusCodes.Status201Created, "application/json")
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status412PreconditionFailed);
         return group;

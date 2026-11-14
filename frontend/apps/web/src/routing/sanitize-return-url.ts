@@ -7,6 +7,10 @@ export function sanitizeInternalReturnUrl(input: string): string {
   // Must start with single slash and not double slash or javascript:
   if (!input.startsWith("/") || input.startsWith("//")) return "/";
   if (input.includes(":\\") || input.includes(":/")) return "/";
+  // Browsers read a backslash as a slash and drop tabs and line breaks inside a URL,
+  // so "/\\host" and "/\t/host" can both mean "//host".
+  // eslint-disable-next-line no-control-regex
+  if (/[\\\u0000-\u001f\u007f]/.test(input)) return "/";
   return input;
 }
 

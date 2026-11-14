@@ -188,6 +188,22 @@ public class OAuthCallbackMfaTests : IClassFixture<OAuthCallbackHost>
     }
 
     [Fact]
+    public async Task Callback_WithAStateAlreadyUsed_RedirectsWithStateInvalid_AndSetsNoCookie()
+    {
+        // A replayed callback reaches the handler as a state-invalid refusal (the state is consumed
+        // once, by the handler, before any provider error is read). The endpoint must send that code
+        // to sign-in and set no session or challenge cookie.
+        using var client = CreateClient(Result<AuthResult>.Failure(new ApplicationError(
+            "identity.oauth.state-invalid", "The sign-in state is unknown or already used.", ApplicationErrorType.Authentication)));
+
+        var response = await client.GetAsync(CallbackPath);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Location!.OriginalString.Should().Contain("error=identity.oauth.state-invalid");
+        SetCookies(response).Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Callback_ForUserWithoutMfa_SetsSessionCookies_AndRedirectsToTheSuccessUrl()
     {
         using var client = CreateClient(SessionOutcome());

@@ -52,6 +52,12 @@ public interface ISpaceStore
 
     /// <summary>Member entries of a Space with the Team name when the subject is a Team.</summary>
     Task<IReadOnlyList<SpaceMemberRow>> ListMembersAsync(Guid workspaceId, Guid spaceId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// One page of the member entries of a Space, ascending by subject id, at most <paramref name="take"/> rows after
+    /// <paramref name="afterSubjectId"/> (null starts at the first). The Team name is set for Team subjects.
+    /// </summary>
+    Task<IReadOnlyList<SpaceMemberRow>> ListMemberPageAsync(Guid workspaceId, Guid spaceId, Guid? afterSubjectId, int take, CancellationToken cancellationToken);
 }
 
 public sealed record SpaceSiblingEntry(Guid Id, string Name, FractionalIndex Position);

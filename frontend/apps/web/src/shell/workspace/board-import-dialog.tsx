@@ -1,24 +1,31 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, CircleAlert, FileSpreadsheet, Lock, X } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  CircleAlert,
+  Download,
+  FileSpreadsheet,
+  LoaderCircle,
+  Lock,
+  RotateCw,
+  Table2,
+  TriangleAlert,
+  Upload,
+} from "lucide-react";
 import { endpoints } from "@notrelix/contracts";
 import type { OperationResponse } from "@notrelix/contracts";
 import { useLocale } from "@notrelix/i18n";
 import { useAppRuntime } from "@notrelix/runtime-web";
+import { limitOf } from "@notrelix/work-management-state";
 import {
   fillLifecycleCopy as fill,
   pluralLifecycle,
   useBoardLifecycleCopy,
 } from "@notrelix/work-management-web";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
   Select,
   SelectContent,
   SelectItem,
@@ -26,6 +33,14 @@ import {
   SelectValue,
   cn,
 } from "@notrelix/ui-web";
+import {
+  FrameBanner,
+  FrameBody,
+  FrameBox,
+  FrameDialog,
+  FrameFooter,
+  FrameHeader,
+} from "./lifecycle-dialog-frame";
 
 type Upload = OperationResponse<"WorkManagement.Imports.Upload", 200>;
 type Preview = OperationResponse<"WorkManagement.Imports.Preview", 200>;
@@ -36,9 +51,31 @@ type ColumnMap = { column: number; target: string };
 
 const SKIP = "$skip";
 const BUTTON =
-  "inline-flex h-8 items-center justify-center rounded-[7px] border px-3 text-compact font-medium outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-60 max-sm:h-11";
+  "inline-flex h-8 flex-none items-center justify-center gap-1.5 whitespace-nowrap rounded-[7px] border px-3 text-frame-small font-medium outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed max-sm:h-11 max-sm:min-w-[120px] max-sm:flex-1";
+// A button that is not a footer button keeps its own width on the phone.
+const SOLO = "max-sm:min-w-0 max-sm:flex-none";
 const GHOST = `${BUTTON} border-line-strong bg-popover text-foreground hover:bg-state-hover-strong`;
-const PRIMARY = `${BUTTON} border-primary bg-primary font-semibold text-primary-foreground hover:opacity-90`;
+const PRIMARY = `${BUTTON} border-primary bg-primary font-semibold text-primary-foreground hover:opacity-90 disabled:border-line-strong disabled:bg-state-hover-strong disabled:font-medium disabled:text-meta-foreground disabled:hover:opacity-100`;
+const LINK =
+  "inline-flex h-8 flex-none items-center justify-center whitespace-nowrap rounded-[7px] border border-transparent px-2 text-frame-small font-semibold text-info-subtle-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring max-sm:h-11";
+const CHIP =
+  "inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-[6px] px-2 text-frame-hint font-semibold";
+const CHIPS = {
+  ok: "bg-success-subtle text-success-text",
+  warn: "bg-warning-subtle text-warning-text",
+  err: "bg-danger-subtle text-danger-subtle-foreground",
+  skip: "bg-state-hover-strong text-meta-foreground",
+} as const;
+const CELL_WIDTH: Record<string, string> = {
+  Date: "92px",
+  Number: "92px",
+  Select: "100px",
+  Status: "100px",
+  Person: "minmax(0,1fr)",
+};
+const MAP_GRID =
+  "grid grid-cols-[minmax(0,1.15fr)_22px_minmax(0,1fr)_128px] gap-3 px-3.5";
+const PV_CELL = "truncate px-2.5";
 const REJECTIONS: Record<string, string> = {
   "unsupported-type": "reject_unsupportedType",
   "too-large": "reject_tooLarge",
@@ -91,6 +128,8 @@ export function BoardImportDialog({
     code: string;
     file: string;
     rows: number;
+    columns: number;
+    size: number;
   } | null>(null);
   const [reading, setReading] = useState<{ file: string; done: number } | null>(
     null,
@@ -102,6 +141,8 @@ export function BoardImportDialog({
   const [lost, setLost] = useState(false);
   const [sending, setSending] = useState(false);
   const [denied, setDenied] = useState(false);
+  // A confirm the board is over its published item limit refused (D78.8): nothing was created, the run stays here.
+  const [limit, setLimit] = useState<{ max: number | null } | null>(null);
   const [attempt, setAttempt] = useState(() => crypto.randomUUID());
   const [dragging, setDragging] = useState(false);
 
@@ -116,6 +157,7 @@ export function BoardImportDialog({
     setLost(false);
     setSending(false);
     setDenied(false);
+    setLimit(null);
     setAttempt(crypto.randomUUID());
   };
   useEffect(() => {
@@ -135,6 +177,20 @@ export function BoardImportDialog({
       ? `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(bytes / (1024 * 1024))} MB`
       : `${Math.max(1, Math.round(bytes / 1024))} KB`;
   const numberLabel = (n: number) => new Intl.NumberFormat(locale).format(n);
+  const unmatchedNote = (rows: readonly number[] | null | undefined) =>
+    rows && rows.length > 0 ? (
+      <p
+        role="status"
+        className="m-0 rounded-[10px] border border-line px-3 py-2 text-metadata text-meta-foreground"
+      >
+        {fill(copy.peopleUnmatched, {
+          count: numberLabel(rows.length),
+          rows:
+            rows.slice(0, 8).map(numberLabel).join(", ") +
+            (rows.length > 8 ? "…" : ""),
+        })}
+      </p>
+    ) : null;
 
   // The job: polled while it waits or runs, so closing and reopening the dialog never loses it.
   const job = useQuery({
@@ -193,6 +249,8 @@ export function BoardImportDialog({
           code: result.rejection ?? "malformed",
           file: file.name,
           rows: result.rowCount ?? 0,
+          columns: result.columnCount ?? 0,
+          size: result.size ?? file.size,
         });
         setUpload(null);
         return;
@@ -216,6 +274,8 @@ export function BoardImportDialog({
               : "malformed",
         file: file.name,
         rows: 0,
+        columns: 0,
+        size: file.size,
       });
       if (code === 403 || code === 404) setDenied(true);
     } finally {
@@ -275,6 +335,7 @@ export function BoardImportDialog({
     if (!upload?.jobId || sending) return;
     setSending(true);
     setLost(false);
+    setLimit(null);
     try {
       const result = await api.api.post<Job>(
         endpoints.boards.importConfirm(boardId, upload.jobId),
@@ -285,7 +346,9 @@ export function BoardImportDialog({
       setStep(4);
     } catch (error) {
       const code = (error as { status?: number } | null)?.status;
-      if (code === 403 || code === 404) setDenied(true);
+      const named = limitOf(error);
+      if (named) setLimit({ max: named.max });
+      else if (code === 403 || code === 404) setDenied(true);
       else if (code === 400) setPreview(null);
       else setLost(true);
     } finally {
@@ -332,102 +395,186 @@ export function BoardImportDialog({
   const reasonText = (e: RowError) =>
     c[REASONS[e.code ?? ""] ?? "reason_invalidValue"] ?? "";
   const steps = [copy.stepFile, copy.stepMap, copy.stepCheck, copy.stepRun];
+  const shown = lost ? 4 : step;
   const progress = job.data;
   const total = progress?.total ?? rowCount;
-
-  const summary: ReactNode =
-    upload && step > 1 ? (
-      <div className="flex items-center gap-2.5 rounded-[10px] border border-line bg-background px-3 py-2.5">
-        <FileSpreadsheet
-          aria-hidden="true"
-          className="size-4 shrink-0 text-meta-foreground"
-        />
-        <span className="min-w-0 flex-1">
-          <b className="block truncate text-compact font-semibold">
-            {upload.fileName}
-          </b>
-          <span className="block text-metadata text-meta-foreground">
-            {fill(copy.fileMeta, {
-              rows: numberLabel(rowCount),
-              columns: upload.columnCount ?? 0,
-              size: sizeLabel(upload.size ?? 0),
-            })}
-          </span>
-        </span>
-        {step < 4 ? (
-          <button type="button" className={GHOST} onClick={reset}>
-            {copy.changeFile}
-          </button>
+  const unknownCheck = (preview?.checks ?? []).find((x) => (x.count ?? 0) > 0);
+  const firstSkipped = (upload?.columns ?? [])
+    .map((col) => col.index ?? 0)
+    .find((index) => mapped(index) === SKIP);
+  const percent = total
+    ? Math.round(((progress?.processed ?? 0) / total) * 100)
+    : 0;
+  const previewGrid = {
+    gridTemplateColumns: [
+      "64px",
+      ...mapping.map((m) =>
+        m.target === "$title"
+          ? "minmax(0,1.5fr)"
+          : (CELL_WIDTH[targets.find((t) => t.id === m.target)?.type ?? ""] ??
+            "minmax(0,1fr)"),
+      ),
+    ].join(" "),
+  };
+  const submitLabel = fill(
+    c[rowCount === 1 ? "submit_one" : "submit_other"] ?? "",
+    { count: numberLabel(rowCount) },
+  );
+  const archived = failed && progress?.failureCode === "board-archived";
+  // A board archived before the run starts is shown where the person was: the check.
+  const at = archived ? 3 : shown;
+  const hasErrorsFailure = failed && progress?.failureCode === "has-errors";
+  const limitFailure = failed && progress?.failureCode === "items-limit";
+  const fileBad =
+    (shown === 3 && preview !== null && !clean) || hasErrorsFailure;
+  // Errors left of the first three, and the rows they sit in (the rows of the three shown are not counted again).
+  const errorList: readonly RowError[] = hasErrorsFailure
+    ? (failedErrors.data?.errors ?? [])
+    : (preview?.errors ?? []);
+  // The server stops at one row: the error of the row it processed last, else the first.
+  const refusedAt = hasErrorsFailure
+    ? (errorList.find((e) => e.row === progress?.processed) ?? errorList[0])
+    : undefined;
+  const firstErrors = errorList.slice(0, 3);
+  const restErrors = hasErrorsFailure
+    ? errorList.length - firstErrors.length
+    : errorCount - firstErrors.length;
+  const restRows = hasErrorsFailure
+    ? new Set(errorList.slice(3).map((e) => e.row)).size
+    : Math.max(
+        0,
+        (preview?.errorRows ?? 0) - new Set(firstErrors.map((e) => e.row)).size,
+      );
+  const errorLines =
+    firstErrors.length > 0 ? (
+      <div
+        aria-label={copy.firstErrors}
+        className="flex flex-col rounded-[10px] border border-line bg-popover text-frame-small leading-[1.5]"
+      >
+        {firstErrors.map((e, i) => (
+          <div
+            key={i}
+            className="flex items-start gap-2.5 border-t border-line px-3.5 py-[9px] first:border-t-0"
+          >
+            <span className="w-[76px] flex-none font-mono text-frame-hint text-meta-foreground">
+              {fill(copy.rowLabel, { row: numberLabel(e.row ?? 0) })}
+            </span>
+            <span>
+              {`${e.column}: ${e.value ? `“${e.value}” ` : ""}${reasonText(e)}`}
+            </span>
+          </div>
+        ))}
+        {restErrors > 0 ? (
+          <div className="flex items-start gap-2.5 border-t border-line px-3.5 py-[9px]">
+            <span className="text-frame-note text-meta-foreground">
+              {fill(copy.moreErrors, {
+                count: numberLabel(restErrors),
+                rows: numberLabel(restRows),
+              })}
+            </span>
+          </div>
         ) : null}
       </div>
     ) : null;
 
-  const sheetClass =
-    "gap-3 sm:max-w-[880px] max-sm:top-auto max-sm:bottom-0 max-sm:max-h-[calc(100dvh-24px)] max-sm:max-w-full max-sm:translate-y-0 max-sm:rounded-b-none max-sm:overflow-y-auto";
+  const summary: ReactNode =
+    upload && shown > 1 ? (
+      <FileCard
+        bad={fileBad}
+        name={upload.fileName ?? ""}
+        meta={fill(copy.fileMeta, {
+          rows: numberLabel(rowCount),
+          columns: upload.columnCount ?? 0,
+          size: sizeLabel(upload.size ?? 0),
+        })}
+        action={
+          shown < 4 ? (
+            <button type="button" className={LINK} onClick={reset}>
+              {copy.changeFile}
+            </button>
+          ) : null
+        }
+      />
+    ) : null;
+
+  const readsRows =
+    rejection?.code === "too-many-rows" || rejection?.code === "no-rows";
+  const rejectionKey = REJECTIONS[rejection?.code ?? ""] ?? "reject_malformed";
 
   return (
-    <Dialog
+    <FrameDialog
       open={open}
+      wide
       onOpenChange={(next) => (next || sending ? undefined : onClose())}
     >
-      <DialogContent showCloseButton={false} className={sheetClass}>
-        <DialogHeader>
-          <div className="flex items-start gap-3">
-            <div className="flex-1">
-              <DialogTitle>{copy.title}</DialogTitle>
-              <DialogDescription>
-                {fill(copy.intro, { name: boardName })}
-              </DialogDescription>
-            </div>
-            <button
-              type="button"
-              aria-label={copy.close}
-              title={copy.close}
-              onClick={onClose}
-              disabled={sending}
-              className="inline-flex size-8 items-center justify-center rounded-[7px] text-meta-foreground hover:bg-state-hover-strong max-sm:size-11"
-            >
-              <X aria-hidden="true" className="size-4" />
-            </button>
-          </div>
-        </DialogHeader>
+      <FrameHeader
+        title={copy.title}
+        description={
+          shown === 1 ? fill(copy.intro, { name: boardName }) : undefined
+        }
+        onClose={onClose}
+        closeLabel={copy.close}
+        closeDisabled={sending}
+      />
+      <FrameBody className="max-sm:max-h-[calc(100dvh-180px)] max-sm:overflow-y-auto">
         <ol
           aria-label={copy.stepsLabel}
-          className="m-0 flex list-none gap-3 p-0 text-compact"
+          className="m-0 flex list-none flex-wrap items-center gap-2 p-0 pb-1 pt-0.5"
         >
           {steps.map((label, i) => (
-            <li
-              key={label}
-              aria-current={step === i + 1 ? "step" : undefined}
-              className={cn(
-                "flex items-center gap-1.5",
-                step === i + 1
-                  ? "font-semibold text-foreground"
-                  : "text-meta-foreground",
-              )}
-            >
-              <span
+            <Fragment key={label}>
+              {i > 0 ? (
+                <li aria-hidden="true" className="h-px w-6 bg-line-strong" />
+              ) : null}
+              <li
+                aria-current={at === i + 1 ? "step" : undefined}
                 className={cn(
-                  "inline-flex size-5 items-center justify-center rounded-full text-metadata",
-                  step > i + 1
-                    ? "bg-success-subtle text-success-text"
-                    : step === i + 1
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-state-hover-strong",
+                  "inline-flex items-center gap-2 text-frame-small",
+                  at === i + 1
+                    ? "font-semibold text-foreground"
+                    : at > i + 1
+                      ? "font-medium text-meta-foreground"
+                      : "font-medium text-meta-foreground",
                 )}
               >
-                {step > i + 1 ? (
-                  <Check aria-hidden="true" className="size-3" />
-                ) : (
-                  i + 1
-                )}
-              </span>
-              <span className="max-sm:hidden">{label}</span>
-              <span className="sm:hidden">{step === i + 1 ? label : ""}</span>
-            </li>
+                <span
+                  className={cn(
+                    "grid size-[22px] place-items-center rounded-full text-frame-hint font-bold",
+                    at > i + 1
+                      ? "bg-success-subtle text-success-text"
+                      : at === i + 1
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-state-hover-strong text-meta-foreground",
+                  )}
+                >
+                  {at > i + 1 ? (
+                    <Check aria-hidden="true" className="size-3" />
+                  ) : (
+                    i + 1
+                  )}
+                </span>
+                {label}
+              </li>
+            </Fragment>
           ))}
         </ol>
 
+        {step === 1 && readsRows && rejection ? (
+          <FileCard
+            bad
+            name={rejection.file}
+            meta={fill(copy.fileMeta, {
+              rows: numberLabel(rejection.rows),
+              columns: rejection.columns,
+              size: sizeLabel(rejection.size),
+            })}
+            action={
+              <button type="button" className={cn(GHOST, SOLO)} onClick={reset}>
+                {copy.changeFile}
+              </button>
+            }
+          />
+        ) : null}
         {summary}
 
         {denied ? (
@@ -436,43 +583,57 @@ export function BoardImportDialog({
           </p>
         ) : null}
 
+        {limit ? (
+          <FrameBanner
+            tone="err"
+            role="alert"
+            icon={<TriangleAlert aria-hidden="true" />}
+            title={copy.limitTitle}
+            body={fill(copy.limitBody, {
+              max: limit.max === null ? "" : numberLabel(limit.max),
+            })}
+          />
+        ) : null}
+
         {step === 1 ? (
           <>
-            {rejection ? (
-              <div
-                role="alert"
-                className="flex flex-col gap-1 rounded-[10px] bg-danger-subtle px-3 py-2.5 text-danger-subtle-foreground"
-              >
-                <b className="text-compact font-semibold">
-                  {fill(
-                    c[
-                      `${REJECTIONS[rejection.code] ?? "reject_malformed"}_title`
-                    ] ?? "",
-                    { file: rejection.file, rows: numberLabel(rejection.rows) },
-                  )}
-                </b>
-                <span className="text-metadata">
-                  {c[REJECTIONS[rejection.code] ?? "reject_malformed"]}
-                </span>
-              </div>
+            {rejection && readsRows ? (
+              <Note
+                tone="err"
+                title={fill(c[`${rejectionKey}_title`] ?? "", {
+                  file: rejection.file,
+                  rows: numberLabel(rejection.rows),
+                })}
+                body={c[rejectionKey] ?? ""}
+              />
             ) : null}
             {reading ? (
-              <div
-                role="status"
-                className="flex flex-col gap-1.5 rounded-[10px] border border-line px-3 py-3"
-              >
-                <b className="text-compact font-semibold">{reading.file}</b>
-                <div className="h-1.5 overflow-hidden rounded-full bg-state-hover-strong">
+              <>
+                <FileCard
+                  name={reading.file}
+                  meta={fill(copy.readingMeta, { percent: reading.done })}
+                />
+                <div
+                  role="progressbar"
+                  aria-label={copy.reading}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={reading.done}
+                  className="h-2 w-full overflow-hidden rounded-[4px] bg-state-hover-strong"
+                >
                   <div
-                    className="h-full rounded-full bg-primary"
+                    className="h-full rounded-[4px] bg-primary"
                     style={{ width: `${reading.done}%` }}
                   />
                 </div>
-                <span className="text-metadata text-meta-foreground">
-                  {copy.reading} · {copy.readingBody}
+                <span
+                  role="status"
+                  className="text-frame-hint text-meta-foreground"
+                >
+                  {copy.readingBody}
                 </span>
-              </div>
-            ) : (
+              </>
+            ) : readsRows ? null : (
               <div
                 onDragOver={(event) => {
                   event.preventDefault();
@@ -484,21 +645,51 @@ export function BoardImportDialog({
                   setDragging(false);
                   void choose(event.dataTransfer.files[0]);
                 }}
+                role={rejection ? "alert" : undefined}
                 className={cn(
-                  "flex flex-col items-center gap-2 rounded-[10px] border border-dashed px-4 py-8 text-center",
-                  dragging
-                    ? "border-primary bg-state-hover-strong"
-                    : "border-line-strong",
+                  "flex flex-col items-center gap-2 rounded-xl border-[1.5px] border-dashed px-5 py-[34px] text-center",
+                  rejection
+                    ? "border-danger bg-danger-subtle"
+                    : dragging
+                      ? "border-primary bg-state-hover-strong"
+                      : "border-line-strong bg-popover",
                 )}
               >
-                <FileSpreadsheet
-                  aria-hidden="true"
-                  className="size-6 text-meta-foreground"
-                />
-                <b className="text-compact font-semibold">{copy.dropTitle}</b>
-                <span className="text-metadata text-meta-foreground">
-                  {copy.dropOr}
-                </span>
+                {rejection ? (
+                  <CircleAlert
+                    aria-hidden="true"
+                    className="size-5 text-danger-text"
+                  />
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    className="grid size-11 place-items-center rounded-xl bg-info-subtle text-info-subtle-foreground"
+                  >
+                    <Upload className="size-5" />
+                  </span>
+                )}
+                <b
+                  className={cn(
+                    "text-frame-lead font-bold",
+                    rejection && "text-danger-text",
+                  )}
+                >
+                  {rejection
+                    ? fill(c[`${rejectionKey}_title`] ?? "", {
+                        file: rejection.file,
+                        rows: numberLabel(rejection.rows),
+                      })
+                    : copy.dropTitle}
+                </b>
+                {rejection ? (
+                  <span className="text-frame-body text-foreground">
+                    {c[rejectionKey]}
+                  </span>
+                ) : (
+                  <span className="text-frame-note text-meta-foreground">
+                    {copy.dropOr}
+                  </span>
+                )}
                 <input
                   ref={fileInput}
                   type="file"
@@ -510,86 +701,167 @@ export function BoardImportDialog({
                 />
                 <button
                   type="button"
-                  className={GHOST}
+                  className={cn(
+                    rejection ? GHOST : PRIMARY,
+                    SOLO,
+                    "max-sm:px-3.5",
+                  )}
                   onClick={() => fileInput.current?.click()}
                 >
+                  <Upload aria-hidden="true" className="size-4" />
                   {rejection ? copy.chooseOther : copy.choose}
                 </button>
-                <span className="text-metadata text-meta-foreground">
-                  {copy.dropHint}
-                </span>
+                {rejection ? null : (
+                  <span className="text-frame-hint text-meta-foreground">
+                    {copy.dropHint}
+                  </span>
+                )}
               </div>
             )}
           </>
         ) : null}
 
-        {step === 2 && upload ? (
-          <div className="flex flex-col gap-2 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-1 motion-safe:duration-150">
+        {shown === 2 && upload ? (
+          <div className="flex flex-col gap-3.5 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-1 motion-safe:duration-150">
             {!hasTitle || blocking.length > 0 ? (
-              <div
+              <FrameBanner
+                tone="err"
                 role="alert"
-                className="flex flex-col gap-0.5 rounded-[10px] bg-danger-subtle px-3 py-2 text-danger-subtle-foreground"
-              >
-                <b className="text-compact font-semibold">
-                  {!hasTitle
+                icon={<TriangleAlert aria-hidden="true" />}
+                title={
+                  !hasTitle
                     ? copy.missingTitle
                     : pluralLifecycle(
                         c as Record<string, string>,
                         "mapProblem",
                         blocking.length,
-                      )}
-                </b>
-                <span className="text-metadata">
-                  {!hasTitle ? copy.missingTitleBody : copy.mapProblemBody}
-                </span>
-              </div>
+                      )
+                }
+                body={!hasTitle ? copy.missingTitleBody : copy.mapProblemBody}
+              />
+            ) : preview ? (
+              <FrameBanner
+                tone="ok"
+                icon={<Check aria-hidden="true" />}
+                title={copy.mapAllOk}
+                body={
+                  unknownCheck
+                    ? fill(copy.mapUnknownNote, {
+                        column:
+                          upload.columns?.find(
+                            (col) => col.index === unknownCheck.column,
+                          )?.header ?? "",
+                        count: unknownCheck.count ?? 0,
+                        values: (unknownCheck.examples ?? []).join(", "),
+                      })
+                    : copy.mapAllOkBody
+                }
+              />
             ) : null}
             <div
               role="table"
               aria-label={copy.stepMap}
-              className="flex flex-col divide-y divide-line rounded-[10px] border border-line"
+              className="overflow-hidden rounded-[10px] border border-line bg-popover max-sm:-mb-[2.2px] max-sm:mt-[1.5px] max-sm:flex max-sm:flex-col max-sm:gap-[13.3px] max-sm:overflow-visible max-sm:border-0 max-sm:bg-transparent"
             >
               <div
                 role="row"
-                className="grid grid-cols-[1fr_1fr_auto] gap-3 px-3 py-2 text-metadata font-semibold text-meta-foreground max-sm:hidden"
+                className={cn(
+                  MAP_GRID,
+                  "border-b border-line bg-state-hover py-2 text-frame-cap font-semibold text-meta-foreground max-sm:hidden",
+                )}
               >
                 <span role="columnheader">{copy.mapColumn}</span>
+                <span role="columnheader" />
                 <span role="columnheader">{copy.mapField}</span>
-                <span role="columnheader" className="min-w-[120px]">
-                  {copy.mapCheck}
-                </span>
+                <span role="columnheader">{copy.mapCheck}</span>
               </div>
               {(upload.columns ?? []).map((column) => {
                 const index = column.index ?? 0;
                 const target = mapped(index);
                 const result = checkOf(index);
                 const info = targets.find((t) => t.id === target);
+                const needsTitle = !hasTitle && index === firstSkipped;
+                const incompatible = result?.status === "incompatible";
+                const why = needsTitle
+                  ? copy.mapRequiredWhy
+                  : incompatible
+                    ? fill(copy.incompatibleBody, {
+                        example: result?.examples?.[0] ?? "",
+                        field: targetName(target),
+                        type: typeLabel(info?.type ?? ""),
+                      })
+                    : null;
+                // The phone sheet words the same problem shorter (the field is already in the select above).
+                const whyShort = incompatible
+                  ? fill(copy.incompatibleShort, {
+                      example: result?.examples?.[0] ?? "",
+                      type: typeLabel(info?.type ?? ""),
+                    })
+                  : null;
                 return (
                   <div
                     key={index}
                     role="row"
-                    className="grid grid-cols-[1fr_1fr_auto] items-center gap-3 px-3 py-2 max-sm:grid-cols-1 max-sm:gap-1.5"
+                    className={cn(
+                      MAP_GRID,
+                      "min-h-[62px] items-center border-t border-line py-2.5 first:border-t-0 max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto] max-sm:gap-x-2 max-sm:gap-y-2 max-sm:rounded-xl max-sm:border max-sm:border-line max-sm:bg-popover max-sm:px-3.5 max-sm:pb-3.5 max-sm:pt-2.5 max-sm:first:border-t",
+                      why &&
+                        "bg-danger-subtle max-sm:border-danger max-sm:bg-danger-subtle",
+                    )}
                   >
-                    <span role="cell" className="min-w-0">
-                      <b className="block truncate text-compact font-semibold">
+                    <span role="cell" className="min-w-0 max-sm:contents">
+                      <b className="block font-semibold max-sm:col-start-1 max-sm:row-start-1 max-sm:text-sm max-sm:font-bold">
                         {column.header}
                       </b>
-                      <span className="block truncate text-metadata text-meta-foreground">
+                      <small className="block truncate font-mono text-frame-hint font-normal text-meta-foreground max-sm:col-span-2 max-sm:row-start-2">
                         {(column.examples ?? [])
                           .map((e) => `“${e}”`)
                           .join(", ")}
-                      </span>
+                      </small>
                     </span>
-                    <span role="cell">
+                    <span
+                      role="presentation"
+                      className="text-meta-foreground max-sm:hidden"
+                    >
+                      <ArrowRight aria-hidden="true" className="size-4" />
+                    </span>
+                    <span
+                      role="cell"
+                      className="max-sm:col-span-2 max-sm:row-start-3"
+                    >
                       <Select
-                        value={target}
+                        value={needsTitle ? "" : target}
                         onValueChange={(value) => setTarget(index, value)}
                       >
                         <SelectTrigger
                           aria-label={`${copy.mapField}: ${column.header}`}
-                          className="w-full"
+                          aria-invalid={needsTitle || incompatible || undefined}
+                          className="h-9 w-full rounded-[7px] pr-2.5 text-frame-body shadow-none max-sm:data-[size=default]:h-11 max-sm:text-frame-lead aria-invalid:ring-1 aria-invalid:ring-inset aria-invalid:ring-danger"
                         >
-                          <SelectValue placeholder={copy.mapChoose} />
+                          <SelectValue
+                            placeholder={
+                              <span className="inline-flex text-meta-foreground">
+                                {copy.mapChoose}
+                              </span>
+                            }
+                          >
+                            {needsTitle ? (
+                              <span className="inline-flex text-meta-foreground">
+                                {copy.mapChoose}
+                              </span>
+                            ) : target === SKIP ? (
+                              <span className="inline-flex">
+                                {copy.mapSkip}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-2">
+                                {targetName(target)}
+                                <span className="text-frame-note text-meta-foreground max-sm:hidden">
+                                  {typeLabel(info?.type ?? "")}
+                                </span>
+                              </span>
+                            )}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value={SKIP}>{copy.mapSkip}</SelectItem>
@@ -608,44 +880,30 @@ export function BoardImportDialog({
                           ))}
                         </SelectContent>
                       </Select>
-                      {target === "$title" ? (
-                        <span className="mt-0.5 block text-metadata text-meta-foreground">
+                    </span>
+                    <span
+                      role="cell"
+                      className="max-sm:col-start-2 max-sm:row-start-1"
+                    >
+                      {needsTitle ? (
+                        <span className={cn(CHIP, CHIPS.err)}>
                           {copy.mapRequired}
                         </span>
-                      ) : null}
-                      {result?.status === "incompatible" ? (
-                        <span
-                          role="alert"
-                          className="mt-1 block text-metadata text-danger-text"
-                        >
-                          {fill(copy.incompatibleBody, {
-                            example: result.examples?.[0] ?? "",
-                            field: targetName(target),
-                            type: typeLabel(info?.type ?? ""),
-                          })}
+                      ) : target === SKIP ? (
+                        <span className={cn(CHIP, CHIPS.skip)}>
+                          {copy.checkSkipped}
                         </span>
-                      ) : null}
-                    </span>
-                    <span role="cell" className="min-w-[120px]">
-                      {target === SKIP ? null : result ? (
+                      ) : result ? (
                         <span
                           className={cn(
-                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-metadata font-medium",
+                            CHIP,
                             result.status === "ok"
-                              ? "bg-success-subtle text-success-text"
+                              ? CHIPS.ok
                               : result.status === "unknown-values"
-                                ? "bg-warning-subtle text-warning-text"
-                                : "bg-danger-subtle text-danger-subtle-foreground",
+                                ? CHIPS.warn
+                                : CHIPS.err,
                           )}
                         >
-                          {result.status === "ok" ? (
-                            <Check aria-hidden="true" className="size-3" />
-                          ) : (
-                            <CircleAlert
-                              aria-hidden="true"
-                              className="size-3"
-                            />
-                          )}
                           {result.status === "ok"
                             ? copy.checkOk
                             : result.status === "unknown-values"
@@ -658,290 +916,367 @@ export function BoardImportDialog({
                         </span>
                       ) : null}
                     </span>
+                    {why ? (
+                      <p
+                        role="alert"
+                        className="col-span-full m-0 flex items-start gap-1.5 max-sm:gap-[5px] text-frame-note font-medium leading-[1.5] text-danger-text max-sm:leading-[1.45]"
+                      >
+                        <TriangleAlert
+                          aria-hidden="true"
+                          className="mt-0.5 size-[13px] flex-none"
+                        />
+                        <span
+                          className={whyShort ? "max-sm:hidden" : undefined}
+                        >
+                          {why}
+                        </span>
+                        {whyShort ? (
+                          <span className="hidden max-sm:inline">
+                            {whyShort}
+                          </span>
+                        ) : null}
+                      </p>
+                    ) : null}
                   </div>
                 );
               })}
             </div>
-            <div className="text-metadata text-meta-foreground">
-              {targets
-                .filter((t) => t.lockedReason)
-                .map((t) => (
-                  <span
-                    key={t.id}
-                    className="mr-3 inline-flex items-center gap-1"
-                  >
-                    <Lock aria-hidden="true" className="size-3" />
-                    {t.name}: {c[`locked_${t.lockedReason}`]}
-                  </span>
-                ))}
-            </div>
+            {targets.some((t) => t.lockedReason) ? (
+              <div className="text-frame-hint text-meta-foreground">
+                {targets
+                  .filter((t) => t.lockedReason)
+                  .map((t) => (
+                    <span
+                      key={t.id}
+                      className="mr-3 inline-flex items-center gap-1"
+                    >
+                      <Lock aria-hidden="true" className="size-3" />
+                      {t.name}: {c[`locked_${t.lockedReason}`]}
+                    </span>
+                  ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
-        {step === 3 && upload ? (
-          <div className="flex flex-col gap-2 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-1 motion-safe:duration-150">
+        {shown === 3 && upload ? (
+          <div className="flex flex-col gap-3.5 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-1 motion-safe:duration-150">
             {preview === null ? (
               <p
                 role="status"
-                className="m-0 text-compact text-meta-foreground"
+                className="m-0 text-frame-small text-meta-foreground"
               >
                 {copy.checkingTitle}
               </p>
             ) : clean ? (
-              <div
-                role="status"
-                className="flex flex-col gap-0.5 rounded-[10px] bg-success-subtle px-3 py-2 text-success-text"
-              >
-                <b className="text-compact font-semibold">
-                  {fill(copy.allValid, { rows: numberLabel(rowCount) })}
-                </b>
-                <span className="text-metadata">
-                  {fill(copy.allValidBody, {
-                    rows: numberLabel(rowCount),
-                    name: boardName,
-                  })}
-                </span>
-              </div>
+              <FrameBanner
+                tone="ok"
+                icon={<Check aria-hidden="true" />}
+                title={fill(copy.allValid, { rows: numberLabel(rowCount) })}
+                body={fill(copy.allValidBody, {
+                  rows: numberLabel(rowCount),
+                  name: boardName,
+                })}
+              />
             ) : (
-              <div
+              <FrameBanner
+                tone="err"
                 role="alert"
-                className="flex flex-col gap-0.5 rounded-[10px] bg-danger-subtle px-3 py-2 text-danger-subtle-foreground"
-              >
-                <b className="text-compact font-semibold">
-                  {fill(copy.hasErrors, {
-                    errors: numberLabel(errorCount),
-                    rows: numberLabel(preview.errorRows ?? 0),
-                  })}
-                </b>
-                <span className="text-metadata">{copy.hasErrorsBody}</span>
-              </div>
+                icon={<TriangleAlert aria-hidden="true" />}
+                title={fill(copy.hasErrors, {
+                  errors: numberLabel(errorCount),
+                  rows: numberLabel(preview.errorRows ?? 0),
+                })}
+                body={copy.hasErrorsBody}
+              />
             )}
+            {unmatchedNote(preview?.unmatchedPersonRows)}
             {preview ? (
-              <div className="overflow-x-auto rounded-[10px] border border-line">
-                <table className="w-full border-collapse text-compact">
-                  <thead>
-                    <tr className="text-left text-metadata text-meta-foreground">
-                      <th className="px-3 py-1.5 font-semibold">
-                        {copy.colRow}
-                      </th>
-                      {mapping.map((m) => (
-                        <th
+              <div
+                role="table"
+                aria-label={copy.previewLabel}
+                className="overflow-hidden rounded-[10px] border border-line bg-popover text-frame-small max-sm:hidden"
+              >
+                <div
+                  role="row"
+                  style={previewGrid}
+                  className="grid min-h-[34px] items-center bg-state-hover text-frame-hint font-semibold text-meta-foreground"
+                >
+                  <span role="columnheader" className={PV_CELL}>
+                    {copy.colRow}
+                  </span>
+                  {mapping.map((m) => (
+                    <span
+                      key={m.target}
+                      role="columnheader"
+                      className={PV_CELL}
+                    >
+                      {targetName(m.target)}
+                    </span>
+                  ))}
+                </div>
+                {(preview.sample ?? []).map((row) => (
+                  <div
+                    key={row.row}
+                    role="row"
+                    style={previewGrid}
+                    className="grid min-h-9 items-center border-t border-line"
+                  >
+                    <span
+                      role="cell"
+                      className={cn(
+                        PV_CELL,
+                        "font-mono text-frame-hint text-meta-foreground",
+                      )}
+                    >
+                      {numberLabel(row.row ?? 0)}
+                    </span>
+                    {mapping.map((m) => {
+                      const bad = row.errorTargets?.includes(m.target);
+                      const value = row.cells?.[m.target];
+                      return (
+                        <span
                           key={m.target}
-                          className="px-3 py-1.5 font-semibold"
+                          role="cell"
+                          className={cn(
+                            PV_CELL,
+                            bad &&
+                              "flex items-center gap-1 self-stretch bg-danger-subtle font-semibold text-danger-text shadow-[inset_0_0_0_1.5px_var(--danger)]",
+                          )}
                         >
-                          {targetName(m.target)}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(preview.sample ?? []).map((row) => (
-                      <tr key={row.row} className="border-t border-line">
-                        <td className="px-3 py-1.5 text-meta-foreground">
-                          {numberLabel(row.row ?? 0)}
-                        </td>
-                        {mapping.map((m) => {
-                          const bad = row.errorTargets?.includes(m.target);
-                          const value = row.cells?.[m.target];
-                          return (
-                            <td
-                              key={m.target}
-                              className={cn(
-                                "px-3 py-1.5",
-                                bad
-                                  ? "text-danger-text outline outline-1 -outline-offset-1 outline-danger"
-                                  : "",
-                              )}
-                            >
-                              {bad ? (
-                                <CircleAlert
-                                  aria-hidden="true"
-                                  className="mr-1 inline size-3"
-                                />
-                              ) : null}
-                              {value ?? copy.empty}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          {bad ? (
+                            <TriangleAlert
+                              aria-hidden="true"
+                              className="size-3.5 flex-none"
+                            />
+                          ) : null}
+                          {value ?? copy.empty}
+                        </span>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
             ) : null}
-            {preview ? (
-              <p className="m-0 text-metadata text-meta-foreground">
+            {preview && clean ? (
+              <span className="text-frame-hint text-meta-foreground max-sm:hidden">
                 {fill(copy.previewNote, {
                   shown: preview.sample?.length ?? 0,
                   rows: numberLabel(rowCount),
                 })}
-              </p>
+              </span>
             ) : null}
-            {preview && !clean ? (
-              <>
-                <ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-compact">
-                  {(preview.errors ?? []).slice(0, 3).map((e, i) => (
-                    <li key={i}>
-                      <b className="font-semibold">
-                        {fill(copy.rowLabel, { row: numberLabel(e.row ?? 0) })}
-                      </b>{" "}
-                      {e.column}: {e.value ? `“${e.value}”` : copy.empty}{" "}
-                      {reasonText(e)}
-                    </li>
-                  ))}
-                </ul>
-                {errorCount > 3 ? (
-                  <p className="m-0 text-metadata text-meta-foreground">
-                    {fill(copy.moreErrors, {
-                      count: numberLabel(errorCount - 3),
-                    })}
-                  </p>
-                ) : null}
-                <p className="m-0 text-metadata text-meta-foreground">
-                  {copy.reportNote}
-                </p>
-              </>
-            ) : null}
+            {preview && !clean ? errorLines : null}
           </div>
         ) : null}
 
-        {step === 4 ? (
-          <div className="flex flex-col gap-2 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-1 motion-safe:duration-150">
-            {succeeded ? (
+        {shown === 4 ? (
+          <div className="flex flex-col gap-3.5 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-1 motion-safe:duration-150">
+            {lost ? (
+              <FrameBanner
+                tone="warn"
+                role="alert"
+                icon={<TriangleAlert aria-hidden="true" />}
+                title={copy.lostTitle}
+                body={copy.lostBody}
+              />
+            ) : succeeded ? (
               <>
-                <div
-                  role="status"
-                  className="flex flex-col gap-0.5 rounded-[10px] bg-success-subtle px-3 py-2 text-success-text"
-                >
-                  <b className="text-compact font-semibold">
-                    {fill(copy.done, {
-                      count: numberLabel(progress?.created ?? 0),
-                      name: boardName,
-                    })}
-                  </b>
-                  <span className="text-metadata">
-                    {fill(copy.doneBody, {
-                      first: progress?.firstKey ?? "",
-                      last: progress?.lastKey ?? "",
-                    })}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-0.5 rounded-[10px] border border-line px-3 py-2">
-                  <b className="text-compact font-semibold">{copy.doneAsk}</b>
-                  <span className="text-metadata text-meta-foreground">
-                    {copy.doneAskBody}
-                  </span>
-                </div>
+                <FrameBanner
+                  tone="ok"
+                  icon={<Check aria-hidden="true" />}
+                  title={fill(copy.done, {
+                    count: numberLabel(progress?.created ?? 0),
+                    name: boardName,
+                  })}
+                  body={fill(copy.doneBody, {
+                    first: progress?.firstKey ?? "",
+                  })}
+                />
+                {unmatchedNote(progress?.unmatchedPersonRows)}
+                <FrameBox>
+                  <div className="flex min-h-[52px] items-center gap-3 px-3.5 py-2">
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <b className="text-frame-body font-semibold">
+                        {copy.doneAsk}
+                      </b>
+                      <small className="text-frame-note leading-[1.4] text-meta-foreground">
+                        {copy.doneAskBody}
+                      </small>
+                    </span>
+                    <button
+                      type="button"
+                      className={GHOST}
+                      onClick={() => {
+                        onClose();
+                        void navigate({
+                          to: "/workspaces/$workspaceId/boards/$boardId",
+                          params: { workspaceId, boardId },
+                          search: {
+                            view: "table",
+                            filter: undefined,
+                            sort: "$created.desc",
+                          },
+                        } as never);
+                      }}
+                    >
+                      <Table2 aria-hidden="true" className="size-4" />
+                      {copy.doneOpen}
+                    </button>
+                  </div>
+                </FrameBox>
               </>
             ) : failed ? (
               <>
-                <div
+                <FrameBanner
+                  tone={archived ? "warn" : "err"}
                   role="alert"
-                  className="flex flex-col gap-0.5 rounded-[10px] bg-danger-subtle px-3 py-2 text-danger-subtle-foreground"
-                >
-                  <b className="text-compact font-semibold">
-                    {progress?.failureCode === "board-archived"
+                  icon={<TriangleAlert aria-hidden="true" />}
+                  title={
+                    archived
                       ? fill(copy.archivedTitle, {
-                          name: progress.failureBy ?? "",
+                          name: progress?.failureBy ?? "",
                         })
                       : progress?.failureCode === "board-gone"
                         ? copy.goneTitle
-                        : copy.failedTitle}
-                  </b>
-                  <span className="text-metadata">
-                    {progress?.failureCode === "board-archived"
+                        : limitFailure
+                          ? copy.limitTitle
+                          : copy.failedTitle
+                  }
+                  body={
+                    archived
                       ? copy.archivedBody
                       : progress?.failureCode === "board-gone"
                         ? copy.goneBody
-                        : progress?.failureCode === "has-errors" &&
-                            failedErrors.data?.errors?.[0]
-                          ? fill(copy.failedHasErrors, {
-                              row: numberLabel(
-                                failedErrors.data.errors[0].row ?? 0,
-                              ),
-                              column: failedErrors.data.errors[0].column ?? "",
-                              value:
-                                failedErrors.data.errors[0].value ?? copy.empty,
-                              reason: reasonText(failedErrors.data.errors[0]),
-                            })
-                          : copy.errorBody}
-                  </span>
-                </div>
-                {progress?.failureCode === "has-errors" ? (
-                  <p className="m-0 text-metadata text-meta-foreground">
-                    {copy.failedRetryNote}
-                  </p>
+                        : limitFailure
+                          ? copy.limitJobBody
+                          : refusedAt
+                            ? fill(copy.failedHasErrors, {
+                                row: numberLabel(refusedAt.row ?? 0),
+                                column: refusedAt.column ?? "",
+                                value: refusedAt.value
+                                  ? `“${refusedAt.value}”`
+                                  : "",
+                                reason: reasonText(refusedAt),
+                              })
+                            : copy.errorBody
+                  }
+                />
+                {hasErrorsFailure ? (
+                  <>
+                    {errorLines}
+                    <span className="text-frame-hint text-meta-foreground">
+                      {copy.failedRetryNote}
+                    </span>
+                  </>
                 ) : null}
               </>
             ) : (
-              <div
-                role="status"
-                className="flex flex-col gap-1.5 rounded-[10px] border border-line px-3 py-3"
-              >
-                <b className="text-compact font-semibold">
-                  {status === "running" && progress?.phase === "creating"
-                    ? fill(copy.creating, {
-                        done: numberLabel(progress.processed ?? 0),
-                        total: numberLabel(total),
-                      })
-                    : copy.queued}
-                </b>
-                <div className="h-1.5 overflow-hidden rounded-full bg-state-hover-strong">
+              <>
+                <FrameBox>
                   <div
-                    className="h-full rounded-full bg-primary motion-safe:transition-[width] motion-safe:duration-300"
-                    style={{
-                      width: `${total ? Math.round(((progress?.processed ?? 0) / total) * 100) : 0}%`,
-                    }}
-                  />
-                </div>
-                <span className="text-metadata text-meta-foreground">
-                  {copy.creatingBody}
-                </span>
-                <span className="text-metadata text-meta-foreground">
+                    role="status"
+                    className="flex min-h-[52px] items-start gap-3 px-3.5 py-2"
+                  >
+                    <LoaderCircle
+                      aria-hidden="true"
+                      className="mt-0.5 size-4 flex-none text-info-subtle-foreground motion-safe:animate-spin"
+                    />
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <b className="text-frame-body font-semibold">
+                        {status === "running" && progress?.phase === "creating"
+                          ? fill(copy.creating, {
+                              done: numberLabel(progress.processed ?? 0),
+                              total: numberLabel(total),
+                            })
+                          : copy.queued}
+                      </b>
+                      <span
+                        role="progressbar"
+                        aria-label={copy.creatingLabel}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={percent}
+                        className="h-2 w-full overflow-hidden rounded-[4px] bg-state-hover-strong"
+                      >
+                        <span
+                          className="block h-full rounded-[4px] bg-primary motion-safe:transition-[width] motion-safe:duration-300"
+                          style={{ width: `${percent}%` }}
+                        />
+                      </span>
+                      <small className="text-frame-note leading-[1.4] text-meta-foreground">
+                        {copy.creatingBody}
+                      </small>
+                    </span>
+                  </div>
+                </FrameBox>
+                <span className="text-frame-hint text-meta-foreground">
                   {copy.creatingNote}
                 </span>
-              </div>
+              </>
             )}
           </div>
         ) : null}
-
-        {lost ? (
-          <div
-            role="alert"
-            className="flex flex-col gap-0.5 rounded-[10px] bg-danger-subtle px-3 py-2 text-danger-subtle-foreground"
-          >
-            <b className="text-compact font-semibold">{copy.lostTitle}</b>
-            <span className="text-metadata">{copy.lostBody}</span>
-          </div>
-        ) : null}
-
-        <DialogFooter className="max-sm:flex-col-reverse">
-          {step === 1 ? (
-            <>
-              <button type="button" className={GHOST} onClick={onClose}>
-                {copy.cancel}
-              </button>
-              <button type="button" className={PRIMARY} disabled>
-                {copy.next}
-              </button>
-            </>
-          ) : step === 2 ? (
-            <>
-              <button type="button" className={GHOST} onClick={reset}>
-                {copy.back}
-              </button>
+      </FrameBody>
+      <FrameFooter>
+        {step === 1 && !lost ? (
+          <>
+            <button type="button" className={GHOST} onClick={onClose}>
+              {copy.cancel}
+            </button>
+            <button type="button" className={PRIMARY} disabled>
+              {copy.next}
+            </button>
+          </>
+        ) : shown === 2 ? (
+          <>
+            <button type="button" className={GHOST} onClick={reset}>
+              {copy.back}
+            </button>
+            <button
+              type="button"
+              className={PRIMARY}
+              disabled={!mapOk}
+              aria-disabled={!mapOk}
+              onClick={() => setStep(3)}
+            >
+              {copy.next}
+            </button>
+          </>
+        ) : shown === 3 ? (
+          <>
+            {preview && !clean ? (
+              <span className="min-w-0 flex-1 text-frame-note leading-[1.4] text-meta-foreground max-sm:hidden">
+                {copy.reportNote}
+              </span>
+            ) : null}
+            {preview && !clean ? (
               <button
                 type="button"
-                className={PRIMARY}
-                disabled={!mapOk}
-                aria-disabled={!mapOk}
-                onClick={() => setStep(3)}
+                className={GHOST}
+                onClick={() =>
+                  void api.api
+                    .post<Preview>(
+                      endpoints.boards.importPreview(
+                        boardId,
+                        upload?.jobId ?? "",
+                      ),
+                      { mapping, allErrors: true },
+                      { skipGlobalErrorToast: true },
+                    )
+                    .then((all) => download(all.errors ?? []))
+                    .catch(() => download(preview.errors ?? []))
+                }
               >
-                {copy.next}
+                <Download aria-hidden="true" className="size-4" />
+                {copy.downloadReport}
               </button>
-            </>
-          ) : step === 3 ? (
-            <>
+            ) : null}
+            {preview && !clean ? (
+              <button type="button" className={GHOST} onClick={reset}>
+                {copy.chooseOther}
+              </button>
+            ) : (
               <button
                 type="button"
                 className={GHOST}
@@ -949,119 +1284,132 @@ export function BoardImportDialog({
               >
                 {copy.back}
               </button>
-              {preview && !clean ? (
-                <>
-                  <button
-                    type="button"
-                    className={GHOST}
-                    onClick={() =>
-                      void api.api
-                        .post<Preview>(
-                          endpoints.boards.importPreview(
-                            boardId,
-                            upload?.jobId ?? "",
-                          ),
-                          { mapping, allErrors: true },
-                          { skipGlobalErrorToast: true },
-                        )
-                        .then((all) => download(all.errors ?? []))
-                        .catch(() => download(preview.errors ?? []))
-                    }
-                  >
-                    {copy.downloadReport}
-                  </button>
-                  <button type="button" className={GHOST} onClick={reset}>
-                    {copy.chooseOther}
-                  </button>
-                </>
-              ) : null}
-              <button
-                type="button"
-                className={PRIMARY}
-                disabled={!clean || sending}
-                aria-disabled={!clean || sending}
-                onClick={() => void send()}
-              >
-                {sending
-                  ? copy.working
-                  : pluralLifecycle(
-                      c as Record<string, string>,
-                      "submit",
-                      rowCount,
-                    )}
-              </button>
-            </>
-          ) : succeeded ? (
-            <>
+            )}
+            <button
+              type="button"
+              className={PRIMARY}
+              disabled={!clean || sending}
+              aria-disabled={!clean || sending}
+              onClick={() => void send()}
+            >
+              {sending ? copy.working : submitLabel}
+            </button>
+          </>
+        ) : succeeded ? (
+          <button type="button" className={PRIMARY} onClick={onClose}>
+            {copy.finish}
+          </button>
+        ) : archived ? (
+          <>
+            <button type="button" className={GHOST} onClick={onClose}>
+              {copy.close}
+            </button>
+            <button type="button" className={PRIMARY} disabled aria-disabled>
+              {submitLabel}
+            </button>
+          </>
+        ) : failed ? (
+          <>
+            {hasErrorsFailure && failedErrors.data ? (
               <button
                 type="button"
                 className={GHOST}
-                onClick={() => {
-                  onClose();
-                  void navigate({
-                    to: "/workspaces/$workspaceId/boards/$boardId",
-                    params: { workspaceId, boardId },
-                    search: {
-                      view: "table",
-                      filter: undefined,
-                      sort: "$created.desc",
-                    },
-                  } as never);
-                }}
+                onClick={() => download(failedErrors.data?.errors ?? [])}
               >
-                {copy.doneOpen}
+                <Download aria-hidden="true" className="size-4" />
+                {copy.downloadReport}
               </button>
-              <button type="button" className={PRIMARY} onClick={onClose}>
-                {copy.finish}
-              </button>
-            </>
-          ) : failed ? (
-            <>
-              {progress?.failureCode === "has-errors" && failedErrors.data ? (
-                <button
-                  type="button"
-                  className={GHOST}
-                  onClick={() => download(failedErrors.data?.errors ?? [])}
-                >
-                  {copy.downloadReport}
-                </button>
-              ) : null}
+            ) : null}
+            {hasErrorsFailure ? null : (
               <button type="button" className={GHOST} onClick={onClose}>
                 {copy.close}
               </button>
-              <button type="button" className={PRIMARY} onClick={reset}>
-                {progress?.failureCode === "has-errors"
-                  ? copy.chooseFixed
-                  : copy.chooseOther}
+            )}
+            <button type="button" className={PRIMARY} onClick={reset}>
+              <Upload aria-hidden="true" className="size-4" />
+              {hasErrorsFailure ? copy.chooseFixed : copy.chooseOther}
+            </button>
+          </>
+        ) : (
+          <>
+            <button type="button" className={GHOST} onClick={onClose}>
+              {copy.close}
+            </button>
+            {lost ? (
+              <button
+                type="button"
+                className={PRIMARY}
+                onClick={() => void send()}
+              >
+                <RotateCw aria-hidden="true" className="size-4" />
+                {copy.retry}
               </button>
-            </>
-          ) : (
-            <>
-              <button type="button" className={GHOST} onClick={onClose}>
-                {copy.close}
+            ) : (
+              <button type="button" className={PRIMARY} disabled aria-disabled>
+                {copy.working}
               </button>
-              {lost ? (
-                <button
-                  type="button"
-                  className={PRIMARY}
-                  onClick={() => void send()}
-                >
-                  {copy.retry}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className={PRIMARY}
-                  disabled
-                  aria-disabled
-                >
-                  {copy.working}
-                </button>
-              )}
-            </>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            )}
+          </>
+        )}
+      </FrameFooter>
+    </FrameDialog>
+  );
+}
+
+function FileCard({
+  name,
+  meta,
+  action,
+  bad,
+}: {
+  name: string;
+  meta: string;
+  action?: ReactNode;
+  bad?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-[10px] border border-line bg-popover px-3.5 py-2.5">
+      <span
+        className={cn(
+          "grid h-10 w-9 flex-none place-items-center rounded-[7px]",
+          bad
+            ? "bg-danger-subtle text-danger-text"
+            : "bg-success-subtle text-success-text",
+        )}
+      >
+        <FileSpreadsheet aria-hidden="true" className="size-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <b className="block truncate text-frame-body font-semibold">{name}</b>
+        <small className="block text-frame-note text-meta-foreground">
+          {meta}
+        </small>
+      </span>
+      {action}
+    </div>
+  );
+}
+
+function Note({
+  tone,
+  title,
+  body,
+}: {
+  tone: "err";
+  title: string;
+  body: string;
+}) {
+  return (
+    <div
+      role="alert"
+      data-tone={tone}
+      className="flex items-start gap-2.5 rounded-[10px] bg-danger-subtle px-3.5 py-2.5 text-frame-small leading-[1.4] text-danger-subtle-foreground"
+    >
+      <CircleAlert aria-hidden="true" className="mt-0.5 size-4 flex-none" />
+      <span className="flex min-w-0 flex-1 flex-col gap-px">
+        <b className="font-semibold">{title}</b>
+        <span>{body}</span>
+      </span>
+    </div>
   );
 }

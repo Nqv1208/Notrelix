@@ -7,6 +7,7 @@ using Notrelix.Integration.Tests.Containers;
 using Notrelix.Integration.Tests.Workspaces.OrgTree;
 using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
 using AppNotFound = Notrelix.Application.Common.Exceptions.NotFoundException;
+using AppPrecondition = Notrelix.Application.Common.Exceptions.PreconditionFailedException;
 
 namespace Notrelix.Integration.Tests.WorkManagement;
 
@@ -86,6 +87,26 @@ public sealed class BoardColumnsPipelineIntegrationTests : IAsyncLifetime
         (await foreign.Should().ThrowAsync<AppNotFound>()).Which.GetType()
             .Should().Be((await missing.Should().ThrowAsync<AppNotFound>()).Which.GetType());
         (await CountAsync(scene.ViewId, stranger.OwnerId)).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task SavingTheSharedView_NamesTheVersionRead_AStaleSaveChangesNothing()
+    {
+        var scene = await SeedAsync();
+        using var owner = _host.CreateProvider(scene.Stack.AccountId, scene.Stack.OwnerId);
+        var read = await _host.ReadAsync(c => c.BoardViews.AsNoTracking().Where(v => v.Id == scene.ViewId).Select(v => v.Version).SingleAsync());
+
+        await OrgTreeTestHost.SendIdempotentAsync(owner, new SaveBoardViewCommand(scene.BoardId, ViewMode.Table, "{\"hidden\":[\"due\"]}", read));
+        var saved = await _host.ReadAsync(c => c.BoardViews.AsNoTracking().Where(v => v.Id == scene.ViewId).Select(v => v.Version).SingleAsync());
+        saved.Should().BeGreaterThan(read);
+
+        var stale = () => OrgTreeTestHost.SendIdempotentAsync(owner, new SaveBoardViewCommand(scene.BoardId, ViewMode.Table, "{\"hidden\":[\"tags\"]}", read));
+        var unnamed = () => OrgTreeTestHost.SendIdempotentAsync(owner, new SaveBoardViewCommand(scene.BoardId, ViewMode.Table, "{\"hidden\":[\"tags\"]}"));
+
+        await stale.Should().ThrowAsync<AppPrecondition>("another save went first");
+        await unnamed.Should().ThrowAsync<AppPrecondition>("overwriting the shared view needs the version read");
+        (await _host.ReadAsync(c => c.BoardViews.AsNoTracking().Where(v => v.Id == scene.ViewId).Select(v => v.Version).SingleAsync()))
+            .Should().Be(saved, "a refused save bumps nothing");
     }
 
     private sealed record Scene(OrgStack Stack, Guid BoardId, Guid ViewId);

@@ -1,5 +1,6 @@
 import type { NotrelixClient } from "@notrelix/contracts";
 import { endpoints } from "@notrelix/contracts";
+import type { OperationResponse } from "@notrelix/contracts";
 import { personInitials } from "@notrelix/work-management-core";
 
 /** A Documents page linked to an item that the caller may open. */
@@ -15,11 +16,48 @@ export interface LinkedPagesDto {
   readonly hiddenCount: number;
 }
 
+/**
+ * The linked pages as the item shows them. Only a page the server names (an id
+ * and a title) is listed; a page the caller may not read arrives only as a count
+ * and is never given a title here, so the item shows it as an unavailable row.
+ */
+export function toLinkedPages(
+  dto:
+    | OperationResponse<"WorkManagement.BoardItems.ListLinkedPages">
+    | null
+    | undefined,
+): LinkedPagesDto {
+  const pages = (dto?.pages ?? []).flatMap((page): LinkedPageDto[] =>
+    page.pageId
+      ? [
+          {
+            pageId: page.pageId,
+            title: page.title ?? "",
+            linkedAt: page.linkedAt ?? "",
+          },
+        ]
+      : [],
+  );
+  const hidden = dto?.hiddenCount ?? 0;
+  return {
+    pages,
+    hiddenCount: Number.isFinite(hidden) && hidden > 0 ? Math.floor(hidden) : 0,
+  };
+}
+
 /** What a reminder reached: who, how many, and when the next one is possible. */
 export interface RemindResultDto {
   readonly recipients: number;
   readonly nextRemindAt: string;
 }
+
+type RemindResponse =
+  OperationResponse<"WorkManagement.BoardItems.RemindOwners">;
+
+type FollowingResponse =
+  OperationResponse<"Collaboration.Watchers.GetBoardItemFollowing">;
+type LinkedPagesResponse =
+  OperationResponse<"WorkManagement.BoardItems.ListLinkedPages">;
 
 /** The error code the server answers when the 24 hour reminder limit is hit. */
 export const REMIND_TOO_SOON_CODE = "work.item.remind-too-soon";
@@ -41,10 +79,30 @@ interface WorkspaceMembersPage {
 const MEMBERS_PAGE_SIZE = 200;
 const MAX_MEMBER_PAGES = 100;
 
+/** A person who can see the board (`WorkManagement.Boards.GetPeople`): name and level, never an email. */
+interface BoardPersonWire {
+  readonly userId: string;
+  readonly name?: string | null;
+  readonly level?: string | null;
+}
+
 /** A member of the board (`WorkManagement.Boards.GetOverview`). */
 interface BoardMember {
   readonly userId?: string;
+  readonly name?: string | null;
   readonly role?: string | null;
+}
+
+/** A read the server refused to this person (a Workspace Guest may not list the workspace members). */
+function isRefusedRead(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const { kind, status } = error as { kind?: unknown; status?: unknown };
+  return (
+    kind === "forbidden" ||
+    kind === "not_found" ||
+    status === 403 ||
+    status === 404
+  );
 }
 
 /** What a board role lets the person do, or null for a role this page does not know. */
@@ -154,10 +212,15 @@ export interface ItemLinkDto {
     readonly title: string;
     readonly statusName: string | null;
     readonly statusCategory: "todo" | "in_progress" | "review" | "done" | null;
+    /** An archived item stays linked and says so. */
+    readonly isArchived?: boolean;
+    /** Its first assignee, when it has one. */
+    readonly assigneeId?: string | null;
+    readonly assigneeName?: string | null;
   };
 }
 
-/** Who follows an item (gap `CTR-GAP-WS-ITEM-SHEET`). */
+/** Who follows an item (`Collaboration.Watchers.GetBoardItemFollowing`). */
 export interface ItemFollowingDto {
   readonly following: boolean;
   readonly followers: readonly { userId: string; name: string }[];
@@ -179,7 +242,18 @@ export interface ItemApprovalDto {
   readonly decisionNote: string | null;
   /** The request's version, sent back as the expected version when it is cancelled. */
   readonly version: number;
+  /** The rejected or cancelled request this one asks again; null for a first request. */
+  readonly previousRequestId: string | null;
 }
+
+type ApprovalsResponse =
+  OperationResponse<"WorkManagement.Approvals.ListForItem">;
+type LinksResponse = OperationResponse<"WorkManagement.BoardItems.ListLinks">;
+
+const isLinkRelation = (
+  relation: string | null | undefined,
+): relation is ItemLinkDto["relation"] =>
+  relation === "blocked-by" || relation === "blocks" || relation === "related";
 
 interface ItemApprovalWire {
   readonly id: string;
@@ -188,6 +262,7 @@ interface ItemApprovalWire {
   readonly requestedByUserId: string;
   readonly createdAt: string;
   readonly version: number;
+  readonly previousRequestId?: string | null;
   readonly steps?:
     | readonly {
         readonly approverUserId?: string | null;
@@ -213,6 +288,7 @@ function toItemApproval(wire: ItemApprovalWire): ItemApprovalDto {
     decidedAt: step?.decidedAt ?? null,
     decisionNote: step?.note ?? null,
     version: wire.version,
+    previousRequestId: wire.previousRequestId ?? null,
   };
 }
 
@@ -261,7 +337,10 @@ export interface MoveToBoardResultDto {
   readonly droppedAssignees: number;
 }
 
-/** An item in a board's archive. */
+type TrashPage = OperationResponse<"WorkManagement.BoardItems.Trash">;
+type ArchivedPage = OperationResponse<"WorkManagement.BoardItems.Archived">;
+
+/** An item in a board's archive: who archived it and when, and how many sub-items come back with it. */
 export interface BoardArchivedEntryDto {
   readonly id: string;
   readonly name: string;
@@ -269,10 +348,12 @@ export interface BoardArchivedEntryDto {
   readonly groupId: string;
   readonly archivedAt: string;
   readonly archivedBy: string | null;
+  readonly archivedByName: string | null;
+  readonly subItemCount: number;
   readonly version: number;
 }
 
-/** An item in a board's trash. */
+/** An item in a board's trash: who deleted it and when, how many sub-items went with it, and the last day it can be restored. */
 export interface BoardTrashEntryDto {
   readonly id: string;
   readonly name: string;
@@ -280,8 +361,23 @@ export interface BoardTrashEntryDto {
   readonly groupId: string;
   readonly deletedAt: string;
   readonly deletedBy: string | null;
+  readonly deletedByName: string | null;
+  readonly subItemCount: number;
   readonly restorableUntil: string;
 }
+
+/** One page of the archive or the trash: the rows, the cursor of the next page (null on the last) and the size of the whole list. */
+export interface ListPage<Row> {
+  readonly rows: readonly Row[];
+  readonly nextCursor: string | null;
+  readonly total: number;
+}
+
+/** The server's answers when a deleted item cannot be restored: past the 30 days, or the parent of a sub-item is still deleted. */
+export const RESTORE_WINDOW_CLOSED_CODE =
+  "work-management.item.restore-window-closed";
+export const RESTORE_PARENT_DELETED_CODE =
+  "work-management.item.restore-parent-deleted";
 
 /** The version an item has after a lifecycle write, for the write that undoes it. */
 export interface ItemVersionDto {
@@ -344,19 +440,28 @@ export function createItemExtrasApi(
       return (dto?.items ?? []).map(toChildItem);
     },
     async getFollowing(itemId: string): Promise<ItemFollowingDto> {
-      const dto = await api.get<Partial<ItemFollowingDto> | null>(
-        `/board-items/${itemId}/following`,
+      const dto = await api.get<FollowingResponse | null>(
+        endpoints.boardItems.following(itemId),
       );
       return {
         following: dto?.following === true,
-        followers: dto?.followers ?? [],
+        followers: (dto?.followers ?? [])
+          .filter((person) => Boolean(person.userId))
+          .map((person) => ({
+            userId: person.userId ?? "",
+            name: person.name ?? "",
+          })),
       };
     },
     async getApprovals(itemId: string): Promise<ItemApprovalDto[]> {
-      const dto = await api.get<ItemApprovalWire[] | null>(
-        `/board-items/${itemId}/approval-requests`,
+      const dto = await api.get<ApprovalsResponse | null>(
+        endpoints.boardItems.approvalRequests(itemId),
       );
-      return (dto ?? []).map(toItemApproval);
+      return (dto ?? []).flatMap((wire) =>
+        wire.id && wire.requestedByUserId && wire.createdAt
+          ? [toItemApproval(wire as ItemApprovalWire)]
+          : [],
+      );
     },
     /** The named approver answers (`WorkManagement.Approvals.Decide`); the comment is optional. */
     async decideApproval(
@@ -366,7 +471,7 @@ export function createItemExtrasApi(
       comment: string | null,
     ): Promise<void> {
       await api.post<void>(
-        `/workspaces/${workspaceId}/approvals/${requestId}/decision`,
+        endpoints.approvals.decision(workspaceId, requestId),
         { decision, comment },
         { idempotencyKey: key(), ...quiet },
       );
@@ -377,7 +482,7 @@ export function createItemExtrasApi(
       expectedVersion: number,
     ): Promise<void> {
       await api.post<void>(
-        `/approvals/${requestId}/cancel`,
+        endpoints.approvals.cancel(requestId),
         { expectedVersion },
         { idempotencyKey: key(), ...quiet },
       );
@@ -389,28 +494,48 @@ export function createItemExtrasApi(
       note: string | null,
     ): Promise<void> {
       await api.post<unknown>(
-        `/board-items/${itemId}/approval-requests`,
+        endpoints.boardItems.approvalRequests(itemId),
         { approverUserId, note },
         { idempotencyKey: key(), ...quiet },
       );
     },
     async getLinks(itemId: string): Promise<ItemLinkDto[]> {
-      const dto = await api.get<{ links?: ItemLinkDto[] } | null>(
-        `/board-items/${itemId}/links`,
+      const dto = await api.get<LinksResponse | null>(
+        endpoints.boardItems.links(itemId),
       );
-      return dto?.links ?? [];
+      return (dto?.links ?? []).flatMap((link) =>
+        link.id && link.item?.id && isLinkRelation(link.relation)
+          ? [
+              {
+                id: link.id,
+                relation: link.relation,
+                item: {
+                  id: link.item.id,
+                  key: link.item.key ?? null,
+                  title: link.item.title ?? "",
+                  statusName: link.item.statusName ?? null,
+                  statusCategory: (link.item.statusCategory ??
+                    null) as ItemLinkDto["item"]["statusCategory"],
+                  isArchived: link.item.isArchived ?? false,
+                  assigneeId: link.item.assigneeId ?? null,
+                  assigneeName: link.item.assigneeName ?? null,
+                },
+              },
+            ]
+          : [],
+      );
     },
     async addLink(
       itemId: string,
       link: { itemId: string; relation: ItemLinkDto["relation"] },
     ): Promise<void> {
-      await api.post<void>(`/board-items/${itemId}/links`, link, {
+      await api.post<void>(endpoints.boardItems.links(itemId), link, {
         idempotencyKey: key(),
         ...quiet,
       });
     },
     async removeLink(itemId: string, linkId: string): Promise<void> {
-      await api.delete<void>(`/board-items/${itemId}/links/${linkId}`, quiet);
+      await api.delete<void>(endpoints.boardItems.link(itemId, linkId), quiet);
     },
     /** Timeline dependency `from -> to`: `to` waits for `from`. */
     async addDependency(from: string, to: string): Promise<void> {
@@ -425,6 +550,29 @@ export function createItemExtrasApi(
       if (!found) return false;
       await this.removeLink(to, found.id);
       return true;
+    },
+    /**
+     * `WorkManagement.BoardItems.CreateChild`: a sub-item under the parent, in the parent's group, with the
+     * facts the create dialog collected. The answer names the new id and version so the follow-up writes chain.
+     */
+    async createChildItem(
+      parentId: string,
+      input: {
+        readonly title: string;
+        readonly descriptionMd?: string;
+        readonly startDate?: string;
+        readonly dueDate?: string;
+      },
+      options: { readonly idempotencyKey: string },
+    ): Promise<{ id: string; version: number } | undefined> {
+      const created = await api.post<
+        { id?: string; version?: number } | null | undefined
+      >(`/board-items/${parentId}/child-items`, input, {
+        idempotencyKey: options.idempotencyKey,
+      });
+      return created?.id
+        ? { id: created.id, version: created.version ?? 1 }
+        : undefined;
     },
     /** Adds a child item (sub-item) under an item. */
     async addChildItem(itemId: string, title: string): Promise<void> {
@@ -471,7 +619,7 @@ export function createItemExtrasApi(
     ): Promise<ItemVersionDto> {
       return versionOf(
         await api.post<VersionBody>(
-          `/board-items/${itemId}/reopen?expectedVersion=${expectedVersion}`,
+          `${endpoints.boardItems.reopen(itemId)}?expectedVersion=${expectedVersion}`,
           {},
           { idempotencyKey: key(), ...quiet },
         ),
@@ -484,7 +632,7 @@ export function createItemExtrasApi(
     ): Promise<ItemVersionDto> {
       return versionOf(
         await api.post<VersionBody>(
-          `/board-items/${itemId}/unarchive?expectedVersion=${expectedVersion}`,
+          `${endpoints.boardItems.unarchive(itemId)}?expectedVersion=${expectedVersion}`,
           {},
           { idempotencyKey: key(), ...quiet },
         ),
@@ -500,7 +648,7 @@ export function createItemExtrasApi(
       boardId: string,
       workspaceId: string,
     ): Promise<PeopleDirectoryDto> {
-      const readMembers = async (): Promise<WorkspaceMember[]> => {
+      const readMembers = async (): Promise<WorkspaceMember[] | null> => {
         const rows: WorkspaceMember[] = [];
         let cursor: string | null = null;
         for (let pages = 0; pages < MAX_MEMBER_PAGES; pages += 1) {
@@ -508,16 +656,51 @@ export function createItemExtrasApi(
             limit: String(MEMBERS_PAGE_SIZE),
           });
           if (cursor) query.set("cursor", cursor);
-          const page: WorkspaceMembersPage | null =
-            await api.get<WorkspaceMembersPage | null>(
+          let page: WorkspaceMembersPage | null;
+          try {
+            page = await api.get<WorkspaceMembersPage | null>(
               `${endpoints.workspaces.members(workspaceId)}?${query}`,
             );
+          } catch (error) {
+            // A Guest does not enumerate the workspace (GOV-009): the board's own members are the list.
+            if (pages === 0 && isRefusedRead(error)) return null;
+            throw error;
+          }
           rows.push(...(page?.items ?? []));
           cursor = page?.nextCursor ?? null;
           if (!cursor) break;
         }
         return rows;
       };
+      // A Guest may not list the workspace (GOV-009): the board's own people (members and grant holders,
+      // names only) are the list, read without the workspace members or the full board (UC-WM-A23).
+      let isGuest = false;
+      try {
+        const me = await api.get<{ role?: string | null } | null>(
+          endpoints.workspaces.myMembership(workspaceId),
+        );
+        isGuest = (me?.role ?? "").trim().toLowerCase() === "guest";
+      } catch {
+        // The role is unknown: the members read below decides.
+      }
+      if (isGuest) {
+        const rows =
+          (await api.get<readonly BoardPersonWire[] | null>(
+            endpoints.boards.people(boardId),
+          )) ?? [];
+        return {
+          people: rows.map((row) => ({
+            userId: row.userId,
+            name: row.name ?? "",
+            department: null,
+            openCount: 0,
+            onBoard: true,
+            level: boardLevel(row.level),
+          })),
+          teams: [],
+          canInvite: false,
+        };
+      }
       const [members, board] = await Promise.all([
         readMembers(),
         api.get<{ members?: BoardMember[] | null }>(
@@ -530,6 +713,21 @@ export function createItemExtrasApi(
           boardLevel(member.role),
         ]),
       );
+      if (members === null)
+        return {
+          people: (board.members ?? [])
+            .filter((member) => Boolean(member.userId))
+            .map((member) => ({
+              userId: member.userId ?? "",
+              name: member.name ?? "",
+              department: null,
+              openCount: 0,
+              onBoard: true,
+              level: boardLevel(member.role),
+            })),
+          teams: [],
+          canInvite: false,
+        };
       return {
         people: members
           .filter((member) => member.status?.toLowerCase() !== "suspended")
@@ -549,11 +747,12 @@ export function createItemExtrasApi(
       const options = { idempotencyKey: key(), ...quiet };
       if (following)
         await api.put<void>(
-          `/board-items/${itemId}/following`,
+          endpoints.boardItems.following(itemId),
           undefined,
           options,
         );
-      else await api.delete<void>(`/board-items/${itemId}/following`, options);
+      else
+        await api.delete<void>(endpoints.boardItems.following(itemId), options);
     },
     /**
      * `WorkManagement.BoardItems.MoveToBoard`: the item lands in the target
@@ -566,7 +765,7 @@ export function createItemExtrasApi(
       expectedVersion: number,
     ): Promise<MoveToBoardResultDto> {
       const result = await api.post<Partial<MoveToBoardResultDto>>(
-        `/board-items/${itemId}/move-to-board`,
+        endpoints.boardItems.moveToBoard(itemId),
         { boardId, expectedVersion },
         { idempotencyKey: key(), ...quiet },
       );
@@ -579,30 +778,70 @@ export function createItemExtrasApi(
         droppedAssignees: result?.droppedAssignees ?? 0,
       };
     },
-    /** `WorkManagement.BoardItems.Trash`: items deleted from the board in the last 30 days. */
-    async listTrash(boardId: string): Promise<BoardTrashEntryDto[]> {
-      const rows = await api.get<BoardTrashEntryDto[]>(
-        `/boards/${boardId}/items/trash`,
+    /** `WorkManagement.BoardItems.Trash`: items deleted from the board in the last 30 days, newest first, optionally narrowed by name or key, a page at a time. */
+    async listTrash(
+      boardId: string,
+      search?: string,
+      cursor?: string,
+    ): Promise<ListPage<BoardTrashEntryDto>> {
+      const query = new URLSearchParams();
+      if (search?.trim()) query.set("q", search.trim());
+      if (cursor) query.set("cursor", cursor);
+      const text = query.toString();
+      const page = await api.get<TrashPage | null>(
+        `${endpoints.boardItems.trash(boardId)}${text ? `?${text}` : ""}`,
         quiet,
       );
-      return rows ?? [];
+      return {
+        rows: (page?.items ?? []).map((row) => ({
+          id: row.id ?? "",
+          name: row.name ?? "",
+          itemKey: row.itemKey ?? null,
+          groupId: row.groupId ?? "",
+          deletedAt: row.deletedAt ?? "",
+          deletedBy: row.deletedBy ?? null,
+          deletedByName: row.deletedByName ?? null,
+          subItemCount: row.subItemCount ?? 0,
+          restorableUntil: row.restorableUntil ?? "",
+        })),
+        nextCursor: page?.nextCursor ?? null,
+        total: page?.total ?? 0,
+      };
     },
-    /** `WorkManagement.BoardItems.Archived`: the board's archived items, newest first, optionally narrowed by name. */
+    /** `WorkManagement.BoardItems.Archived`: the board's archived items, newest first, optionally narrowed by name or key, a page at a time. */
     async listArchived(
       boardId: string,
       search?: string,
-    ): Promise<BoardArchivedEntryDto[]> {
-      const q = search?.trim() ? `?q=${encodeURIComponent(search.trim())}` : "";
-      const rows = await api.get<BoardArchivedEntryDto[]>(
-        `/boards/${boardId}/items/archived${q}`,
+      cursor?: string,
+    ): Promise<ListPage<BoardArchivedEntryDto>> {
+      const query = new URLSearchParams();
+      if (search?.trim()) query.set("q", search.trim());
+      if (cursor) query.set("cursor", cursor);
+      const text = query.toString();
+      const page = await api.get<ArchivedPage | null>(
+        `${endpoints.boardItems.archived(boardId)}${text ? `?${text}` : ""}`,
         quiet,
       );
-      return rows ?? [];
+      return {
+        rows: (page?.items ?? []).map((row) => ({
+          id: row.id ?? "",
+          name: row.name ?? "",
+          itemKey: row.itemKey ?? null,
+          groupId: row.groupId ?? "",
+          archivedAt: row.archivedAt ?? "",
+          archivedBy: row.archivedBy ?? null,
+          archivedByName: row.archivedByName ?? null,
+          subItemCount: row.subItemCount ?? 0,
+          version: row.version ?? 0,
+        })),
+        nextCursor: page?.nextCursor ?? null,
+        total: page?.total ?? 0,
+      };
     },
     /** `WorkManagement.BoardItems.Restore`: a deleted item comes back from the trash. */
     async restoreDeleted(itemId: string): Promise<void> {
       await api.post<void>(
-        `/board-items/${itemId}/restore`,
+        endpoints.boardItems.restore(itemId),
         {},
         { idempotencyKey: key(), ...quiet },
       );
@@ -613,8 +852,8 @@ export function createItemExtrasApi(
      * the server answers 409 `work.item.remind-too-soon` after that.
      */
     async remindOwners(itemId: string): Promise<RemindResultDto> {
-      const result = await api.post<Partial<RemindResultDto> | null>(
-        `/board-items/${itemId}/remind`,
+      const result = await api.post<RemindResponse | null>(
+        endpoints.boardItems.remind(itemId),
         {},
         { idempotencyKey: key(), ...quiet },
       );
@@ -638,11 +877,11 @@ export function createItemExtrasApi(
     },
     /** `WorkManagement.BoardItems.ListLinkedPages`: pages the caller may open, plus how many are hidden. */
     async getLinkedPages(itemId: string): Promise<LinkedPagesDto> {
-      const dto = await api.get<Partial<LinkedPagesDto> | null>(
-        `/board-items/${itemId}/linked-pages`,
+      const dto = await api.get<LinkedPagesResponse | null>(
+        endpoints.boardItems.linkedPages(itemId),
         quiet,
       );
-      return { pages: dto?.pages ?? [], hiddenCount: dto?.hiddenCount ?? 0 };
+      return toLinkedPages(dto);
     },
     /**
      * `Documents.Pages.ListWorkspacePages`: the pages of the workspace the
@@ -674,14 +913,14 @@ export function createItemExtrasApi(
     /** `WorkManagement.BoardItems.LinkPage`: linking a page twice changes nothing. */
     async linkPage(itemId: string, pageId: string): Promise<void> {
       await api.post<void>(
-        `/board-items/${itemId}/link-page`,
+        endpoints.boardItems.linkPage(itemId),
         { pageId },
         { idempotencyKey: key(), ...quiet },
       );
     },
     /** `WorkManagement.BoardItems.UnlinkPage`: removes this page's link only. */
     async unlinkPage(itemId: string, pageId: string): Promise<void> {
-      await api.delete<void>(`/board-items/${itemId}/link-page/${pageId}`, {
+      await api.delete<void>(endpoints.boardItems.unlinkPage(itemId, pageId), {
         idempotencyKey: key(),
         ...quiet,
       });
@@ -752,4 +991,16 @@ export function classifyRemindError(
   }
   if (status === 400) return { kind: "nobody" };
   return { kind: "error" };
+}
+
+/** Why the server refused to bring a deleted item back: past the 30 days, the parent still deleted, gone, no right to, or the network. */
+export function classifyRestoreError(
+  error: unknown,
+): "windowClosed" | "parentDeleted" | "gone" | "denied" | "error" {
+  const { status, code } = failureOf(error);
+  if (code === RESTORE_WINDOW_CLOSED_CODE) return "windowClosed";
+  if (code === RESTORE_PARENT_DELETED_CODE) return "parentDeleted";
+  if (status === 404) return "gone";
+  if (status === 403) return "denied";
+  return "error";
 }

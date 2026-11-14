@@ -172,6 +172,37 @@ public class BoardTests
     }
 
     [Fact]
+    public void Restore_OnTheLastInstantOfTheWindow_StillRestores()
+    {
+        var deletedAt = new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero);
+        var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, deletedAt.AddDays(-1));
+        board.Delete(Guid.NewGuid(), deletedAt);
+
+        board.Restore(Guid.NewGuid(), deletedAt + Board.RestoreWindow);
+
+        board.IsDeleted.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Restore_AfterTheThirtyDayWindow_IsRefusedWithTheRuleCode_AndTheBoardStaysDeleted()
+    {
+        var deletedAt = new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero);
+        var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, deletedAt.AddDays(-1));
+        board.Delete(Guid.NewGuid(), deletedAt);
+        var version = board.Version;
+        ((IHasDomainEvents)board).ClearDomainEvents();
+
+        var act = () => board.Restore(Guid.NewGuid(), deletedAt + Board.RestoreWindow + TimeSpan.FromSeconds(1));
+
+        act.Should().Throw<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()
+            .Which.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_Board_RestoreWindowElapsed);
+        board.IsDeleted.Should().BeTrue();
+        board.Version.Should().Be(version);
+        board.DomainEvents.Should().BeEmpty();
+        Board.RestoreWindow.Should().Be(TimeSpan.FromDays(30));
+    }
+
+    [Fact]
     public void Restore_ShouldBeNoOp_WhenNotDeleted()
     {
         var board = Board.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Valid Title", null, DateTimeOffset.UtcNow);

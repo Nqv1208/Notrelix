@@ -11,6 +11,10 @@ using Dpo = Notrelix.Infrastructure.Options.DataProtectionOptions;
 var builder = WebApplication.CreateBuilder(args);
 var isExportMode = OpenApiExportCommand.IsExportMode(args);
 
+// Fail fast on an unknown or empty Runtime:Roles before any wiring. The OpenAPI export always describes every role.
+var runtimeRoles = isExportMode ? RuntimeRoles.All : RuntimeRoles.Parse(builder.Configuration);
+builder.Services.AddSingleton(runtimeRoles);
+
 builder.Services.Configure<HostOptions>(options =>
     options.ShutdownTimeout = TimeSpan.FromSeconds(30));
 
@@ -40,7 +44,7 @@ if (dataProtectionOptions.PersistKeys && !string.IsNullOrWhiteSpace(dataProtecti
 
 if (!isExportMode)
 {
-    builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
+    builder.Services.AddInfrastructure(builder.Configuration, builder.Environment, runtimeRoles);
 }
 else
 {
@@ -53,10 +57,10 @@ else
     builder.Configuration["JwtSettings:Audience"] = "notrelix-export";
     // The export never touches a database: the role guard (enforced by default) would connect at startup.
     builder.Configuration["Rls:RoleEnforcement"] = "Off";
-    builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
+    builder.Services.AddInfrastructure(builder.Configuration, builder.Environment, runtimeRoles);
 }
 
-builder.Services.AddApiLayer(builder.Configuration, builder.Environment);
+builder.Services.AddApiLayer(builder.Configuration, builder.Environment, runtimeRoles);
 
 if (isExportMode)
 {
@@ -83,6 +87,8 @@ if (await app.RunDatabaseCommandsAsync(args))
 }
 
 await app.InitialiseDatabaseOnStartupAsync();
+
+app.Logger.LogInformation("Runtime roles: {Roles}", runtimeRoles.ToString());
 
 // 1. Forwarded headers (proxy support)
 app.UseForwardedHeaders();

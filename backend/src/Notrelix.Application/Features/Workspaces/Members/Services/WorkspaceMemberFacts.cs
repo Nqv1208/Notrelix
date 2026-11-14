@@ -21,4 +21,12 @@ public sealed class WorkspaceMemberFacts : IWorkspaceMemberFacts
             ? null
             : new WorkspaceMemberFact(userId, member.Role.ToString(), member.Status == WorkspaceMemberStatus.Active);
     }
+
+    public async Task<IReadOnlyList<Guid>> ListActiveColleagueIdsAsync(Guid workspaceId, CancellationToken cancellationToken) =>
+        await _context.WorkspaceMembers
+            .AsNoTracking()
+            .Where(m => m.WorkspaceId == workspaceId)
+            .Where(Notrelix.Domain.Workspaces.Rules.WorkspaceMemberRules.ActiveColleague)
+            .Select(m => m.UserId)
+            .ToListAsync(cancellationToken);
 }

@@ -8,6 +8,8 @@ public enum CommentTargetRight
 {
     View,
     Edit,
+    /// <summary>Moderating others' comments on a board item: a Board manager (ManageBoard).</summary>
+    Moderate,
 }
 
 /// <summary>
@@ -47,6 +49,7 @@ public sealed class CommentTargetAccess : ICommentTargetAccess
         {
             ("work-management.board-item", CommentTargetRight.View) => PermissionAction.ViewBoard,
             ("work-management.board-item", CommentTargetRight.Edit) => PermissionAction.UpdateItem,
+            ("work-management.board-item", CommentTargetRight.Moderate) => PermissionAction.ManageBoard,
             ("documents.page", CommentTargetRight.View) => PermissionAction.ViewPage,
             ("documents.page", CommentTargetRight.Edit) => PermissionAction.UpdatePage,
             _ => (PermissionAction?)null,

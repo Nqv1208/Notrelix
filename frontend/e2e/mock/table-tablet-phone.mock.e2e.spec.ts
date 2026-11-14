@@ -63,7 +63,8 @@ const shot = async (page: Page, name: string, width: number, dark: boolean) => {
 
 /**
  * Every button, checkbox, option and select inside `scope` is a 44 px target: its box is 44 px high, or the point
- * 21 px above and below its centre still reaches it (the hit area a control extends past its drawing).
+ * 21 px above and below its centre still reaches it (the hit area a control extends past its drawing). A smaller
+ * control is scrolled into view before the check, since a column out of view cannot be hit-tested.
  */
 async function expectTargets(page: Page, scope: string, label: string) {
   const bad = await page.evaluate((selector) => {
@@ -80,8 +81,10 @@ async function expectTargets(page: Page, scope: string, label: string) {
           getComputedStyle(element).visibility !== "hidden",
       )
       .filter((element) => {
+        if (element.getBoundingClientRect().height >= 43.5) return false;
+        // A control in a column scrolled out of view cannot be hit-tested where it is: bring it into view first.
+        element.scrollIntoView({ block: "nearest", inline: "nearest" });
         const box = element.getBoundingClientRect();
-        if (box.height >= 43.5) return false;
         const x = box.x + box.width / 2;
         return [-21, 21].some((dy) => {
           const hit = document.elementFromPoint(x, box.y + box.height / 2 + dy);

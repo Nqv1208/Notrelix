@@ -14,9 +14,6 @@ applies_to:
   - frontend
   - mobile
 evidence:
-  - docs/engineering/06-operations/01-operational-readiness.md
-  - docs/engineering/06-operations/04-messaging-data-pipeline-runbook.md
-  - docs/engineering/06-operations/06-sli-slo-alerting.md
   - docs/quality/engineering-quality-standard.md
   - docs/quality/security-quality-standard.md
   - docs/quality/performance-and-scalability.md

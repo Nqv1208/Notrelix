@@ -17,10 +17,7 @@ public sealed class IntegrationWebhookDispatchRequestedConsumerDefinition
         endpointConfigurator.PrefetchCount = 8;
         endpointConfigurator.UseMessageRetry(r =>
         {
-            r.Intervals(
-                TimeSpan.FromSeconds(1),
-                TimeSpan.FromSeconds(5),
-                TimeSpan.FromSeconds(30));
+            r.Intervals(WebhookRedeliveryPolicy.RedeliveryIntervals.ToArray());
             r.Ignore<ArgumentException>();
         });
     }

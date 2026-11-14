@@ -213,6 +213,24 @@ describe("BoardShareDialogSurface", () => {
     expect(screen.getByText(copy.link.publicOn)).toBeTruthy();
   });
 
+  it("keeps the caller's own row and the board's Owner fixed: no level menu to open", () => {
+    renderShare(shareDefaultScenario(), {
+      onChangeLevel: vi.fn(),
+      onRemove: vi.fn(),
+    });
+    // The caller sees their own level as plain text, not a button: a person cannot lower themselves.
+    const own = screen.getByText(/Nguyễn Thu Hà/).closest('[data-f="pr"]')!;
+    expect(within(own as HTMLElement).queryByRole("button")).toBeNull();
+    expect(within(own as HTMLElement).getByText("Quản lý")).toBeTruthy();
+    // A person who is neither the caller nor the Owner keeps a menu.
+    const other = screen
+      .getByText("Nhóm Kế toán tổng hợp")
+      .closest('[data-f="pr"]')!;
+    expect(
+      within(other as HTMLElement).getByRole("button", { name: /Quyền của/ }),
+    ).toBeTruthy();
+  });
+
   it("hides the permission list from a reader the producer discloses no entries to and says how many can open the Board", () => {
     const scenario = shareDefaultScenario();
     renderShare({
@@ -266,5 +284,60 @@ describe("BoardShareDialogSurface", () => {
     expect(
       within(screen.getByRole("dialog")).getByText(copy.people.empty),
     ).toBeTruthy();
+  });
+
+  it("UC-WM-A19 offers an outsider's typed email as a Guest invitation at Viewer and sends it", () => {
+    const onInviteGuest = vi.fn(async () => true);
+    renderShare(shareDefaultScenario(), {
+      candidates: [],
+      onInvite: vi.fn(),
+      onInviteGuest,
+    });
+    const field = screen.getByRole("combobox");
+    fireEvent.change(field, { target: { value: "tuan@doitac-erp.vn" } });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: copy.add.guestOption.replace("{{email}}", "tuan@doitac-erp.vn"),
+      }),
+    );
+    expect(
+      screen.getByRole("button", { name: copy.add.invite }),
+    ).not.toHaveProperty("disabled", true);
+    fireEvent.click(screen.getByRole("button", { name: copy.add.invite }));
+    expect(onInviteGuest).toHaveBeenCalledWith("tuan@doitac-erp.vn");
+  });
+
+  it("UC-WM-A20 lists pending invitations and only the issuer may resend or revoke", () => {
+    const onRevokeInvitation = vi.fn();
+    renderShare(shareDefaultScenario(), {
+      pendingInvitations: [
+        {
+          id: "inv-1",
+          email: "a@x.vn",
+          issuedByYou: true,
+          invitedByName: "Hà",
+          expiresAt: "2027-01-01T00:00:00Z",
+        },
+        {
+          id: "inv-2",
+          email: "b@x.vn",
+          issuedByYou: false,
+          invitedByName: "Phúc",
+          expiresAt: "2027-01-01T00:00:00Z",
+        },
+      ],
+      onResendInvitation: vi.fn(),
+      onRevokeInvitation,
+    });
+    const section = screen.getByRole("region", {
+      name: /Lời mời đang chờ · 2/,
+    });
+    const revokes = within(section).getAllByRole("button", {
+      name: copy.pending.revoke,
+    });
+    expect(revokes[0]).not.toHaveProperty("disabled", true);
+    expect(revokes[1]).toHaveProperty("disabled", true);
+    fireEvent.click(revokes[0]!);
+    expect(onRevokeInvitation).toHaveBeenCalledWith("inv-1");
   });
 });

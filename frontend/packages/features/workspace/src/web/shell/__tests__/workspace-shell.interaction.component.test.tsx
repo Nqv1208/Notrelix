@@ -67,7 +67,7 @@ function primaryLinks(name: string) {
 }
 
 describe("WorkspaceSidebarSurface", () => {
-  it("FUI[workspace.sidebar:render] lists Home, My work, Inbox, Docs and Reports in order as real destinations, in vi and en", () => {
+  it("FUI[workspace.sidebar:render] lists Home, My work, Inbox, Chat, Docs and Reports in order as real destinations, in vi and en", () => {
     const en = renderSidebar({ location: { section: "home" } });
     expect(
       primaryLinks(copy.nav.label).map((link) => [
@@ -78,6 +78,7 @@ describe("WorkspaceSidebarSurface", () => {
       ["Home", "/workspaces/ws-product"],
       ["My work", "/workspaces/ws-product/my-work"],
       ["Inbox", "/workspaces/ws-product/inbox"],
+      ["Chat", "/workspaces/ws-product/chat"],
       ["Docs", "/workspaces/ws-product/library"],
       ["Reports", "/workspaces/ws-product/reports"],
     ]);
@@ -91,7 +92,14 @@ describe("WorkspaceSidebarSurface", () => {
       primaryLinks(viCopy.nav.label).map((link) =>
         link.textContent?.replace(/\d+|99\+/g, "").trim(),
       ),
-    ).toEqual(["Trang chủ", "Việc của tôi", "Hộp thư", "Tài liệu", "Báo cáo"]);
+    ).toEqual([
+      "Trang chủ",
+      "Việc của tôi",
+      "Hộp thư",
+      "Trò chuyện",
+      "Tài liệu",
+      "Báo cáo",
+    ]);
     expect(
       primaryLinks(viCopy.nav.label).some((link) =>
         link.hasAttribute("aria-current"),
@@ -541,6 +549,7 @@ describe("WorkspaceSidebarSurface", () => {
       copy.nav.home,
       `${copy.nav.myWork}7`,
       `${copy.nav.inbox}3`,
+      copy.nav.chat,
       copy.nav.library,
       copy.nav.reports,
       "Board: Product Roadmap",

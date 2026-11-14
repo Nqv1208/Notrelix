@@ -100,6 +100,7 @@ public sealed class EfOwnershipGateTests
         ["Accounts"] = "IAccountDbContext",
         ["Automation"] = "IAutomationDbContext",
         ["Billing"] = "IBillingDbContext",
+        ["Chat"] = "IChatDbContext",
         ["Collaboration"] = "ICollaborationDbContext",
         ["Documents"] = "IDocumentDbContext",
         ["Governance"] = "IGovernanceDbContext",

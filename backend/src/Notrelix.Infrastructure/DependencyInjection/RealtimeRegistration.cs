@@ -17,6 +17,7 @@ public static class RealtimeRegistration
                 provider => provider.GetRequiredService<InMemoryRealtimeNotificationSource>());
             services.AddSingleton<IRealtimeAccessSignalSource>(
                 provider => provider.GetRequiredService<InMemoryRealtimeNotificationSource>());
+            services.AddSingleton<IRealtimeEphemeralTransport, InProcessRealtimeEphemeralTransport>();
             // Testing: no transport side effects. Development: deliver to this process's sockets.
             if (IsTesting(configuration, environment))
                 services.AddScoped<IRealtimePublisher, DevNullRealtimePublisher>();
@@ -28,11 +29,16 @@ public static class RealtimeRegistration
             // Production (or Realtime:Transport=Redis): real Redis-backed publisher (envelope contract in
             // RedisRealtimePublisher). Requires the Redis connection registered
             // by AddCaching; construction never connects (lazy multiplexer).
+            services.AddSingleton<IRealtimeEphemeralTransport, RedisRealtimeEphemeralTransport>();
             services.AddScoped<IRealtimePublisher, RedisRealtimePublisher>();
             services.AddSingleton<RedisRealtimeNotificationSource>();
             services.AddSingleton<IRealtimeNotificationSource>(provider => provider.GetRequiredService<RedisRealtimeNotificationSource>());
             services.AddSingleton<IRealtimeAccessSignalSource>(provider => provider.GetRequiredService<RedisRealtimeNotificationSource>());
         }
+
+        // Typing and presence signals: the same transport choice as the notification source, one bus per process.
+        services.AddSingleton<RealtimeEphemeralBus>();
+        services.AddSingleton<IRealtimeEphemeralBus>(provider => provider.GetRequiredService<RealtimeEphemeralBus>());
 
         return services;
     }

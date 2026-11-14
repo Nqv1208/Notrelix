@@ -48,6 +48,32 @@ public class SuspendMemberCommandHandlerTests : WorkspaceHandlerTestBase
     }
 
     [Fact]
+    public async Task Handle_WhenMemberAlreadySuspended_IsANoOp_WithNoVersionStep()
+    {
+        SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId));
+        var member = CreateMember(userId: _targetId);
+        member.Suspend(TestUserId, TestNow, 2);
+        SetupMembers(CreateMember(WorkspaceRole.Owner), member);
+        var version = member.Version;
+
+        var result = await CreateSut().Handle(new SuspendMemberCommand(TestWorkspaceId, _targetId, version), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        member.Status.Should().Be(Notrelix.Domain.Workspaces.Members.WorkspaceMemberStatus.Suspended);
+        member.Version.Should().Be(version);
+    }
+
+    [Fact]
+    public void Command_QuotesTheTargetMemberVersion_AndDeclaresTheMemberAsTheConcurrencyResource()
+    {
+        IExpectedVersionRequest command = new SuspendMemberCommand(TestWorkspaceId, _targetId, 7);
+
+        command.ExpectedVersion.Should().Be(7);
+        command.Resource.Kind.Value.Should().Be("workspaces.workspace-member");
+        command.Resource.ResourceId.Should().Be(_targetId);
+    }
+
+    [Fact]
     public async Task Handle_WhenTheActorIsTheTarget_IsRefusedBeforeAnyChange()
     {
         SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId));

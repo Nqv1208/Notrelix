@@ -339,6 +339,11 @@ public sealed class AttachmentObjectReaperTests
         public bool SweepBusy { get; set; }
         public bool FailCommitOnce { get; set; }
 
+        /// <summary>Pending two-step uploads are not modelled by this fake: nothing is expired.</summary>
+        public Task<int> ExpirePendingUploadsAsync(
+            DateTimeOffset now, int batchSize, Func<string, CancellationToken, Task<bool>> deleteObject, CancellationToken cancellationToken) =>
+            Task.FromResult(0);
+
         public Row AddDeleted(DateTimeOffset deletedAt) => Add(deletedAt);
         public Row AddLive() => Add(null);
 

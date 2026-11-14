@@ -67,7 +67,7 @@ public class GetBootstrapTests : IdentityHandlerTestBase
         port.Setup(p => p.GetAsync(TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(CreateProjection(
                 personalWorkspaceId: workspaceId,
-                new BootstrapWorkspaceProjection(workspaceId, "My Workspace", "my-workspace", "Admin", AccountId)));
+                new BootstrapWorkspaceProjection(workspaceId, "My Workspace", "my-workspace", AccountId)));
 
         var sut = CreateSut(port);
         var result = await sut.Handle(new GetBootstrapQuery(), CancellationToken.None);
@@ -77,7 +77,6 @@ public class GetBootstrapTests : IdentityHandlerTestBase
         result.Data.Workspaces[0].Id.Should().Be(workspaceId);
         result.Data.Workspaces[0].Name.Should().Be("My Workspace");
         result.Data.Workspaces[0].Slug.Should().Be("my-workspace");
-        result.Data.Workspaces[0].Role.Should().Be("Admin");
         result.Data.PersonalWorkspace.Status.Should().Be("ready");
         result.Data.PersonalWorkspace.WorkspaceId.Should().Be(workspaceId);
         result.Data.Workspaces[0].AccountId.Should().Be(AccountId);

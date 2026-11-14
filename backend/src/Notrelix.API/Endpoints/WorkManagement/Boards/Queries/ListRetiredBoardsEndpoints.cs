@@ -15,12 +15,12 @@ public static class ListRetiredBoardsEndpoints
             .Produces<List<RetiredBoardDto>>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.Boards")
             .WithSummary("Get the archived boards of a workspace that the caller may see");
-        group.MapWorkspaceGet("/deleted", async (Guid workspaceId, ISender sender, CancellationToken ct) =>
-                (await sender.Send(new ListDeletedBoardsQuery(workspaceId), ct)).ToApiResult())
+        group.MapWorkspaceGet("/deleted", async (Guid workspaceId, Guid? spaceId, ISender sender, CancellationToken ct) =>
+                (await sender.Send(new ListDeletedBoardsQuery(workspaceId, spaceId), ct)).ToApiResult())
             .WithName("WorkManagement.Boards.ListDeleted")
             .Produces<List<RetiredBoardDto>>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.Boards")
-            .WithSummary("Get the boards deleted in the last 30 days that the caller can restore");
+            .WithSummary("Get the boards deleted in the last 30 days that the caller can restore, optionally those of one Space");
         return group;
     }
 }

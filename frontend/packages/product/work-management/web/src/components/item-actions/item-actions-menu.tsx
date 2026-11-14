@@ -7,11 +7,18 @@ import {
   CircleCheck,
   Copy,
   ExternalLink,
+  Eye,
+  EyeOff,
   Link2,
   RotateCcw,
   Trash2,
 } from "lucide-react";
-import { DropdownMenuItem, DropdownMenuSeparator } from "@notrelix/ui-web";
+import {
+  ContextMenuItem,
+  ContextMenuSeparator,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@notrelix/ui-web";
 import type { ItemActionsCopy } from "./item-actions.copy";
 
 export interface ItemActionsState {
@@ -19,6 +26,8 @@ export interface ItemActionsState {
   readonly itemKey?: string | null;
   readonly archived: boolean;
   readonly completed: boolean;
+  /** Whether the person follows the item; `null` or absent leaves Follow out. */
+  readonly following?: boolean | null;
 }
 
 export interface ItemActionsPermissions {
@@ -39,6 +48,8 @@ export interface ItemActionsHandlers {
   readonly complete?: (itemId: string) => void;
   readonly reopen?: (itemId: string) => void;
   readonly remind?: (itemId: string) => void;
+  /** Follow (`true`) or stop following (`false`). */
+  readonly follow?: (itemId: string, following: boolean) => void;
   readonly duplicate?: (itemId: string) => void;
   readonly moveBoard?: (itemId: string) => void;
   readonly archive?: (itemId: string) => void;
@@ -46,7 +57,11 @@ export interface ItemActionsHandlers {
   readonly remove?: (itemId: string) => void;
 }
 
+/** The same entries drawn in a "⋯" dropdown or in a right-click / long-press context menu. */
+export type ItemActionsMenuKind = "dropdown" | "context";
+
 function Entry({
+  kind,
   icon,
   label,
   hint,
@@ -54,6 +69,7 @@ function Entry({
   destructive,
   onSelect,
 }: {
+  kind: ItemActionsMenuKind;
   icon: ReactNode;
   label: string;
   hint?: string;
@@ -63,8 +79,9 @@ function Entry({
   onSelect?: () => void;
 }) {
   const reasonId = useId();
+  const Item = kind === "context" ? ContextMenuItem : DropdownMenuItem;
   return (
-    <DropdownMenuItem
+    <Item
       variant={destructive ? "destructive" : undefined}
       disabled={Boolean(reason)}
       aria-describedby={reason ? reasonId : undefined}
@@ -89,14 +106,14 @@ function Entry({
           </small>
         ) : null}
       </span>
-    </DropdownMenuItem>
+    </Item>
   );
 }
 
 /**
  * The one actions menu of an item, in the same order on the card, the side
  * sheet, the item page and the table row: copy link, open page, complete or
- * reopen, remind, duplicate, move board, archive or unarchive, delete. An
+ * reopen, follow, remind, duplicate, move board, archive or unarchive, delete. An
  * entry the person cannot use, or that does not apply to the item's state,
  * stays visible, disabled, with the reason written under it.
  */
@@ -105,7 +122,9 @@ export function ItemActionsMenuItems({
   item,
   can,
   on,
+  kind = "dropdown",
 }: {
+  kind?: ItemActionsMenuKind;
   copy: ItemActionsCopy;
   item: ItemActionsState;
   can: ItemActionsPermissions;
@@ -113,13 +132,23 @@ export function ItemActionsMenuItems({
 }) {
   const { itemId, archived, completed } = item;
   const first = on.copyLink || on.openFull;
+  const following = item.following;
+  const canFollow = Boolean(on.follow) && typeof following === "boolean";
   const middle =
-    on.complete || on.reopen || on.remind || on.duplicate || on.moveBoard;
+    on.complete ||
+    on.reopen ||
+    canFollow ||
+    on.remind ||
+    on.duplicate ||
+    on.moveBoard;
   const last = on.archive || on.unarchive || on.remove;
+  const Separator =
+    kind === "context" ? ContextMenuSeparator : DropdownMenuSeparator;
   return (
     <>
       {on.copyLink ? (
         <Entry
+          kind={kind}
           icon={<Link2 className="size-4" />}
           label={copy.copyLink}
           hint={item.itemKey ?? undefined}
@@ -128,14 +157,16 @@ export function ItemActionsMenuItems({
       ) : null}
       {on.openFull ? (
         <Entry
+          kind={kind}
           icon={<ExternalLink className="size-4" />}
           label={copy.openFull}
           onSelect={() => on.openFull?.(itemId)}
         />
       ) : null}
-      {first && middle ? <DropdownMenuSeparator /> : null}
+      {first && middle ? <Separator /> : null}
       {completed && on.reopen ? (
         <Entry
+          kind={kind}
           icon={<RotateCcw className="size-4" />}
           label={copy.reopen}
           reason={can.edit ? undefined : copy.reasonEdit}
@@ -144,6 +175,7 @@ export function ItemActionsMenuItems({
       ) : null}
       {!completed && on.complete ? (
         <Entry
+          kind={kind}
           icon={<CircleCheck className="size-4" />}
           label={copy.complete}
           reason={
@@ -156,8 +188,24 @@ export function ItemActionsMenuItems({
           onSelect={() => on.complete?.(itemId)}
         />
       ) : null}
+      {canFollow ? (
+        <Entry
+          kind={kind}
+          icon={
+            following ? (
+              <EyeOff className="size-4" />
+            ) : (
+              <Eye className="size-4" />
+            )
+          }
+          label={following ? copy.unfollow : copy.follow}
+          hint={following ? copy.unfollowHint : copy.followHint}
+          onSelect={() => on.follow?.(itemId, !following)}
+        />
+      ) : null}
       {on.remind ? (
         <Entry
+          kind={kind}
           icon={<Bell className="size-4" />}
           label={copy.remind}
           reason={
@@ -172,6 +220,7 @@ export function ItemActionsMenuItems({
       ) : null}
       {on.duplicate ? (
         <Entry
+          kind={kind}
           icon={<Copy className="size-4" />}
           label={copy.duplicate}
           reason={can.create ? undefined : copy.reasonCreate}
@@ -180,6 +229,7 @@ export function ItemActionsMenuItems({
       ) : null}
       {on.moveBoard ? (
         <Entry
+          kind={kind}
           icon={<ArrowLeftRight className="size-4" />}
           label={copy.moveBoard}
           reason={
@@ -192,9 +242,10 @@ export function ItemActionsMenuItems({
           onSelect={() => on.moveBoard?.(itemId)}
         />
       ) : null}
-      {(first || middle) && last ? <DropdownMenuSeparator /> : null}
+      {(first || middle) && last ? <Separator /> : null}
       {archived && on.unarchive ? (
         <Entry
+          kind={kind}
           icon={<ArchiveRestore className="size-4" />}
           label={copy.unarchive}
           onSelect={() => on.unarchive?.(itemId)}
@@ -202,6 +253,7 @@ export function ItemActionsMenuItems({
       ) : null}
       {!archived && on.archive ? (
         <Entry
+          kind={kind}
           icon={<Archive className="size-4" />}
           label={copy.archive}
           reason={can.remove ? undefined : copy.reasonEdit}
@@ -210,6 +262,7 @@ export function ItemActionsMenuItems({
       ) : null}
       {on.remove ? (
         <Entry
+          kind={kind}
           destructive
           icon={<Trash2 className="size-4" />}
           label={copy.delete}

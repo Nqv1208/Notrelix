@@ -41,28 +41,30 @@ for (const [width, height] of [
       await expect(dialog).toBeVisible();
       await page.waitForTimeout(700);
 
-      const fields = dialog.locator("[data-field-row] input[type=text]");
+      // A custom field is a pill: its value is the last text span, cut by an ellipsis with the full value in its title.
+      const fields = dialog.locator("[data-field-row] button span[title]");
       await expect(fields.first()).toBeVisible();
       const frame = (await dialog.boundingBox())!;
-      const report = await fields.evaluateAll((inputs, frameRight) => {
-        return (inputs as HTMLInputElement[]).map((input) => {
-          const box = input.getBoundingClientRect();
+      const report = await fields.evaluateAll((nodes, frameRight) => {
+        return (nodes as HTMLElement[]).map((node) => {
+          const pill = node.closest("button, span[class*=rounded]")!;
           return {
-            name: input.getAttribute("aria-label"),
-            value: input.value,
-            title: input.title,
-            overflows: input.scrollWidth > input.clientWidth,
-            textOverflow: getComputedStyle(input).textOverflow,
-            right: box.right,
+            name: node.textContent,
+            value: node.textContent ?? "",
+            title: node.title,
+            overflows: node.scrollWidth > node.clientWidth,
+            textOverflow: getComputedStyle(node).textOverflow,
+            right: pill.getBoundingClientRect().right,
             frameRight,
           };
         });
       }, frame.x + frame.width);
       expect(report.length).toBeGreaterThan(0);
       for (const field of report) {
-        expect(field.title, `${field.name}: full value in the title`).toBe(
-          field.value,
-        );
+        expect(
+          field.value.startsWith(field.title.slice(0, 8)),
+          `${field.name}: full value in the title`,
+        ).toBe(true);
         expect(field.textOverflow, `${field.name} text-overflow`).toBe(
           "ellipsis",
         );

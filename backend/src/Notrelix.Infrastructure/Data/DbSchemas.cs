@@ -9,6 +9,7 @@ public static class DbSchemas
     public const string Work = "work";
     public const string Docs = "docs";
     public const string Collab = "collab";
+    public const string Chat = "chat";
     public const string Automation = "automation";
     public const string Integration = "integration";
     public const string Billing = "billing";

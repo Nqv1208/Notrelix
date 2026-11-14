@@ -12,4 +12,7 @@ public class ConflictException : Exception
     }
 
     public string? ErrorCode { get; }
+
+    /// <summary>Extra members of the public problem (for example who won the race the caller lost).</summary>
+    public IReadOnlyDictionary<string, object?> Extensions { get; init; } = new Dictionary<string, object?>();
 }

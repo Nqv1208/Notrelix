@@ -110,6 +110,20 @@ public class FormSubmission : Entity, IWorkspaceScoped
         RaiseDomainEvent(new FormSubmissionProcessedDomainEvent(AccountId, WorkspaceId, Id, FormId, createdItemId, processedAt));
     }
 
+    /// <summary>
+    /// Returns a decided response to Accepted, the New tab: the undo of a rejection, a spam mark or a delete.
+    /// An accepted response is left as it is, so a repeated undo changes nothing. A processed response keeps its
+    /// item and its processing time.
+    /// </summary>
+    public void Reopen()
+    {
+        if (Status == FormSubmissionStatus.Accepted) return;
+
+        Status = FormSubmissionStatus.Accepted;
+        RejectionReason = null;
+        if (CreatedItemId is null) ProcessedAt = null;
+    }
+
     public void Delete(Guid deletedBy, DateTimeOffset deletedAt)
     {
         if (Status == FormSubmissionStatus.Deleted)

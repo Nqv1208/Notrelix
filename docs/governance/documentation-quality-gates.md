@@ -185,12 +185,11 @@ It does not silently regenerate and commit.
 
 # 7. Developer entry points
 
-Target Makefile commands:
+Makefile commands:
 
 ```bash
 make docs-check
 make docs-generate
-make docs-check-generated
 ```
 
 Meaning:
@@ -201,10 +200,9 @@ docs-check
 
 docs-generate
     intentionally regenerate generated documentation
-
-docs-check-generated
-    verify committed generated outputs equal producer output
 ```
+
+`docs-check` includes `check-generated.mjs`, which verifies committed generated outputs equal producer output.
 
 The exact implementation may call multiple scripts.
 
@@ -212,17 +210,15 @@ The command contract should remain stable enough for humans, agents, and CI.
 
 ---
 
-# 8. Current transition
+# 8. Current gate
 
-The repository currently exposes:
+The repository exposes:
 
 ```bash
 make docs-check
 ```
 
-through a single documentation checker.
-
-That existing checker already proves several useful properties, including:
+which runs the focused scripts below and proves, among other properties:
 
 - relative-link existence;
 - local `file:///` rejection;
@@ -235,21 +231,21 @@ That existing checker already proves several useful properties, including:
 - generated frontend package-boundary drift;
 - selected branch/freeze/version wording rejection.
 
-The target governance decomposes this responsibility into focused scripts/jobs so failures are easier to understand and extend.
+The governance is decomposed into focused scripts (`scripts/docs/check-*.mjs`) so failures are easier to understand and extend.
 
-Migration MUST preserve useful existing checks rather than replacing them with weaker validation.
+Changes to the gate MUST preserve useful existing checks rather than replace them with weaker validation.
 
 ---
 
-# 9. Target scripts
+# 9. Scripts
 
-Target tooling location:
+Tooling location:
 
 ```text
 scripts/docs/
 ```
 
-Required target scripts:
+Required scripts:
 
 ```text
 check-links.mjs

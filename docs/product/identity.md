@@ -15,8 +15,8 @@ applies_to:
 evidence:
   - PRODUCT.md
   - docs/product/product-model.md
-  - docs/product/contexts/accounts.md
-  - docs/product/contexts/workspaces.md
+  - docs/product/accounts.md
+  - docs/product/workspaces.md
   - docs/architecture/bounded-context-map.md
   - backend/src/Notrelix.Domain/Identity/
   - backend/tests/Notrelix.Domain.Tests/
@@ -252,6 +252,8 @@ Accepted policy (2026-10-23): a successful reset proves control of the account, 
 Email verification token lifecycle is separate from User identity lifecycle.
 
 Verified email is evidence about an address, not proof of arbitrary Account/Workspace ownership.
+
+Accepted policy (2026-11-02): registration answers the same neutral reply for a new address and for an address that already has an account, and opens no session. A new address gets its User, its personal Account and a confirmation message; the person confirms the email and signs in. The owner of an existing address gets a notice message that someone tried to register, and nothing changes. At most three notices are sent per address per hour; past that the answer stays the same and no message is sent. Nothing in the answer (status, body, cookies) says whether the address was registered.
 
 # 15. One-time tokens
 
@@ -870,11 +872,11 @@ Stop rather than guess if:
 # 76. Related canonical owners
 
 ```text
-docs/product/contexts/accounts.md
-docs/product/contexts/workspaces.md
-docs/product/contexts/governance.md
-docs/product/contexts/integrations.md
-docs/product/contexts/billing.md
+docs/product/accounts.md
+docs/product/workspaces.md
+docs/product/governance.md
+docs/product/integrations.md
+docs/product/billing.md
 docs/product/product-model.md
 docs/architecture/contract-boundaries.md
 docs/architecture/events-realtime-and-delivery-boundary.md

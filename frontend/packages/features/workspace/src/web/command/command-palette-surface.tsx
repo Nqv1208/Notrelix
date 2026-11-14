@@ -1,5 +1,6 @@
 import * as React from "react";
 import {
+  MessageSquareText,
   ArrowRight,
   BarChart3,
   ChevronDown,
@@ -28,6 +29,7 @@ import {
   DialogDescription,
   DialogTitle,
   cn,
+  useMediaQuery,
 } from "@notrelix/ui-web";
 import {
   highlightSegments,
@@ -65,6 +67,7 @@ import type {
   PaletteWorkEntry,
   PaletteWorkspace,
 } from "./command-models";
+import { PhoneSearchSheet } from "./command-palette-phone";
 import type { WorkspaceCommandCopy } from "./workspace-command.copy";
 
 export interface WorkspaceCommandPaletteSurfaceProps {
@@ -129,6 +132,7 @@ const ICONS: Readonly<Record<PaletteIcon, LucideIcon>> = {
   home: House,
   "my-work": UserRoundCheck,
   inbox: Inbox,
+  chat: MessageSquareText,
   search: Search,
   library: Library,
   reports: BarChart3,
@@ -364,6 +368,8 @@ export function WorkspaceCommandPaletteSurface({
   const chosenRef = React.useRef(false);
   const baseId = React.useId();
   const listId = `${baseId}-results`;
+  // A phone gets the full-screen search (Final-M-Search); the dialog's own parts stay for wider screens and a running command.
+  const phoneQuery = useMediaQuery("(max-width: 639px)");
 
   React.useEffect(() => {
     onQueryChange?.(open ? query : "");
@@ -495,6 +501,7 @@ export function WorkspaceCommandPaletteSurface({
     }
   };
 
+  const phone = phoneQuery && !running;
   const none = view.state === "none";
   const listLabel =
     view.state === "recent"
@@ -525,317 +532,357 @@ export function WorkspaceCommandPaletteSurface({
           if (!chosenRef.current) openerRef.current?.focus();
         }}
         data-f="pal"
-        className="top-[92px] box-border flex w-[702px] max-w-[calc(100%-30px)] translate-y-0 flex-col gap-0 overflow-hidden rounded-[14px] border border-line-strong bg-popover p-0 text-body leading-[1.45] shadow-palette ring-0 sm:max-w-[calc(100%-30px)] dark:bg-card"
+        className={cn(
+          "top-[92px] box-border flex w-[702px] max-w-[calc(100%-30px)] translate-y-0 flex-col gap-0 overflow-hidden rounded-[14px] border border-line-strong bg-popover p-0 text-body leading-[1.45] shadow-palette ring-0 sm:max-w-[calc(100%-30px)] dark:bg-card",
+          phone &&
+            "top-0 left-0 h-dvh w-full max-w-none translate-x-0 animate-none rounded-none border-0 bg-surface-canvas data-[state=open]:animate-none sm:max-w-none",
+        )}
       >
         <DialogTitle className="sr-only">{copy.title}</DialogTitle>
         <DialogDescription className="sr-only">
           {copy.description}
         </DialogDescription>
 
-        <div
-          data-f="qrow"
-          className="box-border flex h-[57px] items-center gap-2.5 border-b border-border pr-3.5 pl-[18px]"
-        >
-          <Search
-            data-f="qicon"
-            aria-hidden="true"
-            className="size-[19px] shrink-0 text-meta-foreground"
-            strokeWidth={1.8}
+        {phone ? (
+          <PhoneSearchSheet
+            copy={copy}
+            query={query}
+            term={term}
+            prefix={parsed.prefix ?? ""}
+            onQueryChange={changeQuery}
+            onInputKeyDown={onInputKeyDown}
+            inputRef={inputRef}
+            onCancel={() => onOpenChange(false)}
+            view={view}
+            filter={filter}
+            onFilter={(next) => {
+              setFilter(next);
+              setSelectedId(null);
+              inputRef.current?.focus();
+            }}
+            workspace={workspace}
+            listId={listId}
+            listLabel={listLabel}
+            listRef={listRef}
+            activeId={activeId}
+            optionDomId={optionDomId}
+            onChoose={choose}
+            icons={ICONS}
+            emptyTitle={formatCopy(copy.empty.title, {
+              query: term,
+              workspace: workspace.name,
+            })}
           />
-          <div
-            data-f="q"
-            className="relative flex min-w-0 flex-1 items-center text-palette-query text-foreground"
-          >
-            {parsed.prefix || running ? (
-              <span
-                data-f="qpre"
-                aria-hidden="true"
-                className="mr-1 font-mono font-semibold text-state-selected-foreground"
-              >
-                {running ? ">" : parsed.prefix}
-              </span>
-            ) : null}
-            <input
-              ref={inputRef}
-              type="text"
-              role="combobox"
-              aria-label={copy.placeholder}
-              aria-expanded="true"
-              aria-controls={listId}
-              aria-autocomplete="list"
-              aria-activedescendant={
-                activeId && !running ? optionDomId(activeId) : undefined
-              }
-              autoComplete="off"
-              spellCheck={false}
-              readOnly={Boolean(running)}
-              value={
-                running
-                  ? running.typed
-                  : parsed.prefix
-                    ? query.trimStart().slice(1)
-                    : query
-              }
-              onChange={(event) => {
-                const typed = event.target.value;
-                // A prefix typed over a chip starts that mode instead.
-                changeQuery(
-                  parsed.prefix && !/^[>@#]/.test(typed)
-                    ? `${parsed.prefix}${typed}`
-                    : typed,
-                );
-              }}
-              onKeyDown={(event) => {
-                // Backspace on an empty term removes the prefix chip.
-                if (
-                  event.key === "Backspace" &&
-                  parsed.prefix &&
-                  !query.trimStart().slice(1)
-                ) {
-                  event.preventDefault();
-                  changeQuery("");
-                  return;
-                }
-                onInputKeyDown(event);
-              }}
-              className={cn(
-                "m-0 min-w-0 border-0 bg-transparent p-0 text-ellipsis text-palette-query text-foreground caret-primary outline-none",
-                // The hint wraps onto lines of its own, so the field lies over it.
-                showHint ? "absolute inset-0 size-full" : "flex-1",
-              )}
-            />
-            {showHint ? (
-              <span
-                data-f="ph"
-                aria-hidden="true"
-                className="pointer-events-none min-w-0 flex-1 text-meta-foreground"
-              >
-                {copy.placeholder}
-              </span>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            data-f="scope"
-            aria-haspopup="listbox"
-            aria-disabled="true"
-            aria-label={`${copy.scope.label}: ${workspace.name}`}
-            title={copy.scope.unavailable}
-            className="box-border inline-flex h-7 cursor-not-allowed items-center gap-1.5 rounded-[7px] border border-line-strong bg-surface-canvas px-[9px] text-crumb leading-[1.45] font-medium whitespace-nowrap text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-          >
-            <span data-f="scopedm" className="inline-flex shrink-0">
-              <DepartmentMark
-                name={workspace.name}
-                markTone={workspace.markTone}
-                small
-              />
-            </span>
-            <span className="max-w-[180px] truncate">{workspace.name}</span>
-            <ChevronDown
-              data-f="scopechev"
-              aria-hidden="true"
-              className="size-[13px] text-meta-foreground"
-              strokeWidth={1.8}
-            />
-          </button>
-          <kbd data-f="esc" className={KEY_CLASS}>
-            {copy.esc}
-          </kbd>
-        </div>
-
-        {running ? (
-          <div
-            data-f="running"
-            id={listId}
-            role="status"
-            aria-live="polite"
-            className="flex items-center gap-3 px-[18px] py-4"
-          >
-            <span
-              data-f="spin"
-              aria-hidden="true"
-              className="box-border size-[22px] shrink-0 animate-spin rounded-full border-2 border-line-strong border-t-primary motion-reduce:animate-none motion-reduce:border-t-line-strong motion-reduce:border-r-primary"
-            />
-            <div>
-              <b className="font-semibold">{running.title}</b>
-              <div className="text-crumb leading-[1.45] text-meta-foreground">
-                {running.detail}
-              </div>
-              <div className="text-crumb leading-[1.45] text-meta-foreground">
-                {copy.running.note}
-              </div>
-            </div>
-            <button
-              type="button"
-              data-f="rbtn"
-              aria-disabled={running.onUndo ? undefined : true}
-              onClick={running.onUndo}
-              className="ml-auto box-border h-[30px] shrink-0 cursor-pointer rounded-[7px] border border-line-strong bg-popover px-3 text-compact leading-[1.45] font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-not-allowed dark:bg-card"
-            >
-              {copy.running.undo}
-            </button>
-          </div>
         ) : (
           <>
-            {view.state === "results" ? (
+            <div
+              data-f="qrow"
+              className="box-border flex h-[57px] items-center gap-2.5 border-b border-border pr-3.5 pl-[18px]"
+            >
+              <Search
+                data-f="qicon"
+                aria-hidden="true"
+                className="size-[19px] shrink-0 text-meta-foreground"
+                strokeWidth={1.8}
+              />
               <div
-                data-f="filters"
-                role="tablist"
-                aria-label={copy.filtersLabel}
-                className="box-border flex flex-wrap gap-1 border-b border-border px-3.5 py-2"
+                data-f="q"
+                className="relative flex min-w-0 flex-1 items-center text-palette-query text-foreground"
               >
-                {PALETTE_FILTERS.map((name) => {
-                  const count = view.counts[name];
-                  const selected = name === filter;
-                  return (
-                    <button
-                      key={name}
-                      type="button"
-                      role="tab"
-                      data-f="fl"
-                      aria-selected={selected}
-                      aria-controls={listId}
-                      tabIndex={-1}
-                      onClick={() => {
-                        setFilter(name);
-                        setSelectedId(null);
-                        inputRef.current?.focus();
-                      }}
-                      className={cn(
-                        "inline-flex h-7 cursor-pointer items-center gap-[5px] rounded-full border-0 px-2.5 text-crumb leading-[1.45] font-medium outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
-                        selected
-                          ? "bg-foreground font-semibold text-popover dark:text-card"
-                          : "bg-transparent text-muted-foreground",
-                      )}
-                    >
-                      {copy.filters[name]}
-                      {count ? (
-                        <span
-                          data-f="flc"
+                {parsed.prefix || running ? (
+                  <span
+                    data-f="qpre"
+                    aria-hidden="true"
+                    className="mr-1 font-mono font-semibold text-state-selected-foreground"
+                  >
+                    {running ? ">" : parsed.prefix}
+                  </span>
+                ) : null}
+                <input
+                  ref={inputRef}
+                  type="text"
+                  role="combobox"
+                  aria-label={copy.placeholder}
+                  aria-expanded="true"
+                  aria-controls={listId}
+                  aria-autocomplete="list"
+                  aria-activedescendant={
+                    activeId && !running ? optionDomId(activeId) : undefined
+                  }
+                  autoComplete="off"
+                  spellCheck={false}
+                  readOnly={Boolean(running)}
+                  value={
+                    running
+                      ? running.typed
+                      : parsed.prefix
+                        ? query.trimStart().slice(1)
+                        : query
+                  }
+                  onChange={(event) => {
+                    const typed = event.target.value;
+                    // A prefix typed over a chip starts that mode instead.
+                    changeQuery(
+                      parsed.prefix && !/^[>@#]/.test(typed)
+                        ? `${parsed.prefix}${typed}`
+                        : typed,
+                    );
+                  }}
+                  onKeyDown={(event) => {
+                    // Backspace on an empty term removes the prefix chip.
+                    if (
+                      event.key === "Backspace" &&
+                      parsed.prefix &&
+                      !query.trimStart().slice(1)
+                    ) {
+                      event.preventDefault();
+                      changeQuery("");
+                      return;
+                    }
+                    onInputKeyDown(event);
+                  }}
+                  className={cn(
+                    "m-0 min-w-0 border-0 bg-transparent p-0 text-ellipsis text-palette-query text-foreground caret-primary outline-none",
+                    // The hint wraps onto lines of its own, so the field lies over it.
+                    showHint ? "absolute inset-0 size-full" : "flex-1",
+                  )}
+                />
+                {showHint ? (
+                  <span
+                    data-f="ph"
+                    aria-hidden="true"
+                    className="pointer-events-none min-w-0 flex-1 text-meta-foreground"
+                  >
+                    {copy.placeholder}
+                  </span>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                data-f="scope"
+                aria-haspopup="listbox"
+                aria-disabled="true"
+                aria-label={`${copy.scope.label}: ${workspace.name}`}
+                title={copy.scope.unavailable}
+                className="box-border inline-flex h-7 cursor-not-allowed items-center gap-1.5 rounded-[7px] border border-line-strong bg-surface-canvas px-[9px] text-crumb leading-[1.45] font-medium whitespace-nowrap text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                <span data-f="scopedm" className="inline-flex shrink-0">
+                  <DepartmentMark
+                    name={workspace.name}
+                    markTone={workspace.markTone}
+                    small
+                  />
+                </span>
+                <span className="max-w-[180px] truncate">{workspace.name}</span>
+                <ChevronDown
+                  data-f="scopechev"
+                  aria-hidden="true"
+                  className="size-[13px] text-meta-foreground"
+                  strokeWidth={1.8}
+                />
+              </button>
+              <kbd data-f="esc" className={KEY_CLASS}>
+                {copy.esc}
+              </kbd>
+            </div>
+
+            {running ? (
+              <div
+                data-f="running"
+                id={listId}
+                role="status"
+                aria-live="polite"
+                className="flex items-center gap-3 px-[18px] py-4"
+              >
+                <span
+                  data-f="spin"
+                  aria-hidden="true"
+                  className="box-border size-[22px] shrink-0 animate-spin rounded-full border-2 border-line-strong border-t-primary motion-reduce:animate-none motion-reduce:border-t-line-strong motion-reduce:border-r-primary"
+                />
+                <div>
+                  <b className="font-semibold">{running.title}</b>
+                  <div className="text-crumb leading-[1.45] text-meta-foreground">
+                    {running.detail}
+                  </div>
+                  <div className="text-crumb leading-[1.45] text-meta-foreground">
+                    {copy.running.note}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  data-f="rbtn"
+                  aria-disabled={running.onUndo ? undefined : true}
+                  onClick={running.onUndo}
+                  className="ml-auto box-border h-[30px] shrink-0 cursor-pointer rounded-[7px] border border-line-strong bg-popover px-3 text-compact leading-[1.45] font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-not-allowed dark:bg-card"
+                >
+                  {copy.running.undo}
+                </button>
+              </div>
+            ) : (
+              <>
+                {view.state === "results" ? (
+                  <div
+                    data-f="filters"
+                    role="tablist"
+                    aria-label={copy.filtersLabel}
+                    className="box-border flex flex-wrap gap-1 border-b border-border px-3.5 py-2"
+                  >
+                    {PALETTE_FILTERS.map((name) => {
+                      const count = view.counts[name];
+                      const selected = name === filter;
+                      return (
+                        <button
+                          key={name}
+                          type="button"
+                          role="tab"
+                          data-f="fl"
+                          aria-selected={selected}
+                          aria-controls={listId}
+                          tabIndex={-1}
+                          onClick={() => {
+                            setFilter(name);
+                            setSelectedId(null);
+                            inputRef.current?.focus();
+                          }}
                           className={cn(
-                            "text-micro leading-[1.45] opacity-75",
-                            selected ? "font-semibold" : "font-medium",
+                            "inline-flex h-7 cursor-pointer items-center gap-[5px] rounded-full border-0 px-2.5 text-crumb leading-[1.45] font-medium outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+                            selected
+                              ? "bg-foreground font-semibold text-popover dark:text-card"
+                              : "bg-transparent text-muted-foreground",
                           )}
                         >
-                          {count}
-                        </span>
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : null}
+                          {copy.filters[name]}
+                          {count ? (
+                            <span
+                              data-f="flc"
+                              className={cn(
+                                "text-micro leading-[1.45] opacity-75",
+                                selected ? "font-semibold" : "font-medium",
+                              )}
+                            >
+                              {count}
+                            </span>
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
 
-            {none ? (
-              <div
-                data-f="empty"
-                className="px-[18px] pt-[26px] pb-[18px] text-center text-muted-foreground"
-              >
-                <b
-                  data-f="emptyt"
-                  className="mb-1 block text-item-heading font-bold text-foreground"
-                >
-                  {formatCopy(copy.empty.title, {
-                    query: term,
-                    workspace: workspace.name,
-                  })}
-                </b>
-                {copy.empty.text}
-              </div>
-            ) : null}
-
-            <div
-              ref={listRef}
-              id={listId}
-              data-f="res"
-              role="listbox"
-              aria-label={listLabel}
-              className="box-border max-h-[min(534px,calc(100svh-251px))] overflow-auto px-2 pt-1.5 pb-2"
-            >
-              {view.groups.length === 0 ? (
-                <div className="px-2.5 py-6 text-center text-metadata text-meta-foreground">
-                  {view.state === "recent"
-                    ? copy.recentsEmpty
-                    : copy.empty.text}
-                </div>
-              ) : null}
-              {view.groups.map((group) => (
-                <React.Fragment key={group.id}>
-                  {group.label ? (
-                    <div
-                      data-f="gh"
-                      role="presentation"
-                      className="flex items-center gap-2 px-2.5 pt-2.5 pb-1 text-metadata leading-[1.45] font-semibold tracking-normal text-meta-foreground"
+                {none ? (
+                  <div
+                    data-f="empty"
+                    className="px-[18px] pt-[26px] pb-[18px] text-center text-muted-foreground"
+                  >
+                    <b
+                      data-f="emptyt"
+                      className="mb-1 block text-item-heading font-bold text-foreground"
                     >
-                      {group.label}
-                      {group.count !== null ? (
-                        <span data-f="ghn" className="font-medium">
-                          {group.count}
-                        </span>
-                      ) : null}
+                      {formatCopy(copy.empty.title, {
+                        query: term,
+                        workspace: workspace.name,
+                      })}
+                    </b>
+                    {copy.empty.text}
+                  </div>
+                ) : null}
+
+                <div
+                  ref={listRef}
+                  id={listId}
+                  data-f="res"
+                  role="listbox"
+                  aria-label={listLabel}
+                  className="box-border max-h-[min(534px,calc(100svh-251px))] overflow-auto px-2 pt-1.5 pb-2"
+                >
+                  {view.groups.length === 0 ? (
+                    <div className="px-2.5 py-6 text-center text-metadata text-meta-foreground">
+                      {view.state === "recent"
+                        ? copy.recentsEmpty
+                        : copy.empty.text}
                     </div>
                   ) : null}
-                  {group.rows.map((row) => {
-                    const selected = row.id === activeId;
-                    return (
-                      <div
-                        key={row.id}
-                        id={optionDomId(row.id)}
-                        data-f="r"
-                        data-row-id={row.id}
-                        role="option"
-                        aria-selected={selected}
-                        aria-disabled={row.unavailable ? true : undefined}
-                        title={row.unavailable ?? undefined}
-                        onClick={() => choose(row)}
-                        className={cn(
-                          "box-border flex min-h-[60px] cursor-pointer items-center gap-3 rounded-[9px] px-2.5 py-1.5",
-                          selected ? "bg-row-selected" : "hover:bg-state-hover",
-                          row.unavailable && "cursor-not-allowed",
-                        )}
-                      >
-                        <RowIcon row={row} />
-                        <span data-f="body" className="min-w-0 flex-1">
-                          <span
-                            data-f="t"
-                            className="block truncate text-body leading-[1.45] font-medium tracking-normal"
+                  {view.groups.map((group) => (
+                    <React.Fragment key={group.id}>
+                      {group.label ? (
+                        <div
+                          data-f="gh"
+                          role="presentation"
+                          className="flex items-center gap-2 px-2.5 pt-2.5 pb-1 text-metadata leading-[1.45] font-semibold tracking-normal text-meta-foreground"
+                        >
+                          {group.label}
+                          {group.count !== null ? (
+                            <span data-f="ghn" className="font-medium">
+                              {group.count}
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      {group.rows.map((row) => {
+                        const selected = row.id === activeId;
+                        return (
+                          <div
+                            key={row.id}
+                            id={optionDomId(row.id)}
+                            data-f="r"
+                            data-row-id={row.id}
+                            role="option"
+                            aria-selected={selected}
+                            aria-disabled={row.unavailable ? true : undefined}
+                            title={row.unavailable ?? undefined}
+                            onClick={() => choose(row)}
+                            className={cn(
+                              "box-border flex min-h-[60px] cursor-pointer items-center gap-3 rounded-[9px] px-2.5 py-1.5",
+                              selected
+                                ? "bg-row-selected"
+                                : "hover:bg-state-hover",
+                              row.unavailable && "cursor-not-allowed",
+                            )}
                           >
-                            <Highlighted
-                              text={row.title}
-                              term={
-                                row.id === "command:create-item-named"
-                                  ? ""
-                                  : term
-                              }
-                            />
-                          </span>
-                          <CtxLine pieces={row.ctx} />
-                        </span>
-                        <RowEnd row={row} selected={selected} copy={copy} />
-                      </div>
-                    );
-                  })}
-                </React.Fragment>
-              ))}
+                            <RowIcon row={row} />
+                            <span data-f="body" className="min-w-0 flex-1">
+                              <span
+                                data-f="t"
+                                className="block truncate text-body leading-[1.45] font-medium tracking-normal"
+                              >
+                                <Highlighted
+                                  text={row.title}
+                                  term={
+                                    row.id === "command:create-item-named"
+                                      ? ""
+                                      : term
+                                  }
+                                />
+                              </span>
+                              <CtxLine pieces={row.ctx} />
+                            </span>
+                            <RowEnd row={row} selected={selected} copy={copy} />
+                          </div>
+                        );
+                      })}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <div
+              data-f="foot"
+              className="box-border flex flex-wrap items-center gap-3 border-t border-border bg-surface-canvas px-4 py-[9px] text-metadata leading-[1.45] font-normal tracking-normal text-meta-foreground"
+            >
+              <FootHint keys={["↑", "↓"]}>{copy.foot.select}</FootHint>
+              <FootHint keys={["↵"]}>{copy.foot.open}</FootHint>
+              <FootHint keys={["⌘↵"]} unavailable={copy.foot.sideUnavailable}>
+                {copy.foot.side}
+              </FootHint>
+              <FootHint keys={["Tab"]}>{copy.foot.filter}</FootHint>
+              <span className="flex-1" />
+              <FootHint keys={[">"]}>{copy.foot.command}</FootHint>
+              <FootHint keys={["@"]}>{copy.foot.people}</FootHint>
+              <FootHint keys={["#"]}>{copy.foot.board}</FootHint>
             </div>
           </>
         )}
-
-        <div
-          data-f="foot"
-          className="box-border flex flex-wrap items-center gap-3 border-t border-border bg-surface-canvas px-4 py-[9px] text-metadata leading-[1.45] font-normal tracking-normal text-meta-foreground"
-        >
-          <FootHint keys={["↑", "↓"]}>{copy.foot.select}</FootHint>
-          <FootHint keys={["↵"]}>{copy.foot.open}</FootHint>
-          <FootHint keys={["⌘↵"]} unavailable={copy.foot.sideUnavailable}>
-            {copy.foot.side}
-          </FootHint>
-          <FootHint keys={["Tab"]}>{copy.foot.filter}</FootHint>
-          <span className="flex-1" />
-          <FootHint keys={[">"]}>{copy.foot.command}</FootHint>
-          <FootHint keys={["@"]}>{copy.foot.people}</FootHint>
-          <FootHint keys={["#"]}>{copy.foot.board}</FootHint>
-        </div>
       </DialogContent>
     </Dialog>
   );

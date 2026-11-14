@@ -208,7 +208,7 @@ public sealed class CollectionVisibilityIntegrationTests : IAsyncLifetime
                     single.Add(pageId);
             }
 
-            var listed = (await OrgTreeTestHost.QueryAsync(provider, new GetWorkspacePagesQuery(stack.WorkspaceId))).Select(p => p.Id);
+            var listed = (await OrgTreeTestHost.QueryAsync(provider, new GetWorkspacePagesQuery(stack.WorkspaceId))).Items.Select(p => p.Id);
             var tree = await OrgTreeTestHost.QueryAsync(provider, new GetPageTreeQuery(stack.WorkspaceId));
             var found = (await OrgTreeTestHost.QueryAsync(provider, new SearchPagesQuery(stack.WorkspaceId, "handbook"))).Select(p => p.Id);
 

@@ -34,6 +34,12 @@ export interface AccountFrameProps {
   };
   readonly active: AccountTab;
   readonly links: Record<AccountTab, AccountFrameLink>;
+  /**
+   * The pages the menu offers (all five by default). A person with no workspace
+   * has no workspace to open the other four in, so the page outside a workspace
+   * offers "Your workspaces" alone.
+   */
+  readonly tabs?: readonly AccountTab[];
   readonly children: React.ReactNode;
 }
 
@@ -65,8 +71,12 @@ export function AccountFrame({
   identity,
   active,
   links,
+  tabs,
   children,
 }: AccountFrameProps) {
+  const groups = GROUPS.map((group) =>
+    group.filter((tab) => tabs === undefined || tabs.includes(tab)),
+  ).filter((group) => group.length > 0);
   return (
     <div data-f="page" className="relative flex h-full min-h-0 flex-col">
       <header
@@ -98,7 +108,7 @@ export function AccountFrame({
           aria-label={copy.label}
           className="box-border flex w-[212px] shrink-0 flex-col gap-0.5 border-r border-line px-3 py-4 max-md:w-full max-md:flex-row max-md:gap-1 max-md:flex-wrap max-md:border-r-0 max-md:border-b max-md:px-4 max-md:py-2"
         >
-          {GROUPS.map((group, index) => (
+          {groups.map((group, index) => (
             <React.Fragment key={index}>
               {index > 0 ? (
                 <div
@@ -122,7 +132,7 @@ export function AccountFrame({
                       links[tab].onNavigate();
                     }}
                     className={cn(
-                      "flex h-[34px] shrink-0 items-center gap-[9px] rounded-[7px] px-2.5 text-nav leading-[1.45] font-medium text-muted-foreground hover:bg-state-hover-strong hover:text-foreground",
+                      "flex h-[34px] max-md:h-touch shrink-0 items-center gap-[9px] rounded-[7px] px-2.5 text-nav leading-[1.45] font-medium text-muted-foreground hover:bg-state-hover-strong hover:text-foreground",
                       on &&
                         "bg-popover font-semibold text-foreground ring-1 ring-line hover:bg-popover dark:bg-card dark:hover:bg-card",
                       FOCUS,

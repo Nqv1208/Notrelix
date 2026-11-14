@@ -236,7 +236,7 @@ public class BulkUpdateBoardItemsTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
-    public void Validator_RejectsEmptyOversizedAndUnknownRequests()
+    public void Validator_RejectsEmptyAndUnknownRequests()
     {
         var validator = new BulkUpdateBoardItemsCommandValidator();
         var one = new List<Guid> { Guid.CreateVersion7() };
@@ -249,8 +249,19 @@ public class BulkUpdateBoardItemsTests : WorkManagementHandlerTestBase
         validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetPriority, one, Versions(one))).IsValid.Should().BeFalse();
         validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.SetPriority, one, Versions(one), Priority: "opt-high")).IsValid.Should().BeTrue();
         validator.Validate(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Delete, one, Versions(one))).IsValid.Should().BeTrue();
-        validator.Validate(new BulkUpdateBoardItemsCommand(
-            _boardId, BulkBoardItemOperations.Archive,
-            Enumerable.Range(0, BulkBoardItemOperations.MaxItems + 1).Select(_ => Guid.CreateVersion7()).ToList(), Versions(Enumerable.Range(0, BulkBoardItemOperations.MaxItems + 1).Select(_ => Guid.CreateVersion7()).ToList()))).IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task OverThePublishedBulkLimit_TheWholeRequestIsRefusedNamingTheLimit()
+    {
+        var ids = Enumerable.Range(0, BulkBoardItemOperations.MaxItems + 1).Select(_ => Guid.CreateVersion7()).ToList();
+
+        var act = () => _handler.Handle(new BulkUpdateBoardItemsCommand(_boardId, BulkBoardItemOperations.Archive, ids, Versions(ids)), CancellationToken.None);
+
+        var refused = (await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ConflictException>()).Which;
+        refused.ErrorCode.Should().Be("work-management.limit.items-per-bulk-edit");
+        refused.Extensions["limit"].Should().Be("bulkItems");
+        refused.Extensions["max"].Should().Be(200);
+        refused.Extensions["current"].Should().Be(201);
     }
 }

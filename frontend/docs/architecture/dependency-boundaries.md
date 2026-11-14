@@ -2286,3 +2286,9 @@ The exact graph is executable.
 The authored architecture explains why that graph is constrained.
 
 The boundary is successful when a developer cannot accidentally turn package modularity into unrestricted monolithic coupling.
+
+---
+
+# 167. Chat context (planned)
+
+Chat package (planned): `@notrelix/features-chat` at `packages/features/chat`, layer feature, allowed to consume the realtime foundation like `features-collaboration` (`FEATURE_WEB_REALTIME`), `@notrelix/ui-web`, `@notrelix/query`, `@notrelix/contracts`, `@notrelix/kernel`, `@notrelix/platform`. `app-web` adds it to its allowed imports. Registered in `tooling/dependency-rules/src/architecture-manifest.ts`; `docs/generated/package-boundaries.md` is regenerated with `docs:generate`.

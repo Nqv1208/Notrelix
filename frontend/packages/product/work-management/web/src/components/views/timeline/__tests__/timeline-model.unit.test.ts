@@ -557,18 +557,19 @@ describe("layoutTimeline (the drag preview)", () => {
     expect(row.tip).toMatchObject({
       x: 382,
       text: "Hạn: 21/10 → 23/10",
-      note: "Đào tạo phòng Kế toán tự lùi 2 ngày, sang 24/10",
+      note: "",
     });
     // The bar itself stays where it was until the drop.
     expect(row.bar?.width).toBe(154);
   });
 
-  it("pushes the item that waits for it back by the same days", () => {
+  it("never reschedules the item that waits for it (D76.9)", () => {
+    // phase-training waits on ERP-147 and starts 22/10: the pulled due day
+    // (23/10) overlaps it, yet it keeps its own dates and draws no ghost.
     const dependent = task(layout, "phase-training");
-    expect(dependent.dates).toBe("25/10");
-    expect(dependent.dateState).toBe("moved");
-    expect(dependent.ghost).toEqual({ x: 494, width: 52 });
-    // The next one starts after the new end already: it stays.
+    expect(dependent.dates).toBe("23/10");
+    expect(dependent.dateState).toBe("");
+    expect(dependent.ghost).toBeNull();
     expect(task(layout, "phase-parallel").dateState).toBe("");
   });
 

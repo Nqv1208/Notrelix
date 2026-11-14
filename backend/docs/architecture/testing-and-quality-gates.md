@@ -22,7 +22,7 @@ evidence:
   - backend/tests/Notrelix.Testing.Domain/
   - backend/tests/Notrelix.Testing.Application/
   - backend/tests/Notrelix.Testing.Integration/
-  - .github/workflows/be-ci.yml
+  - .github/workflows/ci.yml
 review_on:
   - backend-test-topology-change
   - architecture-gate-change
@@ -1083,7 +1083,7 @@ A test command can exit 0 while selecting zero tests.
 
 Critical suites need explicit execution verification.
 
-Current backend CI binds critical architecture/core/platform/API/integration
+The backend binds critical architecture/core/platform/API/integration
 proofs to stable semantic IDs in the backend-owned registry:
 
 ```text
@@ -1097,7 +1097,7 @@ scripts/ci/verify-required-proofs-trx.py
 ```
 
 The workflow YAML must not list critical test FQNs; a test rename updates the
-backend-owned registry only.
+backend-owned registry only. `ci.yml` does not run this verification; run it locally.
 
 ---
 
@@ -1379,7 +1379,7 @@ It does not prove runtime smoke, authorization, RLS, messaging, or API semantics
 
 # 86. Final gate
 
-Current `backend-ci` job evaluates required upstream job results and reports success for the exact workflow SHA.
+The `CI gate` job in `ci.yml` evaluates the results of `changes`, `backend-unit`, `backend-integration`, `frontend` and `dependencies` and reports success for the exact workflow SHA.
 
 This gives one branch-protection-friendly certification surface.
 
@@ -1395,7 +1395,7 @@ Do not turn the aggregator green while ignoring failed required jobs.
 
 # 88. Change detection
 
-Current workflow avoids expensive backend jobs for frontend-only PRs while still returning a final gate.
+The `changes` job lets `ci.yml` skip backend jobs for frontend-only PRs while `CI gate` still returns a result.
 
 This is CI efficiency, not semantic skipping.
 
@@ -2063,7 +2063,7 @@ Do not run/build/package a release as “certified” if required upstream behav
 
 # 142. Required branch/path behavior
 
-Current backend workflow runs on selected branches and handles PR change detection without leaving required checks pending for frontend-only PRs.
+`ci.yml` runs on pull requests and pushes to `main`, `develop` and `release/**`; `CI gate` always runs so a skipped side never leaves the required check pending.
 
 Exact branches/path filters are workflow policy, not backend architecture.
 
@@ -2276,7 +2276,7 @@ backend/tests/**
 Current workflow evidence:
 
 ```text
-.github/workflows/be-ci.yml
+.github/workflows/ci.yml
 ```
 
 Broad local:

@@ -1,0 +1,90 @@
+using Notrelix.Application.Features.Chat.Attachments.DTOs;
+using Notrelix.Application.Features.Chat.Mentions.DTOs;
+using Notrelix.Application.Features.Chat.Reactions.DTOs;
+using Notrelix.Domain.Chat.Messages;
+
+namespace Notrelix.Application.Features.Chat.Messages.DTOs;
+
+/// <summary>One message as readers see it. A tombstone has a null content and keeps its author, time and sequence.</summary>
+public sealed record MessageDto(
+    Guid Id,
+    Guid SpaceId,
+    long Sequence,
+    string Kind,
+    Guid AuthorId,
+    string? Content,
+    string? ClientMessageId,
+    Guid? ReplyToId,
+    Guid? ThreadRootId,
+    long? ThreadSequence,
+    bool AlsoSentToChannel,
+    bool Edited,
+    bool Deleted,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? EditedAt,
+    DateTimeOffset? DeletedAt,
+    long Version,
+    bool RemovedByModerator = false,
+    ReplyPreviewDto? ReplyPreview = null,
+    IReadOnlyList<ReactionSummaryDto>? Reactions = null,
+    IReadOnlyList<MentionDto>? Mentions = null,
+    IReadOnlyList<MentionNoticeDto>? MentionNotices = null,
+    IReadOnlyList<MessageAttachmentDto>? Attachments = null,
+    long ThreadReplyCount = 0,
+    DateTimeOffset? ThreadLastReplyAt = null)
+{
+    /// <summary>
+    /// The message as readers see it. <paramref name="replyPreview"/> is the live quote of <see cref="ReplyToId"/>, read by the
+    /// caller from the quoted message; it is null when the message quotes nothing. <paramref name="reactions"/> is the reaction
+    /// summary (UC-CHT-G06), empty when nothing reacted.
+    /// <paramref name="mentions"/> are the stored mentions this reader may see (UC-CHT-G01, G04), empty when none. <paramref name="mentionNotices"/>
+    /// are what a send or an edit did not do for the sender (UC-CHT-G02); they are empty in every other view.
+    /// <paramref name="thread"/> is the stored thread of a root message (UC-CHT-F03): its reply count and last reply, which a root shows as its
+    /// "N replies" chip; it is null (count 0, no last reply) for a message with no thread.
+    /// </summary>
+    public static MessageDto From(
+        Message message,
+        ReplyPreviewDto? replyPreview = null,
+        IReadOnlyList<ReactionSummaryDto>? reactions = null,
+        IReadOnlyList<MentionDto>? mentions = null,
+        IReadOnlyList<MentionNoticeDto>? mentionNotices = null,
+        IReadOnlyList<MessageAttachmentDto>? attachments = null,
+        MessageThread? thread = null) => new(
+        message.Id,
+        message.SpaceId,
+        message.Sequence,
+        message.Kind.ToWire(),
+        message.AuthorId,
+        message.Content,
+        message.ClientMessageId,
+        message.ReplyToId,
+        message.ThreadRootId,
+        message.ThreadSequence,
+        message.AlsoSentToChannel,
+        message.IsEdited,
+        message.IsDeleted,
+        message.CreatedAt,
+        message.EditedAt,
+        message.DeletedAt,
+        message.Version,
+        message.IsRemovedByModerator,
+        replyPreview,
+        reactions ?? [],
+        mentions ?? [],
+        mentionNotices ?? [],
+        attachments ?? [],
+        thread?.ReplyCount ?? 0,
+        thread is { ReplyCount: > 0 } ? thread.LastReplyAt : null);
+}
+
+/// <summary>
+/// The message a reply quotes, as a reader may see it (UC-CHT-F02). Read live at each request, so a quote of a deleted message
+/// shows a tombstone. Content is null when the quoted message is deleted; the author and the sequence stay.
+/// </summary>
+public sealed record ReplyPreviewDto(Guid MessageId, long Sequence, Guid AuthorId, string? Content, bool Deleted);
+
+/// <summary>A page of messages in ascending sequence order, with whether older or newer messages exist.</summary>
+public sealed record MessagePageDto(IReadOnlyList<MessageDto> Items, bool HasOlder, bool HasNewer);
+
+/// <summary>The stored message and whether this request created it (false when a retry with the same clientMessageId found it).</summary>
+public sealed record SendMessageResultDto(MessageDto Message, bool Created);

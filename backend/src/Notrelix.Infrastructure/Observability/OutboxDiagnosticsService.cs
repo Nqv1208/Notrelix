@@ -37,7 +37,7 @@ internal sealed class OutboxDiagnosticsService : IOutboxDiagnosticsService
         return await _context.Set<MessagingOutboxMessage>()
             .Where(m => m.Status == "Pending" || m.Status == "Processing")
             .OrderBy(m => m.CreatedAt)
-            .Take(Math.Min(limit, 200))
+            .Take(OutboxDiagnosticsLimits.Clamp(limit))
             .Select(m => new OutboxMessageResult(
                 m.Id,
                 m.MessageName,
@@ -58,7 +58,7 @@ internal sealed class OutboxDiagnosticsService : IOutboxDiagnosticsService
         return await _context.Set<MessagingOutboxMessage>()
             .Where(m => m.Status == "Failed")
             .OrderByDescending(m => m.CreatedAt)
-            .Take(Math.Min(limit, 200))
+            .Take(OutboxDiagnosticsLimits.Clamp(limit))
             .Select(m => new OutboxMessageResult(
                 m.Id,
                 m.MessageName,
@@ -95,8 +95,7 @@ internal sealed class OutboxDiagnosticsService : IOutboxDiagnosticsService
                 m.WorkspaceId,
                 m.ActorUserId,
                 m.CorrelationId,
-                m.CausationId,
-                m.PayloadJson.RootElement.GetRawText()))
+                m.CausationId))
             .FirstOrDefaultAsync(cancellationToken);
     }
 }

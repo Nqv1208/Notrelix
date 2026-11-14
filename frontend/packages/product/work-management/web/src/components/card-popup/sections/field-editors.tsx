@@ -38,7 +38,21 @@ import {
 } from "../../card-detail/item-field-more-editors";
 import { useItemSheetCopy } from "../../card-detail/use-item-sheet-copy";
 import { fillPopupCopy, type CardPopupCopy } from "../card-popup.copy";
-import { useCardPopup, useCanEdit } from "../card-popup-context";
+import {
+  useCardPopup,
+  useCanEdit,
+  useChipsLookEditable,
+  useStaleSchema,
+} from "../card-popup-context";
+import {
+  FxMark,
+  PillBtn,
+  PillKey,
+  PillLock,
+  PillNote,
+  PillSpinner,
+  PillStatic,
+} from "./field-pill";
 import { useServerDraft } from "../use-server-draft";
 import {
   ChipBtn,
@@ -330,10 +344,15 @@ function Feedback({
         className="m-0 flex items-center gap-2 text-[12.5px] font-medium text-danger-text"
       >
         <AlertCircle aria-hidden="true" className="size-4 shrink-0" />
-        {fillPopupCopy(t.saveFailed, { name: field.name })}
-        <PanelBtn small onClick={save.retry}>
-          {t.retry}
-        </PanelBtn>
+        {fillPopupCopy(
+          save.reason === "required" ? t.requiredRefused : t.saveFailed,
+          { name: field.name },
+        )}
+        {save.reason === "required" ? null : (
+          <PanelBtn small onClick={save.retry}>
+            {t.retry}
+          </PanelBtn>
+        )}
       </p>
     );
   return null;
@@ -349,10 +368,36 @@ export function FieldControl({
   variant,
 }: {
   field: FieldDefinition;
-  variant: "chip" | "ctl";
+  variant: "chip" | "ctl" | "pill";
 }) {
-  const { card, board, data, copy, fields, openFieldId, clearOpenField } =
-    useCardPopup();
+  if (variant !== "pill")
+    return <FieldControlBody field={field} variant={variant} />;
+  // The note of a failed or clashing write hangs from the pill's own box.
+  return (
+    <span className="relative inline-flex max-w-full">
+      <FieldControlBody field={field} variant={variant} />
+      <PillNote field={field} />
+    </span>
+  );
+}
+
+function FieldControlBody({
+  field,
+  variant,
+}: {
+  field: FieldDefinition;
+  variant: "chip" | "ctl" | "pill";
+}) {
+  const {
+    card,
+    board,
+    data,
+    copy,
+    fields,
+    openFieldId,
+    clearOpenField,
+    fieldConflicts,
+  } = useCardPopup();
   // The people who can see the board, as the assignee picker lists them.
   const people = [
     ...board.members.map((m) => ({ userId: m.userId, name: m.name })),
@@ -364,7 +409,9 @@ export function FieldControl({
   const t = copy.sections.chips;
   const f = copy.sections.fields;
   const sheetCopy = useItemSheetCopy();
-  const canEdit = useCanEdit();
+  const canEditNow = useCanEdit();
+  const chipLook = useChipsLookEditable();
+  const canEdit = variant === "chip" ? chipLook : canEditNow;
   const { write, save } = useFieldWrite(field);
   const [open, setOpen] = useState(false);
   // "+ Thêm" added this field: its picker opens at once (a typed control takes the cursor itself).
@@ -381,15 +428,82 @@ export function FieldControl({
   }, [openFieldId, field.id, field.fieldType, clearOpenField]);
   const raw = card.fieldValues[field.id];
   const chip = variant === "chip";
+  const pill = variant === "pill";
   const saving = save?.status === "saving";
   const failed = save?.status === "error";
+  const clashing = fieldConflicts.some((c) => c.key === `field:${field.id}`);
+  // The field a refused write named (D12): a deleted one is struck, a changed one takes the red border.
+  const stale = useStaleSchema();
+  const staleHere = pill && stale !== null && stale.fieldName === field.name;
+  const pillState =
+    failed || (staleHere && stale?.kind !== "field-deleted")
+      ? "failed"
+      : clashing
+        ? "conflict"
+        : saving
+          ? "saving"
+          : "rest";
   const label = field.name;
+  const pillEnd = failed ? (
+    <AlertCircle
+      aria-hidden="true"
+      className="size-4 shrink-0 text-danger-text"
+    />
+  ) : clashing ? (
+    <AlertCircle
+      aria-hidden="true"
+      className="size-4 shrink-0 text-warning-text"
+    />
+  ) : saving ? (
+    <PillSpinner />
+  ) : null;
+
+  if (staleHere && (stale?.kind === "field-deleted" || !stale?.kind)) {
+    const shown =
+      field.options.find((o) => o.id === raw)?.label ??
+      (typeof raw === "string" || typeof raw === "number" ? String(raw) : "");
+    return (
+      <PillStatic
+        title={copy.shell.staleSchema.deletedTag}
+        className="border-danger bg-danger-subtle"
+      >
+        <PillKey>{label}</PillKey>
+        <span className="max-w-[220px] truncate">{shown}</span>
+        <span className="text-[12px] text-meta-foreground">
+          {copy.shell.staleSchema.deletedTag}
+        </span>
+        <AlertCircle
+          aria-hidden="true"
+          className="size-4 shrink-0 text-danger-text"
+        />
+      </PillStatic>
+    );
+  }
 
   const trigger = (
     content: ReactNode,
     opts: { tone?: "on" | "ok"; haspopup?: "listbox" | "dialog" } = {},
   ) => {
     const body = <>{content}</>;
+    if (pill)
+      return canEdit ? (
+        <PopoverTrigger asChild>
+          <PillBtn
+            aria-haspopup={opts.haspopup}
+            aria-expanded={open}
+            state={pillState}
+          >
+            <PillKey>{label}</PillKey>
+            {body}
+          </PillBtn>
+        </PopoverTrigger>
+      ) : (
+        <PillStatic title={t.lockedPill}>
+          <PillKey>{label}</PillKey>
+          {body}
+          <PillLock title={t.lockedPill} />
+        </PillStatic>
+      );
     if (!canEdit)
       return chip ? (
         <ChipReadOnly
@@ -429,7 +543,7 @@ export function FieldControl({
       </PopoverTrigger>
     );
   };
-  const caret = canEdit ? CHEVRON : null;
+  const caret = pill ? pillEnd : canEdit ? CHEVRON : null;
   const spin = saving ? (
     <Loader2
       aria-hidden="true"
@@ -441,15 +555,29 @@ export function FieldControl({
     !chip && isFieldValueEmpty(raw) && "text-meta-foreground",
   );
   const wrapChip = (children: ReactNode) =>
-    chip ? children : <span className={valueClass}>{children}</span>;
-  const tail = chip ? (
-    caret
-  ) : (
-    <>
-      {spin}
-      {caret}
-    </>
-  );
+    chip ? (
+      children
+    ) : pill ? (
+      <span
+        className={cn(
+          "max-w-[220px] truncate",
+          isFieldValueEmpty(raw) && "text-meta-foreground",
+        )}
+      >
+        {children}
+      </span>
+    ) : (
+      <span className={valueClass}>{children}</span>
+    );
+  const tail =
+    chip || pill ? (
+      caret
+    ) : (
+      <>
+        {spin}
+        {caret}
+      </>
+    );
 
   // Computed (Formula, Rollup): read-only.
   if (fieldTypeRegistry[field.fieldType]?.computed) {
@@ -458,6 +586,34 @@ export function FieldControl({
       card.computedValues?.[field.id],
       sheetCopy.properties.computed,
     );
+    if (pill)
+      return (
+        <PillStatic
+          title={info.title}
+          data-computed-state={info.tone}
+          tabIndex={0}
+          className={cn(info.tone === "error" && "border-danger")}
+        >
+          <FxMark />
+          <PillKey>{label}</PillKey>
+          {info.tone === "error" ? (
+            <>
+              <AlertCircle
+                aria-hidden="true"
+                className="size-3.5 text-danger-text"
+              />
+              <b className="text-danger-text">{info.text}</b>
+            </>
+          ) : (
+            <span
+              className={cn(info.tone === "empty" && "text-meta-foreground")}
+            >
+              {info.text}
+            </span>
+          )}
+          {info.tone === "stale" ? <PillSpinner /> : null}
+        </PillStatic>
+      );
     return chip ? (
       <ChipReadOnly title={info.title}>
         <Sigma aria-hidden="true" className="size-[13px]" />
@@ -485,6 +641,35 @@ export function FieldControl({
         {on ? <Check className="size-3" strokeWidth={3} /> : null}
       </span>
     );
+    if (pill)
+      return canEdit ? (
+        <PillBtn
+          role="checkbox"
+          aria-checked={on}
+          state={pillState}
+          onClick={() => write(!on)}
+        >
+          <span
+            aria-hidden="true"
+            className={cn(
+              "grid size-[15px] shrink-0 place-items-center rounded-[4px] border-[1.5px] text-primary-foreground",
+              on
+                ? "border-primary bg-primary"
+                : "border-line-strong bg-popover",
+            )}
+          >
+            {on ? <Check className="size-[11px]" strokeWidth={3} /> : null}
+          </span>
+          {label}
+          {pillEnd}
+        </PillBtn>
+      ) : (
+        <PillStatic title={t.lockedPill}>
+          <span aria-hidden="true">{on ? "✓" : "–"}</span>
+          {label}
+          <PillLock title={t.lockedPill} />
+        </PillStatic>
+      );
     if (chip)
       return (
         <ChipBtn
@@ -526,6 +711,7 @@ export function FieldControl({
     const text = dayText(raw);
     return (
       <PanelPopover
+        fieldSheet
         open={open}
         onOpenChange={setOpen}
         width={312}
@@ -551,10 +737,23 @@ export function FieldControl({
   }
 
   if (field.fieldType === "person") {
-    // A custom Person field holds one board member; the item's own Assignee is the people picker.
-    const current = people.find((person) => person.userId === raw);
+    // A Person field holds one board member, or several when its setting says multiple.
+    const picked: string[] = Array.isArray(raw)
+      ? raw.filter((id): id is string => typeof id === "string")
+      : typeof raw === "string" && raw !== ""
+        ? [raw]
+        : [];
+    const multiple = field.multiple === true;
+    const current = multiple
+      ? undefined
+      : people.find((person) => person.userId === raw);
+    const names = people
+      .filter((person) => picked.includes(person.userId))
+      .map((person) => person.name)
+      .join(", ");
     return (
       <PanelPopover
+        fieldSheet
         open={open}
         onOpenChange={setOpen}
         width={240}
@@ -562,8 +761,9 @@ export function FieldControl({
           <>
             <UserRound aria-hidden="true" className="size-[13px]" />
             {wrapChip(
-              current?.name ??
-                (typeof raw === "string" && raw !== ""
+              (multiple && names !== "" ? names : undefined) ??
+                current?.name ??
+                (!multiple && typeof raw === "string" && raw !== ""
                   ? raw
                   : chip
                     ? t.notSet
@@ -586,32 +786,40 @@ export function FieldControl({
               key={person.userId}
               type="button"
               role="option"
-              aria-selected={person.userId === raw}
+              aria-selected={picked.includes(person.userId)}
               onClick={() => {
+                if (multiple) {
+                  write(
+                    picked.includes(person.userId)
+                      ? picked.filter((id) => id !== person.userId)
+                      : [...picked, person.userId],
+                  );
+                  return;
+                }
                 write(person.userId);
                 setOpen(false);
               }}
               className={cn(
                 OPT,
-                person.userId === raw &&
+                picked.includes(person.userId) &&
                   "bg-brand-subtle font-semibold text-brand-subtle-foreground",
               )}
             >
               {person.name}
-              {person.userId === raw ? (
+              {picked.includes(person.userId) ? (
                 <Check aria-hidden="true" className="ml-auto size-4" />
               ) : null}
             </button>
           ))}
         </div>
-        {raw ? (
+        {picked.length > 0 ? (
           <>
             <div className="-mx-3 my-2 h-px bg-line" />
             <button
               type="button"
               className={OPT}
               onClick={() => {
-                write(null);
+                write(multiple ? [] : null);
                 setOpen(false);
               }}
             >
@@ -639,6 +847,7 @@ export function FieldControl({
     const current = field.options.find((o) => o.id === raw);
     return (
       <PanelPopover
+        fieldSheet
         open={open}
         onOpenChange={setOpen}
         width={220}
@@ -662,7 +871,7 @@ export function FieldControl({
                 write(o.id);
                 setOpen(false);
               }}
-              className={cn(PRIORITY_OPT, o.id === raw && "font-semibold")}
+              className={PRIORITY_OPT}
             >
               {glyph(o.label)}
               {o.label}
@@ -679,7 +888,7 @@ export function FieldControl({
             type="button"
             role="option"
             aria-selected={!current}
-            className={cn(PRIORITY_OPT, !current && "font-semibold")}
+            className={PRIORITY_OPT}
             onClick={() => {
               write(null);
               setOpen(false);
@@ -703,6 +912,7 @@ export function FieldControl({
     const current = field.options.find((o) => o.id === raw);
     return (
       <PanelPopover
+        fieldSheet
         open={open}
         onOpenChange={setOpen}
         width={240}
@@ -773,6 +983,7 @@ export function FieldControl({
       .map((o) => o.label);
     return (
       <PanelPopover
+        fieldSheet
         open={open}
         onOpenChange={setOpen}
         width={240}
@@ -826,17 +1037,19 @@ export function FieldControl({
   }
 
   // number, text, long_text, link: typed in the control, saved on leaving the box.
-  return <TypedControl field={field} raw={raw} chip={chip} />;
+  return <TypedControl field={field} raw={raw} chip={chip} pill={pill} />;
 }
 
 function TypedControl({
   field,
   raw,
   chip,
+  pill,
 }: {
   field: FieldDefinition;
   raw: unknown;
   chip: boolean;
+  pill: boolean;
 }) {
   const { copy, openFieldId, clearOpenField } = useCardPopup();
   const input = useRef<HTMLInputElement>(null);
@@ -863,27 +1076,162 @@ function TypedControl({
   const [invalid, setInvalid] = useState<string | undefined>();
   const saving = save?.status === "saving";
   const Icon = kind === "number" ? Hash : Type;
-  const commit = () => {
-    if (held()) return;
-    if (draft === initial) return setInvalid(undefined);
+  const [open, setOpen] = useState(false);
+  /** Sends the draft; true when it was sent or there was nothing to send, false when held or refused. */
+  const commit = (): boolean => {
+    if (held()) return false;
+    if (draft === initial) {
+      setInvalid(undefined);
+      return true;
+    }
     if (kind === "number") {
       const parsed = fieldTypeRegistry.number.parseDraft(
         draft.replace(",", "."),
       );
-      if (!parsed.ok) return setInvalid(t.invalidNumber);
+      if (!parsed.ok) {
+        setInvalid(t.invalidNumber);
+        return false;
+      }
       setInvalid(undefined);
-      return write(parsed.value);
+      write(parsed.value);
+      return true;
     }
     if (kind === "link") {
       const parsed = fieldTypeRegistry.link.parseDraft(draft);
-      if (!parsed.ok) return setInvalid(t.invalidLink);
+      if (!parsed.ok) {
+        setInvalid(t.invalidLink);
+        return false;
+      }
       setInvalid(undefined);
-      return write(parsed.value);
+      write(parsed.value);
+      return true;
     }
     setInvalid(undefined);
     write(draft === "" ? null : draft);
+    return true;
   };
   const ro = !canEdit;
+  if (pill) {
+    const failed = save?.status === "error";
+    const unit = kind === "number" && initial !== "" ? field.unit : null;
+    const shown =
+      initial === ""
+        ? f.textEmpty
+        : kind === "link"
+          ? initial.replace(/^https?:\/\//, "")
+          : initial;
+    const value = (
+      <span
+        title={initial || undefined}
+        className={cn(
+          "max-w-[220px] truncate",
+          initial === "" && "text-meta-foreground",
+          kind === "link" && initial !== "" && "text-brand-ink",
+        )}
+      >
+        {shown}
+        {unit ? ` ${unit}` : ""}
+      </span>
+    );
+    const end = failed ? (
+      <AlertCircle
+        aria-hidden="true"
+        className="size-4 shrink-0 text-danger-text"
+      />
+    ) : saving ? (
+      <PillSpinner />
+    ) : null;
+    if (ro)
+      return (
+        <PillStatic title={t.lockedPill}>
+          <PillKey>{field.name}</PillKey>
+          {value}
+          <PillLock title={t.lockedPill} />
+        </PillStatic>
+      );
+    const cancel = () => {
+      setDraft(initial);
+      setInvalid(undefined);
+      setOpen(false);
+    };
+    return (
+      <PanelPopover
+        fieldSheet
+        open={open}
+        onOpenChange={(next) => {
+          if (!next && draft !== initial) setDraft(initial);
+          if (!next) setInvalid(undefined);
+          setOpen(next);
+        }}
+        width={300}
+        label={field.name}
+        trigger={
+          <PopoverTrigger asChild>
+            <PillBtn
+              aria-haspopup="dialog"
+              aria-expanded={open}
+              state={failed ? "failed" : saving ? "saving" : "rest"}
+            >
+              <PillKey>{field.name}</PillKey>
+              {value}
+              {end}
+            </PillBtn>
+          </PopoverTrigger>
+        }
+      >
+        <form
+          className="flex flex-col gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (commit()) setOpen(false);
+          }}
+        >
+          <b className="text-[14px] font-[650] max-md:text-[13px]">
+            {field.name}
+          </b>
+          {kind === "long_text" ? (
+            <textarea
+              data-autofocus
+              rows={4}
+              value={draft}
+              aria-label={field.name}
+              aria-invalid={Boolean(invalid) || undefined}
+              onChange={(e) => setDraft(e.target.value)}
+              className="box-border w-full resize-y rounded-[8px] border border-line-strong bg-popover px-3 py-2 text-[14px] text-foreground focus:border-primary focus:ring-[3px] focus:ring-brand-subtle focus:outline-none"
+            />
+          ) : (
+            <PanelInput
+              data-autofocus
+              value={draft}
+              aria-label={field.name}
+              aria-invalid={Boolean(invalid) || undefined}
+              invalid={Boolean(invalid)}
+              inputMode={kind === "number" ? "decimal" : undefined}
+              onChange={(e) => setDraft(e.target.value)}
+              className={kind === "number" ? "text-right" : undefined}
+            />
+          )}
+          {invalid ? (
+            <p
+              role="alert"
+              className="m-0 flex items-start gap-1.5 text-[12.5px] font-medium text-danger-text"
+            >
+              <AlertCircle aria-hidden="true" className="size-4 shrink-0" />
+              {invalid}
+            </p>
+          ) : null}
+          <div className="flex justify-end gap-1.5 max-md:gap-2">
+            <PanelBtn small variant="ghost" onClick={cancel}>
+              {t.cancel}
+            </PanelBtn>
+            <PanelBtn small variant="primary" type="submit">
+              {t.save}
+            </PanelBtn>
+          </div>
+        </form>
+      </PanelPopover>
+    );
+  }
   return (
     <div className="flex flex-col gap-1.5">
       <label

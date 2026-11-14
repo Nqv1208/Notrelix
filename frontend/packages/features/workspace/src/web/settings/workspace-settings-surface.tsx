@@ -156,7 +156,12 @@ function SaveBar({
         >
           <AlertTriangle aria-hidden="true" className="size-4 shrink-0" />
           <span className="min-w-0 flex-1">{copy.conflict}</span>
-          <Button size="xs" variant="outline" onClick={onReload}>
+          <Button
+            size="xs"
+            variant="outline"
+            onClick={onReload}
+            className="max-md:h-touch!"
+          >
             {copy.reload}
           </Button>
         </div>
@@ -173,11 +178,18 @@ function SaveBar({
           type="submit"
           size="sm"
           disabled={disabled || saving || !dirty || invalid}
+          className="max-md:h-touch!"
         >
           {saving ? copy.saving : copy.save}
         </Button>
         {dirty && !saving ? (
-          <Button type="button" size="sm" variant="ghost" onClick={onDiscard}>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={onDiscard}
+            className="max-md:h-touch!"
+          >
             {copy.discard}
           </Button>
         ) : null}
@@ -263,7 +275,7 @@ function ProfileForm({
           aria-invalid={dirty && nameError ? true : undefined}
           aria-describedby={cn(nameHelpId, dirty && nameError && nameErrorId)}
           onChange={(event) => setName(event.target.value)}
-          className="max-w-md"
+          className="max-w-md max-md:h-touch"
         />
         <FieldDescription id={nameHelpId}>
           {copy.profile.nameHelp}
@@ -350,7 +362,7 @@ function SwitchField({
   return (
     <Field
       orientation="horizontal"
-      className="items-start justify-between gap-4"
+      className="items-start justify-between gap-4 max-md:min-h-touch"
     >
       <div className="flex min-w-0 flex-col gap-0.5">
         <FieldLabel htmlFor={id}>{label}</FieldLabel>
@@ -450,7 +462,7 @@ function DefaultsForm({
           <SelectTrigger
             id={roleId}
             aria-describedby={roleHelpId}
-            className="max-w-48"
+            className="max-w-48 max-md:h-touch!"
           >
             <SelectValue />
           </SelectTrigger>
@@ -476,7 +488,7 @@ function DefaultsForm({
           aria-invalid={!expiryValid ? true : undefined}
           aria-describedby={cn(expiryHelpId, !expiryValid && expiryErrorId)}
           onChange={(event) => setExpiryText(event.target.value)}
-          className="max-w-24 tabular-nums"
+          className="max-w-24 tabular-nums max-md:h-touch"
         />
         <FieldDescription id={expiryHelpId}>
           {copy.defaults.expiryHelp}
@@ -498,7 +510,7 @@ function DefaultsForm({
           placeholder={copy.defaults.timeZonePlaceholder}
           aria-describedby={zoneHelpId}
           aria-invalid={!zoneValid ? true : undefined}
-          className="max-w-64"
+          className="max-w-64 max-md:h-touch"
           onChange={(event) =>
             setDraft((current) => ({
               ...current,
@@ -538,7 +550,7 @@ function DefaultsForm({
             }))
           }
         >
-          <SelectTrigger id={weekId} className="max-w-48">
+          <SelectTrigger id={weekId} className="max-w-48 max-md:h-touch!">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -656,7 +668,7 @@ function DangerFlow({
           setTyped("");
           setOpen(true);
         }}
-        className="shrink-0"
+        className="shrink-0 max-md:h-touch!"
       >
         {pending ? texts.pending : texts.action}
       </Button>
@@ -691,6 +703,7 @@ function DangerFlow({
                 placeholder={workspaceName}
                 aria-describedby={typed && !matches ? mismatchId : undefined}
                 onChange={(event) => setTyped(event.target.value)}
+                className="max-md:h-touch"
               />
               {typed && !matches ? (
                 <FieldError id={mismatchId}>
@@ -699,10 +712,15 @@ function DangerFlow({
               ) : null}
             </Field>
             <AlertDialogFooter>
-              <AlertDialogCancel type="button">
+              <AlertDialogCancel type="button" className="max-md:h-touch">
                 {copy.danger.cancel}
               </AlertDialogCancel>
-              <Button type="submit" variant="destructive" disabled={!matches}>
+              <Button
+                type="submit"
+                variant="destructive"
+                disabled={!matches}
+                className="max-md:h-touch!"
+              >
                 {texts.confirmAction}
               </Button>
             </AlertDialogFooter>
@@ -746,7 +764,7 @@ export function WorkspaceSettingsSurface({
       : null;
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 md:px-8 md:py-8">
+    <div className="flex w-full max-w-5xl flex-col gap-6">
       <header className="flex flex-col gap-1">
         <h1 className="text-page-title text-foreground">{copy.title}</h1>
         <p className="text-body text-muted-foreground">
@@ -802,7 +820,12 @@ export function WorkspaceSettingsSurface({
               <p className="text-metadata text-muted-foreground">
                 {copy.loadError}
               </p>
-              <Button size="xs" variant="outline" onClick={onRetryDefaults}>
+              <Button
+                size="xs"
+                variant="outline"
+                onClick={onRetryDefaults}
+                className="max-md:h-touch!"
+              >
                 {copy.retry}
               </Button>
             </div>

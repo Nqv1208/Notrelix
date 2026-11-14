@@ -108,6 +108,7 @@ public sealed class N8nDispatchUseCase
             // durable rule: a Running execution is only re-queued by retryable
             // evidence in SettleAttemptAsync, never by redelivery alone.)
             execution.Fail(
+                AutomationFailureClass.OutcomeUnknown,
                 "Dispatch attempt interrupted — provider outcome unknown — reconciliation required",
                 _clock.UtcNow);
             return new N8nDispatchPreparation(N8nDispatchPrepareOutcome.NothingToProgress);
@@ -121,14 +122,17 @@ public sealed class N8nDispatchUseCase
 
         if (rule is null || !rule.IsEnabled)
         {
-            execution.Fail("Automation rule is missing or disabled.", _clock.UtcNow);
+            execution.Fail(
+                rule is null ? AutomationFailureClass.TargetGone : AutomationFailureClass.RuleInactive,
+                "Automation rule is missing or disabled.",
+                _clock.UtcNow);
             return new N8nDispatchPreparation(N8nDispatchPrepareOutcome.PrerequisiteSettled);
         }
 
         if (string.IsNullOrWhiteSpace(rule.Configuration.Action.Configuration) ||
             !N8nAutomationConfiguration.TryGetWebhookPath(rule.Configuration.Action.Configuration, out var webhookPath))
         {
-            execution.Fail("Automation rule has a missing or invalid configuration.webhookPath.", _clock.UtcNow);
+            execution.Fail(AutomationFailureClass.InvalidConfiguration, "Automation rule has a missing or invalid configuration.webhookPath.", _clock.UtcNow);
             return new N8nDispatchPreparation(N8nDispatchPrepareOutcome.PrerequisiteSettled);
         }
 
@@ -176,13 +180,13 @@ public sealed class N8nDispatchUseCase
                 return true;
 
             case N8nWebhookOutcome.TerminalFailure:
-                execution.Fail(result.Error ?? "n8n webhook rejected the dispatch.", now);
+                execution.Fail(AutomationFailureClass.TargetRejected, result.Error ?? "n8n webhook rejected the dispatch.", now);
                 return true;
 
             case N8nWebhookOutcome.RetryableFailure:
                 // Automation-owned retry: evidence recorded, execution re-queued
                 // so a later Automation attempt runs under the same identity.
-                execution.RecordRetryableDispatchFailure(result.Error ?? "retryable dispatch failure", now);
+                execution.RecordRetryableDispatchFailure(AutomationFailureClass.Transient, result.Error ?? "retryable dispatch failure", now);
                 return false;
 
             case N8nWebhookOutcome.UnknownOutcome:
@@ -193,6 +197,7 @@ public sealed class N8nDispatchUseCase
                 // reconciliation-required signal so a human or reconciliation
                 // process can resolve it.
                 execution.Fail(
+                    AutomationFailureClass.OutcomeUnknown,
                     $"{result.Error ?? "n8n outcome unknown"} — reconciliation required",
                     now);
                 return true;
@@ -225,6 +230,7 @@ public sealed class N8nDispatchUseCase
         if (execution.Status == AutomationExecutionStatus.Running)
         {
             execution.Fail(
+                AutomationFailureClass.OutcomeUnknown,
                 "Dispatch attempt interrupted — provider outcome unknown — reconciliation required",
                 _clock.UtcNow);
             return N8nDispatchResidueOutcome.SettledAsFailed;

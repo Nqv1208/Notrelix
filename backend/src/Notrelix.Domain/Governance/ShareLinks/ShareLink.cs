@@ -1,3 +1,4 @@
+using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Governance.ShareLinks.Events;
 namespace Notrelix.Domain.Governance.ShareLinks;
 
@@ -9,6 +10,8 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
     public Guid ResourceId { get; private set; }
     public ShareLinkTokenHash TokenHash { get; private set; } = null!;
     public ShareLinkAccessMode AccessMode { get; private set; }
+    /// <summary>The capability the link grants: Viewer or Commenter only (Lead decision L5).</summary>
+    public PermissionLevel Level { get; private set; }
     public ShareLinkStatus Status { get; private set; }
     public DateTimeOffset? ExpiresAt { get; private set; }
 
@@ -23,7 +26,8 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
         ShareLinkAccessMode accessMode,
         Guid createdBy,
         DateTimeOffset createdAt,
-        DateTimeOffset? expiresAt = null)
+        DateTimeOffset? expiresAt = null,
+        PermissionLevel level = PermissionLevel.Viewer)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(resourceId);
@@ -33,6 +37,9 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
         if (accessMode == ShareLinkAccessMode.Public && !expiresAt.HasValue)
             throw new BusinessRuleException(GovernanceRuleCodes.Governance_ShareLink_PublicMustHaveExpiry, "Public share links must have an expiration date.");
 
+        if (level is not (PermissionLevel.Viewer or PermissionLevel.Commenter))
+            throw new BusinessRuleException(GovernanceRuleCodes.Governance_ShareLink_LevelAboveCommenter, "A share link grants Viewer or Commenter only.");
+
         var link = new ShareLink
         {
             AccountId = accountId,
@@ -41,6 +48,7 @@ public class ShareLink : AggregateRoot, IWorkspaceScoped
             ResourceId = resourceId,
             TokenHash = tokenHash,
             AccessMode = accessMode,
+            Level = level,
             Status = ShareLinkStatus.Active,
             ExpiresAt = expiresAt
         };

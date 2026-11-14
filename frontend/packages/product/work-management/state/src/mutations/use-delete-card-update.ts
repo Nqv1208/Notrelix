@@ -7,7 +7,13 @@ export function useDeleteCardUpdate(cardId: string, workspaceId: string) {
   const { comments } = useWorkManagementServices();
 
   return useMutation({
-    mutationFn: comments.deleteCardUpdate,
+    mutationFn: ({
+      updateId,
+      expectedVersion,
+    }: {
+      updateId: string;
+      expectedVersion: number;
+    }) => comments.deleteCardUpdate(updateId, expectedVersion),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: wmQueryKeys.cardUpdates(workspaceId, cardId),

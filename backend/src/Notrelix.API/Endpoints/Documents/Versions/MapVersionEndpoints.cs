@@ -1,5 +1,6 @@
 using Notrelix.API.Contracts.Documents.Versions.Requests;
 using Notrelix.API.Extensions;
+using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Documents.DTOs;
 using Notrelix.Application.Features.Documents.Versions.Commands.CreatePageVersion;
 using Notrelix.Application.Features.Documents.Versions.Commands.RestorePageVersion;
@@ -19,8 +20,9 @@ public static class MapVersionEndpoints
 
         group.MapResourceGet("/", ListAsync)
             .WithName("Documents.Versions.ListPageVersions")
-            .WithSummary("List the history entries of a page, newest first")
-            .Produces<List<PageVersionDto>>(StatusCodes.Status200OK, "application/json");
+            .WithSummary("List the history entries of a page, newest first, one cursor page at a time")
+            .WithDescription("Newest first, default 50 and at most 200 a page. Pass nextCursor back as cursor for the older entries.")
+            .Produces<CursorPage<PageVersionDto>>(StatusCodes.Status200OK, "application/json");
 
         group.MapResourceGet("/{versionId:guid}", GetAsync)
             .WithName("Documents.Versions.GetPageVersion")
@@ -41,8 +43,8 @@ public static class MapVersionEndpoints
         return app;
     }
 
-    private static async Task<IResult> ListAsync(Guid pageId, ISender sender)
-        => (await sender.Send(new ListPageVersionsQuery(pageId))).ToApiResult();
+    private static async Task<IResult> ListAsync(Guid pageId, string? cursor, int? limit, ISender sender)
+        => (await sender.Send(new ListPageVersionsQuery(pageId, cursor, limit))).ToApiResult();
 
     private static async Task<IResult> GetAsync(Guid pageId, Guid versionId, ISender sender)
         => (await sender.Send(new GetPageVersionQuery(pageId, versionId))).ToApiResult();

@@ -39,8 +39,13 @@ internal sealed class AttachmentObjectReaper
     public async Task<AttachmentReaperResult> RunOnceAsync(CancellationToken cancellationToken)
     {
         var now = _clock.UtcNow;
+        var expired = await ExpirePendingUploadsAsync(now, cancellationToken);
         var (claimed, purged) = await PurgeDeletedAsync(now, cancellationToken);
         var (orphans, skipped) = await SweepOrphansAsync(now, cancellationToken);
+        if (expired > 0)
+        {
+            _logger.LogInformation("Attachment object reaper removed {Expired} expired pending uploads", expired);
+        }
 
         if (purged > 0 || orphans > 0)
         {
@@ -50,6 +55,41 @@ internal sealed class AttachmentObjectReaper
         }
 
         return new AttachmentReaperResult(claimed, purged, orphans, skipped);
+    }
+
+    /// <summary>
+    /// Removes the pending two-step uploads whose window closed without a commit, with their objects. Each batch
+    /// is one store transaction; a short batch ends the pass, as the purge does.
+    /// </summary>
+    private async Task<int> ExpirePendingUploadsAsync(DateTimeOffset now, CancellationToken ct)
+    {
+        var total = 0;
+        while (!ct.IsCancellationRequested)
+        {
+            var removed = await _store.ExpirePendingUploadsAsync(
+                now,
+                _options.BatchSize,
+                async (key, token) =>
+                {
+                    // Defence in depth: only attachment objects of the tenant layout are deleted by this pass.
+                    if (!AttachmentStorageKey.IsAttachmentKey(key))
+                    {
+                        _logger.LogError("A pending upload has a storage key outside the attachment layout; it is left for review.");
+                        return false;
+                    }
+
+                    await _storage.DeleteAsync(key, token);
+                    return true;
+                },
+                ct);
+            total += removed;
+            if (removed < _options.BatchSize)
+            {
+                break;
+            }
+        }
+
+        return total;
     }
 
     private async Task<(int Claimed, int Purged)> PurgeDeletedAsync(DateTimeOffset now, CancellationToken ct)

@@ -22,6 +22,38 @@ public class WorkspaceVersionTests
     }
 
     [Fact]
+    public void UpdateProfile_NameAndDescriptionTogether_BumpsTheVersionOnce_AndTheSameValuesAreANoOp()
+    {
+        var workspace = Workspace.Create(_accountId, _actorId, "Workspace", "workspace", _now);
+        var version = workspace.Version;
+
+        workspace.UpdateProfile("Renamed", "About us", _actorId, _now);
+
+        workspace.Version.Should().Be(version + 1);
+        workspace.DomainEvents.Should().Contain(e => e is WorkspaceRenamedDomainEvent)
+            .And.Contain(e => e is WorkspaceDescriptionUpdatedDomainEvent);
+
+        ((IHasDomainEvents)workspace).ClearDomainEvents();
+        workspace.UpdateProfile("  Renamed ", "About us", _actorId, _now);
+
+        workspace.Version.Should().Be(version + 1);
+        workspace.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void UpdateProfile_NameOfOneHundredSixtyOneCharacters_IsRefusedAndChangesNothing()
+    {
+        var workspace = Workspace.Create(_accountId, _actorId, "Workspace", "workspace", _now);
+        var version = workspace.Version;
+
+        var act = () => workspace.UpdateProfile(new string('a', 161), null, _actorId, _now);
+
+        act.Should().Throw<Exception>();
+        workspace.Name.Should().Be("Workspace");
+        workspace.Version.Should().Be(version);
+    }
+
+    [Fact]
     public void Archive_ShouldIncrementVersion()
     {
         var workspace = Workspace.Create(_accountId, _actorId, "Workspace", "workspace", _now);

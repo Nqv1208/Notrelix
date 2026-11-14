@@ -1,5 +1,14 @@
 namespace Notrelix.Application.Common.Messaging;
 
+/// <summary>Operator reads are bounded: a requested limit is clamped to 1 to 200 (Lead decision L9, UC-GOV-H11).</summary>
+public static class OutboxDiagnosticsLimits
+{
+    public const int DefaultLimit = 50;
+    public const int MaxLimit = 200;
+
+    public static int Clamp(int limit) => Math.Clamp(limit, 1, MaxLimit);
+}
+
 public interface IOutboxDiagnosticsService
 {
     Task<OutboxStatsResult> GetStatsAsync(CancellationToken cancellationToken = default);
@@ -24,6 +33,10 @@ public sealed record OutboxMessageResult(
     DateTimeOffset? ProcessingStartedAt,
     Guid? WorkspaceId);
 
+/// <remarks>
+/// Metadata only. The message payload is never part of this result (Lead decision L9: operator reads return
+/// no payload), so a payload body or a payload-derived secret cannot reach the operator through this route.
+/// </remarks>
 public sealed record OutboxMessageDetailResult(
     Guid Id,
     Guid EventId,
@@ -43,5 +56,4 @@ public sealed record OutboxMessageDetailResult(
     Guid? WorkspaceId,
     Guid? ActorUserId,
     string? CorrelationId,
-    string? CausationId,
-    string? PayloadJson);
+    string? CausationId);

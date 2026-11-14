@@ -22,7 +22,7 @@ public static class BulkBoardItemOperations
     public const string SetPriority = "set-priority";
     public const string Delete = "delete";
 
-    public const int MaxItems = 200;
+    public const int MaxItems = Limits.WorkLimits.ItemsPerBulkEdit;
 
     public static readonly IReadOnlyList<string> All =
         [SetStatus, SetDueDate, ClearDueDate, Assign, UnassignAll, Archive, SetPriority, Delete];
@@ -112,6 +112,8 @@ public class BulkUpdateBoardItemsCommandHandler : IRequestHandler<BulkUpdateBoar
     private async Task<BulkUpdateBoardItemsResult> HandleCore(BulkUpdateBoardItemsCommand request, CancellationToken ct)
     {
         var ids = request.ItemIds.Distinct().ToList();
+        // Over the published bulk limit (D78.8) the whole request is refused naming the limit; nothing is truncated.
+        Limits.WorkLimits.EnsureBulkSize(ids.Count);
 
         var items = await _context.BoardItems
             .Where(i => ids.Contains(i.Id) && i.BoardId == request.BoardId && i.DeletedAt == null)

@@ -70,9 +70,15 @@ export function createCommentApi(client: NotrelixClient) {
       };
     },
 
-    async updateCardUpdate(updateId: string, bodyText: string): Promise<void> {
+    /** `Collaboration.Comments.Update`: the version the list returned goes with the text; a stale one is refused (412). */
+    async updateCardUpdate(
+      updateId: string,
+      bodyText: string,
+      expectedVersion: number,
+    ): Promise<void> {
       const body: UpdateCommentBody = {
         contentMd: bodyText,
+        expectedVersion,
       };
       await api.patch<void>(`/comments/${updateId}`, body);
     },
@@ -88,8 +94,30 @@ export function createCommentApi(client: NotrelixClient) {
       else await api.delete<void>(path);
     },
 
-    async deleteCardUpdate(updateId: string): Promise<void> {
-      await api.delete<void>(`/comments/${updateId}`);
+    /** `Collaboration.Comments.Delete`: the version the list returned goes in the query; a stale one is refused (412). */
+    async deleteCardUpdate(
+      updateId: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      await api.delete<void>(
+        `/comments/${updateId}?expectedVersion=${expectedVersion}`,
+      );
+    },
+
+    /**
+     * `Collaboration.Comments.Resolve` (`resolved`) or `Reopen`: the thread starter or an editor of the item.
+     * Resolving a resolved thread, or reopening an active one, is a no-op on the server.
+     */
+    async setCardUpdateResolved(
+      updateId: string,
+      resolved: boolean,
+    ): Promise<void> {
+      await api.post<void>(
+        resolved
+          ? endpoints.comments.resolve(updateId)
+          : endpoints.comments.reopen(updateId),
+        {},
+      );
     },
   };
 }

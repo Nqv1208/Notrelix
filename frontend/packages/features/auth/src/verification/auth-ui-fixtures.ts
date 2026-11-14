@@ -118,27 +118,31 @@ export function authInviteScenario(
   };
 }
 
-export function authRegisterDefaultScenario(): AuthRegisterFormSurfaceProps {
+export function authRegisterDefaultScenario(
+  overrides: Partial<AuthRegisterFormSurfaceProps> = {},
+): AuthRegisterFormSurfaceProps {
   return {
-    status: "idle",
-    serverError: null,
-    onSubmit: () => undefined,
-    onGoogleSignIn: () => undefined,
-    onGithubSignIn: () => undefined,
-    onSignIn: () => undefined,
+    copy: authCopy("vi"),
+    step: { kind: "form" },
+    onSubmit: noop,
+    onSignIn: noop,
+    onOtherEmail: noop,
+    ...overrides,
   };
 }
 
 export function authRegisterPendingScenario(): AuthRegisterFormSurfaceProps {
-  return {
-    ...authRegisterDefaultScenario(),
-    status: "pending",
-  };
+  return authRegisterDefaultScenario({ pending: true });
 }
 
 export function authRegisterErrorScenario(): AuthRegisterFormSurfaceProps {
-  return {
-    ...authRegisterDefaultScenario(),
-    serverError: "An account with this email already exists.",
-  };
+  return authRegisterDefaultScenario({
+    step: { kind: "form", error: "unreachable" },
+  });
+}
+
+export function authRegisterSentScenario(): AuthRegisterFormSurfaceProps {
+  return authRegisterDefaultScenario({
+    step: { kind: "sent", email: AUTH_PERSONAL_EMAIL },
+  });
 }

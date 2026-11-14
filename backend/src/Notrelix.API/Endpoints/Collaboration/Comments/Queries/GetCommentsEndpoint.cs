@@ -33,7 +33,19 @@ public static class GetCommentsEndpoint
             .WithName("Collaboration.Comments.GetPageComments")
             .Produces<List<CommentDto>>(StatusCodes.Status200OK, "application/json")
             .WithTags("Collaboration.Comments")
-            .WithSummary("Get comments for a page");
+            .WithSummary("Get comments for a page")
+            .WithDescription("Every live comment of the page, oldest first, unpaged. Prefer the /page route for long threads.");
+        return group;
+    }
+
+    public static IEndpointRouteBuilder MapGetPageCommentsPage(this IEndpointRouteBuilder group)
+    {
+        group.MapResourceGet("/page", GetPageCommentsPageAsync)
+            .WithName("Collaboration.Comments.GetPageCommentsPage")
+            .Produces<CursorPage<CommentDto>>(StatusCodes.Status200OK, "application/json")
+            .WithTags("Collaboration.Comments")
+            .WithSummary("Get a page of the comments of a page")
+            .WithDescription("Oldest first, default 50 and at most 200 a page. Pass nextCursor back as cursor for the next page. A deleted comment with live replies comes back as a tombstone (isDeleted true, no author or body).");
         return group;
     }
 
@@ -55,5 +67,13 @@ public static class GetCommentsEndpoint
     {
         var result = await sender.Send(GetCommentsQuery.ForPage(pageId));
         return result.ToApiResult();
+    }
+
+    private static async Task<IResult> GetPageCommentsPageAsync(Guid pageId, string? cursor, int? limit, ISender sender)
+    {
+        var take = TimeCursor.ClampLimit(limit);
+        var result = await sender.Send(GetCommentsQuery.ForPage(pageId) with { After = TimeCursor.Decode(cursor), Limit = take + 1 });
+        if (!result.Succeeded) return result.ToApiResult();
+        return Results.Ok(TimeCursor.Page(result.Data!, take, comment => (comment.CreatedAt, comment.Id)));
     }
 }

@@ -4,7 +4,7 @@ using Notrelix.Application.Features.Collaboration.Comments.Services;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment;
 
-public record UpdateCommentCommand(Guid CommentId, string ContentMd) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
+public record UpdateCommentCommand(Guid CommentId, string ContentMd, long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest
 {
     // A coarse workspace-member gate: who may change the comment is decided in the handler from its target.
     public PermissionAction Action => PermissionAction.ViewBoard;

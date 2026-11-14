@@ -1,3 +1,6 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Notrelix.Infrastructure.Options;
+
 namespace Notrelix.Infrastructure;
 
 /// <summary>
@@ -12,12 +15,16 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
         IConfiguration configuration,
-        IHostEnvironment? environment = null)
+        IHostEnvironment? environment = null,
+        RuntimeRoles? roles = null)
     {
+        var runtime = roles ?? RuntimeRoles.All;
+        services.TryAddSingleton(runtime);
+
         services.AddPersistence(configuration);
         services.AddCrossContextBindings();
-        services.AddMessaging(configuration);
-        services.AddBackgroundJobs(configuration);
+        services.AddMessaging(configuration, runtime);
+        services.AddBackgroundJobs(configuration, runtime);
         services.AddCaching(configuration, environment);
         services.AddAuthInfrastructure(configuration);
         services.AddSecurityInfrastructure(configuration);
@@ -40,7 +47,7 @@ public static class DependencyInjection
 
     /// <summary>
     /// Backward-compatible entry used by the API host. Delegates to
-    /// <see cref="AddInfrastructure(IServiceCollection, IConfiguration)"/>.
+    /// <see cref="AddInfrastructure(IServiceCollection, IConfiguration, IHostEnvironment?, RuntimeRoles?)"/>.
     /// </summary>
     public static void AddInfrastructureServices(this IHostApplicationBuilder builder)
     {

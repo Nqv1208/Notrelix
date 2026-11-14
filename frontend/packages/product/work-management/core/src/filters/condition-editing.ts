@@ -1,6 +1,7 @@
 import { specOf } from "../field-types/field-type-registry";
 import type { FieldDefinition } from "../types/field-types";
 import {
+  dayOf,
   NONE_VALUE,
   type CompoundFilter,
   type ConditionOperator,
@@ -78,45 +79,41 @@ export type DatePreset = "today" | "week" | "month" | "next7" | "overdue";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const iso = (date: Date) =>
-  `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
 
-/** A preset as a condition: `between` for the week, month and next seven days, `before` today for overdue. */
+/**
+ * A preset as a condition: `between` for the week, month and next seven days,
+ * `before` today for overdue. "Today" is the day of `now` in `timeZone` (the
+ * board's), so a preset and the day a card falls on use the same zone.
+ */
 export function presetCondition(
   fieldId: string,
   preset: DatePreset,
   now: Date,
+  timeZone?: string,
 ): FilterCondition {
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const shift = (days: number) =>
-    new Date(today.getFullYear(), today.getMonth(), today.getDate() + days);
+  const [y, m, d] = (dayOf(now.toISOString(), timeZone) ?? iso(now))
+    .split("-")
+    .map(Number) as [number, number, number];
+  const at = (day: number, month = m - 1) => new Date(Date.UTC(y, month, day));
+  const today = at(d);
+  const shift = (days: number) => at(d + days);
   switch (preset) {
     case "today":
       return { fieldId, operator: "equals", values: [iso(today)] };
     case "week": {
-      const monday = shift(-((today.getDay() + 6) % 7));
+      const monday = shift(-((today.getUTCDay() + 6) % 7));
       return {
         fieldId,
         operator: "between",
-        values: [
-          iso(monday),
-          iso(
-            new Date(
-              monday.getFullYear(),
-              monday.getMonth(),
-              monday.getDate() + 6,
-            ),
-          ),
-        ],
+        values: [iso(monday), iso(new Date(monday.getTime() + 6 * 86_400_000))],
       };
     }
     case "month":
       return {
         fieldId,
         operator: "between",
-        values: [
-          iso(new Date(today.getFullYear(), today.getMonth(), 1)),
-          iso(new Date(today.getFullYear(), today.getMonth() + 1, 0)),
-        ],
+        values: [iso(at(1)), iso(at(0, m))],
       };
     case "next7":
       return {

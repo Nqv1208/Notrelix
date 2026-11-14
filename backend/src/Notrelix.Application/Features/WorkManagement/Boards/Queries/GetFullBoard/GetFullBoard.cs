@@ -1,4 +1,3 @@
-using System.Text.Json;
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.Governance.Public.Visibility;
@@ -10,7 +9,9 @@ using Notrelix.Domain.WorkManagement.Formulas;
 namespace Notrelix.Application.Features.WorkManagement.Boards.Queries.GetFullBoard;
 
 /// <param name="PageSize">When set (clamped to 1..200), each group carries only its first page of Items, in the order of <paramref name="Sort"/>, among those that pass <paramref name="Filter"/>; null reads every Item.</param>
-public record GetFullBoardQuery(Guid BoardId, int? PageSize = null, string? Filter = null, string? Sort = null) : IQuery<Result<FullBoardDto>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
+/// <param name="SearchMembers">Comma-separated user ids whose name holds <paramref name="Search"/>: their Items match it too.</param>
+/// <param name="GroupBy">The Status or Select field the pages are laid out by (one lane per option); none: the Status field.</param>
+public record GetFullBoardQuery(Guid BoardId, int? PageSize = null, string? Filter = null, string? Sort = null, string? Search = null, string? SearchMembers = null, string? GroupBy = null) : IQuery<Result<FullBoardDto>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
 {
     public PermissionAction Action => PermissionAction.ViewBoard;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board"), BoardId);
@@ -44,6 +45,25 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
     /// <summary>The Status field a paged read lays the board out by: the first live Status field.</summary>
     internal static CriteriaField? LaneFieldOf(IReadOnlyList<BoardField> fields) =>
         CriteriaFieldsOf(fields).FirstOrDefault(f => f.Type == FieldType.Status);
+
+    /// <summary>
+    /// The field a paged read lays the board out by: the live Status or Select field <paramref name="groupBy"/> names,
+    /// else the Status field. Any other field is refused on "groupBy" (the client then reads the whole board and
+    /// groups there).
+    /// </summary>
+    internal static CriteriaField? LaneFieldOf(IReadOnlyList<BoardField> fields, string? groupBy)
+    {
+        if (string.IsNullOrWhiteSpace(groupBy)) return LaneFieldOf(fields);
+        if (!Guid.TryParse(groupBy, out var id)) throw BoardItemCriteria.Refuse("groupBy", "The grouping is not a field id.");
+        var field = CriteriaFieldsOf(fields).FirstOrDefault(f => f.Id == id)
+            ?? throw BoardItemCriteria.Refuse("groupBy", "The board has no such field.");
+        if (field.Type is not (FieldType.Status or FieldType.Select))
+        {
+            throw BoardItemCriteria.Refuse("groupBy", $"A {field.Type} field cannot group a paged board.");
+        }
+
+        return field;
+    }
 
     /// <summary>What the criteria need of the board's fields: type, option order and which Date field stands for the due date.</summary>
     internal static List<CriteriaField> CriteriaFieldsOf(IReadOnlyList<BoardField> fields)
@@ -117,8 +137,8 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
         List<BoardLaneDto>? lanes = null;
         if (request.PageSize is { } pageSize)
         {
-            var criteria = BoardItemCriteria.Parse(request.Filter, request.Sort);
-            var laneField = LaneFieldOf(fields);
+            var criteria = BoardItemCriteria.Parse(request.Filter, request.Sort, request.Search, request.SearchMembers);
+            var laneField = LaneFieldOf(fields, request.GroupBy);
             var read = await _pageReader.ReadAsync(
                 board.Id, listIds, laneField, CriteriaFieldsOf(fields), criteria, null, null, PageCursor.ClampLimit(pageSize), cancellationToken);
             lanes = read
@@ -216,10 +236,10 @@ public class GetFullBoardQueryHandler : IRequestHandler<GetFullBoardQuery, Resul
                 column.Name,
                 column.Type.ToString(),
                 // A Formula's saved field ids are shown as the fields' current names.
+                // The settings JSON itself, not the value object that holds it.
                 column.Type == FieldType.Formula
-                    ? JsonSerializer.Serialize(
-                        FieldSettings.Create(JsonValue.Create(ComputedFieldGraph.RenderNames(column.Settings.Data.Value, fieldInputs))), (JsonSerializerOptions?)null)
-                    : JsonSerializer.Serialize(column.Settings, (JsonSerializerOptions?)null),
+                    ? ComputedFieldGraph.RenderNames(column.Settings.Data.Value, fieldInputs)
+                    : column.Settings.Data.Value,
                 column.DefaultValue == null ? null : column.DefaultValue.Data.Value,
                 column.Position.Value,
                 column.IsSystem,

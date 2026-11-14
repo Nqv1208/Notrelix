@@ -8,9 +8,10 @@ public static class TeamFactory
         string name,
         Guid creatorUserId,
         DateTimeOffset createdAt,
-        Guid? workspaceMemberId = null)
+        Guid? workspaceMemberId = null,
+        IReadOnlyCollection<string>? otherTeamNames = null)
     {
-        var team = Team.Create(accountId, workspaceId, name, creatorUserId, createdAt);
+        var team = Team.Create(accountId, workspaceId, name, creatorUserId, createdAt, otherTeamNames);
         team.AddMember(creatorUserId, TeamMemberRole.Lead, creatorUserId, createdAt, workspaceMemberId);
 
         var lead = team.Members.First(m => m.UserId == creatorUserId);

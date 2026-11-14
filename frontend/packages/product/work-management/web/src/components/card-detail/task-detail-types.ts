@@ -1,5 +1,5 @@
 import type { ItemPageCopy } from "../item-page/item-page.copy";
-import type { ItemChecklistsModel } from "../checklists/item-checklists";
+import type { ItemChecklistsModel } from "../checklists/item-checklists.model";
 import type {
   ItemPagePeople,
   ItemPageUpload,
@@ -28,6 +28,11 @@ export interface TaskDetailCapabilities {
    */
   readonly canComment?: boolean;
   /**
+   * Moderating others' comments: a Board manager may delete a comment they did
+   * not write. Only shapes the control; the server decides the delete.
+   */
+  readonly canModerateComments?: boolean;
+  /**
    * The board, or the item's group, is archived: the server refuses every write
    * on it except a person's own preference and follow, so remind is off while a
    * plain viewer, who cannot remind either, keeps follow.
@@ -51,9 +56,42 @@ export function canChangeOwnComment(
   );
 }
 
+/**
+ * Delete on a comment: its author, or a moderator (a Board manager) while the
+ * viewer can write comments. Edit stays with the author alone.
+ */
+export function canDeleteComment(
+  capabilities: TaskDetailCapabilities,
+  authorUserId: string,
+  viewerUserId?: string | null,
+): boolean {
+  if (canChangeOwnComment(capabilities, authorUserId, viewerUserId))
+    return true;
+  return (
+    canWriteComment(capabilities) && capabilities.canModerateComments === true
+  );
+}
+
 /** Whether the composer is available for these capabilities. */
 export function canWriteComment(capabilities: TaskDetailCapabilities): boolean {
   return capabilities.canComment ?? capabilities.canEditFields;
+}
+
+/**
+ * Who may resolve or reopen a top-level thread (UC-COL-A07, A08): its starter, or an editor of the item. A
+ * Viewer who did not start the thread gets no control.
+ */
+export function canResolveComment(
+  capabilities: TaskDetailCapabilities,
+  authorUserId: string,
+  viewerUserId?: string | null,
+): boolean {
+  if (capabilities.canEditFields) return true;
+  return (
+    canWriteComment(capabilities) &&
+    Boolean(viewerUserId) &&
+    authorUserId === viewerUserId
+  );
 }
 
 /** A child item listed under "Việc con"; `done` = done category. */
@@ -85,6 +123,10 @@ export interface ItemSheetLink {
     readonly title: string;
     readonly statusName: string | null;
     readonly statusCategory: "todo" | "in_progress" | "review" | "done" | null;
+    readonly isArchived?: boolean;
+    /** Its first assignee, when it has one. */
+    readonly assigneeId?: string | null;
+    readonly assigneeName?: string | null;
   };
 }
 
@@ -121,6 +163,8 @@ export interface ItemSheetApproval {
   readonly decidedAt?: string | null;
   /** The approver's comment with the decision. */
   readonly decisionNote?: string | null;
+  /** The rejected or cancelled request this one asks again. */
+  readonly previousRequestId?: string | null;
 }
 
 /** Board group offered by "Chuyển nhóm"; the item's own group is excluded. */
@@ -141,6 +185,8 @@ export interface ItemSheetMark {
 export interface TaskDetailData {
   readonly updates: readonly CardUpdate[];
   readonly updatesLoading: boolean;
+  /** The comments could not be read and there is nothing to show instead. */
+  readonly updatesError?: boolean;
   /** More comments wait on the server: "Show more" reads the next page. */
   readonly updatesMore?: {
     readonly loading: boolean;
@@ -243,6 +289,8 @@ export interface TaskDetailCallbacks {
   readonly onToggleChildItem?: (childId: string, done: boolean) => void;
   /** Adds a child item with this title; the input stays inert without it. */
   readonly onAddChildItem?: (title: string) => void;
+  /** Opens the full create dialog with this item as the fixed parent (a sub-item with details). */
+  readonly onAddChildItemWithDetails?: () => void;
   /** Links this item to another; "Thêm" in "Liên kết" stays inert without it. */
   readonly onAddLink?: (
     itemId: string,
@@ -288,6 +336,8 @@ export interface TaskDetailCallbacks {
   /** Deletes a stored file; resolves false when it did not go through. */
   readonly onDeleteFile?: (file: CardFile) => Promise<boolean>;
   readonly onRefreshActivity: () => void;
+  /** Reads the comments again after their read failed. */
+  readonly onRefreshUpdates?: () => void;
   /**
    * Posts a comment. `onSuccess` clears the composer; `onSettled` runs after
    * success or failure so the composer can be used again (a failed post keeps
@@ -306,8 +356,14 @@ export interface TaskDetailCallbacks {
     emoji: string,
     on: boolean,
   ) => void;
-  readonly onUpdateUpdate: (updateId: string, body: string) => void;
-  readonly onDeleteUpdate: (updateId: string) => void;
+  readonly onUpdateUpdate: (
+    updateId: string,
+    body: string,
+    expectedVersion: number,
+  ) => void;
+  readonly onDeleteUpdate: (updateId: string, expectedVersion: number) => void;
+  /** Resolves (`resolved`) or reopens a top-level thread; absent: threads cannot be resolved here. */
+  readonly onSetUpdateResolved?: (updateId: string, resolved: boolean) => void;
   readonly onSelectTab: (tab: CardDetailTab) => void;
   /** Copies the item link; the button is disabled without it. */
   readonly onCopyLink?: (cardId: string) => void;

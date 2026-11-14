@@ -15,6 +15,9 @@ namespace Notrelix.Application.Features.Collaboration.Attachments.Services;
 /// </summary>
 internal static class AttachmentTargetOperations
 {
+    /// <summary>Leading bytes kept for an image header. Covers the frame header of a JPEG behind its EXIF and ICC segments.</summary>
+    private const int ImageHeaderCapacity = 64 * 1024;
+
     public static async Task<List<AttachmentDto>> ListAsync(
         ICollaborationDbContext context,
         IActorLookupService actorLookup,
@@ -94,7 +97,8 @@ internal static class AttachmentTargetOperations
         string? contentType,
         CancellationToken ct)
     {
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+        // The validator refuses these first (400); this repeats the same allow-list for any caller that skips it.
+        if (!AttachmentLinkUrl.IsAllowed(url))
             return Result<AttachmentDto>.Failure("Attachment URL must be an absolute HTTP(S) URL.");
 
         var workspaceId = requestContext.RequireWorkspaceId();
@@ -128,6 +132,30 @@ internal static class AttachmentTargetOperations
         Guid targetId,
         string rawFileName,
         Stream body,
+        CancellationToken ct)
+    {
+        var uploaded = await UploadStoredFileAsync(
+            context, requestContext, dateTimeProvider, storage, compensations, targetLock, options, kind, targetId, rawFileName, body, null, ct);
+        return Result<AttachmentDto>.Success(uploaded.Attachment);
+    }
+
+    /// <summary>
+    /// The shared upload with the voice facts of an audio file. The stored bytes never exceed <see cref="AudioUploadHints.MaxBytes"/> (a
+    /// 413 while they stream); the duration and the waveform are stored only for an audio file.
+    /// </summary>
+    public static async Task<UploadedFile> UploadStoredFileAsync(
+        ICollaborationDbContext context,
+        ICurrentRequestContext requestContext,
+        IDateTimeProvider dateTimeProvider,
+        IStorageService storage,
+        IRequestRollbackCompensations compensations,
+        IAttachmentTargetLock targetLock,
+        AttachmentUploadOptions options,
+        ResourceKind kind,
+        Guid targetId,
+        string rawFileName,
+        Stream body,
+        AudioUploadHints? audio,
         CancellationToken ct)
     {
         var accountId = requestContext.RequireAccountId();
@@ -169,10 +197,21 @@ internal static class AttachmentTargetOperations
             $"delete attachment object {storageKey}",
             token => storage.DeleteAsync(storageKey, token));
 
-        using var limited = new SizeLimitedReadStream(
-            new PrefixedReadStream(head.AsMemory(0, headLength), body),
-            options.MaxFileSizeBytes);
+        // The leading bytes of the body are kept while they are copied to storage (one read, no second pass), so an image's pixel
+        // size can be read from its header. The header reader decides which types have one; everything else keeps no size.
+        var leading = new LeadingBytesCaptureStream(new PrefixedReadStream(head.AsMemory(0, headLength), body), ImageHeaderCapacity);
+        var ceiling = audio is null ? options.MaxFileSizeBytes : Math.Min(options.MaxFileSizeBytes, audio.MaxBytes);
+        using var limited = new SizeLimitedReadStream(leading, ceiling);
         await storage.WriteAsync(storageKey, limited, classified.ContentType, ct);
+        var imageSize = ImageDimensionReader.TryRead(leading.Captured, classified.ContentType);
+
+        // The duration comes from the stored header when it carries one; the client hint is the fallback, clamped, and is only a hint.
+        var isAudio = classified.Type == AttachmentType.Audio;
+        var verifiedDuration = isAudio ? AudioMetadataReader.TryReadDurationMs(leading.Captured, classified.ContentType) : null;
+        var durationMs = isAudio && audio is not null
+            ? Math.Min(verifiedDuration ?? Math.Clamp(audio.DurationHintMs ?? 0, 0, DurationMaxMs), DurationMaxMs)
+            : (int?)null;
+        var waveform = isAudio && audio is not null ? audio.Waveform : null;
 
         var now = dateTimeProvider.UtcNow;
         var target = ResourceRef.Create(kind, targetId, workspaceId);
@@ -200,10 +239,17 @@ internal static class AttachmentTargetOperations
             currentCount,
             maxAttachments,
             requestContext.UserId,
-            now);
+            now,
+            imageSize?.Width,
+            imageSize?.Height,
+            durationMs,
+            waveform);
 
         context.Attachments.Add(attachment);
 
-        return Result<AttachmentDto>.Success(AttachmentDto.From(attachment));
+        return new UploadedFile(AttachmentDto.From(attachment), durationMs, verifiedDuration, waveform);
     }
+
+    /// <summary>The longest duration a client may hint, in milliseconds; the same bound as the stored duration.</summary>
+    private const int DurationMaxMs = Notrelix.Domain.Collaboration.Attachments.FileMetadata.MaxDurationMs;
 }

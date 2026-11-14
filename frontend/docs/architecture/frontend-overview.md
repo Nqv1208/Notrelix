@@ -38,7 +38,7 @@ This document is the canonical top-level owner for the Notrelix frontend archite
 It defines:
 
 - frontend versus backend/system responsibility;
-- the three host applications;
+- the three product host applications plus the internal operator host;
 - package-family responsibilities;
 - architecture-layer meanings;
 - high-level dependency direction;
@@ -162,9 +162,9 @@ Record the dependency and change the owning contract.
 
 ---
 
-# 5. Three-host model
+# 5. Host model: three product hosts plus the internal operator host
 
-Notrelix currently has three host applications:
+Notrelix currently has three product host applications:
 
 ```text
 apps/web

@@ -173,7 +173,7 @@ public sealed class InboxStatesIntegrationTests : IAsyncLifetime
         var elsewhere = await SeedAsync(account, ws, user, Guid.NewGuid());
 
         await using var context = _db.CreateOwnerContext(SystemTenant());
-        var notifier = new Notrelix.Infrastructure.Messaging.Consumers.Collaboration.ItemFollowerNotifier(context, context, null!);
+        var notifier = new Notrelix.Infrastructure.Messaging.Consumers.Collaboration.ItemFollowerNotifier(context, context, null!, null!);
         await notifier.MarkMentionsRepliedAsync(ws, ItemKind, thread, user, T0.AddMinutes(5), CancellationToken.None);
 
         var inbox = new PostgresNotificationInbox(context, FakeDateTimeProvider.WithFixedTime(T0.AddMinutes(6)));

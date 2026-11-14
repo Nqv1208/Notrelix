@@ -57,6 +57,12 @@ public class RestoreBoardItemCommandHandler : IRequestHandler<RestoreBoardItemCo
         if (item.DeletedAt is { } deletedAt && _dateTimeProvider.UtcNow - deletedAt > BoardItemTrashPolicy.RestoreWindow)
             throw new ConflictException("This item was deleted more than 30 days ago and can no longer be restored.", "work-management.item.restore-window-closed");
 
+        // A sub-item comes back with its parent, never on its own while the parent is still in the Trash.
+        if (item.IsDeleted && item.ParentItemId is { } parentId
+            && await _context.BoardItems.IgnoreQueryFilters().AnyAsync(
+                p => p.Id == parentId && p.AccountId == accountId && p.WorkspaceId == workspaceId && p.DeletedAt != null, ct))
+            throw new ConflictException("Restore the parent item first; a sub-item comes back with it.", "work-management.item.restore-parent-deleted");
+
         // A deleted root item's key may have been reissued to an active sibling;
         // restore keeps the key when free, otherwise lands right after its holder.
         FractionalIndex? replacement = null;
@@ -70,18 +76,22 @@ public class RestoreBoardItemCommandHandler : IRequestHandler<RestoreBoardItemCo
         }
 
         var deletedWithItem = item.DeletedAt;
-        item.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow, replacement);
 
         // The sub-items that went to the Trash with it come back with it; one deleted on its own earlier stays.
-        if (deletedWithItem is not null)
-        {
-            var children = await _context.BoardItems
+        List<BoardItem> children = deletedWithItem is null
+            ? []
+            : await _context.BoardItems
                 .IgnoreQueryFilters()
                 .Where(child => child.AccountId == accountId && child.WorkspaceId == workspaceId
                     && child.ParentItemId == item.Id && child.DeletedAt == deletedWithItem)
                 .ToListAsync(ct);
-            foreach (var child in children) child.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow);
-        }
+
+        // Coming back from the Trash makes them active again, so they need room under the board's limit (D78.8).
+        if (item.IsDeleted && !item.IsArchived)
+            await Limits.WorkLimits.EnsureItemRoomAsync(_context, item.BoardId, 1 + children.Count(child => !child.IsArchived), ct);
+
+        item.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow, replacement);
+        foreach (var child in children) child.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }
 }

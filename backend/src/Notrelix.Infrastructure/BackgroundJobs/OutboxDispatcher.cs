@@ -10,11 +10,6 @@ namespace Notrelix.Infrastructure.BackgroundJobs;
 internal sealed class OutboxDispatcher : BackgroundService
 {
     private const string DispatcherConsumerName = "OutboxDispatcher";
-    private const int BatchSize = 20;
-    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(1);
-    private const int ProcessingTimeoutSeconds = 60;
-    private const int MaxRetries = 5;
-    private const int MaxBackoffSeconds = 60;
 
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<OutboxDispatcher> _logger;
@@ -64,7 +59,7 @@ internal sealed class OutboxDispatcher : BackgroundService
                 _logger.LogError(ex, "OutboxDispatcher failed");
             }
 
-            await _wakeSignal.WaitAsync(PollInterval, stoppingToken);
+            await _wakeSignal.WaitAsync(TimeSpan.FromSeconds(_options.PollIntervalSeconds), stoppingToken);
         }
     }
 
@@ -174,7 +169,7 @@ internal sealed class OutboxDispatcher : BackgroundService
                     SET processing_started_at = {0}, locked_until = {1}, updated_at = {0}
                     WHERE id = {2} AND lock_id = {3} AND status = 'Processing'
                     """,
-                    [now.UtcDateTime, now.AddSeconds(ProcessingTimeoutSeconds).UtcDateTime, id, lockId],
+                    [now.UtcDateTime, now.AddSeconds(_options.ProcessingTimeoutSeconds).UtcDateTime, id, lockId],
                     cancellationToken);
                 if (renewed == 0)
                 {
@@ -365,7 +360,7 @@ internal sealed class OutboxDispatcher : BackgroundService
         var dateTimeProvider = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
 
         var now = dateTimeProvider.UtcNow;
-        var processingCutoff = now.AddSeconds(-ProcessingTimeoutSeconds);
+        var processingCutoff = now.AddSeconds(-_options.ProcessingTimeoutSeconds);
         var lockId = Guid.NewGuid();
         var streamBatch = _options.StreamBatchSize;
         var streamCap = _options.MaxStreamMessagesPerPoll;
@@ -376,7 +371,7 @@ internal sealed class OutboxDispatcher : BackgroundService
         {
             // Messages with no stream have no order contract: oldest first, as before.
             var unordered = await context.Set<MessagingOutboxMessage>()
-                .FromSqlRaw(UnorderedClaimSql, now.UtcDateTime, processingCutoff.UtcDateTime, BatchSize)
+                .FromSqlRaw(UnorderedClaimSql, now.UtcDateTime, processingCutoff.UtcDateTime, _options.BatchSize)
                 .ToListAsync(cancellationToken);
 
             // Ordered streams: see RunCandidatesSql.
@@ -429,7 +424,7 @@ internal sealed class OutboxDispatcher : BackgroundService
                 unordered.Count, kept.Count, ordered.Count, lockId);
 
             // More is likely waiting when a bound was reached: the unordered limit, the poll cap, or a full run.
-            var more = unordered.Count == BatchSize
+            var more = unordered.Count == _options.BatchSize
                 || kept.Count >= streamCap
                 || ordered.Any(r => r.Length == streamBatch);
             return new ClaimedWork(unordered.Select(m => m.Id).ToList(), ordered, lockId, more);

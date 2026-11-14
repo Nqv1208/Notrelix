@@ -3,6 +3,9 @@ namespace Notrelix.Domain.Collaboration.Comments;
 
 public class Comment : SoftDeletableAggregateRoot, IWorkspaceScoped
 {
+    /// <summary>The longest comment body, in characters. Validators and every write path use this one number.</summary>
+    public const int MaxContentLength = 10000;
+
     public Guid AccountId { get; private set; }
     public Guid WorkspaceId { get; private set; }
     public ResourceRef Target { get; private set; } = null!;
@@ -26,7 +29,7 @@ public class Comment : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
         Guard.NotNullOrWhiteSpace(content);
-        Guard.MaxLength(content, 10000);
+        Guard.MaxLength(content, MaxContentLength);
         Guard.NotEmpty(createdBy);
 
         if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != workspaceId)
@@ -63,7 +66,7 @@ public class Comment : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(workspaceId);
         Guard.NotNull(target);
         Guard.NotNullOrWhiteSpace(content);
-        Guard.MaxLength(content, 10000);
+        Guard.MaxLength(content, MaxContentLength);
         Guard.NotEmpty(createdBy);
         Guard.NotNull(parentContext);
 
@@ -106,7 +109,7 @@ public class Comment : SoftDeletableAggregateRoot, IWorkspaceScoped
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
         Guard.NotNullOrWhiteSpace(newContent);
-        Guard.MaxLength(newContent, 10000);
+        Guard.MaxLength(newContent, MaxContentLength);
 
         if (Content == newContent.Trim()) return;
 

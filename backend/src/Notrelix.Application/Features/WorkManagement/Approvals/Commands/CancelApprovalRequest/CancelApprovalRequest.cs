@@ -86,6 +86,10 @@ public class CancelApprovalRequestCommandHandler : IRequestHandler<CancelApprova
         if (!await IsRequesterWhoCanStillReadAsync(approvalRequest, userId, ct) && !await CanManageAsync(request, ct))
             throw new ForbiddenException("Only the person who asked, or someone who manages the board, can cancel this approval.");
 
+        if (approvalRequest.Status != ApprovalStatus.Pending)
+            return Result.Failure(new ApplicationError(
+                "work.approval.already-decided", $"This approval is already {approvalRequest.Status}.", ApplicationErrorType.Conflict));
+
         approvalRequest.Cancel(userId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }

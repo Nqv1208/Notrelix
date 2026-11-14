@@ -20,8 +20,7 @@ evidence:
   - docs/quality/accessibility-standard.md
   - docs/quality/performance-and-scalability.md
   - docs/governance/documentation-lifecycle.md
-  - .github/workflows/be-ci.yml
-  - .github/workflows/fe-ci.yml
+  - .github/workflows/ci.yml
 review_on:
   - definition-of-done-change
   - required-proof-change
@@ -41,6 +40,8 @@ This document owns repository-wide completion criteria.
 It does not prescribe every implementation task.
 
 `change-classification.md` decides which obligations apply.
+
+`product-delivery-lifecycle.md` owns when a catalog use case is DONE (four lines, evidence, who merges) and how a version is accepted; this document applies to the change that sets it.
 
 Quality documents decide the proof standard.
 
@@ -955,30 +956,16 @@ Avoid one-off patch when the same failure class remains possible elsewhere.
 
 # 92. Current CI alignment
 
-Current backend delivery evidence includes:
+CI is one workflow, `.github/workflows/ci.yml`, with one required check, `CI gate`:
 
 ```text
-quality/security
-architecture
-core tests
-Platform
-API/OpenAPI
-integration
-Docker
-final gate
+backend-unit         format, build, Domain/Application/Infrastructure/Architecture/Platform/API tests, OpenAPI drift
+backend-integration  integration tests in 3 shards
+frontend             format, typecheck, lint, architecture, i18n, codegen, node and web tests, web build
+dependencies         dependency audit
 ```
 
-Current frontend delivery evidence includes:
-
-```text
-codegen/architecture/taxonomy
-type/lint/format
-guarded test categories
-UI accessibility/visual
-builds
-production E2E
-final gate
-```
+Docker image builds, UI accessibility/visual checks, Playwright E2E and `make docs-check` are not PR gates; they run locally (see `docs/delivery/ci-cd-architecture.md`).
 
 Exact topology can evolve while the protected completion properties remain.
 

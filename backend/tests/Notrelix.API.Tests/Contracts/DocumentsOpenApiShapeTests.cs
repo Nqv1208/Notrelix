@@ -16,7 +16,7 @@ public class DocumentsOpenApiShapeTests
 
     [Theory]
     [InlineData("Documents.Pages.GetPage", "200", "PageDto")]
-    [InlineData("Documents.Pages.ListWorkspacePages", "200", "PageDto[]")]
+    [InlineData("Documents.Pages.ListWorkspacePages", "200", "CursorPageOfPageDto")]
     [InlineData("Documents.Pages.GetPageTree", "200", "PageTreeItemDto[]")]
     [InlineData("Documents.Pages.SearchPages", "200", "PageDto[]")]
     public void PageRead_DeclaresItsResponseType(string operationId, string status, string expected)

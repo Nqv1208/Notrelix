@@ -1,6 +1,6 @@
 # Hướng C · Tablet ngang (đợt C2) — quy ước chung
 
-Read together with `review-decisions.md` (world facts, product rules, editing rules) and `mobile-brief.md` (principles section applies here too).
+Read together with `decisions.md` (world facts, product rules, editing rules) and `mobile-brief.md` (principles section applies here too).
 
 ## Principles
 

@@ -23,7 +23,7 @@ public static class CreateChildItemEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new CreateChildItemCommand(itemId, body.Title), cancellationToken);
+        var result = await sender.Send(new CreateChildItemCommand(itemId, body.Title, body.DescriptionMd, body.StartDate, body.DueDate), cancellationToken);
         return Results.Ok(result);
     }
 }

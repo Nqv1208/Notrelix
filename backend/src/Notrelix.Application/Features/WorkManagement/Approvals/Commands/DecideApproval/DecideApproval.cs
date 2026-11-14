@@ -1,14 +1,16 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
+using Notrelix.Application.Features.WorkManagement.Approvals.Services;
+using Notrelix.Application.Features.Workspaces.Public.Teams;
 
 namespace Notrelix.Application.Features.WorkManagement.Approvals.Commands.DecideApproval;
 
 /// <summary>
 /// The named approver approves or rejects an approval request, with an optional comment. Only the person named
-/// on a step may decide it (anyone else is forbidden) and only once: a step that was already decided, or a
+/// on a step (or a member of the Team named on it) may decide it (anyone else is forbidden) and only once: a step that was already decided, or a
 /// request that is no longer pending, is a conflict. The approver must still be able to read the Board of the
-/// Item the request is about. Any member of the Workspace reaches the use case (<c>ViewWorkspace</c>); the
+/// Item the request is about. A step that names a Team is decided by a current member of that Team. Any member of the Workspace reaches the use case (<c>ViewWorkspace</c>); the
 /// named-approver rule is the authority.
 /// </summary>
 [IdempotencyOperation("work-management.approvals.decide-approval.v1")]
@@ -28,6 +30,7 @@ public class DecideApprovalCommandHandler(
     ICurrentRequestContext requestContext,
     IDateTimeProvider clock,
     IResourceVisibility visibility,
+    ITeamMembershipFacts teams,
     IBoardRealtimeNotifier? realtime = null) : IRequestHandler<DecideApprovalCommand, Result>
 {
     public async Task<Result> Handle(DecideApprovalCommand request, CancellationToken ct)
@@ -45,7 +48,7 @@ public class DecideApprovalCommandHandler(
             ?? throw new NotFoundException(nameof(ApprovalRequest), request.RequestId);
 
         var userId = requestContext.UserId;
-        var step = approval.Steps.FirstOrDefault(s => s.ApproverUserId == userId);
+        var (step, myTeams) = await ApprovalDeciders.FindAsync(approval, request.WorkspaceId, userId, teams, ct);
         if (step is null) throw new ForbiddenException("This approval is not assigned to you.");
 
         if (approval.Status != ApprovalStatus.Pending || step.Status != ApprovalStatus.Pending)
@@ -67,8 +70,8 @@ public class DecideApprovalCommandHandler(
 
         var comment = string.IsNullOrWhiteSpace(request.Comment) ? null : request.Comment.Trim();
         var now = clock.UtcNow;
-        if (request.Decision == DecideApprovalCommand.Approve) approval.Approve(step.Id, userId, now, comment);
-        else approval.Reject(step.Id, userId, now, comment);
+        if (request.Decision == DecideApprovalCommand.Approve) approval.Approve(step.Id, userId, now, comment, myTeams);
+        else approval.Reject(step.Id, userId, now, comment, myTeams);
         return Result.Success();
     }
 }

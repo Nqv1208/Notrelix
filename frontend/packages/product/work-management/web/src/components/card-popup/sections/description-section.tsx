@@ -16,6 +16,10 @@ import {
   Code2,
 } from "lucide-react";
 import { PopoverTrigger, cn } from "@notrelix/ui-web";
+import {
+  changedByNameOf,
+  isVersionConflict,
+} from "@notrelix/work-management-state";
 import { useCardPopup, useCanEdit } from "../card-popup-context";
 import { fillPopupCopy } from "../card-popup.copy";
 import { DESCRIPTION_MAX_LENGTH } from "../../shared/item-description-editor";
@@ -200,6 +204,9 @@ function Editor({
   const over = draft.length - DESCRIPTION_MAX_LENGTH;
   const tooLong = over > 0;
   const submitted = useRef(false);
+  // Someone saved first: the draft stays and the person picks theirs or mine.
+  const [clash, setClash] = useState<{ by: string | null } | null>(null);
+  const clashed = useRef(false);
 
   useEffect(() => {
     const node = area.current;
@@ -208,7 +215,7 @@ function Editor({
   }, []);
   // The write finished and nothing is left to retry: the editor closes.
   useEffect(() => {
-    if (submitted.current && save === undefined) onClose();
+    if (submitted.current && save === undefined && !clashed.current) onClose();
   }, [save, onClose]);
 
   const apply = (edit: Edit) => {
@@ -225,9 +232,18 @@ function Editor({
     if (tooLong || saving) return;
     if (draft.trim() === initial.trim()) return onClose();
     submitted.current = true;
-    track("description", async () =>
-      callbacks.onUpdateItem?.(card.id, { descriptionMd: draft }),
-    );
+    clashed.current = false;
+    setClash(null);
+    track("description", async () => {
+      try {
+        await callbacks.onUpdateItem?.(card.id, { descriptionMd: draft });
+      } catch (error) {
+        if (!isVersionConflict(error)) throw error;
+        // The card is read again with their text; mine stays in the editor.
+        clashed.current = true;
+        setClash({ by: changedByNameOf(error) });
+      }
+    });
   };
   const today = new Intl.DateTimeFormat(copy.locale, {
     dateStyle: "long",
@@ -488,6 +504,26 @@ function Editor({
           {t.help}
         </PanelBtn>
       </div>
+      {clash ? (
+        <div
+          role="alert"
+          className="mt-2.5 rounded-[10px] bg-warning-subtle px-4 py-3 text-[13.5px] leading-[1.45] text-foreground shadow-[inset_0_0_0_1px_var(--warning-text)]"
+        >
+          <b className="font-[650]">
+            {fillPopupCopy(t.clashTitle, { who: clash.by ?? t.clashSomeone })}
+          </b>
+          <br />
+          {t.clashBody}
+          <div className="mt-2 flex flex-wrap gap-2">
+            <PanelBtn small onClick={onClose}>
+              {t.takeTheirs}
+            </PanelBtn>
+            <PanelBtn small variant="primary" onClick={submit}>
+              {t.keepMine}
+            </PanelBtn>
+          </div>
+        </div>
+      ) : null}
       {help ? (
         <div>
           <HelpTable />
@@ -499,7 +535,7 @@ function Editor({
 
 /** The description: Markdown to read, a Markdown editor with a toolbar to write. */
 export function DescriptionSection() {
-  const { card, copy } = useCardPopup();
+  const { card, copy, mode } = useCardPopup();
   const t = copy.sections.description;
   const canEdit = useCanEdit();
   const [editing, setEditing] = useState(false);
@@ -543,6 +579,7 @@ export function DescriptionSection() {
         <div
           className={cn(
             "mt-1.5 rounded-[8px] bg-background px-3 py-2.5 text-[14px] leading-[1.55] md:py-2",
+            mode === "create" && "max-md:mt-2",
             canEdit && "cursor-text",
           )}
           onClick={

@@ -46,6 +46,7 @@ public class SystemContextUsageTests
         "ArchiveCustomRoleCommand.cs",
         "RestorePageVersion.cs",
         "PageSubtreeStore.cs",
+        "CommentTombstoneReader.cs",
         "TenantBootstrapStore.cs",
         "ResourceLocator.cs",
         "PostgresPageAuthorizationFacts.cs",

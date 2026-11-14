@@ -210,6 +210,12 @@ export function useViewState(options: UseViewStateOptions): ViewStateControl {
     loaded,
     /** The member has a view of their own: any filter, sort, grouping or swimlane. */
     personal: !isViewStateEmpty(state),
+    restored:
+      loaded &&
+      local === null &&
+      routeFilter === undefined &&
+      personal !== null &&
+      !isViewStateEmpty(personal),
     setFilter,
     setSorts,
     setGroup,

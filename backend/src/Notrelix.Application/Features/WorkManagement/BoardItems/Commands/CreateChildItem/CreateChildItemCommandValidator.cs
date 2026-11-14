@@ -5,6 +5,6 @@ public class CreateChildItemCommandValidator : AbstractValidator<CreateChildItem
     public CreateChildItemCommandValidator()
     {
         RuleFor(x => x.ParentItemId).NotEmpty();
-        RuleFor(x => x.Title).NotEmpty().MaximumLength(500);
+        RuleFor(x => x.Title).NotEmpty().MaximumLength(BoardItem.NameMaxLength);
     }
 }

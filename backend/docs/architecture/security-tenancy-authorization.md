@@ -2256,9 +2256,9 @@ testing-and-quality-gates.md
 Repository:
 
 ```text
-../../../docs/product/contexts/governance.md
-../../../docs/product/contexts/identity.md
-../../../docs/product/contexts/workspaces.md
+../../../docs/product/governance.md
+../../../docs/product/identity.md
+../../../docs/product/workspaces.md
 ../../../docs/quality/security-quality-standard.md
 ../../../docs/architecture/data-ownership-and-consistency.md
 ```
@@ -2312,3 +2312,9 @@ no fail-open security shortcut
 The goal is not to stack security features mechanically.
 
 The goal is to ensure that **every path to protected data or effects has one explicit principal, one explicit resource scope, one authoritative authorization decision, and independent persistence/runtime defenses capable of catching mistakes elsewhere**.
+
+---
+
+# 139. Chat context (planned)
+
+Chat authorization (planned): resource kinds `chat.channel` and `chat.conversation`; actions `chat.channel.create`, `chat.channel.manage`, `chat.group.manage`, `chat.member.invite`, `chat.message.post`, `chat.message.moderate`, `chat.mention.broadcast`, `chat.message.pin`, `chat.message.react`, `chat.search`. Private channels and conversations require space membership in addition to the action; Workspace Owner and Admin roles do not imply access (CHT-004). The realtime `Channel` scope has a Chat-owned authorization query evaluated at subscribe and on re-authorization. `PermissionActionInventoryTests` gains these actions.

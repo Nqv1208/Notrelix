@@ -1,10 +1,11 @@
 import { createRoute } from "@tanstack/react-router";
-import { workspaceRoute } from "./base.routes";
+import { rootRoute, workspaceRoute } from "./base.routes";
 import { AccountLayout } from "../../routes/workspaces/$workspaceId/account";
 import { AccountProfilePage } from "../../routes/workspaces/$workspaceId/account/profile";
 import { AccountSecurityPage } from "../../routes/workspaces/$workspaceId/account/security";
 import { AccountAppearancePage } from "../../routes/workspaces/$workspaceId/account/appearance";
 import { AccountNotificationsPage } from "../../routes/workspaces/$workspaceId/account/notifications";
+import { AccountOutsideWorkspacePage } from "../../routes/account/workspaces";
 import { AccountWorkspacesPage } from "../../routes/workspaces/$workspaceId/account/workspaces";
 
 export const accountRoute = createRoute({
@@ -48,4 +49,11 @@ export const accountWorkspacesRoute = createRoute({
   getParentRoute: () => accountRoute,
   path: "/workspaces",
   component: AccountWorkspacesPage,
+});
+
+/** The same page outside a workspace, for a person who has none left. */
+export const accountOutsideWorkspaceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/account/workspaces",
+  component: AccountOutsideWorkspacePage,
 });

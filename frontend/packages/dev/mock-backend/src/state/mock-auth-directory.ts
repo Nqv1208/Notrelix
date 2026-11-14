@@ -19,6 +19,10 @@ export const MOCK_AUTH = {
   ssoDomain: "minhan.vn",
   /** The six digits the password-reset email carries for that account. */
   resetCode: "246810",
+  /** A registration with this address is answered "too many requests" (the limit state). */
+  registerLimitedEmail: "limited@mock.test",
+  /** A registration with this address is answered "unavailable" (the unreachable state). */
+  registerDownEmail: "down@mock.test",
   /** Wrong passwords in a row before the account is locked (the product rule: ten in 15 minutes). */
   maxAttempts: 10,
   lockSeconds: 900,

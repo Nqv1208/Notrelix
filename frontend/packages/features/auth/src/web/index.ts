@@ -8,10 +8,8 @@
 export { createUseLogin, type NavigationDeps } from "./hooks/use-login";
 export { createUseAuthUser } from "./hooks/use-auth-user";
 export { createUseLogout } from "./hooks/use-logout";
-export { createUseRegister } from "./hooks/use-register";
 export { createUseForgotPassword } from "./hooks/use-forgot-password";
 export { createUseResetPassword } from "./hooks/use-reset-password";
-export { createRegisterForm } from "./components/register-form";
 export {
   createAuthProvider,
   useAuth,
@@ -38,6 +36,12 @@ export {
 } from "./components/auth-invite-surface";
 export { SignInFlow } from "./containers/sign-in-flow";
 export { ForgotFlow } from "./containers/forgot-flow";
+export { RegisterFlow } from "./containers/register-flow";
+export {
+  AuthRegisterFormSurface,
+  type AuthRegisterStep,
+  type AuthRegisterFormSurfaceProps,
+} from "./components/auth-register-form-surface";
 export { ResetFlow } from "./containers/reset-flow";
 export {
   AuthResetSurface,

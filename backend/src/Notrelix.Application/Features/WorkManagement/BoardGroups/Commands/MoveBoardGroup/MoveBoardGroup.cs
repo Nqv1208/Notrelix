@@ -1,6 +1,7 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Ordering;
+using Notrelix.Domain.SharedKernel.Ordering;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardGroups.Commands.MoveBoardGroup;
 
@@ -25,14 +26,20 @@ public class MoveBoardGroupCommandHandler : IRequestHandler<MoveBoardGroupComman
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly WorkPlacementResolver _placement;
     private readonly IBoardRealtimeNotifier? _realtime;
+    private readonly IActorLookupService? _actors;
+    private readonly IWorkspaceAccessResolver? _access;
 
     public MoveBoardGroupCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         WorkPlacementResolver placement,
-        IBoardRealtimeNotifier? realtime = null)
+        IBoardRealtimeNotifier? realtime = null,
+        IActorLookupService? actors = null,
+        IWorkspaceAccessResolver? access = null)
     {
+        _actors = actors;
+        _access = access;
         _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
@@ -52,12 +59,26 @@ public class MoveBoardGroupCommandHandler : IRequestHandler<MoveBoardGroupComman
         var group = await _context.BoardGroups.FirstOrDefaultAsync(g => g.Id == request.GroupId, ct)
             ?? throw new NotFoundException(nameof(BoardGroup), request.GroupId);
 
-        var position = await _placement.ResolveAsync(
+        FractionalIndex position;
+        try
+        {
+            position = await _placement.ResolveAsync(
             new WorkOrderingScope(WorkOrderingScopeKind.BoardGroups, group.BoardId),
             new WorkPlacementIntent(request.PreviousSiblingId, request.NextSiblingId),
             token => BoardGroupSiblings.LoadAsync(_context, group.BoardId, token),
             ct,
             movedEntityId: group.Id);
+        }
+        catch (ConflictException stale) when (stale.ErrorCode == WorkOrderingErrorCodes.StalePlacement)
+        {
+            // The last writer of any other group on the board is whoever moved the neighbours away.
+            var lastWriter = await _context.BoardGroups
+                .Where(other => other.BoardId == group.BoardId && other.Id != group.Id)
+                .OrderByDescending(other => other.UpdatedAt)
+                .Select(other => other.UpdatedBy)
+                .FirstOrDefaultAsync(ct);
+            throw await StalePlacementNotice.NameAsync(stale, lastWriter, _requestContext, _actors, _access, ct);
+        }
 
         group.UpdatePosition(position, _requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();

@@ -8,7 +8,7 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
-import { cn } from "@notrelix/ui-web";
+import { Button, cn, useMediaQuery } from "@notrelix/ui-web";
 import {
   dayNumber,
   fromDayNumber,
@@ -20,6 +20,12 @@ import { TimelineChart, type TimelineChartLink } from "./timeline-chart";
 import { TimelineLinkDialog } from "./timeline-link-dialog";
 import { TimelineTray, type TimelineUndated } from "./timeline-tray";
 import { TimelineList } from "./timeline-list";
+import {
+  TimelineLinkSheet,
+  TimelinePhoneList,
+  TimelineUndatedBar,
+  TimelineUndatedSheet,
+} from "./timeline-phone";
 import { TimelineToolbar, type TimelineToolbarProps } from "./timeline-toolbar";
 import {
   buildHeader,
@@ -77,6 +83,8 @@ export interface BoardTimelineSurfaceProps {
   onAddItem?: () => void;
   /** The view controls (`ViewStateBar`) the toolbar shows after "Vừa khít". */
   viewBar?: ReactNode;
+  /** The grouping and bar span the toolbar offers. */
+  presentation: TimelineToolbarProps["presentation"];
   /**
    * Creates a finish-to-start link (`to` waits for `from`). Without it the
    * chart draws no connectors.
@@ -125,6 +133,7 @@ export function BoardTimelineSurface({
   onReschedule,
   onAddItem,
   viewBar,
+  presentation,
   onCreateLink,
   onRemoveLink,
   undatedItems,
@@ -132,6 +141,8 @@ export function BoardTimelineSurface({
   defaultDrag = null,
   defaultCriticalPath = false,
 }: BoardTimelineSurfaceProps) {
+  // Under 640 px the Timeline is a list with buttons, no chart and no drag (WM-TLCal-320).
+  const phone = useMediaQuery("(max-width: 639px)");
   const [drag, setDrag] = useState<TimelineDrag | null>(defaultDrag);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [linksShown, setLinksShown] = useState(true);
@@ -556,6 +567,7 @@ export function BoardTimelineSurface({
     canAdd: canEdit,
     onAddItem,
     viewBar,
+    presentation,
   };
 
   const gridLabel = fill(copy.gridLabel, {
@@ -569,6 +581,67 @@ export function BoardTimelineSurface({
   const legendInset = (color: string): CSSProperties => ({
     boxShadow: `inset 0 0 0 1px var(${color})`,
   });
+
+  if (phone)
+    return (
+      <div
+        data-timeline-view=""
+        data-tl="phone"
+        className="relative flex h-full min-h-0 flex-col bg-background font-body"
+      >
+        {viewBar || (canEdit && onAddItem) ? (
+          <div className="flex flex-wrap items-center gap-1.5 px-4 pt-2.5 pb-1">
+            {viewBar}
+            <span className="flex-1" />
+            {canEdit && onAddItem ? (
+              <Button size="sm" variant="outline" onClick={onAddItem}>
+                {copy.addItem}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+        <div
+          ref={scroller}
+          aria-label={gridLabel}
+          role="region"
+          className="min-h-0 flex-1 overflow-y-auto"
+        >
+          <TimelinePhoneList
+            copy={copy}
+            groups={groups}
+            onOpenItem={onOpenItem}
+            onLink={onCreateLink && canEdit ? setLinkFor : undefined}
+          />
+        </div>
+        {undatedItems ? (
+          <TimelineUndatedBar
+            copy={copy}
+            count={undatedItems.length}
+            onOpen={() => setTrayOpen(true)}
+          />
+        ) : null}
+        {undatedItems && trayOpen ? (
+          <TimelineUndatedSheet
+            copy={copy}
+            items={undatedItems}
+            canEdit={canEdit && Boolean(onSchedule)}
+            onSchedule={(id, day) => onSchedule?.(id, day)}
+            onClose={() => setTrayOpen(false)}
+          />
+        ) : null}
+        {linkFor && onCreateLink ? (
+          <TimelineLinkSheet
+            copy={copy}
+            item={linkFor}
+            items={linkableItems}
+            links={links}
+            onCreate={onCreateLink}
+            onRemove={(link) => onRemoveLink?.(link)}
+            onClose={() => setLinkFor(null)}
+          />
+        ) : null}
+      </div>
+    );
 
   return (
     <div

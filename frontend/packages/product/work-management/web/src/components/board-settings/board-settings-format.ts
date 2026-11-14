@@ -14,6 +14,16 @@ export function shortDay(iso: string, timeZone: string): string {
   return parts;
 }
 
+/** What a write over a published board limit says (D78.8): the limit, its max and the way out. */
+export function limitCopy(
+  copy: { readonly feedback: { readonly limit: Record<string, string> } },
+  limit: { readonly name: string; readonly max: number | null } | undefined,
+): string {
+  const text =
+    copy.feedback.limit[limit?.name ?? ""] ?? copy.feedback.limit.other!;
+  return fillCopy(text, { max: limit?.max ?? "" });
+}
+
 export function fillCopy(
   message: string,
   values: Readonly<Record<string, string | number>>,

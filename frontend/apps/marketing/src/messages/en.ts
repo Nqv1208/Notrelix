@@ -76,7 +76,6 @@ export const messages = {
     preview: {
       tabsLabel: "Product views",
       urlLabel: "app.notrelix.com",
-      hint: "Click a view to explore",
       tabs: [
         {
           id: "table",
@@ -100,9 +99,10 @@ export const messages = {
         },
       ],
     },
-    floatCards: {
-      tasks: { strong: "12 tasks", small: "done today" },
-      progress: { strong: "On track", small: "+24% vs last week" },
+    orbit: {
+      dueToday: "Due today",
+      inReview: "In review",
+      cursors: ["Linh", "Minh"],
     },
   },
   metrics: {

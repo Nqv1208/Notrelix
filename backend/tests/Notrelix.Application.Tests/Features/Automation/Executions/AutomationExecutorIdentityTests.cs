@@ -12,6 +12,7 @@ using Notrelix.Application.Features.Automation.Rules.Services;
 using Notrelix.Domain.Automation.Executions;
 using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Automation.RulesEngine;
+using Notrelix.Application.Features.Billing.Public.Capacity;
 
 namespace Notrelix.Application.Tests.Features.Automation.Executions;
 
@@ -209,7 +210,7 @@ public class AutomationExecutorIdentityTests
         var currentUser = new Mock<ICurrentUser>();
         currentUser.Setup(u => u.UserId).Returns(TriggerActor);
         var handler = new SetAutomationRuleEnabledCommandHandler(
-            context, currentUser.Object, new Clock(T0), new AutomationExecutorAuthority(port.Object));
+            context, currentUser.Object, new Clock(T0), new AutomationExecutorAuthority(port.Object), Mock.Of<IBillingCapacityActions>());
 
         var act = () => handler.Handle(new SetAutomationRuleEnabledCommand(rule.Id, true), CancellationToken.None);
 

@@ -56,7 +56,7 @@ public sealed record ImportOptions(
 /// <param name="FailureCode">Why nothing was created: has-errors, board-archived, board-gone, storage-missing, or error.</param>
 public sealed record ImportOutcome(
     int Created, int ErrorCount, int ErrorRows, IReadOnlyList<ImportRowError> Errors, bool ErrorsTruncated,
-    string? FirstKey, string? LastKey, string? FailureCode, string? FailureBy = null);
+    string? FirstKey, string? LastKey, string? FailureCode, string? FailureBy = null, IReadOnlyList<int>? UnmatchedPersonRows = null);
 
 public sealed record ExportOptions(Guid AccountId, string FileName, string Scope, string? Filter, string? Sort, string Locale);
 

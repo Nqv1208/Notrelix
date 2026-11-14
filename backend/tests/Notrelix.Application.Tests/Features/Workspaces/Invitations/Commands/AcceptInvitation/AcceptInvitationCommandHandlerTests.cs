@@ -264,6 +264,82 @@ public class AcceptInvitationCommandHandlerTests : AcceptInvitationHandlerTestBa
             "an already-member acceptance must not sync a second workspace grant");
     }
 
+    [Theory]
+    [InlineData(WorkspaceRole.Member, "member limit")]
+    [InlineData(WorkspaceRole.Guest, "guest limit")]
+    public async Task Handle_WhenThePlanHasNoFreeSeat_FailsWithThePlanLimitMessage_AndAdmitsNobody(WorkspaceRole role, string limit)
+    {
+        SetupInvitations(CreateInvitation(role: role));
+        SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId));
+        SetupMembers();
+        SeatGateMock
+            .Setup(g => g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await CreateSut().Handle(Command(), CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().ContainSingle().Which.Should().Contain(limit);
+        DbContextMock.Object.WorkspaceInvitations.Single().Status.Should().Be(WorkspaceInvitationStatus.Pending, "a refused acceptance leaves the invitation open");
+        DbContextMock.Object.WorkspaceMembers.Should().BeEmpty();
+        AccountMembershipActionsMock.Verify(
+            a => a.EnsureAccountMembershipAsync(
+                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenARemovedMemberReturnsAndNoSeatIsFree_ThrowsSeatUnavailable_AndStaysRemoved()
+    {
+        var removed = CreateMember(userId: TestUserId);
+        removed.Remove(activeOwnerCount: 2, Guid.NewGuid(), TestNow.AddHours(1));
+        SetupInvitations(CreateInvitation());
+        SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId));
+        SetupMembers(removed);
+        SeatGateMock
+            .Setup(g => g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var accept = () => CreateSut().Handle(Command(), CancellationToken.None);
+
+        (await accept.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+            .Which.RuleCode.Should().Be(Notrelix.Domain.Workspaces.WorkspaceRuleCodes.Workspaces_Member_SeatUnavailable);
+        removed.Status.Should().Be(WorkspaceMemberStatus.Removed);
+        DbContextMock.Object.WorkspaceInvitations.Single().Status.Should().Be(WorkspaceInvitationStatus.Pending);
+    }
+
+    [Fact]
+    public async Task Handle_WhenTheMemberIsSuspended_IsRefusedAndStaysSuspended_EvenWithAFreeSeat()
+    {
+        var suspended = CreateMember(userId: TestUserId);
+        suspended.Suspend(Guid.NewGuid(), TestNow.AddHours(1), activeOwnerCount: 2);
+        SetupInvitations(CreateInvitation());
+        SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId));
+        SetupMembers(suspended);
+
+        var result = await CreateSut().Handle(Command(), CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().Contain("Your membership in this workspace is not active.");
+        suspended.Status.Should().Be(WorkspaceMemberStatus.Suspended, "an invitation never overrides an admin's suspension");
+        DbContextMock.Object.WorkspaceInvitations.Single().Status.Should().Be(WorkspaceInvitationStatus.Pending);
+    }
+
+    [Fact]
+    public async Task Handle_WhenAnswerIsRepeated_TheSecondOneIsRefusedAndAddsNoSecondMembership()
+    {
+        SetupInvitations(CreateInvitation());
+        SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId));
+        SetupMembers();
+
+        var first = await CreateSut().Handle(Command(), CancellationToken.None);
+        var again = await CreateSut().Handle(Command(), CancellationToken.None);
+
+        first.Succeeded.Should().BeTrue();
+        again.Succeeded.Should().BeFalse("the invitation is no longer pending");
+        DbContextMock.Object.WorkspaceMembers.Should().ContainSingle();
+    }
+
     [Fact]
     public async Task Handle_WhenNewMember_AcceptsAndOrchestratesFullInviteeProvisioning()
     {

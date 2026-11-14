@@ -90,6 +90,15 @@ export {
 } from "./workspaces/account-workspaces.copy";
 export { useAccountWorkspacesCopy } from "./workspaces/use-account-workspaces-copy";
 export {
+  workspacesHomeCopy,
+  type WorkspacesHomeCopy,
+} from "./workspaces/workspaces-home.copy";
+export { useWorkspacesHomeCopy } from "./workspaces/use-workspaces-home-copy";
+export {
+  WorkspacesHomeSurface,
+  type WorkspacesHomeSurfaceProps,
+} from "./workspaces/workspaces-home-surface";
+export {
   AccountWorkspacesSurface,
   type AccountWorkspaceTone,
   type AccountWorkspaceView,

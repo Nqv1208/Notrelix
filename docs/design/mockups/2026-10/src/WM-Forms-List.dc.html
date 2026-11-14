@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Biểu mẫu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--side:#EFF1F4;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--sel:#EEF4FD;--danger:#C42340;--danger-soft:#FCEBEE;--ok:#1E7A4C;--ok-soft:#E5F4EC;--warn-text:#8A5A00;--warn-soft:#FDF3DC;--pop-shadow:0 12px 32px rgba(15,23,42,.16);--c-gray-bg:#EEF0F4;--c-gray:#4B5263;--c-blue-bg:#E6F0FB;--c-blue:#245BA6;--c-amber-bg:#FBF1D6;--c-amber:#7A5810;--c-green-bg:#E5F4EC;--c-green:#1E6A44;--c-red-bg:#FCEBEE;--c-red:#A51D36;--skel:#E6E9EE;--toast:#1B2430;--toast-ink:#F2F4F7;--toast-meta:#A9B4C3;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--side:#141920;--panel:#1A2028;--hover:#232A34;--hover2:#2E3743;--line:#232B35;--line2:#2E3743;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:#13243C;--accent-text:#7DBBFF;--sel:#16263E;--danger:#FF6B81;--danger-soft:#3A1820;--ok:#56C98A;--ok-soft:#12251C;--warn-text:#F2C14E;--warn-soft:#272012;--pop-shadow:0 12px 32px rgba(0,0,0,.5);--c-gray-bg:#232A34;--c-gray:#AAB3C0;--c-blue-bg:#13243C;--c-blue:#7DBBFF;--c-amber-bg:#272012;--c-amber:#F2C14E;--c-green-bg:#12251C;--c-green:#56C98A;--c-red-bg:#3A1820;--c-red:#FF8DA0;--skel:#2E3743;--toast:#2A3340}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn{height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.dng{background:var(--danger);border-color:var(--danger);color:#fff;font-weight:600}
+.nx.mode-dem .btn.dng{color:var(--accent-ink)}
+.btn.txt{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.sm{height:28px;padding:0 10px;font-size:12.5px}
+.btn.lg{height:40px;padding:0 18px;font-size:14px}
+.btn[disabled]{opacity:.55;cursor:default}
+.inp{height:34px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);padding:0 10px;font:inherit;font-size:13.5px;color:var(--text);box-sizing:border-box;width:100%}
+textarea.inp{height:84px;padding:8px 10px;resize:none}
+.inp.focus,.foc{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.inp.err{border-color:var(--danger)}
+.chip{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.c-gray{background:var(--c-gray-bg);color:var(--c-gray)}.c-blue{background:var(--c-blue-bg);color:var(--c-blue)}.c-amber{background:var(--c-amber-bg);color:var(--c-amber)}.c-green{background:var(--c-green-bg);color:var(--c-green)}.c-red{background:var(--c-red-bg);color:var(--c-red)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.state{font-size:12px;font-weight:600;color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:3px 10px;align-self:flex-start}
+.state.bad{background:var(--danger-soft);color:var(--danger)}.state.mut{background:var(--hover2);color:var(--muted)}.state.good{background:var(--ok-soft);color:var(--ok)}
+h1{margin:0;font-size:22px;line-height:1.3;font-weight:650;letter-spacing:-0.01em}
+h2{margin:0;font-size:16px;font-weight:650}
+.sub{margin:0;color:var(--meta);font-size:13.5px;max-width:110ch}
+.lbl{font-size:12.5px;font-weight:600;color:var(--muted)}
+.hint{font-size:12px;color:var(--meta)}
+.nav{height:34px;display:flex;align-items:center;gap:9px;padding:0 10px;border-radius:7px;color:var(--muted);font-size:13.5px;font-weight:500}
+.nav.on{background:var(--panel);box-shadow:0 0 0 1px var(--line);font-weight:600;color:var(--text)}
+.nav small{margin-left:auto;font-size:12px;color:var(--meta)}
+.iconbtn{width:30px;height:30px;border-radius:7px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;flex:none}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) 110px 120px 230px;align-items:center;gap:10px;min-height:56px;padding:0 14px;border-top:1px solid var(--line)}
+.srow.hd{min-height:34px;border-top:0;background:var(--bg);font-size:12px;font-weight:600;color:var(--meta)}
+.tile{display:flex;flex-direction:column;gap:10px;min-width:0}
+.skel{height:44px;border-radius:10px;background:var(--skel)}
+.alert{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--danger)}
+.empty{border:1px dashed var(--line2);border-radius:10px;padding:20px 16px;text-align:center;background:var(--panel)}
+.empty b{display:block;font-size:13.5px;font-weight:600}.empty span{font-size:12.5px;color:var(--meta)}
+.toast{display:flex;align-items:center;gap:12px;background:var(--toast);color:var(--toast-ink);border-radius:10px;padding:10px 12px 10px 14px;font-size:13px;box-shadow:var(--pop-shadow)}
+.toast button{background:transparent;border:0;color:var(--toast-ink);text-decoration:underline;font:inherit;font-weight:600;cursor:pointer;padding:0 4px}
+.toast .m{color:var(--toast-meta)}
+.dlg{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--pop-shadow);padding:20px;display:flex;flex-direction:column;gap:14px;box-sizing:border-box}
+.q{display:grid;grid-template-columns:22px 28px minmax(0,1fr) auto;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.q.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);background:var(--sel)}
+.q.drag{box-shadow:var(--pop-shadow);transform:rotate(-.4deg);border-color:var(--accent)}
+.q .n{width:24px;height:24px;border-radius:6px;background:var(--hover2);display:grid;place-items:center;font-size:12px;font-weight:600;color:var(--muted)}
+.q b{font-size:13.5px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q small{font-size:12px;color:var(--meta);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drop{height:3px;border-radius:2px;background:var(--accent);margin:-4px 0}
+.grip{color:var(--meta);display:grid;place-items:center;cursor:grab}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.err-t{font-size:12.5px;color:var(--danger);display:flex;gap:6px;align-items:flex-start}
+.tab{height:34px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;box-sizing:border-box}
+.tab.on{color:var(--text);font-weight:600;border-bottom-color:var(--accent)}
+.tab small{font-size:11.5px;font-weight:600;color:var(--meta)}
+.tab.on small{color:var(--accent-text)}
+.sw{width:34px;height:20px;border-radius:999px;background:var(--line2);position:relative;flex:none}
+.sw.on{background:var(--accent)}
+.sw:after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff}
+.sw.on:after{left:16px}
+.shell{display:flex;background:var(--bg);overflow:hidden}
+.side{width:224px;flex:none;background:var(--side);border-right:1px solid var(--line);padding:14px 10px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px}
+.row2{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid var(--line)}
+.row2.on{background:var(--sel)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,[role=option]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.m320{width:320px;box-sizing:border-box;border:1px solid var(--line2);border-radius:18px;background:var(--bg);overflow:hidden;display:flex;flex-direction:column}
+.kv{display:grid;grid-template-columns:130px minmax(0,1fr);gap:8px 12px;font-size:13px}
+.kv dt{color:var(--meta)}.kv dd{margin:0;word-break:break-word}
+
+.src{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border-radius:6px;background:var(--accent-soft);color:var(--accent-text);font-size:11.5px;font-weight:600;white-space:nowrap}
+.cd{width:640px;max-width:100%;background:var(--panel);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.3);display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box}
+.cd-h{display:flex;align-items:center;gap:10px;padding:14px 12px 10px 22px}
+.cd-h h2{font-size:18px;letter-spacing:-0.01em}
+.ctx{display:inline-flex;align-items:center;gap:7px;height:26px;padding:0 10px;border-radius:7px;background:var(--hover);font-size:12.5px;font-weight:500;color:var(--muted)}
+.ctx b{color:var(--text);font-weight:600}
+.cd-b{padding:8px 22px 4px;display:flex;flex-direction:column;gap:16px}
+.cd-f{display:flex;align-items:center;gap:10px;padding:14px 22px;border-top:1px solid var(--line);margin-top:12px}
+.cr2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.cf{display:flex;flex-direction:column;gap:6px;min-width:0}
+.cl{font-size:12.5px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cl .opt{font-weight:400;color:var(--meta)}.cl .req{color:var(--danger)}
+.ci{box-sizing:border-box;width:100%;height:40px;border:1px solid var(--line2);border-radius:9px;background:var(--panel);color:var(--text);font-size:14px;padding:0 12px;display:flex;align-items:center;gap:8px}
+.ci.big{height:48px;font-size:16px;font-weight:500}
+.ci.ta{height:auto;min-height:64px;padding:9px 12px;line-height:1.5;align-items:flex-start}
+.ci .ch{margin-left:auto}
+.cbtn{height:44px;padding:0 18px;border-radius:9px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font-size:14px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.cbtn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.cq{height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);font-size:12.5px;font-weight:500;display:inline-flex;align-items:center}
+.note{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:9px;background:var(--hover);font-size:12.5px;color:var(--muted)}
+.opt-row{display:grid;grid-template-columns:20px minmax(0,1fr) 28px 28px 28px;gap:6px;align-items:center}
+.radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--line2);box-sizing:border-box;flex:none}
+.radio.on{border-color:var(--accent);background:radial-gradient(var(--accent) 38%,transparent 42%)}
+.banner{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--warn-soft);color:var(--warn-text);font-size:13px;font-weight:600;border-radius:10px}
+</style>
+</helmet>
+<div class="nx" style="width: 1440px; height: 1162px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 6px"><h1>Biểu mẫu trong Thiết lập board › Biểu mẫu</h1><p class="sub">Danh sách biểu mẫu của một board: trạng thái bằng chip, số phản hồi mới nổi bật, sao chép liên kết cho thành viên, đóng nhận, xoá có hoàn tác. Chỉ máy tính và máy tính bảng. Người chỉ xem không thấy mục này.</p></div><div style="width:1360px"><section class="card" aria-label="Thiết lập board, mục Biểu mẫu" style="display:flex;overflow:hidden"><nav aria-label="Mục thiết lập" style="width:196px;flex:none;padding:16px 12px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px;background:var(--bg)"><a href="#" class="nav">Chung</a><a href="#" class="nav">Trường<small>9</small></a><a href="#" class="nav">View<small>3</small></a><a href="#" class="nav">Nhóm việc<small>4</small></a><a href="#" class="nav">Nhãn<small>6</small></a><a href="#" class="nav on" aria-current="page">Biểu mẫu<small>3</small></a><a href="#" class="nav">Mẫu board<small>4</small></a><a href="#" class="nav">Tự động hoá</a></nav><div style="flex:1;min-width:0;padding:20px 24px 24px;display:flex;flex-direction:column;gap:14px"><div style="display:flex;align-items:flex-start;gap:12px"><div style="flex:1"><h2>Biểu mẫu</h2><p class="hint" style="margin:2px 0 0;font-size:13px">3 biểu mẫu · 1 đang nhận phản hồi · thành viên có quyền tạo việc trên board này điền được</p></div><button class="btn pri"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Tạo biểu mẫu</button></div><div class="card" style="overflow:hidden"><div class="srow hd"><span>Biểu mẫu</span><span>Trạng thái</span><span>Phản hồi</span><span></span></div><div class="srow"><span style="display:flex;flex-direction:column;min-width:0"><b style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Yêu cầu hỗ trợ IT</b><span class="hint">5 câu hỏi · cập nhật hôm nay, Hà Nguyễn</span></span><span><span class="chip c-green">Đang nhận</span></span><span class="hint"><b style="color:var(--accent-text)">3 mới</b> · 18 tổng</span><span style="display:flex;justify-content:flex-end;gap:4px;align-items:center"><button class="btn sm"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg> Sao chép liên kết</button><button class="btn sm">Đóng nhận</button><button class="iconbtn" aria-label="Xoá biểu mẫu"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button></span></div><div class="srow" style="background:var(--sel)"><span style="display:flex;flex-direction:column;min-width:0"><b style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Đề xuất mua sắm thiết bị và phần mềm cho chi nhánh Đà Nẵng và Hải Phòng quý 4</b><span class="hint">4 câu hỏi · chưa xuất bản</span></span><span><span class="chip c-amber">Bản nháp</span></span><span class="hint">0</span><span style="display:flex;justify-content:flex-end;gap:4px;align-items:center"><button class="btn sm pri">Xuất bản</button><button class="iconbtn" aria-label="Xoá biểu mẫu"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button></span></div><div style="border-top:1px solid var(--line);background:var(--danger-soft);padding:10px 14px"><div role="alertdialog" aria-labelledby="dq1" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;background:var(--panel);border:1px solid var(--line2)"><p id="dq1" style="margin:0;flex:1;font-size:13px">Xoá biểu mẫu <b>Đề xuất mua sắm…</b>? Việc đã tạo từ biểu mẫu vẫn giữ nguyên. Hoàn tác được trong vài giây.</p><button class="btn sm">Giữ lại</button><button class="btn sm dng">Xoá biểu mẫu</button></div></div><div class="srow"><span style="display:flex;flex-direction:column;min-width:0"><b style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Báo lỗi ERP</b><span class="hint">6 câu hỏi · đóng ngày 05/10/2026</span></span><span><span class="chip c-gray">Đã đóng</span></span><span class="hint">24 tổng · 0 mới</span><span style="display:flex;justify-content:flex-end;gap:4px;align-items:center"><button class="btn sm">Mở lại</button><button class="iconbtn" aria-label="Xoá biểu mẫu"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button></span></div></div><p class="hint" style="margin:0">Phản hồi vào hộp thư của biểu mẫu; người quản lý board xử lý thành việc. Không có điền nặc danh: người điền phải đăng nhập.</p></div></section></div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px;align-items:start"><div class="tile"><span class="state ">Danh sách đang tải</span><div role="status" aria-label="Đang tải biểu mẫu" style="display:flex;flex-direction:column;gap:8px"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div></div><div class="tile"><span class="state mut">Chưa có biểu mẫu nào</span><div class="empty"><b>Chưa có biểu mẫu nào</b><span>Tạo biểu mẫu để đồng nghiệp gửi yêu cầu thẳng vào board này.</span><div style="margin-top:12px"><button class="btn pri"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Tạo biểu mẫu</button></div></div></div><div class="tile"><span class="state bad">Tải lỗi</span><div class="card" style="padding:14px"><div role="alert" style="display:flex;flex-direction:column;gap:8px"><div class="alert"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span style="flex:1">Chưa tải được danh sách biểu mẫu. Các thiết lập khác của board vẫn dùng được.</span></div><button class="btn sm" style="align-self:flex-start"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg> Thử lại</button></div></div></div><div class="tile"><span class="state ">Tạo tại chỗ · Enter tạo, Esc huỷ</span><div class="card" style="padding:14px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;gap:8px"><input class="inp focus" value="Yêu cầu cấp quyền" aria-label="Tên biểu mẫu mới"><button class="btn pri">Tạo</button><button class="btn txt">Huỷ</button></div><span class="hint">Tạo xong mở thẳng trình soạn để thêm câu hỏi. Biểu mẫu mới là bản nháp.</span></div></div><div class="tile"><span class="state bad">Tên trống · lỗi tại chỗ</span><div class="card" style="padding:14px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;gap:8px"><input class="inp err" value="" aria-label="Tên biểu mẫu mới" aria-invalid="true"><button class="btn pri" disabled>Tạo</button></div><div class="err-t"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Nhập tên biểu mẫu.</span></div></div></div><div class="tile"><span class="state bad">Đóng nhận thất bại · giữ trạng thái cũ</span><div class="card" style="padding:14px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;align-items:center;gap:10px"><b style="font-size:13.5px;flex:1">Yêu cầu hỗ trợ IT</b><span class="chip c-green">Đang nhận</span><button class="btn sm">Đóng nhận</button></div><div role="alert" style="display:flex;flex-direction:column;gap:8px"><div class="alert"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span style="flex:1">Chưa đóng được biểu mẫu. Trạng thái vẫn là Đang nhận.</span></div><button class="btn sm" style="align-self:flex-start"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg> Thử lại</button></div></div></div><div class="tile"><span class="state good">Xoá · hoàn tác ngay</span><div class="toast" role="status"><span style="flex:1">Đã xoá biểu mẫu <b>Đề xuất mua sắm…</b></span><button>Hoàn tác</button></div><span class="hint">Xoá là xoá mềm; hoàn tác khôi phục câu hỏi và phản hồi chưa xử lý.</span></div><div class="tile"><span class="state mut">Không có quyền · người chỉ xem</span><div class="card" style="padding:14px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><p style="margin:8px 0 0;font-size:13px">Người chỉ xem không thấy mục Biểu mẫu trong Thiết lập board. Mở thẳng đường dẫn sẽ hiện thông báo này, không lộ tên biểu mẫu.</p></div></div><div class="tile"><span class="state bad">Biểu mẫu biến mất · phiên cũ</span><div class="card" style="padding:14px"><div class="alert"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span style="flex:1">Biểu mẫu này đã được xoá hoặc bạn không còn thấy nó. Danh sách đã được làm mới.</span></div></div></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1162}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

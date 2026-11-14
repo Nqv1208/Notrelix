@@ -990,11 +990,11 @@ Stop rather than guess if:
 PRODUCT.md
 docs/product/product-model.md
 docs/product/product-experience.md
-docs/product/contexts/identity.md
-docs/product/contexts/workspaces.md
-docs/product/contexts/governance.md
-docs/product/contexts/billing.md
-docs/product/contexts/integrations.md
+docs/product/identity.md
+docs/product/workspaces.md
+docs/product/governance.md
+docs/product/billing.md
+docs/product/integrations.md
 docs/architecture/bounded-context-map.md
 docs/architecture/data-ownership-and-consistency.md
 docs/architecture/contract-boundaries.md

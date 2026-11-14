@@ -59,4 +59,42 @@ public class FileMetadataTests
 
         m1.Should().NotBe(m2);
     }
+
+    [Fact]
+    public void Create_WithAnImageSize_ShouldSetIt()
+    {
+        var metadata = FileMetadata.Create("img.png", 512, "image/png", "uploads/img.png", width: 640, height: 480);
+
+        metadata.Width.Should().Be(640);
+        metadata.Height.Should().Be(480);
+    }
+
+    [Fact]
+    public void Create_WithOnlyOneSide_ShouldThrow()
+    {
+        var act = () => FileMetadata.Create("img.png", 512, "image/png", width: 640);
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData(0, 10)]
+    [InlineData(10, 0)]
+    [InlineData(20001, 10)]
+    [InlineData(10, 20001)]
+    public void Create_WithASideOutsideTheSaneRange_ShouldThrow(int width, int height)
+    {
+        var act = () => FileMetadata.Create("img.png", 512, "image/png", width: width, height: height);
+
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void Two_metadata_with_different_sizes_are_not_equal()
+    {
+        var a = FileMetadata.Create("f.png", 100, "image/png", width: 10, height: 10);
+        var b = FileMetadata.Create("f.png", 100, "image/png", width: 10, height: 20);
+
+        a.Should().NotBe(b);
+    }
 }

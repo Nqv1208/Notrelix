@@ -89,7 +89,8 @@ public static class ComputedFieldGraph
         FormulaLanguage.Parse(expression);
         var rewritten = FormulaLanguage.RewriteReferences(expression, reference =>
             Resolve(board, reference)?.Id.ToString()
-            ?? throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_FormulaUnknownField, $"Formula references [{reference}], which is not a field of this Board."));
+            ?? throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_FormulaUnknownField, $"Formula references [{reference}], which is not a field of this Board.",
+                new Dictionary<string, object?> { ["field"] = reference }));
         return JsonSerializer.Serialize(new Dictionary<string, string> { ["expression"] = rewritten });
     }
 
@@ -122,7 +123,8 @@ public static class ComputedFieldGraph
         {
             var target = Resolve(board, name);
             if (target is null)
-                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_FormulaUnknownField, $"Formula '{field.Name}' references [{name}], which is not a field of this Board.");
+                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_FormulaUnknownField, $"Formula '{field.Name}' references [{name}], which is not a field of this Board.",
+                    new Dictionary<string, object?> { ["field"] = name });
             ids.Add(target.Id);
         }
         return ids;
@@ -134,15 +136,24 @@ public static class ComputedFieldGraph
         var computed = board.Where(f => f.Type is Fields.FieldType.Formula or Fields.FieldType.Rollup).ToList();
         var edges = computed.ToDictionary(f => f.Id, f => DependenciesOf(f, board));
         var state = new Dictionary<Guid, int>(); // 1 = on the stack, 2 = done
+        var path = new List<Guid>();
 
         void Visit(Guid id)
         {
             if (!edges.TryGetValue(id, out var next)) return;
             if (state.GetValueOrDefault(id) == 2) return;
             if (state.GetValueOrDefault(id) == 1)
-                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_ComputedFieldCycle, $"'{board.First(f => f.Id == id).Name}' depends on itself: computed fields cannot form a cycle.");
+            {
+                // The refusal names the loop in order, closing on the field it started from: "A" → "B" → "A".
+                var loop = path.Skip(path.IndexOf(id)).Append(id).Select(f => board.First(b => b.Id == f).Name).ToList();
+                throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Field_ComputedFieldCycle,
+                    $"Computed fields cannot form a cycle: {string.Join(" -> ", loop.Select(n => $"'{n}'"))}.",
+                    new Dictionary<string, object?> { ["cycle"] = loop });
+            }
             state[id] = 1;
+            path.Add(id);
             foreach (var dep in next) Visit(dep);
+            path.RemoveAt(path.Count - 1);
             state[id] = 2;
         }
 

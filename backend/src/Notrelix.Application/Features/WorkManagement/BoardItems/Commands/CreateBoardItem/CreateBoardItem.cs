@@ -77,6 +77,7 @@ public class CreateBoardItemCommandHandler : IRequestHandler<CreateBoardItemComm
             dueAt: request.DueDate.HasValue ? new DateTimeOffset(DateTime.SpecifyKind(request.DueDate.Value, DateTimeKind.Utc)) : null,
             descriptionMd: request.DescriptionMd);
 
+        await BoardItemFieldWrites.ApplyCreateRulesAsync(_context, item, _requestContext.UserId, now, cancellationToken);
         _context.BoardItems.Add(item);
 
         var response = new BoardItemSlimDto(

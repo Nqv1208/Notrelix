@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Check } from "lucide-react";
 import {
   Calendar,
   calendarLocale,
@@ -37,8 +37,15 @@ export interface TablePriorityOption {
 export interface TableEditors {
   readonly members: readonly TableEditorMember[];
   readonly priorities: readonly TablePriorityOption[];
-  /** `null` = nobody. */
-  readonly onAssignee: (rowId: string, userId: string | null) => void;
+  /**
+   * `null` = nobody. `inCell`: the row's own cell is writing, so a lost race opens its in-cell choice (UC-WM-B33);
+   * without it a lost race is only reported as a toast (the phone list has no in-cell note).
+   */
+  readonly onAssignee: (
+    rowId: string,
+    userId: string | null,
+    inCell?: boolean,
+  ) => void;
   /**
    * "YYYY-MM-DD", or `null` to clear the date; `time` ("HH:MM") is given by the tablet and phone picker.
    * Resolves `false` when the server refused the day as before the start date.
@@ -48,7 +55,24 @@ export interface TableEditors {
     day: string | null,
     time?: string,
   ) => void | Promise<boolean>;
-  readonly onPriority: (rowId: string, optionId: string) => void;
+  /** `inCell` as for `onAssignee`. */
+  readonly onPriority: (
+    rowId: string,
+    optionId: string,
+    inCell?: boolean,
+  ) => void;
+}
+
+/** The built-in cells that carry the in-cell conflict choice (the title, the due date, and the status, assignee and priority writes). */
+export type SystemCellColumn =
+  "title" | "due" | "status" | "assignee" | "priority";
+
+/** An open conflict on a built-in cell: what this person wrote, and who saved first. */
+export interface SystemCellConflict {
+  /** The written value as the cell names it (the title, or the due date text). */
+  readonly mine: string;
+  /** Who saved first, when the server named them. */
+  readonly byName: string | null;
 }
 
 /** "YYYY-MM-DD" of a calendar pick, in the viewer's own day. */
@@ -171,11 +195,17 @@ export function PickRow({
       onClick={onClick}
       className={cn(
         "flex h-8 max-xl:h-11 w-full cursor-pointer items-center gap-2 rounded-md border-0 bg-transparent px-2 text-left text-compact text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring",
-        pressed && "bg-state-hover font-semibold",
+        pressed && "bg-state-hover",
       )}
     >
       {mark}
       <span className="min-w-0 flex-1 truncate">{children}</span>
+      {pressed ? (
+        <Check
+          aria-hidden="true"
+          className="size-3.5 shrink-0 text-brand-ink"
+        />
+      ) : null}
     </button>
   );
 }

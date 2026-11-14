@@ -27,7 +27,7 @@ The table below is intentionally near the top of the repository entry point. It 
 | **Database** | PostgreSQL 16 |
 | **Tenant data defense** | Application authorization + PostgreSQL RLS defense-in-depth |
 | **Cache** | Redis 7 · StackExchange.Redis |
-| **Messaging transport** | MassTransit · RabbitMQ 3.13 |
+| **Messaging transport** | MassTransit · RabbitMQ 4.3 |
 | **Authentication** | ASP.NET Core JWT Bearer; OAuth provider integrations |
 | **API contracts** | ASP.NET Core OpenAPI · Swashbuckle · versioned/generated contract artifacts |
 | **Logging / observability adapters** | Serilog-based backend logging; frontend observability package boundary |
@@ -70,16 +70,6 @@ docker-compose*.yml
 ```
 
 When README and an executable manifest disagree, investigate the drift rather than silently copying one side.
-
-## Current backend SDK alignment note
-
-The backend currently targets `net9.0`, and the development Compose backend image uses the .NET 9 SDK.
-
-At the same time, `backend/global.json` currently requests SDK `10.0.201`.
-
-That is a toolchain-alignment issue, not a reason to redefine the backend product/runtime as .NET 10.
-
-Before relying on a host-installed SDK or certifying the Docker backend workflow, reconcile the SDK pin with the intended target/tooling policy.
 
 ---
 
@@ -783,8 +773,6 @@ For the current development environment:
 - pnpm **10 or newer**;
 - .NET SDK compatible with the backend's active SDK/target configuration for local backend development.
 
-The backend currently has an SDK-pin mismatch described in [Current backend SDK alignment note](#current-backend-sdk-alignment-note). Resolve that before treating host-SDK behavior as certified.
-
 ---
 
 ## 1. Clone
@@ -1473,7 +1461,7 @@ Examples:
 
 ```text
 Work Management semantics
-→ docs/product/contexts/work-management.md
+→ docs/product/work-management.md
 
 Domain modeling
 → backend/docs/architecture/domain-modeling.md
@@ -1575,7 +1563,7 @@ Such changes require impact/migration handling rather than being labeled “refa
 
 Canonical delivery owner:
 
-`docs/delivery/change-impact-and-migration.md`
+`docs/delivery/migration-policy.md`
 
 ---
 

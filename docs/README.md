@@ -37,7 +37,7 @@ Read:
 ../PRODUCT.md
 product/README.md
 product/product-model.md
-product/contexts/<owning-context>.md
+product/<owning-context>.md
 ```
 
 Then read affected backend/frontend/system owners.
@@ -101,11 +101,25 @@ Read:
 
 ```text
 delivery/change-classification.md
-delivery/change-impact-and-migration.md
+delivery/migration-policy.md
 architecture/contract-boundaries.md
 ```
 
 Then the affected producer/consumer/data owner.
+
+---
+
+## Use-case acceptance, release scope or release acceptance
+
+Read:
+
+```text
+delivery/product-delivery-lifecycle.md
+workstreams/product-roadmap.md
+workstreams/use-cases/README.md
+```
+
+Then the use-case file of the affected context.
 
 ---
 
@@ -119,9 +133,9 @@ Start with:
     NRX-004
     NRX-012
 
-product/contexts/identity.md
-product/contexts/workspaces.md
-product/contexts/governance.md
+product/identity.md
+product/workspaces.md
+product/governance.md
 quality/security-quality-standard.md
 ```
 
@@ -203,7 +217,6 @@ The repository root owns high-level constitutions and routers.
 | [`../AGENTS.md`](../AGENTS.md) | Coding Agent execution contract |
 | [`../CONTEXT.md`](../CONTEXT.md) | Current repository facts and active transitions |
 | [`../CONTEXT-MAP.md`](../CONTEXT-MAP.md) | Task → canonical authority routing |
-| `../CLAUDE.md` | Provider compatibility router only |
 
 This `docs/README.md` is the canonical index for the repository-level documentation tree.
 
@@ -211,7 +224,7 @@ It must not become a duplicate root README or root rulebook.
 
 ---
 
-# 4. Target documentation tree
+# 4. Documentation tree
 
 ```text
 docs/
@@ -236,18 +249,18 @@ docs/
 │   ├── README.md
 │   ├── product-model.md
 │   ├── product-experience.md
-│   └── contexts/
-│       ├── accounts.md
-│       ├── identity.md
-│       ├── workspaces.md
-│       ├── governance.md
-│       ├── work-management.md
-│       ├── documents.md
-│       ├── collaboration.md
-│       ├── automation.md
-│       ├── integrations.md
-│       ├── billing.md
-│       └── analytics.md
+│   ├── accounts.md
+│   ├── identity.md
+│   ├── workspaces.md
+│   ├── governance.md
+│   ├── work-management.md
+│   ├── documents.md
+│   ├── collaboration.md
+│   ├── chat.md
+│   ├── automation.md
+│   ├── integrations.md
+│   ├── billing.md
+│   └── analytics.md
 │
 ├── quality/
 │   ├── engineering-quality-standard.md
@@ -258,9 +271,16 @@ docs/
 │
 ├── delivery/
 │   ├── change-classification.md
-│   ├── change-impact-and-migration.md
+│   ├── ci-cd-architecture.md
+│   ├── ci-cd-extension-guide.md
+│   ├── ci-cd-implementation-guide.md
+│   ├── contract-first-delivery.md
 │   ├── definition-of-done.md
-│   └── release-rollout-and-recovery.md
+│   ├── local-development.md
+│   ├── migration-policy.md
+│   ├── product-delivery-lifecycle.md
+│   ├── release-and-rollout.md
+│   └── team-ownership.md
 │
 ├── operations/
 │   ├── observability.md
@@ -284,6 +304,15 @@ docs/
 │   ├── migration-plan-template.md
 │   ├── incident-template.md
 │   └── pr-checklist.md
+│
+├── workstreams/
+│   ├── README.md
+│   ├── product-roadmap.md   (release plan, non-normative)
+│   ├── teams/, executions/
+│   └── use-cases/<context>.md   (live delivery catalogs, non-normative evidence)
+│
+├── design/
+│   └── mockups/
 │
 └── generated/
     ├── document-index.md
@@ -364,9 +393,9 @@ Product context documents define business meaning independently of implementatio
 Examples:
 
 ```text
-product/contexts/work-management.md
-product/contexts/governance.md
-product/contexts/billing.md
+product/work-management.md
+product/governance.md
+product/billing.md
 ```
 
 They answer:
@@ -596,8 +625,8 @@ Read:
     NRX-003
     NRX-014
 
-product/contexts/work-management.md
-product/contexts/workspaces.md
+product/work-management.md
+product/workspaces.md
 
 ../frontend/AGENTS.md
 ../frontend/docs/architecture/state-query-mutations.md
@@ -804,7 +833,7 @@ Owns:
 Detailed business meaning remains in:
 
 ```text
-product/contexts/*.md
+product/*.md
 ```
 
 ---
@@ -980,17 +1009,18 @@ Each context document is the canonical product owner for its semantic area.
 Required contexts:
 
 ```text
-product/contexts/accounts.md
-product/contexts/identity.md
-product/contexts/workspaces.md
-product/contexts/governance.md
-product/contexts/work-management.md
-product/contexts/documents.md
-product/contexts/collaboration.md
-product/contexts/automation.md
-product/contexts/integrations.md
-product/contexts/billing.md
-product/contexts/analytics.md
+product/accounts.md
+product/identity.md
+product/workspaces.md
+product/governance.md
+product/work-management.md
+product/documents.md
+product/collaboration.md
+product/chat.md
+product/automation.md
+product/integrations.md
+product/billing.md
+product/analytics.md
 ```
 
 Each context must define, as relevant:
@@ -1026,7 +1056,7 @@ It must not fill template headings with generic prose.
 Example:
 
 ```text
-product/contexts/work-management.md
+product/work-management.md
     owns Board / BoardField / BoardItem / BoardGroup / BoardView meaning
 
 backend/docs/architecture/domain-modeling.md
@@ -1216,7 +1246,7 @@ Each class maps to required owners/evidence.
 File:
 
 ```text
-delivery/change-impact-and-migration.md
+delivery/migration-policy.md
 ```
 
 Owns:
@@ -1261,12 +1291,33 @@ Compilation is not definition of done.
 File:
 
 ```text
-delivery/release-rollout-and-recovery.md
+delivery/release-and-rollout.md
 ```
 
 Owns shared release-change principles.
 
 Exact environment/deployment mechanics route to infrastructure/operations owners.
+
+---
+
+## 14.5 Product delivery lifecycle
+
+File:
+
+```text
+delivery/product-delivery-lifecycle.md
+```
+
+Owns how product work moves from the use-case catalog to a released version:
+
+- roles and who decides what;
+- when a use case is DONE and what evidence proves it;
+- the lane model;
+- release stages, release readiness and owner acceptance;
+- defect severity;
+- commit and pull request content.
+
+The release plan (what each version holds and in what order) is `workstreams/product-roadmap.md`; it is a plan, not authority.
 
 ---
 
@@ -1504,7 +1555,7 @@ templates/
 
 Templates exist to make high-impact work consistent without duplicating architecture.
 
-Target templates:
+Templates:
 
 ```text
 adr-template.md
@@ -1529,7 +1580,7 @@ Directory:
 generated/
 ```
 
-Target repository-generated docs:
+Repository-generated docs:
 
 ```text
 document-index.md
@@ -1585,7 +1636,7 @@ Start:
 ../backend/docs/README.md
 ```
 
-Target backend structure:
+Backend structure:
 
 ```text
 backend/docs/
@@ -1620,7 +1671,7 @@ Start:
 ../frontend/docs/README.md
 ```
 
-Target frontend structure:
+Frontend structure:
 
 ```text
 frontend/docs/
@@ -1665,7 +1716,7 @@ Exact backend project inventory should be generated from:
 ../backend/**/*.csproj
 ```
 
-Target:
+Generated at:
 
 ```text
 ../backend/docs/generated/project-map.md
@@ -1727,9 +1778,9 @@ Recommended:
 ```text
 ../RULE.md
 → quality/security-quality-standard.md
-→ product/contexts/identity.md
-→ product/contexts/workspaces.md
-→ product/contexts/governance.md
+→ product/identity.md
+→ product/workspaces.md
+→ product/governance.md
 → backend security docs
 → affected frontend/docs/runtime evidence
 ```
@@ -1740,9 +1791,9 @@ Recommended:
 
 ```text
 delivery/change-classification.md
-→ delivery/change-impact-and-migration.md
+→ delivery/migration-policy.md
 → affected contract/data owner
-→ release-rollout-and-recovery.md
+→ release-and-rollout.md
 → operations/infrastructure as required
 ```
 
@@ -1754,7 +1805,7 @@ delivery/change-classification.md
 
 ```text
 ../PRODUCT.md
-→ product/contexts/<owner>.md
+→ product/<owner>.md
 → ../RULE.md
 → ../backend/AGENTS.md
 → ../backend/docs/architecture/domain-modeling.md
@@ -1776,7 +1827,7 @@ product owner
 
 ```text
 product owner
-→ delivery/change-impact-and-migration.md
+→ delivery/migration-policy.md
 → ../backend/docs/architecture/infrastructure-and-data.md
 → ../backend/docs/operations/migrations-and-data-change.md
 → migrations/tests
@@ -1828,10 +1879,10 @@ product owner
 
 ```text
 ../PRODUCT.md
-→ product/contexts/<owner>.md
+→ product/<owner>.md
 → architecture/bounded-context-map.md if ownership changes
 → affected backend/frontend docs
-→ delivery/change-impact-and-migration.md
+→ delivery/migration-policy.md
 → ADR if consequential
 ```
 
@@ -2010,7 +2061,7 @@ Canonical authored documentation should use lifecycle statuses defined by:
 governance/documentation-lifecycle.md
 ```
 
-Target statuses:
+Statuses:
 
 ```text
 draft
@@ -2150,7 +2201,7 @@ Deep files are expected where the system is deep.
 Examples likely to be deep:
 
 ```text
-product/contexts/work-management.md
+product/work-management.md
 ../backend/docs/architecture/domain-modeling.md
 ../backend/docs/architecture/application-model.md
 ../backend/docs/architecture/platform-and-messaging.md
@@ -2381,7 +2432,7 @@ scripts/docs/
 
 # 48. Required documentation checks
 
-Target governance should enforce at minimum:
+Governance (`make docs-check`) enforces at minimum:
 
 ```text
 broken relative links = 0
@@ -2403,13 +2454,13 @@ A required check that cannot execute must fail or report unrun—not silently pa
 
 # 49. Documentation generator ownership
 
-Generators should be under a stable repository tooling location such as:
+Generators live under:
 
 ```text
 scripts/docs/
 ```
 
-Target responsibilities may include:
+Current scripts:
 
 ```text
 check-links

@@ -11,6 +11,7 @@ using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
 using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Infrastructure.Data.Collaboration;
 using Notrelix.Infrastructure.Services;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
@@ -137,12 +138,43 @@ public sealed class SoftDeleteQueryTranslationTests : IAsyncLifetime
         }
 
         await using var context = _db.CreateOwnerContext(SystemTenant());
-        var handler = new GetCommentsQueryHandler(context, new ActorLookupService(context), new FakeCurrentUser());
+        var handler = new GetCommentsQueryHandler(context, new ActorLookupService(context), new FakeCurrentUser(), new CommentTombstoneReader(context));
 
         var result = await handler.Handle(GetCommentsQuery.ForBoardItem(itemId), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         result.Data!.Select(comment => comment.Id).Should().Equal(activeComment.Id);
+    }
+
+    [Fact]
+    public async Task GetComments_KeepsADeletedParentWithALiveReplyAsATombstone()
+    {
+        var accountId = Guid.NewGuid();
+        var workspaceId = Guid.NewGuid();
+        var authorId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
+        ResourceRef Target() => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), itemId);
+        var parent = Comment.Create(accountId, workspaceId, Target(), "removed but answered", authorId, Now);
+        var reply = Comment.CreateReply(accountId, workspaceId, Target(), "the answer", authorId, Now.AddSeconds(1),
+            ParentCommentContext.Create(accountId, workspaceId, parent.Id, Target()));
+        parent.Delete(authorId, Now.AddSeconds(2));
+
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
+        {
+            seed.Comments.AddRange(parent, reply);
+            await seed.SaveChangesAsync();
+        }
+
+        await using var context = _db.CreateOwnerContext(SystemTenant());
+        var handler = new GetCommentsQueryHandler(context, new ActorLookupService(context), new FakeCurrentUser(), new CommentTombstoneReader(context));
+
+        var result = await handler.Handle(GetCommentsQuery.ForBoardItem(itemId), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data!.Select(comment => comment.Id).Should().Equal(parent.Id, reply.Id);
+        result.Data![0].IsDeleted.Should().BeTrue();
+        result.Data![0].ContentMd.Should().BeEmpty();
+        result.Data![1].ParentCommentId.Should().Be(parent.Id);
     }
 
     private static ICurrentTenantContext SystemTenant()

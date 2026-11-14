@@ -34,6 +34,7 @@ describe("collaboration web container", () => {
         }
       >
         <ResourceComments
+          workspaceId="ws-1"
           resourceId="res-1"
           resourceType="page"
           currentUserId="current-user"

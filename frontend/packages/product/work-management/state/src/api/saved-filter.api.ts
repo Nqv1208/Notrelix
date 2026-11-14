@@ -43,6 +43,7 @@ export function createSavedFilterApi(client: NotrelixClient) {
                 name: row.name ?? "",
                 visibility: row.visibility === "Public" ? "board" : "me",
                 isMine: row.isMine === true,
+                createdByName: row.createdByName ?? null,
                 criteria: parseSavedFilterCriteria(row.criteria),
                 version: row.version ?? 0,
               } satisfies SavedFilter,

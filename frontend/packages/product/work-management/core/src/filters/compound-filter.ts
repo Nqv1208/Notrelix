@@ -42,7 +42,24 @@ const asList = (value: unknown): string[] =>
     .filter((item) => item !== null && item !== undefined && item !== "")
     .map(String);
 
-const day = (value: unknown): number => Date.parse(String(value).slice(0, 10));
+/** The day (YYYY-MM-DD) of a date value, in `timeZone` when the value is an instant (UTC when none). */
+export function dayOf(value: unknown, timeZone?: string): string | null {
+  if (typeof value !== "string" || value === "") return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const time = Date.parse(value);
+  if (Number.isNaN(time)) return null;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: timeZone ?? "UTC",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(time);
+}
+
+const dayIn =
+  (timeZone?: string) =>
+  (value: unknown): number =>
+    Date.parse(dayOf(value, timeZone) ?? "");
 
 function equalsValue(
   context: FieldContext,
@@ -57,7 +74,9 @@ function equalsValue(
         ? value === Number(operand)
         : normalise(String(value)) === normalise(operand);
     case "date":
-      return day(value) === day(operand);
+      return (
+        dayIn(context.timeZone)(value) === Date.parse(operand.slice(0, 10))
+      );
     case "select":
       return String(value) === operand;
     default:
@@ -79,6 +98,7 @@ export function matchesCondition(
   value: unknown,
 ): boolean {
   const spec = specOf(context.field);
+  const day = dayIn(context.timeZone);
   const empty = spec.isEmpty(value);
   const [first = "", second = ""] = values;
   switch (operator) {

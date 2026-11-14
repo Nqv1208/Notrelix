@@ -20,6 +20,13 @@ public class AutomationExecutionConfiguration : IEntityTypeConfiguration<Automat
         builder.Property(x => x.StartedAt).HasColumnName("started_at").IsRequired();
         builder.Property(x => x.FinishedAt).HasColumnName("finished_at");
         builder.Property(x => x.Error).HasColumnName("error");
+        // UC-AUT-I04: the stable failure class is stored as its code (never the C# name), so a rename cannot change the data.
+        builder.Property(x => x.FailureClass)
+            .HasColumnName("failure_class")
+            .HasConversion(
+                failureClass => failureClass == null ? null : failureClass.Value.Code(),
+                code => code == null ? null : ParseFailureClass(code))
+            .HasMaxLength(50);
         builder.Property(x => x.Payload).HasColumnName("payload").HasColumnType("jsonb");
         builder.Property(x => x.AttemptCount).HasColumnName("attempt_count");
         builder.Property(x => x.LastResponse).HasColumnName("last_response");
@@ -53,4 +60,9 @@ public class AutomationExecutionConfiguration : IEntityTypeConfiguration<Automat
             .HasDatabaseName("ux_automation_executions_rule_trigger")
             .HasFilter("trigger_id IS NOT NULL");
     }
+
+    private static AutomationFailureClass ParseFailureClass(string code) =>
+        AutomationFailureClassification.TryParse(code, out var parsed)
+            ? parsed
+            : throw new InvalidOperationException($"Unknown automation failure class code '{code}'.");
 }

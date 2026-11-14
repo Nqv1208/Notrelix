@@ -73,7 +73,6 @@ public class IdentityOpenApiShapeTests
 
     [Theory]
     [InlineData("Identity.Auth.Login", "AuthSessionResponse")]
-    [InlineData("Identity.Auth.Register", "AuthSessionResponse")]
     [InlineData("Identity.Auth.RefreshToken", "AuthSessionResponse")]
     [InlineData("Identity.Mfa.VerifyChallenge", "AuthSessionResponse")]
     [InlineData("Identity.Auth.GetCurrentUser", "UserDto")]
@@ -93,7 +92,21 @@ public class IdentityOpenApiShapeTests
         Describe(schema).Should().Be(expected, operationId);
     }
 
+    [Fact]
+    public void Bootstrap_CarriesNoWorkspaceRoleAndNoEntitlement()
+    {
+        var schemas = Document.GetProperty("components").GetProperty("schemas");
+        var forbidden = new[] { "role", "roles", "entitlement", "entitlements", "plan", "permissions" };
+        foreach (var name in new[] { "BootstrapResult", "WorkspaceInfo", "PersonalWorkspaceStatus" })
+        {
+            var schema = schemas.EnumerateObject().Single(s => s.Name.EndsWith("GetBootstrap." + name, StringComparison.Ordinal)).Value;
+            schema.GetProperty("properties").EnumerateObject().Select(p => p.Name)
+                .Should().NotIntersectWith(forbidden, $"{name}: a role is a workspace-scoped fact read from the membership");
+        }
+    }
+
     [Theory]
+    [InlineData("Identity.Auth.Register")]
     [InlineData("Identity.Auth.ForgotPassword")]
     [InlineData("Identity.Auth.ResetPassword")]
     [InlineData("Identity.Auth.Logout")]

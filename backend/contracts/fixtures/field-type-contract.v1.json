@@ -1,0 +1,227 @@
+{
+  "version": 1,
+  "description": "One semantic contract per field type (UC-WM-C17, C18). Read by the server (Notrelix.Domain.Tests, FieldTypeParityFixtureTests) and the client (work-management core, field-type-parity.unit.test.ts). A new field type joins this file with its valid and invalid values; the server test fails until it does.",
+  "types": [
+    {
+      "fieldType": "Text",
+      "clientType": "text",
+      "settings": {},
+      "valid": [
+        "hello"
+      ],
+      "invalid": [
+        5
+      ],
+      "sort": {
+        "values": [
+          "b",
+          "A",
+          "a1"
+        ],
+        "ascending": [
+          "A",
+          "a1",
+          "b"
+        ]
+      }
+    },
+    {
+      "fieldType": "LongText",
+      "clientType": "long_text",
+      "settings": {},
+      "valid": [
+        "a longer note"
+      ],
+      "invalid": [
+        true
+      ]
+    },
+    {
+      "fieldType": "Number",
+      "clientType": "number",
+      "settings": {},
+      "valid": [
+        3.5,
+        0
+      ],
+      "invalid": [
+        "3"
+      ],
+      "sort": {
+        "values": [
+          3,
+          1,
+          2.5
+        ],
+        "ascending": [
+          1,
+          2.5,
+          3
+        ]
+      }
+    },
+    {
+      "fieldType": "Status",
+      "clientType": "select",
+      "settings": {
+        "transitions": {}
+      },
+      "valid": [
+        "6f1c2a3e-0000-4000-8000-000000000001"
+      ],
+      "invalid": [
+        "not-an-option"
+      ]
+    },
+    {
+      "fieldType": "Select",
+      "clientType": "select",
+      "settings": {},
+      "valid": [
+        "6f1c2a3e-0000-4000-8000-000000000002"
+      ],
+      "invalid": [
+        "not-an-option"
+      ]
+    },
+    {
+      "fieldType": "MultiSelect",
+      "clientType": "multi_select",
+      "settings": {},
+      "valid": [
+        [
+          "6f1c2a3e-0000-4000-8000-000000000003"
+        ]
+      ],
+      "invalid": [
+        [
+          "not-an-option"
+        ],
+        [
+          "6f1c2a3e-0000-4000-8000-000000000003",
+          "6f1c2a3e-0000-4000-8000-000000000003"
+        ]
+      ]
+    },
+    {
+      "fieldType": "Date",
+      "clientType": "date",
+      "settings": {},
+      "valid": [
+        "2026-11-08T09:00:00+07:00"
+      ],
+      "invalid": [
+        "08/11/2026"
+      ],
+      "sort": {
+        "values": [
+          "2026-10-20T00:00:00Z",
+          "2026-10-02T00:00:00Z"
+        ],
+        "ascending": [
+          "2026-10-02T00:00:00Z",
+          "2026-10-20T00:00:00Z"
+        ]
+      }
+    },
+    {
+      "fieldType": "Person",
+      "clientType": "person",
+      "settings": {},
+      "valid": [
+        "6f1c2a3e-0000-4000-8000-000000000004"
+      ],
+      "invalid": [
+        "not-a-user"
+      ]
+    },
+    {
+      "fieldType": "Checkbox",
+      "clientType": "checkbox",
+      "settings": {},
+      "valid": [
+        true,
+        false
+      ],
+      "invalid": [
+        "yes"
+      ],
+      "sort": {
+        "values": [
+          true,
+          false
+        ],
+        "ascending": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "fieldType": "Link",
+      "clientType": "link",
+      "settings": {},
+      "valid": [
+        "https://example.com/t/1"
+      ],
+      "invalid": [
+        "javascript:alert(1)"
+      ]
+    },
+    {
+      "fieldType": "Formula",
+      "clientType": "formula",
+      "settings": {
+        "expression": "1"
+      },
+      "valid": [],
+      "invalid": [
+        1
+      ]
+    },
+    {
+      "fieldType": "Rollup",
+      "clientType": "rollup",
+      "settings": {
+        "aggregate": "count"
+      },
+      "valid": [],
+      "invalid": [
+        1
+      ]
+    },
+    {
+      "fieldType": "Vote",
+      "clientType": "vote",
+      "settings": {},
+      "valid": [],
+      "invalid": [
+        1
+      ]
+    },
+    {
+      "fieldType": "Relation",
+      "clientType": "relation",
+      "settings": {
+        "targetBoardId": "6f1c2a3e-0000-4000-8000-0000000000b0"
+      },
+      "valid": [
+        [
+          "6f1c2a3e-0000-4000-8000-0000000000a1",
+          "6f1c2a3e-0000-4000-8000-0000000000a2"
+        ],
+        []
+      ],
+      "invalid": [
+        "6f1c2a3e-0000-4000-8000-0000000000a1",
+        [
+          "not-an-item"
+        ],
+        [
+          "6f1c2a3e-0000-4000-8000-0000000000a1",
+          "6f1c2a3e-0000-4000-8000-0000000000a1"
+        ]
+      ]
+    }
+  ]
+}

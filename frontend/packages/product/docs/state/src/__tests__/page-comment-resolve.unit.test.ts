@@ -16,30 +16,33 @@ describe("page comment resolve and delete", () => {
     expect(api.post).toHaveBeenCalledWith("/comments/c1/resolve", {});
     await comments.reopen("c1");
     expect(api.post).toHaveBeenCalledWith("/comments/c1/reopen", {});
-    await comments.delete("c1");
-    expect(api.delete).toHaveBeenCalledWith("/comments/c1");
+    await comments.delete("c1", 3);
+    expect(api.delete).toHaveBeenCalledWith("/comments/c1?expectedVersion=3");
   });
 
   it("reads a resolved thread from resolvedAt", async () => {
     const api = client();
-    api.get.mockResolvedValue([
-      {
-        id: "c1",
-        userId: "u1",
-        contentMd: "done",
-        createdAt: "2026-10-26T10:00:00Z",
-        isEdited: false,
-        resolvedAt: "2026-10-26T11:00:00Z",
-      },
-      {
-        id: "c2",
-        userId: "u1",
-        contentMd: "open",
-        createdAt: "2026-10-26T10:05:00Z",
-        isEdited: false,
-        resolvedAt: null,
-      },
-    ]);
+    api.get.mockResolvedValue({
+      items: [
+        {
+          id: "c1",
+          userId: "u1",
+          contentMd: "done",
+          createdAt: "2026-10-26T10:00:00Z",
+          isEdited: false,
+          resolvedAt: "2026-10-26T11:00:00Z",
+        },
+        {
+          id: "c2",
+          userId: "u1",
+          contentMd: "open",
+          createdAt: "2026-10-26T10:05:00Z",
+          isEdited: false,
+          resolvedAt: null,
+        },
+      ],
+      nextCursor: null,
+    });
     const list = await createCommentApi(api, testEndpoints).getList("p1");
     expect(list.map((c) => c.resolved)).toEqual([true, false]);
   });

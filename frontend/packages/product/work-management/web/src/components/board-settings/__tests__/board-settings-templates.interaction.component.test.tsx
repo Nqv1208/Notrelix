@@ -113,6 +113,63 @@ describe.each([
     ).toBeTruthy();
   });
 
+  it("states the 500-item cap and refuses to save with items ticked on a board over it, and allows exactly 500", () => {
+    const onSave = vi.fn().mockResolvedValue({ ok: true });
+    const { unmount } = renderPureUi(
+      <BoardSettingsSurface
+        status="ready"
+        settings={erpBoardSettings()}
+        copy={copy}
+        boardTitle="ERP"
+        timeZone={ERP_SETTINGS_TIME_ZONE}
+        section="templates"
+        onSelectSection={vi.fn()}
+        fieldId={null}
+        onSelectField={vi.fn()}
+        viewId={null}
+        onSelectView={vi.fn()}
+        actions={noopSettingsActions()}
+        onReload={vi.fn()}
+        onBack={vi.fn()}
+        templates={panel({ itemCount: 600, onSave })}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: t.save }));
+    const form = screen.getByRole("form");
+    const save = within(form).getByRole("button", { name: t.saveConfirm });
+    // Without items the board saves whatever its size.
+    expect((save as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(
+      within(form).getByRole("checkbox", {
+        name: fillCopy(t.includeItemsCount_other, { count: 600 }),
+      }),
+    );
+    expect(within(form).getByRole("alert").textContent).toBe(
+      fillCopy(t.includeItemsOverCap, { count: "600" }),
+    );
+    expect((save as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.submit(form);
+    expect(onSave).not.toHaveBeenCalled();
+    unmount();
+
+    renderTemplates(panel({ itemCount: 500, onSave }), copy);
+    fireEvent.click(screen.getByRole("button", { name: t.save }));
+    const exact = screen.getByRole("form");
+    fireEvent.click(
+      within(exact).getByRole("checkbox", {
+        name: fillCopy(t.includeItemsCount_other, { count: 500 }),
+      }),
+    );
+    expect(within(exact).queryByRole("alert")).toBeNull();
+    expect(
+      (
+        within(exact).getByRole("button", {
+          name: t.saveConfirm,
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(false);
+  });
+
   it("is a section only when the page is given the templates", () => {
     renderTemplates(undefined, copy);
     expect(

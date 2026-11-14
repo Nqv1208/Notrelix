@@ -377,7 +377,7 @@ export const textRoles = {
     letterSpacing: "0em",
     family: "sans",
   },
-  /** Document title (Final-Docs h1, 32px). */
+  /** Document title (Final-Docs-2 h1, 32px). */
   "doc-title": {
     size: "4xl",
     lineHeight: 2.5,
@@ -385,7 +385,7 @@ export const textRoles = {
     letterSpacing: "-0.015em",
     family: "sans",
   },
-  /** Document section heading (Final-Docs h2, 20px). */
+  /** Document section heading (Final-Docs-2 h2, 20px). */
   "doc-heading": {
     size: "20",
     lineHeight: 1.6875,
@@ -393,7 +393,7 @@ export const textRoles = {
     letterSpacing: "0em",
     family: "sans",
   },
-  /** Document paragraph (Final-Docs `.prose`, 15.5px / 1.7). */
+  /** Document paragraph (Final-Docs-2 `.prose`, 15.5px / 1.7). */
   "doc-prose": {
     size: "15p5",
     lineHeight: 1.646875,

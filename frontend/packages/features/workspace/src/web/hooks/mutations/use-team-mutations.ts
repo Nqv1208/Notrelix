@@ -97,6 +97,21 @@ export function createUseTeamMutations({ api, endpoints }: TeamMutationDeps) {
       onSettled: refresh,
     });
 
+    // Delete takes the Team version; restore takes none (the producer checks neither for restore).
+    const remove = useMutation({
+      mutationFn: ({ teamId, ...input }: TeamWrite) =>
+        service.remove(workspaceId, teamId, input),
+      retry: false,
+      onSettled: refresh,
+    });
+
+    const restore = useMutation({
+      mutationFn: ({ teamId }: { teamId: string }) =>
+        service.restore(workspaceId, teamId),
+      retry: false,
+      onSettled: refresh,
+    });
+
     const addMember = useMutation({
       mutationFn: ({
         teamId,
@@ -154,6 +169,8 @@ export function createUseTeamMutations({ api, endpoints }: TeamMutationDeps) {
       describe,
       archive,
       unarchive,
+      remove,
+      restore,
       addMember,
       removeMember,
       changeRole,

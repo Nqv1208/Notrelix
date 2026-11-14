@@ -75,11 +75,21 @@ const RAIL_ITEMS = [
   { key: "docs", Icon: FileText },
 ] as const;
 
-function Skeleton({ className }: { className: string }) {
+function Skeleton({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   return (
     <span
       aria-hidden="true"
-      className={cn("block rounded-full bg-state-hover-strong", className)}
+      style={style}
+      className={cn(
+        "block h-[9px] rounded-[4px] bg-state-hover-strong",
+        className,
+      )}
     />
   );
 }
@@ -98,27 +108,27 @@ export function OnboardingPreview({
   const t = copy.preview;
   return (
     <>
-      <p className="m-0 text-item-ui font-semibold text-muted-foreground">
+      <p className="m-0 text-compact leading-[1.45] font-semibold text-muted-foreground">
         {title}
       </p>
       <div
         role="img"
         aria-label={alt}
-        className="flex h-119 overflow-hidden rounded-[14px] border border-line bg-popover shadow-md"
+        className="flex h-[478px] overflow-hidden rounded-[14px] border border-line-strong bg-background shadow-md"
       >
-        <div className="flex w-39 shrink-0 flex-col gap-1 border-r border-line bg-muted px-3 py-3">
-          <div className="mb-2 flex items-start gap-2">
+        <div className="flex w-39 shrink-0 flex-col gap-0.5 border-r border-line bg-muted px-2 py-2.5 text-micro">
+          <div className="flex items-start gap-[7px] px-1 pt-1 pb-2">
             <span
               aria-hidden="true"
-              className="mt-0.5 grid size-5.5 shrink-0 place-items-center rounded-[6px] bg-primary text-mark-xs font-bold text-primary-foreground"
+              className="grid size-5.5 shrink-0 place-items-center rounded-[6px] bg-primary text-avatar-sm font-bold text-primary-foreground"
             >
               {company.initials}
             </span>
             <span className="min-w-0">
-              <b className="block text-note-small leading-tight font-semibold">
+              <b className="block text-micro leading-[1.3] font-semibold">
                 {company.name}
               </b>
-              <small className="block text-note-small text-meta-foreground">
+              <small className="block truncate text-rail-label leading-[1.45] font-normal text-meta-foreground">
                 {company.sub}
               </small>
             </span>
@@ -127,21 +137,21 @@ export function OnboardingPreview({
             <span
               key={key}
               className={cn(
-                "flex items-center gap-2 rounded-[6px] px-1.5 py-1 text-micro",
+                "flex h-6 items-center gap-[7px] rounded-[5px] px-1.5 text-micro leading-[1.45]",
                 key === "home"
                   ? "bg-brand-subtle font-semibold text-brand-subtle-foreground"
-                  : "text-foreground",
+                  : "font-medium text-muted-foreground",
               )}
             >
               <Icon aria-hidden="true" className="size-3 shrink-0" />
               {t.rail[key]}
             </span>
           ))}
-          <b className="mt-3 px-1.5 text-note-small font-semibold text-muted-foreground">
+          <b className="mx-1.5 mt-2.5 mb-[3px] text-rail-label leading-[1.45] font-semibold text-meta-foreground">
             {t.rail.departments}
           </b>
           {departments.length === 0 ? (
-            <span className="rounded-[6px] border border-dashed border-line-strong px-2 py-1 text-note-small text-meta-foreground">
+            <span className="mx-1.5 my-1.5 flex min-h-6 items-center rounded-[5px] border border-dashed border-line-strong px-1.5 text-rail-label leading-[1.35] font-normal text-meta-foreground">
               {t.rail.departmentsEmpty}
             </span>
           ) : (
@@ -184,38 +194,45 @@ export function OnboardingPreview({
             ))
           )}
           <span className="flex-1" />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-[7px] p-1">
             <span
               aria-hidden="true"
               className={cn(
-                "grid size-5.5 shrink-0 place-items-center rounded-full text-mark-xs font-bold",
+                "grid size-5 shrink-0 place-items-center rounded-full text-avatar-xs font-bold",
                 user.toneClass,
               )}
             >
               {user.initials}
             </span>
             <span className="min-w-0">
-              <b className="block truncate text-note-small font-semibold">
+              <b className="block truncate text-mark-md leading-[1.45] font-semibold">
                 {user.name}
               </b>
-              <small className="block text-note-small text-meta-foreground">
+              <small className="block text-mark-sm leading-[1.45] font-normal text-meta-foreground">
                 {user.role}
               </small>
             </span>
           </div>
         </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-2.5 p-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-2.5 px-3.5 py-4 text-micro">
           {main.kind === "stub" ? (
             <>
-              <Skeleton className="h-2.5 w-24" />
-              <Skeleton className="h-2 w-16" />
-              {[0, 1, 2].map((index) => (
+              <Skeleton className="h-[13px] w-[58%]" />
+              <Skeleton className="w-[40%]" />
+              {[
+                ["80%", "55%"],
+                ["70%", "45%"],
+                ["76%", "38%"],
+              ].map(([first, second], index) => (
                 <div
                   key={index}
-                  className="flex flex-col gap-1.5 rounded-[8px] border border-line p-2.5"
+                  className={cn(
+                    "flex flex-col gap-[7px] rounded-[8px] border border-line bg-popover p-2.5",
+                    index === 0 && "mt-1.5",
+                  )}
                 >
-                  <Skeleton className="h-1.75 w-4/5" />
-                  <Skeleton className="h-1.75 w-3/5" />
+                  <Skeleton style={{ width: first }} />
+                  <Skeleton style={{ width: second }} />
                 </div>
               ))}
             </>
@@ -292,7 +309,7 @@ export function OnboardingPreview({
           )}
         </div>
       </div>
-      <p className="m-0 text-item-prose leading-normal text-muted-foreground">
+      <p className="m-0 text-compact leading-[1.55] text-muted-foreground">
         {caption}
       </p>
     </>

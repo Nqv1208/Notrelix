@@ -12,7 +12,7 @@ evidence:
   - docs/product/README.md
   - docs/product/product-model.md
   - docs/product/product-experience.md
-  - docs/product/contexts/
+  - docs/product/
   - docs/delivery/change-classification.md
   - docs/delivery/contract-first-delivery.md
   - docs/delivery/definition-of-done.md

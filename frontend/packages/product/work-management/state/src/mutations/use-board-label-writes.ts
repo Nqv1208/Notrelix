@@ -5,6 +5,7 @@ import type {
   BoardSettingsWriteResult,
   CardLabel,
 } from "@notrelix/work-management-core";
+import { conflictOf } from "../queries/use-board-settings";
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
 import { neededVersion } from "./seen-version";
@@ -20,7 +21,8 @@ function failure(error: unknown): BoardSettingsWriteResult {
     typeof error === "object" && error !== null && "status" in error
       ? (error as { status?: unknown }).status
       : null;
-  if (status === 412) return { ok: false, reason: "conflict" };
+  if (status === 412)
+    return { ok: false, reason: "conflict", conflict: conflictOf(error) };
   return {
     ok: false,
     reason: kind === "validation" ? "invalid" : "failed",

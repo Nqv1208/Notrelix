@@ -49,6 +49,13 @@ public sealed class PostgresResourceVisibility : IResourceVisibility
         return rows;
     }
 
+    public async Task<IReadOnlyDictionary<Guid, string>> SpaceNamesAsync(Guid workspaceId, IReadOnlyCollection<Guid> spaceIds, CancellationToken cancellationToken) =>
+        spaceIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await _dbContext.Spaces.AsNoTracking()
+                .Where(s => s.WorkspaceId == workspaceId && s.DeletedAt == null && spaceIds.Contains(s.Id))
+                .ToDictionaryAsync(s => s.Id, s => s.Name, cancellationToken);
+
     private static string LevelName(int level) => level switch
     {
         >= 4 => "Manager",

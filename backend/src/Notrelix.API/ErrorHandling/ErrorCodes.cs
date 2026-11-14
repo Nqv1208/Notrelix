@@ -7,6 +7,7 @@ public static class ErrorCodes
     public const string Unauthorized = "auth.unauthorized";
     public const string Forbidden = "auth.forbidden";
     public const string EmailNotConfirmed = Notrelix.Application.Common.Security.AccessDenialCodes.EmailNotConfirmed;
+    public const string RevocationUnavailable = "auth.revocation_unavailable";
     public const string CsrfValidationFailed = "security.csrf_validation_failed";
     public const string AuthorizationMisconfiguration = "security.authorization_misconfiguration";
     public const string ResourceNotFound = "resource.not_found";

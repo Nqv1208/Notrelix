@@ -20,9 +20,11 @@ public class DeleteWorkspaceCommandHandler : IRequestHandler<DeleteWorkspaceComm
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IAuditService _auditService;
+    private readonly IAccessChangeSignal _access;
 
-    public DeleteWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAuditService auditService)
+    public DeleteWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAuditService auditService, IAccessChangeSignal access)
     {
+        _access = access;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -51,6 +53,10 @@ public class DeleteWorkspaceCommandHandler : IRequestHandler<DeleteWorkspaceComm
                 AuditMetadata.Create(),
                 AuditSeverity.Critical,
                 cancellationToken: ct);
+
+            // Open realtime subscriptions of the workspace are re-authorized at once and end as revoked: from the commit
+            // on the workspace answers NotFound to everyone, so a socket opened before the delete must not outlive it.
+            _access.Workspace(workspace.Id);
         }
 
         return Result.Success();

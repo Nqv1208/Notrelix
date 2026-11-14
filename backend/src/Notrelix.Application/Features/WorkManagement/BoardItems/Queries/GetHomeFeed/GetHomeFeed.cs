@@ -3,6 +3,7 @@ using Notrelix.Application.Features.Collaboration.Public.Notifications;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Approvals.Services;
+using Notrelix.Application.Features.Workspaces.Public.Teams;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetHomeFeed;
 
@@ -57,7 +58,8 @@ public class GetHomeFeedQueryHandler(
     ICurrentRequestContext requestContext,
     IResourceVisibility visibility,
     INotificationInbox inbox,
-    IActorLookupService actors) : IRequestHandler<GetHomeFeedQuery, Result<HomeFeedDto>>
+    IActorLookupService actors,
+    ITeamMembershipFacts teams) : IRequestHandler<GetHomeFeedQuery, Result<HomeFeedDto>>
 {
     private const string BoardItemKind = "work-management.board-item";
 
@@ -76,7 +78,7 @@ public class GetHomeFeedQueryHandler(
             .Where(m => m.ResourceKind == BoardItemKind && m.ResourceId is not null)
             .ToList();
         var approvals = await PendingApprovals.ListAsync(
-            context, request.WorkspaceId, userId, visibleBoardIds, cancellationToken);
+            context, request.WorkspaceId, userId, visibleBoardIds, teams, cancellationToken);
         if (mentions.Count == 0 && approvals.Count == 0)
         {
             return Result<HomeFeedDto>.Success(Empty());
@@ -90,6 +92,8 @@ public class GetHomeFeedQueryHandler(
                 .Where(i => itemIds.Contains(i.Id)
                             && i.WorkspaceId == request.WorkspaceId
                             && i.DeletedAt == null
+                            // An Item in an archived group is out of the feed until the group comes back.
+                            && !context.BoardGroups.Any(g => g.Id == i.GroupId && g.IsArchived)
                             && visibleBoardIds.Contains(i.BoardId))
                 .Select(i => new { i.Id, i.BoardId, i.ItemKey, i.Name })
                 .ToDictionaryAsync(i => i.Id, cancellationToken);

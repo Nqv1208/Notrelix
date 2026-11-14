@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import type {
   Form,
   FormDetail,
@@ -38,16 +38,24 @@ export function useForm(formId: string, workspaceId: string, enabled = true) {
   });
 }
 
-/** The responses of a form. */
+/**
+ * The responses of a form, a page at a time (newest first); `data` stays the flat list. Use `hasNextPage` and
+ * `fetchNextPage` for "Xem thêm phản hồi". Writes invalidate the key, so the pages are read again from the first.
+ */
 export function useFormSubmissions(
   formId: string,
   workspaceId: string,
   enabled = true,
 ) {
   const { forms } = useWorkManagementServices();
-  return useQuery<FormSubmission[]>({
+  return useInfiniteQuery({
     queryKey: wmQueryKeys.formSubmissions(workspaceId, formId),
-    queryFn: () => forms.submissions(formId),
+    queryFn: ({ pageParam }) =>
+      forms.submissionsPage(formId, pageParam ?? undefined),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor,
+    select: (data): FormSubmission[] =>
+      data.pages.flatMap((page) => page.items),
     enabled: enabled && Boolean(formId && workspaceId),
     staleTime: 10_000,
   });

@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { MOCK_AUTH } from "../../packages/dev/mock-backend/src/state/mock-auth-directory";
 
 /**
- * UC-IDN-B06, B07, I01: the reset and the second step finish with the keyboard alone (Tab to reach
+ * UC-IDN-B03, B06, B07, I01: the register, the reset and the second step finish with the keyboard alone (Tab to reach
  * a control, typing, Enter to submit), so no step needs a pointer.
  */
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
@@ -87,4 +87,31 @@ test("second step by keyboard: six digits type through the boxes and Enter signs
   await page.keyboard.type(MOCK_AUTH.otpCode);
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary/);
+});
+
+test("register by keyboard: fields in order, Space agrees to the terms, Enter creates and the neutral step opens", async ({
+  page,
+}) => {
+  await english(page);
+  await page.goto("/sign-up");
+  await expect(page.locator("#auth-register-first")).toBeVisible();
+  await tabTo(page, "first name", "auth-register-first");
+  await page.keyboard.type("Ada");
+  await page.keyboard.press("Tab");
+  await page.keyboard.type("Lovelace");
+  await page.keyboard.press("Tab");
+  await page.keyboard.type("ada@example.com");
+  await page.keyboard.press("Tab");
+  await page.keyboard.type(`Pw-${Date.now()}-keys`);
+  await tabTo(page, "terms", "auth-register-terms");
+  await page.keyboard.press("Space");
+  await expect(page.locator("#auth-register-terms")).toBeChecked();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Check your email" }),
+  ).toBeVisible();
+  // The way on is a button the keyboard reaches.
+  await tabTo(page, "go to sign-in", "Go to sign-in");
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/sign-in/);
 });

@@ -247,6 +247,75 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Grant_ChangingTheLevelOfAnExistingGrant_NeedsItsCurrentVersion_AStaleOrMissingOneChangesNothing()
+    {
+        var (accountId, ownerId, _, pageId, memberId) = await SeedPageStackAsync();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        var viewer = (await SendAsync<Result<ResourcePermissionDto>>(provider,
+            new GrantResourcePermissionCommand("documents.page", pageId, "User", memberId, "Viewer"))).Data;
+
+        // No version, and a version that is not the stored one: refused with the conflict code, the row stays Viewer.
+        foreach (long? named in new long?[] { null, viewer.Version + 5 })
+        {
+            var stale = () => SendAsync<Result<ResourcePermissionDto>>(provider,
+                new GrantResourcePermissionCommand("documents.page", pageId, "User", memberId, "Editor", ExpectedVersion: named));
+            (await stale.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.PreconditionFailedException>())
+                .Which.Message.Should().Contain("changed since it was read");
+        }
+
+        // The same level again is a no-op whatever version it names: no version moves.
+        var again = (await SendAsync<Result<ResourcePermissionDto>>(provider,
+            new GrantResourcePermissionCommand("documents.page", pageId, "User", memberId, "Viewer", ExpectedVersion: 999))).Data;
+        again.Version.Should().Be(viewer.Version);
+
+        // The right version changes the level; the version that was just replaced is stale for a second writer.
+        var editor = (await SendAsync<Result<ResourcePermissionDto>>(provider,
+            new GrantResourcePermissionCommand("documents.page", pageId, "User", memberId, "Editor", ExpectedVersion: viewer.Version))).Data;
+        editor.Level.Should().Be("Editor");
+        editor.Version.Should().BeGreaterThan(viewer.Version);
+        var lost = () => SendAsync<Result<ResourcePermissionDto>>(provider,
+            new GrantResourcePermissionCommand("documents.page", pageId, "User", memberId, "Commenter", ExpectedVersion: viewer.Version));
+        await lost.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.PreconditionFailedException>();
+
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
+        var row = await verify.ResourcePermissions.IgnoreQueryFilters().SingleAsync(p => p.Id == viewer.Id);
+        row.Level.ToString().Should().Be("Editor");
+        row.Version.Should().Be(editor.Version);
+    }
+
+    [Fact]
+    public async Task Revoke_OfAnEntryThatIsAlreadyRevoked_Succeeds_AndChangesAndAuditsNothingMore()
+    {
+        var (accountId, ownerId, workspaceId, pageId, memberId) = await SeedPageStackAsync();
+
+        using var provider = CreateProvider(accountId, ownerId);
+        var granted = (await SendAsync<Result<ResourcePermissionDto>>(provider,
+            new GrantResourcePermissionCommand("documents.page", pageId, "User", memberId, "Viewer"))).Data;
+        (await SendAsync<Result>(provider,
+            new RevokeResourcePermissionCommand("documents.page", pageId, granted.Id))).Succeeded.Should().BeTrue();
+
+        await using var before = _db.CreateOwnerContext(SystemTenant());
+        var revokedRow = await before.ResourcePermissions.IgnoreQueryFilters().SingleAsync(p => p.Id == granted.Id);
+        var revokedAt = revokedRow.DeletedAt;
+        var versionAfterFirst = revokedRow.Version;
+        var auditsAfterFirst = await before.EnterpriseAuditLogs
+            .CountAsync(a => a.WorkspaceId == workspaceId && a.Action == "RevokeResourcePermission");
+
+        // A retry, or a second manager removing the same entry, is a success that writes nothing.
+        (await SendAsync<Result>(provider,
+            new RevokeResourcePermissionCommand("documents.page", pageId, granted.Id))).Succeeded.Should().BeTrue();
+
+        await using var after = _db.CreateOwnerContext(SystemTenant());
+        var row = await after.ResourcePermissions.IgnoreQueryFilters().SingleAsync(p => p.Id == granted.Id);
+        row.DeletedAt.Should().Be(revokedAt);
+        row.Version.Should().Be(versionAfterFirst);
+        (await after.EnterpriseAuditLogs
+                .CountAsync(a => a.WorkspaceId == workspaceId && a.Action == "RevokeResourcePermission"))
+            .Should().Be(auditsAfterFirst);
+    }
+
+    [Fact]
     public async Task Grant_OnPage_ExpiredDates_AreRejectedByValidation()
     {
         var (accountId, ownerId, _, pageId, _) = await SeedPageStackAsync();
@@ -762,12 +831,29 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var commentId = (await SendAsync<Result<Guid>>(memberProvider,
             CreateCommentCommand.ForBoardItem(itemId, "Mine", null))).Data;
 
-        (await SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Edited"))).Succeeded.Should().BeTrue(
+        (await SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Edited", 1))).Succeeded.Should().BeTrue(
             "an author who can still view the item edits their own comment");
 
         using var ownerProvider = CreateProvider(accountId, ownerId);
-        var act = () => SendAsync<Result>(ownerProvider, new UpdateCommentCommand(commentId, "Rewritten"));
+        var act = () => SendAsync<Result>(ownerProvider, new UpdateCommentCommand(commentId, "Rewritten", 1));
         await act.Should().ThrowAsync<AppForbidden>("the workspace Owner may not rewrite another person's comment");
+    }
+
+    [Fact]
+    public async Task UpdateComment_WithAStaleVersion_IsRefusedAndTheTextStaysAsItWas()
+    {
+        var (accountId, ownerId, _, boardId, memberId) = await SeedBoardStackAsync();
+        var itemId = await ResolveBoardItemIdAsync(boardId);
+
+        using var memberProvider = CreateProvider(accountId, memberId);
+        var commentId = (await SendAsync<Result<Guid>>(memberProvider,
+            CreateCommentCommand.ForBoardItem(itemId, "Mine", null))).Data;
+        (await SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Edited", 1))).Succeeded.Should().BeTrue(
+            "the first edit quotes the version the comment was created with");
+
+        // Version 1 is stale now: the first edit moved the comment to version 2.
+        var stale = () => SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Stale", 1));
+        await stale.Should().ThrowAsync<PreconditionFailedException>("a stale expected version is refused with 412");
     }
 
     [Fact]
@@ -780,10 +866,10 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             CreateCommentCommand.ForPage(pageId, "Owner's", null))).Data;
 
         using var memberProvider = CreateProvider(accountId, memberId);
-        var act = () => SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Rewritten"));
+        var act = () => SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Rewritten", 1));
         await act.Should().ThrowAsync<AppForbidden>("a member who can view the page may not rewrite the Owner's comment");
 
-        (await SendAsync<Result>(ownerProvider, new UpdateCommentCommand(commentId, "Edited"))).Succeeded.Should().BeTrue();
+        (await SendAsync<Result>(ownerProvider, new UpdateCommentCommand(commentId, "Edited", 1))).Succeeded.Should().BeTrue();
     }
 
     [Fact]
@@ -794,9 +880,9 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var commentId = (await SendAsync<Result<Guid>>(memberProvider, CreateCommentCommand.ForPage(pageId, "Mine", null))).Data;
         await SeedPermissionRuleAsync(accountId, workspaceId, memberId, PermissionAction.ViewPage, "documents.page", pageId, PermissionEffect.Deny);
 
-        var hidden = () => SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Edited"));
+        var hidden = () => SendAsync<Result>(memberProvider, new UpdateCommentCommand(commentId, "Edited", 1));
         var missingId = Guid.NewGuid();
-        var missing = () => SendAsync<Result>(memberProvider, new UpdateCommentCommand(missingId, "Edited"));
+        var missing = () => SendAsync<Result>(memberProvider, new UpdateCommentCommand(missingId, "Edited", 1));
 
         var hiddenError = (await hidden.Should().ThrowAsync<AppNotFound>()).Which;
         var missingError = (await missing.Should().ThrowAsync<AppNotFound>()).Which;
@@ -1619,6 +1705,48 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task DisableShareLink_ByTheWorkspaceOwner_TurnsTheLinkOff_AndWritesOneAuditRow()
+    {
+        var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
+        var link = await SeedShareLinkAsync(accountId, workspaceId, BoardKind, boardId, ownerId);
+
+        using var provider = CreateProvider(accountId, ownerId, workspaceId);
+        var result = await SendAsync<Result>(provider, new DisableShareLinkCommand(BoardKind, boardId, link));
+
+        result.Succeeded.Should().BeTrue();
+        (await ShareLinkStatusAsync(link)).Should().Be(ShareLinkStatus.Disabled);
+        await AssertAuditRecordedAsync(workspaceId, ownerId, "DisableShareLink");
+    }
+
+    [Fact]
+    public async Task DisableShareLink_ByABoardManagerWhoIsNotAWorkspaceAdmin_TurnsTheLinkOff()
+    {
+        var (accountId, ownerId, workspaceId, boardId, managerId) = await SeedBoardStackAsync();
+        await SeedResourcePermissionAsync(accountId, workspaceId, BoardKind, boardId, managerId, PermissionLevel.Manager);
+        var link = await SeedShareLinkAsync(accountId, workspaceId, BoardKind, boardId, ownerId);
+
+        using var provider = CreateProvider(accountId, managerId, workspaceId);
+        var result = await SendAsync<Result>(provider, new DisableShareLinkCommand(BoardKind, boardId, link));
+
+        result.Succeeded.Should().BeTrue("the share action on the board, not workspace Admin, authorizes the revoke (decided 2026-10-30)");
+        (await ShareLinkStatusAsync(link)).Should().Be(ShareLinkStatus.Disabled);
+        await AssertAuditRecordedAsync(workspaceId, managerId, "DisableShareLink");
+    }
+
+    [Fact]
+    public async Task DisableShareLink_ByAStranger_IsNotFound_AndTheLinkStaysActive()
+    {
+        var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
+        var link = await SeedShareLinkAsync(accountId, workspaceId, BoardKind, boardId, ownerId);
+
+        using var provider = CreateProvider(accountId, Guid.NewGuid(), workspaceId);
+        var act = () => SendAsync<Result>(provider, new DisableShareLinkCommand(BoardKind, boardId, link));
+
+        await act.Should().ThrowAsync<AppNotFound>("a person with no access to the board gets the same NotFound as a missing link");
+        (await ShareLinkStatusAsync(link)).Should().Be(ShareLinkStatus.Active);
+    }
+
+    [Fact]
     public async Task CreateShareLink_IsRefused_WhileWorkspaceShareLinksAreOff_AndWritesNothing()
     {
         var (accountId, ownerId, workspaceId, boardId, _) = await SeedBoardStackAsync();
@@ -1626,7 +1754,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         using var provider = CreateProvider(accountId, ownerId, workspaceId);
         var act = () => SendAsync<Result<CreateShareLinkResponse>>(provider,
-            new CreateShareLinkCommand(BoardKind, boardId, "Viewer"));
+            new CreateShareLinkCommand(BoardKind, boardId, "Viewer", DateTime.UtcNow.AddDays(7)));
 
         (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
             .Which.RuleCode.Should().Be("ShareLinksTurnedOff");
@@ -1643,7 +1771,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
 
         using var provider = CreateProvider(accountId, ownerId, workspaceId);
         var result = await SendAsync<Result<CreateShareLinkResponse>>(provider,
-            new CreateShareLinkCommand(BoardKind, boardId, "Viewer"));
+            new CreateShareLinkCommand(BoardKind, boardId, "Viewer", DateTime.UtcNow.AddDays(7)));
 
         result.Succeeded.Should().BeTrue();
         (await ShareLinkStatusAsync(result.Data.ShareLink.Id)).Should().Be(ShareLinkStatus.Active);

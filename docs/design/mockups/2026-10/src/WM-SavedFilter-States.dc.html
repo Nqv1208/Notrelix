@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Bộ lọc đã lưu: trạng thái</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--side:#EFF1F4;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--sel:#EEF4FD;--danger:#C42340;--danger-soft:#FCEBEE;--ok:#1E7A4C;--ok-soft:#E5F4EC;--warn-text:#8A5A00;--warn-soft:#FDF3DC;--pop-shadow:0 12px 32px rgba(15,23,42,.16);font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn{height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.txt{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.sm{height:28px;padding:0 10px;font-size:12.5px}
+.inp{height:34px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);padding:0 10px;font:inherit;font-size:13.5px;color:var(--text);box-sizing:border-box}
+.inp.focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.inp.err{border-color:var(--danger)}
+.chip{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.c-gray{background:#EEF0F4;color:#4B5263}.c-blue{background:#E6F0FB;color:#245BA6}.c-amber{background:#FBF1D6;color:#7A5810}.c-green{background:#E5F4EC;color:#1E6A44}.c-violet{background:#F0E9FB;color:#6A3DB3}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.cap{font-size:12px;font-weight:600;color:var(--meta);margin:0}
+.state{font-size:12px;font-weight:600;color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:3px 10px;align-self:flex-start}
+h1{margin:0;font-size:22px;line-height:1.3;font-weight:650;letter-spacing:-0.01em}
+h2{margin:0;font-size:16px;font-weight:650}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.dlg{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--pop-shadow);padding:22px;display:flex;flex-direction:column;gap:16px;box-sizing:border-box}
+.tpl{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:10px;border:1px solid var(--line2);background:var(--panel);text-align:left;font:inherit;color:var(--text);cursor:pointer;box-sizing:border-box;min-width:0}
+.tpl[aria-checked="true"]{border-color:var(--accent);background:var(--sel);box-shadow:0 0 0 1px var(--accent)}
+.tpl b{font-size:13.5px;font-weight:600}
+.tpl span.d{font-size:12px;color:var(--meta)}
+.tpl .row{display:flex;gap:4px;flex-wrap:wrap}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.lbl{font-size:12.5px;font-weight:600;color:var(--muted)}
+.nav{height:34px;display:flex;align-items:center;gap:9px;padding:0 10px;border-radius:7px;color:var(--muted);font-size:13.5px;font-weight:500}
+.nav.on{background:var(--panel);box-shadow:0 0 0 1px var(--line);font-weight:600;color:var(--text)}
+.nav small{margin-left:auto;font-size:12px;color:var(--meta)}
+.iconbtn{width:30px;height:30px;border-radius:7px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) 120px 200px;align-items:center;gap:10px;min-height:52px;padding:0 14px;border-top:1px solid var(--line)}
+.chk{width:16px;height:16px;border-radius:4px;background:var(--accent);display:grid;place-items:center;flex:none}
+.bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel)}
+.pill{height:30px;padding:0 10px;border-radius:999px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);font:inherit;font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.pill.on{background:var(--accent-soft);border-color:#B9D3F4;color:var(--accent-text)}
+.fchip{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 4px 0 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent-text);font-size:12.5px;font-weight:600}
+.fchip i{width:18px;height:18px;border-radius:999px;display:grid;place-items:center}
+.menu{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--pop-shadow);padding:6px;display:flex;flex-direction:column;gap:2px;box-sizing:border-box}
+.mh{font-size:12px;font-weight:600;color:var(--meta);padding:8px 10px 4px}
+.mrow{display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:44px;padding:4px 8px 4px 10px;border-radius:8px}
+.mrow.hov{background:var(--hover)}
+.mrow.cur{background:var(--sel)}
+.mrow b{font-size:13.5px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow small{font-size:12px;color:var(--meta);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acts{display:flex;gap:2px;align-items:center}
+.sep{height:1px;background:var(--line);margin:4px 0}
+.radio{width:16px;height:16px;border-radius:999px;border:1.5px solid var(--line2);display:grid;place-items:center;flex:none;box-sizing:border-box}
+.radio.on{border-color:var(--accent)}
+.radio.on:after{content:"";width:8px;height:8px;border-radius:999px;background:var(--accent)}
+.toast{display:flex;align-items:center;gap:12px;background:#161A21;color:#fff;border-radius:10px;padding:10px 12px 10px 14px;font-size:13px;box-shadow:var(--pop-shadow)}
+.toast button{background:transparent;border:0;color:#9CC4F7;font:inherit;font-weight:600;cursor:pointer;padding:0 4px}
+.tile{display:flex;flex-direction:column;gap:10px}
+</style>
+</helmet>
+<div class="nx" style="width: 1440px; height: 1000px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 6px"><h1>Bộ lọc đã lưu · các trạng thái</h1><p style="margin: 0; color: var(--meta); font-size: 13.5px; max-width: 92ch">Trống, riêng tư và chia sẻ, không có quyền chia sẻ, đang tải, tải lỗi, xoá có hoàn tác.</p></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; align-items: start">
+<div class="tile"><span class="state">Chưa có bộ lọc nào</span>
+<div class="menu" role="menu" aria-label="Bộ lọc đã lưu, trống"><div style="padding: 18px 14px; text-align: center"><b style="display: block; font-size: 13.5px; font-weight: 600">Chưa có bộ lọc nào</b><span style="font-size: 12.5px; color: var(--meta)">Lọc việc rồi bấm "Lưu bộ lọc" để dùng lại lần sau.</span></div></div></div>
+<div class="tile"><span class="state">Riêng tư và chia sẻ · cách nhận ra</span>
+<div class="menu" role="menu" aria-label="Bộ lọc đã lưu">
+<div class="mrow" role="menuitem"><span style="color: var(--meta); display: grid; place-items: center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span style="min-width: 0"><b>Việc gấp tuần này</b><small>Chỉ mình tôi</small></span><span style="display: flex; align-items: center; gap: 4px"><span class="chip c-gray">Riêng tôi</span></span></div>
+<div class="mrow" role="menuitem"><span style="color: var(--meta); display: grid; place-items: center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 5a3 3 0 0 1 0 6M18 15c2 .5 3 2 3 5"/></svg></span><span style="min-width: 0"><b>Sprint hiện tại</b><small>Hà Nguyễn tạo</small></span><span style="display: flex; align-items: center; gap: 4px"><span class="chip c-blue">Chia sẻ</span></span></div>
+</div></div>
+<div class="tile"><span class="state" style="background: var(--hover2); color: var(--muted)">Không có quyền chia sẻ · người chỉ xem</span>
+<div class="menu" role="menu" aria-label="Bộ lọc đã lưu, chỉ xem">
+<div class="mrow" role="menuitem"><span style="color: var(--meta); display: grid; place-items: center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 5a3 3 0 0 1 0 6M18 15c2 .5 3 2 3 5"/></svg></span><span style="min-width: 0"><b>Sprint hiện tại</b><small>Hà Nguyễn tạo</small></span><span style="display: flex; align-items: center; gap: 4px"><span class="chip c-blue">Chia sẻ</span></span></div>
+<div style="padding: 8px 10px 10px; font-size: 12.5px; color: var(--meta)">Bạn chỉ xem board này nên chưa lưu hay chia sẻ được bộ lọc. Vẫn dùng được các bộ lọc đã chia sẻ.</div>
+</div></div>
+<div class="tile"><span class="state">Đang tải</span>
+<div role="status" aria-label="Đang tải bộ lọc đã lưu" class="menu"><div style="height: 40px; border-radius: 8px; background: var(--hover2)"></div><div style="height: 40px; border-radius: 8px; background: var(--hover2)"></div></div></div>
+<div class="tile"><span class="state" style="background: var(--danger-soft); color: var(--danger)">Tải lỗi</span>
+<div class="menu" role="alert"><div style="display: flex; align-items: flex-start; gap: 8px; padding: 10px; font-size: 12.5px; color: var(--danger)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span style="flex: 1">Chưa tải được bộ lọc đã lưu. Bộ lọc hiện tại của bạn vẫn dùng được.</span></div><button class="btn sm" style="margin: 0 10px 8px; align-self: flex-start"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg> Thử lại</button></div></div>
+<div class="tile"><span class="state" style="background: var(--danger-soft); color: var(--danger)">Không còn quyền · bộ lọc đã bị gỡ</span>
+<div class="menu" role="alert"><div style="display: flex; align-items: flex-start; gap: 8px; padding: 10px; font-size: 12.5px; color: var(--danger)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span style="flex: 1">Bộ lọc này không còn nữa hoặc bạn không còn thấy nó. Danh sách đã được làm mới.</span></div></div></div>
+<div class="tile" style="grid-column: span 2"><span class="state" style="background: var(--ok-soft); color: var(--ok)">Xoá bộ lọc · hoàn tác ngay</span>
+<div class="toast" role="status"><span style="flex: 1">Đã xoá bộ lọc <b>Chờ tôi duyệt</b></span><button>Hoàn tác</button></div>
+<p style="margin: 0; font-size: 12.5px; color: var(--meta)">Xoá là xoá mềm. Hoàn tác khôi phục đúng tên, điều kiện và chế độ chia sẻ. Xoá bộ lọc đang áp dụng thì thanh lọc giữ nguyên các chip.</p></div>
+<div class="tile"><span class="state">Đổi tên tại chỗ</span>
+<div class="menu" role="menu"><div class="mrow cur" style="grid-template-columns: minmax(0, 1fr) auto"><input class="inp focus" value="Việc gấp tuần này" aria-label="Tên mới của bộ lọc" style="height: 32px"><span class="acts"><button class="btn pri sm">Lưu</button><button class="btn txt sm">Huỷ</button></span></div></div></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

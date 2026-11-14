@@ -58,16 +58,21 @@ public class CreateBoardItemLinkCommandHandler(
         if (sourceItem.BoardId != targetItem.BoardId)
             throw new BusinessRuleException("Source and target items must belong to the same board.");
 
-        // The same pair is linked once: a repeat of the same relation returns the link that exists.
-        var existing = (await context.BoardItemLinks
-            .Where(l => l.SourceItemId == sourceId && l.Target.ResourceId == targetId)
+        // An unordered pair is linked once: the same relation again returns that link, another relation changes its kind
+        // and keeps its id.
+        var current = (await context.BoardItemLinks
+            .Where(l => (l.SourceItemId == sourceId && l.Target.ResourceId == targetId)
+                || (l.SourceItemId == targetId && l.Target.ResourceId == sourceId))
             .ToListAsync(cancellationToken))
-            .FirstOrDefault(l => l.LinkType == linkType);
-        if (existing is not null)
-            return Result<Guid>.Success(existing.Id);
+            .FirstOrDefault(l => l.LinkType != BoardItemLinkType.Subtask);
+        if (current is not null
+            && current.LinkType == linkType
+            && (linkType == BoardItemLinkType.Reference || current.SourceItemId == sourceId))
+            return Result<Guid>.Success(current.Id);
 
         if (linkType == BoardItemLinkType.Dependency)
         {
+            // The pair's own waits-on row stays in the check: turning "A waits on B" into "B waits on A" is a loop.
             // Serialize waits-on writes per board so two opposite links cannot both pass the check.
             await scopeLock.AcquireAsync(new WorkOrderingScope(WorkOrderingScopeKind.ItemLinks, sourceItem.BoardId), cancellationToken);
 
@@ -91,6 +96,12 @@ public class CreateBoardItemLinkCommandHandler(
         var workspaceId = requestContext.RequireWorkspaceId();
 
         var target = ResourceRef.Create(ResourceKind.Create("work-management.board-item"), targetId, workspaceId);
+
+        if (current is not null)
+        {
+            current.ChangeKind(sourceId, target, linkType);
+            return Result<Guid>.Success(current.Id);
+        }
 
         var link = BoardItemLink.Create(
             accountId,

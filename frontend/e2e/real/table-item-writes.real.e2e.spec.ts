@@ -215,6 +215,61 @@ test("a member renames an item in the table, Escape keeps the old title, and a r
   ).toBe(`${s.unique} by them`);
 });
 
+test("a title that create took can be renamed shorter, and one over the limit is refused under the editor with the typed text kept", async ({
+  page,
+}) => {
+  const s = await scene(page, "Row title limit");
+  // Create takes up to 500 characters: a 300-character title is a title the rename must take too.
+  const long = `${s.unique} ${"a".repeat(300 - s.unique.length - 1)}`;
+  expect(
+    (
+      await apiWrite(page, "PATCH", `/board-items/${s.item.id}`, {
+        title: long,
+        expectedVersion: s.item.version,
+      })
+    ).status,
+  ).toBeLessThan(300);
+  const row = await openRow(page, s);
+  const draftName = `Edit title of ${s.item.itemKey}`;
+
+  await row.getByRole("button", { name: new RegExp(s.unique) }).dblclick();
+  const input = page.getByRole("textbox", { name: draftName });
+  await expect(input).toHaveAttribute("maxlength", "500");
+  const shorter = `${s.unique} ${"b".repeat(250 - s.unique.length - 1)}`;
+  const accepted = itemWriteAnswer(page, s.item.id, "PATCH");
+  await input.fill(shorter);
+  await input.press("Enter");
+  expect((await accepted).status()).toBeLessThan(300);
+  expect(
+    (await apiRead<ItemRead>(page, `/board-items/${s.item.id}`)).name,
+  ).toBe(shorter);
+
+  // Over the limit: the browser stops typing at 500, so a paste past it is made by lifting the attribute.
+  await row.getByRole("button", { name: new RegExp(s.unique) }).dblclick();
+  const over = page.getByRole("textbox", { name: draftName });
+  await over.evaluate((element) => element.removeAttribute("maxlength"));
+  const tooLong = `${s.unique} ${"c".repeat(501 - s.unique.length - 1)}`;
+  const refused = itemWriteAnswer(page, s.item.id, "PATCH");
+  await over.fill(tooLong);
+  await over.press("Enter");
+  expect((await refused).status()).toBe(400);
+  await expect(page.getByRole("alert")).toContainText(
+    "A title takes at most 500 characters",
+  );
+  await expect(over).toHaveValue(tooLong);
+  await expect(page.getByText(/Couldn.t save the change to/)).toHaveCount(0);
+  expect(
+    (await apiRead<ItemRead>(page, `/board-items/${s.item.id}`)).name,
+  ).toBe(shorter);
+
+  // Escape drops the refused text and the old title stays.
+  await over.press("Escape");
+  await expect(over).toBeHidden();
+  await expect(
+    row.getByRole("button", { name: new RegExp(s.unique) }),
+  ).toHaveAttribute("title", shorter);
+});
+
 test("a member changes an item's status in the table, Done completes it, and a status change that lost the race is refused and names who won", async ({
   browser,
   page,

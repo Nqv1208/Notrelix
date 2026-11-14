@@ -51,6 +51,47 @@ export const itemStatesOperations = [
     },
   }),
 
+  defineMockOperation<{ boardId: string }, never, unknown>({
+    id: "wm.boardItems.archived",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.Archived",
+    },
+    method: "GET",
+    route: "/boards/:boardId/items/archived",
+    async handle({ params, store, request }) {
+      if (!canWriteBoardItems(params.boardId, store)) return forbidden();
+      const url = new URL(request.url);
+      const term = (url.searchParams.get("q") ?? "").trim().toLowerCase();
+      const all = store
+        .getArchivedCards(params.boardId)
+        .filter(
+          (card) =>
+            !term ||
+            card.title.toLowerCase().includes(term) ||
+            (card.itemKey ?? "").toLowerCase().includes(term),
+        );
+      const start = Number(url.searchParams.get("cursor") ?? 0) || 0;
+      return ok({
+        items: all.slice(start, start + 50).map((card) => ({
+          id: card.id,
+          name: card.title,
+          itemKey: card.itemKey ?? null,
+          groupId: card.listId,
+          archivedAt: card.archivedAt ?? "",
+          archivedBy: card.archivedByUserId ?? null,
+          archivedByName: card.archivedByUserId
+            ? (store.getUser(card.archivedByUserId)?.name ?? null)
+            : null,
+          subItemCount: store.getChildCards(card.id).length,
+          version: card.version ?? 1,
+        })),
+        nextCursor: start + 50 < all.length ? String(start + 50) : null,
+        total: all.length,
+      });
+    },
+  }),
+
   defineMockOperation<{ id: string }, never, void>({
     id: "itemStates.restore",
     contract: gap,

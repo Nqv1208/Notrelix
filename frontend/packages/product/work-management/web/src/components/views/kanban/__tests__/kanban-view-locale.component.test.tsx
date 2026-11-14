@@ -57,6 +57,8 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
       remove: vi.fn(),
       restore: vi.fn(),
     }),
+    // The board's time zone is its workspace's; these tests read no settings.
+    useBoardTimeZoneSource: () => ({ timeZone: undefined, isDefault: false }),
     // The member's own view state: nothing saved, nothing persisted by these tests.
     useBoardPreference: () => ({
       criteria: undefined,
@@ -115,6 +117,7 @@ vi.mock("@notrelix/work-management-state", async (importOriginal) => {
     useWorkspaceBoards: () => ({ data: [] }),
     useBoardTrash: () => ({ entries: [], restore: vi.fn() }),
     useUpdateCard: mutation,
+    useToggleCardLabel: mutation,
     useCreateGroup: mutation,
     useAddFieldOption: () => ({ mutate: vi.fn(), isPending: false }),
     useUpdateFieldOption: mutation,

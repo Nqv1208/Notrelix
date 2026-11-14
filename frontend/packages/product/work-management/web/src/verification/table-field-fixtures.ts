@@ -78,6 +78,7 @@ export const TABLE_CUSTOM_FIELDS: readonly FieldDefinition[] = [
     id: "field-reviewer",
     name: "Người nghiệm thu",
     fieldType: "person",
+    multiple: true,
   },
 ].map((field, index) => ({
   options: [],
@@ -149,6 +150,7 @@ export function tableFieldEditing(
     onRetry: noop,
     onKeepMine: noop,
     onUseTheirs: noop,
+    onReloadSchema: noop,
   };
 }
 

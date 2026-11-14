@@ -33,6 +33,45 @@ public class CreateBoardItemLinkTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
+    public async Task Handle_AnotherRelationForTheSamePair_ChangesTheKindAndKeepsTheLink()
+    {
+        var a = CreateBoardItem();
+        var b = CreateBoardItem(boardId: a.BoardId);
+        SetupBoardItems(a, b);
+        var link = BoardItemLink.Create(
+            TestAccountId, TestWorkspaceId, a.BoardId, a.Id,
+            ResourceRef.Create(ResourceKind.Create("work-management.board-item"), b.Id, TestWorkspaceId),
+            BoardItemLinkType.Reference, TestUserId, TestNow);
+        SetupBoardItemLinks(link);
+
+        var result = await _handler.Handle(new CreateBoardItemLinkCommand(a.Id, b.Id, "blocks"), CancellationToken.None);
+
+        result.Data.Should().Be(link.Id);
+        link.LinkType.Should().Be(BoardItemLinkType.Dependency);
+        link.SourceItemId.Should().Be(b.Id);
+        link.Target.ResourceId.Should().Be(a.Id);
+    }
+
+    [Fact]
+    public async Task Handle_TheSameRelationAgain_ReturnsTheLinkWithoutChangingIt()
+    {
+        var a = CreateBoardItem();
+        var b = CreateBoardItem(boardId: a.BoardId);
+        SetupBoardItems(a, b);
+        var link = BoardItemLink.Create(
+            TestAccountId, TestWorkspaceId, a.BoardId, b.Id,
+            ResourceRef.Create(ResourceKind.Create("work-management.board-item"), a.Id, TestWorkspaceId),
+            BoardItemLinkType.Reference, TestUserId, TestNow);
+        SetupBoardItemLinks(link);
+
+        var result = await _handler.Handle(new CreateBoardItemLinkCommand(a.Id, b.Id, "related"), CancellationToken.None);
+
+        result.Data.Should().Be(link.Id);
+        link.SourceItemId.Should().Be(b.Id);
+        link.LinkType.Should().Be(BoardItemLinkType.Reference);
+    }
+
+    [Fact]
     public async Task Handle_SourceItemNotFound_ThrowsNotFoundException()
     {
         var targetItem = CreateBoardItem();

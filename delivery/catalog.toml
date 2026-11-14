@@ -17,13 +17,13 @@ release_on_runtime_change = true
 context = "backend"
 dockerfile = "backend/Dockerfile"
 image_name = "notrelix-backend"
-compose_service = "backend"
+compose_service = "backend-api"
 deploy_env_var = "NOTRELIX_BACKEND_IMAGE"
 runtime_port = 8000
 health_path = "/health/live"
 health_scheme = "http"
 build_arg_locks = { DOTNET_SDK_IMAGE = "dotnet-sdk", DOTNET_RUNTIME_IMAGE = "dotnet-aspnet" }
-smoke_dependency_locks = { postgres = "postgres", redis = "redis", rabbitmq = "rabbitmq" }
+smoke_dependency_locks = { postgres = "postgres", redis = "redis", rabbitmq = "rabbitmq", pgbouncer = "pgbouncer" }
 
 [components.web]
 provider = "frontend-host"

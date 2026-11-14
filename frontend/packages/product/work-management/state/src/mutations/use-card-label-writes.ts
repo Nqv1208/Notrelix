@@ -51,3 +51,35 @@ export function useCardLabelWrites(
 
   return { mutate: toggle.mutate, createAndApply };
 }
+
+/**
+ * Puts a board label on any card of the board, or takes it off: for the board's quick edit, which works on
+ * the card under the pointer rather than on one open item. The card and the board are read again once the server
+ * has answered.
+ */
+export function useToggleCardLabel(boardId: string, workspaceId: string) {
+  const queryClient = useQueryClient();
+  const { labels } = useWorkManagementServices();
+  return useMutation({
+    mutationFn: ({
+      cardId,
+      labelId,
+      on,
+    }: {
+      cardId: string;
+      labelId: string;
+      on: boolean;
+    }) =>
+      on
+        ? labels.addLabelToCard(cardId, labelId)
+        : labels.removeLabelFromCard(cardId, labelId),
+    onSettled: (_data, _error, { cardId }) => {
+      void queryClient.invalidateQueries({
+        queryKey: wmQueryKeys.cardDetail(workspaceId, cardId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: wmQueryKeys.fullBoard(workspaceId, boardId),
+      });
+    },
+  });
+}

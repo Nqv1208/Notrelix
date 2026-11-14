@@ -30,11 +30,14 @@ import {
   PopoverAnchor,
   PopoverContent,
   Skeleton,
+  useIsMobile,
 } from "@notrelix/ui-web";
 import {
   fillBoardShareCopy as fill,
   type BoardShareCopy,
 } from "./board-share.copy";
+import { BoardShareSheet } from "./board-share-sheet";
+import { MARK_TONE, PERSON_TONE } from "./board-share-tones";
 import type {
   BoardShareView,
   ShareImpactPerson,
@@ -54,23 +57,6 @@ import type {
  * them (permission menu, switch to Private, history) are drawn only when a
  * host gives the handler.
  */
-
-const PERSON_TONE: Record<SharePersonView["tone"], string> = {
-  blue: "bg-identity-blue text-identity-blue-foreground",
-  coral: "bg-identity-coral text-identity-coral-foreground",
-  gold: "bg-identity-gold text-identity-gold-foreground",
-  sage: "bg-identity-sage text-identity-sage-foreground",
-  ember: "bg-identity-ember text-identity-ember-foreground",
-};
-
-const MARK_TONE: Record<string, string> = {
-  blue: "bg-mark-blue text-mark-blue-foreground",
-  gold: "bg-mark-gold text-mark-gold-foreground",
-  coral: "bg-mark-coral text-mark-coral-foreground",
-  sage: "bg-mark-sage text-mark-sage-foreground",
-  crimson: "bg-mark-crimson text-mark-crimson-foreground",
-  violet: "bg-mark-violet text-mark-violet-foreground",
-};
 
 const FOCUS = "outline-none focus-visible:ring-2 focus-visible:ring-focus-ring";
 const BTN =
@@ -108,6 +94,17 @@ function Avatar({
 }
 
 /** A person the Board can be shared with. */
+/** A pending resource invitation of this Board (`Workspaces.Invitations.ListResourceInvitations`). */
+export interface PendingGuestInvitation {
+  readonly id: string;
+  readonly email: string;
+  /** Whether the signed-in person sent it (only the issuer may resend or revoke it). */
+  readonly issuedByYou: boolean;
+  readonly invitedByName: string;
+  /** ISO instant the invitation expires. */
+  readonly expiresAt: string;
+}
+
 export interface ShareCandidate {
   readonly id: string;
   readonly name: string;
@@ -119,7 +116,10 @@ export interface BoardShareDialogSurfaceProps {
   readonly open: boolean;
   readonly view: BoardShareView;
   readonly onClose: () => void;
-  readonly onCopyLink: () => void;
+  /** Copies the link; `silent` leaves the confirmation to the caller (the phone sheet draws its own toast). */
+  readonly onCopyLink: (options?: {
+    readonly silent?: boolean;
+  }) => Promise<boolean> | void;
   /** Change a person's permission; absent: the level buttons are inert. */
   readonly onChangeLevel?: (rowId: string, level: ShareLevel) => void;
   readonly onRemove?: (rowId: string) => void;
@@ -140,7 +140,24 @@ export interface BoardShareDialogSurfaceProps {
   readonly onInvite?: (
     userId: string,
     level: ShareLevel,
-  ) => Promise<void> | void;
+  ) => Promise<boolean | void> | boolean | void;
+  /**
+   * Invites an outsider by email as a Guest of this Board (UC-WM-A19): a Guest's level is Viewer (GOV-030).
+   * Absent: an email typed in the add field is not offered as an invitation.
+   */
+  readonly onInviteGuest?: (
+    email: string,
+  ) => Promise<boolean | void> | boolean | void;
+  /** The Board's pending resource invitations (UC-WM-A20); absent or empty: no list. */
+  readonly pendingInvitations?: readonly PendingGuestInvitation[];
+  /** Sends the invitation again (a new link, the old one stops working); absent: no action. */
+  readonly onResendInvitation?: (
+    invitationId: string,
+  ) => Promise<boolean | void> | boolean | void;
+  /** Revokes the invitation: its link stops working; absent: no action. */
+  readonly onRevokeInvitation?: (
+    invitationId: string,
+  ) => Promise<boolean | void> | boolean | void;
   /** The history; absent: its link is inert. */
   readonly log?: readonly ShareLogEntry[] | null;
   /** People the switch to Private would cut off (stories). */
@@ -190,12 +207,15 @@ function Strong({ text }: { text: string }) {
 
 export function BoardShareDialogSurface(props: BoardShareDialogSurfaceProps) {
   const { copy, view, open } = props;
+  const phone = useIsMobile();
   const [screen, setScreen] = useState(props.initialView ?? "share");
   const [menuFor, setMenuFor] = useState<string | null>(
     props.initialLevelMenu ?? null,
   );
   const [managerToken, setManagerToken] = useState(0);
   const title = fill(copy.title, { name: view.boardTitle });
+  // Under 768 px the dialog is the bottom sheet of Final-M-Share, a layout of its own.
+  if (phone) return <BoardShareSheet {...props} />;
   const closeButton = (label: string) => (
     <button
       data-f="ib"
@@ -313,6 +333,10 @@ function ShareBody({
   onChangeGeneral,
   candidates,
   onInvite,
+  onInviteGuest,
+  pendingInvitations,
+  onResendInvitation,
+  onRevokeInvitation,
   log,
   menuFor,
   setMenuFor,
@@ -347,14 +371,23 @@ function ShareBody({
         {notice ? (
           <ShareNotice notice={notice} copy={copy} onAddManager={addManager} />
         ) : null}
-        {candidates && onInvite ? (
+        {pendingInvitations && pendingInvitations.length > 0 ? (
+          <PendingInvitations
+            copy={copy}
+            rows={pendingInvitations}
+            onResend={onResendInvitation}
+            onRevoke={onRevokeInvitation}
+          />
+        ) : null}
+        {(candidates && onInvite) || onInviteGuest ? (
           <AddPeople
             copy={copy}
-            candidates={candidates}
+            candidates={candidates ?? []}
             onInvite={onInvite}
+            onInviteGuest={onInviteGuest}
             managerToken={managerToken}
           />
-        ) : (
+        ) : view.canManage ? (
           <div data-f="add" className="flex gap-2 max-md:flex-wrap">
             <label
               data-f="in"
@@ -402,7 +435,7 @@ function ShareBody({
               {copy.add.invite}
             </button>
           </div>
-        )}
+        ) : null}
 
         <div>
           <div
@@ -472,35 +505,39 @@ function ShareBody({
                 </span>
               ) : null}
             </span>
-            <button
-              data-f="lvl-plain"
-              type="button"
-              aria-haspopup="listbox"
-              aria-expanded="false"
-              aria-disabled={
-                onChangeGeneral && general.kind !== "private" ? undefined : true
-              }
-              title={onChangeGeneral ? undefined : g.changeUnavailable}
-              onClick={
-                onChangeGeneral && general.kind !== "private"
-                  ? () => {
-                      onChangeGeneral("private");
-                      setScreen("private");
-                    }
-                  : undefined
-              }
-              className={cn(
-                "ml-auto box-border inline-flex h-[30px] max-md:h-11 items-center gap-1.5 rounded-[9px] border border-transparent bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:border-line-strong aria-disabled:cursor-default dark:bg-card",
-                FOCUS,
-              )}
-            >
-              {g.change}
-              <ChevronDown
-                aria-hidden="true"
-                className="size-[13px] text-meta-foreground"
-                strokeWidth={1.8}
-              />
-            </button>
+            {view.canManage ? (
+              <button
+                data-f="lvl-plain"
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-disabled={
+                  onChangeGeneral && general.kind !== "private"
+                    ? undefined
+                    : true
+                }
+                title={onChangeGeneral ? undefined : g.changeUnavailable}
+                onClick={
+                  onChangeGeneral && general.kind !== "private"
+                    ? () => {
+                        onChangeGeneral("private");
+                        setScreen("private");
+                      }
+                    : undefined
+                }
+                className={cn(
+                  "ml-auto box-border inline-flex h-[30px] max-md:h-11 items-center gap-1.5 rounded-[9px] border border-transparent bg-popover px-2.5 text-compact leading-[1.45] font-medium whitespace-nowrap text-foreground hover:border-line-strong aria-disabled:cursor-default dark:bg-card",
+                  FOCUS,
+                )}
+              >
+                {g.change}
+                <ChevronDown
+                  aria-hidden="true"
+                  className="size-[13px] text-meta-foreground"
+                  strokeWidth={1.8}
+                />
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -740,23 +777,23 @@ function ShareBody({
           >
             {copy.footer.log}
           </button>
-        ) : (
+        ) : view.canManage ? (
           <InertHint reason={copy.footer.logUnavailable}>
             <button
               data-f="logl"
               type="button"
               aria-disabled="true"
-              className="cursor-default rounded-sm border-0 bg-transparent p-0 text-crumb leading-[1.45] font-medium text-state-selected-foreground"
+              className="cursor-default rounded-sm border-0 bg-transparent p-0 text-crumb leading-[1.45] font-medium text-state-selected-foreground max-md:inline-flex max-md:min-h-11 max-md:items-center"
             >
               {copy.footer.log}
             </button>
           </InertHint>
-        )}
+        ) : null}
         <span className="flex-1" />
         <button
           data-f="btn"
           type="button"
-          onClick={onCopyLink}
+          onClick={() => void onCopyLink()}
           className={cn(BTN, FOCUS)}
         >
           <Link2 aria-hidden="true" className="size-4" strokeWidth={1.8} />
@@ -776,15 +813,96 @@ function ShareBody({
 }
 
 /** The add field: pick a workspace member, choose the permission, give it. */
+/**
+ * The Board's pending guest invitations (UC-WM-A20). Only the person who sent one may resend or revoke it
+ * (the server's rule); the other rows say so instead of offering the actions.
+ */
+function PendingInvitations({
+  copy,
+  rows,
+  onResend,
+  onRevoke,
+}: {
+  copy: BoardShareCopy;
+  rows: readonly PendingGuestInvitation[];
+  onResend?: (invitationId: string) => Promise<boolean | void> | boolean | void;
+  onRevoke?: (invitationId: string) => Promise<boolean | void> | boolean | void;
+}) {
+  return (
+    <section
+      data-f="pending"
+      aria-label={fill(copy.pending.title, { count: rows.length })}
+    >
+      <div className="mb-1.5 text-xs leading-[1.45] font-semibold text-meta-foreground">
+        {fill(copy.pending.title, { count: rows.length })}
+      </div>
+      <ul className="m-0 flex list-none flex-col gap-1 p-0">
+        {rows.map((row) => {
+          const enabled = row.issuedByYou;
+          return (
+            <li
+              key={row.id}
+              className="flex flex-wrap items-center gap-2 rounded-[9px] border border-line-strong px-2.5 py-2 text-nav"
+            >
+              <span className="min-w-0 flex-1 truncate text-foreground">
+                {row.email}
+              </span>
+              <span className="text-compact text-meta-foreground">
+                {fill(copy.pending.invitedBy, {
+                  name: row.invitedByName,
+                  date: new Date(row.expiresAt).toLocaleDateString(),
+                })}
+              </span>
+              <button
+                type="button"
+                disabled={!enabled || !onResend}
+                title={enabled ? undefined : copy.pending.notIssuer}
+                onClick={() => void onResend?.(row.id)}
+                className={cn(
+                  BTN,
+                  FOCUS,
+                  "disabled:cursor-default disabled:opacity-60",
+                )}
+              >
+                {copy.pending.resend}
+              </button>
+              <button
+                type="button"
+                disabled={!enabled || !onRevoke}
+                title={enabled ? undefined : copy.pending.notIssuer}
+                onClick={() => void onRevoke?.(row.id)}
+                className={cn(
+                  BTN,
+                  FOCUS,
+                  "disabled:cursor-default disabled:opacity-60",
+                )}
+              >
+                {copy.pending.revoke}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function AddPeople({
   copy,
   candidates,
   onInvite,
+  onInviteGuest,
   managerToken,
 }: {
   copy: BoardShareCopy;
   candidates: readonly ShareCandidate[];
-  onInvite: (userId: string, level: ShareLevel) => Promise<void> | void;
+  onInvite?: (
+    userId: string,
+    level: ShareLevel,
+  ) => Promise<boolean | void> | boolean | void;
+  onInviteGuest?: (email: string) => Promise<boolean | void> | boolean | void;
   /** Bumped by "Add a Manager": the field takes the Manager level and focus. */
   managerToken: number;
 }) {
@@ -796,6 +914,8 @@ function AddPeople({
   }, [managerToken]);
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<ShareCandidate | null>(null);
+  // An outsider's email chosen to invite as a Guest (UC-WM-A19). A Guest is capped at Viewer (GOV-030).
+  const [guestEmail, setGuestEmail] = useState<string | null>(null);
   const [level, setLevel] = useState<ShareLevel>("edit");
   const [listOpen, setListOpen] = useState(false);
   const [levelOpen, setLevelOpen] = useState(false);
@@ -804,8 +924,25 @@ function AddPeople({
   const matches = candidates
     .filter((candidate) => candidate.name.toLowerCase().includes(needle))
     .slice(0, 6);
+  const typedEmail =
+    onInviteGuest && EMAIL_SHAPE.test(query.trim()) ? query.trim() : null;
+  const guestOffered = typedEmail !== null && matches.length === 0;
   const invite = async () => {
-    if (!picked || busy) return;
+    if (busy) return;
+    if (guestEmail && onInviteGuest) {
+      setBusy(true);
+      try {
+        const sent = await onInviteGuest(guestEmail);
+        if (sent !== false) {
+          setGuestEmail(null);
+          setQuery("");
+        }
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+    if (!picked || !onInvite) return;
     setBusy(true);
     try {
       await onInvite(picked.id, level);
@@ -829,14 +966,19 @@ function AddPeople({
         <input
           ref={field}
           role="combobox"
-          aria-expanded={listOpen && matches.length > 0}
+          aria-expanded={listOpen && (matches.length > 0 || guestOffered)}
           aria-controls="board-share-candidates"
           aria-autocomplete="list"
-          value={picked ? picked.name : query}
-          placeholder={copy.add.placeholder}
-          aria-label={copy.add.placeholder}
+          value={picked ? picked.name : (guestEmail ?? query)}
+          placeholder={
+            onInviteGuest ? copy.add.placeholderGuest : copy.add.placeholder
+          }
+          aria-label={
+            onInviteGuest ? copy.add.placeholderGuest : copy.add.placeholder
+          }
           onChange={(event) => {
             setPicked(null);
+            setGuestEmail(null);
             setQuery(event.target.value);
             setListOpen(true);
           }}
@@ -845,9 +987,12 @@ function AddPeople({
           onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
             if (event.key === "Enter") {
               event.preventDefault();
-              if (picked) void invite();
+              if (picked || guestEmail) void invite();
               else if (matches[0]) {
                 setPicked(matches[0]);
+                setListOpen(false);
+              } else if (guestOffered && typedEmail) {
+                setGuestEmail(typedEmail);
                 setListOpen(false);
               }
             }
@@ -855,12 +1000,35 @@ function AddPeople({
           className="h-full min-w-0 flex-1 border-0 bg-transparent text-nav text-foreground outline-none placeholder:text-meta-foreground"
         />
       </label>
-      {listOpen && !picked && matches.length > 0 ? (
+      {listOpen &&
+      !picked &&
+      !guestEmail &&
+      (matches.length > 0 || guestOffered) ? (
         <ul
           id="board-share-candidates"
           role="listbox"
           className="absolute top-[44px] left-0 z-10 m-0 flex max-h-[220px] w-[60%] list-none flex-col overflow-auto rounded-[9px] border border-line-strong bg-popover p-1 shadow-dialog dark:bg-card"
         >
+          {guestOffered && typedEmail ? (
+            <li role="option" aria-selected="false">
+              <button
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  setGuestEmail(typedEmail);
+                  setListOpen(false);
+                }}
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-[7px] border-0 bg-transparent px-2 py-1.5 text-left text-nav text-foreground hover:bg-state-hover-strong",
+                  FOCUS,
+                )}
+              >
+                <span className="truncate">
+                  {fill(copy.add.guestOption, { email: typedEmail })}
+                </span>
+              </button>
+            </li>
+          ) : null}
           {matches.map((candidate) => (
             <li key={candidate.id} role="option" aria-selected="false">
               <button
@@ -887,11 +1055,19 @@ function AddPeople({
         type="button"
         aria-haspopup="listbox"
         aria-expanded={levelOpen}
-        aria-label={fill(copy.add.level, { level: copy.levels[level] })}
+        disabled={guestEmail !== null}
+        title={guestEmail !== null ? copy.add.guestLevel : undefined}
+        aria-label={fill(copy.add.level, {
+          level: guestEmail !== null ? copy.levels.view : copy.levels[level],
+        })}
         onClick={() => setLevelOpen((open) => !open)}
-        className={cn(LEVEL, FOCUS)}
+        className={cn(
+          LEVEL,
+          FOCUS,
+          "disabled:cursor-default disabled:opacity-60",
+        )}
       >
-        {copy.levels[level]}
+        {guestEmail !== null ? copy.levels.view : copy.levels[level]}
         <ChevronDown
           aria-hidden="true"
           className="size-[13px] text-meta-foreground"
@@ -933,7 +1109,7 @@ function AddPeople({
       <button
         data-f="invite"
         type="button"
-        disabled={!picked || busy}
+        disabled={(!picked && guestEmail === null) || busy}
         onClick={() => void invite()}
         className={cn(
           BTN_PRIMARY,

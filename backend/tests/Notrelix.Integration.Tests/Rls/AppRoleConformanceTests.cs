@@ -154,7 +154,13 @@ public sealed class AppRoleConformanceTests : IAsyncLifetime
 
         var duplicate = await CallAsync(_fixture.AppConnectionString, c => c.PostAsJsonAsync("/api/v1/auth/register",
             new { email = "new-app-rls@example.com", password = Password, name = "Again" }));
-        duplicate.StatusCode.Should().Be(HttpStatusCode.BadRequest, "an existing address is reported through the boolean probe, not a row read");
+        duplicate.StatusCode.Should().Be(HttpStatusCode.OK,
+            "an existing address gets the neutral answer: it is told apart only by the boolean probe, never by status");
+        (await ScalarOwnerAsync("SELECT count(*) FROM identity.users WHERE normalized_email = 'new-app-rls@example.com'"))
+            .Should().Be("1", "the duplicate sign-up creates no second user");
+        (await ScalarOwnerAsync(
+            "SELECT count(*) FROM messaging.outbox_messages WHERE message_name = 'identity.registration-attempted-on-existing-account'"))
+            .Should().Be("1", "the credential scope lets the app role write the one tenantless notice event under RLS");
     }
 
     private async Task<string> ScalarOwnerAsync(string sql)

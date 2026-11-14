@@ -11,7 +11,7 @@ public static class ListBoardLaneItemsEndpoint
             .WithName("WorkManagement.BoardItems.ListLane")
             .Produces<BoardLaneItemPageDto>(StatusCodes.Status200OK, "application/json")
             .WithTags("WorkManagement.BoardItems")
-            .WithSummary("Get one page of a status lane's items under a filter and sort");
+            .WithSummary("Get one page of a lane's items under a filter, sort and grouping");
         return group;
     }
 
@@ -22,10 +22,13 @@ public static class ListBoardLaneItemsEndpoint
         int? limit,
         string? filter,
         string? sort,
+        string? q,
+        string? qMembers,
+        string? groupBy,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var page = await sender.Send(new ListBoardLaneItemsQuery(boardId, lane, cursor, limit, filter, sort), cancellationToken);
+        var page = await sender.Send(new ListBoardLaneItemsQuery(boardId, lane, cursor, limit, filter, sort, q, qMembers, groupBy), cancellationToken);
         return Results.Ok(page);
     }
 }

@@ -1,20 +1,26 @@
 import { useRef, type ReactNode } from "react";
-import { AlertCircle, ExternalLink, Loader2 } from "lucide-react";
+import { AlertCircle, ExternalLink, Loader2, Lock } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
+import type { StaleSchemaDetail } from "@notrelix/work-management-core";
 import {
   specOf,
   type ComputedValue,
   type FieldDefinition,
 } from "@notrelix/work-management-core";
-import { identityMarkClass } from "../../shared/item-display";
 import { fillTableCopy, type MainTableCopy } from "./main-table.copy";
+import type {
+  SystemCellColumn,
+  SystemCellConflict,
+} from "./table-cell-editors";
 import {
   AnchoredNote,
   CheckboxEditor,
   DateEditor,
   InlineInputEditor,
   LongTextEditor,
+  OptionChip,
   OptionEditor,
+  PersonMark,
   type EditorOption,
 } from "./table-field-editors";
 import {
@@ -26,7 +32,13 @@ import {
 
 /** The write state of one cell: saving, failed (the value typed is kept), or in conflict. */
 export interface CellWrite {
-  readonly status: "pending" | "error" | "conflict";
+  readonly status: "pending" | "error" | "conflict" | "schema" | "reloading";
+  /** What the board changed under the write (`schema`). */
+  readonly schema?: StaleSchemaDetail;
+  /** Who saved first (`conflict`), when the server named them. */
+  readonly byName?: string | null;
+  /** The refusal is "this field is required": nothing was stored and retrying cannot help. */
+  readonly required?: boolean;
   /** The value the person wrote; shown while the write has not settled. */
   readonly value: unknown;
 }
@@ -37,6 +49,8 @@ export interface TableFieldEditing {
   readonly canEdit: boolean;
   readonly members: readonly TableFieldMember[];
   readonly writeOf: (rowId: string, fieldId: string) => CellWrite | undefined;
+  /** Fields with a refused cell (a column the board changed): the header takes the danger colour. */
+  readonly refusedFieldIds?: ReadonlySet<string>;
   readonly onWrite: (
     rowId: string,
     fieldId: string,
@@ -46,6 +60,23 @@ export interface TableFieldEditing {
   readonly onRetry: (rowId: string, fieldId: string) => void;
   readonly onKeepMine: (rowId: string, fieldId: string) => void;
   readonly onUseTheirs: (rowId: string, fieldId: string) => void;
+  /** Reload the board's fields after a stale write; the unsaved value is dropped. */
+  readonly onReloadSchema: (rowId: string, fieldId: string) => void;
+  /**
+   * A title or due date write refused because someone else saved the item first: the built-in cell shows the
+   * same in-cell choice (UC-WM-B33). Absent = no conflict is open.
+   */
+  readonly systemConflictOf?: (
+    rowId: string,
+    column: SystemCellColumn,
+  ) => SystemCellConflict | undefined;
+  /** "Giữ giá trị của tôi" on a built-in cell: read the item again, then write the kept value on the newest version. */
+  readonly onSystemKeepMine?: (rowId: string, column: SystemCellColumn) => void;
+  /** "Dùng giá trị mới" on a built-in cell: drop the written value; the row already shows theirs. */
+  readonly onSystemUseTheirs?: (
+    rowId: string,
+    column: SystemCellColumn,
+  ) => void;
 }
 
 export interface TableFieldCellProps {
@@ -62,24 +93,7 @@ export interface TableFieldCellProps {
   onRetry: () => void;
   onKeepMine: () => void;
   onUseTheirs: () => void;
-}
-
-const CHIP_CLASS =
-  "inline-flex h-5.5 min-w-0 items-center gap-1.5 rounded-sm bg-state-hover px-2 text-micro font-semibold text-foreground";
-
-function OptionChip({ option }: { option: EditorOption }) {
-  return (
-    <span className={CHIP_CLASS}>
-      {option.color ? (
-        <span
-          aria-hidden="true"
-          className="size-2 shrink-0 rounded-full"
-          style={{ backgroundColor: option.color }}
-        />
-      ) : null}
-      <span className="truncate">{option.label}</span>
-    </span>
-  );
+  onReloadSchema: () => void;
 }
 
 /** At most two of a list, then "+N" that names the rest in its tooltip. */
@@ -96,7 +110,7 @@ function Stack({
 }) {
   const rest = items.slice(2);
   return (
-    <span className="flex min-w-0 items-center gap-1">
+    <span className="flex min-w-0 items-center gap-[7px]">
       {items.slice(0, 2).map((item) => (
         <span key={item} className="flex min-w-0 items-center">
           {render(item)}
@@ -105,7 +119,7 @@ function Stack({
       {rest.length > 0 ? (
         <span
           title={moreTitle(rest)}
-          className="inline-flex h-5.5 shrink-0 items-center rounded-sm bg-state-hover-strong px-1.5 text-micro font-semibold text-muted-foreground"
+          className="inline-flex h-5.5 shrink-0 items-center rounded-sm bg-state-hover-strong px-2 text-caption font-semibold text-muted-foreground"
         >
           {fillTableCopy(copy.more, { count: rest.length })}
         </span>
@@ -135,26 +149,21 @@ function ComputedCell({
       title={view.title}
       data-computed-state={view.tone}
       className={cn(
-        "inline-flex min-w-0 items-center gap-1.25 text-nav tabular-nums text-muted-foreground",
+        "ml-auto inline-flex min-w-0 items-center gap-1.25 text-nav font-normal tabular-nums text-foreground",
         // Dimmed by italic and the spinner, never by opacity: the text keeps its 4.5:1 contrast in both themes.
-        view.tone === "stale" && "italic",
-        view.tone === "error" && "font-semibold text-danger-text",
+        view.tone === "stale" && "gap-[7px] italic",
+        view.tone === "error" &&
+          "text-caption leading-[1.45] font-semibold text-danger-text",
         view.tone === "empty" && "text-meta-foreground",
       )}
     >
-      <span
-        aria-hidden="true"
-        className="inline-flex h-4.5 flex-none items-center rounded-[5px] bg-state-hover-strong px-1.25 font-mono text-micro font-medium text-muted-foreground"
-      >
-        ƒx
-      </span>
       {view.tone === "error" ? (
-        <AlertCircle className="size-3.5 flex-none" aria-hidden="true" />
+        <AlertCircle className="size-4 flex-none" aria-hidden="true" />
       ) : null}
       <span className="truncate">{view.text}</span>
       {view.tone === "stale" ? (
         <Loader2
-          className="size-3 flex-none animate-spin motion-reduce:animate-none"
+          className="size-4.5 flex-none animate-spin motion-reduce:animate-none"
           aria-hidden="true"
         />
       ) : null}
@@ -164,7 +173,7 @@ function ComputedCell({
 
 /**
  * What a custom field column shows in one cell, and its editor. Formula and
- * Rollup cells are read-only with the ƒx mark; a viewer, or a type with no
+ * Rollup cells are read-only (the ƒx mark and the lock sit in the column header); a viewer, or a type with no
  * inline editor, gets the value alone (the lock sits in the column header).
  * A write shows "Đang lưu" while it runs, an inline error with "Thử lại"
  * when it fails (the typed value stays), and the in-cell conflict choice.
@@ -181,10 +190,10 @@ export function TableFieldCell({
   onRetry,
   onKeepMine,
   onUseTheirs,
+  onReloadSchema,
 }: TableFieldCellProps) {
   const f = copy.fields;
   const spec = specOf(field);
-  const useNew = useRef<HTMLButtonElement>(null);
   if (spec.computed)
     return <ComputedCell field={field} computed={cell.computed} copy={f} />;
 
@@ -217,6 +226,16 @@ export function TableFieldCell({
         <CheckboxEditor
           checked={on}
           editable={canEdit}
+          saving={write?.status === "pending"}
+          caption={
+            write?.status === "pending"
+              ? f.saving
+              : on
+                ? fillTableCopy(f.checkedCaption, {
+                    field: field.name.toLocaleLowerCase(),
+                  })
+                : f.uncheckedCaption
+          }
           label={fillTableCopy(on ? f.checked : f.unchecked, {
             field: field.name,
             key: rowKey,
@@ -230,7 +249,9 @@ export function TableFieldCell({
     case "multi_select":
     case "person": {
       const isPerson = field.fieldType === "person";
-      const multi = field.fieldType !== "select";
+      const multi = isPerson
+        ? field.multiple === true
+        : field.fieldType !== "select";
       const options: EditorOption[] = isPerson
         ? members.map((member) => ({
             id: member.userId,
@@ -238,21 +259,6 @@ export function TableFieldCell({
             initials: member.initials,
           }))
         : field.options.map((option) => optionOf(option.id));
-      const mark = (id: string) => {
-        const person = memberOf(id);
-        return (
-          <span
-            aria-hidden="true"
-            title={person.label}
-            className={cn(
-              "flex size-6 shrink-0 items-center justify-center rounded-full text-avatar-md select-none",
-              identityMarkClass(id),
-            )}
-          >
-            {person.initials}
-          </span>
-        );
-      };
       display = empty ? (
         dash
       ) : (
@@ -265,7 +271,11 @@ export function TableFieldCell({
               .join(", ")
           }
           render={(id) =>
-            isPerson ? mark(id) : <OptionChip option={optionOf(id)} />
+            isPerson ? (
+              <PersonMark option={memberOf(id)} />
+            ) : (
+              <OptionChip option={optionOf(id)} />
+            )
           }
         />
       );
@@ -300,6 +310,7 @@ export function TableFieldCell({
           text={text}
           label={label}
           copy={f}
+          tableCopy={copy}
           onCommit={onWrite}
         >
           {display}
@@ -350,60 +361,170 @@ export function TableFieldCell({
           ) : null}
         </span>
       );
-      const inline = (
-        <>
-          {canEdit && (field.fieldType === "text" || isNumber || isLink) ? (
-            <InlineInputEditor
-              field={field}
-              value={value}
-              text={text}
-              label={label}
-              copy={f}
-              alignEnd={isNumber}
-              onCommit={onWrite}
-            >
-              {display}
-            </InlineInputEditor>
-          ) : (
+      const open =
+        isLink && !empty && /^https?:\/\//.test(text) ? (
+          <a
+            href={text}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={f.openLink}
+            title={f.openLink}
+            className="inline-flex flex-none text-meta-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            <ExternalLink className="size-4" aria-hidden="true" />
+          </a>
+        ) : null;
+      const inline =
+        canEdit && (field.fieldType === "text" || isNumber || isLink) ? (
+          <InlineInputEditor
+            field={field}
+            value={value}
+            text={text}
+            label={label}
+            copy={f}
+            alignEnd={isNumber}
+            unit={isNumber ? field.unit : null}
+            trailing={open}
+            onCommit={onWrite}
+          >
+            {display}
+          </InlineInputEditor>
+        ) : (
+          <>
             <span title={text || undefined} className="flex min-w-0 flex-1">
               {display}
             </span>
-          )}
-          {isLink && !empty && /^https?:\/\//.test(text) ? (
-            <a
-              href={text}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={f.openLink}
-              title={f.openLink}
-              className="inline-flex flex-none text-meta-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-            >
-              <ExternalLink className="size-3.5" aria-hidden="true" />
-            </a>
-          ) : null}
-        </>
-      );
+            {open}
+          </>
+        );
       editor = inline;
     }
   }
 
-  if (!write) return <>{editor}</>;
+  if (!write)
+    return (
+      <>
+        {editor}
+        {/* A viewer's cell ends with a lock that names the field (`WM-Field-Editors`, "Chỉ xem"). */}
+        {!editable && spec.editable ? (
+          <span
+            role="img"
+            aria-label={fillTableCopy(f.viewOnlyLabel, { field: field.name })}
+            title={f.viewOnly}
+            className={cn(
+              "inline-flex flex-none text-meta-foreground",
+              field.fieldType !== "number" && "ml-auto",
+            )}
+          >
+            <Lock className="size-4" aria-hidden="true" />
+          </span>
+        ) : null}
+      </>
+    );
   const valueLabel = text || f.empty;
+  if (write.status === "reloading")
+    return (
+      <span
+        role="status"
+        aria-label={f.staleReloading}
+        className="h-3 w-[70px] animate-pulse rounded-sm bg-state-hover-strong motion-reduce:animate-none"
+      />
+    );
+  if (write.status === "schema" && write.schema) {
+    const { schema } = write;
+    const who = schema.byName ?? f.staleSomeone;
+    const title = fillTableCopy(
+      schema.kind === "field-deleted"
+        ? f.staleDeleted
+        : schema.kind === "option-removed"
+          ? f.staleOption
+          : f.staleType,
+      { who, field: field.name },
+    );
+    return (
+      <AnchoredNote
+        tone="danger"
+        className="bg-danger-soft ring-2 ring-danger-text"
+        noteClassName="w-[330px] gap-2.5 rounded-[12px] p-3"
+        note={
+          <div role="alert" className="flex flex-col gap-2.5">
+            <span className="flex items-start gap-2 font-semibold text-danger-text">
+              <AlertCircle className="size-4 flex-none" aria-hidden="true" />
+              {title}
+            </span>
+            <span className="leading-normal text-muted-foreground">
+              {fillTableCopy(f.staleDeletedBody, { value: valueLabel })}
+            </span>
+            <span className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={onUseTheirs}
+                className="h-8 cursor-pointer rounded-[7px] border border-line-strong bg-popover px-3 text-compact font-medium whitespace-nowrap hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring dark:bg-card"
+              >
+                {f.staleDrop}
+              </button>
+              <button
+                type="button"
+                onClick={onReloadSchema}
+                className="h-8 cursor-pointer rounded-[7px] border-0 bg-primary px-3 text-compact font-semibold whitespace-nowrap text-primary-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                {f.staleReload}
+              </button>
+            </span>
+          </div>
+        }
+      >
+        {editor}
+      </AnchoredNote>
+    );
+  }
   if (write.status === "pending")
     return (
       <>
         {editor}
         <span
           role="status"
-          className="inline-flex flex-none items-center gap-1 text-crumb text-muted-foreground"
+          className={cn(
+            "inline-flex flex-none items-center gap-1 text-crumb text-muted-foreground",
+            field.fieldType === "checkbox" && "ml-auto",
+          )}
         >
           <Loader2
-            className="size-3 animate-spin motion-reduce:animate-none"
+            className={cn(
+              "animate-spin motion-reduce:animate-none",
+              // The saving row draws an 18 px ring at the cell's right padding.
+              field.fieldType === "checkbox" ? "size-4.5" : "size-3",
+            )}
             aria-hidden="true"
           />
-          {f.saving}
+          {field.fieldType === "checkbox" ? null : f.saving}
         </span>
       </>
+    );
+  if (write.status === "error" && write.required)
+    return (
+      <AnchoredNote
+        tone="danger"
+        className="ring-1 ring-danger-text"
+        note={
+          <div role="alert" className="flex flex-col gap-1">
+            <span className="flex items-center gap-1 text-crumb font-semibold text-danger-text">
+              <AlertCircle className="size-3.5" aria-hidden="true" />
+              {fillTableCopy(f.requiredRefused, { field: field.name })}
+            </span>
+            <span>{f.requiredRefusedBody}</span>
+            <button
+              type="button"
+              onClick={onUseTheirs}
+              className="h-6 w-fit cursor-pointer rounded-md border border-line-strong bg-popover px-2 text-crumb font-medium text-foreground hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring dark:bg-card"
+            >
+              {f.requiredDismiss}
+            </button>
+          </div>
+        }
+      >
+        {editor}
+      </AnchoredNote>
     );
   if (write.status === "error")
     return (
@@ -433,29 +554,74 @@ export function TableFieldCell({
       </>
     );
   return (
+    <CellConflictNote
+      copy={copy}
+      who={write?.byName ?? null}
+      field={field.name}
+      theirs={fieldText(field, cell.value, members) || f.empty}
+      mine={valueLabel}
+      onKeepMine={onKeepMine}
+      onUseTheirs={onUseTheirs}
+    >
+      {editor}
+    </CellConflictNote>
+  );
+}
+
+/**
+ * The in-cell version conflict (`WM-Table-Columns` slice 3, "Xung đột phiên bản trong ô"): who changed the cell
+ * first and to what, the value this person wrote, "Giữ giá trị của tôi" (the caller reads the item again, then
+ * writes on the newest version) and "Dùng giá trị mới" (drops the written value; it takes the focus). Shared by the
+ * custom field cells and the built-in title and due date cells.
+ */
+export function CellConflictNote({
+  copy,
+  who,
+  field,
+  theirs,
+  mine,
+  onKeepMine,
+  onUseTheirs,
+  children,
+}: {
+  copy: MainTableCopy;
+  /** Who saved first, as the server named them; null reads "Một người khác". */
+  who: string | null;
+  field: string;
+  theirs: string;
+  mine: string;
+  onKeepMine: () => void;
+  onUseTheirs: () => void;
+  children: ReactNode;
+}) {
+  const f = copy.fields;
+  const useNew = useRef<HTMLButtonElement>(null);
+  return (
     <AnchoredNote
       tone="warning"
       className="ring-1 ring-warning-text"
       focusRef={useNew}
       onEscape={onUseTheirs}
+      noteClassName="w-[316px] px-3"
       note={
         <div
           role="alertdialog"
           aria-label={f.conflictLabel}
-          className="flex flex-col gap-2"
+          className="flex flex-col gap-2 text-[12.5px] leading-[1.45]"
         >
           <span className="font-semibold text-warning-subtle-foreground">
             {fillTableCopy(f.conflictTitle, {
-              field: field.name,
-              value: fieldText(field, cell.value, members) || f.empty,
+              who: who ?? f.staleSomeone,
+              field,
+              value: theirs,
             })}
           </span>
-          <span>{fillTableCopy(f.conflictYours, { value: valueLabel })}</span>
+          <span>{fillTableCopy(f.conflictYours, { value: mine })}</span>
           <span className="flex gap-2">
             <button
               type="button"
               onClick={onKeepMine}
-              className="h-7 cursor-pointer rounded-md border border-line-strong bg-popover px-2.5 text-crumb font-medium whitespace-nowrap hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring dark:bg-card"
+              className="h-[26px] cursor-pointer rounded-[7px] border border-line-strong bg-popover px-2 text-[12px] font-medium whitespace-nowrap hover:bg-state-hover-strong focus-visible:outline-2 focus-visible:outline-ring dark:bg-card"
             >
               {f.conflictMine}
             </button>
@@ -463,17 +629,15 @@ export function TableFieldCell({
               ref={useNew}
               type="button"
               onClick={onUseTheirs}
-              className="h-7 cursor-pointer rounded-md border-0 bg-primary px-2.5 text-crumb font-semibold whitespace-nowrap text-primary-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              className="h-[26px] cursor-pointer rounded-[7px] border-0 bg-primary px-2 text-[12px] font-semibold whitespace-nowrap text-primary-foreground focus-visible:outline-2 focus-visible:outline-ring"
             >
-              {fillTableCopy(f.conflictTheirs, {
-                value: fieldText(field, cell.value, members) || f.empty,
-              })}
+              {fillTableCopy(f.conflictTheirs, { value: theirs })}
             </button>
           </span>
         </div>
       }
     >
-      {editor}
+      {children}
     </AnchoredNote>
   );
 }

@@ -202,6 +202,23 @@ public class AutomationRule : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new AutomationRuleDeletedDomainEvent(AccountId, WorkspaceId, Id, removedBy, removedAt));
     }
 
+    /// <summary>
+    /// UC-AUT-A07: undoes <see cref="Remove"/>. The rule comes back Disabled, never auto-enabled, and holds
+    /// no plan slot until a person enables it. Restoring a rule that is not removed changes nothing.
+    /// </summary>
+    public void RestoreRemoved(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        Guard.NotEmpty(restoredBy);
+        if (!IsRemoved) return;
+
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        Status = AutomationRuleStatus.Disabled;
+        DisabledReason = null;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new AutomationRuleRestoredDomainEvent(AccountId, WorkspaceId, Id, Name, restoredBy, restoredAt));
+    }
+
     private void EnsureNotRemoved()
     {
         if (IsRemoved)

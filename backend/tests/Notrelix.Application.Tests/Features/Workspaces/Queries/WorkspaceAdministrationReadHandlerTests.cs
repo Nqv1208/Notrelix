@@ -80,6 +80,36 @@ public sealed class WorkspaceAdministrationReadHandlerTests : WorkspaceHandlerTe
         });
     }
 
+    [Fact]
+    public async Task GetWorkspaceInvitations_NamesTheIssuer_ReportsAPendingOneThatRanOutAsExpired_AndCarriesNoToken()
+    {
+        SetupWorkspaces(CreateWorkspace(TestWorkspaceId));
+        var stale = Invitation("stale@example.com");
+        var fresh = Invitation("fresh@example.com");
+        SetupInvitations(stale, fresh);
+        // Both were issued at TestNow with the default 7 days; at day 8 neither is answerable.
+        DateTimeProviderMock.Setup(c => c.UtcNow).Returns(TestNow.AddDays(8));
+
+        var result = await new GetWorkspaceInvitationsQueryHandler(DbContextMock.Object, DateTimeProviderMock.Object)
+            .Handle(new GetWorkspaceInvitationsQuery(TestWorkspaceId), CancellationToken.None);
+
+        result.Data!.Items.Should().OnlyContain(i => i.Status == "Expired" && i.InvitedBy == TestUserId);
+        typeof(Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationDto).GetProperties()
+            .Select(p => p.Name).Should().NotContain(name => name.Contains("Token", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task GetWorkspaceInvitations_OfAnotherOrMissingWorkspace_IsNotFound()
+    {
+        SetupWorkspaces(CreateWorkspace(TestWorkspaceId));
+        SetupInvitations(Invitation("a@example.com"));
+
+        var read = () => new GetWorkspaceInvitationsQueryHandler(DbContextMock.Object, DateTimeProviderMock.Object)
+            .Handle(new GetWorkspaceInvitationsQuery(Guid.NewGuid()), CancellationToken.None);
+
+        await read.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
+    }
+
     private WorkspaceMember Active() => CreateMember(WorkspaceRole.Owner, Guid.CreateVersion7());
 
     private WorkspaceMember Suspended()

@@ -30,6 +30,7 @@ internal sealed class BoardTransferRunner(
     IBoardItemKeyAllocator keys,
     IWorkOrderingScopeLock orderingLock,
     BoardExportBuilder exports,
+    ImportPeopleDirectory importPeople,
     IResourceVisibility visibility,
     IWorkspaceAccessResolver access,
     IActorLookupService actors,
@@ -70,6 +71,9 @@ internal sealed class BoardTransferRunner(
     }
 
     // ----- import -----
+    /// <summary>The import would take the board over its published active-item limit (D78.8).</summary>
+    public const string ItemsLimitFailure = "items-limit";
+
     private async Task RunImportAsync(TransferJob job, CancellationToken ct)
     {
         var options = job.Options<ImportOptions>();
@@ -87,9 +91,11 @@ internal sealed class BoardTransferRunner(
             else
             {
                 var data = await ImportJobsRead(options, ct);
+                var people = await importPeople.ResolveAsync(job.WorkspaceId, job.BoardId, job.UserId, data, ct);
                 var schema = new ImportSchema(
                     await context.BoardFields.AsNoTracking().Include(f => f.Options).Where(f => f.BoardId == job.BoardId && f.DeletedAt == null).ToListAsync(ct),
-                    await context.BoardGroups.AsNoTracking().Where(g => g.BoardId == job.BoardId && g.DeletedAt == null).ToListAsync(ct));
+                    await context.BoardGroups.AsNoTracking().Where(g => g.BoardId == job.BoardId && g.DeletedAt == null).ToListAsync(ct),
+                    people);
                 var evaluation = ImportPlanner.Evaluate(data, schema, options.Mapping ?? [], collectItems: true);
                 if (evaluation.ErrorCount > 0)
                 {
@@ -98,9 +104,18 @@ internal sealed class BoardTransferRunner(
                 }
                 else
                 {
-                    outcome = await CreateItemsAsync(job, options, board, schema, evaluation.Items, ct);
-                    job.Status = TransferStatus.Succeeded;
-                    job.Succeeded = outcome.Created;
+                    try
+                    {
+                        outcome = await CreateItemsAsync(job, options, board, schema, evaluation.Items, ct) with { UnmatchedPersonRows = evaluation.UnmatchedPersonRows };
+                        job.Status = TransferStatus.Succeeded;
+                        job.Succeeded = outcome.Created;
+                    }
+                    catch (Notrelix.Application.Common.Exceptions.ConflictException limit)
+                        when (limit.ErrorCode == Notrelix.Application.Features.WorkManagement.Limits.WorkLimits.ItemsCode)
+                    {
+                        // The board filled up since the import was confirmed: nothing is created (D78.8).
+                        outcome = Failure(ItemsLimitFailure);
+                    }
                 }
             }
 

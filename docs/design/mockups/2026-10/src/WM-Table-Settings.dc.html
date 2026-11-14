@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Sửa tên trong bảng, lỗi lưu thiết lập, số việc</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--side:#EFF1F4;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--sel:#EEF4FD;--danger:#C42340;--danger-soft:#FCEBEE;--ok:#1E7A4C;--ok-soft:#E5F4EC;--warn-text:#8A5A00;--warn-soft:#FDF3DC;--pop-shadow:0 12px 32px rgba(15,23,42,.16);font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn{height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.dng{background:var(--danger);border-color:var(--danger);color:#fff;font-weight:600}
+.btn.txt{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.sm{height:28px;padding:0 10px;font-size:12.5px}
+.iconbtn{width:30px;height:30px;border-radius:7px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.inp{height:34px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);padding:0 10px;font:inherit;font-size:13.5px;color:var(--text);box-sizing:border-box}
+.inp.focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.inp.err{border-color:var(--danger)}
+.chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600;white-space:nowrap}
+.c-blue{background:#E6F0FB;color:#245BA6}.c-teal{background:#E2F3EE;color:#24685A}.c-violet{background:#F0E9FB;color:#6A3DB3}.c-amber{background:#FBF1D6;color:#7A5810}.c-rose{background:#FBE5EA;color:#A3283F}.c-gray{background:#EEF0F4;color:#4B5263}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.cap{font-size:12px;font-weight:600;color:var(--meta);margin:0}
+.state{font-size:12px;font-weight:600;color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:3px 10px;align-self:flex-start}
+h1{margin:0;font-size:22px;line-height:1.3;font-weight:650;letter-spacing:-0.01em}
+h2{margin:0;font-size:16px;font-weight:650}
+.av{width:26px;height:26px;border-radius:999px;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</helmet>
+<div class="nx" style="width: 1440px; height: 1000px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 24px">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <h1>Sửa tên ngay trong bảng · lưu thiết lập không bao giờ lặng lẽ quay lại</h1>
+    <p style="margin: 0; color: var(--meta); font-size: 13.5px; max-width: 90ch">Bấm một lần vào tên vẫn mở việc. Nhấn đúp, F2 hoặc Enter trên ô tên để sửa tại chỗ: Enter lưu, Esc huỷ, rời ô cũng lưu. Phím tắt chỉ có trong tooltip, không in lên ô.</p>
+  </div>
+  <section class="card" aria-label="View Bảng, board Triển khai ERP" style="overflow: hidden">
+    <div role="table" aria-label="Việc">
+      <div role="row" style="display: grid; grid-template-columns: 90px minmax(0, 1fr) 150px 140px 110px; align-items: center; gap: 12px; min-height: 36px; padding: 0 14px; background: var(--bg); font-size: 12px; font-weight: 600; color: var(--meta)"><span role="columnheader">Mã</span><span role="columnheader">Tên việc</span><span role="columnheader">Trạng thái</span><span role="columnheader">Người làm</span><span role="columnheader">Hạn</span></div>
+      <div role="row" style="display: grid; grid-template-columns: 90px minmax(0, 1fr) 150px 140px 110px; align-items: center; gap: 12px; min-height: 42px; padding: 0 14px; border-top: 1px solid var(--line); font-size: 13px"><span role="cell" style="color: var(--meta); font-size: 12px">ERP-140</span><span role="cell"><a href="#" style="font-weight: 500">Thiết kế lại sơ đồ tài khoản kế toán</a></span><span role="cell"><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #1E7A4C"><span style="width: 8px; height: 8px; border-radius: 999px; background: #1E7A4C"></span>Hoàn thành</span></span><span role="cell" style="color: var(--muted)">Trần Minh</span><span role="cell" style="color: var(--muted)">08/10/2026</span></div>
+      <div role="row" style="display: grid; grid-template-columns: 90px minmax(0, 1fr) 150px 140px 110px; align-items: center; gap: 12px; min-height: 46px; padding: 0 14px; border-top: 1px solid var(--line); font-size: 13px; background: var(--sel)">
+        <span role="cell" style="color: var(--meta); font-size: 12px">ERP-142</span>
+        <span role="cell" style="position: relative"><label for="ti" class="sr">Tên việc ERP-142</label><input id="ti" class="inp focus" value="Chuyển dữ liệu khách hàng từ hệ thống cũ sang ERP (đợt 2)" style="width: 100%; height: 32px; font-weight: 500"></span>
+        <span role="cell"><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #1666CC"><span style="width: 8px; height: 8px; border-radius: 999px; background: #1666CC"></span>Đang làm</span></span><span role="cell" style="color: var(--muted)">Lê An</span><span role="cell" style="color: var(--muted)">15/10/2026</span>
+      </div>
+      <div role="row" style="display: grid; grid-template-columns: 90px minmax(0, 1fr) 150px 140px 110px; align-items: center; gap: 12px; min-height: 42px; padding: 0 14px; border-top: 1px solid var(--line); font-size: 13px">
+        <span role="cell" style="color: var(--meta); font-size: 12px">ERP-145</span>
+        <span role="cell" style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px"><a href="#" style="font-weight: 500; text-decoration: underline; text-decoration-color: var(--line2)">Đào tạo nhóm kế toán dùng phân hệ công nợ</a></span>
+        <span role="cell"><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #8A5A00"><span style="width: 8px; height: 8px; border-radius: 999px; background: #8A5A00"></span>Chờ duyệt</span></span><span role="cell" style="color: var(--muted)">Phạm Hà</span><span role="cell" style="color: var(--muted)">18/10/2026</span>
+      </div>
+      <div role="row" style="display: grid; grid-template-columns: 90px minmax(0, 1fr) 150px 140px 110px; align-items: center; gap: 12px; min-height: 42px; padding: 0 14px; border-top: 1px solid var(--line); font-size: 13px"><span role="cell" style="color: var(--meta); font-size: 12px">ERP-151</span><span role="cell"><a href="#" style="font-weight: 500">Kiểm thử UAT phân hệ mua hàng</a></span><span role="cell"><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #5F6875"><span style="width: 8px; height: 8px; border-radius: 999px; background: #5F6875"></span>Cần làm</span></span><span role="cell" style="color: var(--muted)">Nguyễn Vy</span><span role="cell" style="color: var(--muted)">22/10/2026</span></div>
+    </div>
+  </section>
+  <div style="display: flex; gap: 10px; align-items: center; margin-top: -12px">
+    <div role="tooltip" style="background: #161A21; color: #fff; font-size: 12px; border-radius: 6px; padding: 6px 10px">Mở việc · nhấn đúp hoặc F2 để sửa tên</div>
+    <span style="font-size: 12px; color: var(--meta)">tooltip khi rê chuột lên tên ERP-145</span>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span class="state">Thiết lập › Trường › Trạng thái · số việc thật</span>
+      <section class="card" aria-label="Lựa chọn của trường Trạng thái" style="overflow: hidden">
+        <div style="display: grid; grid-template-columns: 22px minmax(0, 1fr) 110px; align-items: center; gap: 10px; min-height: 34px; padding: 0 12px; background: var(--bg); font-size: 12px; font-weight: 600; color: var(--meta)"><span></span><span>Lựa chọn</span><span style="text-align: right">Đang dùng</span></div>
+        <div style="display: grid; grid-template-columns: 22px minmax(0, 1fr) 110px; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px; border-top: 1px solid var(--line); font-size: 13px"><span style="width: 12px; height: 12px; border-radius: 4px; background: #5F6875"></span><span style="font-weight: 500">Cần làm</span><span style="color: var(--meta); font-size: 12.5px; text-align: right">9 việc</span></div> <div style="display: grid; grid-template-columns: 22px minmax(0, 1fr) 110px; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px; border-top: 1px solid var(--line); font-size: 13px"><span style="width: 12px; height: 12px; border-radius: 4px; background: #1666CC"></span><span style="font-weight: 500">Đang làm</span><span style="color: var(--meta); font-size: 12.5px; text-align: right">14 việc</span></div> <div style="display: grid; grid-template-columns: 22px minmax(0, 1fr) 110px; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px; border-top: 1px solid var(--line); font-size: 13px"><span style="width: 12px; height: 12px; border-radius: 4px; background: #C18A12"></span><span style="font-weight: 500">Chờ duyệt</span><span style="color: var(--meta); font-size: 12.5px; text-align: right">4 việc</span></div> <div style="display: grid; grid-template-columns: 22px minmax(0, 1fr) 110px; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px; border-top: 1px solid var(--line); font-size: 13px"><span style="width: 12px; height: 12px; border-radius: 4px; background: #1E7A4C"></span><span style="font-weight: 500">Hoàn thành</span><span style="color: var(--meta); font-size: 12.5px; text-align: right">31 việc</span></div>
+      </section>
+      <p style="margin: 0; font-size: 12px; color: var(--meta)">Chỉ đếm việc đang hoạt động; việc đã lưu trữ hoặc trong thùng rác không tính.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span class="state" style="background: var(--danger-soft); color: var(--danger)">Lưu thất bại · giữ chữ đã gõ</span>
+      <section class="card" aria-label="Sửa lựa chọn" style="padding: 16px; display: flex; flex-direction: column; gap: 10px">
+        <label for="on" style="font-size: 12.5px; font-weight: 600; color: var(--muted)">Tên lựa chọn</label>
+        <input id="on" class="inp err" value="Chờ khách duyệt" aria-invalid="true" aria-describedby="on-err">
+        <div id="on-err" role="alert" style="display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: var(--danger)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span style="flex: 1">Chưa lưu được: mất kết nối tới máy chủ. Thay đổi của bạn vẫn còn ở đây.</span></div>
+        <div style="display: flex; gap: 8px; justify-content: flex-end"><button class="btn txt sm">Bỏ thay đổi</button><button class="btn sm"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg> Thử lại</button></div>
+      </section>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span class="state" style="background: var(--warn-soft); color: var(--warn-text)">Người khác vừa sửa · xung đột</span>
+      <section class="card" aria-label="Sửa lựa chọn" style="padding: 16px; display: flex; flex-direction: column; gap: 10px">
+        <div role="status" style="display: flex; gap: 8px; align-items: flex-start; background: var(--warn-soft); color: var(--warn-text); border-radius: 8px; padding: 10px 12px; font-size: 12.5px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Trần Minh vừa đổi lựa chọn này thành <b>"Chờ duyệt KH"</b>. Đã tải bản mới nhất; sửa lại nếu cần.</span></div>
+        <label for="oc" style="font-size: 12.5px; font-weight: 600; color: var(--muted)">Tên lựa chọn</label>
+        <input id="oc" class="inp focus" value="Chờ duyệt KH">
+        <div style="display: flex; gap: 8px; justify-content: flex-end"><button class="btn pri sm">Lưu</button></div>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

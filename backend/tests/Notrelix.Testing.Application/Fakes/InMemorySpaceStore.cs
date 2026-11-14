@@ -95,4 +95,19 @@ public sealed class InMemorySpaceStore : ISpaceStore
                 m.SubjectType == SpaceMemberSubjectType.Team ? TeamNames.GetValueOrDefault(m.SubjectId) : null,
                 m.CreatedAt))
             .ToList());
+
+    public Task<IReadOnlyList<SpaceMemberRow>> ListMemberPageAsync(Guid workspaceId, Guid spaceId, Guid? afterSubjectId, int take, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<SpaceMemberRow>>(Spaces
+            .Where(s => s.WorkspaceId == workspaceId && s.Id == spaceId)
+            .SelectMany(s => s.Members)
+            .Where(m => afterSubjectId is null || m.SubjectId.CompareTo(afterSubjectId.Value) > 0)
+            .OrderBy(m => m.SubjectId)
+            .Take(take)
+            .Select(m => new SpaceMemberRow(
+                m.SubjectType,
+                m.SubjectId,
+                m.Role,
+                m.SubjectType == SpaceMemberSubjectType.Team ? TeamNames.GetValueOrDefault(m.SubjectId) : null,
+                m.CreatedAt))
+            .ToList());
 }

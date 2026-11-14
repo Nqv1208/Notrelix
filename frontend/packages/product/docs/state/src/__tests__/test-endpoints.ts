@@ -8,6 +8,7 @@ export const testEndpoints: PageApiEndpoints = {
     breadcrumb: (pageId) => `/pages/${pageId}/breadcrumb`,
     blocks: (pageId) => `/pages/${pageId}/blocks`,
     comments: (pageId) => `/pages/${pageId}/comments`,
+    commentsPage: (pageId) => `/pages/${pageId}/comments/page`,
     history: (pageId) => `/pages/${pageId}/history`,
     search: (workspaceId) => `/workspaces/${workspaceId}/pages/search`,
     move: (pageId) => `/pages/${pageId}/move`,

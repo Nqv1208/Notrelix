@@ -1,4 +1,6 @@
 using MediatR;
+using Notrelix.Application.Events.Identity;
+using Notrelix.Application.Common.RateLimiting;
 using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 using Notrelix.Domain.Common;
@@ -30,7 +32,7 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
-    public async Task Handle_WhenEmailExists_ShouldReturnFailure()
+    public async Task Handle_WhenEmailExists_ShouldReturnTheSameSuccessAndCreateNothing()
     {
         await using var context = _db.CreateOwnerContext();
 
@@ -40,12 +42,11 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
 
         var passwordHasher = new Mock<IPasswordHasher>();
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
-        var sessionIssuer = new Mock<IAuthSessionIssuer>();
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
         var integrationEventCollector = new Mock<IIntegrationEventCollector>();
 
-        var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context))), passwordHasher.Object, sessionIssuer.Object, dateTimeProvider.Object, integrationEventCollector.Object);
+        var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context))), passwordHasher.Object, dateTimeProvider.Object, integrationEventCollector.Object, Mock.Of<IRateLimitService>());
 
         var result = await handler.Handle(new RegisterCommand
         {
@@ -54,32 +55,34 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
             Name = "New Name"
         }, CancellationToken.None);
 
-        result.Succeeded.Should().BeFalse();
-        result.Errors.Should().Contain("Email is already in use");
+        // The same neutral success as a new address; the owner is mailed and nothing is created.
+        result.Succeeded.Should().BeTrue();
+        result.Errors.Should().BeEmpty();
+        await context.SaveChangesAsync();
 
-        passwordHasher.Verify(x => x.HashPassword(It.IsAny<string>()), Times.Never);
-        sessionIssuer.Verify(x => x.IssueAsync(It.IsAny<User>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+        (await context.Users.CountAsync()).Should().Be(1);
+        (await context.Sessions.CountAsync()).Should().Be(0);
+        // Only the notice for the owner is raised; its mail is queued after the commit.
+        integrationEventCollector.Verify(
+            c => c.Add(It.Is<IIntegrationEvent>(e => e is RegistrationAttemptedOnExistingAccountIntegrationEventV1)),
+            Times.Once);
+        integrationEventCollector.Verify(c => c.Add(It.IsAny<IIntegrationEvent>()), Times.Once);
     }
 
     [Fact]
-    public async Task Handle_WhenValid_ShouldCreateUserAndSession()
+    public async Task Handle_WhenValid_ShouldCreateTheUserAndNoSession()
     {
         await using var context = _db.CreateOwnerContext();
 
         var passwordHasher = new Mock<IPasswordHasher>();
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
 
-        var jwtService = new Mock<IJwtService>();
-        jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>(), It.IsAny<Guid?>())).Returns("access-token");
-        jwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>());
         var integrationEventCollector = new Mock<IIntegrationEventCollector>();
-        var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context))), passwordHasher.Object, sessionIssuer, dateTimeProvider.Object, integrationEventCollector.Object);
+        var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context))), passwordHasher.Object, dateTimeProvider.Object, integrationEventCollector.Object, Mock.Of<IRateLimitService>());
 
-        var now = DateTime.UtcNow;
         var result = await handler.Handle(new RegisterCommand
         {
             Email = "test2@example.com",
@@ -89,17 +92,14 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         await context.SaveChangesAsync();
 
         result.Succeeded.Should().BeTrue();
-        result.Data!.AccessToken.Should().Be("access-token");
-        result.Data!.RefreshToken.Should().Be("refresh-token");
-        result.Data!.ExpiresAt.Should().BeAfter(now);
-        result.Data!.WorkspaceProvisioning.Should().Be("pending");
 
         (await context.Users.ToListAsync()).Should().HaveCount(1);
-        (await context.Sessions.ToListAsync()).Should().HaveCount(1);
+        // Registering opens no session: the person confirms the email and signs in.
+        (await context.Sessions.ToListAsync()).Should().BeEmpty();
     }
 
     [Fact]
-    public async Task Handle_WhenValidAndDomainEventInterceptorEnabled_ShouldCreateUserAndSession()
+    public async Task Handle_WhenValidAndDomainEventInterceptorEnabled_ShouldCreateTheUserAndNoSession()
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetSystem();
@@ -128,13 +128,9 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         var passwordHasher = new Mock<IPasswordHasher>();
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
 
-        var jwtService = new Mock<IJwtService>();
-        jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>(), It.IsAny<Guid?>())).Returns("access-token");
-        jwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
 
-        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>());
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context))), passwordHasher.Object, sessionIssuer, dateTimeProvider.Object, integrationEventCollector.Object);
+        var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context))), passwordHasher.Object, dateTimeProvider.Object, integrationEventCollector.Object, Mock.Of<IRateLimitService>());
 
         var result = await handler.Handle(new RegisterCommand
         {
@@ -144,14 +140,10 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         }, CancellationToken.None);
 
         result.Succeeded.Should().BeTrue($"Handle Succeeded=false. Errors: {string.Join(", ", result.Errors)}");
-        var authResult = result.Data;
-        authResult.Should().NotBeNull("result.Data is null even though Succeeded=true");
-        authResult!.WorkspaceProvisioning.Should().Be("pending");
-
         await context.SaveChangesAsync();
 
         (await context.Users.CountAsync()).Should().Be(1);
-        (await context.Sessions.CountAsync()).Should().Be(1);
+        (await context.Sessions.CountAsync()).Should().Be(0);
     }
 
     [Fact]
@@ -162,15 +154,11 @@ public class RegisterCommandHandlerTests : IAsyncLifetime
         var passwordHasher = new Mock<IPasswordHasher>();
         passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("hashed-password");
 
-        var jwtService = new Mock<IJwtService>();
-        jwtService.Setup(x => x.GenerateAccessToken(It.IsAny<User>(), It.IsAny<Guid?>())).Returns("access-token");
-        jwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
 
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
-        var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>());
         var integrationEventCollector = new Mock<IIntegrationEventCollector>();
-        var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context))), passwordHasher.Object, sessionIssuer, dateTimeProvider.Object, integrationEventCollector.Object);
+        var handler = new RegisterCommandHandler(context, new AccountProvisioningService(context, new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context))), passwordHasher.Object, dateTimeProvider.Object, integrationEventCollector.Object, Mock.Of<IRateLimitService>());
 
         var result = await handler.Handle(new RegisterCommand
         {

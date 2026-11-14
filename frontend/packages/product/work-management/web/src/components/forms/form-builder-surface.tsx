@@ -215,6 +215,15 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
     [...duplicates.values()].flat().map((q) => q.id),
   );
   const firstDuplicate = [...duplicates.entries()][0];
+  // A question still mapped to a board field the board no longer has (deleted) blocks publish.
+  const fieldIds = new Set(fields.map((field) => field.id));
+  const removedIds = new Set(
+    fields.length > 0
+      ? questions
+          .filter((q) => q.boardFieldId && !fieldIds.has(q.boardFieldId))
+          .map((q) => q.id)
+      : [],
+  );
 
   const [title, setTitle] = useState(form.title);
   const [description, setDescription] = useState(form.description);
@@ -382,7 +391,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
   }
 
   const noQuestions = questions.length === 0;
-  const blocked = noQuestions || duplicates.size > 0;
+  const blocked = noQuestions || duplicates.size > 0 || removedIds.size > 0;
   const blockedMessage = noQuestions
     ? b.publishNoQuestions
     : firstDuplicate
@@ -391,7 +400,9 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
           b: questions.findIndex((q) => q.id === firstDuplicate[1][1]!.id) + 1,
           field: fields.find((f) => f.id === firstDuplicate[0])?.name ?? "",
         })
-      : null;
+      : removedIds.size > 0
+        ? b.publishNeedsFix
+        : null;
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto bg-background text-foreground">
@@ -455,6 +466,16 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
                 className={BUTTON_CLASS.primary}
               >
                 {b.publish}
+              </button>
+            ) : null}
+            {form.status === "closed" ? (
+              <button
+                type="button"
+                disabled={archived || conflict !== null}
+                onClick={() => void publish()}
+                className={BUTTON_CLASS.primary}
+              >
+                {b.reopen}
               </button>
             ) : null}
             {form.status === "published" ? (
@@ -655,6 +676,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
                       last={index === questions.length - 1}
                       selected={q.id === props.selectedId}
                       duplicate={duplicateIds.has(q.id)}
+                      removed={removedIds.has(q.id)}
                       differs={differs(q) ? cn_.differs : null}
                       readOnly={frozen}
                       dragging={dragId === q.id}
@@ -682,6 +704,18 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
                         void move(dragged, index);
                       }}
                     />
+                    {removedIds.has(q.id) ? (
+                      <p
+                        role="alert"
+                        className="m-0 flex items-start gap-1.5 text-crumb text-danger-text"
+                      >
+                        <TriangleAlert
+                          aria-hidden="true"
+                          className="mt-0.5 size-3.5 shrink-0"
+                        />
+                        {b.removedFieldError}
+                      </p>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -822,6 +856,7 @@ function QuestionRow({
   last,
   selected,
   duplicate,
+  removed,
   differs,
   readOnly,
   dragging,
@@ -840,6 +875,8 @@ function QuestionRow({
   last: boolean;
   selected: boolean;
   duplicate: boolean;
+  /** Mapped to a board field that was deleted: the question needs a new mapping. */
+  removed: boolean;
   /** "Differs from the new version" while a stale save is open, else null. */
   differs: string | null;
   readOnly: boolean;
@@ -898,7 +935,11 @@ function QuestionRow({
         <b className="truncate text-item-ui font-semibold">{name}</b>
         <small className="truncate text-metadata text-meta-foreground">
           {b.types[q.type]} ·{" "}
-          {target ? fillFormsCopy(b.mappedTo, { field: target }) : b.noMapping}
+          {removed
+            ? b.removedTarget
+            : target
+              ? fillFormsCopy(b.mappedTo, { field: target })
+              : b.noMapping}
         </small>
       </button>
       <span className="flex items-center gap-1">
@@ -909,6 +950,7 @@ function QuestionRow({
         ) : null}
         {q.required ? <Chip tone="brand">{b.required}</Chip> : null}
         {duplicate ? <Chip tone="danger">{b.duplicate}</Chip> : null}
+        {removed ? <Chip tone="danger">{b.needsFix}</Chip> : null}
         {readOnly ? null : (
           <>
             <button
@@ -1476,6 +1518,7 @@ function FormConflict({
           latest: fillFormsCopy(copy.columns.latest, { by }),
         },
         diffHint: fillFormsCopy(copy.diffHint, { by }),
+        pendingBody: fillFormsCopy(copy.pendingBody ?? "", { by }),
       }}
       busy={conflict.busy}
       rows={rows}

@@ -3,8 +3,8 @@ namespace Notrelix.Domain.WorkManagement.Views;
 /// <summary>
 /// Presentation configuration of a BoardView, kept as one JSON document. The
 /// view owns how Items are shown, never the Item data. Keys the domain knows
-/// are checked when a configuration is built (today <c>wipLimits</c>, see
-/// <see cref="KanbanWipLimits"/>); other keys are carried as given.
+/// are checked when a configuration is built (<c>wipLimits</c>, see
+/// <see cref="KanbanWipLimits"/>, and <see cref="ViewPresentationKeys"/>); other keys are carried as given.
 /// </summary>
 public class BoardViewConfig : ValueObject
 {
@@ -15,6 +15,7 @@ public class BoardViewConfig : ValueObject
     {
         Guard.NotNull(data);
         KanbanWipLimits.FromConfig(data);
+        ViewPresentationKeys.Validate(data);
         Data = data;
     }
 

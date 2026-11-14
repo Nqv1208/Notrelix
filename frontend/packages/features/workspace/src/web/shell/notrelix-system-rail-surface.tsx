@@ -176,7 +176,7 @@ export function NotrelixSystemRailSurface({
         "flex gap-1 bg-rail text-rail-foreground outline-none [--focus-ring:var(--rail-focus-ring)]",
         drawer
           ? "w-full shrink-0 flex-row flex-wrap items-start p-2"
-          : "w-19 shrink-0 flex-col items-center overflow-y-auto py-3",
+          : "w-19 shrink-0 flex-col items-center overflow-y-auto py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         overlay &&
           "fixed inset-y-0 left-0 z-sticky shadow-modal motion-safe:animate-in motion-safe:slide-in-from-left motion-safe:duration-180 motion-safe:ease-out",
         presentation === "pinned" && "relative h-full",

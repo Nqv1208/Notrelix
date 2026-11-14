@@ -22,11 +22,14 @@ const ENTRY = {
 describe("page versions", () => {
   it("lists the history entries with their kind and name", async () => {
     const api = client();
-    api.get.mockResolvedValue([
-      ENTRY,
-      { ...ENTRY, id: "v1", versionNumber: 1, kind: "automatic", name: null },
-      { ...ENTRY, id: "v3", kind: "something-new", name: "  " },
-    ]);
+    api.get.mockResolvedValue({
+      items: [
+        ENTRY,
+        { ...ENTRY, id: "v1", versionNumber: 1, kind: "automatic", name: null },
+        { ...ENTRY, id: "v3", kind: "something-new", name: "  " },
+      ],
+      nextCursor: null,
+    });
 
     const list = await createVersionApi(api, testEndpoints).list("p1");
 

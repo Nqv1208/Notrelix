@@ -62,7 +62,7 @@ public class AssignBoardItemMemberCommandHandler : IRequestHandler<AssignBoardIt
         // read makes); the caller may share the Board with them first.
         var visibleBoards = await _visibility.VisibleBoardIdsAsync(card.WorkspaceId, request.UserId, ct);
         if (!visibleBoards.Contains(card.BoardId))
-            throw new ForbiddenException("Người này chưa xem được board của việc, nên chưa thể giao việc. Hãy chia sẻ board với họ trước.");
+            throw new ForbiddenException("Người này chưa xem được board của việc, nên chưa thể giao việc. Hãy chia sẻ board với họ trước.", BoardAssigneeGuard.BoardNotSharedCode);
 
         await BoardAssigneeGuard.EnsureNotViewerAsync(_context, card.BoardId, request.UserId, ct);
 

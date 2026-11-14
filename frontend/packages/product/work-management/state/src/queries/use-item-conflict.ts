@@ -4,6 +4,9 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { workspaceQueryKey } from "@notrelix/query";
+import type { StaleSchemaDetail } from "@notrelix/work-management-core";
+
+export type { StaleSchemaDetail };
 
 const conflictKey = (workspaceId: string, itemId: string) =>
   workspaceQueryKey(workspaceId, "work-management", "item-conflict", itemId);
@@ -18,22 +21,53 @@ export function isVersionConflict(error: unknown): boolean {
   );
 }
 
-/** The schema change a stale write ran into (a field the board no longer has) and who made it. */
-export interface StaleSchemaDetail {
-  readonly kind: "field-deleted";
-  readonly fieldName: string;
-  readonly byName: string | null;
+/** Why the server refused to give someone work: the person cannot see the board yet (share it first), or only views it. */
+export type AssigneeRefusal = "board-not-shared" | "viewer";
+
+/** The refusal reason of an assignee write, read from the error's stable codes; null for any other failure. */
+export function assigneeRefusalOf(error: unknown): AssigneeRefusal | null {
+  const e = error as { code?: unknown; ruleCode?: unknown } | null;
+  if (e?.code === "work-management.assignee.board-not-shared")
+    return "board-not-shared";
+  return e?.ruleCode === "WorkManagement_BoardItem_AssigneeIsViewer"
+    ? "viewer"
+    : null;
 }
+
+/** A write that clears a required field, or leaves it empty on create, is refused with this rule. */
+export function isRequiredRefusal(error: unknown): boolean {
+  return (
+    (error as { ruleCode?: unknown } | null)?.ruleCode ===
+    "WorkManagement_FieldValue_Required"
+  );
+}
+
+const STALE_CODES = {
+  "work-management.field.deleted": "field-deleted",
+  "work-management.field.option-removed": "option-removed",
+  "work-management.field.type-changed": "type-changed",
+} as const;
 
 /** The stale-schema detail of a refused write, when the server named one (D12). */
 export function staleSchemaOf(error: unknown): StaleSchemaDetail | null {
   const body = (error as { details?: unknown } | null)?.details as
     Record<string, unknown> | null | undefined;
-  if (body?.errorCode !== "work-management.field.deleted") return null;
+  const kind =
+    typeof body?.errorCode === "string"
+      ? (STALE_CODES as Record<string, StaleSchemaDetail["kind"]>)[
+          body.errorCode
+        ]
+      : undefined;
+  if (!body || !kind) return null;
+  const text = (key: string) =>
+    typeof body[key] === "string" ? (body[key] as string) : undefined;
   return {
-    kind: "field-deleted",
-    fieldName: typeof body.fieldName === "string" ? body.fieldName : "",
-    byName: typeof body.changedByName === "string" ? body.changedByName : null,
+    kind,
+    fieldName: text("fieldName") ?? "",
+    byName: text("changedByName") ?? null,
+    optionLabel: text("optionLabel"),
+    fromType: text("fromType"),
+    toType: text("toType"),
   };
 }
 
@@ -98,7 +132,7 @@ export function useItemConflict(workspaceId: string, itemId: string) {
   const detail = data && typeof data === "object" ? data : null;
   return {
     conflict: data === true || detail !== null,
-    staleSchema: detail?.kind === "field-deleted" ? detail : null,
+    staleSchema: detail && detail.kind !== "stale-version" ? detail : null,
     /** Who changed the item first, when the refused write was a plain lost race and the server named them. */
     changedBy: detail?.kind === "stale-version" ? detail.byName : null,
     clear: () =>

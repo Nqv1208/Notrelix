@@ -7,8 +7,12 @@ import {
   groupableFields,
   groupCardsByField,
   groupCardsByStatus,
-  serializeCompoundFilter,
+  laneSizes,
+  NO_STATUS_LANE,
+  selectOptionValue,
+  dropStaleConditions,
   type BoardGroup,
+  type BoardPaging,
   type Card,
   type DateBucket,
   type FieldDefinition,
@@ -24,6 +28,7 @@ import { useBoardReadNeed, useLanePager } from "../queries/board-read";
 import { useBoardLabels } from "../queries/use-board-labels";
 import { laneKeyOf } from "../cache/lane-pages";
 import { useDebounce } from "./use-debounce";
+import { searchMembersOf, serverFilterOf } from "./server-view-criteria";
 import {
   dropUnknownFilterIds,
   kanbanFilterChoices,
@@ -92,20 +97,16 @@ export interface KanbanWriteFailure {
   readonly conflict?: { readonly card: Card } | undefined;
 }
 
-function optionValue(value: unknown): string | null {
-  if (typeof value === "string" && value) return value;
-  if (Array.isArray(value) && typeof value[0] === "string") return value[0];
-  return null;
-}
-
 /**
  * Lanes for a Select field: one lane per option in option order, then a lane
  * for cards without a value when there are any. Same lane model and card rules
- * as the Status lanes (child, archived and deleted items are left out).
+ * as the Status lanes (child, archived and deleted items are left out). A read
+ * paged by this field gives each lane the server's sizes.
  */
 export function groupCardsBySelectField(
   field: FieldDefinition,
   groups: readonly BoardGroup[],
+  paging?: BoardPaging,
 ): KanbanStatusLane[] {
   const byOption = new Map<string, Card[]>(
     field.options.map((option) => [option.id, []]),
@@ -114,7 +115,7 @@ export function groupCardsBySelectField(
   for (const group of groups) {
     for (const card of group.cards) {
       if (card.parentItemId || card.isArchived || card.isDeleted) continue;
-      const optionId = optionValue(card.fieldValues[field.id]);
+      const optionId = selectOptionValue(card.fieldValues[field.id]);
       const lane = optionId ? byOption.get(optionId) : undefined;
       if (lane) lane.push(card);
       else withoutValue.push(card);
@@ -128,17 +129,20 @@ export function groupCardsBySelectField(
       category: null,
       color: option.color || null,
       cards,
-      total: cards.length,
+      ...laneSizes(paging, option.id, cards.length),
     };
   });
-  if (withoutValue.length > 0) {
+  if (
+    withoutValue.length > 0 ||
+    (paging?.lanes[NO_STATUS_LANE]?.total ?? 0) > 0
+  ) {
     lanes.push({
       optionId: null,
       name: "",
       category: null,
       color: null,
       cards: withoutValue,
-      total: withoutValue.length,
+      ...laneSizes(paging, NO_STATUS_LANE, withoutValue.length),
     });
   }
   return lanes;
@@ -200,14 +204,15 @@ export function useBoardKanban(
     () => (fields ? kanbanGroupByFields(fields) : []),
     [fields],
   );
-  // The cards of a paged read hold only some of the board's labels: the filter offers the board's own list.
-  const boardLabels = useBoardLabels(boardId, workspaceId, Boolean(paging));
+  // The cards hold only some of the board's labels (a page, or none that use a label): the filter offers the
+  // board's own list, and a label of it that was deleted is told apart from one no loaded card holds.
+  const boardLabels = useBoardLabels(boardId, workspaceId);
   const pagedLabels = useMemo(
     () =>
-      paging && boardLabels.data
+      boardLabels.data
         ? boardLabels.data.map((label) => ({ id: label.id, name: label.name }))
         : undefined,
-    [paging, boardLabels.data],
+    [boardLabels.data],
   );
   const labelChoices = useMemo(
     () =>
@@ -221,11 +226,12 @@ export function useBoardKanban(
             fieldDefinitions: board.fieldDefinitions,
             members: board.members,
             labels: labelChoices,
+            labelsComplete: pagedLabels !== undefined,
             names: view.names,
             isOverdue,
           })
         : [],
-    [board, view, labelChoices, isOverdue],
+    [board, view, labelChoices, pagedLabels, isOverdue],
   );
   const memberName = useMemo(() => {
     const names = new Map<string, string>();
@@ -284,7 +290,11 @@ export function useBoardKanban(
         paging,
       });
     }
-    return groupCardsBySelectField(groupByField, sortedGroups);
+    return groupCardsBySelectField(
+      groupByField,
+      sortedGroups,
+      paging?.criteria.groupBy === groupByField.id ? paging : undefined,
+    );
   }, [
     board,
     groups,
@@ -307,27 +317,52 @@ export function useBoardKanban(
     [board, filter, filterChoices],
   );
 
-  // Pages of Status lanes serve a view that lays the board out by Status and filters by what the server can
-  // evaluate; anything else (another grouping, a swimlane, a search, a facet filter) reads the whole board.
+  // Pages of lanes serve a view that lays the board out by Status or by a Select field and filters by what the
+  // server can evaluate: the toolbar facets and the member's own filter go as `filter`, the search box as `q`
+  // (with the people whose name holds it), the Select field as `groupBy`. A person or date grouping, a
+  // swimlane, or a filter the server cannot say (overdue) reads the whole board.
   const compoundFilter = view?.state.filter;
+  const serverFilter = useMemo(
+    () =>
+      fields
+        ? serverFilterOf(
+            appliedFilter,
+            compoundFilter
+              ? dropStaleConditions(compoundFilter, filterFields)
+              : undefined,
+            fields,
+          )
+        : "",
+    [fields, appliedFilter, compoundFilter, filterFields],
+  );
+  const serverGroupBy =
+    groupByField && groupByField.id !== statusField?.id
+      ? groupByField.id
+      : undefined;
   const needsWholeBoard =
     allCards ||
     Boolean(flatGroupField) ||
-    (groupByField !== undefined && groupByField.id !== statusField?.id) ||
     Boolean(view?.state.lane) ||
-    debouncedQuery.trim() !== "" ||
-    filter.statusOptionIds.length > 0 ||
-    filter.priorities.length > 0 ||
-    filter.assigneeIds.length > 0 ||
-    filter.labelIds.length > 0 ||
-    filter.overdue;
+    serverFilter === null;
+  const search = debouncedQuery.trim();
+  const searchMembers = useMemo(() => {
+    if (!search || !board) return "";
+    const people = new Map<string, string>();
+    for (const member of board.members) people.set(member.userId, member.name);
+    for (const group of groups)
+      for (const card of group.cards)
+        for (const member of card.members)
+          if (!people.has(member.userId))
+            people.set(member.userId, member.name);
+    return searchMembersOf(search, people);
+  }, [search, board, groups]);
   useBoardReadNeed(boardId, workspaceId, {
     full: needsWholeBoard,
-    filter:
-      !needsWholeBoard && compoundFilter
-        ? serializeCompoundFilter(compoundFilter)
-        : "",
+    filter: needsWholeBoard ? "" : (serverFilter ?? ""),
     sort: "",
+    search,
+    ...(searchMembers ? { searchMembers } : {}),
+    ...(serverGroupBy ? { groupBy: serverGroupBy } : {}),
   });
   const lanePager = useLanePager(boardId, workspaceId);
 
@@ -343,6 +378,7 @@ export function useBoardKanban(
       compound,
       filterFields,
       memberName,
+      view?.timeZone,
     );
     return {
       ...legacyFiltered,
@@ -350,7 +386,7 @@ export function useBoardKanban(
       visibleCount: lanes.reduce((sum, lane) => sum + lane.cards.length, 0),
       active: true,
     };
-  }, [compound, filterFields, legacyFiltered, memberName]);
+  }, [compound, filterFields, legacyFiltered, memberName, view?.timeZone]);
 
   const queryClient = useQueryClient();
   // A refused stale write has already refetched the board (the write's own
@@ -450,7 +486,7 @@ export function useBoardKanban(
         0,
       ),
     },
-    /** Reads the next page of a Status lane (`optionId` null: the lane without a status). */
+    /** Reads the next page of a lane (`optionId` null: the lane without a value). */
     loadMoreLane: (optionId: string | null) =>
       lanePager.loadMore(laneKeyOf({ optionId })),
     /** Lanes (by option id, `none` for no status) whose next page is being read, or failed to read. */

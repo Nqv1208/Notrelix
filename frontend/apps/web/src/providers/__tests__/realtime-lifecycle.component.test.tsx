@@ -129,6 +129,18 @@ function boardEvent(
   });
 }
 
+/** The runtime the lifecycle reads: the realtime client and the REST client the Chat adapter uses. */
+function runtimeStub(client: RealtimeClient, telemetryStub: typeof telemetry) {
+  return {
+    realtime: client,
+    telemetry: telemetryStub,
+    api: {
+      api: { get: vi.fn() },
+      endpoints: { chat: new Proxy({}, { get: () => () => "/chat" }) },
+    },
+  };
+}
+
 let root: Root | null = null;
 let host: HTMLDivElement | null = null;
 let sockets: ReturnType<typeof createSocket>[] = [];
@@ -172,7 +184,7 @@ beforeEach(async () => {
     },
     telemetry,
   });
-  state.runtime = { realtime, telemetry };
+  state.runtime = runtimeStub(realtime, telemetry);
   host = document.createElement("div");
   document.body.appendChild(host);
   root = createRoot(host);
@@ -206,11 +218,17 @@ describe("RealtimeLifecycle", () => {
     queryClient.setQueryData(key, { name: "stale" });
     const socket = await openSocket(0);
 
+    // The workspace stream, and the caller's own per-user stream (unread counters, UC-CHT-C09).
     expect(socket.sent).toEqual([
       {
         type: "subscribe",
         subscriptionId: "workspace:ws-a",
         scope: { kind: "workspace", id: "ws-a" },
+      },
+      {
+        type: "subscribe",
+        subscriptionId: "user:1",
+        scope: { kind: "user", id: "1" },
       },
     ]);
 
@@ -290,7 +308,11 @@ describe("RealtimeLifecycle", () => {
       expect.objectContaining({ eventId: "e2" }),
     );
     expect(
-      socket.sent.filter((frame) => frame.type === "subscribe"),
+      socket.sent.filter(
+        (frame) =>
+          frame.type === "subscribe" &&
+          String(frame.subscriptionId).startsWith("workspace:"),
+      ),
     ).toHaveLength(1);
   });
 
@@ -322,8 +344,10 @@ describe("RealtimeLifecycle", () => {
 
     expect(queryClient.getQueryState(keyA)?.isInvalidated).toBe(false);
     expect(queryClient.getQueryState(keyB)?.isInvalidated).toBe(false);
+    // The workspace stream and the per-user stream of the old workspace are released.
     expect(socket.sent.filter((f) => f.type === "unsubscribe")).toEqual([
       { type: "unsubscribe", subscriptionId: "workspace:ws-a" },
+      { type: "unsubscribe", subscriptionId: "user:1" },
     ]);
   });
 
@@ -340,7 +364,7 @@ describe("RealtimeLifecycle", () => {
         return socket;
       },
     });
-    state.runtime = { realtime, telemetry };
+    state.runtime = runtimeStub(realtime, telemetry);
     root = createRoot(host as HTMLDivElement);
     await render();
     await flush();

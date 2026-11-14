@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using Notrelix.Application.Features.Integrations.Connections;
+using Notrelix.Domain.Integrations.Webhooks;
 
 namespace Notrelix.Infrastructure.Integrations.Connections;
 
@@ -16,7 +17,19 @@ public enum WebhookSendOutcome
     Permanent,
 }
 
-public sealed record WebhookSendResult(WebhookSendOutcome Outcome, string Description);
+/// <summary>
+/// The answer of one attempt. The status code and the failure class go to the delivery log; the description
+/// may name the status and is never a receiver body or a header value.
+/// </summary>
+public sealed record WebhookSendResult(
+    WebhookSendOutcome Outcome,
+    string Description,
+    int? StatusCode = null,
+    OutboundDeliveryFailureClass? FailureClass = null,
+    TimeSpan? RetryAfter = null)
+{
+    public static WebhookSendResult Delivered(int statusCode) => new(WebhookSendOutcome.Delivered, $"HTTP {statusCode}", statusCode);
+}
 
 /// <summary>
 /// Posts one signed delivery. The address is checked again when the connection is made, against the
@@ -52,25 +65,36 @@ public sealed class OutboundWebhookSender
             using var client = _factory.CreateClient(HttpClientName);
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             var status = (int)response.StatusCode;
-            if (response.IsSuccessStatusCode) return new(WebhookSendOutcome.Delivered, $"HTTP {status}");
-            var transient = status >= 500 || status is 408 or 425 or 429;
-            return new(transient ? WebhookSendOutcome.Transient : WebhookSendOutcome.Permanent, $"HTTP {status}");
+            if (response.IsSuccessStatusCode) return WebhookSendResult.Delivered(status);
+            var failure = status switch
+            {
+                429 or 425 => OutboundDeliveryFailureClass.RateLimited,
+                408 => OutboundDeliveryFailureClass.Timeout,
+                >= 500 => OutboundDeliveryFailureClass.ReceiverError,
+                _ => OutboundDeliveryFailureClass.ReceiverRejected,
+            };
+            var transient = failure is not OutboundDeliveryFailureClass.ReceiverRejected;
+            var retryAfter = WebhookRetryAfter.Capped(
+                response.Headers.RetryAfter?.Delta,
+                response.Headers.RetryAfter?.Date,
+                DateTimeOffset.UtcNow);
+            return new(transient ? WebhookSendOutcome.Transient : WebhookSendOutcome.Permanent, $"HTTP {status}", status, failure, retryAfter);
         }
         catch (BlockedWebhookAddressException)
         {
-            return new(WebhookSendOutcome.Permanent, "The address points to a network the webhook may not reach.");
+            return new(WebhookSendOutcome.Permanent, "The address points to a network the webhook may not reach.", null, OutboundDeliveryFailureClass.AddressRefused);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            return new(WebhookSendOutcome.Transient, "The receiver did not answer in time.");
+            return new(WebhookSendOutcome.Transient, "The receiver did not answer in time.", null, OutboundDeliveryFailureClass.Timeout);
         }
         catch (HttpRequestException ex) when (ex.InnerException is BlockedWebhookAddressException)
         {
-            return new(WebhookSendOutcome.Permanent, "The address points to a network the webhook may not reach.");
+            return new(WebhookSendOutcome.Permanent, "The address points to a network the webhook may not reach.", null, OutboundDeliveryFailureClass.AddressRefused);
         }
         catch (HttpRequestException)
         {
-            return new(WebhookSendOutcome.Transient, "The receiver could not be reached.");
+            return new(WebhookSendOutcome.Transient, "The receiver could not be reached.", null, OutboundDeliveryFailureClass.Unreachable);
         }
     }
 

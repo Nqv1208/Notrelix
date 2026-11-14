@@ -7,6 +7,12 @@ namespace Notrelix.API.Middleware;
 public sealed class CorrelationIdMiddleware
 {
     private const string HeaderName = "X-Correlation-Id";
+
+    /// <summary>HttpContext.Items key holding the request's correlation id, so problem bodies can echo it.</summary>
+    public const string ItemKey = "Notrelix.CorrelationId";
+
+    public static Guid? Read(HttpContext context) =>
+        context.Items.TryGetValue(ItemKey, out var value) && value is Guid id ? id : null;
     private readonly RequestDelegate _next;
     private readonly ILogger<CorrelationIdMiddleware> _logger;
 
@@ -26,6 +32,8 @@ public sealed class CorrelationIdMiddleware
         {
             correlationId = parsedId;
         }
+
+        context.Items[ItemKey] = correlationId;
 
         // Set in ICorrelationContext (for events/outbox/logs)
         var correlationContext = context.RequestServices.GetService<ICorrelationContext>();

@@ -10,6 +10,7 @@ import {
 import { wmQueryKeys } from "../queries/keys";
 import { useWorkManagementServices } from "../services";
 import { neededVersion } from "./seen-version";
+import { sendNewChecklistItem } from "./send-new-checklist-item";
 import {
   CHECKLIST_UNDO_MS,
   checklistQueueFor,
@@ -151,9 +152,15 @@ export function useChecklistWrites(
   );
 
   const addItem = useCallback(
-    (checklistId: string, title: string) => {
+    (
+      checklistId: string,
+      title: string,
+      extras?: { assigneeId?: string | null; dueAt?: string | null },
+    ) => {
       const text = title.trim();
       if (!text) return;
+      const assigneeId = extras?.assigneeId ?? null;
+      const dueAt = extras?.dueAt ?? null;
       const id = pendingId();
       queue.schedule({
         id: opId("add-item"),
@@ -171,13 +178,18 @@ export function useChecklistWrites(
                 title: text,
                 isDone: false,
                 position: (list.items.at(-1)?.position ?? 0) + 1,
+                ...(assigneeId ? { assigneeId } : {}),
+                ...(dueAt ? { dueAt } : {}),
               },
             ],
           })),
         send: (version) =>
-          api.createChecklistItem({
+          sendNewChecklistItem(api, {
+            cardId,
             checklistId,
-            title: text,
+            text,
+            assigneeId,
+            dueAt,
             expectedVersion: neededVersion(version, cardId),
           }),
       });

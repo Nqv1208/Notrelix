@@ -14,7 +14,11 @@ public record BoardDto(
     long Version,
     // The Workspaces Space the board is placed in; null at the Workspace root
     // and also when the caller cannot see that Space (never disclosed, GOV-029).
-    Guid? SpaceId = null
+    Guid? SpaceId = null,
+    // The key the board's items carry (KHQ in KHQ-27) and the name of the Space the board sits in, when the caller
+    // may see that Space: the move picker names the board by them.
+    string? ItemKeyPrefix = null,
+    string? DepartmentName = null
 );
 
 public record FullBoardDto(
@@ -80,6 +84,19 @@ public record BoardLifecycleImpactDto(
     int MemberCount,
     int GroupCount,
     int ViewCount);
+
+/// <summary>
+/// A person who can see the Board (UC-WM-A23, UC-WM-C13). Name and avatar only: no email. Level, IsBoardMember
+/// and IsGuest are present only for a caller who manages the Board (omitted otherwise, not sent as null).
+/// </summary>
+public record BoardPersonDto(
+    Guid UserId,
+    string Name,
+    string? AvatarUrl,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Level,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] bool? IsBoardMember,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] bool? IsGuest
+);
 
 public record BoardMemberDto(
     Guid UserId,

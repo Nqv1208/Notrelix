@@ -8,6 +8,7 @@ using Notrelix.Application.Tests.Features.Automation.Executions;
 using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Automation.RulesEngine;
 using Notrelix.Domain.Governance.Permissions;
+using Notrelix.Application.Features.Billing.Public.Capacity;
 
 namespace Notrelix.Application.Tests.Features.Automation.Rules;
 
@@ -117,7 +118,7 @@ public sealed class AutomationRuleManagementAuthorityTests
         await context.SaveChangesAsync();
         var handler = new SetAutomationRuleEnabledCommandHandler(
             context, Mock.Of<ICurrentUser>(), Mock.Of<IDateTimeProvider>(),
-            new AutomationExecutorAuthority(Mock.Of<Notrelix.Application.Features.Automation.Ports.WorkManagement.IWorkActionPort>()));
+            new AutomationExecutorAuthority(Mock.Of<Notrelix.Application.Features.Automation.Ports.WorkManagement.IWorkActionPort>()), Mock.Of<IBillingCapacityActions>());
 
         var act = () => handler.Handle(new SetAutomationRuleEnabledCommand(rule.Id, false, Guid.CreateVersion7()), default);
 
@@ -139,7 +140,7 @@ public sealed class AutomationRuleManagementAuthorityTests
         await context.SaveChangesAsync();
         var handler = new SetAutomationRuleEnabledCommandHandler(
             context, Mock.Of<ICurrentUser>(), Mock.Of<IDateTimeProvider>(),
-            new AutomationExecutorAuthority(Mock.Of<Notrelix.Application.Features.Automation.Ports.WorkManagement.IWorkActionPort>()));
+            new AutomationExecutorAuthority(Mock.Of<Notrelix.Application.Features.Automation.Ports.WorkManagement.IWorkActionPort>()), Mock.Of<IBillingCapacityActions>());
 
         var act = () => handler.Handle(new SetAutomationRuleEnabledCommand(rule.Id, true, Board), default);
 
@@ -157,7 +158,7 @@ public sealed class AutomationRuleManagementAuthorityTests
         var clock = Mock.Of<IDateTimeProvider>(c => c.UtcNow == T0);
         var handler = new SetAutomationRuleEnabledCommandHandler(
             context, user, clock,
-            new AutomationExecutorAuthority(Mock.Of<Notrelix.Application.Features.Automation.Ports.WorkManagement.IWorkActionPort>()));
+            new AutomationExecutorAuthority(Mock.Of<Notrelix.Application.Features.Automation.Ports.WorkManagement.IWorkActionPort>()), Mock.Of<IBillingCapacityActions>());
 
         var result = await handler.Handle(new SetAutomationRuleEnabledCommand(rule.Id, true, Board), default);
 

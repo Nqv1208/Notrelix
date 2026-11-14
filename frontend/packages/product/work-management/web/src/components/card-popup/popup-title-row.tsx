@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
+import { ITEM_TITLE_MAX_LENGTH } from "@notrelix/work-management-core";
 import { useCardPopup, useCanEdit } from "./card-popup-context";
 import { useServerDraft } from "./use-server-draft";
 
@@ -80,6 +81,7 @@ export function PopupTitleRow() {
         type="text"
         value={draft}
         readOnly={!canEdit}
+        maxLength={ITEM_TITLE_MAX_LENGTH}
         aria-label={t.titleLabel}
         aria-invalid={invalid || undefined}
         placeholder={t.titlePlaceholder}
@@ -101,7 +103,7 @@ export function PopupTitleRow() {
           }
         }}
         className={cn(
-          "-ml-2 box-border h-12 min-w-0 flex-1 rounded-[8px] border-0 bg-transparent px-2 text-[20px] md:h-10 md:text-[22px] font-[650] tracking-[-0.01em] text-foreground placeholder:font-medium placeholder:text-meta-foreground hover:bg-state-hover-strong focus:bg-popover focus:ring-2 focus:ring-primary focus:outline-none read-only:focus:bg-transparent read-only:focus:ring-0",
+          "-ml-2 box-border h-12 min-w-0 flex-1 rounded-[8px] border-0 bg-transparent px-2 text-[20px] text-ellipsis md:h-10 md:text-[22px] in-data-popup-pane:text-[20px]! font-[650] tracking-[-0.01em] text-foreground placeholder:font-medium placeholder:text-meta-foreground hover:bg-state-hover-strong focus:bg-popover focus:ring-2 focus:ring-primary focus:outline-none read-only:focus:bg-transparent read-only:focus:ring-0",
           invalid && "bg-popover ring-2 ring-danger",
         )}
       />

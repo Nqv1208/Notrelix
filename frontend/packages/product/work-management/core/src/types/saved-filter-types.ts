@@ -28,6 +28,8 @@ export interface SavedFilter {
   readonly visibility: "board" | "me";
   /** True when the signed-in member created it. */
   readonly isMine: boolean;
+  /** Who made a filter shared with the board (null for the caller's own, or when the server names no one). */
+  readonly createdByName: string | null;
   readonly criteria: SavedFilterCriteria;
   /** Expected version of the next change. */
   readonly version: number;

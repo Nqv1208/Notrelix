@@ -15,7 +15,8 @@ const endpoints = {
   notifications: {
     list: "/notifications",
     read: (id: string) => `/notifications/${id}/read`,
-    readAll: "/notifications/read-all",
+    readAll: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/inbox/read-all`,
     unreadCount: "/notifications/unread-count",
     archive: (id: string) => `/notifications/${id}/archive`,
     preferences: (workspaceId: string) =>
@@ -38,7 +39,11 @@ function mount(locale: Locale, items: Notification[], count: number) {
     patch: vi.fn(),
     delete: vi.fn(),
   } as unknown as NotificationsApiClient;
-  const NotificationBell = createNotificationBell({ api, endpoints });
+  const NotificationBell = createNotificationBell({
+    api,
+    endpoints,
+    workspaceId: "w-1",
+  });
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -83,7 +88,10 @@ describe("NotificationBell container", () => {
     expect(screen.getByText(/ngày trước/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: viCopy.markAllRead }));
     await waitFor(() =>
-      expect(post).toHaveBeenCalledWith(endpoints.notifications.readAll, {}),
+      expect(post).toHaveBeenCalledWith(
+        endpoints.notifications.readAll("w-1"),
+        {},
+      ),
     );
   });
 

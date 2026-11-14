@@ -20,10 +20,23 @@ test("a signed-in person reads only their own facts, and a revoked session ends 
   expect(me.id).toEqual(expect.any(String));
   expect(Object.keys(me).filter((key) => !ownFacts.includes(key))).toEqual([]);
 
+  // The bootstrap a client reads at start names the person, their workspaces and their Account, and no role,
+  // plan or entitlement: those are read from the workspace they belong to.
+  const bootstrap = await apiRead<{
+    accountId: string | null;
+    workspaces: Record<string, unknown>[];
+  }>(page, "/auth/bootstrap");
+  expect(bootstrap.accountId).toEqual(expect.any(String));
+  expect(bootstrap.workspaces.length).toBeGreaterThan(0);
+  expect(JSON.stringify(bootstrap)).not.toMatch(
+    /"(role|roles|plan|entitlements?|permissions)"/i,
+  );
+
   // Rejection: with no session the answer is 401.
   const stranger = await request.newContext();
   try {
     expect((await stranger.get(`${apiUrl}/auth/me`)).status()).toBe(401);
+    expect((await stranger.get(`${apiUrl}/auth/bootstrap`)).status()).toBe(401);
   } finally {
     await stranger.dispose();
   }

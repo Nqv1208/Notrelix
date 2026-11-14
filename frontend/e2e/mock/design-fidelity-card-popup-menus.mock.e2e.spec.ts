@@ -3,8 +3,9 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 /**
  * The card popup's column picker against `Kanban-CardPopup-Menus` (owner artifact 18L4jUXGfdXh7Wn9YQvA2x), frame 2
- * "Chọn cột ở đầu popup", light and dark: a 300 px panel with "Chuyển sang cột" and a close button, one row per
- * column with its count (or "n / limit"), "Đã đủ giới hạn" under a column at its limit, "Vị trí trong cột" with its
+ * "Chọn cột ở đầu popup", and `Kanban-CardPopup-M-Sheets-3` frame 2 (the 390 bottom sheet), light and dark: a panel
+ * with "Chuyển sang cột" and a close button, one row per column with its count (or "n / limit"; the current column
+ * draws a 16 px check and no count), "Đã đủ giới hạn" under a column at its limit, "Vị trí trong cột" with its
  * select, and the note. The other frames of the board (the "+ Thêm" menus, the "⋯" menu, the shortcut legend, the
  * board's own fields) are not part of this spec.
  *
@@ -156,133 +157,186 @@ test.beforeEach(() => {
   );
 });
 
-for (const dark of [false, true]) {
-  const mode = dark ? "dark" : "light";
-  test(`${mode}: the picker as drawn, with the count, the limit note and the position select`, async ({
-    page,
-  }) => {
-    await open(page, 1440, dark);
-    await limitReview(page);
-    // ERP-151 sits in Cần làm and its group also has cards in Hoàn thành, so the position select is drawn.
-    const picker = await openPicker(page, "mock-erp-item-151");
-    const c = COLORS[mode];
-    const pb = await picker.boundingBox();
-    near(pb!.width, 300, "panel width");
-    near(pb!.height, 343.6, "panel height");
-    const ps = await style(picker);
-    expect(ps.r).toBe("12px");
-    expectColor(ps.bg, [...c.panel], "panel bg");
+/**
+ * The two frames of the picker, boxes relative to the panel's top-left. 1440 is `Kanban-CardPopup-Menus` frame 2; 390
+ * is `Kanban-CardPopup-M-Sheets-3` frame 2 (a 16 px radius bottom sheet with a 40 x 4 grab bar). The sheet's own
+ * rows are 44 px, not the drawn 40: the 44 px touch target rule beats the drawn row, an accepted +16 px on the
+ * sheet from the rows down (rows start at y 72 as drawn; caption, select and note sit 16 px lower, the sheet is
+ * 397.6 px high, not 381.6).
+ */
+const FRAMES = [
+  {
+    name: "1440",
+    width: 1440,
+    sheet: false,
+    panel: { w: 300, h: 343.6, r: "12px" },
+    header: { x: 13, y: 13, w: 274, h: 32 },
+    close: { x: 259, y: 13, w: 32, h: 32 },
+    list: { x: 13, y: 53, w: 274, h: 160 },
+    row: { x: 13, y: 53, w: 274, h: 40 },
+    dotY: 15.5,
+    limitNoteY: 21.1,
+    caption: { x: 13, y: 225, w: 274, h: 17.4 },
+    select: { x: 13, y: 248.4, w: 274, h: 36 },
+    note: { x: 15, y: 294.4, w: 270, h: 36.3 },
+  },
+  {
+    name: "390",
+    width: 390,
+    sheet: true,
+    panel: { w: 390, h: 397.6, r: "16px" },
+    header: { x: 16, y: 20, w: 358, h: 44 },
+    close: { x: 334, y: 20, w: 44, h: 44 },
+    list: { x: 16, y: 72, w: 358, h: 176 },
+    row: { x: 16, y: 72, w: 358, h: 44 },
+    dotY: 17.5,
+    limitNoteY: 23.1,
+    caption: { x: 16, y: 260, w: 358, h: 17.4 },
+    select: { x: 16, y: 283.4, w: 358, h: 44 },
+    note: { x: 18, y: 337.4, w: 354, h: 36.3 },
+  },
+] as const;
 
-    expectBox(
-      await box(picker.locator("> div").first(), picker),
-      { x: 13, y: 13, w: 274, h: 32 },
-      "header",
-    );
-    const title = picker.getByText("Chuyển sang cột", { exact: true });
-    const tb = await box(title, picker);
-    near(tb.x + tb.w / 2, 150, "title is centred");
-    const ts = await style(title);
-    expect([ts.fs, ts.fw]).toEqual(["14px", "650"]);
-    const close = picker.getByRole("button", { name: "Đóng" });
-    expectBox(
-      await box(close, picker),
-      { x: 259, y: 13, w: 32, h: 32 },
-      "close",
-    );
-    expect((await style(close)).r).toBe("8px");
-
-    const list = picker.getByRole("listbox", { name: "Chuyển sang cột" });
-    expectBox(
-      await box(list, picker),
-      { x: 13, y: 53, w: 274, h: 160 },
-      "list",
-    );
-    const options = list.getByRole("option");
-    await expect(options).toHaveCount(4);
-    const expected = [
-      { name: /^Cần làm/, count: "6", current: true },
-      { name: /^Đang làm/, count: "3" },
-      { name: /^Chờ duyệt/, count: "2 / 2", full: true },
-      { name: /^Hoàn thành/, count: "5" },
-    ];
-    for (const [i, want] of expected.entries()) {
-      const row = options.nth(i);
-      await expect(row).toContainText(want.count);
-      expectBox(
-        await box(row, picker),
-        { x: 13, y: 53 + 40 * i, w: 274, h: 40 },
-        `row ${i}`,
-      );
-      const rs = await style(row);
-      expect(rs.r).toBe("8px");
-      expect(rs.fs).toBe("14px");
-      expect(rs.fw).toBe(want.current ? "600" : "400");
-      expect(await row.getAttribute("aria-selected")).toBe(
-        want.current ? "true" : "false",
-      );
-      if (want.current) {
-        // The selected-row token: its blue sits up to 30 off the artboard accent-soft in dark.
-        expectColor(rs.bg, [...c.curBg], "current bg", 30);
-        expectColor(rs.c, [...c.curInk], "current ink", 24);
-      }
-      // Dot 9 px at 10 px from the row's left, the count 10 px from its right edge.
-      const dot = row.locator("> span").first();
-      expectBox(
-        await box(dot, row),
-        { x: 10, y: 15.5, w: 9, h: 9 },
-        `dot ${i}`,
-      );
-      const count = row.locator("small");
-      const cb = await box(count, row);
-      near(cb.x + cb.w, 264, `count ${i} right edge`);
-      const cs = await style(count);
-      expect([cs.fs, cs.fw]).toEqual(["12.5px", "400"]);
-      expectColor(cs.c, [...c.meta], `count ${i} colour`);
-      const note = row.getByText("Đã đủ giới hạn", { exact: true });
-      if (want.full) {
-        await expect(note).toBeVisible();
-        const ns = await style(note);
-        expect([ns.fs, ns.fw]).toEqual(["12px", "500"]);
-        expectColor(ns.c, [...c.warn], "limit note colour", 40);
-        // Under the name: 15.6 px high at 29 px from the row's left.
+for (const frame of FRAMES) {
+  for (const dark of [false, true]) {
+    const mode = dark ? "dark" : "light";
+    test(`${frame.name} ${mode}: the picker as drawn, with the count, the check on the current row, the limit note and the position select`, async ({
+      page,
+    }) => {
+      await open(page, frame.width, dark);
+      await limitReview(page);
+      // ERP-151 sits in Cần làm and its group also has cards in Hoàn thành, so the position select is drawn.
+      const picker = await openPicker(page, "mock-erp-item-151");
+      const c = COLORS[mode];
+      const pb = await picker.boundingBox();
+      near(pb!.width, frame.panel.w, "panel width");
+      near(pb!.height, frame.panel.h, "panel height");
+      const ps = await style(picker);
+      expect(ps.r).toBe(frame.panel.r);
+      expectColor(ps.bg, [...c.panel], "panel bg");
+      if (frame.sheet) {
+        // The grab bar: 40 x 4 at 8 px from the top, centred.
+        const grab = picker.locator("> div").first();
         expectBox(
-          await box(note, row),
-          { x: 29, y: 21.1, h: 15.6 },
-          "limit note",
+          await box(grab, picker),
+          { x: 175, y: 8, w: 40, h: 4 },
+          "grab bar",
         );
-      } else await expect(note).toHaveCount(0);
-    }
+      }
 
-    const cap = picker.getByText("Vị trí trong cột", { exact: true });
-    expectBox(
-      await box(cap, picker),
-      { x: 13, y: 225, w: 274, h: 17.4 },
-      "caption",
-    );
-    const cps = await style(cap);
-    expect([cps.fs, cps.fw]).toEqual(["12px", "600"]);
-    expectColor(cps.c, [...c.cap], "caption colour");
-    const select = picker.getByRole("combobox", { name: "Vị trí trong cột" });
-    expectBox(
-      await box(select, picker),
-      { x: 13, y: 248.4, w: 274, h: 36 },
-      "select",
-    );
-    const ss = await style(select);
-    expect([ss.fs, ss.r]).toEqual(["14px", "8px"]);
-    await expect(select).toHaveValue("bottom");
-    await expect(select.locator("option:checked")).toHaveText("Cuối cột");
-    const note = picker.getByText(/^Chuyển cột là lưu ngay/);
-    expectBox(
-      await box(note, picker),
-      { x: 15, y: 294.4, w: 270, h: 36.3 },
-      "note",
-    );
-    const nts = await style(note);
-    expect(nts.fs).toBe("12.5px");
-    expectColor(nts.c, [...c.meta], "note colour");
-    await shot(page, `card-popup-picker-${mode}`);
-  });
+      const title = picker
+        .locator("b")
+        .filter({ hasText: /^Chuyển sang cột$/ });
+      expectBox(await box(title.locator(".."), picker), frame.header, "header");
+      const tb = await box(title, picker);
+      near(tb.x + tb.w / 2, pb!.width / 2, "title is centred");
+      const ts = await style(title);
+      expect([ts.fs, ts.fw]).toEqual(["14px", "650"]);
+      const close = picker.getByRole("button", { name: "Đóng" });
+      expectBox(await box(close, picker), frame.close, "close");
+      expect((await style(close)).r).toBe("8px");
+
+      const list = picker.getByRole("listbox", { name: "Chuyển sang cột" });
+      expectBox(await box(list, picker), frame.list, "list");
+      const options = list.getByRole("option");
+      await expect(options).toHaveCount(4);
+      // The current row draws a 16 px check and no count (as drawn); the others keep their count.
+      const expected = [
+        { name: /^Cần làm/, current: true },
+        { name: /^Đang làm/, count: "3" },
+        { name: /^Chờ duyệt/, count: "2 / 2", full: true },
+        { name: /^Hoàn thành/, count: "5" },
+      ];
+      for (const [i, want] of expected.entries()) {
+        const row = options.nth(i);
+        await expect(row).toHaveAccessibleName(want.name);
+        expectBox(
+          await box(row, picker),
+          {
+            x: frame.row.x,
+            y: frame.row.y + frame.row.h * i,
+            w: frame.row.w,
+            h: frame.row.h,
+          },
+          `row ${i}`,
+        );
+        const rs = await style(row);
+        expect(rs.r).toBe("8px");
+        expect(rs.fs).toBe("14px");
+        expect(rs.fw).toBe(want.current ? "600" : "400");
+        expect(await row.getAttribute("aria-selected")).toBe(
+          want.current ? "true" : "false",
+        );
+        if (want.current) {
+          // The selected-row token: its blue sits up to 30 off the artboard accent-soft in dark.
+          expectColor(rs.bg, [...c.curBg], "current bg", 30);
+          expectColor(rs.c, [...c.curInk], "current ink", 24);
+        }
+        // Dot 9 px at 10 px from the row's left, the count (or the check) 10 px from its right edge.
+        const dot = row.locator("> span").first();
+        expectBox(
+          await box(dot, row),
+          { x: 10, y: frame.dotY, w: 9, h: 9 },
+          `dot ${i}`,
+        );
+        const count = row.locator("small");
+        if (want.current) {
+          await expect(count).toHaveCount(0);
+          const check = row.locator("svg");
+          await expect(check).toHaveCount(1);
+          const kb = await box(check, row);
+          near(kb.x + kb.w, frame.row.w - 10, "check right edge");
+          near(kb.w, 16, "check width");
+          near(kb.h, 16, "check height");
+          near(kb.y + kb.h / 2, frame.row.h / 2, "check is centred");
+          expectColor(
+            (await style(check)).c,
+            [...c.curInk],
+            "check colour",
+            24,
+          );
+        } else {
+          await expect(count).toHaveText(want.count!);
+          const cb = await box(count, row);
+          near(cb.x + cb.w, frame.row.w - 10, `count ${i} right edge`);
+          const cs = await style(count);
+          expect([cs.fs, cs.fw]).toEqual(["12.5px", "400"]);
+          expectColor(cs.c, [...c.meta], `count ${i} colour`);
+        }
+        const note = row.getByText("Đã đủ giới hạn", { exact: true });
+        if (want.full) {
+          await expect(note).toBeVisible();
+          const ns = await style(note);
+          expect([ns.fs, ns.fw]).toEqual(["12px", "500"]);
+          expectColor(ns.c, [...c.warn], "limit note colour", 40);
+          // Under the name: 15.6 px high at 29 px from the row's left.
+          expectBox(
+            await box(note, row),
+            { x: 29, y: frame.limitNoteY, h: 15.6 },
+            "limit note",
+          );
+        } else await expect(note).toHaveCount(0);
+      }
+
+      const cap = picker.getByText("Vị trí trong cột", { exact: true });
+      expectBox(await box(cap, picker), frame.caption, "caption");
+      const cps = await style(cap);
+      expect([cps.fs, cps.fw]).toEqual(["12px", "600"]);
+      expectColor(cps.c, [...c.cap], "caption colour");
+      const select = picker.getByRole("combobox", { name: "Vị trí trong cột" });
+      expectBox(await box(select, picker), frame.select, "select");
+      const ss = await style(select);
+      expect([ss.fs, ss.r]).toEqual(["14px", "8px"]);
+      await expect(select).toHaveValue("bottom");
+      await expect(select.locator("option:checked")).toHaveText("Cuối cột");
+      const note = picker.getByText(/^Chuyển cột là lưu ngay/);
+      expectBox(await box(note, picker), frame.note, "note");
+      const nts = await style(note);
+      expect(nts.fs).toBe("12.5px");
+      expectColor(nts.c, [...c.meta], "note colour");
+      await shot(page, `card-popup-picker-${frame.name}-${mode}`);
+    });
+  }
 }
 
 /** Closes the picker and the popup so the lanes are readable again (the popup is modal). */
@@ -366,6 +420,9 @@ test("keyboard: the picker opens from the keyboard, the select takes arrow keys 
     .first()
     .click();
   const trigger = page.getByTitle("Chuyển thẻ sang cột khác");
+  // The popup moves focus into itself as it opens: focus the trigger only after that, or the picker returns focus there.
+  await expect(trigger).toBeVisible();
+  await page.waitForTimeout(500);
   await trigger.focus();
   await page.keyboard.press("Enter");
   const picker = page.getByRole("dialog", { name: "Chuyển sang cột" });

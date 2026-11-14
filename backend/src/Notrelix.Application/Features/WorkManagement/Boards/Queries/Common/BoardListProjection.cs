@@ -15,6 +15,7 @@ internal static class BoardListProjection
         Guid workspaceId,
         IReadOnlyList<Guid> visibleBoardIds,
         IReadOnlyCollection<Guid> visibleSpaceIds,
+        IReadOnlyDictionary<Guid, string> spaceNames,
         CancellationToken ct)
     {
         if (visibleBoardIds.Count == 0)
@@ -47,7 +48,9 @@ internal static class BoardListProjection
             groupCounts.GetValueOrDefault(b.Id),
             b.CreatedAt.UtcDateTime,
             b.Version,
-            b.SpaceId is { } spaceId && visibleSpaceIds.Contains(spaceId) ? spaceId : null
+            b.SpaceId is { } spaceId && visibleSpaceIds.Contains(spaceId) ? spaceId : null,
+            string.IsNullOrWhiteSpace(b.ItemKeyPrefix) ? null : b.ItemKeyPrefix,
+            b.SpaceId is { } named && visibleSpaceIds.Contains(named) ? spaceNames.GetValueOrDefault(named) : null
         )).ToList();
     }
 }

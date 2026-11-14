@@ -25,14 +25,21 @@ public class AddReactionCommandHandler : IRequestHandler<AddReactionCommand, Res
     private readonly ICollaborationDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IReactionWriteLock _reactionLock;
     private readonly IBoardRealtimeNotifier? _realtime;
 
-    public AddReactionCommandHandler(ICollaborationDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IBoardRealtimeNotifier? realtime = null)
+    public AddReactionCommandHandler(
+        ICollaborationDbContext context,
+        ICurrentRequestContext requestContext,
+        IDateTimeProvider dateTimeProvider,
+        IReactionWriteLock reactionLock,
+        IBoardRealtimeNotifier? realtime = null)
     {
         _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
+        _reactionLock = reactionLock;
     }
 
     public async Task<Result> Handle(AddReactionCommand request, CancellationToken ct)
@@ -51,6 +58,10 @@ public class AddReactionCommandHandler : IRequestHandler<AddReactionCommand, Res
         var comment = await ReactionCommentLookup.RequireOnItemAsync(_context, request.BoardItemId, request.CommentId, ct);
         var target = ResourceRef.Create(ResourceKind.Create(ReactionCommentLookup.CommentKind), comment.Id, workspaceId);
         var emoji = Emoji.Create(request.Emoji);
+
+        // Concurrent adds of the same reaction serialize on this lock; the check below then sees the committed row,
+        // so a racing duplicate is the same no-op as a repeat click (UC-COL-A09).
+        await _reactionLock.AcquireAsync(comment.Id, userId, emoji.Code, ct);
 
         // Adding a reaction the person already holds is a semantic no-op.
         var exists = await _context.Reactions.AsNoTracking()

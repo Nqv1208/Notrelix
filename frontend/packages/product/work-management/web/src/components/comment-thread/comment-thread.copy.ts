@@ -19,6 +19,11 @@ export const threadEn = {
   chipMine: "{{emoji}} {{count}}, you reacted",
   reactedBy: "Reacted by {{names}}",
   reactions: "Reactions",
+  resolve: "Resolve",
+  reopen: "Reopen",
+  resolved: "Resolved",
+  resolveRefused: "You can't change this thread. Ask its starter or an editor.",
+  resolveNotFound: "This item is gone or you can no longer see it.",
 };
 
 export type ThreadCopy = typeof threadEn;
@@ -38,4 +43,10 @@ export const threadVi: ThreadCopy = {
   chipMine: "{{emoji}} {{count}}, bạn đã thả",
   reactedBy: "Đã thả bởi {{names}}",
   reactions: "Cảm xúc",
+  resolve: "Giải quyết",
+  reopen: "Mở lại",
+  resolved: "Đã giải quyết",
+  resolveRefused:
+    "Bạn không thể thay đổi chuỗi bình luận này. Hãy hỏi người bắt đầu hoặc người biên tập.",
+  resolveNotFound: "Việc này đã mất hoặc bạn không còn xem được.",
 };

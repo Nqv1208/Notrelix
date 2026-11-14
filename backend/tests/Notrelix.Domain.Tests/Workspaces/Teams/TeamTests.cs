@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Domain.Tests.Workspaces;
 
@@ -440,5 +441,52 @@ public class TeamTests
         act.Should().Throw<BusinessRuleException>();
         team.Status.Should().Be(originalStatus);
         team.DomainEvents.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("design")]
+    [InlineData("  DESIGN ")]
+    public void Create_WithAnotherTeamsNameCaseInsensitively_IsRejected(string name)
+    {
+        var act = () => Team.Create(Guid.NewGuid(), Guid.NewGuid(), name, Guid.NewGuid(), DateTimeOffset.UtcNow, ["Design"]);
+
+        act.Should().Throw<BusinessRuleException>().Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Team_DuplicateName);
+    }
+
+    [Fact]
+    public void Rename_ToAnotherTeamsName_IsRejected_WithoutMutation()
+    {
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        ((IHasDomainEvents)team).ClearDomainEvents();
+
+        var act = () => team.Rename("design", Guid.NewGuid(), DateTimeOffset.UtcNow, ["Design"]);
+
+        act.Should().Throw<BusinessRuleException>().Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Team_DuplicateName);
+        team.Name.Should().Be("Dev Team");
+        team.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Rename_ToItsOwnNameInAnotherCase_IsAllowed()
+    {
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), "Dev Team", Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var version = team.Version;
+
+        team.Rename("dev team", Guid.NewGuid(), DateTimeOffset.UtcNow, ["Design"]);
+
+        team.Name.Should().Be("dev team");
+        team.Version.Should().Be(version + 1);
+    }
+
+    [Fact]
+    public void Create_MeasuresTheTrimmedName_AgainstTheLengthLimit()
+    {
+        var padded = "  " + new string('a', 160) + "  ";
+
+        var team = Team.Create(Guid.NewGuid(), Guid.NewGuid(), padded, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        team.Name.Should().HaveLength(160);
+        var tooLong = () => Team.Create(Guid.NewGuid(), Guid.NewGuid(), new string('a', 161), Guid.NewGuid(), DateTimeOffset.UtcNow);
+        tooLong.Should().Throw<BusinessRuleException>();
     }
 }

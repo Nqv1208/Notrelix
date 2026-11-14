@@ -22,6 +22,7 @@ export const SAVED_FILTER_URGENT: SavedFilter = {
   name: "Việc gấp tuần này",
   visibility: "me",
   isMine: true,
+  createdByName: null,
   criteria: { filter: "p.high~o", groupBy: "field-assignee" },
   version: 3,
 };
@@ -32,6 +33,7 @@ export const SAVED_FILTER_REVIEW: SavedFilter = {
   name: "Chờ tôi duyệt",
   visibility: "me",
   isMine: true,
+  createdByName: null,
   criteria: { filter: "s.status-review" },
   version: 1,
 };
@@ -42,6 +44,7 @@ export const SAVED_FILTER_SPRINT: SavedFilter = {
   name: "Sprint hiện tại",
   visibility: "board",
   isMine: false,
+  createdByName: "Hà Nguyễn",
   criteria: { filter: "s.status-doing", groupBy: "field-status" },
   version: 2,
 };
@@ -52,6 +55,7 @@ export const SAVED_FILTER_SHARED_MINE: SavedFilter = {
   name: "Lỗi chưa gán người",
   visibility: "board",
   isMine: true,
+  createdByName: null,
   criteria: { filter: "l.label-bug" },
   version: 1,
 };

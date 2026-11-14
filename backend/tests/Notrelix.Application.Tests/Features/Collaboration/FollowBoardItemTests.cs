@@ -19,6 +19,7 @@ public class FollowBoardItemTests
     private readonly List<ResourceWatcher> _rows = [];
     private readonly Mock<DbSet<ResourceWatcher>> _watchers;
     private readonly Mock<ICollaborationDbContext> _context = new();
+    private readonly Mock<IWatcherWriteLock> _watcherLock = new();
 
     public FollowBoardItemTests()
     {
@@ -32,7 +33,7 @@ public class FollowBoardItemTests
     }
 
     private Task Follow(Guid item) =>
-        new FollowBoardItemCommandHandler(_context.Object, _request.Object, _clock.Object)
+        new FollowBoardItemCommandHandler(_context.Object, _request.Object, _clock.Object, _watcherLock.Object)
             .Handle(new FollowBoardItemCommand(item), CancellationToken.None);
 
     private Task Unfollow(Guid item) =>
@@ -43,6 +44,19 @@ public class FollowBoardItemTests
         _account, _workspace,
         ResourceRef.Create(ResourceKind.Create(FollowBoardItemCommand.BoardItemKind), item, _workspace),
         user, user, Now);
+
+    [Fact]
+    public async Task Following_TakesTheWatcherLockForTheCallerAndItemBeforeItChecks()
+    {
+        var item = Guid.CreateVersion7();
+
+        await Follow(item);
+
+        _watcherLock.Verify(l => l.AcquireAsync(
+            _me,
+            It.Is<ResourceRef>(r => r.ResourceId == item && r.Kind.Value == FollowBoardItemCommand.BoardItemKind),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
 
     [Fact]
     public async Task Following_RecordsTheCallerAsAFollowerOfTheItem()

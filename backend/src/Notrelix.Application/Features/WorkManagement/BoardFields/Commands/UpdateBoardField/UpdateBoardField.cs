@@ -5,7 +5,7 @@ using Notrelix.Domain.WorkManagement.Formulas;
 namespace Notrelix.Application.Features.WorkManagement.BoardFields.Commands.UpdateBoardField;
 
 [IdempotencyOperation("work-management.board-fields.update-board-field.v1")]
-public record UpdateBoardFieldCommand(Guid BoardId, Guid ColumnId, string? Name, string? Settings, long ExpectedVersion) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
+public record UpdateBoardFieldCommand(Guid BoardId, Guid ColumnId, string? Name, string? Settings, long ExpectedVersion, string? DefaultValueJson = null) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateField;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-field"), ColumnId);
@@ -17,13 +17,16 @@ public class UpdateBoardFieldCommandHandler : IRequestHandler<UpdateBoardFieldCo
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IBoardRealtimeNotifier? _realtime;
+    private readonly Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility? _visibility;
 
     public UpdateBoardFieldCommandHandler(
         IWorkManagementDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
-        IBoardRealtimeNotifier? realtime = null)
+        IBoardRealtimeNotifier? realtime = null,
+        Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility? visibility = null)
     {
+        _visibility = visibility;
         _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
@@ -40,6 +43,7 @@ public class UpdateBoardFieldCommandHandler : IRequestHandler<UpdateBoardFieldCo
     private async Task<Result> HandleCore(UpdateBoardFieldCommand request, CancellationToken ct)
     {
         var column = await _context.BoardFields
+            .Include(item => item.Options)
             .FirstOrDefaultAsync(item => item.Id == request.ColumnId && item.BoardId == request.BoardId, ct);
         if (column is null) throw new NotFoundException(nameof(BoardField), request.ColumnId);
 
@@ -64,10 +68,25 @@ public class UpdateBoardFieldCommandHandler : IRequestHandler<UpdateBoardFieldCo
         {
             var self = new ComputedFieldInput(column.Id, column.Name, column.Type, request.Settings);
             var normalized = await ComputedFieldGuard.NormalizeAsync(_context, column.BoardId, self, column.Type, request.Settings, ct);
+            if (column.Type == FieldType.Relation && RelationFieldSettings.TargetBoardId(normalized) is Guid targetBoardId)
+                await RelationTargets.RelationFieldTargets.EnsureTargetBoardAsync(_context, _visibility, column.AccountId, column.WorkspaceId, _currentUser.UserId, targetBoardId, ct);
             var settings = FieldSettings.Create(JsonValue.Create(normalized)!);
             column.UpdateSettings(settings, _currentUser.UserId, now);
             await ComputedFieldGuard.EnsureAsync(_context, column, ct);
         }
+
+        // The default is creation behaviour (WM-008): existing values are not rewritten. The literal `null` clears it.
+        if (request.DefaultValueJson is not null)
+        {
+            var fallback = FieldValue.Create(JsonValue.Create(request.DefaultValueJson)!);
+            column.SetDefaultValue(fallback.IsEmpty ? null : fallback, _currentUser.UserId, now);
+        }
+
+        // Quick add must never be blocked: a required field needs a default, except a checkbox whose empty value is unchecked.
+        if ((request.Settings is not null || request.DefaultValueJson is not null)
+            && column.IsRequired && column.DefaultValue is null && column.Type != FieldType.Checkbox)
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(Notrelix.Domain.WorkManagement.WorkManagementRuleCodes.WorkManagement_FieldSettings_RequiredNeedsDefault,
+                $"The field '{column.Name}' can be required only when it has a default value.");
 
         return Result.Success();
     }

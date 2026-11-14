@@ -5,7 +5,98 @@
 # TLS terminates at a managed edge/load balancer. The origin HTTP port must be
 # firewall-restricted to that edge; infra/nginx/nginx.prod.conf then forwards
 # the canonical public scheme as HTTPS to application services.
+#
+# One backend image runs three processes, selected by Runtime__Roles (see
+# backend/docs/operations/configuration-and-runtime.md section 23B):
+#   backend-api       api        REST endpoints and health probes
+#   backend-realtime  realtime   WebSocket gateway (/api/v1/realtime) and health probes
+#   backend-worker    worker     outbox relay, consumers and jobs, and health probes
+#
+# Application connections go through pgbouncer (transaction pooling). Migrations,
+# rls-apply and seed connect straight to postgres with the owner login.
 # =============================================================================
+x-backend-build: &backend-build
+  build:
+    context: ./backend
+  image: ${NOTRELIX_BACKEND_IMAGE:-notrelix-backend:local}
+
+x-backend-environment: &backend-environment
+  ASPNETCORE_ENVIRONMENT: Production
+  ASPNETCORE_URLS: http://+:8000
+  # Requests run as notrelix_app (through pgbouncer), background work as notrelix_worker (through pgbouncer).
+  # Both strings compose the runtime logins from their passwords so the route cannot skip the pooler.
+  # Npgsql: no session reset on close (transaction pooling), no auto-prepare (pgbouncer keeps prepared statements off).
+  # Passwords must not contain ';', '=' or '"'.
+  ConnectionStrings__NotrelixDb: >-
+    Host=pgbouncer;Port=6432;Database=${POSTGRES_DB:-notrelix};Username=notrelix_app;Password=${NOTRELIX_APP_DB_PASSWORD:?NOTRELIX_APP_DB_PASSWORD is required};No Reset On Close=true;Max Auto Prepare=0
+  ConnectionStrings__NotrelixWorkerDb: >-
+    Host=pgbouncer;Port=6432;Database=${POSTGRES_DB:-notrelix};Username=notrelix_worker;Password=${NOTRELIX_WORKER_DB_PASSWORD:?NOTRELIX_WORKER_DB_PASSWORD is required};No Reset On Close=true;Max Auto Prepare=0
+  # Migrations, seed and rls-apply connect directly to postgres (never through pgbouncer).
+  ConnectionStrings__NotrelixMigrationDb: ${CONNECTIONSTRINGS_NOTRELIXMIGRATIONDB:?CONNECTIONSTRINGS_NOTRELIXMIGRATIONDB is required}
+  ConnectionStrings__Redis: ${CONNECTIONSTRINGS_REDIS:?CONNECTIONSTRINGS_REDIS is required}
+  Rls__RoleEnforcement: Enforce
+  SeedData__Enabled: "false"
+  JwtSettings__SecretKey: ${JWT_SECRET:?JWT_SECRET is required}
+  JwtSettings__Issuer: ${JWT_ISSUER:?JWT_ISSUER is required}
+  JwtSettings__Audience: ${JWT_AUDIENCE:?JWT_AUDIENCE is required}
+  # The platform operator console is off until both are set: its own database login (notrelix_operator,
+  # provisioned from this string) and its own signing key. Never reuse JWT_SECRET. The seeded operator
+  # password is read once and hashed; an existing operator is never overwritten.
+  ConnectionStrings__NotrelixOperatorDb: ${NOTRELIX_OPERATOR_DB_CONNECTION:-}
+  Operator__Jwt__SigningKey: ${OPERATOR_JWT_SIGNING_KEY:-}
+  Operator__Jwt__Audience: ${OPERATOR_JWT_AUDIENCE:-notrelix-operator-console}
+  Operator__Seed__Email: ${OPERATOR_SEED_EMAIL:-}
+  Operator__Seed__Password: ${OPERATOR_SEED_PASSWORD:-}
+  Email__ApiKey: ${RESEND_API_KEY:?RESEND_API_KEY is required}
+  Email__FromEmail: ${EMAIL_FROM:-noreply@notrelix.app}
+  Email__FromName: ${EMAIL_FROM_NAME:-Notrelix}
+  Cors__AllowedOrigins__0: ${CORS_ORIGIN:?CORS_ORIGIN is required}
+  # Browser CSRF enforcement is mandatory outside Development/Testing (ADR-005);
+  # not env-overridable, and startup fails if it is disabled here.
+  Security__Csrf__Enabled: "true"
+  # Every role reads and writes the same Data Protection key ring (integration secrets, MFA, OAuth state).
+  DataProtection__PersistKeys: "true"
+  DataProtection__KeysPath: /var/lib/notrelix/dataprotection-keys
+  Messaging__Transport: RabbitMQ
+  Messaging__RabbitMQ__Host: rabbitmq
+  Messaging__RabbitMQ__Port: "5672"
+  Messaging__RabbitMQ__VHost: ${RABBITMQ_VHOST:-/}
+  Messaging__RabbitMQ__Username: ${RABBITMQ_USER:?RABBITMQ_USER is required}
+  Messaging__RabbitMQ__Password: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is required}
+  ForwardedHeaders__RequireKnownProxyInProduction: "true"
+  ForwardedHeaders__KnownNetworks__0: ${BACKEND_NETWORK_SUBNET:-172.28.0.0/24}
+
+x-backend-service: &backend-service
+  <<: *backend-build
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp:mode=1777
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  deploy:
+    resources:
+      limits:
+        cpus: "0.5"
+        memory: 512M
+      reservations:
+        cpus: "0.1"
+        memory: 128M
+  depends_on:
+    pgbouncer:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    rabbitmq:
+      condition: service_healthy
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+
 services:
   # Repeat stateful auth requirements here so production cannot silently fall
   # back to development credentials from a local/base topology.
@@ -15,10 +106,22 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is required}
       RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
 
-  backend:
-    build:
-      context: ./backend
+  # Transaction-mode connection pooler in front of postgres for the runtime logins only.
+  # The two passwords are written to a userlist in /tmp (tmpfs) at start; nothing is persisted.
+  pgbouncer:
+    image: ${NOTRELIX_PGBOUNCER_IMAGE:-edoburu/pgbouncer:v1.25.2-p0}
     restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        umask 077 &&
+        printf '"%s" "%s"\n"%s" "%s"\n' notrelix_app "$$NOTRELIX_APP_DB_PASSWORD" notrelix_worker "$$NOTRELIX_WORKER_DB_PASSWORD" > /tmp/pgbouncer-userlist.txt &&
+        exec pgbouncer /etc/pgbouncer/pgbouncer.ini
+    environment:
+      NOTRELIX_APP_DB_PASSWORD: ${NOTRELIX_APP_DB_PASSWORD:?NOTRELIX_APP_DB_PASSWORD is required}
+      NOTRELIX_WORKER_DB_PASSWORD: ${NOTRELIX_WORKER_DB_PASSWORD:?NOTRELIX_WORKER_DB_PASSWORD is required}
+    volumes:
+      - ./infra/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
     read_only: true
     tmpfs:
       - /tmp:mode=1777
@@ -26,66 +129,57 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 512M
-        reservations:
-          cpus: "0.1"
-          memory: 128M
-    environment:
-      ASPNETCORE_ENVIRONMENT: Production
-      ASPNETCORE_URLS: http://+:8000
-      # NotrelixDb connects as notrelix_app and NotrelixWorkerDb as notrelix_worker (their passwords are the
-      # ones --rls-apply provisions); NotrelixMigrationDb is the owner, used by migrate / seed / rls-apply only.
-      ConnectionStrings__NotrelixDb: ${CONNECTIONSTRINGS_NOTRELIXDB:?CONNECTIONSTRINGS_NOTRELIXDB is required}
-      ConnectionStrings__NotrelixWorkerDb: ${CONNECTIONSTRINGS_NOTRELIXWORKERDB:?CONNECTIONSTRINGS_NOTRELIXWORKERDB is required}
-      ConnectionStrings__NotrelixMigrationDb: ${CONNECTIONSTRINGS_NOTRELIXMIGRATIONDB:?CONNECTIONSTRINGS_NOTRELIXMIGRATIONDB is required}
-      ConnectionStrings__Redis: ${CONNECTIONSTRINGS_REDIS:?CONNECTIONSTRINGS_REDIS is required}
-      Rls__RoleEnforcement: Enforce
-      SeedData__Enabled: "false"
-      JwtSettings__SecretKey: ${JWT_SECRET:?JWT_SECRET is required}
-      JwtSettings__Issuer: ${JWT_ISSUER:?JWT_ISSUER is required}
-      JwtSettings__Audience: ${JWT_AUDIENCE:?JWT_AUDIENCE is required}
-      # The platform operator console is off until both are set: its own database login (notrelix_operator,
-      # provisioned from this string) and its own signing key. Never reuse JWT_SECRET. The seeded operator
-      # password is read once and hashed; an existing operator is never overwritten.
-      ConnectionStrings__NotrelixOperatorDb: ${NOTRELIX_OPERATOR_DB_CONNECTION:-}
-      Operator__Jwt__SigningKey: ${OPERATOR_JWT_SIGNING_KEY:-}
-      Operator__Jwt__Audience: ${OPERATOR_JWT_AUDIENCE:-notrelix-operator-console}
-      Operator__Seed__Email: ${OPERATOR_SEED_EMAIL:-}
-      Operator__Seed__Password: ${OPERATOR_SEED_PASSWORD:-}
-      Email__ApiKey: ${RESEND_API_KEY:?RESEND_API_KEY is required}
-      Email__FromEmail: ${EMAIL_FROM:-noreply@notrelix.app}
-      Email__FromName: ${EMAIL_FROM_NAME:-Notrelix}
-      Cors__AllowedOrigins__0: ${CORS_ORIGIN:?CORS_ORIGIN is required}
-      # Browser CSRF enforcement is mandatory outside Development/Testing (ADR-005);
-      # not env-overridable, and startup fails if it is disabled here.
-      Security__Csrf__Enabled: "true"
-      Messaging__Transport: RabbitMQ
-      Messaging__RabbitMQ__Host: rabbitmq
-      Messaging__RabbitMQ__Port: "5672"
-      Messaging__RabbitMQ__VHost: ${RABBITMQ_VHOST:-/}
-      Messaging__RabbitMQ__Username: ${RABBITMQ_USER:?RABBITMQ_USER is required}
-      Messaging__RabbitMQ__Password: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is required}
-      ForwardedHeaders__RequireKnownProxyInProduction: "true"
-      ForwardedHeaders__KnownNetworks__0: ${BACKEND_NETWORK_SUBNET:-172.28.0.0/24}
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 6432"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
     networks:
       - backend-network
-      - backend-egress-network
     logging:
       driver: json-file
       options:
-        max-size: "20m"
-        max-file: "5"
+        max-size: "10m"
+        max-file: "3"
+
+  # REST endpoints. Serves /api except the realtime path, and the health probes.
+  backend-api:
+    <<: *backend-service
+    environment:
+      <<: *backend-environment
+      Runtime__Roles: api
+    networks:
+      - backend-network
+      - backend-egress-network
+    volumes:
+      - dataprotection_keys:/var/lib/notrelix/dataprotection-keys
+
+  # WebSocket realtime gateway. No REST routes and no hosted services.
+  backend-realtime:
+    <<: *backend-service
+    environment:
+      <<: *backend-environment
+      Runtime__Roles: realtime
+    networks:
+      - backend-network
+    volumes:
+      - dataprotection_keys:/var/lib/notrelix/dataprotection-keys
+
+  # Background jobs and the outbox relay. No public route.
+  backend-worker:
+    <<: *backend-service
+    environment:
+      <<: *backend-environment
+      Runtime__Roles: worker
+    networks:
+      - backend-network
+      - backend-egress-network
+    volumes:
+      - dataprotection_keys:/var/lib/notrelix/dataprotection-keys
 
   frontend-marketing:
     build:
@@ -100,7 +194,7 @@ services:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
     depends_on:
-      - backend
+      - backend-api
     networks:
       - frontend-network
 
@@ -119,7 +213,7 @@ services:
     environment:
       NODE_ENV: production
     depends_on:
-      - backend
+      - backend-api
     networks:
       - frontend-network
 
@@ -139,9 +233,14 @@ services:
     volumes:
       - ./infra/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - backend
+      - backend-api
+      - backend-realtime
       - frontend-marketing
       - frontend-web
     networks:
       - backend-network
       - frontend-network
+
+volumes:
+  # Shared by the three backend processes so they read one Data Protection key ring.
+  dataprotection_keys:

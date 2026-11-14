@@ -1001,7 +1001,7 @@ Examples:
 Route to:
 
 ```text
-docs/delivery/change-impact-and-migration.md
+docs/delivery/migration-policy.md
 backend/docs/operations/migrations-and-data-change.md
 ```
 
@@ -1571,7 +1571,7 @@ frontend/docs/architecture/api-and-contracts.md
 frontend/docs/architecture/realtime.md
 frontend/docs/architecture/state-query-mutations.md
 
-docs/delivery/change-impact-and-migration.md
+docs/delivery/migration-policy.md
 ```
 
 ---

@@ -33,6 +33,30 @@ public class InvitationEndpointTests : IClassFixture<NotrelixApiFactory>
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
     }
 
+    [Theory]
+    [InlineData("limit=0")]
+    [InlineData("limit=201")]
+    [InlineData("limit=-1")]
+    [InlineData("cursor=not-a-cursor")]
+    [InlineData("cursor=MTIzOjQ1Ng")]
+    public async Task ListInvitations_WithAPageThatIsNotValid_ReturnsBadRequest(string query)
+    {
+        var response = await _client.GetAsync($"/api/v1/workspaces/{WorkspaceId}/invitations?{query}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Theory]
+    [InlineData("limit=1")]
+    [InlineData("limit=50")]
+    [InlineData("limit=200")]
+    public async Task ListInvitations_WithAPageInRange_IsNotRefusedAsBadRequest(string query)
+    {
+        var response = await _client.GetAsync($"/api/v1/workspaces/{WorkspaceId}/invitations?{query}");
+
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
+    }
+
     // ── Cancel Invitation ───────────────────────────────────
     [Fact]
     public async Task CancelInvitation_WithExistingInvitation_ReturnsSuccess()

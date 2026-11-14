@@ -375,6 +375,53 @@ describe("BoardTimelineView dependencies and the tray", () => {
     );
   });
 
+  it("moves a linked item with one write of its own and reschedules no other item (D76.9)", async () => {
+    const { container, cards, extras } = renderTimeline();
+    await ready();
+    await linkFromDialog(container);
+    await waitFor(() => expect(extras.addDependency).toHaveBeenCalledTimes(1));
+    const [first, second] = extras.addDependency.mock.calls[0] as unknown as [
+      string,
+      string,
+    ];
+    const other = first === erpItemId("ERP-142") ? second : first;
+    const otherRow = container.querySelector<HTMLElement>(
+      `[data-tl="lrow"][data-row-id="${other}"]`,
+    );
+    const otherDue = otherRow?.querySelector(
+      ":scope > span:last-child",
+    )?.textContent;
+    const title = within(listRow(container, "ERP-142")).getAllByRole(
+      "link",
+    )[1]!;
+    for (let step = 0; step < 3; step += 1)
+      fireEvent.keyDown(title, { key: "ArrowRight", altKey: true });
+    await waitFor(() => expect(cards.updateCard).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    for (const call of cards.updateCard.mock.calls as unknown[][])
+      expect(call[0]).toBe(erpItemId("ERP-142"));
+    expect(
+      container
+        .querySelector<HTMLElement>(`[data-tl="lrow"][data-row-id="${other}"]`)
+        ?.querySelector(":scope > span:last-child")?.textContent,
+    ).toBe(otherDue);
+  });
+
+  it("says why a link that would close a loop is refused by the server", async () => {
+    const { container } = renderTimeline(erpOwnerAccess(), {
+      addDependency: async () => {
+        throw Object.assign(new Error("cycle"), {
+          kind: "business_rule",
+          code: "WorkManagement_Dependency_CannotCreateCycle",
+        });
+      },
+    });
+    await ready();
+    await linkFromDialog(container);
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(toast.error.mock.calls[0]?.[0]).toMatch(/^Không nối được/);
+  });
+
   it("keeps a failed link red with Thử lại that sends it again", async () => {
     const { container, extras } = renderTimeline(erpOwnerAccess(), {
       addDependency: async () => {

@@ -95,9 +95,7 @@ public class Form : SoftDeletableAggregateRoot, IWorkspaceScoped
     {
         EnsureNotDeleted();
         Guard.NotEmpty(updatedBy);
-        if (Status == FormStatus.Closed)
-            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_CannotPublishClosed, "Cannot publish a closed form.");
-
+        // A closed form is opened again by publishing it (Mở lại in the builder).
         if (Status == FormStatus.Published) return;
 
         if (_questions.Count == 0)

@@ -177,4 +177,17 @@ describe("projectTableLanes", () => {
     expect(result.groups).toEqual([]);
     expect(result.hiddenCount).toBe(4);
   });
+
+  it("keeps a lane a filter emptied while another lane still matches, so its note shows", () => {
+    const result = projectTableLanes({
+      ...base,
+      lanes: [...lanes, lane("review", "Chờ duyệt", [], 4)],
+      hideDone: false,
+      narrowed: true,
+    });
+    expect(result.groups.map((g) => g.name)).toContain("Chờ duyệt");
+    expect(result.groups.find((g) => g.name === "Chờ duyệt")?.cards).toEqual(
+      [],
+    );
+  });
 });

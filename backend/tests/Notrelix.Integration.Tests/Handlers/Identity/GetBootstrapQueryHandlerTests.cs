@@ -97,7 +97,6 @@ public class GetBootstrapQueryHandlerTests : IAsyncLifetime
         result.Data.Workspaces[0].Id.Should().Be(workspace.Id);
         result.Data.Workspaces[0].Name.Should().Be("My Workspace");
         result.Data.Workspaces[0].Slug.Should().Be("my-workspace");
-        result.Data.Workspaces[0].Role.Should().Be("Admin");
     }
 
     [Fact]

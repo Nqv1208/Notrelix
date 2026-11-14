@@ -165,12 +165,23 @@ export interface MockColumnRecord {
   name: string;
   fieldType: string;
   settings?: string;
+  /** The default value for a new item, a JSON value (what `defaultValueJson` stores). */
+  defaultValue?: string;
   position: number;
   isHidden?: boolean;
   /** Options of a Status or Select field, in position order. */
   options?: MockFieldOptionRecord[];
   /** Field aggregate version (an option write's `expectedVersion`); absent = 1. */
   version?: number;
+}
+
+/** A field deleted from a board, kept for 30 days (`WorkManagement.BoardFields.Deleted`). */
+export interface MockDeletedColumnRecord {
+  column: MockColumnRecord;
+  deletedAt: string;
+  restorableUntil: string;
+  deletedByName: string;
+  valueCount: number;
 }
 
 /** A board member (`WorkManagement.Boards.GetMembers` / `/full` members). */
@@ -209,6 +220,8 @@ export interface MockLabelRecord {
   boardId: string;
   name: string;
   color: string;
+  /** The label version a write names; starts at 1 and moves on every update. */
+  version?: number;
 }
 
 export interface MockCardLabelRecord {

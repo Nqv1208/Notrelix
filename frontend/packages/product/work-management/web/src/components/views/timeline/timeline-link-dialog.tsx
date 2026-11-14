@@ -20,9 +20,72 @@ import {
 } from "./timeline-model";
 import type { TimelineCopy } from "./timeline.copy";
 
-type Direction = "waits" | "blocks";
+export type TimelineLinkDirection = "waits" | "blocks";
+type Direction = TimelineLinkDirection;
 
-const nameOf = (item: TimelineItem) => item.itemKey ?? item.title;
+export const linkNameOf = (item: TimelineItem) => item.itemKey ?? item.title;
+const nameOf = linkNameOf;
+
+/**
+ * What "Liên kết với…" offers, shared by the dialog and the phone sheet: the
+ * direction, the search, the other items with the loop each would close, the
+ * chosen one and the item's existing links.
+ */
+export function useTimelineLinkChoices(
+  item: TimelineItem,
+  items: readonly TimelineItem[],
+  links: readonly TimelineLink[],
+) {
+  const [direction, setDirectionState] = useState<Direction>("waits");
+  const [query, setQuery] = useState("");
+  const [chosen, setChosen] = useState<string | null>(null);
+  const byId = new Map(items.map((candidate) => [candidate.id, candidate]));
+  byId.set(item.id, item);
+  const nameById = (id: string) => {
+    const found = byId.get(id);
+    return found ? nameOf(found) : id;
+  };
+  // `waits`: the chosen item finishes first (chosen -> item).
+  const linkFor = (other: string): TimelineLink =>
+    direction === "waits"
+      ? { from: other, to: item.id }
+      : { from: item.id, to: other };
+  const needle = query.trim().toLowerCase();
+  const rows = items
+    .filter((candidate) => candidate.id !== item.id)
+    .filter((candidate) =>
+      `${candidate.itemKey ?? ""} ${candidate.title}`
+        .toLowerCase()
+        .includes(needle),
+    )
+    .map((candidate) => {
+      const link = linkFor(candidate.id);
+      const cycle = findLinkCycle(links, link.from, link.to);
+      const linked = hasLink(links, link.from, link.to);
+      return { candidate, link, cycle, linked };
+    });
+  const chosenRow = rows.find((row) => row.candidate.id === chosen);
+  const mine = links.filter(
+    (link) => link.from === item.id || link.to === item.id,
+  );
+  return {
+    direction,
+    setDirection: (value: Direction) => {
+      setDirectionState(value);
+      setChosen(null);
+    },
+    query,
+    setQuery,
+    chosen,
+    setChosen,
+    nameById,
+    rows,
+    chosenRow,
+    refused: chosenRow?.cycle ?? null,
+    mine,
+    canCreate: Boolean(chosenRow && !chosenRow.cycle && !chosenRow.linked),
+  };
+}
 
 export interface TimelineLinkDialogProps {
   copy: TimelineCopy;
@@ -51,42 +114,22 @@ export function TimelineLinkDialog({
   onRemove,
   onClose,
 }: TimelineLinkDialogProps) {
-  const [direction, setDirection] = useState<Direction>("waits");
-  const [query, setQuery] = useState("");
-  const [chosen, setChosen] = useState<string | null>(null);
   const alertId = useId();
   const text = copy.link;
-  const byId = new Map(items.map((candidate) => [candidate.id, candidate]));
-  byId.set(item.id, item);
-  const nameById = (id: string) => {
-    const found = byId.get(id);
-    return found ? nameOf(found) : id;
-  };
-  // `waits`: the chosen item finishes first (chosen -> item).
-  const linkFor = (other: string): TimelineLink =>
-    direction === "waits"
-      ? { from: other, to: item.id }
-      : { from: item.id, to: other };
-  const needle = query.trim().toLowerCase();
-  const rows = items
-    .filter((candidate) => candidate.id !== item.id)
-    .filter((candidate) =>
-      `${candidate.itemKey ?? ""} ${candidate.title}`
-        .toLowerCase()
-        .includes(needle),
-    )
-    .map((candidate) => {
-      const link = linkFor(candidate.id);
-      const cycle = findLinkCycle(links, link.from, link.to);
-      const linked = hasLink(links, link.from, link.to);
-      return { candidate, link, cycle, linked };
-    });
-  const chosenRow = rows.find((row) => row.candidate.id === chosen);
-  const refused = chosenRow?.cycle ?? null;
-  const mine = links.filter(
-    (link) => link.from === item.id || link.to === item.id,
-  );
-  const canCreate = chosenRow && !chosenRow.cycle && !chosenRow.linked;
+  const {
+    direction,
+    setDirection,
+    query,
+    setQuery,
+    chosen,
+    setChosen,
+    nameById,
+    rows,
+    chosenRow,
+    refused,
+    mine,
+    canCreate,
+  } = useTimelineLinkChoices(item, items, links);
 
   return (
     <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
@@ -116,10 +159,7 @@ export function TimelineLinkDialog({
                 direction === value &&
                   "bg-popover font-semibold text-foreground shadow-segment dark:bg-card",
               )}
-              onClick={() => {
-                setDirection(value);
-                setChosen(null);
-              }}
+              onClick={() => setDirection(value)}
             >
               {fill(text[value], { key: nameOf(item) })}
             </button>

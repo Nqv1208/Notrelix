@@ -511,6 +511,8 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
                 Notrelix.Infrastructure.CrossContext.Collaboration.Watchers.PostgresResourceFollowers>();
             services.AddScoped<Notrelix.Application.Features.WorkManagement.Ports.Collaboration.IWorkManagementCollaborationReadPort,
                 Notrelix.Infrastructure.CrossContext.WorkManagement.Collaboration.WorkManagementCollaborationReadAdapter>();
+            services.AddScoped<Notrelix.Application.Features.Collaboration.Comments.Ports.ICommentTombstoneReader,
+                Notrelix.Infrastructure.Data.Collaboration.CommentTombstoneReader>();
         }
 
         // A guest is view-only (cannot comment), so a member writes the comment and the guest reads it.

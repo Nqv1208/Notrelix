@@ -59,7 +59,15 @@ export function InboxPage() {
               })
             : target.kind === "doc" && target.id
               ? navigation.getHref({ section: "doc", docId: target.id })
-              : null,
+              : target.kind === "board" && target.boardId
+                ? navigation.getHref({
+                    section: "board",
+                    boardId: target.boardId,
+                  })
+                : target.kind === "chat" && target.id
+                  ? // A conversation has no name; it lives under /chat/dm.
+                    `/workspaces/${workspaceId}/chat/${target.title ? "" : "dm/"}${target.id}`
+                  : null,
         weekday: (iso) => {
           const text = formatters.date(iso, { weekday: "long" });
           return text.charAt(0).toLowerCase() + text.slice(1);

@@ -15,15 +15,15 @@ public class AuthEndpointContractArchitectureTests : ArchitectureTestBase
     }
 
     [Fact]
-    public void RegisterEndpoint_UsesCookieService()
+    public void RegisterEndpoint_OpensNoSession()
     {
         var file = Path.Combine(GetApiPath(), "Endpoints", "Identity", "Auth", "Commands", "RegisterEndpoint.cs");
         var content = RemoveComments(File.ReadAllText(file));
 
-        content.Should().Contain("ICookieService",
-            "RegisterEndpoint must set auth cookies after successful registration.");
-        content.Should().Contain("SetTokenCookie",
-            "RegisterEndpoint must call SetTokenCookie after successful registration.");
+        content.Should().NotContain("ICookieService",
+            "registration answers one neutral response for a new and an existing address and sets no auth cookie (UC-IDN-B03).");
+        content.Should().NotContain("SetTokenCookie",
+            "a session would tell a new address from an existing one.");
     }
 
     [Fact]
@@ -34,7 +34,6 @@ public class AuthEndpointContractArchitectureTests : ArchitectureTestBase
 
         content.Should().Contain("RegisterRequest request", "First parameter must be RegisterRequest DTO");
         content.Should().Contain("ISender sender", "Second parameter must be ISender");
-        content.Should().Contain("ICookieService cookieService", "Third parameter must be ICookieService");
     }
 
     [Fact]

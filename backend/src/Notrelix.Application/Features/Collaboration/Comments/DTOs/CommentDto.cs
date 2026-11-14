@@ -11,7 +11,9 @@ public record CommentDto(
     DateTime? ResolvedAt,
     DateTime CreatedAt,
     IReadOnlyList<ReactionSummaryDto> Reactions,
-    CommentAnchorDto? Anchor = null
+    CommentAnchorDto? Anchor = null,
+    long Version = 1,
+    bool IsDeleted = false
 );
 
 /// <summary>One emoji on a comment: how many people chose it, whether the caller did, and who.</summary>

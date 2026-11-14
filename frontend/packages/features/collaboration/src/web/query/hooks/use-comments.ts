@@ -11,11 +11,11 @@ export function createUseComments(
   endpoints: CollaborationEndpoints,
 ) {
   const service = createCommentService(api, endpoints);
-  return function useComments(resourceId: string) {
+  return function useComments(workspaceId: string, resourceId: string) {
     return useQuery({
-      queryKey: collaborationQueryKeys.comments(resourceId),
+      queryKey: collaborationQueryKeys.comments(workspaceId, resourceId),
       queryFn: () => service.list(resourceId),
-      enabled: !!resourceId,
+      enabled: !!workspaceId && !!resourceId,
     });
   };
 }
@@ -34,6 +34,7 @@ export function createUseCreateComment(
         authorId,
         authorName,
       }: {
+        workspaceId: string;
         resourceId: string;
         body: string;
         authorId: string;
@@ -42,6 +43,7 @@ export function createUseCreateComment(
       onSuccess: (
         _data: unknown,
         variables: {
+          workspaceId: string;
           resourceId: string;
           body: string;
           authorId: string;
@@ -49,7 +51,10 @@ export function createUseCreateComment(
         },
       ) => {
         queryClient.invalidateQueries({
-          queryKey: collaborationQueryKeys.comments(variables.resourceId),
+          queryKey: collaborationQueryKeys.comments(
+            variables.workspaceId,
+            variables.resourceId,
+          ),
         });
       },
     });
@@ -62,12 +67,12 @@ export function createUseDeleteComment(
 ) {
   const service = createCommentService(api, endpoints);
   const queryClient = useQueryClient();
-  return function useDeleteComment(resourceId: string) {
+  return function useDeleteComment(workspaceId: string, resourceId: string) {
     return useMutation({
       mutationFn: (commentId: string) => service.remove(commentId),
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: collaborationQueryKeys.comments(resourceId),
+          queryKey: collaborationQueryKeys.comments(workspaceId, resourceId),
         });
       },
     });

@@ -55,6 +55,26 @@ describe("AccountFrame", () => {
     view.unmount();
   });
 
+  it("offers only the pages it is given, so a person with no workspace sees 'Your workspaces' alone", () => {
+    const copy = frameCopyFixture("en");
+    const view = renderPureUi(
+      <AccountFrame
+        {...frameDefaultScenario("en")}
+        active="workspaces"
+        tabs={["workspaces"]}
+      >
+        <p>page</p>
+      </AccountFrame>,
+    );
+    const nav = screen.getByRole("navigation", { name: copy.label });
+    expect(nav.querySelectorAll("a")).toHaveLength(1);
+    expect(nav.querySelector("[aria-current=page]")?.textContent).toBe(
+      copy.workspaces,
+    );
+    expect(nav.querySelector("[role=separator]")).toBeNull();
+    view.unmount();
+  });
+
   it("FUI[account.frame:edge] keeps a long name and address in the head", () => {
     const view = renderPureUi(
       <AccountFrame {...frameEdgeDataScenario()}>

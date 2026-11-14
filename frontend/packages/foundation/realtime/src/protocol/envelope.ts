@@ -1,13 +1,15 @@
 /**
  * Domain event frame delivered by the realtime gateway (`type: "event"`).
  *
- * Wire shape: backend realtime gateway protocol v1, written by hand here. The
- * generated `artifacts/contracts/realtime.v1.json` stub is NOT the producer of
- * this type (the contract-owner decision is still open).
+ * Wire shape: backend realtime gateway protocol v1 (v1.1 adds the Chat scopes).
+ * Written by hand here; the payload message types of the chat and per-user
+ * streams are generated from `artifacts/contracts/realtime.v1.json`.
  *
- * The gateway sends NO payload. A frame only tells the client that a resource
- * in a subscribed scope changed; state is reconciled by REST invalidation and
- * refetch (FE-RT-001, FE-RT-040).
+ * Most frames carry NO payload: they only tell the client that a resource in a
+ * subscribed scope changed, and state is reconciled by REST invalidation and
+ * refetch (FE-RT-001, FE-RT-040). The chat channel stream (`chat.message.v1`) and
+ * the per-user stream (`chat.unread.v1`) carry a compact `payload`; when it did
+ * not fit the frame limit `payloadOmitted` is true and the client refetches.
  *
  * Mapping from the wire frame (`parseRealtimeMessage`):
  *   occurredAt -> timestamp
@@ -36,4 +38,8 @@ export interface RealtimeEnvelope {
   /** `occurredAt` from the wire frame. */
   readonly timestamp: string;
   readonly payloadContract?: string;
+  /** Compact payload of the chat and per-user streams; absent on notify-only frames. */
+  readonly payload?: Readonly<Record<string, unknown>>;
+  /** True when the gateway dropped the payload to fit the frame limit; refetch over REST. */
+  readonly payloadOmitted?: boolean;
 }

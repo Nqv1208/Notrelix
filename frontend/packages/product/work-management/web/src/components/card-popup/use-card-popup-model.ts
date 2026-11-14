@@ -1,5 +1,8 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { changedByNameOf } from "@notrelix/work-management-state";
+import {
+  changedByNameOf,
+  isRequiredRefusal,
+} from "@notrelix/work-management-state";
 import type {
   Board,
   CardDetail,
@@ -123,7 +126,9 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
               [key]: {
                 status: "error",
                 retry: attempt,
-                reason: (error as { kind?: string } | null)?.kind,
+                reason: isRequiredRefusal(error)
+                  ? "required"
+                  : (error as { kind?: string } | null)?.kind,
               },
             }));
         },
@@ -172,6 +177,8 @@ export function useCardPopupModel(input: CardPopupModelInput): CardPopupModel {
     slots,
     saves,
     track,
+    discardSave: (key: string) =>
+      setSaves((current) => ({ ...current, [key]: undefined })),
     conflict,
     conflictBy,
     clearConflict: () => {

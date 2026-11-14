@@ -124,6 +124,24 @@ public sealed class PageVersionHandlerTests
     }
 
     [Fact]
+    public async Task RestoringAVersionOfATrashedPage_IsRefused_AndTheBlocksStayPut()
+    {
+        var f = new Fixture();
+        var block = NewBlock(f.Page, "a0", "kept");
+        f.Blocks.Add(block);
+        f.Versions.Add(Entry(f, 1, DocumentVersionKind.Named, "Start", [block]));
+        f.Page.Archive(UserId, T0.AddMinutes(1));
+        var seen = block.Version;
+        var sut = new RestorePageVersionCommandHandler(f.Context, new NoPageBlockWriteLock(), f.Recorder, f.Request(), f.Clock);
+
+        var act = () => sut.Handle(new RestorePageVersionCommand(f.Page.Id, f.Versions[0].Id, [new SeenBlockVersion(block.Id, seen)]), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+            .Which.RuleCode.Should().Be(DocumentRuleCodes.Documents_Page_CannotEditArchived);
+        block.Version.Should().Be(seen, "a refused restore changes no block");
+    }
+
+    [Fact]
     public async Task TheList_IsNewestFirst_AndNamesTheKindOfEachEntry()
     {
         var f = new Fixture();
@@ -133,7 +151,7 @@ public sealed class PageVersionHandlerTests
 
         var result = await new ListPageVersionsQueryHandler(f.Context).Handle(new ListPageVersionsQuery(f.Page.Id), CancellationToken.None);
 
-        result.Data!.Select(v => (v.VersionNumber, v.Kind, v.Name)).Should().Equal(
+        result.Data!.Items.Select(v => (v.VersionNumber, v.Kind, v.Name)).Should().Equal(
             (3, "restore", "Restored from version 1"), (2, "named", "Draft"), (1, "automatic", null));
     }
 

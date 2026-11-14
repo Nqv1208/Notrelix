@@ -16,7 +16,8 @@ export interface NotificationsEndpoints {
   notifications: {
     list: string;
     read: (notificationId: string) => string;
-    readAll: string;
+    // Collaboration.Inbox.ReadAll: the Inbox is workspace-scoped on the backend.
+    readAll: (workspaceId: string) => string;
     // PENDING BACKEND
     unreadCount?: string;
     archive?: (notificationId: string) => string;
@@ -87,8 +88,9 @@ export function createNotificationsService(
       await api.post<void>(endpoints.notifications.read(id), {});
     },
 
-    async markAllAsRead(): Promise<void> {
-      await api.post<void>(endpoints.notifications.readAll, {});
+    /** `POST /workspaces/{workspaceId}/inbox/read-all`: marks every Inbox entry of the workspace read. */
+    async markAllAsRead(workspaceId: string): Promise<void> {
+      await api.post<void>(endpoints.notifications.readAll(workspaceId), {});
     },
 
     async archive(id: string): Promise<void> {

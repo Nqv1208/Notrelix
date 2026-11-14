@@ -58,7 +58,7 @@ public sealed class PageReadVersionTests
         renamed.Rename("Beta 2", UserId, Now.AddMinutes(1));
         var sut = new GetWorkspacePagesQueryHandler(Context(unchanged, renamed), Visibility(unchanged, renamed), Actor());
 
-        var pages = (await sut.Handle(new GetWorkspacePagesQuery(WorkspaceId), CancellationToken.None)).Data!;
+        var pages = (await sut.Handle(new GetWorkspacePagesQuery(WorkspaceId), CancellationToken.None)).Data!.Items;
 
         pages.Should().HaveCount(2);
         pages.Single(p => p.Id == unchanged.Id).Version.Should().Be(1);

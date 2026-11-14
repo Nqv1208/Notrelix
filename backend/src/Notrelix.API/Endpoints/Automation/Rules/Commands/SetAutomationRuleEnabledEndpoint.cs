@@ -1,4 +1,5 @@
 using Notrelix.API.Contracts.Automation.Rules.Requests;
+using Notrelix.API.Contracts.Automation.Rules.Responses;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Automation.Rules.Commands.SetAutomationRuleEnabled;
 
@@ -11,7 +12,8 @@ public static class SetAutomationRuleEnabledEndpoint
         group.MapWorkspacePatch("/{automationId:guid}/enabled", HandleAsync)
             .WithName("Automation.Rules.SetEnabled")
             .WithTags("Automation.Rules")
-            .WithSummary("Enable or disable an automation rule");
+            .WithSummary("Enable or disable an automation rule")
+            .Produces<AutomationEnableRefusalResponse>(StatusCodes.Status400BadRequest, "application/json");
         return group;
     }
 

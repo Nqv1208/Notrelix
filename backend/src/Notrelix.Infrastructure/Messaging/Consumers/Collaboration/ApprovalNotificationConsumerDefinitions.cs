@@ -25,6 +25,29 @@ public sealed class ApprovalRequestedNotificationConsumerDefinition : ConsumerDe
     }
 }
 
+public sealed class ApprovalTeamRequestedNotificationConsumerDefinition : ConsumerDefinition<ApprovalTeamRequestedNotificationConsumer>
+{
+    public ApprovalTeamRequestedNotificationConsumerDefinition()
+    {
+        EndpointName = "notrelix-collab-approval-team-requested-notification-v1";
+        ConcurrentMessageLimit = 4;
+    }
+
+    protected override void ConfigureConsumer(
+        IReceiveEndpointConfigurator endpointConfigurator,
+        IConsumerConfigurator<ApprovalTeamRequestedNotificationConsumer> consumerConfigurator,
+        IRegistrationContext context)
+    {
+        endpointConfigurator.PrefetchCount = 8;
+        endpointConfigurator.UseMessageRetry(r =>
+        {
+            r.Interval(3, TimeSpan.FromMilliseconds(200));
+            r.Ignore<ArgumentException>();
+            r.Ignore<DomainException>();
+        });
+    }
+}
+
 public sealed class ApprovalDecidedNotificationConsumerDefinition : ConsumerDefinition<ApprovalDecidedNotificationConsumer>
 {
     public ApprovalDecidedNotificationConsumerDefinition()

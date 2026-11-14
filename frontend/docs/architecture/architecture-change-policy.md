@@ -18,7 +18,7 @@ evidence:
   - frontend/tooling/dependency-rules/src/architecture-manifest.ts
   - frontend/docs/generated/package-boundaries.md
   - frontend/package.json
-  - .github/workflows/fe-ci.yml
+  - .github/workflows/ci.yml
 review_on:
   - architecture-authority-change
   - adr-policy-change
@@ -1985,7 +1985,7 @@ frontend/docs/generated/package-boundaries.md
 frontend/**/package.json
 frontend/package.json
 frontend/tooling/
-.github/workflows/fe-ci.yml
+.github/workflows/ci.yml
 ```
 
 Current FE ADR registry explicitly says:

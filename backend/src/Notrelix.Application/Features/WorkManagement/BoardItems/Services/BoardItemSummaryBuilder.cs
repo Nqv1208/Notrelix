@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.WorkManagement.RelationTargets;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.WorkManagement.Common.DTOs;
 using Notrelix.Application.Features.WorkManagement.Ports.Collaboration;
@@ -16,17 +17,20 @@ public sealed class BoardItemSummaryBuilder : IBoardItemSummaryBuilder
     private readonly IActorLookupService _actorLookup;
     private readonly IWorkManagementCollaborationReadPort _collabReadPort;
     private readonly ICurrentRequestContext _requestContext;
+    private readonly Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility? _visibility;
 
     public BoardItemSummaryBuilder(
         IWorkManagementDbContext context,
         IActorLookupService actorLookup,
         IWorkManagementCollaborationReadPort collabReadPort,
-        ICurrentRequestContext requestContext)
+        ICurrentRequestContext requestContext,
+        Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility? visibility = null)
     {
         _context = context;
         _actorLookup = actorLookup;
         _collabReadPort = collabReadPort;
         _requestContext = requestContext;
+        _visibility = visibility;
     }
 
     public async Task<List<BoardItemSummaryDto>> BuildAsync(IReadOnlyList<BoardField> fields, IReadOnlyList<BoardItem> cards, CancellationToken cancellationToken)
@@ -85,20 +89,32 @@ public sealed class BoardItemSummaryBuilder : IBoardItemSummaryBuilder
             .Where(link => link.Target.Kind == dependencyKind)
             .ToList();
         var blockerIds = blockerLinks.Select(link => link.Target.ResourceId).Distinct().ToList();
-        var openBlockerIds = (await _context.BoardItems
+        var openBlockers = (await _context.BoardItems
                 .AsNoTracking()
                 .Where(item => blockerIds.Contains(item.Id) && item.DeletedAt == null && item.CompletedAt == null)
-                .Select(item => item.Id)
+                .Select(item => new { item.Id, item.BoardId, item.ItemKey })
                 .ToListAsync(cancellationToken))
-            .ToHashSet();
-        var openBlockerCountByCardId = blockerLinks
-            .Where(link => openBlockerIds.Contains(link.Target.ResourceId))
+            .ToDictionary(item => item.Id);
+        var boardIdByCardId = cards.ToDictionary(card => card.Id, card => card.BoardId);
+        var openBlockerLinks = blockerLinks.Where(link => openBlockers.ContainsKey(link.Target.ResourceId)).ToList();
+        var openBlockerCountByCardId = openBlockerLinks
             .GroupBy(link => link.SourceItemId)
             .ToDictionary(group => group.Key, group => group.Count());
+        // A key names an Item the reader sees on this Board only; a blocker on another Board counts but is not named.
+        var openBlockerKeyByCardId = openBlockerLinks
+            .Where(link => openBlockers[link.Target.ResourceId].BoardId == boardIdByCardId[link.SourceItemId])
+            .Select(link => (link.SourceItemId, Key: openBlockers[link.Target.ResourceId].ItemKey))
+            .Where(blocker => !string.IsNullOrEmpty(blocker.Key))
+            .GroupBy(blocker => blocker.SourceItemId)
+            .ToDictionary(group => group.Key, group => group.Select(blocker => blocker.Key!).OrderBy(key => key, StringComparer.Ordinal).First());
 
         var collaborationCounts = await _collabReadPort.GetCountsAsync(cardIds, cancellationToken);
         var readValues = await BoardItemReadValues.LoadAsync(_context, fields, cardIds, cancellationToken);
         var fieldProjection = await BoardItemFieldProjection.LoadAsync(_context, fields, cardIds, cancellationToken, _requestContext.UserId);
+        var relationLinks = await BoardItemRelationLinks.LoadAsync(
+            _context, _visibility, _requestContext.UserId, fields,
+            fieldProjection.ToDictionary(pair => pair.Key, pair => pair.Value.Stored),
+            cancellationToken);
 
         var membersByCardId = cardMembers
             .GroupBy(member => member.ItemId)
@@ -145,7 +161,7 @@ public sealed class BoardItemSummaryBuilder : IBoardItemSummaryBuilder
                 card.StartedAt,
                 card.CompletedAt,
                 values.ChildProgress,
-                projected.Stored.ToDictionary(pair => pair.Key, pair => pair.Value),
+                BoardItemRelationLinks.WithLinkIds(projected.Stored, relationLinks.GetValueOrDefault(card.Id)).ToDictionary(pair => pair.Key, pair => pair.Value),
                 projected.Computed.ToDictionary(pair => pair.Key, pair => pair.Value),
                 openBlockerCountByCardId.GetValueOrDefault(card.Id),
                 card.CoverColor,
@@ -154,7 +170,9 @@ public sealed class BoardItemSummaryBuilder : IBoardItemSummaryBuilder
                 card.RepeatRule,
                 card.ReminderOffsetMinutes ?? ItemReminder.DefaultMinutes,
                 card.UpdatedBy,
-                card.UpdatedBy.HasValue && memberActorMap.TryGetValue(card.UpdatedBy.Value, out var editor) ? editor.Name : null
+                card.UpdatedBy.HasValue && memberActorMap.TryGetValue(card.UpdatedBy.Value, out var editor) ? editor.Name : null,
+                openBlockerKeyByCardId.GetValueOrDefault(card.Id),
+                relationLinks.TryGetValue(card.Id, out var linksByField) ? linksByField.ToDictionary(pair => pair.Key, pair => pair.Value) : null
             );
         })
         .ToList();

@@ -27,7 +27,7 @@ const BUTTON =
   "inline-flex h-8 items-center gap-1.5 rounded-[7px] border border-line-strong bg-doc-panel px-3 text-compact leading-[1.45] font-medium text-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default aria-disabled:text-muted-foreground";
 
 /**
- * The document bar (Final-Docs `.dbar`): crumb, who edited and the
+ * The document bar (Final-Docs-2 `.dbar`): crumb, who edited and the
  * save state on the left; viewers, Share, the review action and More on the
  * right. 49 px with its bottom border.
  */

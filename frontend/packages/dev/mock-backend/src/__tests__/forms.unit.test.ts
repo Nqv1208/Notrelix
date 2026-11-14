@@ -144,6 +144,43 @@ describe("Forms in the mock world (WorkManagement.Forms.*)", () => {
     expect(list.some((row) => row.id === "mock-fsub-3")).toBe(false);
   });
 
+  it("undoes a reject, spam or delete: the response goes back to New, and a closed form publishes again", async () => {
+    const { client, actAs } = setup();
+    actAs("owner");
+    await client.api.post(
+      endpoints.forms.reject("mock-fsub-2"),
+      { reason: "Trùng" },
+      key(),
+    );
+    await client.api.delete(endpoints.forms.submission("mock-fsub-3"));
+    await client.api.post(endpoints.forms.reopen("mock-fsub-2"), {}, key());
+    await client.api.post(endpoints.forms.reopen("mock-fsub-3"), {}, key());
+    const list = await client.api.get<
+      { id: string; status: string; reason: string | null }[]
+    >(endpoints.forms.submissions(FORM));
+    expect(list.find((row) => row.id === "mock-fsub-2")).toMatchObject({
+      status: "Accepted",
+      reason: null,
+    });
+    expect(list.find((row) => row.id === "mock-fsub-3")).toMatchObject({
+      status: "Accepted",
+    });
+
+    const closed = ERP_FORM_IDS.bug;
+    const detail = await client.api.get<{ version: number }>(
+      endpoints.forms.detail(closed),
+    );
+    await client.api.post(
+      `${endpoints.forms.publish(closed)}?expectedVersion=${detail.version}`,
+      {},
+      key(),
+    );
+    const reopened = await client.api.get<{ status: string }>(
+      endpoints.forms.detail(closed),
+    );
+    expect(reopened.status).toBe("Published");
+  });
+
   it("builds a form: publish needs a question, deleting is soft and restorable", async () => {
     const { client } = setup();
     const id = await client.api.post<string>(

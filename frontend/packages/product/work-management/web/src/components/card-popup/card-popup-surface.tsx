@@ -1,7 +1,12 @@
-import type { ReactNode } from "react";
+import type { ClipboardEvent, DragEvent, ReactNode } from "react";
 import { X } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, cn } from "@notrelix/ui-web";
-import { CardPopupProvider, type CardPopupModel } from "./card-popup-context";
+import {
+  CardPopupProvider,
+  StaleSchemaProvider,
+  type CardPopupModel,
+  type PopupStaleSchema,
+} from "./card-popup-context";
 import { PopupHeader } from "./popup-header";
 import { PopupTitleRow } from "./popup-title-row";
 import { PopupQuickRow } from "./popup-quick-row";
@@ -19,12 +24,13 @@ import {
   PopupDeleted,
   PopupGone,
   PopupLoadError,
+  PopupMoved,
   PopupSkeleton,
 } from "./states/popup-states";
 import { useCardPopupCopy } from "./use-card-popup-copy";
 
 export type CardPopupStatus =
-  "loading" | "error" | "gone" | "deleted" | "ready";
+  "loading" | "error" | "gone" | "deleted" | "moved" | "ready";
 
 export interface CardPopupSurfaceProps {
   readonly status: CardPopupStatus;
@@ -42,11 +48,26 @@ export interface CardPopupSurfaceProps {
   readonly conflictBy?: string | null;
   /** Who deleted the card (status `deleted`); null: the server named no one. */
   readonly deletedBy?: string | null;
+  /** Restores the deleted card (status `deleted`); absent for a person who may not. Rejects with the refusal reason key. */
+  readonly onRestoreDeleted?: () => Promise<void>;
+  /** The board the card was moved to (status `moved`) and the way to open it there. */
+  readonly movedTo?: {
+    readonly boardTitle: string;
+    readonly onOpen?: () => void;
+  };
+  /** The comment the person had typed and not sent on a card that is gone: kept to copy. */
+  readonly keptDraft?: string;
   /** The conflict is a field the board no longer has (D12): names who changed it. */
-  readonly staleSchema?: { fieldName: string; byName: string | null } | null;
-  readonly onReloadConflict?: () => void;
+  readonly staleSchema?: PopupStaleSchema | null;
+  readonly onReloadConflict?: () => void | Promise<unknown>;
   /** Dialogs of the host that must sit inside the popup (the draft confirm). */
   readonly overlays?: ReactNode;
+  /**
+   * `modal` (the default): a dialog over the page. `pane`: a region beside the
+   * view that opened it (the tablet Table's split, `Final-T-Table` chia-doi),
+   * one column, no backdrop or focus trap; Escape still closes it.
+   */
+  readonly presentation?: "modal" | "pane";
 }
 
 /**
@@ -64,10 +85,15 @@ export function CardPopupSurface({
   conflict,
   conflictBy,
   deletedBy,
+  onRestoreDeleted,
+  movedTo,
+  keptDraft,
   staleSchema,
   onReloadConflict,
   overlays,
+  presentation = "modal",
 }: CardPopupSurfaceProps) {
+  const pane = presentation === "pane";
   const fallbackCopy = useCardPopupCopy();
   const t = (model?.copy ?? fallbackCopy).shell;
   const ready = status === "ready" && model;
@@ -79,53 +105,48 @@ export function CardPopupSurface({
     model.callbacks.onAddFile,
   );
 
-  return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent
-        showCloseButton={false}
-        onCloseAutoFocus={onCloseAutoFocus}
-        aria-describedby={undefined}
-        // An inline editor closes itself on Escape; the popup stays open.
-        onEscapeKeyDown={(event) => {
-          if (
-            (event.target as HTMLElement | null)?.closest?.("[data-popup-esc]")
-          )
-            event.preventDefault();
-        }}
-        // Files dropped or pasted anywhere on the card are attached, like "Chọn tệp" in the attach panel.
-        onDragOver={(event) => {
-          if (canAttach && event.dataTransfer.types.includes("Files"))
-            event.preventDefault();
-        }}
-        onDrop={(event) => {
-          if (!canAttach || event.dataTransfer.files.length === 0) return;
-          event.preventDefault();
-          for (const dropped of Array.from(event.dataTransfer.files))
-            model?.callbacks.onAddFile?.(dropped);
-        }}
-        onPaste={(event) => {
-          if (!canAttach || event.clipboardData.files.length === 0) return;
-          event.preventDefault();
-          for (const pasted of Array.from(event.clipboardData.files))
-            model?.callbacks.onAddFile?.(pasted);
-        }}
-        overlayClassName="bg-black/40 backdrop-blur-none"
-        className={cn(
-          "fixed top-3 left-0 flex h-[calc(100dvh-12px)] max-h-none w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-t-[16px] rounded-b-none bg-popover p-0 text-[14px] text-foreground ring-0",
-          "md:top-1/2 md:left-1/2 md:h-[calc(100dvh-128px)] md:w-[1120px] md:max-w-[calc(100vw-48px)] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[16px] md:shadow-popover",
-          "sm:max-w-none",
-        )}
-      >
-        <DialogTitle className="sr-only">
-          {ready ? model.card.title || t.dialogLabel : t.dialogLabel}
-        </DialogTitle>
-        {ready ? (
-          <CardPopupProvider value={model}>
-            <PopupHeader onClose={onClose} />
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto md:flex-row md:overflow-hidden">
+  // Files dropped or pasted anywhere on the card are attached, like "Chọn tệp" in the attach panel.
+  const fileDrop = {
+    onDragOver: (event: DragEvent<HTMLElement>) => {
+      if (canAttach && event.dataTransfer.types.includes("Files"))
+        event.preventDefault();
+    },
+    onDrop: (event: DragEvent<HTMLElement>) => {
+      if (!canAttach || event.dataTransfer.files.length === 0) return;
+      event.preventDefault();
+      for (const dropped of Array.from(event.dataTransfer.files))
+        model?.callbacks.onAddFile?.(dropped);
+    },
+    onPaste: (event: ClipboardEvent<HTMLElement>) => {
+      if (!canAttach || event.clipboardData.files.length === 0) return;
+      event.preventDefault();
+      for (const pasted of Array.from(event.clipboardData.files))
+        model?.callbacks.onAddFile?.(pasted);
+    },
+  };
+  const label = ready ? model.card.title || t.dialogLabel : t.dialogLabel;
+
+  const body = (
+    <>
+      {ready ? (
+        <CardPopupProvider value={model}>
+          <StaleSchemaProvider value={staleSchema ?? null}>
+            <PopupHeader onClose={onClose} pane={pane} />
+            <div
+              className={cn(
+                "flex min-h-0 flex-1 flex-col overflow-y-auto",
+                !pane && "md:flex-row md:overflow-hidden",
+              )}
+            >
               <div
                 // 720 px when the popup is 1120 px wide; the column gives way first when the window is narrower.
-                className="relative box-border min-w-0 pb-6 md:flex-[0_1_720px] md:overflow-y-auto"
+                className={cn(
+                  "relative box-border min-w-0 pb-6",
+                  !pane && "md:flex-[0_1_720px] md:overflow-y-auto",
+                  // A new card has no comments yet: on a phone they wait below the fold (Kanban-CardPopup-M-Create).
+                  model.mode === "create" &&
+                    "max-md:min-h-full max-md:shrink-0",
+                )}
                 data-popup-left=""
               >
                 {model.slots.coverBanner}
@@ -146,7 +167,15 @@ export function CardPopupSurface({
               </div>
               <aside
                 aria-label={model.copy.shell.comments}
-                className="relative box-border flex min-w-0 flex-col gap-3.5 border-t border-line bg-background px-4 pt-4 pb-6 md:min-w-[300px] md:flex-[0_1_400px] md:px-5 md:overflow-y-auto md:border-t-0 md:border-l"
+                className={cn(
+                  "relative box-border flex min-w-0 flex-col border-t border-line bg-background px-4 pt-4 pb-6",
+                  pane
+                    ? "md:px-5"
+                    : "md:min-w-[300px] md:flex-[0_1_400px] md:overflow-y-auto md:border-t-0 md:border-l md:px-5",
+                  // Every card popup artboard draws a 12 px rhythm in the comments column (`.pop-r{gap:12px}`
+                  // overrides the base 14), the open card as the create card.
+                  "gap-3",
+                )}
               >
                 <ApprovalSection />
                 <CommentsColumn />
@@ -155,24 +184,91 @@ export function CardPopupSurface({
             <CommentsBar />
             {footer}
             {overlays}
-          </CardPopupProvider>
-        ) : (
-          <>
-            <div className="flex h-14 flex-none items-center justify-end border-b border-line pr-3 pl-4">
-              <IconBtn aria-label={t.close} onClick={onClose}>
-                <X aria-hidden="true" className="size-4" />
-              </IconBtn>
-            </div>
-            {status === "loading" ? <PopupSkeleton /> : null}
-            {status === "error" ? (
-              <PopupLoadError onRetry={onRetry ?? onClose} onClose={onClose} />
-            ) : null}
-            {status === "gone" ? <PopupGone onClose={onClose} /> : null}
-            {status === "deleted" ? (
-              <PopupDeleted by={deletedBy ?? null} onClose={onClose} />
-            ) : null}
-          </>
+          </StaleSchemaProvider>
+        </CardPopupProvider>
+      ) : (
+        <>
+          <div className="flex h-14 flex-none items-center justify-end border-b border-line pr-3 pl-4">
+            <IconBtn aria-label={t.close} onClick={onClose}>
+              <X aria-hidden="true" className="size-4" />
+            </IconBtn>
+          </div>
+          {status === "loading" ? <PopupSkeleton /> : null}
+          {status === "error" ? (
+            <PopupLoadError onRetry={onRetry ?? onClose} onClose={onClose} />
+          ) : null}
+          {status === "gone" ? (
+            <PopupGone onClose={onClose} draft={keptDraft} />
+          ) : null}
+          {status === "deleted" ? (
+            <PopupDeleted
+              by={deletedBy ?? null}
+              onClose={onClose}
+              draft={keptDraft}
+              onRestore={onRestoreDeleted}
+            />
+          ) : null}
+          {status === "moved" && movedTo ? (
+            <PopupMoved
+              boardTitle={movedTo.boardTitle}
+              onOpen={movedTo.onOpen}
+              onClose={onClose}
+              draft={keptDraft}
+            />
+          ) : null}
+        </>
+      )}
+    </>
+  );
+
+  if (pane)
+    return (
+      <section
+        role="region"
+        aria-label={label}
+        data-popup-pane=""
+        // An inline editor closes itself on Escape; otherwise Escape closes the pane.
+        onKeyDown={(event) => {
+          if (event.key !== "Escape" || event.defaultPrevented) return;
+          if (
+            (event.target as HTMLElement | null)?.closest?.("[data-popup-esc]")
+          )
+            return;
+          event.preventDefault();
+          onClose();
+        }}
+        {...fileDrop}
+        className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-popover text-[14px] text-foreground"
+      >
+        {body}
+      </section>
+    );
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        showCloseButton={false}
+        onCloseAutoFocus={onCloseAutoFocus}
+        aria-describedby={undefined}
+        // An inline editor closes itself on Escape; the popup stays open.
+        onEscapeKeyDown={(event) => {
+          if (
+            (event.target as HTMLElement | null)?.closest?.("[data-popup-esc]")
+          )
+            event.preventDefault();
+        }}
+        {...fileDrop}
+        overlayClassName="bg-black/40 backdrop-blur-none"
+        className={cn(
+          "fixed top-3 left-0 flex h-[calc(100dvh-12px)] max-h-none w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-t-[16px] rounded-b-none bg-popover p-0 text-[14px] text-foreground ring-0",
+          "md:top-1/2 md:left-1/2 md:h-[calc(100dvh-128px)] md:w-[1120px] md:max-w-[calc(100vw-48px)] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[16px] md:shadow-popover",
+          "sm:max-w-none",
+          // A calmer entrance than the base 100 ms: the card is heavy to draw, and a longer ease hides its first frames.
+          "duration-200 ease-out motion-reduce:animate-none",
         )}
+      >
+        <DialogTitle className="sr-only">{label}</DialogTitle>
+        {body}
       </DialogContent>
     </Dialog>
   );

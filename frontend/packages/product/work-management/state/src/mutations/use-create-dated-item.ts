@@ -4,10 +4,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import type { ApiRequestOptions } from "@notrelix/contracts";
-import {
-  updateCardInFullBoard,
-  type UpdateCardInput,
-} from "@notrelix/work-management-core";
+import { updateCardInFullBoard } from "@notrelix/work-management-core";
 import { addOptimisticCard } from "../cache/optimistic-card";
 import { useWorkManagementServices } from "../services";
 import { runCardCommand } from "./card-command";
@@ -26,22 +23,15 @@ export interface CreateDatedItemVariables {
 interface DatedItemWriter {
   createCard(
     boardId: string,
-    payload: { listId: string; title: string },
+    payload: { listId: string; title: string; dueDate: string },
     options?: ApiRequestOptions,
   ): Promise<{ id: string; version: number } | undefined>;
-  updateCard(
-    cardId: string,
-    patch: UpdateCardInput,
-    options: ApiRequestOptions & { readonly expectedVersion: number },
-  ): Promise<void>;
 }
 
 /**
- * Creates an item that already has a due date (the Calendar's quick create):
- * the item, then its due date. The board shows the new card on its day at
- * once; a failure of either write removes only that card again and rethrows
- * (an item created before the second write failed comes back from the
- * refetch without a date).
+ * Creates an item that already has a due date (the Calendar's quick create)
+ * in one write: the item is born with its date. The board shows the new card
+ * on its day at once; a failure removes only that card again and rethrows.
  */
 export function runCreateDatedItem(
   queryClient: QueryClient,
@@ -71,17 +61,14 @@ export function runCreateDatedItem(
       );
     },
     send: async (context) => {
-      const created = await cards.createCard(
+      await cards.createCard(
         variables.boardId,
-        { listId: variables.listId, title: variables.title },
+        {
+          listId: variables.listId,
+          title: variables.title,
+          dueDate: variables.dueDate,
+        },
         context,
-      );
-      if (!created) return;
-      // The create answers the item's first version, which the date write names.
-      await cards.updateCard(
-        created.id,
-        { dueDate: variables.dueDate },
-        { expectedVersion: created.version },
       );
     },
   });

@@ -22,7 +22,7 @@ review_on:
 
 # Use cases: Automation and Integrations
 
-This file follows [README.md](README.md). It holds two contexts, each with its own capability letters: Automation (code AUT) and Integrations (code INT). Product meaning stays in [automation.md](../../product/automation.md) and [integrations.md](../../product/integrations.md). The capability grouping comes from [the team spec](../teams/automation-integrations.md). Requirement ids (AIREQ...) belong to [the execution spec](../executions/automation-integrations/automation-integrations.spec.md); the certified evidence is in [the certification](../executions/automation-integrations/automation-integrations.certification.md) and [the test plan](../executions/automation-integrations/automation-integrations.tests.md).
+This file follows [README.md](README.md). It holds two contexts, each with its own capability letters: Automation (code AUT) and Integrations (code INT). Product meaning stays in [automation.md](../../product/automation.md) and [integrations.md](../../product/integrations.md). The capability grouping comes from [the team spec](../teams/automation-integrations.md). Requirement ids (AIREQ...) belong to the execution spec (removed; see git history); the certified evidence is in the certification (removed; see git history) and the test plan (removed; see git history).
 
 Test path shorthand used in Evidence lines:
 
@@ -54,41 +54,41 @@ Automation (letters follow the team spec order AUT-001 to AUT-014):
 
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
-| A | AUT-001 Rule lifecycle | 8 | 0 | 3 | 1 | 4 | 0 | 0 |
-| B | AUT-002 Trigger model | 8 | 2 | 3 | 2 | 1 | 0 | 0 |
-| C | AUT-003 Condition model | 3 | 1 | 1 | 1 | 0 | 0 | 0 |
-| D | AUT-004 Action model | 10 | 0 | 3 | 1 | 5 | 0 | 1 |
+| A | AUT-001 Rule lifecycle | 8 | 0 | 2 | 1 | 5 | 0 | 0 |
+| B | AUT-002 Trigger model | 8 | 2 | 3 | 0 | 3 | 0 | 0 |
+| C | AUT-003 Condition model | 3 | 1 | 0 | 0 | 2 | 0 | 0 |
+| D | AUT-004 Action model | 10 | 0 | 2 | 1 | 6 | 0 | 1 |
 | E | AUT-005 Enable/disable lifecycle | 7 | 1 | 2 | 2 | 2 | 0 | 0 |
-| F | AUT-006 Source-event subscription/matching | 3 | 0 | 0 | 1 | 2 | 0 | 0 |
-| G | AUT-007 Execution creation | 6 | 1 | 1 | 3 | 1 | 0 | 0 |
-| H | AUT-008 Execution state machine | 5 | 0 | 2 | 1 | 2 | 0 | 0 |
-| I | AUT-009 Business retry/failure policy | 4 | 0 | 2 | 2 | 0 | 0 | 0 |
+| F | AUT-006 Source-event subscription/matching | 3 | 0 | 0 | 0 | 3 | 0 | 0 |
+| G | AUT-007 Execution creation | 6 | 1 | 1 | 2 | 2 | 0 | 0 |
+| H | AUT-008 Execution state machine | 5 | 0 | 1 | 0 | 4 | 0 | 0 |
+| I | AUT-009 Business retry/failure policy | 4 | 0 | 1 | 2 | 1 | 0 | 0 |
 | J | AUT-010 Execution history/query | 5 | 2 | 1 | 1 | 1 | 0 | 0 |
-| K | AUT-011 Automation authoring frontend | 8 | 1 | 3 | 2 | 2 | 0 | 0 |
+| K | AUT-011 Automation authoring frontend | 8 | 1 | 2 | 0 | 5 | 0 | 0 |
 | L | AUT-012 Realtime execution status | 2 | 0 | 2 | 0 | 0 | 0 | 0 |
-| M | AUT-013 Entitlement integration | 4 | 1 | 1 | 2 | 0 | 0 | 0 |
-| N | AUT-014 Hardening/observability | 6 | 2 | 2 | 2 | 0 | 0 | 0 |
-| | Total | 79 | 11 | 26 | 21 | 20 | 0 | 1 |
+| M | AUT-013 Entitlement integration | 4 | 1 | 0 | 2 | 1 | 0 | 0 |
+| N | AUT-014 Hardening/observability | 6 | 2 | 2 | 0 | 2 | 0 | 0 |
+| | Total | 79 | 11 | 19 | 11 | 37 | 0 | 1 |
 
 Integrations (letters follow INT-001 to INT-014):
 
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
 | A | INT-001 Connector catalog | 3 | 2 | 0 | 0 | 1 | 0 | 0 |
-| B | INT-002 Connection lifecycle | 7 | 1 | 2 | 0 | 4 | 0 | 0 |
-| C | INT-003 Provider authorization/OAuth | 5 | 1 | 1 | 3 | 0 | 0 | 0 |
+| B | INT-002 Connection lifecycle | 7 | 1 | 1 | 0 | 5 | 0 | 0 |
+| C | INT-003 Provider authorization/OAuth | 5 | 1 | 1 | 1 | 2 | 0 | 0 |
 | D | INT-004 Connection configuration | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
-| E | INT-005 Credential reference/storage contract | 5 | 0 | 2 | 2 | 1 | 0 | 0 |
-| F | INT-006 Outbound provider operation | 7 | 2 | 3 | 1 | 1 | 0 | 0 |
-| G | INT-007 Inbound webhook verification | 4 | 0 | 0 | 4 | 0 | 0 | 0 |
+| E | INT-005 Credential reference/storage contract | 5 | 0 | 1 | 1 | 3 | 0 | 0 |
+| F | INT-006 Outbound provider operation | 7 | 2 | 1 | 0 | 4 | 0 | 0 |
+| G | INT-007 Inbound webhook verification | 4 | 0 | 0 | 1 | 3 | 0 | 0 |
 | H | INT-008 Inbound event mapping | 8 | 1 | 7 | 0 | 0 | 0 | 0 |
-| I | INT-009 Connection health | 4 | 2 | 1 | 0 | 1 | 0 | 0 |
+| I | INT-009 Connection health | 4 | 2 | 0 | 0 | 2 | 0 | 0 |
 | J | INT-010 Provider failure normalization | 1 | 0 | 0 | 1 | 0 | 0 | 0 |
 | K | INT-011 Integration management frontend | 4 | 1 | 1 | 0 | 2 | 0 | 0 |
-| L | INT-012 Rate/retry/provider limits | 2 | 0 | 2 | 0 | 0 | 0 | 0 |
+| L | INT-012 Rate/retry/provider limits | 2 | 0 | 1 | 0 | 1 | 0 | 0 |
 | M | INT-013 Entitlement integration | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | N | INT-014 Hardening/security | 2 | 1 | 0 | 0 | 1 | 0 | 0 |
-| | Total | 55 | 13 | 20 | 11 | 11 | 0 | 0 |
+| | Total | 55 | 13 | 14 | 4 | 24 | 0 | 0 |
 
 Calendar sync and mapping use cases sit in INT capability H (Inbound event mapping) because the team spec has no separate sync capability. Marketplace and plugin use cases sit in INT capability A (Connector catalog).
 
@@ -98,7 +98,7 @@ Calendar sync and mapping use cases sit in INT capability H (Inbound event mappi
 2. Only three trigger facts have a consumer (ItemCreated, ItemMovedToGroup, ItemAssigned). ItemUpdated, FieldChanged, ItemDeleted, FormSubmitted and ScheduleTrigger validate and save, then never fire (UC-AUT-B04, UC-AUT-B05).
 3. `SlackMessage` is accepted, enabled and counted as an integration action but has no executor and no Integrations operation behind it (UC-AUT-D09, UC-INT-F03).
 4. No scheduler runtime: Schedule intent, time zone and missed-run policy exist as design and `ScheduledJob` domain code only (UC-AUT-B05, UC-AUT-K08).
-5. No rerun of a failed step, no cancel, no workspace run feed, no realtime producer for `automation.execution.*` (UC-AUT-I03, UC-AUT-H04, UC-AUT-J03, UC-AUT-L01).
+5. No rerun of a failed step, no workspace run feed, no realtime producer for `automation.execution.*` (UC-AUT-I03, UC-AUT-J03, UC-AUT-L01). Cancel of a Queued execution is built on the backend (UC-AUT-H04); its frontend action is not.
 6. Calendar sync is not reachable: `TriggerCalendarSyncCommandHandler` throws, no endpoint, no job, and an OAuth connection is not linked to a `CalendarIntegration` binding (UC-INT-H01, UC-INT-H04, UC-INT-H05).
 7. Provider authorization has no PKCE, no reauthorization UI, no scope-upgrade re-consent, and disconnect does not revoke the grant at the provider (UC-INT-C01, UC-INT-C04, UC-INT-C05, UC-INT-B04).
 8. Outbound webhook retry is 3 attempts (1 s, 5 s, 30 s) against the owner decision of up to 8 with backoff; there is no delivery log, no unknown-outcome reconciliation, no secret regeneration (UC-INT-F05, UC-INT-F06, UC-INT-F07, UC-INT-E02).
@@ -167,79 +167,79 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-AUT-A03 | List the rules of a board or workspace | A Rule lifecycle | board Manager (ManageBoard) with `boardId` | Y | Y | Y | Y | HARDENING | unbounded read (DEF-3); no pagination contract; no cross-tenant test |
 | UC-AUT-A04 | Edit a rule into a new version | A Rule lifecycle | as A01 | Y | Y | Y | Y | HARDENING | no expected version (DEF-2); no no-op proof; no conflict UI |
 | UC-AUT-A05 | Delete a rule | A Rule lifecycle | as A01 (ManageBoard or ManageWorkspaceSettings) | Y | Y | Y | Y | HARDENING | pending executions and scheduled jobs on delete are not proven; no purge job (J04) |
-| UC-AUT-A06 | Save a rule as a draft | A Rule lifecycle | as A01 | Y | Y | Y | N | INTEGRATING | capacity rule conflicts with the decision (DEF-6); no e2e for draft |
-| UC-AUT-A07 | Restore a deleted rule | A Rule lifecycle | board Manager or Owner and Admin, same as delete | P | N | N | N | IMPLEMENTING | domain method only; no command, endpoint or UI |
+| UC-AUT-A06 | Save a rule as a draft | A Rule lifecycle | as A01 | Y | Y | Y | N | INTEGRATING | create takes a plan slot while the rule is still a Draft (DEF-6), against the owner decision |
+| UC-AUT-A07 | Restore a deleted rule | A Rule lifecycle | board Manager or Owner and Admin, same as delete | Y | N | N | N | HARDENING | Built: POST `/api/v1/workspaces/{workspaceId}/automations/{automationId}/restore` (`AutomationRule.RestoreRemoved`) brings back a rule deleted under 90 days as Disabled, takes no plan slot, and makes a live rule a no-op. Not built: restore UI. Owner question: the output line says capacity is consumed again, but M04 says Disabled uses no slot; this build follows M04. Owner tests by hand |
 | UC-AUT-A08 | Create a rule from a template | A Rule lifecycle | as A01 | P | N | N | N | IMPLEMENTING | domain and table only; deferred by decision |
-| UC-AUT-B01 | Fire a rule when an item is created | B Trigger model | set up by a board Manager (A01) | Y | Y | Y | N | INTEGRATING | the real e2e covers only the moved trigger |
+| UC-AUT-B01 | Fire a rule when an item is created | B Trigger model | set up by a board Manager (A01) | Y | Y | Y | N | HARDENING | Built (verified by reading code 2026-11-09, not run): BoardItemMovedForAutomationConsumer.cs (BoardItemCreatedAutomationConsumer), N8nAutomationRuleEvaluator.cs, automation-pickers.tsx, AutomationTriggerMatrixIntegrationTests.cs, AutomationWorkEventRuntimeChainIntegrationTests.cs. Remaining: owner tests by hand. |
 | UC-AUT-B02 | Fire a rule when an item moves to a group | B Trigger model | as B01 | Y | Y | Y | Y | HARDENING | no axe or design diff; no owner check |
-| UC-AUT-B03 | Fire a rule when a person is assigned | B Trigger model | as B01 | Y | P | Y | N | INTEGRATING | no real e2e |
+| UC-AUT-B03 | Fire a rule when a person is assigned | B Trigger model | as B01 | Y | P | Y | N | HARDENING | Built (verified by reading code 2026-11-09, not run): BoardItemMemberAssignedForAutomationConsumer.cs, AutomationTriggerMatrixIntegrationTests.cs (member-assigned trigger test), automation-pickers.tsx. Remaining: owner tests by hand. |
 | UC-AUT-B04 | Triggers on update, field or status change, delete, form submit | B Trigger model | as A01 | P | P | Y | N | IMPLEMENTING | validators only; cannot run end to end |
 | UC-AUT-B05 | Run a rule on a schedule | B Trigger model | as A01 | P | P | Y | N | IMPLEMENTING | no scheduler runtime; the validator accepts cron or interval while the UI sends daily or weekly |
 | UC-AUT-B06 | Run a rule by hand on an item | B Trigger model | any actor who can edit the item | N | N | N | N | DEFINED | deferred by the owner until the item-page contract exists |
 | UC-AUT-B07 | An unknown or changed trigger type fails closed | B Trigger model | system | Y | N | N | N | IMPLEMENTING | domain proof only; no UI for invalid rules |
 | UC-AUT-B08 | Start a rule from an inbound provider event | B Trigger model | system, after Integrations has verified and translated the event | N | N | N | N | DEFINED | deferred until verified provider intake exists |
-| UC-AUT-C01 | Add all-of equals conditions | C Condition model | as A01 | Y | Y | Y | N | INTEGRATING | the real e2e has no condition; no condition-false end-to-end proof |
-| UC-AUT-C02 | A condition not met is shown as skipped, not failed | C Condition model | any reader of run history (J01 permission) | P | P | Y | N | IMPLEMENTING | no Skipped status or record |
+| UC-AUT-C01 | Add all-of equals conditions | C Condition model | as A01 | Y | Y | Y | N | HARDENING | Built (verified by reading code 2026-11-09, not run): AutomationConditions.cs, N8nAutomationRuleEvaluator.cs (Holds), automation-flow.tsx, AutomationMultiActionTests.cs (Conditions_AreAnAndOfEqualsTests), AutomationConditionDefinitionTests.cs. Remaining: owner tests by hand. |
+| UC-AUT-C02 | A condition not met is shown as skipped, not failed | C Condition model | any reader of run history (J01 permission) | Y | Y | Y | N | HARDENING | Built: a rule whose conditions are evaluated and not met keeps a `Skipped` execution, dispatches nothing and is not counted as a failure; the workspace rule run history shows "Skipped, conditions not met" (en, vi). Not built: a condition that cannot be evaluated (no item, forbidden) still records nothing. Owner question: product §33 says an evaluation error is not a skip, so should it be Failed? Owner tests by hand |
 | UC-AUT-C03 | Actor and time conditions, OR and nesting | C Condition model | as A01 | N | N | N | N | DEFINED | deferred by decision OD4 |
 | UC-AUT-D01 | Move the item to a group | D Action model | executor (bound creator) holding the MoveItem decision on the item | Y | Y | Y | Y | HARDENING | no owner check; no 1 px diff |
 | UC-AUT-D02 | Change the item status | D Action model | executor with edit permission on the item | Y | Y | Y | Y | HARDENING | as D01 |
 | UC-AUT-D03 | Assign a person | D Action model | executor with permission to assign on the item | Y | Y | Y | Y | HARDENING | as D01 |
-| UC-AUT-D04 | Set a field value | D Action model | executor with edit permission on the item | Y | Y | Y | N | INTEGRATING | no real e2e; the frontend sends the value as a string for every field type |
+| UC-AUT-D04 | Set a field value | D Action model | executor with edit permission on the item | Y | Y | Y | N | INTEGRATING | value encoding not verified per field type: the UI sends numeric-looking text as a number and all else as text (workspace-automations.api.ts fieldValue); date, checkbox and option fields untested |
 | UC-AUT-D05 | Notify a member or send an email | D Action model | executor | Y | Y | Y | Y | HARDENING | the email delivery provider is not proven in a real run |
 | UC-AUT-D06 | Run up to five actions in order | D Action model | as A01 | Y | Y | Y | Y | HARDENING | the "Not run" step state is not in the DTO (steps map to succeeded or failed only) |
 | UC-AUT-D07 | Create an item | D Action model | executor with create permission on the target board | P | N | N | N | IMPLEMENTING | validates and saves, never runs; must be refused until an executor exists |
 | UC-AUT-D08 | Call an n8n webhook | D Action model | ManageIntegrations on create and enable (workspace path) | Y | N | N | N | IMPLEMENTING | no UI to author or see it; no real e2e |
 | UC-AUT-D09 | Send a Slack message | D Action model | ManageIntegrations | P | N | N | N | BLOCKED | waits on UC-INT-F03 (Slack outbound operation); today the rule saves and never runs (DEF-4) |
-| UC-AUT-D10 | A deleted or archived target blocks enable or fails the step | D Action model | the actor enabling | P | P | Y | N | IMPLEMENTING | the enable check covers `rule.Configuration.Action` (first action) only; no structured broken-reference error |
+| UC-AUT-D10 | A deleted or archived target blocks enable or fails the step | D Action model | the actor enabling | Y | P | Y | N | HARDENING | Built: enable checks every action, condition and the trigger group and refuses with `Automation_Rule_BrokenReference` listing kind, id and field. Not built: the run-time terminal step (I04) and the save check (A04). Owner tests by hand |
 | UC-AUT-E01 | Enable a rule | E Enable/disable lifecycle | board Manager (ManageBoard) | Y | Y | Y | Y | HARDENING | no expected version or idempotency (DEF-1) |
 | UC-AUT-E02 | Disable a rule | E Enable/disable lifecycle | ManageBoard or ManageWorkspaceSettings only (kill switch | Y | Y | Y | Y | HARDENING | as E01 |
-| UC-AUT-E03 | A rule stops when its runner loses access | E Enable/disable lifecycle | system reacting to Workspaces facts | Y | P | Y | N | INTEGRATING | no real e2e |
+| UC-AUT-E03 | A rule stops when its runner loses access | E Enable/disable lifecycle | system reacting to Workspaces facts | Y | P | Y | N | INTEGRATING | board rule list shows no disabled reason: FE pausedReason is never populated and disabledReason renders only in the workspace rules section |
 | UC-AUT-E04 | Change the person a rule runs as | E Enable/disable lifecycle | a board Manager picks a person who can edit the board | P | P | Y | N | IMPLEMENTING | no explicit runner command; implicit takeover only |
-| UC-AUT-E05 | A rule stops after repeated failures | E Enable/disable lifecycle | system | Y | P | N | N | INTEGRATING | no notice to the owner when it happens |
+| UC-AUT-E05 | A rule stops after repeated failures | E Enable/disable lifecycle | system | Y | P | N | N | INTEGRATING | no owner notice when a rule auto-disables after 5 failures (only the reason is stored) |
 | UC-AUT-E06 | Pause and resume rules with the board | E Enable/disable lifecycle | system on board archive and unarchive | N | N | N | N | DEFINED | no consumer |
 | UC-AUT-E07 | Check a rule before enabling it | E Enable/disable lifecycle | as E01 | N | P | Y | N | IMPLEMENTING | mock-only UI path; no backend check endpoint |
 | UC-AUT-F01 | One fact starts each matching rule once | F Source-event subscription/matching | system | Y | N | N | Y | HARDENING | a durable uniqueness constraint (AIREQ028) is not confirmed in the migrations |
 | UC-AUT-F02 | Filter by group on the trigger | F Source-event subscription/matching | as A01 | Y | Y | Y | Y | HARDENING | as B02 |
-| UC-AUT-F03 | A fact from another workspace never matches | F Source-event subscription/matching | system | Y | N | N | N | INTEGRATING | no dedicated cross-tenant integration test for the Automation consumers found |
+| UC-AUT-F03 | A fact from another workspace never matches | F Source-event subscription/matching | system | Y | N | N | N | HARDENING | Built (integration test written; not run, Docker unavailable; CI work-rls shard runs it): Rls/AutomationTenantIsolationTests.cs. Remaining: owner tests by hand. |
 | UC-AUT-G01 | Each execution freezes the rule version | G Execution creation | system | Y | Y | Y | Y | HARDENING | as A04 |
-| UC-AUT-G02 | The runner is re-checked on every execution | G Execution creation | system as executor | Y | N | Y | N | INTEGRATING | no real e2e |
-| UC-AUT-G03 | Chains and runaway rules are bounded | G Execution creation | system | Y | N | N | N | INTEGRATING | a stopped trigger is silent to users |
+| UC-AUT-G02 | The runner is re-checked on every execution | G Execution creation | system as executor | Y | N | Y | N | HARDENING | Built (verified by reading code 2026-11-09, not run): AutomationExecutorAuthority.cs, AutomationExecutorIdentityTests.cs, AutomationMoveItemExecutorCompositionIntegrationTests.cs. Remaining: owner tests by hand. |
+| UC-AUT-G03 | Chains and runaway rules are bounded | G Execution creation | system | Y | N | N | N | INTEGRATING | a stopped chain or rate-limited trigger is silent: no log note and no UI state |
 | UC-AUT-G04 | Concurrent claims never duplicate work | G Execution creation | system | P | N | N | N | IMPLEMENTING | claim proven for n8n only; MoveItem and work actions rely on operation ids |
-| UC-AUT-G05 | An automated change names the rule and the runner | G Execution creation | any viewer of the changed item | Y | P | Y | N | INTEGRATING | the rule label in the item history UI is not proven |
+| UC-AUT-G05 | An automated change names the rule and the runner | G Execution creation | any viewer of the changed item | Y | P | Y | N | INTEGRATING | item history has no 'automation <rule> on behalf of <runner>' line (no match in the FE item history) |
 | UC-AUT-G06 | Test-run a rule | G Execution creation | as A01 | N | P | N | N | DEFINED | deferred by the P5 decisions |
 | UC-AUT-H01 | An execution moves Queued, Running, then ends | H Execution state machine | system | Y | Y | Y | Y | HARDENING | as D01 |
 | UC-AUT-H02 | See each step of a run | H Execution state machine | as J01 | Y | Y | Y | Y | HARDENING | step status is stored in the `LastResponse` JSON, not in `AutomationExecutionStep` rows |
-| UC-AUT-H03 | Partial failure keeps what already happened | H Execution state machine | as J01 | Y | P | Y | N | INTEGRATING | no real e2e of a failing step |
-| UC-AUT-H04 | Cancel a queued execution | H Execution state machine | board Manager or Owner and Admin | P | N | N | N | IMPLEMENTING | domain only |
+| UC-AUT-H03 | Partial failure keeps what already happened | H Execution state machine | as J01 | Y | P | Y | N | HARDENING | Built (verified by reading code 2026-11-09, not run): AutomationMultiActionTests.cs (ARejectedAction_FailsTheExecution_AndLaterActionsDoNotRun), automation-log.tsx. Remaining: owner tests by hand. |
+| UC-AUT-H04 | Cancel a queued execution | H Execution state machine | board Manager or Owner and Admin | Y | N | N | N | HARDENING | Built: POST `/api/v1/workspaces/{workspaceId}/automations/{automationId}/executions/{executionId}/cancel` refuses unless Queued (`AutomationExecution.CancelBeforeStart`). Not built: cancel action and confirmation in the FE; no expected version (as E01). Owner tests by hand |
 | UC-AUT-H05 | An unknown outcome is held, never re-fired | H Execution state machine | system | Y | N | N | N | IMPLEMENTING | no UI state; no governed reconciliation action |
-| UC-AUT-I01 | Retryable failures retry within one budget | I Business retry/failure policy | system | Y | N | N | N | INTEGRATING | no UI for the retrying state |
-| UC-AUT-I02 | A terminal failure shows a safe, useful reason | I Business retry/failure policy | as J01 | Y | Y | Y | N | INTEGRATING | failure classes are free text, not a stable enum |
+| UC-AUT-I01 | Retryable failures retry within one budget | I Business retry/failure policy | system | Y | N | N | N | INTEGRATING | no UI for the retrying state ('đang thử lại, lần N' is not in the FE) |
+| UC-AUT-I02 | A terminal failure shows a safe, useful reason | I Business retry/failure policy | as J01 | Y | Y | Y | N | INTEGRATING | the stable failure class is stored on the execution row (`AutomationFailureClass`, codes such as `target_gone`) but not exposed: `AutomationExecutionDto` carries only `Error` (free text), so the API, OpenAPI and run log do not show it; expose the class in the DTO and the run log |
 | UC-AUT-I03 | Rerun a failed step | I Business retry/failure policy | board Manager | N | P | Y | N | IMPLEMENTING | mock-only UI path |
-| UC-AUT-I04 | A gone target or revoked permission is terminal | I Business retry/failure policy | system | P | N | N | N | IMPLEMENTING | the terminal versus retryable class is not a stable contract |
+| UC-AUT-I04 | A gone target or revoked permission is terminal | I Business retry/failure policy | system | Y | N | N | N | HARDENING | Built: `AutomationFailureClass` (stable codes `target_gone`, `permission_revoked`, `invalid_configuration`, `rule_inactive`, `target_rejected`, `outcome_unknown`, `transient`) is stored as `failure_class` on each failed execution; only `transient` is retried. Not built: the class is not in the DTO or the run log; executions failed before the migration have no class. Owner tests by hand |
 | UC-AUT-J01 | Read the recent runs of a rule | J Execution history/query | ManageBoard (with `boardId`) or ManageWorkspaceSettings | Y | Y | Y | Y | HARDENING | offset paging, no total or cursor (DEF-3); the payload may hold item data and its redaction is not proven |
-| UC-AUT-J02 | Open one run | J Execution history/query | as J01 | P | Y | Y | N | INTEGRATING | triggerer and item reference come from the payload only |
+| UC-AUT-J02 | Open one run | J Execution history/query | as J01 | P | Y | Y | N | INTEGRATING | no run-detail endpoint; triggerer and item reference come from the list payload only |
 | UC-AUT-J03 | See all runs of a workspace and filter them | J Execution history/query | Owner and Admin (ManageWorkspaceSettings) | N | N | N | N | DEFINED | (enterprise baseline) |
 | UC-AUT-J04 | Keep and purge history | J Execution history/query | system | P | N | N | N | IMPLEMENTING | read cutoff only; no purge |
 | UC-AUT-J05 | Rule changes appear in the workspace audit log | J Execution history/query | Owner and Admin read the audit log | N | N | N | N | DEFINED | (enterprise baseline) |
 | UC-AUT-K01 | See the rules of a board | K Automation authoring frontend | board Manager | Y | Y | Y | Y | HARDENING | scope-transition behaviour not proven |
 | UC-AUT-K02 | Compose a rule: trigger, conditions, actions | K Automation authoring frontend | board Manager | Y | Y | Y | Y | HARDENING | no conflict state; no axe proof; 1 px diff not measured |
-| UC-AUT-K03 | Read the run log of a rule | K Automation authoring frontend | as J01 | Y | Y | Y | P | INTEGRATING | the real e2e reads the list but does not assert the log screen |
-| UC-AUT-K04 | See why a rule cannot be enabled | K Automation authoring frontend | board Manager | P | P | Y | N | IMPLEMENTING | structured reasons are not in the API (see UC-AUT-D10) |
-| UC-AUT-K05 | A non-manager sees a denied state | K Automation authoring frontend | Member, Guest, Viewer | Y | P | Y | N | INTEGRATING | no real e2e of the denied path |
+| UC-AUT-K03 | Read the run log of a rule | K Automation authoring frontend | as J01 | Y | Y | Y | P | HARDENING | Built (verified by reading code 2026-11-09, not run): automation-log.tsx, automation-log-parts.tsx, board-automation.interaction.component.test.tsx. Remaining: owner tests by hand. |
+| UC-AUT-K04 | See why a rule cannot be enabled | K Automation authoring frontend | board Manager | Y | Y | Y | N | HARDENING | Built: the enable 400 carries `brokenReferences` (OpenAPI `AutomationEnableRefusalResponse`); the board editor lists each one in en and vi. Not built: the draft-to-enable save path and the workspace rules list show a generic failure. Owner tests by hand |
+| UC-AUT-K05 | A non-manager sees a denied state | K Automation authoring frontend | Member, Guest, Viewer | Y | P | Y | N | HARDENING | Built (verified by reading code 2026-11-09, not run): board-settings-surface.tsx (DeniedCard), board-settings-surface.interaction.component.test.tsx, AutomationPermissionMarkerTests.cs. Remaining: owner tests by hand. |
 | UC-AUT-K06 | Phone: read rules, switch them, read the run log | K Automation authoring frontend | board Manager | Y | P | Y | N | IMPLEMENTING | the screen is a placeholder |
 | UC-AUT-K07 | Workspace automation page | K Automation authoring frontend | Owner and Admin | P | N | N | N | DEFINED | (enterprise baseline) |
 | UC-AUT-K08 | Edit a schedule | K Automation authoring frontend | board Manager | N | P | Y | N | IMPLEMENTING | blocked on the B05 runtime |
 | UC-AUT-L01 | Watch a run progress live | L Realtime execution status | as J01 | N | P | N | N | IMPLEMENTING | no backend producer |
 | UC-AUT-L02 | Recover after a realtime gap | L Realtime execution status | as J01 | N | P | N | N | IMPLEMENTING | the keys exist in the island package; the real UI uses Work Management keys |
-| UC-AUT-M01 | Creating a rule respects the plan limit | M Entitlement integration | as A01 | Y | P | N | N | INTEGRATING | no limit-reached UI |
-| UC-AUT-M02 | Deleting a rule frees its slot | M Entitlement integration | as A05 | Y | N | N | N | INTEGRATING | the retry-after-delete path is not proven |
+| UC-AUT-M01 | Creating a rule respects the plan limit | M Entitlement integration | as A01 | Y | P | N | N | INTEGRATING | no limit-reached notice with an upgrade path (the editor maps 'limit' to a generic failure) |
+| UC-AUT-M02 | Deleting a rule frees its slot | M Entitlement integration | as A05 | Y | N | N | N | INTEGRATING | retry of a delete never releasing twice is not tested (only one release under its identity is asserted) |
 | UC-AUT-M03 | What happens to rules on a plan downgrade | M Entitlement integration | system on Billing facts | N | N | N | N | DEFINED | the rule text is in Part 5 |
-| UC-AUT-M04 | Only enabled rules count toward the limit | M Entitlement integration | as A01 | P | N | N | N | IMPLEMENTING | code contradicts the decision |
+| UC-AUT-M04 | Only enabled rules count toward the limit | M Entitlement integration | as A01 | Y | N | N | N | HARDENING | Built: Draft create takes no slot; enable consumes one, disable and delete release one. Owner question: a platform auto-disable keeps its slot until a person acts (the decision says Disabled uses no slot). Owner tests by hand |
 | UC-AUT-N01 | Operators see backlog and failure metrics | N Hardening/observability | operators | N | N | N | N | DEFINED | no metrics, alerts or dashboards exist |
 | UC-AUT-N02 | Follow one fact to its execution by correlation id | N Hardening/observability | operators | P | N | N | N | IMPLEMENTING | not asserted end to end |
 | UC-AUT-N03 | A stuck provider claim is recovered under control | N Hardening/observability | operators with a governed, audited procedure | P | N | N | N | IMPLEMENTING | no operator action exists |
-| UC-AUT-N04 | No reusable secret in a rule | N Hardening/observability | as A01 | Y | N | N | N | INTEGRATING | secret-like field rejection is not confirmed by a test |
-| UC-AUT-N05 | Tenant isolation of rules and executions | N Hardening/observability | system | Y | N | N | N | INTEGRATING | no Automation-specific cross-tenant integration test with Postgres RLS found |
+| UC-AUT-N04 | No reusable secret in a rule | N Hardening/observability | as A01 | Y | N | N | N | HARDENING | Built and run (Domain suite): AutomationSecretFieldGuard rejects secret-like names and Bearer values in action and trigger configuration (AutomationSecretFieldGuardTests.cs). Remaining: owner tests by hand. |
+| UC-AUT-N05 | Tenant isolation of rules and executions | N Hardening/observability | system | Y | N | N | N | HARDENING | Built (integration test written; not run, Docker unavailable; CI work-rls shard runs it): Rls/AutomationTenantIsolationTests.cs. Remaining: owner tests by hand. |
 | UC-AUT-N06 | Pause all automation of a workspace | N Hardening/observability | Owner and Admin | N | N | N | N | DEFINED | (enterprise baseline) |
 
 ## Integrations index
@@ -255,30 +255,30 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-INT-B04 | Disconnect a connection | B Connection lifecycle | Owner and Admin | Y | Y | Y | Y | HARDENING | no provider-side revoke (DEF-8); no impact counts in the dialog (B05) |
 | UC-INT-B05 | See the impact before disconnecting | B Connection lifecycle | Owner and Admin | N | N | Y | N | DEFINED | planned as slice 4 of the integrations plan |
 | UC-INT-B06 | Connect again after a disconnect | B Connection lifecycle | Owner and Admin | P | N | N | N | IMPLEMENTING | provider account change confirmation is not built |
-| UC-INT-B07 | Read one connection in detail | B Connection lifecycle | Owner and Admin | N | P | Y | N | IMPLEMENTING | no detail endpoint |
-| UC-INT-C01 | Start provider authorization | C Provider authorization/OAuth | Owner and Admin (ManageIntegrations) | Y | Y | Y | P | INTEGRATING | no PKCE (DEF-9); no real provider round trip |
-| UC-INT-C02 | Complete authorization on the callback | C Provider authorization/OAuth | the signed-in member returning from the provider | Y | Y | Y | N | INTEGRATING | no real e2e; no provider simulator |
-| UC-INT-C03 | A refused or failed authorization is explained | C Provider authorization/OAuth | as C02 | Y | Y | P | N | INTEGRATING | no test of the error redirects |
+| UC-INT-B07 | Read one connection in detail | B Connection lifecycle | Owner and Admin | Y | P | Y | N | HARDENING | Built (not run here): GetIntegrationConnection.cs, endpoint GET .../integrations/{connectionId} (IntegrationConnectionEndpoints.cs), IntegrationConnectionDetailDto (scopes and the base DTO; no secret, token, digest or reference). Tests: GetIntegrationConnectionTests.cs (Application suite), IntegrationConnectionDetailNonMemberTests.cs (RLS, CI). Remaining: no 'what uses it' list and no recent activity in the detail (use the delivery log, UC-INT-F05); the web still composes the reduced view (no screen change); owner tests by hand. |
+| UC-INT-C01 | Start provider authorization | C Provider authorization/OAuth | Owner and Admin (ManageIntegrations) | Y | Y | Y | P | INTEGRATING | no PKCE on the provider authorize URL (DEF-9) |
+| UC-INT-C02 | Complete authorization on the callback | C Provider authorization/OAuth | the signed-in member returning from the provider | Y | Y | Y | N | HARDENING | Built and run: CompleteIntegrationAuthorizationCommandHandlerTests.cs (10 unit tests) and IntegrationOAuthCallbackRedirectTests.cs (API). Remaining: owner tests by hand. |
+| UC-INT-C03 | A refused or failed authorization is explained | C Provider authorization/OAuth | as C02 | Y | Y | P | N | HARDENING | Built and run: IntegrationOAuthCallbackRedirectTests.cs (error=refused and error=failed). Remaining: owner tests by hand. |
 | UC-INT-C04 | Reauthorize an expired connection | C Provider authorization/OAuth | Owner and Admin | P | N | Y | N | IMPLEMENTING | no `reauthorization-required` status and no UI |
 | UC-INT-C05 | Ask for more provider permission | C Provider authorization/OAuth | Owner and Admin | N | N | Y | N | DEFINED | domain facts only |
 | UC-INT-D01 | Change the address of an outgoing webhook | D Connection configuration | Owner and Admin | N | N | N | N | DEFINED | no endpoint or UI exists |
 | UC-INT-D02 | Typed, versioned provider configuration | D Connection configuration | system | P | N | N | N | IMPLEMENTING | only the webhook target address is a typed field; no versioned configuration object |
 | UC-INT-E01 | A signing secret is generated and shown once | E Credential reference/storage contract | Owner and Admin | Y | Y | Y | Y | HARDENING | the physical store depends on Data Protection key persistence (restart safety, AIREQ061) not proven in a restart test |
-| UC-INT-E02 | Regenerate a webhook secret | E Credential reference/storage contract | Owner and Admin | P | N | Y | N | IMPLEMENTING | domain only |
-| UC-INT-E03 | Tokens are stored behind an opaque reference | E Credential reference/storage contract | system | Y | N | N | N | INTEGRATING | no integration test of the OAuth token path |
+| UC-INT-E02 | Regenerate a webhook secret | E Credential reference/storage contract | Owner and Admin | Y | N | Y | N | HARDENING | Built (not run here): RegenerateWebhookSecret.cs (command with ExpectedVersion, handler, validator), endpoint POST .../integrations/{connectionId}/secret, ExpectedVersionTargetMap entry. The new secret is returned once and never logged, audited or put in the idempotency store; no Idempotency-Key (reason in the No-op line). Tests: RegenerateWebhookSecretTests.cs (9 tests, Application suite). No screen (confirm and one-time dialogs not built). Remaining: the replaced secret blob is not physically revoked (only the current reference moves). Owner question: should regeneration need a step-up proof like API token issuance (no step-up purpose exists for integrations)? Owner tests by hand. |
+| UC-INT-E03 | Tokens are stored behind an opaque reference | E Credential reference/storage contract | system | Y | N | N | N | INTEGRATING | unit level only: the handler test shows one token set goes to the secret store and the connection keeps the reference; no integration test through PostgreSQL and the real secret store yet |
 | UC-INT-E04 | Refresh tokens before they expire | E Credential reference/storage contract | system | P | N | N | N | IMPLEMENTING | no refresh job |
-| UC-INT-E05 | Retire the secret after a disconnect | E Credential reference/storage contract | system | Y | N | N | N | INTEGRATING | no direct test of the cleanup consumer |
-| UC-INT-F01 | Deliver a signed webhook for a work fact | F Outbound provider operation | system on Work and Collaboration facts | Y | N | N | N | INTEGRATING | no real e2e of a fact-driven delivery |
+| UC-INT-E05 | Retire the secret after a disconnect | E Credential reference/storage contract | system | Y | N | N | N | HARDENING | Built (verified by reading code 2026-11-09, not run): IntegrationConnectionRevokedConsumer.cs, IntegrationConnectionRevokedConsumerTests.cs, CalendarConnectionFlowIntegrationTests.cs (RevokedConnection_OutboxEvent_ConsumerRevokesAllSecretReferences). Remaining: owner tests by hand. |
+| UC-INT-F01 | Deliver a signed webhook for a work fact | F Outbound provider operation | system on Work and Collaboration facts | Y | N | N | N | HARDENING | Built (verified by reading code 2026-11-09, not run): WebhookEventFanOut.cs, IntegrationWebhookDispatchRequestedConsumer.cs, OutboundWebhookSender.cs, WebhookFanOutRuntimeChainIntegrationTests.cs (AnItemCreatedFactIsDeliveredOncePerActiveConnectionAndSkipsPausedOnes). Remaining: owner tests by hand. |
 | UC-INT-F02 | Send a test delivery | F Outbound provider operation | Owner and Admin | Y | Y | Y | Y | HARDENING | the result of the test is not shown to the user (only "queued") |
 | UC-INT-F03 | Send a Slack message (outbound operation) | F Outbound provider operation | system on behalf of an Automation rule whose creator may use the connection | N | N | N | N | DEFINED | unblocks UC-AUT-D09 |
 | UC-INT-F04 | Dispatch an n8n webhook for Automation | F Outbound provider operation | system on behalf of an Automation Webhook step | Y | N | N | N | IMPLEMENTING | no real e2e; see UC-AUT-D08 |
-| UC-INT-F05 | Read the delivery log of a webhook | F Outbound provider operation | Owner and Admin | N | N | Y | N | IMPLEMENTING | no read endpoint |
-| UC-INT-F06 | Retry a failed delivery with backoff | F Outbound provider operation | system | P | N | N | N | IMPLEMENTING | the budget differs from the decision (DEF-12) |
+| UC-INT-F05 | Read the delivery log of a webhook | F Outbound provider operation | Owner and Admin | N | N | Y | N | HARDENING | Built (not run here): OutboundDeliveryLogEntry.cs, ListConnectionDeliveryLog.cs, IntegrationConnectionEndpoints.cs (GET .../{connectionId}/deliveries), dispatch consumer writes one row per delivery; OutboundDeliveryLogEntryTests.cs, ConnectionDeliveryLogTests.cs. No screen (detail tab not built). Remaining: a PostgreSQL integration test of the log write (CI); owner tests by hand. |
+| UC-INT-F06 | Retry a failed delivery with backoff | F Outbound provider operation | system | Y | N | N | N | HARDENING | Built (not run here): WebhookRedeliveryPolicy.cs holds the budget (8 attempts, 7 redeliveries) and the interval list; the consumer and its definition read it, so the old 3-redelivery budget is gone. Tests: WebhookRedeliveryPolicyTests.cs (Infrastructure suite; a receiver failing 7 times is delivered on attempt 8). The failed attempts are written to the delivery log (UC-INT-F05). Intervals are 1, 2, 5, 10, 20, 30 and 30 seconds, each at most 30 seconds, because each wait holds a consumer slot in process and that slot is shared by all tenants. Owner question: a longer backoff (minutes) needs a broker-side delayed redelivery, a transport decision, because in-process waits hold a slot shared across tenants; the intervals are short for that reason. The decision names only the budget. The decision says 'up to 8 retries' and the acceptance says attempt 8: built as 8 attempts in total. Owner tests by hand. |
 | UC-INT-F07 | Reconcile an unknown provider outcome | F Outbound provider operation | system | N | N | N | N | DEFINED | no executable path outside n8n |
-| UC-INT-G01 | Accept only bounded, verified calendar webhooks | G Inbound webhook verification | the provider (anonymous route, signature-authenticated, rate limited per IP) | Y | N | N | N | INTEGRATING | no provider simulator e2e; the rate limit has no negative test found |
-| UC-INT-G02 | Reject replayed and duplicate deliveries | G Inbound webhook verification | system | Y | N | N | N | INTEGRATING | as G01 |
-| UC-INT-G03 | The tenant comes from the binding, never the payload | G Inbound webhook verification | system | Y | N | N | N | INTEGRATING | as G01 |
-| UC-INT-G04 | Malformed or conflicting payloads fail closed | G Inbound webhook verification | system | Y | N | N | N | INTEGRATING | as G01 |
+| UC-INT-G01 | Accept only bounded, verified calendar webhooks | G Inbound webhook verification | the provider (anonymous route, signature-authenticated, rate limited per IP) | Y | N | N | N | HARDENING | Built and run: WebhookIntakeRateLimitTests.cs (31st delivery gets 429 before the handler). Remaining: owner tests by hand. |
+| UC-INT-G02 | Reject replayed and duplicate deliveries | G Inbound webhook verification | system | Y | N | N | N | HARDENING | Built (verified by reading code 2026-11-09, not run): CalendarWebhookIntake.cs, CalendarWebhookIntakeIntegrationTests.cs (DuplicateDelivery and StaleTimestamp tests). Remaining: owner tests by hand. |
+| UC-INT-G03 | The tenant comes from the binding, never the payload | G Inbound webhook verification | system | Y | N | N | N | HARDENING | Built (verified by reading code 2026-11-09, not run): CalendarWebhookBindingResolver.cs, CalendarWebhookIntakeIntegrationTests.cs (PayloadAccountWorkspaceAreIgnored test), CalendarWebhookDataSessionIntegrationTests.cs. Remaining: owner tests by hand. |
+| UC-INT-G04 | Malformed or conflicting payloads fail closed | G Inbound webhook verification | system | Y | N | N | N | INTEGRATING | Owner question: no event-type branch exists (the processing path never reads the payload kind), so an unsupported type is processed, not marked and skipped; malformed and conflicting payloads are tested |
 | UC-INT-H01 | Bind a calendar to a connection | H Inbound event mapping | Owner and Admin (ManageIntegrations) | P | N | Y | N | IMPLEMENTING | no UI; the token travels in the request body and is not linked to the OAuth connection |
 | UC-INT-H02 | Remove a calendar binding | H Inbound event mapping | Owner and Admin (ManageIntegrations on the calendar integration) | Y | N | N | N | IMPLEMENTING | no UI; not idempotent by key |
 | UC-INT-H03 | Turn a verified calendar change into an internal fact | H Inbound event mapping | system | P | N | N | N | IMPLEMENTING | the consumer reconciles into Integrations state; the Work Management consumer of the fact is not found |
@@ -288,16 +288,16 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 | UC-INT-H07 | Keep both identities of a mapped event | H Inbound event mapping | system | P | N | N | N | IMPLEMENTING | no flow uses it end to end |
 | UC-INT-H08 | Provider content is untrusted | H Inbound event mapping | system | N | N | N | N | DEFINED | no sanitizer exists at the provider boundary |
 | UC-INT-I01 | See status, last success and last error | I Connection health | Owner and Admin | Y | Y | Y | Y | HARDENING | Expired and Revoked collapse into "error" in the DTO |
-| UC-INT-I02 | Sync health is separate from connection status | I Connection health | Owner and Admin | N | N | N | N | IMPLEMENTING | no DTO field |
+| UC-INT-I02 | Sync health is separate from connection status | I Connection health | Owner and Admin | Y | N | N | N | HARDENING | Built (not run here): IntegrationSyncHealth.cs (closed set of the seven product values, derived from the stored state), field SyncHealth on IntegrationConnectionDto; the status field is unchanged. Tests: IntegrationSyncHealthTests.cs (Application suite). Only idle, failed and reauthorization-required are produced today. No screen (no health chip). Owner question: a failed delivery sets the status to error (RecordFailure), so the acceptance example 'status Active, health failed' is not reachable; should a failure keep status Active and only set health? Owner tests by hand. |
 | UC-INT-I03 | Hold work while reauthorization is needed | I Connection health | Owner and Admin | N | N | Y | N | DEFINED | no held-operation state exists |
 | UC-INT-I04 | Tell admins when a connection breaks (enterprise baseline) | I Connection health | Owner, Admin and the connector owner receive | N | N | N | N | DEFINED | (enterprise baseline) |
-| UC-INT-J01 | Provider results map to one taxonomy | J Provider failure normalization | system | Y | N | N | N | INTEGRATING | the taxonomy is per adapter; no shared contract type; OAuth and calendar adapters are not covered |
+| UC-INT-J01 | Provider results map to one taxonomy | J Provider failure normalization | system | Y | N | N | N | INTEGRATING | taxonomy exists per adapter only; no shared contract type; OAuth and calendar adapters are not mapped |
 | UC-INT-K01 | The Integrations page | K Integration management frontend | Owner and Admin | Y | Y | Y | Y | HARDENING | the permission-denied state has no real e2e; no axe; no 1 px diff |
 | UC-INT-K02 | Confirm a disconnect | K Integration management frontend | Owner and Admin | Y | Y | Y | Y | HARDENING | no impact counts (B05) |
 | UC-INT-K03 | Connection detail page | K Integration management frontend | Owner and Admin | N | P | Y | N | IMPLEMENTING | reduced view only |
 | UC-INT-K04 | Live connection and sync progress | K Integration management frontend | Owner and Admin | N | N | N | N | DEFINED | no realtime producer or consumer exists |
-| UC-INT-L01 | Back off on a provider rate limit | L Rate/retry/provider limits | system | P | N | N | N | IMPLEMENTING | retry-after is not honored |
-| UC-INT-L02 | Queued work after a disconnect never runs | L Rate/retry/provider limits | system | P | N | N | N | IMPLEMENTING | skip is not recorded as a delivery state |
+| UC-INT-L01 | Back off on a provider rate limit | L Rate/retry/provider limits | system | P | N | N | N | IMPLEMENTING | Built: Retry-After (seconds or date) is parsed and capped at 1 hour (`WebhookRetryAfter.cs`, tests `WebhookRetryAfterTests.cs`), not yet honored at send. Owner question: the product names no cap (1 hour is the proposal), and honoring a 30 s wait needs a broker-side delayed redelivery (transport decision), since in-process waits hold a consumer slot shared across tenants |
+| UC-INT-L02 | Queued work after a disconnect never runs | L Rate/retry/provider limits | system | Y | N | N | N | HARDENING | Built: the dispatch consumer rechecks the connection at send and records a skipped delivery with a reason in outbound_delivery_log_entries. Only the state is unit-tested (OutboundDeliveryLogEntryTests.cs); the consumer skip path has no runnable test here (CI integration test). |
 | UC-INT-M01 | Plan limits on connections and premium providers | M Entitlement integration | Owner and Admin | N | N | P | N | DEFINED | the code uses a constant, not Billing |
 | UC-INT-N01 | Outgoing webhooks cannot reach internal networks | N Hardening/security | system | Y | N | N | Y | HARDENING | no test of the send-time DNS check in a hostile resolver case |
 | UC-INT-N02 | Connect, pause and disconnect are audited | N Hardening/security | Owner and Admin read the audit log | N | N | N | N | DEFINED | (enterprise baseline) |
@@ -390,7 +390,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: automation.md §6; owner decision 44 (OD3); AIREQ010.
 - Acceptance: Given a Draft rule, When a matching fact arrives, Then no execution is created.
 - Evidence: BE `AutomationRule.Create` (Status Draft) · FE FE-BS `automation-editor.tsx` (`submit("draft")`) · Design `Final-Automation` · Tests T-AD `AutomationRuleActivationInvariantTests` · Real e2e none
-- State: INTEGRATING — capacity rule conflicts with the decision (DEF-6); no e2e for draft.
+- State: INTEGRATING — create takes a plan slot while the rule is still a Draft (DEF-6), against the owner decision.
 
 ### UC-AUT-A07 Restore a deleted rule
 - Capability: AUT-001 Rule lifecycle
@@ -403,8 +403,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: empty, pending, error, permission denied.
 - Rules: automation.md §100; AIREQ015.
 - Acceptance: Given a rule deleted 10 days ago, When restored, Then it appears Disabled with its history and version.
-- Evidence: BE `AutomationRule.Restore` (domain only, no endpoint) · FE none · Design none · Tests T-AD `AutomationRuleDeletionLifecycleTests` · Real e2e none
-- State: IMPLEMENTING — domain method only; no command, endpoint or UI.
+- Evidence: BE `RestoreAutomationRuleCommandHandler` (Application), `RestoreAutomationRuleEndpoint`, `AutomationRule.RestoreRemoved` (the older `AutomationRule.Restore` undoes a soft delete and is not on this path) · FE none · Design none · Tests T-AD `AutomationRuleRestoreRemovedTests`, T-AA `RestoreAutomationRuleTests` · Real e2e none
+- State: HARDENING — Built: restore of a removed rule returns it Disabled with no plan slot, after 90 days it is NotFound, and a live rule is a no-op. Not built: the deleted-rules list and restore button in the FE. Owner question: the Output line says capacity is consumed again on restore, but M04 says Disabled uses no slot; this build follows M04 (no slot). Owner tests by hand.
 
 ### UC-AUT-A08 Create a rule from a template
 - Capability: AUT-001 Rule lifecycle
@@ -433,8 +433,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: trigger picker option "Item created"; run appears in the log.
 - Rules: automation.md §15 to §19 AUT-005, AUT-006; AIREQ022, AIREQ024, AIREQ047.
 - Acceptance: Given an Active rule, When an item is created on its board, Then one execution is queued with the rule version.
-- Evidence: BE `BoardItemCreatedAutomationConsumer`, `N8nAutomationRuleEvaluator` · FE FE-BS `automation-pickers.tsx` · Design `Final-Automation` · Tests T-AI `AutomationTriggerMatrixIntegrationTests`, `AutomationWorkEventRuntimeChainIntegrationTests` · Real e2e none
-- State: INTEGRATING — the real e2e covers only the moved trigger.
+- Evidence: BE `BoardItemMovedForAutomationConsumer.cs` (`BoardItemCreatedAutomationConsumer`), `N8nAutomationRuleEvaluator.cs` · FE FE-BS `automation-pickers.tsx` · Design `Final-Automation` · Tests T-AI `AutomationTriggerMatrixIntegrationTests.cs`, `AutomationWorkEventRuntimeChainIntegrationTests.cs` · Real e2e none
+- State: HARDENING — Built (verified by reading code 2026-11-09, not run): BoardItemMovedForAutomationConsumer.cs (BoardItemCreatedAutomationConsumer), N8nAutomationRuleEvaluator.cs, automation-pickers.tsx, AutomationTriggerMatrixIntegrationTests.cs, AutomationWorkEventRuntimeChainIntegrationTests.cs. Remaining: owner tests by hand.
 
 ### UC-AUT-B02 Fire a rule when an item moves to a group
 - Capability: AUT-002 Trigger model
@@ -461,8 +461,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: trigger option; log.
 - Rules: as B01.
 - Acceptance: Given an Active rule, When a member is assigned, Then one execution is queued.
-- Evidence: BE `BoardItemMemberAssignedAutomationConsumer` · FE FE-BS (picker; not checked against the API in a real run) · Design `Final-Automation` · Tests T-AI `AutomationTriggerMatrixIntegrationTests` · Real e2e none
-- State: INTEGRATING — no real e2e.
+- Evidence: BE `BoardItemMemberAssignedForAutomationConsumer.cs` · FE FE-BS `automation-pickers.tsx` · Design `Final-Automation` · Tests T-AI `AutomationTriggerMatrixIntegrationTests.cs` · Real e2e none
+- State: HARDENING — Built (verified by reading code 2026-11-09, not run): BoardItemMemberAssignedForAutomationConsumer.cs, AutomationTriggerMatrixIntegrationTests.cs (member-assigned trigger test), automation-pickers.tsx. Remaining: owner tests by hand.
 
 ### UC-AUT-B04 Triggers on update, field or status change, delete, form submit
 - Capability: AUT-002 Trigger model
@@ -547,8 +547,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: condition builder, validation error.
 - Rules: automation.md §29 to §34 AUT-010, AUT-011; AIREQ020; owner decision 44 (OD4: no OR, no nesting).
 - Acceptance: Given conditions status=Done and field=X, When an item has only status Done, Then the rule does not run.
-- Evidence: BE `AutomationConditions`, `AutomationExecutorAuthority.EnsureRuleAsync` · FE FE-BS `automation-flow.tsx` · Design `Final-Automation` · Tests T-AA `AutomationBoardScopeTests`, T-AD `AutomationConditionDefinitionTests` · Real e2e none
-- State: INTEGRATING — the real e2e has no condition; no condition-false end-to-end proof.
+- Evidence: BE `AutomationConditions.cs`, `N8nAutomationRuleEvaluator.cs` · FE FE-BS `automation-flow.tsx` · Design `Final-Automation` · Tests T-AA `AutomationMultiActionTests.cs`, T-AD `AutomationConditionDefinitionTests.cs` · Real e2e none
+- State: HARDENING — Built (verified by reading code 2026-11-09, not run): AutomationConditions.cs, N8nAutomationRuleEvaluator.cs (Holds), automation-flow.tsx, AutomationMultiActionTests.cs (Conditions_AreAnAndOfEqualsTests), AutomationConditionDefinitionTests.cs. Remaining: owner tests by hand.
 
 ### UC-AUT-C02 A condition not met is shown as skipped, not failed
 - Capability: AUT-003 Condition model
@@ -561,8 +561,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: log row "Skipped".
 - Rules: automation.md §33 AUT-011, §106; AIREQ021.
 - Acceptance: Given a failing condition, When the fact arrives, Then the log shows Skipped and the rule is not disabled.
-- Evidence: BE the evaluator drops the rule silently; `AutomationExecutionStatus` has no Skipped (DEF-16) · FE FE-BS `automation-log.tsx` (design shows Skipped) · Design `Final-M-Automation` · Tests T-AA `AutomationRuleEvaluatorGuardTests` · Real e2e none
-- State: IMPLEMENTING — no Skipped status or record.
+- Evidence: BE `N8nAutomationRuleEvaluator` (records the Skipped row), `AutomationExecution.CreateSkipped`, `AutomationExecutionStatus.Skipped` · FE `workspace-rules.copy.ts` and `workspace-rules-section.tsx` (run history label), `workspace-automations.api.ts` (status map) · Design `Final-M-Automation` · Tests T-AD `AutomationExecutionSkippedTests`, T-AA `AutomationConditionSkipTests` · Real e2e none
+- State: HARDENING — Built: a condition that was evaluated and not met records a Skipped execution with no failure and no queued fact, and the consecutive-failure count and the rate window ignore it. Not built: `automation-log.tsx` (board screen) reads fixture outcomes and was not changed. Owner question: a condition that cannot be evaluated still records nothing, while product §33 says an evaluation error is not a skip; should it be recorded as Failed? Owner tests by hand.
 
 ### UC-AUT-C03 Actor and time conditions, OR and nesting
 - Capability: AUT-003 Condition model
@@ -634,7 +634,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: automation.md §37, §38 AUT-013; AIREQ025.
 - Acceptance: Given a rule setting a date field to today, When run, Then the item shows the date.
 - Evidence: BE `IWorkActionPort.SetFieldValueAsync`, `EnsureFieldValueAsync` · FE FE-BS (value sent as a string) · Design `Final-Automation` · Tests T-AI `AutomationWorkActionChainIntegrationTests` · Real e2e none
-- State: INTEGRATING — no real e2e; the frontend sends the value as a string for every field type.
+- State: INTEGRATING — value encoding not verified per field type: the UI sends numeric-looking text as a number and all else as text (workspace-automations.api.ts fieldValue); date, checkbox and option fields untested.
 
 ### UC-AUT-D05 Notify a member or send an email
 - Capability: AUT-004 Action model
@@ -717,8 +717,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: blocked-enable message "field Ngày bàn giao archived" with Restore field and Choose another field.
 - Rules: automation.md §101, §102 AUT-034, §104; AIREQ048.
 - Acceptance: Given a rule step writing field F, When F is archived and the Manager enables, Then enable is rejected naming F.
-- Evidence: BE `AutomationExecutorAuthority.EnsureCanExecuteAsync` (checks the first action only) · FE FE-BS (message in design only) · Design `Final-Automation` · Tests T-AA `AutomationBoardScopeAuthorityTests` · Real e2e none
-- State: IMPLEMENTING — the enable check covers `rule.Configuration.Action` (first action) only; no structured broken-reference error.
+- Evidence: BE `AutomationExecutorAuthority.FindBrokenReferencesAsync`, `SetAutomationRuleEnabledCommandHandler` · FE `automation-editor.tsx` (broken-reference list) · Design `Final-Automation` · Tests T-AA `AutomationBrokenReferenceTests`, `AutomationBoardScopeAuthorityTests`; FE-BS `board-automation.interaction.component.test.tsx` · Real e2e none
+- State: HARDENING — Built: enable checks every action, condition and the trigger group and refuses with `Automation_Rule_BrokenReference`, listing each archived or deleted target (kind, id, field). Not built: the run-time terminal step (UC-AUT-I04) and the save check (UC-AUT-A04). Owner tests by hand.
 
 ## Capability E. Enable and disable lifecycle
 
@@ -762,7 +762,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: automation.md §61.2 AUT-020, §62; AIREQ049, AIREQ050.
 - Acceptance: Given an Active rule run by Minh, When Minh is removed, Then the rule is Disabled with a reason.
 - Evidence: BE `WorkspaceMemberRemovedAutomationConsumer` and siblings, `AutomationExecutorLifecycle` · FE FE-BS (reason text) · Design `Final-M-Automation` · Tests T-AA `AutomationExecutorIdentityTests` · Real e2e none
-- State: INTEGRATING — no real e2e.
+- State: INTEGRATING — board rule list shows no disabled reason: FE pausedReason is never populated and disabledReason renders only in the workspace rules section.
 
 ### UC-AUT-E04 Change the person a rule runs as
 - Capability: AUT-005 Enable/disable lifecycle
@@ -790,7 +790,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: automation.md §71; AIREQ116.
 - Acceptance: Given 5 failed runs, When the next fact arrives, Then the rule is Disabled with the reason.
 - Evidence: BE `AutomationGuardOptions`, `AutomationRule.DisableAutomatically`, `N8nAutomationRuleEvaluator` · FE FE-BS (reason text only) · Design none · Tests T-AA `AutomationRuleEvaluatorGuardTests` · Real e2e none
-- State: INTEGRATING — no notice to the owner when it happens.
+- State: INTEGRATING — no owner notice when a rule auto-disables after 5 failures (only the reason is stored).
 
 ### UC-AUT-E06 Pause and resume rules with the board
 - Capability: AUT-005 Enable/disable lifecycle
@@ -861,8 +861,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: none.
 - Rules: automation.md §62; RULE.md tenant invariants; AIREQ104.
 - Acceptance: Given the same group id value in two workspaces, When a W1 fact arrives, Then W2 rules do not run.
-- Evidence: BE `TenantContextConsumeFilter`, `AutomationRuleConfiguration` (RLS) · FE none · Design none · Tests T-AA `AutomationBoardScopeAuthorityTests` · Real e2e none
-- State: INTEGRATING — no dedicated cross-tenant integration test for the Automation consumers found.
+- Evidence: BE `TenantContextConsumeFilter`, `AutomationRuleConfiguration` (RLS), `N8nAutomationRuleEvaluator` (rule load filter) · FE none · Design none · Tests T-AA `AutomationBoardScopeAuthorityTests`; Rls `backend/tests/Notrelix.Integration.Tests/Rls/AutomationTenantIsolationTests.cs` · Real e2e none
+- State: HARDENING — Built (integration test written and compiles; not run locally because Docker is unavailable; the CI work-rls shard runs it): `AutomationTenantIsolationTests.cs`. The rule-loading filter of a W1 fact returns only W1 rules even when W2 has the same group id value. Remaining: owner tests by hand.
 
 ## Capability G. Execution creation
 
@@ -891,8 +891,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: reason in the list.
 - Rules: automation.md §60, §61, §62 AUT-020; AIREQ048 to AIREQ050.
 - Acceptance: Given an executor demoted to Viewer, When the next fact arrives, Then nothing moves and the rule is Disabled.
-- Evidence: BE `AutomationExecutorAuthority.EnsureCanExecuteAsync` · FE none · Design `Final-Automation` (runner card) · Tests T-AA `AutomationExecutorIdentityTests`, T-AI `AutomationMoveItemExecutorCompositionIntegrationTests` · Real e2e none
-- State: INTEGRATING — no real e2e.
+- Evidence: BE `AutomationExecutorAuthority.cs` · FE none · Design `Final-Automation` · Tests T-AA `AutomationExecutorIdentityTests.cs`, T-AI `AutomationMoveItemExecutorCompositionIntegrationTests.cs` · Real e2e none
+- State: HARDENING — Built (verified by reading code 2026-11-09, not run): AutomationExecutorAuthority.cs, AutomationExecutorIdentityTests.cs, AutomationMoveItemExecutorCompositionIntegrationTests.cs. Remaining: owner tests by hand.
 
 ### UC-AUT-G03 Chains and runaway rules are bounded
 - Capability: AUT-007 Execution creation
@@ -906,7 +906,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: automation.md §66 to §71 AUT-022; AIREQ037, AIREQ116.
 - Acceptance: Given two rules that move an item back and forth, Then the chain stops at depth 3.
 - Evidence: BE `AutomationGuardOptions`, `N8nAutomationRuleEvaluator` · FE none · Design none · Tests T-AA `AutomationRuleEvaluatorGuardTests` · Real e2e none
-- State: INTEGRATING — a stopped trigger is silent to users.
+- State: INTEGRATING — a stopped chain or rate-limited trigger is silent: no log note and no UI state.
 
 ### UC-AUT-G04 Concurrent claims never duplicate work
 - Capability: AUT-007 Execution creation
@@ -934,7 +934,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: automation.md §61.2 Attribution, §68 Causation; AIREQ054.
 - Acceptance: Given a rule move, Then the item history shows the rule and the runner.
 - Evidence: BE `WorkItemActionAdapter` · FE item history (Collaboration) not checked for the rule label · Design `Final-Automation` · Tests T-AI `AutomationMoveItemExecutorCompositionIntegrationTests` · Real e2e none
-- State: INTEGRATING — the rule label in the item history UI is not proven.
+- State: INTEGRATING — item history has no 'automation <rule> on behalf of <runner>' line (no match in the FE item history).
 
 ### UC-AUT-G06 Test-run a rule
 - Capability: AUT-007 Execution creation
@@ -991,8 +991,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: "Bước 1 thành công, Bước 2 lỗi".
 - Rules: automation.md §52, §53; AIREQ031, AIREQ033.
 - Acceptance: as D06.
-- Evidence: BE `AutomationMultiActionTests` subject · FE FE-BS · Design `Final-M-Automation` · Tests T-AA `AutomationMultiActionTests` · Real e2e none
-- State: INTEGRATING — no real e2e of a failing step.
+- Evidence: BE `AutomationMultiActionTests.cs` subject · FE FE-BS `automation-log.tsx` · Design `Final-M-Automation` · Tests T-AA `AutomationMultiActionTests.cs` · Real e2e none
+- State: HARDENING — Built (verified by reading code 2026-11-09, not run): AutomationMultiActionTests.cs (ARejectedAction_FailsTheExecution_AndLaterActionsDoNotRun), automation-log.tsx. Remaining: owner tests by hand.
 
 ### UC-AUT-H04 Cancel a queued execution
 - Capability: AUT-008 Execution state machine
@@ -1000,13 +1000,13 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Preconditions: execution Queued (not Running).
 - Input: execution id, expected version.
 - Output: status Cancelled; no step runs.
-- Main flow: a cancel command (not built).
+- Main flow: a cancel command (`CancelAutomationExecutionCommand`, `POST .../executions/{executionId}/cancel`).
 - No-op / rejection / concurrency / retry: cancelling a finished execution is rejected; a stale version is rejected.
 - UI states: cancel action, confirmation.
 - Rules: automation.md §49; AIREQ030.
 - Acceptance: Given a Queued execution, When cancelled, Then it ends Cancelled and no action runs.
-- Evidence: BE `AutomationExecution` Cancelled state and event, no endpoint · FE `AutomationExecutionRepository.cancel?` unimplemented · Design none · Tests T-AD `AutomationExecutionTests` · Real e2e none
-- State: IMPLEMENTING — domain only.
+- Evidence: BE `CancelAutomationExecutionCommandHandler` (Application), `CancelAutomationExecutionEndpoint`, `AutomationExecution.CancelBeforeStart`, OpenAPI `backend/contracts/openapi/notrelix.v1.json` · FE `AutomationExecutionRepository.cancel?` unimplemented · Design none · Tests T-AD `AutomationExecutionCancelQueuedTests`, T-AA `CancelAutomationExecutionTests`, architecture `request-execution-baseline.json` · Real e2e none
+- State: HARDENING — Built: the endpoint and handler refuse a Running or finished execution with `Automation_Execution_CannotCancelUnlessQueued` and a rule or board mismatch as NotFound. Not built: the FE cancel action and confirmation; no expected version (as E01, A05). Owner question: the n8n `retried` callback still cancels through `AutomationExecution.Cancel`, which also accepts Running; kept because that path needs it. Owner tests by hand.
 
 ### UC-AUT-H05 An unknown outcome is held, never re-fired
 - Capability: AUT-008 Execution state machine
@@ -1036,7 +1036,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: automation.md §54, §55 AUT-018; AIREQ034, AIREQ035.
 - Acceptance: Given a 503 then 200, Then one effect and attempt count 2.
 - Evidence: BE `AutomationExecution.RecordRetryableDispatchFailure`, `AutomationConsumerDefinitions` (`UseMessageRetry`) · FE none (`attemptCount` is in the DTO) · Design none · Tests T-AD `AutomationExecutionRetryTests`, T-AI `AutomationN8nDurabilityIntegrationTests` · Real e2e none
-- State: INTEGRATING — no UI for the retrying state.
+- State: INTEGRATING — no UI for the retrying state ('đang thử lại, lần N' is not in the FE).
 
 ### UC-AUT-I02 A terminal failure shows a safe, useful reason
 - Capability: AUT-009 Business retry/failure policy
@@ -1050,7 +1050,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: automation.md §106, §107 AUT-035; AIREQ033, AIREQ113.
 - Acceptance: Given a deleted target group, Then the log says the group no longer exists.
 - Evidence: BE `AutomationExecution.Fail`, `AutomationExecutionDto.Error` · FE FE-BS `automation-log.tsx` · Design `Final-M-Automation` · Tests T-AD `AutomationExecutionTests` · Real e2e none
-- State: INTEGRATING — failure classes are free text, not a stable enum.
+- State: INTEGRATING — the stable failure class (`AutomationFailureClass`, codes such as `target_gone`) is stored on the execution row, but `AutomationExecutionDto` carries only `Error` (free text), so the API, the OpenAPI contract and the run log do not show it. Remaining: expose the class in the DTO and the run log, with a safe label per class.
 
 ### UC-AUT-I03 Rerun a failed step
 - Capability: AUT-009 Business retry/failure policy
@@ -1077,8 +1077,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: reason.
 - Rules: automation.md §54, §101 AUT-034; AIREQ033.
 - Acceptance: Given the target group deleted, Then no retry and the reason names it.
-- Evidence: BE `AutomationMoveItemUseCase`, `WorkItemActionAdapter` · FE none · Design none · Tests T-AA `AutomationBoardScopeAuthorityTests` · Real e2e none
-- State: IMPLEMENTING — the terminal versus retryable class is not a stable contract.
+- Evidence: BE `AutomationFailureClass` and its codes (Domain), `AutomationExecution.Fail` and `RecordRetryableDispatchFailure`, `AutomationMoveItemUseCase`, `N8nDispatchUseCase`, migration `20261109100301_AddAutomationExecutionFailureClass` · FE none · Design none · Tests T-AD `AutomationFailureClassTests`, T-AA `AutomationFailureClassTests`, `AutomationBoardScopeAuthorityTests` · Real e2e none
+- State: HARDENING — Built: a failure carries one stable class and the retry rule follows it: a terminal class ends the execution and is never retried (the domain refuses a retry for it), and only a technical failure is re-queued under the same execution id. Not built: the class is not in the execution DTO or the run log. Owner tests by hand.
 
 ## Capability J. Execution history and query
 
@@ -1108,7 +1108,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: automation.md §57; AIREQ038.
 - Acceptance: Given a run, When opened, Then the steps and version are shown.
 - Evidence: BE none for detail (list only) · FE FE-BS `automation-run-sheet.tsx` · Design `Final-M-Automation` · Tests FE-BS component tests · Real e2e none
-- State: INTEGRATING — triggerer and item reference come from the payload only.
+- State: INTEGRATING — no run-detail endpoint; triggerer and item reference come from the list payload only.
 
 ### UC-AUT-J03 See all runs of a workspace and filter them
 - Capability: AUT-010 Execution history/query
@@ -1193,8 +1193,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: loading, empty, error, permission denied.
 - Rules: automation.md §58 AUT-019.
 - Acceptance: Given runs, Then the log lists them newest first.
-- Evidence: BE as J01 · FE FE-BS `automation-log.tsx`, `automation-log-parts.tsx` · Design `Final-Automation` · Tests FE-BS `__tests__/` · Real e2e E2E-AUT (the list is read after the run)
-- State: INTEGRATING — the real e2e reads the list but does not assert the log screen.
+- Evidence: BE as J01 · FE FE-BS `automation-log.tsx`, `automation-log-parts.tsx` · Design `Final-Automation` · Tests FE-BS `__tests__/board-automation.interaction.component.test.tsx` · Real e2e E2E-AUT (the list is read after the run)
+- State: HARDENING — Built (verified by reading code 2026-11-09, not run): automation-log.tsx, automation-log-parts.tsx, board-automation.interaction.component.test.tsx. Remaining: owner tests by hand.
 
 ### UC-AUT-K04 See why a rule cannot be enabled
 - Capability: AUT-011 Automation authoring frontend
@@ -1207,8 +1207,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: blocking notice with actions.
 - Rules: automation.md §7 AUT-002, §106.
 - Acceptance: Given an archived field, When enable fails, Then the notice names it.
-- Evidence: BE rejection codes in `AutomationRuleCodes.cs` · FE FE-BS (message copy) · Design `Final-Automation` · Tests FE-BS `__tests__/` · Real e2e none
-- State: IMPLEMENTING — structured reasons are not in the API (see UC-AUT-D10).
+- Evidence: BE rejection codes in `AutomationRuleCodes.cs`, OpenAPI `backend/contracts/openapi/notrelix.v1.json` (`AutomationEnableRefusalResponse`) · FE `automation-editor.tsx`, `board-automation.copy.ts` (en and vi) · Design `Final-Automation` · Tests FE-BS `__tests__/board-automation.interaction.component.test.tsx` · Real e2e none
+- State: HARDENING — Built: the refusal names each archived or deleted target (step, trigger or condition, and its kind) in the board editor, en and vi. Not built: the draft-to-enable save path and the workspace rules list show a generic failure. Owner tests by hand.
 
 ### UC-AUT-K05 A non-manager sees a denied state
 - Capability: AUT-011 Automation authoring frontend
@@ -1221,8 +1221,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: permission denied.
 - Rules: automation.md §61.1; AIREQ096.
 - Acceptance: Given a Member, When opening the tab, Then a denied notice shows and no rule names leak.
-- Evidence: BE `AutomationPermissionMarkerTests` subject · FE FE-BS · Design `Final-Settings` ("Chỉ quản lý board mở được trang này") · Tests T-AA `AutomationPermissionMarkerTests` · Real e2e none
-- State: INTEGRATING — no real e2e of the denied path.
+- Evidence: BE `AutomationPermissionMarkerTests.cs` subject · FE FE-BS `board-settings-surface.tsx` (DeniedCard) · Design `Final-Settings` · Tests `board-settings-surface.interaction.component.test.tsx`, T-AA `AutomationPermissionMarkerTests.cs` · Real e2e none
+- State: HARDENING — Built (verified by reading code 2026-11-09, not run): board-settings-surface.tsx (DeniedCard), board-settings-surface.interaction.component.test.tsx, AutomationPermissionMarkerTests.cs. Remaining: owner tests by hand.
 
 ### UC-AUT-K06 Phone: read rules, switch them, read the run log
 - Capability: AUT-011 Automation authoring frontend
@@ -1310,7 +1310,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: automation.md §72, §73 AUT-023; AIREQ052, AIREQ053.
 - Acceptance: Given 0 slots left, When creating, Then rejected and no rule exists.
 - Evidence: BE `CreateAutomationRuleCommandHandler`, `IBillingCapabilityFacts` · FE generic error toast only · Design none · Tests T-AA `CreateAutomationRuleBillingGateTests` · Real e2e none
-- State: INTEGRATING — no limit-reached UI.
+- State: INTEGRATING — no limit-reached notice with an upgrade path (the editor maps 'limit' to a generic failure).
 
 ### UC-AUT-M02 Deleting a rule frees its slot
 - Capability: AUT-013 Entitlement integration
@@ -1324,7 +1324,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: AIREQ053.
 - Acceptance: Given a retried delete, Then capacity rises by one.
 - Evidence: BE `DeleteAutomationRuleCommandHandler.ReleaseOperationId` · FE none · Design none · Tests T-AA `CreateAutomationRuleBillingGateTests` · Real e2e none
-- State: INTEGRATING — the retry-after-delete path is not proven.
+- State: INTEGRATING — retry of a delete never releasing twice is not tested (only one release under its identity is asserted).
 
 ### UC-AUT-M03 What happens to rules on a plan downgrade
 - Capability: AUT-013 Entitlement integration
@@ -1351,8 +1351,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: limit notice on the enable switch.
 - Rules: owner decision 44 (OD3); AIREQ053.
 - Acceptance: Given a limit of 3 and 3 enabled rules, When creating a Draft, Then it saves; When enabling it, Then rejected.
-- Evidence: BE the consume is in create (DEF-6) · FE none · Design none · Tests T-AA `CreateAutomationRuleBillingGateTests` · Real e2e none
-- State: IMPLEMENTING — code contradicts the decision.
+- Evidence: BE `AutomationRuleCapacity`, `CreateAutomationRule` (no slot), `SetAutomationRuleEnabled` (consume, release on disable), `DeleteAutomationRule` (release if held) · FE none · Design none · Tests T-AA `CreateAutomationRuleDraftCapacityTests`, `AutomationRuleCapacityTests`; integration `Billing/BillingCapacityFlowIntegrationTests.cs` (CI only) · Real e2e none
+- State: HARDENING — Built: Draft create takes no plan slot; enable consumes one (over the limit it is refused); disable and delete release the slot of a rule that holds one. Owner question: a rule the platform auto-disables keeps its slot until a person enables, disables or deletes it; the decision says Disabled uses no slot, and releasing on auto-disable needs the four executor call sites changed. Owner tests by hand.
 
 ## Capability N. Hardening and observability
 
@@ -1409,8 +1409,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: validation error.
 - Rules: automation.md §85, §86 AUT-029; AIREQ113.
 - Acceptance: Given a config with `apiKey`, Then rejected.
-- Evidence: BE `AutomationActionValidator`, `N8nWebhookPath` · FE none · Design none · Tests T-AD `AutomationActionValidatorTests` · Real e2e none
-- State: INTEGRATING — secret-like field rejection is not confirmed by a test.
+- Evidence: BE `AutomationSecretFieldGuard`, `AutomationActionValidator`, `AutomationTriggerValidator`, `AutomationRuleCodes` · FE none · Design none · Tests T-AD `AutomationSecretFieldGuardTests`, `AutomationActionValidatorTests` · Real e2e none
+- State: HARDENING — Built and run (Domain suite): `AutomationSecretFieldGuard` rejects a secret-like property name (password, passwd, secret, token, apiKey, authorization, bearer, privateKey) at any depth, and a `Bearer ` value, in action and trigger configuration, with `Automation_Configuration_SecretFieldNotAllowed`. Matching is by substring, so a name such as `tokenId` is refused too. Remaining: owner tests by hand.
 
 ### UC-AUT-N05 Tenant isolation of rules and executions
 - Capability: AUT-014 Hardening/observability
@@ -1423,8 +1423,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: not found.
 - Rules: AIREQ104, AIREQ110; RULE.md tenant invariants.
 - Acceptance: Given a W2 rule id, When a W1 Manager calls update, Then NotFound.
-- Evidence: BE `AutomationRuleConfiguration`, `AutomationExecutionConfiguration` · FE none · Design none · Tests T-AA `AutomationBoardScopeAuthorityTests` · Real e2e none
-- State: INTEGRATING — no Automation-specific cross-tenant integration test with Postgres RLS found.
+- Evidence: BE `AutomationRuleConfiguration`, `AutomationExecutionConfiguration` · FE none · Design none · Tests T-AA `AutomationBoardScopeAuthorityTests`; Rls `backend/tests/Notrelix.Integration.Tests/Rls/AutomationTenantIsolationTests.cs` · Real e2e none
+- State: HARDENING — Built (integration test written and compiles; not run locally because Docker is unavailable; the CI work-rls shard runs it): `AutomationTenantIsolationTests.cs`. Under the application login, W1 sees only its own rules and executions; W2 rows are invisible to updates and deletes, and inserts into W2 are refused with SQLSTATE 42501. Remaining: owner tests by hand.
 
 ### UC-AUT-N06 Pause all automation of a workspace
 - Capability: AUT-014 Hardening/observability
@@ -1583,8 +1583,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: loading, error, permission denied.
 - Rules: integrations.md §7, §42; AIREQ098.
 - Acceptance: Given a connection, Then the detail shows last success, last error and scopes.
-- Evidence: BE none · FE FE-INT `integrations-view.ts` (reduced view) · Design `Final-Integrations` · Tests none · Real e2e none
-- State: IMPLEMENTING — no detail endpoint.
+- Evidence: BE `GetIntegrationConnection.cs`, `IntegrationConnectionEndpoints.cs` (GET detail), `IntegrationCatalog.cs` (`IntegrationConnectionDetailDto`) · FE `integrations-view.ts` (reduced view) · Design `Final-Integrations` · Tests `GetIntegrationConnectionTests.cs` (run: Application suite), `Rls/IntegrationConnectionDetailNonMemberTests.cs` (not run: Docker) · Real e2e none
+- State: HARDENING — the detail endpoint is built and unit-tested; the stranger-versus-made-up-id test runs in CI on PostgreSQL. No screen change. Remaining: the use list and recent activity.
 
 ## Capability C. Provider authorization and OAuth
 
@@ -1600,7 +1600,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: integrations.md §13, §14 INT-004, §108 INT-035; AIREQ057, AIREQ059.
 - Acceptance: Given a configured Slack, Then an authorization address with state is returned; a Member gets NotFound.
 - Evidence: BE GET `.../integrations/{provider}/authorize` (Integrations.Connections.Authorize), `IntegrationOAuthStateProtector` · FE FE-INT · Design `Final-Integrations` · Tests T-II `CalendarConnectionFlowIntegrationTests` · Real e2e E2E-INT (only "Not configured" is proven)
-- State: INTEGRATING — no PKCE (DEF-9); no real provider round trip.
+- State: INTEGRATING — no PKCE on the provider authorize URL (DEF-9).
 
 ### UC-INT-C02 Complete authorization on the callback
 - Capability: INT-003 Provider authorization/OAuth
@@ -1613,8 +1613,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: success toast, error toast.
 - Rules: integrations.md §9, §10, §14 INT-004, §15 INT-005; AIREQ058, AIREQ060.
 - Acceptance: Given a valid code, Then one Active connection exists and no token is in any response.
-- Evidence: BE GET `/api/v1/integrations/{provider}/callback` (Integrations.Connections.Callback), `CompleteIntegrationAuthorizationCommandHandler` · FE FE-INT (reads `connected` and `error`) · Design `Final-Integrations` · Tests T-II `CalendarConnectionFlowIntegrationTests` · Real e2e none
-- State: INTEGRATING — no real e2e; no provider simulator.
+- Evidence: BE GET `/api/v1/integrations/{provider}/callback` (Integrations.Connections.Callback), `CompleteIntegrationAuthorizationCommandHandler` · FE FE-INT (reads `connected` and `error`) · Design `Final-Integrations` · Tests T-II `CalendarConnectionFlowIntegrationTests`; Application `backend/tests/Notrelix.Application.Tests/Features/Integrations/CompleteIntegrationAuthorizationCommandHandlerTests.cs`; API `backend/tests/Notrelix.API.Tests/Integrations/IntegrationOAuthCallbackRedirectTests.cs` · Real e2e none
+- State: HARDENING — Built and run: 10 handler unit tests (unreadable, expired, other-member, other-workspace and other-provider states; refused exchange; provider not configured; success stores an opaque reference; reauthorization of an expired connection) and 5 API redirect tests. Remaining: owner tests by hand.
 
 ### UC-INT-C03 A refused or failed authorization is explained
 - Capability: INT-003 Provider authorization/OAuth
@@ -1627,8 +1627,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: error toast with retry.
 - Rules: integrations.md §14 INT-004.
 - Acceptance: Given a denied consent, Then no connection exists and the message says it was refused.
-- Evidence: BE callback endpoint · FE FE-INT (toast) · Design `Final-Integrations` · Tests none · Real e2e none
-- State: INTEGRATING — no test of the error redirects.
+- Evidence: BE callback endpoint (`IntegrationConnectionEndpoints.cs`) · FE FE-INT (toast) · Design `Final-Integrations` · Tests API `backend/tests/Notrelix.API.Tests/Integrations/IntegrationOAuthCallbackRedirectTests.cs` · Real e2e none
+- State: HARDENING — Built and run: API tests cover `error=refused` (provider error and missing code) and `error=failed`; neither creates a connection. Remaining: owner tests by hand.
 
 ### UC-INT-C04 Reauthorize an expired connection
 - Capability: INT-003 Provider authorization/OAuth
@@ -1711,12 +1711,12 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Input: `connectionId`, expected version.
 - Output: a new secret version shown once; the old one is invalid at once.
 - Main flow: "Regenerate secret" on the detail.
-- No-op / rejection / concurrency / retry: a retry with the same idempotency key returns the same new secret reference, never two.
+- No-op / rejection / concurrency / retry: built without an Idempotency-Key on purpose. A replayed result would have to hold the one-time secret in the idempotency result store, which must never hold it. Instead the request states the connection version it read (ExpectedVersion): a repeat with that stale version is refused (412), so a lost response cannot rotate twice, and a new attempt reads the version again. A connection that is not Active or Paused is refused (integrations.webhook.secret.connection-state).
 - UI states: confirm dialog, one-time dialog.
 - Rules: integrations.md §17; owner decision 45 (regeneration allowed); AIREQ062.
 - Acceptance: Given a regenerated secret, Then deliveries signed with the old secret are no longer produced.
-- Evidence: BE `IntegrationConnection.RotateSecret`, `IntegrationSecretRotatedDomainEvent` (no command, no endpoint) · FE none · Design `Final-Integrations` · Tests T-ID `SecretRotationBoundaryTests` · Real e2e none
-- State: IMPLEMENTING — domain only.
+- Evidence: BE `RegenerateWebhookSecret.cs`, `IntegrationConnectionEndpoints.cs` (POST secret), `ExpectedVersionTargetMap.cs`, `IntegrationConnection.RotateSecret` · FE none (no screen) · Design `Final-Integrations` · Tests `RegenerateWebhookSecretTests.cs` (run: Application suite), `ExpectedVersionArchitectureTests.cs` (run) · Real e2e none
+- State: HARDENING — the regenerate command, endpoint and audit row are built and unit-tested (Application suite). No screen. Replaced secret blob not revoked physically. Owner question on step-up.
 
 ### UC-INT-E03 Tokens are stored behind an opaque reference
 - Capability: INT-005 Credential reference/storage contract
@@ -1729,8 +1729,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: none.
 - Rules: integrations.md §15, §16 INT-005; AIREQ060 to AIREQ062, AIREQ105.
 - Acceptance: Given a connected Google account, Then no API response contains a token.
-- Evidence: BE `IntegrationSecretBlobConfiguration`, `IntegrationSecretVersionConfiguration`, `SecretEncryptor` · FE none · Design none · Tests T-ID `IntegrationSecretStateTests` · Real e2e none
-- State: INTEGRATING — no integration test of the OAuth token path.
+- Evidence: BE `IntegrationSecretBlobConfiguration`, `IntegrationSecretVersionConfiguration`, `SecretEncryptor` · FE none · Design none · Tests T-ID `IntegrationSecretStateTests`; Application `backend/tests/Notrelix.Application.Tests/Features/Integrations/CompleteIntegrationAuthorizationCommandHandlerTests.cs` (in-memory unit test) · Real e2e none
+- State: INTEGRATING — unit level only. `CompleteIntegrationAuthorizationCommandHandlerTests` shows one raw token set goes to the secret store and the connection holds only the returned reference. Still open: the integration test through PostgreSQL and the real secret store (IntegrationSecretBlob), which needs Docker and is not written.
 
 ### UC-INT-E04 Refresh tokens before they expire
 - Capability: INT-005 Credential reference/storage contract
@@ -1757,8 +1757,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: none.
 - Rules: integrations.md §97 INT-033; AIREQ063.
 - Acceptance: Given a disconnected connection, Then its secret blob is gone after the consumer runs.
-- Evidence: BE `IntegrationConnectionRevokedConsumer` · FE none · Design none · Tests T-II `CalendarWebhookDataSessionIntegrationTests` · Real e2e none
-- State: INTEGRATING — no direct test of the cleanup consumer.
+- Evidence: BE `IntegrationConnectionRevokedConsumer.cs` · FE none · Design none · Tests T-II `CalendarConnectionFlowIntegrationTests.cs`, Infrastructure `IntegrationConnectionRevokedConsumerTests.cs` · Real e2e none
+- State: HARDENING — Built (verified by reading code 2026-11-09, not run): IntegrationConnectionRevokedConsumer.cs, IntegrationConnectionRevokedConsumerTests.cs, CalendarConnectionFlowIntegrationTests.cs (RevokedConnection_OutboxEvent_ConsumerRevokesAllSecretReferences). Remaining: owner tests by hand.
 
 ## Capability F. Outbound provider operation
 
@@ -1773,8 +1773,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: none (delivery log is F05).
 - Rules: integrations.md §52, §53 INT-019, §93 INT-031; AIREQ065, AIREQ067, AIREQ074.
 - Acceptance: Given two Active webhooks, When one item is created, Then each receives one delivery with its own delivery id.
-- Evidence: BE `WebhookEventFanOut`, `IntegrationWebhookDispatchRequestedConsumer`, `OutboundWebhookSender` · FE none · Design none · Tests T-II `WebhookFanOutRuntimeChainIntegrationTests` · Real e2e none
-- State: INTEGRATING — no real e2e of a fact-driven delivery.
+- Evidence: BE `WebhookEventFanOut.cs`, `IntegrationWebhookDispatchRequestedConsumer.cs`, `OutboundWebhookSender.cs` · FE none · Design none · Tests T-II `WebhookFanOutRuntimeChainIntegrationTests.cs` · Real e2e none
+- State: HARDENING — Built (verified by reading code 2026-11-09, not run): WebhookEventFanOut.cs, IntegrationWebhookDispatchRequestedConsumer.cs, OutboundWebhookSender.cs, WebhookFanOutRuntimeChainIntegrationTests.cs (AnItemCreatedFactIsDeliveredOncePerActiveConnectionAndSkipsPausedOnes). Remaining: owner tests by hand.
 
 ### UC-INT-F02 Send a test delivery
 - Capability: INT-006 Outbound provider operation
@@ -1829,22 +1829,22 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: loading, empty, error.
 - Rules: integrations.md §27 Webhook Delivery, §28 INT-010; AIREQ083, AIREQ114.
 - Acceptance: Given a failed delivery, Then the log shows its attempts and last status.
-- Evidence: BE `WebhookDelivery` entity and table only · FE none · Design `Final-Integrations` · Tests T-ID `WebhookDeliveryLifecycleTests` · Real e2e none
-- State: IMPLEMENTING — no read endpoint.
+- Evidence: BE `OutboundDeliveryLogEntry` (table `outbound_delivery_log_entries`), `ListConnectionDeliveryLog.cs`, `IntegrationWebhookDispatchRequestedConsumer.cs` (writes the log), `IntegrationConnectionEndpoints.cs` · FE none (no screen) · Design `Final-Integrations` · Tests `OutboundDeliveryLogEntryTests.cs`, `ConnectionDeliveryLogTests.cs` (run: Domain and Application suites) · Real e2e none
+- State: HARDENING — built and unit-tested (Domain and Application suites); the log write and the cursor read against PostgreSQL are not run here. No screen.
 
 ### UC-INT-F06 Retry a failed delivery with backoff
 - Capability: INT-006 Outbound provider operation
 - Actors and permission: system.
 - Preconditions: a delivery failed with a retryable result (5xx, 408, 429, timeout, refusal).
 - Input: attempt number.
-- Output: owner decision 45: up to 8 attempts per event with backoff, then Failed and visible. Today 3 redeliveries at 1, 5 and 30 seconds.
+- Output: owner decision 45: up to 8 attempts per event with backoff, then Failed and visible. Built: 7 redeliveries with waits of 1, 2, 5, 10, 20, 30 and 30 seconds (each at most 30 seconds).
 - Main flow: broker retry with intervals.
 - No-op / rejection / concurrency / retry: the delivery id header is the receiver's dedupe key; a hot loop is forbidden.
 - UI states: attempts in the log (F05).
 - Rules: integrations.md §57, §58, §59 INT-021; AIREQ068, AIREQ069; owner decision 45.
 - Acceptance: Given a receiver that fails 7 times then succeeds, Then it is delivered once on attempt 8.
-- Evidence: BE `IntegrationWebhookDispatchRequestedConsumerDefinition` (1 s, 5 s, 30 s) · FE none · Design none · Tests T-II `WebhookFanOutRuntimeChainIntegrationTests` · Real e2e none
-- State: IMPLEMENTING — the budget differs from the decision (DEF-12).
+- Evidence: BE `WebhookRedeliveryPolicy.cs`, `IntegrationWebhookDispatchRequestedConsumer.cs`, `IntegrationWebhookDispatchRequestedConsumerDefinition.cs` · FE none · Design none · Tests `WebhookRedeliveryPolicyTests.cs` (run: Infrastructure suite) · Real e2e none
+- State: HARDENING — the 8-attempt budget and the interval list are built in one place and unit-tested (Infrastructure suite). Owner questions: the intervals and the in-process hold of long waits.
 
 ### UC-INT-F07 Reconcile an unknown provider outcome
 - Capability: INT-006 Outbound provider operation
@@ -1873,8 +1873,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: none.
 - Rules: integrations.md §20, §21 INT-007, §22, §23, §24 INT-008; AIREQ075 to AIREQ079, AIREQ084.
 - Acceptance: Given a body with a wrong signature, Then 401 and a rejected receipt is recorded; given a 2 MB body, Then 413.
-- Evidence: BE POST `/api/v1/integrations/calendar/webhooks/{provider}/{webhookPath}` (Integrations.Calendar.HandleWebhook), `HandleCalendarWebhookCommandHandler`, `CalendarWebhookVerifier` · FE none · Design none · Tests T-II `CalendarWebhookIntakeIntegrationTests`, `CalendarWebhookDataSessionIntegrationTests` · Real e2e none
-- State: INTEGRATING — no provider simulator e2e; the rate limit has no negative test found.
+- Evidence: BE POST `/api/v1/integrations/calendar/webhooks/{provider}/{webhookPath}` (Integrations.Calendar.HandleWebhook), `HandleCalendarWebhookCommandHandler`, `CalendarWebhookVerifier` · FE none · Design none · Tests T-II `CalendarWebhookIntakeIntegrationTests`, `CalendarWebhookDataSessionIntegrationTests`; API `backend/tests/Notrelix.API.Tests/RateLimiting/WebhookIntakeRateLimitTests.cs` · Real e2e none
+- State: HARDENING — Built and run: the 31st delivery from one address gets 429 with `rate_limit.exceeded` and the handler never sees it. Remaining: owner tests by hand.
 
 ### UC-INT-G02 Reject replayed and duplicate deliveries
 - Capability: INT-007 Inbound webhook verification
@@ -1887,8 +1887,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: none.
 - Rules: integrations.md §25, §26 INT-009, §27, §28 INT-010; AIREQ078, AIREQ079.
 - Acceptance: Given the same event posted twice, Then one processing intent exists.
-- Evidence: BE `CalendarWebhookIntake`, `InboundWebhookReceipt` · FE none · Design none · Tests T-II `CalendarWebhookIntakeIntegrationTests`, `backend/tests/Notrelix.Infrastructure.Tests/Integrations/InboundWebhookReceiptLifecycleTests.cs` · Real e2e none
-- State: INTEGRATING — as G01.
+- Evidence: BE `CalendarWebhookIntake.cs`, `InboundWebhookReceipt` · FE none · Design none · Tests T-II `CalendarWebhookIntakeIntegrationTests.cs`, `backend/tests/Notrelix.Infrastructure.Tests/Integrations/InboundWebhookReceiptLifecycleTests.cs` · Real e2e none
+- State: HARDENING — Built (verified by reading code 2026-11-09, not run): CalendarWebhookIntake.cs, CalendarWebhookIntakeIntegrationTests.cs (DuplicateDelivery and StaleTimestamp tests). Remaining: owner tests by hand.
 
 ### UC-INT-G03 The tenant comes from the binding, never the payload
 - Capability: INT-007 Inbound webhook verification
@@ -1901,8 +1901,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: none.
 - Rules: integrations.md §23, §24 INT-008; AIREQ077, AIREQ104.
 - Acceptance: Given a payload naming workspace W2 on a W1 path, Then only W1 data is touched.
-- Evidence: BE `CalendarWebhookBindingResolver`, `TenantContextConsumeFilter` · FE none · Design none · Tests T-II `CalendarWebhookDataSessionIntegrationTests` · Real e2e none
-- State: INTEGRATING — as G01.
+- Evidence: BE `CalendarWebhookBindingResolver.cs`, `TenantContextConsumeFilter` · FE none · Design none · Tests T-II `CalendarWebhookIntakeIntegrationTests.cs`, `CalendarWebhookDataSessionIntegrationTests.cs` · Real e2e none
+- State: HARDENING — Built (verified by reading code 2026-11-09, not run): CalendarWebhookBindingResolver.cs, CalendarWebhookIntakeIntegrationTests.cs (PayloadAccountWorkspaceAreIgnored test), CalendarWebhookDataSessionIntegrationTests.cs. Remaining: owner tests by hand.
 
 ### UC-INT-G04 Malformed or conflicting payloads fail closed
 - Capability: INT-007 Inbound webhook verification
@@ -1916,7 +1916,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: integrations.md §29, §30, §75 INT-026; AIREQ081, AIREQ082.
 - Acceptance: Given a payload missing the event id, Then rejected at the boundary; given an unsupported type, Then marked and skipped.
 - Evidence: BE `CalendarWebhookProcessingRequestedConsumer`, `CalendarWebhookProcessingUseCase` · FE none · Design none · Tests T-II `CalendarWebhookProcessingRuntimeTests` · Real e2e none
-- State: INTEGRATING — as G01.
+- State: INTEGRATING — Owner question: which calendar event types are supported? The processing path never reads the payload `kind`; any dotted `resourceKind` is reconciled, so an unsupported type is processed rather than marked and skipped (integrations.md §29, §30). Malformed and conflicting payloads are tested. No test is added until the list is decided.
 
 ## Capability H. Inbound event mapping, with calendar sync
 
@@ -2059,8 +2059,8 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: health chip.
 - Rules: integrations.md §42, §43 INT-015.
 - Acceptance: Given a valid token and a failing sync, Then status is Active and health is failed.
-- Evidence: BE `SyncStatus` (Idle, InProgress, Completed, Failed, Partial) domain · FE none · Design `Final-Integrations` · Tests T-ID `SyncTransitionMatrixTests` · Real e2e none
-- State: IMPLEMENTING — no DTO field.
+- Evidence: BE `IntegrationSyncHealth.cs`, `IntegrationCatalog.cs` (`IntegrationConnectionDto.SyncHealth`) · FE none (no health chip) · Design `Final-Integrations` · Tests `IntegrationSyncHealthTests.cs` (run: Application suite) · Real e2e none
+- State: HARDENING — the health field is built and unit-tested (Application suite) and separate from the status. Owner question: status stays error on a failed delivery; the acceptance example is not reachable yet. No screen.
 
 ### UC-INT-I03 Hold work while reauthorization is needed
 - Capability: INT-009 Connection health
@@ -2104,7 +2104,7 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: integrations.md §5 INT-001, §54, §55, §111 INT-036; AIREQ066, AIREQ113.
 - Acceptance: Given a 404 from a receiver, Then Terminal; given a 503, Then Retryable.
 - Evidence: BE `OutboundWebhookSender` result enum, `N8nClient` · FE none · Design none · Tests T-AA `N8nDispatchUseCaseTests`, `backend/tests/Notrelix.Infrastructure.Tests/Integrations/Providers/N8nClientTests.cs` · Real e2e none
-- State: INTEGRATING — the taxonomy is per adapter; no shared contract type; OAuth and calendar adapters are not covered.
+- State: INTEGRATING — taxonomy exists per adapter only; no shared contract type; OAuth and calendar adapters are not mapped.
 
 ## Capability K. Integration management frontend
 
@@ -2178,7 +2178,9 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - Rules: integrations.md §58, §59 INT-021; AIREQ068, AIREQ115.
 - Acceptance: Given retry-after 30 s, Then no attempt is made before 30 s.
 - Evidence: BE `OutboundWebhookSender` (429 as retryable), consumer definition (`ConcurrentMessageLimit` 4) · FE none · Design none · Tests none · Real e2e none
-- State: IMPLEMENTING — retry-after is not honored.
+- Built: `WebhookRetryAfter.cs` parses the Retry-After header (seconds or HTTP date) on any failed answer and caps it at one hour; `WebhookSendResult.RetryAfter` carries the wait. Tests: `WebhookRetryAfterTests.cs` (Infrastructure suite).
+- Owner question: the product names no cap for Retry-After (one hour is the proposal). Honoring a receiver's wait needs a broker-side delayed redelivery, a transport decision, because in-process waits hold a consumer slot shared by all tenants. Until then the wait is parsed but not applied, so the next attempt uses the F06 schedule.
+- State: IMPLEMENTING — the Retry-After wait is parsed and capped but not applied at send; owner question on the cap and the delayed-redelivery transport.
 
 ### UC-INT-L02 Queued work after a disconnect never runs
 - Capability: INT-012 Rate/retry/provider limits
@@ -2191,8 +2193,9 @@ Column values: BE, FE, Design and Real e2e use Y (present), P (partial) or N (no
 - UI states: none.
 - Rules: integrations.md §102; AIREQ063.
 - Acceptance: Given a queued delivery and a disconnect, Then no request is sent.
-- Evidence: BE `IntegrationWebhookDispatchRequestedConsumer` · FE none · Design none · Tests T-II `WebhookFanOutRuntimeChainIntegrationTests` · Real e2e none
-- State: IMPLEMENTING — skip is not recorded as a delivery state.
+- Evidence: BE `IntegrationWebhookDispatchRequestedConsumer.cs`, `OutboundDeliveryLogEntry.cs` (RecordSkipped) · FE none · Design none · Tests `OutboundDeliveryLogEntryTests.cs` (run: Domain suite), T-II `WebhookFanOutRuntimeChainIntegrationTests` (not run, Docker) · Real e2e none
+- Built: the consumer records a skipped delivery with a reason in `outbound_delivery_log_entries` (`OutboundDeliveryLogEntry.RecordSkipped`); the send is never made. Tests: `OutboundDeliveryLogEntryTests.cs` (Domain suite). Not covered here: a consumer-level skip test (needs Docker; add to the Messaging integration tests).
+- State: HARDENING — skipped intents are recorded as Skipped with a reason. Consumer skip path not yet tested without Docker.
 
 ## Capability M. Entitlement integration
 

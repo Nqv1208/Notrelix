@@ -67,7 +67,7 @@ export interface WorkspaceAutomationRuleDto {
 }
 
 export type WorkspaceAutomationRunStatus =
-  "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "queued" | "running" | "succeeded" | "failed" | "cancelled" | "skipped";
 
 /** What one action of a run did. */
 export interface WorkspaceAutomationRunStepDto {
@@ -103,4 +103,17 @@ export interface CreateWorkspaceAutomationInput extends WorkspaceAutomationDefin
 
 export type WorkspaceAutomationWriteResult =
   | { ok: true }
-  | { ok: false; reason: "limit" | "invalid" | "forbidden" | "failed" };
+  | {
+      ok: false;
+      reason:
+        | "limit"
+        | "invalid"
+        | "forbidden"
+        | "failed"
+        | "broken-reference"
+        | "cancel-forbidden"
+        | "not-found"
+        | "not-queued";
+      /** Present on a refused enable: every archived or deleted target the rule names. */
+      brokenReferences?: readonly { kind: string; id: string; field: string }[];
+    };

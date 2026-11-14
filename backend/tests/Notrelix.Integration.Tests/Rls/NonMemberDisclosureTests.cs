@@ -109,7 +109,14 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
 
     private WebApplicationFactory<Program> Factory => _factory ??= AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString);
 
-    private async Task<(HttpStatusCode Status, string Body)> AsAsync(User who, HttpMethod method, string url, string? json = null)
+    private Task<(HttpStatusCode Status, string Body)> AsAsync(User who, HttpMethod method, string url, string? json = null) =>
+        SendAsync(who, method, url, json, accountId: null);
+
+    // Account-scoped routes name the Account in the X-Account-Id header (the Account hint), not in the path.
+    private Task<(HttpStatusCode Status, string Body)> AsInAccountAsync(User who, Guid accountId, HttpMethod method, string url, string json) =>
+        SendAsync(who, method, url, json, accountId);
+
+    private async Task<(HttpStatusCode Status, string Body)> SendAsync(User who, HttpMethod method, string url, string? json, Guid? accountId)
     {
         var factory = Factory;
         string token;
@@ -118,6 +125,7 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         using var request = new HttpRequestMessage(method, url);
+        if (accountId is { } hinted) request.Headers.Add("X-Account-Id", hinted.ToString("D"));
         if (json is not null) request.Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
         using var response = await client.SendAsync(request);
         return (response.StatusCode, Normalize(await response.Content.ReadAsStringAsync()));
@@ -132,6 +140,19 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
         yield return ("board item", HttpMethod.Get, $"/api/v1/board-items/{itemId}", $"/api/v1/board-items/{Guid.NewGuid()}", null);
         yield return ("form", HttpMethod.Get, $"/api/v1/forms/{formId}", $"/api/v1/forms/{Guid.NewGuid()}", null);
         yield return ("comments of an item", HttpMethod.Get, $"/api/v1/board-items/{itemId}/comments", $"/api/v1/board-items/{Guid.NewGuid()}/comments", null);
+    }
+
+    // Every Workspaces read a person outside the Workspace can try: the roster, their own membership, the
+    // invitations, the Space tree and the Space list. An existing Workspace answers like a made-up one.
+    private async Task AssertWorkspaceReadsIdenticalAsync(User who, string because)
+    {
+        foreach (var route in new[] { "members", "members/me", "invitations", "spaces/tree", "spaces" })
+        {
+            var found = await AsAsync(who, HttpMethod.Get, $"/api/v1/workspaces/{_a.WorkspaceId}/{route}");
+            var made = await AsAsync(who, HttpMethod.Get, $"/api/v1/workspaces/{Guid.NewGuid()}/{route}");
+            made.Status.Should().Be(HttpStatusCode.NotFound, $"{route}: a made-up workspace is NotFound");
+            found.Should().Be(made, $"{route}: {because}");
+        }
     }
 
     private async Task AssertIdenticalAsync(User who, string because, Guid itemId, Guid formId)
@@ -151,15 +172,12 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
     {
         await AssertIdenticalAsync(_sameAccountOutsider, "a person of the same account outside the Workspace learns nothing", _itemId, _formId);
 
-        var comment = await AsAsync(_sameAccountOutsider, HttpMethod.Patch, $"/api/v1/comments/{_commentId}", "{\"contentMd\":\"x\"}");
-        var madeComment = await AsAsync(_sameAccountOutsider, HttpMethod.Patch, $"/api/v1/comments/{Guid.NewGuid()}", "{\"contentMd\":\"x\"}");
+        var comment = await AsAsync(_sameAccountOutsider, HttpMethod.Patch, $"/api/v1/comments/{_commentId}", "{\"contentMd\":\"x\",\"expectedVersion\":1}");
+        var madeComment = await AsAsync(_sameAccountOutsider, HttpMethod.Patch, $"/api/v1/comments/{Guid.NewGuid()}", "{\"contentMd\":\"x\",\"expectedVersion\":1}");
         madeComment.Status.Should().Be(HttpStatusCode.NotFound);
         comment.Should().Be(madeComment, "an existing comment answers like a made-up one");
 
-        var members = await AsAsync(_sameAccountOutsider, HttpMethod.Get, $"/api/v1/workspaces/{_a.WorkspaceId}/members");
-        var madeMembers = await AsAsync(_sameAccountOutsider, HttpMethod.Get, $"/api/v1/workspaces/{Guid.NewGuid()}/members");
-        madeMembers.Status.Should().Be(HttpStatusCode.NotFound);
-        members.Should().Be(madeMembers, "an existing workspace answers like a made-up one on the member route");
+        await AssertWorkspaceReadsIdenticalAsync(_sameAccountOutsider, "a person without a seat in the Workspace learns nothing");
     }
 
     [Fact]
@@ -167,10 +185,7 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
     {
         await AssertIdenticalAsync(_b.User, "a person of another account learns nothing", _itemId, _formId);
 
-        var members = await AsAsync(_b.User, HttpMethod.Get, $"/api/v1/workspaces/{_a.WorkspaceId}/members");
-        var madeMembers = await AsAsync(_b.User, HttpMethod.Get, $"/api/v1/workspaces/{Guid.NewGuid()}/members");
-        madeMembers.Status.Should().Be(HttpStatusCode.NotFound);
-        members.Should().Be(madeMembers);
+        await AssertWorkspaceReadsIdenticalAsync(_b.User, "a person without a seat in the Workspace learns nothing");
     }
 
     [Fact]
@@ -178,10 +193,7 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
     {
         await AssertIdenticalAsync(_accountAdmin, "an Account admin who is not in the Workspace learns nothing", _itemId, _formId);
 
-        var members = await AsAsync(_accountAdmin, HttpMethod.Get, $"/api/v1/workspaces/{_a.WorkspaceId}/members");
-        var madeMembers = await AsAsync(_accountAdmin, HttpMethod.Get, $"/api/v1/workspaces/{Guid.NewGuid()}/members");
-        madeMembers.Status.Should().Be(HttpStatusCode.NotFound);
-        members.Should().Be(madeMembers);
+        await AssertWorkspaceReadsIdenticalAsync(_accountAdmin, "a person without a seat in the Workspace learns nothing");
     }
 
     [Fact]
@@ -189,10 +201,22 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
     {
         await AssertIdenticalAsync(_suspended, "a suspended member holds no access and learns nothing", _itemId, _formId);
 
-        var members = await AsAsync(_suspended, HttpMethod.Get, $"/api/v1/workspaces/{_a.WorkspaceId}/members");
-        var madeMembers = await AsAsync(_suspended, HttpMethod.Get, $"/api/v1/workspaces/{Guid.NewGuid()}/members");
-        madeMembers.Status.Should().Be(HttpStatusCode.NotFound);
-        members.Should().Be(madeMembers);
+        await AssertWorkspaceReadsIdenticalAsync(_suspended, "a person without a seat in the Workspace learns nothing");
+    }
+
+    [Fact]
+    public async Task RenameAccount_OfAnotherAccount_GetsTheIdenticalRefusal_ForExistingAndMadeUpIds()
+    {
+        // The Account rename names its Account only through the hint. The owner of Account B who sends Account A's id
+        // must get the same answer as for an id that never existed. Only B's owner is probed: the same-Account
+        // outsider and the Account admin are members of A and would reach the rename gate.
+        const string json = "{\"name\":\"Probe\",\"expectedVersion\":1}";
+        var found = await AsInAccountAsync(_b.User, _a.AccountId, HttpMethod.Put, "/api/v1/accounts/rename", json);
+        var made = await AsInAccountAsync(_b.User, Guid.NewGuid(), HttpMethod.Put, "/api/v1/accounts/rename", json);
+
+        made.Status.Should().BeOneOf(new[] { HttpStatusCode.NotFound, HttpStatusCode.Forbidden }, "a made-up account id is refused");
+        found.Status.Should().Be(made.Status, "an Account the person does not belong to answers like a made-up one");
+        found.Body.Should().Be(made.Body, "the body does not reveal whether the Account exists");
     }
 
     [Fact]

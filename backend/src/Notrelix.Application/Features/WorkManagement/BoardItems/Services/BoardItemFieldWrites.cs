@@ -33,6 +33,31 @@ public static class BoardItemFieldWrites
         return WorkItemSemanticFields.ResolveStatusField(statusFields);
     }
 
+    /// <summary>A required field keeps a value: a user write that clears it is refused and nothing is stored.</summary>
+    public static void EnsureNotClearingRequired(BoardField field, FieldValue value)
+    {
+        if (value.IsEmpty && field.IsRequired)
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldValue_Required, $"The field '{field.Name}' is required and needs a value.");
+    }
+
+    /// <summary>
+    /// A new Item gets each field's default value; a required field with no default makes the create fail, since the
+    /// create carries no values yet. System and calculated fields are skipped.
+    /// </summary>
+    public static async Task ApplyCreateRulesAsync(IWorkManagementDbContext context, BoardItem item, Guid actorUserId, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var fields = await context.BoardFields
+            .Include(field => field.Options)
+            .Where(field => field.BoardId == item.BoardId && field.DeletedAt == null && !field.IsSystem
+                && field.Type != FieldType.Formula && field.Type != FieldType.Rollup)
+            .ToListAsync(cancellationToken);
+        foreach (var field in fields)
+        {
+            if (field.DefaultValue is { IsEmpty: false } fallback) item.UpdateFieldValue(field, fallback, actorUserId, now);
+            else EnsureNotClearingRequired(field, FieldValue.Empty());
+        }
+    }
+
     public static void Write(BoardItem item, BoardField field, FieldValue value, BoardField? statusField, Guid actorUserId, DateTimeOffset now)
     {
         if (field.IsSystem && field.Type == FieldType.Date)

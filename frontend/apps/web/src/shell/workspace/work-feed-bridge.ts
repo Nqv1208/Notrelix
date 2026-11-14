@@ -150,10 +150,17 @@ export type InboxTypeDto =
   | "followed_assignee"
   | "automation"
   | "due_tomorrow"
+  | "due_reminder"
+  | "nudge"
+  | "form_response"
+  | "chat_mention"
+  | "chat_direct"
+  | "chat_thread"
+  | "chat_broadcast"
   | "system";
 
 export interface InboxTargetDto {
-  readonly kind: "item" | "doc" | "board";
+  readonly kind: "item" | "doc" | "board" | "chat";
   readonly id: string | null;
   readonly key: string | null;
   readonly title: string;
@@ -520,9 +527,16 @@ const INBOX_TYPES: Readonly<Record<string, InboxTypeDto>> = {
   "work.item.automation": "automation",
   "work.item.due-tomorrow": "due_tomorrow",
   "work.item.overdue": "overdue",
+  "work.item.due-reminder": "due_reminder",
+  "work.item.reminder": "nudge",
+  "work.form.submission-created": "form_response",
   "approval.requested": "approval_requested",
   "approval.approved": "approval_approved",
   "approval.rejected": "approval_rejected",
+  "chat.mention": "chat_mention",
+  "chat.direct-message": "chat_direct",
+  "chat.thread-reply": "chat_thread",
+  "chat.broadcast": "chat_broadcast",
 };
 
 const APPROVAL_STATUSES = {
@@ -577,7 +591,14 @@ export function toInboxDto(
       done: view === "done",
       snoozedUntil: entry.snoozedUntil ?? null,
       target: {
-        kind: entry.target?.kind === "doc" ? "doc" : "item",
+        kind:
+          entry.target?.kind === "doc"
+            ? "doc"
+            : entry.target?.kind === "board"
+              ? "board"
+              : entry.target?.kind === "chat"
+                ? "chat"
+                : "item",
         id: entry.target?.id ?? null,
         key: entry.target?.key ?? null,
         title: entry.target?.title ?? "",
@@ -599,7 +620,9 @@ export function toInboxDto(
     items,
     counts: {
       need: items.filter((entry) => entry.need !== null).length,
-      mention: items.filter((entry) => entry.type === "mention").length,
+      mention: items.filter(
+        (entry) => entry.type === "mention" || entry.type === "chat_mention",
+      ).length,
       assigned: items.filter((entry) => entry.type === "assigned").length,
       follow: items.filter((entry) => entry.following).length,
       all: items.length,

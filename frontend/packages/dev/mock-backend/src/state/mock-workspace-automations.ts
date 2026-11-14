@@ -115,6 +115,21 @@ export class MockWorkspaceAutomations {
     }
   }
 
+  /** One run of a rule, or undefined when the rule has no run with that id. */
+  execution(
+    ruleId: string,
+    executionId: string,
+  ): MockAutomationExecution | undefined {
+    return (this.executionsByRule.get(ruleId) ?? []).find(
+      (run) => run.id === executionId,
+    );
+  }
+
+  /** Ends a Queued run as Cancelled: no step ran, so none is recorded. */
+  cancel(execution: MockAutomationExecution): void {
+    execution.status = "Cancelled";
+  }
+
   /** The runs of a rule, the latest first. */
   executions(ruleId: string): MockAutomationExecution[] {
     return [...(this.executionsByRule.get(ruleId) ?? [])].sort((a, b) =>

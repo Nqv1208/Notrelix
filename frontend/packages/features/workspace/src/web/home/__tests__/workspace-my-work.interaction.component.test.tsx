@@ -462,7 +462,9 @@ describe("WorkspaceMyWorkSurface", () => {
 
   it("FUI[workspace.my-work:states] retries a failed load", () => {
     const props = renderMyWork(myWorkErrorScenario());
-    expect(screen.getByRole("alert").textContent).toContain(copy.list.error);
+    expect(screen.getByRole("alert").textContent).toContain(
+      copy.list.errorTitle,
+    );
     fireEvent.click(screen.getByRole("button", { name: copy.list.retry }));
     expect(props.onRetry).toHaveBeenCalledTimes(1);
   });

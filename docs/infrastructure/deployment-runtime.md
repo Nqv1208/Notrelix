@@ -413,7 +413,7 @@ Do not infer product durability from AOF being enabled.
 
 Broker transports durable async work according to Platform.
 
-Current local/base evidence includes optional RabbitMQ, but the canonical dependency role is provider-neutral enough to permit change through architecture review.
+Local development starts RabbitMQ only under the `messaging` profile; staging and production require it. The canonical dependency role is the canonical dependency role is provider-neutral enough to permit change through architecture review.
 
 ---
 
@@ -802,25 +802,21 @@ where tooling supports it.
 
 ---
 
-# 82. Current Compose caveat
+# 82. Release deployment
 
-Current staging/production Compose files use `build:` during `up --build`.
-
-This is current executable packaging evidence, not proof that build-on-production is the desired final immutable-promotion architecture.
+Staging and production are deployed by `release.yml`, `promote-release.yml` and `deploy.yml`. They pin images by digest from `delivery/images.lock.toml` and add the generated release overlay with `--no-build`. The `build:` entries in the staging/production Compose files serve development use only. The release path is dormant until `ci.yml` produces the release-candidate input `release.yml` waits for.
 
 ---
 
 # 83. INFRA-RUN-040 — Build-on-target is not normalized as canonical release strategy
 
-The target remains:
+The invariant stays:
 
 ```text
 tested source/artifact provenance
 → immutable/reproducible release identity
 → promoted deployment
 ```
-
-A future CI/CD pipeline may replace current Compose build-on-host mechanics.
 
 ---
 
@@ -1189,6 +1185,23 @@ docs/architecture/capability-extraction-strategy.md
 backend/docs/architecture/infrastructure-and-data.md
 backend/docs/architecture/platform-and-messaging.md
 ```
+
+---
+
+# 114A. Stage 1 deployed roles, probes and pooler
+
+Staging and production run one backend image as three processes selected by `Runtime__Roles` (`backend-api`, `backend-realtime`, `backend-worker`), so the API, the WebSocket gateway and the background work deploy and restart separately while sharing one codebase:
+
+```text
+backend-api       api        /api and /health; edge route /api/ and /health
+backend-realtime  realtime   /api/v1/realtime (WebSocket upgrade); edge route only for that path
+backend-worker    worker     outbox relay, consumers and jobs; no public route
+pgbouncer                    transaction pooling for the two runtime logins; migrations bypass it
+```
+
+Each role serves its own probes: `/health/live` depends on nothing, `/health/ready` checks the database and Redis for every role, plus the outbox and the broker for the worker. The three processes read one Data Protection key ring from a shared volume. Development keeps one process with every role.
+
+Authority: the role split is runtime composition (INFRA-RUN-027). It changes no ownership. Backend detail: `backend/docs/operations/configuration-and-runtime.md` sections 23C to 23G.
 
 ---
 

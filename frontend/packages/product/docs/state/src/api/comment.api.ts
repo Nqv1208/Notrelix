@@ -8,11 +8,28 @@ export function createCommentApi(
   endpoints: PageApiEndpoints,
 ) {
   return {
+    /**
+     * Every comment of the page, read one page at a time (oldest first) until
+     * `nextCursor` runs out. A deleted comment that only keeps its replies is
+     * left out: this view does not thread replies.
+     */
     async getList(pageId: string): Promise<PageComment[]> {
-      const comments = await api.get<CommentDtoApi[]>(
-        endpoints.pages.comments(pageId),
-      );
-      return comments.map((dto) => mapComment(dto, pageId));
+      const comments: PageComment[] = [];
+      let cursor: string | null = null;
+      do {
+        const query: string = cursor
+          ? `?cursor=${encodeURIComponent(cursor)}`
+          : "";
+        const page = await api.get<{
+          items?: CommentDtoApi[] | null;
+          nextCursor?: string | null;
+        }>(`${endpoints.pages.commentsPage(pageId)}${query}`);
+        for (const dto of page.items ?? []) {
+          if (!dto.isDeleted) comments.push(mapComment(dto, pageId));
+        }
+        cursor = page.nextCursor ?? null;
+      } while (cursor);
+      return comments;
     },
 
     async create(
@@ -54,8 +71,11 @@ export function createCommentApi(
       await api.post<void>(endpoints.comments.reopen(commentId), {});
     },
 
-    async delete(commentId: string): Promise<void> {
-      await api.delete<void>(endpoints.comments.detail(commentId));
+    /** `Collaboration.Comments.Delete`: the version the reader saw goes in the query. */
+    async delete(commentId: string, expectedVersion: number): Promise<void> {
+      await api.delete<void>(
+        `${endpoints.comments.detail(commentId)}?expectedVersion=${expectedVersion}`,
+      );
     },
   };
 }

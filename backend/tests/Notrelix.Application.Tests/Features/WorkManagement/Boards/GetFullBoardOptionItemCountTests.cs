@@ -74,4 +74,22 @@ public class GetFullBoardOptionItemCountTests : WorkManagementHandlerTestBase
         options.Single(o => o.Id == todo.Id).ItemCount.Should().Be(2);
         options.Single(o => o.Id == done.Id).ItemCount.Should().Be(1);
     }
+
+    [Fact]
+    public async Task ColumnSettings_AreTheSettingsJsonItself_NotTheValueObjectThatHoldsIt()
+    {
+        var board = CreateBoard();
+        var people = BoardField.Create(
+            TestAccountId, TestWorkspaceId, board.Id, "Reviewers", FieldType.Person,
+            FieldSettings.Create(JsonValue.Create("{\"multiple\":true}")!), FractionalIndex.Create("a0"), TestUserId, TestNow);
+        SetupBoards(board);
+        SetupBoardGroups();
+        SetupBoardFields(people);
+        SetupBoardItems();
+        DbContextMock.Setup(c => c.BoardItemValues).Returns(CreateAsyncDbSet(new List<BoardItemValue>()));
+
+        var result = await _handler.Handle(new GetFullBoardQuery(board.Id), CancellationToken.None);
+
+        result.Data!.Columns.Single(c => c.Id == people.Id).Settings.Should().Be("{\"multiple\":true}");
+    }
 }

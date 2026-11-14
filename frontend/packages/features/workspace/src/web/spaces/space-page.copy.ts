@@ -224,7 +224,7 @@ export const spacePageEn = {
     deleteHint: "This can't be undone.",
     delete: "Delete department",
     deleteUnavailable: "Deleting a department isn't available yet.",
-    deleteConfirmTitle: "Delete {{name}}?",
+    deleteConfirmTitle: "Delete {{name}} from {{workspace}}?",
     deleteConfirmText:
       "{{content}} are not deleted with it; they stay as they are and show under Unplaced.",
     deleteConfirmLabel: 'Type "{{name}}" to confirm',
@@ -457,7 +457,7 @@ export const spacePageVi: SpacePageCopy = {
     deleteHint: "Không hoàn tác được.",
     delete: "Xoá phòng ban",
     deleteUnavailable: "Chưa xoá được phòng ban.",
-    deleteConfirmTitle: "Xoá {{name}}?",
+    deleteConfirmTitle: "Xoá {{name}} khỏi {{workspace}}?",
     deleteConfirmText:
       "{{content}} không bị xoá theo; chúng giữ nguyên và hiện ở mục Chưa xếp phòng.",
     deleteConfirmLabel: 'Gõ "{{name}}" để xác nhận',

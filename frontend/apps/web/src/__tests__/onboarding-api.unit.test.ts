@@ -166,3 +166,147 @@ describe("the first visit of an invited person", () => {
     ]);
   });
 });
+
+describe("the onboarding creates keep their Idempotency-Key across a retry", () => {
+  const lostAnswer = Object.assign(new Error("network"), { status: 0 });
+  const refused = Object.assign(new Error("conflict"), { status: 409 });
+  const input = {
+    name: "Minh An",
+    slug: "minh-an",
+    size: "m" as const,
+    locale: "vi" as const,
+  };
+
+  /** A client whose POSTs answer from a script: an Error is thrown, anything else is the answer. */
+  function scripted(answers: readonly unknown[]) {
+    const keys: (string | undefined)[] = [];
+    let next = 0;
+    const client: OnboardingApiClient = {
+      get: async () => ({ accountId: "acc1" }) as never,
+      post: async (_url, _body, options) => {
+        keys.push(options?.idempotencyKey);
+        const answer = answers[next++];
+        if (answer instanceof Error) throw answer;
+        return answer as never;
+      },
+      put: async () => undefined as never,
+      patch: async () => undefined as never,
+      delete: async () => undefined as never,
+    };
+    return { api: createOnboardingApi(client), keys };
+  }
+
+  it("sends the same key when the workspace create is retried after a lost answer", async () => {
+    const { api, keys } = scripted([lostAnswer, "ws-1"]);
+
+    await expect(api.createWorkspace(input)).rejects.toThrow("network");
+    await expect(api.createWorkspace(input)).resolves.toEqual({
+      id: "ws-1",
+      slug: "minh-an",
+    });
+
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).toBeTruthy();
+    expect(keys[1]).toBe(keys[0]);
+  });
+
+  it("forgets the key once the create succeeds, so the next identical create is a new request", async () => {
+    const { api, keys } = scripted(["ws-1", "ws-2"]);
+
+    await api.createWorkspace(input);
+    await api.createWorkspace(input);
+
+    expect(keys[1]).not.toBe(keys[0]);
+  });
+
+  it("keeps the invitation key on a lost answer and forgets it on a refused row", async () => {
+    const invite = [
+      { email: "lan@example.com", spaceId: null, role: "Member" as const },
+    ];
+    const { api, keys } = scripted([lostAnswer, undefined, refused]);
+
+    await expect(api.sendInvites("w1", invite)).rejects.toThrow("network");
+    await expect(api.sendInvites("w1", invite)).resolves.toEqual({
+      sent: 1,
+      skipped: [],
+    });
+    expect(keys[1]).toBe(keys[0]);
+
+    // The sent invitation forgot its key, so a refused row is a new request; the refused row forgets its key too.
+    await expect(api.sendInvites("w1", invite)).resolves.toEqual({
+      sent: 0,
+      skipped: ["lan@example.com"],
+    });
+    expect(keys[2]).not.toBe(keys[1]);
+    await api.sendInvites("w1", invite);
+    expect(keys[3]).not.toBe(keys[2]);
+  });
+
+  it("drops the workspace key when the create is refused, so the corrected retry is a new request", async () => {
+    const { api, keys } = scripted([refused, "ws-1"]);
+
+    await expect(api.createWorkspace(input)).rejects.toThrow("conflict");
+    await expect(api.createWorkspace(input)).resolves.toEqual({
+      id: "ws-1",
+      slug: "minh-an",
+    });
+
+    expect(keys[0]).toBeTruthy();
+    expect(keys[1]).not.toBe(keys[0]);
+  });
+
+  const department = { name: "Công nghệ", color: "blue" as const };
+
+  it("sends the same department key when the create is retried after a lost answer", async () => {
+    const { api, keys } = scripted([lostAnswer, "sp-1"]);
+
+    await expect(api.createDepartments("w1", [department])).rejects.toThrow(
+      "network",
+    );
+    await expect(api.createDepartments("w1", [department])).resolves.toEqual({
+      departments: [{ id: "sp-1", name: "Công nghệ", color: "blue" }],
+    });
+
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).toBeTruthy();
+    expect(keys[1]).toBe(keys[0]);
+  });
+
+  it("drops the department key when the create is refused, so the corrected retry is a new request", async () => {
+    const { api, keys } = scripted([refused, "sp-1"]);
+
+    await expect(api.createDepartments("w1", [department])).rejects.toThrow(
+      "conflict",
+    );
+    await api.createDepartments("w1", [department]);
+
+    expect(keys[0]).toBeTruthy();
+    expect(keys[1]).not.toBe(keys[0]);
+  });
+
+  const board = { templateId: "blank", name: "Kế hoạch Q4", spaceId: null };
+
+  it("sends the same board key when the create is retried after a lost answer", async () => {
+    const { api, keys } = scripted([lostAnswer, "b-1"]);
+
+    await expect(api.createBoard("w1", board)).rejects.toThrow("network");
+    await expect(api.createBoard("w1", board)).resolves.toMatchObject({
+      id: "b-1",
+      templateId: "blank",
+    });
+
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).toBeTruthy();
+    expect(keys[1]).toBe(keys[0]);
+  });
+
+  it("drops the board key when the create is refused, so the corrected retry is a new request", async () => {
+    const { api, keys } = scripted([refused, "b-1"]);
+
+    await expect(api.createBoard("w1", board)).rejects.toThrow("conflict");
+    await api.createBoard("w1", board);
+
+    expect(keys[0]).toBeTruthy();
+    expect(keys[1]).not.toBe(keys[0]);
+  });
+});

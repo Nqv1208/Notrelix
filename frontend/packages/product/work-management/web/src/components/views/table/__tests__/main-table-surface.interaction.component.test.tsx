@@ -150,14 +150,12 @@ describe("MainTableSurface", () => {
     });
     expect(within(bar).getByText("2 đã chọn")).toBeTruthy();
 
-    // Assign and move have no write behind them: present, inert, explained.
-    for (const name of [/Giao cho/, /Chuyển board/]) {
-      const button = within(bar).getByRole("button", { name });
-      expect(button.getAttribute("aria-disabled")).toBe("true");
-      expect(button.getAttribute("title")).toBe("Chưa khả dụng");
-    }
+    // Assign has no write behind it: present, inert, explained.
+    const assign = within(bar).getByRole("button", { name: /Người phụ trách/ });
+    expect(assign.getAttribute("aria-disabled")).toBe("true");
+    expect(assign.getAttribute("title")).toBe("Chưa khả dụng");
 
-    fireEvent.click(within(bar).getByRole("button", { name: "Lưu trữ" }));
+    fireEvent.click(within(bar).getByRole("button", { name: /^Lưu trữ/ }));
     expect(props.onBulkArchive).toHaveBeenCalledOnce();
 
     fireEvent.click(within(bar).getByRole("button", { name: "Bỏ chọn (Esc)" }));
@@ -216,6 +214,7 @@ describe("MainTableSurface", () => {
     expect(props.onStatusChange).toHaveBeenCalledWith(
       ERP_TABLE_ITEM("ERP-144"),
       "status-review",
+      true,
     );
     expect(screen.queryByRole("listbox")).toBeNull();
   });
@@ -578,7 +577,9 @@ describe("MainTableSurface", () => {
     );
     expect(props.onGroupToggle).toHaveBeenCalledWith("status-todo");
 
-    fireEvent.click(screen.getByRole("button", { name: "Thêm vào Cần làm" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Thêm công việc vào Cần làm" }),
+    );
     const input = screen.getByRole("textbox", {
       name: "Tên việc mới trong Cần làm",
     });
@@ -599,7 +600,7 @@ describe("MainTableSurface", () => {
     });
     expect(row("ERP-151")).toBeNull();
     expect(
-      screen.queryByRole("button", { name: "Thêm vào Cần làm" }),
+      screen.queryByRole("button", { name: "Thêm công việc vào Cần làm" }),
     ).toBeNull();
     expect(
       screen
@@ -611,7 +612,7 @@ describe("MainTableSurface", () => {
   it("FUI[wm.table.main:read-only] gives a viewer no status edit, add or archive", () => {
     renderTable(erpTableReadOnlyProps());
     expect(
-      screen.queryByRole("button", { name: "Thêm vào Cần làm" }),
+      screen.queryByRole("button", { name: "Thêm công việc vào Cần làm" }),
     ).toBeNull();
     expect(screen.queryByRole("button", { name: "Thêm công việc" })).toBeNull();
     const pill = within(row("ERP-144")).getByRole("button", {
@@ -645,12 +646,47 @@ describe("MainTableSurface", () => {
     expect(props.onShowDone).toHaveBeenCalledOnce();
   });
 
-  it("keeps empty groups of a new board with their add rows", () => {
-    renderTable(erpTableEmptyProps());
-    expect(screen.getAllByRole("rowgroup")).toHaveLength(4);
-    expect(
-      screen.getByRole("button", { name: "Thêm vào Hoàn thành" }),
-    ).toBeTruthy();
+  it("says a board with no item yet is empty and offers the first item", () => {
+    const onOpen = vi.fn();
+    renderTable({
+      ...erpTableEmptyProps(),
+      canCreate: true,
+      onOpenCreateDialog: onOpen,
+    });
+    expect(screen.getByText("Board chưa có công việc nào")).toBeTruthy();
+    expect(screen.queryAllByRole("rowgroup")).toHaveLength(0);
+    fireEvent.click(
+      within(screen.getByRole("status")).getByRole("button", {
+        name: "Thêm công việc",
+      }),
+    );
+    expect(onOpen).toHaveBeenCalledOnce();
+  });
+
+  it("a role lowered to viewer closes the editors while the table stays open", () => {
+    const props = spied(erpTableProps({ canEdit: true }));
+    const { rerender } = renderPureUi(<MainTableSurface {...props} />);
+    const status = () =>
+      within(row("ERP-142")).getByRole("button", {
+        name: "Đổi trạng thái của ERP-142",
+      }) as HTMLButtonElement;
+    expect(status().disabled).toBe(false);
+    rerender(<MainTableSurface {...props} canEdit={false} />);
+    expect(status().disabled).toBe(true);
+    // The rows and their values stay; selecting stays too, and the bulk bar then says every action is off.
+    expect(row("ERP-142")).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: "Chọn ERP-142" })).toBeTruthy();
+  });
+
+  it("tells a viewer an empty board is theirs to look at only", () => {
+    renderTable({ ...erpTableEmptyProps(), canEdit: false, canCreate: false });
+    expect(screen.getByText(/Bạn chỉ xem được board này/)).toBeTruthy();
+    expect(within(screen.getByRole("status")).queryByRole("button")).toBeNull();
+  });
+
+  it("warns that a board with no group cannot take an item and offers Thêm nhóm", () => {
+    renderTable(erpTableProps({ lanes: [] }));
+    expect(screen.getByText("Chưa thêm được công việc")).toBeTruthy();
   });
 
   it("sizes rows by density and drops hidden columns", () => {
@@ -765,6 +801,7 @@ describe("MainTableSurface in-place edits and bulk people and boards", () => {
     expect(ed.onAssignee).toHaveBeenCalledWith(
       ERP_TABLE_ITEM("ERP-153"),
       "u-quan",
+      true,
     );
   });
 
@@ -775,7 +812,11 @@ describe("MainTableSurface in-place edits and bulk people and boards", () => {
       screen.getByRole("button", { name: "Đổi người phụ trách của ERP-151" }),
     );
     fireEvent.click(screen.getByRole("button", { name: /Chưa giao/ }));
-    expect(ed.onAssignee).toHaveBeenCalledWith(ERP_TABLE_ITEM("ERP-151"), null);
+    expect(ed.onAssignee).toHaveBeenCalledWith(
+      ERP_TABLE_ITEM("ERP-151"),
+      null,
+      true,
+    );
   });
 
   it("the priority cell offers the board's options", () => {
@@ -789,6 +830,7 @@ describe("MainTableSurface in-place edits and bulk people and boards", () => {
     expect(ed.onPriority).toHaveBeenCalledWith(
       ERP_TABLE_ITEM("ERP-153"),
       "p-urgent",
+      true,
     );
   });
 
@@ -821,10 +863,13 @@ describe("MainTableSurface in-place edits and bulk people and boards", () => {
         onMove,
       },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^Giao cho/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Người phụ trách/ }));
     fireEvent.click(screen.getByRole("button", { name: "Nguyễn Thu Hà" }));
     expect(onAssign).toHaveBeenCalledWith("u-ha");
-    fireEvent.click(screen.getByRole("button", { name: /^Chuyển board/ }));
+    fireEvent.keyDown(screen.getByRole("button", { name: "Thêm" }), {
+      key: "Enter",
+    });
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Chuyển board…/ }));
     fireEvent.click(screen.getByRole("button", { name: "Hỗ trợ nội bộ" }));
     expect(onMove).toHaveBeenCalledWith("board-support");
   });
@@ -879,12 +924,19 @@ describe("MainTableSurface in-place edits and bulk people and boards", () => {
     expect(within(bar).queryByRole("button", { name: "Xoá" })).toBeNull();
   });
 
-  it("without a write behind them Giao cho and Chuyển board stay disabled with the reason", () => {
+  it("without a write behind them Người phụ trách and Chuyển board… stay disabled with the reason", () => {
     renderTable(erpTableSelectedProps());
-    for (const name of [/^Giao cho/, /^Chuyển board/]) {
-      const button = screen.getByRole("button", { name });
-      expect(button.getAttribute("aria-disabled")).toBe("true");
-    }
+    expect(
+      screen
+        .getByRole("button", { name: /^Người phụ trách/ })
+        .getAttribute("aria-disabled"),
+    ).toBe("true");
+    fireEvent.keyDown(screen.getByRole("button", { name: "Thêm" }), {
+      key: "Enter",
+    });
+    const move = screen.getByRole("menuitem", { name: /^Chuyển board…/ });
+    expect(move.getAttribute("aria-disabled")).toBe("true");
+    expect(move.textContent).toContain("Cần quyền tạo việc ở board đích");
   });
 
   it("the row menu opens the item, duplicates, copies the link and archives", () => {
@@ -895,17 +947,17 @@ describe("MainTableSurface in-place edits and bulk people and boards", () => {
     };
     const { props } = renderTable({ ...erpTableProps(), rowActions });
     fireEvent.contextMenu(row("ERP-144"));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Nhân bản" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Nhân bản/ }));
     expect(rowActions.onDuplicate).toHaveBeenCalledWith(
       ERP_TABLE_ITEM("ERP-144"),
     );
     fireEvent.contextMenu(row("ERP-144"));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Lưu trữ" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Lưu trữ/ }));
     expect(rowActions.onArchive).toHaveBeenCalledWith(
       ERP_TABLE_ITEM("ERP-144"),
     );
     fireEvent.contextMenu(row("ERP-144"));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Mở chi tiết" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Mở trang đầy đủ/ }));
     expect(props.onOpenItem).toHaveBeenCalledWith(ERP_TABLE_ITEM("ERP-144"));
   });
 
@@ -1005,6 +1057,49 @@ describe("MainTableSurface title edit in place", () => {
     expect(titleOf("ERP-142").textContent).toMatch(/Chuyển dữ liệu/);
   });
 
+  it("limits the typed title to what the server takes", () => {
+    render();
+    fireEvent.doubleClick(titleOf("ERP-142"));
+    const input = screen.getByRole("textbox", {
+      name: "Sửa tên ERP-142",
+    }) as HTMLInputElement;
+    expect(input.maxLength).toBe(500);
+  });
+
+  it("a refused title is told under the editor, the typed text stays and Escape drops it", async () => {
+    const { onRename } = render();
+    onRename.mockResolvedValueOnce(false);
+    fireEvent.doubleClick(titleOf("ERP-142"));
+    const input = screen.getByRole("textbox", {
+      name: "Sửa tên ERP-142",
+    }) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "Tên bị từ chối" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    const note = await screen.findByRole("alert");
+    expect(note.textContent).toBe(
+      "Tên tối đa 500 ký tự. Rút ngắn rồi nhấn Enter.",
+    );
+    const kept = screen.getByRole("textbox", {
+      name: "Sửa tên ERP-142",
+    }) as HTMLInputElement;
+    expect(kept.value).toBe("Tên bị từ chối");
+    expect(kept.getAttribute("aria-invalid")).toBe("true");
+
+    // Leaving the field does not retry the refused text; changing it does.
+    fireEvent.blur(kept);
+    expect(onRename).toHaveBeenCalledTimes(1);
+    fireEvent.change(kept, { target: { value: "Tên ngắn hơn" } });
+    expect(screen.queryByRole("alert")).toBeNull();
+    fireEvent.keyDown(kept, { key: "Enter" });
+    expect(onRename).toHaveBeenCalledTimes(2);
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("textbox", { name: "Sửa tên ERP-142" }),
+      ).toBeNull(),
+    );
+  });
+
   it("offers no edit without the right to rename", () => {
     renderTable(erpTableReadOnlyProps());
     fireEvent.doubleClick(titleOf("ERP-142"));
@@ -1013,5 +1108,27 @@ describe("MainTableSurface title edit in place", () => {
       screen.queryByRole("textbox", { name: "Sửa tên ERP-142" }),
     ).toBeNull();
     expect(titleOf("ERP-142").getAttribute("aria-keyshortcuts")).toBeNull();
+  });
+
+  it("a pick past 200 states the cap and keeps every picked row (nothing is trimmed)", () => {
+    const base = erpTableProps({ hideDone: false });
+    const group = base.groups[0]!;
+    const rows = Array.from({ length: 205 }, (_, n) => ({
+      ...group.rows[0]!,
+      id: `bulk-${n}`,
+      key: `ERP-${900 + n}`,
+    }));
+    const props = {
+      ...base,
+      groups: [
+        { ...group, rows, total: rows.length, filteredTotal: undefined },
+      ],
+      selectedIds: new Set(rows.map((r) => r.id)),
+    } as MainTableSurfaceProps;
+    renderTable(props);
+    expect(
+      screen.getByText("Đã chọn 205 việc, nhiều nhất 200 việc mỗi lần"),
+    ).toBeTruthy();
+    expect(screen.getByText(/Bỏ chọn bớt 5 việc/)).toBeTruthy();
   });
 });

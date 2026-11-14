@@ -15,6 +15,7 @@ using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Infrastructure.Auth.ApiTokens;
+using Notrelix.Application.Common.Auditing;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Security.ApiTokens;
 using Notrelix.Integration.Tests.Containers;
@@ -84,6 +85,8 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
     private async Task<Result<CreatedApiTokenDto>> SendCreateToken(
         Guid userId, string name, DateTimeOffset? expiresAt = null)
     {
+        // An API token needs an expiry (Lead decision L7): the default is 30 days.
+        expiresAt ??= DateTimeOffset.UtcNow.AddDays(30);
         await using var context = CreateSystemContext();
         var stepUp = new Mock<ISecurityStepUpService>();
         stepUp.Setup(s => s.ConsumeAsync(
@@ -99,7 +102,8 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
         var handler = new CreateApiTokenCommandHandler(
             context, Actor(userId, sessionId: Guid.NewGuid()).Object, stepUp.Object,
             new ApiTokenSecretService(), time.Object,
-            NullLogger<CreateApiTokenCommandHandler>.Instance);
+            NullLogger<CreateApiTokenCommandHandler>.Instance,
+            new Mock<IAuditService>().Object);
         var result = await handler.Handle(new CreateApiTokenCommand(
             _workspaceId, name, expiresAt, "proof-token"), CancellationToken.None);
         await context.SaveChangesAsync();
@@ -113,7 +117,7 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
         time.Setup(t => t.UtcNow).Returns(() => DateTimeOffset.UtcNow);
         var handler = new RevokeApiTokenCommandHandler(
             context, Actor(userId).Object, time.Object,
-            NullLogger<RevokeApiTokenCommandHandler>.Instance);
+            NullLogger<RevokeApiTokenCommandHandler>.Instance, new Mock<IAuditService>().Object);
         var result = await handler.Handle(new RevokeApiTokenCommand(_workspaceId, tokenId), CancellationToken.None);
         result.Succeeded.Should().BeTrue();
         await context.SaveChangesAsync();
@@ -418,7 +422,7 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
         var context = CreateSystemContext();
         return (new RevokeApiTokenCommandHandler(
             context, Actor(_user.Id).Object, time.Object,
-            NullLogger<RevokeApiTokenCommandHandler>.Instance), context);
+            NullLogger<RevokeApiTokenCommandHandler>.Instance, new Mock<IAuditService>().Object), context);
     }
 
     private async Task<Result> RevokeAndSaveAsync(

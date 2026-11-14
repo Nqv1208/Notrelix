@@ -70,6 +70,7 @@ export const en = {
     label: "{{zone}} ({{offset}})",
   },
   addItem: "Add item",
+  overflow: "More",
   weekdays: {
     mon: "Mon",
     tue: "Tue",
@@ -207,6 +208,35 @@ export const en = {
     reschedule: "Alt and arrow keys move the due date",
   },
   separator: " · ",
+  phone: {
+    weekdaysShort: {
+      mon: "Mo",
+      tue: "Tu",
+      wed: "We",
+      thu: "Th",
+      fri: "Fr",
+      sat: "Sa",
+      sun: "Su",
+    },
+    items_one: "{{count}} item",
+    items_other: "{{count}} items",
+    undatedOpen: "See",
+    rangeMenu: "Choose the range shown",
+    overdueLink: "{{key}} · {{title}} · {{days}} overdue",
+    overdueMore: "Overdue: {{count}} items",
+    nothingOn: "Nothing on this day",
+    span: "{{from}} to {{to}} · {{days}} days",
+    changeDates: "Change dates…",
+    changeDatesLabel: "Change the dates of {{key}}",
+    nothingInRange: "Nothing scheduled in this range",
+    rangeToggle: "Show the week or the month",
+    trayTitle: "Unscheduled",
+    trayReadOnly:
+      "You can only view this board, so you cannot schedule these items.",
+    trayLocked:
+      "{{key}} {{title}}, unscheduled, view only so it cannot be scheduled",
+    trayEmpty: "Every item has a date",
+  },
 };
 
 export type CalendarCopy = typeof en;
@@ -264,6 +294,7 @@ export const vi: CalendarCopy = {
     label: "{{zone}} ({{offset}})",
   },
   addItem: "Thêm công việc",
+  overflow: "Thêm",
   weekdays: {
     mon: "Thứ 2",
     tue: "Thứ 3",
@@ -393,6 +424,34 @@ export const vi: CalendarCopy = {
     reschedule: "Alt cùng phím mũi tên để dời hạn",
   },
   separator: " · ",
+  phone: {
+    weekdaysShort: {
+      mon: "T2",
+      tue: "T3",
+      wed: "T4",
+      thu: "T5",
+      fri: "T6",
+      sat: "T7",
+      sun: "CN",
+    },
+    items_one: "{{count}} mục",
+    items_other: "{{count}} mục",
+    undatedOpen: "Xem",
+    rangeMenu: "Chọn cách xem lịch",
+    overdueLink: "{{key}} · {{title}} · quá hạn {{days}}",
+    overdueMore: "Quá hạn: {{count}} việc",
+    nothingOn: "Không có việc nào trong ngày này",
+    span: "{{from}} đến {{to}} · {{days}} ngày",
+    changeDates: "Đổi ngày…",
+    changeDatesLabel: "Đổi ngày của {{key}}",
+    nothingInRange: "Không có việc nào trong khoảng này",
+    rangeToggle: "Xem theo tuần hoặc tháng",
+    trayTitle: "Chưa lên lịch",
+    trayReadOnly: "Bạn chỉ có quyền xem nên không thể đặt lịch.",
+    trayLocked:
+      "{{key}} {{title}}, chưa lên lịch, chỉ xem nên không đặt lịch được",
+    trayEmpty: "Mọi việc đều có ngày",
+  },
 };
 
 export function calendarCopy(locale: "vi" | "en"): CalendarCopy {

@@ -49,6 +49,7 @@ public class RestoreBoardViewCommandHandler : IRequestHandler<RestoreBoardViewCo
         if (view is null) throw new NotFoundException(nameof(BoardView), request.ViewId);
 
         BoardViewAccess.EnsureCanEdit(view, _requestContext.UserId);
+        if (view.IsDeleted) await Limits.WorkLimits.EnsureViewRoomAsync(_context, view.BoardId, 1, ct);
         view.Restore(_requestContext.UserId, _dateTimeProvider.UtcNow);
         return Result.Success();
     }

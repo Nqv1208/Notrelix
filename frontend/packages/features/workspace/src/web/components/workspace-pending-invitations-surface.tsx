@@ -106,7 +106,7 @@ export function PendingInvitationsMenuSurface({
         onKeyDown={(event) => {
           if (event.key === "Escape") event.stopPropagation();
         }}
-        className="w-80 gap-0 overflow-hidden rounded-[12px] border border-line p-0 shadow-modal ring-0"
+        className="w-80 max-w-[calc(100vw-6rem)] gap-0 overflow-hidden rounded-[12px] border border-line p-0 shadow-modal ring-0"
       >
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
           <h2 className="m-0 text-body font-semibold text-foreground">
@@ -142,7 +142,12 @@ export function PendingInvitationsMenuSurface({
               <p role="alert" className="m-0 text-crumb text-muted-foreground">
                 {copy.loadError}
               </p>
-              <Button size="sm" variant="outline" onClick={onRetry}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="max-md:h-touch"
+                onClick={onRetry}
+              >
                 {copy.retry}
               </Button>
             </div>
@@ -187,6 +192,7 @@ export function PendingInvitationsMenuSurface({
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
+                        className="max-md:h-touch"
                         disabled={busyId !== null}
                         aria-label={formatCopy(copy.acceptLabel, {
                           workspace: invitation.workspaceName,
@@ -204,6 +210,7 @@ export function PendingInvitationsMenuSurface({
                       <Button
                         size="sm"
                         variant="outline"
+                        className="max-md:h-touch"
                         disabled={busyId !== null}
                         aria-label={formatCopy(copy.declineLabel, {
                           workspace: invitation.workspaceName,

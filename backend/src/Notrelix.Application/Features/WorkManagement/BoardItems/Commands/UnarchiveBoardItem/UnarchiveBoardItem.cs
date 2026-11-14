@@ -43,12 +43,17 @@ public class UnarchiveBoardItemCommandHandler : IRequestHandler<UnarchiveBoardIt
         if (item is null) throw new NotFoundException(nameof(BoardItem), request.BoardItemId);
 
         var now = _timeProvider.UtcNow;
-        item.Unarchive(_currentUser.UserId, now);
 
         // Only the sub-items the parent's archive took come back.
         var children = await _context.BoardItems
             .Where(child => child.ParentItemId == item.Id && child.DeletedAt == null && child.ArchivedWithParent)
             .ToListAsync(ct);
+
+        // Unarchived items are active again, so they need room under the board's limit (D78.8).
+        if (item.IsArchived)
+            await Limits.WorkLimits.EnsureItemRoomAsync(_context, item.BoardId, 1 + children.Count, ct);
+
+        item.Unarchive(_currentUser.UserId, now);
         foreach (var child in children) child.UnarchiveWithParent(_currentUser.UserId, now);
         return VersionedResult.Success(item.Version);
     }

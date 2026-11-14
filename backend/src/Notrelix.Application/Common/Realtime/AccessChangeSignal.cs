@@ -22,6 +22,12 @@ public interface IAccessChangeSignal
 
     /// <summary>Several people's access across the workspace may have changed (a Team or a Space lost its entry).</summary>
     void Workspace(Guid workspaceId);
+
+    /// <summary>One person's membership of one Chat channel ended (left or removed): their live subscription to it closes.</summary>
+    void ChannelPerson(Guid workspaceId, Guid channelId, Guid userId);
+
+    /// <summary>A Chat channel stopped being readable for everyone (archived, deleted): every live subscription to it closes.</summary>
+    void Channel(Guid workspaceId, Guid channelId);
 }
 
 public sealed class AccessChangeSignal : IAccessChangeSignal
@@ -46,6 +52,10 @@ public sealed class AccessChangeSignal : IAccessChangeSignal
     public void WorkspacePerson(Guid workspaceId, Guid userId) => Add(RealtimeAccessSignal.WorkspaceResource, workspaceId, userId, workspaceId);
 
     public void Workspace(Guid workspaceId) => Add(RealtimeAccessSignal.WorkspaceResource, workspaceId, null, workspaceId);
+
+    public void ChannelPerson(Guid workspaceId, Guid channelId, Guid userId) => Add(RealtimeAccessSignal.ChannelResource, channelId, userId, workspaceId);
+
+    public void Channel(Guid workspaceId, Guid channelId) => Add(RealtimeAccessSignal.ChannelResource, channelId, null, workspaceId);
 
     private Guid WorkspaceId() => _context.WorkspaceId ?? throw new InvalidOperationException("An access signal needs the workspace of the request.");
 

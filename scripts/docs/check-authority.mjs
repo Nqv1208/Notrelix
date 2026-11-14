@@ -88,6 +88,7 @@ const REQUIRED_AUTHORED_PATHS = [
   "docs/product/work-management.md",
   "docs/product/documents.md",
   "docs/product/collaboration.md",
+  "docs/product/chat.md",
   "docs/product/automation.md",
   "docs/product/integrations.md",
   "docs/product/billing.md",

@@ -138,6 +138,7 @@ const RULE_NAMESPACE_STEMS =
     "WM",
     "DCT",
     "COL",
+    "CHT",
     "AUT",
     "INT",
     "BIL",
@@ -720,6 +721,10 @@ function markdownEscape(
   value,
 ) {
   return String(value)
+    .replace(
+      /\\/g,
+      "\\\\",
+    )
     .replace(
       /\|/g,
       "\\|",

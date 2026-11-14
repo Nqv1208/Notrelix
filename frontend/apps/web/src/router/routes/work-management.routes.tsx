@@ -1,6 +1,6 @@
 import { createRoute, redirect } from "@tanstack/react-router";
 import { workspaceRoute } from "./base.routes";
-import { boardSearchSchema } from "../schemas/board-search-schema";
+import { parseBoardSearch } from "../schemas/board-search-schema";
 import { BoardRouteError } from "../../routes/workspaces/$workspaceId/boards/board-route-error";
 import { BoardPage } from "../../routes/workspaces/$workspaceId/boards/$boardId";
 import { BoardSettingsRoutePage } from "../../routes/workspaces/$workspaceId/boards/$boardId.settings";
@@ -12,7 +12,7 @@ import { boardSettingsSearchSchema } from "../schemas/board-settings-search-sche
 export const boardRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/boards/$boardId",
-  validateSearch: (search) => boardSearchSchema.parse(search),
+  validateSearch: (search) => parseBoardSearch(search),
   component: BoardPage,
   errorComponent: ({ error, reset }) => (
     <BoardRouteError error={error} reset={reset} />

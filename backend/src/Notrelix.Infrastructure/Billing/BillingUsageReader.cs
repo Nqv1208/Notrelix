@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using Notrelix.Application.Features.Billing.Abstractions;
 using Notrelix.Domain.Accounts.Members;
 using Notrelix.Infrastructure.Data;
@@ -38,6 +39,19 @@ public sealed class BillingUsageReader : IBillingUsageReader
             .SqlQuery<bool>($"SELECT ops.billing_has_seat({accountId}, {workspaceId}, {userId}, {guest}) AS \"Value\"")
             .ToListAsync(cancellationToken);
         return rows.SingleOrDefault();
+    }
+
+    public async Task LockSeatAdmissionAsync(Guid accountId, CancellationToken cancellationToken)
+    {
+        if (_context.Database.CurrentTransaction is null)
+        {
+            throw new InvalidOperationException(
+                "The seat admission lock must be acquired inside the active request transaction.");
+        }
+
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes($"billing.seat-admission:{accountId:N}"));
+        var key = BinaryPrimitives.ReadInt64BigEndian(hash);
+        await _context.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({key})", cancellationToken);
     }
 
     public Task<bool> IsAccountOwnerAsync(Guid accountId, Guid userId, CancellationToken cancellationToken)

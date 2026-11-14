@@ -1,4 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { workspaceQueryKey } from "@notrelix/query";
 import type { BoardArchivedEntryDto } from "../api/item-extras.api";
 import { neededVersion } from "../mutations/seen-version";
@@ -7,19 +11,25 @@ import { useWorkManagementServices } from "../services";
 
 /**
  * The items deleted from a board in the last 30 days (only people who may
- * edit items can read it) and the way back: restoring puts the item in its
- * group again and refreshes the board and the lists that show items.
+ * edit items can read it), a page at a time and optionally narrowed by name or key, and the way back: restoring puts
+ * the item (and the sub-items that went with it) in its group again and
+ * refreshes the board and the lists that show items. A refusal (past the 30
+ * days, the parent still deleted) is thrown to the caller, which tells why.
  */
 export function useBoardTrash(
   boardId: string,
   workspaceId: string,
+  search = "",
   enabled = true,
 ) {
   const { itemExtras } = useWorkManagementServices();
   const queryClient = useQueryClient();
-  const query = useQuery({
-    queryKey: wmQueryKeys.boardTrash(workspaceId, boardId),
-    queryFn: () => itemExtras.listTrash(boardId),
+  const query = useInfiniteQuery({
+    queryKey: wmQueryKeys.boardTrash(workspaceId, boardId, search),
+    queryFn: ({ pageParam }) =>
+      itemExtras.listTrash(boardId, search, pageParam ?? undefined),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor,
     enabled: enabled && Boolean(boardId && workspaceId),
     staleTime: 0,
   });
@@ -38,17 +48,23 @@ export function useBoardTrash(
     },
   });
   return {
-    entries: query.data ?? [],
+    entries: query.data?.pages.flatMap((page) => page.rows) ?? [],
+    total: query.data?.pages[0]?.total ?? 0,
     isLoading: query.isLoading,
     isError: query.isError,
+    retry: () => void query.refetch(),
+    hasMore: query.hasNextPage,
+    loadingMore: query.isFetchingNextPage,
+    loadMore: () => void query.fetchNextPage(),
     restore: restore.mutateAsync,
     restoringId: restore.isPending ? restore.variables : undefined,
   };
 }
 
 /**
- * The items archived on a board and the way back: unarchiving puts the item (and the sub-items archived with
- * it) on the board again.
+ * The items archived on a board, a page at a time and optionally narrowed by
+ * name or key, and the way back: unarchiving puts the item (and the sub-items
+ * archived with it) on the board again.
  */
 export function useBoardArchive(
   boardId: string,
@@ -58,9 +74,13 @@ export function useBoardArchive(
 ) {
   const { itemExtras } = useWorkManagementServices();
   const queryClient = useQueryClient();
-  const query = useQuery({
-    queryKey: wmQueryKeys.boardArchive(workspaceId, boardId, search),
-    queryFn: () => itemExtras.listArchived(boardId, search),
+  const key = wmQueryKeys.boardArchive(workspaceId, boardId, search);
+  const query = useInfiniteQuery({
+    queryKey: key,
+    queryFn: ({ pageParam }) =>
+      itemExtras.listArchived(boardId, search, pageParam ?? undefined),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor,
     enabled: enabled && Boolean(boardId && workspaceId),
     staleTime: 0,
   });
@@ -70,10 +90,11 @@ export function useBoardArchive(
         itemId,
         neededVersion(
           queryClient
-            .getQueryData<readonly BoardArchivedEntryDto[]>(
-              wmQueryKeys.boardArchive(workspaceId, boardId, search),
-            )
-            ?.find((entry) => entry.id === itemId)?.version,
+            .getQueryData<{
+              pages: { rows: readonly BoardArchivedEntryDto[] }[];
+            }>(key)
+            ?.pages.flatMap((page) => page.rows)
+            .find((entry) => entry.id === itemId)?.version,
           itemId,
         ),
       ),
@@ -90,10 +111,32 @@ export function useBoardArchive(
     },
   });
   return {
-    entries: query.data ?? [],
+    entries: query.data?.pages.flatMap((page) => page.rows) ?? [],
+    total: query.data?.pages[0]?.total ?? 0,
     isLoading: query.isLoading,
     isError: query.isError,
+    retry: () => void query.refetch(),
+    hasMore: query.hasNextPage,
+    loadingMore: query.isFetchingNextPage,
+    loadMore: () => void query.fetchNextPage(),
     unarchive: unarchive.mutateAsync,
     unarchivingId: unarchive.isPending ? unarchive.variables : undefined,
   };
+}
+
+/** Brings one deleted item back from the card that says it was deleted; the card and the board refetch on settle. */
+export function useRestoreDeletedItem(workspaceId: string, boardId: string) {
+  const { itemExtras } = useWorkManagementServices();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (itemId: string) => itemExtras.restoreDeleted(itemId),
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: wmQueryKeys.fullBoard(workspaceId, boardId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: workspaceQueryKey(workspaceId, "work-management"),
+      });
+    },
+  });
 }

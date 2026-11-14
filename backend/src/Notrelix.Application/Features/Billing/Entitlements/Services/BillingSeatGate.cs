@@ -18,6 +18,9 @@ public sealed class BillingSeatGate : IBillingSeatGate
     public async Task<bool> CanAdmitAsync(
         Guid accountId, Guid workspaceId, Guid userId, bool asGuest, CancellationToken cancellationToken)
     {
+        // The check and the membership insert share one transaction: take the account's lock first.
+        await _usage.LockSeatAdmissionAsync(accountId, cancellationToken);
+
         if (await _usage.HasSeatAsync(accountId, workspaceId, userId, asGuest, cancellationToken))
             return true;
 

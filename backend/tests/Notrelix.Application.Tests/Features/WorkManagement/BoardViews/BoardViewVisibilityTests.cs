@@ -34,6 +34,24 @@ public class BoardViewVisibilityTests : WorkManagementHandlerTestBase
     }
 
     [Fact]
+    public async Task List_HidesArchivedViews_AndListsThemOnRequestUnderTheSameVisibilityRule()
+    {
+        var boardId = Guid.CreateVersion7();
+        var live = ViewBy(TestUserId, "Live", BoardViewVisibility.Board, boardId);
+        var oldShared = ViewBy(Colleague, "Old shared", BoardViewVisibility.Board, boardId);
+        var oldMine = ViewBy(TestUserId, "Old mine", BoardViewVisibility.Private, boardId);
+        var oldTheirs = ViewBy(Colleague, "Old theirs", BoardViewVisibility.Private, boardId);
+        foreach (var view in new[] { oldShared, oldMine, oldTheirs }) view.Archive(TestUserId, TestNow);
+        SetupBoardViews(live, oldShared, oldMine, oldTheirs);
+        var handler = new ListBoardViewsQueryHandler(DbContextMock.Object, RequestContextMock.Object);
+
+        (await handler.Handle(new ListBoardViewsQuery(boardId), CancellationToken.None)).Data!
+            .Select(v => v.Name).Should().Equal("Live");
+        (await handler.Handle(new ListBoardViewsQuery(boardId, Archived: true), CancellationToken.None)).Data!
+            .Select(v => v.Name).Should().BeEquivalentTo(["Old shared", "Old mine"]);
+    }
+
+    [Fact]
     public async Task List_PutsTheDefaultFirst()
     {
         var boardId = Guid.CreateVersion7();

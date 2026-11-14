@@ -46,4 +46,9 @@ export { defineMockOperation } from "./operations/types";
 export {
   createMockRealtimeTransport,
   MockRealtimeTransport,
+  MOCK_VIEWER_ID,
+  simulateMockTyping,
+  simulateMockPresence,
+  resetMockEphemeral,
+  setMockEphemeralClock,
 } from "./realtime/mock-realtime-transport";

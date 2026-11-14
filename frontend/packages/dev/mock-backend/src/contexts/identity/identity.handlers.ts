@@ -4,7 +4,6 @@
  * Operations:
  *   identity.profile        — GET /auth/me
  *   identity.login          — POST /auth/login
- *   identity.register       — POST /auth/register
  *   identity.refresh        — POST /auth/refresh
  *   identity.logout         — POST /auth/logout
  *   identity.forgotPassword — POST /auth/forgot-password
@@ -78,7 +77,6 @@ export const identityOperations = [
             id: workspace.id,
             name: workspace.name,
             slug: workspace.slug,
-            role: "Member",
             accountId,
           })),
         personalWorkspace: personal
@@ -138,25 +136,6 @@ export const identityOperations = [
         });
       store.loginCurrentUser();
       return ok(sessionOf(store));
-    },
-  }),
-
-  defineMockOperation({
-    id: "identity.register",
-    contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
-    method: "POST",
-    route: "/auth/register",
-    async handle({ store }) {
-      const user = store.getCurrentUser();
-      return ok({
-        ...sessionOf(store),
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          avatarUrl: user.avatarUrl,
-        },
-      });
     },
   }),
 

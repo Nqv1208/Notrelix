@@ -89,7 +89,8 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
     {
         var (accountId, userId, _) = await SeedAccountMemberAsync(AccountRole.Owner);
 
-        using var recorder = new ActivityRecorder();
+        using var trace = StartTestTrace();
+        using var recorder = new ActivityRecorder(trace.TraceId);
         using var provider = CreateAccountScopedProvider(accountId, userId);
 
         Notrelix.Application.Common.Models.Result<Guid> result;
@@ -136,7 +137,8 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
     {
         var (accountId, userId, _) = await SeedAccountMemberAsync(AccountRole.Member);
 
-        using var recorder = new ActivityRecorder();
+        using var trace = StartTestTrace();
+        using var recorder = new ActivityRecorder(trace.TraceId);
         using var provider = CreateAccountScopedProvider(accountId, userId);
 
         Func<Task> act = () =>
@@ -167,7 +169,8 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         var (accountId, userId, workspaceId) = await SeedBoardStackAsync();
         const string idempotencyKey = "tel-e2e-due-date-1";
 
-        using var recorder = new ActivityRecorder();
+        using var trace = StartTestTrace();
+        using var recorder = new ActivityRecorder(trace.TraceId);
         using var provider = CreateResourceScopedProvider(accountId, userId);
         var counter = provider.GetRequiredService<HandlerExecutionCounter>();
         var boardItemId = await ResolveBoardItemIdAsync(workspaceId);
@@ -579,10 +582,27 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
         activity.OperationName == "pipeline.request"
         && activity.Tags.Any(tag => tag.Key == "app.request" && Equals(tag.Value, requestName));
 
-    private static Activity? RootAncestor(Activity activity)
+    /// <summary>
+    /// Opens a trace owned by one test. Every pipeline activity the test starts
+    /// inherits its trace id, so the recorder can ignore spans from any other
+    /// request that runs in parallel in the same process.
+    /// </summary>
+    private static Activity StartTestTrace()
+    {
+        var trace = new Activity($"telemetry-test-{Guid.NewGuid():N}");
+        trace.Start();
+        return trace;
+    }
+
+    /// <summary>
+    /// The pipeline root of an activity: the nearest ancestor named
+    /// <c>pipeline.request</c>, or the activity itself when it is that root.
+    /// The test trace sits above the pipeline root and is not a pipeline span.
+    /// </summary>
+    private static Activity RootAncestor(Activity activity)
     {
         var current = activity;
-        while (current.Parent is not null)
+        while (current.OperationName != "pipeline.request" && current.Parent is not null)
         {
             current = current.Parent;
         }
@@ -659,20 +679,46 @@ public sealed class PipelineTelemetryIntegrationTests : IAsyncLifetime
     private sealed class ActivityRecorder : IDisposable
     {
         private readonly ActivityListener _listener;
+        private readonly List<Activity> _started = [];
+        private readonly object _gate = new();
 
-        public ActivityRecorder()
+        /// <summary>
+        /// The listener is process-wide: pipeline spans of other requests that
+        /// run in parallel in this test host reach it too. Only spans of
+        /// <paramref name="traceId"/> (the test's own trace) are kept.
+        /// </summary>
+        public ActivityRecorder(ActivityTraceId traceId)
         {
-            Started = [];
             _listener = new ActivityListener
             {
                 ShouldListenTo = source => source.Name == PipelineActivitySource.SourceName,
                 Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
-                ActivityStarted = Started.Add,
+                ActivityStarted = activity =>
+                {
+                    if (activity.TraceId != traceId)
+                    {
+                        return;
+                    }
+
+                    lock (_gate)
+                    {
+                        _started.Add(activity);
+                    }
+                },
             };
             ActivitySource.AddActivityListener(_listener);
         }
 
-        public List<Activity> Started { get; }
+        public IReadOnlyList<Activity> Started
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return _started.ToArray();
+                }
+            }
+        }
 
         public void Dispose() => _listener.Dispose();
     }

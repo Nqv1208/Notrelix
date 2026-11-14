@@ -223,4 +223,37 @@ describe.each(["vi", "en"] as const)("form inbox (%s)", (locale) => {
     fireEvent.click(screen.getByRole("button", { name: copy.common.retry }));
     expect(retry).toHaveBeenCalled();
   });
+
+  it(`${fui("more", locale)}offers the next page of responses at the foot of the list while more are on the server (${locale})`, () => {
+    const onLoadMore = vi.fn();
+    render(locale, { hasMore: true, onLoadMore });
+    fireEvent.click(screen.getByRole("button", { name: t.more }));
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+    document.body.innerHTML = "";
+    render(locale, { hasMore: true, loadingMore: true, onLoadMore });
+    expect(
+      (screen.getByRole("button", { name: t.loadingMore }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+    document.body.innerHTML = "";
+    render(locale, { hasMore: false, onLoadMore });
+    expect(screen.queryByRole("button", { name: t.more })).toBeNull();
+  });
+
+  it(`${fui("more-empty-tab", locale)}keeps the load-more control on a tab that has no loaded response yet, and hides it while loading or on error (${locale})`, () => {
+    render(locale, {
+      submissions: [],
+      tab: "rejected",
+      hasMore: true,
+      onLoadMore: vi.fn(),
+    });
+    expect(screen.getByText(t.empty.rejected)).toBeTruthy();
+    expect(screen.getByRole("button", { name: t.more })).toBeTruthy();
+    document.body.innerHTML = "";
+    render(locale, { status: "loading", hasMore: true, onLoadMore: vi.fn() });
+    expect(screen.queryByRole("button", { name: t.more })).toBeNull();
+    document.body.innerHTML = "";
+    render(locale, { status: "error", hasMore: true, onLoadMore: vi.fn() });
+    expect(screen.queryByRole("button", { name: t.more })).toBeNull();
+  });
 });

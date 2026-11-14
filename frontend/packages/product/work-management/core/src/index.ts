@@ -33,6 +33,7 @@ export * from "./utils/table-fields";
 export * from "./utils/table-column-preference";
 export * from "./utils/person-initials";
 export * from "./utils/item-file-rules";
+export * from "./utils/item-title";
 export * from "./utils/move-preview";
 export * from "./utils/checklist-ops";
 export * from "./field-types";

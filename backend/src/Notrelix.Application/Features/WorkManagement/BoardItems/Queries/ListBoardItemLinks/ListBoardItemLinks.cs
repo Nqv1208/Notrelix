@@ -6,8 +6,10 @@ using Notrelix.Application.Features.WorkManagement.ItemLinks;
 
 namespace Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemLinks;
 
-/// <summary>The other end of a link: the item an item waits for, blocks or relates to.</summary>
-public record LinkedItemDto(Guid Id, string? Key, string Title, string? StatusName, string? StatusCategory);
+/// <summary>The other end of a link: the item an item waits for, blocks or relates to; an archived item stays linked and says so. Carries its first assignee, as a sub-item does.</summary>
+public record LinkedItemDto(
+    Guid Id, string? Key, string Title, string? StatusName, string? StatusCategory, bool IsArchived,
+    Guid? AssigneeId = null, string? AssigneeName = null);
 
 /// <summary>One link as the viewed item sees it: <c>blocked-by</c>, <c>blocks</c> or <c>related</c>.</summary>
 public record BoardItemLinkDto(Guid Id, string Relation, LinkedItemDto Item);
@@ -23,10 +25,12 @@ public record ListBoardItemLinksQuery(Guid BoardItemId) : IQuery<Result<BoardIte
 public class ListBoardItemLinksQueryHandler : IRequestHandler<ListBoardItemLinksQuery, Result<BoardItemLinkListDto>>
 {
     private readonly IWorkManagementDbContext _context;
+    private readonly IActorLookupService _actorLookup;
 
-    public ListBoardItemLinksQueryHandler(IWorkManagementDbContext context)
+    public ListBoardItemLinksQueryHandler(IWorkManagementDbContext context, IActorLookupService actorLookup)
     {
         _context = context;
+        _actorLookup = actorLookup;
     }
 
     public async Task<Result<BoardItemLinkListDto>> Handle(ListBoardItemLinksQuery request, CancellationToken ct)
@@ -78,6 +82,15 @@ public class ListBoardItemLinksQueryHandler : IRequestHandler<ListBoardItemLinks
             }
         }
 
+        var firstAssignee = (await _context.BoardItemMembers.AsNoTracking()
+                .Where(m => otherIds.Contains(m.ItemId))
+                .OrderBy(m => m.AssignedAt)
+                .ToListAsync(ct))
+            .GroupBy(m => m.ItemId)
+            .ToDictionary(g => g.Key, g => g.First().UserId);
+        var actors = (await _actorLookup.FindManyAsync(firstAssignee.Values.Distinct().ToList(), ct))
+            .ToDictionary(a => a.UserId);
+
         var othersById = others.ToDictionary(i => i.Id);
         var links = ends
             .Where(e => othersById.ContainsKey(e.OtherId))
@@ -85,10 +98,12 @@ public class ListBoardItemLinksQueryHandler : IRequestHandler<ListBoardItemLinks
             {
                 var other = othersById[e.OtherId];
                 statusByItem.TryGetValue(other.Id, out var status);
+                Guid? assigneeId = firstAssignee.TryGetValue(other.Id, out var userId) ? userId : null;
+                var assigneeName = assigneeId is { } id && actors.TryGetValue(id, out var actor) ? actor.Name : null;
                 return new BoardItemLinkDto(
                     e.Link.Id,
                     ItemLinkRelations.ToRelation(e.Link.LinkType, e.Link.SourceItemId == itemId),
-                    new LinkedItemDto(other.Id, other.ItemKey, other.Name, status.Name, status.Category));
+                    new LinkedItemDto(other.Id, other.ItemKey, other.Name, status.Name, status.Category, other.IsArchived, assigneeId, assigneeName));
             })
             .ToList();
 

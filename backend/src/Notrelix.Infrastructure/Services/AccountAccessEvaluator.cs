@@ -6,7 +6,7 @@ namespace Notrelix.Infrastructure.Services;
 /// Legacy seam retained for compatibility with the account-access abstraction.
 /// TenantBootstrapStore and the RLS helpers are the authoritative enforcement
 /// paths; this type is intentionally not used for request authorization
-/// (NRX-006, PR-IA-00 decision note).
+/// (NRX-006).
 /// </summary>
 public sealed class AccountAccessEvaluator : IAccountAccessEvaluator
 {

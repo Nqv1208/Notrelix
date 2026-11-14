@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -8,9 +8,14 @@ import {
   ArrowLeft,
   ArrowRight,
   ChevronLeft,
+  EyeOff,
+  Gauge,
   Inbox,
   MoreHorizontal,
+  PanelLeftClose,
+  Pencil,
   Plus,
+  Trash2,
   TriangleAlert,
 } from "lucide-react";
 import {
@@ -54,7 +59,10 @@ import {
   kanbanLaneKey,
   type KanbanMoveDirection,
 } from "./kanban-dnd";
-import { kanbanColumnWidthClass } from "./kanban-layout";
+import {
+  kanbanColumnTabletWidthClass,
+  kanbanColumnWidthClass,
+} from "./kanban-layout";
 import type { KanbanLaneCopy } from "./kanban-lane.copy";
 
 /** Lane tint by status category; lanes without a category use the neutral tint. */
@@ -100,6 +108,13 @@ export interface KanbanLaneEdit {
   };
 }
 
+/** Height a lane starts from while it opens: about the skeleton lane (a header and two cards). */
+const LANE_ENTER_FROM = 176;
+const LANE_ENTER_BASE = 260;
+const LANE_ENTER_PER_CARD = 40;
+const LANE_ENTER_MAX = 720;
+const LANE_ENTER_STAGGER = 90;
+
 export interface KanbanColumnProps {
   lane: KanbanStatusLane;
   /** The lane's display name (the view names the lane without a value). */
@@ -113,6 +128,8 @@ export interface KanbanColumnProps {
   selectedItemId?: string;
   /** A filter or search narrows the board: empty lanes say so. */
   filterActive: boolean;
+  /** The whole board has no item: a lane shows the plain two-line hint. */
+  boardEmpty?: boolean;
   canAdd: boolean;
   canDrag: boolean;
   /** The dragged card is over this lane: it is where the card would land. */
@@ -151,12 +168,17 @@ export interface KanbanColumnProps {
   onLoadMore?: () => void;
   /** The lane's next page is being read. */
   loadingMore?: boolean;
+  /**
+   * Set on the lanes of a board that has just finished loading: the lane grows from the height of its
+   * skeleton to its own, after the lanes before it (the value is its place from the left).
+   */
+  enterIndex?: number;
   /** The lane's next page did not come; the cards already loaded stay. */
   loadFailed?: boolean;
 }
 
-/** Cards each "Hiện thêm" of a lane read in pages adds (the first window is the lane's card limit). */
-export const KANBAN_LANE_PAGE = 50;
+/** Cards each step of a lane read in pages adds (they load as the lane is scrolled to its end) (the first window is the lane's card limit). */
+export const KANBAN_LANE_PAGE = 10;
 /** Cards of one lane drawn at once; the others stand in as spacers of their estimated height. */
 export const KANBAN_LANE_DOM_CAP = 80;
 const KANBAN_CARD_ESTIMATE = 96;
@@ -177,6 +199,7 @@ export function KanbanColumn({
   timeZone,
   selectedItemId,
   filterActive,
+  boardEmpty = false,
   canAdd,
   canDrag,
   dropTarget = false,
@@ -198,6 +221,7 @@ export function KanbanColumn({
   onExpandCreate,
   onLoadMore,
   loadingMore = false,
+  enterIndex,
   loadFailed = false,
 }: KanbanColumnProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -365,6 +389,65 @@ export function KanbanColumn({
     target.focus();
   }, [expanded, paged, pageShown, loaded]);
 
+  // Reaching the end of the cards shows the next page by itself, so no click is needed and the lane does not
+  // jump under the pointer; the button stays for keyboard use and for a page that failed.
+  const sentinel = useRef<HTMLDivElement | null>(null);
+  const autoMore =
+    (pagedMore && !(loadFailed && lane.hasMore) && !loadingMore) ||
+    (!paged && hiddenCount > 0);
+  const revealMore = useRef<() => void>(() => {});
+  revealMore.current = () => {
+    if (paged) {
+      if (visibleCards.length >= loaded) onLoadMore?.();
+      setPageShown(visibleCards.length + KANBAN_LANE_PAGE);
+    } else setExpanded(true);
+  };
+  useEffect(() => {
+    const node = sentinel.current;
+    if (!autoMore || !node || typeof IntersectionObserver === "undefined")
+      return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) revealMore.current();
+      },
+      // The lane's own scroller is the root: a sentinel inside it is only "in view" against that box.
+      { root: cardsRef.current, rootMargin: "0px 0px 240px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [autoMore, visibleCards.length]);
+
+  // The lanes of a board that just arrived open one after the other, each as tall as its cards ask:
+  // more cards take a little longer. Only on the first draw, never when a lane is added later.
+  useLayoutEffect(() => {
+    const element = sectionRef.current;
+    if (enterIndex === undefined || !element) return;
+    if (typeof element.animate !== "function") return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const to = element.getBoundingClientRect().height;
+    const from = Math.min(to, LANE_ENTER_FROM);
+    if (to - from < 8) return;
+    const animation = element.animate(
+      [
+        { height: `${from}px`, overflow: "hidden", flexShrink: 0 },
+        { height: `${to}px`, overflow: "hidden", flexShrink: 0 },
+      ],
+      {
+        duration: Math.min(
+          LANE_ENTER_MAX,
+          LANE_ENTER_BASE + count * LANE_ENTER_PER_CARD,
+        ),
+        delay: Math.min(enterIndex, 8) * LANE_ENTER_STAGGER,
+        easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+        fill: "both",
+      },
+    );
+    // Done: drop the held end state so the lane follows its content again.
+    animation.onfinish = () => animation.cancel();
+    return () => animation.cancel();
+    // Only on mount.
+  }, []);
+
   const setRefs = (element: HTMLElement | null) => {
     sectionRef.current = element;
     setNodeRef(element);
@@ -410,8 +493,9 @@ export function KanbanColumn({
       data-lane-count={count}
       data-drop-target={dropTarget ? "" : undefined}
       className={cn(
-        "flex shrink-0 flex-col gap-2 rounded-xl p-2 transition-shadow duration-150",
+        "flex shrink-0 flex-col gap-2 rounded-xl p-2 transition-shadow duration-150 tablet:rounded-[16px] tablet:pt-1.5",
         kanbanColumnWidthClass,
+        kanbanColumnTabletWidthClass,
         tint,
         dropTarget && "ring-2 ring-inset ring-primary",
       )}
@@ -426,13 +510,16 @@ export function KanbanColumn({
         }}
       >
         <PopoverAnchor asChild>
-          <div className="flex min-h-8 items-center gap-1.5 pr-0 pl-1.5">
+          <div className="flex min-h-8 items-center gap-1.5 pr-0 pl-1.5 tablet:min-h-11 tablet:gap-2.25 tablet:pl-2">
             <span
               aria-hidden="true"
-              className={cn("size-2.25 shrink-0 rounded-full", dot)}
+              className={cn(
+                "size-2.25 shrink-0 rounded-full tablet:size-2.5",
+                dot,
+              )}
               style={dotStyle}
             />
-            <h2 className="min-w-0 truncate text-nav font-semibold text-foreground">
+            <h2 className="min-w-0 truncate text-nav font-semibold text-foreground tablet:text-[15px] tablet:leading-[1.45] tablet:font-[650]">
               {name}
             </h2>
             <span
@@ -444,7 +531,7 @@ export function KanbanColumn({
                   : fillCopy(copy.wipLimitTitle, { limit: wipLimit })
               }
               className={cn(
-                "grid h-5.5 min-w-5.5 shrink-0 place-items-center rounded-[11px] px-1.5 text-caption font-semibold tabular-nums",
+                "grid h-5.5 min-w-5.5 shrink-0 place-items-center rounded-[11px] px-1.5 text-caption font-semibold tabular-nums tablet:h-6 tablet:min-w-6 tablet:rounded-[12px] tablet:text-[12.5px]",
                 wipState === "over"
                   ? "bg-danger-subtle text-danger-subtle-foreground"
                   : wipState === "full"
@@ -464,7 +551,7 @@ export function KanbanColumn({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className="ml-auto size-7 rounded-[7px] text-meta-foreground hover:bg-state-hover-strong"
+                className="ml-auto size-7 rounded-[7px] text-meta-foreground hover:bg-state-hover-strong tablet:hidden"
                 aria-label={fillCopy(copy.addToLane, { lane: name })}
                 onClick={onRequestCreate}
               >
@@ -475,7 +562,7 @@ export function KanbanColumn({
               variant="ghost"
               size="icon-sm"
               className={cn(
-                "size-7 rounded-[7px] text-meta-foreground hover:bg-state-hover-strong",
+                "size-7 rounded-[7px] text-meta-foreground hover:bg-state-hover-strong tablet:hidden",
                 !(canAdd && onRequestCreate) && "ml-auto",
               )}
               aria-label={fillCopy(copy.collapseLane, { lane: name })}
@@ -488,14 +575,19 @@ export function KanbanColumn({
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  className="size-7 rounded-[7px] text-meta-foreground hover:bg-state-hover-strong"
+                  className="size-7 rounded-[7px] text-meta-foreground hover:bg-state-hover-strong tablet:ml-auto tablet:size-11 tablet:rounded-[10px]"
                   aria-label={fillCopy(copy.laneOptions, { lane: name })}
                 >
-                  <MoreHorizontal aria-hidden="true" className="size-4" />
+                  <MoreHorizontal
+                    aria-hidden="true"
+                    className="size-4 tablet:size-5"
+                  />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
+                // One line per action: the menu is as wide as its longest label, never narrower than 14rem.
+                className="w-max min-w-56 [&_[data-slot=dropdown-menu-item]]:text-[14px] [&_[data-slot=dropdown-menu-item]]:whitespace-nowrap"
                 onCloseAutoFocus={(event) => {
                   if (openingForm.current) {
                     openingForm.current = false;
@@ -518,6 +610,7 @@ export function KanbanColumn({
                       openingForm.current = true;
                     }}
                   >
+                    <Pencil aria-hidden="true" />
                     {edit.subject === "status"
                       ? copy.editStatus
                       : copy.editValue}
@@ -533,6 +626,7 @@ export function KanbanColumn({
                       openingWip.current = true;
                     }}
                   >
+                    <Gauge aria-hidden="true" />
                     {copy.wipSet}
                   </DropdownMenuItem>
                 ) : null}
@@ -555,9 +649,11 @@ export function KanbanColumn({
                   </>
                 ) : null}
                 <DropdownMenuItem onSelect={() => onCollapsedChange(true)}>
+                  <PanelLeftClose aria-hidden="true" />
                   {copy.collapse}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={onHide}>
+                  <EyeOff aria-hidden="true" />
                   {copy.hide}
                 </DropdownMenuItem>
                 {canEdit && edit.remove ? (
@@ -571,6 +667,7 @@ export function KanbanColumn({
                         openingRemove.current = true;
                       }}
                     >
+                      <Trash2 aria-hidden="true" />
                       {edit.subject === "status"
                         ? copy.deleteStatus
                         : copy.deleteValue}
@@ -703,7 +800,7 @@ export function KanbanColumn({
             data-lane-cards=""
             ref={cardsRef}
             onScroll={(event) => moveWindow(event.currentTarget)}
-            className="-mx-1 -my-0.5 flex max-h-[calc(100dvh-17rem)] min-h-12 flex-col gap-2 overflow-y-auto px-1 py-0.5 [scrollbar-width:thin]"
+            className="-my-0.5 -ml-1 -mr-2 flex max-h-[calc(100dvh-17rem)] min-h-12 flex-col gap-2 overflow-y-auto py-0.5 pr-2 pl-1 [scrollbar-gutter:stable] [scrollbar-width:thin]"
           >
             {spaceAbove > 0 ? (
               <div
@@ -735,6 +832,13 @@ export function KanbanColumn({
                 className="shrink-0"
               />
             ) : null}
+            {autoMore ? (
+              <div
+                ref={sentinel}
+                aria-hidden="true"
+                className="h-px shrink-0"
+              />
+            ) : null}
           </div>
         ) : null}
       </SortableContext>
@@ -756,6 +860,15 @@ export function KanbanColumn({
               lane.total,
             )}
           </div>
+        ) : boardEmpty ? (
+          <p
+            data-lane-empty="board"
+            className="m-0 rounded-[11px] border-[1.5px] border-dashed border-line-strong px-3 py-4 text-center text-[12px] leading-[1.45] text-muted-foreground"
+          >
+            {copy.emptyTitle}
+            <br />
+            {copy.emptyBoardHint}
+          </p>
         ) : (
           <div
             data-lane-empty="empty"
@@ -806,47 +919,18 @@ export function KanbanColumn({
             {copy.loadMoreRetry}
           </Button>
         </div>
-      ) : pagedMore ? (
-        <div className="flex flex-wrap items-center justify-center gap-3 px-6 py-2.5 text-crumb text-muted-foreground">
-          {fillCopy(copy.shownOf, {
-            shown: visibleCards.length,
-            total: count,
-          })}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={loadingMore}
-            aria-busy={loadingMore || undefined}
-            onClick={() => {
-              focusFirstRevealed.current =
-                lane.cards[visibleCards.length]?.id ?? null;
-              if (visibleCards.length >= loaded) onLoadMore?.();
-              setPageShown(visibleCards.length + KANBAN_LANE_PAGE);
-            }}
-          >
-            {pluralCopy(
-              { one: copy.pageMore_one, other: copy.pageMore_other },
-              Math.min(KANBAN_LANE_PAGE, count - visibleCards.length),
-            )}
-          </Button>
-        </div>
-      ) : null}
-
-      {hiddenCount > 0 ? (
-        <button
-          type="button"
-          onClick={() => {
-            focusFirstRevealed.current = lane.cards[limit]?.id ?? null;
-            setExpanded(true);
-          }}
-          className="h-7.5 rounded-md bg-popover px-2 text-left dark:bg-card text-crumb font-medium text-muted-foreground hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus-ring"
+      ) : pagedMore && loadingMore ? (
+        <div
+          role="status"
+          aria-busy="true"
+          className="flex flex-col gap-2 px-1 pb-1"
         >
-          {pluralCopy(
-            { one: copy.showMore_one, other: copy.showMore_other },
-            hiddenCount,
-          )}
-        </button>
+          <span className="sr-only">{copy.loadingMore}</span>
+          <span
+            aria-hidden="true"
+            className="block h-16 rounded-xl bg-card/70 motion-safe:animate-pulse"
+          />
+        </div>
       ) : null}
 
       {canAdd ? (
@@ -854,7 +938,12 @@ export function KanbanColumn({
           laneName={name}
           copy={copy}
           openRequest={openAddRequest}
-          onSubmit={onCreateItem}
+          onSubmit={(title) => {
+            // The new item lands at the bottom: open the lane so it is in view.
+            setExpanded(true);
+            setPageShown((shown) => Math.max(shown, loaded + 1));
+            return onCreateItem(title);
+          }}
           onExpand={onExpandCreate}
         />
       ) : null}

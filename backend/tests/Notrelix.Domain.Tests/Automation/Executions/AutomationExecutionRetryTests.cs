@@ -25,7 +25,7 @@ public class AutomationExecutionRetryTests
         var execution = CreateRunningExecution();
         ((IHasDomainEvents)execution).ClearDomainEvents();
 
-        execution.RecordRetryableDispatchFailure("n8n unreachable", DateTimeOffset.UtcNow);
+        execution.RecordRetryableDispatchFailure(AutomationFailureClass.Transient, "n8n unreachable", DateTimeOffset.UtcNow);
 
         execution.Status.Should().Be(AutomationExecutionStatus.Queued,
             "the execution returns to Queued for another Automation attempt");
@@ -39,9 +39,9 @@ public class AutomationExecutionRetryTests
     {
         var execution = CreateRunningExecution();
 
-        execution.RecordRetryableDispatchFailure("first attempt failed", DateTimeOffset.UtcNow);
+        execution.RecordRetryableDispatchFailure(AutomationFailureClass.Transient, "first attempt failed", DateTimeOffset.UtcNow);
         execution.Start(DateTimeOffset.UtcNow);
-        execution.RecordRetryableDispatchFailure("second attempt failed", DateTimeOffset.UtcNow);
+        execution.RecordRetryableDispatchFailure(AutomationFailureClass.Transient, "second attempt failed", DateTimeOffset.UtcNow);
 
         execution.AttemptCount.Should().Be(2);
     }
@@ -52,7 +52,7 @@ public class AutomationExecutionRetryTests
         var execution = AutomationExecution.Create(
             Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        var act = () => execution.RecordRetryableDispatchFailure("error", DateTimeOffset.UtcNow);
+        var act = () => execution.RecordRetryableDispatchFailure(AutomationFailureClass.Transient, "error", DateTimeOffset.UtcNow);
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*running*");
     }
@@ -62,7 +62,7 @@ public class AutomationExecutionRetryTests
     {
         var execution = CreateRunningExecution();
 
-        var act = () => execution.RecordRetryableDispatchFailure(" ", DateTimeOffset.UtcNow);
+        var act = () => execution.RecordRetryableDispatchFailure(AutomationFailureClass.Transient, " ", DateTimeOffset.UtcNow);
 
         act.Should().Throw<BusinessRuleException>().WithMessage("*empty*");
     }
@@ -72,7 +72,7 @@ public class AutomationExecutionRetryTests
     {
         var execution = CreateRunningExecution();
 
-        execution.Fail("rule configuration invalid", DateTimeOffset.UtcNow);
+        execution.Fail(AutomationFailureClass.TargetRejected, "rule configuration invalid", DateTimeOffset.UtcNow);
 
         execution.Status.Should().Be(AutomationExecutionStatus.Failed);
         execution.AttemptCount.Should().Be(0,

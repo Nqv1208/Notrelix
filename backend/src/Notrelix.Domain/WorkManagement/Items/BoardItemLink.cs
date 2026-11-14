@@ -52,4 +52,17 @@ public class BoardItemLink : Entity, IWorkspaceScoped
         Guard.NotEmpty(boardId);
         BoardId = boardId;
     }
+
+    /// <summary>The same pair, seen another way: the link keeps its identity and takes the new direction and kind.</summary>
+    public void ChangeKind(Guid sourceItemId, ResourceRef target, BoardItemLinkType type)
+    {
+        Guard.NotEmpty(sourceItemId);
+        Guard.NotNull(target);
+        if (target.WorkspaceId.HasValue && target.WorkspaceId.Value != WorkspaceId)
+            throw new BusinessRuleException(CommonRuleCodes.Common_WorkspaceScopeMismatch, $"Workspace scope mismatch. Expected '{WorkspaceId}', got '{target.WorkspaceId.Value}'.");
+
+        SourceItemId = sourceItemId;
+        Target = target;
+        LinkType = type;
+    }
 }

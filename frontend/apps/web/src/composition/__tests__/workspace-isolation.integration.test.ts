@@ -10,6 +10,9 @@ function createFakeRealtime() {
     subscribe: vi.fn(() => () => undefined),
     subscribeState: vi.fn(() => () => undefined),
     subscribeRecovery: vi.fn(() => () => undefined),
+    subscribeEphemeral: vi.fn(() => () => undefined),
+    sendTyping: vi.fn(),
+    sendPresence: vi.fn(),
     getState: vi.fn(() => "connected" as const),
     dispose: vi.fn(),
   };
@@ -92,6 +95,36 @@ describe("application lifecycle — workspace isolation", () => {
     lifecycle.prepareWorkspaceTransition("ws-c");
     expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
 
+    lifecycle.dispose();
+  });
+
+  it("LIFE-027 a slow read of workspace A that settles after the switch to B leaves B without A data", async () => {
+    const { queryClient, lifecycle } = createHarness();
+    lifecycle.prepareWorkspaceTransition("ws-a");
+
+    let release: (value: { name: string }) => void = () => undefined;
+    const slowRead = queryClient.fetchQuery({
+      queryKey: ["workspaces", "detail", "ws-a"],
+      queryFn: () =>
+        new Promise<{ name: string }>((resolve) => {
+          release = resolve;
+        }),
+    });
+    // The switch happens while the read is in flight.
+    lifecycle.prepareWorkspaceTransition("ws-b");
+    queryClient.setQueryData(["workspaces", "detail", "ws-b"], { name: "B" });
+
+    release({ name: "A" });
+    // The reader that asked for A may reject or settle; neither may reach the cache.
+    await slowRead.catch(() => undefined);
+
+    expect(
+      queryClient.getQueryData(["workspaces", "detail", "ws-a"]),
+    ).toBeUndefined();
+    expect(queryClient.getQueryData(["workspaces", "detail", "ws-b"])).toEqual({
+      name: "B",
+    });
+    expect(queryClient.getQueryCache().getAll()).toHaveLength(1);
     lifecycle.dispose();
   });
 

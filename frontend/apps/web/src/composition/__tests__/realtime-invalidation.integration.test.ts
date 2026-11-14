@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryObserver } from "@tanstack/react-query";
 import { RealtimeClient, type WebSocketLike } from "@notrelix/realtime";
 import { handleWorkspaceRecovery } from "../../realtime/workspace-recovery-policy";
 
@@ -108,6 +108,61 @@ describe("integration: realtime recovery reaches the query cache", () => {
     // Recovery rebased the checkpoint: the next +1 event is consumed once.
     socket.onmessage?.({ data: eventFrame("e4", 4) });
     expect(events).toHaveBeenCalledTimes(2);
+  });
+
+  it("repeated gaps converge the open workspace screen to the latest server state", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const wsKey = ["workspace", "ws-1", "workspace", "detail"];
+    let server = "v0";
+    const queryFn = vi.fn(async () => server);
+    // An open screen observes the key, so every invalidation refetches it.
+    const observer = new QueryObserver(queryClient, {
+      queryKey: wsKey,
+      queryFn,
+      staleTime: Infinity,
+    });
+    const stop = observer.subscribe(() => undefined);
+    await vi.waitFor(() => expect(queryClient.getQueryData(wsKey)).toBe("v0"));
+
+    const socket = createMockSocket();
+    const client = new RealtimeClient("wss://ws.test/api/v1/realtime", {
+      socketFactory: vi.fn(() => socket),
+    });
+    client.subscribe({ workspaceId: "ws-1" }, vi.fn());
+    client.subscribeRecovery((signal) => {
+      void handleWorkspaceRecovery({
+        workspaceId: signal.workspaceId,
+        accountId: "user-1",
+        invalidateQueries: async (keys) => {
+          await Promise.all(
+            keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+          );
+        },
+      });
+    });
+    await connectReady(client, socket);
+    socket.onmessage?.({ data: subscribed("ws-1") });
+    await vi.waitFor(() => expect(queryFn).toHaveBeenCalledTimes(2));
+
+    socket.onmessage?.({ data: eventFrame("e1", 1) });
+    // Three gaps in a row while the server keeps changing: nothing is dropped, nothing loops.
+    for (const [eventId, version, next] of [
+      ["e3", 3, "v1"],
+      ["e6", 6, "v2"],
+      ["e9", 9, "v3"],
+    ] as const) {
+      server = next;
+      socket.onmessage?.({ data: eventFrame(eventId, version) });
+    }
+
+    await vi.waitFor(() => expect(queryClient.getQueryData(wsKey)).toBe("v3"));
+    const settledCalls = queryFn.mock.calls.length;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(queryFn).toHaveBeenCalledTimes(settledCalls);
+    expect(settledCalls).toBeLessThanOrEqual(2 + 3);
+    stop();
   });
 
   it("after a workspace switch a late event of the previous workspace does not touch the new one", async () => {

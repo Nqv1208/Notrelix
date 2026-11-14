@@ -172,6 +172,8 @@ export function useFormWrites(boardId: string, workspaceId: string) {
         write(() => forms.reject(submissionId, reason), formId, true),
       markSpam: (formId: string, submissionId: string) =>
         write(() => forms.markSpam(submissionId), formId, true),
+      reopenSubmission: (formId: string, submissionId: string) =>
+        write(() => forms.reopenSubmission(submissionId), formId, true),
       removeSubmission: (formId: string, submissionId: string) =>
         write(() => forms.removeSubmission(submissionId), formId, true),
     }),

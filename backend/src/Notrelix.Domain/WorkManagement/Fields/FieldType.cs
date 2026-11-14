@@ -14,5 +14,6 @@ public enum FieldType
     Link,
     Formula,
     Rollup,
-    Vote
+    Vote,
+    Relation
 }

@@ -46,7 +46,9 @@ public sealed class WorkReportFactsService : IWorkReportFacts
             .Where(i => i.WorkspaceId == workspaceId
                 && ids.Contains(i.BoardId)
                 && i.DeletedAt == null
-                && !i.IsArchived);
+                && !i.IsArchived
+                // An Item in an archived group is out of the counts until the group comes back.
+                && !_context.BoardGroups.Any(g => g.Id == i.GroupId && g.IsArchived));
 
         var totals = await items
             .GroupBy(_ => 1)

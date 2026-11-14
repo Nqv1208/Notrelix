@@ -27,6 +27,7 @@ public static class MapBoardEndpoints
         boardGroup.MapGetBoardOverview();
         boardGroup.MapGetBoardAccess();
         boardGroup.MapGetBoardSharing();
+        boardGroup.MapGetBoardPeople();
         boardGroup.MapGetBoardLifecycleImpact();
         boardGroup.MapGetBoardMoveImpact();
         boardGroup.MapGetBoardDuplicatePreview();

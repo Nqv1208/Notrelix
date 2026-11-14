@@ -26,14 +26,17 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
     private readonly IDateTimeProvider _timeProvider;
     private readonly IResourceLocator _resourceLocator;
     private readonly IBoardRealtimeNotifier? _realtime;
+    private readonly IActorLookupService? _actors;
 
     public UpdateBoardItemFieldValuesCommandHandler(
         IWorkManagementDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider timeProvider,
         IResourceLocator resourceLocator,
-        IBoardRealtimeNotifier? realtime = null)
+        IBoardRealtimeNotifier? realtime = null,
+        IActorLookupService? actors = null)
     {
+        _actors = actors;
         _realtime = realtime;
         _context = context;
         _requestContext = requestContext;
@@ -68,12 +71,26 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
         // All-or-nothing (WMREQ025): every field is validated before any value is
         // applied, because a failed Result still commits the data session.
         var unsupported = request.Values.Keys.FirstOrDefault(id => id != card.BoardId && !columns.ContainsKey(id));
+        // A field deleted since the client loaded the board answers the stale-schema precondition naming it, as the
+        // single write does (UC-WM-D12); a field the board never had stays the unsupported-field refusal.
+        if (unsupported != Guid.Empty
+            && await Notrelix.Application.Features.WorkManagement.BoardFields.StaleFieldGuard.MissingAsync(_context, _actors, _requestContext, card.BoardId, unsupported, ct)
+                is Notrelix.Application.Common.Exceptions.PreconditionFailedException stale)
+            throw stale;
         if (unsupported != Guid.Empty)
             return Result.Failure(new ApplicationError("work.board-item.unsupported-field", $"Unsupported field '{unsupported}'.", ApplicationErrorType.Validation));
 
         var unsupportedType = columns.Values.FirstOrDefault(column => !SupportedSemanticFields.Contains(ResolveSemanticField(column)));
         if (unsupportedType is not null)
             return Result.Failure(new ApplicationError("work.board-item.unsupported-field", $"Unsupported field '{unsupportedType.Name}'.", ApplicationErrorType.Validation));
+
+        foreach (var (columnId, value) in request.Values)
+        {
+            if (!columns.TryGetValue(columnId, out var optionField)
+                || optionField.Type is not (FieldType.Select or FieldType.MultiSelect or FieldType.Status)) continue;
+            Notrelix.Application.Features.WorkManagement.BoardFields.StaleFieldGuard.EnsureOptionsExist(
+                optionField, FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(NormalizeStoredValue(value)))));
+        }
 
         var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, card.BoardId, ct);
 
@@ -98,6 +115,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                 case "priority":
                     {
                         var fv = FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(NormalizeStoredValue(value))));
+                        BoardItemFieldWrites.EnsureNotClearingRequired(column, fv);
                         BoardItemFieldWrites.Write(card, column, fv, statusField, _requestContext.UserId, now);
                         break;
                     }
@@ -147,6 +165,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
                 case "multi_select":
                     {
                         var fv = FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(NormalizeStoredValue(value))));
+                        BoardItemFieldWrites.EnsureNotClearingRequired(column, fv);
                         BoardItemFieldWrites.Write(card, column, fv, statusField, _requestContext.UserId, now);
                         break;
                     }

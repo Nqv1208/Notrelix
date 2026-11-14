@@ -53,6 +53,8 @@ public class CreateBoardGroupCommandHandler : IRequestHandler<CreateBoardGroupCo
             new WorkPlacementIntent(request.PreviousSiblingId, request.NextSiblingId),
             token => BoardGroupSiblings.LoadAsync(_context, board.Id, token),
             ct);
+        // Under the group ordering lock the placement just took (D78.8).
+        await Limits.WorkLimits.EnsureGroupRoomAsync(_context, board.Id, 1, ct);
 
         var color = request.Color is not null ? Color.Create(request.Color) : Color.Create("#808080");
         var list = BoardGroup.Create(_requestContext.RequireAccountId(), board.WorkspaceId, request.BoardId, request.Title, color, position, _requestContext.UserId, _dateTimeProvider.UtcNow);

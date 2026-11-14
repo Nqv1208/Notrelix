@@ -140,10 +140,101 @@ public sealed class WorkItemKeyIntegrationTests : IAsyncLifetime
         await act.Should().ThrowAsync<DbUpdateException>();
     }
 
-    private async Task<Guid> CreateAsync(string title, Guid group) =>
+    [Fact]
+    public async Task TwentyParallelCreates_OnOneBoard_NeverShareAKey()
+    {
+        // UC-WM-A10 acceptance: 20 creates at once, each in its own request transaction, draw 20 distinct numbers.
+        const int creates = 20;
+
+        var ids = await Task.WhenAll(Enumerable.Range(0, creates).Select(i => Task.Run(() => CreateAsync($"item {i}", _todoId))));
+
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
+        var rows = await verify.BoardItems.Where(i => ids.Contains(i.Id)).Select(i => new { i.ItemKey, i.ItemSequence }).ToListAsync();
+        rows.Should().HaveCount(creates);
+        rows.Select(r => r.ItemKey).Should().OnlyHaveUniqueItems();
+        rows.Select(r => r.ItemSequence).Should().BeEquivalentTo(Enumerable.Range(1, creates).Select(n => (long)n));
+        (await BoardScalarAsync(b => b.ItemSequence)).Should().Be(creates);
+    }
+
+    [Fact]
+    public async Task TenConcurrentInserts_AtOnePosition_GetDistinctKeysAndADeterministicOrder()
+    {
+        // UC-WM-F04: ten creates aimed between the same two neighbours of one group, all at once. The group's ordering
+        // lock serializes them, so each one reads the committed keys and none collides; the order they end in is fixed
+        // by the stored keys alone (read twice, it is the same), and every one of them lies between the two neighbours.
+        var first = await CreateAsync("first", _todoId);
+        var last = await CreateAsync("last", _todoId);
+
+        // Ten appends to the bottom of the group: all land, each after the one committed before it.
+        var appended = await Task.WhenAll(Enumerable.Range(0, 10).Select(i => Task.Run(() => CreateAsync($"append {i}", _todoId))));
+
+        // Ten inserts between the same two neighbours: the first to take the lock lands between them; the others
+        // find the neighbours no longer adjacent and get the stable ordering conflict, never a shared key.
+        var between = await Task.WhenAll(Enumerable.Range(0, 10).Select(i => Task.Run(async () =>
+        {
+            try { return (Guid?)await CreateAsync($"between {i}", _todoId, previous: first, next: last); }
+            catch (Notrelix.Application.Common.Exceptions.ConflictException conflict)
+            {
+                conflict.ErrorCode.Should().Be(WorkOrderingErrorCodes.StalePlacement);
+                return null;
+            }
+        })));
+        var landed = between.Where(id => id is not null).Select(id => id!.Value).ToList();
+        landed.Should().ContainSingle("only one insert can be between two neighbours that were adjacent when it was asked");
+
+        await using var verify = _db.CreateOwnerContext(SystemTenant());
+        var rows = await verify.BoardItems.Where(i => i.GroupId == _todoId).Select(i => new { i.Id, i.Position }).ToListAsync();
+        rows.Should().HaveCount(13);
+        rows.Select(r => r.Position.Value).Should().OnlyHaveUniqueItems("a real collision is a stable conflict, not a shared key");
+        var order = rows.OrderBy(r => r.Position).Select(r => r.Id).ToList();
+        order.Take(3).Should().Equal(first, landed[0], last);
+        order.Skip(3).Should().BeEquivalentTo(appended);
+
+        await using var again = _db.CreateOwnerContext(SystemTenant());
+        (await again.BoardItems.Where(i => i.GroupId == _todoId).OrderBy(i => i.Position).Select(i => i.Id).ToListAsync())
+            .Should().Equal(order, "the order is the stored keys' order, the same on every read");
+    }
+
+    [Fact]
+    public async Task AMovedItemsOldKey_StillResolvesToTheItem_OnlyForSomeoneWhoSeesItsNewBoard()
+    {
+        // UC-WM-A10 / D76.3: the item moved to board B and took B's key; its old key on this board is a stored alias.
+        var other = Board.Create(_accountId, _workspaceId, _userId, "Target", null, Now, itemKeyPrefix: "OPS");
+        var group = BoardGroup.Create(_accountId, _workspaceId, other.Id, "Todo", Color.Create("#808080"), FractionalIndex.Create("a0"), _userId, Now);
+        var moved = BoardItem.CreateRoot(_accountId, _workspaceId, other.Id, group.Id, "moved", FractionalIndex.Create("a0"), _userId, Now, itemKey: "OPS-9", itemSequence: 9);
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
+        {
+            seed.Boards.Add(other);
+            seed.BoardGroups.Add(group);
+            seed.BoardItems.Add(moved);
+            seed.BoardItemKeyAliases.Add(BoardItemKeyAlias.Create(_accountId, _workspaceId, _boardId, moved.Id, "WEB-3"));
+            await seed.SaveChangesAsync();
+        }
+        var stays = await CreateAsync("stays", _todoId);
+
+        var byOldKey = await ResolveAsync("WEB-3", seesBoards: [_boardId, other.Id]);
+        byOldKey.Should().Be(new Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ResolveBoardItemKey.ResolvedBoardItemKeyDto(moved.Id, other.Id, "OPS-9", true));
+        (await ResolveAsync("WEB-1", seesBoards: [_boardId])).ItemId.Should().Be(stays);
+
+        var hidden = () => ResolveAsync("WEB-3", seesBoards: [_boardId]);
+        await hidden.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>("the new board is not one the caller sees");
+        var never = () => ResolveAsync("WEB-77", seesBoards: [_boardId, other.Id]);
+        await never.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
+    }
+
+    private async Task<Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ResolveBoardItemKey.ResolvedBoardItemKeyDto> ResolveAsync(string key, Guid[] seesBoards)
+    {
+        await using var context = _db.CreateOwnerContext(Tenant());
+        var visibility = new Mock<Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility>();
+        visibility.Setup(v => v.VisibleBoardIdsAsync(_workspaceId, _userId, It.IsAny<CancellationToken>())).ReturnsAsync(seesBoards);
+        return await new Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ResolveBoardItemKey.ResolveBoardItemKeyQueryHandler(context, Request(), visibility.Object, new PostgresBoardItemKeyAliases(context))
+            .Handle(new Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ResolveBoardItemKey.ResolveBoardItemKeyQuery(_boardId, key), CancellationToken.None);
+    }
+
+    private async Task<Guid> CreateAsync(string title, Guid group, Guid? previous = null, Guid? next = null) =>
         await InTransactionAsync(async context =>
             (await new CreateBoardItemCommandHandler(context, Request(), Clock(), Resolver(context), Keys(context))
-                .Handle(new CreateBoardItemCommand(_boardId, group, title), CancellationToken.None)).Id);
+                .Handle(new CreateBoardItemCommand(_boardId, group, title, previous, next), CancellationToken.None)).Id);
 
     private async Task<long> BoardScalarAsync(System.Linq.Expressions.Expression<Func<Board, long>> selector)
     {

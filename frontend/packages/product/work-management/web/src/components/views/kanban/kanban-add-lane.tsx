@@ -6,7 +6,10 @@ import {
   type StatusOptionDraft,
 } from "../../status-option/status-option-form";
 import type { StatusOptionFormCopy } from "../../status-option/status-option-form.copy";
-import { kanbanColumnWidthClass } from "./kanban-layout";
+import {
+  kanbanColumnTabletWidthClass,
+  kanbanColumnWidthClass,
+} from "./kanban-layout";
 import type { KanbanLaneCopy } from "./kanban-lane.copy";
 
 export interface KanbanAddLaneProps {
@@ -45,13 +48,18 @@ export function KanbanAddLane({
           className={cn(
             "flex h-11.5 shrink-0 items-center gap-1.5 rounded-xl border border-dashed border-line-strong px-4 text-compact font-medium text-muted-foreground transition-colors hover:border-transparent hover:bg-state-hover hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus-ring aria-expanded:bg-state-hover aria-expanded:text-foreground",
             kanbanColumnWidthClass,
+            kanbanColumnTabletWidthClass,
           )}
         >
           <Plus aria-hidden="true" className="size-4" />
           {subject === "status" ? copy.addStatus : copy.addValue}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-72 gap-0">
+      <PopoverContent
+        align="start"
+        aria-label={formCopy.titleCreate}
+        className="w-72 gap-0"
+      >
         <StatusOptionForm
           copy={formCopy}
           subject={subject}

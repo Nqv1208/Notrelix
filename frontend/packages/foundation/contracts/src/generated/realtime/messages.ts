@@ -21,9 +21,120 @@ export interface BoardItemUpdatedPayload {
   "value"?: string;
 }
 
+export interface ChatMessageAttachmentChangedPayload {
+  "attachmentId": string;
+  "change": string;
+  "contentType"?: string | null;
+  "createdAt"?: string | null;
+  "detailsOmitted": boolean;
+  "downloadPath"?: string | null;
+  "fileName"?: string | null;
+  "messageId": string;
+  "sizeBytes"?: number | null;
+  "uploadedBy"?: string | null;
+}
+
+export interface ChatMessageCreatedPayload {
+  "authorId": string;
+  "content": string | null;
+  "contentOmitted": boolean;
+  "createdAt": string | null;
+  "deleted": boolean;
+  "editedAt": string | null;
+  "id": string;
+  "kind": "user" | "system";
+  "replyToId": string | null;
+  "sequence": number;
+  "threadRootId": string | null;
+  "threadSequence": number | null;
+  "version": number;
+}
+
+export interface ChatMessageDeletedPayload {
+  "authorId": string;
+  "content": string | null;
+  "contentOmitted": boolean;
+  "createdAt": string | null;
+  "deleted": boolean;
+  "editedAt": string | null;
+  "id": string;
+  "kind": "user" | "system";
+  "replyToId": string | null;
+  "sequence": number;
+  "threadRootId": string | null;
+  "threadSequence": number | null;
+  "version": number;
+}
+
+export interface ChatMessageUpdatedPayload {
+  "authorId": string;
+  "content": string | null;
+  "contentOmitted": boolean;
+  "createdAt": string | null;
+  "deleted": boolean;
+  "editedAt": string | null;
+  "id": string;
+  "kind": "user" | "system";
+  "replyToId": string | null;
+  "sequence": number;
+  "threadRootId": string | null;
+  "threadSequence": number | null;
+  "version": number;
+}
+
+export interface ChatReactionChangedPayload {
+  "actorId": string;
+  "change": string;
+  "kind": string;
+  "messageId": string;
+}
+
+export interface ChatSpaceChangedPayload {
+  "change": string;
+  "messageId": string;
+}
+
+export interface ChatUnreadChangedPayload {
+  "mentions": number;
+  "spaceId": string;
+  "unread": number;
+}
+
+export interface RealtimePresenceClientFrame {
+  "state": "online" | "idle" | "offline";
+  "type": "presence";
+}
+
+export interface RealtimePresenceServerFrame {
+  "state": "online" | "idle" | "offline";
+  "subscriptionId": string;
+  "ttlMs": number;
+  "type": "presence";
+  "userId": string;
+}
+
+export interface RealtimeTypingClientFrame {
+  "subscriptionId": string;
+  "type": "typing";
+}
+
+export interface RealtimeTypingServerFrame {
+  "expiresInMs": number;
+  "subscriptionId": string;
+  "type": "typing";
+  "userId": string;
+}
+
 export type GeneratedRealtimeMessage =
   | { eventType: "board.item.created"; payload: BoardItemCreatedPayload }
   | { eventType: "board.item.moved"; payload: BoardItemMovedPayload }
-  | { eventType: "board.item.updated"; payload: BoardItemUpdatedPayload };
+  | { eventType: "board.item.updated"; payload: BoardItemUpdatedPayload }
+  | { eventType: "chat.message.attachment.changed"; payload: ChatMessageAttachmentChangedPayload }
+  | { eventType: "chat.message.created"; payload: ChatMessageCreatedPayload }
+  | { eventType: "chat.message.deleted"; payload: ChatMessageDeletedPayload }
+  | { eventType: "chat.message.updated"; payload: ChatMessageUpdatedPayload }
+  | { eventType: "chat.reaction.changed"; payload: ChatReactionChangedPayload }
+  | { eventType: "chat.space.changed"; payload: ChatSpaceChangedPayload }
+  | { eventType: "chat.unread.changed"; payload: ChatUnreadChangedPayload };
 
 export type RealtimeEventMessage = GeneratedRealtimeMessage;

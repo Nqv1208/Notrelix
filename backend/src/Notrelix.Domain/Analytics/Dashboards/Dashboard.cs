@@ -92,7 +92,10 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         EnsureActive();
         Guard.NotEmpty(updatedBy);
         var widget = _widgets.FirstOrDefault(w => w.Id == widgetId);
-        if (widget is null) return;
+        if (widget is null)
+        {
+            throw new BusinessRuleException(Analytics_Dashboard_WidgetNotFound, $"Widget '{widgetId}' not found on this dashboard.");
+        }
 
         var pending = PrepareAuditUpdate(updatedBy, updatedAt);
         _widgets.Remove(widget);
@@ -131,6 +134,22 @@ public class Dashboard : AggregateRoot, IWorkspaceScoped
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new DashboardArchivedDomainEvent(AccountId, WorkspaceId, Id, archivedBy, archivedAt));
+    }
+
+    /// <summary>
+    /// Returns an archived dashboard to Active. The product text names no restore window, so any archived dashboard
+    /// may be restored (Owner question in the analytics use-case doc). Restoring an active dashboard is a no-op.
+    /// </summary>
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        if (Status == DashboardStatus.Active) return;
+        Guard.NotEmpty(restoredBy);
+
+        var pending = PrepareAuditUpdate(restoredBy, restoredAt);
+        Status = DashboardStatus.Active;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new DashboardRestoredDomainEvent(AccountId, WorkspaceId, Id, restoredBy, restoredAt));
     }
 
     private void EnsureActive()

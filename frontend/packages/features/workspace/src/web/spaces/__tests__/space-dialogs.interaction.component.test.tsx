@@ -213,6 +213,35 @@ describe("MoveToSpaceDialog", () => {
     expect(props.onSubmit).toHaveBeenCalledWith("sp-accounting");
   });
 
+  it("FUI[workspace.move-to-space:conflict] shows a refused move above the buttons and keeps the choice so the member can try again", () => {
+    const props = renderMove(moveBoardScenario(), {
+      error: copy.toasts.conflict,
+    });
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText(copy.toasts.conflict)).toBeTruthy();
+    fireEvent.click(
+      within(dialog).getByRole("radio", { name: copy.move.rootBoard }),
+    );
+    const submit = within(dialog).getByRole("button", {
+      name: copy.move.submit,
+    }) as HTMLButtonElement;
+    expect(submit.disabled).toBe(false);
+    fireEvent.click(submit);
+    expect(props.onSubmit).toHaveBeenCalledWith(null);
+  });
+
+  it("FUI[workspace.move-to-space:pending] holds the submit while the move is on its way", () => {
+    renderMove(moveBoardScenario(), { pending: true });
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(
+      within(dialog).getByRole("radio", { name: copy.move.rootBoard }),
+    );
+    const submit = within(dialog).getByRole("button", {
+      name: copy.move.submitting,
+    }) as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);
+  });
+
   it("FUI[workspace.move-to-space:search] filters the tree by name, keeping ancestors", () => {
     renderMove();
     const dialog = screen.getByRole("dialog");

@@ -326,9 +326,11 @@ public sealed class WorkLiveVerifyPipelineIntegrationTests : IAsyncLifetime
         services.AddScoped<Notrelix.Application.Common.Tenancy.IActorLookupService, ActorLookupService>();
         services.AddScoped<IRequestHandler<DeleteLabelCommand, Result>, DeleteLabelCommandHandler>();
         services.AddScoped<IRequestHandler<CancelApprovalRequestCommand, Result>, CancelApprovalRequestCommandHandler>();
+        services.AddScoped<IReactionWriteLock, Notrelix.Infrastructure.Data.Collaboration.PostgresReactionWriteLock>();
         services.AddScoped<IRequestHandler<AddReactionCommand, Result>, AddReactionCommandHandler>();
         services.AddScoped<IRequestHandler<RemoveReactionCommand, Result>, RemoveReactionCommandHandler>();
         services.AddScoped<IRequestHandler<GetCommentsQuery, Result<List<CommentDto>>>, GetCommentsQueryHandler>();
+        services.AddScoped<Notrelix.Application.Features.Collaboration.Comments.Ports.ICommentTombstoneReader, Notrelix.Infrastructure.Data.Collaboration.CommentTombstoneReader>();
         services.AddProductionCrossContextAdapters();
 
         return services.BuildServiceProvider();

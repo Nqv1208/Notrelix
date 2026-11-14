@@ -17,6 +17,7 @@ public class WorkManagementLocalDependencyArchitectureTests
         "IAccountDbContext",
         "IIdentityDbContext",
         "ICollaborationDbContext",
+        "IChatDbContext",
         "IAutomationDbContext",
         "IIntegrationDbContext",
     ];

@@ -103,6 +103,18 @@
         {
           "id": "empty",
           "testFile": "src/web/components/__tests__/workspace-ui-surfaces.interaction.component.test.tsx"
+        },
+        {
+          "id": "seat-refused",
+          "testFile": "src/web/components/__tests__/pending-invitations-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "gone",
+          "testFile": "src/web/components/__tests__/pending-invitations-menu.interaction.component.test.tsx"
+        },
+        {
+          "id": "pending",
+          "testFile": "src/web/components/__tests__/pending-invitations-menu.interaction.component.test.tsx"
         }
       ]
     },
@@ -3152,6 +3164,14 @@
         },
         {
           "id": "page",
+          "testFile": "src/web/spaces/__tests__/space-dialogs.interaction.component.test.tsx"
+        },
+        {
+          "id": "conflict",
+          "testFile": "src/web/spaces/__tests__/space-dialogs.interaction.component.test.tsx"
+        },
+        {
+          "id": "pending",
           "testFile": "src/web/spaces/__tests__/space-dialogs.interaction.component.test.tsx"
         },
         {

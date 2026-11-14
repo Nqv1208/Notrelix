@@ -1,14 +1,18 @@
 using Notrelix.API.Contracts.Integrations.Connections;
 using Notrelix.API.Extensions;
+using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Integrations.Abstractions;
 using Notrelix.Application.Features.Integrations.Connections;
 using Notrelix.Application.Features.Integrations.Connections.Commands.CompleteIntegrationAuthorization;
 using Notrelix.Application.Features.Integrations.Connections.Commands.ConnectWebhook;
 using Notrelix.Application.Features.Integrations.Connections.Commands.DisconnectIntegration;
 using Notrelix.Application.Features.Integrations.Connections.Commands.PauseIntegration;
+using Notrelix.Application.Features.Integrations.Connections.Commands.RegenerateWebhookSecret;
 using Notrelix.Application.Features.Integrations.Connections.Commands.ResumeIntegration;
 using Notrelix.Application.Features.Integrations.Connections.Commands.TestIntegration;
 using Notrelix.Application.Features.Integrations.Connections.Queries.ListIntegrations;
+using Notrelix.Application.Features.Integrations.Connections.Queries.GetIntegrationConnection;
+using Notrelix.Application.Features.Integrations.Connections.Queries.ListConnectionDeliveryLog;
 using Notrelix.Application.Features.Integrations.Connections.Queries.StartIntegrationAuthorization;
 
 namespace Notrelix.API.Endpoints.Integrations.Connections;
@@ -33,6 +37,16 @@ public static class IntegrationConnectionEndpoints
             .WithSummary("The provider's authorization page for the workspace (OAuth redirect flow)")
             .Produces<IntegrationAuthorizationDto>();
 
+        group.MapWorkspaceGet("/{connectionId:guid}", GetAsync)
+            .WithName("Integrations.Connections.Get")
+            .WithSummary("Read one connection in detail: status, last success and error, address and granted scopes")
+            .Produces<IntegrationConnectionDetailDto>();
+
+        group.MapWorkspaceGet("/{connectionId:guid}/deliveries", ListDeliveriesAsync)
+            .WithName("Integrations.Connections.ListDeliveries")
+            .WithSummary("The delivery log of an outgoing webhook connection, newest first (cursor page, default 50, max 200)")
+            .Produces<CursorPage<OutboundDeliveryLogEntryDto>>();
+
         group.MapWorkspacePost("/webhooks", ConnectWebhookAsync)
             .WithName("Integrations.Webhooks.Connect")
             .WithSummary("Connect an outgoing webhook; the generated signing secret is returned once")
@@ -53,6 +67,11 @@ public static class IntegrationConnectionEndpoints
             .WithSummary("Send a test delivery to an outgoing webhook")
             .Produces<IntegrationTestDto>();
 
+        group.MapWorkspacePost("/{connectionId:guid}/secret", RegenerateSecretAsync)
+            .WithName("Integrations.Webhooks.RegenerateSecret")
+            .WithSummary("Regenerate an outgoing webhook's signing secret; the new secret is returned once and the old one stops signing")
+            .Produces<RegeneratedWebhookSecretDto>();
+
         group.MapWorkspaceDelete("/{connectionId:guid}", DisconnectAsync)
             .WithName("Integrations.Connections.Disconnect")
             .WithSummary("Disconnect a connection")
@@ -70,6 +89,13 @@ public static class IntegrationConnectionEndpoints
 
     private static async Task<IResult> ListAsync(Guid workspaceId, ISender sender)
         => (await sender.Send(new ListIntegrationsQuery(workspaceId))).ToApiResult();
+
+    private static async Task<IResult> GetAsync(Guid workspaceId, Guid connectionId, ISender sender)
+        => (await sender.Send(new GetIntegrationConnectionQuery(workspaceId, connectionId))).ToApiResult();
+
+    private static async Task<IResult> ListDeliveriesAsync(
+        Guid workspaceId, Guid connectionId, string? cursor, int? limit, ISender sender)
+        => (await sender.Send(new ListConnectionDeliveryLogQuery(workspaceId, connectionId, cursor, limit))).ToApiResult();
 
     private static async Task<IResult> AuthorizeAsync(
         Guid workspaceId, string provider, HttpRequest request, IConfiguration configuration, ISender sender)
@@ -92,6 +118,10 @@ public static class IntegrationConnectionEndpoints
 
     private static async Task<IResult> TestAsync(Guid workspaceId, Guid connectionId, ISender sender)
         => (await sender.Send(new TestIntegrationCommand(workspaceId, connectionId))).ToApiResult();
+
+    private static async Task<IResult> RegenerateSecretAsync(
+        Guid workspaceId, Guid connectionId, RegenerateWebhookSecretRequest body, ISender sender)
+        => (await sender.Send(new RegenerateWebhookSecretCommand(workspaceId, connectionId, body.ExpectedVersion))).ToApiResult();
 
     private static async Task<IResult> DisconnectAsync(Guid workspaceId, Guid connectionId, ISender sender)
         => (await sender.Send(new DisconnectIntegrationCommand(workspaceId, connectionId))).ToNoContentResult();

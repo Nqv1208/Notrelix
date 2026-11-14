@@ -108,6 +108,7 @@ export function CreateWorkspaceDialog({
               aria-invalid={createWorkspace.isError || undefined}
               aria-describedby={createWorkspace.isError ? errorId : undefined}
               maxLength={NAME_MAX}
+              className="max-md:h-touch"
             />
             {createWorkspace.isError ? (
               <p
@@ -124,12 +125,14 @@ export function CreateWorkspaceDialog({
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
+              className="max-md:h-touch!"
             >
               {copy.createWorkspace.cancel}
             </Button>
             <Button
               type="submit"
               disabled={!trimmed || createWorkspace.isPending}
+              className="max-md:h-touch!"
             >
               {createWorkspace.isPending
                 ? copy.createWorkspace.submitting

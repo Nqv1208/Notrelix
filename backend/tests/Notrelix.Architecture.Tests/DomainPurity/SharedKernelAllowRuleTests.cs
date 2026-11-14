@@ -22,6 +22,7 @@ public class SharedKernelAllowRuleTests
         "Notrelix.Domain.Accounts",
         "Notrelix.Domain.Documents",
         "Notrelix.Domain.Collaboration",
+        "Notrelix.Domain.Chat",
         "Notrelix.Domain.Automation",
         "Notrelix.Domain.Governance",
         "Notrelix.Domain.Integrations",

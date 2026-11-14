@@ -20,6 +20,7 @@ import {
   useWorkspaceBoards,
 } from "@notrelix/work-management-state";
 import {
+  ITEM_TITLE_MAX_LENGTH,
   previewMoveToBoard,
   type Card,
   type FullBoardResponse,
@@ -43,7 +44,10 @@ import {
   ArchiveItemDialog,
   type ArchiveDialogStatus,
 } from "./archive-item-dialog";
-import { DeleteItemDialog } from "./item-lifecycle-dialogs";
+import {
+  DeleteItemDialog,
+  type DeleteDialogStatus,
+} from "./item-lifecycle-dialogs";
 import { fillLifecycleCopy, pluralLifecycleCopy } from "./item-lifecycle.copy";
 import { useItemLifecycleCopy } from "./use-item-lifecycle-copy";
 
@@ -55,6 +59,8 @@ interface Pending {
 /** A delete waiting for its confirmation, with the item version the dialog opened on. */
 interface DeletePending extends Pending {
   readonly version: number;
+  /** What the dialog listed when the write went out: the card has left the board read by then. */
+  readonly subItems?: number;
 }
 
 /** An archive waiting for its answer, with the item version the dialog opened on. */
@@ -109,8 +115,8 @@ export function useItemRemoval({
   boardId: string;
   titleOf: (itemId: string) => string;
   onGone?: (itemId: string) => void;
-  /** Opens another item in the host (the item a move landed on, a copy). */
-  onOpenItem?: (itemId: string) => void;
+  /** Opens an item of a board in the host (the item a move landed on, a copy, the item that blocks a move). */
+  onOpenItem?: (boardId: string, itemId: string) => void;
 }): {
   requestArchive: (itemId: string) => void;
   requestDelete: (itemId: string) => void;
@@ -130,6 +136,7 @@ export function useItemRemoval({
   const [archiveStatus, setArchiveStatus] =
     useState<ArchiveDialogStatus>("idle");
   const [deleting, setDeleting] = useState<DeletePending | null>(null);
+  const [deleteStatus, setDeleteStatus] = useState<DeleteDialogStatus>("idle");
   const [moving, setMoving] = useState<Pending | null>(null);
   const [moveTarget, setMoveTarget] = useState<string | null>(null);
   const [moveStatus, setMoveStatus] = useState<MoveDialogStatus>("idle");
@@ -137,12 +144,17 @@ export function useItemRemoval({
   const [reminding, setReminding] = useState<Pending | null>(null);
   const [remindState, setRemindState] = useState<RemindDialogState>("confirm");
   const [remindWhen, setRemindWhen] = useState<string | null>(null);
+  const [remindedAt, setRemindedAt] = useState<string | null>(null);
   const archiveCard = useArchiveCard(boardId, workspaceId);
   const seenVersion = useSeenItemVersion(boardId, workspaceId);
   const archiveLinks = useItemLinks(archiving?.id ?? "", workspaceId, boardId);
+  const deleteLinks = useItemLinks(deleting?.id ?? "", workspaceId, boardId);
+  const moveLinks = useItemLinks(moving?.id ?? "", workspaceId, boardId);
   // Hook-level: the card sheet closes with the optimistic removal, which would drop the callbacks of `mutate`.
   const deleteCard = useDeleteCard(boardId, workspaceId, {
     onSuccess: ({ cardId, title = "" }) => {
+      setDeleting(null);
+      setDeleteStatus("idle");
       toast.success(fillLifecycleCopy(copy.deleted, { title }), {
         action: {
           label: copy.deletedUndo,
@@ -156,15 +168,24 @@ export function useItemRemoval({
       });
       onGone?.(cardId);
     },
-    onError: (error, { title = "" }) =>
-      isVersionConflict(error)
-        ? toast.error(copy.archiveConflictTitle, {
-            description: copy.deleteConflictBody,
-          })
-        : toast.error(fillLifecycleCopy(copy.deleteFailed, { title })),
+    onError: (error) => {
+      if (isVersionConflict(error)) {
+        // The item sheet shows the newer version; the dialog has nothing more to offer.
+        setDeleting(null);
+        setDeleteStatus("idle");
+        toast.error(copy.archiveConflictTitle, {
+          description: copy.deleteConflictBody,
+        });
+      } else {
+        setDeleting((current) =>
+          current ? { ...current, subItems: undefined } : current,
+        );
+        setDeleteStatus("error");
+      }
+    },
   });
   const duplicateCard = useDuplicateCard(boardId, workspaceId);
-  const trash = useBoardTrash(boardId, workspaceId, false);
+  const trash = useBoardTrash(boardId, workspaceId, "", false);
   const boards = useWorkspaceBoards(workspaceId);
   const source = useFullBoard(boardId, workspaceId);
   const target = useFullBoard(moveTarget ?? undefined, workspaceId);
@@ -202,6 +223,14 @@ export function useItemRemoval({
             result.droppedLabels,
             result.droppedAssignees,
           ),
+          action: onOpenItem
+            ? {
+                label: fillLifecycleCopy(copy.movedOpen, {
+                  key: result.itemKey,
+                }),
+                onClick: () => onOpenItem(targetBoardId, cardId),
+              }
+            : undefined,
         },
       );
       onGone?.(cardId);
@@ -301,7 +330,11 @@ export function useItemRemoval({
   const confirmDelete = () => {
     if (!deleting) return;
     const { id, title, version } = deleting;
-    setDeleting(null);
+    setDeleting({
+      ...deleting,
+      subItems: deleteCardView?.childProgress?.total ?? 0,
+    });
+    setDeleteStatus("busy");
     deleteCard.mutate({ cardId: id, expectedVersion: version, title });
   };
 
@@ -319,7 +352,7 @@ export function useItemRemoval({
               ? {
                   action: {
                     label: actions.dupOpen,
-                    onClick: () => onOpenItem(copyId),
+                    onClick: () => onOpenItem(boardId, copyId),
                   },
                 }
               : undefined,
@@ -334,6 +367,19 @@ export function useItemRemoval({
       .filter((member) => member.userId !== viewerId)
       .map((member) => member.name);
 
+  /** "14:30 today" or "14:30 on 13/10", in the person's clock. */
+  const remindClock = (iso: string) => {
+    const at = new Date(iso);
+    const now = new Date();
+    const time = `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
+    return at.toDateString() === now.toDateString()
+      ? fillLifecycleCopy(actions.remindToday, { time })
+      : fillLifecycleCopy(actions.remindOnDate, {
+          time,
+          date: `${at.getDate()}/${at.getMonth() + 1}`,
+        });
+  };
+
   const confirmRemind = () => {
     if (!reminding) return;
     const { id, title } = reminding;
@@ -344,7 +390,7 @@ export function useItemRemoval({
         setRemindState("confirm");
         const names = recipientsOf(id);
         const when = result.nextRemindAt
-          ? new Date(result.nextRemindAt).toLocaleString()
+          ? remindClock(result.nextRemindAt)
           : "";
         toast.success(
           names.length > 0
@@ -364,8 +410,16 @@ export function useItemRemoval({
         const failure = classifyRemindError(error);
         if (failure.kind === "tooSoon") {
           setRemindWhen(
+            failure.nextRemindAt ? remindClock(failure.nextRemindAt) : null,
+          );
+          // The limit is 24 hours, so the last reminder went out a day before the next is possible.
+          setRemindedAt(
             failure.nextRemindAt
-              ? new Date(failure.nextRemindAt).toLocaleString()
+              ? remindClock(
+                  new Date(
+                    new Date(failure.nextRemindAt).getTime() - 86_400_000,
+                  ).toISOString(),
+                )
               : null,
           );
           setRemindState("tooSoon");
@@ -412,7 +466,14 @@ export function useItemRemoval({
         !candidate.isArchived &&
         candidate.canAddItems !== false,
     )
-    .map((candidate) => ({ id: candidate.id, title: candidate.title }));
+    .map((candidate) => ({
+      id: candidate.id,
+      title: candidate.title,
+      ...(candidate.itemKeyPrefix
+        ? { keyPrefix: candidate.itemKeyPrefix }
+        : {}),
+      ...(candidate.departmentName ? { space: candidate.departmentName } : {}),
+    }));
 
   const preview: MovePreviewView | null = useMemo(() => {
     if (!moving || !moveTarget || !target.board) return null;
@@ -501,6 +562,19 @@ export function useItemRemoval({
   const dependencyLinks = (archiveLinks.data ?? []).filter(
     (link) => link.relation !== "related",
   );
+  // The refusal names the item that blocks the move and offers to open it.
+  const blocker =
+    (moveLinks.data ?? []).find((link) => link.relation === "blocked-by") ??
+    (moveLinks.data ?? []).find((link) => link.relation !== "related");
+  const duplicateCardView = duplicating
+    ? findCard(sourceBoard as FullBoardResponse, duplicating.id)?.card
+    : undefined;
+  const deleteCardView = deleting
+    ? findCard(sourceBoard as FullBoardResponse, deleting.id)?.card
+    : undefined;
+  const deleteDependencies = (deleteLinks.data ?? []).filter(
+    (link) => link.relation !== "related",
+  );
 
   return {
     requestArchive: (itemId) => {
@@ -519,6 +593,7 @@ export function useItemRemoval({
         );
         return;
       }
+      setDeleteStatus("idle");
       setDeleting({ id: itemId, title: titleOf(itemId), version });
     },
     requestMove: (itemId) => {
@@ -592,8 +667,18 @@ export function useItemRemoval({
         />
         <DeleteItemDialog
           copy={copy}
-          actions={actions}
+          impact={{
+            subItems:
+              deleting?.subItems ?? deleteCardView?.childProgress?.total ?? 0,
+            dependencies: {
+              count: deleteDependencies.length,
+              keys: deleteDependencies
+                .map((link) => link.item.key)
+                .filter((key): key is string => Boolean(key)),
+            },
+          }}
           title={deleting?.title ?? ""}
+          status={deleteStatus}
           open={deleting !== null}
           onCancel={() => setDeleting(null)}
           onConfirm={confirmDelete}
@@ -606,6 +691,15 @@ export function useItemRemoval({
           open={moving !== null}
           preview={preview}
           status={moveStatus}
+          blockingKey={blocker?.item.key ?? null}
+          onOpenBlocking={
+            onOpenItem && blocker
+              ? () => {
+                  closeMove();
+                  onOpenItem(boardId, blocker.item.id);
+                }
+              : undefined
+          }
           onPick={(id) => {
             setMoveStatus("idle");
             setMoveTarget(id);
@@ -631,7 +725,21 @@ export function useItemRemoval({
         />
         <DuplicateItemDialog
           copy={actions}
-          defaultName={`${duplicating?.title ?? ""} (${copySuffix(actions.locale)})`}
+          summary={
+            duplicateCardView
+              ? {
+                  fields: Object.values(duplicateCardView.fieldValues).filter(
+                    (value) =>
+                      value !== null && value !== undefined && value !== "",
+                  ).length,
+                  checklists: duplicateCardView.checklists.length,
+                  subItems: duplicateCardView.childProgress?.total ?? 0,
+                  labels: duplicateCardView.labels.length,
+                  assignees: duplicateCardView.members.map((m) => m.name),
+                }
+              : undefined
+          }
+          defaultName={copyName(duplicating?.title ?? "", actions.locale)}
           open={duplicating !== null}
           busy={duplicateCard.isPending}
           failed={duplicateCard.isError}
@@ -649,15 +757,28 @@ export function useItemRemoval({
           recipients={reminding ? recipientsOf(reminding.id) : []}
           state={remindState}
           nextRemindAt={remindWhen}
+          remindedAt={remindedAt}
           open={reminding !== null}
           onCancel={() => setReminding(null)}
           onConfirm={confirmRemind}
+          // Nobody else is in charge: the item opens where the assignees are set.
+          onAssign={
+            onOpenItem && reminding
+              ? () => {
+                  const { id } = reminding;
+                  setReminding(null);
+                  onOpenItem(boardId, id);
+                }
+              : undefined
+          }
         />
       </>
     ),
   };
 }
 
-function copySuffix(locale: string): string {
-  return locale === "vi" ? "bản sao" : "copy";
+/** "<title> (copy)", the title shortened so the name stays within the title limit. */
+function copyName(title: string, locale: string): string {
+  const suffix = ` (${locale === "vi" ? "bản sao" : "copy"})`;
+  return `${title.slice(0, ITEM_TITLE_MAX_LENGTH - suffix.length)}${suffix}`;
 }

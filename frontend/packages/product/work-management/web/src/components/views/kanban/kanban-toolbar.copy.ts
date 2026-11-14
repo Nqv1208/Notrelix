@@ -40,13 +40,6 @@ export const en = {
     label: "Group by",
   },
   addItem: "Add item",
-  noResults: {
-    title: "No items match the filter",
-    hidden_one: "{{count}} board item is hidden",
-    hidden_other: "{{count}} board items are hidden",
-    clear: "Clear filter",
-  },
-  separator: " · ",
 };
 
 export type KanbanToolbarCopy = typeof en;
@@ -84,14 +77,6 @@ export const vi: KanbanToolbarCopy = {
     label: "Nhóm theo",
   },
   addItem: "Thêm công việc",
-  noResults: {
-    title: "Không có việc khớp bộ lọc",
-    // Vietnamese has no singular/plural distinction; both forms stay complete.
-    hidden_one: "{{count}} việc của board đang bị ẩn",
-    hidden_other: "{{count}} việc của board đang bị ẩn",
-    clear: "Bỏ lọc",
-  },
-  separator: " · ",
 };
 
 export function kanbanToolbarCopy(locale: "vi" | "en"): KanbanToolbarCopy {

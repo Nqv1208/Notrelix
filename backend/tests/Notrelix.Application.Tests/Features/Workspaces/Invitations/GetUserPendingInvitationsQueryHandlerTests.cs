@@ -86,6 +86,56 @@ public class GetUserPendingInvitationsQueryHandlerTests : AcceptInvitationHandle
         IdentityUserFactsMock.Verify(f => f.FindByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task AnInvitationThatRanOut_IsLeftOut_WhileAnUnexpiredOneStays()
+    {
+        StoredUser();
+        SetupWorkspaces(CreateWorkspace(TestWorkspaceId));
+        var ranOut = CreateInvitation(tokenHash: Digest(1), createdAt: TestNow.AddDays(-10), expiry: TimeSpan.FromDays(7));
+        var open = CreateInvitation(tokenHash: Digest(2), createdAt: TestNow.AddDays(-1), expiry: TimeSpan.FromDays(7));
+        SetupInvitations(ranOut, open);
+
+        var result = await Read();
+
+        result.Data!.Select(d => d.Id).Should().Equal(open.Id);
+    }
+
+    [Fact]
+    public async Task AnInvitationToAnArchivedWorkspace_IsLeftOut()
+    {
+        StoredUser();
+        SetupWorkspaces(CreateWorkspace(TestWorkspaceId, isArchived: true));
+        SetupInvitations(CreateInvitation());
+
+        (await Read()).Data.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task AnInvitationToADeletedWorkspace_IsLeftOut()
+    {
+        StoredUser();
+        var deleted = CreateWorkspace(TestWorkspaceId);
+        deleted.Delete(TestUserId, TestNow.AddMinutes(5));
+        SetupWorkspaces(deleted);
+        SetupInvitations(CreateInvitation());
+
+        (await Read()).Data.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task AnInvitationToAnotherActiveWorkspace_StaysWhenOneToAnArchivedWorkspaceIsLeftOut()
+    {
+        StoredUser();
+        var archivedId = Guid.CreateVersion7();
+        var activeId = Guid.CreateVersion7();
+        SetupWorkspaces(CreateWorkspace(archivedId, isArchived: true), CreateWorkspace(activeId));
+        var toArchived = CreateInvitation(archivedId, tokenHash: Digest(1));
+        var toActive = CreateInvitation(activeId, tokenHash: Digest(2));
+        SetupInvitations(toArchived, toActive);
+
+        (await Read()).Data!.Select(d => d.Id).Should().Equal(toActive.Id);
+    }
+
     // An unconfirmed address is answered with an empty list by the handler, so the pipeline must not refuse the
     // request first (a 403 would show the rail an error where it should show "nothing waiting").
     [Fact]

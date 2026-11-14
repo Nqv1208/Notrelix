@@ -6,6 +6,7 @@ using Notrelix.Application.Features.Collaboration.Comments.Commands.ResolveComme
 using Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment;
 using Notrelix.Application.Features.Collaboration.Comments.Services;
 using Notrelix.Domain.Collaboration.Comments;
+using Notrelix.Domain.Collaboration.Comments.Events;
 using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Application.Tests.Features.Collaboration;
@@ -29,13 +30,19 @@ public class CommentAuthorizationTests
     private readonly Mock<ICommentTargetAccess> _access = new();
     private bool _canView = true;
     private bool _canEdit;
+    private bool _canModerate;
 
     public CommentAuthorizationTests()
     {
         _clock.Setup(c => c.UtcNow).Returns(Now);
         _context.Setup(c => c.Comments).Returns(TestDbSet.Create(_rows).Object);
         _access.Setup(a => a.HasAsync(It.IsAny<ResourceRef>(), It.IsAny<CommentTargetRight>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ResourceRef _, CommentTargetRight right, CancellationToken _) => right == CommentTargetRight.View ? _canView : _canEdit);
+            .ReturnsAsync((ResourceRef _, CommentTargetRight right, CancellationToken _) => right switch
+            {
+                CommentTargetRight.View => _canView,
+                CommentTargetRight.Moderate => _canModerate,
+                _ => _canEdit,
+            });
     }
 
     private Comment Thread(string kind = "work-management.board-item")
@@ -59,8 +66,8 @@ public class CommentAuthorizationTests
         _user.Setup(u => u.UserId).Returns(actor);
         return action switch
         {
-            "edit" => new UpdateCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new UpdateCommentCommand(commentId, "Changed"), default),
-            "delete" => new DeleteCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new DeleteCommentCommand(commentId), default),
+            "edit" => new UpdateCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new UpdateCommentCommand(commentId, "Changed", 1), default),
+            "delete" => new DeleteCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new DeleteCommentCommand(commentId, 1), default),
             "resolve" => new ResolveCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new ResolveCommentCommand(commentId), default),
             _ => new ReopenCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new ReopenCommentCommand(commentId), default),
         };
@@ -106,7 +113,7 @@ public class CommentAuthorizationTests
         var act = () => Run(action, _author, comment.Id);
 
         // Identical to what the pipeline says for a missing comment, so a hidden one cannot be told apart.
-        var pipeline = new UpdateCommentCommand(comment.Id, "x").Resource;
+        var pipeline = new UpdateCommentCommand(comment.Id, "x", 1).Resource;
         (await act.Should().ThrowAsync<NotFoundException>()).Which.Message
             .Should().Be(new NotFoundException(pipeline.Kind.ToString(), pipeline.ResourceId).Message);
     }
@@ -119,7 +126,46 @@ public class CommentAuthorizationTests
         var act = () => Run("edit", _author, missing);
 
         (await act.Should().ThrowAsync<NotFoundException>()).Which.Message
-            .Should().Be(new NotFoundException(new UpdateCommentCommand(missing, "x").Resource.Kind.ToString(), missing).Message);
+            .Should().Be(new NotFoundException(new UpdateCommentCommand(missing, "x", 1).Resource.Kind.ToString(), missing).Message);
+    }
+
+    [Fact]
+    public async Task Moderator_MayDeleteAnotherPersonsComment_AndTheDomainRecordsThemAsActor()
+    {
+        _canModerate = true;
+        var comment = Thread();
+
+        (await Run("delete", _other, comment.Id)).Succeeded.Should().BeTrue();
+
+        comment.IsDeleted.Should().BeTrue();
+        comment.DomainEvents.OfType<CommentDeletedDomainEvent>().Should().ContainSingle(e => e.DeletedBy == _other);
+    }
+
+    [Fact]
+    public async Task Moderator_MayNotEditAnotherPersonsComment()
+    {
+        _canModerate = true;
+        _canEdit = true;
+        var comment = Thread();
+        var version = comment.Version;
+
+        var act = () => Run("edit", _other, comment.Id);
+
+        (await act.Should().ThrowAsync<ForbiddenException>()).Which.Code.Should().Be(CommentAccessRules.AuthorOnlyCode);
+        comment.Version.Should().Be(version);
+    }
+
+    [Fact]
+    public async Task Moderator_WithoutViewOfTheTarget_IsNotFound()
+    {
+        _canView = false;
+        _canModerate = true;
+        var comment = Thread("documents.page");
+
+        var act = () => Run("delete", _other, comment.Id);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+        comment.IsDeleted.Should().BeFalse();
     }
 
     [Theory]
@@ -174,7 +220,7 @@ public class CommentAuthorizationTests
     [Fact]
     public void TheWorkspaceGate_IsNoLongerOwnerOnly()
     {
-        new UpdateCommentCommand(Guid.CreateVersion7(), "x").Action.Should().NotBe(PermissionAction.UpdateItem);
-        new DeleteCommentCommand(Guid.CreateVersion7()).Action.Should().NotBe(PermissionAction.UpdateItem);
+        new UpdateCommentCommand(Guid.CreateVersion7(), "x", 1).Action.Should().NotBe(PermissionAction.UpdateItem);
+        new DeleteCommentCommand(Guid.CreateVersion7(), 1).Action.Should().NotBe(PermissionAction.UpdateItem);
     }
 }
