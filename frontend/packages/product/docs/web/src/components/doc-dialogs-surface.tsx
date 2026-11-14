@@ -22,7 +22,7 @@ import type {
 import { useModalFocus } from "./doc-share-dialog-surface";
 
 export const OUTLINE =
-  "inline-flex h-8 items-center gap-1.5 rounded-[7px] border border-line-strong bg-doc-panel px-3 text-compact leading-[1.45] font-medium text-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-default disabled:opacity-60";
+  "inline-flex h-8 max-sm:h-11 items-center gap-1.5 rounded-[7px] border border-line-strong bg-doc-panel px-3 text-compact leading-[1.45] font-medium text-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-default disabled:opacity-60";
 
 export const PRIMARY = cn(
   OUTLINE,
@@ -73,7 +73,7 @@ export function DialogFrame({
             type="button"
             aria-label={closeLabel}
             onClick={onClose}
-            className="ml-auto grid size-8 shrink-0 place-items-center rounded-[7px] text-meta-foreground outline-none hover:bg-state-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
+            className="ml-auto grid size-8 shrink-0 place-items-center max-sm:size-11 rounded-[7px] text-meta-foreground outline-none hover:bg-state-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             <X aria-hidden="true" className="size-4 stroke-[1.8]" />
           </button>
