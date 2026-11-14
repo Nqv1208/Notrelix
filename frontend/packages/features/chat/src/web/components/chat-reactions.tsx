@@ -49,10 +49,8 @@ export function ReactionChips({
       role="group"
       aria-label={copy.reactions.pickerLabel}
       className={cn(
-        "relative z-0 mt-1 mb-1 flex max-w-full flex-wrap items-center gap-1 max-xl:mt-2 max-xl:mb-0 max-xl:gap-1.5",
-        align === "end"
-          ? "justify-end pe-2.5 max-xl:pe-0"
-          : "justify-start ps-2.5 max-xl:ps-0",
+        "relative z-0 mt-2 flex max-w-full flex-wrap items-center gap-1.5",
+        align === "end" ? "justify-end" : "justify-start",
       )}
       data-testid="chat-reactions"
       data-align={align}
@@ -75,7 +73,7 @@ export function ReactionChips({
             }
             onClick={() => onToggle(reaction.emoji, !reaction.reactedByMe)}
             className={cn(
-              "inline-flex h-[22px] items-center gap-[3px] rounded-full border-[1.5px] px-1.5 text-xs leading-[1.45] tabular-nums shadow-xs transition-colors max-xl:h-[26px] max-xl:gap-[5px] max-xl:border max-xl:px-[9px] max-xl:text-[12.5px] max-xl:font-semibold max-xl:shadow-none focus-visible:ring-focus-ring focus-visible:outline-none motion-reduce:transition-none",
+              "inline-flex h-[26px] items-center gap-[5px] rounded-full border px-[9px] text-[12.5px] leading-[1.45] font-semibold tabular-nums transition-colors focus-visible:ring-focus-ring focus-visible:outline-none motion-reduce:transition-none",
               reaction.reactedByMe
                 ? "border-primary bg-state-selected text-state-selected-foreground"
                 : "border-input bg-card text-muted-foreground hover:bg-muted",

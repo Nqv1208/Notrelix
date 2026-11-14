@@ -156,18 +156,18 @@ export function formatFullTime(iso: string, locale: string, timeZone?: string) {
   return formatter("full", locale, timeZone).format(new Date(iso));
 }
 
-/**
- * The corner radii of a bubble in its group (Messenger): 18 px all round, with the corners toward the
- * author's edge reduced to 6 px where the bubble touches the one above or below it.
- */
+/** Bubble corners: 14 px all round; only the last bubble of a group gets the 6 px tail on the author's side. */
 export function bubbleShape(
   isOwn: boolean,
-  continued: boolean,
+  _continued: boolean,
   groupEnd: boolean,
 ): string {
-  const top = continued ? (isOwn ? "rounded-se-sm" : "rounded-ss-sm") : null;
-  const bottom = groupEnd ? null : isOwn ? "rounded-ee-sm" : "rounded-es-sm";
-  return cn("rounded-2xl", top, bottom);
+  const tail = groupEnd
+    ? isOwn
+      ? "rounded-ee-[6px]"
+      : "rounded-es-[6px]"
+    : null;
+  return cn("rounded-[14px]", tail);
 }
 
 /** The width a side action bar needs beside the bubble; with less room it sits above the bubble. */
@@ -179,7 +179,7 @@ const LONG_PRESS_SLOP_PX = 10;
 
 /** The avatar column of someone else's messages; rows without the avatar keep the gutter so the bubbles line up. */
 const GUTTER =
-  "w-7 shrink-0 xl:group-has-[[data-testid=chat-reactions]]/row:mb-[30px]";
+  "w-7 shrink-0 group-has-[[data-testid=chat-reactions]]/row:mb-[34px]";
 
 /** A message the server stored: a bubble, a tombstone, or a system line. */
 export function ChatMessageRow({

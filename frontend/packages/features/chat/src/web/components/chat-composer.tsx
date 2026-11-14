@@ -543,7 +543,7 @@ export function ChatComposer({
         ) : (
           <form
             className={cn(
-              "flex flex-col overflow-hidden rounded-[26px] max-xl:rounded-[22px] border border-input bg-card shadow-xs transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/30 motion-reduce:transition-none",
+              "flex flex-col overflow-hidden rounded-[26px] border border-input bg-card shadow-xs transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/30 motion-reduce:transition-none",
               disabled && "opacity-60",
               dragging && "border-ring ring-[3px] ring-ring/30",
             )}
@@ -591,7 +591,7 @@ export function ChatComposer({
                 {copy.attachments.dropHint}
               </p>
             ) : null}
-            <div className="flex items-end gap-0.5 p-[5px] ps-1.5 pe-1.5 max-xl:flex-wrap max-xl:items-center max-xl:gap-0 max-xl:p-0">
+            <div className="flex items-end gap-0.5 p-[5px] ps-1.5 pe-1.5">
               {attachments ? (
                 <>
                   <input
@@ -611,7 +611,7 @@ export function ChatComposer({
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    className="size-10 rounded-full text-muted-foreground hover:text-foreground max-xl:size-8 max-xl:rounded-[8px] max-xl:mt-1.5 max-xl:mb-2 max-xl:ms-2"
+                    className="size-10 rounded-full text-muted-foreground hover:text-foreground"
                     disabled={disabled}
                     aria-label={copy.attachments.attach}
                     title={copy.attachments.attach}
@@ -657,14 +657,14 @@ export function ChatComposer({
                 onSelect={(event) => syncCaret(event.currentTarget)}
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
-                className="max-h-36 min-h-10 flex-1 resize-none self-center rounded-none border-0 bg-transparent px-2 py-2.5 leading-5 max-xl:order-first max-xl:basis-full max-xl:px-3.5 max-xl:min-h-[42px] md:max-xl:min-h-14 shadow-none focus-visible:border-0 focus-visible:ring-0 md:text-sm dark:bg-transparent"
+                className="max-h-36 min-h-10 flex-1 resize-none self-center rounded-none border-0 bg-transparent px-2 py-2.5 leading-5 shadow-none focus-visible:border-0 focus-visible:ring-0 md:text-sm dark:bg-transparent"
               />
               {showMic ? (
                 <Button
                   type="button"
                   size="icon"
                   variant="ghost"
-                  className="size-10 shrink-0 rounded-full text-muted-foreground hover:text-foreground max-xl:ms-auto max-xl:me-2 max-xl:mt-1.5 max-xl:mb-2 max-xl:size-8 max-xl:rounded-[8px]"
+                  className="size-10 shrink-0 rounded-full text-muted-foreground hover:text-foreground"
                   aria-label={copy.voice.record}
                   title={copy.voice.record}
                   disabled={disabled || busy}
@@ -676,16 +676,13 @@ export function ChatComposer({
                 <Button
                   type="submit"
                   size="icon"
-                  className="size-10 shrink-0 rounded-full max-xl:mt-1.5 max-xl:mb-2 max-xl:me-2 max-xl:ms-auto max-xl:h-[34px] max-xl:w-auto max-xl:gap-1.5 max-xl:rounded-[9px] max-xl:px-3.5 max-xl:text-[13px] max-xl:font-[650]"
+                  className="size-10 shrink-0 rounded-full"
                   aria-label={copy.composer.send}
                   title={`${copy.composer.send} (Enter)`}
                   disabled={disabled || busy || tooLong || !check.ok}
                   data-has-content={check.ok ? "true" : "false"}
                 >
                   <SendHorizontal aria-hidden="true" />
-                  <span className="hidden max-xl:inline" aria-hidden="true">
-                    {copy.composer.send}
-                  </span>
                 </Button>
               )}
             </div>

@@ -139,7 +139,7 @@ export function dayLabel(
     weekday: "long",
     day: "numeric",
     month: "long",
-    year: "numeric",
+    ...(year === Number(today.slice(0, 4)) ? {} : { year: "numeric" }),
     timeZone: "UTC",
   }).format(date);
 }
@@ -390,7 +390,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
                   <li
                     key={row.key}
                     role="presentation"
-                    className="mt-1.5 mb-1 flex justify-center px-5 max-xl:my-0 max-xl:items-center max-xl:gap-3 max-xl:px-6 max-xl:py-2.5 max-xl:before:h-px max-xl:before:flex-1 max-xl:before:bg-border max-xl:before:content-[''] max-xl:after:h-px max-xl:after:flex-1 max-xl:after:bg-border max-xl:after:content-['']"
+                    className="my-1.5 flex h-6 items-center gap-3 px-5 before:h-px before:flex-1 before:bg-border before:content-[''] after:h-px after:flex-1 after:bg-border after:content-['']"
                   >
                     <span className="text-xs leading-[1.45] font-semibold whitespace-nowrap text-muted-foreground">
                       {dayLabel(row.dayKey, locale, copy, timeZone)}
@@ -422,17 +422,13 @@ export function ChatMessageList(props: ChatMessageListProps) {
                     role="separator"
                     aria-label={copy.list.newDivider}
                     data-unread-divider=""
-                    className="mt-3 mb-0.5 flex items-center gap-3 px-5 text-xs leading-[1.45] font-[650] text-destructive max-xl:my-0 max-xl:px-6 max-xl:py-2.5 max-xl:font-semibold"
+                    className="my-1.5 flex h-6 items-center gap-3 px-5 text-xs leading-[1.45] font-[650] text-destructive"
                   >
                     <span
                       className="h-px flex-1 bg-destructive/45"
                       aria-hidden="true"
                     />
                     <span>{copy.list.newDivider}</span>
-                    <span
-                      className="h-px flex-1 bg-destructive/45"
-                      aria-hidden="true"
-                    />
                   </li>
                 );
               }
