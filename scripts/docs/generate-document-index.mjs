@@ -631,6 +631,10 @@ function markdownEscape(
 ) {
   return String(value)
     .replace(
+      /\\/g,
+      "\\\\",
+    )
+    .replace(
       /\|/g,
       "\\|",
     )
