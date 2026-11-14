@@ -245,6 +245,53 @@ describe("docs web pure surfaces", () => {
     ).toBe("true");
   });
 
+  it("FUI[docs.page.toolbar:offline] turns copy, move and trash off with the connection reason while offline", () => {
+    renderPureUi(
+      <DocPageScreenSurface
+        {...docsPageScreenFileMenuScenario()}
+        callbacks={{ offline: true }}
+      />,
+    );
+    for (const name of [
+      docsCopy.fileMenu.duplicate,
+      docsCopy.fileMenu.move,
+      docsCopy.fileMenu.trash,
+    ]) {
+      const item = screen.getByRole("menuitem", { name });
+      expect(item.getAttribute("aria-disabled")).toBe("true");
+      expect(item.getAttribute("title")).toBe(docsCopy.fileMenu.offline);
+    }
+  });
+
+  it("FUI[docs.page.article:offline] turns Convert to task off with the connection reason while offline", () => {
+    renderPureUi(
+      <DocArticleSurface {...ARTICLE} callbacks={{ offline: true }} />,
+    );
+    const buttons = screen.getAllByRole("button", {
+      name: /Chuyển .* thành việc|Chuyển thành việc/,
+    });
+    expect(buttons.length).toBeGreaterThan(0);
+    for (const button of buttons) {
+      expect(button.getAttribute("aria-disabled")).toBe("true");
+      expect(button.getAttribute("title")).toBe(docsCopy.blocks.convertOffline);
+    }
+  });
+
+  it("FUI[docs.page.article:rest-failed] offers a retry for the rest of a large page and keeps the blocks shown", () => {
+    const onRetryBlocks = vi.fn();
+    renderPureUi(
+      <DocArticleSurface {...ARTICLE} callbacks={{ onRetryBlocks }} />,
+    );
+    expect(screen.getByRole("status").textContent).toContain(
+      docsCopy.blocks.restFailed,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: docsCopy.blocks.restRetry }),
+    );
+    expect(onRetryBlocks).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(HEADER.title)).toBeTruthy();
+  });
+
   it("FUI[docs.page.bar:offline] says the changes are not saved yet while the connection is gone", () => {
     renderPureUi(
       <DocPageBarSurface copy={docsCopy} header={HEADER} saveState="offline" />,

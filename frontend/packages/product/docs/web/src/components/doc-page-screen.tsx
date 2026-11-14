@@ -245,6 +245,7 @@ export function createDocPageScreen({
     const blocksQuery = usePageBlocks(workspaceId, pageId) as {
       data: Block[] | undefined;
       isLoading: boolean;
+      retryRest?: () => void;
     };
     const breadcrumbQuery = usePageBreadcrumb(workspaceId, pageId);
     const commentsQuery = usePageComments(workspaceId, pageId);
@@ -563,7 +564,14 @@ export function createDocPageScreen({
     );
     const contextKey = useMemo(
       () => ({}),
-      [host.tasks, host.tasksReady, host.board, host.boards, readablePages],
+      [
+        host.tasks,
+        host.tasksReady,
+        host.board,
+        host.boards,
+        readablePages,
+        online,
+      ],
     );
     // The page's files: uploads in flight, the stored files and their bytes.
     const rememberAttachment = useRememberPageAttachment(workspaceId, pageId);
@@ -668,9 +676,10 @@ export function createDocPageScreen({
             callbacksRef.current?.onOpenBoardPicker?.(blockId),
           onOpenComment: (id) => callbacksRef.current?.onOpenComment?.(id),
           onTodoConvert:
-            host.canEdit && host.canConvertTodo !== false
+            host.canEdit && host.canConvertTodo !== false && online
               ? (blockId) => callbacksRef.current?.onTodoConvert?.(blockId)
               : undefined,
+          offline: !online,
           onEditorCommand: (command) =>
             callbacksRef.current?.onEditorCommand?.(command),
         },
@@ -984,7 +993,8 @@ export function createDocPageScreen({
           );
         },
       });
-    const callbacks: DocPageCallbacks = {
+    const liveCallbacks: DocPageCallbacks = {
+      onRetryBlocks: blocksQuery.retryRest,
       onTitleCommit: host.canEdit ? editor.updateTitle : undefined,
       onBlockCommit: host.canEdit
         ? (blockId, text) => {
@@ -1571,6 +1581,19 @@ export function createDocPageScreen({
       },
     };
 
+    // Typing stays on while offline; moving, trashing, copying and converting wait for the connection.
+    const callbacks: DocPageCallbacks = online
+      ? liveCallbacks
+      : {
+          ...liveCallbacks,
+          offline: true,
+          onTodoConvert: undefined,
+          onTrashPage: undefined,
+          onConfirmTrashPage: undefined,
+          onMovePage: undefined,
+          onMovePageTo: undefined,
+          onDuplicatePage: undefined,
+        };
     callbacksRef.current = callbacks;
     const saveState: DocSaveState =
       editor.saveState === "error" || saver.saveState === "error"
