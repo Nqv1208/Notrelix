@@ -408,7 +408,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
                   >
                     <time
                       dateTime={row.at}
-                      className="text-[11.5px] leading-[1.45] font-semibold whitespace-nowrap tabular-nums text-muted-foreground"
+                      className="text-micro leading-[1.45] font-semibold whitespace-nowrap tabular-nums text-muted-foreground"
                     >
                       {formatClock(row.at, locale, timeZone)}
                     </time>

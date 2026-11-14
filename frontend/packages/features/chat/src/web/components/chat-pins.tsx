@@ -114,7 +114,7 @@ export function PinsPanel({
         onClose={onClose}
       />
       {items.length > 0 ? (
-        <p className="border-b border-border px-4 py-2.5 text-[13px] text-muted-foreground max-md:hidden">
+        <p className="border-b border-border px-4 py-2.5 text-compact text-muted-foreground max-md:hidden">
           {fillCopy(copy.pins.summary, { count: String(items.length) })}
         </p>
       ) : null}
@@ -162,17 +162,17 @@ export function PinsPanel({
                   <Avatar className="size-[18px]" aria-hidden="true">
                     <AvatarFallback
                       className={cn(
-                        "text-[9px] font-[650]",
+                        "text-mark-xs font-[650]",
                         avatarToneOf(pin.message.authorId),
                       )}
                     >
                       {initialsOf(author)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-[13px] font-bold">{author}</span>
+                  <span className="text-compact font-bold">{author}</span>
                   <time
                     dateTime={pin.message.createdAt}
-                    className="text-[11.5px] font-medium tracking-[.01em] text-muted-foreground tabular-nums"
+                    className="text-micro font-medium tracking-[.01em] text-muted-foreground tabular-nums"
                   >
                     {pinDayLabel(pin.message.createdAt, locale, timeZone)}
                   </time>

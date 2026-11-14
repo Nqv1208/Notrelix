@@ -117,7 +117,7 @@ export function ChatHeader({
         <ChevronLeft aria-hidden="true" />
       </Button>
       <div className="flex min-w-0 flex-1 flex-col">
-        <h1 className="flex min-w-0 items-center gap-1.5 text-lg leading-[1.45] font-[650] text-foreground max-md:text-[17px]">
+        <h1 className="flex min-w-0 items-center gap-1.5 text-lg leading-[1.45] font-[650] text-foreground max-md:text-calendar-title">
           <Icon
             className="size-4 shrink-0 text-muted-foreground"
             aria-hidden="true"
@@ -135,7 +135,7 @@ export function ChatHeader({
           ) : null}
         </h1>
         <p
-          className="truncate text-[12.5px] leading-[1.45] text-muted-foreground max-md:text-xs"
+          className="truncate text-crumb leading-[1.45] text-muted-foreground max-md:text-xs"
           title={channel.topic ?? undefined}
         >
           {channel.topic ?? copy.header.topicEmpty}

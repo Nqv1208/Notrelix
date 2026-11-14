@@ -30,7 +30,7 @@ export function ChatPanelHeader({
       data-testid="chat-panel-header"
     >
       <div className="min-w-0 flex-1">
-        <h2 className="truncate text-[17px] leading-[1.45] font-[650] md:text-base md:font-bold">
+        <h2 className="truncate text-calendar-title leading-[1.45] font-[650] md:text-base md:font-bold">
           {title}
         </h2>
         {subtitle ? (

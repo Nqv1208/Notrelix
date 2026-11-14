@@ -418,7 +418,7 @@ export function ChatMessageRow({
         <time
           dateTime={message.createdAt}
           title={fullTime}
-          className="shrink-0 text-[11.5px] font-medium tabular-nums"
+          className="shrink-0 text-micro font-medium tabular-nums"
         >
           {time}
         </time>

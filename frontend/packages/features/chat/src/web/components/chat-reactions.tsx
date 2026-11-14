@@ -73,7 +73,7 @@ export function ReactionChips({
             }
             onClick={() => onToggle(reaction.emoji, !reaction.reactedByMe)}
             className={cn(
-              "inline-flex h-[26px] items-center gap-[5px] rounded-full border px-[9px] text-[12.5px] leading-[1.45] font-semibold tabular-nums transition-colors focus-visible:ring-focus-ring focus-visible:outline-none motion-reduce:transition-none",
+              "inline-flex h-[26px] items-center gap-[5px] rounded-full border px-[9px] text-crumb leading-[1.45] font-semibold tabular-nums transition-colors focus-visible:ring-focus-ring focus-visible:outline-none motion-reduce:transition-none",
               reaction.reactedByMe
                 ? "border-primary bg-state-selected text-state-selected-foreground"
                 : "border-input bg-card text-muted-foreground hover:bg-muted",

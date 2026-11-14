@@ -80,7 +80,7 @@ const NO_FILTERS: DraftFilters = {
 };
 
 const CHIP =
-  "inline-flex h-7 items-center rounded-full border border-input bg-background px-[11px] text-[12.5px] text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring";
+  "inline-flex h-7 items-center rounded-full border border-input bg-background px-[11px] text-crumb text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring";
 const CHIP_ON = "border-primary bg-primary/10 font-semibold text-link";
 
 /**
@@ -292,7 +292,7 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
             </Button>
           </DialogClose>
           <div className="min-w-0 flex-1">
-            <DialogTitle className="truncate text-[17px] leading-[1.45] font-[650]">
+            <DialogTitle className="truncate text-calendar-title leading-[1.45] font-[650]">
               {text.title}
             </DialogTitle>
             <DialogDescription
@@ -336,7 +336,7 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
             {showResults ? (
               <span
                 aria-hidden="true"
-                className="text-[11.5px] font-medium tabular-nums text-muted-foreground"
+                className="text-micro font-medium tabular-nums text-muted-foreground"
               >
                 {hits.length}
                 {query.hasNextPage ? "+" : ""}
@@ -618,14 +618,14 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
                       <Avatar className="size-[18px]" aria-hidden="true">
                         <AvatarFallback
                           className={cn(
-                            "text-[9px] font-[650]",
+                            "text-mark-xs font-[650]",
                             avatarToneOf(hit.authorId),
                           )}
                         >
                           {initialsOf(author)}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="truncate text-[13px] font-bold">
+                      <span className="truncate text-compact font-bold">
                         {author}
                       </span>
                       <span className="inline-flex h-5 min-w-0 shrink items-center truncate rounded-full bg-muted px-[9px] text-xs font-semibold text-muted-foreground">
@@ -648,7 +648,7 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
                       <span className="flex-1" />
                       <time
                         dateTime={hit.createdAt}
-                        className="text-[11.5px] font-medium tracking-[.01em] whitespace-nowrap text-muted-foreground tabular-nums"
+                        className="text-micro font-medium tracking-[.01em] whitespace-nowrap text-muted-foreground tabular-nums"
                       >
                         {whenOf(hit.createdAt)}
                       </time>

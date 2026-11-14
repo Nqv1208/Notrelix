@@ -93,7 +93,7 @@ export function groupChannels(
 }
 
 const HEADING =
-  "-mx-2 pt-3.5 pr-3 pb-1 pl-2.5 text-[11.5px] leading-[1.45] font-[650] tracking-[.04em] text-muted-foreground uppercase";
+  "-mx-2 pt-3.5 pr-3 pb-1 pl-2.5 text-micro leading-[1.45] font-[650] tracking-[.04em] text-muted-foreground uppercase";
 
 /**
  * The channel column: the caller's channels grouped under headings, each with
@@ -127,7 +127,7 @@ export function ChatSidebar({
       className="flex min-h-0 flex-1 flex-col bg-sidebar text-sidebar-foreground"
     >
       <div className="flex items-center justify-between gap-2 px-3.5 pt-3.5 pb-2.5 max-md:h-14 max-md:px-3 max-md:py-0">
-        <h2 className="text-[15px] font-[650] max-md:text-[17px]">
+        <h2 className="text-item-heading font-[650] max-md:text-calendar-title">
           {copy.sidebar.listTitle}
         </h2>
         <div className="flex items-center gap-1">
@@ -170,7 +170,7 @@ export function ChatSidebar({
       {/* A jump-to field with no handler yet: visual only, so it is not a control. */}
       <div
         aria-hidden="true"
-        className="mx-3 mb-2 flex h-9 items-center gap-2 rounded-[10px] max-md:hidden border border-border bg-card px-2.5 text-[13px] text-muted-foreground"
+        className="mx-3 mb-2 flex h-9 items-center gap-2 rounded-[10px] max-md:hidden border border-border bg-card px-2.5 text-compact text-muted-foreground"
       >
         <Search className="size-3.5 shrink-0" />
         <span className="truncate">{copy.sidebar.jumpTo}</span>
@@ -350,7 +350,7 @@ function ChannelButton({
         <span
           aria-hidden="true"
           data-testid="chat-mention-badge"
-          className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-destructive px-1.5 text-[11.5px] font-bold text-destructive-foreground tabular-nums"
+          className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-destructive px-1.5 text-micro font-bold text-destructive-foreground tabular-nums"
         >
           @{mentionBadge}
         </span>
@@ -358,7 +358,7 @@ function ChannelButton({
       {badge ? (
         <span
           aria-hidden="true"
-          className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-brand-solid px-1.5 text-[11.5px] font-bold text-brand-solid-foreground tabular-nums"
+          className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-brand-solid px-1.5 text-micro font-bold text-brand-solid-foreground tabular-nums"
         >
           {badge}
         </span>
