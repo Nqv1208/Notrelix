@@ -34,7 +34,8 @@ try {
   await down();
   await assertPortsAvailable();
   await up();
-  await waitForUrl(realBackend.healthUrl);
+  // A cold dotnet SDK container restores and builds first; allow it ten minutes.
+  await waitForUrl(realBackend.healthUrl, 600_000);
   await runFrontend("pnpm", ["--filter", "@notrelix/app-web", "build"], {
     env: webEnv,
   });
