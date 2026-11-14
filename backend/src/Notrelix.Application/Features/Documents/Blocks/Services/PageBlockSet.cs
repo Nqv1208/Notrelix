@@ -71,7 +71,16 @@ internal sealed class PageBlockSet
     {
         var (lower, upper) = Bounds(Siblings(parentId, moving), afterBlockId, beforeBlockId);
         if (string.IsNullOrWhiteSpace(explicitPosition))
+        {
+            var generated = KeyBetween(lower, upper);
+            if (generated.Value.Length <= MaxKeyLength) return generated;
+
+            // Dense inserts at one spot lengthen the key; the column holds 50 characters. Re-space this sibling set
+            // (order unchanged, so no version bump and no event), then take the key from the roomy bounds.
+            Rebalance(parentId, moving);
+            (lower, upper) = Bounds(Siblings(parentId, moving), afterBlockId, beforeBlockId);
             return KeyBetween(lower, upper);
+        }
 
         FractionalIndex key;
         try
@@ -85,6 +94,8 @@ internal sealed class PageBlockSet
 
         if (afterBlockId is null && beforeBlockId is null)
             throw new Notrelix.Application.Common.Exceptions.ValidationException("A position key needs the sibling it goes next to.");
+        if (key.Value.Length > MaxKeyLength)
+            throw new Notrelix.Application.Common.Exceptions.ValidationException($"'{explicitPosition}' is longer than {MaxKeyLength} characters.");
         if (!IsBetween(key, lower, upper))
             throw new Notrelix.Application.Common.Exceptions.ValidationException($"'{explicitPosition}' does not lie between the siblings the request names.");
         return key;
@@ -104,6 +115,18 @@ internal sealed class PageBlockSet
         {
             throw new ConflictException("The blocks around the position share a sort key. Reload and retry.", PositionConflictCode);
         }
+    }
+
+    /// <summary>The longest sort key a placement may produce or accept (the column holds 50).</summary>
+    public const int MaxKeyLength = 32;
+
+    /// <summary>Gives the siblings under a parent short, evenly spaced keys in their current order.</summary>
+    private void Rebalance(Guid? parentId, Guid? moving)
+    {
+        var siblings = Siblings(parentId, moving);
+        if (siblings.Count == 0) return;
+        var keys = FractionalIndexGenerator.GenerateNKeysBetween(null, null, siblings.Count);
+        for (var i = 0; i < siblings.Count; i++) siblings[i].Rekey(keys[i]);
     }
 
     /// <summary>The error code of a position that two blocks would share.</summary>
