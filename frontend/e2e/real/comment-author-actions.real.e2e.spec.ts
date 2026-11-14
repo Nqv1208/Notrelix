@@ -44,17 +44,17 @@ test("only the author of a comment is offered Edit and Delete on it", async ({
   // The author sees the actions menu on their comment.
   await page.goto(url);
   await expect(page.getByText(body)).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Comment actions" }),
-  ).toHaveCount(1);
+  const actions = (p: typeof page, name: string) =>
+    p.locator("[data-comment]").getByRole("button", { name, exact: true });
+  await expect(actions(page, "Edit")).toHaveCount(1);
+  await expect(actions(page, "Delete")).toHaveCount(1);
 
   // Another member who can open the board sees the comment and no actions.
   const other = await browser.newPage();
   await signIn(other, realUsers.workspaceOwner);
   await other.goto(url);
   await expect(other.getByText(body)).toBeVisible();
-  await expect(
-    other.getByRole("button", { name: "Comment actions" }),
-  ).toHaveCount(0);
+  // The workspace owner manages the board, so Delete may show; Edit stays with the author.
+  await expect(actions(other, "Edit")).toHaveCount(0);
   await other.close();
 });

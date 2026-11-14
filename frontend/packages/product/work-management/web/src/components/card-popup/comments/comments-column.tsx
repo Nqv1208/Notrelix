@@ -42,8 +42,9 @@ import { IconBtn, PanelBtn, PersonMark, SmallBtn } from "../popup-ui";
 
 const FEED_LINK =
   "text-[12.5px] text-brand-subtle-foreground underline decoration-1 underline-offset-2";
+// Below 600 px an invisible 44 x 44 overlay is the hit area; the drawn glyph and spacing do not change.
 const TEXT_ACTION =
-  "cursor-pointer border-0 bg-transparent p-0 text-[12.5px] text-muted-foreground underline focus-visible:outline-2 focus-visible:outline-primary";
+  "relative cursor-pointer border-0 bg-transparent p-0 text-[12.5px] text-muted-foreground underline focus-visible:outline-2 focus-visible:outline-primary max-[599px]:before:absolute max-[599px]:before:left-1/2 max-[599px]:before:top-1/2 max-[599px]:before:min-h-11 max-[599px]:before:min-w-11 max-[599px]:before:-translate-x-1/2 max-[599px]:before:-translate-y-1/2 max-[599px]:before:content-['']";
 
 /** The body with the names of people mentioned drawn in the link ink. */
 function Mentions({ body, names }: { body: string; names: readonly string[] }) {
@@ -683,6 +684,7 @@ export function CommentsColumn() {
     useCardPopup();
   const t = copy.related.comments;
   const [details, setDetails] = useState(false);
+  const [showResolved, setShowResolved] = useState(false);
   const create = mode === "create";
   const { top, repliesOf, orphans } = splitThreads(data.updates);
   const names = (data.people?.people ?? card.members).map((p) => p.name);
@@ -708,6 +710,13 @@ export function CommentsColumn() {
       event,
     })),
   ].sort((a, b) => b.at.localeCompare(a.at));
+  // A resolved thread leaves the feed until Show resolved is on; a placeholder is never resolved.
+  const isHidden = (entry: (typeof feed)[number]) =>
+    !showResolved && entry.update?.resolved === true && !entry.deleted;
+  const resolvedCount = feed.filter(
+    (entry) => entry.update?.resolved === true && !entry.deleted,
+  ).length;
+  const visibleFeed = feed.filter((entry) => !isHidden(entry));
   const loading = data.updatesLoading || data.activityLoading;
 
   return (
@@ -735,6 +744,17 @@ export function CommentsColumn() {
         </SmallBtn>
       </div>
       <Composer />
+      {resolvedCount > 0 ? (
+        <label className="flex items-center gap-1.5 text-[12.5px] leading-[1.45] text-muted-foreground max-md:min-h-11">
+          <input
+            type="checkbox"
+            checked={showResolved}
+            onChange={(event) => setShowResolved(event.target.checked)}
+            className="size-3.5 accent-primary"
+          />
+          {t.showResolved} ({resolvedCount})
+        </label>
+      ) : null}
       {create ? (
         <div className="flex flex-col items-center gap-2 px-3 py-8 text-center text-[13.5px] text-muted-foreground">
           <span className="grid size-11 place-items-center rounded-full bg-state-hover-strong text-meta-foreground">
@@ -745,7 +765,7 @@ export function CommentsColumn() {
           </b>
           <span className="leading-[1.45]">{t.createBody}</span>
         </div>
-      ) : loading && feed.length === 0 ? (
+      ) : loading && visibleFeed.length === 0 ? (
         <FeedSkeleton label={t.loading} />
       ) : (
         <div className="mt-1 flex flex-col gap-3.5" data-comment-feed="">
@@ -787,7 +807,9 @@ export function CommentsColumn() {
               }
             />
           ) : null}
-          {feed.length === 0 && !data.activityError && !data.updatesError ? (
+          {visibleFeed.length === 0 &&
+          !data.activityError &&
+          !data.updatesError ? (
             <FeedNotice
               icon={<MessageCircle aria-hidden="true" className="size-5" />}
               title={t.emptyTitle}
@@ -798,7 +820,7 @@ export function CommentsColumn() {
               }
             />
           ) : null}
-          {feed.map((entry) =>
+          {visibleFeed.map((entry) =>
             entry.update ? (
               <CommentEntry
                 key={entry.update.id}
