@@ -54,9 +54,13 @@ function formatEntry(entry) {
  */
 export function registerManifestEntries(rootDir, entries, anchor) {
   const path = manifestPath(rootDir);
-  if (!existsSync(path)) return false;
-
-  const source = readFileSync(path, "utf8");
+  let source;
+  try {
+    source = readFileSync(path, "utf8");
+  } catch (err) {
+    if (err.code === "ENOENT") return false;
+    throw err;
+  }
   const index = source.search(anchor);
   if (index === -1) {
     throw new Error(

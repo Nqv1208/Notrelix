@@ -1,17 +1,14 @@
 #!/usr/bin/env node
 /* global process */
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const args = process.argv
-  .slice(2)
-  .map((a) => `"${a}"`)
-  .join(" ");
+const args = process.argv.slice(2);
 
 try {
-  execSync(`pnpm exec tsx src/run-checks.ts ${args}`, {
+  execFileSync("pnpm", ["exec", "tsx", "src/run-checks.ts", ...args], {
     cwd: join(__dirname, ".."),
     stdio: "inherit",
   });
