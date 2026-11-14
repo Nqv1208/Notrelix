@@ -29,7 +29,7 @@ export interface ReactionChipsProps {
 }
 
 /**
- * The reaction summary of a message: compact pills that overlap the bottom edge of the bubble (Messenger
+ * The reaction summary of a message: compact pills below the bubble with a small gap, never overlapping it (Messenger
  * style), one toggle per emoji (aria-pressed says whether the caller reacted; the count shows above one),
  * and a "who reacted" popover.
  */
@@ -49,7 +49,7 @@ export function ReactionChips({
       role="group"
       aria-label={copy.reactions.pickerLabel}
       className={cn(
-        "relative z-0 -mt-1.5 flex max-w-full flex-wrap items-center gap-1",
+        "relative z-0 mt-1 flex max-w-full flex-wrap items-center gap-1",
         align === "end" ? "justify-end pe-2" : "justify-start ps-2",
       )}
       data-testid="chat-reactions"

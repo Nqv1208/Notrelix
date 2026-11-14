@@ -643,6 +643,7 @@ export function ChatComposer({
                 aria-haspopup={mentions ? "listbox" : undefined}
                 aria-label={label}
                 aria-describedby={hintId}
+                aria-keyshortcuts="Enter Shift+Enter"
                 aria-invalid={tooLong || undefined}
                 placeholder={label}
                 value={value}
@@ -704,7 +705,7 @@ export function ChatComposer({
                 ? fillCopy(copy.composer.slowMode, {
                     wait: formatWait(copy, slowModeSeconds),
                   })
-                : copy.composer.hint)}
+                : null)}
           </span>
           {showsCounter(value) ? (
             <span className="shrink-0 tabular-nums" aria-live="off">

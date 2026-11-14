@@ -1148,9 +1148,6 @@ export function ChatWorkspace({
     [viewerId, people, channels.data, browse.data, onOpenChannel],
   );
 
-  const viewerName = people.get(viewerId);
-  const viewer =
-    viewerId && viewerName ? { id: viewerId, name: viewerName } : null;
   // On a narrow screen with no channel open, the list is the page.
   const listOnly =
     isMobile && channelId === null && (channels.data?.length ?? 0) > 0;
@@ -1242,7 +1239,6 @@ export function ChatWorkspace({
       }}
       onJoin={(id) => handleJoin(id, () => onOpenChannel(id))}
       onRetry={() => void channels.refetch()}
-      viewer={viewer}
     />
   );
 

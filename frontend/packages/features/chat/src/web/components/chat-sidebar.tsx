@@ -7,10 +7,9 @@ import {
   Search,
   Settings,
 } from "lucide-react";
-import { Avatar, AvatarFallback, Button, Skeleton, cn } from "@notrelix/ui-web";
+import { Button, Skeleton, cn } from "@notrelix/ui-web";
 import type { ChatChannel } from "../../core/types/chat";
 import type { ChatCopy } from "./chat.copy";
-import { avatarToneOf, initialsOf } from "./chat-initials";
 import { fillCopy, pluralCopy } from "./use-chat-copy";
 import {
   ChatConversationSection,
@@ -25,12 +24,6 @@ export interface ChannelUnread {
 }
 
 export type ChannelListStatus = "loading" | "ready" | "error";
-
-/** The caller, shown in the footer when the host knows their name. */
-export interface ChatSidebarViewer {
-  readonly id: string;
-  readonly name: string;
-}
 
 export interface ChatSidebarProps {
   readonly channels: readonly ChatChannel[];
@@ -55,8 +48,6 @@ export interface ChatSidebarProps {
   readonly onJoin: (channelId: string) => void;
   readonly onRetry: () => void;
   readonly joiningId: string | null;
-  /** The caller; the footer is left out when it is null. */
-  readonly viewer?: ChatSidebarViewer | null;
   /** The direct and group conversations section; left out when the host does not offer conversations. */
   readonly conversations?: ChatConversationListView | null;
   /** The category names by group id (`Chat.ChannelGroups.List`); a group without one keeps the numbered fallback. */
@@ -107,8 +98,7 @@ const HEADING =
 /**
  * The channel column: the caller's channels grouped under headings, each with
  * its unread badge (muted channels are dimmed and show no badge), a lock for a
- * private channel, a browse section for public channels to join, and the
- * caller in the footer.
+ * private channel, a browse section for public channels to join.
  */
 export function ChatSidebar({
   channels,
@@ -126,7 +116,6 @@ export function ChatSidebar({
   onJoin,
   onRetry,
   joiningId,
-  viewer = null,
   conversations = null,
   groupNames,
 }: ChatSidebarProps) {
@@ -285,21 +274,6 @@ export function ChatSidebar({
           </section>
         ) : null}
       </div>
-
-      {viewer ? (
-        <div className="flex items-center gap-2.5 border-t border-border px-3 py-2.5">
-          <Avatar className="size-8" aria-hidden="true">
-            <AvatarFallback
-              className={cn("text-xs font-semibold", avatarToneOf(viewer.id))}
-            >
-              {initialsOf(viewer.name)}
-            </AvatarFallback>
-          </Avatar>
-          <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-            {viewer.name}
-          </span>
-        </div>
-      ) : null}
     </nav>
   );
 }

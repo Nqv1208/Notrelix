@@ -51,7 +51,7 @@ describe("ChatRateLimitNotice", () => {
 });
 
 describe("slow mode on the composer and the settings", () => {
-  it("shows the slow-mode hint on the composer only when it is on", () => {
+  it("shows the slow-mode hint on the composer only when it is on, and no keyboard hint", () => {
     const base = {
       channelName: "general",
       value: "",
@@ -61,7 +61,7 @@ describe("slow mode on the composer and the settings", () => {
       onSend: vi.fn(),
     };
     const { rerender } = render(<ChatComposer {...base} />);
-    expect(screen.getByText(en.composer.hint)).not.toBeNull();
+    expect(screen.queryByText(en.composer.hint)).toBeNull();
     rerender(<ChatComposer {...base} slowModeSeconds={30} />);
     expect(
       screen.getByText("Slow mode: one message every 30 s."),
