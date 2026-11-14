@@ -567,6 +567,14 @@ export function useBoardKanban(
       }),
   });
 
+  const boardTotals = {
+    total: allLanes.reduce((sum, lane) => sum + lane.total, 0),
+    filtered: allLanes.reduce(
+      (sum, lane) => sum + (lane.filteredTotal ?? lane.cards.length),
+      0,
+    ),
+  };
+
   return {
     board,
     groups,
@@ -585,21 +593,17 @@ export function useBoardKanban(
     allLanes,
     /** Lanes with the filter and search applied; `total` is the lane total. */
     lanes: filtered.lanes,
-    visibleCount: filtered.visibleCount,
-    totalCount: filtered.totalCount,
+    // A paged read: the server's sizes (items that pass the filter, items of the board), not those of the loaded pages.
+    visibleCount:
+      paging && !dateWindow ? boardTotals.filtered : filtered.visibleCount,
+    totalCount: paging && !dateWindow ? boardTotals.total : filtered.totalCount,
     filterActive: filtered.active,
     /** The status options, people and labels the filter menu offers. */
     filterChoices,
     /** A paged read: the sizes of the board and of each lane; absent when every item is loaded. */
     paging,
     /** Items of the board, and those that pass the server filter (what lanes hold plus what they could still load). */
-    boardTotals: {
-      total: allLanes.reduce((sum, lane) => sum + lane.total, 0),
-      filtered: allLanes.reduce(
-        (sum, lane) => sum + (lane.filteredTotal ?? lane.cards.length),
-        0,
-      ),
-    },
+    boardTotals,
     /** Reads the next page of a lane (`optionId` null: the lane without a value). */
     loadMoreLane: (optionId: string | null) =>
       lanePager.loadMore(laneKeyOf({ optionId })),

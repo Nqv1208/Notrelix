@@ -344,6 +344,15 @@ function pagedLanes(
     .find((column) => column.fieldType === "status");
   if (!status) return [];
   const filter = parseCompoundFilter(filterWire);
+  const personColumns = new Set(
+    store
+      .getColumns(board.id)
+      .filter(
+        (column) =>
+          column.fieldType === "user" || column.fieldType === "person",
+      )
+      .map((column) => column.id),
+  );
   const passes = (card: MockCardRecord) => {
     if (!filter || filter.conditions.length === 0) return true;
     const results = filter.conditions.map((condition) => {
@@ -352,7 +361,10 @@ function pagedLanes(
         return condition.values.includes(
           String(store.getFieldValues(card.id)[status.id] ?? ""),
         );
-      if (condition.fieldId === ASSIGNEE_FIELD_ID)
+      if (
+        condition.fieldId === ASSIGNEE_FIELD_ID ||
+        personColumns.has(condition.fieldId)
+      )
         return (card.assigneeUserIds ?? []).some((id) =>
           condition.values.includes(id),
         );

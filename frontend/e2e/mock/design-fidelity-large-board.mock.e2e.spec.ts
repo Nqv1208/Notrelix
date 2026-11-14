@@ -47,6 +47,13 @@ const MOCK = {
     banner: { x: 24, y: 246, w: 1082, h: 64 },
     retry: { w: 72.6, h: 44 },
   },
+  filt: {
+    group: { h: 40 },
+    // From the group row's own top-left: the lane count ("63 của 200") and the filtered total on the right.
+    // The name sits 11 px nearer the left in the app's shared group header (not measured here); the gap to the count is.
+    count: { gap: 8, y: 10.1, w: 70.2, h: 18.8 },
+    caption: { r: 12, y: 10.1, w: 250.9, h: 18.8 },
+  },
   jump: { w: 103.4, h: 44, r: 24, b: 20 },
   lane: {
     foot: { h: 94.1, button: { w: 144.9, h: 44 } },
@@ -106,6 +113,21 @@ async function openTable(page: Page, dark: boolean, query = "") {
     page.locator("[data-table-scroll]").getByText("Board có 5.000 việc"),
   ).toBeVisible();
   await showMore(page).filter({ hasText: "trên 200" }).scrollIntoViewIfNeeded();
+}
+
+/** Filters the board to one person through the toolbar's filter panel (the server counts the rest). */
+async function filterByPerson(page: Page, name: string) {
+  await page.getByRole("button", { name: /^Lọc/ }).first().click();
+  await page.getByRole("button", { name: "Thêm điều kiện" }).click();
+  await page
+    .getByRole("combobox")
+    .first()
+    .selectOption({ label: "Người thực hiện" });
+  await page.getByText("Giá trị", { exact: true }).first().click();
+  await page.getByRole("option", { name: new RegExp(name) }).click();
+  // The people list stays open over the panel: close it, then the panel.
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Xong" }).click();
 }
 
 /** The right edge of an element from the header row's right edge. */
@@ -184,6 +206,74 @@ for (const dark of [false, true]) {
       near(b.y, MOCK.foot.button.y - MOCK.foot.y, "button.y");
       // The artboard centres "Đã hiện N trên 200" and the button as one line; the app does the same.
       near(b.x, MOCK.foot.button.x, "button.x");
+    });
+
+    test(`lg-filt: the lane count and the filtered total come from the server (${mode})`, async ({
+      page,
+    }) => {
+      await openTable(page, dark);
+      await filterByPerson(page, "Lê Hoàng Phúc");
+      const doing = page
+        .locator("[data-table-scroll] [role=row]")
+        .filter({ hasText: "Chọn cả nhóm" })
+        .filter({ hasText: "Đang làm" })
+        .first();
+      // 63 of the 200 items in Đang làm are Phúc's, 63 of the 5,000 of the board in the open lanes: not the loaded 10.
+      const count = doing.getByText(/^63 của 200$/);
+      // The board's filtered total sits on the first group of the table (Cần làm here; the artboard's first is Đang làm).
+      const first = page
+        .locator("[data-table-scroll] [role=row]")
+        .filter({ hasText: "Đang lọc" })
+        .first();
+      const caption = first.getByText(
+        /^Đang lọc: 63 trên 5\.000 việc của board$/,
+      );
+      await expect(count).toBeVisible({ timeout: 30_000 });
+      await expect(caption).toBeVisible();
+      await expect(page.getByText("63 công việc đang hiện")).toBeVisible();
+      const g = await doing.boundingBox();
+      if (!g) throw new Error("no box");
+      near(g.height, MOCK.filt.group.h, "group.h");
+      const c = await rel(count, doing);
+      const nameRight = await doing.evaluate((row) => {
+        const walker = document.createTreeWalker(row, NodeFilter.SHOW_TEXT);
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+          if (n.textContent?.trim() !== "Đang làm") continue;
+          const range = document.createRange();
+          range.selectNodeContents(n);
+          return (
+            range.getBoundingClientRect().right - row.getBoundingClientRect().x
+          );
+        }
+        return NaN;
+      });
+      near(c.x - nameRight, MOCK.filt.count.gap, "count.gap");
+      // The count is text: its line box differs by about 1 px (13 px type, 1.5 against 1.45 leading), as in lg-more.
+      near(
+        c.y + c.h / 2,
+        MOCK.filt.count.y + MOCK.filt.count.h / 2,
+        "count.mid",
+        1,
+      );
+      near(c.w, MOCK.filt.count.w, "count.w", 1.1);
+      near(c.h, MOCK.filt.count.h, "count.h", 1.5);
+      const t = await rel(caption, first);
+      near(
+        t.y + t.h / 2,
+        MOCK.filt.caption.y + MOCK.filt.caption.h / 2,
+        "caption.mid",
+        1,
+      );
+      near(t.w, MOCK.filt.caption.w, "caption.w");
+      near(t.h, MOCK.filt.caption.h, "caption.h", 1.5);
+      // The 1182 px artboard is 4 px narrower than the app's table: the caption keeps its 12 px from the right edge.
+      const fb = (await first.boundingBox())!;
+      near(
+        fb.x + fb.width - ((await caption.boundingBox())!.x + t.w),
+        MOCK.filt.caption.r,
+        "caption.right",
+        2,
+      );
     });
 
     test(`lg-jump: "Lên đầu" sits 24 px from the right and 20 px above the bottom (${mode})`, async ({
