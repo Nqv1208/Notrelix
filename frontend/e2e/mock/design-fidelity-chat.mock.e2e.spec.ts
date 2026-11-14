@@ -229,3 +229,150 @@ test.describe("390 (Chat-List-M, Chat-Main-M)", () => {
     expect(nd.h).toBeCloseTo(24, 0);
   });
 });
+
+/**
+ * Side panels against Chat-Pins (1440), Chat-Pins-M, Chat-Thread-M and Chat-Search-M (v41 boards rendered at their own
+ * width, tolerance 1 px). The thread keeps the bubbles of Chat-Main-T's thread (Chat-Thread-T and -M draw flat messages: a
+ * board inconsistency) and the shared pill composer; the 1440 Chat-Search board is a command palette with kind tabs and a
+ * preview pane, which the app does not have: only the field, chips and result rows are compared, on the phone.
+ */
+async function pinThree(page: Page) {
+  for (let i = 0; i < 3; i++) {
+    const row = page.locator("[data-own=false]").nth(-1 - i * 2);
+    await row.scrollIntoViewIfNeeded();
+    await row.hover();
+    await row
+      .getByRole("button", { name: "Thao tác khác" })
+      .click({ force: true });
+    await page.getByRole("menuitem", { name: /Ghim tin nhắn/ }).click();
+    await page.waitForTimeout(400);
+  }
+}
+
+async function openThread(page: Page) {
+  const row = page.locator("[data-own=false]").last();
+  await row.scrollIntoViewIfNeeded();
+  await row.hover();
+  await row.getByRole("button", { name: "Thao tác khác" }).click();
+  await page.getByRole("menuitem", { name: /Trả lời trong luồng/ }).click();
+  const box = page.getByTestId("chat-thread-panel").getByRole("combobox");
+  await box.fill("Phản hồi đầu tiên trong luồng");
+  await box.press("Enter");
+  await expect(page.getByTestId("chat-thread-separator")).toBeVisible();
+}
+
+const HEADER = "[data-testid=chat-panel-header]";
+const PIN = "[data-testid=chat-pin-item]";
+
+test.describe("Pins panel (Chat-Pins 1440)", () => {
+  test("88 header, 16 title, summary strip, 12 16 rows with an 18 avatar", async ({
+    page,
+  }) => {
+    await open(page, 1440, 900, CHANNEL);
+    await pinThree(page);
+    await page.getByRole("button", { name: "Ghim" }).first().click();
+    await expect(page.locator(PIN)).toHaveCount(3);
+    expect((await box(page, "[data-testid=chat-side-panel]")).w).toBeCloseTo(
+      360,
+      0,
+    );
+    expect((await box(page, HEADER)).h).toBeCloseTo(88, 0);
+    expect(await css(page, `${HEADER} h2`, "font-size")).toBe("16px");
+    expect(await css(page, `${HEADER} h2`, "font-weight")).toBe("700");
+    const strip = page.locator("[data-testid=chat-pins-panel] > p").first();
+    expect(await strip.evaluate((e) => getComputedStyle(e).fontSize)).toBe(
+      "13px",
+    );
+    expect(await css(page, PIN, "padding")).toBe("12px 16px");
+    const av = await box(page, `${PIN} [data-slot=avatar]`);
+    expect(av.w).toBeCloseTo(18, 0);
+    expect(await css(page, `${PIN} span.font-bold`, "font-size")).toBe("13px");
+    expect(await css(page, `${PIN} p.line-clamp-3`, "line-height")).toBe(
+      "21px",
+    );
+    expect((await box(page, `${PIN} button`)).h).toBeCloseTo(28, 0);
+    await expect(page.getByRole("tablist")).toBeHidden();
+  });
+});
+
+test.describe("390 side panels (Chat-Pins-M, Chat-Thread-M, Chat-Search-M)", () => {
+  test("pins: a 56 page header with a back arrow, 17/650 title, 12 px line, no time in the footer", async ({
+    page,
+  }) => {
+    await open(page, 390, 844, CHANNEL);
+    await pinThree(page);
+    await page.getByRole("button", { name: "Ghim" }).first().click();
+    await expect(page.locator(PIN)).toHaveCount(3);
+    const head = await box(page, HEADER);
+    expect(head.h).toBeCloseTo(56, 0);
+    const back = await box(page, `${HEADER} button`);
+    expect(back.x).toBeCloseTo(12, 0);
+    expect(back.w).toBeCloseTo(32, 0);
+    expect(await css(page, `${HEADER} h2`, "font-size")).toBe("17px");
+    expect(await css(page, `${HEADER} h2`, "font-weight")).toBe("650");
+    expect(await css(page, `${HEADER} p`, "font-size")).toBe("12px");
+    expect(await css(page, PIN, "padding")).toBe("12px 16px");
+    await expect(
+      page.locator("[data-testid=chat-pins-panel] > p"),
+    ).toBeHidden();
+  });
+
+  test("thread: a 56 page header with the follow chip, a 24 high lined reply separator, the pill composer", async ({
+    page,
+  }) => {
+    await open(page, 390, 844, CHANNEL);
+    await openThread(page);
+    expect((await box(page, HEADER)).h).toBeCloseTo(56, 0);
+    expect(await css(page, `${HEADER} h2`, "font-size")).toBe("17px");
+    const chip = await box(page, `${HEADER} button[aria-pressed]`);
+    expect(chip.h).toBeCloseTo(22, 0);
+    expect(
+      parseFloat(
+        await css(page, `${HEADER} button[aria-pressed]`, "border-radius"),
+      ),
+    ).toBeGreaterThanOrEqual(11);
+    expect(await css(page, `${HEADER} button[aria-pressed]`, "font-size")).toBe(
+      "12px",
+    );
+    const sep = await box(page, "[data-testid=chat-thread-separator]");
+    expect(sep.h).toBeCloseTo(24, 0);
+    expect(
+      await css(page, "[data-testid=chat-thread-separator]", "padding"),
+    ).toBe("0px 24px");
+    const form = "[data-testid=chat-thread-panel] form:has(textarea)";
+    expect((await box(page, form)).h).toBeCloseTo(52, 0);
+    expect(await css(page, form, "border-radius")).toBe("26px");
+    await expect(page.getByRole("tablist")).toBeHidden();
+  });
+
+  test("search: a full-screen page, 56 header, 44 field radius 12, 28 filter chips, rows 12 16 with an 18 avatar", async ({
+    page,
+  }) => {
+    await open(page, 390, 844, CHANNEL);
+    await page.getByRole("button", { name: "Tìm tin nhắn" }).last().click();
+    await page.keyboard.type("Tin nhắn");
+    const dialog = "[data-slot=dialog-content]";
+    await expect(page.locator("[role=option]").first()).toBeVisible();
+    const d = await box(page, dialog);
+    expect(d.w).toBeCloseTo(390, 0);
+    expect(d.h).toBeCloseTo(844, 0);
+    expect((await box(page, `${dialog} > div:first-child`)).h).toBeCloseTo(
+      56,
+      0,
+    );
+    expect(await css(page, `${dialog} h2`, "font-size")).toBe("17px");
+    const field = `${dialog} div.h-11`;
+    expect((await box(page, field)).h).toBeCloseTo(44, 0);
+    expect(await css(page, field, "border-radius")).toBe("12px");
+    expect((await box(page, `${dialog} select`)).h).toBeCloseTo(28, 0);
+    expect(
+      parseFloat(await css(page, `${dialog} select`, "border-radius")),
+    ).toBeGreaterThanOrEqual(14);
+    const row = "[role=option]";
+    expect(await css(page, row, "padding")).toBe("12px 16px");
+    expect((await box(page, `${row} [data-slot=avatar]`)).w).toBeCloseTo(18, 0);
+    expect(await css(page, `${row} span.font-bold`, "font-size")).toBe("13px");
+    expect(await css(page, `${row} p`, "line-height")).toBe("21px");
+    expect(await css(page, `${row} mark`, "border-radius")).toBe("3px");
+  });
+});

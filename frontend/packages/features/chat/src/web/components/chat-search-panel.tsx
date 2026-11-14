@@ -1,11 +1,13 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Lock, Hash, MessageSquare, Search, Users } from "lucide-react";
+import { ChevronLeft, Search, X } from "lucide-react";
 import {
+  Avatar,
+  AvatarFallback,
   Button,
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogHeader,
   DialogTitle,
   Input,
   Label,
@@ -30,6 +32,7 @@ import {
 } from "../../core/model/search-model";
 import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
+import { avatarToneOf, initialsOf } from "./chat-initials";
 import { fillCopy, pluralCopy } from "./use-chat-copy";
 
 /** A place the caller can search in: a channel or a conversation they can read. */
@@ -76,22 +79,9 @@ const NO_FILTERS: DraftFilters = {
   mentionsMe: false,
 };
 
-function KindIcon({ kind }: { readonly kind: ChatSearchHit["spaceKind"] }) {
-  const Icon =
-    kind === "channel_private"
-      ? Lock
-      : kind === "channel_public"
-        ? Hash
-        : kind === "group"
-          ? Users
-          : MessageSquare;
-  return (
-    <Icon
-      className="size-3.5 shrink-0 text-muted-foreground"
-      aria-hidden="true"
-    />
-  );
-}
+const CHIP =
+  "inline-flex h-7 items-center rounded-full border border-input bg-background px-[11px] text-[12.5px] text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring";
+const CHIP_ON = "border-primary bg-primary/10 font-semibold text-link";
 
 /**
  * The message search (UC-CHT-H07, CHT-022). A dialog with a debounced text box (a combobox over a listbox), filters, and the hits
@@ -122,6 +112,7 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
   const [debounced, setDebounced] = useState("");
   const [draft, setDraft] = useState<DraftFilters>(NO_FILTERS);
   const [active, setActive] = useState(-1);
+  const [datesOpen, setDatesOpen] = useState(false);
   const [recent, setRecent] = useState<readonly string[]>([]);
   const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -194,6 +185,36 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
     }).format(new Date(iso));
   }
 
+  /** The board's short stamp: the time today, "Hôm qua", the weekday this week, the date before that. */
+  function whenOf(iso: string): string {
+    const zone = timeZone ? { timeZone } : {};
+    const day = (value: Date) =>
+      new Intl.DateTimeFormat("en-CA", zone).format(value);
+    const at = new Date(iso);
+    const now = new Date();
+    const age = Math.round(
+      (Date.parse(day(now)) - Date.parse(day(at))) / 86_400_000,
+    );
+    if (age <= 0)
+      return new Intl.DateTimeFormat(locale, {
+        hour: "2-digit",
+        minute: "2-digit",
+        ...zone,
+      }).format(at);
+    if (age === 1) return copy.time.yesterday;
+    if (age < 7)
+      return new Intl.DateTimeFormat(locale, {
+        weekday: "long",
+        ...zone,
+      }).format(at);
+    return new Intl.DateTimeFormat(locale, {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      ...zone,
+    }).format(at);
+  }
+
   function choose(hit: ChatSearchHit) {
     setRecent((current) => pushRecentSearch(current, typed));
     onOpenHit(hit);
@@ -252,21 +273,44 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="flex max-h-[85vh] flex-col gap-4 overflow-hidden sm:max-w-2xl"
+        showCloseButton={false}
+        className="flex flex-col gap-0 overflow-hidden p-0 max-sm:top-0 max-sm:left-0 max-sm:h-dvh max-sm:max-h-none max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none sm:max-h-[85vh] sm:max-w-[720px] sm:rounded-2xl"
         aria-describedby={`${ids}-description`}
       >
-        <DialogHeader>
-          <DialogTitle>{text.title}</DialogTitle>
-          <DialogDescription id={`${ids}-description`}>
-            {text.description}
-          </DialogDescription>
-        </DialogHeader>
+        <div className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-3 sm:px-5">
+          <DialogClose asChild>
+            <Button
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              className="order-first text-muted-foreground sm:order-last"
+              aria-label={text.close}
+              title={text.close}
+            >
+              <ChevronLeft className="sm:hidden" aria-hidden="true" />
+              <X className="max-sm:hidden" aria-hidden="true" />
+            </Button>
+          </DialogClose>
+          <div className="min-w-0 flex-1">
+            <DialogTitle className="truncate text-[17px] leading-[1.45] font-[650]">
+              {text.title}
+            </DialogTitle>
+            <DialogDescription
+              id={`${ids}-description`}
+              className="truncate text-xs leading-[1.45]"
+            >
+              {text.description}
+            </DialogDescription>
+          </div>
+        </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor={inputId}>{text.inputLabel}</Label>
-          <div className="relative">
+        <div className="shrink-0 px-4 pt-3.5 pb-2">
+          <Label htmlFor={inputId} className="sr-only">
+            {text.inputLabel}
+          </Label>
+          <div className="flex h-11 items-center gap-2 rounded-[12px] border border-input bg-background px-3 focus-within:border-primary">
             <Search
-              className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              className="size-4 shrink-0 text-muted-foreground"
               aria-hidden="true"
             />
             <Input
@@ -285,18 +329,43 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
                 showResults && active >= 0 ? optionId(active) : undefined
               }
               aria-describedby={`${ids}-hint`}
-              className="ps-9"
+              className="h-full min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 shadow-none ring-0 focus-visible:border-0 focus-visible:ring-0 [&::-webkit-search-cancel-button]:hidden"
               onChange={(event) => setTyped(event.target.value)}
               onKeyDown={handleKey}
             />
+            {showResults ? (
+              <span
+                aria-hidden="true"
+                className="text-[11.5px] font-medium tabular-nums text-muted-foreground"
+              >
+                {hits.length}
+                {query.hasNextPage ? "+" : ""}
+              </span>
+            ) : null}
+            {typed ? (
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                className="size-7 text-muted-foreground"
+                aria-label={text.clearText}
+                title={text.clearText}
+                onClick={() => {
+                  setTyped("");
+                  setDebounced("");
+                }}
+              >
+                <X aria-hidden="true" />
+              </Button>
+            ) : null}
           </div>
           <p
             id={`${ids}-hint`}
             className={cn(
               "text-xs",
               state.kind === "too-short" || state.kind === "too-long"
-                ? "text-destructive"
-                : "text-muted-foreground",
+                ? "mt-1.5 text-destructive"
+                : "sr-only",
             )}
           >
             {state.kind === "too-short"
@@ -305,12 +374,10 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
                 ? text.tooLong
                 : text.hint}
           </p>
-        </div>
 
-        <fieldset className="flex flex-wrap items-end gap-3">
-          <legend className="sr-only">{text.filtersLabel}</legend>
-          <div className="space-y-1">
-            <Label htmlFor={`${ids}-space`} className="text-xs">
+          <fieldset className="mt-2.5 flex flex-wrap items-center gap-1.5">
+            <legend className="sr-only">{text.filtersLabel}</legend>
+            <Label htmlFor={`${ids}-space`} className="sr-only">
               {text.spaceLabel}
             </Label>
             <select
@@ -319,7 +386,7 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
               onChange={(event) =>
                 setDraft({ ...draft, spaceId: event.target.value })
               }
-              className="h-9 max-w-48 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              className={cn(CHIP, "max-w-44", draft.spaceId && CHIP_ON)}
             >
               <option value="">{text.allSpaces}</option>
               {spaces.map((space) => (
@@ -328,9 +395,7 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
                 </option>
               ))}
             </select>
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor={`${ids}-author`} className="text-xs">
+            <Label htmlFor={`${ids}-author`} className="sr-only">
               {text.authorLabel}
             </Label>
             <select
@@ -339,7 +404,7 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
               onChange={(event) =>
                 setDraft({ ...draft, authorId: event.target.value })
               }
-              className="h-9 max-w-40 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              className={cn(CHIP, "max-w-40", draft.authorId && CHIP_ON)}
             >
               <option value="">{text.anyone}</option>
               {[...people.entries()].map(([id, name]) => (
@@ -348,70 +413,92 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
                 </option>
               ))}
             </select>
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor={`${ids}-from`} className="text-xs">
-              {text.fromLabel}
-            </Label>
-            <Input
-              id={`${ids}-from`}
-              type="date"
-              value={draft.fromDay}
-              aria-invalid={!rangeOk}
-              onChange={(event) =>
-                setDraft({ ...draft, fromDay: event.target.value })
-              }
-              className="w-36"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor={`${ids}-to`} className="text-xs">
-              {text.toLabel}
-            </Label>
-            <Input
-              id={`${ids}-to`}
-              type="date"
-              value={draft.toDay}
-              aria-invalid={!rangeOk}
-              onChange={(event) =>
-                setDraft({ ...draft, toDay: event.target.value })
-              }
-              className="w-36"
-            />
-          </div>
-          <label className="flex h-9 items-center gap-1.5 text-sm">
-            <input
-              type="checkbox"
-              checked={draft.hasFile}
-              onChange={(event) =>
-                setDraft({ ...draft, hasFile: event.target.checked })
-              }
-            />
-            {text.hasFile}
-          </label>
-          <label className="flex h-9 items-center gap-1.5 text-sm">
-            <input
-              type="checkbox"
-              checked={draft.mentionsMe}
-              onChange={(event) =>
-                setDraft({ ...draft, mentionsMe: event.target.checked })
-              }
-            />
-            {text.mentionsMe}
-          </label>
-          {filtersOn || draft.fromDay || draft.toDay ? (
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setDraft(NO_FILTERS)}
+              aria-expanded={
+                datesOpen || draft.fromDay !== "" || draft.toDay !== ""
+              }
+              onClick={() => setDatesOpen((current) => !current)}
+              className={cn(CHIP, (draft.fromDay || draft.toDay) && CHIP_ON)}
             >
-              {text.clearFilters}
-            </Button>
+              {text.dateChip}
+            </button>
+            <label
+              className={cn(
+                CHIP,
+                "cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:font-semibold has-[:checked]:text-link has-[:focus-visible]:outline-2",
+              )}
+            >
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={draft.hasFile}
+                onChange={(event) =>
+                  setDraft({ ...draft, hasFile: event.target.checked })
+                }
+              />
+              {text.hasFile}
+            </label>
+            <label
+              className={cn(
+                CHIP,
+                "cursor-pointer has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:font-semibold has-[:checked]:text-link has-[:focus-visible]:outline-2",
+              )}
+            >
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={draft.mentionsMe}
+                onChange={(event) =>
+                  setDraft({ ...draft, mentionsMe: event.target.checked })
+                }
+              />
+              {text.mentionsMe}
+            </label>
+            {filtersOn || draft.fromDay || draft.toDay ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setDraft(NO_FILTERS)}
+              >
+                {text.clearFilters}
+              </Button>
+            ) : null}
+          </fieldset>
+          {datesOpen || draft.fromDay || draft.toDay ? (
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <Label htmlFor={`${ids}-from`} className="sr-only">
+                {text.fromLabel}
+              </Label>
+              <Input
+                id={`${ids}-from`}
+                type="date"
+                value={draft.fromDay}
+                aria-invalid={!rangeOk}
+                onChange={(event) =>
+                  setDraft({ ...draft, fromDay: event.target.value })
+                }
+                className={cn(CHIP, "w-[8.5rem]", draft.fromDay && CHIP_ON)}
+              />
+              <Label htmlFor={`${ids}-to`} className="sr-only">
+                {text.toLabel}
+              </Label>
+              <Input
+                id={`${ids}-to`}
+                type="date"
+                value={draft.toDay}
+                aria-invalid={!rangeOk}
+                onChange={(event) =>
+                  setDraft({ ...draft, toDay: event.target.value })
+                }
+                className={cn(CHIP, "w-[8.5rem]", draft.toDay && CHIP_ON)}
+              />
+            </div>
           ) : null}
-        </fieldset>
+        </div>
         {!rangeOk ? (
-          <p role="alert" className="-mt-2 text-xs text-destructive">
+          <p role="alert" className="px-4 pb-2 text-xs text-destructive">
             {text.rangeInvalid}
           </p>
         ) : null}
@@ -420,7 +507,10 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
           {announcement}
         </p>
 
-        <div className="min-h-24 flex-1 overflow-y-auto" ref={listRef}>
+        <div
+          className="min-h-24 flex-1 overflow-y-auto border-t border-border"
+          ref={listRef}
+        >
           {state.kind === "empty" && recent.length > 0 ? (
             <section aria-labelledby={`${ids}-recent`}>
               <h3
@@ -496,7 +586,7 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
               id={listId}
               role="listbox"
               aria-label={text.resultsLabel}
-              className="flex flex-col gap-1"
+              className="flex flex-col"
             >
               {hits.map((hit, index) => {
                 const segments = segmentSnippet(hit.snippet);
@@ -520,35 +610,51 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
                     onClick={() => choose(hit)}
                     onMouseEnter={() => setActive(index)}
                     className={cn(
-                      "cursor-pointer rounded-md border border-transparent px-3 py-2",
-                      selected &&
-                        "border-border bg-accent text-accent-foreground",
+                      "cursor-pointer border-b border-border px-4 py-3",
+                      selected && "bg-primary/5",
                     )}
                   >
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                      <span className="flex min-w-0 items-center gap-1">
-                        <KindIcon kind={hit.spaceKind} />
-                        <span className="truncate font-medium text-foreground">
-                          {space}
-                        </span>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="size-[18px]" aria-hidden="true">
+                        <AvatarFallback
+                          className={cn(
+                            "text-[9px] font-[650]",
+                            avatarToneOf(hit.authorId),
+                          )}
+                        >
+                          {initialsOf(author)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="truncate text-[13px] font-bold">
+                        {author}
+                      </span>
+                      <span className="inline-flex h-5 min-w-0 shrink items-center truncate rounded-full bg-muted px-[9px] text-xs font-semibold text-muted-foreground">
+                        {hit.spaceKind === "channel_public" ||
+                        hit.spaceKind === "channel_private"
+                          ? "# "
+                          : ""}
+                        {space}
                       </span>
                       {hit.spaceArchived ? (
-                        <span className="rounded-full border border-border px-1.5">
+                        <span className="rounded-full border border-border px-1.5 text-xs text-muted-foreground">
                           {text.archivedBadge}
                         </span>
                       ) : null}
                       {hit.threadRootId !== null && !hit.alsoSentToChannel ? (
-                        <span className="rounded-full border border-border px-1.5">
+                        <span className="rounded-full border border-border px-1.5 text-xs text-muted-foreground">
                           {text.threadBadge}
                         </span>
                       ) : null}
-                      <span>{author}</span>
-                      <time dateTime={hit.createdAt}>
-                        {timeOf(hit.createdAt)}
+                      <span className="flex-1" />
+                      <time
+                        dateTime={hit.createdAt}
+                        className="text-[11.5px] font-medium tracking-[.01em] whitespace-nowrap text-muted-foreground tabular-nums"
+                      >
+                        {whenOf(hit.createdAt)}
                       </time>
                     </div>
                     <p
-                      className="mt-0.5 break-words text-sm"
+                      className="mt-1.5 text-sm leading-[1.5] break-words"
                       aria-hidden="true"
                     >
                       {hit.snippet.cutBefore ? "…" : ""}
@@ -556,7 +662,7 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
                         segment.match ? (
                           <mark
                             key={at}
-                            className="rounded-sm bg-warning-subtle px-0.5 text-foreground"
+                            className="rounded-[3px] bg-warning-subtle px-0.5 text-warning-subtle-foreground"
                           >
                             {segment.text}
                           </mark>
