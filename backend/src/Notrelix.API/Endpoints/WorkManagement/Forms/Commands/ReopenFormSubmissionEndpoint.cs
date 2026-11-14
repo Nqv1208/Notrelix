@@ -17,10 +17,11 @@ public static class ReopenFormSubmissionEndpoint
 
     private static async Task<IResult> HandleAsync(
         Guid submissionId,
+        bool? clearItem,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new ReopenFormSubmissionCommand(submissionId), cancellationToken);
+        var result = await sender.Send(new ReopenFormSubmissionCommand(submissionId, clearItem == true), cancellationToken);
         return result.ToNoContentResult();
     }
 }

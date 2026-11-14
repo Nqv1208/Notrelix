@@ -296,6 +296,8 @@ export const vi = {
     closedMidwayBody:
       "Câu trả lời chưa gửi. Chúng tôi chỉ giữ chúng khi bạn còn mở trang này; hãy sao chép nếu cần.",
     copyAnswers: "Sao chép câu trả lời",
+    limitedError:
+      "Bạn đã gửi quá nhiều phản hồi cho biểu mẫu này. Vui lòng thử lại sau ít phút.",
     networkError: "Chưa gửi được yêu cầu. Nội dung bạn điền vẫn còn.",
     crumbBoard: "Về board {{board}}",
   },
@@ -396,6 +398,19 @@ export const vi = {
     unmapped:
       "{{label}}: {{value}} · không ánh xạ trường nào nên chỉ giữ ở phản hồi, không đưa vào việc.",
     submit: "Tạo công việc",
+    nameLabel: "Tên công việc",
+    nameRequired: "Nhập tên công việc.",
+    descriptionLabel: "Mô tả",
+    optional: "(không bắt buộc)",
+    groupLabel: "Nhóm",
+    priorityLabel: "Ưu tiên",
+    noPriority: "Chưa chọn",
+    dueLabel: "Hạn hoàn thành",
+    cancel: "Huỷ",
+    close: "Đóng",
+    failed: "Chưa tạo được công việc. Thử lại.",
+    undone: "Đã hoàn tác: công việc bị gỡ và phản hồi về mục Mới.",
+    undoFailed: "Chưa hoàn tác được. Công việc vẫn ở trên board.",
   },
 };
 
@@ -696,6 +711,8 @@ export const en: FormsCopy = {
     closedMidwayBody:
       "Your answers were not sent. We only keep them while this page stays open; copy them if you need to.",
     copyAnswers: "Copy my answers",
+    limitedError:
+      "You have sent too many responses to this form. Please try again in a few minutes.",
     networkError:
       "The request could not be sent. What you filled in is still here.",
     crumbBoard: "Back to the board {{board}}",
@@ -799,6 +816,19 @@ export const en: FormsCopy = {
     unmapped:
       "{{label}}: {{value}} · it maps to no field, so it stays on the response and does not go into the item.",
     submit: "Create item",
+    nameLabel: "Item name",
+    nameRequired: "Enter an item name.",
+    descriptionLabel: "Description",
+    optional: "(optional)",
+    groupLabel: "Group",
+    priorityLabel: "Priority",
+    noPriority: "Not set",
+    dueLabel: "Due date",
+    cancel: "Cancel",
+    close: "Close",
+    failed: "The item was not created. Try again.",
+    undone: "Undone: the item is removed and the response is back under New.",
+    undoFailed: "Could not undo. The item is still on the board.",
   },
 };
 

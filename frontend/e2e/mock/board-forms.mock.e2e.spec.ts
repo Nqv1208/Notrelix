@@ -132,24 +132,25 @@ test.describe("Board forms (owner)", () => {
     ).toContainText("→ Tiêu đề việc");
 
     await page.getByRole("button", { name: "Tạo việc từ phản hồi" }).click();
-    // The ordinary create-item dialog: it is named by the item it will create, prefilled from the answers.
-    const dialog = page.getByRole("dialog");
-    await expect(dialog.getByRole("textbox", { name: "Tên thẻ" })).toHaveValue(
-      "Làm mới tên máy kế toán Đà Nẵng",
-    );
-    await expect(dialog.getByRole("region", { name: "Mô tả" })).toContainText(
+    // The "Tạo việc từ phản hồi" dialog: the mapped fields prefilled with their source, and a group picker.
+    const dialog = page.getByRole("dialog", { name: "Tạo việc từ phản hồi" });
+    await expect(
+      dialog.getByRole("textbox", { name: /Tên công việc/ }),
+    ).toHaveValue("Làm mới tên máy kế toán Đà Nẵng");
+    await expect(dialog.getByText("Từ: Bạn cần gì?")).toBeVisible();
+    await expect(dialog.getByRole("textbox", { name: /Mô tả/ })).toHaveValue(
       /tên cũ còn nằm trong domain/,
     );
-    // The same validation as the ordinary dialog: with no name nothing is created and nothing typed is lost.
-    await dialog.getByRole("textbox", { name: "Tên thẻ" }).fill("");
-    await expect(
-      dialog.getByRole("button", { name: "Tạo công việc" }),
-    ).toHaveAttribute("aria-disabled", "true");
-    await expect(dialog.getByRole("region", { name: "Mô tả" })).toContainText(
+    await expect(dialog.getByRole("combobox", { name: "Nhóm" })).toBeVisible();
+    // With no name nothing is created and nothing typed is lost.
+    await dialog.getByRole("textbox", { name: /Tên công việc/ }).fill("");
+    await dialog.getByRole("button", { name: "Tạo công việc" }).click();
+    await expect(dialog.getByRole("alert")).toHaveText("Nhập tên công việc.");
+    await expect(dialog.getByRole("textbox", { name: /Mô tả/ })).toHaveValue(
       /tên cũ còn nằm trong domain/,
     );
     await dialog
-      .getByRole("textbox", { name: "Tên thẻ" })
+      .getByRole("textbox", { name: /Tên công việc/ })
       .fill("Đổi tên máy kế toán Đà Nẵng");
     await dialog.getByRole("button", { name: "Tạo công việc" }).click();
 
@@ -159,6 +160,9 @@ test.describe("Board forms (owner)", () => {
     await expect(
       page.getByRole("option", { name: /Làm mới tên máy kế toán/ }),
     ).toBeVisible();
+    // Undo reverses both: the response is back under Mới and no longer processed.
+    await page.getByRole("button", { name: "Hoàn tác" }).click();
+    await expect(page.getByRole("tab", { name: /Mới\s*3/ })).toBeVisible();
   });
 
   test("rejects a response without a reason, at once and without an undo", async ({

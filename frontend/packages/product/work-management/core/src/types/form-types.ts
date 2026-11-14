@@ -276,7 +276,12 @@ export type FormWriteResult =
   | {
       readonly ok: false;
       readonly reason:
-        "forbidden" | "missing" | "conflict" | "validation" | "failed";
+        | "forbidden"
+        | "missing"
+        | "conflict"
+        | "validation"
+        | "limited"
+        | "failed";
       /** Per question key, for a refused submit. */
       readonly errors?: FormAnswerErrors;
       /** Present on a conflict, when the server named who saved first. */
