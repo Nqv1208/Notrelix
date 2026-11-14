@@ -52,7 +52,9 @@ test("a board of 5,000 items returns at most 200 items per lane and draws its fi
     });
     expect(made.status, `item ${index}`).toBeLessThan(300);
   }
-  console.log(`LARGE-BOARD seeded ${TOTAL} items in ${Date.now() - seeding} ms`);
+  console.log(
+    `LARGE-BOARD seeded ${TOTAL} items in ${Date.now() - seeding} ms`,
+  );
 
   // The page size is clamped: asking for 500 returns at most 200 per lane, and the lane totals add up to the board.
   const timed = async (query: string) => {
