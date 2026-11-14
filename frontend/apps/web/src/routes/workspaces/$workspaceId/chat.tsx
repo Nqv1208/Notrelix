@@ -6,6 +6,7 @@ import {
   type ChatViewerRole,
 } from "@notrelix/features-chat/web";
 import type { ChatEphemeralPort } from "@notrelix/features-chat";
+import { useIsMobile } from "@notrelix/ui-web";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
@@ -66,15 +67,25 @@ export function ChatPage() {
   const channels = hooks.useChannels(workspaceId);
   const firstChannelId = channels.data?.[0]?.id ?? null;
 
+  const isMobile = useIsMobile();
+
   // A bare /chat opens the first channel; the list is the caller's own, so the first one is theirs.
+  // On a phone the bare route is the channel list (a root screen), so nothing is opened for the caller.
   useEffect(() => {
-    if (channelId || conversationId || !firstChannelId) return;
+    if (channelId || conversationId || !firstChannelId || isMobile) return;
     void navigate({
       to: "/workspaces/$workspaceId/chat/$channelId",
       params: { workspaceId, channelId: firstChannelId },
       replace: true,
     });
-  }, [channelId, conversationId, firstChannelId, navigate, workspaceId]);
+  }, [
+    channelId,
+    conversationId,
+    firstChannelId,
+    isMobile,
+    navigate,
+    workspaceId,
+  ]);
 
   const people = useMemo(() => {
     const map = new Map<string, string>();

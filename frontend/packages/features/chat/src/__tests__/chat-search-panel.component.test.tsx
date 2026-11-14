@@ -221,6 +221,7 @@ describe("ChatSearchPanel (UC-CHT-H07)", () => {
     fireEvent.change(screen.getByLabelText(en.search.authorLabel), {
       target: { value: "mock-user-member" },
     });
+    fireEvent.click(screen.getByRole("button", { name: en.search.dateChip }));
     fireEvent.change(screen.getByLabelText(en.search.fromLabel), {
       target: { value: "2026-01-02" },
     });
@@ -246,6 +247,7 @@ describe("ChatSearchPanel (UC-CHT-H07)", () => {
     type("hop ban");
     await firstHit();
     const before = urls.length;
+    fireEvent.click(screen.getByRole("button", { name: en.search.dateChip }));
     fireEvent.change(screen.getByLabelText(en.search.fromLabel), {
       target: { value: "2026-02-10" },
     });

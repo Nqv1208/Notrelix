@@ -7,12 +7,13 @@ import { useChatMentions } from "./chat-mention-context";
 import { fillCopy } from "./use-chat-copy";
 
 const CHIP =
-  "rounded-sm bg-warning-subtle px-1 font-semibold text-warning-subtle-foreground";
+  "rounded-[5px] bg-warning-subtle px-1 font-semibold text-warning-subtle-foreground";
 /**
- * On the caller's own (accent) bubble a mention keeps the bubble's text colour, bold and underlined, so its
- * contrast is the bubble's own (primary-foreground on primary, AA in every theme).
+ * On the caller's own (accent) bubble a mention is an inline chip, translucent primary-foreground on the bubble, so its
+ * contrast stays the bubble's own (primary-foreground on primary, AA in every theme).
  */
-const OWN_CHIP = "font-semibold underline decoration-2 underline-offset-2";
+const OWN_CHIP =
+  "rounded-[5px] bg-primary-foreground/[.24] px-1 font-semibold text-primary-foreground";
 
 export interface ChatMentionTextProps {
   readonly content: string;
@@ -83,8 +84,8 @@ export function ChatMentionText({
               className={cn(
                 "inline rounded-sm font-semibold focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none",
                 tone === "own"
-                  ? "underline decoration-2 underline-offset-2"
-                  : "bg-accent px-1 text-accent-foreground hover:underline",
+                  ? "bg-primary-foreground/20 px-1 text-primary-foreground"
+                  : "bg-accent px-1 text-accent-foreground",
               )}
             >
               {shown}

@@ -502,8 +502,8 @@ export function ChatComposer({
   }
 
   return (
-    <div className="shrink-0 bg-background px-3 pt-1 pb-2 md:px-4 md:pb-3">
-      <div className="relative mx-auto w-full max-w-3xl">
+    <div className="shrink-0 bg-background px-2.5 pb-2.5 md:px-5 md:pb-4 xl:pb-1">
+      <div className="relative mx-auto w-full max-w-[720px]">
         {trigger ? (
           <MentionPopover
             id={listId}
@@ -543,7 +543,7 @@ export function ChatComposer({
         ) : (
           <form
             className={cn(
-              "flex flex-col overflow-hidden rounded-3xl border border-input bg-card shadow-xs transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/30 motion-reduce:transition-none",
+              "flex flex-col overflow-hidden rounded-[26px] border border-input bg-card shadow-xs transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/30 motion-reduce:transition-none",
               disabled && "opacity-60",
               dragging && "border-ring ring-[3px] ring-ring/30",
             )}
@@ -591,7 +591,7 @@ export function ChatComposer({
                 {copy.attachments.dropHint}
               </p>
             ) : null}
-            <div className="flex items-end gap-0.5 px-1.5 py-1">
+            <div className="flex items-end gap-0.5 p-[5px] ps-1.5 pe-1.5">
               {attachments ? (
                 <>
                   <input
@@ -611,7 +611,7 @@ export function ChatComposer({
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    className="mb-0.5 rounded-full text-muted-foreground hover:text-foreground"
+                    className="size-10 rounded-full text-muted-foreground hover:text-foreground"
                     disabled={disabled}
                     aria-label={copy.attachments.attach}
                     title={copy.attachments.attach}
@@ -643,6 +643,7 @@ export function ChatComposer({
                 aria-haspopup={mentions ? "listbox" : undefined}
                 aria-label={label}
                 aria-describedby={hintId}
+                aria-keyshortcuts="Enter Shift+Enter"
                 aria-invalid={tooLong || undefined}
                 placeholder={label}
                 value={value}
@@ -656,14 +657,14 @@ export function ChatComposer({
                 onSelect={(event) => syncCaret(event.currentTarget)}
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
-                className="max-h-36 min-h-9 flex-1 resize-none self-center rounded-none border-0 bg-transparent px-1.5 py-2 leading-5 shadow-none focus-visible:border-0 focus-visible:ring-0 md:text-sm dark:bg-transparent"
+                className="max-h-36 min-h-10 flex-1 resize-none self-center rounded-none border-0 bg-transparent px-2 py-2.5 leading-5 shadow-none focus-visible:border-0 focus-visible:ring-0 md:text-sm dark:bg-transparent"
               />
               {showMic ? (
                 <Button
                   type="button"
                   size="icon"
                   variant="ghost"
-                  className="mb-0.5 size-9 shrink-0 rounded-full text-muted-foreground hover:text-foreground"
+                  className="size-10 shrink-0 rounded-full text-muted-foreground hover:text-foreground"
                   aria-label={copy.voice.record}
                   title={copy.voice.record}
                   disabled={disabled || busy}
@@ -675,9 +676,9 @@ export function ChatComposer({
                 <Button
                   type="submit"
                   size="icon"
-                  className="mb-0.5 size-9 shrink-0 rounded-full"
+                  className="size-10 shrink-0 rounded-full"
                   aria-label={copy.composer.send}
-                  title={copy.composer.send}
+                  title={`${copy.composer.send} (Enter)`}
                   disabled={disabled || busy || tooLong || !check.ok}
                   data-has-content={check.ok ? "true" : "false"}
                 >
@@ -690,22 +691,22 @@ export function ChatComposer({
         <div
           id={hintId}
           className={cn(
-            "flex min-h-5 min-w-0 flex-wrap items-center gap-x-3 gap-y-1 px-4 pt-1 text-xs",
+            "flex min-h-5 min-w-0 flex-wrap items-center gap-x-3 gap-y-1 px-4 pt-1 text-xs empty:hidden",
             tooLong ? "text-destructive" : "text-muted-foreground",
           )}
         >
           {footerExtra}
-          <span
-            role={message ? "status" : undefined}
-            className="min-w-0 truncate"
-          >
-            {message ??
-              (slowModeSeconds > 0
-                ? fillCopy(copy.composer.slowMode, {
-                    wait: formatWait(copy, slowModeSeconds),
-                  })
-                : copy.composer.hint)}
-          </span>
+          {(message ?? slowModeSeconds > 0) ? (
+            <span
+              role={message ? "status" : undefined}
+              className="min-w-0 truncate"
+            >
+              {message ??
+                fillCopy(copy.composer.slowMode, {
+                  wait: formatWait(copy, slowModeSeconds),
+                })}
+            </span>
+          ) : null}
           {showsCounter(value) ? (
             <span className="shrink-0 tabular-nums" aria-live="off">
               {fillCopy(copy.composer.counter, {
