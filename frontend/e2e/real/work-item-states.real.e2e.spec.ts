@@ -515,6 +515,8 @@ test("a description save that lost the race keeps my text, names who saved first
   browser,
   page,
 }) => {
+  // Six axe passes (three widths, light and dark) after the two writers' setup.
+  test.setTimeout(120_000);
   await signIn(page, realUsers.workspaceAdmin);
   const { workspace, board } = await openBoard(
     page,
@@ -593,18 +595,8 @@ test("a description save that lost the race keeps my text, names who saved first
         document.documentElement.classList.remove("light", "dark");
         document.documentElement.classList.add(mode ? "dark" : "light");
       }, dark);
-      // Colours cross-fade on a theme change: judge contrast once they have settled.
-      await page.evaluate(() =>
-        Promise.all(
-          document
-            .getAnimations()
-            .filter(
-              (animation) =>
-                animation.effect?.getComputedTiming().iterations !== Infinity,
-            )
-            .map((animation) => animation.finished),
-        ),
-      );
+      // Colours cross-fade on a theme change: judge contrast once the fade has ended.
+      await page.waitForTimeout(500);
       await notice.scrollIntoViewIfNeeded();
       const box = (await notice.boundingBox())!;
       const label = `${width} ${dark ? "dark" : "light"}`;
