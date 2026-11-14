@@ -93,7 +93,7 @@ export function groupChannels(
 }
 
 const HEADING =
-  "px-2 pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground";
+  "-mx-2 pt-3.5 pr-3 pb-1 pl-2.5 text-[11.5px] leading-[1.45] font-[650] tracking-[.04em] text-muted-foreground uppercase";
 
 /**
  * The channel column: the caller's channels grouped under headings, each with
@@ -126,8 +126,10 @@ export function ChatSidebar({
       aria-label={copy.sidebar.navLabel}
       className="flex min-h-0 flex-1 flex-col bg-sidebar text-sidebar-foreground"
     >
-      <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
-        <h2 className="text-sm font-semibold">{copy.sidebar.listTitle}</h2>
+      <div className="flex items-center justify-between gap-2 px-3.5 pt-3.5 pb-2.5 max-md:h-14 max-md:px-3 max-md:py-0">
+        <h2 className="text-[15px] font-[650] max-md:text-[17px]">
+          {copy.sidebar.listTitle}
+        </h2>
         <div className="flex items-center gap-1">
           {onSearch ? (
             <Button
@@ -168,13 +170,13 @@ export function ChatSidebar({
       {/* A jump-to field with no handler yet: visual only, so it is not a control. */}
       <div
         aria-hidden="true"
-        className="mx-3 mb-2 flex h-9 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm text-muted-foreground"
+        className="mx-3 mb-2 flex h-9 items-center gap-2 rounded-[10px] max-md:hidden border border-border bg-card px-2.5 text-[13px] text-muted-foreground"
       >
         <Search className="size-3.5 shrink-0" />
         <span className="truncate">{copy.sidebar.jumpTo}</span>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-2 pb-3">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-2">
         {status === "loading" ? (
           <div role="status" className="space-y-2 px-1 pt-2">
             <span className="sr-only">{copy.sidebar.loading}</span>
@@ -211,9 +213,9 @@ export function ChatSidebar({
                 className="flex flex-col"
               >
                 <h3 className={HEADING}>{heading}</h3>
-                <ul className="flex flex-col gap-0.5">
+                <ul className="flex flex-col gap-px">
                   {group.channels.map((channel) => (
-                    <li key={channel.id}>
+                    <li key={channel.id} className="max-md:-mx-2">
                       <ChannelButton
                         channel={channel}
                         active={channel.id === activeChannelId}
@@ -325,11 +327,11 @@ function ChannelButton({
         unread?.mentions ?? 0,
       )}
       className={cn(
-        "flex h-8 w-full items-center gap-2 rounded-lg px-2 text-start text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus-ring motion-reduce:transition-none",
+        "flex h-8 w-full items-center gap-[9px] rounded-[8px] px-2.5 text-start text-sm outline-none max-md:h-auto max-md:min-h-12 max-md:gap-3 max-md:rounded-none max-md:px-4 max-md:py-3 transition-colors focus-visible:ring-2 focus-visible:ring-focus-ring motion-reduce:transition-none",
         active
-          ? "bg-state-selected font-semibold text-state-selected-foreground"
+          ? "bg-state-selected font-[650] text-state-selected-foreground"
           : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
-        unreadHere && !active && "font-semibold text-foreground",
+        unreadHere && !active && "font-[650] text-foreground",
         muted && !active && "opacity-60",
       )}
     >
@@ -348,7 +350,7 @@ function ChannelButton({
         <span
           aria-hidden="true"
           data-testid="chat-mention-badge"
-          className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-destructive px-1.5 text-xs font-bold text-destructive-foreground tabular-nums"
+          className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-destructive px-1.5 text-[11.5px] font-bold text-destructive-foreground tabular-nums"
         >
           @{mentionBadge}
         </span>
@@ -356,7 +358,7 @@ function ChannelButton({
       {badge ? (
         <span
           aria-hidden="true"
-          className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-brand-solid px-1.5 text-xs font-bold text-brand-solid-foreground tabular-nums"
+          className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-brand-solid px-1.5 text-[11.5px] font-bold text-brand-solid-foreground tabular-nums"
         >
           {badge}
         </span>

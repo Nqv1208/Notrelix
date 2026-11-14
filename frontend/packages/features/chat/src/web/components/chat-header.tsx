@@ -106,7 +106,7 @@ export function ChatHeader({
   const canJoin = !channel.isMember && !isPrivate && !channel.isArchived;
 
   return (
-    <header className="flex min-h-14 flex-wrap items-center gap-x-2 gap-y-1 border-b border-border bg-background px-3 py-2 md:px-4">
+    <header className="flex min-h-16 flex-wrap items-center gap-x-3 gap-y-1 border-b border-border bg-card px-3 py-2 max-md:min-h-14 max-md:gap-x-2 max-md:py-0 md:px-5">
       <Button
         variant="ghost"
         size="icon-sm"
@@ -117,7 +117,7 @@ export function ChatHeader({
         <ChevronLeft aria-hidden="true" />
       </Button>
       <div className="flex min-w-0 flex-1 flex-col">
-        <h1 className="flex min-w-0 items-center gap-1.5 text-base font-semibold text-foreground">
+        <h1 className="flex min-w-0 items-center gap-1.5 text-lg leading-[1.45] font-[650] text-foreground max-md:text-[17px]">
           <Icon
             className="size-4 shrink-0 text-muted-foreground"
             aria-hidden="true"
@@ -135,7 +135,7 @@ export function ChatHeader({
           ) : null}
         </h1>
         <p
-          className="truncate text-xs text-muted-foreground"
+          className="truncate text-[12.5px] leading-[1.45] text-muted-foreground max-md:text-xs"
           title={channel.topic ?? undefined}
         >
           {channel.topic ?? copy.header.topicEmpty}

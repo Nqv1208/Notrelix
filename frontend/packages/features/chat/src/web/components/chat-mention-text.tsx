@@ -7,13 +7,13 @@ import { useChatMentions } from "./chat-mention-context";
 import { fillCopy } from "./use-chat-copy";
 
 const CHIP =
-  "rounded-sm bg-warning-subtle px-1 font-semibold text-warning-subtle-foreground";
+  "rounded-[5px] bg-warning-subtle px-1 font-semibold text-warning-subtle-foreground";
 /**
  * On the caller's own (accent) bubble a mention is an inline chip, translucent primary-foreground on the bubble, so its
  * contrast stays the bubble's own (primary-foreground on primary, AA in every theme).
  */
 const OWN_CHIP =
-  "rounded-sm bg-primary-foreground/20 px-1 font-semibold text-primary-foreground";
+  "rounded-[5px] bg-primary-foreground/[.24] px-1 font-semibold text-primary-foreground";
 
 export interface ChatMentionTextProps {
   readonly content: string;

@@ -49,8 +49,10 @@ export function ReactionChips({
       role="group"
       aria-label={copy.reactions.pickerLabel}
       className={cn(
-        "relative z-0 mt-1 flex max-w-full flex-wrap items-center gap-1",
-        align === "end" ? "justify-end pe-2" : "justify-start ps-2",
+        "relative z-0 mt-1 mb-1 flex max-w-full flex-wrap items-center gap-1 max-xl:mt-2 max-xl:mb-0 max-xl:gap-1.5",
+        align === "end"
+          ? "justify-end pe-2.5 max-xl:pe-0"
+          : "justify-start ps-2.5 max-xl:ps-0",
       )}
       data-testid="chat-reactions"
       data-align={align}
@@ -73,13 +75,13 @@ export function ReactionChips({
             }
             onClick={() => onToggle(reaction.emoji, !reaction.reactedByMe)}
             className={cn(
-              "inline-flex h-6 items-center gap-1 rounded-full border px-1.5 text-xs font-medium tabular-nums shadow-sm ring-2 ring-background transition-colors focus-visible:ring-focus-ring focus-visible:outline-none motion-reduce:transition-none",
+              "inline-flex h-[22px] items-center gap-[3px] rounded-full border-[1.5px] px-1.5 text-xs leading-[1.45] tabular-nums shadow-xs transition-colors max-xl:h-[26px] max-xl:gap-[5px] max-xl:border max-xl:px-[9px] max-xl:text-[12.5px] max-xl:font-semibold max-xl:shadow-none focus-visible:ring-focus-ring focus-visible:outline-none motion-reduce:transition-none",
               reaction.reactedByMe
                 ? "border-primary bg-state-selected text-state-selected-foreground"
-                : "border-border bg-popover text-popover-foreground hover:bg-muted",
+                : "border-input bg-card text-muted-foreground hover:bg-muted",
             )}
           >
-            <span aria-hidden="true" className="text-sm leading-none">
+            <span aria-hidden="true" className="leading-none">
               {reaction.emoji}
             </span>
             {reaction.count > 1 || reaction.reactedByMe ? (
@@ -120,7 +122,7 @@ function WhoReactedPopover({
           type="button"
           variant="ghost"
           size="icon-xs"
-          className="rounded-full text-muted-foreground opacity-70 hover:opacity-100 focus-visible:opacity-100"
+          className="size-[22px] rounded-full text-muted-foreground opacity-70 hover:opacity-100 focus-visible:opacity-100"
           aria-label={copy.reactions.who}
           title={copy.reactions.who}
         >
