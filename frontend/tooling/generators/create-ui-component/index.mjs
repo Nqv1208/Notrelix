@@ -15,7 +15,7 @@
  * Usage: node index.mjs <component-name> [--target web|mobile]
  */
 
-import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -44,8 +44,24 @@ const PascalName = componentName
   .join("");
 console.log(`Creating UI component: ${componentName} (target: ${target})`);
 
+// "wx" fails when the file exists, so the existence check and the write are one step.
+function writeNewComponentFile(file, content) {
+  try {
+    writeFileSync(file, content, { flag: "wx" });
+  } catch (err) {
+    if (err.code !== "EEXIST") throw err;
+    console.error(`Component "${componentName}" already exists at ${file}`);
+    process.exit(1);
+  }
+}
+
 function appendExport(indexPath, exportLine) {
-  const source = existsSync(indexPath) ? readFileSync(indexPath, "utf8") : "";
+  let source = "";
+  try {
+    source = readFileSync(indexPath, "utf8");
+  } catch (err) {
+    if (err.code !== "ENOENT") throw err;
+  }
   if (source.includes(exportLine)) return;
   const updated = source.replace(/\s*$/, "\n") + exportLine + "\n";
   writeFileSync(indexPath, updated);
@@ -66,18 +82,11 @@ if (target === "web") {
   );
   const indexPath = join(rootDir, "packages/ui/web/src/index.ts");
 
-  if (existsSync(componentFile)) {
-    console.error(
-      `Component "${componentName}" already exists at ${componentFile}`,
-    );
-    process.exit(1);
-  }
-
   mkdirSync(componentDir, { recursive: true });
   mkdirSync(join(componentDir, "__tests__"), { recursive: true });
   mkdirSync(dirname(storyFile), { recursive: true });
 
-  writeFileSync(
+  writeNewComponentFile(
     componentFile,
     `import * as React from "react"
 import { cn } from "~/lib/cn"
@@ -154,17 +163,10 @@ export const Default: Story = {
   );
   const indexPath = join(rootDir, "packages/ui/mobile/src/index.ts");
 
-  if (existsSync(componentFile)) {
-    console.error(
-      `Component "${componentName}" already exists at ${componentFile}`,
-    );
-    process.exit(1);
-  }
-
   mkdirSync(componentDir, { recursive: true });
   mkdirSync(dirname(testFile), { recursive: true });
 
-  writeFileSync(
+  writeNewComponentFile(
     componentFile,
     `import React from "react";
 import { View, Text, StyleSheet } from "react-native";
