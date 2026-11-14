@@ -10408,6 +10408,65 @@
         ]
       }
     },
+    "/api/v1/pages/{pageId}/activity": {
+      "get": {
+        "tags": [
+          "Documents.Pages",
+          "Documents.Pages"
+        ],
+        "summary": "Get the activity feed of a page (rename, move, trash, restore)",
+        "operationId": "Documents.Pages.GetPageActivity",
+        "parameters": [
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Activity.DTOs.ResourceActivityPageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/pages/{pageId}/backlinks": {
       "get": {
         "tags": [
