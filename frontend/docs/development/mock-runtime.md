@@ -56,17 +56,17 @@ That path does not import `@notrelix/dev-mock-backend`, boot application service
 
 ## Environment Variables
 
-| Variable             | Type      | Allowed Values                                                                          | Default                    | Description                                                                                           |
-| :------------------- | :-------- | :-------------------------------------------------------------------------------------- | :------------------------- | :---------------------------------------------------------------------------------------------------- |
-| `VITE_MOCK_API`      | `boolean` | `true`, `false`                                                                         | `false`                    | Enables offline mock backend runtime in dev mode                                                      |
-| `VITE_MOCK_PRESET`   | `enum`    | `default`, `fast`, `slow`, `demo`, `qa-stress`                                          | `default`                  | Config preset bundle                                                                                  |
-| `VITE_MOCK_PERSONA`  | `enum`    | `owner`, `admin`, `member`, `viewer`, `commenter`                                       | `owner`                    | Active actor persona                                                                                  |
-| `VITE_MOCK_STATE`    | `enum`    | `default`, `new-user`, `empty-workspace`, `permission-limited`, `expired-session`       | `default`                  | Initial business scenario                                                                             |
-| `VITE_MOCK_DENSITY`  | `enum`    | `tiny`, `normal`, `large`, `stress`                                                     | `normal`                   | Data density for boards/cards/pages                                                                   |
-| `VITE_MOCK_OVERLAYS` | `list`    | `unicode`, `long-titles`, `many-columns`, `many-cards`                                  | `[]`                       | Composable state modifiers                                                                            |
-| `VITE_MOCK_LATENCY`  | `enum`    | `instant`, `fast`, `normal`, `slow`                                                     | `instant` (tests) / `fast` | Simulated network delay                                                                               |
-| `VITE_MOCK_SEED`     | `number`  | integer                                                                                 | `1001`                     | PRNG seed for deterministic data                                                                      |
-| `VITE_MOCK_FAULTS`   | `list`    | `path=fault` pairs, comma-separated; fault `network`, `401`, `409`, `500`, `validation` | none                       | Forces an error on one API path (without `/api/v1`), e.g. `/board-items/mock-erp-item-149/status=500` |
+| Variable             | Type      | Allowed Values                                                                                   | Default                    | Description                                                                                                                                                                                                      |
+| :------------------- | :-------- | :----------------------------------------------------------------------------------------------- | :------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_MOCK_API`      | `boolean` | `true`, `false`                                                                                  | `false`                    | Enables offline mock backend runtime in dev mode                                                                                                                                                                 |
+| `VITE_MOCK_PRESET`   | `enum`    | `default`, `fast`, `slow`, `demo`, `qa-stress`                                                   | `default`                  | Config preset bundle                                                                                                                                                                                             |
+| `VITE_MOCK_PERSONA`  | `enum`    | `owner`, `admin`, `member`, `viewer`, `commenter`                                                | `owner`                    | Active actor persona                                                                                                                                                                                             |
+| `VITE_MOCK_STATE`    | `enum`    | `default`, `new-user`, `empty-workspace`, `permission-limited`, `expired-session`                | `default`                  | Initial business scenario                                                                                                                                                                                        |
+| `VITE_MOCK_DENSITY`  | `enum`    | `tiny`, `normal`, `large`, `stress`                                                              | `normal`                   | Data density for boards/cards/pages                                                                                                                                                                              |
+| `VITE_MOCK_OVERLAYS` | `list`    | `unicode`, `long-titles`, `many-columns`, `many-cards`                                           | `[]`                       | Composable state modifiers                                                                                                                                                                                       |
+| `VITE_MOCK_LATENCY`  | `enum`    | `instant`, `fast`, `normal`, `slow`                                                              | `instant` (tests) / `fast` | Simulated network delay                                                                                                                                                                                          |
+| `VITE_MOCK_SEED`     | `number`  | integer                                                                                          | `1001`                     | PRNG seed for deterministic data                                                                                                                                                                                 |
+| `VITE_MOCK_FAULTS`   | `list`    | `path=fault` pairs, comma-separated; fault `network`, `401`, `409`, `500`, `validation`, `stale` | none                       | Forces an error on one API path (without `/api/v1`), e.g. `/board-items/mock-erp-item-149/status=500`; `stale` is read by the handler that takes an expected version (the Board share grant) and answers its 412 |
 
 _Note: Any invalid environment value fails immediately at startup with `MockConfigurationError`._
 
@@ -94,7 +94,7 @@ The `commenter` persona is Đỗ Khánh Linh: a workspace member outside the Eng
 
 - `pnpm test:node:guarded`: Runs all unit tests (including mock backend suite) with zero-test assertion guard.
 - `pnpm mock:freeze:check`: Runs the consumer surface / registry closure gate.
-- `pnpm mock:contract`: Runs `test:node:guarded` + `mock:freeze:check` combined (CI mock-contract job command).
+- `pnpm mock:contract`: Runs `test:node:guarded` + `mock:freeze:check` combined.
 - `pnpm e2e:mock`: Runs browser Playwright tests with mock backend active.
 - `pnpm e2e:mock:count`: Asserts Playwright JSON results have zero failures and zero skips.
 - `pnpm check:production-mock-isolation`: Verifies that `apps/web/dist` contains zero mock signatures.
@@ -150,16 +150,18 @@ Search (`/api/v1/search`) is **not implemented** in the mock backend. This is a 
 
 The `permission-limited` state uses the `viewer` persona. This triggers a purely view-only UI — mutations are disabled at the UI layer before being dispatched. No mock 403 responses are injected; the authorization gap is recorded as `AUTHZ-CONTRACT-GAP`.
 
-## CI Required Commands (summary)
+## Local verification commands (summary)
+
+None of these run in `ci.yml`.
 
 ```bash
-# Contract + freeze gate (mock-contract CI job)
+# Contract + freeze gate
 pnpm mock:contract
 
-# E2E mock suite (mock-e2e CI job, run per persona × state matrix)
+# E2E mock suite (per persona × state)
 VITE_MOCK_PERSONA=owner VITE_MOCK_STATE=default pnpm e2e:mock
 pnpm e2e:mock:count
 
-# Production artifact isolation (mock-artifact-isolation CI job)
+# Production artifact isolation
 pnpm check:production-mock-isolation
 ```

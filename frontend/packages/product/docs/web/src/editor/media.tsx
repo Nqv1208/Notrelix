@@ -21,6 +21,7 @@ import {
   FileArchive,
   FileImage,
   FileText,
+  FileX,
   Trash2,
   Type,
   type LucideIcon,
@@ -409,6 +410,21 @@ function FileContent({
             className={ICON_ACTION}
           >
             <Trash2 aria-hidden="true" className="size-4" />
+          </button>
+        ) : null}
+        {editor.isEditable ? (
+          <button
+            type="button"
+            disabled={busy}
+            aria-label={fillDocCopy(copy.deleteFile, { name: file.fileName })}
+            title={fillDocCopy(copy.deleteFile, { name: file.fileName })}
+            onClick={() => {
+              setBusy(true);
+              void media.remove(file).finally(() => setBusy(false));
+            }}
+            className={ICON_ACTION}
+          >
+            <FileX aria-hidden="true" className="size-4" />
           </button>
         ) : null}
       </div>

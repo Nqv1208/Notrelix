@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hướng chốt · Tài liệu 2 · Ghi chú</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.nt{--page:#FFFFFF;--text:#161A21;--body:#272D36;--meta:#5F6875;--line:#E6E9EE;--soft:#F1F3F6;--accent-text:#0F56AE;width:880px;box-sizing:border-box;padding:32px 36px 36px;background:var(--page);color:var(--text);font-family:'Be Vietnam Pro',system-ui,sans-serif;font-size:14px;line-height:1.5}
+.nt h1{margin:0 0 6px;font-size:22px;line-height:1.3;font-weight:650}
+.nt p{margin:0 0 20px;color:var(--meta);font-size:13px;max-width:70ch}
+.nt h2{margin:24px 0 10px;font-size:15px;font-weight:650}
+.nt ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.nt li{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px;font-size:13px;color:var(--body)}
+.nt li b{font-weight:600;color:var(--text)}
+.nt table{width:100%;border-collapse:collapse;font-size:12px;line-height:1.45}
+.nt th,.nt td{text-align:left;vertical-align:top;padding:6px 8px;border-bottom:1px solid var(--line);color:var(--body)}
+.nt th{font-weight:600;color:var(--text);width:230px}
+.nt td:nth-child(2){width:200px;font-variant-numeric:tabular-nums}
+.nt thead th{color:var(--meta);font-weight:600;background:var(--soft)}
+</style>
+</helmet>
+<div class="nt">
+<h1>Tài liệu 2: khác gì so với bản đã phát hành</h1>
+<p>Final-Docs-2 vẽ lại đúng trang Tài liệu trong code (hàng menu chữ, không nút Trạng thái tài liệu, một khung soạn thảo) và sửa những chỗ yếu. Final-Docs cũ chỉ còn để tham khảo lịch sử. Toạ độ tính từ góc trên trái vùng chính (x332 khi thanh hệ thống ghim, màn 1440).</p>
+<h2>Khác với bản đã phát hành</h2>
+<ul><li><b>Viền ô kiểm chưa chọn</b><span>Bản đã phát hành dùng --line2 (#D2D7DE, 1,5:1 trên nền trắng). Đổi sang --st-todo (#7A8391, 3,83:1 trên nền trắng; 3,45:1 trên hàng đang rê chuột; tối #8C95A3). Ô là điều khiển nên cần ≥3:1. Viền các điều khiển khác (nút Chia sẻ, Kiểu đoạn, Chuyển thành việc) giữ token hệ thống --line2: nhãn chữ của chúng đã nhận diện điều khiển, và viền nhạt của --line2 là việc đã biết của cả hệ thống, không xử lý riêng ở trang này.</span></li><li><b>Ô Kiểu đoạn</b><span>Bản đã phát hành: khung 161×36, nút 150×36 cao hơn các nút 30. Đổi thành 150×30 ngang hàng với nút công cụ (y86, trước y83).</span></li><li><b>Nhịp tiêu đề mục</b><span>h2 cách trên 28 → 32, cách dưới 10 → 12; thẻ Việc liên quan cách tiêu đề 12. Cùng thang 4px, tách mục rõ hơn.</span></li><li><b>Thanh tài liệu</b><span>Thêm vạch 1×14 giữa đường dẫn và 'Đỗ Khánh Linh sửa lúc…', và vạch 1×12 trước số từ. Ba cụm chữ cạnh nhau (người sửa, Đã lưu, đếm từ) không còn dính thành một dòng.</span></li><li><b>Ô kiểm căn giữa dòng</b><span>Ô 17px nằm giữa chiều cao dòng chữ (đỉnh ô = hàng + 9.5), trước đây lệch lên +7.</span></li><li><b>Chip việc trong dòng</b><span>Hộp 26px cố định, border-box, không vượt cột chữ; tên dài cắt bằng dấu … (ERP-xxx không xuống dòng).</span></li><li><b>Bản 320</b><span>Bản đã phát hành vỡ (cột bài viết rộng 0, tiêu đề xếp dọc, bảng bên đè lên). Vẽ lại theo mẫu Final-M-Docs: nút Quay lại Tài liệu, nút Bình luận có số, nút Thêm (…); bảng bên là bảng trượt từ dưới (Final-Docs-2-320-Sheet: cao 520, tay nắm 36×5, nút Đóng 44, tab Liên kết aria-selected). Thanh tab dưới của hệ thống ẩn trên trang Tài liệu như Final-M-Docs. Mọi điều khiển ≥44; menu và công cụ cuộn ngang có mờ dần 24px ở mép phải; mục kiểm xuống dòng; bảng việc liên quan thành thẻ hai dòng; lề 16; đáy chừa env(safe-area-inset-bottom).</span></li></ul>
+<h2>Số đo (CSS px, từ vùng chính; chữ Be Vietnam Pro đã tải)</h2>
+<table><thead><tr><th scope="col">Phần tử</th><th scope="col">x, y, rộng × cao</th><th scope="col">Ghi chú</th></tr></thead><tbody><tr><th scope='row'>Thanh tài liệu</th><td>0, 0, 1108 × 49</td><td>crumb x24 y14.6 · nút Chia sẻ x855.4 w73.5 · Duyệt x938.8 w111.2 · Thêm x1060 (32×32)</td></tr><tr><th scope='row'>Hàng menu (Tệp, Chỉnh sửa, Xem, Chèn, Định dạng, Công cụ)</th><td>0, 49, 1108 × 30</td><td>nút 13px/400, cao 28, y51: Tệp x16 w42.8 · Chỉnh sửa x58.8 w79.9 · Xem x138.7 w46.2 · Chèn x185 w51 · Định dạng x236 w82.6 · Công cụ x318.6 w71</td></tr><tr><th scope='row'>Thanh công cụ</th><td>0, 79, 1108 × 46</td><td>nút 30×30 y86, bước 32; ô Kiểu đoạn x119 w150 h30; vạch ngăn 1×20 y91 tại x112, 275, 446, 585, 756, 927, 1066</td></tr><tr><th scope='row'>Tiêu đề trang (h1)</th><td>49.5, 162, 700 × 40</td><td>32px / 650 / line-height 40</td></tr><tr><th scope='row'>Chip thông tin</th><td>y214, cao 26</td><td>12.5px / 500, x49.5 · 243.9 · 409.3; dòng 'Bạn thấy trang…' y248 cao 18.1</td></tr><tr><th scope='row'>Cột chữ của trang</th><td>x49.5 w700 (giữa vùng 799)</td><td>cách mép trái vùng chữ 49.5, mép phải bảng bên 49.5</td></tr><tr><th scope='row'>Tiêu đề mục (h2)</th><td>y298.1 · 449.2 · 668.6 · 847.6</td><td>20px / 650 / 27; cách trên 32, cách dưới 12</td></tr><tr><th scope='row'>Đoạn văn</th><td>49.5, 337.1, 700 × 80.1</td><td>15.5px / 400 / line-height 26.35 (1.7), màu --body</td></tr><tr><th scope='row'>Danh sách số (mỗi mục)</th><td>49.5, 488.2, 700 × 27.1</td><td>cột số 28 canh phải, chữ bắt đầu x77.5; khoảng cách giữa mục 4; 15.5px / line-height 27.125</td></tr><tr><th scope='row'>Chip việc trong dòng</th><td>cao 26, radius 6</td><td>viền 1px --line2, nền --hover; ERP-151 x77.5 y610.6 w385.3</td></tr><tr><th scope='row'>Mục kiểm (mỗi hàng)</th><td>41.5, y707.6 · 743.6 · 779.6, 716 × 36</td><td>ô 17×17 tại x49.5, viền 1.5px --st-todo; chữ x76.5 15px / 21.75; nút Chuyển thành việc x594.4 w155.1 h28</td></tr><tr><th scope='row'>Thẻ Việc liên quan</th><td>49.5, 886.6, 700 × 255.8</td><td>radius 12; hàng 43 (hàng khoá 42)</td></tr><tr><th scope='row'>Ghi chú quyền + khung thông tin</th><td>y1154.4 (cao 37.5) · y1211.9 (cao 74.4)</td><td></td></tr><tr><th scope='row'>Bảng bên</th><td>799, 126, 309 × 1214</td><td>thanh tab y126 cao 44; tab Liên kết x812 w83.4 · Mục lục x897.4 w69.2 · Bình luận x968.6 w89.3; nội dung y170, đệm 14/16; mục đầu y210.1 cao 71.8</td></tr><tr><th scope='row'>320: thanh trên</th><td>0, 0, 320 × 52</td><td>Quay lại x6 y3.5 44×44 · Bình luận x224 · Thêm x270; dòng 'Đã lưu · Linh sửa 16:40 hôm qua' y52 cao 33</td></tr><tr><th scope='row'>320: menu · công cụ</th><td>menu y85 cao 44 · công cụ y129 cao 52</td><td>cuộn ngang ẩn thanh cuộn, mờ 24px ở mép phải; nút công cụ 44×44 y133, Kiểu đoạn x157 w132 h44</td></tr><tr><th scope='row'>320: bài viết</th><td>x16 w288, y202, cao 2026</td><td>h1 y202 (26px/32, 2 dòng); h2 y448.3 · 670.4 · 1071.6 · 1397.1 (18px/25); đoạn y483.3; chip việc cao 26</td></tr><tr><th scope='row'>320: mục kiểm</th><td>x0 w320, y1106.6 (65.5) · 1172.1 (98.5) · 1270.6 (98.5)</td><td>cả hàng là vùng chạm; ô nhìn thấy 17×17 trong vùng 44×44 ở x0; chữ x44; nút Chuyển thành việc x42 w159.1 h44 nằm dưới chữ</td></tr><tr><th scope='row'>320: thẻ Việc liên quan</th><td>x16, y1434.1, 288 × 566.1</td><td>đầu thẻ cao 124.7; liên kết 44 cao (y1514.8); hàng thẻ hai dòng y1559.8 · 1646.8 · 1733.8 · 1833.5 (87 / 99.7), mã ERP 44 cao, tiêu đề 52; hàng khoá 78.7</td></tr><tr><th scope='row'>320: ghi chú · khung thông tin</th><td>y2012.2 (75) · y2107.2 (120.8)</td><td>chiều cao cả bản vẽ 2276, đáy chừa 48 + safe-area</td></tr><tr><th scope='row'>320: bảng bên mở</th><td>Final-Docs-2-320-Sheet: sheet 0, 280, 320 × 520</td><td>tay nắm 142,286 36×5; tiêu đề cao 52; Đóng x268 y297 44×44; tab y345 cao 44; nội dung y389; mục đầu y429.1 cao 71.8</td></tr></tbody></table>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":1980}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

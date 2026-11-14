@@ -11,6 +11,7 @@ public static class AutomationRuleCodes
     public const string Automation_Rule_MustHaveTrigger = "Automation_Rule_MustHaveTrigger";
     public const string Automation_Rule_MustHaveAction = "Automation_Rule_MustHaveAction";
     public const string Automation_Rule_MustHaveExecutor = "Automation_Rule_MustHaveExecutor";
+    public const string Automation_Rule_BrokenReference = "Automation_Rule_BrokenReference";
 
     // ── Execution ─────────────────────────────────────────────────────────
     public const string Automation_Execution_CannotStartUnlessQueued = "Automation_Execution_CannotStartUnlessQueued";
@@ -18,6 +19,9 @@ public static class AutomationRuleCodes
     public const string Automation_Execution_CannotFailUnlessRunning = "Automation_Execution_CannotFailUnlessRunning";
     public const string Automation_Execution_ErrorRequiredOnFail = "Automation_Execution_ErrorRequiredOnFail";
     public const string Automation_Execution_CannotCancelUnlessQueuedOrRunning = "Automation_Execution_CannotCancelUnlessQueuedOrRunning";
+    public const string Automation_Execution_CannotCancelUnlessQueued = "Automation_Execution_CannotCancelUnlessQueued";
+    public const string Automation_Execution_FailureClassNotTerminal = "Automation_Execution_FailureClassNotTerminal";
+    public const string Automation_Execution_FailureClassNotRetryable = "Automation_Execution_FailureClassNotRetryable";
 
     // ── Agent ─────────────────────────────────────────────────────────────
     public const string Automation_Agent_InvalidStatusTransition = "Automation_Agent_InvalidStatusTransition";
@@ -28,6 +32,9 @@ public static class AutomationRuleCodes
     // ── ScheduledJob ──────────────────────────────────────────────────────
     public const string Automation_ScheduledJob_CannotCompleteFromStatus = "Automation_ScheduledJob_CannotCompleteFromStatus";
     public const string Automation_ScheduledJob_CannotFailFromStatus = "Automation_ScheduledJob_CannotFailFromStatus";
+
+    // ── Configuration (AUT-029) ───────────────────────────────────────────
+    public const string Automation_Configuration_SecretFieldNotAllowed = "Automation_Configuration_SecretFieldNotAllowed";
 
     // ── ActionValidator ───────────────────────────────────────────────────
     public const string Automation_Action_InvalidConfigJson = "Automation_Action_InvalidConfigJson";

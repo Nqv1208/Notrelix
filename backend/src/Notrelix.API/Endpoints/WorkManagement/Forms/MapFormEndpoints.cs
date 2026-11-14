@@ -41,6 +41,7 @@ public static class MapFormEndpoints
         submissionGroup.MapProcessFormSubmission();
         submissionGroup.MapRejectFormSubmission();
         submissionGroup.MapMarkFormSubmissionAsSpam();
+        submissionGroup.MapReopenFormSubmission();
         submissionGroup.MapDeleteFormSubmission();
 
         return app;

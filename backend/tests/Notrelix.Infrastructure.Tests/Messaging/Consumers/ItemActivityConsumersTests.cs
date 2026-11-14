@@ -254,6 +254,80 @@ public sealed class ItemActivityConsumersTests
         last.Rows.Select(r => r.Title).Should().Equal("row 0");
     }
 
+    [Fact]
+    public void EveryItemFact_HasExactlyOneHistoryConsumer()
+    {
+        // One fact, one history line: no item fact is recorded by two consumers.
+        var consumers = typeof(ItemActivityRecorder).Assembly.GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false } && t.Name.EndsWith("ActivityConsumer", StringComparison.Ordinal))
+            .SelectMany(t => t.GetInterfaces()
+                .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IConsumer<>))
+                .Select(i => (Consumer: t, Fact: i.GetGenericArguments()[0])))
+            .Where(pair => pair.Fact.Name.StartsWith("BoardItem", StringComparison.Ordinal))
+            .ToList();
+
+        consumers.Should().NotBeEmpty();
+        consumers.GroupBy(pair => pair.Fact)
+            .Where(group => group.Count() > 1)
+            .Select(group => $"{group.Key.Name}: {string.Join(", ", group.Select(p => p.Consumer.Name))}")
+            .Should().BeEmpty();
+    }
+
+    public static TheoryData<string> ItemActions() =>
+        ["renamed", "archived", "unarchived", "restored", "dates-changed", "moved-to-group", "moved-to-board", "assigned", "label-added"];
+
+    [Theory]
+    [MemberData(nameof(ItemActions))]
+    public async Task EachItemAction_WritesExactlyOneLine_AndARedeliveryAddsNone(string action)
+    {
+        await using var db = CreateDb();
+        Guid Id() => Guid.CreateVersion7();
+        var work = Facts();
+        var groupA = Id();
+        var groupB = Id();
+        var otherBoard = Id();
+        work.Setup(f => f.FindGroupNameAsync(WorkspaceId, groupA, It.IsAny<CancellationToken>())).ReturnsAsync("To do");
+        work.Setup(f => f.FindGroupNameAsync(WorkspaceId, groupB, It.IsAny<CancellationToken>())).ReturnsAsync("Doing");
+        work.Setup(f => f.FindBoardNameAsync(WorkspaceId, It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync("Board");
+
+        Func<Task> deliver = action switch
+        {
+            "renamed" => Twice(new ItemRenamedActivityConsumer(Recorder(db)),
+                new BoardItemRenamedIntegrationEvent(Id(), AccountId, ItemId, BoardId, WorkspaceId, "Old", "New", Id(), Actor, null, Now)),
+            "archived" => Twice(new ItemArchivedActivityConsumer(Recorder(db)),
+                new BoardItemArchivedIntegrationEventV2(Id(), AccountId, ItemId, BoardId, WorkspaceId, 2, Id(), Actor, null, Now)),
+            "unarchived" => Twice(new ItemUnarchivedActivityConsumer(Recorder(db)),
+                new BoardItemUnarchivedIntegrationEvent(Id(), AccountId, WorkspaceId, ItemId, BoardId, Actor, Id(), null, null, Now)),
+            "restored" => Twice(new ItemRestoredActivityConsumer(Recorder(db)),
+                new BoardItemRestoredIntegrationEvent(Id(), AccountId, WorkspaceId, ItemId, BoardId, Actor, Id(), null, null, Now)),
+            "dates-changed" => Twice(new ItemDatesChangedActivityConsumer(Recorder(db)),
+                new BoardItemDatesChangedIntegrationEvent(Id(), AccountId, WorkspaceId, ItemId, BoardId, Now, Now.AddDays(2), null, null, Actor, Id(), null, null, Now)),
+            "moved-to-group" => Twice(new ItemMovedActivityConsumer(Recorder(db), work.Object),
+                new BoardItemMovedIntegrationEventV2(Id(), AccountId, ItemId, BoardId, WorkspaceId, groupA, groupB, 2, Id(), Actor, null, Now)),
+            "moved-to-board" => Twice(new ItemMovedToBoardActivityConsumer(Recorder(db), work.Object),
+                new BoardItemMovedToBoardIntegrationEvent(Id(), AccountId, WorkspaceId, ItemId, BoardId, otherBoard, groupA, groupB, "OPS-7", 3, Actor, Id(), null, null, Now)),
+            "assigned" => Twice(new ItemAssignedActivityConsumer(Recorder(db)),
+                new BoardItemMemberAssignedIntegrationEvent(Id(), AccountId, WorkspaceId, ItemId, Id(), Actor, Id(), null, null, Now)),
+            "label-added" => Twice(new ItemLabelAddedActivityConsumer(Recorder(db)),
+                new BoardItemLabelAddedIntegrationEvent(Id(), AccountId, WorkspaceId, ItemId, Id(), "Bug", Actor, Id(), null, null, Now)),
+            _ => throw new ArgumentOutOfRangeException(nameof(action)),
+        };
+
+        await deliver();
+
+        var rows = await db.WorkspaceActivityLogs.ToListAsync();
+        rows.Should().ContainSingle($"{action} is one line");
+        rows[0].ResourceId.Should().Be(ItemId);
+        rows[0].ActorUserId.Should().Be(Actor);
+    }
+
+    /// <summary>The same message delivered twice, as a redelivery does.</summary>
+    private static Func<Task> Twice<T>(IConsumer<T> consumer, T message) where T : class => async () =>
+    {
+        await consumer.Consume(Context(message));
+        await consumer.Consume(Context(message));
+    };
+
     private static BoardItemMovedIntegrationEventV2 Moved(Guid from, Guid to) => new(
         Guid.CreateVersion7(), AccountId, ItemId, BoardId, WorkspaceId, from, to, 2, Guid.CreateVersion7(), Actor, null, Now);
 

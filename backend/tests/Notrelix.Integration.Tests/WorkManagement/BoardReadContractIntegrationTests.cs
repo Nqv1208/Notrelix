@@ -7,8 +7,10 @@ using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.WorkManagement.Checklists;
 using Notrelix.Domain.WorkManagement.Fields;
 using Notrelix.Domain.WorkManagement.Items;
+using Notrelix.Domain.WorkManagement.Labels;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
@@ -46,6 +48,7 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
     private BoardItem _archivedRoot = null!;
     private BoardItem _plain = null!;
     private BoardItem _trashed = null!;
+    private Label _label = null!;
 
     public BoardReadContractIntegrationTests(PostgresTestContainer db)
     {
@@ -89,12 +92,18 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
         _trashed = Root("Trashed", "a6");
         _trashed.Delete(_userId, Now);
 
+        _label = Label.Create(_accountId, workspace.Id, _board.Id, "Bug", LabelColor.Create("#E53935"), _userId, Now);
+
         await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.Workspaces.Add(workspace);
         seed.Boards.Add(_board);
         seed.BoardGroups.Add(_group);
         seed.BoardFields.AddRange(_status, _priority);
         seed.BoardItems.AddRange(_parent, _doneChild, _todoChild, _archivedChild, _archivedRoot, _plain, _trashed);
+        seed.Labels.Add(_label);
+        seed.BoardItemLabels.Add(BoardItemLabel.Create(_accountId, workspace.Id, _board.Id, _plain.Id, _label.Id, _userId, Now));
+        // Both the parent (with sub-items) and the plain item (without) hold a checklist of 3 with 1 done.
+        seed.Checklists.AddRange(ChecklistOf(_parent), ChecklistOf(_plain));
         // Plain is blocked by the open Parent and by the completed child: only the open one counts.
         var itemKind = ResourceKind.Create("work-management.board-item");
         seed.BoardItemLinks.AddRange(
@@ -136,6 +145,26 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Progress_IsTheSubItemShare_AndAChecklistKeepsItsOwnCount()
+    {
+        var board = await FullBoardAsync(visibleSpaces: [_spaceId]);
+        var items = board.Lists.Single(l => l.Id == _group.Id).BoardItems;
+
+        // One precedence: with sub-items the progress is theirs (1 of 2), whatever the checklist holds.
+        var parent = items.Single(i => i.Id == _parent.Id);
+        parent.ChildProgress.Should().Be(new BoardItemChildProgressDto(1, 2));
+        (parent.ChecklistProgress, parent.ChecklistTotal).Should().Be((1, 3), "the checklist is its own count and never feeds the parent's progress");
+
+        // Without sub-items there is no derived progress: a checklist does not become one.
+        var plain = items.Single(i => i.Id == _plain.Id);
+        plain.ChildProgress.Should().BeNull();
+        (plain.ChecklistProgress, plain.ChecklistTotal).Should().Be((1, 3));
+
+        // The detail read agrees with the board read.
+        (await ItemAsync(_parent.Id)).ChildProgress.Should().Be(parent.ChildProgress);
+    }
+
+    [Fact]
     public async Task FullBoard_FieldOptionsCarryTheirStatusCategory()
     {
         var board = await FullBoardAsync(visibleSpaces: [_spaceId]);
@@ -156,6 +185,24 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
         // The parent and its two live children; the archived child does not count.
         board.Columns.Single(c => c.Id == _status.Id).ValueCount.Should().Be(3);
         board.Columns.Single(c => c.Id == _priority.Id).ValueCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task BoardList_CarriesTheKeyPrefixAndTheNameOfAVisibleSpace()
+    {
+        var visibility = new Mock<IResourceVisibility>();
+        visibility.Setup(v => v.VisibleBoardIdsAsync(_workspaceId, _userId, It.IsAny<CancellationToken>())).ReturnsAsync([_board.Id]);
+        visibility.Setup(v => v.VisibleSpaceIdsAsync(_workspaceId, _userId, It.IsAny<CancellationToken>())).ReturnsAsync([_spaceId]);
+        visibility.Setup(v => v.SpaceNamesAsync(_workspaceId, It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, string> { [_spaceId] = "Khối Công nghệ" });
+        await using var context = _db.CreateOwnerContext(Tenant());
+
+        var result = await new Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoards.GetBoardsQueryHandler(context, visibility.Object, Request())
+            .Handle(new Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoards.GetBoardsQuery(_workspaceId), CancellationToken.None);
+
+        var listed = result.Data!.Single();
+        listed.ItemKeyPrefix.Should().Be("WEB");
+        listed.DepartmentName.Should().Be("Khối Công nghệ");
     }
 
     [Fact]
@@ -221,13 +268,38 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
         (await ItemAsync(_archivedRoot.Id, guest: true)).ArchivedByName.Should().BeNull();
     }
 
-    private async Task<FullBoardDto> FullBoardAsync(IReadOnlyList<Guid> visibleSpaces)
+    [Fact]
+    public async Task FullBoard_PagedWithSearch_KeepsTheItemsWhoseTitleOrKeyHoldsTheText_IgnoringCase()
+    {
+        var byTitle = await FullBoardAsync([_spaceId], search: "PLAIN");
+        byTitle.Lists.Single(l => l.Id == _group.Id).BoardItems.Select(i => i.Name).Should().Equal(["Plain"]);
+        byTitle.Lanes!.Sum(l => l.FilteredCount).Should().Be(1);
+        byTitle.Lanes!.Sum(l => l.ItemCount).Should().Be(2, "the search narrows the filtered size, not the lane's own");
+
+        var byKey = await FullBoardAsync([_spaceId], search: _parent.ItemKey!.ToLowerInvariant());
+        byKey.Lists.Single(l => l.Id == _group.Id).BoardItems.Select(i => i.Name).Should().Equal(["Parent"]);
+    }
+
+    [Fact]
+    public async Task FullBoard_PagedWithALabelFilter_KeepsOnlyTheItemsHoldingAnyOfTheLabels_AndALabelOfNoItemMatchesNothing()
+    {
+        var any = await FullBoardAsync([_spaceId], filter: $"c2:and~%24label.has_any.{_label.Id}");
+        any.Lists.Single(l => l.Id == _group.Id).BoardItems.Select(i => i.Name).Should().Equal(["Plain"]);
+        any.Lanes!.Sum(l => l.FilteredCount).Should().Be(1);
+        any.Lanes!.Sum(l => l.ItemCount).Should().Be(2, "the filter narrows the filtered size, not the lane's own");
+
+        var other = await FullBoardAsync([_spaceId], filter: $"c2:and~%24label.has_any.{Guid.NewGuid()}");
+        other.Lists.Single(l => l.Id == _group.Id).BoardItems.Should().BeEmpty("a label of another board matches nothing");
+        other.Lanes!.Sum(l => l.FilteredCount).Should().Be(0);
+    }
+
+    private async Task<FullBoardDto> FullBoardAsync(IReadOnlyList<Guid> visibleSpaces, string? search = null, string? filter = null)
     {
         var visibility = new Mock<IResourceVisibility>();
         visibility.Setup(v => v.VisibleSpaceIdsAsync(_workspaceId, _userId, It.IsAny<CancellationToken>())).ReturnsAsync(visibleSpaces);
         await using var context = _db.CreateOwnerContext(Tenant());
         var result = await new GetFullBoardQueryHandler(context, Actors(), new Notrelix.Application.Features.WorkManagement.BoardItems.Services.BoardItemSummaryBuilder(context, Actors(), Collaboration(), Request()), new Notrelix.Infrastructure.Data.WorkManagement.PostgresBoardItemPageReader(context), visibility.Object, Request())
-            .Handle(new GetFullBoardQuery(_board.Id), CancellationToken.None);
+            .Handle(search is null && filter is null ? new GetFullBoardQuery(_board.Id) : new GetFullBoardQuery(_board.Id, 50, Filter: filter, Search: search), CancellationToken.None);
         result.Succeeded.Should().BeTrue();
         return result.Data!;
     }
@@ -246,6 +318,16 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
             .Handle(new GetBoardItemQuery(itemId), CancellationToken.None);
         result.Succeeded.Should().BeTrue();
         return result.Data!;
+    }
+
+    private Checklist ChecklistOf(BoardItem item)
+    {
+        var checklist = Checklist.Create(_accountId, _workspaceId, item.Id, "Steps", FractionalIndex.Create("a0"), _userId, Now);
+        var first = checklist.AddItem("One", FractionalIndex.Create("a0"), _userId, Now);
+        checklist.AddItem("Two", FractionalIndex.Create("a1"), _userId, Now);
+        checklist.AddItem("Three", FractionalIndex.Create("a2"), _userId, Now);
+        checklist.SetItemCompletion(first.Id, true, _userId, Now);
+        return checklist;
     }
 
     private Guid Category(WorkStatusCategory category) => _status.Options.Single(o => o.Category == category).Id;

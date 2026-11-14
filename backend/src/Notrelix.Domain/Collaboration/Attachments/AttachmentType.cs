@@ -8,5 +8,6 @@ public enum AttachmentType
     Spreadsheet,
     Archive,
     Link,
-    Video
+    Video,
+    Audio
 }

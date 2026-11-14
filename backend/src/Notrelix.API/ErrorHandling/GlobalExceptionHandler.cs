@@ -6,6 +6,8 @@ namespace Notrelix.API.ErrorHandling;
 
 public class GlobalExceptionHandler : IExceptionHandler
 {
+    private const string RevocationRetryAfterSeconds = "5";
+
     private readonly ILogger<GlobalExceptionHandler> _logger;
     private readonly IdempotencyOptions _idempotencyOptions;
 
@@ -29,6 +31,16 @@ public class GlobalExceptionHandler : IExceptionHandler
             // Spec 3.8: incomplete idempotency state maps to 503 + Retry-After.
             context.Response.Headers.RetryAfter =
                 ((int)_idempotencyOptions.IncompleteStateRetryAfter.TotalSeconds).ToString();
+        }
+
+        if (exception is Notrelix.Application.Common.Exceptions.TooManyRequestsException tooMany)
+        {
+            context.Response.Headers.RetryAfter = ProblemDetailsMapper.RetryAfterSeconds(tooMany).ToString();
+        }
+
+        if (exception is Notrelix.Application.Common.Exceptions.RevocationStoreUnavailableException)
+        {
+            context.Response.Headers.RetryAfter = RevocationRetryAfterSeconds;
         }
 
         if (problemDetails.Status >= 500)

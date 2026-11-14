@@ -104,6 +104,21 @@ public static class WorkspaceRoleBaseline
         // Commenting is decided on the target resource (board item / page); a Guest needs explicit
         // access evidence on it.
         [PermissionAction.CreateComment] = new(A, L, L, L),
+
+        // Chat (docs/workstreams/teams/chat.md section 9). Public channels are visible to every non-guest member;
+        // the space's own rules (membership of a private space, the channel manager) decide the rest in the handler.
+        // A Guest sees only the spaces they were added to, so the Guest cell of a space action is decided there too.
+        [PermissionAction.ChatChannelCreate] = new(A, A, A, D),
+        [PermissionAction.ChatChannelManage] = new(A, A, A, D),
+        // Groups are a category: Owner and Admin by default, a Member only with a granted chat.group.manage.
+        [PermissionAction.ChatGroupManage] = new(A, A, D, D),
+        [PermissionAction.ChatMemberInvite] = new(A, A, A, D),
+        [PermissionAction.ChatMessagePost] = new(A, A, A, A),
+        [PermissionAction.ChatMessageModerate] = new(A, A, D, D),
+        [PermissionAction.ChatMentionBroadcast] = new(A, A, D, D),
+        [PermissionAction.ChatMessagePin] = new(A, A, A, D),
+        [PermissionAction.ChatMessageReact] = new(A, A, A, A),
+        [PermissionAction.ChatSearch] = new(A, A, A, A),
     };
 
     /// <summary>The actions the table classifies (every <see cref="PermissionAction"/> must be one).</summary>

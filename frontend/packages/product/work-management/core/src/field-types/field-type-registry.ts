@@ -27,6 +27,8 @@ export type FilterOperator =
 export interface FieldContext {
   readonly field: FieldDefinition;
   readonly memberName: (userId: string) => string;
+  /** The IANA zone a date instant's day is judged in (the board's); absent: UTC. */
+  readonly timeZone?: string;
 }
 
 /** A draft typed in an inline editor, parsed to the value the write carries. */
@@ -181,6 +183,11 @@ const computed = (
   parseDraft: readOnlyDraft,
 });
 
+/** How many items a Relation value links to; a value that is not a list links to none. */
+function linkCount(value: unknown): number {
+  return Array.isArray(value) ? value.length : 0;
+}
+
 /** The count of a Vote value (`{ count, voted }`); anything else counts as no votes. */
 function voteCount(value: unknown): number {
   const count = (value as { count?: unknown } | null | undefined)?.count;
@@ -309,10 +316,14 @@ export const fieldTypeRegistry: Readonly<Record<FieldType, FieldTypeSpec>> = {
     editable: false,
     parseDraft: readOnlyDraft,
   },
+  // Links to items of another board (UC-WM-C18): set in the item, never typed; only emptiness is filterable.
   relation: {
-    ...text,
+    ...base,
     type: "relation",
     editable: false,
+    operators: ["is_empty", "is_not_empty"],
+    compare: (a, b) => linkCount(a) - linkCount(b),
+    text: (value) => String(linkCount(value)),
     parseDraft: readOnlyDraft,
   },
 };

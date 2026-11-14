@@ -13,5 +13,6 @@ export function mapComment(dto: CommentDtoApi, pageId: string): PageComment {
     resolved: !!dto.resolvedAt,
     createdAt: dto.createdAt,
     updatedAt: dto.createdAt,
+    version: dto.version,
   };
 }

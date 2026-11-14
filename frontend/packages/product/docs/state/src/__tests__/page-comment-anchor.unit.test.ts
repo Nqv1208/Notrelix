@@ -35,23 +35,26 @@ describe("page comments with a text anchor", () => {
 
   it("reads the anchor of a comment, and none for a comment without one", async () => {
     const api = client();
-    api.get.mockResolvedValue([
-      {
-        id: "c1",
-        userId: "u1",
-        contentMd: "why?",
-        createdAt: "2026-10-26T10:00:00Z",
-        isEdited: false,
-        anchor: ANCHOR,
-      },
-      {
-        id: "c2",
-        userId: "u1",
-        contentMd: "hi",
-        createdAt: "2026-10-26T11:00:00Z",
-        isEdited: false,
-      },
-    ]);
+    api.get.mockResolvedValue({
+      items: [
+        {
+          id: "c1",
+          userId: "u1",
+          contentMd: "why?",
+          createdAt: "2026-10-26T10:00:00Z",
+          isEdited: false,
+          anchor: ANCHOR,
+        },
+        {
+          id: "c2",
+          userId: "u1",
+          contentMd: "hi",
+          createdAt: "2026-10-26T11:00:00Z",
+          isEdited: false,
+        },
+      ],
+      nextCursor: null,
+    });
     const list = await createCommentApi(api, testEndpoints).getList("p1");
     expect(list.map((comment) => comment.anchor)).toEqual([ANCHOR, null]);
   });

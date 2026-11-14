@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Chat.Public.SpaceViewFacts;
 using Notrelix.Application.Features.Collaboration.Public.Notifications;
 using Notrelix.Application.Features.Documents.Public.PageTitles;
 using Notrelix.Application.Features.Governance.Public.Visibility;
@@ -56,10 +57,13 @@ public class GetWorkspaceInboxQueryHandler(
     IResourceVisibility visibility,
     INotificationInbox inbox,
     IActorLookupService actors,
-    IPageTitleFacts pageTitles) : IRequestHandler<GetWorkspaceInboxQuery, Result<WorkspaceInboxDto>>
+    IPageTitleFacts pageTitles,
+    IChatSpaceViewFacts chatSpaces) : IRequestHandler<GetWorkspaceInboxQuery, Result<WorkspaceInboxDto>>
 {
     private const string BoardItemKind = "work-management.board-item";
     private const string PageKind = "documents.page";
+    private const string BoardKind = "work-management.board";
+    private const string ChatSpaceKind = "chat.space";
 
     /// <summary>The notification type Collaboration stores for "someone asked you to approve an item".</summary>
     private const string ApprovalRequestedType = "approval.requested";
@@ -92,17 +96,38 @@ public class GetWorkspaceInboxQueryHandler(
             .Select(n => n.ResourceId!.Value)
             .Distinct()
             .ToList();
+        var boardIds = scanned
+            .Where(n => n.ResourceKind == BoardKind && n.ResourceId is not null)
+            .Select(n => n.ResourceId!.Value)
+            .Distinct()
+            .ToList();
         var readable = new Dictionary<Guid, (Guid BoardId, string? Key, string Name)>();
-        if (itemIds.Count > 0)
+        // A notification about a Board itself (a new response to one of its forms) names the Board when the caller
+        // may still read it; otherwise it is not shown.
+        var readableBoards = new Dictionary<Guid, string>();
+        if (itemIds.Count > 0 || boardIds.Count > 0)
         {
             var visibleBoardIds = await visibility.VisibleBoardIdsAsync(request.WorkspaceId, userId, cancellationToken);
-            if (visibleBoardIds.Count > 0)
+            var shownBoardIds = boardIds.Where(visibleBoardIds.Contains).ToList();
+            if (shownBoardIds.Count > 0)
+            {
+                readableBoards = (await context.Boards
+                        .AsNoTracking()
+                        .Where(b => shownBoardIds.Contains(b.Id) && b.WorkspaceId == request.WorkspaceId && b.DeletedAt == null)
+                        .Select(b => new { b.Id, b.Title })
+                        .ToListAsync(cancellationToken))
+                    .ToDictionary(b => b.Id, b => b.Title);
+            }
+
+            if (itemIds.Count > 0 && visibleBoardIds.Count > 0)
             {
                 readable = (await context.BoardItems
                         .AsNoTracking()
                         .Where(i => itemIds.Contains(i.Id)
                                     && i.WorkspaceId == request.WorkspaceId
                                     && i.DeletedAt == null
+                                    // An Item in an archived group is out of the inbox until the group comes back.
+                                    && !context.BoardGroups.Any(g => g.Id == i.GroupId && g.IsArchived)
                                     && visibleBoardIds.Contains(i.BoardId))
                         .Select(i => new { i.Id, i.BoardId, i.ItemKey, i.Name })
                         .ToListAsync(cancellationToken))
@@ -125,12 +150,25 @@ public class GetWorkspaceInboxQueryHandler(
             readablePages = titles.ToDictionary(t => t.Key, t => t.Value);
         }
 
+        // A chat notification names its channel while the caller is still a member of the space; once they left it, it is not shown.
+        var chatSpaceIds = scanned
+            .Where(n => n.ResourceKind == ChatSpaceKind && n.ResourceId is not null)
+            .Select(n => n.ResourceId!.Value)
+            .Distinct()
+            .ToList();
+        var viewableSpaces = chatSpaceIds.Count == 0
+            ? new Dictionary<Guid, string?>()
+            : (await chatSpaces.ViewableSpacesAsync(request.WorkspaceId, userId, chatSpaceIds, cancellationToken))
+                .ToDictionary(s => s.Key, s => s.Value);
+
         // A notification without a target, or about an Item or Page the caller reads, is shown; about one they do not read, not.
         var shown = scanned
             .Where(n => n.ResourceId is null
                         || (n.ResourceKind == BoardItemKind && readable.ContainsKey(n.ResourceId.Value))
                         || (n.ResourceKind == PageKind && readablePages.ContainsKey(n.ResourceId.Value))
-                        || (n.ResourceKind != BoardItemKind && n.ResourceKind != PageKind))
+                        || (n.ResourceKind == BoardKind && readableBoards.ContainsKey(n.ResourceId.Value))
+                        || (n.ResourceKind == ChatSpaceKind && viewableSpaces.ContainsKey(n.ResourceId.Value))
+                        || (n.ResourceKind != BoardItemKind && n.ResourceKind != PageKind && n.ResourceKind != BoardKind && n.ResourceKind != ChatSpaceKind))
             .ToList();
         var page = shown.Take(limit).ToList();
 
@@ -174,6 +212,15 @@ public class GetWorkspaceInboxQueryHandler(
             else if (n.ResourceKind == PageKind && n.ResourceId is { } pageId && readablePages.TryGetValue(pageId, out var pageTitle))
             {
                 target = new InboxTargetDto("doc", pageId, null, null, pageTitle);
+            }
+            else if (n.ResourceKind == BoardKind && n.ResourceId is { } boardId && readableBoards.TryGetValue(boardId, out var boardName))
+            {
+                target = new InboxTargetDto("board", boardId, boardId, null, boardName);
+            }
+
+            else if (n.ResourceKind == ChatSpaceKind && n.ResourceId is { } spaceId && viewableSpaces.TryGetValue(spaceId, out var spaceName))
+            {
+                target = new InboxTargetDto("chat", spaceId, null, null, spaceName);
             }
 
             return new InboxEntryDto(

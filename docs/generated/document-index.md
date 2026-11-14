@@ -30,25 +30,25 @@ review_on:
 > This file is generated discovery evidence.
 > It does not replace the canonical authority described by each source document.
 
-Document count: 96
+Document count: 99
 
 ## Documents by type
 
 | Value | Count |
 |:---|---:|
 | `architecture` | 22 |
-| `architecture-decision` | 17 |
+| `architecture-decision` | 18 |
 | `architecture-policy` | 1 |
 | `decision-registry` | 3 |
 | `delivery-handbook` | 1 |
-| `delivery-policy` | 9 |
+| `delivery-policy` | 10 |
 | `generated` | 3 |
 | `governance` | 5 |
 | `index-router` | 1 |
 | `infrastructure-standard` | 3 |
 | `operations` | 3 |
 | `operations-standard` | 4 |
-| `product-context` | 12 |
+| `product-context` | 13 |
 | `product-experience` | 1 |
 | `quality-standard` | 4 |
 | `template` | 6 |
@@ -58,8 +58,8 @@ Document count: 96
 
 | Value | Count |
 |:---|---:|
-| `Accepted` | 15 |
-| `active` | 76 |
+| `Accepted` | 16 |
+| `active` | 78 |
 | `generated` | 3 |
 | `Superseded` | 2 |
 
@@ -100,6 +100,7 @@ Document count: 96
 | `DEL-DEFINITION-OF-DONE` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `backend`, `frontend`, `documentation`, `ci` | [`docs/delivery/definition-of-done.md`](../delivery/definition-of-done.md) |
 | `DEL-LOCAL-DEVELOPMENT` | `delivery-handbook` | `active` | `engineering-delivery` | `repository`, `local-development`, `onboarding`, `backend`, `frontend`, `docker`, `developer-tooling` | [`docs/delivery/local-development.md`](../delivery/local-development.md) |
 | `DEL-MIGRATION` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `backend`, `database`, `persisted-contracts`, `data-backfills`, `ownership-migrations`, `projections`, `message-backlogs` | [`docs/delivery/migration-policy.md`](../delivery/migration-policy.md) |
+| `DEL-PRODUCT-LIFECYCLE` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `use-case-catalog`, `releases`, `lanes`, `acceptance` | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
 | `DEL-RELEASE-ROLLOUT` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `backend`, `frontend`, `mobile`, `workers`, `infrastructure`, `feature-flags`, `releases` | [`docs/delivery/release-and-rollout.md`](../delivery/release-and-rollout.md) |
 | `DEL-TEAM-OWNERSHIP` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `product-contexts`, `backend`, `frontend`, `platform`, `quality`, `delivery`, `operations`, `infrastructure` | [`docs/delivery/team-ownership.md`](../delivery/team-ownership.md) |
 | `DOC-AUTHORITY` | `governance` | `active` | `documentation-governance` | `repository` | [`docs/governance/documentation-authority.md`](../governance/documentation-authority.md) |
@@ -136,6 +137,7 @@ Document count: 96
 | `PROD-ANALYTICS` | `product-context` | `active` | `analytics` | `analytics`, `reporting`, `dashboards`, `widgets`, `metrics`, `snapshots`, `projections` | [`docs/product/analytics.md`](../product/analytics.md) |
 | `PROD-AUTOMATION` | `product-context` | `active` | `automation` | `automation`, `rules`, `triggers`, `conditions`, `actions`, `executions`, `scheduling`, `automation-templates` | [`docs/product/automation.md`](../product/automation.md) |
 | `PROD-BILLING` | `product-context` | `active` | `billing` | `billing`, `plans`, `subscriptions`, `entitlements`, `usage`, `invoices`, `payment-methods`, `billing-customers` | [`docs/product/billing.md`](../product/billing.md) |
+| `PROD-CHAT` | `product-context` | `active` | `chat` | `chat`, `channels`, `channel-groups`, `conversations`, `messages`, `threads`, `pins`, `chat-read-state`, `chat-presence`, `chat-notifications` | [`docs/product/chat.md`](../product/chat.md) |
 | `PROD-COLLABORATION` | `product-context` | `active` | `collaboration` | `collaboration`, `comments`, `mentions`, `reactions`, `attachments`, `presence`, `read-state`, `watchers`, `notifications`, `user-activity` | [`docs/product/collaboration.md`](../product/collaboration.md) |
 | `PROD-DOCUMENTS` | `product-context` | `active` | `documents` | `documents`, `pages`, `blocks`, `document-hierarchy`, `resource-links`, `document-versions`, `document-templates` | [`docs/product/documents.md`](../product/documents.md) |
 | `PROD-EXPERIENCE` | `product-experience` | `active` | `product-design` | `authenticated-product`, `marketing`, `web`, `mobile`, `product-copy`, `accessibility` | [`docs/product/product-experience.md`](../product/product-experience.md) |
@@ -151,6 +153,7 @@ Document count: 96
 | `QLT-PERFORMANCE` | `quality-standard` | `active` | `engineering-quality` | `repository`, `backend`, `frontend`, `api`, `data`, `messaging`, `realtime`, `analytics`, `integrations` | [`docs/quality/performance-and-scalability.md`](../quality/performance-and-scalability.md) |
 | `QLT-SECURITY` | `quality-standard` | `active` | `engineering-security` | `repository`, `backend`, `frontend`, `api`, `background-processing`, `integrations`, `ci` | [`docs/quality/security-quality-standard.md`](../quality/security-quality-standard.md) |
 | `QLT-TESTING` | `testing-strategy` | `active` | `engineering-quality` | `repository`, `backend`, `frontend`, `ci` | [`docs/quality/testing-strategy.md`](../quality/testing-strategy.md) |
+| `SYS-ADR-001` | `architecture-decision` | `Accepted` | `architecture` | `chat`, `collaboration`, `bounded-context-map`, `realtime-gateway`, `backend`, `frontend` | [`docs/decisions/SYS-ADR-001-chat-bounded-context.md`](../decisions/SYS-ADR-001-chat-bounded-context.md) |
 | `SYS-BOUNDED-CONTEXT-MAP` | `architecture` | `active` | `system-architecture` | `product`, `backend`, `frontend`, `cross-context-contracts` | [`docs/architecture/bounded-context-map.md`](../architecture/bounded-context-map.md) |
 | `SYS-CAPABILITY-EXTRACTION` | `architecture` | `active` | `system-architecture` | `repository`, `backend`, `frontend`, `bounded-contexts`, `deployment`, `data-ownership`, `public-contracts`, `operations` | [`docs/architecture/capability-extraction-strategy.md`](../architecture/capability-extraction-strategy.md) |
 | `SYS-CONTRACT-BOUNDARIES` | `architecture` | `active` | `system-architecture` | `repository`, `backend`, `frontend`, `public-contracts`, `integration-contracts`, `realtime-contracts`, `generated-contracts` | [`docs/architecture/contract-boundaries.md`](../architecture/contract-boundaries.md) |

@@ -8,9 +8,10 @@ namespace Notrelix.Application.Tests.Features.Workspaces.Workspaces.Commands;
 public class DeleteWorkspaceCommandHandlerTests : WorkspaceHandlerTestBase
 {
     private readonly Mock<IAuditService> _audit = new();
+    private readonly Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal> _access = new();
 
     private DeleteWorkspaceCommandHandler CreateSut() => new(
-        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, _audit.Object);
+        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, _audit.Object, _access.Object);
 
     private void VerifyAudit(Times times) => _audit.Verify(a => a.RecordAsync(
         It.IsAny<Guid>(), It.IsAny<Guid>(), "DeleteWorkspace", It.IsAny<ResourceRef>(), It.IsAny<AuditMetadata>(),
@@ -27,6 +28,7 @@ public class DeleteWorkspaceCommandHandlerTests : WorkspaceHandlerTestBase
         workspace.IsDeleted.Should().BeTrue();
         workspace.DeletedBy.Should().Be(TestUserId);
         VerifyAudit(Times.Once());
+        _access.Verify(a => a.Workspace(workspace.Id), Times.Once);
     }
 
     [Fact]
@@ -42,6 +44,7 @@ public class DeleteWorkspaceCommandHandlerTests : WorkspaceHandlerTestBase
         result.Succeeded.Should().BeTrue();
         workspace.Version.Should().Be(version);
         VerifyAudit(Times.Never());
+        _access.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -56,6 +59,7 @@ public class DeleteWorkspaceCommandHandlerTests : WorkspaceHandlerTestBase
             .Should().Be(WorkspaceRuleCodes.Workspaces_Workspace_CannotDeletePersonal);
         personal.IsDeleted.Should().BeFalse();
         VerifyAudit(Times.Never());
+        _access.VerifyNoOtherCalls();
     }
 
     [Fact]

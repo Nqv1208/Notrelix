@@ -21,6 +21,11 @@ class InnerRuntimeErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
+  // Retry remounts the subtree: clearing the error renders the children again.
+  private readonly handleRetry = (): void => {
+    this.setState({ hasError: false, error: null });
+  };
+
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     this.props.runtime.telemetry.reportError(error, {
       componentStack: errorInfo.componentStack,
@@ -41,9 +46,12 @@ class InnerRuntimeErrorBoundary extends Component<Props, State> {
         >
           <h2>Something went wrong</h2>
           <p>
-            An unexpected error occurred. Please refresh the page or try again
-            later.
+            An unexpected error occurred. Try again, or refresh the page if it
+            keeps happening.
           </p>
+          <button type="button" onClick={this.handleRetry}>
+            Try again
+          </button>
           {!isProduction && this.state.error instanceof Error && (
             <pre
               style={{

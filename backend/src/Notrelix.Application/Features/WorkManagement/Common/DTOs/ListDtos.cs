@@ -9,7 +9,8 @@ public record SavedFilterDto(
     DateTimeOffset CreatedAt,
     string? Criteria,
     bool IsMine,
-    long Version
+    long Version,
+    string? CreatedByName
 );
 
 public record ApprovalRequestDto(
@@ -20,7 +21,8 @@ public record ApprovalRequestDto(
     Guid RequestedByUserId,
     DateTimeOffset CreatedAt,
     List<ApprovalStepDto> Steps,
-    long Version
+    long Version,
+    Guid? PreviousRequestId = null
 );
 
 public record ApprovalStepDto(

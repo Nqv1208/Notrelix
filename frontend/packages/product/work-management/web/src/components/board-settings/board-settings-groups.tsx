@@ -29,6 +29,18 @@ import {
 } from "./board-settings-parts";
 import { SortableList, SortableRow } from "./board-settings-sortable";
 
+/** The inset panel under a row (the artboard's `.gconf`): the delete, archive and add forms and the gone notice. */
+const PANEL_CLASS =
+  "flex flex-col gap-2.5 border-t border-line bg-background px-3.5 pt-3 pb-3.5 pl-[58px] first:border-t-0";
+
+/** A group whose rename, archive or delete panel is open; `leaving` while this person's own archive or delete runs. */
+interface OpenPanel {
+  readonly id: string;
+  readonly name: string;
+  readonly kind: "rename" | "delete" | "archive";
+  readonly leaving: boolean;
+}
+
 const ROW_GRID =
   "grid grid-cols-[28px_14px_minmax(0,1fr)_92px_66px] items-center gap-2.5 min-h-[47px] first:min-h-[46px] pr-2.5 pl-1.5 text-item-ui";
 
@@ -37,21 +49,37 @@ export function GroupsSection() {
   const { copy, settings, actions, run } = useSettings();
   const t = copy.groups;
   const [adding, setAdding] = useState(false);
+  const [addPending, setAddPending] = useState(false);
   const [newName, setNewName] = useState("");
-  const [renameId, setRenameId] = useState<string | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [open, setOpen] = useState<OpenPanel | null>(null);
   const addFailedProps = useWriteErrorProps("group-add", "bs-group-add-error");
   const groups = settings.groups;
   const total = groups.reduce((sum, group) => sum + group.itemCount, 0);
+  // The group of an open panel left the settings without this person's own archive or delete:
+  // someone else deleted or archived it. The panel gives way to a notice and nothing is sent.
+  const gone =
+    open && !open.leaving && !groups.some((group) => group.id === open.id)
+      ? open
+      : null;
+  const openOf = (id: string) =>
+    open && open.id === id && !gone ? open.kind : null;
 
   async function add() {
     const name = newName.trim();
-    if (!name) return;
+    if (!name || addPending) return;
+    setAddPending(true);
     const result = await run(() => actions.createGroup(name), "group-add");
+    setAddPending(false);
     if (result.ok) {
       setAdding(false);
       setNewName("");
     }
+  }
+
+  function closeAdd() {
+    if (addPending) return;
+    setAdding(false);
+    setNewName("");
   }
 
   return (
@@ -79,53 +107,6 @@ export function GroupsSection() {
           <span>{t.note}</span>
         </Callout>
 
-        {adding ? (
-          <form
-            className="mb-3 flex flex-wrap items-center gap-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void add();
-            }}
-          >
-            <input
-              autoFocus
-              value={newName}
-              aria-label={t.addPlaceholder}
-              placeholder={t.addPlaceholder}
-              {...addFailedProps}
-              onChange={(event) => setNewName(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") {
-                  event.stopPropagation();
-                  setAdding(false);
-                  setNewName("");
-                }
-              }}
-              className={cn(INPUT_CLASS, "min-w-0 flex-1")}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setAdding(false);
-                setNewName("");
-              }}
-              className={BUTTON_CLASS.outline}
-            >
-              {copy.common.cancel}
-            </button>
-            <button
-              type="submit"
-              disabled={newName.trim() === ""}
-              className={BUTTON_CLASS.primary}
-            >
-              {t.addConfirm}
-            </button>
-            <div className="basis-full empty:hidden">
-              <WriteError scope="group-add" id="bs-group-add-error" />
-            </div>
-          </form>
-        ) : null}
-
         <SectionLine
           title={t.list}
           count={fillCopy(t.summary, { groups: groups.length, items: total })}
@@ -148,6 +129,25 @@ export function GroupsSection() {
             <span>{t.columns.count}</span>
             <span />
           </div>
+          {gone ? (
+            <div role="listitem" className={PANEL_CLASS}>
+              <div role="status" className="flex flex-wrap items-center gap-2">
+                <p className="m-0 min-w-0 flex-1 text-item-small text-muted-foreground">
+                  <b className="font-semibold text-foreground">
+                    {fillCopy(t.goneTitle, { name: gone.name })}
+                  </b>{" "}
+                  {t.goneBody}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setOpen(null)}
+                  className={BUTTON_CLASS.outline}
+                >
+                  {copy.common.close}
+                </button>
+              </div>
+            </div>
+          ) : null}
           <SortableList
             ids={groups.map((group) => group.id)}
             onReorder={(ids) => run(() => actions.reorderGroups(ids))}
@@ -168,8 +168,7 @@ export function GroupsSection() {
                     key={group.id}
                     group={group}
                     last={groups.length <= 1}
-                    renaming={renameId === group.id}
-                    deleting={deleteId === group.id}
+                    panel={openOf(group.id)}
                     others={groups.filter((entry) => entry.id !== group.id)}
                     defaultTargetId={
                       (
@@ -181,17 +180,86 @@ export function GroupsSection() {
                         ]
                       )?.id ?? ""
                     }
-                    onRename={() => setRenameId(group.id)}
-                    onRenameDone={() => setRenameId(null)}
-                    onDelete={() => setDeleteId(group.id)}
-                    onDeleteDone={() => setDeleteId(null)}
+                    onOpen={(kind) =>
+                      setOpen({
+                        id: group.id,
+                        name: group.name,
+                        kind,
+                        leaving: false,
+                      })
+                    }
+                    onLeaving={(leaving) =>
+                      setOpen((held) =>
+                        held && held.id === group.id
+                          ? { ...held, leaving }
+                          : held,
+                      )
+                    }
+                    onClose={() =>
+                      setOpen((held) =>
+                        held && held.id === group.id ? null : held,
+                      )
+                    }
                   />
                 );
               })
             }
           </SortableList>
+          {adding ? (
+            <form
+              role="listitem"
+              aria-label={t.addTitle}
+              aria-busy={addPending || undefined}
+              className={PANEL_CLASS}
+              onSubmit={(event) => {
+                event.preventDefault();
+                void add();
+              }}
+            >
+              <p className="m-0 text-item-small text-muted-foreground">
+                <b className="font-semibold text-foreground">{t.addTitle}</b>{" "}
+                {t.addBody}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  autoFocus
+                  value={newName}
+                  readOnly={addPending}
+                  aria-label={t.addPlaceholder}
+                  placeholder={t.addPlaceholder}
+                  {...addFailedProps}
+                  onChange={(event) => setNewName(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      event.stopPropagation();
+                      closeAdd();
+                    }
+                  }}
+                  className={cn(INPUT_CLASS, "min-w-0 flex-1")}
+                />
+                <button
+                  type="button"
+                  disabled={addPending}
+                  onClick={closeAdd}
+                  className={BUTTON_CLASS.outline}
+                >
+                  {copy.common.cancel}
+                </button>
+                <button
+                  type="submit"
+                  disabled={addPending || newName.trim() === ""}
+                  className={BUTTON_CLASS.primary}
+                >
+                  {addPending ? t.adding : t.addConfirm}
+                </button>
+              </div>
+              <div className="empty:hidden">
+                <WriteError scope="group-add" id="bs-group-add-error" />
+              </div>
+            </form>
+          ) : null}
         </div>
-        <p className={cn(HINT_CLASS, "mt-2.5 mb-0 px-0.5")}>{t.footnote}</p>
+        <p className={cn(HINT_CLASS, "mx-0.5 mt-2.5 mb-0")}>{t.footnote}</p>
         {settings.archivedGroups.length > 0 ? (
           <div className="mt-5">
             <SectionLine
@@ -260,34 +328,37 @@ function ArchivedGroupRow({ group }: { group: BoardSettingsGroupDto }) {
 function GroupRow({
   group,
   last,
-  renaming,
-  deleting,
+  panel,
   others,
   defaultTargetId,
-  onRename,
-  onRenameDone,
-  onDelete,
-  onDeleteDone,
+  onOpen,
+  onLeaving,
+  onClose,
 }: {
   group: BoardSettingsGroupDto;
   last: boolean;
-  renaming: boolean;
-  deleting: boolean;
+  /** The panel open under this row, if any. */
+  panel: OpenPanel["kind"] | null;
   others: readonly BoardSettingsGroupDto[];
   /** The group the items move to unless another is chosen: the next one, else the previous. */
   defaultTargetId: string;
-  onRename: () => void;
-  onRenameDone: () => void;
-  onDelete: () => void;
-  onDeleteDone: () => void;
+  onOpen: (kind: OpenPanel["kind"]) => void;
+  /** True while this person's own archive or delete of the group runs, so its leaving is not news. */
+  onLeaving: (leaving: boolean) => void;
+  onClose: () => void;
 }) {
   const { copy, settings, actions, run } = useSettings();
   const t = copy.groups;
   const keepsItems =
     settings.unavailable?.nonEmptyGroupDelete === true && group.itemCount > 0;
+  const renaming = panel === "rename";
+  const deleting = panel === "delete";
+  const archiving = panel === "archive";
   const [name, setName] = useState(group.name);
+  const [renamePending, setRenamePending] = useState(false);
   const [moveTo, setMoveTo] = useState(defaultTargetId);
-  const [archiving, setArchiving] = useState(false);
+  // A target someone else removed meanwhile is no target: the person picks again.
+  const target = others.some((other) => other.id === moveTo) ? moveTo : "";
   const confirmId = useId();
   const archiveId = useId();
   const renameScope = `group:${group.id}`;
@@ -296,30 +367,38 @@ function GroupRow({
   const needsTarget = group.itemCount > 0;
 
   async function commitRename() {
+    if (renamePending) return;
     const next = name.trim();
     if (next && next !== group.name) {
       // A failed rename stays open with the typed name; the error offers Retry.
+      setRenamePending(true);
       const result = await run(
         () => actions.updateGroup(group.id, { name: next }),
         renameScope,
       );
-      if (result.ok) onRenameDone();
+      setRenamePending(false);
+      if (result.ok) onClose();
       return;
     }
+    // The same name (or only spaces around it) is no change: nothing is sent.
     setName(group.name);
-    onRenameDone();
+    onClose();
   }
 
   async function confirmArchive() {
+    onLeaving(true);
     const result = await run(() => actions.archiveGroup(group.id), renameScope);
-    if (result.ok) setArchiving(false);
+    if (result.ok) onClose();
+    else onLeaving(false);
   }
 
   async function confirmDelete() {
+    onLeaving(true);
     const result = await run(
-      actions.deleteGroup(group.id, needsTarget ? moveTo : null),
+      actions.deleteGroup(group.id, needsTarget ? target : null),
     );
-    if (result.ok) onDeleteDone();
+    if (result.ok) onClose();
+    else onLeaving(false);
   }
 
   return (
@@ -342,16 +421,18 @@ function GroupRow({
               <input
                 autoFocus
                 value={name}
+                readOnly={renamePending}
+                aria-busy={renamePending || undefined}
                 aria-label={t.renameField}
                 {...renameFailedProps}
                 onChange={(event) => setName(event.target.value)}
                 onBlur={() => void commitRename()}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") event.currentTarget.blur();
-                  if (event.key === "Escape") {
+                  if (event.key === "Escape" && !renamePending) {
                     event.stopPropagation();
                     setName(group.name);
-                    onRenameDone();
+                    onClose();
                   }
                 }}
                 className={cn(INPUT_CLASS, "h-8 min-w-0")}
@@ -370,7 +451,10 @@ function GroupRow({
               <button
                 type="button"
                 aria-label={fillCopy(t.rename, { name: group.name })}
-                onClick={onRename}
+                onClick={() => {
+                  setName(group.name);
+                  onOpen("rename");
+                }}
                 className={ICON_BUTTON_CLASS}
               >
                 <Pencil aria-hidden="true" />
@@ -402,12 +486,7 @@ function GroupRow({
                   >
                     {t.duplicate}
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      onDeleteDone();
-                      setArchiving(true);
-                    }}
-                  >
+                  <DropdownMenuItem onSelect={() => onOpen("archive")}>
                     {t.archive}
                   </DropdownMenuItem>
                   {last || keepsItems ? (
@@ -422,10 +501,7 @@ function GroupRow({
                   ) : (
                     <DropdownMenuItem
                       variant="destructive"
-                      onSelect={() => {
-                        setArchiving(false);
-                        onDelete();
-                      }}
+                      onSelect={() => onOpen("delete")}
                     >
                       {t.delete}
                     </DropdownMenuItem>
@@ -437,14 +513,23 @@ function GroupRow({
         )}
       </SortableRow>
       <div role="listitem" className="empty:hidden pl-[58px]">
-        <WriteError scope={renameScope} id={renameErrorId} />
+        {renamePending ? (
+          <p
+            role="status"
+            className="m-0 mt-1 pb-1 text-crumb text-meta-foreground"
+          >
+            {t.renaming}
+          </p>
+        ) : (
+          <WriteError scope={renameScope} id={renameErrorId} />
+        )}
       </div>
       {archiving ? (
         <div
           id={archiveId}
           role="listitem"
           aria-label={fillCopy(t.archiveQuestion, { name: group.name })}
-          className="flex flex-col gap-2.5 border-t border-line bg-background px-3.5 pt-3 pb-3.5 pl-[58px]"
+          className={PANEL_CLASS}
         >
           <p className="m-0 text-item-small text-muted-foreground">
             <b className="font-semibold text-foreground">
@@ -458,7 +543,7 @@ function GroupRow({
             <span className="flex-1" />
             <button
               type="button"
-              onClick={() => setArchiving(false)}
+              onClick={onClose}
               className={BUTTON_CLASS.outline}
             >
               {copy.common.cancel}
@@ -478,7 +563,7 @@ function GroupRow({
           id={confirmId}
           role="listitem"
           aria-label={fillCopy(t.deleteQuestion, { name: group.name })}
-          className="flex flex-col gap-2.5 border-t border-line bg-background px-3.5 pt-3 pb-3.5 pl-[58px]"
+          className={PANEL_CLASS}
         >
           <p className="m-0 text-item-small text-muted-foreground">
             <b className="font-semibold text-foreground">
@@ -497,8 +582,11 @@ function GroupRow({
                 >
                   {fillCopy(t.moveTo, { count: group.itemCount })}
                 </label>
-                <Select value={moveTo} onValueChange={setMoveTo}>
-                  <SelectTrigger id={`${confirmId}-to`} className="w-[220px]">
+                <Select value={target} onValueChange={setMoveTo}>
+                  <SelectTrigger
+                    id={`${confirmId}-to`}
+                    className="w-[220px] data-[size=default]:h-[34px]"
+                  >
                     <SelectValue placeholder={t.choose} />
                   </SelectTrigger>
                   <SelectContent>
@@ -514,14 +602,14 @@ function GroupRow({
             <span className="flex-1" />
             <button
               type="button"
-              onClick={onDeleteDone}
+              onClick={onClose}
               className={BUTTON_CLASS.outline}
             >
               {copy.common.cancel}
             </button>
             <button
               type="button"
-              disabled={needsTarget && moveTo === ""}
+              disabled={needsTarget && target === ""}
               onClick={() => void confirmDelete()}
               className={BUTTON_CLASS.danger}
             >

@@ -586,6 +586,11 @@ Bounds (`Messaging:Outbox`, validated on start):
 |---|---|---|
 | `StreamBatchSize` | 100 | most consecutive messages of one stream per poll |
 | `MaxStreamMessagesPerPoll` | 500 | most ordered messages per poll across all streams |
+| `BatchSize` | 20 | most unordered messages (no stream key) one claim takes |
+| `ProcessingTimeoutSeconds` | 60 | how long a claimed row stays leased before another dispatcher may reclaim it |
+| `PollIntervalSeconds` | 1 | longest wait between polls when no wake signal arrives |
+
+The retry budget (5 attempts) and the backoff (up to 60 seconds) are properties of the outbox row, not dispatcher options: each message carries its own `MaxRetries`.
 
 Contract:
 
@@ -2481,3 +2486,9 @@ tenantless worker
 unbounded replay
 broker-specific business contract
 ```
+
+---
+
+# 151. Chat context (planned)
+
+Chat events (planned): `chat.channel.*`, `chat.membership.*`, `chat.message.created|updated|deleted`, `chat.reaction.changed`, `chat.message.attachment.changed`, `chat.read.advanced`, `chat.mention.created` through the outbox, with consumers for Collaboration notification intents, Governance Audit and Search indexing. Realtime: `RealtimeScopeKind.Channel`, message-carrying event frames, `typing` and `presence` client frames (protocol v1.1, `SYS-ADR-001`). Typing and presence are ephemeral: `RealtimeConnection` accepts them after the same per-connection limits as every frame, authorizes typing through the Chat channel-scope authorizer, keeps presence in connection memory with an expiry (`RealtimeGatewayOptions.TypingMinInterval`, `TypingExpiry`, `PresenceMinInterval`, `PresenceTtl`) and fans both out to the other connections of the space through `IRealtimeEphemeralBus` (in process in Development and Testing, Redis pub/sub otherwise). Nothing is persisted and no port or table exists for them.

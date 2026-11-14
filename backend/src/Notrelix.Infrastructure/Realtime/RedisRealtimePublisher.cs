@@ -76,7 +76,7 @@ public sealed class RedisRealtimePublisher : IRealtimePublisher
         var channel = RealtimeChannelResolver.RedisChannel(RealtimeChannelResolver.ForTopic(topic));
         var draft = new RealtimeNotification(
             EventId: change.EventId.ToString("N"),
-            EventType: $"{topic.Namespace}.{topic.ResourceKind}".ToLowerInvariant(),
+            EventType: RealtimeFrameMapping.EventTypeOf(change),
             ChangeKind: change.ChangeKind,
             StreamKey: change.StreamKey,
             StreamVersion: 0,
@@ -87,7 +87,8 @@ public sealed class RedisRealtimePublisher : IRealtimePublisher
             OccurredAt: change.OccurredAt,
             ResourceVersion: change.StreamVersion,
             SchemaVersion: 1,
-            PayloadContract: change.PayloadContract);
+            PayloadContract: change.PayloadContract,
+            Payload: RealtimeFrameMapping.PayloadOf(change));
 
         var (prefix, suffix) = RealtimeNotificationJson.SerializeForVersionSplice(draft);
 

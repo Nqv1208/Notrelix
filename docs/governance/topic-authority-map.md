@@ -244,7 +244,7 @@ when a consequential system/product architecture decision is required.
 
 ```text
 docs/product/product-model.md
-docs/product/contexts/*.md
+docs/product/*.md
 ```
 
 **Non-ownership**
@@ -696,7 +696,7 @@ technical capability distinction
 
 ```text
 PRODUCT.md
-docs/product/contexts/
+docs/product/
 backend Domain/Application modules
 frontend capability/package evidence
 ```
@@ -709,7 +709,7 @@ docs/decisions/
 
 **Non-ownership**
 
-Context-specific semantics belong to `docs/product/contexts/*.md`.
+Context-specific semantics belong to `docs/product/*.md`.
 
 ---
 
@@ -935,7 +935,7 @@ docs/decisions/
 **Canonical owner**
 
 ```text
-docs/product/contexts/accounts.md
+docs/product/accounts.md
 ```
 
 **Scope**
@@ -967,7 +967,7 @@ docs/decisions/
 **Canonical owner**
 
 ```text
-docs/product/contexts/identity.md
+docs/product/identity.md
 ```
 
 **Scope**
@@ -1002,7 +1002,7 @@ docs/decisions/
 **Canonical owner**
 
 ```text
-docs/product/contexts/workspaces.md
+docs/product/workspaces.md
 ```
 
 **Scope**
@@ -1035,7 +1035,7 @@ docs/decisions/
 **Canonical owner**
 
 ```text
-docs/product/contexts/governance.md
+docs/product/governance.md
 ```
 
 **Scope**
@@ -1069,7 +1069,7 @@ docs/decisions/
 **Canonical owner**
 
 ```text
-docs/product/contexts/work-management.md
+docs/product/work-management.md
 ```
 
 **Scope**
@@ -1117,7 +1117,7 @@ Backend/frontend architecture docs implement these semantics; they do not redefi
 **Canonical owner**
 
 ```text
-docs/product/contexts/documents.md
+docs/product/documents.md
 ```
 
 **Scope**
@@ -1151,7 +1151,7 @@ docs/decisions/
 **Canonical owner**
 
 ```text
-docs/product/contexts/collaboration.md
+docs/product/collaboration.md
 ```
 
 **Scope**
@@ -1182,12 +1182,50 @@ docs/decisions/
 
 ---
 
+## PROD-CHAT — Chat semantics
+
+**Canonical owner**
+
+```text
+docs/product/chat.md
+```
+
+**Scope**
+
+```text
+channels
+channel groups
+direct and group conversations
+messages
+threads
+pins
+chat read state
+chat notification levels
+chat realtime scope
+```
+
+**Primary evidence**
+
+```text
+backend Chat source/tests (planned)
+frontend chat package source/tests (planned)
+realtime evidence
+```
+
+**Decision registry**
+
+```text
+docs/decisions/
+```
+
+---
+
 ## PROD-AUTOMATION — Automation semantics
 
 **Canonical owner**
 
 ```text
-docs/product/contexts/automation.md
+docs/product/automation.md
 ```
 
 **Scope**
@@ -1223,7 +1261,7 @@ docs/decisions/
 **Canonical owner**
 
 ```text
-docs/product/contexts/integrations.md
+docs/product/integrations.md
 ```
 
 **Scope**
@@ -1259,7 +1297,7 @@ docs/decisions/
 **Canonical owner**
 
 ```text
-docs/product/contexts/billing.md
+docs/product/billing.md
 ```
 
 **Scope**
@@ -1295,7 +1333,7 @@ docs/decisions/
 **Canonical owner**
 
 ```text
-docs/product/contexts/analytics.md
+docs/product/analytics.md
 ```
 
 **Scope**
@@ -2350,7 +2388,7 @@ none by default
 **Canonical owner**
 
 ```text
-docs/delivery/change-impact-and-migration.md
+docs/delivery/migration-policy.md
 ```
 
 **Scope**
@@ -2427,7 +2465,7 @@ none by default
 **Canonical owner**
 
 ```text
-docs/delivery/release-rollout-and-recovery.md
+docs/delivery/release-and-rollout.md
 ```
 
 **Scope**
@@ -2452,6 +2490,53 @@ operations evidence
 
 ```text
 docs/decisions/
+```
+
+---
+
+## DEL-LIFECYCLE — Product delivery lifecycle and acceptance
+
+**Canonical owner**
+
+```text
+docs/delivery/product-delivery-lifecycle.md
+```
+
+**Scope**
+
+```text
+roles and decisions
+use-case DONE standard and evidence
+lane model
+release stages
+release readiness
+owner acceptance of a version
+defect severity
+commit and pull request content
+```
+
+**Primary evidence**
+
+```text
+use-case catalog states
+release candidates and acceptance journeys
+CI gate
+pull requests
+```
+
+**Not owned**
+
+```text
+release scope and order  → docs/workstreams/product-roadmap.md (plan)
+branch/tag mechanics     → docs/delivery/ci-cd-architecture.md
+deployment and rollout   → docs/delivery/release-and-rollout.md
+per-change completion    → docs/delivery/definition-of-done.md
+```
+
+**Decision registry**
+
+```text
+none by default
 ```
 
 ---
@@ -3064,7 +3149,7 @@ Example:
 
 ```text
 BoardView semantics
-→ docs/product/contexts/work-management.md
+→ docs/product/work-management.md
 ```
 
 Backend modeling:
@@ -3355,17 +3440,18 @@ Before changing this registry:
 | SYS-EXTRACTION | Capability extraction | `docs/architecture/capability-extraction-strategy.md` |
 | PROD-MODEL | Product model | `docs/product/product-model.md` |
 | PROD-EXPERIENCE | Product experience | `docs/product/product-experience.md` |
-| PROD-ACCOUNTS | Accounts | `docs/product/contexts/accounts.md` |
-| PROD-IDENTITY | Identity | `docs/product/contexts/identity.md` |
-| PROD-WORKSPACES | Workspaces | `docs/product/contexts/workspaces.md` |
-| PROD-GOVERNANCE | Governance | `docs/product/contexts/governance.md` |
-| PROD-WORK-MANAGEMENT | Work Management | `docs/product/contexts/work-management.md` |
-| PROD-DOCUMENTS | Documents | `docs/product/contexts/documents.md` |
-| PROD-COLLABORATION | Collaboration | `docs/product/contexts/collaboration.md` |
-| PROD-AUTOMATION | Automation | `docs/product/contexts/automation.md` |
-| PROD-INTEGRATIONS | Integrations | `docs/product/contexts/integrations.md` |
-| PROD-BILLING | Billing | `docs/product/contexts/billing.md` |
-| PROD-ANALYTICS | Analytics/Reporting | `docs/product/contexts/analytics.md` |
+| PROD-ACCOUNTS | Accounts | `docs/product/accounts.md` |
+| PROD-IDENTITY | Identity | `docs/product/identity.md` |
+| PROD-WORKSPACES | Workspaces | `docs/product/workspaces.md` |
+| PROD-GOVERNANCE | Governance | `docs/product/governance.md` |
+| PROD-WORK-MANAGEMENT | Work Management | `docs/product/work-management.md` |
+| PROD-DOCUMENTS | Documents | `docs/product/documents.md` |
+| PROD-COLLABORATION | Collaboration | `docs/product/collaboration.md` |
+| PROD-CHAT | Chat | `docs/product/chat.md` |
+| PROD-AUTOMATION | Automation | `docs/product/automation.md` |
+| PROD-INTEGRATIONS | Integrations | `docs/product/integrations.md` |
+| PROD-BILLING | Billing | `docs/product/billing.md` |
+| PROD-ANALYTICS | Analytics/Reporting | `docs/product/analytics.md` |
 | BE-OVERVIEW | Backend architecture | `backend/docs/architecture/backend-overview.md` |
 | BE-DOMAIN | Domain modeling | `backend/docs/architecture/domain-modeling.md` |
 | BE-APPLICATION | Application model | `backend/docs/architecture/application-model.md` |
@@ -3391,9 +3477,10 @@ Before changing this registry:
 | QLT-ACCESSIBILITY | Accessibility | `docs/quality/accessibility-standard.md` |
 | QLT-PERFORMANCE | Performance/scalability | `docs/quality/performance-and-scalability.md` |
 | DEL-CLASSIFICATION | Change classification | `docs/delivery/change-classification.md` |
-| DEL-MIGRATION | Change impact/migration | `docs/delivery/change-impact-and-migration.md` |
+| DEL-MIGRATION | Change impact/migration | `docs/delivery/migration-policy.md` |
 | DEL-DOD | Definition of done | `docs/delivery/definition-of-done.md` |
-| DEL-ROLLOUT | Release/rollout/recovery | `docs/delivery/release-rollout-and-recovery.md` |
+| DEL-ROLLOUT | Release/rollout/recovery | `docs/delivery/release-and-rollout.md` |
+| DEL-LIFECYCLE | Product delivery lifecycle/acceptance | `docs/delivery/product-delivery-lifecycle.md` |
 | OPS-OBSERVABILITY | Observability | `docs/operations/observability.md` |
 | OPS-INCIDENT | Incident readiness | `docs/operations/incident-readiness.md` |
 | OPS-RECOVERY | Recovery/data safety | `docs/operations/recovery-and-data-safety.md` |

@@ -25,15 +25,18 @@ public class DisableShareLinkCommandHandler : IRequestHandler<DisableShareLinkCo
     private readonly IGovernanceDbContext _context;
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IAuditService _auditService;
 
     public DisableShareLinkCommandHandler(
         IGovernanceDbContext context,
         ICurrentUser currentUser,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IAuditService auditService)
     {
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
+        _auditService = auditService;
     }
 
     public async Task<Result> Handle(
@@ -51,7 +54,28 @@ public class DisableShareLinkCommandHandler : IRequestHandler<DisableShareLinkCo
 
         var userId = _currentUser.UserId;
 
+        // Already off is a no-op: nothing changed, so nothing is audited.
+        if (shareLink.Status == ShareLinkStatus.Disabled)
+        {
+            return Result.Success();
+        }
+
+        var before = shareLink.Status;
         shareLink.Disable(userId, _dateTimeProvider.UtcNow);
+
+        await _auditService.RecordAsync(
+            shareLink.WorkspaceId,
+            userId,
+            "DisableShareLink",
+            ResourceRef.Create(request.Kind, request.ResourceId),
+            AuditMetadata.Create(),
+            AuditSeverity.Info,
+            cancellationToken: cancellationToken,
+            change: new AuditChange(
+                null,
+                null,
+                new { linkId = shareLink.Id, status = before.ToString() },
+                new { linkId = shareLink.Id, status = ShareLinkStatus.Disabled.ToString() }));
 
         return Result.Success();
     }

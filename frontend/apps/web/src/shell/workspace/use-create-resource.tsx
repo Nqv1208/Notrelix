@@ -213,6 +213,14 @@ export function useCreateResource(
         name: entry.name,
       }))}
       boardTemplates={boardTemplates}
+      boardTemplatesStatus={
+        boardTemplatesQuery.isError
+          ? "error"
+          : boardTemplatesQuery.isPending && kind === "board"
+            ? "loading"
+            : "ready"
+      }
+      onRetryBoardTemplates={() => void boardTemplatesQuery.refetch()}
       error={error}
       spaceName={space?.name ?? null}
       onOpenChange={(next) => {

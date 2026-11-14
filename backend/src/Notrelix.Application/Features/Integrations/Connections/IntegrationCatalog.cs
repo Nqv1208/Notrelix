@@ -45,7 +45,11 @@ public sealed record IntegrationConnectionDto(
     DateTimeOffset? LastSuccessAt,
     DateTimeOffset? LastErrorAt,
     string? LastError,
-    string? TargetUrl);
+    string? TargetUrl,
+    string SyncHealth);
+
+/// <summary>One connection in detail. The base carries the status, the last success and error, and the address; Scopes are the granted scope names.</summary>
+public sealed record IntegrationConnectionDetailDto(IntegrationConnectionDto Connection, IReadOnlyList<string> Scopes);
 
 public sealed record IntegrationsOverviewDto(
     IReadOnlyList<IntegrationCatalogEntryDto> Catalog,
@@ -73,5 +77,6 @@ public static class IntegrationConnectionMapper
         connection.LastSuccessAt,
         connection.LastErrorAt,
         connection.ErrorDetail,
-        connection.TargetUrl);
+        connection.TargetUrl,
+        IntegrationSyncHealth.Of(connection.Status));
 }

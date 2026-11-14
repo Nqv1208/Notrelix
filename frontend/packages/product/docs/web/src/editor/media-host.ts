@@ -31,4 +31,9 @@ export interface DocMediaHost {
   readonly useContent: (attachmentId: string | null) => DocMediaContent;
   /** Saves a stored file to the member's device. */
   readonly download: (attachment: PageAttachment) => Promise<void>;
+  /**
+   * Deletes a stored file from the page (UC-COL-B12). Offered to editors only; the server refuses anyone
+   * else. A refused or failed delete is reported by the page, not thrown.
+   */
+  readonly remove: (attachment: PageAttachment) => Promise<void>;
 }

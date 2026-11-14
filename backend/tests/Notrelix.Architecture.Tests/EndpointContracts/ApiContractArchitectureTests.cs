@@ -105,6 +105,7 @@ public class ApiContractArchitectureTests
             "Notrelix.Domain.Workspaces",
             "Notrelix.Domain.Documents",
             "Notrelix.Domain.Collaboration",
+            "Notrelix.Domain.Chat",
             "Notrelix.Domain.Governance",
             "Notrelix.Domain.Billing",
             "Notrelix.Domain.Identity",

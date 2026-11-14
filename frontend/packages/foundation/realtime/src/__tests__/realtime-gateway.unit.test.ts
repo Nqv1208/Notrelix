@@ -295,6 +295,86 @@ describe("RealtimeClient gateway protocol v1", () => {
       expect(listener).toHaveBeenCalledTimes(2);
     });
 
+    it("subscribes the Chat channel and per-user scopes on their own wire streams and routes their frames", async () => {
+      const client = makeClient();
+      const channelListener = vi.fn();
+      const userListener = vi.fn();
+      const wsListener = vi.fn();
+      client.subscribe({ workspaceId: "ws-1" }, wsListener);
+      client.subscribe(
+        { workspaceId: "ws-1", channelId: "space-1" },
+        channelListener,
+      );
+      client.subscribe({ workspaceId: "ws-1", userId: "me" }, userListener);
+      const socket = await connect(client);
+
+      const subscribes = socket
+        .sentFrames()
+        .filter((frame) => frame.type === "subscribe");
+      expect(subscribes.map((frame) => frame.subscriptionId).sort()).toEqual([
+        "channel:space-1",
+        "user:me",
+        "workspace:ws-1",
+      ]);
+      expect(subscribes).toContainEqual({
+        type: "subscribe",
+        subscriptionId: "channel:space-1",
+        scope: { kind: "channel", id: "space-1" },
+      });
+
+      socket.onmessage?.({
+        data: JSON.stringify({
+          type: "subscribed",
+          subscriptionId: "channel:space-1",
+          scope: { kind: "channel", id: "space-1" },
+          streamKey: "chat:Channel:space-1",
+        }),
+      });
+      socket.onmessage?.({
+        data: JSON.stringify({
+          type: "subscribed",
+          subscriptionId: "user:me",
+          scope: { kind: "user", id: "me" },
+          streamKey: "user:notifications:me",
+        }),
+      });
+      ackSubscriptions(socket);
+      socket.onmessage?.({
+        data: eventFrame({
+          eventId: "chat-1",
+          subscriptionId: "channel:space-1",
+          streamKey: "chat:Channel:space-1",
+          streamVersion: 1,
+          eventType: "chat.message.created",
+          resourceKind: "Channel",
+          resourceId: "space-1",
+          payloadContract: "chat.message.v1",
+          payload: { id: "m-1", sequence: 1 },
+        }),
+      });
+      socket.onmessage?.({
+        data: eventFrame({
+          eventId: "unread-1",
+          subscriptionId: "user:me",
+          streamKey: "user:notifications:me",
+          streamVersion: 1,
+          eventType: "chat.unread.changed",
+          resourceKind: "notifications",
+          resourceId: "me",
+          payloadContract: "chat.unread.v1",
+          payload: { spaceId: "space-1", unread: 1, mentions: 0 },
+        }),
+      });
+
+      expect(channelListener).toHaveBeenCalledTimes(1);
+      expect(userListener).toHaveBeenCalledTimes(1);
+      expect(wsListener).not.toHaveBeenCalled();
+      expect(channelListener.mock.calls[0]![0]).toMatchObject({
+        eventType: "chat.message.created",
+        payload: { id: "m-1", sequence: 1 },
+      });
+    });
+
     it("tracks streams independently per subscription and streamKey", async () => {
       const client = makeClient();
       const wsListener = vi.fn();

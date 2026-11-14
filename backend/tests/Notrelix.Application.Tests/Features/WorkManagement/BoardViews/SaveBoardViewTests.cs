@@ -78,7 +78,7 @@ public class SaveBoardViewTests : WorkManagementHandlerTestBase
         var lane = Guid.CreateVersion7().ToString();
         var config = "{\"laneCardLimit\":5,\"wipLimits\":{\"" + lane + "\":2}}";
 
-        var result = await _handler.Handle(new SaveBoardViewCommand(board.Id, ViewMode.Kanban, config), CancellationToken.None);
+        var result = await _handler.Handle(new SaveBoardViewCommand(board.Id, ViewMode.Kanban, config, view.Version), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         view.Config.Data.Value.Should().Be(JsonValue.Create(config).Value);
@@ -95,7 +95,7 @@ public class SaveBoardViewTests : WorkManagementHandlerTestBase
             BoardViewConfig.Create(JsonValue.EmptyObject()), TestUserId, TestNow);
         SetupBoardViews(view);
 
-        var result = await _handler.Handle(new SaveBoardViewCommand(board.Id, ViewMode.Kanban, "{\"groupBy\":\"status\"}"), CancellationToken.None);
+        var result = await _handler.Handle(new SaveBoardViewCommand(board.Id, ViewMode.Kanban, "{\"groupBy\":\"status\"}", view.Version), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         view.Config.Data.Value.Should().Be("{\"groupBy\":\"status\"}");
@@ -114,7 +114,7 @@ public class SaveBoardViewTests : WorkManagementHandlerTestBase
         var versionBefore = view.Version;
 
         var act = () => _handler.Handle(
-            new SaveBoardViewCommand(board.Id, ViewMode.Kanban, "{\"wipLimits\":{\"lane\":1000}}"), CancellationToken.None);
+            new SaveBoardViewCommand(board.Id, ViewMode.Kanban, "{\"wipLimits\":{\"lane\":1000}}", view.Version), CancellationToken.None);
 
         (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
             .Which.RuleCode.Should().Be(Notrelix.Domain.WorkManagement.WorkManagementRuleCodes.WorkManagement_Kanban_WipLimitOutOfRange);
@@ -133,5 +133,25 @@ public class SaveBoardViewTests : WorkManagementHandlerTestBase
         var result = await _handler.Handle(command, CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(99L)]
+    public async Task Handle_ExistingView_WithoutTheVersionRead_IsRefused_AndViewUnchanged(long? expected)
+    {
+        var board = CreateBoard();
+        SetupBoards(board);
+        var view = BoardView.Create(
+            TestAccountId, TestWorkspaceId, board.Id, "View", ViewType.Table,
+            BoardViewConfig.Create(JsonValue.EmptyObject()), TestUserId, TestNow);
+        SetupBoardViews(view);
+        var versionBefore = view.Version;
+
+        var act = () => _handler.Handle(new SaveBoardViewCommand(board.Id, ViewMode.Table, "{\"groupBy\":\"status\"}", expected), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<PreconditionFailedException>()).Which.CurrentVersion.Should().Be(versionBefore);
+        view.Config.Data.Value.Should().Be("{}");
+        view.Version.Should().Be(versionBefore);
     }
 }

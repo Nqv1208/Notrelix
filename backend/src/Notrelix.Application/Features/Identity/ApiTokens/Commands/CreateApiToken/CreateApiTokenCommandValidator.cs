@@ -20,9 +20,21 @@ public class CreateApiTokenCommandValidator : AbstractValidator<CreateApiTokenCo
             .WithErrorCode("identity.api-tokens.invalid-step-up-token")
             .WithMessage("Step-up verification token is required.");
 
+        // An API token needs an expiry, within the default maximum lifetime (Lead decision L7).
+        RuleFor(x => x.ExpiresAt)
+            .NotNull()
+            .WithErrorCode("identity.api-tokens.expiration-required")
+            .WithMessage("An API token needs an expiration date.");
+
         RuleFor(x => x.ExpiresAt)
             .Must(expiresAt => !expiresAt.HasValue || expiresAt.Value > dateTimeProvider.UtcNow)
             .WithErrorCode("identity.api-tokens.invalid-expiration")
             .WithMessage("Token expiration must be in the future.");
+
+        RuleFor(x => x.ExpiresAt)
+            .Must(expiresAt => !expiresAt.HasValue
+                               || expiresAt.Value <= dateTimeProvider.UtcNow.AddDays(CreateApiTokenCommandHandler.MaxTokenLifetimeDays))
+            .WithErrorCode("identity.api-tokens.lifetime-exceeded")
+            .WithMessage($"An API token cannot live longer than {CreateApiTokenCommandHandler.MaxTokenLifetimeDays} days.");
     }
 }

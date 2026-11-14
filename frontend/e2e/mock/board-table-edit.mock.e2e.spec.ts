@@ -82,25 +82,27 @@ test.describe("Board table, in-place edits (owner)", () => {
     await expect(row(page, "ERP-153")).toContainText("20/10");
   });
 
-  test("bulk: Giao cho assigns every selected row", async ({ page }) => {
+  test("bulk: Người phụ trách assigns every selected row", async ({ page }) => {
     await openTable(page);
     for (const key of ["ERP-142", "ERP-146"])
       await page.getByRole("checkbox", { name: `Chọn ${key}` }).click();
-    await page.getByRole("button", { name: /^Giao cho/ }).click();
-    await page.getByRole("button", { name: "Phan Ngọc Anh" }).click();
-    await expect(row(page, "ERP-142")).toContainText("Phan Ngọc Anh");
-    await expect(row(page, "ERP-146")).toContainText("Phan Ngọc Anh");
+    await page.getByRole("button", { name: /^Người phụ trách/ }).click();
+    await page.getByRole("button", { name: "Bùi Thanh Tâm" }).click();
+    await expect(row(page, "ERP-142")).toContainText("Bùi Thanh Tâm");
+    await expect(row(page, "ERP-146")).toContainText("Bùi Thanh Tâm");
   });
 
   test("bulk: Chuyển board sends the row to the other board", async ({
     page,
   }) => {
+    // ERP-147 is the mock's archived-behind-the-dialog item (the move refuses it), so the move takes ERP-149.
     await openTable(page);
-    await page.getByRole("checkbox", { name: "Chọn ERP-147" }).click();
-    await page.getByRole("button", { name: /^Chuyển board/ }).click();
+    await page.getByRole("checkbox", { name: "Chọn ERP-149" }).click();
+    await page.getByRole("button", { name: "Thêm", exact: true }).click();
+    await page.getByRole("menuitem", { name: /^Chuyển board…/ }).click();
     await page.getByRole("button", { name: "Hỗ trợ nội bộ" }).click();
     await expect(
-      page.locator("[data-row-id]").filter({ hasText: "ERP-147" }),
+      page.locator("[data-row-id]").filter({ hasText: "ERP-149" }),
     ).toHaveCount(0);
     await expect(
       page.getByText("10 công việc đang hiện · 5 ẩn bởi bộ lọc"),
@@ -134,12 +136,27 @@ test.describe("Board table, in-place edits (owner)", () => {
     page,
   }) => {
     await openTable(page);
+    // Every seeded person holds an open item: Bùi Thanh Tâm's only one (ERP-147) goes to nobody first.
+    await page
+      .getByRole("button", { name: "Đổi người phụ trách của ERP-147" })
+      .click();
+    await page.getByRole("button", { name: /Chưa giao/ }).click();
+    await expect(row(page, "ERP-147")).toContainText("Chưa giao");
     await page.getByRole("button", { name: /^Lọc/ }).click();
-    await page.getByText("Đặng Minh Tuấn").first().click();
+    // The filter is a builder: add a condition on the assignee and pick the person.
+    await page.getByRole("button", { name: "Thêm điều kiện" }).click();
+    await page
+      .getByRole("combobox", { name: "Trường (Điều kiện 1)" })
+      .selectOption({ label: "Người thực hiện" });
+    await page.getByRole("button", { name: "Giá trị (Điều kiện 1)" }).click();
+    await page
+      .getByRole("listbox", { name: "Giá trị (Điều kiện 1)" })
+      .getByRole("option", { name: "Bùi Thanh Tâm" })
+      .click();
     await page.keyboard.press("Escape");
     await expect(
       page.getByText(
-        "Đặng Minh Tuấn chưa phụ trách việc nào chưa xong trên board này.",
+        "Bùi Thanh Tâm chưa phụ trách việc nào chưa xong trên board này.",
       ),
     ).toBeVisible();
     await expect(

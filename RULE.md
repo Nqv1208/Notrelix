@@ -250,7 +250,7 @@ This violates `NRX-001`.
 Evidence may include:
 
 - [`PRODUCT.md`](PRODUCT.md);
-- owning `docs/product/contexts/*.md`;
+- owning `docs/product/*.md`;
 - Domain behavior tests;
 - API/contract tests;
 - frontend product behavior tests;
@@ -260,7 +260,7 @@ Evidence may include:
 
 - [`PRODUCT.md`](PRODUCT.md)
 - `docs/product/product-model.md`
-- `docs/product/contexts/*.md`
+- `docs/product/*.md`
 
 ---
 
@@ -415,8 +415,8 @@ The HTTP path is secure; the background path is not.
 
 ## Canonical detailed owners
 
-- `docs/product/contexts/workspaces.md`
-- `docs/product/contexts/governance.md`
+- `docs/product/workspaces.md`
+- `docs/product/governance.md`
 - `backend/docs/architecture/security-tenancy-authorization.md`
 - `frontend/docs/architecture/state-query-mutations.md`
 - `frontend/docs/architecture/realtime.md`
@@ -486,7 +486,7 @@ This applies to protected:
 
 ## Canonical detailed owners
 
-- `docs/product/contexts/governance.md`
+- `docs/product/governance.md`
 - `backend/docs/architecture/security-tenancy-authorization.md`
 - `backend/docs/architecture/application-model.md`
 
@@ -797,7 +797,7 @@ Correct approach requires a compatible expand/contract sequence.
 
 ## Canonical detailed owners
 
-- `docs/delivery/change-impact-and-migration.md`
+- `docs/delivery/migration-policy.md`
 - `docs/architecture/contract-boundaries.md`
 - `backend/docs/operations/migrations-and-data-change.md`
 - `backend/docs/architecture/api-and-contracts.md`
@@ -1054,7 +1054,7 @@ This violates `NRX-011` and `NRX-001`.
 ## Canonical detailed owners
 
 - [`PRODUCT.md`](PRODUCT.md)
-- `docs/product/contexts/*.md`
+- `docs/product/*.md`
 - `backend/docs/architecture/domain-modeling.md`
 - `backend/docs/operations/migrations-and-data-change.md`
 

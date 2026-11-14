@@ -38,7 +38,14 @@ public class RenameTeamCommandHandler : IRequestHandler<RenameTeamCommand, Resul
         if (team is null)
             throw new NotFoundException(nameof(Team), request.TeamId);
 
-        team.Rename(request.Name, _requestContext.UserId, _dateTimeProvider.UtcNow);
+        // Team names are unique within the Workspace (Workspaces_Team_DuplicateName); the team itself is excluded.
+        var otherTeamNames = await _context.Teams
+            .AsNoTracking()
+            .Where(t => t.WorkspaceId == request.WorkspaceId && t.DeletedAt == null && t.Id != request.TeamId)
+            .Select(t => t.Name)
+            .ToListAsync(ct);
+
+        team.Rename(request.Name, _requestContext.UserId, _dateTimeProvider.UtcNow, otherTeamNames);
         return Result.Success();
     }
 }

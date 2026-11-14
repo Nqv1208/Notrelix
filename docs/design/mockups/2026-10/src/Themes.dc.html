@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Bộ màu từ logo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.pg{font-family:'Be Vietnam Pro',system-ui,sans-serif;background:#F7F8FA;color:#161A21;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;padding:48px 56px 64px;box-sizing:border-box}
+h1{margin:0;font-size:30px;font-weight:650;letter-spacing:-0.015em;line-height:1.2}
+.lede{margin:8px 0 0;color:#4F5866;font-size:15px;max-width:70ch}
+h2{margin:44px 0 6px;font-size:18px;font-weight:650}
+.note{margin:0 0 18px;color:#4F5866;max-width:72ch}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12px}
+.stops{display:flex;flex-wrap:wrap;border-radius:14px;overflow:hidden;border:1px solid #E1E5EA;background:#fff}
+.stop{flex:1 1 200px;min-width:0;display:flex;flex-direction:column}
+.sw{height:84px;display:flex;align-items:flex-end;padding:10px 12px;box-sizing:border-box;color:#fff;font-weight:600}
+.sw.dark{color:#161A21}
+.stop .info{padding:12px 14px 14px;display:flex;flex-direction:column;gap:6px;border-top:1px solid #E1E5EA}
+.stop .info b{font-size:14px}
+.pair{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#4F5866}
+.chipc{width:16px;height:16px;border-radius:4px;flex:none}
+.gbar{height:6px;border-radius:3px;margin-top:14px;background:linear-gradient(90deg,#FF1E56,#FC744C 25%,#F9C942 50%,#8CADA1 75%,#1E90FF)}
+.gnote{font-size:12.5px;color:#4F5866;margin:6px 0 0}
+.themes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.theme{display:flex;flex-direction:column;gap:10px}
+.theme h3{margin:0;font-size:15px;font-weight:650;display:flex;align-items:center;gap:8px}
+.theme h3 small{font-size:12px;font-weight:500;color:#4F5866}
+.theme p{margin:0;font-size:12.5px;color:#4F5866}
+.mini{border-radius:12px;overflow:hidden;display:flex;height:220px;box-shadow:0 0 0 1px rgba(15,23,42,.1)}
+.mini .sb{width:64px;padding:10px 8px;display:flex;flex-direction:column;gap:6px;box-sizing:border-box}
+.mini .nv{height:8px;border-radius:4px;display:block}
+.mini .nv.on{height:18px;border-radius:5px}
+.mini .ct{flex:1;padding:12px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box;min-width:0}
+.mini .bar{display:flex;align-items:center;gap:8px}
+.mini .ttl{font-size:13px;font-weight:650}
+.mini .btn{margin-left:auto;font-size:11px;font-weight:600;padding:5px 9px;border-radius:6px}
+.mini .tabs{display:flex;gap:12px;font-size:11px}
+.mini .tabs span{padding-bottom:4px}
+.mini .card{border-radius:8px;padding:9px 10px;display:flex;flex-direction:column;gap:6px;font-size:11.5px}
+.mini .card b{font-weight:500}
+.mini .meta{display:flex;align-items:center;gap:6px;font-size:10.5px}
+.mini .dot{width:7px;height:7px;border-radius:50%}
+.mini .over{padding:1px 5px;border-radius:4px;font-weight:600}
+.fixed{display:flex;flex-wrap:wrap;gap:32px}
+.fixed section{flex:1 1 300px}
+.fixed h3{margin:0 0 10px;font-size:14px;font-weight:650}
+.legend{display:flex;flex-direction:column;background:#fff;border:1px solid #E1E5EA;border-radius:12px;overflow:hidden}
+.lg{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid #E1E5EA;font-size:13.5px}
+.lg:first-child{border-top:0}
+.lg .dot{width:10px;height:10px;border-radius:50%;flex:none}
+.lg .mono{margin-left:auto;color:#5F6875}
+.dept{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.dm{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E1E5EA;border-radius:10px;padding:10px 12px;font-size:13px}
+.dm span{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;color:#fff;font-size:10.5px;font-weight:700;flex:none}
+</style>
+</helmet>
+<div class="pg" style="width:100%;min-height:1100px">
+  <h1>Bộ màu từ logo Notrelix</h1>
+  <p class="lede">Logo có năm điểm màu chạy từ đỏ sang lam. Mỗi bộ màu lấy một điểm làm màu hành động, các bề mặt giữ trung tính. Màu trạng thái và cảnh báo không đổi giữa các bộ để “quá hạn” luôn trông như nhau.</p>
+
+  <h2>Năm điểm màu gốc và phiên bản dùng được</h2>
+  <p class="note">Màu gốc của logo quá sáng để làm chữ hoặc nền nút có chữ trắng. Mỗi màu có một phiên bản đậm hơn đạt độ tương phản 4.5:1 trên nền trắng.</p>
+  <div class="stops">
+    <sc-for list="{{stops}}" as="s" hint-placeholder-count="5">
+      <div class="stop">
+        <div class="sw {{s.ink}}" style="background:{{s.hex}}"><span class="mono">{{s.hex}}</span></div>
+        <div class="info">
+          <b>{{s.name}}</b>
+          <span class="pair"><span class="chipc" style="background:{{s.deep}}"></span>Đậm <span class="mono">{{s.deep}}</span></span>
+          <span class="pair">{{s.use}}</span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+  <div class="gbar" aria-hidden="true"></div>
+  <p class="gnote">Dải chuyển màu nguyên bản chỉ dùng cho logo, màn hình đăng nhập và trang giới thiệu. Không dùng trong vùng làm việc.</p>
+
+  <h2>Năm bộ màu cho người dùng chọn</h2>
+  <p class="note">Người dùng chọn trong Cài đặt › Giao diện. Quản trị viên có thể đặt bộ mặc định cho cả công ty.</p>
+  <div class="themes">
+    <sc-for list="{{themes}}" as="t" hint-placeholder-count="5">
+      <div class="theme">
+        <div class="mini" aria-hidden="true" style="background:{{t.bg}}">
+          <div class="sb" style="background:{{t.side}}">
+            <span class="nv" style="background:{{t.line}}"></span>
+            <span class="nv on" style="background:{{t.soft}}"></span>
+            <span class="nv" style="background:{{t.line}}"></span>
+            <span class="nv" style="background:{{t.line}}"></span>
+          </div>
+          <div class="ct">
+            <div class="bar"><span class="ttl" style="color:{{t.text}}">Triển khai ERP Q4</span><span class="btn" style="background:{{t.accent}};color:{{t.ink}}">Thêm</span></div>
+            <div class="tabs" style="color:{{t.meta}}"><span>Bảng</span><span style="color:{{t.text}};font-weight:600;border-bottom:2px solid {{t.accent}}">Kanban</span><span>Lịch</span></div>
+            <div class="card" style="background:{{t.panel}};border:{{t.border}};color:{{t.text}}">
+              <b>Chuyển dữ liệu khách hàng</b>
+              <span class="meta"><span class="over" style="background:{{t.dangerSoft}};color:{{t.danger}}">Quá hạn 2 ngày</span><span style="color:{{t.meta}}">Dữ liệu</span></span>
+            </div>
+            <div class="card" style="background:{{t.panel}};border:{{t.border}};color:{{t.text}}">
+              <b>Thiết lập SSO</b>
+              <span class="meta"><span class="dot" style="background:{{t.review}}"></span><span style="color:{{t.meta}}">Chờ duyệt · 14/10</span></span>
+            </div>
+          </div>
+        </div>
+        <h3>{{t.name}} <small>{{t.tag}}</small></h3>
+        <p>{{t.desc}}</p>
+      </div>
+    </sc-for>
+  </div>
+
+  <h2>Màu cố định trong mọi bộ</h2>
+  <p class="note">Màu có nghĩa thì không đổi theo sở thích, và luôn đi kèm chữ hoặc biểu tượng.</p>
+  <div class="fixed">
+    <section>
+      <h3>Trạng thái công việc</h3>
+      <div class="legend">
+        <div class="lg"><span class="dot" style="box-shadow:inset 0 0 0 2px #7A8391"></span>Cần làm<span class="mono">#7A8391</span></div>
+        <div class="lg"><span class="dot" style="background:#1E7BE0"></span>Đang làm<span class="mono">#1E7BE0</span></div>
+        <div class="lg"><span class="dot" style="background:#D99A00"></span>Chờ duyệt<span class="mono">#D99A00</span></div>
+        <div class="lg"><span class="dot" style="background:#2E8B57"></span>Hoàn thành<span class="mono">#2E8B57</span></div>
+        <div class="lg"><span class="dot" style="background:#C42340"></span>Quá hạn, lỗi, xoá<span class="mono">#C42340</span></div>
+      </div>
+    </section>
+    <section>
+      <h3>Màu nhận diện phòng ban</h3>
+      <div class="dept">
+        <div class="dm"><span style="background:#1E6FD0">CN</span>Lam</div>
+        <div class="dm"><span style="background:#9A6A12">KT</span>Vàng đậm</div>
+        <div class="dm"><span style="background:#C2410C">MK</span>San hô</div>
+        <div class="dm"><span style="background:#4E8574">NS</span>Xô thơm</div>
+        <div class="dm"><span style="background:#C8143F">GĐ</span>Đỏ</div>
+        <div class="dm"><span style="background:#7C4DDB">PL</span>Tím phụ</div>
+      </div>
+      <p class="note" style="margin-top:10px">Chỉ dùng cho dấu nhận diện, không bao giờ dùng làm màu trạng thái.</p>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const light = { bg: '#F7F8FA', side: '#EFF1F4', panel: '#FFFFFF', line: '#D7DCE3', text: '#161A21', meta: '#5F6875', border: '1px solid #E1E5EA', danger: '#C42340', dangerSoft: '#FDECEF', review: '#D99A00', ink: '#FFFFFF' };
+    return {
+      stops: [
+        { name: 'Đỏ', hex: '#FF1E56', deep: '#C8143F', ink: '', use: 'Nhận diện, ban giám đốc. Không làm màu nút.' },
+        { name: 'San hô', hex: '#FC744C', deep: '#B5461D', ink: 'dark', use: 'Bộ màu San hô, phòng Marketing.' },
+        { name: 'Vàng', hex: '#F9C942', deep: '#8A6400', ink: 'dark', use: 'Chỉ nhận diện. Quá nhạt cho hành động.' },
+        { name: 'Xô thơm', hex: '#8CADA1', deep: '#2D6A59', ink: 'dark', use: 'Bộ màu Xô thơm, phòng Nhân sự.' },
+        { name: 'Lam', hex: '#1E90FF', deep: '#1666CC', ink: '', use: 'Màu hành động mặc định.' }
+      ],
+      themes: [
+        Object.assign({}, light, { name: 'Lam Notrelix', tag: 'Mặc định', desc: 'Trung tính, một màu lam cho hành động. Hợp với hầu hết công ty.', accent: '#1666CC', soft: '#CFE0F7' }),
+        Object.assign({}, light, { name: 'San hô', tag: 'Ấm', desc: 'Hành động màu san hô đậm. Hợp với đội sáng tạo, bán hàng.', accent: '#B5461D', soft: '#F6D6C8' }),
+        Object.assign({}, light, { name: 'Xô thơm', tag: 'Dịu mắt', desc: 'Xanh xám dịu cho phiên làm việc dài như kế toán, vận hành.', accent: '#2D6A59', soft: '#CFE3DB' }),
+        { name: 'Đêm', tag: 'Tối', desc: 'Nền tối trung tính, chữ sáng đạt chuẩn. Cho làm việc buổi tối.', bg: '#111419', side: '#161A20', panel: '#1B2027', line: '#2C333D', text: '#E7EAEF', meta: '#9DA6B3', border: '1px solid #272E38', danger: '#FF6B81', dangerSoft: '#3A1820', review: '#F2C14E', accent: '#4C9DFF', soft: '#22406A', ink: '#06121F' },
+        { name: 'Tương phản cao', tag: 'Trợ năng', desc: 'Viền đậm, chữ đen tuyền, lam sâu. Cho người cần độ rõ tối đa.', bg: '#FFFFFF', side: '#FFFFFF', panel: '#FFFFFF', line: '#000000', text: '#000000', meta: '#1F2328', border: '2px solid #000000', danger: '#A0001C', dangerSoft: '#FFE3E8', review: '#8A5A00', accent: '#0047B3', soft: '#B9CFF2', ink: '#FFFFFF' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

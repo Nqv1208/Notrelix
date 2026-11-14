@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import type {
   BoardSettingsDto,
   BoardSettingsFieldPatch,
+  FormulaPreviewDraft,
+  FormulaPreviewDto,
   BoardSettingsFieldType,
   BoardSettingsGeneralPatch,
   BoardSettingsViewDto,
@@ -68,6 +70,8 @@ export interface BoardLabelsPanelProps {
 export interface DeletedFieldRow {
   readonly id: string;
   readonly name: string;
+  /** The key the field was listed under (its name as a slug). */
+  readonly key: string;
   readonly type: BoardSettingsFieldType;
   readonly deletedAt: string;
   readonly restorableUntil: string;
@@ -75,8 +79,19 @@ export interface DeletedFieldRow {
   readonly valueCount: number;
 }
 
+/** The field was already active: someone restored it first; `by` is their display name, null for a Guest or a stranger. */
+export interface DeletedFieldAlreadyActive {
+  readonly kind: "already-active";
+  readonly by: string | null;
+}
+
 export type DeletedFieldRestore =
-  "restored" | "name-taken" | "expired" | "forbidden" | "failed";
+  | "restored"
+  | "name-taken"
+  | "expired"
+  | "forbidden"
+  | "failed"
+  | DeletedFieldAlreadyActive;
 
 /** The board's deleted fields and the way back (a Manager restores). */
 export interface DeletedFieldsPanelProps {
@@ -134,6 +149,11 @@ export interface BoardSettingsActions {
     fieldId: string,
     changes: BoardSettingsFieldPatch,
   ): Promise<BoardSettingsWriteResult>;
+  /** What a draft formula shows on the item it is tried on; null when the server could not be asked. */
+  previewFormula(
+    itemId: string,
+    draft: FormulaPreviewDraft,
+  ): Promise<FormulaPreviewDto | null>;
   archiveField(fieldId: string): Promise<BoardSettingsWriteResult>;
   /** Deletes a field for good; a board Manager confirms first. */
   deleteField(fieldId: string): Promise<BoardSettingsWriteResult>;
@@ -166,6 +186,9 @@ export interface BoardSettingsActions {
   duplicateView(viewId: string): Promise<BoardSettingsWriteResult>;
   /** The tab a board opens on. */
   setDefaultView(viewId: string): Promise<BoardSettingsWriteResult>;
+  /** Takes a view out of the tab strip (the default hands over to the oldest shared view). */
+  archiveView(viewId: string): Promise<BoardSettingsWriteResult>;
+  unarchiveView(viewId: string): Promise<BoardSettingsWriteResult>;
   /** Deleting the default view names the view that becomes the default. */
   deleteView(
     viewId: string,
@@ -293,6 +316,11 @@ export interface WorkspaceRulesPanelProps {
   readonly onSetEnabled: (
     ruleId: string,
     enabled: boolean,
+  ) => Promise<WorkspaceAutomationWriteResult>;
+  /** Cancels a Queued run of a rule; the runs list is re-read afterwards. */
+  readonly onCancelRun: (
+    ruleId: string,
+    runId: string,
   ) => Promise<WorkspaceAutomationWriteResult>;
   /** The rule whose runs are open, with the runs read for it. */
   readonly openRuleId: string | null;

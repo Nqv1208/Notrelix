@@ -289,11 +289,6 @@
         "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
       },
       {
-        "path": "src/components/checklists/item-checklists.tsx",
-        "category": "container",
-        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
-      },
-      {
         "path": "src/components/comment-thread/reaction-bar.tsx",
         "category": "container",
         "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
@@ -3251,6 +3246,18 @@
         },
         {
           "id": "workspace-rules-runs",
+          "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
+        },
+        {
+          "id": "workspace-rules-cancel-run",
+          "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
+        },
+        {
+          "id": "workspace-rules-cancel-refused",
+          "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
+        },
+        {
+          "id": "workspace-rules-cancel-only-queued",
           "testFile": "src/components/board-settings/__tests__/workspace-rules.interaction.component.test.tsx"
         },
         {

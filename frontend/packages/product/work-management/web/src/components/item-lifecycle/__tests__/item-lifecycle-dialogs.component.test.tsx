@@ -7,6 +7,75 @@ import { DeleteItemDialog } from "../item-lifecycle-dialogs";
 import { en } from "../item-lifecycle.copy";
 
 describe("DeleteItemDialog", () => {
+  it("cannot be dismissed while the delete is out, and offers Try again after a failure", () => {
+    const onCancel = vi.fn();
+    const { rerender } = render(
+      <DeleteItemDialog
+        copy={en}
+        title="Fix login"
+        status="busy"
+        open
+        onCancel={onCancel}
+        onConfirm={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
+    expect(
+      screen
+        .getByRole("button", { name: "Deleting…" })
+        .getAttribute("aria-disabled"),
+    ).toBe("true");
+    rerender(
+      <DeleteItemDialog
+        copy={en}
+        title="Fix login"
+        status="error"
+        open
+        onCancel={onCancel}
+        onConfirm={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("alert").textContent).toContain(
+      "still on the board",
+    );
+    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+  });
+
+  it("names the sub-items and the dependency links that go with the item", () => {
+    render(
+      <DeleteItemDialog
+        copy={en}
+        title="Fix login"
+        impact={{
+          subItems: 3,
+          dependencies: { count: 2, keys: ["ERP-1", "ERP-2"] },
+        }}
+        open
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByText("3 sub-items are deleted with this item"),
+    ).toBeTruthy();
+    expect(screen.getByText("Links to ERP-1, ERP-2 are hidden")).toBeTruthy();
+  });
+
+  it("says nothing of sub-items or links when there are none", () => {
+    render(
+      <DeleteItemDialog
+        copy={en}
+        title="Fix login"
+        impact={{ subItems: 0, dependencies: { count: 0, keys: [] } }}
+        open
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/deleted with this item/)).toBeNull();
+    expect(screen.queryByText(/are hidden|is hidden/)).toBeNull();
+  });
+
   it("FUI[wm.item-lifecycle:delete] asks before deleting and only deletes on confirm", async () => {
     const onConfirm = vi.fn();
     const onCancel = vi.fn();
@@ -132,8 +201,8 @@ describe("ArchiveItemDialog", () => {
         }}
       />,
     );
-    expect(screen.queryByText(/sub-item/)).toBeNull();
-    expect(screen.queryByText(/dependency link/)).toBeNull();
+    expect(screen.queryByText(/deleted with this item/)).toBeNull();
+    expect(screen.queryByText(/are hidden|is hidden/)).toBeNull();
     expect(screen.getByRole("button", { name: "Archive item" })).toBeTruthy();
   });
 

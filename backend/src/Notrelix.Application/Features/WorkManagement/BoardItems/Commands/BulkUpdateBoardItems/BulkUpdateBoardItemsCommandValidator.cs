@@ -7,10 +7,8 @@ public class BulkUpdateBoardItemsCommandValidator : AbstractValidator<BulkUpdate
         RuleFor(x => x.BoardId).NotEmpty();
         RuleFor(x => x.Operation).Must(op => BulkBoardItemOperations.All.Contains(op))
             .WithMessage("Operation must be one of: " + string.Join(", ", BulkBoardItemOperations.All) + ".");
-        RuleFor(x => x.ItemIds)
-            .NotEmpty()
-            .Must(ids => ids.Count <= BulkBoardItemOperations.MaxItems)
-            .WithMessage($"At most {BulkBoardItemOperations.MaxItems} items can change at once.");
+        // The size limit (D78.8) is the handler's: it answers the published limit code, not a validation error.
+        RuleFor(x => x.ItemIds).NotEmpty();
         RuleForEach(x => x.ItemIds).NotEmpty();
         RuleFor(x => x.Status).NotEmpty().MaximumLength(200)
             .When(x => x.Operation == BulkBoardItemOperations.SetStatus);

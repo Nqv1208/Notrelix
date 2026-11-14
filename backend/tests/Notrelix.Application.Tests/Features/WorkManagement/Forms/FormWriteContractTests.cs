@@ -6,6 +6,7 @@ using Notrelix.Application.Features.WorkManagement.Forms.Commands.MarkFormSubmis
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.ProcessFormSubmission;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.PublishForm;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.RejectFormSubmission;
+using Notrelix.Application.Features.WorkManagement.Forms.Commands.ReopenFormSubmission;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.RestoreForm;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.SubmitForm;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.UpdateFormDetails;
@@ -76,12 +77,13 @@ public class FormWriteContractTests : WorkManagementHandlerTestBase
         new ProcessFormSubmissionCommand(id, Guid.CreateVersion7()).Action.Should().Be(PermissionAction.UpdateItem);
         new RejectFormSubmissionCommand(id).Action.Should().Be(PermissionAction.UpdateItem);
         new MarkFormSubmissionAsSpamCommand(id).Action.Should().Be(PermissionAction.UpdateItem);
+        new ReopenFormSubmissionCommand(id).Action.Should().Be(PermissionAction.UpdateItem);
     }
 
     [Fact]
     public void EveryFormCreateAndSubmitIsIdempotent_UnderItsOwnOperationName()
     {
-        foreach (var command in new[] { typeof(CreateFormCommand), typeof(SubmitFormCommand), typeof(ProcessFormSubmissionCommand), typeof(RejectFormSubmissionCommand), typeof(MarkFormSubmissionAsSpamCommand) })
+        foreach (var command in new[] { typeof(CreateFormCommand), typeof(SubmitFormCommand), typeof(ProcessFormSubmissionCommand), typeof(RejectFormSubmissionCommand), typeof(MarkFormSubmissionAsSpamCommand), typeof(ReopenFormSubmissionCommand) })
         {
             typeof(IIdempotentRequest).IsAssignableFrom(command).Should().BeTrue(command.Name);
             command.GetCustomAttributes(typeof(IdempotencyOperationAttribute), false).Should().ContainSingle(command.Name);

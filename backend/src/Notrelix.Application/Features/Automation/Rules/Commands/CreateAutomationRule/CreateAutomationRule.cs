@@ -2,8 +2,6 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Automation.Ports.WorkManagement;
 using Notrelix.Application.Features.Automation.Rules.Services;
-using Notrelix.Application.Features.Billing.Public.Capacity;
-using Notrelix.Application.Features.Billing.Public.Facts;
 
 namespace Notrelix.Application.Features.Automation.Rules.Commands.CreateAutomationRule;
 
@@ -43,8 +41,6 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
     private readonly IAutomationDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly IBillingCapabilityFacts _billingCapabilityFacts;
-    private readonly IBillingCapacityActions _billingCapacityActions;
     private readonly AutomationExecutorAuthority _executorAuthority;
     private readonly IWorkActionPort _workActions;
 
@@ -52,8 +48,6 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
         IAutomationDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        IBillingCapabilityFacts billingCapabilityFacts,
-        IBillingCapacityActions billingCapacityActions,
         AutomationExecutorAuthority executorAuthority,
         IWorkActionPort workActions)
     {
@@ -62,25 +56,11 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
-        _billingCapabilityFacts = billingCapabilityFacts;
-        _billingCapacityActions = billingCapacityActions;
     }
 
     public async Task<Result<Guid>> Handle(CreateAutomationRuleCommand request, CancellationToken cancellationToken)
     {
-        // Billing owns the commercial decision: the consumer asks whether the
-        // capability is available, never what plan the account is on.
-        var capability = await _billingCapabilityFacts.GetCapabilityAsync(
-            _requestContext.RequireAccountId(),
-            request.WorkspaceId,
-            BillingCapabilityCode.AutomationRule,
-            requestedAmount: 1,
-            cancellationToken);
-
-        if (capability is null || !capability.IsAvailable)
-            return Result<Guid>.Failure(
-                "The automation rule limit for this workspace's plan has been reached.");
-
+        // A Draft holds no plan slot (only enabled rules count); the slot is consumed on enable.
         // One trigger, optional AND conditions and up to five ordered actions (no branching).
         IReadOnlyList<RuleActionInput> actions = request.Actions is { Count: > 0 }
             ? request.Actions
@@ -120,24 +100,6 @@ public class CreateAutomationRuleCommandHandler : IRequestHandler<CreateAutomati
             request.BoardId);
 
         _context.AutomationRules.Add(rule);
-
-        // BOUND-TX-003: the capacity consume and the rule create share the
-        // request transaction (same ApplicationDbContext, one SaveChanges owned
-        // by the data session). If the capacity slot is lost to a concurrent
-        // request the whole mutation rolls back; no separate compensation is
-        // needed. The rule identity is the stable logical operation id, so a
-        // retry after a partial infrastructure failure never double-consumes.
-        await _billingCapacityActions.ConsumeAsync(
-            new ConsumeCapacityRequest(new BillingCapacityOperationIdentity(
-                AccountId: _requestContext.RequireAccountId(),
-                WorkspaceId: request.WorkspaceId,
-                CapabilityCode: BillingCapabilityCode.AutomationRule,
-                Amount: 1,
-                LogicalOperationId: rule.Id,
-                SourceResource: rule.Id.ToString(),
-                ActorUserId: _requestContext.UserId,
-                OccurredAt: _dateTimeProvider.UtcNow)),
-            cancellationToken);
 
         return Result<Guid>.Success(rule.Id);
     }

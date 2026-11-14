@@ -23,6 +23,7 @@ const STATUS_BY_NAME: Readonly<
   Succeeded: "succeeded",
   Failed: "failed",
   Cancelled: "cancelled",
+  Skipped: "skipped",
 };
 
 /** The contract documents the status as its name, which is what the API sends. */
@@ -285,6 +286,19 @@ export function createWorkspaceAutomationsApi(client: NotrelixClient) {
         `${base(workspaceId)}/${encodeURIComponent(ruleId)}/enabled`,
         { isEnabled: enabled, boardId },
         quiet,
+      );
+    },
+    /** Cancels a Queued run: it ends Cancelled and no action runs. A run that started or finished is refused (409). */
+    cancelRun(
+      workspaceId: string,
+      boardId: string,
+      ruleId: string,
+      runId: string,
+    ): Promise<void> {
+      return api.post<void>(
+        `${base(workspaceId)}/${encodeURIComponent(ruleId)}/executions/${encodeURIComponent(runId)}/cancel?${claim(boardId)}`,
+        undefined,
+        { idempotencyKey: crypto.randomUUID(), ...quiet },
       );
     },
     async runs(

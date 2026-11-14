@@ -33,7 +33,7 @@ SELECT n.nspname AS schema_name, c.relname AS table_name, 'RLS_DISABLED' AS issu
 FROM pg_class c
 JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE c.relkind = 'r'
-  AND n.nspname IN ('account', 'identity', 'workspace', 'governance', 'authz', 'work', 'docs', 'collab', 'automation', 'integration', 'billing', 'reporting', 'search', 'notifications', 'activity', 'analytics', 'events', 'messaging', 'audit', 'ops')
+  AND n.nspname IN ('account', 'identity', 'workspace', 'governance', 'authz', 'work', 'docs', 'collab', 'chat', 'automation', 'integration', 'billing', 'reporting', 'search', 'notifications', 'activity', 'analytics', 'events', 'messaging', 'audit', 'ops')
   AND c.relrowsecurity = false
 ORDER BY n.nspname, c.relname;
 
@@ -45,7 +45,7 @@ LEFT JOIN pg_policies p
   ON p.schemaname = n.nspname
  AND p.tablename = c.relname
 WHERE c.relkind = 'r'
-  AND n.nspname IN ('account', 'identity', 'workspace', 'governance', 'authz', 'work', 'docs', 'collab', 'automation', 'integration', 'billing', 'reporting', 'search', 'notifications', 'activity', 'analytics', 'events', 'messaging', 'audit', 'ops')
+  AND n.nspname IN ('account', 'identity', 'workspace', 'governance', 'authz', 'work', 'docs', 'collab', 'chat', 'automation', 'integration', 'billing', 'reporting', 'search', 'notifications', 'activity', 'analytics', 'events', 'messaging', 'audit', 'ops')
   AND c.relrowsecurity = true
 GROUP BY n.nspname, c.relname
 HAVING count(p.policyname) = 0
@@ -54,6 +54,6 @@ ORDER BY n.nspname, c.relname;
 -- 4. Policy count by schema.
 SELECT schemaname, count(*) AS policy_count
 FROM pg_policies
-WHERE schemaname IN ('account', 'identity', 'workspace', 'governance', 'authz', 'work', 'docs', 'collab', 'automation', 'integration', 'billing', 'reporting', 'search', 'notifications', 'activity', 'analytics', 'events', 'messaging', 'audit', 'ops')
+WHERE schemaname IN ('account', 'identity', 'workspace', 'governance', 'authz', 'work', 'docs', 'collab', 'chat', 'automation', 'integration', 'billing', 'reporting', 'search', 'notifications', 'activity', 'analytics', 'events', 'messaging', 'audit', 'ops')
 GROUP BY schemaname
 ORDER BY schemaname;

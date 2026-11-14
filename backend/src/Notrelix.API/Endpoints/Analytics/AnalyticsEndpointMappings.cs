@@ -1,3 +1,7 @@
+using Notrelix.API.Endpoints.Analytics.Dashboards.Commands;
+using Notrelix.API.Endpoints.Analytics.Dashboards.Queries;
+using Notrelix.API.Endpoints.Analytics.Dashboards.Widgets;
+using Notrelix.API.Endpoints.Analytics.Placements.Queries;
 using Notrelix.API.Endpoints.Analytics.Queries;
 
 namespace Notrelix.API.Endpoints.Analytics;
@@ -15,6 +19,32 @@ public static class AnalyticsEndpointMappings
             .WithTags("Analytics")
             .WithOpenApi()
             .MapGetWorkspaceReport();
+
+        app.MapGroup("/api/v1/workspaces/{workspaceId:guid}/work-placements")
+            .WithTags("Analytics")
+            .WithOpenApi()
+            .MapListWorkspacePlacements();
+
+        app.MapGroup("/api/v1/workspaces/{workspaceId:guid}/dashboards")
+            .WithTags("Analytics")
+            .WithOpenApi()
+            .MapCreateDashboard()
+            .MapListDashboards();
+
+        app.MapGroup("/api/v1/workspaces/{workspaceId:guid}/dashboards/{dashboardId:guid}")
+            .WithTags("Analytics")
+            .WithOpenApi()
+            .MapGetDashboard()
+            .MapRenameDashboard()
+            .MapArchiveDashboard()
+            .MapRestoreDashboard()
+            .MapDeleteDashboard();
+
+        app.MapGroup("/api/v1/workspaces/{workspaceId:guid}/dashboards/{dashboardId:guid}/widgets/{widgetId:guid}")
+            .WithTags("Analytics")
+            .WithOpenApi()
+            .MapMoveDashboardWidget()
+            .MapRemoveDashboardWidget();
 
         return app;
     }

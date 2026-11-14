@@ -114,6 +114,9 @@ export const endpoints = {
       `/workspaces/${workspaceId}/spaces/${spaceId}/archive`,
     spaceUnarchive: (workspaceId: string, spaceId: string) =>
       `/workspaces/${workspaceId}/spaces/${spaceId}/unarchive`,
+    // Workspaces.Spaces.RestoreSpace (POST, no expected version; DELETE on `space` is Workspaces.Spaces.DeleteSpace).
+    spaceRestore: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${workspaceId}/spaces/${spaceId}/restore`,
     spaceMove: (workspaceId: string, spaceId: string) =>
       `/workspaces/${workspaceId}/spaces/${spaceId}/move`,
     spaceMembers: (workspaceId: string, spaceId: string) =>
@@ -135,6 +138,9 @@ export const endpoints = {
       `/workspaces/${workspaceId}/teams/${teamId}/archive`,
     teamUnarchive: (workspaceId: string, teamId: string) =>
       `/workspaces/${workspaceId}/teams/${teamId}/unarchive`,
+    // Workspaces.Teams.RestoreTeam (POST, no expected version; DELETE on `team` takes expectedVersion in the query).
+    teamRestore: (workspaceId: string, teamId: string) =>
+      `/workspaces/${workspaceId}/teams/${teamId}/restore`,
     teamMembers: (workspaceId: string, teamId: string) =>
       `/workspaces/${workspaceId}/teams/${teamId}/members`,
     teamMember: (workspaceId: string, teamId: string, userId: string) =>
@@ -149,6 +155,7 @@ export const endpoints = {
     breadcrumb: (pageId: string) => `/pages/${pageId}/breadcrumb`,
     blocks: (pageId: string) => `/pages/${pageId}/blocks`,
     comments: (pageId: string) => `/pages/${pageId}/comments`,
+    commentsPage: (pageId: string) => `/pages/${pageId}/comments/page`,
     history: (pageId: string) => `/pages/${pageId}/history`,
     search: (workspaceId: string) => `/workspaces/${workspaceId}/pages/search`,
     move: (pageId: string) => `/pages/${pageId}/move`,
@@ -204,9 +211,11 @@ export const endpoints = {
     // WorkManagement.Boards.ListArchived / ListDeleted: boards that left the working set.
     archivedByWorkspaceId: (workspaceId: string) =>
       `/workspaces/${workspaceId}/boards/archived`,
-    deletedByWorkspaceId: (workspaceId: string) =>
-      `/workspaces/${workspaceId}/boards/deleted`,
+    deletedByWorkspaceId: (workspaceId: string, spaceId?: string | null) =>
+      `/workspaces/${workspaceId}/boards/deleted${spaceId ? `?spaceId=${encodeURIComponent(spaceId)}` : ""}`,
     detail: (boardId: string) => `/boards/${boardId}`,
+    // WorkManagement.Boards.GetPeople: the people who can see the board (the pickers a Guest reads, UC-WM-A23).
+    people: (boardId: string) => `/boards/${boardId}/people`,
     // WorkManagement.Boards.Archive / Unarchive / Restore carry the board version the person saw.
     archive: (boardId: string) => `/boards/${boardId}/archive`,
     unarchive: (boardId: string) => `/boards/${boardId}/unarchive`,
@@ -276,6 +285,13 @@ export const endpoints = {
     detail: (resourceType: string, resourceId: string, permissionId: string) =>
       `/resources/${resourceType}/${resourceId}/permissions/${permissionId}`,
   },
+  // Resource invitations by email (Workspaces.Invitations.*): a guest of one Board or Page (UC-WM-A19, A20).
+  resourceInvitations: {
+    list: (resourceType: string, resourceId: string) =>
+      `/resources/${resourceType}/${resourceId}/invitations`,
+    detail: (resourceType: string, resourceId: string, invitationId: string) =>
+      `/resources/${resourceType}/${resourceId}/invitations/${invitationId}`,
+  },
 
   checklists: {
     detail: (checklistId: string) => `/checklists/${checklistId}`,
@@ -304,10 +320,146 @@ export const endpoints = {
   notifications: {
     list: "/notifications",
     read: (id: string) => `/notifications/${id}/read`,
-    readAll: "/notifications/read-all",
+    // Collaboration.Inbox.ReadAll (workspace-scoped Inbox).
+    readAll: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/inbox/read-all`,
     // Collaboration.Preferences.*: one member's choices in one workspace.
     preferences: (workspaceId: string) =>
       `/workspaces/${workspaceId}/notification-preferences`,
+  },
+  // Chat.* (REST prefix /api/v1/workspaces/{workspaceId}/chat). A channel is a space: the same GUID.
+  chat: {
+    channels: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels`,
+    channel: (workspaceId: string, channelId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}`,
+    channelOrder: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/order`,
+    channelArchive: (workspaceId: string, channelId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/archive`,
+    channelMembers: (workspaceId: string, channelId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/members`,
+    channelJoin: (workspaceId: string, channelId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/members/me`,
+    channelMember: (workspaceId: string, channelId: string, userId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/members/${encodeURIComponent(userId)}`,
+    channelGroups: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channel-groups`,
+    channelGroup: (workspaceId: string, groupId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channel-groups/${encodeURIComponent(groupId)}`,
+    messages: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/messages`,
+    message: (workspaceId: string, messageId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}`,
+    unread: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/unread`,
+    markRead: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/read`,
+    markAllRead: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/read-all`,
+    notificationLevel: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/notification-level`,
+    /** Threads: GET reads a thread's replies, POST replies in it (the root message id). */
+    threadReplies: (workspaceId: string, rootId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(rootId)}/replies`,
+    threadFollow: (workspaceId: string, threadId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/threads/${encodeURIComponent(threadId)}/follow`,
+    threadRead: (workspaceId: string, threadId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/threads/${encodeURIComponent(threadId)}/read`,
+    followedThreads: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/threads`,
+    /** GET lists the people a message in the space can mention, and whether the caller may broadcast. */
+    spaceMentionables: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/mentionables`,
+    /** Files of a message: GET lists them, POST (multipart, streamed) attaches one to the caller's own message. */
+    messageAttachments: (workspaceId: string, messageId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/attachments`,
+    /** DELETE removes one file of the caller's own message. */
+    messageAttachment: (
+      workspaceId: string,
+      messageId: string,
+      attachmentId: string,
+    ) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`,
+    /** GET streams the bytes (permission checked on every request). */
+    messageAttachmentContent: (
+      workspaceId: string,
+      messageId: string,
+      attachmentId: string,
+    ) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}/content`,
+    /** POST declares a two-step upload (pre-signed PUT) of one file of the caller's own message. */
+    messageAttachmentUploads: (workspaceId: string, messageId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/attachments/uploads`,
+    /** POST commits a two-step upload once its bytes are stored. */
+    messageAttachmentUploadCommit: (
+      workspaceId: string,
+      messageId: string,
+      uploadId: string,
+    ) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/attachments/uploads/${encodeURIComponent(uploadId)}/commit`,
+    /** GET issues a short-lived pre-signed download URL for one file of a message. */
+    messageAttachmentUrl: (
+      workspaceId: string,
+      messageId: string,
+      attachmentId: string,
+    ) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}/url`,
+    /** GET resolves the preview of a Board item or Page link (query: `url`, or `kind` with `resourceId`). */
+    linkResolve: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/links/resolve`,
+    /** A channel's link to a Board or Page: PUT sets it, DELETE (expectedVersion in the query) clears it. */
+    channelLink: (workspaceId: string, channelId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/link`,
+    /** GET lists the channels the caller can see that are linked to one resource (query: `kind` and `id`). */
+    linkedChannels: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/links/linked-channels`,
+    /** Pins: PUT pins a message and DELETE unpins it (the message id). */
+    messagePin: (workspaceId: string, messageId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/pin`,
+    spacePins: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/pins`,
+    /** Channel permission overrides: GET reads, PUT replaces the set, DELETE (expectedVersion in the query) clears it. */
+    channelPermissions: (workspaceId: string, channelId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/permissions`,
+    /** The Workspace retention rule: GET reads it, PUT sets it (Owner only, expectedVersion in the body). */
+    retention: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/retention`,
+    /** Exports of a person's chat data: POST asks for one. */
+    exports: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/exports`,
+    /** One export: its status. */
+    chatExport: (workspaceId: string, exportId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/exports/${encodeURIComponent(exportId)}`,
+    /** The export file, read with the session (permission checked on every request). */
+    chatExportContent: (workspaceId: string, exportId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/exports/${encodeURIComponent(exportId)}/content`,
+    /** Message search: GET with q and the filters in the query string (the caller's readable spaces only). */
+    search: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/search`,
+    /** POST removes another person's message as a moderator (the reason goes to the Audit record). */
+    messageModeration: (workspaceId: string, messageId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/moderation`,
+    /** Reactions: PUT adds and DELETE removes the caller's palette emoji; GET lists who reacted. */
+    messageReaction: (workspaceId: string, messageId: string, kind: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/reactions/${encodeURIComponent(kind)}`,
+    messageReactors: (workspaceId: string, messageId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/messages/${encodeURIComponent(messageId)}/reactions`,
+    /** Conversations: GET lists the caller's direct and group conversations, POST starts one. */
+    conversations: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/conversations`,
+    /** POST adds people to a group conversation. */
+    conversationParticipants: (workspaceId: string, conversationId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/conversations/${encodeURIComponent(conversationId)}/participants`,
+    /** DELETE leaves a group conversation. */
+    conversationLeave: (workspaceId: string, conversationId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/conversations/${encodeURIComponent(conversationId)}/participants/me`,
+    /** PUT hides or shows a conversation in the caller's list. */
+    conversationVisibility: (workspaceId: string, conversationId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/conversations/${encodeURIComponent(conversationId)}/visibility`,
+    /** PUT blocks or unblocks a person for the caller. */
+    blocks: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/blocks`,
   },
 
   boardGroups: {
@@ -318,15 +470,45 @@ export const endpoints = {
     archive: (groupId: string) => `/board-groups/${groupId}/archive`,
     unarchive: (groupId: string) => `/board-groups/${groupId}/unarchive`,
   },
+  // WorkManagement.Approvals.Decide / Cancel: answering and withdrawing an approval request.
+  approvals: {
+    decision: (workspaceId: string, requestId: string) =>
+      `/workspaces/${workspaceId}/approvals/${requestId}/decision`,
+    cancel: (requestId: string) => `/approvals/${requestId}/cancel`,
+  },
   boardItems: {
     create: (boardId: string) => `/boards/${boardId}/items`,
     bulk: (boardId: string) => `/boards/${boardId}/items/bulk`,
     detail: (itemId: string) => `/board-items/${itemId}`,
+    // WorkManagement.BoardItems.ResolveKey: an item by its key on the board, or the old key it kept after a move.
+    byKey: (boardId: string, key: string) =>
+      `/boards/${boardId}/items/by-key/${encodeURIComponent(key)}`,
     move: (itemId: string) => `/board-items/${itemId}/move`,
     linkPage: (itemId: string) => `/board-items/${itemId}/link-page`,
+    // WorkManagement.BoardItems.UnlinkPage / ListLinkedPages: one page's link, and the pages the caller may see.
+    unlinkPage: (itemId: string, pageId: string) =>
+      `/board-items/${itemId}/link-page/${pageId}`,
+    linkedPages: (itemId: string) => `/board-items/${itemId}/linked-pages`,
     duplicate: (itemId: string) => `/board-items/${itemId}/duplicate`,
     archive: (itemId: string) => `/board-items/${itemId}/archive`,
+    unarchive: (itemId: string) => `/board-items/${itemId}/unarchive`,
+    // WorkManagement.BoardItems.Trash / .Archived: the board's deleted and archived items, a page at a time.
+    trash: (boardId: string) => `/boards/${boardId}/items/trash`,
+    archived: (boardId: string) => `/boards/${boardId}/items/archived`,
+    restore: (itemId: string) => `/board-items/${itemId}/restore`,
+    // WorkManagement.BoardItems.ListLinks / CreateLink / DeleteLink: the links of an item, seen from the item.
+    links: (itemId: string) => `/board-items/${itemId}/links`,
+    link: (itemId: string, linkId: string) =>
+      `/board-items/${itemId}/links/${linkId}`,
+    // WorkManagement.Approvals.ListForItem / RequestForItem.
+    approvalRequests: (itemId: string) =>
+      `/board-items/${itemId}/approval-requests`,
     complete: (itemId: string) => `/board-items/${itemId}/complete`,
+    reopen: (itemId: string) => `/board-items/${itemId}/reopen`,
+    moveToBoard: (itemId: string) => `/board-items/${itemId}/move-to-board`,
+    remind: (itemId: string) => `/board-items/${itemId}/remind`,
+    // Collaboration.Watchers.GetBoardItemFollowing / FollowBoardItem / UnfollowBoardItem.
+    following: (itemId: string) => `/board-items/${itemId}/following`,
     status: (itemId: string) => `/board-items/${itemId}/status`,
     fieldValues: (itemId: string) => `/board-items/${itemId}/field-values`,
     fieldValue: (itemId: string, fieldId: string) =>
@@ -361,6 +543,19 @@ export const endpoints = {
       `/boards/${boardId}/fields/${fieldId}/options`,
     option: (boardId: string, fieldId: string, optionId: string) =>
       `/boards/${boardId}/fields/${fieldId}/options/${optionId}`,
+    // WorkManagement.BoardFields.PreviewFormula: a draft formula or rollup evaluated on one item, never saved.
+    previewFormula: (
+      boardId: string,
+      itemId: string,
+      draft:
+        | { expression: string }
+        | { rollupFunction: string; rollupFieldId?: string | null },
+    ) =>
+      `/boards/${boardId}/fields/preview-formula?itemId=${itemId}&${
+        "expression" in draft
+          ? `expression=${encodeURIComponent(draft.expression)}`
+          : `rollupFunction=${draft.rollupFunction}${draft.rollupFieldId ? `&rollupFieldId=${draft.rollupFieldId}` : ""}`
+      }`,
   },
   // WorkManagement.SavedFilters.*: listed and created per board, changed by filter id.
   savedFilters: {
@@ -381,12 +576,15 @@ export const endpoints = {
     question: (formId: string, questionId: string) =>
       `/forms/${formId}/questions/${questionId}`,
     submissions: (formId: string) => `/forms/${formId}/submissions`,
+    submissionsPage: (formId: string) => `/forms/${formId}/submissions/page`,
     submission: (submissionId: string) => `/form-submissions/${submissionId}`,
     process: (submissionId: string) =>
       `/form-submissions/${submissionId}/process`,
     reject: (submissionId: string) =>
       `/form-submissions/${submissionId}/reject`,
     spam: (submissionId: string) => `/form-submissions/${submissionId}/spam`,
+    reopen: (submissionId: string) =>
+      `/form-submissions/${submissionId}/reopen`,
   },
   // WorkManagement.BoardPreferences.*: a member's personal state of one view of a board.
   boardPreferences: {

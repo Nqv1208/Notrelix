@@ -15,9 +15,13 @@ public static class RenameAccountEndpoint
         return group;
     }
 
-    private static async Task<IResult> HandleAsync(RenameAccountRequest request, ISender sender)
+    private static async Task<IResult> HandleAsync(
+        RenameAccountRequest request,
+        ICurrentRequestContext requestContext,
+        ISender sender)
     {
-        var result = await sender.Send(new RenameAccountCommand(request.Name));
+        var result = await sender.Send(new RenameAccountCommand(
+            requestContext.RequireAccountId(), request.Name, request.ExpectedVersion));
         return result.ToNoContentResult();
     }
 }

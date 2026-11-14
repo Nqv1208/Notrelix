@@ -47,14 +47,43 @@ export const defaultTableViewConfig: ViewConfig = {
 };
 
 /** The query string of a paged read: the filter and sort only when set, the rest as given. */
+/** What a paged read is read under, in the web client's own wire forms. */
+interface PageCriteria {
+  filter: string;
+  sort: string;
+  /** Keeps the items whose title, key or label holds the text. */
+  search?: string;
+  /** People whose name holds the search text (comma-separated ids): their items match it too. */
+  searchMembers?: string;
+  /** The Select field the lanes are of; absent: the Status field. */
+  groupBy?: string;
+}
+
 function criteriaQuery(
-  criteria: { filter: string; sort: string },
+  criteria: PageCriteria,
   rest: Record<string, string>,
 ): string {
   const params = new URLSearchParams(rest);
   if (criteria.filter) params.set("filter", criteria.filter);
   if (criteria.sort) params.set("sort", criteria.sort);
+  if (criteria.search) params.set("q", criteria.search);
+  if (criteria.search && criteria.searchMembers)
+    params.set("qMembers", criteria.searchMembers);
+  if (criteria.groupBy) params.set("groupBy", criteria.groupBy);
   return params.toString();
+}
+
+/** The criteria the paging keeps: only what was sent. */
+function keptCriteria(criteria: PageCriteria) {
+  return {
+    filter: criteria.filter,
+    sort: criteria.sort,
+    ...(criteria.search ? { search: criteria.search } : {}),
+    ...(criteria.search && criteria.searchMembers
+      ? { searchMembers: criteria.searchMembers }
+      : {}),
+    ...(criteria.groupBy ? { groupBy: criteria.groupBy } : {}),
+  };
 }
 
 type SaveBoardViewOp = "WorkManagement.BoardViews.Save";
@@ -79,7 +108,7 @@ export function createBoardApi(client: NotrelixClient) {
       boardId: string,
       context: {
         workspaceId: string;
-        page?: { size: number; filter: string; sort: string };
+        page?: PageCriteria & { size: number };
       },
     ): Promise<FullBoardResponse> {
       const query = context.page
@@ -90,26 +119,17 @@ export function createBoardApi(client: NotrelixClient) {
       );
       return mapFullBoardDto(board, {
         workspaceId: context.workspaceId,
-        ...(context.page
-          ? {
-              criteria: {
-                filter: context.page.filter,
-                sort: context.page.sort,
-              },
-            }
-          : {}),
+        ...(context.page ? { criteria: keptCriteria(context.page) } : {}),
       });
     },
 
-    /** The next page of one Status lane (`none`: the lane without a status), under the criteria the board was read with. */
+    /** The next page of one lane (`none`: the lane without a value), under the criteria the board was read with. */
     async getLanePage(
       boardId: string,
       lane: string,
-      input: {
+      input: PageCriteria & {
         cursor: string;
         limit: number;
-        filter: string;
-        sort: string;
         board: Board;
         fieldDefinitions: FieldDefinition[];
       },
@@ -136,21 +156,31 @@ export function createBoardApi(client: NotrelixClient) {
 
     async saveBoardView(
       boardId: string,
-      input: { viewMode: ViewMode; viewConfig: ViewConfig },
+      input: {
+        viewMode: ViewMode;
+        viewConfig: ViewConfig;
+        /** The version of the shared view last read; omitted only for the board's first save. */
+        expectedVersion?: number;
+      },
     ): Promise<void> {
       const config = JSON.stringify(input.viewConfig);
       const body: SaveBoardViewBody = {
         viewMode: input.viewMode,
         config,
         filters: config,
+        expectedVersion: input.expectedVersion,
       };
       await api.put<void>(endpoints.boardViews.detail(boardId), body);
     },
 
     /** The saved views the caller sees: the board's shared ones and their own private ones. */
-    async listSavedViews(boardId: string): Promise<SavedBoardView[]> {
+    /** The views the caller sees; `archived` lists the archived ones instead. */
+    async listSavedViews(
+      boardId: string,
+      archived = false,
+    ): Promise<SavedBoardView[]> {
       const views = await api.get<BoardViewDtoApi[]>(
-        endpoints.boardViews.saved(boardId),
+        `${endpoints.boardViews.saved(boardId)}${archived ? "?archived=true" : ""}`,
       );
       return views.map(mapSavedView);
     },
@@ -224,6 +254,30 @@ export function createBoardApi(client: NotrelixClient) {
     ): Promise<void> {
       await api.post<void>(
         `${endpoints.boardViews.view(boardId, viewId)}/set-default`,
+        { expectedVersion },
+      );
+    },
+
+    /** Archiving the default view hands the default to `newDefaultViewId` (else the oldest shared view). */
+    async archiveSavedView(
+      boardId: string,
+      viewId: string,
+      expectedVersion: number,
+      newDefaultViewId?: string,
+    ): Promise<void> {
+      await api.post<void>(
+        `${endpoints.boardViews.view(boardId, viewId)}/archive`,
+        { expectedVersion, ...(newDefaultViewId ? { newDefaultViewId } : {}) },
+      );
+    },
+
+    async unarchiveSavedView(
+      boardId: string,
+      viewId: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      await api.post<void>(
+        `${endpoints.boardViews.view(boardId, viewId)}/unarchive`,
         { expectedVersion },
       );
     },

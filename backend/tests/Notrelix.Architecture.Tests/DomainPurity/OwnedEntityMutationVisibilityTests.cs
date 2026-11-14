@@ -14,6 +14,10 @@ public class OwnedEntityMutationVisibilityTests
         "Notrelix.Domain.Billing.Plans.PlanPrice",
         "Notrelix.Domain.Billing.Plans.PlanLimit",
 
+        // ── Integrations ── a delivery log row has its own identity (the delivery id), no aggregate owns it, and the
+        // dispatch consumer writes it as the attempts happen
+        "Notrelix.Domain.Integrations.Webhooks.OutboundDeliveryLogEntry",
+
         // ── WorkManagement ── a reminder ledger row has its own lifecycle (one per Item and sender, no aggregate owns it)
         "Notrelix.Domain.WorkManagement.Items.BoardItemReminder",
         // a link row follows its source Item when the Item moves to another board (rehomed by that use case)
@@ -24,6 +28,12 @@ public class OwnedEntityMutationVisibilityTests
         // ── Governance ── a person's role assignment is its own row per workspace; archiving a role moves its
         // holders in several workspaces, so no single aggregate owns the move
         "Notrelix.Domain.Governance.Roles.MemberRoleAssignment",
+
+        // ── Chat ── a pin has its own identity and lifecycle (one per message, listed per space); no aggregate owns it,
+        // and the pin handlers and the delete of its message remove it through Remove, which raises the pin fact
+        "Notrelix.Domain.Chat.Messages.Pin",
+        // A reaction has its own identity (one per message, person and kind), listed per message; no aggregate owns it.
+        "Notrelix.Domain.Chat.Messages.Reaction",
 
         // ── Analytics ──
         "Notrelix.Domain.Analytics.Dashboards.DashboardWidget",

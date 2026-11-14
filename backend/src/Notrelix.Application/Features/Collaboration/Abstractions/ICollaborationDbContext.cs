@@ -12,6 +12,9 @@ public interface ICollaborationDbContext
     DbSet<Mention> PageMentions { get; }
     DbSet<Reaction> Reactions { get; }
     DbSet<Attachment> Attachments { get; }
+
+    /// <summary>Two-step uploads declared but not yet committed (the pre-signed flow). Expired rows are removed with their objects by the worker.</summary>
+    DbSet<PendingAttachmentUpload> PendingAttachmentUploads { get; }
     DbSet<ResourceWatcher> ResourceWatchers { get; }
     DbSet<PresenceSession> PresenceSessions { get; }
     DbSet<ResourceReadState> ResourceReadStates { get; }

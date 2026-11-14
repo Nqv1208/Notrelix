@@ -1,3 +1,25 @@
+using Notrelix.Application.Features.Documents.Blocks.Commands.BatchUpdateBlocks;
+using Notrelix.Application.Features.Documents.Blocks.Commands.CreateBlock;
+using Notrelix.Application.Features.Documents.Blocks.Commands.DeleteBlock;
+using Notrelix.Application.Features.Documents.Blocks.Commands.ReorderBlocks;
+using Notrelix.Application.Features.Documents.Blocks.Commands.UpdateBlock;
+using Notrelix.Application.Features.Documents.Blocks.Queries.GetPageBlocks;
+using Notrelix.Application.Features.Documents.Pages.Commands.ArchivePage;
+using Notrelix.Application.Features.Documents.Pages.Commands.DeletePage;
+using Notrelix.Application.Features.Documents.Pages.Commands.MovePage;
+using Notrelix.Application.Features.Documents.Pages.Commands.MovePageToSpace;
+using Notrelix.Application.Features.Documents.Pages.Commands.PublishPage;
+using Notrelix.Application.Features.Documents.Pages.Commands.RestorePage;
+using Notrelix.Application.Features.Documents.Pages.Commands.SetPageDeadline;
+using Notrelix.Application.Features.Documents.Pages.Queries.GetPage;
+using Notrelix.Application.Features.Documents.Pages.Queries.GetPageBacklinks;
+using Notrelix.Application.Features.Documents.Pages.Queries.GetPageBreadcrumb;
+using Notrelix.Application.Features.Documents.Pages.Queries.GetPageHistory;
+using Notrelix.Application.Features.Documents.Versions.Commands.CreatePageVersion;
+using Notrelix.Application.Features.Documents.Versions.Commands.RestorePageVersion;
+using Notrelix.Application.Features.Documents.Versions.Queries.GetPageVersion;
+using Notrelix.Application.Features.Documents.Versions.Queries.ListPageVersions;
+using Notrelix.Application.Features.Documents.Pages.Commands.UpdatePage;
 using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Application.Tests.Features.Governance;
@@ -120,6 +142,89 @@ public sealed class ResourceLevelEnforcementMatrixTests
             decision.Kind.Should().Be(level >= required ? AccessDecisionKind.Allowed : AccessDecisionKind.Forbidden,
                 $"{source} ({LevelName(level)}) → {action}");
         }
+    }
+
+    [Fact]
+    public void EveryPageRequest_IsAllowedExactlyFromTheLevelOfItsAction()
+    {
+        var page = Guid.NewGuid();
+        var block = Guid.NewGuid();
+        var version = Guid.NewGuid();
+        var requests = new (IRequirePermission Request, PermissionAction Action)[]
+        {
+            (new GetPageQuery(page), PermissionAction.ViewPage),
+            (new GetPageBlocksQuery(page), PermissionAction.ViewPage),
+            (new GetPageBacklinksQuery(page), PermissionAction.ViewPage),
+            (new GetPageHistoryQuery(page), PermissionAction.ViewPage),
+            (new GetPageBreadcrumbQuery(page), PermissionAction.ViewPage),
+            (new GetPageVersionQuery(page, version), PermissionAction.ViewPage),
+            (new ListPageVersionsQuery(page), PermissionAction.ViewPage),
+            (new CreateBlockCommand(page, null, "paragraph", null, null, null, null), PermissionAction.UpdatePage),
+            (new UpdateBlockCommand(page, block, null, null, null, 1), PermissionAction.UpdatePage),
+            (new DeleteBlockCommand(page, block, 1), PermissionAction.UpdatePage),
+            (new ReorderBlocksCommand(page, []), PermissionAction.UpdatePage),
+            (new BatchUpdateBlocksCommand(page, []), PermissionAction.UpdatePage),
+            (new CreatePageVersionCommand(page, "Named"), PermissionAction.UpdatePage),
+            (new RestorePageVersionCommand(page, version, []), PermissionAction.UpdatePage),
+            (new UpdatePageCommand(page, "Renamed", 1), PermissionAction.UpdatePage),
+            (new MovePageCommand(page, null, 1), PermissionAction.UpdatePage),
+            (new MovePageToSpaceCommand(page, null, 1), PermissionAction.UpdatePage),
+            (new ArchivePageCommand(page), PermissionAction.ArchivePage),
+            (new RestorePageCommand(page), PermissionAction.ArchivePage),
+            (new DeletePageCommand(page), PermissionAction.DeletePage),
+            (new SetPageDeadlineCommand(page, null), PermissionAction.ManageBoard),
+            (new PublishPageCommand(page), PermissionAction.ManageBoard),
+        };
+
+        // The level each action needs on a page: Viewer reads, Editor edits and trashes, Manager deletes for good.
+        var required = new Dictionary<PermissionAction, int>
+        {
+            [PermissionAction.ViewPage] = 1,
+            [PermissionAction.UpdatePage] = 3,
+            [PermissionAction.ArchivePage] = 3,
+            [PermissionAction.ManageBoard] = 3,
+            [PermissionAction.DeletePage] = 4,
+        };
+        var levels = new (int Level, AccessFacts Facts)[]
+        {
+            (1, PageFacts("explicit Viewer on a Private page", "Member")),
+            (3, PageFacts("explicit Editor on a Private page", "Member")),
+            (4, PageFacts("explicit Manager on a Private page", "Member")),
+        };
+
+        foreach (var (request, action) in requests)
+        {
+            request.Action.Should().Be(action, $"{request.GetType().Name} is gated by {action}");
+            foreach (var (level, facts) in levels)
+            {
+                var decision = Engine.Evaluate(Descriptor, Context, facts, request);
+                decision.Kind.Should().Be(level >= required[action] ? AccessDecisionKind.Allowed : AccessDecisionKind.Forbidden,
+                    $"{request.GetType().Name} ({LevelName(level)}) → {action}");
+            }
+        }
+
+        // Every page-scoped Documents request is in the matrix, so a new one cannot skip the check unnoticed.
+        var pageScoped = typeof(UpdatePageCommand).Assembly.GetTypes()
+            .Where(t => t.IsClass && !t.IsAbstract
+                && t.Namespace?.StartsWith("Notrelix.Application.Features.Documents", StringComparison.Ordinal) == true
+                && typeof(IResourceScopedRequest).IsAssignableFrom(t)
+                && typeof(IRequirePermission).IsAssignableFrom(t))
+            .ToHashSet();
+        pageScoped.Should().BeEquivalentTo(requests.Select(r => r.Request.GetType()).ToHashSet(),
+            "every page request of Documents is covered by the matrix");
+    }
+
+    [Fact]
+    public void Rename_IsGatedAsEditing_SoAnEditorCanRenameAndAViewerCannot()
+    {
+        // A page rename is the UpdatePage command (the same right as editing its content), not a board action.
+        var rename = new UpdatePageCommand(Guid.NewGuid(), "Renamed plan", 1);
+        rename.Action.Should().Be(PermissionAction.UpdatePage);
+
+        Engine.Evaluate(Descriptor, Context, PageFacts("explicit Editor on a Private page", "Member"), new Probe(rename.Action, Page)).Kind
+            .Should().Be(AccessDecisionKind.Allowed, "an Editor renames the page");
+        Engine.Evaluate(Descriptor, Context, PageFacts("explicit Viewer on a Private page", "Member"), new Probe(rename.Action, Page)).Kind
+            .Should().Be(AccessDecisionKind.Forbidden, "a Viewer cannot rename the page");
     }
 
     [Fact]

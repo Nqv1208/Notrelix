@@ -1,6 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@notrelix/ui-web";
 import {
   createUseMovePageToSpace,
   createUsePageList,
@@ -9,7 +8,10 @@ import {
   appendPlacement,
   buildSpaceIndex,
   describeWorkspaceFailure,
+  initialsFor,
+  markToneFor,
   moveTargets,
+  visibleSpaceRows,
   type SpaceNode,
 } from "@notrelix/features-workspace/core";
 import {
@@ -19,12 +21,14 @@ import {
   type MoveToSpaceSubject,
 } from "@notrelix/features-workspace/web";
 import { useFeatureRuntimeDependencies } from "@notrelix/runtime-web";
+import { changedByNameOf } from "@notrelix/work-management-state";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import {
-  BoardMoveImpactPanel,
+  BoardMoveDialog,
   pluralLifecycle,
   useBoardLifecycleCopy,
   type BoardMoveImpact,
+  type MovePlaceView,
 } from "@notrelix/work-management-web";
 import {
   useBoardMoveImpact,
@@ -65,8 +69,17 @@ export function useMoveToSpace() {
   const movePage = docs.useMovePageToSpace(workspaceId);
   const [subject, setSubject] = useState<MoveToSpaceSubject | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // WM-MoveBoard frames 6 and 9: someone moved the board first, or the person may not move it.
+  const [notice, setNotice] = useState<
+    | { kind: "moved-by"; by: string | null; place: string }
+    | { kind: "denied" }
+    | null
+  >(null);
   const lifecycle = useBoardLifecycleCopy();
+  // The place picked in the board dialog (`undefined`: none yet; `null`: the top of the workspace).
   const [picked, setPicked] = useState<string | null | undefined>(undefined);
+  // The impact last shown, read when the move succeeds (the toast says who was added and who lost the board).
+  const boardImpactRef = useRef<BoardMoveImpact | null>(null);
   const impactQuery = useBoardMoveImpact(
     subject?.kind === "board" ? subject.id : null,
     picked,
@@ -93,6 +106,8 @@ export function useMoveToSpace() {
   const openForBoard = useCallback(
     (board: { id: string; name: string }) => {
       setError(null);
+      setNotice(null);
+      setPicked(undefined);
       const placement = placements.data?.find((item) => item.id === board.id);
       setSubject({
         kind: "board",
@@ -130,19 +145,61 @@ export function useMoveToSpace() {
         return;
       }
       const described = describeWorkspaceFailure(failure);
+      if (subject?.kind === "board" && described.kind === "network") {
+        setError(lifecycle.move.networkFailed);
+        return;
+      }
+      if (subject?.kind === "board" && described.kind === "forbidden") {
+        setNotice({ kind: "denied" });
+        return;
+      }
+      if (subject?.kind === "board" && described.kind === "conflict") {
+        // Someone moved it first: read where it is now, name them, and work the impact out again.
+        const boardId = subject.id;
+        const by = changedByNameOf(failure) ?? null;
+        void placements.refetch().then((result) => {
+          const now = result.data?.find((item) => item.id === boardId);
+          const spaceId = now?.spaceId ?? null;
+          const node = spaceId ? index.byId.get(spaceId) : undefined;
+          setSubject((current) =>
+            current?.kind === "board" && current.id === boardId
+              ? { ...current, spaceId }
+              : current,
+          );
+          setPicked(undefined);
+          setNotice({
+            kind: "moved-by",
+            by,
+            place: node
+              ? node.type === "Department"
+                ? formatCopy(copy.page.departmentName, { name: node.name })
+                : node.name
+              : (workspace?.name ?? ""),
+          });
+        });
+        return;
+      }
       setError(
         described.kind === "rule" || described.kind === "validation"
           ? (described.detail ?? copy.toasts.unknown)
           : spaceRecoveryHint(copy)(described),
       );
     },
-    [copy],
+    [
+      copy,
+      index,
+      lifecycle.move.networkFailed,
+      placements,
+      subject,
+      workspace?.name,
+    ],
   );
 
   const onSubmit = useCallback(
     (target: string | null, addUserIds?: readonly string[]) => {
       if (!subject) return;
       setError(null);
+      setNotice(null);
       const where = target
         ? (index.byId.get(target)?.name ?? "")
         : (workspace?.name ?? "");
@@ -179,6 +236,60 @@ export function useMoveToSpace() {
         return;
       }
       const placement = placements.data?.find((item) => item.id === subject.id);
+      const from = subject.spaceId;
+      const fromNode = from ? index.byId.get(from) : undefined;
+      const fromName = fromNode
+        ? fromNode.type === "Department"
+          ? formatCopy(copy.page.departmentName, { name: fromNode.name })
+          : fromNode.name
+        : (workspace?.name ?? "");
+      const added = addUserIds?.length ?? 0;
+      const lost = boardImpactRef.current?.losingCount ?? 0;
+      const movedBoard = { id: subject.id, name: subject.name };
+      // WM-MoveBoard frame 11: who was added and who lost the board, with Hoàn tác (the move back to where it was).
+      const boardDone = () => {
+        setSubject(null);
+        const note = [
+          added > 0 ? pluralLifecycle(lifecycle.move, "doneAdded", added) : "",
+          lost > 0 ? pluralLifecycle(lifecycle.move, "doneLost", lost) : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+        toast.success(
+          formatCopy(copy.toasts.moved, { name: movedBoard.name }),
+          {
+            description: note || where,
+            action: {
+              label: lifecycle.move.undo,
+              onClick: () => {
+                void placements.refetch().then((result) => {
+                  const now = result.data?.find(
+                    (item) => item.id === movedBoard.id,
+                  );
+                  moveBoard.mutate(
+                    {
+                      boardId: movedBoard.id,
+                      spaceId: from,
+                      expectedVersion: now?.version ?? 0,
+                      attemptKey: nextAttemptKey(),
+                    },
+                    {
+                      onSuccess: () =>
+                        toast.success(
+                          formatCopy(lifecycle.move.undone, {
+                            name: movedBoard.name,
+                            place: fromName,
+                          }),
+                        ),
+                      onError: () => toast.error(lifecycle.move.undoFailed),
+                    },
+                  );
+                });
+              },
+            },
+          },
+        );
+      };
       moveBoard.mutate(
         {
           boardId: subject.id,
@@ -187,12 +298,13 @@ export function useMoveToSpace() {
           attemptKey: nextAttemptKey(),
           ...(addUserIds?.length ? { addUserIds } : {}),
         },
-        { onSuccess: () => done(subject.name), onError: onFailure },
+        { onSuccess: boardDone, onError: onFailure },
       );
     },
     [
       copy,
       index,
+      lifecycle.move,
       move,
       moveBoard,
       movePage,
@@ -211,6 +323,7 @@ export function useMoveToSpace() {
     return {
       unchanged: dto.unchanged ?? false,
       targetName: dto.targetSpaceName ?? null,
+      targetPeople: dto.targetPeople ?? null,
       losingCount: dto.losingCount ?? null,
       everyoneGains: dto.everyoneGains ?? false,
       everyoneLoses: dto.everyoneLoses ?? false,
@@ -232,73 +345,101 @@ export function useMoveToSpace() {
       strandedOverdue: dto.strandedOverdue ?? 0,
       keptNames: dto.keptNames ?? [],
       keptCount: dto.keptCount ?? 0,
+      isPrivate: dto.isPrivate ?? false,
     };
   }, [impactQuery.data]);
-  const strandedIds = (impactQuery.data?.stranded ?? []).flatMap((person) =>
-    person.userId ? [person.userId] : [],
-  );
-  const forBoard = subject?.kind === "board" && picked !== undefined;
+  boardImpactRef.current = boardImpact;
   const placementOfSubject = subject?.kind === "board" ? subject.spaceId : null;
-  const fromName = placementOfSubject
-    ? (index.byId.get(placementOfSubject)?.name ?? "")
-    : (workspace?.name ?? "");
-  const targetName = picked
-    ? (index.byId.get(picked)?.name ?? "")
-    : (workspace?.name ?? "");
-
-  const dialog = (
-    <MoveToSpaceDialog
-      onChoose={setPicked}
-      submitBlocked={forBoard && !impactQuery.isSuccess}
-      submitLabel={
-        forBoard && strandedIds.length > 0
-          ? lifecycle.move.moveWithout
-          : undefined
-      }
-      impact={
-        forBoard ? (
-          <BoardMoveImpactPanel
-            copy={lifecycle.move}
-            state={
-              impactQuery.isError
-                ? "error"
-                : impactQuery.isSuccess
-                  ? "ready"
-                  : "loading"
-            }
-            impact={boardImpact}
-            fromName={fromName}
-            targetName={targetName}
-            onRetry={() => void impactQuery.refetch()}
-          />
-        ) : null
-      }
-      footerExtra={
-        forBoard && strandedIds.length > 0 ? (
-          <Button
-            type="button"
-            disabled={
-              move.isPending || moveBoard.isPending || movePage.isPending
-            }
-            onClick={() => onSubmit(picked ?? null, strandedIds)}
-          >
-            {pluralLifecycle(lifecycle.move, "moveAdding", strandedIds.length)}
-          </Button>
-        ) : null
-      }
-      copy={copy}
-      subject={subject}
-      workspaceName={workspace?.name ?? null}
-      nodes={tree.data ?? []}
-      targets={targets}
-      pending={move.isPending || moveBoard.isPending || movePage.isPending}
-      error={error}
-      onOpenChange={(open) => {
-        if (!open) setSubject(null);
-      }}
-      onSubmit={onSubmit}
-    />
+  // A department is named "Phòng X" on the page, as in the share dialog.
+  const placeName = useCallback(
+    (node: SpaceNode) =>
+      node.type === "Department"
+        ? formatCopy(copy.page.departmentName, { name: node.name })
+        : node.name,
+    [copy],
   );
+  const placementNode = placementOfSubject
+    ? index.byId.get(placementOfSubject)
+    : undefined;
+  const fromName = placementNode
+    ? placeName(placementNode)
+    : (workspace?.name ?? "");
+  const places = useMemo<MovePlaceView[]>(() => {
+    if (subject?.kind !== "board") return [];
+    const spaces = visibleSpaceRows(index, new Set(index.byId.keys()))
+      .filter((row) => !row.node.isArchived)
+      .map(({ node }): MovePlaceView => ({
+        id: node.id,
+        name: placeName(node),
+        initials: initialsFor(node.name),
+        markTone: markToneFor(node.id),
+        state:
+          node.id === subject.spaceId
+            ? "current"
+            : targets.spaceIds.has(node.id)
+              ? "open"
+              : "blocked",
+      }));
+    return [
+      ...spaces,
+      {
+        id: null,
+        name: workspace?.name ?? "",
+        initials: "",
+        markTone: "blue",
+        state:
+          subject.spaceId === null
+            ? "current"
+            : targets.root
+              ? "open"
+              : "blocked",
+      },
+    ];
+  }, [index, placeName, subject, targets, workspace?.name]);
+
+  const pending = move.isPending || moveBoard.isPending || movePage.isPending;
+  const dialog =
+    subject?.kind === "board" ? (
+      <BoardMoveDialog
+        copy={lifecycle.move}
+        open
+        boardName={subject.name}
+        fromName={fromName}
+        workspaceName={workspace?.name ?? ""}
+        places={places}
+        picked={picked}
+        onPick={setPicked}
+        impactState={
+          impactQuery.isError
+            ? "error"
+            : impactQuery.isSuccess
+              ? "ready"
+              : "loading"
+        }
+        impact={boardImpact}
+        onRetryImpact={() => void impactQuery.refetch()}
+        pending={pending}
+        error={error}
+        notice={notice}
+        onReview={() => setNotice(null)}
+        onClose={() => setSubject(null)}
+        onSubmit={onSubmit}
+      />
+    ) : (
+      <MoveToSpaceDialog
+        copy={copy}
+        subject={subject}
+        workspaceName={workspace?.name ?? null}
+        nodes={tree.data ?? []}
+        targets={targets}
+        pending={pending}
+        error={error}
+        onOpenChange={(open) => {
+          if (!open) setSubject(null);
+        }}
+        onSubmit={onSubmit}
+      />
+    );
 
   return { openForSpace, openForBoard, openForPage, dialog };
 }

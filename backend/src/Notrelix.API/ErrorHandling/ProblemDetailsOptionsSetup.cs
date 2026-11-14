@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Notrelix.API.Middleware;
 
 namespace Notrelix.API.ErrorHandling;
 
@@ -10,6 +11,12 @@ public static class ProblemDetailsOptionsSetup
         {
             var traceId = Activity.Current?.Id ?? context.HttpContext.TraceIdentifier;
             context.ProblemDetails.Extensions["traceId"] = traceId;
+
+            var correlationId = CorrelationIdMiddleware.Read(context.HttpContext);
+            if (correlationId is not null)
+            {
+                context.ProblemDetails.Extensions["correlationId"] = correlationId.Value.ToString();
+            }
         };
     }
 }

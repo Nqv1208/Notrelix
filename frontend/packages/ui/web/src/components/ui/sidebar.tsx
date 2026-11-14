@@ -54,6 +54,11 @@ function useSidebar() {
   return context;
 }
 
+/** Like `useSidebar`, but `null` outside a provider (a story, a test). */
+function useOptionalSidebar() {
+  return React.useContext(SidebarContext);
+}
+
 function SidebarProvider({
   defaultOpen = true,
   defaultOpenMobile = false,
@@ -225,7 +230,9 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
+          // A phone drawer takes the tablet band's 44 px touch rows (no phone sidebar is drawn).
+          data-tablet="true"
+          className="group bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -751,4 +758,5 @@ export {
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
+  useOptionalSidebar,
 };

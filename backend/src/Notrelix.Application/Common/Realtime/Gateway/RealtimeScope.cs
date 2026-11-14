@@ -9,6 +9,10 @@ public enum RealtimeScopeKind
 {
     Workspace,
     Board,
+    /// <summary>A Chat space (channel). The id is the space id; the subscription is authorized by Chat's query.</summary>
+    Channel,
+    /// <summary>The caller's own per-user stream (unread badges). The id must be the caller's user id.</summary>
+    User,
 }
 
 /// <summary>A subscription target: a scope kind plus the resource id it names.</summary>
@@ -16,11 +20,15 @@ public readonly record struct RealtimeScope(RealtimeScopeKind Kind, Guid Id)
 {
     public const string WorkspaceWireKind = "workspace";
     public const string BoardWireKind = "board";
+    public const string ChannelWireKind = "channel";
+    public const string UserWireKind = "user";
 
     public string WireKind => Kind switch
     {
         RealtimeScopeKind.Workspace => WorkspaceWireKind,
         RealtimeScopeKind.Board => BoardWireKind,
+        RealtimeScopeKind.Channel => ChannelWireKind,
+        RealtimeScopeKind.User => UserWireKind,
         _ => throw new InvalidOperationException($"Unsupported realtime scope kind {Kind}."),
     };
 
@@ -29,6 +37,8 @@ public readonly record struct RealtimeScope(RealtimeScopeKind Kind, Guid Id)
     {
         RealtimeScopeKind.Workspace => new RealtimeTopic("workspace", "Workspace", Id),
         RealtimeScopeKind.Board => new RealtimeTopic("board", "Board", Id),
+        RealtimeScopeKind.Channel => new RealtimeTopic("chat", "Channel", Id),
+        RealtimeScopeKind.User => new RealtimeTopic("user", "notifications", Id),
         _ => throw new InvalidOperationException($"Unsupported realtime scope kind {Kind}."),
     };
 
@@ -50,6 +60,12 @@ public readonly record struct RealtimeScope(RealtimeScopeKind Kind, Guid Id)
                 return true;
             case BoardWireKind:
                 scope = new RealtimeScope(RealtimeScopeKind.Board, parsed);
+                return true;
+            case ChannelWireKind:
+                scope = new RealtimeScope(RealtimeScopeKind.Channel, parsed);
+                return true;
+            case UserWireKind:
+                scope = new RealtimeScope(RealtimeScopeKind.User, parsed);
                 return true;
             default:
                 return false;

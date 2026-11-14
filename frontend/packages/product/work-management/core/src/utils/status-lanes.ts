@@ -167,11 +167,51 @@ export function groupCardsByStatus(board: {
 /** The key of the lane of items without a status in a paged read. */
 export const NO_STATUS_LANE = "none";
 
+/** The option a Select value holds: the id itself, or the first of a list. */
+export function selectOptionValue(value: unknown): string | null {
+  if (typeof value === "string" && value) return value;
+  if (Array.isArray(value) && typeof value[0] === "string") return value[0];
+  return null;
+}
+
+/**
+ * Cards the groups hold per lane of a paged read, as the lanes will group them: by Status option, or by the
+ * option of the Select field `groupBy` names (`none` for a card without a value or with a value no longer an
+ * option). Child, archived and deleted items are no lane's cards.
+ */
+export function countCardsByLane(
+  board: {
+    readonly fieldDefinitions: readonly FieldDefinition[];
+    readonly groups: readonly BoardGroup[];
+  },
+  groupBy?: string,
+): Map<string, number> {
+  const field = groupBy
+    ? board.fieldDefinitions.find((candidate) => candidate.id === groupBy)
+    : findStatusField(board.fieldDefinitions);
+  const options = new Set(field?.options.map((option) => option.id) ?? []);
+  const counts = new Map<string, number>(
+    [...options].map((option) => [option, 0]),
+  );
+  counts.set(NO_STATUS_LANE, 0);
+  for (const group of board.groups) {
+    for (const card of group.cards) {
+      if (card.parentItemId || card.isArchived || card.isDeleted) continue;
+      const value = groupBy
+        ? selectOptionValue(card.fieldValues[groupBy])
+        : (card.statusOptionId ?? null);
+      const key = value && options.has(value) ? value : NO_STATUS_LANE;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
 /**
  * The sizes of a lane. A whole read counts the cards; a paged read takes the server's counts and moves them by
  * how far the loaded cards have moved since (a drop into or out of the lane, a create, an archive).
  */
-function laneSizes(
+export function laneSizes(
   paging: BoardPaging | undefined,
   key: string,
   loaded: number,
@@ -229,13 +269,16 @@ export function isOptimisticOptionId(
 }
 
 export function normalizeName(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/đ/gi, "d")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
+  return (
+    value
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/đ/gi, "d")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      // The run above leaves at most one underscore at either end.
+      .replace(/^_|_$/g, "")
+  );
 }
 
 /** Category of a status option without one (older reads), from its name. */

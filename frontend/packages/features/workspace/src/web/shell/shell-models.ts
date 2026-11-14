@@ -49,6 +49,8 @@ export interface ShellCurrentWorkspace extends ShellWorkspace {
 export interface ShellSidebarCounts {
   readonly myWork: number | null;
   readonly inbox: number | null;
+  /** Total unread Chat messages in muted-free channels; absent or null = no badge. */
+  readonly chat?: number | null;
 }
 
 /**
@@ -199,6 +201,7 @@ export function workspaceBreadcrumbLabels(
       home: copy.sections.home,
       "my-work": copy.sections.myWork,
       inbox: copy.sections.inbox,
+      chat: copy.sections.chat,
       search: copy.sections.search,
       library: copy.sections.library,
       reports: copy.sections.reports,
@@ -232,7 +235,7 @@ export interface SidebarDocsDepartment {
 }
 
 /**
- * The document tree under the Docs row (Final-Docs `.tree`): shown on a
+ * The document tree under the Docs row (Final-Docs-2 `.tree`): shown on a
  * document page, for the department that holds it.
  */
 export interface SidebarDocsTree {

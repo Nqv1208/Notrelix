@@ -1,11 +1,18 @@
 import { useItemRemoval } from "../../item-lifecycle/use-item-removal";
 import {
   tableCollapsedGroupsKey,
-  useKanbanCollapsedLanes,
+  useCollapsedSet,
 } from "../kanban/use-kanban-collapsed-lanes";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
-import { useIsMobile } from "@notrelix/ui-web";
+import { cn, useIsMobile } from "@notrelix/ui-web";
 import {
   useArchiveCard,
   useBulkUpdateItems,
@@ -15,9 +22,12 @@ import {
   useMoveFieldOption,
   useUpdateFieldValue,
   useMoveItemToBoard,
+  usePeopleDirectory,
   useRemoveFieldOption,
   useUpdateCard,
   useWorkspaceBoards,
+  useBoardView,
+  assigneeRefusalOf,
   changedByNameOf,
   isVersionConflict,
   type KanbanWriteFailure,
@@ -30,6 +40,7 @@ import {
   groupableFields,
   NONE_VALUE,
   BULK_ITEM_LIMIT,
+  personInitials,
   projectTableLanes,
   serializeCompoundFilter,
   sortCardsByLevels,
@@ -54,13 +65,16 @@ import { buildCardLink } from "../kanban/kanban-view-helpers";
 import { useKanbanLaneCopy } from "../kanban/use-kanban-lane-copy";
 import { CardCreatePopup } from "../../card-popup/create/card-create-popup";
 import { MainTableError } from "./main-table-error";
-import { fillTableCopy } from "./main-table.copy";
+import { useLimitMessage } from "../../shared/use-limit-message";
+import { BoardHeaderDataContext } from "../../board-layout/board-header-data-context";
+import { fillTableCopy, pluralTableCopy } from "./main-table.copy";
 import { MainTableSkeleton } from "./main-table-skeleton";
 import { MainTableSurface } from "./main-table-surface";
 import { useNoGroupNotice } from "../../card-popup/create/use-no-group-notice";
 import { TableSubItems } from "./table-sub-items";
 import { useViewportTableLayout } from "./table-layout";
-import type { TableEditors } from "./table-cell-editors";
+import { TableSplitDivider, useSplitPaneWidth } from "./table-split-divider";
+import type { SystemCellColumn, TableEditors } from "./table-cell-editors";
 import type { TableFieldEditing } from "./table-field-cell";
 import {
   buildTableGroup,
@@ -74,14 +88,16 @@ import { useStatusOptionFormCopy } from "../../status-option/use-status-option-f
 import type { TableGroupMenuModel } from "./table-group-menu";
 import { useMainTableCopy } from "./use-main-table-copy";
 import { useFieldCellWrites } from "./use-field-cell-writes";
+import { useSystemCellConflicts } from "./use-system-cell-conflicts";
+import { itemDueState } from "../../shared/item-display";
+import { useArchiveUndoWindow } from "./use-archive-undo-window";
 
 type ParamChange = (
   value: string | undefined,
   options?: { replace?: boolean },
 ) => void;
 
-/** How long "Hoàn tác" is offered before the archive is sent. */
-export const ARCHIVE_UNDO_MS = 6000;
+export { ARCHIVE_UNDO_MS } from "./use-archive-undo-window";
 
 export interface MainTableViewProps {
   boardId: string;
@@ -94,6 +110,8 @@ export interface MainTableViewProps {
     id: string | undefined,
     options?: { replace?: boolean },
   ) => void;
+  /** Opens an item of any board (the toast after a move, the item that blocks a move); absent: only this board's items open, through `onSelectedItemChange`. */
+  onOpenItem?: (boardId: string, itemId: string) => void;
   /** The route `filter` parameter (`serializeKanbanFilter` form). */
   filter?: string;
   /** Writes the route `filter` parameter; without it the view keeps the filter. */
@@ -104,6 +122,25 @@ export interface MainTableViewProps {
 }
 
 /** The board group a new item of a group goes into. */
+/**
+ * The people the table's person editor offers: the board's members, then the grant holders the people
+ * directory names on this board, each once (UC-WM-C13).
+ */
+function mergeBoardPeople(
+  members: readonly { userId: string; name: string; initials: string }[],
+  directory: readonly { userId: string; name: string; onBoard: boolean }[],
+): { userId: string; name: string; initials: string }[] {
+  const listed = new Set(members.map((member) => member.userId));
+  const granted = directory
+    .filter((person) => person.onBoard && !listed.has(person.userId))
+    .map((person) => ({
+      userId: person.userId,
+      name: person.name,
+      initials: personInitials(person.name),
+    }));
+  return [...members, ...granted];
+}
+
 function listForNewItem(
   cards: readonly Card[],
   groups: readonly { id: string; position: number }[],
@@ -126,6 +163,12 @@ function isRefusedRange(error: unknown, hasStart: boolean): boolean {
   );
 }
 
+/** The server refused the write as invalid (a 400): the person fixes the value, a toast cannot help. */
+function isRefusedValue(error: unknown): boolean {
+  const e = error as { status?: unknown; kind?: unknown } | null;
+  return e?.status === 400 || e?.kind === "validation";
+}
+
 /** "YYYY-MM-DD" as an instant at `time` ("HH:MM", 17:00 by default) of that local day. */
 function dueInstant(day: string, time = "17:00"): string {
   return new Date(`${day}T${time}:00`).toISOString();
@@ -139,12 +182,16 @@ function dueInstant(day: string, time = "17:00"): string {
  * for "Hoàn tác" to run out (the board has no restore write), then sends the
  * archive.
  */
+/** The key of a status or field write in flight for one item (the in-cell write bookkeeping). */
+const inCellKey = (kind: string, cardId: string) => `${kind}\u0000${cardId}`;
+
 export function MainTableView({
   boardId,
   workspaceId,
   selectedItemId,
   currentUserId,
   onSelectedItemChange,
+  onOpenItem,
   filter: filterParam,
   onFilterChange,
   groupBy: groupByParam,
@@ -182,6 +229,8 @@ export function MainTableView({
     copy: filtersCopy,
     view,
     kanbanView,
+    timeZone,
+    timeZoneIsDefault,
   } = useBoardViewState({
     boardId,
     workspaceId,
@@ -196,20 +245,33 @@ export function MainTableView({
   const [selection, setSelection] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
-  const collapsedGroups = useKanbanCollapsedLanes(
-    tableCollapsedGroupsKey(workspaceId, boardId),
-  );
-  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(
-    () => collapsedGroups.initial,
+  // Collapsed groups are the member's own, per workspace and Table view, kept on this device (D38).
+  const { viewId: tableViewId } = useBoardView(boardId, workspaceId);
+  const [collapsed, setCollapsed] = useCollapsedSet(
+    tableCollapsedGroupsKey(workspaceId, tableViewId ?? boardId),
   );
 
+  // The route gives Share only to people who may grant board access.
+  const openShare = useContext(BoardHeaderDataContext)?.onOpenShare;
   const titles = useRef(new Map<string, string>());
   // Each failure toast takes its own id: reusing one id swallows the next result toast.
   const toastAttempt = useRef(0);
+  // A write over a published board limit (D78.8) names the limit and its max, not the generic failure.
+  const limitMessage = useLimitMessage();
+  // Status, assignee and priority cell writes in flight, by kind and item: a lost race there opens the cell's
+  // in-cell choice instead of a toast (UC-WM-B33).
+  const inCellWrites = useRef(new Map<string, number>());
   const onWriteError = useCallback(
     (failure: KanbanWriteFailure) => {
       const title =
         failure.title ?? titles.current.get(failure.cardId ?? "") ?? "";
+      if (
+        failure.cardId &&
+        isVersionConflict(failure.error) &&
+        (inCellWrites.current.get(inCellKey(failure.kind, failure.cardId)) ??
+          0) > 0
+      )
+        return;
       // Lost to someone else's change: the board is read again, so the row now shows theirs; name who.
       if (failure.conflict) {
         toast.error(
@@ -226,6 +288,33 @@ export function MainTableView({
         );
         return;
       }
+      // The server named why this person cannot be given the work: say it, and offer Share to who may grant access.
+      const refusal = assigneeRefusalOf(failure.error);
+      if (refusal) {
+        toast.error(
+          fillTableCopy(
+            refusal === "viewer"
+              ? copy.failed.assigneeViewer
+              : copy.failed.assigneeNotShared,
+            { title },
+          ),
+          {
+            id: `table-write-${failure.cardId ?? "create"}-${++toastAttempt.current}`,
+            action:
+              refusal === "board-not-shared" && openShare
+                ? { label: copy.failed.shareBoard, onClick: openShare }
+                : undefined,
+          },
+        );
+        return;
+      }
+      const limited = limitMessage(failure.error);
+      if (limited) {
+        toast.error(limited, {
+          id: `table-write-${failure.cardId ?? "create"}-${++toastAttempt.current}`,
+        });
+        return;
+      }
       const message =
         failure.kind === "create"
           ? copy.failed.create
@@ -236,9 +325,12 @@ export function MainTableView({
         id: `table-write-${failure.cardId ?? "create"}-${++toastAttempt.current}`,
       });
     },
-    [copy],
+    [copy, limitMessage, openShare],
   );
 
+  // The people who can see the board: the board's members, plus the grant holders the directory names
+  // (a Guest reads the directory, not the workspace members, UC-WM-C13).
+  const { directory } = usePeopleDirectory(boardId, workspaceId);
   const table = useBoardTable(boardId, workspaceId, {
     groupBy: view.applied.group?.fieldId,
     filter: noLegacyFilter,
@@ -300,6 +392,10 @@ export function MainTableView({
         { id: `table-write-${cardId}` },
       ),
   });
+  const openItem = (targetBoardId: string, itemId: string) => {
+    if (onOpenItem) onOpenItem(targetBoardId, itemId);
+    else if (targetBoardId === boardId) onSelectedItemChange?.(itemId);
+  };
   const removal = useItemRemoval({
     workspaceId,
     boardId,
@@ -311,12 +407,15 @@ export function MainTableView({
       if (selectedItemId === itemId)
         onSelectedItemChange?.(undefined, { replace: true });
     },
+    onOpenItem: openItem,
   });
   const bulkUpdate = useBulkUpdateItems(boardId, workspaceId);
   const [bulkFailure, setBulkFailure] = useState<{
     picked: string;
     change: BulkItemChange;
     detail: string;
+    /** Over the published bulk limit: the same change is refused again, so no Retry. */
+    limited?: boolean;
   } | null>(null);
   const bulkMutate = bulkUpdate.mutate;
   const moveItem = useMoveItemToBoard(boardId, workspaceId, {
@@ -332,61 +431,39 @@ export function MainTableView({
   const isNarrow = useIsMobile();
   const layout = useViewportTableLayout();
   const boardCovered = Boolean(selectedItemId) && isNarrow;
+  // On the tablet the open item is a pane beside the table (`Final-T-Table` chia-doi), not a dialog over it.
+  const split = layout === "tablet" && Boolean(selectedItemId);
+  // The pane's width is the person's, kept in this browser (the grip on the divider sets it).
+  const splitPane = useSplitPaneWidth();
 
   const { board } = table;
 
-  // Archive waits for the undo window: the rows leave the table at once, the
-  // write goes out when the window ends, on the next archive, on close, or
-  // when the table goes away.
-  const [pendingArchive, setPendingArchive] = useState<readonly string[]>([]);
-  const pendingRef = useRef<{ ids: string[]; timer: number } | null>(null);
+  // Archive waits for the undo window (`useArchiveUndoWindow`): the rows
+  // leave the table at once and the write goes out when the window ends.
   const archiveMutate = archiveCard.mutate;
-  const flushArchive = useCallback(() => {
-    const pending = pendingRef.current;
-    if (!pending) return;
-    window.clearTimeout(pending.timer);
-    pendingRef.current = null;
-    if (pending.ids.length > 1) {
+  const {
+    pendingIds: pendingArchive,
+    start: startArchive,
+    undo: undoArchive,
+    flush: flushArchive,
+  } = useArchiveUndoWindow((ids, done) => {
+    if (ids.length > 1) {
       // Several rows go in one request; they stay hidden until it answers.
       bulkMutate(
-        { itemIds: pending.ids, change: { type: "archive" } },
+        { itemIds: ids, change: { type: "archive" } },
         {
-          onError: () =>
-            toast.error(copy.failed.bulk, {
+          onError: (error) =>
+            toast.error(limitMessage(error) ?? copy.failed.bulk, {
               id: `table-bulk-${++toastAttempt.current}`,
             }),
-          onSettled: () =>
-            setPendingArchive((current) =>
-              current === pending.ids ? [] : current,
-            ),
+          onSettled: done,
         },
       );
       return;
     }
-    for (const id of pending.ids) archiveMutate({ cardId: id });
-    setPendingArchive([]);
-  }, [archiveMutate, bulkMutate, copy]);
-  useEffect(() => {
-    window.addEventListener("pagehide", flushArchive);
-    return () => {
-      window.removeEventListener("pagehide", flushArchive);
-      flushArchive();
-    };
-  }, [flushArchive]);
-  const startArchive = (ids: string[]) => {
-    flushArchive();
-    if (ids.length === 0) return;
-    const timer = window.setTimeout(flushArchive, ARCHIVE_UNDO_MS);
-    pendingRef.current = { ids, timer };
-    setPendingArchive(ids);
-  };
-  const undoArchive = () => {
-    const pending = pendingRef.current;
-    if (!pending) return;
-    window.clearTimeout(pending.timer);
-    pendingRef.current = null;
-    setPendingArchive([]);
-  };
+    for (const id of ids) archiveMutate({ cardId: id });
+    done();
+  });
 
   const statusField = table.statusField;
   const statusOptions = useMemo<TableStatusOption[]>(
@@ -593,6 +670,82 @@ export function MainTableView({
     () => new Set([...selection].filter((id) => visibleIds.has(id))),
     [selection, visibleIds],
   );
+  // Items picked and then deleted by someone else: the board reloads without them, they leave the pick and the bar says so.
+  const [goneNotice, setGoneNotice] = useState<{
+    count: number;
+    left: number;
+  } | null>(null);
+  // What the last bulk change did, for a few seconds.
+  const [doneNotice, setDoneNotice] = useState<{
+    text: string;
+    onUndo?: () => void;
+  } | null>(null);
+  useEffect(() => {
+    if (!doneNotice) return;
+    const timer = setTimeout(() => setDoneNotice(null), 6000);
+    return () => clearTimeout(timer);
+  }, [doneNotice]);
+  const boardLoaded = !table.isLoading && groups.every((g) => !g.hasMore);
+  useEffect(() => {
+    if (!boardLoaded) return;
+    const present = new Set(allCards.map((card) => card.id));
+    const gone = [...selection].filter((id) => !present.has(id));
+    if (gone.length === 0) return;
+    setSelection(
+      (current) => new Set([...current].filter((id) => present.has(id))),
+    );
+    setGoneNotice({ count: gone.length, left: selection.size - gone.length });
+  }, [allCards, boardLoaded, selection]);
+  useEffect(() => {
+    if (selection.size === 0) setGoneNotice(null);
+  }, [selection]);
+  // "Chọn cả nhóm": the rows of one group up to the limit; a group read in pages is read on until it holds enough.
+  const [groupPick, setGroupPick] = useState<{
+    groupId: string;
+    reading: boolean;
+  } | null>(null);
+  const loadMoreLane = table.loadMoreLane;
+  const laneLoading = table.lanePages.loading;
+  const laneFailed = table.lanePages.failed;
+  useEffect(() => {
+    if (!groupPick?.reading) return;
+    const group = groups.find(
+      (candidate) => candidate.id === groupPick.groupId,
+    );
+    if (!group) {
+      setGroupPick(null);
+      return;
+    }
+    const want = Math.min(
+      group.filteredTotal ?? group.rows.length,
+      BULK_ITEM_LIMIT,
+    );
+    if (
+      group.rows.length < want &&
+      group.hasMore &&
+      !laneFailed.has(group.id)
+    ) {
+      if (!laneLoading.has(group.id))
+        void loadMoreLane(group.id === "none" ? null : group.id);
+      return;
+    }
+    setSelection(
+      new Set(group.rows.slice(0, BULK_ITEM_LIMIT).map((row) => row.id)),
+    );
+    setGroupPick({ groupId: group.id, reading: false });
+  }, [groupPick, groups, laneFailed, laneLoading, loadMoreLane]);
+  useEffect(() => {
+    if (selection.size === 0) setGroupPick(null);
+  }, [selection]);
+  const pickedGroup = groupPick
+    ? groups.find((group) => group.id === groupPick.groupId)
+    : undefined;
+  const pickedInGroup = pickedGroup
+    ? pickedGroup.rows.filter((row) => selectedIds.has(row.id)).length
+    : 0;
+  const pickedGroupTotal = pickedGroup
+    ? (pickedGroup.filteredTotal ?? pickedGroup.rows.length)
+    : 0;
   const noteTitle = (cardId: string) => {
     const card = allCards.find((candidate) => candidate.id === cardId);
     if (card) titles.current.set(cardId, card.title);
@@ -606,6 +759,8 @@ export function MainTableView({
     [table.groups],
   );
 
+  // A title or due date write lost to someone else's save keeps the typed value in the cell's choice (UC-WM-B33).
+  const cellConflicts = useSystemCellConflicts(table.refetch);
   const sendCellValue = cellFieldValue.mutateAsync;
   const cellWrites = useFieldCellWrites(
     useCallback(
@@ -627,11 +782,54 @@ export function MainTableView({
   }, []);
 
   if (table.isLoading) return <MainTableSkeleton copy={copy} />;
-  if (table.error || !board) return <MainTableError copy={copy} />;
+  if (table.error || !board)
+    return <MainTableError copy={copy} onRetry={() => void table.refetch()} />;
 
-  const writeStatus = (cardId: string, statusOptionId: string) => {
+  // A status, assignee or priority cell write: a lost race opens the cell's choice with the value written (UC-WM-B33).
+  const cellWrite = (
+    kind: "status" | "field",
+    cardId: string,
+    column: SystemCellColumn,
+    mine: string,
+    send: () => Promise<unknown>,
+    resend: () => void,
+  ) => {
+    const key = inCellKey(kind, cardId);
+    const count = (delta: number) =>
+      inCellWrites.current.set(
+        key,
+        Math.max(0, (inCellWrites.current.get(key) ?? 0) + delta),
+      );
+    count(1);
+    send()
+      .catch((error: unknown) => {
+        if (!isVersionConflict(error)) return;
+        cellConflicts.open(cardId, column, {
+          mine,
+          byName: changedByNameOf(error) ?? table.lastEditorOf(cardId) ?? null,
+          resend: async () => resend(),
+        });
+      })
+      .finally(() => count(-1));
+  };
+  const writeStatus = (
+    cardId: string,
+    statusOptionId: string,
+    inCell = false,
+  ) => {
     noteTitle(cardId);
-    table.updateStatus.mutate({ cardId, statusOptionId });
+    if (!inCell) {
+      table.updateStatus.mutate({ cardId, statusOptionId });
+      return;
+    }
+    cellWrite(
+      "status",
+      cardId,
+      "status",
+      statusOptions.find((option) => option.id === statusOptionId)?.name ?? "",
+      () => table.updateStatus.mutateAsync({ cardId, statusOptionId }),
+      () => writeStatus(cardId, statusOptionId, true),
+    );
   };
 
   const selectedList = [...selectedIds];
@@ -639,25 +837,95 @@ export function MainTableView({
     for (const id of selectedList) write(id);
     setSelection(new Set());
   };
+  // The change that takes a status or due-date edit back, when every picked item held the same value before it; otherwise none.
+  const inverseBulkChange = (
+    change: BulkItemChange,
+    ids: readonly string[],
+  ): BulkItemChange | null => {
+    const rows = groups.flatMap((group) => group.rows);
+    const picked = ids.map((id) => rows.find((row) => row.id === id));
+    if (picked.some((row) => !row)) return null;
+    const same = <T,>(
+      read: (row: (typeof rows)[number]) => T,
+    ): T | undefined => {
+      const first = read(picked[0]!);
+      return picked.every((row) => read(row!) === first) ? first : undefined;
+    };
+    if (change.type === "set-status") {
+      const prev = same((row) => row.status?.id ?? null);
+      return prev ? { type: "set-status", statusOptionId: prev } : null;
+    }
+    if (change.type === "set-due-date" || change.type === "clear-due-date") {
+      const prev = same((row) => row.dueAt);
+      if (prev === undefined) return null;
+      return prev
+        ? { type: "set-due-date", dueDate: prev }
+        : { type: "clear-due-date" };
+    }
+    return null;
+  };
+  // After the server took a status, due-date or priority change: the count, and "Hoàn tác" where the inverse is one request.
+  const announceBulk = (
+    change: BulkItemChange,
+    ids: readonly string[],
+    inverse: BulkItemChange | null,
+  ) => {
+    const b = copy.bulk;
+    const text =
+      change.type === "set-status"
+        ? pluralTableCopy(
+            { one: b.doneStatus_one, other: b.doneStatus_other },
+            ids.length,
+          )
+        : change.type === "set-due-date" || change.type === "clear-due-date"
+          ? pluralTableCopy(
+              { one: b.doneDue_one, other: b.doneDue_other },
+              ids.length,
+            )
+          : change.type === "set-priority"
+            ? pluralTableCopy(
+                { one: b.donePriority_one, other: b.donePriority_other },
+                ids.length,
+              )
+            : null;
+    if (!text) return;
+    setDoneNotice({
+      text,
+      onUndo: inverse
+        ? () => {
+            setDoneNotice(null);
+            bulkMutate({ itemIds: [...ids], change: inverse });
+          }
+        : undefined,
+    });
+  };
   // Status, due date and assignee of the selected rows: one request, all or none.
   const bulkWrite = (change: BulkItemChange) => {
     for (const id of selectedList) noteTitle(id);
     const picked = [...selectedList].sort().join();
+    const inverse = inverseBulkChange(change, selectedList);
     setBulkFailure(null);
     // The selection is spent only once the server took the change; a refusal keeps it, names the item and offers a retry.
     bulkMutate(
       { itemIds: selectedList, change },
       {
-        onSuccess: () => setSelection(new Set()),
+        onSuccess: () => {
+          setSelection(new Set());
+          announceBulk(change, selectedList, inverse);
+        },
         onError: (error) => {
           const failed = bulkFailedItemId(error);
           const title = failed ? titles.current.get(failed) : undefined;
+          const limited = limitMessage(error);
           setBulkFailure({
             picked,
             change,
-            detail: title
-              ? fillTableCopy(copy.failed.bulkItem, { title })
-              : copy.failed.bulk,
+            limited: limited !== null,
+            detail:
+              limited ??
+              (title
+                ? fillTableCopy(copy.failed.bulkItem, { title })
+                : copy.failed.bulk),
           });
         },
       },
@@ -670,33 +938,61 @@ export function MainTableView({
       : null;
 
   const itemFields = findItemFields(board);
-  const members = board.members.map((member) => ({
-    userId: member.userId,
-    name: member.name,
-    initials: member.initials,
-  }));
-  const writeAssignee = (cardId: string, userId: string | null) => {
-    if (!itemFields.person) return;
+  const members = mergeBoardPeople(
+    board.members.map((member) => ({
+      userId: member.userId,
+      name: member.name,
+      initials: member.initials,
+    })),
+    directory?.people ?? [],
+  );
+  const writeAssignee = (
+    cardId: string,
+    userId: string | null,
+    inCell = false,
+  ) => {
+    const person = itemFields.person;
+    if (!person) return;
     noteTitle(cardId);
-    table.updateFieldValue.mutate({
+    const payload = {
       cardId,
-      fieldDefinitionId: itemFields.person.id,
+      fieldDefinitionId: person.id,
       value: userId ? [userId] : [],
-    });
+    };
+    if (!inCell) {
+      table.updateFieldValue.mutate(payload);
+      return;
+    }
+    cellWrite(
+      "field",
+      cardId,
+      "assignee",
+      members.find((member) => member.userId === userId)?.name ?? "",
+      () => table.updateFieldValue.mutateAsync(payload),
+      () => writeAssignee(cardId, userId, true),
+    );
   };
   const writeDue = async (
     cardId: string,
     day: string | null,
     time?: string,
-  ) => {
+  ): Promise<boolean> => {
     noteTitle(cardId);
+    const dueDate = day ? dueInstant(day, time) : null;
     try {
-      await updateCard.mutateAsync({
-        cardId,
-        patch: { dueDate: day ? dueInstant(day, time) : null },
-      });
+      await updateCard.mutateAsync({ cardId, patch: { dueDate } });
       return true;
     } catch (error) {
+      if (isVersionConflict(error)) {
+        cellConflicts.open(cardId, "due", {
+          mine: dueDate
+            ? (itemDueState(dueDate, new Date(), timeZone)?.text ?? "")
+            : "",
+          byName: changedByNameOf(error) ?? table.lastEditorOf(cardId) ?? null,
+          resend: () => writeDue(cardId, day, time),
+        });
+        return true;
+      }
       // A due day before the start is said in the picker, not as a generic toast.
       const hasStart = allCards.some(
         (candidate) => candidate.id === cardId && candidate.startDate,
@@ -705,6 +1001,51 @@ export function MainTableView({
       reportCardWriteFailure(error, cardId);
       return true;
     }
+  };
+  const writeTitle = async (
+    cardId: string,
+    title: string,
+  ): Promise<boolean> => {
+    noteTitle(cardId);
+    try {
+      await updateCard.mutateAsync({ cardId, patch: { title } });
+    } catch (error) {
+      // A refused title is told under the editor, with the typed text kept; the row is already back.
+      if (isRefusedValue(error)) return false;
+      // Someone saved first: the cell keeps the typed title in its choice instead of a toast.
+      if (isVersionConflict(error)) {
+        cellConflicts.open(cardId, "title", {
+          mine: title,
+          byName: changedByNameOf(error) ?? table.lastEditorOf(cardId) ?? null,
+          resend: () => writeTitle(cardId, title),
+        });
+        return true;
+      }
+      reportCardWriteFailure(error, cardId);
+    }
+    return true;
+  };
+  const writePriority = (cardId: string, optionId: string, inCell = false) => {
+    const priority = itemFields.priority;
+    if (!priority) return;
+    noteTitle(cardId);
+    const payload = {
+      cardId,
+      fieldDefinitionId: priority.id,
+      value: optionId,
+    };
+    if (!inCell) {
+      table.updateFieldValue.mutate(payload);
+      return;
+    }
+    cellWrite(
+      "field",
+      cardId,
+      "priority",
+      priority.options.find((option) => option.id === optionId)?.label ?? "",
+      () => table.updateFieldValue.mutateAsync(payload),
+      () => writePriority(cardId, optionId, true),
+    );
   };
   const editors: TableEditors | undefined = itemFields.person
     ? {
@@ -715,21 +1056,15 @@ export function MainTableView({
         })),
         onAssignee: writeAssignee,
         onDue: writeDue,
-        onPriority: (cardId, optionId) => {
-          if (!itemFields.priority) return;
-          noteTitle(cardId);
-          table.updateFieldValue.mutate({
-            cardId,
-            fieldDefinitionId: itemFields.priority.id,
-            value: optionId,
-          });
-        },
+        onPriority: (cardId, optionId, inCell) =>
+          writePriority(cardId, optionId, inCell),
       }
     : undefined;
   const fieldEditing: TableFieldEditing = {
     canEdit: capabilities.canEditFields,
     members,
     writeOf: cellWrites.writeOf,
+    refusedFieldIds: cellWrites.refusedFieldIds,
     onWrite: (cardId, fieldDefinitionId, value, stale) => {
       noteTitle(cardId);
       cellWrites.write(cardId, fieldDefinitionId, value, stale);
@@ -737,6 +1072,10 @@ export function MainTableView({
     onRetry: cellWrites.retry,
     onKeepMine: cellWrites.keepMine,
     onUseTheirs: cellWrites.takeTheirs,
+    onReloadSchema: cellWrites.reloadSchema,
+    systemConflictOf: cellConflicts.conflictOf,
+    onSystemKeepMine: cellConflicts.keepMine,
+    onSystemUseTheirs: cellConflicts.takeTheirs,
   };
   const moveTargets = (workspaceBoards.data ?? [])
     .filter(
@@ -839,16 +1178,20 @@ export function MainTableView({
       ref={tableRef}
       data-main-table=""
       tabIndex={-1}
-      className="relative h-full min-h-0 focus:outline-hidden"
+      className={cn(
+        "relative h-full min-h-0 focus:outline-hidden",
+        split && "flex",
+      )}
     >
       <div
-        className="h-full"
+        className={cn("h-full", split && "min-w-0 flex-1")}
         inert={boardCovered || undefined}
         aria-hidden={boardCovered || undefined}
       >
         <MainTableSurface
           layout={layout}
           onNoGroup={noGroupNotice.noGroup}
+          noBoardGroup={table.groups.length === 0}
           renderSubItems={(rowId) => (
             <TableSubItems
               itemId={rowId}
@@ -879,6 +1222,8 @@ export function MainTableView({
                   total: table.totalCount,
                 }}
                 now={now}
+                timeZone={timeZone}
+                timeZoneIsDefault={timeZoneIsDefault}
                 sort
                 sortFallback={sharedSortSummary}
                 groupFields={groupableFields(table.filterFields)}
@@ -914,6 +1259,7 @@ export function MainTableView({
               onRetrySave: table.retryColumnsSave,
               saveToViewFailed: table.saveColumnsToViewFailed,
               saveToViewConflict: table.saveColumnsToViewConflict,
+              saveToViewConflictBy: table.saveColumnsToViewConflictBy,
               savedToView: table.columnsSavedToView,
             },
             hiddenColumnIds: table.hiddenColumnIds,
@@ -969,20 +1315,13 @@ export function MainTableView({
           selectedIds={selectedIds}
           collapsedGroupIds={collapsed}
           openItemId={selectedItemId}
+          split={split}
           canEdit={capabilities.canEditFields}
           editors={editors}
           fieldEditing={fieldEditing}
           onRename={
             capabilities.canEditFields
-              ? (cardId, title) => {
-                  noteTitle(cardId);
-                  updateCard.mutate(
-                    { cardId, patch: { title } },
-                    {
-                      onError: (error) => reportCardWriteFailure(error, cardId),
-                    },
-                  );
-                }
+              ? (cardId, title) => writeTitle(cardId, title)
               : undefined
           }
           canCreate={capabilities.canCreateCard}
@@ -1040,7 +1379,6 @@ export function MainTableView({
             if (next.has(groupId)) next.delete(groupId);
             else next.add(groupId);
             setCollapsed(next);
-            collapsedGroups.onChange(next);
           }}
           onOpenItem={(id) => onSelectedItemChange?.(id)}
           onStatusChange={writeStatus}
@@ -1051,11 +1389,40 @@ export function MainTableView({
             setShowDone(true);
           }}
           onShowDone={() => setShowDone(true)}
+          onSelectGroup={(groupId) => setGroupPick({ groupId, reading: true })}
+          groupPickNote={
+            groupPick && !groupPick.reading && pickedGroupTotal > pickedInGroup
+              ? {
+                  groupId: groupPick.groupId,
+                  picked: pickedInGroup,
+                  total: pickedGroupTotal,
+                  onClear: () => {
+                    const rows = new Set(
+                      pickedGroup?.rows.map((row) => row.id) ?? [],
+                    );
+                    setSelection(
+                      (current) =>
+                        new Set([...current].filter((id) => !rows.has(id))),
+                    );
+                    setGroupPick(null);
+                  },
+                }
+              : null
+          }
+          bulkSaving={bulkUpdate.isPending}
+          bulkDone={doneNotice}
+          goneNotice={
+            goneNotice
+              ? { ...goneNotice, onClose: () => setGoneNotice(null) }
+              : null
+          }
           bulkFailure={
             failure
               ? {
                   detail: failure.detail,
-                  onRetry: () => bulkWrite(failure.change),
+                  onRetry: failure.limited
+                    ? undefined
+                    : () => bulkWrite(failure.change),
                 }
               : null
           }
@@ -1155,9 +1522,45 @@ export function MainTableView({
           onOpenItem={(id) => onSelectedItemChange?.(id)}
         />
       ) : null}
-      {selectedItemId ? (
+      {selectedItemId && split ? (
+        <>
+          <TableSplitDivider
+            containerRef={tableRef}
+            paneId="table-split-pane"
+            width={splitPane.width}
+            onPreview={splitPane.preview}
+            onCommit={splitPane.commit}
+            label={copy.header.splitGrip}
+          />
+          <div
+            id="table-split-pane"
+            data-slot="table-split-pane"
+            style={{ width: `${(splitPane.width * 100).toFixed(2)}%` }}
+            className="h-full min-w-0 flex-none"
+          >
+            <KanbanSelectedItem
+              presentation="pane"
+              board={board}
+              onOpenItem={openItem}
+              cardId={selectedItemId}
+              capabilities={capabilities}
+              groups={sheetGroups}
+              groupField={table.groupByField}
+              onClose={() =>
+                onSelectedItemChange?.(undefined, { replace: true })
+              }
+              onRestoreFocus={restoreFocus}
+              onCopyLink={handleCopyLink}
+              onMoveToGroup={handleMoveToGroup}
+              onUpdateFieldValue={handleSheetFieldValue}
+              onDuplicate={removal.requestDuplicate}
+            />
+          </div>
+        </>
+      ) : selectedItemId ? (
         <KanbanSelectedItem
           board={board}
+          onOpenItem={openItem}
           cardId={selectedItemId}
           capabilities={capabilities}
           groups={sheetGroups}

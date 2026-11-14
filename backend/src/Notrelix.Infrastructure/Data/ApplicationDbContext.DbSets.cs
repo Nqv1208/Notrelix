@@ -169,6 +169,7 @@ public partial class ApplicationDbContext
     public DbSet<BoardItemValue> BoardItemValues => Set<BoardItemValue>();
     public DbSet<BoardItemMember> BoardItemMembers => Set<BoardItemMember>();
     public DbSet<BoardItemReminder> BoardItemReminders => Set<BoardItemReminder>();
+    public DbSet<BoardItemKeyAlias> BoardItemKeyAliases => Set<BoardItemKeyAlias>();
     public DbSet<BoardItemVote> BoardItemVotes => Set<BoardItemVote>();
     public DbSet<BoardItemView> BoardItemViews => Set<BoardItemView>();
     public DbSet<BoardItemLabel> BoardItemLabels => Set<BoardItemLabel>();
@@ -203,6 +204,7 @@ public partial class ApplicationDbContext
     public DbSet<IntegrationSyncCursor> IntegrationSyncCursors => Set<IntegrationSyncCursor>();
     public DbSet<WebhookSubscription> WebhookSubscriptions => Set<WebhookSubscription>();
     public DbSet<WebhookDelivery> WebhookDeliveries => Set<WebhookDelivery>();
+    public DbSet<OutboundDeliveryLogEntry> OutboundDeliveryLog => Set<OutboundDeliveryLogEntry>();
     public DbSet<InboundWebhookEvent> InboundWebhookEvents => Set<InboundWebhookEvent>();
     public DbSet<global::Notrelix.Infrastructure.Data.Integrations.InboundWebhookReceipt> InboundWebhookReceipts => Set<global::Notrelix.Infrastructure.Data.Integrations.InboundWebhookReceipt>();
     public DbSet<global::Notrelix.Infrastructure.Data.Integrations.IntegrationSecretBlob> IntegrationSecretBlobs => Set<global::Notrelix.Infrastructure.Data.Integrations.IntegrationSecretBlob>();
@@ -228,11 +230,28 @@ public partial class ApplicationDbContext
     public DbSet<WorkspacePolicy> WorkspacePolicies => Set<WorkspacePolicy>();
     public DbSet<PermissionTemplate> PermissionTemplates => Set<PermissionTemplate>();
 
+    // Chat (the Workspaces Space keeps the name Spaces; the Chat space is ChatSpaces)
+    public DbSet<Notrelix.Domain.Chat.Spaces.Space> ChatSpaces => Set<Notrelix.Domain.Chat.Spaces.Space>();
+    public DbSet<Notrelix.Domain.Chat.Spaces.Membership> ChatMemberships => Set<Notrelix.Domain.Chat.Spaces.Membership>();
+    public DbSet<Notrelix.Domain.Chat.Spaces.ChannelGroup> ChatChannelGroups => Set<Notrelix.Domain.Chat.Spaces.ChannelGroup>();
+    public DbSet<Notrelix.Domain.Chat.Messages.Message> ChatMessages => Set<Notrelix.Domain.Chat.Messages.Message>();
+    public DbSet<Notrelix.Domain.Chat.Messages.MessageThread> ChatThreads => Set<Notrelix.Domain.Chat.Messages.MessageThread>();
+    public DbSet<Notrelix.Domain.Chat.Messages.ThreadFollower> ChatThreadFollowers => Set<Notrelix.Domain.Chat.Messages.ThreadFollower>();
+    public DbSet<Notrelix.Domain.Chat.Messages.Pin> ChatPins => Set<Notrelix.Domain.Chat.Messages.Pin>();
+    public DbSet<Notrelix.Domain.Chat.Messages.Reaction> ChatReactions => Set<Notrelix.Domain.Chat.Messages.Reaction>();
+    public DbSet<Notrelix.Domain.Chat.Messages.MessageMention> ChatMessageMentions => Set<Notrelix.Domain.Chat.Messages.MessageMention>();
+    public DbSet<Notrelix.Domain.Chat.Permissions.ChannelPermissionOverride> ChatPermissionOverrides => Set<Notrelix.Domain.Chat.Permissions.ChannelPermissionOverride>();
+    public DbSet<Notrelix.Domain.Chat.Spaces.DirectPair> ChatDirectPairs => Set<Notrelix.Domain.Chat.Spaces.DirectPair>();
+    public DbSet<Notrelix.Domain.Chat.Spaces.PersonBlock> ChatBlocks => Set<Notrelix.Domain.Chat.Spaces.PersonBlock>();
+    public DbSet<Notrelix.Domain.Chat.Retention.RetentionPolicy> ChatRetentionPolicies => Set<Notrelix.Domain.Chat.Retention.RetentionPolicy>();
+    public DbSet<Notrelix.Domain.Chat.Exports.ChatExportJob> ChatExportJobs => Set<Notrelix.Domain.Chat.Exports.ChatExportJob>();
+
     // Collaboration
     public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<Mention> PageMentions => Set<Mention>();
     public DbSet<Reaction> Reactions => Set<Reaction>();
     public DbSet<Attachment> Attachments => Set<Attachment>();
+    public DbSet<PendingAttachmentUpload> PendingAttachmentUploads => Set<PendingAttachmentUpload>();
     public DbSet<ResourceWatcher> ResourceWatchers => Set<ResourceWatcher>();
     public DbSet<PresenceSession> PresenceSessions => Set<PresenceSession>();
 

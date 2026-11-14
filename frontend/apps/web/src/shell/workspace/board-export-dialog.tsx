@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CircleAlert, Download, FileSpreadsheet, X } from "lucide-react";
+import {
+  CircleAlert,
+  CircleCheck,
+  Clock,
+  Download,
+  FileSpreadsheet,
+  Info,
+  LoaderCircle,
+  RotateCcw,
+  TriangleAlert,
+} from "lucide-react";
 import { endpoints } from "@notrelix/contracts";
 import type { OperationResponse } from "@notrelix/contracts";
 import { useLocale } from "@notrelix/i18n";
@@ -9,27 +19,26 @@ import {
   fillLifecycleCopy as fill,
   pluralLifecycle,
   useBoardLifecycleCopy,
+  useFilterChipLabels,
 } from "@notrelix/work-management-web";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  cn,
-} from "@notrelix/ui-web";
+  FrameBanner,
+  FrameBody,
+  FrameBox,
+  FrameButton,
+  FrameDialog,
+  FrameField,
+  FrameFooter,
+  FrameHeader,
+  FrameRadio,
+  FrameRow,
+} from "./lifecycle-dialog-frame";
 
 type Summary = OperationResponse<"WorkManagement.Exports.GetSummary", 200>;
 type Job = OperationResponse<"WorkManagement.Exports.Get", 200>;
 type Jobs = OperationResponse<"WorkManagement.Exports.List", 200>;
 type Format = "csv" | "xlsx";
 type Scope = "view" | "all";
-
-const BUTTON =
-  "inline-flex h-8 items-center justify-center gap-1.5 rounded-[7px] border px-3 text-compact font-medium outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-60 max-sm:h-11";
-const GHOST = `${BUTTON} border-line-strong bg-popover text-foreground hover:bg-state-hover-strong`;
-const PRIMARY = `${BUTTON} border-primary bg-primary font-semibold text-primary-foreground hover:opacity-90`;
 
 /**
  * Export a board or its current view to CSV or XLSX (WM-Export, UC-WM-B31). The file is made on the server in the
@@ -57,6 +66,7 @@ export function BoardExportDialog({
   const c = copy as Record<string, string>;
   const { api } = useAppRuntime();
   const { locale } = useLocale();
+  const chips = useFilterChipLabels();
   const [format, setFormat] = useState<Format>("csv");
   const [scope, setScope] = useState<Scope>("view");
   const [jobId, setJobId] = useState<string | null>(null);
@@ -192,325 +202,345 @@ export function BoardExportDialog({
     bytes >= 1024 * 1024
       ? `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(bytes / (1024 * 1024))} MB`
       : `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  const expiresLabel = (iso: string) =>
-    new Date(iso).toLocaleString(locale, {
-      day: "2-digit",
-      month: "2-digit",
+  const expiresLabel = (iso: string) => {
+    const d = new Date(iso);
+    const two = (n: number) => String(n).padStart(2, "0");
+    return `${two(d.getDate())}/${two(d.getMonth() + 1)} ${two(d.getHours())}:${two(d.getMinutes())}`;
+  };
+
+  const running = status === "queued" || status === "running";
+  const summaryLine = fill(copy.summaryLine, {
+    format: (job.data?.format ?? format).toUpperCase(),
+    scope:
+      (job.data?.scope ?? scope) === "all"
+        ? copy.summaryAllShort
+        : copy.summaryViewShort,
+    count: number(job.data?.rowCount ?? count),
+  });
+  const title =
+    status === "ready"
+      ? copy.readyTitle
+      : status === "expired"
+        ? copy.expiredTitle
+        : status === "failed" || jobId === null
+          ? copy.title
+          : status === "queued"
+            ? copy.preparingTitle
+            : copy.running;
+  const fileChip = (tone: "ok" | "bad", meta: string) => (
+    <div className="flex items-center gap-3 rounded-[10px] border border-line bg-popover px-3.5 py-2.5">
+      <span className="grid h-10 w-9 flex-none place-items-center rounded-[7px] bg-success-subtle text-success-text">
+        <FileSpreadsheet
+          aria-hidden="true"
+          className="size-4"
+          data-tone={tone}
+        />
+      </span>
+      <span className="min-w-0 flex-1">
+        <b className="block truncate text-frame-body font-semibold">
+          {job.data?.fileName}
+        </b>
+        <small className="text-frame-note text-meta-foreground">{meta}</small>
+      </span>
+      {tone === "ok" ? (
+        <FrameButton
+          onClick={again}
+          className="max-sm:min-w-0 max-sm:flex-none"
+        >
+          {copy.again}
+        </FrameButton>
+      ) : null}
+    </div>
+  );
+  const time = (iso: string) =>
+    new Date(iso).toLocaleTimeString(locale, {
       hour: "2-digit",
       minute: "2-digit",
     });
 
-  const running = status === "queued" || status === "running";
-  const sheetClass =
-    "gap-3 sm:max-w-[600px] max-sm:top-auto max-sm:bottom-0 max-sm:max-w-full max-sm:translate-y-0 max-sm:rounded-b-none";
-
   return (
-    <Dialog
+    <FrameDialog
       open={open}
       onOpenChange={(next) => (next || sending ? undefined : onClose())}
     >
-      <DialogContent showCloseButton={false} className={sheetClass}>
-        <DialogHeader>
-          <div className="flex items-start gap-3">
-            <div className="flex-1">
-              <DialogTitle>
-                {status === "ready"
-                  ? copy.ready
-                  : status === "failed"
-                    ? copy.failedTitle
-                    : status === "expired"
-                      ? copy.expired
-                      : running
-                        ? copy.running
-                        : copy.title}
-              </DialogTitle>
-              <DialogDescription>
-                {fill(copy.intro, { name: boardName })}
-              </DialogDescription>
-            </div>
-            <button
-              type="button"
-              aria-label={copy.close}
-              title={copy.close}
-              onClick={onClose}
-              disabled={sending}
-              className="inline-flex size-8 items-center justify-center rounded-[7px] text-meta-foreground hover:bg-state-hover-strong max-sm:size-11"
-            >
-              <X aria-hidden="true" className="size-4" />
-            </button>
-          </div>
-        </DialogHeader>
+      <FrameHeader
+        title={title}
+        description={
+          jobId === null && status === null
+            ? fill(copy.intro, { name: boardName })
+            : undefined
+        }
+        onClose={running ? undefined : onClose}
+        closeLabel={copy.close}
+        closeDisabled={sending}
+      />
 
-        {jobId === null ? (
-          <div className="flex flex-col gap-3">
-            <fieldset className="m-0 flex flex-col gap-1.5 border-0 p-0">
-              <legend className="mb-1.5 text-compact font-semibold">
-                {copy.formatLabel}
-              </legend>
-              <div
-                role="radiogroup"
-                aria-label={copy.formatLabel}
-                className="grid grid-cols-2 gap-2 max-sm:grid-cols-1"
-              >
-                {(["csv", "xlsx"] as const).map((f) => (
-                  <Choice
-                    key={f}
-                    checked={format === f}
-                    name="format"
-                    onSelect={() => setFormat(f)}
-                    title={c[f] ?? f}
-                    body={c[`${f}Body`] ?? ""}
-                    icon={
-                      <FileSpreadsheet aria-hidden="true" className="size-4" />
-                    }
-                  />
-                ))}
-              </div>
-            </fieldset>
-            <fieldset className="m-0 flex flex-col gap-1.5 border-0 p-0">
-              <legend className="mb-1.5 text-compact font-semibold">
-                {copy.scopeLabel}
-              </legend>
-              <div
-                role="radiogroup"
-                aria-label={copy.scopeLabel}
-                className="flex flex-col gap-2"
-              >
-                <Choice
-                  checked={scope === "view"}
-                  name="scope"
-                  onSelect={() => setScope("view")}
-                  title={fill(copy.scopeView, {
-                    view: viewName,
-                    count: summary.isSuccess ? number(viewCount) : "…",
-                  })}
-                  body={copy.scopeViewBody}
-                />
-                <Choice
-                  checked={scope === "all"}
-                  name="scope"
-                  onSelect={() => setScope("all")}
-                  title={fill(copy.scopeAll, {
-                    count: summary.isSuccess ? number(allCount) : "…",
-                  })}
-                  body={copy.scopeAllBody}
-                />
-              </div>
-            </fieldset>
-            <div className="flex flex-col gap-0.5 rounded-[10px] border border-line bg-background px-3 py-2.5">
-              <b className="text-compact font-semibold">{copy.visibleTitle}</b>
-              <span className="text-metadata text-meta-foreground">
-                {summary.data?.hiddenFields?.length
-                  ? fill(copy.hidden, {
-                      count: summary.data.hiddenFields.length,
-                      names: summary.data.hiddenFields.join(", "),
-                    })
-                  : copy.visibleBody}
-              </span>
-            </div>
-            {emptyView ? (
-              <div
-                role="status"
-                className="flex flex-col gap-0.5 rounded-[10px] bg-warning-subtle px-3 py-2 text-warning-text"
-              >
-                <b className="text-compact font-semibold">{copy.emptyTitle}</b>
-                <span className="text-metadata">{copy.emptyBody}</span>
-              </div>
-            ) : null}
-            {guestDenied || failure === "denied" ? (
-              <p role="alert" className="m-0 text-compact text-danger-text">
-                {copy.denied}
-              </p>
-            ) : summary.isError ? (
-              <p role="alert" className="m-0 text-compact text-danger-text">
-                {copy.summaryFailed}
-              </p>
-            ) : failure === "error" ? (
-              <p role="alert" className="m-0 text-compact text-danger-text">
-                {copy.failedBody}
-              </p>
-            ) : null}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150">
-            {running ? (
-              <div
-                role="status"
-                className="flex flex-col gap-1.5 rounded-[10px] border border-line px-3 py-3"
-              >
-                <b className="text-compact font-semibold">
-                  {status === "queued" ? copy.queued : copy.running}
-                </b>
-                <div className="h-1.5 overflow-hidden rounded-full bg-state-hover-strong">
-                  <div
-                    className="h-full rounded-full bg-primary motion-safe:transition-[width] motion-safe:duration-300"
-                    style={{
-                      width: `${job.data?.rowCount ? Math.round(((job.data.processed ?? 0) / job.data.rowCount) * 100) : 0}%`,
-                    }}
-                  />
-                </div>
-                {job.data?.rowCount ? (
-                  <span className="text-metadata text-meta-foreground">
-                    {fill(copy.progress, {
-                      done: number(job.data.processed ?? 0),
-                      total: number(job.data.rowCount),
-                    })}
+      {jobId === null ? (
+        <FrameBody>
+          <FrameField
+            label={copy.formatLabel}
+            className="grid grid-cols-2 max-sm:grid-cols-1"
+          >
+            {(["csv", "xlsx"] as const).map((f) => (
+              <FrameRadio
+                key={f}
+                checked={format === f}
+                name="format"
+                onSelect={() => setFormat(f)}
+                title={c[f] ?? f}
+                body={c[`${f}Body`] ?? ""}
+              />
+            ))}
+          </FrameField>
+          <FrameField label={copy.scopeLabel}>
+            <FrameRadio
+              checked={scope === "view"}
+              name="scope"
+              onSelect={() => setScope("view")}
+              title={fill(copy.scopeView, {
+                view: viewName,
+                count: summary.isSuccess ? number(viewCount) : "…",
+              })}
+              body={copy.scopeViewBody}
+              extra={
+                chips.length > 0 ? (
+                  <span className="mt-1.5 flex flex-wrap gap-1.5">
+                    {chips.map((chip) => (
+                      <span
+                        key={chip}
+                        className="inline-flex h-[22px] items-center rounded-md bg-state-selected px-2 text-xs font-semibold text-state-selected-foreground"
+                      >
+                        {chip}
+                      </span>
+                    ))}
                   </span>
-                ) : null}
-                <span className="text-metadata text-meta-foreground">
-                  {copy.runningBody}
+                ) : undefined
+              }
+            />
+            <FrameRadio
+              checked={scope === "all"}
+              name="scope"
+              onSelect={() => setScope("all")}
+              title={fill(copy.scopeAll, {
+                count: summary.isSuccess ? number(allCount) : "…",
+              })}
+              body={copy.scopeAllBody}
+            />
+          </FrameField>
+          <FrameBanner
+            tone="info"
+            icon={<Info aria-hidden="true" />}
+            title={copy.visibleTitle}
+            body={
+              summary.data?.hiddenFields?.length
+                ? fill(copy.hidden, {
+                    count: summary.data.hiddenFields.length,
+                    names: summary.data.hiddenFields.join(", "),
+                  })
+                : copy.visibleBody
+            }
+          />
+          {emptyView ? (
+            <FrameBanner
+              tone="warn"
+              icon={<TriangleAlert aria-hidden="true" />}
+              title={copy.emptyTitle}
+              body={copy.emptyBody}
+            />
+          ) : null}
+          {guestDenied || failure === "denied" ? (
+            <FrameBanner
+              tone="err"
+              role="alert"
+              icon={<CircleAlert aria-hidden="true" />}
+              title={copy.denied}
+            />
+          ) : summary.isError ? (
+            <FrameBanner
+              tone="err"
+              role="alert"
+              icon={<CircleAlert aria-hidden="true" />}
+              title={copy.summaryFailed}
+            />
+          ) : failure === "error" ? (
+            <FrameBanner
+              tone="err"
+              role="alert"
+              icon={<CircleAlert aria-hidden="true" />}
+              title={copy.failedTitle}
+              body={copy.failedBody}
+            />
+          ) : null}
+        </FrameBody>
+      ) : (
+        <FrameBody className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150">
+          {running ? (
+            <FrameBox>
+              <FrameRow>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <small className="text-frame-note leading-[1.4] text-meta-foreground">
+                    {copy.summaryLabel}
+                  </small>
+                  <b className="text-frame-body font-semibold">{summaryLine}</b>
                 </span>
-              </div>
-            ) : status === "ready" ? (
-              <div
-                role="status"
-                className="flex flex-col gap-1 rounded-[10px] bg-success-subtle px-3 py-2.5 text-success-text"
-              >
-                <b className="text-compact font-semibold">
-                  {job.data?.fileName}
-                </b>
-                <span className="text-metadata">
-                  {fill(copy.fileMeta, {
-                    format: (job.data?.format ?? "").toUpperCase(),
-                    size: sizeLabel(job.data?.size ?? 0),
-                    expires: expiresLabel(
-                      job.data?.expiresAt ?? new Date().toISOString(),
-                    ),
-                  })}
+              </FrameRow>
+            </FrameBox>
+          ) : null}
+          {status === "queued" ? (
+            <FrameBanner
+              tone="info"
+              icon={<Clock aria-hidden="true" />}
+              title={copy.queuedBanner}
+              body={copy.queuedBody}
+            />
+          ) : status === "running" ? (
+            <FrameBox>
+              <FrameRow top>
+                <span className="mt-0.5 text-info-subtle-foreground">
+                  <LoaderCircle
+                    aria-hidden="true"
+                    className="size-4 motion-safe:animate-spin"
+                  />
                 </span>
-                <span className="text-metadata">{copy.readyBody}</span>
-              </div>
-            ) : status === "expired" ? (
-              <div
-                role="status"
-                className="flex flex-col gap-0.5 rounded-[10px] border border-line px-3 py-2.5"
-              >
-                <b className="text-compact font-semibold">{copy.expired}</b>
-                <span className="text-metadata text-meta-foreground">
-                  {copy.expiredBody}
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <b className="text-frame-body font-semibold">
+                    {fill(copy.runningLine, {
+                      done: number(job.data?.processed ?? 0),
+                      total: number(job.data?.rowCount ?? 0),
+                    })}
+                  </b>
+                  <span
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={job.data?.rowCount ?? 0}
+                    aria-valuenow={job.data?.processed ?? 0}
+                    className="block h-2 w-full overflow-hidden rounded-[4px] bg-state-hover-strong"
+                  >
+                    <span
+                      className="block h-full rounded-[4px] bg-primary motion-safe:transition-[width] motion-safe:duration-300"
+                      style={{
+                        width: `${job.data?.rowCount ? Math.round(((job.data.processed ?? 0) / job.data.rowCount) * 100) : 0}%`,
+                      }}
+                    />
+                  </span>
+                  <small className="text-frame-note leading-[1.4] text-meta-foreground">
+                    {copy.runningNote}
+                  </small>
                 </span>
-              </div>
-            ) : (
-              <div
-                role="alert"
-                className="flex flex-col gap-0.5 rounded-[10px] bg-danger-subtle px-3 py-2.5 text-danger-subtle-foreground"
-              >
-                <b className="flex items-center gap-1.5 text-compact font-semibold">
-                  <CircleAlert aria-hidden="true" className="size-4" />
-                  {copy.failedTitle}
-                </b>
-                <span className="text-metadata">
-                  {job.data?.failureCode === "no-access"
-                    ? copy.failedNoAccess
-                    : copy.failedBody}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
-        <DialogFooter className="max-sm:flex-col-reverse">
-          {jobId === null ? (
-            <>
-              <button type="button" className={GHOST} onClick={onClose}>
-                {copy.cancel}
-              </button>
-              <button
-                type="button"
-                className={PRIMARY}
-                disabled={
-                  sending || !summary.isSuccess || emptyView || guestDenied
-                }
-                aria-disabled={
-                  sending || !summary.isSuccess || emptyView || guestDenied
-                }
-                onClick={() => void submit()}
-              >
-                {sending
-                  ? copy.working
-                  : summary.isSuccess && count > 0
-                    ? pluralLifecycle(
-                        c as Record<string, string>,
-                        "submit",
-                        count,
-                      )
-                    : copy.submitNone}
-              </button>
-            </>
+              </FrameRow>
+            </FrameBox>
           ) : status === "ready" ? (
             <>
-              <button type="button" className={GHOST} onClick={onClose}>
-                {copy.close}
-              </button>
-              <button type="button" className={GHOST} onClick={again}>
-                {copy.again}
-              </button>
-              <button
-                type="button"
-                className={PRIMARY}
-                autoFocus
-                onClick={() => void download()}
-              >
-                <Download aria-hidden="true" className="size-4" />
-                {copy.download}
-              </button>
+              <FrameBanner
+                tone="ok"
+                icon={<CircleCheck aria-hidden="true" />}
+                title={copy.readyBannerTitle}
+                body={fill(copy.readyBannerBody, {
+                  rows: number(job.data?.rowCount ?? 0),
+                })}
+              />
+              {fileChip(
+                "ok",
+                fill(copy.readyMeta, {
+                  format: (job.data?.format ?? "").toUpperCase(),
+                  size: sizeLabel(job.data?.size ?? 0),
+                  time: time(job.data?.createdAt ?? new Date().toISOString()),
+                }),
+              )}
             </>
-          ) : status === "failed" || status === "expired" ? (
+          ) : status === "expired" ? (
             <>
-              <button type="button" className={GHOST} onClick={onClose}>
-                {copy.close}
-              </button>
-              <button type="button" className={PRIMARY} onClick={again}>
-                {status === "failed" ? copy.retry : copy.again}
-              </button>
+              <FrameBanner
+                tone="warn"
+                icon={<TriangleAlert aria-hidden="true" />}
+                title={copy.expired}
+                body={copy.expiredBannerBody}
+              />
+              {fileChip(
+                "bad",
+                fill(copy.fileMeta, {
+                  format: (job.data?.format ?? "").toUpperCase(),
+                  size: sizeLabel(job.data?.size ?? 0),
+                  expires: expiresLabel(
+                    job.data?.expiresAt ?? new Date().toISOString(),
+                  ),
+                }),
+              )}
             </>
           ) : (
-            <button type="button" className={GHOST} onClick={onClose}>
-              {copy.close}
-            </button>
+            <FrameBanner
+              tone="err"
+              role="alert"
+              icon={<CircleAlert aria-hidden="true" />}
+              title={copy.failedTitle}
+              body={
+                job.data?.failureCode === "no-access"
+                  ? copy.failedNoAccess
+                  : copy.failedBody
+              }
+            />
           )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function Choice({
-  checked,
-  name,
-  onSelect,
-  title,
-  body,
-  icon,
-}: {
-  checked: boolean;
-  name: string;
-  onSelect: () => void;
-  title: string;
-  body: string;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <label
-      className={cn(
-        "flex cursor-pointer items-start gap-2.5 rounded-[10px] border px-3 py-2.5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-focus-ring",
-        checked ? "border-primary bg-state-hover-strong" : "border-line",
+        </FrameBody>
       )}
-    >
-      <input
-        type="radio"
-        name={name}
-        checked={checked}
-        onChange={onSelect}
-        className="mt-0.5 size-4 accent-primary"
-      />
-      <span className="flex-1">
-        <b className="flex items-center gap-1.5 text-compact font-semibold">
-          {icon}
-          {title}
-        </b>
-        <span className="block text-metadata text-meta-foreground">{body}</span>
-      </span>
-    </label>
+
+      <FrameFooter>
+        {jobId === null ? (
+          <>
+            <FrameButton onClick={onClose}>{copy.cancel}</FrameButton>
+            <FrameButton
+              primary
+              disabled={
+                sending || !summary.isSuccess || emptyView || guestDenied
+              }
+              onClick={() => void submit()}
+            >
+              {sending ? (
+                copy.working
+              ) : summary.isSuccess && count > 0 ? (
+                <>
+                  <Download aria-hidden="true" className="size-4" />
+                  {pluralLifecycle(c, "submit", count)}
+                </>
+              ) : (
+                <>
+                  <Download aria-hidden="true" className="size-4" />
+                  {copy.submitNone}
+                </>
+              )}
+            </FrameButton>
+          </>
+        ) : status === "ready" ? (
+          <>
+            <FrameButton onClick={onClose}>{copy.close}</FrameButton>
+            <FrameButton primary autoFocus onClick={() => void download()}>
+              <Download aria-hidden="true" className="size-4" />
+              {copy.download}
+            </FrameButton>
+          </>
+        ) : status === "failed" || status === "expired" ? (
+          <>
+            <FrameButton onClick={onClose}>{copy.close}</FrameButton>
+            <FrameButton primary onClick={again}>
+              <RotateCcw aria-hidden="true" className="size-4" />
+              {status === "failed" ? copy.retry : copy.again}
+            </FrameButton>
+          </>
+        ) : (
+          <>
+            <FrameButton onClick={onClose}>{copy.close}</FrameButton>
+            <FrameButton primary disabled>
+              {status === "queued" ? (
+                copy.queuedButton
+              ) : (
+                <>
+                  <Download aria-hidden="true" className="size-4" />
+                  {copy.download}
+                </>
+              )}
+            </FrameButton>
+          </>
+        )}
+      </FrameFooter>
+    </FrameDialog>
   );
 }

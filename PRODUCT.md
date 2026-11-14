@@ -56,18 +56,18 @@ The intended detailed product ownership is:
 docs/product/
 ├── product-model.md
 ├── product-experience.md
-└── contexts/
-    ├── accounts.md
-    ├── identity.md
-    ├── workspaces.md
-    ├── governance.md
-    ├── work-management.md
-    ├── documents.md
-    ├── collaboration.md
-    ├── automation.md
-    ├── integrations.md
-    ├── billing.md
-    └── analytics.md
+├── accounts.md
+├── identity.md
+├── workspaces.md
+├── governance.md
+├── work-management.md
+├── documents.md
+├── collaboration.md
+├── chat.md
+├── automation.md
+├── integrations.md
+├── billing.md
+└── analytics.md
 ```
 
 This file may summarize those contexts, but MUST NOT diverge from them.
@@ -780,6 +780,18 @@ Collaboration targets stable scoped resources; it does not copy resource ownersh
 Detailed owner:
 
 [`docs/product/collaboration.md`](docs/product/collaboration.md)
+
+---
+
+## 7.7.1 Chat
+
+Chat owns free-standing conversation inside a Workspace: channels and categories (public and private), direct and group conversations, messages, threads, pins, and per-space read state and notification level. It reuses Collaboration's mention, reaction, attachment and notification rules and links to Boards, Pages and Teams only by reference.
+
+Detailed owner:
+
+[`docs/product/chat.md`](docs/product/chat.md)
+
+Admission decision (accepted): [`docs/decisions/SYS-ADR-001-chat-bounded-context.md`](docs/decisions/SYS-ADR-001-chat-bounded-context.md)
 
 ---
 
@@ -1965,3 +1977,45 @@ The product should remain:
 > **calm · focused · confident**
 
 while its underlying architecture remains explicit enough to support long-term parallel development and controlled evolution.
+
+---
+
+# 30. Vision, market and positioning
+
+This section states where the product is going and who it is for. It holds no delivery plan; the release plan is [`docs/workstreams/product-roadmap.md`](docs/workstreams/product-roadmap.md).
+
+## 30.1 Vision
+
+> **One operating system for a company's work: boards, documents, collaboration, automation, integrations and reporting on one coherent model, with enterprise security as the default.**
+
+A team should not stitch five tools together and then rebuild permissions, search and reporting across them (§2).
+
+## 30.2 Target market
+
+| Dimension | Choice |
+|---|---|
+| Customers | Teams and companies in Vietnam that coordinate structured work and knowledge (§3) |
+| Language | Vietnamese is the default locale; English is supported |
+| Plans | Free, Pro and Enterprise ([`docs/product/billing.md`](docs/product/billing.md)); the final tier list is an owner decision |
+| Buyer and user | The administrator or owner buys and governs; power users and contributors work daily |
+
+## 30.3 Positioning
+
+Notrelix is measured against monday.com, Asana, ClickUp, Jira Cloud, Smartsheet, Notion and Linear (the comparison set of the Work Management catalog, [`docs/workstreams/use-cases/work-management.md`](docs/workstreams/use-cases/work-management.md) §1.4). It does not claim to out-feature each of them. It commits to four differences:
+
+| Difference | What it means for the customer |
+|---|---|
+| Enterprise security by default | Tenant isolation enforced twice (application and database), second-factor sign-in, an audit trail, the same answer for a resource you may not see (`NRX-003`, `NRX-004`) |
+| One work model, many views | Table, Kanban, Calendar and Timeline show the same items; a change in one is true in all (PROD-002) |
+| No lost writes | Two people editing the same item never silently overwrite each other (PROD-013) |
+| Vietnamese done properly | Vietnamese is the default locale and the language the product is written in first; English is supported, not the source |
+
+## 30.4 The promise of 1.0 (general availability)
+
+1. A Vietnamese company can sign up, subscribe, invite its people and run its work in boards, pages, comments, automations and integrations, in Vietnamese.
+2. No person sees another tenant's data or a resource they were not granted, and no concurrent edit is lost.
+3. Plans, limits, invoices and payments work for real, and the operator can run, back up and restore the service.
+4. Dashboards and reports show only what the viewer may see and say how fresh they are.
+5. Every use case in the 1.0 scope of the roadmap is DONE and the owner has accepted the release by journeys.
+
+What 1.0 does not promise: live co-editing with cursors, ordered delivery to consumers that need it, and the other items the roadmap lists after 1.0.

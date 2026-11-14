@@ -22,7 +22,7 @@ import { AutomationsSection } from "./board-settings-automations";
 import { WorkspaceRulesSection } from "./workspace-rules-section";
 import { BoardSettingsProvider, useSettings } from "./board-settings-context";
 import { FieldsSection } from "./board-settings-fields";
-import { fillCopy } from "./board-settings-format";
+import { fillCopy, limitCopy } from "./board-settings-format";
 import { GeneralSection } from "./board-settings-general";
 import { GroupsSection } from "./board-settings-groups";
 import { LabelsSection } from "./board-settings-labels";
@@ -90,7 +90,7 @@ export function BoardSettingsSurface(props: BoardSettingsSurfaceProps) {
             <PageLink
               href={props.boardHref}
               onNavigate={props.onBack}
-              className="font-medium text-brand-subtle-foreground hover:underline"
+              className="font-medium text-brand-subtle-foreground hover:underline max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
             >
               {props.boardTitle}
             </PageLink>{" "}
@@ -102,7 +102,7 @@ export function BoardSettingsSurface(props: BoardSettingsSurfaceProps) {
         </div>
         <span className="flex-1" />
         {forbidden ? null : (
-          <span className="text-item-small text-meta-foreground">
+          <span className="text-metadata leading-[1.45] text-meta-foreground">
             {copy.header.hint}
           </span>
         )}
@@ -290,7 +290,7 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
     );
   const count = (value?: number) =>
     value === undefined ? null : (
-      <span className="ml-auto text-metadata font-medium text-meta-foreground">
+      <span className="ml-auto text-metadata leading-[1.45] font-medium text-meta-foreground">
         {value}
       </span>
     );
@@ -439,7 +439,9 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
                     ? copy.feedback.conflictTitle
                     : feedback === "invalid"
                       ? copy.feedback.invalid
-                      : copy.feedback.failed}
+                      : feedback === "limit"
+                        ? limitCopy(copy, failure?.limit)
+                        : copy.feedback.failed}
                 </b>
                 {feedback === "conflict" ? (
                   <span>{copy.feedback.conflictBody}</span>

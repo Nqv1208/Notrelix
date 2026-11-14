@@ -17,6 +17,7 @@ public class ShareLinkConfiguration : IEntityTypeConfiguration<ShareLink>
         builder.Property(x => x.ResourceId).HasColumnName("resource_id").IsRequired();
         builder.Property(x => x.AccessMode).HasColumnName("access_mode").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
+        builder.Property(x => x.Level).HasColumnName("level").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.ExpiresAt).HasColumnName("expires_at");
 
         builder.OwnsOne(x => x.TokenHash, token =>

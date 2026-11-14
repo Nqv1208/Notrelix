@@ -1,23 +1,18 @@
 import {
-  groupCardsByStatus,
+  countCardsByLane,
   NO_STATUS_LANE,
   type FullBoardResponse,
   type KanbanStatusLane,
 } from "@notrelix/work-management-core";
 import type { LanePage } from "../api/board-api-mappers";
 
-/** The Status lane a card belongs to in a paged read: its option, or `none`. */
+/** The lane a card belongs to in a paged read: its option of the lane field, or `none`. */
 export const laneKeyOf = (lane: Pick<KanbanStatusLane, "optionId">): string =>
   lane.optionId ?? NO_STATUS_LANE;
 
 /** Cards the cache holds per lane (what a refetch must put back). */
 export function loadedByLane(board: FullBoardResponse): Map<string, number> {
-  return new Map(
-    groupCardsByStatus({
-      fieldDefinitions: board.fieldDefinitions,
-      groups: board.groups,
-    }).map((lane) => [laneKeyOf(lane), lane.cards.length]),
-  );
+  return countCardsByLane(board, board.paging?.criteria.groupBy);
 }
 
 /**

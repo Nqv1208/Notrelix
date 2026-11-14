@@ -22,8 +22,36 @@ function errorKind(error: unknown): string | null {
     : null;
 }
 
+function brokenReferencesOf(
+  error: unknown,
+): { kind: string; id: string; field: string }[] {
+  const details = (error as { details?: unknown } | null)?.details;
+  const rows = (details as { brokenReferences?: unknown } | null)
+    ?.brokenReferences;
+  if (!Array.isArray(rows)) return [];
+  return rows.flatMap((row: unknown) => {
+    const { kind, id, field } = (row ?? {}) as Record<string, unknown>;
+    return typeof kind === "string" &&
+      typeof id === "string" &&
+      typeof field === "string"
+      ? [{ kind, id, field }]
+      : [];
+  });
+}
+
 function failure(error: unknown): WorkspaceAutomationWriteResult {
   const kind = errorKind(error);
+  // UC-AUT-D10 / K04: an enable refused because a target the rule names is archived or deleted.
+  if (
+    (error as { ruleCode?: unknown } | null)?.ruleCode ===
+    "Automation_Rule_BrokenReference"
+  ) {
+    return {
+      ok: false,
+      reason: "broken-reference",
+      brokenReferences: brokenReferencesOf(error),
+    };
+  }
   if (kind === "forbidden") return { ok: false, reason: "forbidden" };
   if (kind === "validation") {
     // The one validation the page can word: the plan's rule limit.
@@ -31,6 +59,22 @@ function failure(error: unknown): WorkspaceAutomationWriteResult {
     return { ok: false, reason: /limit/i.test(text) ? "limit" : "invalid" };
   }
   return { ok: false, reason: "failed" };
+}
+
+/** A refused cancel: the page says which refusal it was (403, 404 or 409). */
+function cancelFailure(
+  error: unknown,
+): Extract<WorkspaceAutomationWriteResult, { ok: false }> {
+  switch (errorKind(error)) {
+    case "forbidden":
+      return { ok: false, reason: "cancel-forbidden" };
+    case "not_found":
+      return { ok: false, reason: "not-found" };
+    case "conflict":
+      return { ok: false, reason: "not-queued" };
+    default:
+      return { ok: false, reason: "failed" };
+  }
 }
 
 /**
@@ -98,6 +142,15 @@ export function useWorkspaceAutomations(
     mutationFn: (ruleId: string) =>
       workspaceAutomations.remove(workspaceId, boardId, ruleId),
   });
+  const cancelMutation = useMutation({
+    mutationFn: (input: { ruleId: string; runId: string }) =>
+      workspaceAutomations.cancelRun(
+        workspaceId,
+        boardId,
+        input.ruleId,
+        input.runId,
+      ),
+  });
 
   const create = useCallback(
     async (
@@ -158,6 +211,27 @@ export function useWorkspaceAutomations(
     [removeMutation, refresh],
   );
 
+  const cancelRun = useCallback(
+    async (
+      ruleId: string,
+      runId: string,
+    ): Promise<WorkspaceAutomationWriteResult> => {
+      try {
+        await cancelMutation.mutateAsync({ ruleId, runId });
+        // Refreshing the automation keys also re-reads the open rule's runs.
+        await refresh();
+        return { ok: true };
+      } catch (error) {
+        const result = cancelFailure(error);
+        // The run changed or vanished under the page: re-read the list so it shows the truth.
+        if (result.reason === "not-queued" || result.reason === "not-found")
+          await refresh();
+        return result;
+      }
+    },
+    [cancelMutation, refresh],
+  );
+
   const forbidden = errorKind(rules.error) === "forbidden";
   return {
     rules: rules.data ?? [],
@@ -169,6 +243,7 @@ export function useWorkspaceAutomations(
     update,
     remove,
     setEnabled,
+    cancelRun,
     openRuleId,
     openRuns: setOpenRuleId,
     runs: runs.data ?? [],

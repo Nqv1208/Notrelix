@@ -112,12 +112,16 @@ function Row({
   actions?: ReactNode;
   busy?: boolean;
 }) {
+  // The new-card sheet lets the note wrap on two 20.3 px lines (Kanban-CardPopup-M-Create).
+  const queued = useCardPopup().mode === "create";
   return (
     <div
       aria-busy={busy || undefined}
       className="box-border flex min-h-[60px] items-center gap-3 rounded-[8px] px-2 py-1.5 hover:bg-state-hover-strong"
     >
-      <span className={cn(THUMB, tone)}>{tile}</span>
+      <span className={cn(THUMB, tone, queued && "max-md:-mt-0.5")}>
+        {tile}
+      </span>
       <span className="min-w-0 flex-1">
         {nameHref ? (
           <a
@@ -133,7 +137,13 @@ function Row({
             {name}
           </span>
         )}
-        <span className="block truncate text-[12.5px] text-meta-foreground">
+        <span
+          className={cn(
+            "block truncate text-[12.5px] text-meta-foreground",
+            queued &&
+              "max-md:-mt-[1.2px] max-md:mb-[1.2px] max-md:leading-[20.3px] max-md:whitespace-normal",
+          )}
+        >
           {meta}
         </span>
       </span>
@@ -374,70 +384,88 @@ export function AttachmentsSection() {
               tile={tile.node}
               tone={tile.tone}
               name={file.name}
-              nameHref={isLink ? file.url : undefined}
+              nameHref={isLink && mode === "view" ? file.url : undefined}
               meta={
-                isLink
-                  ? fillPopupCopy(t.linkMeta, {
+                mode === "create"
+                  ? fillPopupCopy(isLink ? t.queuedLink : t.queuedFile, {
                       host: hostOf(file.url),
-                      date: date(file.createdAt).split(" ")[0] ?? "",
-                      author,
-                    })
-                  : fillPopupCopy(t.addedBy, {
-                      date: date(file.createdAt),
                       size: formatFileSize(file.size, locale),
-                      author,
                     })
+                  : isLink
+                    ? fillPopupCopy(t.linkMeta, {
+                        host: hostOf(file.url),
+                        date: date(file.createdAt).split(" ")[0] ?? "",
+                        author,
+                      })
+                    : fillPopupCopy(t.addedBy, {
+                        date: date(file.createdAt),
+                        size: formatFileSize(file.size, locale),
+                        author,
+                      })
               }
               actions={
-                <>
-                  {!isLink && callbacks.onDownloadFile ? (
-                    <IconBtn
-                      small
-                      aria-label={fillPopupCopy(t.downloadFile, {
-                        name: file.name,
-                      })}
-                      title={t.download}
-                      onClick={() => callbacks.onDownloadFile?.(file)}
-                    >
-                      <Download aria-hidden="true" className="size-4" />
-                    </IconBtn>
-                  ) : null}
-                  {isLink || (canEdit && callbacks.onDeleteFile) ? (
-                    <OptionsMenu
-                      label={fillPopupCopy(t.options, { name: file.name })}
-                    >
-                      {isLink ? (
-                        <DropdownMenuItem asChild>
-                          <a
-                            href={file.url}
-                            target="_blank"
-                            rel="noreferrer noopener"
+                mode === "create" ? (
+                  // A queued file is not stored yet: it leaves the draft at once.
+                  <IconBtn
+                    small
+                    aria-label={fillPopupCopy(t.removeQueued, {
+                      name: file.name,
+                    })}
+                    onClick={() => void callbacks.onDeleteFile?.(file)}
+                  >
+                    <X aria-hidden="true" className="size-4" />
+                  </IconBtn>
+                ) : (
+                  <>
+                    {!isLink && callbacks.onDownloadFile ? (
+                      <IconBtn
+                        small
+                        aria-label={fillPopupCopy(t.downloadFile, {
+                          name: file.name,
+                        })}
+                        title={t.download}
+                        onClick={() => callbacks.onDownloadFile?.(file)}
+                      >
+                        <Download aria-hidden="true" className="size-4" />
+                      </IconBtn>
+                    ) : null}
+                    {isLink || (canEdit && callbacks.onDeleteFile) ? (
+                      <OptionsMenu
+                        label={fillPopupCopy(t.options, { name: file.name })}
+                      >
+                        {isLink ? (
+                          <DropdownMenuItem asChild>
+                            <a
+                              href={file.url}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                            >
+                              <ExternalLink aria-hidden="true" />
+                              {t.openLink}
+                            </a>
+                          </DropdownMenuItem>
+                        ) : null}
+                        {canEdit && callbacks.onDeleteFile ? (
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() =>
+                              setConfirm({
+                                title: fillPopupCopy(t.deleteTitle, {
+                                  name: file.name,
+                                }),
+                                body: t.deleteBody,
+                                action: t.deleteConfirm,
+                                run: () => callbacks.onDeleteFile!(file),
+                              })
+                            }
                           >
-                            <ExternalLink aria-hidden="true" />
-                            {t.openLink}
-                          </a>
-                        </DropdownMenuItem>
-                      ) : null}
-                      {canEdit && callbacks.onDeleteFile ? (
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onSelect={() =>
-                            setConfirm({
-                              title: fillPopupCopy(t.deleteTitle, {
-                                name: file.name,
-                              }),
-                              body: t.deleteBody,
-                              action: t.deleteConfirm,
-                              run: () => callbacks.onDeleteFile!(file),
-                            })
-                          }
-                        >
-                          {t.deleteFile}
-                        </DropdownMenuItem>
-                      ) : null}
-                    </OptionsMenu>
-                  ) : null}
-                </>
+                            {t.deleteFile}
+                          </DropdownMenuItem>
+                        ) : null}
+                      </OptionsMenu>
+                    ) : null}
+                  </>
+                )
               }
             />
           );

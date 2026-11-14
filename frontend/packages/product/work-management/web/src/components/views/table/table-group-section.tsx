@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Plus, TriangleAlert } from "lucide-react";
 import { Button, cn } from "@notrelix/ui-web";
+import { ITEM_TITLE_MAX_LENGTH } from "@notrelix/work-management-core";
 import {
   fillTableCopy,
   pluralTableCopy,
@@ -21,11 +22,14 @@ export function TableGroupHeader({
   menu,
   boardNote,
   onAdd,
+  onSelectGroup,
 }: {
   copy: MainTableCopy;
   group: TableGroupModel;
   collapsed: boolean;
   onToggle: () => void;
+  /** Picks the group's rows (at most the bulk limit); absent when the viewer cannot change items. */
+  onSelectGroup?: () => void;
   /** The tablet header's "+": opens the group's add field; absent when the viewer cannot add. */
   onAdd?: () => void;
   /** Move and delete of the group's option; absent = the viewer cannot, or the group is not an option. */
@@ -51,6 +55,19 @@ export function TableGroupHeader({
           group.overdueCount,
         )
       : null;
+  const selectButton =
+    onSelectGroup && !collapsed && group.rows.length > 0 ? (
+      <button
+        type="button"
+        onClick={onSelectGroup}
+        className={cn(
+          "inline-flex cursor-pointer items-center rounded-[7px] border-0 bg-transparent px-2.5 text-compact font-medium text-muted-foreground hover:bg-state-hover-strong hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring",
+          tablet ? "h-11" : "mr-3 ml-auto h-8",
+        )}
+      >
+        {copy.group.selectAll}
+      </button>
+    ) : null;
   if (tablet)
     // `Final-T-Table`: one 44 px toggle holds the chevron, dot, name and count; "+" adds to the group.
     return (
@@ -103,6 +120,7 @@ export function TableGroupHeader({
           {menu ? (
             <TableGroupMenu copy={copy} name={group.name} menu={menu} />
           ) : null}
+          {selectButton}
         </span>
         {boardNote ? (
           <span
@@ -121,7 +139,7 @@ export function TableGroupHeader({
     >
       <span
         role="cell"
-        className="inline-flex items-center gap-2 pl-2.5 text-nav font-semibold text-foreground"
+        className="inline-flex flex-1 items-center gap-2 pl-2.5 text-nav font-semibold text-foreground"
       >
         <button
           type="button"
@@ -141,6 +159,14 @@ export function TableGroupHeader({
         <StatusDot category={group.category} />
         {group.name}
         <span className="font-medium text-meta-foreground">{count}</span>
+        {group.rows.length === 0 && !group.hasMore ? (
+          <span
+            data-slot="table-group-empty"
+            className="text-[13px] leading-[1.45] font-normal text-meta-foreground"
+          >
+            {group.total > 0 ? copy.group.emptyFiltered : copy.group.emptyGroup}
+          </span>
+        ) : null}
         {group.overdueCount > 0 ? (
           <span className="text-crumb font-semibold text-danger-text">
             ·{" "}
@@ -156,6 +182,7 @@ export function TableGroupHeader({
         {menu ? (
           <TableGroupMenu copy={copy} name={group.name} menu={menu} />
         ) : null}
+        {selectButton}
       </span>
       {boardNote ? (
         <span
@@ -336,6 +363,7 @@ export function TableAddRow({
             <input
               ref={inputRef}
               value={title}
+              maxLength={ITEM_TITLE_MAX_LENGTH}
               onChange={(event) => setTitle(event.target.value)}
               aria-label={fillTableCopy(copy.group.newItemLabel, {
                 name: group.name,

@@ -77,6 +77,13 @@ public static class FormulaLanguage
     private static BusinessRuleException Syntax(string message) =>
         new(WorkManagementRuleCodes.WorkManagement_FieldSettings_FormulaSyntaxInvalid, message);
 
+    /// <summary>A syntax refusal that names where (1-based) and, when one is missing, the character expected there.</summary>
+    private static BusinessRuleException Syntax(string message, int position, string? missing = null) =>
+        new(WorkManagementRuleCodes.WorkManagement_FieldSettings_FormulaSyntaxInvalid, message,
+            missing is null
+                ? new Dictionary<string, object?> { ["position"] = position }
+                : new Dictionary<string, object?> { ["position"] = position, ["missing"] = missing });
+
     private sealed class Parser(string src)
     {
         private int _pos;
@@ -87,7 +94,7 @@ public static class FormulaLanguage
         {
             var node = Comparison();
             SkipWs();
-            if (_pos < src.Length) throw Syntax($"Unexpected '{src[_pos]}' at position {_pos + 1}.");
+            if (_pos < src.Length) throw Syntax($"Unexpected '{src[_pos]}' at position {_pos + 1}.", _pos + 1);
             return node;
         }
 
@@ -160,14 +167,14 @@ public static class FormulaLanguage
                 if (++_depth > MaxNodes)
                     throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_FieldSettings_FormulaTooComplex, $"A formula may have at most {MaxNodes} nodes.");
                 var inner = Comparison();
-                if (!Eat(")")) throw Syntax("A ')' is missing.");
+                if (!Eat(")")) throw Syntax("A ')' is missing.", _pos + 1, ")");
                 _depth--;
                 return inner;
             }
             if (c == '[')
             {
                 var end = src.IndexOf(']', _pos);
-                if (end < 0) throw Syntax("A ']' is missing.");
+                if (end < 0) throw Syntax("A ']' is missing.", src.Length + 1, "]");
                 var name = src[(_pos + 1)..end].Trim();
                 if (name.Length == 0) throw Syntax("A field reference is empty.");
                 _pos = end + 1;
@@ -224,7 +231,7 @@ public static class FormulaLanguage
                 if (!valid) throw Syntax($"{word} is called with the wrong number of arguments.");
                 return Count(new CallNode(word, args));
             }
-            throw Syntax($"Unexpected '{c}' at position {_pos + 1}.");
+            throw Syntax($"Unexpected '{c}' at position {_pos + 1}.", _pos + 1);
         }
     }
 }

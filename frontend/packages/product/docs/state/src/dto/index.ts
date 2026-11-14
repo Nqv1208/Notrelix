@@ -47,6 +47,10 @@ export type CommentDtoApi = {
   contentMd: string;
   createdAt: string;
   isEdited: boolean;
+  /** The comment's version: edit and delete quote it, and a stale one is refused. */
+  version?: number;
+  /** A deleted comment that still has replies: it keeps no author and no text. */
+  isDeleted?: boolean;
   /** When the thread was marked resolved; absent while it is open. */
   resolvedAt?: string | null;
   /** `Collaboration.Comments.GetPageComments`: the quoted range of a block, when the comment has one. */

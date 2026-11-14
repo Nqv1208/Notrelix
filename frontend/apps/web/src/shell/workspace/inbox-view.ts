@@ -145,6 +145,13 @@ const KIND: Record<InboxEntryDto["type"], InboxKind> = {
   followed_assignee: "change",
   automation: "system",
   due_tomorrow: "overdue",
+  due_reminder: "overdue",
+  nudge: "assign",
+  form_response: "assign",
+  chat_mention: "mention",
+  chat_direct: "mention",
+  chat_thread: "change",
+  chat_broadcast: "mention",
   system: "system",
 };
 
@@ -267,6 +274,59 @@ export function toInboxEntries(
         );
         context = { department, label: keyLabel };
         break;
+      case "due_reminder":
+        segments = sentence(copy, copy.feed.dueSoon, { title: target.title }, [
+          "title",
+        ]);
+        context = { department, label: keyLabel };
+        break;
+      case "nudge":
+        segments = sentence(
+          copy,
+          copy.feed.nudge,
+          { actor: actorName, title: target.title },
+          ["actor", "title"],
+        );
+        context = { department, label: keyLabel };
+        break;
+      case "form_response":
+        // The producer names the form (the excerpt) and the Board (the target); never an answer.
+        segments = sentence(
+          copy,
+          entry.excerpt ? copy.feed.formResponse : copy.feed.formResponsePlain,
+          { form: entry.excerpt ?? "", title: target.title },
+          ["form", "title"],
+        );
+        context = null;
+        break;
+      case "chat_mention":
+      case "chat_direct":
+      case "chat_thread":
+      case "chat_broadcast": {
+        // A chat notification names the channel; a conversation has no name.
+        const chatTemplates = {
+          chat_mention: [copy.feed.chatMention, copy.feed.chatMentionPlain],
+          chat_direct: [copy.feed.chatDirect, copy.feed.chatDirectPlain],
+          chat_thread: [copy.feed.chatThread, copy.feed.chatThreadPlain],
+          chat_broadcast: [
+            copy.feed.chatBroadcast,
+            copy.feed.chatBroadcastPlain,
+          ],
+        } as const;
+        const [withText, plain] = chatTemplates[entry.type];
+        segments = sentence(
+          copy,
+          entry.excerpt ? withText : plain,
+          {
+            actor: actorName,
+            title: target.title || copy.feed.chatConversation,
+            excerpt: entry.excerpt ?? "",
+          },
+          ["actor", "title"],
+        );
+        context = null;
+        break;
+      }
       case "system":
         // A type this page does not know: its own text when it has one.
         segments = sentence(

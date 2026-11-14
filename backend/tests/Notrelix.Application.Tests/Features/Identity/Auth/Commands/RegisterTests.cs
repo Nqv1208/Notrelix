@@ -1,7 +1,9 @@
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
-using Notrelix.Application.Common.Security.Auth;
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
+using Notrelix.Application.Common.Data.Rls;
+using Notrelix.Application.Features.Identity.Auth.Services;
+using Notrelix.Application.Features.Identity.Registration.Ports;
 using Notrelix.Application.Features.Identity.Verification.Abstractions;
 using Notrelix.Domain.Identity.Users;
 
@@ -10,21 +12,36 @@ namespace Notrelix.Application.Tests.Features.Identity.Auth.Commands;
 public class RegisterTests : IdentityHandlerTestBase
 {
     private readonly Mock<IAccountProvisioningActions> _provisioningActionsMock = new();
+    private readonly Mock<IEmailRegistrationProbe> _probeMock = new();
 
     private RegisterCommandHandler CreateSut(IEmailVerificationTokenIssuer? tokenIssuer = null) => new(
         IdentityContextMock.Object,
         _provisioningActionsMock.Object,
         PasswordHasherMock.Object,
-        SessionIssuerMock.Object,
         DateTimeProviderMock.Object,
         IntegrationEventCollectorMock.Object,
-        tokenIssuer);
+        RateLimitServiceMock.Object,
+        tokenIssuer,
+        _probeMock.Object);
+
+    private RegisterCommand Command() => new()
+    {
+        Email = TestEmail,
+        Password = TestPassword,
+        Name = "Test User"
+    };
 
     private void SetupProvisioning(Guid accountId)
     {
         _provisioningActionsMock
             .Setup(s => s.ProvisionPersonalAccountAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PersonalAccountProvisioningResult(accountId));
+    }
+
+    private void SetupExistingAddress()
+    {
+        _probeMock.Setup(p => p.IsRegisteredAsync(TestEmail, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        PasswordHasherMock.Setup(h => h.HashPassword(TestPassword)).Returns(TestHashedPassword);
     }
 
     [Fact]
@@ -34,14 +51,6 @@ public class RegisterTests : IdentityHandlerTestBase
         SetupProvisioning(accountId);
 
         PasswordHasherMock.Setup(h => h.HashPassword(TestPassword)).Returns(TestHashedPassword);
-        SessionIssuerMock.Setup(s => s.IssueAsync(It.IsAny<User>(), TestNow, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AuthResult
-            {
-                AccessToken = "access-token",
-                RefreshToken = "refresh-token",
-                ExpiresAt = TestNow.AddHours(1).UtcDateTime,
-                User = new UserDto { Id = TestUserId, Email = TestEmail, Name = "Test User", EmailConfirmed = false }
-            });
 
         var sut = CreateSut();
         var result = await sut.Handle(new RegisterCommand
@@ -52,7 +61,7 @@ public class RegisterTests : IdentityHandlerTestBase
         }, CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
-        result.Data!.WorkspaceProvisioning.Should().Be("pending");
+        SessionIssuerMock.VerifyNoOtherCalls();
         _provisioningActionsMock.Verify(
             s => s.ProvisionPersonalAccountAsync(It.IsAny<Guid>(), "Test User", TestNow, It.IsAny<CancellationToken>()),
             Times.Once);
@@ -68,14 +77,6 @@ public class RegisterTests : IdentityHandlerTestBase
         SetupProvisioning(accountId);
 
         PasswordHasherMock.Setup(h => h.HashPassword(TestPassword)).Returns(TestHashedPassword);
-        SessionIssuerMock.Setup(s => s.IssueAsync(It.IsAny<User>(), TestNow, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AuthResult
-            {
-                AccessToken = "access-token",
-                RefreshToken = "refresh-token",
-                ExpiresAt = TestNow.AddHours(1).UtcDateTime,
-                User = new UserDto { Id = TestUserId, Email = TestEmail, Name = "Test User", EmailConfirmed = false }
-            });
 
         IIntegrationEvent? captured = null;
         IntegrationEventCollectorMock
@@ -98,24 +99,106 @@ public class RegisterTests : IdentityHandlerTestBase
     }
 
     [Fact]
-    public async Task Handle_WhenEmailAlreadyExists_ReturnsFailure()
+    public async Task Handle_WhenEmailAlreadyExists_ReturnsTheSameSuccessAndRaisesOnlyTheOwnerNotice()
     {
-        var existingUser = CreateUser();
-        SetupUsers(existingUser);
+        SetupExistingAddress();
+        IIntegrationEvent? captured = null;
+        IntegrationEventCollectorMock
+            .Setup(c => c.Add(It.IsAny<IIntegrationEvent>()))
+            .Callback<IIntegrationEvent>(e => captured = e);
 
         var sut = CreateSut();
-        var result = await sut.Handle(new RegisterCommand
-        {
-            Email = TestEmail,
-            Password = TestPassword,
-            Name = "Test User"
-        }, CancellationToken.None);
+        var result = await sut.Handle(Command(), CancellationToken.None);
 
-        result.Succeeded.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("already in use"));
+        result.Succeeded.Should().BeTrue();
+        result.Errors.Should().BeEmpty();
         _provisioningActionsMock.Verify(
             s => s.ProvisionPersonalAccountAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()),
             Times.Never);
+        IdentityContextMock.Verify(c => c.Users.Add(It.IsAny<User>()), Times.Never);
+        SessionIssuerMock.VerifyNoOtherCalls();
+        // Only the notice fact, addressed to the owner: no registration fact, no account, no session.
+        IntegrationEventCollectorMock.Verify(
+            c => c.Add(It.Is<IIntegrationEvent>(e => e is RegistrationAttemptedOnExistingAccountIntegrationEventV1)),
+            Times.Once);
+        IntegrationEventCollectorMock.Verify(c => c.Add(It.IsAny<IIntegrationEvent>()), Times.Once);
+        captured.Should().BeOfType<RegistrationAttemptedOnExistingAccountIntegrationEventV1>()
+            .Which.Email.Should().Be(TestEmail);
+    }
+
+    [Fact]
+    public async Task Handle_WhenEmailAlreadyExists_HashesThePasswordLikeANewRegistration()
+    {
+        SetupExistingAddress();
+
+        await CreateSut().Handle(Command(), CancellationToken.None);
+
+        PasswordHasherMock.Verify(h => h.HashPassword(TestPassword), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenEmailAlreadyExistsAndTheNoticeIsLimited_StaysSilentWithTheSameSuccess()
+    {
+        SetupExistingAddress();
+        RateLimitServiceMock
+            .Setup(r => r.IsRateLimitedAsync("register-existing-notice", TestEmail, It.IsAny<int>(), It.IsAny<TimeSpan>()))
+            .ReturnsAsync(true);
+
+        var result = await CreateSut().Handle(Command(), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        IntegrationEventCollectorMock.Verify(c => c.Add(It.IsAny<IIntegrationEvent>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenEmailAlreadyExists_EntersTheCredentialScopeOfTheAddressBeforeTheNoticeIsRaised()
+    {
+        // The database lets a tenantless event in only under a user scope (found by the real run: the first
+        // version wrote the event with no scope and the outbox refused it).
+        SetupExistingAddress();
+        var rls = new Mock<IRlsSessionContext>();
+        rls.SetupGet(r => r.IsSessionContextEnabled).Returns(true);
+        CredentialScopeRequest? entered = null;
+        var order = new List<string>();
+        rls.Setup(r => r.EnterCredentialScopeAsync(It.IsAny<CredentialScopeRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<CredentialScopeRequest, CancellationToken>((request, _) =>
+            {
+                entered = request;
+                order.Add("scope");
+            })
+            .ReturnsAsync((Guid?)Guid.NewGuid());
+        IntegrationEventCollectorMock
+            .Setup(c => c.Add(It.IsAny<IIntegrationEvent>()))
+            .Callback<IIntegrationEvent>(_ => order.Add("event"));
+        var sut = new RegisterCommandHandler(
+            IdentityContextMock.Object,
+            _provisioningActionsMock.Object,
+            PasswordHasherMock.Object,
+            DateTimeProviderMock.Object,
+            IntegrationEventCollectorMock.Object,
+            RateLimitServiceMock.Object,
+            null,
+            _probeMock.Object,
+            null,
+            new CredentialScope(rls.Object));
+
+        var result = await sut.Handle(Command(), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        entered!.Kind.Should().Be(CredentialScopeKind.NormalizedEmail);
+        entered.Credential.Should().Be(TestEmail);
+        order.Should().Equal("scope", "event");
+    }
+
+    [Fact]
+    public async Task Handle_WhenEmailIsMixedCaseAndPadded_ProbesTheNormalizedAddress()
+    {
+        SetupExistingAddress();
+
+        var command = Command() with { Email = "  Test@Example.COM " };
+        await CreateSut().Handle(command, CancellationToken.None);
+
+        _probeMock.Verify(p => p.IsRegisteredAsync(TestEmail, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -124,14 +207,6 @@ public class RegisterTests : IdentityHandlerTestBase
         SetupProvisioning(Guid.NewGuid());
 
         PasswordHasherMock.Setup(h => h.HashPassword(TestPassword)).Returns(TestHashedPassword);
-        SessionIssuerMock.Setup(s => s.IssueAsync(It.IsAny<User>(), TestNow, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AuthResult
-            {
-                AccessToken = "access-token",
-                RefreshToken = "refresh-token",
-                ExpiresAt = TestNow.AddHours(1).UtcDateTime,
-                User = new UserDto { Id = TestUserId, Email = TestEmail, Name = "Test User", EmailConfirmed = false }
-            });
 
         TokenIssuerMock.Setup(t => t.IssueAsync(It.IsAny<User>(), It.IsAny<Guid>(), TestNow, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new EmailVerificationTokenIssue(Guid.NewGuid(), TestUserId, TestEmail, "protected-token", 1, TestNow.AddDays(1)));

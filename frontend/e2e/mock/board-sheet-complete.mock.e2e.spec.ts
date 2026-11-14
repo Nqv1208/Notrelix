@@ -70,16 +70,21 @@ test.describe("Card popup, everyday edits (owner)", () => {
   test("creates a property in place and sets its value", async ({ page }) => {
     await open(page);
     const popup = page.getByRole("dialog");
-    await popup.getByRole("button", { name: "Thêm trường" }).click();
-    await page.getByRole("button", { name: "Thêm thuộc tính" }).click();
+    await popup
+      .locator("[data-field-pills]")
+      .getByRole("button", { name: "Thêm thuộc tính" })
+      .click();
+    await page.getByRole("button", { name: "Thêm thuộc tính" }).last().click();
     await page.getByRole("button", { name: "Thuộc tính mới" }).click();
     await page.getByRole("textbox", { name: "Tên thuộc tính" }).fill("Ghi chú");
     await page.getByRole("combobox", { name: "Loại" }).selectOption("text");
     await page.getByRole("button", { name: "Tạo thuộc tính" }).click();
-    const box = popup.getByRole("textbox", { name: "Ghi chú" });
-    await expect(box).toBeVisible();
+    // The new property is a pill; its editor opens from it.
+    const pill = popup.locator('[data-field-pills] button:has-text("Ghi chú")');
+    await pill.click();
+    const box = page.getByRole("textbox", { name: "Ghi chú" });
     await box.fill("Đã khớp");
     await box.press("Enter");
-    await expect(box).toHaveValue("Đã khớp");
+    await expect(pill).toContainText("Đã khớp");
   });
 });

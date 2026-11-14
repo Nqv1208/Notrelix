@@ -152,6 +152,116 @@ public sealed class AutomationExecutorAuthority
         }
     }
 
+    /// <summary>
+    /// UC-AUT-D10: checks every action, condition and the trigger's group, and returns each target that is
+    /// archived or deleted (a not-found from the target context) instead of stopping at the first. Authority
+    /// refusals (forbidden) and malformed configuration still throw, as in <see cref="EnsureRuleAsync"/>.
+    /// </summary>
+    public async Task<IReadOnlyList<AutomationBrokenReference>> FindBrokenReferencesAsync(
+        Guid accountId,
+        Guid workspaceId,
+        Guid executorUserId,
+        AutomationConfiguration configuration,
+        Guid? boardId,
+        string? triggerConfiguration,
+        CancellationToken cancellationToken)
+    {
+        var broken = new List<AutomationBrokenReference>();
+        var principal = new AutomationPrincipal(accountId, executorUserId, workspaceId);
+
+        var actions = configuration.Actions;
+        for (var i = 0; i < actions.Count; i++)
+        {
+            try
+            {
+                await EnsureCanExecuteAsync(accountId, workspaceId, executorUserId, actions[i], cancellationToken, boardId);
+            }
+            catch (NotFoundException)
+            {
+                broken.Add(ReferenceOf(actions[i], boardId, $"actions[{i}]"));
+            }
+        }
+
+        if (boardId is { } board && AutomationTriggerFilter.TryReadGroup(triggerConfiguration, out var triggerGroup))
+        {
+            try
+            {
+                await _workActions.EnsureBoardGroupAsync(board, triggerGroup, principal, cancellationToken);
+            }
+            catch (NotFoundException)
+            {
+                broken.Add(new AutomationBrokenReference("group", triggerGroup, "trigger.groupId"));
+            }
+        }
+
+        if (configuration.Condition is null || boardId is not { } conditionBoard
+            || !AutomationConditions.TryParse(configuration.Condition.RawJson, out var conditions))
+        {
+            return broken;
+        }
+
+        for (var i = 0; i < conditions.Count; i++)
+        {
+            var condition = conditions[i];
+            var field = $"conditions[{i}]";
+            try
+            {
+                switch (condition.Kind)
+                {
+                    case "group":
+                        await _workActions.EnsureBoardGroupAsync(conditionBoard, condition.GroupId, principal, cancellationToken);
+                        break;
+                    case "status":
+                        await _workActions.EnsureStatusOptionAsync(conditionBoard, condition.OptionId!.Value, principal, cancellationToken);
+                        break;
+                    case "field":
+                        await _workActions.EnsureFieldValueAsync(conditionBoard, condition.FieldId!.Value, condition.ValueJson!, principal, cancellationToken);
+                        break;
+                }
+            }
+            catch (NotFoundException)
+            {
+                broken.Add(condition.Kind switch
+                {
+                    "group" => new AutomationBrokenReference("group", condition.GroupId ?? Guid.Empty, field),
+                    "status" => new AutomationBrokenReference("option", condition.OptionId ?? Guid.Empty, field),
+                    _ => new AutomationBrokenReference("field", condition.FieldId ?? Guid.Empty, field),
+                });
+            }
+        }
+
+        return broken;
+    }
+
+    private static AutomationBrokenReference ReferenceOf(AutomationActionDefinition action, Guid? boardId, string field)
+    {
+        var kind = "board";
+        var id = boardId ?? Guid.Empty;
+        switch (action.Type)
+        {
+            case AutomationActionConfigs.Types.MoveItem when AutomationMoveItemConfiguration.TryParseTarget(action.Configuration, out var group):
+                (kind, id) = ("group", group);
+                break;
+            case AutomationActionConfigs.Types.ChangeStatus when AutomationActionConfigs.TryParseChangeStatus(action.Configuration, out var option):
+                (kind, id) = ("option", option);
+                break;
+            case AutomationActionConfigs.Types.UpdateField when AutomationActionConfigs.TryParseUpdateField(action.Configuration, out var fieldId, out _):
+                (kind, id) = ("field", fieldId);
+                break;
+            case AutomationActionConfigs.Types.AssignPerson when AutomationActionConfigs.TryParseAssign(action.Configuration, out var assignee):
+                (kind, id) = ("member", assignee);
+                break;
+            case AutomationActionConfigs.Types.NotifyMember when AutomationActionConfigs.TryParseNotify(action.Configuration, out var notified, out _):
+                (kind, id) = ("member", notified);
+                break;
+            case AutomationActionConfigs.Types.SendEmail when AutomationActionConfigs.TryParseEmail(action.Configuration, out var recipient, out _, out _):
+                (kind, id) = ("member", recipient);
+                break;
+        }
+
+        return new AutomationBrokenReference(kind, id, field);
+    }
+
     private static DomainBusinessRuleException Invalid(string message) =>
         new(AutomationRuleCodes.Automation_Action_InvalidConfigJson, message);
 }

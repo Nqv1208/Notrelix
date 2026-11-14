@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import {
   useSavedFilters,
@@ -9,7 +9,7 @@ import type {
   SavedFilterCriteria,
 } from "@notrelix/work-management-core";
 import { fillSavedFiltersCopy } from "./saved-filters.copy";
-import { SavedFiltersMenu } from "./saved-filters-menu";
+import { SavedFiltersMenu, type SummaryPhrase } from "./saved-filters-menu";
 import { useSavedFiltersCopy } from "./use-saved-filters-copy";
 
 export interface SavedFiltersControlProps {
@@ -28,8 +28,14 @@ export interface SavedFiltersControlProps {
   onApply: (criteria: SavedFilterCriteria) => void;
   /** The "Lưu bộ lọc" form, controlled by the filter bar (its removed-field warning opens it). */
   compact?: boolean;
+  /** A phone (`WM-Filter-320`): 36 px icon trigger; the save trigger only anchors the form. */
+  phone?: boolean;
   saveOpen?: boolean;
   onSaveOpenChange?: (open: boolean) => void;
+  /** What the bar shows now, as phrases: the save form's summary. */
+  summary?: readonly SummaryPhrase[];
+  /** The phrases of a saved filter's criteria: the subtitle of its row. */
+  describe?: (criteria: SavedFilterCriteria) => readonly SummaryPhrase[];
 }
 
 /** A saved filter is applied when the bar already shows its filter (and its grouping, if it kept one). */
@@ -57,11 +63,16 @@ export function SavedFiltersControl({
   saveOpen,
   onSaveOpenChange,
   compact,
+  phone,
+  summary,
+  describe,
 }: SavedFiltersControlProps) {
   const copy = useSavedFiltersCopy();
   const query = useSavedFilters(boardId, workspaceId);
   const writes = useSavedFilterWrites(boardId, workspaceId);
   const filters = query.data ?? [];
+  // A write that found the filter gone: the list is read again and the menu says so (not a toast that vanishes).
+  const [gone, setGone] = useState(false);
   const applied = filters.find((saved) => isApplied(saved, filter, groupBy));
   const currentCriteria: SavedFilterCriteria = {
     ...(filter ? { filter } : {}),
@@ -70,22 +81,33 @@ export function SavedFiltersControl({
 
   const tell = useCallback(
     (
-      result: { ok: boolean; reason?: "forbidden" | "missing" | "failed" },
+      result: {
+        ok: boolean;
+        reason?: "forbidden" | "missing" | "conflict" | "failed";
+        by?: string | null;
+      },
       name: string,
     ) => {
       if (result.ok) return;
+      if (result.reason === "missing") {
+        setGone(true);
+        void query.refetch();
+        return;
+      }
       toast.error(
         fillSavedFiltersCopy(
           result.reason === "forbidden"
             ? copy.toast.forbidden
-            : result.reason === "missing"
-              ? copy.menu.gone
+            : result.reason === "conflict"
+              ? result.by
+                ? copy.toast.conflictBy
+                : copy.toast.conflict
               : copy.toast.failed,
-          { name },
+          { name, by: result.by ?? "" },
         ),
       );
     },
-    [copy],
+    [copy, query],
   );
 
   return (
@@ -101,13 +123,18 @@ export function SavedFiltersControl({
       filters={filters}
       appliedId={applied?.id ?? null}
       canEdit={canEdit}
-      {...(compact ? { compact } : {})}
+      {...(compact || phone ? { compact: true } : {})}
+      {...(phone ? { phone } : {})}
+      {...(summary ? { summary } : {})}
+      {...(describe ? { describe } : {})}
       {...(saveOpen !== undefined ? { saveOpen } : {})}
       {...(onSaveOpenChange ? { onSaveOpenChange } : {})}
       canSaveCurrent={Boolean(filter) && applied === undefined}
       onApply={(saved) => onApply(saved.criteria)}
       onClearApplied={() => onApply({})}
       onRetry={() => void query.refetch()}
+      gone={gone}
+      onGoneSeen={() => setGone(false)}
       onSave={async ({ name, visibility }) => {
         const result = await writes.create(name, currentCriteria, visibility);
         if (result.ok) {
@@ -124,6 +151,11 @@ export function SavedFiltersControl({
       }}
       onRename={async (saved, name) => {
         const result = await writes.rename(saved, name);
+        if (
+          !result.ok &&
+          (result.reason === "missing" || result.reason === "conflict")
+        )
+          tell(result, saved.name);
         if (result.ok)
           toast.success(fillSavedFiltersCopy(copy.toast.renamed, { name }));
         return result;

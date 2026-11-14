@@ -37,7 +37,13 @@ test("loads auth and workspace routes without backend network", async ({
     return;
   }
 
-  // `/home` resolves into the member's first workspace (WX-SHELL-001).
+  // `/home` lists the member's workspaces; one card opens the workspace (WX-SHELL-001).
+  await expect(page).toHaveURL(/\/home$/);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await page
+    .getByRole("link", { name: /^(Open|Mở) / })
+    .first()
+    .click();
   await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary$/);
   await expect(page.getByText("Notrelix Sandbox")).toHaveCount(0);
   const nav = page.getByRole("navigation", {

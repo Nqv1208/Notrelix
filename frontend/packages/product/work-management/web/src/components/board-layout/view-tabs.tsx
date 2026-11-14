@@ -31,6 +31,7 @@ export interface ViewTabSavedView {
   readonly name: string;
   readonly viewMode: string;
   readonly visibility?: "board" | "me";
+  readonly isDefault?: boolean;
 }
 
 interface ViewTabsProps {
@@ -122,7 +123,7 @@ export function ViewTabs({
               // paint borders (also under `dark:`) through group variants, so
               // the underline goes through the same variants to win; the
               // primitive's pseudo-element underline is not used.
-              className="h-9 flex-none gap-[7px] rounded-none border-0 border-b-2 border-transparent px-3 py-0 text-nav text-muted-foreground after:hidden hover:bg-state-hover hover:text-foreground data-[state=active]:font-semibold data-[state=active]:text-foreground dark:data-[state=active]:text-foreground group-data-[variant=line]/tabs-list:data-[state=active]:border-b-primary dark:group-data-[variant=line]/tabs-list:data-[state=active]:border-b-primary"
+              className="h-9 flex-none gap-[7px] rounded-none border-0 border-b-2 border-transparent px-3 py-0 text-nav text-muted-foreground after:hidden hover:bg-transparent hover:text-foreground dark:hover:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-foreground dark:data-[state=active]:text-foreground group-data-[variant=line]/tabs-list:data-[state=active]:border-b-primary dark:group-data-[variant=line]/tabs-list:data-[state=active]:border-b-primary"
             >
               <Icon className="size-4" aria-hidden="true" />
               {view.label}
@@ -137,12 +138,61 @@ export function ViewTabs({
   );
 }
 
+/** The tablet band's order of the four layouts (`Final-T-*`): the Kanban comes first there. */
+const TABLET_ORDER = ["kanban", "table", "calendar", "timeline"] as const;
+
+/**
+ * The tablet header's view switcher: the same tabs as `ViewTabs`, drawn as the 44 px segmented control of the
+ * `Final-T-*` boards (text only, the active segment lifted on a white pill).
+ */
+export function TabletViewTabs({
+  activeView,
+  onViewChange,
+  copy,
+  savedViews = [],
+}: ViewTabsProps) {
+  const tabs = buildViewTabs(savedViews, copy).sort(
+    (a, b) => TABLET_ORDER.indexOf(a.type) - TABLET_ORDER.indexOf(b.type),
+  );
+  return (
+    <Tabs
+      value={activeView}
+      onValueChange={onViewChange}
+      activationMode="manual"
+      className="min-w-0 gap-0"
+    >
+      <TabsList
+        variant="line"
+        aria-label={copy.boardViews}
+        className="h-12 w-max gap-0 rounded-xl bg-state-hover-strong p-0.5 data-[variant=line]:rounded-[12px] group-data-horizontal/tabs:h-12"
+      >
+        {tabs.map((view) => (
+          <TabsTrigger
+            key={view.key}
+            value={view.key}
+            aria-controls={undefined}
+            className="h-11 flex-none gap-1.5 rounded-[10px] border-0 px-3.5 py-0 text-[14px] font-medium text-muted-foreground after:hidden hover:text-foreground data-[state=active]:font-[650] data-[state=active]:text-foreground group-data-[variant=line]/tabs-list:data-[state=active]:bg-popover dark:group-data-[variant=line]/tabs-list:data-[state=active]:bg-card group-data-[variant=line]/tabs-list:data-[state=active]:shadow-[0_1px_3px_rgba(15,23,42,0.14)] dark:data-[state=active]:text-foreground"
+          >
+            {view.label}
+            {view.isPrivate ? (
+              <Lock className="size-3" aria-label={copy.privateView} />
+            ) : null}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
+  );
+}
+
 export function AddViewMenu({
   onAddView,
   copy,
+  tablet = false,
 }: {
   onAddView: (type: string) => void;
   copy: BoardHeaderCopy;
+  /** The 44 px button of the tablet toolbar instead of the tab strip's 40 px one. */
+  tablet?: boolean;
 }) {
   return (
     <DropdownMenu>
@@ -151,7 +201,11 @@ export function AddViewMenu({
           variant="ghost"
           size="icon-sm"
           aria-label={copy.addView}
-          className="-mb-px h-9 w-10 rounded-none text-muted-foreground hover:text-foreground"
+          className={
+            tablet
+              ? "size-11 rounded-[10px] text-muted-foreground hover:text-foreground"
+              : "-mb-px h-9 w-10 rounded-none text-muted-foreground hover:text-foreground"
+          }
         >
           <Plus aria-hidden="true" />
         </Button>

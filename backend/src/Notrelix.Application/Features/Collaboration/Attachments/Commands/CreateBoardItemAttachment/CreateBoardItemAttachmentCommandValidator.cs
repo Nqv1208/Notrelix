@@ -1,3 +1,5 @@
+using Notrelix.Application.Features.Collaboration.Attachments.Services;
+
 namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment;
 
 public class CreateBoardItemAttachmentCommandValidator : AbstractValidator<CreateBoardItemAttachmentCommand>
@@ -13,6 +15,8 @@ public class CreateBoardItemAttachmentCommandValidator : AbstractValidator<Creat
 
         RuleFor(x => x.Url)
             .NotEmpty()
-            .MaximumLength(2048);
+            .MaximumLength(AttachmentLinkUrl.MaxLength)
+            .Must(AttachmentLinkUrl.IsAllowed)
+            .WithMessage("A link must be an absolute http or https address.");
     }
 }

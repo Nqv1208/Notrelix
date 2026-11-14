@@ -44,6 +44,7 @@ public sealed class WorkPermissionActionMatrixArchitectureTests
         ["Boards.UpdateBoardVisibilityCommand"] = PermissionAction.ManageBoard,
         ["Boards.MakeBoardPrivateCommand"] = PermissionAction.ManageBoard,
         ["Boards.GetBoardSharingQuery"] = PermissionAction.ViewBoard,
+        ["Boards.GetBoardPeopleQuery"] = PermissionAction.ViewBoard,
         ["Boards.MoveBoardToSpaceCommand"] = PermissionAction.ManageBoard,
         ["Boards.ArchiveBoardCommand"] = PermissionAction.ManageBoard,
         ["Boards.UnarchiveBoardCommand"] = PermissionAction.ManageBoard,
@@ -107,6 +108,7 @@ public sealed class WorkPermissionActionMatrixArchitectureTests
         ["BoardItems.ListBoardItemViewersQuery"] = PermissionAction.ViewBoard,
         ["BoardItems.ListBoardDependenciesQuery"] = PermissionAction.ViewBoard,
         ["BoardItems.ListArchivedBoardItemsQuery"] = PermissionAction.UpdateItem,
+        ["BoardItems.ResolveBoardItemKeyQuery"] = PermissionAction.ViewBoard,
         ["BoardItems.ListBoardLaneItemsQuery"] = PermissionAction.ViewBoard,
         ["BoardItems.SetBoardItemCoverCommand"] = PermissionAction.UpdateItem,
         ["BoardItems.SetBoardItemVoteCommand"] = PermissionAction.CreateComment,
@@ -135,6 +137,7 @@ public sealed class WorkPermissionActionMatrixArchitectureTests
         ["Checklists.ToggleChecklistItemCommand"] = PermissionAction.UpdateItem,
         ["Checklists.DeleteChecklistItemCommand"] = PermissionAction.UpdateItem,
 
+        ["BoardFields.PreviewFormulaQuery"] = PermissionAction.ViewBoard,
         ["BoardSchema.GetBoardSchemaQuery"] = PermissionAction.ViewBoard,
 
         ["Labels.GetLabelsQuery"] = PermissionAction.ViewBoard,

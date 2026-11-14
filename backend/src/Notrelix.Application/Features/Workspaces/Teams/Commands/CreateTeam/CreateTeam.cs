@@ -40,12 +40,20 @@ public class CreateTeamCommandHandler : IRequestHandler<CreateTeamCommand, Resul
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
+        // Team names are unique within the Workspace (Workspaces_Team_DuplicateName); Application reads the names.
+        var otherTeamNames = await _context.Teams
+            .AsNoTracking()
+            .Where(t => t.WorkspaceId == request.WorkspaceId && t.DeletedAt == null)
+            .Select(t => t.Name)
+            .ToListAsync(ct);
+
         var (team, _) = TeamFactory.CreateWithLead(
             workspace.AccountId,
             request.WorkspaceId,
             request.Name,
             _requestContext.UserId,
-            _dateTimeProvider.UtcNow);
+            _dateTimeProvider.UtcNow,
+            otherTeamNames: otherTeamNames);
 
         if (request.Description is not null)
             team.UpdateDescription(request.Description, _requestContext.UserId, _dateTimeProvider.UtcNow);

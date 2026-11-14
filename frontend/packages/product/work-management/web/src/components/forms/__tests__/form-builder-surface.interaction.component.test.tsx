@@ -9,8 +9,12 @@ import {
 } from "@notrelix/testing";
 import {
   BOARD_FIELDS,
+  Q_DESCRIPTION,
+  Q_DUE,
+  Q_EMAIL,
   Q_OWN_CHOICES,
   Q_PRIORITY,
+  Q_TITLE,
   formFixture,
   formsCopyFixture,
   question,
@@ -234,6 +238,100 @@ describe.each(["vi", "en"] as const)("form builder (%s)", (locale) => {
     expect(props.onReload).toHaveBeenCalled();
   });
 
+  it(`${fui("conflict-diff", locale)}shows the difference table of a stale save, keeps mine while the save is written, and holds the notice as status (${locale})`, async () => {
+    const latest = formFixture({
+      version: 5,
+      questions: [
+        { ...Q_TITLE, label: "Tên việc" },
+        Q_DESCRIPTION,
+        Q_PRIORITY,
+        Q_DUE,
+        Q_EMAIL,
+      ],
+    });
+    const onReadLatest = vi.fn(async () => latest);
+    let resolveRedo: (value: { ok: true }) => void = () => undefined;
+    const onUpdateQuestion = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        reason: "conflict",
+        conflict: { byName: "Hà Nguyễn", at: null },
+      })
+      .mockImplementationOnce(
+        () => new Promise((resolve) => (resolveRedo = resolve)),
+      );
+    const props = render(locale, {
+      selectedId: "q-title",
+      onUpdateQuestion,
+      onReadLatest,
+    });
+    fireEvent.click(screen.getByRole("switch", { name: b.requiredSwitch }));
+    await screen.findByRole("alert");
+    await waitFor(() => expect(onReadLatest).toHaveBeenCalled());
+
+    fireEvent.click(
+      screen.getByRole("button", { name: b.conflictNotice.showDiff }),
+    );
+    const table = screen.getByRole("table", {
+      name: b.conflictNotice.diffLabel,
+    });
+    expect(within(table).getByText("Tên việc")).toBeTruthy();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: b.conflictNotice.keepMineAndSave }),
+    );
+    expect(props.onReload).toHaveBeenCalled();
+    await waitFor(() => expect(onUpdateQuestion).toHaveBeenCalledTimes(2));
+    expect(screen.getByRole("status").textContent).toContain(
+      b.conflictNotice.pendingTitle,
+    );
+    expect(
+      screen.queryByRole("table", { name: b.conflictNotice.diffLabel }),
+    ).toBeNull();
+    resolveRedo({ ok: true });
+  });
+
+  it(`${fui("drag", locale)}shows a line where a dragged question would land and moves it on drop (${locale})`, async () => {
+    const props = render(locale);
+    const list = screen.getByRole("list", { name: b.list });
+    const rows = list.querySelectorAll<HTMLElement>('[draggable="true"]');
+    expect(rows).toHaveLength(5);
+    fireEvent.dragStart(rows[0]!, {
+      dataTransfer: { effectAllowed: "move" },
+    });
+    fireEvent.dragOver(rows[2]!);
+    expect(
+      list.querySelectorAll('[aria-hidden="true"].h-\\[3px\\]'),
+    ).toHaveLength(1);
+    fireEvent.drop(rows[2]!);
+    await waitFor(() =>
+      expect(props.onUpdateQuestion).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "q-title" }),
+        expect.objectContaining({ position: expect.any(String) }),
+      ),
+    );
+    expect(
+      list.querySelectorAll('[aria-hidden="true"].h-\\[3px\\]'),
+    ).toHaveLength(0);
+  });
+
+  it(`${fui("removed-field", locale)}marks a question whose board field was deleted, names it and keeps the form from publishing (${locale})`, () => {
+    render(locale, {
+      form: formFixture({
+        questions: [Q_TITLE, { ...Q_PRIORITY, boardFieldId: "f-deleted" }],
+      }),
+    });
+    expect(screen.getByText(b.needsFix)).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toContain(
+      b.removedFieldError,
+    );
+    expect(screen.getByRole("button", { name: b.publish })).toHaveProperty(
+      "disabled",
+      true,
+    );
+  });
+
   it(`${fui("remove", locale)}asks before it removes a question (${locale})`, async () => {
     const props = render(locale, { selectedId: "q-email" });
     fireEvent.click(screen.getByRole("button", { name: b.removeQuestion }));
@@ -291,6 +389,15 @@ describe.each(["vi", "en"] as const)("form builder (%s)", (locale) => {
       (screen.getByRole("textbox", { name: b.label }) as HTMLInputElement)
         .disabled,
     ).toBe(true);
+  });
+
+  it(`${fui("closed", locale)}reopens a closed form with Mở lại: publishing it again (${locale})`, async () => {
+    const props = render(locale, {
+      form: formFixture({ status: "closed" }),
+    });
+    expect(screen.queryByRole("button", { name: b.close })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: b.reopen }));
+    await waitFor(() => expect(props.onPublish).toHaveBeenCalledTimes(1));
   });
 
   it(`is read-only on an archived board: says why, locks the name, the questions and publishing (${locale})`, () => {

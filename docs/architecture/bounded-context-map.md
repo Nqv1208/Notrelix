@@ -33,7 +33,7 @@ review_on:
 >
 > Detailed business semantics remain in:
 >
-> `docs/product/contexts/*.md`
+> `docs/product/*.md`
 
 A bounded context is:
 
@@ -54,7 +54,7 @@ It is **not automatically**:
 
 # 1. Accepted business bounded contexts
 
-Notrelix currently recognizes eleven business bounded contexts:
+Notrelix currently recognizes twelve business bounded contexts (Chat was admitted by `SYS-ADR-001`, Accepted until the owner accepts it):
 
 ```text
 Accounts
@@ -64,6 +64,7 @@ Governance
 Work Management
 Documents
 Collaboration
+Chat
 Automation
 Integrations
 Billing
@@ -87,6 +88,7 @@ They are not generated from folder names.
 | **Work Management** | Boards, dynamic fields, items, groups, views, structured-work semantics | Document block content, generic provider integrations, subscription state |
 | **Documents** | Pages, blocks, hierarchy and document-owned content semantics | Board record schema, generic comments/notifications |
 | **Collaboration** | Comments, mentions, reactions, notification/activity/presence collaboration semantics | Immutable security governance policy, source resource state |
+| **Chat** | Channels, channel groups, direct and group conversations, messages, threads, pins, per-space read state and notification level | Comments on resources, mention/reaction/attachment/notification delivery rules (Collaboration), permission policy, Workspace membership |
 | **Automation** | Automation definition, trigger/condition/action semantics, execution product lifecycle | Provider transports, generic retry runtime, source business-state ownership |
 | **Integrations** | Provider connection/webhook/synchronization product state | Provider SDK mechanics as product semantics, source-context business state |
 | **Billing** | Plans, subscriptions, entitlements, usage/commercial lifecycle | General resource authorization, provider SDK mechanics |
@@ -191,7 +193,7 @@ The target context remains responsible for its invariants.
 
 # 8. Context categories
 
-The eleven contexts are not ranked, but they play different architectural roles.
+The twelve contexts are not ranked, but they play different architectural roles.
 
 A useful relationship view is:
 
@@ -242,7 +244,7 @@ It does not create a new authority hierarchy.
 Canonical product owner:
 
 ```text
-docs/product/contexts/accounts.md
+docs/product/accounts.md
 ```
 
 ## Owns
@@ -314,7 +316,7 @@ then Accounts is not the owner merely because the fact is account-scoped.
 Canonical product owner:
 
 ```text
-docs/product/contexts/identity.md
+docs/product/identity.md
 ```
 
 ## Owns
@@ -397,7 +399,7 @@ Do not merge these questions into generic roles attached to Identity.
 Canonical product owner:
 
 ```text
-docs/product/contexts/workspaces.md
+docs/product/workspaces.md
 ```
 
 ## Owns
@@ -471,7 +473,7 @@ Workspaces must not directly delete internal state in every other context by obj
 Canonical product owner:
 
 ```text
-docs/product/contexts/governance.md
+docs/product/governance.md
 ```
 
 ## Owns
@@ -562,7 +564,7 @@ Governance/audit evidence has different trust and retention semantics from Colla
 Canonical product owner:
 
 ```text
-docs/product/contexts/work-management.md
+docs/product/work-management.md
 ```
 
 ## Owns
@@ -652,7 +654,7 @@ Work Management remains owner of work state.
 Canonical product owner:
 
 ```text
-docs/product/contexts/documents.md
+docs/product/documents.md
 ```
 
 ## Owns
@@ -728,7 +730,7 @@ Analytics
 Canonical product owner:
 
 ```text
-docs/product/contexts/collaboration.md
+docs/product/collaboration.md
 ```
 
 ## Owns
@@ -747,6 +749,42 @@ docs/product/contexts/collaboration.md
 - authorization policy;
 - immutable security audit policy;
 - identity credentials.
+
+---
+
+# 31.1. Chat
+
+Canonical product owner:
+
+```text
+docs/product/chat.md
+```
+
+Admission decision:
+
+```text
+docs/decisions/SYS-ADR-001-chat-bounded-context.md
+```
+
+## Owns
+
+- channels and channel groups;
+- direct and group conversations;
+- messages, their per-space sequence and tombstones;
+- threads and pins;
+- per-person read boundary and notification level per space;
+- chat access rules (membership of a space).
+
+## Does not own
+
+- comments on Board items and Pages (Collaboration);
+- mention identity, reaction uniqueness, attachment policy and notification delivery rules (Collaboration; Chat applies them);
+- permission policy and Audit (Governance);
+- Workspace membership (Workspaces);
+- realtime transport (Platform);
+- voice, video and calls (out of scope).
+
+Chat references Boards, Pages and Teams only by `ResourceRef` and never mutates them. Chat has no foreign key into another schema.
 
 ---
 
@@ -799,7 +837,7 @@ If a user is disabled/deleted, Collaboration applies its own retention/display p
 Canonical product owner:
 
 ```text
-docs/product/contexts/automation.md
+docs/product/automation.md
 ```
 
 ## Owns
@@ -885,7 +923,7 @@ Automation owns execution product semantics.
 Canonical product owner:
 
 ```text
-docs/product/contexts/integrations.md
+docs/product/integrations.md
 ```
 
 ## Owns
@@ -959,7 +997,7 @@ They do not turn Infrastructure into the product Integrations context.
 Canonical product owner:
 
 ```text
-docs/product/contexts/billing.md
+docs/product/billing.md
 ```
 
 ## Owns
@@ -1013,7 +1051,7 @@ Provider status names must not automatically become Notrelix business lifecycle 
 Canonical product owner:
 
 ```text
-docs/product/contexts/analytics.md
+docs/product/analytics.md
 ```
 
 ## Owns
@@ -1358,6 +1396,12 @@ Detailed product workflows remain product-context-owned.
 
 ---
 
+## Chat relationships
+
+Chat is a twelfth context and is not a column of the matrix above. Its relationship classes in the same notation: Accounts S, Identity R, Workspaces S (member lookups, member-removed and Workspace-deleted facts), Governance A (permission actions `chat.*`, Audit facts), Work Management L and Documents L (resource links by `ResourceRef` for view checks only), Collaboration I/V (notification intents, mention and attachment rules), Automation none, Integrations none, Billing E (limits), Analytics P.
+
+---
+
 # 67. Matrix interpretation
 
 The matrix does NOT mean:
@@ -1661,6 +1705,8 @@ A proposed bounded context MUST answer:
 
 A new screen/table/package is insufficient.
 
+Admission record: Chat (`SYS-ADR-001`) answers the checklist in the ADR's admission test table. Chat is registered here as accepted by the ADR.
+
 ---
 
 # 86. Context-removal checklist
@@ -1711,7 +1757,7 @@ testing/change impact
 under:
 
 ```text
-docs/product/contexts/
+docs/product/
 ```
 
 ---

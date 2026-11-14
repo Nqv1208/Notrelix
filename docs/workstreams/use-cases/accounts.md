@@ -29,7 +29,7 @@ review_on:
 
 # Use cases: Accounts
 
-Product meaning: [accounts](../../product/accounts.md). Team: [identity-accounts](../teams/identity-accounts.md). Execution pack: [spec](../executions/identity-accounts/identity-accounts.spec.md), [tests](../executions/identity-accounts/identity-accounts.tests.md), [certification](../executions/identity-accounts/identity-accounts.certification.md). Permission and role meaning: [governance](../../product/governance.md). Sign-in, session, MFA, profile and the personal "My account" pages are Identity use cases: see [identity.md](identity.md). This file covers the Account (organization) boundary only.
+Product meaning: [accounts](../../product/accounts.md). Team: [identity-accounts](../teams/identity-accounts.md). Execution pack: spec (removed; see git history), tests (removed; see git history), certification (removed; see git history). Permission and role meaning: [governance](../../product/governance.md). Sign-in, session, MFA, profile and the personal "My account" pages are Identity use cases: see [identity.md](identity.md). This file covers the Account (organization) boundary only.
 
 Requirement ids cited below are `IAREQ024` to `IAREQ036` (Account capability, current Account, tenant isolation) and `CORE-CERT-004`, `CORE-CERT-005` of the pack. The test plan ids are `IA-TST-ACCOUNT-*`.
 
@@ -120,7 +120,7 @@ Column values: BE and FE say `yes`, `partial`, `domain only` (aggregate and test
 | UC-ACC-B01 | Read the current Account | B | Account member | no | no | none | none | DEFINED | Query, endpoint, screen |
 | UC-ACC-B02 | List my Accounts (enterprise baseline) | B | Signed-in user | partial | no | none | none | DEFINED | Query returns one id only |
 | UC-ACC-B03 | See the derived plan label | B | Account member | domain only | no | none | none | DEFINED | Billing fact, no PlanCode writer |
-| UC-ACC-C01 | Rename the Account | C | Account Owner, Admin | yes | no | none | none | IMPLEMENTING | Expected version, UI, suspended rule |
+| UC-ACC-C01 | Rename the Account | C | Account Owner, Admin | yes | no | none | none | IMPLEMENTING | Built: expected version and suspended refusal. Remaining: screen (owner question) |
 | UC-ACC-C02 | Set the legal name (enterprise baseline) | C | Account Owner, Admin | partial | no | none | none | DEFINED | Update operation, command |
 | UC-ACC-D01 | Suspend an Account | D | Platform operator | yes | yes | none | yes | HARDENING | Reactions of other contexts (D06), tenant banner, integrations in the impact preview |
 | UC-ACC-D02 | Lift a suspension | D | Platform operator | yes | yes | none | yes | HARDENING | Same as D01 |
@@ -129,12 +129,12 @@ Column values: BE and FE say `yes`, `partial`, `domain only` (aggregate and test
 | UC-ACC-D05 | Delete and restore an Account | D | Account Owner | domain only | no | none | none | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): The account Owner deletes the Account; it takes its workspaces; same 30-day recoverable window, then a purge job hard-deletes with an audit fact. Export before deletion is not built. |
 | UC-ACC-D06 | Other contexts react to suspension and closure | D | System | no | no | none | none | DEFINED | Consumers in four contexts |
 | UC-ACC-E01 | Resolve the current Account for a request | E | Any signed-in actor | yes | partial | none | none | INTEGRATING | Non-deterministic bootstrap pick; FE uses User.id |
-| UC-ACC-E02 | Deny access to another Account identically | E | Any actor | yes | no | none | none | IMPLEMENTING | FE denied state; cross-tenant test per use case |
+| UC-ACC-E02 | Deny access to another Account identically | E | Any actor | yes | no | none | none | IMPLEMENTING | Built: cross-tenant rename test. Remaining: FE denied state (owner question) |
 | UC-ACC-E03 | Carry Account context in background work | E | Worker | partial | n/a | none | none | IMPLEMENTING | Per-consumer proof |
 | UC-ACC-F01 | Switch the active Account | F | Multi-Account user | no | no | none | none | DEFINED | List, switcher, reset |
-| UC-ACC-F02 | Reset Account scope when the principal changes | F | Signed-in user | n/a | yes | none | none | IMPLEMENTING | Real Account id; real e2e |
-| UC-ACC-G01 | Account id in every account-scoped query key | G | Frontend | n/a | yes | none | none | IMPLEMENTING | Real Account id; coverage of all packages |
-| UC-ACC-G02 | A late response from the old Account is discarded | G | Frontend | n/a | yes | none | none | IMPLEMENTING | Real Account id |
+| UC-ACC-F02 | Reset Account scope when the principal changes | F | Signed-in user | n/a | yes | none | none | IMPLEMENTING | Real Account id (owner question); no e2e |
+| UC-ACC-G01 | Account id in every account-scoped query key | G | Frontend | n/a | yes | none | none | IMPLEMENTING | Built: key tests for all account keys and a repo scan. Remaining: real Account id (owner question) |
+| UC-ACC-G02 | A late response from the old Account is discarded | G | Frontend | n/a | yes | none | none | IMPLEMENTING | Built: late-response discard unit tests. Remaining: real Account id (owner question) |
 | UC-ACC-G03 | Realtime and local state reset on Account change | G | Frontend | n/a | no | none | none | DEFINED | Subscription teardown rule |
 | UC-ACC-H01 | Open Account administration with a scope indicator | H | Owner, Admin, SecurityAdmin | no | no | none | none | DEFINED | Shell, route, artboards |
 | UC-ACC-H02 | List Account members | H | Owner, Admin | no | no | none | none | DEFINED | Paged query, screen |
@@ -262,12 +262,12 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - Input: `name` (required, trimmed, 1 to 160 characters); `expectedVersion` (to add).
 - Output: name changed, version +1, `AccountRenamed` fact, audit record. Slug does not change.
 - Main flow: 1. Admin opens Account settings and edits the name. 2. `PUT /api/v1/accounts/rename`. 3. Pipeline authorizes `ManageAccount`. 4. Domain renames, pipeline commits. 5. 204 returned; screen shows the new name.
-- No-op / rejection / concurrency / retry: same name after trim is a no-op: 204, no version, no event. Member role gets Forbidden with the Account left unchanged. Closed Account: business-rule error `Accounts_Account_CannotRenameClosed`. Stale `expectedVersion`: 409 conflict, nothing changes (to build). Same idempotency key: one effect.
+- No-op / rejection / concurrency / retry: same name after trim is a no-op: 204, no version, no event. Member role gets Forbidden with the Account left unchanged. Closed Account: business-rule error `Accounts_Account_CannotRenameClosed`. Stale `expectedVersion`: 412, nothing changes (built, as the other expected-version writes). Same idempotency key: one effect.
 - UI states: loading, validation error, permission denied, read-only (Member), conflict, pending, offline, success.
 - Rules: accounts sections 55, 56, 81, 82, ACC-017, ACC-020; IAREQ024.
 - Acceptance: Given an Admin, When they rename, Then the name changes and one event is raised. Given a Member, When they rename, Then Forbidden and the name is unchanged. Given the same name, When sent, Then no version bump. Given a stale version, When sent, Then 409 and no change. Given a user of Account B, When they rename Account A, Then NotFound, never a write.
-- Evidence: BE `PUT /api/v1/accounts/rename` `RenameAccountEndpoint`, `RenameAccountCommandHandler`, `RenameAccountCommandValidator`, `AccountRoleBaseline` · FE none (generated client has the path) · Design none · Tests `RenameAccountCommandHandlerTests`, `RenameAccountPipelineAuthorizationTests`, `AccountTests` (Rename cases) · Real e2e none
-- State: IMPLEMENTING — expected version, Suspended rule, screen and artboard, real e2e.
+- Evidence: BE `PUT /api/v1/accounts/rename` `RenameAccountEndpoint`, `RenameAccountRequest`, `RenameAccountCommand`, `RenameAccountCommandHandler`, `RenameAccountCommandValidator`, `ExpectedVersionTargetMap` · FE none (generated client has the path) · Design none · Tests `RenameAccountCommandHandlerTests`, `RenameAccountPipelineAuthorizationTests`, `RenameAccountEvidenceTests`, `ExpectedVersionArchitectureTests`, `AccountTests` (Rename cases) · Real e2e none
+- State: IMPLEMENTING — Built: expected version (`RenameAccountCommand` implements `IExpectedVersionRequest`, target map entry `accounts.account`, endpoint takes `expectedVersion`, stale is 412). The Suspended rule already holds: `AccessPolicyEngine` refuses every `IWriteRequest` with `account.suspended`. Remaining: the screen. Owner question: the rename screen needs the current Account version, and no Account read exists (B01 is DEFINED with no endpoint); which surface hosts Account settings (the `account` feature is the person's profile). Owner tests by hand.
 
 ### UC-ACC-C02 Set the legal name (enterprise baseline)
 - Capability: C Account update
@@ -396,8 +396,8 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - UI states: permission denied rendered as "not found".
 - Rules: ACC-017; IAREQ033, IAREQ034; IA-TST-ACCOUNT-APP-002.
 - Acceptance: Given Account A and Account B, When a user of B asks for A, Then status and body equal those for a random id. Given the same user, When a direct SQL query runs under B's context, Then zero rows of A appear.
-- Evidence: BE pipeline authorization, RLS `007_policies_platform.sql` (`ops.has_account_access`, `ops.is_account_admin`) · FE none · Design none · Tests `RenameAccountPipelineAuthorizationTests`, `AppRoleConformanceTests` · Real e2e none
-- State: IMPLEMENTING — cross-tenant negative test for each Account endpoint as it is added; frontend denied state.
+- Evidence: BE pipeline authorization, RLS `007_policies_platform.sql` (`ops.has_account_access`, `ops.is_account_admin`) · FE none · Design none · Tests `RenameAccountPipelineAuthorizationTests`, `AppRoleConformanceTests`, `NonMemberDisclosureTests` (rename case) · Real e2e none
+- State: IMPLEMENTING — Built: `NonMemberDisclosureTests.RenameAccount_OfAnotherAccount_GetsTheIdenticalRefusal_ForExistingAndMadeUpIds` (written, not run locally: Docker; CI runs it). Remaining: the frontend denied state, because no route carries an Account id yet. Owner question: which URL carries the Account id? Owner tests by hand.
 
 ### UC-ACC-E03 Carry Account context in background work
 - Capability: E Account-context resolution
@@ -441,7 +441,7 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - Rules: IAREQ034, IAREQ036; FE-STATE-038, FE-STATE-039; team spec section 12.
 - Acceptance: Given user 1 signs out and user 2 signs in, When pages load, Then no user 1 data is shown.
 - Evidence: BE n/a · FE `frontend/apps/web/src/providers/app-providers.tsx`, `frontend/apps/web/src/composition/application-lifecycle.ts` · Design none · Tests `frontend/apps/web/src/composition/__tests__/account-isolation.integration.test.ts` · Real e2e none
-- State: IMPLEMENTING — key must be the real Account id (today `User.id`); a real e2e.
+- State: IMPLEMENTING — remaining: the key must be the real Account id (today `User.id`). Owner question: the bootstrap names one `accountId` but its pick is non-deterministic (E01), and the app must not render scoped children before it is known. No e2e run.
 
 ## G. Account-scoped frontend state isolation
 
@@ -456,8 +456,8 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - UI states: none.
 - Rules: QRY-002; FE-STATE-038; IAREQ034.
 - Acceptance: Given any account-scoped hook, When its key is built, Then position 1 is the Account id.
-- Evidence: BE n/a · FE `frontend/packages/features/account/src/query/keys.ts`, `frontend/packages/foundation/query/src/query-key-scope.ts` · Design none · Tests `account-query-keys.unit.test.ts`, `query-key-scope.unit.test.ts` · Real e2e none
-- State: IMPLEMENTING — real Account id; a repository-wide scan that every account-scoped key uses the helper.
+- Evidence: BE n/a · FE `frontend/packages/features/account/src/query/keys.ts`, `frontend/packages/foundation/query/src/query-key-scope.ts` · Design none · Tests `account-query-keys.unit.test.ts` (all nine account keys, nesting, disjoint Accounts), `account-key-scan.unit.test.ts` (repository scan: no production raw `["account", ...]` tuple outside the helper), `query-key-scope.unit.test.ts` · Real e2e none
+- State: IMPLEMENTING — Built: the coverage and the repository scan above. Remaining: the real Account id (owner question in F02). Owner tests by hand.
 
 ### UC-ACC-G02 A late response from the old Account is discarded
 - Capability: G Account-scoped frontend state isolation
@@ -471,7 +471,7 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - Rules: agent contract section 8.5; FE-STATE-039.
 - Acceptance: Given a slow A query, When the user switches to B, Then B's screen shows only B data.
 - Evidence: BE n/a · FE `account-scope.ts`, `application-lifecycle.ts` · Design none · Tests `account-isolation.integration.test.ts` · Real e2e none
-- State: IMPLEMENTING — real Account id; real e2e with two Accounts.
+- State: IMPLEMENTING — Built: discard of late responses (`ACC-005` in `account-scope.unit.test.tsx`, `ACCT-003` in `account-isolation.integration.test.ts`). Remaining: the real Account id (owner question in F02); no e2e run.
 
 ### UC-ACC-G03 Realtime and local state reset on Account change
 - Capability: G Account-scoped frontend state isolation

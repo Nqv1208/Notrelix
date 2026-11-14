@@ -19,8 +19,10 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
     private readonly IWorkManagementCollaborationReadPort _collabReadPort;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IWorkspaceAccessResolver _workspaceAccess;
-    public GetBoardItemQueryHandler(IWorkManagementDbContext context, IActorLookupService actorLookup, IWorkManagementCollaborationReadPort collabReadPort, ICurrentRequestContext requestContext, IWorkspaceAccessResolver workspaceAccess)
+    private readonly Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility? _visibility;
+    public GetBoardItemQueryHandler(IWorkManagementDbContext context, IActorLookupService actorLookup, IWorkManagementCollaborationReadPort collabReadPort, ICurrentRequestContext requestContext, IWorkspaceAccessResolver workspaceAccess, Notrelix.Application.Features.Governance.Public.Visibility.IResourceVisibility? visibility = null)
     {
+        _visibility = visibility;
         _workspaceAccess = workspaceAccess;
         _requestContext = requestContext;
         _context = context;
@@ -92,6 +94,10 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             .ToListAsync(ct);
         var values = (await BoardItemReadValues.LoadAsync(_context, fields, [card.Id], ct))[card.Id];
         var projected = (await BoardItemFieldProjection.LoadAsync(_context, fields, [card.Id], ct, _requestContext.UserId))[card.Id];
+        var relationLinks = await Notrelix.Application.Features.WorkManagement.RelationTargets.BoardItemRelationLinks.LoadAsync(
+            _context, _visibility, _requestContext.UserId, fields,
+            new Dictionary<Guid, IReadOnlyDictionary<string, System.Text.Json.JsonElement>> { [card.Id] = projected.Stored },
+            ct);
 
         return Result<BoardItemDto>.Success(new BoardItemDto(
             card.Id, listContext.BoardId, listContext.WorkspaceId, card.GroupId, card.Name,
@@ -115,7 +121,7 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             card.ArchivedBy,
             await ActorNotice.NameAsync(_actorLookup, _workspaceAccess, listContext.WorkspaceId, _requestContext.UserId, card.ArchivedBy, ct),
             card.DescriptionMd,
-            projected.Stored.ToDictionary(pair => pair.Key, pair => pair.Value),
+            Notrelix.Application.Features.WorkManagement.RelationTargets.BoardItemRelationLinks.WithLinkIds(projected.Stored, relationLinks.GetValueOrDefault(card.Id)).ToDictionary(pair => pair.Key, pair => pair.Value),
             projected.Computed.ToDictionary(pair => pair.Key, pair => pair.Value),
             card.CoverColor,
             card.CoverAttachmentId,
@@ -123,7 +129,8 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             card.RepeatRule,
             card.ReminderOffsetMinutes ?? ItemReminder.DefaultMinutes,
             card.UpdatedBy,
-            NameOf(card.UpdatedBy)
+            NameOf(card.UpdatedBy),
+            relationLinks.TryGetValue(card.Id, out var linksByField) ? linksByField.ToDictionary(pair => pair.Key, pair => pair.Value) : null
         ));
     }
 

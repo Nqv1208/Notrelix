@@ -1,4 +1,5 @@
 using Notrelix.Application.Events.WorkManagement;
+using Notrelix.Application.Features.Workspaces.Public.Teams;
 using Notrelix.Domain.Collaboration.Preferences;
 
 namespace Notrelix.Infrastructure.Messaging.Consumers.Collaboration;
@@ -20,6 +21,32 @@ public sealed class ApprovalRequestedNotificationConsumer : IConsumer<ApprovalRe
             msg.AccountIdValue, msg.WorkspaceIdValue, msg.TargetId, msg.RequestedBy, msg.EventId,
             NotificationTypes.ApprovalRequestedProducedType, "Approval requested", ItemFollowerNotifier.Excerpt(msg.Note),
             [msg.ApproverUserId], DateTimeOffset.UtcNow, context.CancellationToken);
+    }
+}
+
+[OrderingNotApplicable("Each team request notifies each current member once, keyed by the request event and person; deliveries commute.")]
+public sealed class ApprovalTeamRequestedNotificationConsumer : IConsumer<ApprovalTeamRequestedIntegrationEvent>
+{
+    private readonly ItemFollowerNotifier _notifier;
+    private readonly ITeamMembershipFacts _teams;
+
+    public ApprovalTeamRequestedNotificationConsumer(ItemFollowerNotifier notifier, ITeamMembershipFacts teams)
+    {
+        _notifier = notifier;
+        _teams = teams;
+    }
+
+    public async Task Consume(ConsumeContext<ApprovalTeamRequestedIntegrationEvent> context)
+    {
+        var msg = context.Message;
+        if (msg.TargetKind != ItemFollowerNotifier.BoardItemKind) return;
+
+        // Members are read now, inside the event's Workspace; a Team that is gone or inactive notifies nobody.
+        var members = await _teams.CurrentMemberIdsAsync(msg.WorkspaceIdValue, msg.ApproverTeamId, context.CancellationToken);
+        await _notifier.NotifyAsync(
+            msg.AccountIdValue, msg.WorkspaceIdValue, msg.TargetId, msg.RequestedBy, msg.EventId,
+            NotificationTypes.ApprovalRequestedProducedType, "Approval requested", ItemFollowerNotifier.Excerpt(msg.Note),
+            members.Where(id => id != msg.RequestedBy).ToList(), DateTimeOffset.UtcNow, context.CancellationToken);
     }
 }
 

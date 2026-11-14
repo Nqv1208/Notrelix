@@ -23,6 +23,42 @@ function apiOver(pages: Record<string, unknown>) {
 }
 
 describe("The people directory of an item", () => {
+  it("lists only the board's members to a Guest, who may not list the workspace (UC-WM-R03)", async () => {
+    const get = vi.fn(async (url: string) => {
+      if (url.includes("/boards/"))
+        return {
+          members: [
+            { userId: "u1", name: "Ada", role: "Editor" },
+            { userId: "u5", name: "Em", role: "Viewer" },
+          ],
+        };
+      throw Object.assign(new Error("Forbidden"), {
+        kind: "forbidden",
+        status: 403,
+      });
+    });
+    const { people } = await createItemExtrasApi({
+      api: { get },
+    } as unknown as NotrelixClient).getPeopleDirectory("b-1", "ws-1");
+
+    expect(people.map((p) => [p.name, p.onBoard, p.level])).toEqual([
+      ["Ada", true, "editor"],
+      ["Em", true, "viewer"],
+    ]);
+  });
+
+  it("still fails on a members read that broke for another reason", async () => {
+    const get = vi.fn(async (url: string) => {
+      if (url.includes("/boards/")) return { members: [] };
+      throw Object.assign(new Error("Server"), { kind: "server", status: 500 });
+    });
+    await expect(
+      createItemExtrasApi({
+        api: { get },
+      } as unknown as NotrelixClient).getPeopleDirectory("b-1", "ws-1"),
+    ).rejects.toThrow("Server");
+  });
+
   it("joins every page of the workspace members (the producer lists them as a cursor page)", async () => {
     const { get, directory } = apiOver({
       first: {
@@ -41,7 +77,45 @@ describe("The people directory of an item", () => {
     expect(people.find((p) => p.userId === "u1")?.onBoard).toBe(true);
     expect(people.find((p) => p.userId === "u2")?.onBoard).toBe(false);
     expect(
-      get.mock.calls.filter(([url]) => String(url).includes("/members")),
+      get.mock.calls.filter(([url]) => String(url).includes("/members?")),
     ).toHaveLength(2);
+  });
+
+  it("reads the board's own people for a Guest, never the workspace members", async () => {
+    const get = vi.fn(async (url: string) => {
+      if (url.endsWith("/members/me")) return { userId: "me", role: "Guest" };
+      if (url.endsWith("/people"))
+        return [
+          { userId: "u1", name: "Ada" },
+          { userId: "u2", name: "Bao" },
+        ];
+      throw new Error(`unexpected ${url}`);
+    });
+    const { people, canInvite } = await createItemExtrasApi({
+      api: { get },
+    } as unknown as NotrelixClient).getPeopleDirectory("b-1", "ws-1");
+
+    expect(people).toEqual([
+      {
+        userId: "u1",
+        name: "Ada",
+        department: null,
+        openCount: 0,
+        onBoard: true,
+        level: null,
+      },
+      {
+        userId: "u2",
+        name: "Bao",
+        department: null,
+        openCount: 0,
+        onBoard: true,
+        level: null,
+      },
+    ]);
+    expect(canInvite).toBe(false);
+    expect(
+      get.mock.calls.some(([url]) => String(url).includes("/members?")),
+    ).toBe(false);
   });
 });

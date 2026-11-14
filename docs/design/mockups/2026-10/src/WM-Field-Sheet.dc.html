@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Thuộc tính trong side sheet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+.nx{--bg:#F7F8FA;--panel:#FFFFFF;--hover:#F1F3F6;--hover2:#E6E9EE;--line:#E6E9EE;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-ink:#FFFFFF;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--sel-row:#EEF4FD;--st-todo:#7A8391;--st-doing:#1E7BE0;--st-review:#D99A00;--st-done:#2E8B57;--danger:#C42340;--danger-soft:#FCEBEE;--warn-text:#8A5A00;--warn-soft:#FDF3DC;--high:#B4500B;--lane-todo:#ECEEF2;--lane-doing:#E2ECFA;--lane-review:#FBF0D6;--lane-done:#E2F1E7;--grp:#F3F5F8;--pop-shadow:0 12px 32px rgba(15,23,42,.16);--av1:#1E6FD0;--av2:#B4500B;--av3:#7C4DDB;--av4:#9A6A12;--av5:#0E7490;--av6:#475569;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.nx.mode-dem{--bg:#0E1116;--panel:#151A21;--hover:#1C232C;--hover2:#232A34;--line:#232B35;--line2:#2E3743;--text:#E6E9EE;--muted:#AAB3C0;--meta:#8F99A7;--accent:#5AA9FF;--accent-ink:#04111F;--accent-soft:rgba(90,169,255,.16);--accent-text:#7DBBFF;--sel-row:#172334;--st-todo:#8C95A3;--st-doing:#5AA9FF;--st-review:#F2C14E;--st-done:#56C98A;--danger:#FF6B81;--danger-soft:rgba(255,107,129,.12);--warn-text:#F2C14E;--warn-soft:rgba(242,193,78,.12);--high:#FFA060;--lane-todo:#1E252F;--lane-doing:#16284A;--lane-review:#30281A;--lane-done:#153024;--grp:#12171D;--pop-shadow:0 12px 32px rgba(0,0,0,.5)}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+button{font:inherit}
+button:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.btn.sm{height:26px;padding:0 8px;font-size:12px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.txt{border-color:transparent;background:transparent;color:var(--muted)}
+.btn[disabled]{opacity:.55;cursor:default}
+.page{padding:36px 40px 56px;box-sizing:border-box}
+h1{margin:0;font-size:22px;font-weight:650;letter-spacing:-0.01em}
+h2{margin:0;font-size:15px;font-weight:650}
+.sub{margin:4px 0 0;color:var(--muted);font-size:13px;max-width:125ch}
+.cap2{margin:0;font-size:12.5px;color:var(--meta)}
+.grid3{display:grid;grid-template-columns:repeat(3,426px);gap:24px 40px;margin-top:24px}
+.pan{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.pan>h2{display:flex;align-items:center;gap:8px}
+.pan .tag2{font-size:11.5px;font-weight:600;color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:2px 9px;margin-left:auto}
+.stage{position:relative}
+.th{height:36px;padding:0 10px;background:var(--grp);color:var(--meta);font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:8px 8px 0 0;box-sizing:border-box}
+.th .i{width:13px;height:13px}
+.td{height:40px;padding:0 10px;background:var(--panel);display:flex;align-items:center;gap:7px;box-sizing:border-box;position:relative;font-size:13.5px;white-space:nowrap;border:1px solid var(--line);border-top:0;min-width:0}
+.td.last{border-radius:0 0 8px 8px}
+.td.foc{outline:2px solid var(--accent);outline-offset:-2px}
+.td.dim{opacity:.72}
+.td .grow{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.inp{height:28px;border:1px solid var(--line2);border-radius:6px;background:var(--panel);padding:0 8px;font-size:13px;color:var(--text);box-sizing:border-box;width:100%;display:flex;align-items:center}
+.inp.focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.inp.err{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger);outline:0}
+.inp.r{justify-content:flex-end;text-align:right}
+.caret{display:inline-block;width:1px;height:15px;background:var(--text);margin-left:1px}
+.errmsg{display:inline-flex;align-items:center;gap:5px;color:var(--danger);font-size:12px;font-weight:600}
+.pop{position:absolute;z-index:6;background:var(--panel);border:1px solid var(--line2);border-radius:10px;box-shadow:var(--pop-shadow);padding:8px;display:flex;flex-direction:column;gap:6px;font-size:13px;white-space:normal;box-sizing:border-box}
+.pop.err{border-color:var(--danger)}.pop.warn{border-color:var(--warn-text)}
+.opt{display:flex;align-items:center;gap:8px;min-height:32px;padding:0 8px;border-radius:7px;font-size:13px;color:var(--text);cursor:pointer}
+.opt:hover,.opt.hov{background:var(--hover2)}
+.opt.sel{background:var(--accent-soft)}
+.opt.foc{outline:2px solid var(--accent);outline-offset:-2px}
+.opt .tick{margin-left:auto;color:var(--accent-text)}
+.cb{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--line2);background:var(--panel);display:grid;place-items:center;color:transparent;flex:none;box-sizing:border-box;padding:0}
+.cb.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.cb .i{width:11px;height:11px;stroke-width:2.6}
+.chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600;white-space:nowrap;flex:none}
+.chip.more{background:var(--hover2);color:var(--muted)}
+.c-blue{background:#E1EEFC;color:#124C8E}.c-rose{background:#FDE5EA;color:#9E1736}.c-teal{background:#E1F0EA;color:#2C5E4F}.c-amber{background:#FBF0D3;color:#6E4F0A}.c-gray{background:#ECEEF2;color:#3E4757}.c-violet{background:#EEE7FB;color:#5532A8}
+.mode-dem .c-blue{background:#16304F;color:#9CC8FA}.mode-dem .c-rose{background:#4A1A26;color:#FFA8B8}.mode-dem .c-teal{background:#173A30;color:#9ED6C2}.mode-dem .c-amber{background:#3C3014;color:#F2D58A}.mode-dem .c-gray{background:#262E39;color:#C3CBD6}.mode-dem .c-violet{background:#2E2350;color:#C9B8FA}
+.av{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none}
+.av.c1{background:var(--av1)}.av.c2{background:var(--av2)}.av.c3{background:var(--av3)}.av.c4{background:var(--av4)}.av.c5{background:var(--av5)}.av.c6{background:var(--av6)}
+.muted{color:var(--meta)}
+.fxg{height:18px;padding:0 5px;border-radius:5px;background:var(--hover2);color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;display:inline-flex;align-items:center;flex:none}
+.lk{display:inline-flex;color:var(--meta);flex:none}
+.cal{display:grid;grid-template-columns:repeat(7,32px);gap:2px;justify-content:center}
+.cal span{height:30px;display:grid;place-items:center;border-radius:7px;font-size:12.5px;font-variant-numeric:tabular-nums}
+.cal .dow{color:var(--meta);font-size:11.5px;font-weight:600}
+.cal .off{color:var(--meta);opacity:.6}
+.cal .today{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.cal .pick{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.sep{height:1px;background:var(--line);margin:2px -8px}
+.pill{height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--line2);display:inline-flex;align-items:center;gap:6px;font-size:13px;background:var(--panel);color:var(--text);box-sizing:border-box;cursor:pointer;max-width:100%}
+.pill.mute{color:var(--meta)}
+.pill.add{border-style:dashed;color:var(--accent-text)}
+.pill.pend{opacity:.72}
+.pill.bad{border-color:var(--danger)}
+.pill.ro{cursor:default;background:var(--hover)}
+.pill .k{color:var(--meta);font-size:12px}
+.pill.foc{outline:2px solid var(--accent);outline-offset:2px}
+.sheet{width:560px;flex:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--pop-shadow);display:flex;flex-direction:column;box-sizing:border-box}
+.sheet .crumb{padding:12px 18px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--meta)}
+.sheet .body{padding:18px 22px;display:flex;flex-direction:column;gap:14px}
+.props{display:flex;flex-wrap:wrap;gap:6px}
+.state{font-size:12px;font-weight:600;color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:3px 10px;align-self:flex-start}
+.strip{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);position:relative}
+.dlg{width:560px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--pop-shadow);display:flex;flex-direction:column;box-sizing:border-box}
+.dlg .hd{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.dlg .bd{padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+.dlg .ft{padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center;justify-content:flex-end}
+.lbl{font-size:12px;font-weight:600;color:var(--meta);margin:0 0 4px;display:block}
+.code{border:1px solid var(--line2);border-radius:7px;background:var(--panel);padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.55;min-height:64px;box-sizing:border-box;color:var(--text);white-space:pre-wrap;overflow-wrap:anywhere}
+.code.focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.code.err{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger);outline:0}
+.ref{background:var(--accent-soft);color:var(--accent-text);border-radius:4px;padding:0 3px}
+.ref.bad{background:var(--danger-soft);color:var(--danger);text-decoration:underline wavy}
+.fn{color:var(--warn-text)}
+.prev{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--hover);font-size:13px;color:var(--muted)}
+.prev b{color:var(--text);font-size:14px}
+.note{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:8px;font-size:12.5px}
+.note.bad{background:var(--danger-soft);color:var(--danger)}
+.note.warn{background:var(--warn-soft);color:var(--warn-text)}
+.note.info{background:var(--hover);color:var(--muted)}
+.note .i{margin-top:2px}
+.fchips{display:flex;flex-wrap:wrap;gap:6px}
+.fchips .chip{cursor:pointer;border:1px solid var(--line2);background:var(--panel);color:var(--text);font-weight:500;height:24px}
+.cnt{margin-left:auto;font-size:12px;color:var(--meta);font-variant-numeric:tabular-nums}
+.cnt.bad{color:var(--danger);font-weight:600}
+.sel2{height:34px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);padding:0 10px;display:flex;align-items:center;gap:8px;font-size:13.5px;box-sizing:border-box}
+.sel2.off{background:var(--hover);color:var(--meta)}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg .btn.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-text);font-weight:600}
+.phone{width:320px;border:1px solid var(--line);border-radius:18px;background:var(--bg);overflow:hidden;position:relative;box-sizing:border-box;flex:none}
+.drawer{position:absolute;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line2);border-radius:16px 16px 0 0;box-shadow:var(--pop-shadow);padding:10px 14px 16px;display:flex;flex-direction:column;gap:8px;box-sizing:border-box}
+.grab2{width:36px;height:4px;border-radius:2px;background:var(--line2);margin:0 auto 4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--line2);border-top-color:var(--accent);flex:none}
+@media (prefers-reduced-motion:no-preference){.spin{animation:sp 0.9s linear infinite}}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+</style>
+</helmet>
+<div class="nx mode-{{mode}}" style="width:1440px;height:1400px;background:var(--bg)">
+<div class="page">
+  <h1>Side sheet · sửa thuộc tính tuỳ chỉnh tại chỗ</h1>
+  <p class="sub">Trường tuỳ chỉnh hiện thành pill trong mục Thuộc tính; mỗi pill mở đúng trình sửa của View Bảng (một nguồn duy nhất cho mặt thẻ, Bảng và sheet). Có đủ: nghỉ, neo popover, đang lưu, lỗi + Thử lại, xung đột, chỉ xem, trường tính ƒx, 320px.</p>
+<div style="display:flex;gap:40px;margin-top:24px;align-items:flex-start"><div style="display:flex;flex-direction:column;gap:18px;width:560px;flex:none"><div style="display:flex;flex-direction:column;gap:10px"><span class="state">Thuộc tính trong sheet · lúc nghỉ</span><div class="sheet"><div class="crumb"><span>Triển khai ERP</span><span>›</span><b style="color:var(--text)">ERP-145</b></div><div class="body"><h2 style="font-size:18px">Đào tạo nhóm kế toán dùng phân hệ công nợ</h2><div class="props"><span class="pill"><span class="k">Ghi chú</span>Cần xuất bản Excel</span><span class="pill"><span class="k">Phạm vi</span><span style="max-width:150px;overflow:hidden;text-overflow:ellipsis">Chuyển toàn bộ danh mục…</span></span><span class="pill"><span class="k">Điểm</span>13 giờ</span><span class="pill"><button type="button" class="cb on" aria-label="Nghiệm thu: đã chọn" style="width:15px;height:15px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></button>Nghiệm thu</span><span class="pill"><span class="k">Phân hệ</span><span class="chip c-blue">Kế toán</span></span><span class="pill"><span class="k">Liên quan</span><span class="chip c-blue">Kế toán</span><span class="chip c-violet">Công nợ</span><span class="chip more">+2</span></span><span class="pill"><span class="k">Hạn NT</span>15/10/2026</span><span class="pill"><span class="k">Người NT</span><span class="av c1">MQ</span><span class="av c2">HP</span></span><span class="pill"><span class="k">Liên kết</span><span style="color:var(--accent-text)">erp.minhan.vn/t/145</span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5H5V6h5"/></svg></span><span class="pill ro"><span class="fxg">ƒx</span><span class="k">Trễ</span>0 ngày</span><span class="pill ro"><span class="fxg">ƒx</span><span class="k">Tổng giờ việc con</span>7</span><span class="pill add"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Thêm thuộc tính</span></div><p class="cap2">Các mục khác của sheet (Mô tả, Danh sách kiểm, Việc con, Tệp…) giữ nguyên như Side sheet đầy đủ.</p></div></div><p class="cap2" style="max-width:560px">Pill thuộc tính là nút: bấm hoặc Enter mở đúng trình sửa của Bảng, neo dưới pill. Tên trường đứng trước giá trị; ƒx và ổ khoá chỉ có ở trường không sửa được. Pill dài cắt bằng dấu ba chấm, tooltip đọc đủ.</p></div><div style="display:flex;flex-direction:column;gap:10px;margin-top:6px"><span class="state">Neo vào pill</span><div class="stage" style="height:330px;width:560px"><div class="props"><span class="pill foc"><span class="k">Liên quan</span><span class="chip c-blue">Kế toán</span><span class="chip c-violet">Công nợ</span><span class="chip more">+2</span></span></div><div class="pop" style="left:0;top:40px;width:260px"><div class="opt hov"><button type="button" class="cb on" aria-label="Kế toán"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></button><span class="chip c-blue">Kế toán</span></div><div class="opt"><button type="button" class="cb on" aria-label="Công nợ"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></button><span class="chip c-violet">Công nợ</span></div><div class="opt"><button type="button" class="cb on" aria-label="Mua hàng"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></button><span class="chip c-teal">Mua hàng</span></div><div class="opt"><button type="button" class="cb on" aria-label="Kho"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></button><span class="chip c-amber">Kho</span></div><div class="opt"><button type="button" class="cb" aria-label="Nhân sự"></button><span class="chip c-gray">Nhân sự</span></div><div class="sep"></div><div style="display:flex;justify-content:flex-end"><button type="button" class="btn sm pri">Xong</button></div></div><div class="pop" style="left:290px;top:40px;width:270px"><div class="inp focus" style="height:30px;gap:6px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.3-4.3"/></svg><span class="muted">Tìm thành viên</span></div><div class="opt hov"><button type="button" class="cb on" aria-label="Mai Quốc Minh"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></button><span class="av c1">MQ</span><span>Mai Quốc Minh</span></div><div class="opt"><button type="button" class="cb on" aria-label="Lê Hoàng Phúc"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></button><span class="av c2">HP</span><span>Lê Hoàng Phúc</span></div><div class="opt"><button type="button" class="cb" aria-label="Nguyễn Anh"></button><span class="av c3">NA</span><span>Nguyễn Anh</span></div><div class="sep"></div><div class="opt muted"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>Bỏ hết</div></div></div></div></div><div style="display:flex;flex-direction:column;gap:12px;width:400px;flex:none"><span class="state">Trạng thái của một thuộc tính</span><div class="strip"><b style="font-size:12.5px">Đang lưu</b><div class="stage" style="min-height:64px"><div class="props"><span class="pill pend"><span class="k">Điểm</span>13 giờ<span class="spin"></span></span></div></div><p class="cap2">Giá trị mới hiện ngay, mờ nhẹ, vòng quay nhỏ. Không khoá các pill khác.</p></div><div class="strip"><b style="font-size:12.5px">Lỗi lưu · Thử lại trong chỗ</b><div class="stage" style="min-height:150px"><div class="props"><span class="pill bad"><span class="k">Điểm</span>13 giờ<span style="color:var(--danger)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg></span></span></div><div class="pop err" style="left:0;top:36px;width:300px"><span class="errmsg"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>Chưa lưu được Điểm</span><span class="cap2">Mất kết nối tới máy chủ. Giá trị bạn gõ vẫn còn ở đây.</span><div style="display:flex;gap:6px;justify-content:flex-end"><button type="button" class="btn sm txt">Bỏ thay đổi</button><button type="button" class="btn sm pri"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg>Thử lại</button></div></div></div><p class="cap2">Không tự hoàn tác. Viền đỏ ở pill; popover tự mở lại khi tiêu điểm vào pill.</p></div><div class="strip"><b style="font-size:12.5px">Xung đột phiên bản</b><div class="stage" style="min-height:150px"><div class="props"><span class="pill bad"><span class="k">Điểm</span>13 giờ<span style="color:var(--warn-text)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg></span></span></div><div class="pop warn" style="left:0;top:36px;width:320px"><b style="font-size:12.5px">Lê An vừa đổi Điểm thành 21</b><span class="cap2">Giá trị của bạn: 13</span><div style="display:flex;gap:6px;justify-content:flex-end"><button type="button" class="btn sm">Giữ giá trị của tôi</button><button type="button" class="btn sm pri">Dùng giá trị mới (21)</button></div></div></div><p class="cap2">Không ghi đè mù: sheet tải lại giá trị mới nhất rồi hỏi. Giống ô trong Bảng.</p></div><div class="strip"><b style="font-size:12.5px">Chỉ xem (Người xem / Bình luận)</b><div class="stage" style="min-height:52px"><div class="props"><span class="pill ro" title="Chỉ xem: bạn không có quyền sửa"><span class="k">Điểm</span>13 giờ<span class="lk"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span></span><span class="pill ro"><span class="fxg">ƒx</span><span class="k">Trễ</span>0 ngày</span></div></div><p class="cap2">Giá trị đọc được, không mở trình sửa, không có dòng "Thêm thuộc tính". Ổ khoá kèm tên đọc cho trình đọc màn hình: "Chỉ xem: bạn không có quyền sửa".</p></div><div class="strip"><b style="font-size:12.5px">Trường tính (ƒx): đủ, trống, lỗi, cũ</b><div class="stage" style="min-height:70px"><div class="props"><span class="pill ro"><span class="fxg">ƒx</span><span class="k">Trễ</span>0 ngày</span><span class="pill ro"><span class="fxg">ƒx</span><span class="k">Tổng</span><span class="muted">—</span></span><span class="pill ro bad" title="Chia cho 0 trong công thức Tỷ lệ"><span class="fxg">ƒx</span><span class="k">Tỷ lệ</span><span style="color:var(--danger);font-weight:600">Lỗi</span></span><span class="pill ro pend"><span class="fxg">ƒx</span><span class="k">Trễ</span>0 ngày<span class="spin"></span></span></div></div><p class="cap2">Trống: gạch ngang mờ. Lỗi: chữ "Lỗi" đỏ, tooltip nói lý do (chia cho 0, không thấy trường, phụ thuộc vòng). Cũ: mờ + vòng quay trong lúc giá trị nguồn vừa sửa và bảng đang tải lại; không bao giờ hiện số cũ như số mới.</p></div></div><div style="display:flex;flex-direction:column;gap:14px"><span class="state">320px · ngăn kéo từ đáy</span><div class="phone" style="height:330px"><div style="padding:14px"><div class="props"><span class="pill foc"><span class="k">Phân hệ</span><span class="chip c-blue">Kế toán</span></span><span class="pill"><span class="k">Điểm</span>13 giờ</span><span class="pill ro"><span class="fxg">ƒx</span><span class="k">Trễ</span>0 ngày</span></div></div><div class="drawer"><div class="grab2"></div><b style="font-size:13px">Phân hệ</b><div class="opt sel" style="min-height:44px"><span class="chip c-blue">Kế toán</span><span class="tick"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></span></div><div class="opt" style="min-height:44px"><span class="chip c-violet">Công nợ</span></div><div class="opt" style="min-height:44px"><span class="chip c-teal">Mua hàng</span></div><div class="opt muted" style="min-height:44px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>Bỏ chọn</div></div></div><div class="phone" style="height:300px"><div style="padding:14px"><div class="props"><span class="pill foc"><span class="k">Phân hệ</span><span class="chip c-blue">Kế toán</span></span><span class="pill"><span class="k">Điểm</span>13 giờ</span><span class="pill ro"><span class="fxg">ƒx</span><span class="k">Trễ</span>0 ngày</span></div></div><div class="drawer"><div class="grab2"></div><b style="font-size:13px">Điểm</b><div class="inp err r" style="height:44px;font-size:15px"><span>13a</span></div><span class="errmsg"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>Nhập một số, ví dụ 13 hoặc 13,5</span><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn txt" style="height:44px">Huỷ</button><button type="button" class="btn pri" style="height:44px" disabled>Lưu</button></div></div></div><p class="cap2" style="max-width:320px">Trên điện thoại trình sửa mở thành ngăn kéo đáy, hàng 44px. Lưu ngay khi chọn; ô nhập có nút Lưu / Huỷ vì không có Enter vật lý đáng tin.</p></div></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["sang","dem"],"default":"sang"},"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+renderVals() {
+return { mode: this.props.mode ?? 'sang' };
+}
+}
+</script>
+</body>
+</html>

@@ -4,8 +4,11 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
+  type ReactNode,
 } from "react";
 import {
+  AlertCircle,
+  Ban,
   ChevronRight,
   Flag,
   MessageCircle,
@@ -13,11 +16,11 @@ import {
   SquareCheck,
 } from "lucide-react";
 import { PriorityGlyph } from "../../shared/priority-glyph";
+import { ITEM_TITLE_MAX_LENGTH } from "@notrelix/work-management-core";
 import {
   cn,
   ContextMenu,
   ContextMenuContent,
-  ContextMenuItem,
   ContextMenuTrigger,
   Popover,
   PopoverContent,
@@ -27,9 +30,13 @@ import {
   ITEM_LABEL_TONE_CLASS,
   identityMarkClass,
 } from "../../shared/item-display";
+import { ItemActionsMenuItems } from "../../item-actions/item-actions-menu";
+import { itemActionsCopyFor } from "../../item-actions/use-item-actions-copy";
 import { fillTableCopy, type MainTableCopy } from "./main-table.copy";
 import { STATUS_TINT_CLASS, tablePanelClass } from "./table-chrome";
 import type { TableColumnSpec } from "./table-columns";
+import { CellConflictNote } from "./table-field-cell";
+import type { SystemCellColumn } from "./table-cell-editors";
 import type { TableRowModel, TableStatusOption } from "./table-model";
 import {
   AssigneeEditor,
@@ -38,6 +45,7 @@ import {
   type TableEditors,
 } from "./table-cell-editors";
 import { TableFieldCell, type TableFieldEditing } from "./table-field-cell";
+import { AnchoredNote } from "./table-field-editors";
 import { StatusDot, TableCheckbox } from "./table-parts";
 import { useTableLayout } from "./table-layout";
 import { TableStatusPicker } from "./table-status-picker";
@@ -77,8 +85,11 @@ export interface TableRowProps {
   fieldEditing?: TableFieldEditing;
   /** The row's menu; absent = no menu. */
   actions?: TableRowActions;
-  /** Saves a new title typed in place; absent = the title cannot be edited here. */
-  onRename?: (title: string) => void;
+  /**
+   * Saves a new title typed in place; absent = the title cannot be edited here.
+   * Resolves `false` when the server refused the title: the editor stays open with the typed text.
+   */
+  onRename?: (title: string) => void | Promise<boolean>;
   /** The sub-items of this row can be shown under it; absent = the row has none. */
   expand?: { expanded: boolean; count: number; onToggle: () => void };
   /** The status list is open on this row. */
@@ -103,7 +114,7 @@ const PRIORITY_CLASS = {
   urgent: "font-semibold text-danger-text",
   high: "font-semibold text-priority-high-text",
   medium: "font-medium text-muted-foreground",
-  low: "font-normal text-meta-foreground",
+  low: "font-normal text-meta-foreground tablet:font-medium",
 } as const;
 
 /**
@@ -181,6 +192,7 @@ export function TableRow({
   onStatusChange,
   onKeyDown,
 }: TableRowProps) {
+  const itemActionsCopy = itemActionsCopyFor(copy.row.pickerLocale);
   const keyLabel = row.key ?? row.title;
   const tablet = useTableLayout() === "tablet";
   const [renaming, setRenaming] = useState(false);
@@ -189,6 +201,8 @@ export function TableRow({
   const refocus = useRef(false);
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleButton = useRef<HTMLButtonElement>(null);
+  const titleInput = useRef<HTMLInputElement>(null);
+  const [refused, setRefused] = useState(false);
   useEffect(
     () => () => {
       if (openTimer.current) clearTimeout(openTimer.current);
@@ -205,6 +219,7 @@ export function TableRow({
     if (!onRename) return;
     if (openTimer.current) clearTimeout(openTimer.current);
     settled.current = false;
+    setRefused(false);
     setDraft(row.title);
     setRenaming(true);
   };
@@ -213,9 +228,44 @@ export function TableRow({
     if (settled.current) return;
     settled.current = true;
     const next = draft.trim();
-    if (save && next && next !== row.title) onRename?.(next);
-    refocus.current = restoreFocus;
-    setRenaming(false);
+    const written =
+      save && next && next !== row.title ? onRename?.(next) : undefined;
+    const close = () => {
+      refocus.current = restoreFocus;
+      setRenaming(false);
+    };
+    if (!(written instanceof Promise)) return close();
+    // The editor stays until the server has answered: a refused title is told under it, the text kept.
+    void written.then((accepted) => {
+      if (accepted === false) {
+        settled.current = false;
+        setRefused(true);
+      } else close();
+    });
+  };
+
+  // A title or due date write lost to someone else's save: the cell offers "keep mine" or "use theirs" (UC-WM-B33).
+  const withConflict = (
+    column: SystemCellColumn,
+    field: string,
+    theirs: string,
+    node: ReactNode,
+  ) => {
+    const conflict = fieldEditing?.systemConflictOf?.(row.id, column);
+    if (!conflict) return node;
+    return (
+      <CellConflictNote
+        copy={copy}
+        who={conflict.byName}
+        field={field}
+        theirs={theirs || copy.fields.empty}
+        mine={conflict.mine || copy.fields.empty}
+        onKeepMine={() => fieldEditing?.onSystemKeepMine?.(row.id, column)}
+        onUseTheirs={() => fieldEditing?.onSystemUseTheirs?.(row.id, column)}
+      >
+        {node}
+      </CellConflictNote>
+    );
   };
 
   const render = (column: TableColumnSpec) => {
@@ -260,65 +310,120 @@ export function TableRow({
                 />
               </button>
             ) : null}
+            {row.blocker && !renaming ? (
+              <span
+                data-slot="table-blocked-chip"
+                className="-mr-px inline-flex h-5.5 shrink-0 items-center gap-1 rounded-[6px] bg-danger-subtle px-2 text-xs font-semibold text-danger-subtle-foreground"
+              >
+                <Ban
+                  className="size-3.25"
+                  strokeWidth={1.8}
+                  aria-hidden="true"
+                />
+                {row.blocker.key
+                  ? fillTableCopy(copy.row.blockedBy, { key: row.blocker.key })
+                  : fillTableCopy(copy.row.blockedByCount, {
+                      count: row.blocker.count,
+                    })}
+              </span>
+            ) : null}
             {renaming ? (
-              <input
-                autoFocus
-                value={draft}
-                aria-label={fillTableCopy(copy.row.editTitle, {
-                  key: keyLabel,
-                })}
-                onChange={(event) => setDraft(event.target.value)}
-                onFocus={(event) => event.currentTarget.select()}
-                onBlur={() => endRename(true, false)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    endRename(true, true);
-                  } else if (event.key === "Escape") {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    endRename(false, true);
-                  }
-                }}
-                className="h-6.5 min-w-0 flex-1 rounded-[7px] border border-line-strong bg-popover px-2 text-nav font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring dark:bg-card"
-              />
-            ) : (
-              <button
-                ref={titleButton}
-                type="button"
-                // A double click renames, so an editor's single click waits
-                // out the second click before it opens the item.
-                onClick={() => {
-                  if (!onRename) return onOpen();
-                  if (openTimer.current) clearTimeout(openTimer.current);
-                  openTimer.current = setTimeout(onOpen, 220);
-                }}
-                onDoubleClick={startRename}
-                onKeyDown={(event) => {
-                  if (!onRename) return;
-                  if (event.key === "F2" || event.key === "Enter") {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    startRename();
-                  }
-                }}
-                aria-keyshortcuts={onRename ? "F2 Enter" : undefined}
-                title={row.title}
-                data-row-open=""
-                className={
-                  tablet
-                    ? // The whole cell is the target: the key and the title wrap under it, two lines at most.
-                      "line-clamp-2 min-w-0 flex-1 text-left text-[14.5px] leading-[1.38] font-medium text-pretty text-foreground after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:rounded-[8px] focus-visible:after:outline-2 focus-visible:after:-outline-offset-3 focus-visible:after:outline-ring"
-                    : "min-w-0 truncate text-left text-nav font-medium text-foreground max-md:min-h-11 focus-visible:outline-2 focus-visible:outline-ring"
+              <AnchoredNote
+                tone="danger"
+                focusRef={titleInput}
+                onEscape={() => endRename(false, true)}
+                note={
+                  refused ? (
+                    <p
+                      role="alert"
+                      className="flex items-start gap-1.5 text-danger-text"
+                    >
+                      <AlertCircle
+                        className="mt-0.5 size-3.5 flex-none"
+                        aria-hidden="true"
+                      />
+                      <span>
+                        {fillTableCopy(copy.row.titleRefused, {
+                          max: ITEM_TITLE_MAX_LENGTH,
+                        })}
+                      </span>
+                    </p>
+                  ) : null
                 }
               >
-                {tablet && row.key ? (
-                  <span className="mr-1.5 font-mono text-[12.5px] font-medium text-meta-foreground">
-                    {row.key}
-                  </span>
-                ) : null}
-                {row.title}
-              </button>
+                <input
+                  ref={titleInput}
+                  autoFocus
+                  value={draft}
+                  maxLength={ITEM_TITLE_MAX_LENGTH}
+                  aria-invalid={refused || undefined}
+                  aria-label={fillTableCopy(copy.row.editTitle, {
+                    key: keyLabel,
+                  })}
+                  onChange={(event) => {
+                    setDraft(event.target.value);
+                    setRefused(false);
+                  }}
+                  onFocus={(event) => event.currentTarget.select()}
+                  // A refused title stays on screen with its reason until it is changed or dropped.
+                  onBlur={() => {
+                    if (!refused) endRename(true, false);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      endRename(true, true);
+                    } else if (event.key === "Escape") {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      endRename(false, true);
+                    }
+                  }}
+                  className="h-6.5 min-w-0 flex-1 rounded-[7px] border border-line-strong bg-popover px-2 text-nav font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring dark:bg-card"
+                />
+              </AnchoredNote>
+            ) : (
+              withConflict(
+                "title",
+                copy.columns.title,
+                row.title,
+                <button
+                  ref={titleButton}
+                  type="button"
+                  // A double click renames, so an editor's single click waits
+                  // out the second click before it opens the item.
+                  onClick={() => {
+                    if (!onRename) return onOpen();
+                    if (openTimer.current) clearTimeout(openTimer.current);
+                    openTimer.current = setTimeout(onOpen, 220);
+                  }}
+                  onDoubleClick={startRename}
+                  onKeyDown={(event) => {
+                    if (!onRename) return;
+                    if (event.key === "F2" || event.key === "Enter") {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      startRename();
+                    }
+                  }}
+                  aria-keyshortcuts={onRename ? "F2 Enter" : undefined}
+                  title={row.title}
+                  data-row-open=""
+                  className={
+                    tablet
+                      ? // The whole cell is the target: the key and the title wrap under it, two lines at most.
+                        "line-clamp-2 min-w-0 flex-1 text-left text-[14.5px] leading-[1.38] font-medium text-pretty text-foreground after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:rounded-[8px] focus-visible:after:outline-2 focus-visible:after:-outline-offset-3 focus-visible:after:outline-ring"
+                      : "min-w-0 truncate text-left text-nav font-medium text-foreground max-md:min-h-11 focus-visible:outline-2 focus-visible:outline-ring"
+                  }
+                >
+                  {tablet && row.key ? (
+                    <span className="mr-1.5 font-mono text-[12.5px] font-medium text-meta-foreground">
+                      {row.key}
+                    </span>
+                  ) : null}
+                  {row.title}
+                </button>,
+              )
             )}
           </Cell>
         );
@@ -349,31 +454,36 @@ export function TableRow({
         );
         return (
           <Cell key="status" selected={selected}>
-            {canEdit ? (
-              <Popover open={editing} onOpenChange={onEditingChange}>
-                <PopoverTrigger asChild>{pill}</PopoverTrigger>
-                <PopoverContent
-                  align="start"
-                  side="bottom"
-                  aria-label={copy.status.change}
-                  sideOffset={2}
-                  alignOffset={-4}
-                  className="w-58.5 gap-0 rounded-[10px] border border-line-strong bg-popover p-1.5 text-compact shadow-pop ring-0 dark:bg-card"
-                >
-                  <TableStatusPicker
-                    copy={copy.status}
-                    options={statusOptions}
-                    currentId={status?.id ?? null}
-                    initialHighlightId={highlightStatusId}
-                    onSelect={(optionId) => {
-                      onEditingChange(false);
-                      if (optionId !== status?.id) onStatusChange(optionId);
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
-            ) : (
-              pill
+            {withConflict(
+              "status",
+              copy.columns.status,
+              status?.name ?? copy.group.noStatus,
+              canEdit ? (
+                <Popover open={editing} onOpenChange={onEditingChange}>
+                  <PopoverTrigger asChild>{pill}</PopoverTrigger>
+                  <PopoverContent
+                    align="start"
+                    side="bottom"
+                    aria-label={copy.status.change}
+                    sideOffset={2}
+                    alignOffset={-4}
+                    className="w-58.5 gap-0 rounded-[10px] border border-line-strong bg-popover p-1.5 text-compact shadow-pop ring-0 dark:bg-card"
+                  >
+                    <TableStatusPicker
+                      copy={copy.status}
+                      options={statusOptions}
+                      currentId={status?.id ?? null}
+                      initialHighlightId={highlightStatusId}
+                      onSelect={(optionId) => {
+                        onEditingChange(false);
+                        if (optionId !== status?.id) onStatusChange(optionId);
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                pill
+              ),
             )}
           </Cell>
         );
@@ -399,6 +509,11 @@ export function TableRow({
             >
               {row.assignee.name}
             </span>
+            {row.assignee.more > 0 ? (
+              <span className="shrink-0 text-metadata text-meta-foreground">
+                +{row.assignee.more}
+              </span>
+            ) : null}
           </>
         ) : (
           <>
@@ -427,20 +542,25 @@ export function TableRow({
             selected={selected}
             className="text-muted-foreground"
           >
-            {canEdit && editors ? (
-              <AssigneeEditor
-                copy={copy}
-                members={editors.members}
-                currentId={row.assignee?.userId ?? null}
-                label={fillTableCopy(copy.row.changeAssignee, {
-                  key: keyLabel,
-                })}
-                onPick={(userId) => editors.onAssignee(row.id, userId)}
-              >
-                {person}
-              </AssigneeEditor>
-            ) : (
-              person
+            {withConflict(
+              "assignee",
+              copy.columns.assignee,
+              row.assignee?.name ?? copy.row.unassigned,
+              canEdit && editors ? (
+                <AssigneeEditor
+                  copy={copy}
+                  members={editors.members}
+                  currentId={row.assignee?.userId ?? null}
+                  label={fillTableCopy(copy.row.changeAssignee, {
+                    key: keyLabel,
+                  })}
+                  onPick={(userId) => editors.onAssignee(row.id, userId, true)}
+                >
+                  {person}
+                </AssigneeEditor>
+              ) : (
+                person
+              ),
             )}
           </Cell>
         );
@@ -472,23 +592,28 @@ export function TableRow({
         );
         return (
           <Cell key="due" selected={selected}>
-            {canEdit && editors ? (
-              <DueEditor
-                copy={copy}
-                dueAt={row.dueAt}
-                itemKey={row.key ?? undefined}
-                startAt={row.startAt}
-                label={fillTableCopy(copy.row.changeDue, { key: keyLabel })}
-                onPick={(day, time) =>
-                  time
-                    ? editors.onDue(row.id, day, time)
-                    : editors.onDue(row.id, day)
-                }
-              >
-                {due}
-              </DueEditor>
-            ) : (
-              due
+            {withConflict(
+              "due",
+              copy.columns.due,
+              row.due.text,
+              canEdit && editors ? (
+                <DueEditor
+                  copy={copy}
+                  dueAt={row.dueAt}
+                  itemKey={row.key ?? undefined}
+                  startAt={row.startAt}
+                  label={fillTableCopy(copy.row.changeDue, { key: keyLabel })}
+                  onPick={(day, time) =>
+                    time
+                      ? editors.onDue(row.id, day, time)
+                      : editors.onDue(row.id, day)
+                  }
+                >
+                  {due}
+                </DueEditor>
+              ) : (
+                due
+              ),
             )}
           </Cell>
         );
@@ -518,21 +643,28 @@ export function TableRow({
         );
         return (
           <Cell key="priority" selected={selected}>
-            {canEdit && editors && editors.priorities.length > 0 ? (
-              <PriorityEditor
-                options={editors.priorities}
-                currentLabel={
-                  row.priority ? copy.row.priority[row.priority] : null
-                }
-                label={fillTableCopy(copy.row.changePriority, {
-                  key: keyLabel,
-                })}
-                onPick={(optionId) => editors.onPriority(row.id, optionId)}
-              >
-                {shown}
-              </PriorityEditor>
-            ) : (
-              shown
+            {withConflict(
+              "priority",
+              copy.columns.priority,
+              priority ? copy.row.priority[priority] : copy.row.noPriority,
+              canEdit && editors && editors.priorities.length > 0 ? (
+                <PriorityEditor
+                  options={editors.priorities}
+                  currentLabel={
+                    row.priority ? copy.row.priority[row.priority] : null
+                  }
+                  label={fillTableCopy(copy.row.changePriority, {
+                    key: keyLabel,
+                  })}
+                  onPick={(optionId) =>
+                    editors.onPriority(row.id, optionId, true)
+                  }
+                >
+                  {shown}
+                </PriorityEditor>
+              ) : (
+                shown
+              ),
             )}
           </Cell>
         );
@@ -549,6 +681,11 @@ export function TableRow({
                 )}
               >
                 {row.label.name}
+              </span>
+            ) : null}
+            {row.label?.more ? (
+              <span className="ml-1 shrink-0 text-metadata text-meta-foreground">
+                +{row.label.more}
               </span>
             ) : null}
           </Cell>
@@ -701,6 +838,9 @@ export function TableRow({
               onRetry={() => fieldEditing?.onRetry(row.id, field.id)}
               onKeepMine={() => fieldEditing?.onKeepMine(row.id, field.id)}
               onUseTheirs={() => fieldEditing?.onUseTheirs(row.id, field.id)}
+              onReloadSchema={() =>
+                fieldEditing?.onReloadSchema(row.id, field.id)
+              }
             />
           </Cell>
         );
@@ -785,33 +925,26 @@ export function TableRow({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{rowElement}</ContextMenuTrigger>
-      <ContextMenuContent className="w-52">
-        <ContextMenuItem onSelect={onOpen}>
-          {copy.row.menu.open}
-        </ContextMenuItem>
-        {actions.onDuplicate ? (
-          <ContextMenuItem onSelect={actions.onDuplicate}>
-            {copy.row.menu.duplicate}
-          </ContextMenuItem>
-        ) : null}
-        <ContextMenuItem onSelect={actions.onCopyLink}>
-          {copy.row.menu.copyLink}
-        </ContextMenuItem>
-        {actions.onMoveToBoard ? (
-          <ContextMenuItem onSelect={actions.onMoveToBoard}>
-            {copy.row.menu.moveToBoard}
-          </ContextMenuItem>
-        ) : null}
-        {actions.onArchive ? (
-          <ContextMenuItem onSelect={actions.onArchive}>
-            {copy.row.menu.archive}
-          </ContextMenuItem>
-        ) : null}
-        {actions.onDelete ? (
-          <ContextMenuItem variant="destructive" onSelect={actions.onDelete}>
-            {copy.row.menu.delete}
-          </ContextMenuItem>
-        ) : null}
+      <ContextMenuContent className="w-72">
+        <ItemActionsMenuItems
+          kind="context"
+          copy={itemActionsCopy}
+          item={{
+            itemId: row.id,
+            itemKey: row.key,
+            archived: false,
+            completed: false,
+          }}
+          can={{ edit: canEdit, create: true, move: true, remove: true }}
+          on={{
+            copyLink: actions.onCopyLink,
+            openFull: onOpen,
+            duplicate: actions.onDuplicate,
+            moveBoard: actions.onMoveToBoard,
+            archive: actions.onArchive,
+            remove: actions.onDelete,
+          }}
+        />
       </ContextMenuContent>
     </ContextMenu>
   );

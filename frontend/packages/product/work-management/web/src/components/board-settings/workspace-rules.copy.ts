@@ -117,6 +117,15 @@ export const workspaceRulesEn = {
       succeeded: "Succeeded",
       failed: "Failed",
       cancelled: "Cancelled",
+      skipped: "Skipped, conditions not met",
+    },
+    cancel: "Cancel run",
+    cancelName: "Cancel run from {{time}}",
+    confirmCancel: {
+      title: "Cancel this run?",
+      body: "It has not started, so it ends now as cancelled and none of its actions run.",
+      confirm: "Cancel run",
+      cancel: "Keep it",
     },
   },
   feedback: {
@@ -125,6 +134,10 @@ export const workspaceRulesEn = {
       "The rule is not valid. Check the name, the actions and what they point at.",
     forbidden: "You cannot change this rule.",
     failed: "The change could not be saved. Try again.",
+    "cancel-forbidden": "You cannot cancel this run.",
+    "not-found": "This run no longer exists.",
+    "not-queued":
+      "This run has already started or finished, so it cannot be cancelled.",
   },
 } as const;
 
@@ -242,6 +255,15 @@ export const workspaceRulesVi: WorkspaceRulesCopy = {
       succeeded: "Thành công",
       failed: "Thất bại",
       cancelled: "Đã huỷ",
+      skipped: "Bỏ qua, điều kiện không đạt",
+    },
+    cancel: "Huỷ lần chạy",
+    cancelName: "Huỷ lần chạy từ {{time}}",
+    confirmCancel: {
+      title: "Huỷ lần chạy này?",
+      body: "Lần chạy chưa bắt đầu nên sẽ kết thúc ngay ở trạng thái đã huỷ, và không hành động nào trong đó chạy.",
+      confirm: "Huỷ lần chạy",
+      cancel: "Giữ lại",
     },
   },
   feedback: {
@@ -250,6 +272,9 @@ export const workspaceRulesVi: WorkspaceRulesCopy = {
       "Quy tắc chưa hợp lệ. Kiểm tra tên, các hành động và những gì chúng trỏ tới.",
     forbidden: "Bạn không đổi được quy tắc này.",
     failed: "Chưa lưu được thay đổi. Hãy thử lại.",
+    "cancel-forbidden": "Bạn không huỷ được lần chạy này.",
+    "not-found": "Lần chạy này không còn tồn tại.",
+    "not-queued": "Lần chạy này đã bắt đầu hoặc đã xong nên không huỷ được.",
   },
 };
 

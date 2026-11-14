@@ -26,6 +26,9 @@ import {
   mapCardDto,
 } from "./board-api-mappers";
 
+/** The largest page the history read allows. */
+export const ACTIVITY_PAGE_SIZE = 100;
+
 /** What a duplicate takes along besides name, dates and description. */
 export interface DuplicateItemOptions {
   readonly name?: string;
@@ -82,6 +85,12 @@ export type BulkItemChange =
   | { readonly type: "set-priority"; readonly priorityOptionId: string }
   | { readonly type: "delete" };
 
+/** Which item a key names now: its id, board and current key (`moved` when the key is an old one). */
+export type ResolvedItemKey = OperationResponse<
+  "WorkManagement.BoardItems.ResolveKey",
+  200
+>;
+
 type UpdateStatusOp = "WorkManagement.BoardItems.UpdateStatus";
 type UpdateStatusBody = OperationRequestBody<UpdateStatusOp>;
 
@@ -95,6 +104,14 @@ export function createCardApi(client: NotrelixClient) {
         endpoints.boardItems.detail(cardId),
       );
       return mapCardDto(card);
+    },
+
+    /** The item a key names on this board, or the item that kept it as an old key after a move (UC-WM-A10). */
+    async resolveItemKey(
+      boardId: string,
+      key: string,
+    ): Promise<ResolvedItemKey> {
+      return api.get<ResolvedItemKey>(endpoints.boardItems.byKey(boardId, key));
     },
 
     /** Creates the item and returns its id and first version (absent when the server sends none). */
@@ -364,10 +381,10 @@ export function createCardApi(client: NotrelixClient) {
       return files.map((file) => mapAttachmentDtoToCardFile(file, cardId));
     },
 
-    async getCardActivity(cardId: string) {
-      // The newest page of the history (the server pages newest first; 100 is its largest page).
+    async getCardActivity(cardId: string, page = 1) {
+      // One page of the history (the server pages newest first; 100 is its largest page).
       const activity = await api.get<ActivityLogResponseApi>(
-        `${endpoints.boardItems.activity(cardId)}?page=1&pageSize=100`,
+        `${endpoints.boardItems.activity(cardId)}?page=${page}&pageSize=${ACTIVITY_PAGE_SIZE}`,
       );
       return mapActivityResponse(activity, cardId);
     },

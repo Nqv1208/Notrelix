@@ -88,8 +88,8 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         new(ctx, clock, new Notrelix.Infrastructure.Billing.BillingUsageReader((ApplicationDbContext)ctx),
             new Notrelix.Application.Features.Billing.Plans.BillingPlanResolver(ctx, clock, new Notrelix.Application.Features.Billing.Plans.BillingPlanCatalogReader(ctx)));
 
-    [Fact(DisplayName = "TAC-XPK-BILLING-LAST-SLOT - two concurrent creates, one remaining slot")]
-    public async Task TwoConcurrentCreateRuleCommands_OneRemainingSlot_ExactlyOneWins_AndOneSloteConsumed()
+    [Fact(DisplayName = "TAC-XPK-BILLING-LAST-SLOT - two concurrent enables, one remaining slot")]
+    public async Task TwoConcurrentEnableCommands_OneRemainingSlot_ExactlyOneWins_AndOneSlotConsumed()
     {
         var (accountId, ownerId, workspaceId) = await SeedWorkspaceStackAsync();
         await SeedWorkspaceFeatureUsageAsync(accountId, workspaceId, currentUsage: 0, hardLimit: 1);
@@ -97,8 +97,9 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         using var provider = CreateProvider(accountId, ownerId, new BillingCapabilityFact(
             IsAvailable: true, Limit: 1, Used: 0, Remaining: 1));
 
-        var first = CreateRuleCommand(workspaceId, "Race Rule A", "race-a");
-        var second = CreateRuleCommand(workspaceId, "Race Rule B", "race-b");
+        // Drafts take no slot, so both creates succeed; only the enables compete for the single slot.
+        var firstId = (await SendCreateAsync(provider, "automation-race-create-a", CreateRuleCommand(workspaceId, "Race Rule A", "race-a"))).Data;
+        var secondId = (await SendCreateAsync(provider, "automation-race-create-b", CreateRuleCommand(workspaceId, "Race Rule B", "race-b"))).Data;
 
         using var firstScope = provider.CreateScope();
         BindKey(firstScope, "automation-race-key-a");
@@ -106,11 +107,11 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         BindKey(secondScope, "automation-race-key-b");
 
         var outcomes = await Task.WhenAll(
-            SendOnceAsync(firstScope, first),
-            SendOnceAsync(secondScope, second));
+            SendEnableOnceAsync(firstScope, firstId, "Race Rule A"),
+            SendEnableOnceAsync(secondScope, secondId, "Race Rule B"));
 
         outcomes.Count(o => o.Outcome == CreateRuleOutcome.Succeeded)
-            .Should().Be(1, "exactly one of the concurrent creates may win the single remaining slot");
+            .Should().Be(1, "exactly one of the concurrent enables may win the single remaining slot");
         outcomes.Where(o => o.Outcome != CreateRuleOutcome.Succeeded)
             .Should().OnlyContain(o => o.Outcome == CreateRuleOutcome.VersionConflict
                 || o.Outcome == CreateRuleOutcome.UniqueConflict
@@ -120,11 +121,9 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         var winner = outcomes.Single(o => o.Outcome == CreateRuleOutcome.Succeeded);
 
         await using var verify = _db.CreateOwnerContext(SystemTenant());
-        (await verify.AutomationRules.IgnoreQueryFilters().CountAsync(r => r.WorkspaceId == workspaceId))
-            .Should().Be(1, "a loser that reached SaveChanges must roll back the rule insert atomically");
         (await verify.AutomationRules.IgnoreQueryFilters()
-                .AnyAsync(r => r.WorkspaceId == workspaceId && r.Name == winner.Name))
-            .Should().BeTrue("the surviving rule is exactly the request that reported success");
+                .CountAsync(r => r.WorkspaceId == workspaceId && r.Status == AutomationRuleStatus.Active))
+            .Should().Be(1, "a loser that reached SaveChanges must roll back its enable atomically");
 
         var usage = await verify.WorkspaceFeatureUsages
             .SingleAsync(w => w.AccountId == accountId && w.WorkspaceId == workspaceId);
@@ -139,7 +138,6 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
             .ToListAsync();
         ledger.Should().HaveCount(1, "the one consumed slot records exactly one ledger effect");
         ledger.Single().Delta.Should().Be(1m);
-        ledger.Single().LogicalOperationId.Should().Be(winner.RuleId);
         ledger.Single().ReferenceResource.Should().Be(winner.RuleId.ToString());
     }
 
@@ -440,7 +438,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
     }
 
     [Fact(DisplayName = "TAC-BI-008C - real capability reflects production AutomationRule lifecycle")]
-    public async Task RealCapabilityLifecycle_CreateRules_ConsumesSlots_ThenGateRejectsAtLimit()
+    public async Task RealCapabilityLifecycle_EnableRules_ConsumesSlots_ThenEnableRejectsAtLimit()
     {
         var (accountId, ownerId, workspaceId) = await SeedWorkspaceStackAsync();
         await SeedEntitlementAsync(accountId, limit: 3);
@@ -450,24 +448,36 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         clock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
 
         (await ReadRemainingAsync(accountId, workspaceId, clock.Object))
-            .Should().Be(3, "capability before create reflects the granted limit");
+            .Should().Be(3, "capability before any enable reflects the granted limit");
 
-        for (var i = 1; i <= 3; i++)
+        var ruleIds = new List<Guid>();
+        for (var i = 1; i <= 4; i++)
         {
-            var result = await SendCreateAsync(provider, $"automation-lifecycle-key-{i}", CreateRuleCommand(workspaceId, $"Lifecycle Rule {i}", $"lifecycle-{i}"));
-            result.Succeeded.Should().BeTrue($"rule {i} fits under the plan limit");
-            (await ReadRemainingAsync(accountId, workspaceId, clock.Object))
-                .Should().Be(3 - i, "each persisted rule consumes exactly one ledgered slot");
+            var created = await SendCreateAsync(provider, $"automation-lifecycle-create-{i}", CreateRuleCommand(workspaceId, $"Lifecycle Rule {i}", $"lifecycle-{i}"));
+            created.Succeeded.Should().BeTrue("a Draft takes no plan slot, so creating it is never refused by the limit");
+            ruleIds.Add(created.Data);
         }
 
-        var fourth = await SendCreateAsync(provider, "automation-lifecycle-key-4", CreateRuleCommand(workspaceId, "Lifecycle Rule 4", "lifecycle-4"));
-        fourth.Succeeded.Should().BeFalse("the fourth rule exceeds the plan limit and the gate rejects");
+        (await ReadRemainingAsync(accountId, workspaceId, clock.Object))
+            .Should().Be(3, "Drafts do not consume capacity");
+
+        for (var i = 0; i < 3; i++)
+        {
+            var enabled = await SendEnableAsync(provider, $"automation-lifecycle-enable-{i}", ruleIds[i]);
+            enabled.Succeeded.Should().BeTrue($"rule {i + 1} fits under the plan limit");
+            (await ReadRemainingAsync(accountId, workspaceId, clock.Object))
+                .Should().Be(2 - i, "each enabled rule consumes exactly one ledgered slot");
+        }
+
+        var fourth = await SendEnableOnceAsync(provider, ruleIds[3], "Lifecycle Rule 4");
+        fourth.Outcome.Should().Be(CreateRuleOutcome.CapacityExceeded, "the fourth enable exceeds the plan limit");
 
         (await ReadRemainingAsync(accountId, workspaceId, clock.Object)).Should().Be(0);
 
         await using var verify = _db.CreateOwnerContext(SystemTenant());
-        (await verify.AutomationRules.IgnoreQueryFilters().CountAsync(r => r.WorkspaceId == workspaceId))
-            .Should().Be(3, "no rule is created past the limit");
+        (await verify.AutomationRules.IgnoreQueryFilters()
+                .CountAsync(r => r.WorkspaceId == workspaceId && r.Status == AutomationRuleStatus.Active))
+            .Should().Be(3, "no rule is enabled past the limit");
         (await verify.FeatureUsageLedger.CountAsync(l =>
                 l.AccountId == accountId && l.WorkspaceId == workspaceId
                 && l.FeatureCode == BillingCapabilityCode.AutomationRule && l.Delta == 1))
@@ -547,8 +557,8 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         ledger.Count(l => l.Delta == -1m).Should().Be(1);
     }
 
-    [Fact(DisplayName = "TAC-BI-FLOW-03 - a disabled rule still occupies its capacity slot")]
-    public async Task DisablingARule_DoesNotReleaseCapacity()
+    [Fact(DisplayName = "TAC-BI-FLOW-03 - disabling an enabled rule releases its capacity slot")]
+    public async Task DisablingAnEnabledRule_ReleasesCapacity()
     {
         var (accountId, ownerId, workspaceId) = await SeedWorkspaceStackAsync();
         await SeedEntitlementAsync(accountId, limit: 3);
@@ -560,7 +570,11 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         var created = await SendCreateAsync(provider, "disable-key-1", CreateRuleCommand(workspaceId, "Disabled Rule", "disable-me"));
         created.Succeeded.Should().BeTrue();
         (await ReadRemainingAsync(accountId, workspaceId, clock.Object))
-            .Should().Be(2, "one slot is consumed by the created rule");
+            .Should().Be(3, "a Draft takes no slot");
+
+        (await SendEnableAsync(provider, "disable-enable-key", created.Data)).Succeeded.Should().BeTrue();
+        (await ReadRemainingAsync(accountId, workspaceId, clock.Object))
+            .Should().Be(2, "enabling consumes one slot");
 
         using (var scope = provider.CreateScope())
         {
@@ -571,7 +585,7 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         }
 
         (await ReadRemainingAsync(accountId, workspaceId, clock.Object))
-            .Should().Be(2, "disabling a rule does not return its slot to the pool");
+            .Should().Be(3, "disabling a rule returns its slot to the pool");
 
         await using var verify = _db.CreateOwnerContext(SystemTenant());
         var rule = await verify.AutomationRules.IgnoreQueryFilters()
@@ -579,19 +593,19 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         rule.Status.Should().Be(AutomationRuleStatus.Disabled);
         var usage = await verify.WorkspaceFeatureUsages
             .SingleAsync(w => w.AccountId == accountId && w.WorkspaceId == workspaceId);
-        usage.CurrentUsage.Should().Be(1m, "the disabled rule still occupies one slot");
+        usage.CurrentUsage.Should().Be(0m, "no enabled rule is left");
         (await verify.FeatureUsageLedger.CountAsync(l =>
                 l.AccountId == accountId && l.WorkspaceId == workspaceId
                 && l.FeatureCode == BillingCapabilityCode.AutomationRule && l.Delta == 1))
-            .Should().Be(1, "exactly the one create consume is ledgered");
+            .Should().Be(1, "exactly the one enable consume is ledgered");
         (await verify.FeatureUsageLedger.CountAsync(l =>
                 l.AccountId == accountId && l.WorkspaceId == workspaceId
                 && l.FeatureCode == BillingCapabilityCode.AutomationRule && l.Delta == -1))
-            .Should().Be(0, "a mere disable adds no release effect");
+            .Should().Be(1, "the disable writes exactly one release effect");
     }
 
-    [Fact(DisplayName = "TAC-BI-006 - CreateAutomationRule retry with the same idempotency key never double-uses capacity")]
-    public async Task CreateRule_RetrySameIdempotencyKey_ConsumesOneSlotOnly()
+    [Fact(DisplayName = "TAC-BI-006 - enable retried with the same key never double-uses capacity")]
+    public async Task EnableRule_Retried_ConsumesOneSlotOnly()
     {
         var (accountId, ownerId, workspaceId) = await SeedWorkspaceStackAsync();
         await SeedEntitlementAsync(accountId, limit: 3);
@@ -600,14 +614,14 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         var clock = new Mock<IDateTimeProvider>();
         clock.Setup(c => c.UtcNow).Returns(DateTimeOffset.UtcNow);
 
-        var command = CreateRuleCommand(workspaceId, "Retried Rule", "retry-me");
-        var first = await SendCreateAsync(provider, "retry-same-key", command);
-        first.Succeeded.Should().BeTrue();
-        var replay = await SendCreateAsync(provider, "retry-same-key", command);
-        replay.Succeeded.Should().BeTrue("the same operation key replays the first semantic result");
+        var created = await SendCreateAsync(provider, "retry-same-key", CreateRuleCommand(workspaceId, "Retried Rule", "retry-me"));
+        created.Succeeded.Should().BeTrue();
+
+        (await SendEnableAsync(provider, "retry-enable-key", created.Data)).Succeeded.Should().BeTrue();
+        (await SendEnableAsync(provider, "retry-enable-key", created.Data)).Succeeded.Should().BeTrue("an enable of an enabled rule is a no-op");
 
         (await ReadRemainingAsync(accountId, workspaceId, clock.Object))
-            .Should().Be(2, "the replayed request must not consume a second slot");
+            .Should().Be(2, "the replayed enable must not consume a second slot");
 
         await using var verify = _db.CreateOwnerContext(SystemTenant());
         (await verify.AutomationRules.IgnoreQueryFilters().CountAsync(r => r.WorkspaceId == workspaceId))
@@ -618,8 +632,8 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
             .Should().Be(1, "the retry must not record a second +1 ledger effect");
     }
 
-    [Fact(DisplayName = "TAC-BI-006 - CreateAutomationRule usage is isolated per workspace")]
-    public async Task CreateRuleInOneWorkspace_DoesNotConsumeCapacityOfAnother()
+    [Fact(DisplayName = "TAC-BI-006 - enabling a rule in one workspace does not consume capacity of another")]
+    public async Task EnableRuleInOneWorkspace_DoesNotConsumeCapacityOfAnother()
     {
         var (accountId, ownerId, workspaceIdA) = await SeedWorkspaceStackAsync();
         var workspaceIdB = await SeedAdditionalWorkspaceAsync(accountId, ownerId, "Billing WS B", $"billing-ws-b-{Guid.NewGuid():N}");
@@ -631,9 +645,10 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
 
         var created = await SendCreateAsync(provider, "iso-key-a", CreateRuleCommand(workspaceIdA, "Isolation Rule", "iso-a"));
         created.Succeeded.Should().BeTrue();
+        (await SendEnableAsync(provider, "iso-enable-a", created.Data)).Succeeded.Should().BeTrue();
 
         (await ReadRemainingAsync(accountId, workspaceIdA, clock.Object))
-            .Should().Be(2, "workspace A consumed one slot");
+            .Should().Be(2, "workspace A consumed one slot on enable");
         (await ReadRemainingAsync(accountId, workspaceIdB, clock.Object))
             .Should().Be(3, "workspace B is untouched by workspace A's usage under the same account grant");
     }
@@ -666,29 +681,42 @@ public sealed class BillingCapacityFlowIntegrationTests : IAsyncLifetime
         scope.ServiceProvider.GetRequiredService<IIdempotencyExecutionContextWriter>()
             .Set(key, IdempotencyExecutionSource.Internal);
 
-    private static async Task<CreateRuleAttempt> SendOnceAsync(
-        IServiceScope scope,
-        CreateAutomationRuleCommand command)
+    private static async Task<Result> SendEnableAsync(ServiceProvider provider, string key, Guid ruleId)
+    {
+        using var scope = provider.CreateScope();
+        BindKey(scope, key);
+        return await scope.ServiceProvider.GetRequiredService<ISender>()
+            .Send(new SetAutomationRuleEnabledCommand(ruleId, true));
+    }
+
+    private static async Task<CreateRuleAttempt> SendEnableOnceAsync(IServiceScope scope, Guid ruleId, string name)
     {
         try
         {
-            var result = await scope.ServiceProvider.GetRequiredService<ISender>().Send(command);
+            var result = await scope.ServiceProvider.GetRequiredService<ISender>()
+                .Send(new SetAutomationRuleEnabledCommand(ruleId, true));
             return result.Succeeded
-                ? new CreateRuleAttempt(CreateRuleOutcome.Succeeded, command.Name, result.Data)
-                : new CreateRuleAttempt(CreateRuleOutcome.GateRejected, command.Name, null);
+                ? new CreateRuleAttempt(CreateRuleOutcome.Succeeded, name, ruleId)
+                : new CreateRuleAttempt(CreateRuleOutcome.GateRejected, name, null);
         }
         catch (PreconditionFailedException)
         {
-            return new CreateRuleAttempt(CreateRuleOutcome.VersionConflict, command.Name, null);
+            return new CreateRuleAttempt(CreateRuleOutcome.VersionConflict, name, null);
         }
         catch (ConflictException)
         {
-            return new CreateRuleAttempt(CreateRuleOutcome.UniqueConflict, command.Name, null);
+            return new CreateRuleAttempt(CreateRuleOutcome.UniqueConflict, name, null);
         }
         catch (BusinessRuleException bre) when (bre.RuleCode == BillingRuleCodes.Billing_Usage_FeatureLimitExceeded)
         {
-            return new CreateRuleAttempt(CreateRuleOutcome.CapacityExceeded, command.Name, null);
+            return new CreateRuleAttempt(CreateRuleOutcome.CapacityExceeded, name, null);
         }
+    }
+
+    private static async Task<CreateRuleAttempt> SendEnableOnceAsync(ServiceProvider provider, Guid ruleId, string name)
+    {
+        using var scope = provider.CreateScope();
+        return await SendEnableOnceAsync(scope, ruleId, name);
     }
 
     private ServiceProvider CreateProvider(Guid accountId, Guid userId, BillingCapabilityFact? gateFact)

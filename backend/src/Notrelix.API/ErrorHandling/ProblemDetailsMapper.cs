@@ -4,6 +4,8 @@ using AppConflictException = Notrelix.Application.Common.Exceptions.ConflictExce
 using AppNotFoundException = Notrelix.Application.Common.Exceptions.NotFoundException;
 using AppValidationException = Notrelix.Application.Common.Exceptions.ValidationException;
 
+using Notrelix.API.Middleware;
+
 namespace Notrelix.API.ErrorHandling;
 
 public static class ProblemDetailsMapper
@@ -75,6 +77,90 @@ public static class ProblemDetailsMapper
                 ex.Message,
                 null
             ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.VoiceTooLong } ex => (
+                StatusCodes.Status413PayloadTooLarge,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.VoiceTooLong,
+                "Voice message too long",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.VoiceInvalid } ex => (
+                StatusCodes.Status400BadRequest,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.VoiceInvalid,
+                "Voice message invalid",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.ChannelArchived } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.ChannelArchived,
+                "Channel archived",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageDeleted } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageDeleted,
+                "Message deleted",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageNotPinnable } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageNotPinnable,
+                "Message not pinnable",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageNotReactable } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageNotReactable,
+                "Message not reactable",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageNotAttachable } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.MessageNotAttachable,
+                "Message not attachable",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.LimitReached } ex => (
+                StatusCodes.Status422UnprocessableEntity,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.LimitReached,
+                "Limit reached",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.SystemMessageImmutable } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.SystemMessageImmutable,
+                "System message",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.PermissionLockout } ex => (
+                StatusCodes.Status422UnprocessableEntity,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.PermissionLockout,
+                "Permission lockout",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.PermissionExceedsRole } ex => (
+                StatusCodes.Status422UnprocessableEntity,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.PermissionExceedsRole,
+                "Permission exceeds role",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.LastManager } ex => (
+                StatusCodes.Status422UnprocessableEntity,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.LastManager,
+                "Last manager",
+                ex.Message,
+                null
+            ),
             Notrelix.Domain.Common.Exceptions.BusinessRuleException ex => (
                 StatusCodes.Status400BadRequest,
                 ErrorCodes.BusinessRuleViolation,
@@ -94,6 +180,13 @@ public static class ProblemDetailsMapper
                 forbidden.Code ?? ErrorCodes.Forbidden,
                 "Forbidden",
                 exception.Message,
+                null
+            ),
+            Notrelix.Application.Common.Exceptions.RevocationStoreUnavailableException => (
+                StatusCodes.Status503ServiceUnavailable,
+                ErrorCodes.RevocationUnavailable,
+                "Service unavailable",
+                "Your session could not be verified right now. Retry shortly.",
                 null
             ),
             // Request-contract security violations (scoped request without an
@@ -131,6 +224,13 @@ public static class ProblemDetailsMapper
                 StatusCodes.Status409Conflict,
                 ErrorCodes.Conflict,
                 "Conflict",
+                exception.Message,
+                null
+            ),
+            Notrelix.Application.Common.Exceptions.TooManyRequestsException => (
+                StatusCodes.Status429TooManyRequests,
+                ErrorCodes.TooManyRequests,
+                "Too Many Requests",
                 exception.Message,
                 null
             ),
@@ -175,12 +275,39 @@ public static class ProblemDetailsMapper
 
         problemDetails.Extensions["errorCode"] = mapped.ErrorCode;
         problemDetails.Extensions["traceId"] = context.TraceIdentifier;
+        if (CorrelationIdMiddleware.Read(context) is { } correlationId)
+        {
+            problemDetails.Extensions["correlationId"] = correlationId.ToString();
+        }
 
         // The stable rule that refused the request, additive to the category in errorCode, so a client
         // branches on it instead of reading the detail text.
-        if (exception is Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: var ruleCode })
+        if (exception is Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: var ruleCode } rule)
         {
             problemDetails.Extensions["ruleCode"] = ruleCode;
+            foreach (var (key, value) in rule.Details)
+            {
+                problemDetails.Extensions[key] = value;
+            }
+        }
+
+        if (exception is AppConflictException { Extensions.Count: > 0 } lost)
+        {
+            foreach (var (key, value) in lost.Extensions)
+            {
+                problemDetails.Extensions[key] = value;
+            }
+        }
+
+        // A limit of a feature (a Chat rate limit, a slow mode): the stable rule and the wait, so a client shows a countdown.
+        if (exception is Notrelix.Application.Common.Exceptions.TooManyRequestsException tooMany)
+        {
+            problemDetails.Extensions["ruleCode"] = tooMany.RuleCode;
+            problemDetails.Extensions["retryAfter"] = RetryAfterSeconds(tooMany);
+            foreach (var (key, value) in tooMany.Extensions)
+            {
+                problemDetails.Extensions[key] = value;
+            }
         }
 
         if (exception is Notrelix.Application.Common.Exceptions.PreconditionFailedException { Extensions.Count: > 0 } stale)
@@ -206,4 +333,8 @@ public static class ProblemDetailsMapper
 
         return problemDetails;
     }
+
+    /// <summary>The whole seconds a client waits, at least one (the Retry-After header and the problem member).</summary>
+    public static int RetryAfterSeconds(Notrelix.Application.Common.Exceptions.TooManyRequestsException exception) =>
+        Math.Max(1, (int)Math.Ceiling(exception.RetryAfter.TotalSeconds));
 }

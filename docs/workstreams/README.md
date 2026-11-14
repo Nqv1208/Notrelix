@@ -10,7 +10,7 @@ applies_to:
   - parallel-feature-delivery
 evidence:
   - docs/delivery/team-ownership.md
-  - docs/workstreams/capability-map.md
+  - docs/workstreams/capability-delivery-map.md
   - docs/workstreams/cross-team-dependencies.md
 review_on:
   - team-topology-change
@@ -60,11 +60,18 @@ Canonical structure:
 ```text
 docs/workstreams/
 ├── README.md
-├── capability-map.md
+├── capability-delivery-map.md
 ├── cross-team-dependencies.md
+├── product-roadmap.md
+├── backend-roadmap.md   (superseded by product-roadmap.md; history only)
 ├── use-cases/
 │   ├── README.md
 │   └── <context>.md
+├── executions/
+│   ├── identity-accounts/identity-accounts.plan.md
+│   ├── work-management/work-management.spec.md
+│   ├── work-management/work-management.tests.md
+│   └── workspace-experience/workspace-experience.plan.md
 └── teams/
     ├── identity-accounts.md
     ├── workspace-governance.md
@@ -77,6 +84,8 @@ docs/workstreams/
 ```
 
 The `teams/` documents are execution specifications, not permanent architecture documents.
+
+`executions/` holds only the four files that code or manifests read (architecture tests and the workspace UI evidence manifest). The use-case catalogs superseded the other execution packs; git keeps their history. Do not add new files there.
 
 They may evolve as capabilities move from planning to implementation and hardening.
 
@@ -287,6 +296,23 @@ Owns execution decomposition for:
 - Documents;
 - Collaboration.
 
+### Chat
+
+```text
+docs/workstreams/teams/chat.md
+```
+
+Owns execution decomposition for:
+
+- Chat (channels, conversations, messages, threads, chat realtime scope).
+
+Its specification, blueprint and phase plan are:
+
+```text
+docs/workstreams/specs/chat-foundation.md
+docs/workstreams/chat-delivery-plan.md
+```
+
 ### Automation & Integrations
 
 ```text
@@ -474,13 +500,19 @@ For stable team ownership:
 For capability decomposition:
 
 ```text
-./capability-map.md
+./capability-delivery-map.md
 ```
 
 For cross-team dependencies:
 
 ```text
 ./cross-team-dependencies.md
+```
+
+For the release plan (which release holds each use case, journeys, order):
+
+```text
+./product-roadmap.md
 ```
 
 For team execution:

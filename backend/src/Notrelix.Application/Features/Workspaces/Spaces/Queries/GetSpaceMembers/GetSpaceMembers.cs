@@ -16,17 +16,18 @@ public record SpaceMemberDto(
     DateTimeOffset AddedAt);
 
 /// <summary>
-/// The direct member entries (Users and Teams) of one Space the caller can see
-/// (WSP-024). A Space the caller cannot see is NotFound.
+/// The direct member entries (Users and Teams) of one Space the caller can see (WSP-024) as a cursor page in
+/// subject id order (LD-06; default 50, at most 200). Pass <c>NextCursor</c> back as <c>Cursor</c> for the next page.
+/// A Space the caller cannot see is NotFound.
 /// </summary>
-public record GetSpaceMembersQuery(Guid WorkspaceId, Guid SpaceId)
-    : IQuery<Result<List<SpaceMemberDto>>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
+public record GetSpaceMembersQuery(Guid WorkspaceId, Guid SpaceId, string? Cursor = null, int? Limit = null)
+    : IQuery<Result<CursorPage<SpaceMemberDto>>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 
-public class GetSpaceMembersQueryHandler : IRequestHandler<GetSpaceMembersQuery, Result<List<SpaceMemberDto>>>
+public class GetSpaceMembersQueryHandler : IRequestHandler<GetSpaceMembersQuery, Result<CursorPage<SpaceMemberDto>>>
 {
     private readonly ISpaceStore _spaces;
     private readonly IResourceVisibility _visibility;
@@ -45,18 +46,22 @@ public class GetSpaceMembersQueryHandler : IRequestHandler<GetSpaceMembersQuery,
         _requestContext = requestContext;
     }
 
-    public async Task<Result<List<SpaceMemberDto>>> Handle(GetSpaceMembersQuery request, CancellationToken ct)
+    public async Task<Result<CursorPage<SpaceMemberDto>>> Handle(GetSpaceMembersQuery request, CancellationToken ct)
     {
         var visible = await _visibility.VisibleSpaceIdsAsync(request.WorkspaceId, _requestContext.UserId, ct);
         if (!visible.Contains(request.SpaceId))
             throw new NotFoundException(nameof(Space), request.SpaceId);
 
-        var rows = await _spaces.ListMembersAsync(request.WorkspaceId, request.SpaceId, ct);
-        var userIds = rows.Where(r => r.SubjectType == SpaceMemberSubjectType.User).Select(r => r.SubjectId).Distinct().ToList();
+        var limit = request.Limit ?? SpaceIdCursor.DefaultLimit;
+        Guid? after = SpaceIdCursor.TryDecode(request.Cursor, out var cursorId) ? cursorId : null;
+        var rows = await _spaces.ListMemberPageAsync(request.WorkspaceId, request.SpaceId, after, limit + 1, ct);
+
+        var hasMore = rows.Count > limit;
+        var page = rows.Take(limit).ToList();
+        var userIds = page.Where(r => r.SubjectType == SpaceMemberSubjectType.User).Select(r => r.SubjectId).Distinct().ToList();
         var actors = (await _actors.FindManyAsync(userIds, ct)).ToDictionary(a => a.UserId);
 
-        var result = rows
-            .OrderByDescending(r => r.Role)
+        var items = page
             .Select(r =>
             {
                 actors.TryGetValue(r.SubjectId, out var actor);
@@ -73,6 +78,7 @@ public class GetSpaceMembersQueryHandler : IRequestHandler<GetSpaceMembersQuery,
             })
             .ToList();
 
-        return Result<List<SpaceMemberDto>>.Success(result);
+        var nextCursor = hasMore ? SpaceIdCursor.Encode(page[^1].SubjectId) : null;
+        return Result<CursorPage<SpaceMemberDto>>.Success(new CursorPage<SpaceMemberDto>(items, nextCursor));
     }
 }

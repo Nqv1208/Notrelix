@@ -242,6 +242,7 @@ Governance
 Work Management
 Documents
 Collaboration
+Chat
 Automation
 Integrations
 Billing
@@ -463,7 +464,7 @@ These MUST NOT be conflated.
 
 # 39. DEL-OWN-019 — CODEOWNERS is review routing, not semantic authority
 
-If `.github/CODEOWNERS` is introduced:
+`.github/CODEOWNERS` exists:
 
 ```text
 CODEOWNERS

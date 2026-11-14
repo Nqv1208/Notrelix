@@ -295,7 +295,7 @@ export function breadcrumbFixture(
   });
 }
 
-/** The document tree of the Docs row on a document page (Final-Docs `binh-thuong`). */
+/** The document tree of the Docs row on a document page (Final-Docs-2 `binh-thuong`). */
 export function sidebarDocsTreeFixture(
   expand: boolean = true,
 ): import("../web/shell/shell-models").SidebarDocsTree {

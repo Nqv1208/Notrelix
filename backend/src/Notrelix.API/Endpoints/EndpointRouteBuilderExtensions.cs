@@ -1,6 +1,25 @@
+using Notrelix.API.Endpoints.Chat.Blocks;
+using Notrelix.API.Endpoints.Chat.ChannelGroups;
+using Notrelix.API.Endpoints.Chat.Channels;
+using Notrelix.API.Endpoints.Chat.Conversations;
+using Notrelix.API.Endpoints.Chat.Links;
+using Notrelix.API.Endpoints.Chat.Members;
+using Notrelix.API.Endpoints.Chat.Threads;
+using Notrelix.API.Endpoints.Chat.Messages;
+using Notrelix.API.Endpoints.Chat.Permissions;
+using Notrelix.API.Endpoints.Chat.Retention;
+using Notrelix.API.Endpoints.Chat.Exports;
+using Notrelix.API.Endpoints.Chat.Pins;
+using Notrelix.API.Endpoints.Chat.Search;
+using Notrelix.API.Endpoints.Chat.Attachments;
+using Notrelix.API.Endpoints.Chat.Mentions;
+using Notrelix.API.Endpoints.Chat.Reactions;
+using Notrelix.API.Endpoints.Chat.ReadState;
 using Notrelix.API.Endpoints.Admin;
+using Notrelix.API.Endpoints.WorkManagement.Limits;
 using Notrelix.API.Endpoints.Identity.Users;
 using Notrelix.API.Realtime;
+using Notrelix.Infrastructure.Options;
 using Notrelix.API.Endpoints.Automation.Executions;
 using Notrelix.API.Endpoints.Automation.Rules;
 using Notrelix.API.Endpoints.Analytics;
@@ -54,17 +73,36 @@ namespace Notrelix.API.Endpoints;
 
 public static class EndpointRouteBuilderExtensions
 {
+    /// <summary>
+    /// Maps the endpoints of the roles this process runs. Health endpoints are mapped in every role;
+    /// the realtime gateway only with <c>realtime</c>; every REST endpoint only with <c>api</c>.
+    /// </summary>
     public static IEndpointRouteBuilder MapEndpoints(this IEndpointRouteBuilder app)
+    {
+        var roles = app.ServiceProvider.GetService<RuntimeRoles>() ?? RuntimeRoles.All;
+
+        app.MapHealthEndpoints();
+
+        if (roles.RunsRealtime)
+        {
+            app.MapRealtimeGateway();
+        }
+
+        if (roles.RunsApi)
+        {
+            app.MapApiEndpoints();
+        }
+
+        return app;
+    }
+
+    private static IEndpointRouteBuilder MapApiEndpoints(this IEndpointRouteBuilder app)
     {
         // Auth & Identity
         app.RegisterAuthEndpoints();
         app.RegisterProfileEndpoints();
         app.RegisterUserAvatarEndpoints();
         app.RegisterApiTokenEndpoints();
-        app.MapHealthEndpoints();
-
-        // Realtime gateway (WebSocket)
-        app.MapRealtimeGateway();
 
         // Accounts
         app.RegisterAccountEndpoints();
@@ -130,11 +168,31 @@ public static class EndpointRouteBuilderExtensions
         // WorkManagement - Templates
         app.MapTemplates();
 
+        // WorkManagement - Limits (D78.8)
+        app.MapWorkLimits();
+
         // Collaboration
         app.RegisterBoardItemActivityEndpoints();
         app.MapAttachmentsEndpoints();
         app.MapPageAttachmentsEndpoints();
         app.MapCommentsEndpoints();
+        app.MapChannelRoutes();
+        app.MapChannelMemberRoutes();
+        app.MapChannelGroupRoutes();
+        app.MapMessageRoutes();
+        app.MapThreadRoutes();
+        app.MapPinRoutes();
+        app.MapReactionRoutes();
+        app.MapChatAttachmentRoutes();
+        app.MapChannelPermissionRoutes();
+        app.MapChatRetentionRoutes();
+        app.MapChatExportRoutes();
+        app.MapChatSearchRoutes();
+        app.MapChatLinkRoutes();
+        app.MapMentionRoutes();
+        app.MapConversationRoutes();
+        app.MapBlockRoutes();
+        app.MapReadStateRoutes();
         app.MapWatchersEndpoints();
         app.RegisterNotificationPreferenceEndpoints();
         app.RegisterInboxEndpoints();

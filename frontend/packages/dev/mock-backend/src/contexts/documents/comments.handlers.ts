@@ -37,6 +37,41 @@ export const commentsOperations = [
     },
   }),
 
+  // ─── GET /pages/:pageId/comments/page ───────────────────────────────────
+
+  // The mock holds a page's comments in one list, so the first page is the whole thread and has no next cursor.
+  defineMockOperation<
+    { pageId: string },
+    never,
+    { items: CommentDtoApi[]; nextCursor: string | null }
+  >({
+    id: "docs.comments.listPage",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Comments.GetPageCommentsPage",
+    } as any,
+    method: "GET",
+    route: "/pages/:pageId/comments/page",
+    async handle({ params, store }) {
+      const page = store.getPage(params.pageId);
+      if (!page) return notFound("Page not found");
+
+      const comments = store.getPageComments(params.pageId);
+      return ok({
+        items: comments.map((c) => ({
+          id: c.id,
+          userId: c.userId,
+          contentMd: c.contentMd,
+          createdAt: c.createdAt,
+          isEdited: !!c.updatedAt,
+          resolvedAt: c.resolvedAt ?? null,
+          anchor: c.anchor ?? null,
+        })),
+        nextCursor: null,
+      });
+    },
+  }),
+
   // ─── POST /pages/:pageId/comments ───────────────────────────────────────
 
   defineMockOperation<

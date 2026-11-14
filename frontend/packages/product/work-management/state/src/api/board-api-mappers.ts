@@ -35,7 +35,6 @@ import type {
   FieldSemanticRole,
   FullBoardDtoApi,
   FullBoardResponse,
-  KanbanStatusLane,
   LanePaging,
   ListDtoApi,
   WorkStatusCategory,
@@ -50,7 +49,7 @@ import {
 import {
   findPriorityField,
   findStatusField,
-  groupCardsByStatus,
+  countCardsByLane,
   inferStatusCategory,
   NO_STATUS_LANE,
   isPriorityFieldName,
@@ -150,6 +149,8 @@ export function mapBoardDto(dto: BoardDtoApi): Board {
     ...(typeof dto.canAddItems === "boolean"
       ? { canAddItems: dto.canAddItems }
       : {}),
+    ...(dto.itemKeyPrefix ? { itemKeyPrefix: dto.itemKeyPrefix } : {}),
+    ...(dto.departmentName ? { departmentName: dto.departmentName } : {}),
   };
 }
 
@@ -158,7 +159,7 @@ export function mapFullBoardDto(
   context: {
     workspaceId: string;
     /** The filter and sort a paged read was made under. */
-    criteria?: { filter: string; sort: string };
+    criteria?: BoardPaging["criteria"];
   },
 ): FullBoardResponse {
   const boardId = dto.id ?? "";
@@ -210,7 +211,10 @@ export function mapFullBoardDto(
           paging: mapBoardPaging(
             dto as GeneratedFullBoardDto,
             lanes,
-            groupCardsByStatus({ fieldDefinitions, groups: mappedGroups }),
+            countCardsByLane(
+              { fieldDefinitions, groups: mappedGroups },
+              context.criteria?.groupBy,
+            ),
             context.criteria ?? { filter: "", sort: "" },
           ),
         }
@@ -222,12 +226,9 @@ export function mapFullBoardDto(
 function mapBoardPaging(
   dto: GeneratedFullBoardDto,
   lanes: NonNullable<GeneratedFullBoardDto["lanes"]>,
-  grouped: readonly KanbanStatusLane[],
-  criteria: { filter: string; sort: string },
+  loadedBy: ReadonlyMap<string, number>,
+  criteria: BoardPaging["criteria"],
 ): BoardPaging {
-  const loadedBy = new Map(
-    grouped.map((lane) => [lane.optionId ?? NO_STATUS_LANE, lane.cards.length]),
-  );
   const byLane: Record<string, LanePaging> = {};
   for (const lane of lanes) {
     const key = lane.optionId ?? NO_STATUS_LANE;
@@ -479,6 +480,9 @@ export function mapCommentDtoToCardUpdate(
     updatedAt: dto.isEdited ? dto.createdAt : undefined,
     parentId: dto.parentCommentId ?? undefined,
     reactions: dto.reactions ?? [],
+    version: dto.version,
+    deleted: dto.isDeleted,
+    resolved: Boolean(dto.resolvedAt),
   };
 }
 
@@ -726,6 +730,9 @@ function mapCardSummaryDto(
     openBlockerCount: legacy
       ? 0
       : ((dto as GeneratedItemSummary).openBlockerCount ?? 0),
+    openBlockerKey: legacy
+      ? null
+      : ((dto as GeneratedItemSummary).openBlockerKey ?? null),
     ...readCardSettings(dto),
     updatedBy: legacy
       ? null
@@ -772,6 +779,7 @@ function mapBoardColumnDto(
     isSystemField:
       "isSystemField" in dto ? dto.isSystemField : (dto.isSystem ?? false),
     ...(typeof settings.unit === "string" ? { unit: settings.unit } : {}),
+    ...(settings.multiple === true ? { multiple: true } : {}),
     ...(settings.display === "mark" ? { display: "mark" as const } : {}),
     ...(normalizeName(rawType) === "status"
       ? { semanticRole: "status" as const }

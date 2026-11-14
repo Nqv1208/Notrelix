@@ -79,7 +79,7 @@ public class AuthorizationFailClosedFaultInjectionTests : IAsyncLifetime
         var sender = provider.GetRequiredService<ISender>();
         var faultHost = provider.GetRequiredService<FaultHost>();
         faultHost.FactsFault = new InvalidOperationException("simulated access-facts provider outage");
-        var command = new RenameAccountCommand("Renamed Despite Facts Failure");
+        var command = new RenameAccountCommand(graph.AccountId, "Renamed Despite Facts Failure", 1);
 
         var act = () => sender.Send(command);
 
@@ -102,7 +102,7 @@ public class AuthorizationFailClosedFaultInjectionTests : IAsyncLifetime
         var sender = provider.GetRequiredService<ISender>();
         var faultHost = provider.GetRequiredService<FaultHost>();
         faultHost.PolicyFault = new InvalidOperationException("simulated access-policy evaluator outage");
-        var command = new RenameAccountCommand("Renamed Despite Policy Failure");
+        var command = new RenameAccountCommand(graph.AccountId, "Renamed Despite Policy Failure", 1);
 
         var act = () => sender.Send(command);
 
@@ -124,7 +124,7 @@ public class AuthorizationFailClosedFaultInjectionTests : IAsyncLifetime
         using var provider = CreatePipelineProvider(graph.AccountId, graph.ActorId);
         var sender = provider.GetRequiredService<ISender>();
         var faultHost = provider.GetRequiredService<FaultHost>();
-        var command = new RenameAccountCommand("Renamed By Admin");
+        var command = new RenameAccountCommand(graph.AccountId, "Renamed By Admin", 1);
 
         var result = await sender.Send(command);
 

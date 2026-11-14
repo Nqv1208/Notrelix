@@ -46,6 +46,10 @@ public class ExceptionMappingBehavior<TRequest, TResponse> : IPipelineBehavior<T
         {
             throw;
         }
+        catch (Exceptions.TooManyRequestsException)
+        {
+            throw;
+        }
         catch (Exceptions.UnsupportedMediaTypeException)
         {
             throw;

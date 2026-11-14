@@ -2,17 +2,26 @@ using Notrelix.Application.Common.Exceptions;
 using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Infrastructure.Messaging;
 using Notrelix.Infrastructure.Messaging.Options;
+using Notrelix.Infrastructure.Options;
 
 namespace Notrelix.Infrastructure;
 
 public static class MessagingRegistration
 {
+    /// <summary>
+    /// Bus wiring. Consumers are registered only with the <c>worker</c> role, so an api or realtime
+    /// process publishes through the bus but creates no receive endpoints.
+    /// </summary>
     public static IServiceCollection AddMessaging(
-        this IServiceCollection services, IConfiguration configuration)
+        this IServiceCollection services, IConfiguration configuration, RuntimeRoles? roles = null)
     {
+        var runsWorker = (roles ?? RuntimeRoles.All).RunsWorker;
+
         services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Collaboration.ItemFollowerNotifier>();
+        services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Collaboration.ItemAudience>();
         services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Collaboration.ItemActivityRecorder>();
         services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Integrations.WebhookEventFanOut>();
+        services.AddScoped<Notrelix.Infrastructure.Messaging.Consumers.Chat.ChatUnreadFanOut>();
 
         // Domain -> integration event mappers (order preserved for composite aggregation).
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Identity.UserEventMapper>();
@@ -21,6 +30,12 @@ public static class MessagingRegistration
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Governance.PermissionEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Documents.PageEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Collaboration.CommentEventMapper>();
+        services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Chat.ChatMessageEventMapper>();
+        services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Chat.ChatPinEventMapper>();
+        services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Chat.ChatPermissionsEventMapper>();
+        services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Chat.ChatSlowModeEventMapper>();
+        services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Chat.ChatLinkEventMapper>();
+        services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Chat.ChatRetentionEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Billing.SubscriptionEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.WorkManagement.BoardItemMemberAssignedEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.WorkManagement.BoardItemOwnersRemindedEventMapper>();
@@ -29,6 +44,7 @@ public static class MessagingRegistration
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.WorkManagement.BoardItemLabelEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.WorkManagement.BoardItemChecklistEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.WorkManagement.ApprovalEventMapper>();
+        services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.WorkManagement.FormSubmissionEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Integrations.IntegrationConnectionEventMapper>();
         services.AddScoped<IIntegrationEventMapper, CompositeIntegrationEventMapper>();
 
@@ -66,7 +82,10 @@ public static class MessagingRegistration
                 services.AddMassTransit(cfg =>
                 {
                     cfg.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter(endpointPrefix, false));
-                    cfg.AddConsumers(typeof(MessagingRegistration).Assembly);
+                    if (runsWorker)
+                    {
+                        cfg.AddConsumers(typeof(MessagingRegistration).Assembly);
+                    }
 
                     cfg.UsingInMemory((ctx, mem) =>
                     {
@@ -89,7 +108,10 @@ public static class MessagingRegistration
                 services.AddMassTransit(cfg =>
                 {
                     cfg.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("notrelix", false));
-                    cfg.AddConsumers(typeof(MessagingRegistration).Assembly);
+                    if (runsWorker)
+                    {
+                        cfg.AddConsumers(typeof(MessagingRegistration).Assembly);
+                    }
 
                     cfg.UsingRabbitMq((ctx, rbt) =>
                     {

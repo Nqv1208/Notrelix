@@ -43,6 +43,7 @@ export function ViewsSection({
   const selected = settings.views.find((view) => view.id === viewId) ?? null;
   const shared = settings.views.filter((view) => view.visibility === "board");
   const mine = settings.views.filter((view) => view.visibility === "me");
+  const archived = settings.archivedViews ?? [];
   const knownIds = useRef<readonly string[] | null>(null);
 
   // A view that no longer exists closes the panel; a new one opens it.
@@ -133,6 +134,40 @@ export function ViewsSection({
               ))}
             </div>
           </>
+        ) : null}
+        {archived.length > 0 ? (
+          <div className="mt-5">
+            <SectionLine
+              title={t.archivedList}
+              count={fillCopy(t.archivedSummary, { count: archived.length })}
+              note={t.archivedNote}
+            />
+            <div
+              role="list"
+              className="overflow-hidden rounded-[10px] border border-line bg-popover"
+            >
+              {archived.map((view) => (
+                <div
+                  key={view.id}
+                  role="listitem"
+                  className="grid min-h-[47px] grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-2.5 border-t border-line pr-2.5 pl-3.5 text-item-ui text-meta-foreground first:border-t-0"
+                >
+                  <TypeMark icon={VIEW_ICON[view.kind]} size="md" />
+                  <span className="truncate font-medium">{view.name}</span>
+                  <button
+                    type="button"
+                    aria-label={fillCopy(t.restoreLabel, { name: view.name })}
+                    onClick={() =>
+                      void run(() => actions.unarchiveView(view.id))
+                    }
+                    className={BUTTON_CLASS.ghostBrand}
+                  >
+                    {t.restore}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         ) : null}
       </section>
       {selected ? (

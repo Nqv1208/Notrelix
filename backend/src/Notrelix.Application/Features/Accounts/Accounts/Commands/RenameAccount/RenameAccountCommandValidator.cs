@@ -5,5 +5,6 @@ public class RenameAccountCommandValidator : AbstractValidator<RenameAccountComm
     public RenameAccountCommandValidator()
     {
         RuleFor(x => x.Name).NotEmpty().MaximumLength(160);
+        RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
     }
 }

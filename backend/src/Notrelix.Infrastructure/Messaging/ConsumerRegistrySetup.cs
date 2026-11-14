@@ -59,6 +59,16 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "SendRegistrationNoticeEmailConsumer",
+                EventName = "identity.registration-attempted-on-existing-account",
+                EventVersion = 1,
+                EndpointName = "notrelix-identity-registration-notice-v1",
+                BoundedContext = "Identity",
+                Description = "Tells the owner of an existing address that someone tried to register with it",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "UserDeactivatedConsumer",
                 EventName = "user.deactivated",
                 EventVersion = 1,
@@ -470,12 +480,32 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "ApprovalTeamRequestedNotificationConsumer",
+                EventName = "work-management.approval-team-requested",
+                EventVersion = 1,
+                EndpointName = "notrelix-collab-approval-team-requested-notification-v1",
+                BoundedContext = "Collaboration",
+                Description = "Tells the current members of an approver Team they were asked to decide an approval request",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "ApprovalDecidedNotificationConsumer",
                 EventName = "work-management.approval-decided",
                 EventVersion = 1,
                 EndpointName = "notrelix-collab-approval-decided-notification-v1",
                 BoundedContext = "Collaboration",
                 Description = "Tells a requester their approval request was decided",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "FormSubmissionNotificationConsumer",
+                EventName = "work-management.form-submission-created",
+                EventVersion = 1,
+                EndpointName = "notrelix-collab-form-submission-notification-v1",
+                BoundedContext = "Collaboration",
+                Description = "Tells the people who manage a form that it got a new response",
                 Maturity = ConsumerMaturity.Implemented
             },
 
@@ -763,6 +793,86 @@ public static class ConsumerRegistrySetup
                 EndpointName = "notrelix-realtime-resource-changed-v1",
                 BoundedContext = "Realtime",
                 Description = "Publishes durable resource changes to the realtime gateway",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ChatMessageCreatedRealtimeConsumer",
+                EventName = "chat.message.created",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-realtime-v1",
+                BoundedContext = "Chat",
+                Description = "Publishes a new message to the realtime gateway (channel frame) and fans out unread counts to the per-user stream",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ChatMessageUpdatedRealtimeConsumer",
+                EventName = "chat.message.updated",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-realtime-v1",
+                BoundedContext = "Chat",
+                Description = "Publishes an edited message to the realtime gateway (channel frame)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ChatMessageDeletedRealtimeConsumer",
+                EventName = "chat.message.deleted",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-realtime-v1",
+                BoundedContext = "Chat",
+                Description = "Publishes a deleted message (tombstone) to the realtime gateway (channel frame)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ChatSpaceChangedRealtimeConsumer",
+                EventName = "chat.space.changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-realtime-v1",
+                BoundedContext = "Chat",
+                Description = "Publishes a pin change of a channel to the realtime gateway (notify-only channel frame; readers refetch the pins)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ChatReactionRealtimeConsumer",
+                EventName = "chat.reaction.changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-realtime-v1",
+                BoundedContext = "Chat",
+                Description = "Publishes a reaction change of a channel message to the realtime gateway (compact channel frame; readers apply it or refetch the reaction summary)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ChatNotificationIntentConsumer",
+                EventName = "chat.message.created",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-notification-intent-v1",
+                BoundedContext = "Chat",
+                Description = "Maps a new message to notification intents (mention, direct or group message, followed thread reply, @channel) and hands them to Collaboration, which applies preferences and writes the Inbox notification once per message, recipient and reason",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ChatMessageAttachmentRealtimeConsumer",
+                EventName = "chat.message.attachment.changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-realtime-v1",
+                BoundedContext = "Chat",
+                Description = "Publishes a file added to or removed from a channel message to the realtime gateway (compact channel frame; readers patch the message's file list or refetch it)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ChatWorkspaceMemberRemovedConsumer",
+                EventName = "workspace.member.removed",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-workspace-member-removed-v1",
+                BoundedContext = "Chat",
+                Description = "Ends the channel memberships of a person removed from or leaving a Workspace and signals the access change per channel",
                 Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition

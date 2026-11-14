@@ -24,6 +24,7 @@ import type { BoardFormsPanelProps } from "./forms-list-panel";
 import { fillFormsCopy } from "./forms.copy";
 import { boardFormFields, prefillFromResponse } from "./form-model";
 import { useFormsCopy } from "./use-forms-copy";
+import { toastDecisionWithUndo } from "./form-decision-toast";
 
 const UNDO_MS = 8000;
 
@@ -342,20 +343,36 @@ export function FormInboxPage({
     [board?.members],
   );
 
-  /** A decision on a response is written at once; a refusal leaves the response where it was. */
+  /**
+   * A decision on a response is written at once; a refusal leaves the response where it was. A reject, a spam
+   * mark or a delete says so with an undo for a few seconds: the undo returns the response to the New tab.
+   */
   const decide = useCallback(
-    async (message: string, send: () => Promise<FormWriteResult>) => {
+    async (
+      message: string,
+      send: () => Promise<FormWriteResult>,
+      undoable?: FormSubmission,
+    ) => {
       setConflict(false);
       setFailed(null);
       const result = await send();
       if (result.ok) {
         setSelectedId(null);
-        toast(message);
+        if (undoable)
+          toastDecisionWithUndo(
+            message,
+            { undo: copy.common.undo, undoFailed: copy.inbox.undoFailed },
+            () => writes.reopenSubmission(undoable.formId, undoable.id),
+          );
+        else toast(message);
       } else if (result.reason === "conflict") setConflict(true);
-      else setFailed({ retry: () => void decide(message, send) });
+      else
+        setFailed({
+          retry: () => void decide(message, send, undoable),
+        });
       return result;
     },
-    [],
+    [copy, writes],
   );
 
   const status =
@@ -400,6 +417,9 @@ export function FormInboxPage({
         form={form}
         fields={fields}
         submissions={visible}
+        hasMore={submissions.hasNextPage}
+        loadingMore={submissions.isFetchingNextPage}
+        onLoadMore={() => void submissions.fetchNextPage()}
         people={people}
         deciderName={deciderName}
         tab={tab}
@@ -418,16 +438,24 @@ export function FormInboxPage({
           setCreating(response);
         }}
         onReject={(response, reason) =>
-          decide(copy.inbox.rejected, () =>
-            writes.reject(formId, response.id, reason),
+          decide(
+            copy.inbox.rejected,
+            () => writes.reject(formId, response.id, reason),
+            response,
           )
         }
         onSpam={(response) =>
-          decide(copy.inbox.spammed, () => writes.markSpam(formId, response.id))
+          decide(
+            copy.inbox.spammed,
+            () => writes.markSpam(formId, response.id),
+            response,
+          )
         }
         onRemove={(response) =>
-          decide(copy.inbox.removed, () =>
-            writes.removeSubmission(formId, response.id),
+          decide(
+            copy.inbox.removed,
+            () => writes.removeSubmission(formId, response.id),
+            response,
           )
         }
         onOpenItem={onOpenItem}

@@ -132,4 +132,34 @@ public class FormulaLanguageTests
         var unknown = () => ComputedFieldGraph.EnsureValid([Formula("A", "[Missing]")]);
         unknown.Should().Throw<BusinessRuleException>().Which.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_Field_FormulaUnknownField);
     }
+
+    [Fact]
+    public void ARefusedCycle_NamesItsFieldsInOrder_ClosingOnTheFirst()
+    {
+        // UC-WM-C20 acceptance: a formula that references itself indirectly is rejected naming the cycle.
+        ComputedFieldInput Formula(string name, string expression) =>
+            new(Guid.NewGuid(), name, FieldType.Formula, $$"""{"expression":"{{expression}}"}""");
+        var cycle = new[] { Formula("Tổng giờ", "[Tỷ lệ]+1"), Formula("Tỷ lệ", "[Tổng giờ]*2"), Formula("Khác", "1") };
+
+        var error = FluentActions.Invoking(() => ComputedFieldGraph.EnsureValid(cycle)).Should().Throw<BusinessRuleException>().Which;
+
+        error.Details["cycle"].Should().BeEquivalentTo(new[] { "Tổng giờ", "Tỷ lệ", "Tổng giờ" }, o => o.WithStrictOrdering());
+        var self = FluentActions.Invoking(() => ComputedFieldGraph.EnsureValid([Formula("Me", "[Me]+1")])).Should().Throw<BusinessRuleException>().Which;
+        self.Details["cycle"].Should().BeEquivalentTo(new[] { "Me", "Me" });
+    }
+
+    [Fact]
+    public void AnUnknownReferenceAndASyntaxError_CarryWhatAClientNames()
+    {
+        ComputedFieldInput Formula(string name, string expression) =>
+            new(Guid.NewGuid(), name, FieldType.Formula, $$"""{"expression":"{{expression}}"}""");
+        var unknown = FluentActions.Invoking(() => ComputedFieldGraph.EnsureValid([Formula("A", "[Chi phí]*2")])).Should().Throw<BusinessRuleException>().Which;
+        unknown.Details["field"].Should().Be("Chi phí");
+
+        var open = FluentActions.Invoking(() => FormulaLanguage.Parse("[Điểm] * (2 +")).Should().Throw<BusinessRuleException>().Which;
+        open.RuleCode.Should().Be(WorkManagementRuleCodes.WorkManagement_FieldSettings_FormulaSyntaxInvalid);
+        var missing = FluentActions.Invoking(() => FormulaLanguage.Parse("[Điểm] * (2 + 3")).Should().Throw<BusinessRuleException>().Which;
+        missing.Details["missing"].Should().Be(")");
+        missing.Details["position"].Should().Be(16);
+    }
 }

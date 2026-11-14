@@ -123,22 +123,55 @@ describe("createFormApi", () => {
       ["/form-submissions/s-1/reject", { reason: null }],
       ["/form-submissions/s-2/reject", { reason: "Trùng" }],
     ]);
-    const get = vi.fn(async () => [
-      {
-        id: "a",
-        status: "Accepted",
-        payloadJson: '{"title":"x"}',
-        submittedAt: "t",
-      },
-      { id: "b", status: "Accepted", createdItemId: "i", submittedAt: "t" },
-      { id: "c", status: "Deleted", submittedAt: "t" },
-    ]);
-    const rows = await apiWith({ get }).submissions("f-1");
-    expect(rows.map((r) => [r.id, r.status])).toEqual([
+    const get = vi.fn(async () => ({
+      items: [
+        {
+          id: "a",
+          status: "Accepted",
+          payloadJson: '{"title":"x"}',
+          submittedAt: "t",
+        },
+        { id: "b", status: "Accepted", createdItemId: "i", submittedAt: "t" },
+        { id: "c", status: "Deleted", submittedAt: "t" },
+      ],
+      nextCursor: null,
+    }));
+    const page = await apiWith({ get }).submissionsPage("f-1");
+    expect(get).toHaveBeenCalledWith("/forms/f-1/submissions/page");
+    expect(page.items.map((r) => [r.id, r.status])).toEqual([
       ["a", "new"],
       ["b", "processed"],
     ]);
-    expect(rows[0]?.answers).toEqual({ title: "x" });
+    expect(page.nextCursor).toBeNull();
+    expect(page.items[0]?.answers).toEqual({ title: "x" });
+  });
+
+  it("reads the responses a page at a time: the cursor goes back as the next page's cursor", async () => {
+    const get = vi
+      .fn()
+      .mockResolvedValueOnce({
+        items: [{ id: "a", status: "New", submittedAt: "t" }],
+        nextCursor: "c 1/",
+      })
+      .mockResolvedValueOnce({
+        items: [{ id: "b", status: "New", submittedAt: "t" }],
+        nextCursor: null,
+      });
+    const api = apiWith({ get });
+    const first = await api.submissionsPage("f-1");
+    const second = await api.submissionsPage("f-1", first.nextCursor!);
+    expect(get.mock.calls).toEqual([
+      ["/forms/f-1/submissions/page"],
+      ["/forms/f-1/submissions/page?cursor=c%201%2F"],
+    ]);
+    expect(second.items.map((r) => r.id)).toEqual(["b"]);
+    expect(second.nextCursor).toBeNull();
+  });
+
+  it("undoes a decision by returning the response to the New tab", async () => {
+    const post = vi.fn(async () => undefined);
+    await apiWith({ post }).reopenSubmission("s-9");
+    expect(post).toHaveBeenCalledWith("/form-submissions/s-9/reopen", {});
   });
 
   it("writes only the settings a question has", () => {

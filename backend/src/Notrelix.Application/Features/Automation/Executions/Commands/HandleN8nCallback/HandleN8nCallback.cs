@@ -43,7 +43,7 @@ public class HandleN8nCallbackCommandHandler : IRequestHandler<HandleN8nCallback
             case "error":
                 // AUT-019: the provider-supplied text is transport detail, never
                 // product evidence; only a fixed category is persisted.
-                execution.Fail("n8n reported that the workflow failed.", now);
+                execution.Fail(AutomationFailureClass.TargetRejected, "n8n reported that the workflow failed.", now);
                 break;
             default:
                 return Result.Failure(new ApplicationError("integrations.n8n.unsupported-status", $"Unsupported n8n callback status '{request.Status}'.", ApplicationErrorType.Validation));

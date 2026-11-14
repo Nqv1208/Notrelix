@@ -2,10 +2,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.AddSpaceMember;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.ArchiveSpace;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceType;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceVisibility;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.CreateSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.DeleteSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.MoveSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.RemoveSpaceMember;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.RenameSpace;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.UnarchiveSpace;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.UpdateSpaceDescription;
 using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceMembers;
 using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpaceTree;
 using Notrelix.Domain.Workspaces;
@@ -135,6 +140,35 @@ public sealed class SpaceHierarchyIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task AStaleExpectedVersion_IsRejected_ForEveryVersionedSpaceEdit_WithoutChanging()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        using var owner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
+        var it = await CreateAsync(owner, stack, "IT");
+        var stale = (await SpaceAsync(it)).Version;
+        await OrgTreeTestHost.SendAsync(owner, new UpdateSpaceDescriptionCommand(stack.WorkspaceId, it, "Desk", stale));
+        var current = (await SpaceAsync(it)).Version;
+        current.Should().BeGreaterThan(stale, "a description change is a versioned Space mutation");
+
+        Func<Task>[] edits =
+        [
+            () => OrgTreeTestHost.SendAsync(owner, new RenameSpaceCommand(stack.WorkspaceId, it, "Renamed", stale)),
+            () => OrgTreeTestHost.SendAsync(owner, new UpdateSpaceDescriptionCommand(stack.WorkspaceId, it, "Other", stale)),
+            () => OrgTreeTestHost.SendAsync(owner, new ChangeSpaceTypeCommand(stack.WorkspaceId, it, "Department", stale)),
+            () => OrgTreeTestHost.SendAsync(owner, new ChangeSpaceVisibilityCommand(stack.WorkspaceId, it, "Private", stale)),
+            () => OrgTreeTestHost.SendAsync(owner, new ArchiveSpaceCommand(stack.WorkspaceId, it, stale)),
+            () => OrgTreeTestHost.SendAsync(owner, new UnarchiveSpaceCommand(stack.WorkspaceId, it, stale)),
+        ];
+        foreach (var edit in edits)
+            await edit.Should().ThrowAsync<PreconditionFailed>();
+
+        var after = await SpaceAsync(it);
+        after.Version.Should().Be(current);
+        after.Name.Should().Be("IT");
+        after.Description.Should().Be("Desk");
+    }
+
+    [Fact]
     public async Task ConcurrentOppositeMoves_CannotFormACycle()
     {
         var stack = await _host.SeedWorkspaceAsync();
@@ -238,7 +272,7 @@ public sealed class SpaceHierarchyIntegrationTests : IAsyncLifetime
         (await removeLastAdmin.Should().ThrowAsync<DomainBusinessRuleException>()).Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Space_CannotRemoveLastAdmin);
         (await VersionAsync(accounting)).Should().Be(version, "a rejected change leaves the Space unchanged");
 
-        var members = await OrgTreeTestHost.QueryAsync(owner, new GetSpaceMembersQuery(stack.WorkspaceId, accounting));
+        var members = (await OrgTreeTestHost.QueryAsync(owner, new GetSpaceMembersQuery(stack.WorkspaceId, accounting))).Items;
         members.Select(m => (m.SubjectType, m.SubjectId, m.Role)).Should().BeEquivalentTo(new[]
         {
             ("User", stack.OwnerId, "Admin"),

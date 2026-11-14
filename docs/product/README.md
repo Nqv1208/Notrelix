@@ -12,7 +12,7 @@ evidence:
   - docs/architecture/bounded-context-map.md
   - docs/product/product-model.md
   - docs/product/product-experience.md
-  - docs/product/contexts/
+  - docs/product/
 review_on:
   - product-documentation-topology-change
   - bounded-context-owner-change
@@ -44,7 +44,7 @@ PRODUCT.md
 docs/product/product-model.md
     cross-context product model and shared semantic rules
         ↓
-docs/product/contexts/*.md
+docs/product/*.md
     detailed bounded-context semantics
         ↓
 backend/frontend implementation docs + source/tests
@@ -111,7 +111,7 @@ It does not own one context's complete lifecycle.
 Each file under:
 
 ```text
-docs/product/contexts/
+docs/product/
 ```
 
 owns one bounded context's:
@@ -172,7 +172,7 @@ It MUST NOT become another product constitution.
 
 # 7. Canonical context set
 
-Notrelix currently recognizes eleven business bounded contexts:
+Notrelix currently recognizes twelve business bounded contexts:
 
 ```text
 Accounts
@@ -182,6 +182,7 @@ Governance
 Work Management
 Documents
 Collaboration
+Chat
 Automation
 Integrations
 Billing
@@ -194,26 +195,27 @@ The system-level relationship map belongs to:
 docs/architecture/bounded-context-map.md
 ```
 
-The detailed semantics belong here under `contexts/`.
+The detailed semantics belong in the flat context files in this folder.
 
 ---
 
 # 8. Context files
 
-Target context owners:
+Context owners:
 
 ```text
-contexts/accounts.md
-contexts/identity.md
-contexts/workspaces.md
-contexts/governance.md
-contexts/work-management.md
-contexts/documents.md
-contexts/collaboration.md
-contexts/automation.md
-contexts/integrations.md
-contexts/billing.md
-contexts/analytics.md
+accounts.md
+identity.md
+workspaces.md
+governance.md
+work-management.md
+documents.md
+collaboration.md
+chat.md
+automation.md
+integrations.md
+billing.md
+analytics.md
 ```
 
 No context file should be added merely to mirror a frontend package, backend folder, table, provider, or team.
@@ -269,7 +271,7 @@ Do not start from the nearest source folder and infer product semantics from it.
 ```text
 PRODUCT.md
 → product-model.md
-→ contexts/work-management.md
+→ work-management.md
 → bounded-context-map.md
 → relevant backend/frontend docs
 ```
@@ -1095,18 +1097,18 @@ docs/product/
 ├── README.md
 ├── product-model.md
 ├── product-experience.md
-└── contexts/
-    ├── accounts.md
-    ├── identity.md
-    ├── workspaces.md
-    ├── governance.md
-    ├── work-management.md
-    ├── documents.md
-    ├── collaboration.md
-    ├── automation.md
-    ├── integrations.md
-    ├── billing.md
-    └── analytics.md
+├── accounts.md
+├── identity.md
+├── workspaces.md
+├── governance.md
+├── work-management.md
+├── documents.md
+├── collaboration.md
+├── chat.md
+├── automation.md
+├── integrations.md
+├── billing.md
+└── analytics.md
 ```
 
 This tree is semantic.

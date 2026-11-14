@@ -33,6 +33,10 @@ export interface Board {
    * gap `CTR-GAP-WM-TABLE-BULK`). Absent = not known.
    */
   canAddItems?: boolean;
+  /** The key the board's items carry ("KHQ" in KHQ-27), when the list read says it. */
+  itemKeyPrefix?: string;
+  /** The department the board belongs to, when the list read says it (the move picker shows it). */
+  departmentName?: string;
 }
 
 export type ViewMode = "table" | "kanban" | "calendar" | "timeline";
@@ -62,6 +66,12 @@ export interface ViewConfig {
   cardFieldIds?: string[];
   /** Kanban: field ids that are hidden on the card face while the card has no value. */
   cardHideEmpty?: string[];
+  /** Calendar: `span`, `due` or the id of a Date field the items sit on (default `span`). */
+  calendarDateField?: string;
+  /** Timeline: what its rows are grouped by (default the board's groups). */
+  timelineGroupBy?: "group" | "status" | "assignee" | "none";
+  /** Timeline: where a bar starts (default the start day). */
+  timelineBarSpan?: "start-due" | "created-due";
 }
 
 export interface FilterConfig {
@@ -95,14 +105,23 @@ export interface LanePaging {
  * of the whole board.
  */
 export interface BoardPaging {
-  /** By Status option id; the lane of items without a status is `none`. */
+  /** By option id of the lane field (Status, or `criteria.groupBy`); the lane of items without a value is `none`. */
   readonly lanes: Readonly<Record<string, LanePaging>>;
   /** Live root items of the board before the filter. */
   readonly totalItems: number;
   /** Items of the board that pass the server filter. */
   readonly filteredTotal: number;
   /** The filter and sort the pages were read under; later pages are read under the same. */
-  readonly criteria: { readonly filter: string; readonly sort: string };
+  readonly criteria: {
+    readonly filter: string;
+    readonly sort: string;
+    /** The title or key text the lanes were read under; absent: none. */
+    readonly search?: string;
+    /** People whose name holds the search text (their items match it too), comma-separated ids; absent: none. */
+    readonly searchMembers?: string;
+    /** The Select field the lanes are of (lane keys are its option ids); absent: the Status field. */
+    readonly groupBy?: string;
+  };
 }
 
 export interface FullBoardResponse {
@@ -159,6 +178,8 @@ export interface BoardDtoApi {
   createdAt: string;
   /** Gap field (`CTR-GAP-WM-TABLE-BULK`): the caller may add items. */
   canAddItems?: boolean;
+  itemKeyPrefix?: string | null;
+  departmentName?: string | null;
 }
 
 export interface FullBoardDtoApi {

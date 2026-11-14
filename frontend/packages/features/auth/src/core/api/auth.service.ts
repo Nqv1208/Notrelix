@@ -4,8 +4,6 @@ import type {
   LoginResponseApi,
   LogoutRequest,
   RefreshRequest,
-  RegisterRequestApi,
-  RegisterResponseApi,
   ResetPasswordRequest,
   User,
 } from "../types/auth";
@@ -18,7 +16,6 @@ export interface AuthApiClient {
 export interface AuthEndpoints {
   auth: {
     login: string;
-    register: string;
     logout: string;
     refresh: string;
     forgotPassword: string;
@@ -34,10 +31,6 @@ export function createAuthService(
   return {
     login(data: LoginRequestApi) {
       return api.post<LoginResponseApi>(endpoints.auth.login, data);
-    },
-
-    register(data: RegisterRequestApi) {
-      return api.post<RegisterResponseApi>(endpoints.auth.register, data);
     },
 
     logout(data: LogoutRequest) {

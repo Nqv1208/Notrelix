@@ -96,7 +96,10 @@ export function buildCalendarEntries({
   copy,
   timeZone,
   planItems = [],
+  dateFieldId,
 }: {
+  /** A Date field the items sit on, one day each, instead of their start and due. */
+  dateFieldId?: string | undefined;
   lanes: readonly KanbanStatusLane[];
   today: DayKey;
   copy: CalendarCopy;
@@ -107,8 +110,11 @@ export function buildCalendarEntries({
   const undated: CalendarUndated[] = [];
   for (const lane of lanes) {
     for (const card of lane.cards) {
-      const due = dayOf(cardDue(card), timeZone);
-      const start = dayOf(card.startDate, timeZone);
+      const fieldValue = dateFieldId ? card.fieldValues[dateFieldId] : null;
+      const due = dateFieldId
+        ? dayOf(typeof fieldValue === "string" ? fieldValue : null, timeZone)
+        : dayOf(cardDue(card), timeZone);
+      const start = dateFieldId ? null : dayOf(card.startDate, timeZone);
       const person = card.members[0];
       if (!due && !start) {
         undated.push({
@@ -116,6 +122,14 @@ export function buildCalendarEntries({
           itemKey: card.itemKey,
           title: card.title,
           assigneeName: person?.name ?? null,
+          tone:
+            lane.category === "done"
+              ? "done"
+              : lane.category === "review"
+                ? "review"
+                : lane.category === "in_progress"
+                  ? "doing"
+                  : "todo",
         });
         continue;
       }
@@ -165,7 +179,8 @@ export function buildCalendarEntries({
           timeZone,
           copy,
         }),
-        movable: due !== null,
+        // A custom date field is read-only here: a drag writes the due day.
+        movable: due !== null && !dateFieldId,
       });
     }
   }

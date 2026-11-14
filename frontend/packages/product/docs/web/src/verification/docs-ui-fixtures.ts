@@ -1,6 +1,6 @@
 /**
  * Deterministic scenarios of the document page for stories and interaction
- * tests. The data is the Final-Docs mockup world (Minh An Group, the invoice
+ * tests. The data is the Final-Docs-2 mockup world (Minh An Group, the invoice
  * process page); it lives here only, never in product code.
  */
 import { docPageCopy } from "../components/doc-page.copy";
@@ -408,7 +408,7 @@ const MENTION_TASKS: readonly DocTaskRef[] = [
   TASK_149,
 ];
 
-/** The page in its normal state (Final-Docs `binh-thuong`). */
+/** The page in its normal state (Final-Docs-2 `binh-thuong`). */
 export function docsPageScreenDefaultScenario(): DocPageScreenSurfaceProps {
   return {
     copy: docsCopy,

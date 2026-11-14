@@ -44,6 +44,7 @@ export const en = {
       title: "Sub-item",
       placeholder: "Name the sub-item",
       add: "Add sub-item",
+      withDetails: "Add with details",
     },
     link: { title: "Link a card" },
     fields: {
@@ -108,10 +109,29 @@ export const en = {
     body: "It may have been deleted or moved to another board, or you were removed from the board. No information about the card is shown.",
     close: "Back to the board",
   },
+  keptDraft: {
+    title: "Your unsent comment is kept here",
+    copy: "Copy comment",
+  },
   deleted: {
     title: "{{who}} deleted this card",
     someone: "Someone else",
-    body: "It is no longer on the board, so changes to it cannot be saved.",
+    body: "It is no longer on the board, so changes to it cannot be saved. It stays in Deleted items for 30 days.",
+    bannerBody: "It stays in Deleted items for 30 days.",
+    close: "Back to the board",
+    restore: "Restore",
+    restoring: "Restoring…",
+    restoreDenied: "You are not allowed to restore it.",
+    restoreWindowClosed:
+      "It has been more than 30 days, so it can no longer be restored.",
+    restoreParentDeleted:
+      "Its parent card is still deleted. Restore that one first.",
+    restoreFailed: "Could not restore it. Try again.",
+  },
+  moved: {
+    title: "This card was moved to the board “{{board}}”",
+    body: "You can read it, so you can open it on the new board.",
+    open: "Open on the new board",
     close: "Back to the board",
   },
   conflict: {
@@ -125,6 +145,28 @@ export const en = {
     someone: "Someone else",
     body: "The value you chose was not saved and nothing changed. Reload the fields to see the latest board.",
     reload: "Reload the fields",
+    optionRemoved: "{{who}} just edited the options of {{field}}",
+    optionRemovedBody:
+      "“{{option}}” is no longer in the field. The value you chose was not saved; choose again from the new list.",
+    optionReload: "Choose again",
+    typeChanged:
+      "{{who}} just changed the type of {{field}} from {{from}} to {{to}}",
+    typeChangedBody:
+      "The value you entered was not saved. Reload the field to edit it in the new type.",
+    pending: "Reloading the board's fields…",
+    pendingBody:
+      "Values you have not saved are kept; nothing has been sent again.",
+    doneDeleted: "Fields reloaded: {{field}} is no longer on this board.",
+    doneDeletedBody: "The value you chose was not saved.",
+    doneOption: "Fields reloaded: the options of {{field}} are up to date.",
+    doneOptionBody: "Choose a value from the new list.",
+    doneType: "Fields reloaded: {{field}} has a new type.",
+    doneTypeBody: "Enter the value again for the new type.",
+    failed: "Could not reload the fields",
+    failedBody:
+      "Lost the connection. Your value is still not saved and the board is unchanged.",
+    retry: "Retry",
+    deletedTag: "field deleted",
   },
   fieldConflict: {
     title: "Someone else just changed {{field}} to {{value}}",
@@ -177,6 +219,7 @@ export const vi: ShellCopy = {
       title: "Việc con",
       placeholder: "Tên việc con",
       add: "Thêm việc con",
+      withDetails: "Thêm chi tiết",
     },
     link: { title: "Liên kết công việc" },
     fields: {
@@ -241,10 +284,28 @@ export const vi: ShellCopy = {
     body: "Thẻ có thể đã bị xoá hay chuyển sang board khác, hoặc bạn đã được gỡ khỏi board. Không có thông tin nào của thẻ được hiển thị.",
     close: "Về board",
   },
+  keptDraft: {
+    title: "Bình luận bạn chưa gửi vẫn còn ở đây",
+    copy: "Sao chép bình luận",
+  },
   deleted: {
     title: "{{who}} đã xoá thẻ này",
     someone: "Một người khác",
-    body: "Thẻ không còn trên board nên không thể lưu thay đổi cho thẻ này.",
+    body: "Thẻ không còn trên board nên không thể lưu thay đổi cho thẻ này. Thẻ nằm trong Việc đã xoá 30 ngày.",
+    bannerBody: "Việc nằm trong Việc đã xoá 30 ngày.",
+    close: "Về board",
+    restore: "Khôi phục",
+    restoring: "Đang khôi phục…",
+    restoreDenied: "Bạn không có quyền khôi phục.",
+    restoreWindowClosed: "Đã quá 30 ngày nên không khôi phục được nữa.",
+    restoreParentDeleted:
+      "Thẻ cha vẫn đang bị xoá. Hãy khôi phục thẻ cha trước.",
+    restoreFailed: "Không khôi phục được. Hãy thử lại.",
+  },
+  moved: {
+    title: "Thẻ này đã được chuyển sang board “{{board}}”",
+    body: "Bạn xem được nên có thể mở ở board mới.",
+    open: "Mở ở board mới",
     close: "Về board",
   },
   conflict: {
@@ -258,6 +319,27 @@ export const vi: ShellCopy = {
     someone: "Một người khác",
     body: "Giá trị bạn chọn chưa được lưu, không có gì thay đổi. Tải lại trường để thấy bảng mới nhất.",
     reload: "Tải lại trường",
+    optionRemoved: "{{who}} vừa sửa các lựa chọn của {{field}}",
+    optionRemovedBody:
+      "“{{option}}” không còn trong trường. Giá trị bạn chọn chưa được lưu; chọn lại trong danh sách mới.",
+    optionReload: "Chọn lại",
+    typeChanged: "{{who}} vừa đổi loại của {{field}} từ {{from}} sang {{to}}",
+    typeChangedBody:
+      "Giá trị bạn nhập chưa được lưu. Tải lại trường để sửa theo loại mới.",
+    pending: "Đang tải lại các trường của board…",
+    pendingBody:
+      "Các giá trị bạn chưa lưu được giữ lại; chưa gửi lại thay đổi nào.",
+    doneDeleted: "Đã tải lại trường: {{field}} không còn ở board này.",
+    doneDeletedBody: "Giá trị bạn chọn không được lưu.",
+    doneOption: "Đã tải lại trường: các lựa chọn của {{field}} đã cập nhật.",
+    doneOptionBody: "Chọn một giá trị trong danh sách mới.",
+    doneType: "Đã tải lại trường: {{field}} có loại mới.",
+    doneTypeBody: "Nhập lại giá trị theo loại mới.",
+    failed: "Chưa tải lại được các trường",
+    failedBody:
+      "Mất kết nối. Giá trị của bạn vẫn chưa được lưu; bảng không đổi.",
+    retry: "Thử lại",
+    deletedTag: "trường đã bị xoá",
   },
   fieldConflict: {
     title: "Một người khác vừa đổi {{field}} thành {{value}}",

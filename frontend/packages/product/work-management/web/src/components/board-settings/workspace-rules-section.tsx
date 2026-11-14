@@ -134,7 +134,11 @@ function feedbackText(
   copy: WorkspaceRulesCopy,
   result: WorkspaceAutomationWriteResult,
 ): string | null {
-  return result.ok ? null : copy.feedback[result.reason];
+  if (result.ok) return null;
+  // A refused enable names its targets in the rule editor; the list here only says it failed.
+  return copy.feedback[
+    result.reason === "broken-reference" ? "failed" : result.reason
+  ];
 }
 
 /** The "Tự động hoá" section when the backend's workspace rules are shown. */
@@ -448,7 +452,14 @@ function RuleCard({
           </div>
         </div>
       ) : null}
-      {open ? <RuleRuns panel={panel} copy={copy} /> : null}
+      {open ? (
+        <RuleRuns
+          panel={panel}
+          copy={copy}
+          ruleId={rule.id}
+          onResult={onResult}
+        />
+      ) : null}
     </li>
   );
 }
@@ -461,6 +472,7 @@ const RUN_TONE: Readonly<
   succeeded: "brand",
   failed: "warning",
   cancelled: "warning",
+  skipped: "brand",
 };
 
 /** The name of an action type in the editor's words, or the type itself. */
@@ -472,12 +484,18 @@ function stepType(copy: WorkspaceRulesCopy, type: string): string {
 function RuleRuns({
   panel,
   copy,
+  ruleId,
+  onResult,
 }: {
   panel: WorkspaceRulesPanelProps;
   copy: WorkspaceRulesCopy;
+  ruleId: string;
+  onResult: (result: WorkspaceAutomationWriteResult) => void;
 }) {
   const t = copy.history;
   const { runs } = panel;
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [busyRunId, setBusyRunId] = useState<string | null>(null);
   if (runs.status === "loading")
     return (
       <p role="status" className="mt-2 mb-0 text-crumb text-meta-foreground">
@@ -536,6 +554,63 @@ function RuleRuns({
                 </li>
               ))}
             </ol>
+          ) : null}
+          {run.status === "queued" ? (
+            <div className="basis-full">
+              <button
+                type="button"
+                aria-expanded={confirmingId === run.id}
+                aria-label={fillCopy(t.cancelName, {
+                  time: new Date(run.createdAt).toLocaleString(),
+                })}
+                onClick={() =>
+                  setConfirmingId((id) => (id === run.id ? null : run.id))
+                }
+                className={BUTTON_CLASS.ghost}
+              >
+                {t.cancel}
+              </button>
+              {confirmingId === run.id ? (
+                <div
+                  role="alertdialog"
+                  aria-label={t.confirmCancel.title}
+                  className="mt-2 flex flex-col gap-2 rounded-lg border border-line bg-popover px-3 py-2.5"
+                >
+                  <p className="m-0 text-item-small font-semibold">
+                    {t.confirmCancel.title}
+                  </p>
+                  <p className="m-0 text-crumb text-meta-foreground">
+                    {t.confirmCancel.body}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={busyRunId === run.id}
+                      onClick={() => {
+                        setBusyRunId(run.id);
+                        void panel
+                          .onCancelRun(ruleId, run.id)
+                          .then((result) => {
+                            onResult(result);
+                            setConfirmingId(null);
+                          })
+                          .finally(() => setBusyRunId(null));
+                      }}
+                      className={BUTTON_CLASS.danger}
+                    >
+                      {t.confirmCancel.confirm}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingId(null)}
+                      className={BUTTON_CLASS.outline}
+                    >
+                      {t.confirmCancel.cancel}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           ) : null}
         </li>
       ))}

@@ -241,6 +241,47 @@ describe.each([
     ).toBeTruthy();
   });
 
+  it(`lists every archived target when an enable is refused (${locale})`, async () => {
+    const setEnabled = vi.fn(() =>
+      Promise.resolve({
+        ok: false as const,
+        reason: "broken-reference" as const,
+        brokenReferences: [
+          { kind: "option", id: "s-old", field: "actions[1]" },
+          { kind: "group", id: "g-old", field: "trigger.groupId" },
+        ],
+      }),
+    );
+    renderAutomation(copy, {
+      ...ready({ ...eventRule, status: "off" } as typeof eventRule),
+      actions: noopAutomationActions({ setEnabled }),
+    });
+    fireEvent.click(
+      screen.getByRole("switch", {
+        name: fillCopy(e.toggle, { name: eventRule.definition.name }),
+      }),
+    );
+    await waitFor(() =>
+      expect(setEnabled).toHaveBeenCalledWith("sa-review", true),
+    );
+    const list = await screen.findByTestId("broken-references");
+    const items = within(list).getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    expect(items[0]?.textContent).toBe(
+      fillCopy(e.feedback.brokenItem, {
+        where: fillCopy(e.feedback.whereStep, { n: 2 }),
+        kind: e.feedback.kindOption,
+      }),
+    );
+    expect(items[1]?.textContent).toBe(
+      fillCopy(e.feedback.brokenItem, {
+        where: e.feedback.whereTrigger,
+        kind: e.feedback.kindGroup,
+      }),
+    );
+    expect(screen.getByText(e.feedback.brokenTitle)).toBeTruthy();
+  });
+
   it(`${fui("automation-schedule", locale)}edits the schedule and lists the recent runs (${locale})`, async () => {
     const save = vi.fn(() => Promise.resolve({ ok: true as const }));
     const onOpenLog = vi.fn();

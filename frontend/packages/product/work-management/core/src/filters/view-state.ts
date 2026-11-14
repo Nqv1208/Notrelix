@@ -14,12 +14,14 @@ import {
   priorityFromOptionName,
 } from "../utils/status-lanes";
 import {
+  dayOf,
   decodePart,
   emptyCompoundFilter,
   escapePart,
   evaluateFilter,
   parseCompoundFilter,
   serializeCompoundFilter,
+  NONE_VALUE,
   type CompoundFilter,
   type FilterCondition,
 } from "./compound-filter";
@@ -82,6 +84,8 @@ export interface FilterField {
   /** True for the title, label and overdue pseudo fields (no stored field value). */
   readonly builtin: boolean;
   readonly read: (card: Card) => unknown;
+  /** True when `field.options` is the board's whole list, so a value outside it names an option that was deleted. */
+  readonly optionsComplete?: boolean;
 }
 
 export interface FilterFieldInput {
@@ -95,6 +99,8 @@ export interface FilterFieldInput {
     /** Names the assignee filter of a board that has no Person field; absent: that board has none. */
     assignee?: string;
   };
+  /** True when `labels` is the board's own list (not the labels the loaded items happen to hold). */
+  readonly labelsComplete?: boolean;
   /** Whether the card counts as overdue (the same rule as its due wording). */
   readonly isOverdue: (card: Card) => boolean;
 }
@@ -180,6 +186,7 @@ export function buildFilterFields(input: FilterFieldInput): FilterField[] {
     ),
     builtin: true,
     read: (card) => card.labels.map((l) => l.id),
+    ...(input.labelsComplete ? { optionsComplete: true } : {}),
   };
   const overdue: FilterField = {
     id: OVERDUE_FIELD_ID,
@@ -220,8 +227,9 @@ export type MemberNames = (userId: string) => string;
 export function fieldContext(
   field: FilterField,
   memberName: MemberNames,
+  timeZone?: string,
 ): FieldContext {
-  return { field: field.field, memberName };
+  return { field: field.field, memberName, ...(timeZone ? { timeZone } : {}) };
 }
 
 /* ---------- filter ---------- */
@@ -244,21 +252,51 @@ export function staleFieldIdsOf(
   ];
 }
 
-/** Whether a card passes the compound filter; conditions on missing fields are ignored. */
+/**
+ * A condition the board can no longer honour: its field is gone, or every option it names was deleted (a label
+ * removed from the board). Such a condition is ignored, never a mismatch, and the bar says so.
+ */
+export function isStaleCondition(
+  condition: FilterCondition,
+  byId: ReadonlyMap<string, FilterField>,
+): boolean {
+  const field = byId.get(condition.fieldId);
+  if (!field) return true;
+  if (!field.optionsComplete) return false;
+  const named = condition.values.filter((value) => value !== NONE_VALUE);
+  if (named.length === 0) return false;
+  const known = new Set(field.field.options.map((option) => option.id));
+  return named.every((value) => !known.has(value));
+}
+
+/** The filter without its stale conditions: what is evaluated here and sent to the server. */
+export function dropStaleConditions(
+  filter: CompoundFilter,
+  fields: readonly FilterField[],
+): CompoundFilter {
+  const byId = new Map(fields.map((f) => [f.id, f]));
+  const kept = filter.conditions.filter((c) => !isStaleCondition(c, byId));
+  return kept.length === filter.conditions.length
+    ? filter
+    : { ...filter, conditions: kept };
+}
+
+/** Whether a card passes the compound filter; stale conditions are ignored. */
 export function cardMatchesFilter(
   filter: CompoundFilter,
   fields: readonly FilterField[],
   memberName: MemberNames,
   card: Card,
+  timeZone?: string,
 ): boolean {
   if (filter.conditions.length === 0) return true;
   const byId = new Map(fields.map((f) => [f.id, f]));
-  return evaluateFilter(filter, {
+  return evaluateFilter(dropStaleConditions(filter, fields), {
     resolve: (fieldId) => {
       const found = byId.get(fieldId);
       return found
         ? {
-            context: fieldContext(found, memberName),
+            context: fieldContext(found, memberName, timeZone),
             value: found.read(card),
           }
         : undefined;
@@ -272,12 +310,13 @@ export function filterLanesByCompound(
   filter: CompoundFilter,
   fields: readonly FilterField[],
   memberName: MemberNames,
+  timeZone?: string,
 ): KanbanStatusLane[] {
   if (filter.conditions.length === 0) return [...lanes];
   return lanes.map((lane) => ({
     ...lane,
     cards: lane.cards.filter((card) =>
-      cardMatchesFilter(filter, fields, memberName, card),
+      cardMatchesFilter(filter, fields, memberName, card, timeZone),
     ),
   }));
 }
@@ -333,20 +372,7 @@ export function groupableFields(fields: readonly FilterField[]): FilterField[] {
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-/** The day (YYYY-MM-DD) of a date value, in `timeZone` when the value is an instant. */
-export function dayOf(value: unknown, timeZone?: string): string | null {
-  if (typeof value !== "string" || value === "") return null;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-  const time = Date.parse(value);
-  if (Number.isNaN(time)) return null;
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: timeZone ?? "UTC",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(time);
-  return parts;
-}
+export { dayOf };
 
 /** The bucket a day falls in: its day, the Monday of its week, `YYYY-MM`, `YYYY-Qn` or `YYYY`. */
 export function bucketKeyOf(day: string, bucket: DateBucket): string {
@@ -400,7 +426,15 @@ export function groupCardsByField(
       const people = [...new Set(value.map(String).filter(Boolean))];
       if (people.length > 0) return people;
     }
-    return [groupKeyOf(field.field, value) ?? ""];
+    const key = groupKeyOf(field.field, value) ?? "";
+    // An option the field no longer has is a deleted option: its items fall into "No value", never out of the lanes.
+    if (
+      type === "select" &&
+      key !== "" &&
+      !field.field.options.some((option) => option.id === key)
+    )
+      return [""];
+    return [key];
   };
   const byKey = new Map<string, Card[]>();
   for (const card of cards) {

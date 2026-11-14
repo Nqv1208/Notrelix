@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-import { useParams, useSearch, useNavigate } from "@tanstack/react-router";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useCurrentUser } from "@notrelix/features-auth";
 import { useLocale } from "@notrelix/i18n";
 import {
@@ -9,14 +8,19 @@ import {
   BoardHeaderDataContext,
   BoardLayoutShell,
   BoardArchiveHost,
+  BoardGone,
+  ViewGoneBanner,
   BoardTrashHost,
   BoardWorkspaceViewContent,
   useBoardHeaderCopy,
+  useViewTabActions,
 } from "@notrelix/work-management-web";
 import {
   BoardViewSelectionProvider,
   pickSavedView,
+  useBoardTrash,
   useFullBoard,
+  useItemByKey,
   useSavedViews,
 } from "@notrelix/work-management-state";
 import {
@@ -29,6 +33,7 @@ import { BoardExportDialog } from "../../../../shell/workspace/board-export-dial
 import { BoardImportDialog } from "../../../../shell/workspace/board-import-dialog";
 import { useWorkspaceViewer } from "../../../../shell/workspace/use-workspace-viewer";
 import { BoardLeaveDialog } from "../../../../shell/workspace/board-leave-dialog";
+import { BoardDiscuss } from "../../../../shell/workspace/board-discuss";
 import { BoardShareDialog } from "../../../../shell/workspace/board-share-dialog";
 import { useBoardHeaderData } from "../../../../shell/workspace/use-board-header-data";
 
@@ -55,9 +60,10 @@ export function BoardPage() {
   const viewType = activeSaved?.viewMode ?? search.view;
   const view = { type: viewType, name: viewType.toUpperCase() };
 
-  const { board } = useFullBoard(boardId, workspaceId);
+  const { board, error: boardError } = useFullBoard(boardId, workspaceId);
   const headerCopy = useBoardHeaderCopy();
   const goneNotice = useRef<string | null>(null);
+  const [viewGone, setViewGone] = useState(false);
   // An address that names a saved view that is gone shows the default once, with one notice.
   useEffect(() => {
     const wanted = search.savedView;
@@ -65,20 +71,70 @@ export function BoardPage() {
     if (saved.views.some((entry) => entry.id === wanted)) return;
     if (goneNotice.current !== wanted) {
       goneNotice.current = wanted;
-      toast(headerCopy.viewGone);
+      setViewGone(true);
     }
     void navigate({
       search: (prev: BoardSearch) => ({ ...prev, savedView: undefined }),
       replace: true,
     });
-  }, [
-    headerCopy.viewGone,
-    navigate,
-    saved.isError,
-    saved.isLoading,
-    saved.views,
-    search.savedView,
-  ]);
+  }, [navigate, saved.isError, saved.isLoading, saved.views, search.savedView]);
+  // An address that names a layout that does not exist (`?view=gantt`) shows the board's default view, with the
+  // same one notice; the address is rewritten to that view, so Back does not return to the unknown name.
+  const unknownView = search.unknownView;
+  useEffect(() => {
+    if (unknownView === undefined || saved.isLoading) return;
+    const fallback = saved.views.find((entry) => entry.isDefault);
+    const key = `view:${unknownView}`;
+    if (goneNotice.current !== key) {
+      goneNotice.current = key;
+      setViewGone(true);
+    }
+    void navigate({
+      search: (prev: BoardSearch) => ({
+        ...prev,
+        view: fallback?.viewMode ?? "kanban",
+        savedView: fallback?.id,
+        unknownView: undefined,
+      }),
+      replace: true,
+    });
+  }, [navigate, unknownView, saved.isLoading, saved.views]);
+  // Archiving or deleting the opened view lands on the default view, with no "gone" notice.
+  const viewActions = useViewTabActions(
+    boardId,
+    workspaceId,
+    activeSaved?.id,
+    (viewId, phase) => {
+      if (phase === "start") goneNotice.current = viewId;
+      else
+        void saved.refetch().then(({ data }) => {
+          const next = data?.find((entry) => entry.isDefault);
+          showView(next?.viewMode ?? viewType, next?.id);
+        });
+    },
+  );
+  // A link may name the item by its key ("ERP-142", the route /items/ERP-142 lands here too): resolve it,
+  // old keys included, and open the item where it lives now (UC-WM-A10). A key that names nothing the viewer
+  // may see stays in the address, so the sheet asks for it and shows the same "gone" state as any missing item.
+  const byKey = useItemByKey(boardId, workspaceId, search.item);
+  const resolvedItem = byKey.resolved;
+  useEffect(() => {
+    if (!resolvedItem?.itemId) return;
+    if (!resolvedItem.boardId || resolvedItem.boardId === boardId) {
+      void navigate({
+        search: (prev: BoardSearch) => ({ ...prev, item: resolvedItem.itemId }),
+        replace: true,
+      });
+      return;
+    }
+    void navigate({
+      to: "/workspaces/$workspaceId/boards/$boardId",
+      params: { workspaceId, boardId: resolvedItem.boardId },
+      search: { item: resolvedItem.itemId },
+      replace: true,
+    });
+  }, [boardId, navigate, resolvedItem, workspaceId]);
+  const selectedItemId = byKey.isKey && !byKey.failed ? undefined : search.item;
   const currentUser = useCurrentUser();
   const connection = useRealtimeConnection();
   const { locale } = useLocale();
@@ -112,6 +168,16 @@ export function BoardPage() {
     () => setImportOpen(true),
     canExport ? () => setExportOpen(true) : undefined,
   );
+  // The count on the "Việc đã xoá" entry: only people who may edit items can read the trash.
+  const myLevel = headerData.access?.myLevel;
+  // Archive, delete and the default are an Editor's change.
+  const canEditViews = myLevel === "manager" || myLevel === "editor";
+  const trashCount = useBoardTrash(
+    boardId,
+    workspaceId,
+    "",
+    myLevel === "manager" || myLevel === "editor",
+  ).total;
 
   const showView = (mode: BoardSearch["view"], savedView?: string) => {
     // The item belongs to the view it was opened in; filter, sort and
@@ -166,6 +232,16 @@ export function BoardPage() {
     });
   };
 
+  // The toast after a move names the item on its new board; the board that blocks a move is this one.
+  const handleOpenItem = (targetBoardId: string, item: string) => {
+    if (targetBoardId === boardId) return handleSelectedItemChange(item);
+    navigate({
+      to: "/workspaces/$workspaceId/boards/$boardId",
+      params: { workspaceId, boardId: targetBoardId },
+      search: { item },
+    });
+  };
+
   // The Kanban filter (`serializeKanbanFilter` form). A user change pushes
   // history; the view's own cleanup of stale ids replaces it.
   const handleFilterChange = (
@@ -183,9 +259,24 @@ export function BoardPage() {
     navigate({ search: (prev: BoardSearch) => ({ ...prev, groupBy }) });
   };
 
+  // A board that is gone or not visible answers the same page, without its name, tabs or cards.
+  const boardKind = (boardError as { kind?: string } | null)?.kind;
+  if (boardKind === "not_found" || boardKind === "forbidden")
+    return (
+      <BoardGone
+        copy={headerCopy}
+        onHome={() =>
+          void navigate({
+            to: "/workspaces/$workspaceId/home",
+            params: { workspaceId },
+          })
+        }
+      />
+    );
+
   return (
     <BoardHeaderCopyContext.Provider value={headerCopy}>
-      <BoardHeaderDataContext.Provider value={headerData}>
+      <BoardHeaderDataContext.Provider value={{ ...headerData, trashCount }}>
         <BoardLayoutShell
           workspaceId={workspaceId}
           boardId={boardId}
@@ -194,16 +285,28 @@ export function BoardPage() {
           onViewChange={handleViewChange}
           savedViews={saved.views}
           onAddView={(layout) => void handleAddView(layout)}
+          viewActions={canEditViews ? viewActions : undefined}
           onOpenTrash={() => setTrashOpen(true)}
           onOpenArchive={() => setArchiveOpen(true)}
+          banner={
+            viewGone ? (
+              <ViewGoneBanner
+                copy={headerCopy}
+                onClose={() => setViewGone(false)}
+              />
+            ) : undefined
+          }
           notice={
-            <BoardConnectionNotice
-              state={connection.state}
-              lostAt={connection.lostAt}
-              copy={headerCopy}
-              locale={locale}
-              onReconnect={connection.reconnect}
-            />
+            <>
+              <BoardConnectionNotice
+                state={connection.state}
+                lostAt={connection.lostAt}
+                copy={headerCopy}
+                locale={locale}
+                onReconnect={connection.reconnect}
+              />
+              <BoardDiscuss workspaceId={workspaceId} boardId={boardId} />
+            </>
           }
           onOpenSettings={() =>
             navigate({
@@ -218,9 +321,10 @@ export function BoardPage() {
               workspaceId={workspaceId}
               boardId={boardId}
               view={view}
-              selectedItemId={search.item}
+              selectedItemId={selectedItemId}
               currentUserId={currentUser?.id ?? null}
               onSelectedItemChange={handleSelectedItemChange}
+              onOpenItem={handleOpenItem}
               filter={search.filter}
               onFilterChange={handleFilterChange}
               groupBy={search.groupBy}

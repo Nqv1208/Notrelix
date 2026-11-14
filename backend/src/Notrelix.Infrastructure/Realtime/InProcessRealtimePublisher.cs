@@ -27,19 +27,13 @@ public sealed class InProcessRealtimePublisher : IRealtimePublisher
             return;
         }
 
-        var kind = change.TopicNamespace switch
-        {
-            "workspace" => RealtimeScopeKind.Workspace,
-            "board" => RealtimeScopeKind.Board,
-            _ => (RealtimeScopeKind?)null,
-        };
-        if (kind is null) return;
+        var scope = RealtimeFrameMapping.ScopeOf(change);
+        if (scope is null) return;
 
-        var scope = new RealtimeScope(kind.Value, change.ResourceId);
         var version = Versions.AddOrUpdate(change.StreamKey, 1, (_, last) => last + 1);
-        await _source.Publish(scope, new RealtimeNotification(
+        await _source.Publish(scope.Value, new RealtimeNotification(
             EventId: change.EventId.ToString("N"),
-            EventType: $"{change.TopicNamespace}.{change.ResourceKind}".ToLowerInvariant(),
+            EventType: RealtimeFrameMapping.EventTypeOf(change),
             ChangeKind: change.ChangeKind,
             StreamKey: change.StreamKey,
             StreamVersion: version,
@@ -50,6 +44,7 @@ public sealed class InProcessRealtimePublisher : IRealtimePublisher
             OccurredAt: change.OccurredAt,
             ResourceVersion: change.StreamVersion,
             SchemaVersion: 1,
-            PayloadContract: change.PayloadContract));
+            PayloadContract: change.PayloadContract,
+            Payload: RealtimeFrameMapping.PayloadOf(change)));
     }
 }

@@ -11,6 +11,7 @@ public interface IIntegrationDbContext
     DbSet<IntegrationSyncCursor> IntegrationSyncCursors { get; }
     DbSet<WebhookSubscription> WebhookSubscriptions { get; }
     DbSet<WebhookDelivery> WebhookDeliveries { get; }
+    DbSet<OutboundDeliveryLogEntry> OutboundDeliveryLog { get; }
     DbSet<InboundWebhookEvent> InboundWebhookEvents { get; }
     DbSet<CalendarIntegration> CalendarIntegrations { get; }
     DbSet<CalendarEvent> CalendarEvents { get; }

@@ -115,7 +115,11 @@ interface SeenBlock {
 }
 
 export const versionsOperations = [
-  defineMockOperation<{ pageId: string }, never, Json[]>({
+  defineMockOperation<
+    { pageId: string },
+    never,
+    { items: Json[]; nextCursor: string | null }
+  >({
     id: "docs.versions.list",
     contract: {
       kind: "openapi",
@@ -123,12 +127,17 @@ export const versionsOperations = [
     },
     method: "GET",
     route: "/pages/:pageId/versions",
-    async handle({ params, store }) {
+    async handle({ params, query, store }) {
       const page = store.getPage(params.pageId);
       if (!page || page.trashedAt) return notFound("Page not found");
-      return ok<Json[]>(
-        store.docsHistory.listVersions(params.pageId).map(toVersionDto),
-      );
+      // The producer's cursor is opaque; here it is the offset of the next entry.
+      const limit = Math.min(Number(query.limit) || 50, 200);
+      const from = Number(query.cursor) || 0;
+      const rows = store.docsHistory.listVersions(params.pageId);
+      return ok({
+        items: rows.slice(from, from + limit).map(toVersionDto),
+        nextCursor: from + limit < rows.length ? String(from + limit) : null,
+      });
     },
   }),
 

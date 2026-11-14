@@ -55,7 +55,6 @@ public sealed class IdentityBootstrapReadAdapter : IIdentityBootstrapReadPort
                     workspace.Id,
                     workspace.Name,
                     workspace.Slug,
-                    member.Role.ToString(),
                     workspace.AccountId))
             .ToListAsync(cancellationToken);
 

@@ -16,10 +16,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  *   on the bar, so the check is the reason, the dimming and the 44 px targets at 390 px;
  * - the 390 px bar: the clear-selection button is 44 x 44.
  *
- * Not measured (the canvas draws them; the app does not yet): `bk-cap-*` (the amber banner above a
- * locked bar for a pick over 200: the app writes the limit on the bar itself and the mock world has
- * no board of 201 items), `bk320-*` (the compact bar with one "Hành động" button and its sheet),
- * `bk-save-*`, `bk-gone-*`, `bk-ok-*`, `bk-grp-*` and `bk-more-*`.
+ * The other frames are measured in `design-fidelity-bulk-states` and `design-fidelity-bulk-frames`.
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
@@ -49,12 +46,23 @@ async function openTable(page: Page, dark = false) {
     dark ? "dark" : "light",
   );
   await page.goto(`${BOARD}?view=table`);
-  await expect(page.getByRole("rowgroup").first()).toBeVisible();
+  await expect(
+    page.locator('[role="rowgroup"], [data-slot="table-phone-list"]').first(),
+  ).toBeVisible();
 }
 
 async function pick(page: Page, keys: readonly string[]) {
-  for (const key of keys)
-    await page.getByRole("checkbox", { name: `Chọn ${key}` }).click();
+  for (const key of keys) {
+    const tick = page.getByRole("checkbox", { name: `Chọn ${key}` });
+    if (await tick.isVisible()) await tick.click();
+    else {
+      // The phone list has no pick box until a row is picked: the first pick comes from the row's sheet.
+      await page
+        .getByRole("button", { name: `Thao tác khác cho ${key}` })
+        .click();
+      await page.getByRole("button", { name: "Chọn việc này" }).click();
+    }
+  }
   await page.mouse.move(2, 2);
 }
 
@@ -100,7 +108,7 @@ function near(actual: number, want: number, label: string) {
 async function refuseOnce(page: Page, dark: boolean) {
   await openTable(page, dark);
   await pick(page, ["ERP-142", "ERP-144", "ERP-146"]);
-  await page.getByRole("button", { name: "Đặt hạn", exact: true }).click();
+  await page.getByRole("button", { name: "Hạn", exact: true }).click();
   await page.getByLabel("Hạn", { exact: true }).fill("2026-11-03");
   await page.getByRole("button", { name: "Áp dụng", exact: true }).click();
   const banner = page.locator("[data-table-bulk-failure]");
@@ -257,7 +265,7 @@ test.describe("A viewer's bulk bar (bk-ro)", () => {
     });
     const reason = "Bạn chỉ xem được board này, không đổi được các việc";
     await expect(bar.getByText(reason, { exact: true })).toBeVisible();
-    for (const name of ["Giao cho", "Chuyển board", "Trạng thái", "Đặt hạn"]) {
+    for (const name of ["Người phụ trách", "Thêm", "Trạng thái", "Hạn"]) {
       const control = bar.getByRole("button", { name: `${name}: ${reason}` });
       await expect(control).toHaveAttribute("aria-disabled", "true");
       expect(await style(control, "opacity")).toBe("0.5");

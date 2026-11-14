@@ -48,6 +48,14 @@ compose_service = "rabbitmq"
 deploy_env_var = "NOTRELIX_RABBITMQ_IMAGE"
 stateful = true
 
+[images.pgbouncer]
+class = "runtime"
+source = "edoburu/pgbouncer:v1.25.2-p0"
+ref = "edoburu/pgbouncer:v1.25.2-p0@sha256:7d7a27d9e90985cab5cf42256f5c13a3120baa4b055b69df37beb272b89b2340"
+compose_service = "pgbouncer"
+deploy_env_var = "NOTRELIX_PGBOUNCER_IMAGE"
+stateful = false
+
 [images.nginx]
 class = "runtime"
 source = "nginx:1.30-alpine-slim"

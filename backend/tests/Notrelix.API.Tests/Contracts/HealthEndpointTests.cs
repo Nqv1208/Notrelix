@@ -1,4 +1,6 @@
 using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -46,6 +48,33 @@ public class HealthEndpointTests : IClassFixture<NotrelixApiFactory>
         var response = await client.GetAsync(path);
 
         response.StatusCode.Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task GetLive_WhenNotAuthenticated_ShouldReturnAlive()
+    {
+        var response = await _client.GetAsync("/health/live");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("status").GetString().Should().Be("alive");
+        body.TryGetProperty("timestamp", out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task GetLive_WhenDependencyIsUnhealthy_ShouldStillReturnAlive()
+    {
+        using var factory = _factory.WithWebHostBuilder(b => b.ConfigureTestServices(services =>
+            services.AddHealthChecks().Add(new HealthCheckRegistration(
+                "broken-dependency",
+                _ => new FixedHealthCheck(HealthStatus.Unhealthy),
+                failureStatus: null,
+                tags: ["ready"]))));
+        var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/health/live");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     private sealed class FixedHealthCheck(HealthStatus status) : IHealthCheck

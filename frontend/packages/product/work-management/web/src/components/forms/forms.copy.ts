@@ -82,6 +82,7 @@ export const vi = {
     preview: "Xem trước",
     publish: "Xuất bản",
     close: "Đóng nhận",
+    reopen: "Mở lại",
     description: "Mô tả (người điền thấy dưới tên)",
     questions: "Câu hỏi",
     questionsCount: "· {{count}}, thứ tự từ trên xuống",
@@ -157,7 +158,7 @@ export const vi = {
     archivedNote:
       "Board đã lưu trữ nên biểu mẫu chỉ đọc. Bỏ lưu trữ board để sửa biểu mẫu.",
     closedNote:
-      'Biểu mẫu đã đóng. Người điền thấy thông báo "đã đóng". Không thêm hay sửa câu hỏi được.',
+      'Biểu mẫu đã đóng. Người điền thấy thông báo "đã đóng". Không thêm hay sửa câu hỏi được; mở lại để tiếp tục.',
     publishedTitle: "Biểu mẫu đang nhận phản hồi",
     publishedNote:
       "Liên kết dành cho thành viên: cần đăng nhập và có quyền tạo việc trên board này.",
@@ -172,6 +173,12 @@ export const vi = {
       "Chưa xuất bản được: câu {{a}} và câu {{b}} cùng ánh xạ trường {{field}}. Mỗi trường chỉ nhận một câu hỏi.",
     duplicateError:
       'Câu hỏi {{n}} "{{name}}" cũng ánh xạ tới trường {{field}}. Mỗi trường chỉ nhận một câu hỏi: đổi sang trường khác hoặc bỏ ánh xạ một trong hai. Chưa xuất bản được khi còn trùng.',
+    publishNeedsFix:
+      "Chưa xuất bản được khi còn câu hỏi cần sửa: trường đã bị xoá khỏi board.",
+    removedTarget: "trường đã bị xoá",
+    needsFix: "Cần sửa",
+    removedFieldError:
+      "Trường đã bị xoá khỏi board. Chọn trường khác hoặc bỏ ánh xạ; chưa xuất bản được khi còn câu hỏi cần sửa.",
     publishFailed: "Chưa xuất bản được biểu mẫu. Hãy thử lại.",
     conflict:
       "Biểu mẫu vừa được người khác sửa. Tải lại để xem thay đổi mới trước khi sửa tiếp, thay đổi của bạn chưa được lưu.",
@@ -186,6 +193,9 @@ export const vi = {
       takeTheirs: "Dùng bản mới",
       keepMine: "Giữ của tôi",
       keepMineAndSave: "Giữ của tôi và lưu",
+      pendingTitle: "Đang lưu thay đổi của bạn lên bản mới nhất…",
+      pendingBody:
+        "Chỉ phần bạn đã sửa được ghi lên bản mới nhất của {{by}}; phần còn lại của họ được giữ.",
       working: "Đang lưu…",
       diffLabel: "Khác biệt giữa bản của bạn và bản mới nhất",
       columns: {
@@ -318,6 +328,8 @@ export const vi = {
       spamBody: "Phản hồi đánh dấu spam không tạo việc và nằm ở đây.",
     },
     loading: "Đang tải phản hồi",
+    more: "Xem thêm phản hồi",
+    loadingMore: "Đang tải thêm…",
     loadError: "Chưa tải được phản hồi. Biểu mẫu vẫn nhận thêm phản hồi.",
     status: {
       new: "Mới",
@@ -344,6 +356,7 @@ export const vi = {
     conflictTitle: "Phản hồi này vừa được người khác xử lý.",
     conflictBody: "Danh sách đã làm mới.",
     actionFailed: "Chưa xử lý được phản hồi. Phản hồi vẫn ở tab Mới.",
+    undoFailed: "Chưa hoàn tác được. Phản hồi vẫn ở trạng thái cũ.",
     createFailedProcess:
       "Đã tạo việc nhưng chưa đánh dấu được phản hồi là đã xử lý. Hãy thử lại.",
     rejectTitle: "Từ chối phản hồi này?",
@@ -466,6 +479,7 @@ export const en: FormsCopy = {
     preview: "Preview",
     publish: "Publish",
     close: "Stop accepting",
+    reopen: "Reopen",
     description: "Description (shown under the name)",
     questions: "Questions",
     questionsCount: "· {{count}}, top to bottom",
@@ -541,7 +555,7 @@ export const en: FormsCopy = {
     archivedNote:
       "The board is archived, so the form is read-only. Unarchive the board to edit it.",
     closedNote:
-      'The form is closed. People filling it see "closed". Questions cannot be added or edited.',
+      'The form is closed. People filling it see "closed". Questions cannot be added or edited; reopen it to continue.',
     publishedTitle: "The form is accepting responses",
     publishedNote:
       "The link is for members: they must sign in and be allowed to create items on this board.",
@@ -557,6 +571,12 @@ export const en: FormsCopy = {
       "Cannot publish yet: questions {{a}} and {{b}} both map to {{field}}. A field takes one question.",
     duplicateError:
       'Question {{n}} "{{name}}" also maps to the {{field}} field. A field takes one question: pick another field or drop the mapping on one of them. It cannot be published while they clash.',
+    publishNeedsFix:
+      "Cannot publish yet while a question needs fixing: its board field was deleted.",
+    removedTarget: "field deleted",
+    needsFix: "Needs fix",
+    removedFieldError:
+      "The board field was deleted. Pick another field or drop the mapping; the form cannot be published while a question needs fixing.",
     publishFailed: "The form could not be published. Try again.",
     conflict:
       "Someone else just edited this form. Reload to see the change before editing further; your change was not saved.",
@@ -571,6 +591,9 @@ export const en: FormsCopy = {
       takeTheirs: "Use the new version",
       keepMine: "Keep mine",
       keepMineAndSave: "Keep mine and save",
+      pendingTitle: "Saving your changes onto the latest version…",
+      pendingBody:
+        "Only what you changed is written onto the latest version by {{by}}; the rest of theirs is kept.",
       working: "Saving…",
       diffLabel: "Differences between your version and the latest",
       columns: {
@@ -706,6 +729,8 @@ export const en: FormsCopy = {
       spamBody: "Responses marked as spam create no item and are kept here.",
     },
     loading: "Loading the responses",
+    more: "Show more responses",
+    loadingMore: "Loading more…",
     loadError:
       "The responses could not be loaded. The form still takes responses.",
     status: {
@@ -733,6 +758,7 @@ export const en: FormsCopy = {
     conflictTitle: "Someone else just handled this response.",
     conflictBody: "The list was refreshed.",
     actionFailed: "The response could not be handled. It stays in the New tab.",
+    undoFailed: "Could not undo. The response keeps its current state.",
     createFailedProcess:
       "The item was created but the response could not be marked as processed. Try again.",
     rejectTitle: "Reject this response?",

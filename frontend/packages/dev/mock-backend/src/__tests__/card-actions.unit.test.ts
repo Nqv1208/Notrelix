@@ -58,4 +58,14 @@ describe("Card actions in the mock world", () => {
       client.api.post(`/board-items/${item}/remind`, {}),
     ).rejects.toMatchObject({ status: 409 });
   });
+
+  it("takes a title up to 500 characters on rename and refuses 501 with a 400", async () => {
+    const { store, client } = setup();
+    await client.api.patch(`/board-items/${item}`, { title: "x".repeat(500) });
+    expect(store.getCard(item)!.title).toHaveLength(500);
+    await expect(
+      client.api.patch(`/board-items/${item}`, { title: "x".repeat(501) }),
+    ).rejects.toMatchObject({ status: 400 });
+    expect(store.getCard(item)!.title).toHaveLength(500);
+  });
 });

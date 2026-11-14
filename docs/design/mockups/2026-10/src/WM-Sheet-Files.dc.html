@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Side sheet: mục Tệp</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.nx{--bg:#F7F8FA;--panel:#FFFFFF;--hover:#F1F3F6;--line:#E6E9EE;--line2:#D2D7DE;--text:#161A21;--muted:#4F5866;--meta:#5F6875;--accent:#1666CC;--accent-soft:#E7F0FC;--accent-text:#0F56AE;--sel:#EEF4FD;--danger:#C42340;--danger-soft:#FCEBEE;--pop-shadow:0 12px 32px rgba(15,23,42,.16);font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn{height:30px;padding:0 12px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font:inherit;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.txt{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.dng{background:var(--danger);border-color:var(--danger);color:#fff;font-weight:600}
+.inp{height:32px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);padding:0 10px;font:inherit;font-size:13px;color:var(--text);box-sizing:border-box}
+.inp.focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600;white-space:nowrap}
+.c-blue{background:#E6F0FB;color:#245BA6}.c-red{background:#FBE5EA;color:#A3283F}.c-green{background:#E2F3EE;color:#24685A}.c-amber{background:#FBF1D6;color:#7A5810}.c-gray{background:#EEF0F4;color:#4B5263}.c-violet{background:#F0E9FB;color:#6A3DB3}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.cap{font-size:12px;font-weight:600;color:var(--meta);margin:0}
+.state{font-size:12px;font-weight:600;color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:3px 10px;align-self:flex-start}
+h1{margin:0;font-size:22px;line-height:1.3;font-weight:650}
+.pill{height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--line2);display:inline-flex;align-items:center;gap:6px;font-size:13px;background:var(--panel);color:var(--text);box-sizing:border-box}
+.pill.mute{color:var(--meta)}
+.sec{display:flex;flex-direction:column;gap:6px}
+.h3{margin:0;font-size:13px;font-weight:600;color:var(--meta);display:flex;gap:8px;align-items:center}
+.add{height:36px;border:1px dashed var(--line2);border-radius:9px;display:flex;align-items:center;gap:8px;padding:0 12px;color:var(--accent-text);font-size:13px;font-weight:500;background:transparent;font-family:inherit;cursor:pointer;text-align:left}
+.sheet{width:560px;flex:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--pop-shadow);display:flex;flex-direction:column;overflow:hidden}
+.sheet .body{padding:18px 22px;display:flex;flex-direction:column;gap:20px}
+.sheet .foot{border-top:1px solid var(--line);padding:10px 18px;display:flex;gap:8px;align-items:center}
+.file{display:flex;align-items:center;gap:10px;min-height:46px;padding:0 8px;border-radius:8px}
+.fk{width:34px;height:34px;border-radius:7px;display:grid;place-items:center;font-size:10px;font-weight:700;flex:none}
+</style>
+</helmet>
+<div class="nx" style="width: 1440px; height: 1000px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 24px">
+<div style="display:flex;flex-direction:column;gap:6px"><h1>Side sheet · mục Tệp: các trạng thái</h1><p style="margin:0;color:var(--meta);font-size:13.5px;max-width:90ch">Kéo thả, dán từ clipboard hoặc chọn tệp. Có tiến độ, lỗi kèm Thử lại, xoá có hỏi lại. Người chỉ xem chỉ mở và tải về.</p></div><div style="display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap"><div style="display:flex;flex-direction:column;gap:10px;width:440px"><span class="state">Chưa có tệp · gập một dòng</span><div class="card" style="padding:16px;display:flex;flex-direction:column;gap:6px"><h3 class="h3">Tệp</h3><button class="add"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Thêm tệp</button></div></div><div style="display:flex;flex-direction:column;gap:10px;width:440px"><span class="state">Có tệp · tải thêm</span><div class="card" style="padding:16px;display:flex;flex-direction:column;gap:6px"><h3 class="h3">Tệp</h3><div class="file"><span class="fk" style="background:#E2F3EE;color:#24685A">XLS</span><span style="flex:1;min-width:0"><b style="font-size:13px;font-weight:500">Bang-doi-chieu.xlsx</b><br><small style="color:var(--meta)">84 KB · Lan Anh · hôm nay</small></span><button class="btn txt" style="width:30px;padding:0" aria-label="Tải xuống"><svg class="i" viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg></button><button class="btn txt" style="width:30px;padding:0" aria-label="Xoá tệp"><svg class="i" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></div><div class="file"><span class="fk" style="background:#FBE5EA;color:#A3283F">PDF</span><span style="flex:1;min-width:0"><b style="font-size:13px;font-weight:500">Quy-trinh.pdf</b><br><small style="color:var(--meta)">1,2 MB · Minh Khoa · 12/11</small></span><button class="btn txt" style="width:30px;padding:0" aria-label="Tải xuống"><svg class="i" viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg></button><button class="btn txt" style="width:30px;padding:0" aria-label="Xoá tệp"><svg class="i" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></div><div style="height:34px;border:1px dashed var(--line2);border-radius:8px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:12.5px;color:var(--meta)">Kéo, dán hoặc <u style="color:var(--accent-text);text-decoration:none;font-weight:500">chọn tệp</u></div></div></div><div style="display:flex;flex-direction:column;gap:10px;width:440px"><span class="state">Đang tải và lỗi</span><div class="card" style="padding:16px;display:flex;flex-direction:column;gap:6px"><h3 class="h3">Tệp</h3><div style="border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:500">Hop-dong.pdf</span><small style="color:var(--meta)">Đang tải 62% · 3,1 / 5 MB</small><span role="progressbar" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100" aria-label="Hop-dong.pdf" style="height:5px;border-radius:3px;background:var(--hover);overflow:hidden"><span style="display:block;width:62%;height:100%;background:var(--accent)"></span></span></div><div style="border:1px solid #F1C4CD;background:var(--danger-soft);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px"><span style="flex:1"><span style="font-size:13px;font-weight:500">Bao-cao.zip</span><br><small style="color:var(--danger)">Không tải lên được. Kiểm tra mạng rồi thử lại.</small></span><button class="btn" style="height:28px">Thử lại</button><button class="btn txt" style="height:28px">Bỏ qua</button></div><div style="height:34px;border:1px dashed var(--line2);border-radius:8px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:12.5px;color:var(--meta)">Kéo, dán hoặc <u style="color:var(--accent-text);text-decoration:none;font-weight:500">chọn tệp</u></div></div></div><div style="display:flex;flex-direction:column;gap:10px;width:440px"><span class="state">Xoá có hỏi lại</span><div class="card" style="padding:16px;display:flex;flex-direction:column;gap:6px"><h3 class="h3">Tệp</h3><div role="alertdialog" aria-label="Xoá tệp" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;border:1px solid #F1C4CD;background:var(--danger-soft)"><p style="margin:0;flex:1;font-size:13px">Xoá <b>Bang-doi-chieu.xlsx</b>? Không hoàn tác được.</p><button class="btn" style="height:28px">Giữ lại</button><button class="btn dng" style="height:28px">Xoá tệp</button></div><div class="file"><span class="fk" style="background:#FBE5EA;color:#A3283F">PDF</span><span style="flex:1;min-width:0"><b style="font-size:13px;font-weight:500">Quy-trinh.pdf</b><br><small style="color:var(--meta)">1,2 MB · Minh Khoa · 12/11</small></span><button class="btn txt" style="width:30px;padding:0" aria-label="Tải xuống"><svg class="i" viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg></button><button class="btn txt" style="width:30px;padding:0" aria-label="Xoá tệp"><svg class="i" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></div></div></div><div style="display:flex;flex-direction:column;gap:10px;width:440px"><span class="state">Chỉ xem</span><div class="card" style="padding:16px;display:flex;flex-direction:column;gap:6px"><h3 class="h3">Tệp</h3><div class="file"><span class="fk" style="background:#E2F3EE;color:#24685A">XLS</span><span style="flex:1;min-width:0"><b style="font-size:13px;font-weight:500">Bang-doi-chieu.xlsx</b><br><small style="color:var(--meta)">84 KB · Lan Anh · hôm nay</small></span><button class="btn txt" style="width:30px;padding:0" aria-label="Tải xuống"><svg class="i" viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg></button></div></div></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
