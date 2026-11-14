@@ -318,7 +318,11 @@ function subtree(blocks: readonly MockBlockRecord[], rootId: string): string[] {
 export const blocksOperations = [
   // ─── GET /pages/:pageId/blocks ──────────────────────────────────────────
 
-  defineMockOperation<{ pageId: string }, never, BlockDtoApi[]>({
+  defineMockOperation<
+    { pageId: string },
+    never,
+    { items: BlockDtoApi[]; nextCursor: string | null }
+  >({
     id: "docs.blocks.list",
     contract: {
       kind: "openapi",
@@ -326,12 +330,18 @@ export const blocksOperations = [
     } as any,
     method: "GET",
     route: "/pages/:pageId/blocks",
-    async handle({ params, store }) {
+    async handle({ params, query, store }) {
       const page = store.getPage(params.pageId);
       if (!page) return notFound("Page not found");
-      return ok<BlockDtoApi[]>(
-        store.getPageBlocks(params.pageId).map(toBlockDto),
-      );
+      // A cursor page of at most 1 000 blocks; the producer's cursor is
+      // opaque, here it is the offset of the next block.
+      const blocks = store.getPageBlocks(params.pageId);
+      const limit = Math.min(Number(query.limit) || 1000, 1000);
+      const from = Number(query.cursor) || 0;
+      return ok({
+        items: blocks.slice(from, from + limit).map(toBlockDto),
+        nextCursor: from + limit < blocks.length ? String(from + limit) : null,
+      });
     },
   }),
 

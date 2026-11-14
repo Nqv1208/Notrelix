@@ -47,7 +47,9 @@ public sealed class OpenPageNotFoundTests
         var empty = Page.Create(AccountId, WorkspaceId, "Empty", UserId, Now);
         var (_, blocks) = Handlers(empty);
 
-        (await blocks.Handle(new GetPageBlocksQuery(empty.Id), CancellationToken.None)).Data.Should().BeEmpty();
+        var window = (await blocks.Handle(new GetPageBlocksQuery(empty.Id), CancellationToken.None)).Data!;
+        window.Items.Should().BeEmpty();
+        window.NextCursor.Should().BeNull();
     }
 
     private static (GetPageQueryHandler Page, GetPageBlocksQueryHandler Blocks) Handlers(Page page)

@@ -1897,7 +1897,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List blocks for a page */
+        /**
+         * List the blocks of a page, 1 000 at a time
+         * @description Position order, at most 1 000 a window. Pass nextCursor back as cursor for the next window.
+         */
         get: operations["Documents.Blocks.ListPageBlocks"];
         put?: never;
         /** Create a new block */
@@ -9212,6 +9215,11 @@ export interface components {
         };
         "Notrelix.Application.Common.Models.CursorPageOfApprovalRequestDto": {
             items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalRequestDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfBlockDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"][] | null;
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
@@ -17706,7 +17714,10 @@ export interface operations {
     };
     "Documents.Blocks.ListPageBlocks": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 pageId: string;
@@ -17721,7 +17732,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfBlockDto"];
                 };
             };
         };
