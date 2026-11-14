@@ -140,7 +140,7 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-B02 | Create a child page | B | Editor of the parent | yes | yes | Final-Docs-2 | none | INTEGRATING | No client creates a page under a chosen parent (File menu makes a sibling) |
 | UC-DCT-B03 | Show the breadcrumb | B | Viewer | yes | yes | Final-Docs-2 | none | HARDENING | Built: `PageBreadcrumbHandlerTests` (path, hidden crumb, collapsed run, missing parent); owner tests by hand |
 | UC-DCT-B04 | Refuse a cycle or a foreign parent | B | System | yes | partial | none | real | HARDENING | Owner check; the Move to dialog is not driven in a browser |
-| UC-DCT-B05 | Limit nesting depth | B | System | yes | partial | none | none | HARDENING | Built: `PageNestingDepthTests` (create and subtree move refused past the limit); the move dialog words only the 400; owner tests by hand |
+| UC-DCT-B05 | Limit nesting depth | B | System | yes | partial | none | none | HARDENING | Built: `PageNestingDepthTests` (create and subtree move refused past the limit); the move dialog words the rule; real depth journey not yet run |
 | UC-DCT-C01 | Move a root page and its subtree to a space | C | Editor of the page and of the space | yes | yes | Final-Docs-2 | none | HARDENING | Dialog screenshot review; real e2e through the dialog |
 | UC-DCT-C02 | Move a page under another parent | C | Editor of the page, Editor of the new parent | yes | yes | none | real | HARDENING | Owner check; Move to dialog not driven in a browser; sidebar drag not built |
 | UC-DCT-C03 | Refuse a move to another workspace | C | System | none | none | none | none | HARDENING | Real e2e rejection line |
@@ -555,7 +555,7 @@ Team capability 2 (team id DCT-002). Requirements `DCREQ006`, `DCREQ007`, `DCREQ
 - Rules: new rule in Part 5; team spec section 7 "maximum nesting if product-defined".
 - Acceptance: Given a page at depth 10, When a child is created, Then refused.
 - Evidence: BE `PageTreeRules.MaxDepth` and `EnsureCanNestUnder(parentDepth, subtreeDepth)` applied on create, create from template and move (the move passes the level of the deepest descendant) · FE the Move to dialog words the `400` as a rule message · Design none · Tests `PageNestingDepthTests` (create under a page at the limit refused, one level below allowed, a subtree move past the limit refused, a subtree that fits allowed) · Real e2e none
-- State: HARDENING. Built: the limit is tested for create and for a move that carries a subtree, at the boundary (level 10 allowed, 11 refused). Missing: the move dialog words only the 400; owner tests by hand.
+- State: HARDENING. Built: the limit is tested for create and for a move that carries a subtree, at the boundary (level 10 allowed, 11 refused). The move dialog words the refusal (`movePage.rule`: pages nest at most 10 levels). Missing: the real depth journey (written in `documents-move-dialogs.real.e2e.spec.ts`, not yet run).
 
 ## Capability C: Page move / reparent
 
