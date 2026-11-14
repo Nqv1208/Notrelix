@@ -300,7 +300,7 @@ test("a member writes a page comment and a reply in the page's comments panel an
     .fill(`Answer ${unique}`);
   await page.getByRole("textbox", { name: "Reply to comment" }).press("Enter");
   await expect(page.getByText(`Answer ${unique}`)).toBeVisible();
-  await page.reload();
+  await openPanel(page);
   await expect(page.getByText(`Answer ${unique}`)).toBeVisible();
   const listed = await apiRead<
     | { contentMd: string; parentCommentId: string | null }[]
