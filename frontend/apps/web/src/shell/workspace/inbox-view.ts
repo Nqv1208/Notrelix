@@ -541,6 +541,7 @@ export function toInboxEntries(
       following: entry.following,
       muted: entry.muted,
       done: entry.done,
+      snoozed: entry.snoozed,
       itemId: target.kind === "item" ? target.id : null,
       docId: target.kind === "doc" ? target.id : null,
       bundle: entry.bundle

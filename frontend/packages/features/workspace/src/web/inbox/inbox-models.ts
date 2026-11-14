@@ -148,6 +148,8 @@ export interface InboxItemView {
   readonly muted?: boolean;
   /** The member marked it done (it lives in the Done list). */
   readonly done?: boolean;
+  /** It is hidden until a later time; "Done" is true too, so it can be taken back. */
+  readonly snoozed?: boolean;
   /** The item the notification is about, when the reply can go to it. */
   readonly itemId?: string | null;
   /** The page the notification is about, when the reply can go to it. */
