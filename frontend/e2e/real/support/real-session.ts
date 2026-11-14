@@ -42,7 +42,9 @@ export async function signIn(
   await page.locator("#auth-password").fill(user.password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   // The first sign-in after the backend starts is slow (cold start).
-  await expect(page).toHaveURL(/\/workspaces\/[^/]+/, { timeout: 20_000 });
+  await expect(page).toHaveURL(/\/(home|workspaces\/[^/]+)/, {
+    timeout: 20_000,
+  });
 }
 
 interface Workspace {
