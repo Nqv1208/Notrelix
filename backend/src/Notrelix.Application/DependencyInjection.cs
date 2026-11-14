@@ -203,6 +203,8 @@ public static class DependencyInjection
             Notrelix.Application.Features.Collaboration.Comments.Services.CommentTargetAccess>();
         services.AddScoped<Notrelix.Application.Features.Collaboration.Public.Attachments.IChatMessageAttachments,
             Notrelix.Application.Features.Collaboration.Attachments.Services.ChatMessageAttachments>();
+        services.AddScoped<Notrelix.Application.Features.Collaboration.Public.Attachments.IChatMessageAttachmentTransfers,
+            Notrelix.Application.Features.Collaboration.Attachments.Services.ChatMessageAttachmentTransfers>();
         services.AddScoped<Notrelix.Application.Features.Documents.Public.PageViewAccess.IPageViewAccess,
             Notrelix.Application.Features.Documents.Pages.Services.PageViewAccess>();
         services.AddScoped<Notrelix.Application.Features.Documents.Versions.Services.IPageVersionRecorder,

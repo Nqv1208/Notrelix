@@ -22,6 +22,9 @@ public sealed class AttachmentUploadOptions
     /// <summary>Maximum number of (non-deleted) attachments on one Chat message. Default 10.</summary>
     public int MaxAttachmentsPerMessage { get; init; } = 10;
 
+    /// <summary>How long a declared two-step upload may wait for its bytes before it expires and its object is removed. Default 900 seconds.</summary>
+    public int PendingUploadLifetimeSeconds { get; init; } = 900;
+
     /// <summary>
     /// File name extensions (lower case, without the dot) that are refused regardless of the
     /// sniffed content: executables and script types. Executable content signatures are
@@ -65,6 +68,11 @@ public sealed class AttachmentUploadOptionsValidator : IValidateOptions<Attachme
         {
             failures.Add(
                 $"{AttachmentUploadOptions.SectionName}:MaxAttachmentsPerMessage must be between 1 and {MaxConfigurableAttachments}.");
+        }
+
+        if (options.PendingUploadLifetimeSeconds is < 60 or > 86400)
+        {
+            failures.Add($"{AttachmentUploadOptions.SectionName}:PendingUploadLifetimeSeconds must be between 60 and 86400.");
         }
 
         if (options.BlockedExtensions is null

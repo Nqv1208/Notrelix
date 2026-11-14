@@ -18,6 +18,9 @@ internal sealed class PostgresAttachmentReaperStore : IAttachmentReaperStore
     private static readonly SystemOperationReason PurgeReason =
         new("Collaboration", "Purge objects of attachments deleted longer than the retention period");
 
+    private static readonly SystemOperationReason ExpiryReason =
+        new("Collaboration", "Remove expired pending attachment uploads and their objects");
+
     private static readonly SystemOperationReason SweepReason =
         new("Collaboration", "Remove attachment objects that no attachment row references");
 
@@ -82,6 +85,45 @@ internal sealed class PostgresAttachmentReaperStore : IAttachmentReaperStore
         await _context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return new AttachmentPurgeResult(rows.Count, purged);
+    }
+
+    public async Task<int> ExpirePendingUploadsAsync(
+        DateTimeOffset now,
+        int batchSize,
+        Func<string, CancellationToken, Task<bool>> deleteObject,
+        CancellationToken cancellationToken)
+    {
+        using var system = new SystemContextScope(_tenant, _logger, "attachment-object-reaper.pending-expiry", ExpiryReason);
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        await _rls.ApplyAsync(cancellationToken);
+
+        var rows = await _context.PendingAttachmentUploads
+            .FromSqlInterpolated($"""
+                SELECT *
+                FROM collab.attachment_pending_uploads
+                WHERE attachment_id IS NULL
+                  AND expires_at < {now}
+                ORDER BY expires_at
+                LIMIT {batchSize}
+                FOR UPDATE SKIP LOCKED
+                """)
+            .IgnoreQueryFilters()
+            .ToListAsync(cancellationToken);
+
+        var removed = 0;
+        foreach (var row in rows)
+        {
+            // The object goes first: a crash between the two only repeats an idempotent delete on the next pass.
+            if (await deleteObject(row.StorageKey, cancellationToken))
+            {
+                _context.PendingAttachmentUploads.Remove(row);
+                removed++;
+            }
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return removed;
     }
 
     public async Task<int?> DeleteUnreferencedAsync(

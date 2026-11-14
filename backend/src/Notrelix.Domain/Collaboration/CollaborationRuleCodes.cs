@@ -28,5 +28,6 @@ public static class CollaborationRuleCodes
     public const string Collaboration_Attachment_FileSizeMustBePositive = "Collaboration_Attachment_FileSizeMustBePositive";
     public const string Collaboration_Attachment_MaxAttachmentsExceeded = "Collaboration_Attachment_MaxAttachmentsExceeded";
     public const string Collaboration_Attachment_FileSizeExceeded = "Collaboration_Attachment_FileSizeExceeded";
+    public const string Collaboration_Attachment_UploadAlreadyCommitted = "Collaboration_Attachment_UploadAlreadyCommitted";
     public const string Collaboration_Attachment_ObjectPurged = "Collaboration_Attachment_ObjectPurged";
 }

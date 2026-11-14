@@ -40,6 +40,8 @@ import type {
   ChatThreadRepliesPage,
   ChatUnreadSummary,
   ChatUpdateChannelInput,
+  ChatAttachmentUpload,
+  ChatAttachmentUrl,
 } from "../types/chat";
 import { voiceFactsOf } from "../model/voice-model";
 
@@ -119,6 +121,20 @@ export interface ChatEndpoints {
       attachmentId: string,
     ) => string;
     messageAttachmentContent: (
+      workspaceId: string,
+      messageId: string,
+      attachmentId: string,
+    ) => string;
+    messageAttachmentUploads: (
+      workspaceId: string,
+      messageId: string,
+    ) => string;
+    messageAttachmentUploadCommit: (
+      workspaceId: string,
+      messageId: string,
+      uploadId: string,
+    ) => string;
+    messageAttachmentUrl: (
       workspaceId: string,
       messageId: string,
       attachmentId: string,
@@ -471,6 +487,58 @@ export function createChatService(
       }
       return api.getBlob(
         paths.messageAttachmentContent(workspaceId, messageId, attachmentId),
+      );
+    },
+
+    /**
+     * `Chat.Attachments.CreateUpload`: step one of a direct upload. The declared name, size and type are the file's own; a voice
+     * message carries its facts as the streaming upload does. 409 storage-direct-upload-unsupported when the server has no
+     * pre-signed storage, so the caller falls back to `uploadAttachment`.
+     */
+    createAttachmentUpload(
+      workspaceId: string,
+      messageId: string,
+      file: File,
+    ): Promise<ChatAttachmentUpload> {
+      const voice = voiceFactsOf(file);
+      return api.post<ChatAttachmentUpload>(
+        paths.messageAttachmentUploads(workspaceId, messageId),
+        {
+          fileName: file.name,
+          sizeBytes: file.size,
+          contentType: file.type || "application/octet-stream",
+          ...(voice
+            ? {
+                voice: true,
+                durationHintMs: voice.durationMs,
+                waveform: voice.waveform,
+              }
+            : {}),
+        },
+      );
+    },
+
+    /**
+     * `Chat.Attachments.CommitUpload`: step two, after the bytes are stored. Idempotent: a repeat returns the same file.
+     */
+    commitAttachmentUpload(
+      workspaceId: string,
+      messageId: string,
+      uploadId: string,
+    ): Promise<ChatAttachment> {
+      return api.post<ChatAttachment>(
+        paths.messageAttachmentUploadCommit(workspaceId, messageId, uploadId),
+      );
+    },
+
+    /** `Chat.Attachments.GetUrl`: a short-lived pre-signed download URL, or 409 when the server does not sign them. */
+    getAttachmentUrl(
+      workspaceId: string,
+      messageId: string,
+      attachmentId: string,
+    ): Promise<ChatAttachmentUrl> {
+      return api.get<ChatAttachmentUrl>(
+        paths.messageAttachmentUrl(workspaceId, messageId, attachmentId),
       );
     },
 
