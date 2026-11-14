@@ -47,7 +47,7 @@ export function DocTaskChip({
   copy: DocPageCopy;
 }) {
   const base =
-    "inline-flex h-6.5 items-center gap-1.5 rounded-[6px] border border-line-strong bg-state-hover py-0 pr-2 pl-[7px] align-[1px] text-compact leading-none font-medium text-foreground no-underline";
+    "inline-flex h-6.5 items-center gap-1.5 rounded-[6px] border border-line-strong bg-state-hover py-0 pr-2 pl-[7px] align-middle text-compact leading-none font-medium text-foreground no-underline";
   if (isRestrictedTask(task)) {
     return (
       <span
@@ -472,7 +472,7 @@ export function DocLiveTable({
 
   return (
     <>
-      <div className="mt-1.5 mb-5 overflow-hidden rounded-[12px] border border-line-strong bg-doc-panel">
+      <div className="my-3 overflow-hidden rounded-[12px] border border-line-strong bg-doc-panel">
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-3.5 py-2.5 text-compact leading-[1.45] text-meta-foreground">
           <Table2
             aria-hidden="true"
@@ -508,7 +508,7 @@ export function DocLiveTable({
             <div
               key={task.id}
               role="row"
-              className="box-content grid min-h-[42px] grid-cols-[76px_minmax(0,1fr)_104px_32px_108px] items-center gap-2.5 border-b border-border px-3.5 text-nav leading-[1.45] font-normal"
+              className="box-content grid min-h-[42px] grid-cols-[76px_minmax(0,1fr)_104px_32px_108px] items-center gap-2.5 border-b border-border px-3.5 text-nav leading-[1.45] font-normal last:border-b-0"
             >
               <span role="cell">
                 <a
@@ -583,7 +583,7 @@ export function DocLiveTable({
       </div>
       <p
         id={noteId}
-        className="-mt-3 mb-5 flex items-start gap-[7px] text-crumb leading-[1.5] text-meta-foreground"
+        className="mb-5 flex items-start gap-[7px] text-crumb leading-[1.5] text-meta-foreground"
       >
         <Lock
           aria-hidden="true"
@@ -1002,7 +1002,7 @@ export function DocArticleSurface({
       >
         {title}
       </h1>
-      <div className="mt-3 mb-[26px] flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-wrap gap-2">
         {chips.map((chip) =>
           chip.href ? (
             <a key={chip.id} href={chip.href} className={CHIP}>

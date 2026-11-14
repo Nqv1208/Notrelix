@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 /**
@@ -129,7 +130,7 @@ function expectSame(actual: Parts, expected: Parts, label: string) {
   );
 }
 
-async function open(page: Page, width: Width, mode: string, path: string) {
+async function open(page: Page, width: number, mode: string, path: string) {
   await page.setViewportSize({ width, height: 900 });
   await page.addInitScript(
     (dark) => {
@@ -151,7 +152,12 @@ async function expectToolbarRow(page: Page, width: Width, oneRow = true) {
   const row = page.locator("[data-table-toolbar]").first();
   await expect(row).toBeVisible();
   // The live toolbar wraps "Thêm công việc" onto a second row below ~1100 px of main width (known gap, one row drawn).
-  if (oneRow) expect((await row.boundingBox())!.height).toBeCloseTo(52, 0);
+  // The tablet band (768) draws the 60 px bar of Final-T-*.
+  if (oneRow)
+    expect((await row.boundingBox())!.height).toBeCloseTo(
+      width === 768 ? 60 : 52,
+      0,
+    );
 }
 
 const WIDTHS: Width[] = [1280, 768, 320];
@@ -436,6 +442,224 @@ test.describe("Archived and no-group boards against BC-Shell", () => {
           '[data-slot="board-band"]',
           `${BOARDS}/mock-board-it-no-group?view=table`,
         );
+      });
+    }
+});
+
+/** Evaluated in a root: the grid header and the first skeleton row (boxes against the grid, bars against their row). */
+const LOADING_GRID = `(tbl, rows) => {
+  const o = tbl.getBoundingClientRect();
+  const hdr = rows[0].getBoundingClientRect();
+  const row = rows[1];
+  const r = row.getBoundingClientRect();
+  const bars = [...row.querySelectorAll("[class*='sk'], [data-slot='skeleton']")].map((e) => {
+    const b = e.getBoundingClientRect();
+    return { left: b.x - o.x, right: o.right - b.right, y: b.y - r.y, w: b.width, h: b.height };
+  });
+  return { hdrH: hdr.height, hdrY: hdr.y - o.y, rowH: r.height, rowY: r.y - o.y, pitch: rows[2].getBoundingClientRect().y - r.y, bars };
+}`;
+
+/** The phone's loading cards: each card's box and its bars against the card. */
+const LOADING_CARDS = `(cards) => {
+  const first = cards[0].getBoundingClientRect();
+  return {
+    w: first.width,
+    h: first.height,
+    pitch: cards[1].getBoundingClientRect().y - first.y,
+    bars: [...cards[0].querySelectorAll("[class*='sk'], [data-slot='skeleton']")].map((e) => {
+      const b = e.getBoundingClientRect();
+      return { x: b.x - first.x, y: b.y - first.y, w: b.width, h: b.height };
+    }),
+  };
+}`;
+
+test.describe("Loading board against BC-Shell L (VITE_MOCK_LATENCY=slow)", () => {
+  test.skip(
+    scenario !== "default" || latency !== "slow" || persona !== "owner",
+    "Needs VITE_MOCK_LATENCY=slow",
+  );
+  for (const width of WIDTHS)
+    for (const mode of MODES) {
+      test(`L at ${width} px, ${mode}: the grid while it loads`, async ({
+        page,
+      }) => {
+        await page.goto(
+          pathToFileURL(`${dir(ARTBOARD[width])}/${ARTBOARD[width]}`).href,
+        );
+        if (width === 320) {
+          const drawn = await page.evaluate(
+            ({ frame, fn }) =>
+              (0, eval)(fn)([
+                ...document.querySelectorAll(`[data-frame="${frame}"] .cardp`),
+              ]),
+            { frame: `sh320-L-${mode}`, fn: LOADING_CARDS },
+          );
+          const drawnBar = await page.evaluate(
+            ({ frame }) => {
+              const row = document.querySelector(
+                `[data-frame="${frame}"] .bar`,
+              )!;
+              const o = row.getBoundingClientRect();
+              return {
+                h: o.height,
+                kids: [...row.children].slice(0, 2).map((e) => {
+                  const b = e.getBoundingClientRect();
+                  return {
+                    x: b.x - o.x,
+                    y: b.y - o.y,
+                    h: b.height,
+                    w: b.width,
+                  };
+                }),
+              };
+            },
+            { frame: `sh320-L-${mode}` },
+          );
+          await open(page, width, mode, `${BOARDS}/mock-board-erp?view=table`);
+          await expect(
+            page.locator('[data-slot="main-table-loading"]'),
+          ).toBeVisible();
+          const got = await page.evaluate(
+            ({ fn }) =>
+              (0, eval)(fn)([
+                ...document.querySelectorAll(
+                  '[data-slot="main-table-loading-cards"] > div',
+                ),
+              ]),
+            { fn: LOADING_CARDS },
+          );
+          // The artboard frame's 1 px border narrows a full-width card by 2 px.
+          expect(Math.abs(got.w - drawn.w), "card width").toBeLessThanOrEqual(
+            2.5,
+          );
+          expect(got.h, "card height").toBeCloseTo(drawn.h, 0);
+          expect(got.pitch, "card pitch").toBeCloseTo(drawn.pitch, 0);
+          // The phone bar (Final-M keeps its own header, so only the bar below the tabs is measured).
+          const bar = await page.evaluate(() => {
+            const row = document.querySelector(
+              '[data-slot="phone-toolbar-placeholder"]',
+            )!;
+            const o = row.getBoundingClientRect();
+            return {
+              h: o.height,
+              kids: [...row.children].map((e) => {
+                const b = e.getBoundingClientRect();
+                return { x: b.x - o.x, y: b.y - o.y, h: b.height, w: b.width };
+              }),
+            };
+          });
+          expect(bar.h, "phone bar height").toBeCloseTo(drawnBar.h, 0);
+          expect(bar.kids[0]!.w, "search button width").toBeCloseTo(
+            drawnBar.kids[0]!.w,
+            0,
+          );
+          expect(bar.kids[0]!.h, "search button height").toBeCloseTo(
+            drawnBar.kids[0]!.h,
+            0,
+          );
+          expect(bar.kids[0]!.y, "search button y").toBeCloseTo(
+            drawnBar.kids[0]!.y,
+            0,
+          );
+          expect(bar.kids[1]!.h, "pill height").toBeCloseTo(
+            drawnBar.kids[1]!.h,
+            0,
+          );
+          expect(bar.kids[1]!.y, "pill y").toBeCloseTo(drawnBar.kids[1]!.y, 0);
+          expect(got.bars.length, "bars per card").toBe(drawn.bars.length);
+          drawn.bars.forEach((bar: Record<string, number>, i: number) => {
+            for (const key of ["x", "y", "w", "h"])
+              expect(got.bars[i][key], `bar ${i} ${key}`).toBeCloseTo(
+                bar[key]!,
+                0,
+              );
+          });
+          return;
+        }
+        const drawnHeader = await page.evaluate(
+          ({ frame }) =>
+            [...document.querySelectorAll(`[data-frame="${frame}"] .hdr .sk`)]
+              .slice(1)
+              .map((e) => {
+                const b = e.getBoundingClientRect();
+                return { w: b.width, h: b.height };
+              }),
+          { frame: `sh${width}-L-${mode}` },
+        );
+        const expected = await page.evaluate(
+          ({ frame, fn }) => {
+            const fr = document.querySelector(`[data-frame="${frame}"]`)!;
+            const tbl = fr.querySelector(".tbl")!;
+            return (0, eval)(fn)(tbl, [...tbl.querySelectorAll(".tr")]);
+          },
+          { frame: `sh${width}-L-${mode}`, fn: LOADING_GRID },
+        );
+        await open(page, width, mode, `${BOARDS}/mock-board-erp?view=table`);
+        const loading = page.locator('[data-slot="main-table-loading"]');
+        await expect(loading).toBeVisible();
+        const actual = await page.evaluate(
+          ({ fn }) => {
+            const grid = document.querySelector(
+              '[data-slot="main-table-loading"] > div:last-child',
+            )!;
+            return (0, eval)(fn)(grid, [...grid.children]);
+          },
+          { fn: LOADING_GRID },
+        );
+        const want = expected as typeof actual;
+        expect(actual.hdrH, "header height").toBeCloseTo(want.hdrH, 0);
+        expect(actual.rowH, "row height").toBeCloseTo(want.rowH, 0);
+        expect(actual.pitch, "row pitch").toBeCloseTo(want.pitch, 0);
+        expect(actual.bars.length, "bars per row").toBe(want.bars.length);
+        want.bars.forEach((bar, i) => {
+          const got = actual.bars[i]!;
+          expect(got.y, `bar ${i} y`).toBeCloseTo(bar.y, 0);
+          expect(got.h, `bar ${i} height`).toBeCloseTo(bar.h, 0);
+          // The first bar sits from the grid's left edge, the last two from its right edge (the title bar's width varies).
+          if (i === 0) {
+            expect(got.left, `bar ${i} left`).toBeCloseTo(bar.left, 0);
+            expect(got.w, `bar ${i} width`).toBeCloseTo(bar.w, 0);
+          }
+        });
+        // The mark is not measured (Final-Board draws 34 px, the state board 32); the two title bars are.
+        if (width === 1280) {
+          const bars = await page
+            .locator('[data-slot="board-header-loading"] > *')
+            .evaluateAll((els) =>
+              els.map((e) => {
+                const b = e.getBoundingClientRect();
+                return { w: b.width, h: b.height };
+              }),
+            );
+          expect(bars, "header bars").toHaveLength(drawnHeader.length);
+          drawnHeader.forEach((bar, i) => {
+            expect(bars[i]!.w, `header bar ${i} width`).toBeCloseTo(bar.w, 0);
+            expect(bars[i]!.h, `header bar ${i} height`).toBeCloseTo(bar.h, 0);
+          });
+        }
+        if (width >= 640) await expectToolbarRow(page, width);
+      });
+    }
+  // Screenshot-review numbers for the loading state at the three review widths.
+  for (const width of [1440, 1024, 390] as const)
+    for (const mode of MODES) {
+      test(`L reviewed at ${width} px, ${mode}: no sideways scroll and no serious axe finding`, async ({
+        page,
+      }) => {
+        await open(page, width, mode, `${BOARDS}/mock-board-erp?view=table`);
+        await expect(
+          page.locator('[data-slot="main-table-loading"]'),
+        ).toBeVisible();
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth,
+          ),
+          "no horizontal page scroll",
+        ).toBe(true);
+        const serious = (await new AxeBuilder({ page }).analyze()).violations
+          .filter((v) => ["serious", "critical"].includes(v.impact ?? ""))
+          .map((v) => v.id);
+        expect(serious).toEqual([]);
       });
     }
 });

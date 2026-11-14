@@ -25,6 +25,9 @@ public static class EmailRegistration
             .Validate(
                 o => !o.Enabled || o.Port is > 0 and <= 65535,
                 "Smtp:Port must be between 1 and 65535 when Smtp:Enabled is true.")
+            .Validate(
+                o => !o.Enabled || o.IsEncryptionSatisfied(),
+                "Smtp:EnableSsl must be true unless Smtp:Host is localhost, 127.0.0.1 or ::1.")
             .ValidateOnStart();
 
         services
