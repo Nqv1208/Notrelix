@@ -126,7 +126,7 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-A05 | Restore a page from the trash | A | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Owner check |
 | UC-DCT-A06 | Delete a trashed page permanently | A | Manager | yes | yes | Final-Docs-2 | real | HARDENING | Owner check |
 | UC-DCT-A07 | Browse the trash | A | Viewer of a trashed page | yes | yes | none | real | HARDENING | Owner check |
-| UC-DCT-A08 | Trash or delete a page that has children | A | Editor, Manager | yes | yes | none | real | HARDENING | Owner check; delete for good of a subtree and the confirmation artboard |
+| UC-DCT-A08 | Trash or delete a page that has children | A | Editor, Manager | yes | yes | none | real | HARDENING | Confirmation screenshot review; owner check |
 | UC-DCT-A09 | Duplicate a page | A | Editor | partial | yes | none | none | INTEGRATING | Copy is two client calls; the client has no video block; BE is partial; no artboard |
 | UC-DCT-A10 | Save a page as a template | A | Editor | yes | yes | none | none | INTEGRATING | No artboard; template visibility when the viewer cannot read the source is undecided (owner) |
 | UC-DCT-A11 | Create a page from a template | A | Editor of the target | yes | yes | none | none | INTEGRATING | No gallery artboard; replay of create-from-template is not proven |
@@ -141,9 +141,9 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-B03 | Show the breadcrumb | B | Viewer | yes | yes | Final-Docs-2 | none | HARDENING | Built: `PageBreadcrumbHandlerTests` (path, hidden crumb, collapsed run, missing parent); owner tests by hand |
 | UC-DCT-B04 | Refuse a cycle or a foreign parent | B | System | yes | partial | none | real | HARDENING | Owner check; the Move to dialog is not driven in a browser |
 | UC-DCT-B05 | Limit nesting depth | B | System | yes | partial | none | none | HARDENING | Built: `PageNestingDepthTests` (create and subtree move refused past the limit); the move dialog words only the 400; owner tests by hand |
-| UC-DCT-C01 | Move a root page and its subtree to a space | C | Editor of the page and of the space | yes | yes | Final-Docs-2 | none | INTEGRATING | Refusal for a page below the caller, a deleted page below, 412 and a hidden target are untested; no dialog artboard |
+| UC-DCT-C01 | Move a root page and its subtree to a space | C | Editor of the page and of the space | yes | yes | Final-Docs-2 | none | HARDENING | Dialog screenshot review; real e2e through the dialog |
 | UC-DCT-C02 | Move a page under another parent | C | Editor of the page, Editor of the new parent | yes | yes | none | real | HARDENING | Owner check; Move to dialog not driven in a browser; sidebar drag not built |
-| UC-DCT-C03 | Refuse a move to another workspace | C | System | none | none | none | none | DEFINED | No explicit rejection test |
+| UC-DCT-C03 | Refuse a move to another workspace | C | System | none | none | none | none | HARDENING | Real e2e rejection line |
 | UC-DCT-D01 | Add a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
 | UC-DCT-D02 | Edit a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
 | UC-DCT-D03 | Save several blocks as one change | D | Editor | yes | yes | Final-Docs-2 | none | HARDENING | Built: batch retry and 5 000-block limit in `BatchUpdateBlocksHandlerTests`; rollback in `BatchRollbackIntegrationTests` (CI); owner tests by hand |
@@ -355,7 +355,7 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - Rules: product doc sections 89, 90 (product rule DCT-028: lifecycle workflow, not ORM cascade); `DCREQ004`, `DCREQ006`. New rule in Part 5.
 - Acceptance: Given a page with two children, When trashed, Then neither child is in the tree or readable. When the parent is restored, Then both are back.
 - Evidence: BE `ArchivePageCommandHandler`, `RestorePageCommandHandler`, `DeletePageCommandHandler` apply the subtree through `IPageSubtreeStore` and `IPageSubtreeAuthorizer` · FE confirmation with the count of visible active pages below (`pagesBelow`, the set the trash changes), undo toast, trash note, the refusal message · Design none · Tests Application `ArchivePageCommandHandlerTests` (5), `PageTrashHandlerTests` (6); Integration `PageTreeShapeIntegrationTests` (7), `PageArchivedOutboxEvidenceTests` (5) · Real e2e `frontend/e2e/real/documents-structure.real.e2e.spec.ts` test 1 (trashing the parent puts the child in the trash list; restoring the parent brings the child back under it)
-- State: HARDENING. Run 2026-11-01 at `d99b4cca0`: the real spec and the tests above pass (12 of 12 real specs; Application filter 589, Integration filter 476, none failed). Missing: owner check; permanent delete of a subtree and a descendant the caller cannot see have no test of their own (`Delete_FromTheTrash_DeletesThePage` covers one page); confirmation artboard.
+- State: HARDENING. Run 2026-11-01 at `d99b4cca0`: the real spec and the tests above pass (12 of 12 real specs; Application filter 589, Integration filter 476, none failed). Built since: `PageTrashHandlerTests` now covers permanent delete of a subtree (a page trashed earlier and an active page below stay) and a descendant the caller may not delete refusing the whole operation without naming it (2 tests). Missing: confirmation screenshot review at 1440, 1024 and 390 (light, dark, Vietnamese); owner check.
 
 ### UC-DCT-A09 Duplicate a page
 - Capability: A Page lifecycle
@@ -573,7 +573,7 @@ Team capability 3 (team id DCT-003). Requirements `DCREQ008` to `DCREQ010`, `DCR
 - Rules: product doc sections 16, 86; `DCREQ008`, `DCREQ034`, `DCREQ010`.
 - Acceptance: Given a root page with two children, When moved to Space S, Then all three show Space S. Given a stale version, Then `412` and no change.
 - Evidence: BE `POST /api/v1/pages/{pageId}/move-to-space`, `MovePageToSpaceCommandHandler` (now evaluates `UpdatePage` for every page below the root through `IPageSubtreeAuthorizer` before any page changes Space, and skips deleted pages that used to make the move throw) · FE `useMovePageToSpace`, the dialog shows a specific message when a page below is refused · Design Final-Docs-2 · Tests `page-move-to-space.unit.test.ts`, `PageHierarchyTests` · Real e2e none
-- State: INTEGRATING — Refusal for a page below the caller, a deleted page below, 412 and a hidden target are untested; no dialog artboard.
+- State: HARDENING. Built: `PageMoveToSpaceHandlerTests` (6) covers the subtree move that skips a deleted page, the same-Space no-op, refusal when a page below is not allowed (nothing moves), a Space of another workspace, a page of another workspace and a nested page; the 412 and the hidden target are in `SpacePlacementIntegrationTests`. Missing: dialog screenshot review at 1440, 1024 and 390 (light, dark, Vietnamese); real e2e through the dialog.
 
 ### UC-DCT-C02 Move a page under another parent
 - Capability: C Page move / reparent
@@ -601,7 +601,7 @@ Team capability 3 (team id DCT-003). Requirements `DCREQ008` to `DCREQ010`, `DCR
 - Rules: product doc sections 87, 88; `DCREQ009`.
 - Acceptance: Given a page and a Space of another workspace, When moved, Then refused and unchanged.
 - Evidence: BE `MovePageToSpaceCommandHandler` (reads the caller's workspace) · FE none · Design none · Tests none · Real e2e none
-- State: DEFINED — explicit rejection test.
+- State: HARDENING. Built: `PageMoveToSpaceHandlerTests` refuses a Space of another workspace with the not-found answer and a page of another workspace, both leaving the page and its version unchanged. Missing: a real e2e rejection line.
 
 ## Capability D: Block lifecycle
 
