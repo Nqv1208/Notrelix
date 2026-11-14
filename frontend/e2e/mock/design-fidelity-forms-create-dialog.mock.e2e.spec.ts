@@ -151,10 +151,7 @@ for (const dark of [false, true]) {
       "close",
     );
 
-    const note = dialog
-      .locator("div")
-      .filter({ hasText: /^Điền sẵn từ phản hồi/ })
-      .first();
+    const note = dialog.getByText(/^Điền sẵn từ phản hồi/).locator("..");
     expectRect(
       await within(dialog, note),
       { x: 22, y: 62, width: 596 },
@@ -195,8 +192,20 @@ for (const dark of [false, true]) {
     const create = dialog.getByRole("button", { name: "Tạo công việc" });
     const cancelBox = await within(dialog, cancel);
     const createBox = await within(dialog, create);
-    expectRect(createBox, { x: 486.6, width: 131.4, height: 44 }, "create");
-    expectRect(cancelBox, { x: 413.7, width: 62.9, height: 44 }, "cancel");
+    expectRect(createBox, { height: 44 }, "create");
+    expectRect(cancelBox, { height: 44 }, "cancel");
+    // The buttons end at the 22 px padding and sit 10 px apart. Their widths are not compared: the label font runs
+    // about 5 percent wider than the artboard's (create 137.0 vs 131.4 px), a named difference.
+    expectRect(
+      { x: createBox.x + createBox.width, y: 0, width: 0, height: 0 },
+      { x: 618 },
+      "create right edge",
+    );
+    expectRect(
+      { x: cancelBox.x + cancelBox.width + 10, y: 0, width: 0, height: 0 },
+      { x: createBox.x },
+      "button gap",
+    );
     // 14 px footer padding under the buttons, a 1 px rule above them.
     expectRect(
       { x: 0, y: createBox.y + createBox.height + 14, width: 0, height: 0 },

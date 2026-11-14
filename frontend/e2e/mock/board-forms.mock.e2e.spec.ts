@@ -165,7 +165,7 @@ test.describe("Board forms (owner)", () => {
     await expect(page.getByRole("tab", { name: /Mới\s*3/ })).toBeVisible();
   });
 
-  test("rejects a response without a reason, at once and without an undo", async ({
+  test("rejects a response without a reason at once, with an undo for a few seconds", async ({
     page,
   }) => {
     await open(page, `${SUPPORT}/responses`);
@@ -177,7 +177,7 @@ test.describe("Board forms (owner)", () => {
       .click();
     await expect(page.getByText("Đã từ chối", { exact: true })).toBeVisible();
     await expect(page.getByRole("tab", { name: /Mới\s*2/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Hoàn tác" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Hoàn tác" })).toHaveCount(1);
   });
 
   test("keeps the admin screens usable at 768 px", async ({ page }) => {

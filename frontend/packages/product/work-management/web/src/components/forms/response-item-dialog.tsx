@@ -132,8 +132,8 @@ export function ResponseItemDialog(props: ResponseItemDialogProps) {
         showCloseButton={false}
         className="max-h-[calc(100dvh-32px)] gap-0 overflow-y-auto rounded-2xl bg-popover p-0 sm:max-w-[640px]"
       >
-        <DialogHeader className="flex-row items-center gap-2.5 pt-3.5 pr-3 pb-2.5 pl-[22px]">
-          <DialogTitle className="text-[18px] leading-[1.3] font-[650]">
+        <DialogHeader className="flex-row items-center gap-2.5 pt-4 pr-3 pb-2.5 pl-[22px]">
+          <DialogTitle className="text-[18px] leading-[1.45] font-[650]">
             {t.title}
           </DialogTitle>
           <span className="inline-flex h-[26px] items-center rounded-[7px] bg-state-hover px-2.5 text-[12.5px] font-medium text-muted-foreground">
