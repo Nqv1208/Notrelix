@@ -17,23 +17,12 @@ namespace Notrelix.Infrastructure.Email
                 // No provider is configured on a developer machine: the text of the message
                 // (the confirmation link, the invitation link) is the only way to follow it.
                 logger.LogInformation(
-                    "Development email to {Recipient}: {BodyText}",
-                    MaskEmail(request.RecipientEmail),
+                    "Development email with subject {Subject}: {BodyText}",
+                    request.Subject,
                     request.BodyText);
             }
 
             return Task.FromResult(new EmailDeliveryResult("noop", request.IdempotencyKey));
-        }
-
-        private static string MaskEmail(string email)
-        {
-            var atIndex = email.IndexOf('@');
-            if (atIndex <= 1 || atIndex == email.Length - 1)
-            {
-                return "***";
-            }
-
-            return $"{email[0]}***{email[(atIndex - 1)..]}";
         }
     }
 }

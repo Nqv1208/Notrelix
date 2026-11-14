@@ -16,7 +16,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, "../../..");
@@ -54,7 +54,7 @@ console.log(
 mkdirSync(outputDir, { recursive: true });
 
 try {
-  execSync(`npx openapi-typescript "${specPath}" -o "${outputFile}"`, {
+  execFileSync("npx", ["openapi-typescript", specPath, "-o", outputFile], {
     cwd: join(__dirname, ".."),
     stdio: "inherit",
   });
