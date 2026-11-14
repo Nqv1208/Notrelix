@@ -635,7 +635,7 @@ export function DocSidePanelSurface({
   return (
     <aside
       aria-label={p.label}
-      className="box-content flex w-[308px] shrink-0 flex-col border-l border-border bg-doc-panel max-sm:absolute max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-40 max-sm:h-[72%] max-sm:w-auto max-sm:rounded-t-[16px] max-sm:border-t max-sm:border-l-0 max-sm:shadow-popover"
+      className="box-content flex w-[308px] shrink-0 flex-col border-l border-border bg-doc-panel max-sm:absolute max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-dropdown max-sm:h-[72%] max-sm:w-auto max-sm:rounded-t-[16px] max-sm:border-t max-sm:border-l-0 max-sm:shadow-popover"
     >
       <div
         role="tablist"
