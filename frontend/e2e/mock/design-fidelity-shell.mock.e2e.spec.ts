@@ -347,12 +347,13 @@ test.describe("rail pinned (nav=hien-day)", () => {
     // The key chip is gone (owner rule: no visible shortcut hints on buttons).
   });
 
-  test("the five navigation rows are 235 x 34 on a 36 px pitch from y=116 with 13.5/500 muted text", async ({
+  test("the six navigation rows (the five drawn plus Chat) are 235 x 34 on a 36 px pitch from y=116 with 13.5/500 muted text", async ({
     page,
   }) => {
     const rows = page.getByRole("list", { name: "Chính" }).locator("a");
-    await expect(rows).toHaveCount(5);
-    for (let index = 0; index < 5; index += 1) {
+    // Final-Board draws five rows; Chat (owner-approved scope) is the fourth, so the rows below it sit 36 px lower.
+    await expect(rows).toHaveCount(6);
+    for (let index = 0; index < 6; index += 1) {
       const row = rows.nth(index);
       await expectBox(row, {
         x: 86,
@@ -378,16 +379,16 @@ test.describe("rail pinned (nav=hien-day)", () => {
     expect((await box(count)).height).toBeLessThanOrEqual(18);
   });
 
-  test("the section label is 215 x 24 at 96,312 with a 24 x 24 r6 add button at x=287", async ({
+  test("the section label is 215 x 24 at 96,348 with a 24 x 24 r6 add button at x=287", async ({
     page,
   }) => {
     const label = page.getByText("Phòng ban", { exact: true });
     await expectFont(label, 12, 600);
     await expectRgb(label, "color", [95, 104, 117]);
     const row = label.locator("xpath=..");
-    await expectBox(row, { x: 96, y: 312, width: 215, height: 24 });
+    await expectBox(row, { x: 96, y: 348, width: 215, height: 24 });
     const add = page.getByRole("button", { name: "Tạo phòng ban" });
-    await expectBox(add, { x: 287, y: 312, width: 24, height: 24 });
+    await expectBox(add, { x: 287, y: 348, width: 24, height: 24 });
     expect(await css(add, "border-radius")).toBe("6px");
   });
 
@@ -397,23 +398,23 @@ test.describe("rail pinned (nav=hien-day)", () => {
     const tree = page.getByRole("tree", { name: "Phòng ban" });
     const space = tree.getByRole("treeitem").nth(0);
     await expect(space).toHaveAttribute("aria-expanded", "true");
-    await expectBox(space, { x: 86, y: 342, width: 209, height: 32 });
+    await expectBox(space, { x: 86, y: 378, width: 209, height: 32 });
     expect(await css(space, "border-radius")).toBe("7px");
     expect(await css(space, "padding-left")).toBe("10px");
     expect(await css(space, "column-gap")).toBe("9px");
     await expectFont(space, 13.5, 500);
     const mark = space.locator("span").first();
-    await expectBox(mark, { x: 96, y: 348, width: 20, height: 20 });
+    await expectBox(mark, { x: 96, y: 384, width: 20, height: 20 });
     expect(await css(mark, "border-radius")).toBe("6px");
     await expectFont(mark, 9, 700);
     // The Private lock is 13 x 13 and ends 10 px inside the row.
     await expectBox(space.locator("svg"), { x: 272, width: 13, height: 13 });
     const toggle = tree.locator("[data-tree-toggle]").first();
-    await expectBox(toggle, { x: 297, y: 346, width: 24, height: 24 });
+    await expectBox(toggle, { x: 297, y: 382, width: 24, height: 24 });
     expect(await css(toggle, "border-radius")).toBe("6px");
 
     const current = tree.getByRole("treeitem", { name: /Triển khai ERP Q4/ });
-    await expectBox(current, { x: 86, y: 376, width: 235, height: 30 });
+    await expectBox(current, { x: 86, y: 412, width: 235, height: 30 });
     expect(await css(current, "padding-left")).toBe("39px");
     expect(await css(current, "border-radius")).toBe("7px");
     await expectFont(current, 13, 600);
