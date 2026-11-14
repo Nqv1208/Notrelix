@@ -9,8 +9,8 @@ import { useWorkManagementServices } from "../services";
 
 /** Items of each Status lane a board read brings with it. */
 export const BOARD_FIRST_PAGE = 10;
-/** Items each step of scrolling a lane to its end reads from the server. */
-export const BOARD_LANE_PAGE = 10;
+/** Items each step of scrolling a lane to its end reads from the server: what "Hiện thêm 50 việc" says it adds. */
+export const BOARD_LANE_PAGE = 50;
 /** Items each step reads when a view needs a lane to its end (a date window). */
 export const WINDOW_LANE_PAGE = 200;
 // Pages a refetch reads back to put a lane's loaded items where they were (about 2,000 items).
