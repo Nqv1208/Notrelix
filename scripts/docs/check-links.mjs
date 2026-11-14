@@ -650,7 +650,7 @@ function githubLikeSlug(heading) {
       "$1",
     )
     .replace(/<[^>]+>/g, "")
-    .replace(/[`*_~]/g, "")
+    .replace(/[<>`*_~]/g, "")
     .trim()
     .toLowerCase();
 
