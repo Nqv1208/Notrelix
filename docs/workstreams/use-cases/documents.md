@@ -163,17 +163,17 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-F02 | Reorder blocks | F | Editor | yes | yes | none | real | HARDENING | Owner check; the grip and keys are not driven in a browser |
 | UC-DCT-F03 | Nest or un-nest a block | F | Editor | yes | yes | none | none | HARDENING | Built (verified by reading code 2026-11-09, not run): Block.cs, BlockHierarchyTests.cs, BlockTreeRulesTests.cs, BlockMoveFailureAtomicityTests.cs, block-move.ts, block-move.component.test.tsx. Remaining: owner tests by hand. |
 | UC-DCT-F04 | Insert many blocks densely | F | Editor | yes | none | none | none | IMPLEMENTING | Rebalance undefined |
-| UC-DCT-G01 | Open a page | G | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Block list unbounded |
+| UC-DCT-G01 | Open a page | G | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Blocks read in one answer (cap 5 000 holds); trashed page still opens; 1-px diff |
 | UC-DCT-G02 | List the pages of a workspace | G | Workspace member | yes | yes | none | none | HARDENING | Built: cursor paging; real e2e owner |
-| UC-DCT-G03 | Search pages by title | G | Workspace member | yes | yes | Final-Command | none | INTEGRATING | Owner question: approve an ILIKE rewrite of the title match and a pg_trgm GIN index on the title, or keep the current search? |
-| UC-DCT-G04 | Read the pages that reference this page | G | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Unbounded |
+| UC-DCT-G03 | Search pages by title | G | Workspace member | yes | yes | Final-Command | none | HARDENING | Decision 2026-11-15: keep the title match as it is; the index follows the body-search projection (UC-DCT-G07). Real e2e none |
+| UC-DCT-G04 | Read the pages that reference this page | G | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Bounded at 200; 1-px diff of the Liên kết tab |
 | UC-DCT-G05 | Show the tasks and boards linked to a page | G | Viewer | partial | yes | Final-Docs-2 | none | INTEGRATING | ResourceLink aggregate fate is undecided (owner decision) |
-| UC-DCT-G06 | Load a very large page (enterprise baseline) | G | Viewer | none | none | none | none | DEFINED | No block limit or windowing |
+| UC-DCT-G06 | Load a very large page (enterprise baseline) | G | Viewer | yes | none | none | none | INTEGRATING | Cap of 5 000 built and tested; cursor of 1 000 and windowed first render not built |
 | UC-DCT-G07 | Search inside page text (enterprise baseline) | G | Workspace member | none | none | none | none | DEFINED | Title search only |
-| UC-DCT-H01 | Autosave edits and show the saved state | H | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Offline state not proven |
+| UC-DCT-H01 | Autosave edits and show the saved state | H | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Offline state built (UC-DCT-H04); not proven in a real e2e |
 | UC-DCT-H02 | Rebase after a stale save | H | Editor | yes | yes | none | none | INTEGRATING | No conflict artboard; no proof with two sessions |
-| UC-DCT-H03 | Roll back a failed optimistic write | H | Editor | yes | yes | none | none | INTEGRATING | Built: create, delete and reorder hooks patch the list at once and roll back (`block-mutation-rollback.unit.test.ts`). Owner question: editor saves keep a rejected block until Retry by design; revert it instead? |
-| UC-DCT-H04 | Edit while offline | H | Editor | none | none | none | none | DEFINED | Not built |
+| UC-DCT-H03 | Roll back a failed optimistic write | H | Editor | yes | yes | none | none | INTEGRATING | Built: create, delete and reorder hooks patch the list at once and roll back (`block-mutation-rollback.unit.test.ts`). Decision 2026-11-15: the editor keeps a rejected block until Retry; no artboard for the error toast |
+| UC-DCT-H04 | Edit while offline | H | Editor | none | yes | none | none | INTEGRATING | Banner and leave warning and resend built; structural actions stay enabled offline; no real e2e |
 | UC-DCT-H05 | Find and replace in a page | H | Editor | none | yes | none | none | INTEGRATING | No artboard for find and replace |
 | UC-DCT-H06 | Read a page on a phone app | H | Viewer | yes | yes | Final-M-Docs | none | HARDENING | Built (verified by reading code 2026-11-09, not run): GetPageEndpoint.cs, ListPageBlocksEndpoint.cs, mobile-document-screen.tsx, docs-mobile-screen.mobile.test.tsx. Remaining: owner tests by hand. |
 | UC-DCT-H07 | Use the 320 px page and its overflow sheet | H | Viewer, Editor | yes | yes | Final-Docs-2-320 | none | INTEGRATING | Measured gaps beyond 1 px (paragraph style select 36 px against 30, status pill 79 against 87); other states undrawn |
@@ -897,7 +897,7 @@ Team capability 7 (team id DCT-007). Requirements `DCREQ023` to `DCREQ026`, `DCR
 - Rules: product doc sections 7, 8, 99; `DCREQ023`, `DCREQ025`, `DCREQ026`.
 - Acceptance: Given a readable page, When opened, Then title and blocks render in order. Given an unreadable page and a missing page, Then the same `404` body.
 - Evidence: BE `GET /api/v1/pages/{pageId}`, `GET /api/v1/pages/{pageId}/blocks`, `GetPageQueryHandler`, `GetPageBlocksQueryHandler` · FE route `/workspaces/$workspaceId/docs/$docId`, `usePage`, `usePageBlocks`, `DocPageScreen` · Design Final-Docs-2, Final-Docs-2-Dem, Final-Docs-2-320 · Tests `PageReadVersionTests`, `DocumentsOpenApiShapeTests` · Real e2e `documents.real.e2e.spec.ts`
-- State: HARDENING — block limit and windowing (UC-DCT-G06), identical-404 test, 1-px diff.
+- State: HARDENING — Built: `OpenPageNotFoundTests` (a missing page and a page deleted for good give the same `NotFoundException` on the page read and on the block read; an empty page opens as an empty list); an unreadable page is answered by the ViewPage requirement with the same not found (resource-level enforcement matrix). Missing: the cursor and windowed first render (UC-DCT-G06); a trashed (archived) page still opens for a reader who can see it in the trash, the catalog line says 404; measured gaps of the page against Final-Docs-2 (the paragraph-style select and the toolbar are fixed to the drawing; the content column still sits 4 to 25 px lower from the first heading down, the status pill is 79 px against 87).
 
 ### UC-DCT-G02 List the pages of a workspace
 - Capability: G Document query and loading
@@ -925,7 +925,7 @@ Team capability 7 (team id DCT-007). Requirements `DCREQ023` to `DCREQ026`, `DCR
 - Rules: product doc section 67; `DCREQ140`, `DCREQ141`; decision 33.
 - Acceptance: Given a private page "Salary plan", When another member searches "salary", Then no result.
 - Evidence: BE `GET /api/v1/workspaces/{workspaceId}/pages/search`, `SearchPagesQueryHandler`, `PageSearchFactsAdapterTests` · FE `useDocsSearch`, `search.api.ts` · Design Final-Command · Tests `PageSearchFactsAdapterTests`, `PageViewAccessTests`, `PageReadVersionTests` · Real e2e none
-- State: INTEGRATING — Owner question: the search matches the title with `lower(title) LIKE %query%`, which a plain index does not serve. A GIN trigram index on the title (`pg_trgm` is already in the model) helps only when the match is `ILIKE` on the same column, and that rewrite breaks the in-memory handler test in `PageReadVersionTests` (EF.Functions does not run there). Approve the ILIKE rewrite and the index, or keep title search as it is?
+- State: HARDENING — Decision 2026-11-15 (lead, night run): keep `lower(title) LIKE %query%`. The match runs inside one workspace after the ViewPage filter and returns at most 25 rows, so the scan is bounded by the pages of one workspace; an ILIKE rewrite plus a GIN trigram index would break the in-memory handler test in `PageReadVersionTests` and is better spent on the body-search projection (UC-DCT-G07), which replaces this read. Missing: real e2e, 1-px diff of the search box.
 
 ### UC-DCT-G04 Read the pages that reference this page
 - Capability: G Document query and loading
@@ -938,8 +938,8 @@ Team capability 7 (team id DCT-007). Requirements `DCREQ023` to `DCREQ026`, `DCR
 - UI states: loading, empty ("No page links here"), error.
 - Rules: product doc sections 20, 38, 40 (product rule DCT-014); `DCREQ122`, `DCREQ125`.
 - Acceptance: Given page A references B, When B is opened, Then A is listed in B's backlinks; a reader who cannot see A does not see it.
-- Evidence: BE `GET /api/v1/pages/{pageId}/backlinks`, `GetPageBacklinksQueryHandler` · FE `usePageBacklinks` · Design Final-Docs-2 (Liên kết tab) · Tests `PageViewAccessTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
-- State: HARDENING — result bound, unreadable-referrer test over the API.
+- Evidence: BE `GET /api/v1/pages/{pageId}/backlinks`, `GetPageBacklinksQueryHandler` · FE `usePageBacklinks` · Design Final-Docs-2 (Liên kết tab) · Tests `PageBacklinksHandlerTests`, `PageViewAccessTests`, `GovernanceResourcePermissionFlowTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
+- State: HARDENING — Built: the list is cut at 200 referrers by title (`GetPageBacklinksQueryHandler.MaxBacklinks`); `PageBacklinksHandlerTests` (5): an unreadable referrer is absent and its title appears nowhere, a trashed referrer is absent, an empty list, a missing page is not found, the cut at the bound. Missing: 1-px diff of the Liên kết tab.
 
 ### UC-DCT-G05 Show the tasks and boards linked to a page
 - Capability: G Document query and loading
@@ -966,8 +966,8 @@ Team capability 7 (team id DCT-007). Requirements `DCREQ023` to `DCREQ026`, `DCR
 - UI states: loading more, error with retry.
 - Rules: product doc section 99; `DCREQ024`; AGENTS.md section 25.
 - Acceptance: Given a page with 5 000 blocks, When opened, Then the first window renders before the rest is fetched. When a 5 001st block is created, Then refused.
-- Evidence: BE `GetPageBlocksQueryHandler` (reads all blocks, comment says the set is bounded; nothing enforces it) · FE none · Design none · Tests none · Real e2e none
-- State: DEFINED — limit, cursor, windowed rendering.
+- Evidence: BE `PageRules.MaxBlocksPerPage` (5 000), enforced by `CreateBlockCommandHandler` and `PageBlockSet.EnsureWithinLimit` (the batch route); `GetPageBlocksQueryHandler` reads the whole bounded set · FE none · Design none · Tests `BatchUpdateBlocksHandlerTests.ABatchThatWouldPassTheBlockLimit_IsRefused_ButOneThatReachesIt_Succeeds` · Real e2e none
+- State: INTEGRATING — Built: the 5 000-block cap on create and on the batch route (rule `Documents_Page_BlockLimitReached`). Missing: a cursor of 1 000 on `GET /pages/{id}/blocks` (the response becomes a cursor page, which moves the web, mobile and mock-backend consumers and the OpenAPI shape together) and the windowed first render.
 
 ### UC-DCT-G07 Search inside page text (enterprise baseline)
 - Capability: G Document query and loading
@@ -1027,7 +1027,7 @@ Team capability 8 (team id DCT-008). Requirements `DCREQ027` to `DCREQ031`. Deci
 - Rules: product doc section 99; team spec section 13 "mutation reconciliation"; `DCREQ028`, `DCREQ029`.
 - Acceptance: Given a block create that the server refuses, Then the block vanishes and the person sees the reason.
 - Evidence: BE block routes · FE `useCreateBlock`, `useDeleteBlock`, `useReorderBlocks`, `useRefreshPageBlocks` · Design none · Tests `block-mutation-rollback.unit.test.ts`, `docs-blocks-trash.unit.test.ts`, `doc-block-saver.unit.test.ts` · Real e2e none
-- State: INTEGRATING — Built: `useCreateBlock`, `useDeleteBlock` and `useReorderBlocks` patch the block list at once and roll it back when the producer refuses (`block-mutation-rollback.unit.test.ts`, two cases per hook). Owner question: the editor screen (`useDocEditor`, `DocBlockSaver`) keeps a rejected block until Retry by design and does not use these hooks; should a rejected editor save revert the block instead?
+- State: INTEGRATING — Built: `useCreateBlock`, `useDeleteBlock` and `useReorderBlocks` patch the block list at once and roll it back when the producer refuses (`block-mutation-rollback.unit.test.ts`, two cases per hook). Decision 2026-11-15 (lead, night run): the editor screen (`useDocEditor`, `DocBlockSaver`) keeps a rejected block until Retry and does not use these hooks, so typed text is never taken back from the person (UC-DCT-H01 acceptance: the text stays); the rollback hooks serve the list-style surfaces. Missing: real e2e with a refused create, the error toast against a drawing.
 
 ### UC-DCT-H04 Edit while offline
 - Capability: H Editor state reconciliation
@@ -1040,8 +1040,8 @@ Team capability 8 (team id DCT-008). Requirements `DCREQ027` to `DCREQ031`. Deci
 - UI states: offline banner, not saved, saving after reconnect.
 - Rules: product doc section 101; `DCREQ031`.
 - Acceptance: Given an offline typing session of one minute, When the connection returns, Then the text is saved or shown as a conflict, never silently dropped.
-- Evidence: BE none · FE none (no offline state in `doc-page-bar-surface.tsx` evidence found) · Design none · Tests none · Real e2e none
-- State: DEFINED — banner, leave warning, resend, tests.
+- Evidence: BE none · FE `useOnline`, the `offline` save state of `doc-page-bar-surface.tsx`, the `beforeunload` warning and the resend on reconnect in `doc-page-screen.tsx` · Design none (Doc-Page states on the Docs canvas v23) · Tests `use-online.component.test.tsx`, `doc-page-surfaces.interaction.component.test.tsx` (`docs.page.bar:offline`) · Real e2e none
+- State: INTEGRATING — Built: the bar says "Offline, changes not saved yet" while the browser is offline, the browser warns before the tab closes while anything is unsaved, and the reconnect sends the unsent writes again (a stale one follows UC-DCT-H02). Missing: disabling create page, move, trash and import while offline, a real e2e with the network cut, the state measured against the Docs canvas.
 
 ### UC-DCT-H05 Find and replace in a page
 - Capability: H Editor state reconciliation

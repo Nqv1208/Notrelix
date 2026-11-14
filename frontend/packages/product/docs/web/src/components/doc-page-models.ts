@@ -192,7 +192,7 @@ export interface DocHeaderView {
   readonly presence: readonly DocPerson[];
 }
 
-export type DocSaveState = "saved" | "saving" | "error";
+export type DocSaveState = "saved" | "saving" | "error" | "offline";
 
 export interface DocTocEntry {
   readonly id: string;

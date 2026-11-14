@@ -23,6 +23,7 @@ export const vi = {
     saving: "Đang lưu…",
     stats: "{{words}} từ · {{characters}} ký tự",
     saveFailed: "Chưa lưu được ·",
+    offline: "Ngoại tuyến, thay đổi chưa được lưu",
     titleConflict:
       "Tên tài liệu vừa được người khác đổi. Đang hiện tên mới nhất.",
     retry: "Thử lại",
@@ -796,6 +797,7 @@ export const en: DocPageCopy = {
     saving: "Saving…",
     stats: "{{words}} words · {{characters}} characters",
     saveFailed: "Not saved ·",
+    offline: "Offline, changes not saved yet",
     titleConflict:
       "Someone else just renamed this document. Showing the latest name.",
     retry: "Retry",

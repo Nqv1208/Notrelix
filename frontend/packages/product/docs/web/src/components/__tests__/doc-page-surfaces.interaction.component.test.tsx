@@ -245,6 +245,17 @@ describe("docs web pure surfaces", () => {
     ).toBe("true");
   });
 
+  it("FUI[docs.page.bar:offline] says the changes are not saved yet while the connection is gone", () => {
+    renderPureUi(
+      <DocPageBarSurface copy={docsCopy} header={HEADER} saveState="offline" />,
+    );
+
+    expect(
+      screen.getByRole("status").textContent?.includes(docsCopy.header.offline),
+    ).toBe(true);
+    expect(screen.queryByText(docsCopy.header.saved)).toBeNull();
+  });
+
   it("FUI[docs.page.toolbar:menus] opens the File menu and routes its actions through callbacks", () => {
     const onOpenFileMenu = vi.fn();
     const onNewDoc = vi.fn();

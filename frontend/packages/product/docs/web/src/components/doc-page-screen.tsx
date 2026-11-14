@@ -1,4 +1,5 @@
 import { useDocLive } from "./use-doc-live";
+import { useOnline } from "./use-online";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AttachmentUploads,
@@ -38,7 +39,6 @@ import {
   createUsePageHistory,
   type Block,
   type BlockType,
-  type DocSaveState,
   type DocsApiClient,
   type PageApiEndpoints,
 } from "@notrelix/docs-state";
@@ -80,7 +80,7 @@ import type {
   DocPerson,
   DocMarkTargets,
 } from "./doc-page-models";
-import { isRestrictedTask } from "./doc-page-models";
+import { isRestrictedTask, type DocSaveState } from "./doc-page-models";
 import { readImportFile } from "../import/read-import-file";
 import { DocPageScreenSurface } from "./doc-page-screen-surface";
 import { useDocPanelOpen } from "./use-doc-panel-open";
@@ -518,6 +518,8 @@ export function createDocPageScreen({
       null,
     );
     const toastedRef = useRef(false);
+    const online = useOnline();
+    const unsavedRef = useRef(false);
     const saver = useDocSaver(workspaceId, pageId, blocksQuery.data, {
       onConflict: ({ blockId, local, server }) => {
         const changed = !local || !draftEquals(local, server);
@@ -533,6 +535,27 @@ export function createDocPageScreen({
       },
       onRebased: (drafts) => richRef.current?.applyDrafts(drafts),
     });
+    // Unsent typing stays in the open tab: the browser warns before it closes, and
+    // the connection coming back sends it with its expected versions (conflicts follow the rebase).
+    useEffect(() => {
+      const warn = (event: BeforeUnloadEvent) => {
+        if (!unsavedRef.current) return;
+        event.preventDefault();
+        event.returnValue = "";
+      };
+      window.addEventListener("beforeunload", warn);
+      return () => window.removeEventListener("beforeunload", warn);
+    }, []);
+    const wasOnlineRef = useRef(online);
+    const { retry: retryEditor } = editor;
+    const { retry: retrySaver } = saver;
+    useEffect(() => {
+      if (online && !wasOnlineRef.current) {
+        retryEditor();
+        void retrySaver();
+      }
+      wasOnlineRef.current = online;
+    }, [online, retryEditor, retrySaver]);
     const initialDrafts = useMemo(
       () =>
         [...blocks].sort((a, b) => a.position - b.position).map(draftOfBlock),
@@ -1552,9 +1575,12 @@ export function createDocPageScreen({
     const saveState: DocSaveState =
       editor.saveState === "error" || saver.saveState === "error"
         ? "error"
-        : editor.saveState === "saving" || saver.saveState === "saving"
-          ? "saving"
-          : "saved";
+        : !online
+          ? "offline"
+          : editor.saveState === "saving" || saver.saveState === "saving"
+            ? "saving"
+            : "saved";
+    unsavedRef.current = saveState !== "saved";
 
     return (
       <DocPageScreenSurface
