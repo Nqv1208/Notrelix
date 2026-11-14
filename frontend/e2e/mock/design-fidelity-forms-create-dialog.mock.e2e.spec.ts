@@ -151,7 +151,10 @@ for (const dark of [false, true]) {
       "close",
     );
 
-    const note = dialog.getByText(/^Điền sẵn từ phản hồi/).locator("..");
+    const note = dialog
+      .getByText(/^Điền sẵn từ phản hồi/)
+      .last()
+      .locator("..");
     expectRect(
       await within(dialog, note),
       { x: 22, y: 62, width: 596 },
