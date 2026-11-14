@@ -8,7 +8,6 @@ import {
 } from "./support/real-session";
 
 test.setTimeout(240_000);
-test.use({ locale: "vi-VN" });
 
 const apiUrl = process.env.VITE_API_URL ?? "http://127.0.0.1:58000/api/v1";
 const FILE_MENU = /^(Tệp|File)$/;
@@ -216,6 +215,8 @@ test("trash and permanent-delete confirmations and the move dialog hold at 1440,
 }, testInfo) => {
   const stamp = Date.now();
   await signIn(page, realUsers.workspaceOwner);
+  // The sign-in screen is English; the dialogs are reviewed in Vietnamese.
+  await page.evaluate(() => localStorage.setItem("notrelix-locale", "vi"));
   const workspace = await findWorkspace(page, "Workspace 3");
   const other = await createDoc(page, workspace.id, `Other ${stamp}`);
   const parent = await createDoc(page, workspace.id, `Parent ${stamp}`);
@@ -252,14 +253,18 @@ test("trash and permanent-delete confirmations and the move dialog hold at 1440,
         if (width === 390) {
           const small = await dialog
             .locator("button, [role=option]")
-            .evaluateAll(
-              (nodes) =>
-                nodes
-                  .map((node) => node.getBoundingClientRect())
-                  .filter((r) => r.width > 0 && r.height > 0 && r.height < 44)
-                  .length,
+            .evaluateAll((nodes) =>
+              nodes
+                .filter((node) => {
+                  const r = node.getBoundingClientRect();
+                  return r.width > 0 && r.height > 0 && r.height < 44;
+                })
+                .map(
+                  (node) =>
+                    `${node.getAttribute("aria-label") ?? node.textContent} ${Math.round(node.getBoundingClientRect().height)}px`,
+                ),
             );
-          expect(small, `${name} ${tag} targets under 44 px`).toBe(0);
+          expect(small, `${name} ${tag} targets under 44 px`).toEqual([]);
         }
         await testInfo.attach(`${name}-${tag}`, {
           body: await page.screenshot(),
