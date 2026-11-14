@@ -1,5 +1,5 @@
 import { Plus, RefreshCw, Search, TriangleAlert } from "lucide-react";
-import { Button, cn } from "@notrelix/ui-web";
+import { Button, Skeleton, cn } from "@notrelix/ui-web";
 import {
   kanbanPillClass,
   kanbanPrimaryButtonClass,
@@ -51,42 +51,57 @@ export function MainTableError({
 /** The toolbar where it is drawn, switched off: nothing on it can act on a board that is not there (BC-Shell L and Er). */
 export function MainTableToolbarPlaceholder({
   copy = mainTableCopy("vi"),
+  phoneBar = false,
 }: {
   copy?: MainTableCopy;
+  /** A phone: the drawn bar of a search button and a wide pill (BC-Shell L); Er draws none. */
+  phoneBar?: boolean;
 }) {
   const t = copy.toolbar;
   return (
-    <div
-      data-table-toolbar=""
-      aria-hidden="true"
-      className="flex items-center gap-1.5 px-4 py-2.5 max-sm:hidden sm:px-6 tablet:gap-2 tablet:py-2"
-    >
-      <span className="flex h-8 w-50 items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-compact text-meta-foreground dark:bg-card">
-        <Search className="size-4 shrink-0" />
-        {t.search.placeholder}
-      </span>
-      {[t.filter.trigger, t.sort.label, t.groupBy.label].map((label) => (
+    <>
+      {phoneBar ? (
+        <div
+          data-slot="phone-toolbar-placeholder"
+          aria-hidden="true"
+          className="flex h-15 items-center gap-2 px-3 sm:hidden"
+        >
+          <Skeleton className="size-11 shrink-0 rounded-[9px]" />
+          <Skeleton className="h-11 flex-1 rounded-[9px]" />
+        </div>
+      ) : null}
+      <div
+        data-table-toolbar=""
+        aria-hidden="true"
+        className="flex items-center gap-1.5 px-4 py-2.5 max-sm:hidden sm:px-6 tablet:gap-2 tablet:py-2"
+      >
+        <span className="flex h-8 w-50 items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-compact text-meta-foreground dark:bg-card">
+          <Search className="size-4 shrink-0" />
+          {t.search.placeholder}
+        </span>
+        {[t.filter.trigger, t.sort.label, t.groupBy.label].map((label) => (
+          <Button
+            key={label}
+            variant="ghost"
+            size="sm"
+            disabled
+            tabIndex={-1}
+            className={kanbanPillClass}
+          >
+            {label}
+          </Button>
+        ))}
+        <span className="flex-1" />
         <Button
-          key={label}
-          variant="ghost"
           size="sm"
           disabled
           tabIndex={-1}
-          className={kanbanPillClass}
+          className={kanbanPrimaryButtonClass}
         >
-          {label}
+          <Plus className="size-4" />
+          {t.addItem}
         </Button>
-      ))}
-      <span className="flex-1" />
-      <Button
-        size="sm"
-        disabled
-        tabIndex={-1}
-        className={kanbanPrimaryButtonClass}
-      >
-        <Plus className="size-4" />
-        {t.addItem}
-      </Button>
-    </div>
+      </div>
+    </>
   );
 }

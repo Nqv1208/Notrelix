@@ -494,6 +494,27 @@ test.describe("Loading board against BC-Shell L (VITE_MOCK_LATENCY=slow)", () =>
               ]),
             { frame: `sh320-L-${mode}`, fn: LOADING_CARDS },
           );
+          const drawnBar = await page.evaluate(
+            ({ frame }) => {
+              const row = document.querySelector(
+                `[data-frame="${frame}"] .bar`,
+              )!;
+              const o = row.getBoundingClientRect();
+              return {
+                h: o.height,
+                kids: [...row.children].slice(0, 2).map((e) => {
+                  const b = e.getBoundingClientRect();
+                  return {
+                    x: b.x - o.x,
+                    y: b.y - o.y,
+                    h: b.height,
+                    w: b.width,
+                  };
+                }),
+              };
+            },
+            { frame: `sh320-L-${mode}` },
+          );
           await open(page, width, mode, `${BOARDS}/mock-board-erp?view=table`);
           await expect(
             page.locator('[data-slot="main-table-loading"]'),
@@ -513,6 +534,38 @@ test.describe("Loading board against BC-Shell L (VITE_MOCK_LATENCY=slow)", () =>
           );
           expect(got.h, "card height").toBeCloseTo(drawn.h, 0);
           expect(got.pitch, "card pitch").toBeCloseTo(drawn.pitch, 0);
+          // The phone bar (Final-M keeps its own header, so only the bar below the tabs is measured).
+          const bar = await page.evaluate(() => {
+            const row = document.querySelector(
+              '[data-slot="phone-toolbar-placeholder"]',
+            )!;
+            const o = row.getBoundingClientRect();
+            return {
+              h: o.height,
+              kids: [...row.children].map((e) => {
+                const b = e.getBoundingClientRect();
+                return { x: b.x - o.x, y: b.y - o.y, h: b.height, w: b.width };
+              }),
+            };
+          });
+          expect(bar.h, "phone bar height").toBeCloseTo(drawnBar.h, 0);
+          expect(bar.kids[0]!.w, "search button width").toBeCloseTo(
+            drawnBar.kids[0]!.w,
+            0,
+          );
+          expect(bar.kids[0]!.h, "search button height").toBeCloseTo(
+            drawnBar.kids[0]!.h,
+            0,
+          );
+          expect(bar.kids[0]!.y, "search button y").toBeCloseTo(
+            drawnBar.kids[0]!.y,
+            0,
+          );
+          expect(bar.kids[1]!.h, "pill height").toBeCloseTo(
+            drawnBar.kids[1]!.h,
+            0,
+          );
+          expect(bar.kids[1]!.y, "pill y").toBeCloseTo(drawnBar.kids[1]!.y, 0);
           expect(got.bars.length, "bars per card").toBe(drawn.bars.length);
           drawn.bars.forEach((bar: Record<string, number>, i: number) => {
             for (const key of ["x", "y", "w", "h"])
@@ -523,6 +576,16 @@ test.describe("Loading board against BC-Shell L (VITE_MOCK_LATENCY=slow)", () =>
           });
           return;
         }
+        const drawnHeader = await page.evaluate(
+          ({ frame }) =>
+            [...document.querySelectorAll(`[data-frame="${frame}"] .hdr .sk`)]
+              .slice(1)
+              .map((e) => {
+                const b = e.getBoundingClientRect();
+                return { w: b.width, h: b.height };
+              }),
+          { frame: `sh${width}-L-${mode}` },
+        );
         const expected = await page.evaluate(
           ({ frame, fn }) => {
             const fr = document.querySelector(`[data-frame="${frame}"]`)!;
@@ -558,6 +621,22 @@ test.describe("Loading board against BC-Shell L (VITE_MOCK_LATENCY=slow)", () =>
             expect(got.w, `bar ${i} width`).toBeCloseTo(bar.w, 0);
           }
         });
+        // The mark is not measured (Final-Board draws 34 px, the state board 32); the two title bars are.
+        if (width === 1280) {
+          const bars = await page
+            .locator('[data-slot="board-header-loading"] > *')
+            .evaluateAll((els) =>
+              els.map((e) => {
+                const b = e.getBoundingClientRect();
+                return { w: b.width, h: b.height };
+              }),
+            );
+          expect(bars, "header bars").toHaveLength(drawnHeader.length);
+          drawnHeader.forEach((bar, i) => {
+            expect(bars[i]!.w, `header bar ${i} width`).toBeCloseTo(bar.w, 0);
+            expect(bars[i]!.h, `header bar ${i} height`).toBeCloseTo(bar.h, 0);
+          });
+        }
         if (width >= 640) await expectToolbarRow(page, width);
       });
     }

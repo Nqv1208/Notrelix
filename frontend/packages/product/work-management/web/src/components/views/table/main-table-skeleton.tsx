@@ -26,7 +26,7 @@ export function MainTableSkeleton({
       data-slot="main-table-loading"
       className="flex h-full min-h-0 flex-col bg-background"
     >
-      <MainTableToolbarPlaceholder copy={copy} />
+      <MainTableToolbarPlaceholder copy={copy} phoneBar />
       <div
         data-slot="main-table-loading-cards"
         className="flex flex-col gap-2.5 px-3 pt-2 sm:hidden"
