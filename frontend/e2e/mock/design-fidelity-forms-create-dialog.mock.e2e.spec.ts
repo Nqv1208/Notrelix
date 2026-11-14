@@ -191,6 +191,55 @@ for (const dark of [false, true]) {
     // Label 20 px + 6 px gap + 48 px box + 16 px gap to the next label, as the artboard stacks them.
     expectRect(descBox, { y: nameBox.y + 48 + 16 + 20 + 6 }, "description y");
 
+    // The drawn rows under the description (artboard y of each, from the card's top).
+    const status = dialog.getByRole("combobox", { name: "Trạng thái" });
+    expectRect(
+      await within(dialog, status),
+      { x: 22, y: 354.4, width: 290, height: 40 },
+      "status",
+    );
+    const priority = dialog.getByRole("combobox", { name: /Ưu tiên/ });
+    expectRect(
+      await within(dialog, priority),
+      { x: 328, y: 356.3, width: 290, height: 40 },
+      "priority",
+    );
+    const start = dialog.getByLabel("Ngày bắt đầu");
+    expectRect(
+      await within(dialog, start),
+      { x: 22, y: 436.4, width: 290, height: 40 },
+      "start date",
+    );
+    const due = dialog.getByLabel(/^Hạn hoàn thành/);
+    expectRect(
+      await within(dialog, due),
+      { x: 328, y: 438.3, width: 290, height: 40 },
+      "due date",
+    );
+    for (const [name, x, y] of [
+      ["Hôm nay", 89.4, 486.3],
+      ["Ngày mai", 171.1, 486.3],
+    ] as const) {
+      const chipBox = await within(
+        dialog,
+        dialog.getByRole("button", { name }),
+      );
+      expectRect(chipBox, { x, y, height: 30 }, `quick ${name}`);
+    }
+    const addPerson = dialog.getByRole("combobox", { name: "+ Thêm người" });
+    expectRect(
+      await within(dialog, addPerson),
+      { x: 22, y: 556.4, height: 30 },
+      "add person",
+    );
+    expect.soft(await style(addPerson, "font-size")).toBe("12.5px");
+    const label = dialog.getByRole("button", { name: "Bảo mật" });
+    expectRect(
+      await within(dialog, label),
+      { y: 626.5, height: 30 },
+      "label pill",
+    );
+
     const cancel = dialog.getByRole("button", { name: "Huỷ" });
     const create = dialog.getByRole("button", { name: "Tạo công việc" });
     const cancelBox = await within(dialog, cancel);

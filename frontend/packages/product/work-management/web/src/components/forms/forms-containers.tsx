@@ -4,6 +4,7 @@ import { useLocale } from "@notrelix/i18n";
 import {
   useBoardAccess,
   useBoardForms,
+  useBoardLabels,
   useCreateItemWithDetails,
   useDeleteCard,
   useForm,
@@ -346,6 +347,7 @@ export function FormInboxPage({
   const createItem = useCreateItemWithDetails(boardId, workspaceId);
   const deleteItem = useDeleteCard(boardId, workspaceId);
   const createPending = createItem.isPending;
+  const boardLabels = useBoardLabels(boardId, workspaceId, Boolean(creating));
 
   /**
    * "Tạo việc từ phản hồi": creates the item, marks the response processed, and offers an undo that removes the
@@ -364,8 +366,14 @@ export function FormInboxPage({
         listId: values.groupId,
         title: values.title.trim(),
         descriptionMd: values.description.trim() || undefined,
+        startDate: values.startDay
+          ? `${values.startDay}T00:00:00.000Z`
+          : undefined,
+        assigneeIds: values.assigneeIds,
+        labelIds: values.labelIds,
         dueDate: values.dueDay ? `${values.dueDay}T00:00:00.000Z` : undefined,
-        statusOptionId: fieldsOfBoard.status?.options[0]?.id ?? null,
+        statusOptionId:
+          values.statusOptionId ?? fieldsOfBoard.status?.options[0]?.id ?? null,
         priority:
           fieldsOfBoard.priority && values.priorityOptionId
             ? {
@@ -556,8 +564,20 @@ export function FormInboxPage({
             description: prefill.description,
             groupId: groups[0]?.id ?? "",
             priorityOptionId: prefill.priorityOptionId,
+            statusOptionId:
+              findItemFields(board).status?.options[0]?.id ?? null,
+            startDay: "",
             dueDay: prefill.dueDay,
+            assigneeIds: [],
+            labelIds: [],
           }}
+          statuses={findItemFields(board).status?.options ?? []}
+          members={board.members ?? []}
+          currentUserId={currentUserId}
+          labels={boardLabels.data ?? []}
+          today={new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(
+            now ?? new Date(),
+          )}
           from={prefill.from}
           groups={groups}
           priorities={findItemFields(board).priority?.options ?? []}

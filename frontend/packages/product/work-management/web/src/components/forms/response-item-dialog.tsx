@@ -22,8 +22,13 @@ export interface ResponseItemValues {
   readonly description: string;
   readonly groupId: string;
   readonly priorityOptionId: string | null;
+  readonly statusOptionId: string | null;
+  /** `YYYY-MM-DD` or "". */
+  readonly startDay: string;
   /** `YYYY-MM-DD` or "". */
   readonly dueDay: string;
+  readonly assigneeIds: readonly string[];
+  readonly labelIds: readonly string[];
 }
 
 export interface ResponseItemDialogProps {
@@ -44,6 +49,18 @@ export interface ResponseItemDialogProps {
     readonly id: string;
     readonly label: string;
   }[];
+  readonly statuses: readonly {
+    readonly id: string;
+    readonly label: string;
+  }[];
+  readonly members: readonly {
+    readonly userId: string;
+    readonly name: string;
+  }[];
+  readonly currentUserId?: string | null;
+  readonly labels: readonly { readonly id: string; readonly name: string }[];
+  /** Today as `YYYY-MM-DD` in the workspace time zone: the quick-due chips count from it. */
+  readonly today: string;
   /** Answers no field takes. */
   readonly left: readonly string[];
   readonly pending: boolean;
@@ -53,6 +70,39 @@ export interface ResponseItemDialogProps {
 }
 
 const FIELD_BOX = "rounded-[9px] px-3 text-sm";
+const SELECT = cn(INPUT_CLASS, FIELD_BOX, "h-10 max-md:h-11");
+const ROW = "grid grid-cols-2 gap-4 max-sm:grid-cols-1";
+const LABEL = cn(
+  FIELD_LABEL_CLASS,
+  "flex flex-wrap items-center gap-1.5 text-[12.5px] leading-[1.45]",
+);
+const PILL =
+  "inline-flex h-[30px] cursor-pointer items-center rounded-full border border-line-strong bg-popover px-2.5 text-[12.5px] font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring max-md:h-11";
+const PILL_ON =
+  "border-brand bg-brand-subtle text-brand-subtle-foreground aria-pressed:border-brand";
+const CHIP_BOX =
+  "inline-flex h-[30px] cursor-pointer items-center rounded-[6px] bg-state-hover px-2.5 text-[12.5px] font-semibold text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring aria-pressed:bg-brand-subtle aria-pressed:text-brand-subtle-foreground max-md:h-11";
+
+/** Today, tomorrow, the coming Friday and next week as `YYYY-MM-DD`, from a `YYYY-MM-DD` today. */
+function quickDays(
+  today: string,
+  t: { today: string; tomorrow: string; friday: string; nextWeek: string },
+) {
+  const base = new Date(`${today}T00:00:00Z`);
+  const plus = (days: number) => {
+    const d = new Date(base);
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().slice(0, 10);
+  };
+  const friday = plus((5 - base.getUTCDay() + 7) % 7 || 7);
+  const short = (day: string) => `${day.slice(8, 10)}/${day.slice(5, 7)}`;
+  return [
+    { label: t.today, day: plus(0) },
+    { label: t.tomorrow, day: plus(1) },
+    { label: fillFormsCopy(t.friday, { date: short(friday) }), day: friday },
+    { label: t.nextWeek, day: plus(7) },
+  ];
+}
 
 function Note({ children, role }: { children: ReactNode; role?: "note" }) {
   return (
@@ -120,6 +170,13 @@ export function ResponseItemDialog(props: ResponseItemDialogProps) {
   const [values, setValues] = useState(initial);
   const [attempted, setAttempted] = useState(false);
   const blank = values.title.trim() === "";
+  const toggle = (key: "assigneeIds" | "labelIds", value: string) =>
+    setValues((v) => ({
+      ...v,
+      [key]: v[key].includes(value)
+        ? v[key].filter((x) => x !== value)
+        : [...v[key], value],
+    }));
   const set = (patch: Partial<ResponseItemValues>) =>
     setValues((v) => ({ ...v, ...patch }));
 
@@ -130,7 +187,7 @@ export function ResponseItemDialog(props: ResponseItemDialogProps) {
     >
       <DialogContent
         showCloseButton={false}
-        className="max-h-[calc(100dvh-32px)] gap-0 overflow-y-auto rounded-2xl bg-popover p-0 sm:max-w-[640px]"
+        className="max-h-[calc(100dvh-32px)] gap-0 overflow-y-auto rounded-[16px] bg-popover p-0 sm:max-w-[640px]"
       >
         <DialogHeader className="flex-row items-center gap-2.5 pt-3.5 pr-3 pb-2.5 pl-[22px]">
           <DialogTitle className="text-[18px] leading-[1.45] font-[650]">
@@ -211,17 +268,19 @@ export function ResponseItemDialog(props: ResponseItemDialogProps) {
                 )}
               />
             </Field>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label={t.groupLabel} htmlFor={`${id}-g`}>
+            <div className={ROW}>
+              <Field label={t.statusLabel} htmlFor={`${id}-s`}>
                 <select
-                  id={`${id}-g`}
-                  value={values.groupId}
-                  onChange={(e) => set({ groupId: e.target.value })}
-                  className={cn(INPUT_CLASS, FIELD_BOX, "h-10 max-md:h-11")}
+                  id={`${id}-s`}
+                  value={values.statusOptionId ?? ""}
+                  onChange={(e) =>
+                    set({ statusOptionId: e.target.value || null })
+                  }
+                  className={SELECT}
                 >
-                  {groups.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.title}
+                  {props.statuses.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.label}
                     </option>
                   ))}
                 </select>
@@ -239,7 +298,7 @@ export function ResponseItemDialog(props: ResponseItemDialogProps) {
                     onChange={(e) =>
                       set({ priorityOptionId: e.target.value || null })
                     }
-                    className={cn(INPUT_CLASS, FIELD_BOX, "h-10 max-md:h-11")}
+                    className={SELECT}
                   >
                     <option value="">{t.noPriority}</option>
                     {priorities.map((o) => (
@@ -250,10 +309,20 @@ export function ResponseItemDialog(props: ResponseItemDialogProps) {
                   </select>
                 </Field>
               ) : null}
+            </div>
+            <div className={ROW}>
+              <Field label={t.startLabel} htmlFor={`${id}-b`}>
+                <input
+                  id={`${id}-b`}
+                  type="date"
+                  value={values.startDay}
+                  onChange={(e) => set({ startDay: e.target.value })}
+                  className={SELECT}
+                />
+              </Field>
               <Field
                 label={t.dueLabel}
                 htmlFor={`${id}-u`}
-                optional={t.optional}
                 source={<Source copy={copy} question={from.due} />}
               >
                 <input
@@ -261,10 +330,118 @@ export function ResponseItemDialog(props: ResponseItemDialogProps) {
                   type="date"
                   value={values.dueDay}
                   onChange={(e) => set({ dueDay: e.target.value })}
-                  className={cn(INPUT_CLASS, FIELD_BOX, "h-10 max-md:h-11")}
+                  className={SELECT}
                 />
               </Field>
             </div>
+            <div className="-mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="text-[12px] text-meta-foreground">
+                {t.quickDue}
+              </span>
+              {quickDays(props.today, t).map((q) => (
+                <button
+                  key={q.label}
+                  type="button"
+                  aria-pressed={values.dueDay === q.day}
+                  onClick={() => set({ dueDay: q.day })}
+                  className={cn(PILL, values.dueDay === q.day && PILL_ON)}
+                >
+                  {q.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <span className={LABEL}>
+                {t.assigneeLabel}
+                <span className="font-normal text-meta-foreground">
+                  {t.optional}
+                </span>
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  aria-label={t.addPerson}
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) toggle("assigneeIds", e.target.value);
+                  }}
+                  className={cn(CHIP_BOX, "appearance-none")}
+                >
+                  <option value="">{t.addPerson}</option>
+                  {props.members
+                    .filter((m) => !values.assigneeIds.includes(m.userId))
+                    .map((m) => (
+                      <option key={m.userId} value={m.userId}>
+                        {m.name}
+                      </option>
+                    ))}
+                </select>
+                {props.currentUserId ? (
+                  <button
+                    type="button"
+                    aria-pressed={values.assigneeIds.includes(
+                      props.currentUserId,
+                    )}
+                    onClick={() => toggle("assigneeIds", props.currentUserId!)}
+                    className={CHIP_BOX}
+                  >
+                    {t.assignMe}
+                  </button>
+                ) : null}
+                {values.assigneeIds
+                  .filter((uid) => uid !== props.currentUserId)
+                  .map((uid) => (
+                    <button
+                      key={uid}
+                      type="button"
+                      aria-pressed
+                      onClick={() => toggle("assigneeIds", uid)}
+                      className={cn(CHIP_BOX, PILL_ON)}
+                    >
+                      {props.members.find((m) => m.userId === uid)?.name ?? uid}
+                    </button>
+                  ))}
+              </div>
+            </div>
+            {props.labels.length > 0 ? (
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <span className={LABEL}>
+                  {t.labelsLabel}
+                  <span className="font-normal text-meta-foreground">
+                    {t.optional}
+                  </span>
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {props.labels.map((l) => (
+                    <button
+                      key={l.id}
+                      type="button"
+                      aria-pressed={values.labelIds.includes(l.id)}
+                      onClick={() => toggle("labelIds", l.id)}
+                      className={cn(
+                        PILL,
+                        values.labelIds.includes(l.id) && PILL_ON,
+                      )}
+                    >
+                      {l.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            <Field label={t.groupLabel} htmlFor={`${id}-g`}>
+              <select
+                id={`${id}-g`}
+                value={values.groupId}
+                onChange={(e) => set({ groupId: e.target.value })}
+                className={SELECT}
+              >
+                {groups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.title}
+                  </option>
+                ))}
+              </select>
+            </Field>
             {props.left.map((line) => (
               <Note key={line} role="note">
                 {line}

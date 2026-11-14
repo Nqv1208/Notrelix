@@ -18,6 +18,10 @@ function render(
       title: "Làm mới tên máy",
       description: "",
       groupId: "g2",
+      statusOptionId: "s1",
+      startDay: "",
+      assigneeIds: [],
+      labelIds: [],
       priorityOptionId: "p-high",
       dueDay: "2026-10-16",
     },
@@ -27,6 +31,11 @@ function render(
       { id: "g2", title: "Đang làm" },
     ],
     priorities: [{ id: "p-high", label: "Cao" }],
+    statuses: [{ id: "s1", label: "Cần làm" }],
+    members: [{ userId: "u1", name: "Hà" }],
+    currentUserId: "u1",
+    labels: [{ id: "l1", name: "Bảo mật" }],
+    today: "2026-10-12",
     left: ["Email: trang@minhan.vn"],
     pending: false,
     failed: false,
@@ -56,12 +65,20 @@ describe.each(["vi", "en"] as const)(
       ).toBe("g2");
       expect(screen.getByRole("note").textContent).toContain("trang@minhan.vn");
       fireEvent.click(screen.getByRole("button", { name: t.submit }));
+      fireEvent.click(screen.getByRole("button", { name: t.assignMe }));
+      fireEvent.click(screen.getByRole("button", { name: t.tomorrow }));
+      fireEvent.click(screen.getByRole("button", { name: "Bảo mật" }));
+      fireEvent.click(screen.getByRole("button", { name: t.submit }));
       expect(props.onSubmit).toHaveBeenCalledWith({
         title: "Làm mới tên máy",
         description: "",
         groupId: "g2",
         priorityOptionId: "p-high",
-        dueDay: "2026-10-16",
+        statusOptionId: "s1",
+        startDay: "",
+        dueDay: "2026-10-13",
+        assigneeIds: ["u1"],
+        labelIds: ["l1"],
       });
     });
 
@@ -71,6 +88,10 @@ describe.each(["vi", "en"] as const)(
           title: "",
           description: "",
           groupId: "g1",
+          statusOptionId: "s1",
+          startDay: "",
+          assigneeIds: [],
+          labelIds: [],
           priorityOptionId: null,
           dueDay: "",
         },
