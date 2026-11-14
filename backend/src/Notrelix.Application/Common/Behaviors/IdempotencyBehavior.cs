@@ -68,7 +68,7 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         switch (beginResult.Status)
         {
             case IdempotencyBeginStatus.Completed:
-                _logger.LogDebug("Idempotency replay for {Operation} scope={Scope}", identity.Operation, identity.Scope);
+                _logger.LogDebug("Idempotency replay for {Operation}", identity.Operation);
                 using (PipelineActivitySource.Instance.StartActivity("idempotency.replay"))
                 {
                     _metrics.IdempotencyReplays.Add(1);
