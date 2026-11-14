@@ -605,6 +605,7 @@ function MainTableSurfaceBody({
                 onGroupToggle={onGroupToggle}
                 onOpenItem={onOpenItem}
                 onStatusChange={onStatusChange}
+                fieldEditing={fieldEditing}
                 selectedIds={selectedIds}
                 onRowSelectedChange={canEdit ? onRowSelectedChange : undefined}
                 onSelectGroup={onSelectGroup}

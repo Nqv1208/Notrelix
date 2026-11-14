@@ -107,9 +107,31 @@ describe("comment thread resolve and reopen (UC-COL-A07, A08)", () => {
       resolved: true,
     });
 
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /Show resolved comments/ }),
+    );
     expect(screen.getByText(/Resolved$/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Reopen" }));
 
     expect(onSetUpdateResolved).toHaveBeenCalledWith("c-1", false);
+  });
+
+  it("hides a resolved thread until Show resolved is on, and counts it", () => {
+    show({ viewerUserId: "u-1", canEditFields: true, resolved: true });
+
+    expect(screen.queryByText("Cần xem lại")).toBeNull();
+    const toggle = screen.getByRole("checkbox", {
+      name: "Show resolved comments (1)",
+    });
+    fireEvent.click(toggle);
+    expect(screen.getByText("Cần xem lại")).toBeTruthy();
+    fireEvent.click(toggle);
+    expect(screen.queryByText("Cần xem lại")).toBeNull();
+  });
+
+  it("offers no Show resolved control when no thread is resolved", () => {
+    show({ viewerUserId: "u-1", canEditFields: true });
+
+    expect(screen.queryByRole("checkbox")).toBeNull();
   });
 });

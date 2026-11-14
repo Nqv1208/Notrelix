@@ -235,10 +235,40 @@ test("blocks nest and un-nest, a cycle or a foreign parent is refused, and the o
 
   // Many inserts right after one block: each new block lands first, keys stay short, no version moves.
   const dense = await add(doc, "dense head", parent.id);
+  // A batch is one change: a failing operation stores none of it.
+  const before = await blocks(page, doc);
+  const refused = await apiWrite(page, "POST", `/pages/${doc}/blocks/batch`, {
+    blocks: [
+      {
+        op: "upsert",
+        id: crypto.randomUUID(),
+        type: "Text",
+        content: text("a"),
+      },
+      { op: "upsert", id: crypto.randomUUID(), type: "Hologram" },
+    ],
+  });
+  expect(refused.status).toBe(400);
+  expect(await blocks(page, doc)).toEqual(before);
+
+  // Batches keep the run inside the per-user request limit; each upsert is placed against the blocks before it.
   const expected: string[] = [];
-  for (let i = 0; i < 230; i += 1) {
-    const inserted = await add(doc, `dense ${i}`, dense.id);
-    expected.unshift(inserted.id);
+  for (let batch = 0; batch < 3; batch += 1) {
+    const items = Array.from({ length: 80 }, (_, i) => {
+      const id = crypto.randomUUID();
+      expected.unshift(id);
+      return {
+        op: "upsert",
+        id,
+        type: "Text",
+        content: text(`dense ${batch}-${i}`),
+        afterBlockId: dense.id,
+      };
+    });
+    const saved = await apiWrite(page, "POST", `/pages/${doc}/blocks/batch`, {
+      blocks: items,
+    });
+    expect(saved.status).toBeLessThan(300);
   }
   const all = await blocks(page, doc);
   expect(all.map((b) => b.id)).toEqual([

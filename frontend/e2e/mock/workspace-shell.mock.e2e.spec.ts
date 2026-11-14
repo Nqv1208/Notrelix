@@ -14,7 +14,14 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-const PRIMARY = ["Trang chủ", "Việc của tôi", "Hộp thư", "Tài liệu", "Báo cáo"];
+const PRIMARY = [
+  "Trang chủ",
+  "Việc của tôi",
+  "Hộp thư",
+  "Trò chuyện",
+  "Tài liệu",
+  "Báo cáo",
+];
 
 function sidebarNav(page: Page) {
   return page.getByRole("navigation", {
@@ -67,7 +74,7 @@ async function overflow(page: Page) {
   });
 }
 
-test("Sidebar lists the five primary items and opens the Reports list", async ({
+test("Sidebar lists the six primary items and opens the Reports list", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
