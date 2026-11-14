@@ -7,6 +7,7 @@ import {
   useBoardPlanItems,
   useBoardView,
   useCreateDatedItem,
+  useFullBoard,
   useUpdateCard,
 } from "@notrelix/work-management-state";
 import {
@@ -46,6 +47,7 @@ import {
   formatDayMonth,
   toDayKey,
   calendarDateFields,
+  calendarReadWindow,
   resolveCalendarDateBasis,
   type CalendarDateBasis,
   type CalendarEntry,
@@ -125,6 +127,7 @@ export function BoardCalendarView({
   // edit the view picks one for this visit only.
   const { viewConfig, updateViewConfig } = useBoardView(boardId, workspaceId);
   const [localBasis, setLocalBasis] = useState<CalendarDateBasis | null>(null);
+  const savedBasis = resolveCalendarDateField(viewConfig);
   const todayParts = calendarParts(now, timeZone);
   const today = toDayKey(todayParts.year, todayParts.month, todayParts.day);
   const nowMinutes = todayParts.hour * 60 + todayParts.minute;
@@ -156,11 +159,28 @@ export function BoardCalendarView({
     [now, timeZone],
   );
 
+  // The server reads only the items that touch the month on screen (and the undated tray), so a large board
+  // stays paged. The basis is resolved against the board's own Date fields before the first read.
+  const { fieldDefinitions } = useFullBoard(boardId, workspaceId);
+  const wantedBasis = localBasis ?? savedBasis;
+  const readBasis =
+    wantedBasis === "span" ||
+    wantedBasis === "due" ||
+    fieldDefinitions.some(
+      (field) => field.id === wantedBasis && field.fieldType === "date",
+    )
+      ? wantedBasis
+      : "span";
+  const readMonth = anchorDay.slice(0, 7);
+  const dateWindow = useMemo(
+    () => ({ basis: readBasis, ...calendarReadWindow(`${readMonth}-01`) }),
+    [readBasis, readMonth],
+  );
   const kanban = useBoardKanban(boardId, workspaceId, {
     filter: noLegacyFilter,
     view: kanbanView,
     isOverdue,
-    allCards: true,
+    dateWindow,
   });
   const { capabilities } = useBoardCapabilities(boardId, workspaceId);
   const canEdit = capabilities.canMoveCard && capabilities.canCreateCard;
@@ -170,7 +190,6 @@ export function BoardCalendarView({
     () => calendarDateFields(kanban.filterFields),
     [kanban.filterFields],
   );
-  const savedBasis = resolveCalendarDateField(viewConfig);
   const dateBasis = resolveCalendarDateBasis(
     localBasis ?? savedBasis,
     dateFields,
@@ -230,12 +249,13 @@ export function BoardCalendarView({
           }),
     [built.entries, unsaved],
   );
-  const undatedTotal = useMemo(
+  const loadedUndated = useMemo(
     () =>
       buildCalendarEntries({ lanes: kanban.allLanes, today, copy, timeZone })
         .undated.length,
     [kanban.allLanes, today, copy, timeZone],
   );
+  const undatedTotal = Math.max(kanban.undatedTotal ?? 0, loadedUndated);
   const cardsById = useMemo(
     () =>
       new Map(

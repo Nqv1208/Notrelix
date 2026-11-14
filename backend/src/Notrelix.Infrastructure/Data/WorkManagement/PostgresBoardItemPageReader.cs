@@ -31,6 +31,10 @@ public sealed class PostgresBoardItemPageReader(ApplicationDbContext context) : 
     private const string LabelId = "$label";
     private const string AssigneeId = "$assignee";
     private const string OverdueId = "$overdue";
+    private const string StartId = "$start";
+    private const string DueId = "$due";
+    /// <summary>The Item's start-to-due span: with "overlaps" it keeps the Items whose days touch a window (a calendar's month).</summary>
+    private const string SpanId = "$span";
 
     private const string LiveRootItem =
         "i.board_id = @board AND i.deleted_at IS NULL AND NOT i.is_archived AND i.parent_item_id IS NULL";
@@ -208,6 +212,12 @@ public sealed class PostgresBoardItemPageReader(ApplicationDbContext context) : 
                     return SetOf(Members, op, values);
                 case OverdueId:
                     throw Refuse("filter", "Filtering by overdue is not available on a paged board.");
+                case StartId:
+                    return Date(ItemDay("i.started_at"), op, values);
+                case DueId:
+                    return Date(ItemDay("i.due_at"), op, values);
+                case SpanId:
+                    return Span(op, values);
             }
 
             if (!Guid.TryParse(condition.FieldId, out var fieldId) || !_fields.TryGetValue(fieldId, out var field))
@@ -315,6 +325,25 @@ public sealed class PostgresBoardItemPageReader(ApplicationDbContext context) : 
                 : field.IsDueField ? $"left(COALESCE({scalar}, {due}), 10)"
                 : $"left({scalar}, 10)";
             return $"(CASE WHEN {text} ~ '^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$' THEN {text}::date END)";
+        }
+
+        private static string ItemDay(string column) => $"({column} AT TIME ZONE 'UTC')::date";
+
+        /// <summary>An Item with a start or a due day lies in [from, to] when its span (the one day it has, or start to due) touches it; an undated Item never does.</summary>
+        private string Span(string op, IReadOnlyList<string> values)
+        {
+            if (op == "is_empty") return "i.started_at IS NULL AND i.due_at IS NULL";
+            if (op != "overlaps") throw Refuse("filter", $"The operator '{op}' is not defined for a span.");
+            if (values.Count < 2
+                || !DateOnly.TryParseExact(values[0].Length >= 10 ? values[0][..10] : values[0], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var from)
+                || !DateOnly.TryParseExact(values[1].Length >= 10 ? values[1][..10] : values[1], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var to))
+            {
+                return "false";
+            }
+
+            var first = ItemDay("COALESCE(i.started_at, i.due_at)");
+            var last = ItemDay("COALESCE(i.due_at, i.started_at)");
+            return $"({first} <= {Add(to, NpgsqlDbType.Date)} AND {last} >= {Add(from, NpgsqlDbType.Date)})";
         }
 
         private string Date(string day, string op, IReadOnlyList<string> values)

@@ -164,6 +164,22 @@ export function addMonths(key: DayKey, months: number): DayKey {
   return toDayKey(targetYear, targetMonth, Math.min(day, last));
 }
 
+/**
+ * The days the server reads for the month of `anchor`: its whole weeks and a day each side (an item's due is
+ * stored as an instant, so its day may differ by one from the member's). Week and day ranges read the same
+ * month, so stepping inside it reads nothing.
+ */
+export function calendarReadWindow(anchor: DayKey): {
+  from: DayKey;
+  to: DayKey;
+} {
+  const weeks = monthWeeks(anchor);
+  return {
+    from: addDays(weeks[0]![0]!, -1),
+    to: addDays(weeks[weeks.length - 1]![6]!, 1),
+  };
+}
+
 /** The weeks of the month of `anchor`, Monday first, padded to whole weeks. */
 export function monthWeeks(anchor: DayKey): DayKey[][] {
   const { year, month } = parseDayKey(anchor);
