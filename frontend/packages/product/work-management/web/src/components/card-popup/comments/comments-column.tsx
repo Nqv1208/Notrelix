@@ -42,8 +42,9 @@ import { IconBtn, PanelBtn, PersonMark, SmallBtn } from "../popup-ui";
 
 const FEED_LINK =
   "text-[12.5px] text-brand-subtle-foreground underline decoration-1 underline-offset-2";
+// Below 600 px an invisible 44 x 44 overlay is the hit area; the drawn glyph and spacing do not change.
 const TEXT_ACTION =
-  "cursor-pointer border-0 bg-transparent p-0 text-[12.5px] text-muted-foreground underline focus-visible:outline-2 focus-visible:outline-primary";
+  "relative cursor-pointer border-0 bg-transparent p-0 text-[12.5px] text-muted-foreground underline focus-visible:outline-2 focus-visible:outline-primary max-[599px]:before:absolute max-[599px]:before:left-1/2 max-[599px]:before:top-1/2 max-[599px]:before:min-h-11 max-[599px]:before:min-w-11 max-[599px]:before:-translate-x-1/2 max-[599px]:before:-translate-y-1/2 max-[599px]:before:content-['']";
 
 /** The body with the names of people mentioned drawn in the link ink. */
 function Mentions({ body, names }: { body: string; names: readonly string[] }) {
