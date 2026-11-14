@@ -11,7 +11,7 @@ import {
  * The single-item writes of the board table on the real stack: rename (UC-WM-B04), assignee (UC-WM-B05), due date
  * (UC-WM-D04), status (UC-WM-D05) and priority (UC-WM-D06). Each journey makes the write through the page and
  * checks the server; the rejection is a write that lost the race: another member saves first, the page still sends
- * the version it read, the server answers 412, nothing of the page's write is kept and the toast names who won.
+ * the version it read, the server answers 412, nothing of the page's write is kept and the conflict note names who won.
  */
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -145,8 +145,9 @@ function itemWriteAnswer(page: Page, itemId: string, method: string) {
 const pickADay = (page: Page) =>
   page.getByRole("grid").getByRole("button").nth(15).click();
 
+/** The in-cell note on the desktop grid, the bottom sheet on a phone: both name who won (no toast-only path). */
 const conflictToast = (page: Page, who: string) =>
-  page.getByText(new RegExp(`${who} changed “[^”]*” first`));
+  page.getByRole("alertdialog").filter({ hasText: who });
 
 test("a member renames an item in the table, Escape keeps the old title, and a rename that lost the race is refused and names who won", async ({
   browser,
@@ -631,6 +632,8 @@ test("on a phone a member changes an item's status from the row sheet, and a cha
   const box = (await toast.boundingBox())!;
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(390.5);
+  // Nothing of the lost write is kept until the person chooses.
   const kept = await apiRead<ItemRead>(page, `/board-items/${s.item.id}`);
   expect(kept.statusOptionId).toBe(doing.id);
+  await expect(toast).toContainText("Your value");
 });
