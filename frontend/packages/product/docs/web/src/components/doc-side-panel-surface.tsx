@@ -293,13 +293,13 @@ function CommentRow({
         className="size-7 text-mark-sm leading-none"
       />
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5 text-compact">
+        <div className="flex items-center gap-1.5 text-compact leading-[1.45]">
           <b className="font-semibold">{comment.author.name}</b>
-          <time className="text-metadata text-meta-foreground">
+          <time className="text-metadata leading-[1.45] text-meta-foreground">
             {comment.when}
           </time>
         </div>
-        <p className="mt-0.5 text-nav leading-[1.55] text-doc-body">
+        <p className="mt-0.5 text-nav leading-[1.55] font-normal text-doc-body">
           {comment.body}
         </p>
         {comment.resolved && onReply ? (
@@ -518,11 +518,11 @@ function CommentField({
           }
         }}
         className={cn(
-          "box-border w-full resize-none rounded-[8px] border bg-doc-panel px-2.5 py-2 text-nav leading-[1.45] text-foreground outline-none placeholder:text-meta-foreground focus-visible:ring-2 focus-visible:ring-focus-ring",
+          "box-border w-full resize-none rounded-[8px] border bg-doc-panel px-2.5 py-2 text-nav leading-[1.5] font-normal text-foreground outline-none placeholder:text-meta-foreground focus-visible:ring-2 focus-visible:ring-focus-ring",
           over > 0 ? "border-danger" : "border-line-strong",
         )}
       />
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2.5">
         {over > 0 ? (
           <span role="alert" className="text-crumb text-danger-text">
             {fillDocCopy(c.tooLong, { max: COMMENT_MAX_LENGTH, over })}
@@ -538,7 +538,7 @@ function CommentField({
           type="button"
           onClick={send}
           disabled={over > 0 || draft.trim() === ""}
-          className="inline-flex h-7.5 items-center rounded-[7px] border-0 bg-primary px-3 text-compact leading-none font-medium text-primary-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
+          className="inline-flex h-8 items-center rounded-[7px] border border-primary bg-primary px-3 text-compact leading-none font-semibold text-primary-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
         >
           {c.send}
         </button>
@@ -635,7 +635,7 @@ export function DocSidePanelSurface({
   return (
     <aside
       aria-label={p.label}
-      className="box-content flex w-[308px] shrink-0 flex-col border-l border-border bg-doc-panel"
+      className="box-content flex w-[308px] shrink-0 flex-col border-l border-border bg-doc-panel max-sm:absolute max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-40 max-sm:h-[72%] max-sm:w-auto max-sm:rounded-t-[16px] max-sm:border-t max-sm:border-l-0 max-sm:shadow-popover"
     >
       <div
         role="tablist"
