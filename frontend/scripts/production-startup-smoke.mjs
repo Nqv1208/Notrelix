@@ -6,7 +6,7 @@
  */
 
 import { parseEnv } from "../packages/foundation/kernel/dist/index.js";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -47,9 +47,9 @@ function scanDistBundle() {
   let violationCount = 0;
 
   function walk(dir) {
-    for (const entry of readdirSync(dir)) {
-      const full = join(dir, entry);
-      if (statSync(full).isDirectory()) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
         walk(full);
       } else if (full.endsWith(".js")) {
         const content = readFileSync(full, "utf8");
