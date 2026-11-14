@@ -379,7 +379,7 @@ export function EditorToolbar({
           <SelectTrigger
             data-tool=""
             aria-label={t.paragraphStyle}
-            className="h-7.5 w-[150px] rounded-[6px] border border-line-strong bg-doc-panel px-2 text-compact text-foreground shadow-none hover:bg-doc-panel data-[size=default]:h-7.5"
+            className="h-7.5 w-[150px] rounded-[6px] border border-line-strong bg-doc-panel px-2 text-compact text-foreground shadow-none data-[size=default]:h-7.5"
           >
             <SelectValue />
           </SelectTrigger>
@@ -773,7 +773,7 @@ export function EditorToolbar({
       aria-label={t.label}
       aria-orientation="horizontal"
       onKeyDown={onKeyDown}
-      className="flex flex-nowrap items-center gap-0.5 overflow-hidden px-3 pt-[7px] pb-[9px]"
+      className="flex flex-nowrap items-start gap-0.5 overflow-hidden px-3 pt-[7px] pb-[9px]"
     >
       {shown.map((group, index) => (
         <div

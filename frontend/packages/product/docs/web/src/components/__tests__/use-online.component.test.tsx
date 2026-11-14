@@ -1,21 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { act, renderHook } from "@testing-library/react";
+import { act, renderPureUi, screen } from "@notrelix/testing";
 
 import { useOnline } from "../use-online";
 
+function Probe() {
+  return <span role="status">{useOnline() ? "online" : "offline"}</span>;
+}
+
 describe("useOnline", () => {
-  it("follows the offline and online events of the window", () => {
-    const { result } = renderHook(() => useOnline());
-    expect(result.current).toBe(true);
+  it("FUI[docs.page.online] follows the offline and online events of the window", () => {
+    renderPureUi(<Probe />);
+    expect(screen.getByRole("status").textContent).toBe("online");
 
     act(() => {
       window.dispatchEvent(new Event("offline"));
     });
-    expect(result.current).toBe(false);
+    expect(screen.getByRole("status").textContent).toBe("offline");
 
     act(() => {
       window.dispatchEvent(new Event("online"));
     });
-    expect(result.current).toBe(true);
+    expect(screen.getByRole("status").textContent).toBe("online");
   });
 });
