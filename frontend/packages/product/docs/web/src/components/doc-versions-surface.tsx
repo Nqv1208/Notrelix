@@ -80,6 +80,8 @@ export interface DocVersionPanelSurfaceProps {
   readonly namedOnly?: boolean;
   readonly callbacks?: DocPageCallbacks;
   readonly onNamedOnlyChange?: (value: boolean) => void;
+  readonly status?: "ready" | "loading" | "error";
+  readonly onRetry?: () => void;
 }
 
 /** The version history panel that replaces the side tabs (Final-Docs `.rp` `phien-ban`). */
@@ -90,6 +92,8 @@ export function DocVersionPanelSurface({
   namedOnly = false,
   callbacks,
   onNamedOnlyChange,
+  status = "ready",
+  onRetry,
 }: DocVersionPanelSurfaceProps) {
   const v = copy.versions;
   const shown = namedOnly ? versions.filter((entry) => entry.name) : versions;
@@ -138,7 +142,30 @@ export function DocVersionPanelSurface({
           />
           {v.namedOnly}
         </label>
-        {days.length === 0 ? (
+        {status === "loading" ? (
+          <p
+            role="status"
+            className="text-compact text-meta-foreground leading-[1.45]"
+          >
+            {v.loading}
+          </p>
+        ) : null}
+        {status === "error" ? (
+          <div
+            role="alert"
+            className="flex flex-col items-start gap-2 text-compact text-meta-foreground leading-[1.45]"
+          >
+            <p className="m-0">{v.error}</p>
+            <button
+              type="button"
+              onClick={onRetry}
+              className="inline-flex h-7.5 items-center rounded-[7px] border border-line-strong bg-doc-panel px-3 font-medium text-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              {v.retry}
+            </button>
+          </div>
+        ) : null}
+        {status === "ready" && days.length === 0 ? (
           <p className="text-compact text-meta-foreground leading-[1.45]">
             {v.empty}
           </p>

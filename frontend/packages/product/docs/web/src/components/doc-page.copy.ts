@@ -648,6 +648,9 @@ export const vi = {
     today: "Hôm nay",
     yesterday: "Hôm qua",
     empty: "Chưa có phiên bản nào.",
+    loading: "Đang tải lịch sử phiên bản…",
+    error: "Không tải được lịch sử phiên bản.",
+    retry: "Thử lại",
     kinds: {
       automatic: "Tự động lưu",
       named: "Phiên bản đã đặt tên",
@@ -1422,6 +1425,9 @@ export const en: DocPageCopy = {
     today: "Today",
     yesterday: "Yesterday",
     empty: "No versions yet.",
+    loading: "Loading version history…",
+    error: "Could not load the version history.",
+    retry: "Try again",
     kinds: {
       automatic: "Saved automatically",
       named: "Named version",

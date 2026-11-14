@@ -1604,6 +1604,12 @@ export function createDocPageScreen({
                 list: versionList,
                 selectedId: selectedVersionId,
                 namedOnly: versions.namedOnly,
+                status: versionsQuery.isError
+                  ? "error"
+                  : versionsQuery.isPending
+                    ? "loading"
+                    : "ready",
+                onRetry: () => void versionsQuery.refetch(),
                 onNamedOnlyChange: (namedOnly) =>
                   setVersions((current) =>
                     current ? { ...current, namedOnly } : current,

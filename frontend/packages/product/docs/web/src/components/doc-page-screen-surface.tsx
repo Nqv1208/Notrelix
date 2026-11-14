@@ -75,6 +75,9 @@ export interface DocVersionsState {
   readonly selectedId: string | null;
   readonly namedOnly: boolean;
   readonly onNamedOnlyChange?: (value: boolean) => void;
+  /** The list read: `loading` and `error` replace the entries. */
+  readonly status?: "ready" | "loading" | "error";
+  readonly onRetry?: () => void;
 }
 
 export interface DocPageScreenSurfaceProps {
@@ -377,6 +380,8 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
               selectedId={versions.selectedId}
               namedOnly={versions.namedOnly}
               onNamedOnlyChange={versions.onNamedOnlyChange}
+              status={versions.status}
+              onRetry={versions.onRetry}
               callbacks={callbacks}
             />
           ) : panelOpen && !focusMode ? (
