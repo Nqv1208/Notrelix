@@ -360,9 +360,11 @@ export function layoutWeek(
 }
 
 /** The most event rows that fit a week of `weekHeight` px (month grid). */
-export function weekRowCapacity(weekHeight: number): number {
+export function weekRowCapacity(weekHeight: number, tall = false): number {
   // 4 px top padding + 26 px day number row + 6 px bottom padding; each event
-  // row is 24 px plus the 3 px row gap.
+  // row is 24 px plus the 3 px row gap. The touch month (Final-T-Calendar) has
+  // a 36 px number row and 40 px chips with a 2 px gap, and no bottom padding.
+  if (tall) return Math.max(1, Math.floor((weekHeight - 40) / 42));
   return Math.max(1, Math.floor((weekHeight - 36) / 27));
 }
 
@@ -453,4 +455,11 @@ export function rescheduledDays(
     endDay: toDay,
     shift,
   };
+}
+
+/** The board's statuses for "Chuyển sang…": the options, the item's current one, and the write. */
+export interface CalendarStatusMenu {
+  readonly options: readonly { id: string; label: string; color: string }[];
+  currentOf: (itemId: string) => string | null;
+  onChange: (entry: CalendarEntry, optionId: string) => void;
 }

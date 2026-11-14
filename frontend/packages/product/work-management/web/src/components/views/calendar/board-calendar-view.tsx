@@ -52,6 +52,7 @@ import {
   type CalendarDateBasis,
   type CalendarEntry,
   type CalendarRange,
+  type CalendarStatusMenu,
   type DayKey,
 } from "./calendar-model";
 import { useCalendarCopy } from "./use-calendar-copy";
@@ -420,14 +421,22 @@ export function BoardCalendarView({
   };
 
   /** An undated item gets one day: start and due are both that day. */
-  const handleSetDue = (id: string, day: DayKey) => {
+  const handleSetDue = (id: string, day: DayKey, minutes?: number) => {
     const card = cardsById.get(id);
     if (!card || !canEdit) return;
     writeDates(
       card,
       {
         startDate: zonedInstant(day, DEFAULT_START_HOUR, 0, timeZone),
-        dueDate: zonedInstant(day, DEFAULT_DUE_HOUR, 0, timeZone),
+        dueDate:
+          minutes === undefined
+            ? zonedInstant(day, DEFAULT_DUE_HOUR, 0, timeZone)
+            : zonedInstant(
+                day,
+                Math.floor(minutes / 60),
+                minutes % 60,
+                timeZone,
+              ),
       },
       datesOf(card),
       { startDay: day, endDay: day },
@@ -437,6 +446,27 @@ export function BoardCalendarView({
       }),
     );
   };
+
+  const statusField = kanban.statusField;
+  const statusMenu: CalendarStatusMenu | undefined =
+    canEdit && statusField?.options?.length
+      ? {
+          options: statusField.options.map((option) => ({
+            id: option.id,
+            label: option.label,
+            color: option.color ?? "currentColor",
+          })),
+          currentOf: (itemId) => {
+            const value = cardsById.get(itemId)?.fieldValues[statusField.id];
+            return typeof value === "string" ? value : null;
+          },
+          onChange: (entry, optionId) =>
+            kanban.updateStatus.mutate({
+              cardId: entry.id,
+              statusOptionId: optionId,
+            }),
+        }
+      : undefined;
 
   const handleCreate = (title: string, day: DayKey) => {
     const listId = [...kanban.groups].sort((a, b) => a.position - b.position)[0]
@@ -541,6 +571,7 @@ export function BoardCalendarView({
           onSetDue={handleSetDue}
           onChangeDates={handleChangeDates}
           onUnschedule={handleUnschedule}
+          statusMenu={statusMenu}
           onCreateItem={handleCreate}
           onAddItem={setCreateDay}
         />

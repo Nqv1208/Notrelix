@@ -203,6 +203,7 @@ const VALID_OVERLAYS = new Set<string>([
   "deleted-fields",
   "field-restored-elsewhere",
   "item-blockers",
+  "calendar-deleted-date-field",
 ]);
 
 const VALID_FAULTS = new Set<string>([

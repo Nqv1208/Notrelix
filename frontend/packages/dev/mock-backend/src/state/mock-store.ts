@@ -1342,7 +1342,9 @@ export class MockStore {
     });
     this.boardViewsByBoardId.set(boardId, {
       boardId,
-      viewMode: "kanban",
+      viewMode: this.config.overlays.includes("calendar-deleted-date-field")
+        ? "calendar"
+        : "kanban",
       viewConfig: JSON.stringify({
         cardFieldIds: [
           ERP_READY_COLUMN_ID,
@@ -1354,6 +1356,10 @@ export class MockStore {
           ERP_ACCEPT_COLUMN_ID,
           ERP_VOTE_COLUMN_ID,
         ],
+        // The Calendar's saved date field is gone: the notice shows and items sit by Bắt đầu → Hạn.
+        ...(this.config.overlays.includes("calendar-deleted-date-field")
+          ? { calendarDateField: "mock-erp-col-deleted-date" }
+          : {}),
       }),
     });
     if (
