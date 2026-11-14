@@ -584,6 +584,8 @@ test("on a phone a member changes an item's status from the row sheet, and a cha
     await page.goto(
       `/workspaces/${s.workspace.id}/boards/${s.board.id}?view=table`,
     );
+    // On a phone the search is a button that opens the field.
+    await page.getByRole("button", { name: "Search the table" }).click();
     await page
       .getByRole("searchbox", { name: "Search the table" })
       .fill(s.unique);
