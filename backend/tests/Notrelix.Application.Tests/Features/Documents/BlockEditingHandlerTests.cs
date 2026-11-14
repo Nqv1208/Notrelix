@@ -214,6 +214,104 @@ public sealed class BlockEditingHandlerTests
         await act.Should().ThrowAsync<NotFoundException>();
     }
 
+    private const string Hello = "{\"v\":1,\"runs\":[{\"text\":\"hello\",\"marks\":[]}]}";
+
+    [Fact]
+    public async Task CreatingOnAPageAtTheBlockLimit_IsRefusedAndStoresNothing()
+    {
+        var page = NewPage();
+        var keys = FractionalIndexGenerator.GenerateNKeysBetween(null, null, 5000);
+        var blocks = keys.Select(key => NewBlock(page, key.Value)).ToList();
+        var (sut, context) = CreateCreateSut(page, blocks);
+
+        var act = () => sut.Handle(new CreateBlockCommand(page.Id, null, "paragraph", null, null, null, null), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+            .Which.RuleCode.Should().Be(Notrelix.Domain.Documents.DocumentRuleCodes.Documents_Page_BlockLimitReached);
+        context.Added.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ReplayingACreateWithTheSameIdAndBody_AnswersTheStoredBlockAndAddsNone()
+    {
+        var page = NewPage();
+        var (sut, context) = CreateCreateSut(page, []);
+        var id = Guid.CreateVersion7();
+        var command = new CreateBlockCommand(page.Id, id, "paragraph", Json(Hello), null, null, null);
+
+        var first = await sut.Handle(command, CancellationToken.None);
+        var replay = await sut.Handle(command, CancellationToken.None);
+
+        replay.Succeeded.Should().BeTrue();
+        replay.Data!.Id.Should().Be(first.Data!.Id);
+        context.Added.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task ReplayingACreateWithTheSameIdAndAnotherBody_IsAConflict()
+    {
+        var page = NewPage();
+        var (sut, context) = CreateCreateSut(page, []);
+        var id = Guid.CreateVersion7();
+        await sut.Handle(new CreateBlockCommand(page.Id, id, "paragraph", Json(Hello), null, null, null), CancellationToken.None);
+
+        var act = () => sut.Handle(new CreateBlockCommand(page.Id, id, "heading_1", Json(Hello), null, null, null), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ConflictException>()).Which.ErrorCode.Should().Be("documents.block.id-taken");
+        context.Added.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task CreatingWithAnIdOfABlockOnAnotherPage_IsAConflict_NotAReplay()
+    {
+        var page = NewPage();
+        var other = NewPage();
+        var foreign = NewBlock(other, "a0");
+        var (sut, context) = CreateCreateSut(page, [foreign]);
+
+        var act = () => sut.Handle(new CreateBlockCommand(page.Id, foreign.Id, "paragraph", null, null, null, null), CancellationToken.None);
+
+        await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ConflictException>();
+        context.Added.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CreatingOnAPageTheCallerCannotSee_IsNotFound()
+    {
+        var page = NewPage();
+        var (sut, _) = CreateCreateSut(page, []);
+
+        var act = () => sut.Handle(new CreateBlockCommand(Guid.CreateVersion7(), null, "paragraph", null, null, null, null), CancellationToken.None);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task ManyInsertsAtOneSpot_KeepEveryKeyShortAndInOrder_WithoutBumpingAVersion()
+    {
+        var page = NewPage();
+        var first = NewBlock(page, "a0");
+        var last = NewBlock(page, "a1");
+        var blocks = new List<Block> { first, last };
+        var (sut, _) = CreateCreateSut(page, blocks);
+
+        // Each new block goes right after the first one, so every key falls between "a0" and the previous insert.
+        var expected = new List<Guid>();
+        for (var i = 0; i < 400; i++)
+        {
+            var id = Guid.CreateVersion7();
+            await sut.Handle(new CreateBlockCommand(page.Id, id, "paragraph", Json(Hello), null, first.Id, null), CancellationToken.None);
+            expected.Insert(0, id);
+        }
+
+        var ordered = blocks.OrderBy(b => b.Position.Value, StringComparer.Ordinal).Select(b => b.Id).ToList();
+        ordered.Should().Equal([first.Id, .. expected, last.Id]);
+        blocks.Should().OnlyContain(b => b.Position.Value.Length <= 32);
+        blocks.Select(b => b.Position.Value).Should().OnlyHaveUniqueItems();
+        blocks.Where(b => b.Id != first.Id && b.Id != last.Id).Should().OnlyContain(b => b.Version == 1);
+        first.Version.Should().Be(1);
+    }
+
     private static System.Text.Json.JsonElement Json(string json) => System.Text.Json.JsonDocument.Parse(json).RootElement.Clone();
 
     private static Page NewPage() => Page.Create(AccountId, WorkspaceId, "Doc", UserId, Now);

@@ -162,7 +162,7 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-F01 | Insert a block between two blocks | F | Editor | yes | yes | Final-Docs-2 | none | HARDENING | Built: `BlockEditingHandlerTests` asserts 400 for a block of the page that is not a sibling and 404 for an id not on the page (doc and test agree); owner tests by hand |
 | UC-DCT-F02 | Reorder blocks | F | Editor | yes | yes | none | real | HARDENING | Owner check; the grip and keys are not driven in a browser |
 | UC-DCT-F03 | Nest or un-nest a block | F | Editor | yes | yes | none | none | HARDENING | Built (verified by reading code 2026-11-09, not run): Block.cs, BlockHierarchyTests.cs, BlockTreeRulesTests.cs, BlockMoveFailureAtomicityTests.cs, block-move.ts, block-move.component.test.tsx. Remaining: owner tests by hand. |
-| UC-DCT-F04 | Insert many blocks densely | F | Editor | yes | none | none | none | IMPLEMENTING | Rebalance undefined |
+| UC-DCT-F04 | Insert many blocks densely | F | Editor | yes | none | none | none | HARDENING | Real journey written, not run |
 | UC-DCT-G01 | Open a page | G | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Block list unbounded |
 | UC-DCT-G02 | List the pages of a workspace | G | Workspace member | yes | yes | none | none | HARDENING | Built: cursor paging; real e2e owner |
 | UC-DCT-G03 | Search pages by title | G | Workspace member | yes | yes | Final-Command | none | INTEGRATING | Owner question: approve an ILIKE rewrite of the title match and a pg_trgm GIN index on the title, or keep the current search? |
@@ -619,7 +619,7 @@ Team capability 4 (team id DCT-004). Requirements `DCREQ011` to `DCREQ013`, `DCR
 - Rules: product doc sections 18, 19, 25 (product rules DCT-006, DCT-009); `DCREQ011`, `DCREQ012`, `DCREQ118`.
 - Acceptance: Given an Editor, When a block is created, Then it is listed with version 1 after the named sibling. Given a parent block of another page, Then `404`.
 - Evidence: BE `POST /api/v1/pages/{pageId}/blocks`, `CreateBlockCommandHandler` (refuses a trashed page, refuses a page past 5 000 live blocks with `Documents_Page_BlockLimitReached` through `PageRules.EnsureBlockCountWithinLimit`, answers the stored block when the id repeats with the same type, content and properties through `Block.IsRetryOfCreate`, else `409 documents.block.id-taken`) · FE `useCreateBlock`, `DocEditorSurface` · Design Final-Docs-2 · Tests `BlockEditingHandlerTests`, `BlockTests`, `BlockCreateChildScopeTests` · Real e2e `documents.real.e2e.spec.ts`
-- State: HARDENING — tests and owner check (limit refusal, replay and conflicting replay, cross-tenant negative test).
+- State: HARDENING. Built: `BlockEditingHandlerTests` now asserts the 5 000-block refusal (nothing stored), the replay of the same id and body (stored block, none added), the same id with another body (`409 documents.block.id-taken`), an id held by a block of another page (`409`, not a replay) and an unknown page (`404`); 129 Application Documents tests pass. Real journey written in `documents-blocks.real.e2e.spec.ts` (add, replay, conflict, trash refusal), not run: the heavy-run lock was held 20 minutes. Missing: that run; the Final-Docs-2 geometry spec `design-fidelity-docs.mock.e2e.spec.ts` fails 10 of 10 at `develop` 4586f0224 (the mock shell renders the old system rail, the spec expects the pinned rail), so the design line does not hold.
 
 ### UC-DCT-D02 Edit a block
 - Capability: D Block lifecycle
@@ -633,7 +633,7 @@ Team capability 4 (team id DCT-004). Requirements `DCREQ011` to `DCREQ013`, `DCR
 - Rules: product doc sections 31, 32, 78, 79 (product rules DCT-011, DCT-025); `DCREQ028` to `DCREQ030`, `DCREQ137`.
 - Acceptance: Given version 3, When a write carries 3, Then version 4. When another write still carries 3, Then `412`, block unchanged.
 - Evidence: BE `PATCH /api/v1/pages/{pageId}/blocks/{blockId}`, `UpdateBlockCommandHandler`, `PageBlockSet.EnsureVersion` · FE `useUpdateBlock`, `doc-block-saver.ts` · Design Final-Docs-2 · Tests `BlockEditingHandlerTests`, `BlockEditTests`, `doc-block-saver.unit.test.ts` · Real e2e `documents.real.e2e.spec.ts`
-- State: HARDENING — tests and owner check (real e2e for the 412 and rebase; the handler now also refuses a trashed page before the version check).
+- State: HARDENING. The 412, no-op, missing-version and trash refusal are in `documents-blocks.real.e2e.spec.ts` (written, not run: heavy-run lock held 20 minutes); the Final-Docs-2 geometry spec fails 10 of 10 at `develop` 4586f0224, so the design line does not hold.
 
 ### UC-DCT-D03 Save several blocks as one change
 - Capability: D Block lifecycle
@@ -879,7 +879,7 @@ Team capability 6 (team id DCT-006). Requirements `DCREQ018` to `DCREQ022`. Orde
 - Rules: product doc section 28; team spec section 11 required tests; `DCREQ020`, `DCREQ022`.
 - Acceptance: Given 1 000 inserts after the same block, When listed, Then order is the insert order reversed and every key is valid.
 - Evidence: BE `FractionalIndexGenerator` · FE none · Design none · Tests none for Documents (Work Management has `WorkOrderingRebalancerTests` for its own ordering) · Real e2e none
-- State: IMPLEMENTING — rebalance rule, dense-insert test through the API.
+- State: HARDENING. Decision: a generated key longer than 32 characters re-spaces the siblings under that parent (`PageBlockSet.Rebalance`, `Block.Rekey`: order unchanged, so no version bump and no event), and a client key longer than 32 is `400`; the position column holds 50, so a few hundred inserts at one spot would have failed before. Built: `BlockEditingHandlerTests.ManyInsertsAtOneSpot...` (400 inserts, order strict, keys at most 32 characters, no version moved; 129 Application Documents tests pass). Real journey with 230 inserts is in `documents-blocks.real.e2e.spec.ts`, not run: heavy-run lock held 20 minutes. FE and design: none needed.
 
 ## Capability G: Document query and loading
 
