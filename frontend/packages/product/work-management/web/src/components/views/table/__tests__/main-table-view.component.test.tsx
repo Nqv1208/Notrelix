@@ -1,5 +1,13 @@
 import { useState, type ReactNode } from "react";
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { I18nProvider } from "@notrelix/i18n";
 import {
   act,
@@ -447,6 +455,51 @@ describe("MainTableView on the ERP board", () => {
     const choice = await inCellNote();
     expect(choice.textContent).toMatch(/^Một người khác vừa đổi Trạng thái/);
     expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  describe("on a phone (UC-WM-B33, UC-WM-D02)", () => {
+    const widthBefore = window.innerWidth;
+    beforeAll(() => {
+      window.innerWidth = 390;
+    });
+    afterAll(() => {
+      window.innerWidth = widthBefore;
+    });
+
+    const tickFirst = async () => {
+      fireEvent.click((await screen.findAllByLabelText(/^Đánh dấu xong/))[0]!);
+    };
+    // The hidden desktop grid holds its own in-cell note; ByRole skips it.
+    const sheet = () => screen.findByRole("alertdialog", {}, { timeout: 8000 });
+
+    it("opens a bottom sheet with both values and no toast when a status write lost the race", async () => {
+      const { cards } = renderTable(erpOwnerAccess());
+      cards.updateStatus.mockRejectedValueOnce(lostRace("Lê Hoàng Phúc"));
+      await tickFirst();
+      const choice = await sheet();
+      expect(choice.textContent).toMatch(
+        /^Lê Hoàng Phúc vừa đổi Trạng thái thành /,
+      );
+      expect(choice.textContent).toContain("Giá trị của bạn: Hoàn thành");
+      expect(toast.error).not.toHaveBeenCalled();
+      fireEvent.click(
+        within(choice).getByRole("button", { name: "Dùng bản mới" }),
+      );
+      await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+      expect(cards.updateStatus).toHaveBeenCalledTimes(1);
+    }, 20000);
+
+    it("writes the value again on Giữ của bạn", async () => {
+      const { cards } = renderTable(erpOwnerAccess());
+      cards.updateStatus.mockRejectedValueOnce(lostRace(null));
+      await tickFirst();
+      const choice = await sheet();
+      expect(choice.textContent).toMatch(/^Một người khác vừa đổi/);
+      fireEvent.click(
+        within(choice).getByRole("button", { name: "Giữ của bạn" }),
+      );
+      await waitFor(() => expect(cards.updateStatus).toHaveBeenCalledTimes(2));
+    }, 20000);
   });
 
   const renameErp149 = async (title: string) => {
