@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  Skeleton,
   TABLET_SLOT,
   TabletSlot,
   Tooltip,
@@ -140,6 +141,8 @@ export interface BoardHeaderData {
   readonly onExport?: () => void;
   /** Present when the board is archived: the read-only banner with Unarchive for a Manager. */
   readonly archived?: BoardHeaderArchived;
+  /** The board is still loading (BC-Shell L): the mark and the title row show bars. */
+  readonly loading?: boolean;
 }
 
 /** What the tablet band's 56 px header needs beyond the data every width has (`Final-T-*`). */
@@ -540,6 +543,7 @@ export function BoardHeaderSurface({
   trashCount = 0,
   onOpenArchive,
   archived,
+  loading,
   tablet,
 }: BoardHeaderSurfaceProps) {
   const sidebar = useOptionalSidebar();
@@ -744,25 +748,41 @@ export function BoardHeaderSurface({
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-3 px-4 pt-4 sm:px-6">
-          {space ? (
-            <span
-              aria-hidden="true"
-              className={cn(
-                "flex size-8.5 shrink-0 items-center justify-center rounded-[9px] text-metadata font-bold",
-                MARK_TONE_CLASS[space.markTone],
-              )}
-            >
-              {space.initials}
-            </span>
-          ) : null}
-          <div className="flex min-w-0 flex-col">
-            {space ? (
-              <SpaceCrumb space={space} onOpenSpace={onOpenSpace} />
-            ) : null}
-            <h1 className="truncate text-board-title text-foreground">
-              {title}
-            </h1>
-          </div>
+          {loading ? (
+            <>
+              <Skeleton className="size-8.5 shrink-0 rounded-[9px]" />
+              <div
+                data-slot="board-header-loading"
+                className="flex min-w-0 flex-col gap-1.5"
+              >
+                <Skeleton className="h-2.5 w-30" />
+                <Skeleton className="h-4.5 w-55" />
+              </div>
+              <h1 className="sr-only">{title}</h1>
+            </>
+          ) : (
+            <>
+              {space ? (
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "flex size-8.5 shrink-0 items-center justify-center rounded-[9px] text-metadata font-bold",
+                    MARK_TONE_CLASS[space.markTone],
+                  )}
+                >
+                  {space.initials}
+                </span>
+              ) : null}
+              <div className="flex min-w-0 flex-col">
+                {space ? (
+                  <SpaceCrumb space={space} onOpenSpace={onOpenSpace} />
+                ) : null}
+                <h1 className="truncate text-board-title text-foreground">
+                  {title}
+                </h1>
+              </div>
+            </>
+          )}
 
           {access && visibility ? (
             <ReasonHint reason={shareReason}>
