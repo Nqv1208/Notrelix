@@ -71,6 +71,46 @@ const summary = (ops: readonly BlockWrite[]) =>
         }${op.afterId ? ` after ${op.afterId}` : ""}`,
   );
 
+describe("DocBlockSaver when the right to edit is lost", () => {
+  it.each([403, 404])(
+    "stops saving on a %s and hands over the text that was never stored",
+    async (status) => {
+      const refused = Object.assign(new Error("gone"), { status });
+      const { w } = writer({ write: vi.fn().mockRejectedValue(refused) });
+      const lost = vi.fn();
+      const { saver, statuses } = saverWith(w, { onAccessLost: lost });
+      saver.reset([draft("a", "x", 1), draft("b", "y", 2)]);
+
+      saver.change([draft("a", "x edited", 1), draft("b", "y", 2)]);
+      await saver.flush();
+
+      expect(statuses).toContain("error");
+      expect(lost).toHaveBeenCalledTimes(1);
+      expect(lost.mock.calls[0]![0].map((d: BlockDraft) => d.id)).toEqual([
+        "a",
+      ]);
+
+      // Locked for good: more typing and a retry send nothing.
+      saver.change([draft("a", "x edited more", 1), draft("b", "y", 2)]);
+      await saver.retry();
+      expect(w.write).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("keeps retrying a failure that is not a lost right", async () => {
+    const down = Object.assign(new Error("down"), { status: 503 });
+    const { w } = writer({ write: vi.fn().mockRejectedValue(down) });
+    const lost = vi.fn();
+    const { saver } = saverWith(w, { onAccessLost: lost });
+    saver.reset([draft("a", "x", 1)]);
+    saver.change([draft("a", "x!", 1)]);
+    await saver.flush();
+    await saver.retry();
+    expect(lost).not.toHaveBeenCalled();
+    expect(w.write).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe("planBlockWrites", () => {
   it("edits only the changed block against its version", () => {
     const ops = planBlockWrites(

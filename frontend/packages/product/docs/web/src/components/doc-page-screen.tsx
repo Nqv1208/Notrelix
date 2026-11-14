@@ -518,7 +518,18 @@ export function createDocPageScreen({
       null,
     );
     const toastedRef = useRef(false);
+    // The right to edit was lost while the page was open: saving stopped and
+    // what was never stored waits here to copy.
+    const [accessLost, setAccessLost] = useState<{
+      readonly text: string;
+      readonly copied: boolean;
+    } | null>(null);
     const saver = useDocSaver(workspaceId, pageId, blocksQuery.data, {
+      onAccessLost: (unsaved) =>
+        setAccessLost({
+          text: unsaved.map(draftRecoveryText).filter(Boolean).join("\n\n"),
+          copied: false,
+        }),
       onConflict: ({ blockId, local, server }) => {
         const changed = !local || !draftEquals(local, server);
         if (!changed) return;
@@ -629,14 +640,14 @@ export function createDocPageScreen({
       pageId,
       ready: !pageQuery.isLoading && !blocksQuery.isLoading && page !== null,
       initial: initialDrafts,
-      editable: host.canEdit,
+      editable: host.canEdit && !accessLost,
       placeholder: copy.blockPlaceholder,
       emptyPlaceholder: copy.blocks.emptyDoc,
       label: copy.blockPlaceholder,
       contextKey,
       context: {
         copy,
-        readOnly: !host.canEdit,
+        readOnly: !host.canEdit || !!accessLost,
         media,
         callbacks: {
           onOpenPagePicker: (blockId) =>
@@ -1375,6 +1386,15 @@ export function createDocPageScreen({
           });
         }
       },
+      onAccessLostCopy: () => {
+        const text = accessLost?.text;
+        if (!text) return;
+        void navigator.clipboard
+          ?.writeText(text)
+          .then(() => setAccessLost((c) => (c ? { ...c, copied: true } : c)))
+          .catch(() => undefined);
+      },
+      onLeavePage: host.leaveDoc,
       onRecoveryCopy: (id) => {
         const text = recoveries.find((entry) => entry.id === id)?.draft;
         if (!text) return;
@@ -1564,6 +1584,7 @@ export function createDocPageScreen({
         editor={richEditor.editor}
         recoveries={recoveryViews}
         copiedRecoveryId={copiedRecoveryId}
+        accessLost={accessLost ?? undefined}
         chips={chips}
         why={why}
         blocks={blockViews}
@@ -1701,7 +1722,7 @@ export function createDocPageScreen({
             ? convertTodoFailedStep(convertTodo.error)
             : null,
         }}
-        readOnly={!host.canEdit}
+        readOnly={!host.canEdit || !!accessLost}
         canComment
         canFormat={host.canEdit}
         callbacks={callbacks}

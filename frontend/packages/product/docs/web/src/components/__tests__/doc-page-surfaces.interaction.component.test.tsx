@@ -157,6 +157,7 @@ describe("docs web pure surfaces", () => {
         .getAllByRole("textbox")
         .every((box) => box.getAttribute("aria-readonly") === "true"),
     ).toBe(true);
+    expect(screen.getByText(docsCopy.notice.readOnlyTitle)).toBeTruthy();
     readOnly.unmount();
 
     const failed = renderPureUi(
@@ -564,5 +565,32 @@ describe("docs web pure surfaces", () => {
       "Kế toán hằng tháng",
     );
     expect(onConvertBoard).toHaveBeenCalledWith("board-2");
+  });
+});
+
+describe("DocPageScreenSurface after the right to edit is lost", () => {
+  it("says so, keeps the unsaved text copyable and offers a way out", () => {
+    const copyText = vi.fn();
+    const leave = vi.fn();
+    renderPureUi(
+      <DocPageScreenSurface
+        {...docsPageScreenReadOnlyScenario()}
+        accessLost={{ text: "my unsaved line", copied: false }}
+        callbacks={{ onAccessLostCopy: copyText, onLeavePage: leave }}
+      />,
+    );
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toContain(docsCopy.notice.lostTitle);
+    expect(
+      screen.getByLabelText(docsCopy.notice.unsavedLabel).textContent,
+    ).toBe("my unsaved line");
+    fireEvent.click(
+      within(alert).getByRole("button", { name: docsCopy.notice.copyUnsaved }),
+    );
+    fireEvent.click(
+      within(alert).getByRole("button", { name: docsCopy.notice.leave }),
+    );
+    expect(copyText).toHaveBeenCalledTimes(1);
+    expect(leave).toHaveBeenCalledTimes(1);
   });
 });

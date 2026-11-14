@@ -7,6 +7,7 @@ import {
   DocArticleSurface,
   type DocArticleSurfaceProps,
 } from "./doc-article-surface";
+import { DocAccessNoticeSurface } from "./doc-access-notice-surface";
 import { DocPageBarSurface } from "./doc-page-bar-surface";
 import {
   DocPageSetupDialogSurface,
@@ -108,6 +109,8 @@ export interface DocPageScreenSurfaceProps {
   readonly editor?: Editor | null;
   readonly recoveries?: readonly DocRecoveryView[];
   readonly copiedRecoveryId?: string | null;
+  /** The right to edit was lost while the page was open (see `DocAccessNoticeSurface`). */
+  readonly accessLost?: { readonly text: string; readonly copied: boolean };
   readonly versions?: DocVersionsState;
   /** The history dialogs' write state (save version, restore). */
   readonly history?: DocHistoryActionView;
@@ -216,6 +219,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     editor,
     recoveries,
     copiedRecoveryId,
+    accessLost,
     versions,
     history,
     templateAction,
@@ -309,6 +313,14 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
         aria-hidden={dialogOpen || undefined}
         inert={dialogOpen || undefined}
       >
+        {focusMode || versions ? null : (
+          <DocAccessNoticeSurface
+            copy={copy}
+            accessLost={accessLost}
+            readOnly={readOnly}
+            callbacks={callbacks}
+          />
+        )}
         {focusMode ? (
           <button
             type="button"

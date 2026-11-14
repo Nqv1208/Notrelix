@@ -770,6 +770,16 @@ export const vi = {
     toast:
       "Một khối vừa được người khác sửa. Chỉnh sửa của bạn được giữ phía trên tài liệu.",
   },
+  notice: {
+    readOnlyTitle: "Bạn chỉ có quyền xem trang này.",
+    readOnlyBody: "Liên hệ người quản lý trang để xin quyền sửa.",
+    lostTitle: "Bạn không còn quyền sửa trang này.",
+    lostBody: "Thay đổi chưa lưu được giữ lại để sao chép.",
+    unsavedLabel: "Văn bản chưa lưu của bạn",
+    copyUnsaved: "Sao chép văn bản chưa lưu",
+    copied: "Đã sao chép",
+    leave: "Rời trang",
+  },
   tree: {
     docs: "Tài liệu",
     expand: "Mở rộng {{name}}",
@@ -1543,6 +1553,16 @@ export const en: DocPageCopy = {
     dismiss: "Dismiss",
     toast:
       "A block was just changed by someone else. Your edit is kept above the document.",
+  },
+  notice: {
+    readOnlyTitle: "You can only read this page.",
+    readOnlyBody: "Ask the page manager for edit access.",
+    lostTitle: "You can no longer edit this page.",
+    lostBody: "Your unsaved changes are kept here so you can copy them.",
+    unsavedLabel: "Your unsaved text",
+    copyUnsaved: "Copy my unsaved text",
+    copied: "Copied",
+    leave: "Leave page",
   },
   tree: {
     docs: "Docs",
