@@ -138,7 +138,8 @@ export const attachmentsOperations = [
     id: "chat.attachments.create-upload",
     contract: { kind: "openapi", operationId: "Chat.Attachments.CreateUpload" },
     method: "POST",
-    route: "/workspaces/:workspaceId/chat/messages/:messageId/attachments/uploads",
+    route:
+      "/workspaces/:workspaceId/chat/messages/:messageId/attachments/uploads",
     async handle() {
       return directUploadUnsupported("storage-direct-upload-unsupported");
     },
