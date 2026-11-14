@@ -4210,6 +4210,11 @@
           "name": "PageArchived",
           "context": "Documents",
           "maturity": "Stub"
+        },
+        {
+          "name": "PageTrashedActivityConsumer",
+          "context": "Collaboration",
+          "maturity": "Implemented"
         }
       ]
     },
@@ -4554,7 +4559,13 @@
       ],
       "piiFields": [],
       "sensitiveFields": [],
-      "consumers": []
+      "consumers": [
+        {
+          "name": "PageMovedActivityConsumer",
+          "context": "Collaboration",
+          "maturity": "Implemented"
+        }
+      ]
     },
     {
       "name": "page.renamed",
@@ -4638,7 +4649,13 @@
       ],
       "piiFields": [],
       "sensitiveFields": [],
-      "consumers": []
+      "consumers": [
+        {
+          "name": "PageRenamedActivityConsumer",
+          "context": "Collaboration",
+          "maturity": "Implemented"
+        }
+      ]
     },
     {
       "name": "page.restored",
@@ -4712,7 +4729,13 @@
       ],
       "piiFields": [],
       "sensitiveFields": [],
-      "consumers": []
+      "consumers": [
+        {
+          "name": "PageRestoredActivityConsumer",
+          "context": "Collaboration",
+          "maturity": "Implemented"
+        }
+      ]
     },
     {
       "name": "page.space-changed",
