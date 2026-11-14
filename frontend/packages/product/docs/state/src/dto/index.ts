@@ -47,6 +47,7 @@ export type CommentDtoApi = {
   contentMd: string;
   createdAt: string;
   isEdited: boolean;
+  parentCommentId?: string | null;
   /** The comment's version: edit and delete quote it, and a stale one is refused. */
   version?: number;
   /** A deleted comment that still has replies: it keeps no author and no text. */
