@@ -165,15 +165,8 @@ describe("ChatSidebar", () => {
     ).not.toBeNull();
   });
 
-  it("shows the caller in the footer when the host knows their name", () => {
-    const { unmount } = render(
-      <ChatSidebar
-        {...props({ viewer: { id: "me", name: "Nguyễn Thu Hà" } })}
-      />,
-    );
-    expect(screen.getByText("Nguyễn Thu Hà")).not.toBeNull();
-    unmount();
-    render(<ChatSidebar {...props({ viewer: null })} />);
+  it("has no account footer: the caller lives only in the app rail", () => {
+    render(<ChatSidebar {...props()} />);
     expect(screen.queryByText("Nguyễn Thu Hà")).toBeNull();
   });
 });

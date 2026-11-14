@@ -1148,9 +1148,6 @@ export function ChatWorkspace({
     [viewerId, people, channels.data, browse.data, onOpenChannel],
   );
 
-  const viewerName = people.get(viewerId);
-  const viewer =
-    viewerId && viewerName ? { id: viewerId, name: viewerName } : null;
   // On a narrow screen with no channel open, the list is the page.
   const listOnly =
     isMobile && channelId === null && (channels.data?.length ?? 0) > 0;
@@ -1194,6 +1191,7 @@ export function ChatWorkspace({
   const spaceName = conversation
     ? conversationTitle(conversation, viewerId, nameOf)
     : (channel?.name ?? "");
+  const panelSpaceLabel = conversation ? spaceName : `# ${spaceName}`;
   const spaceReady =
     conversationId !== null ? conversation !== null : channel !== null;
 
@@ -1242,7 +1240,6 @@ export function ChatWorkspace({
       }}
       onJoin={(id) => handleJoin(id, () => onOpenChannel(id))}
       onRetry={() => void channels.refetch()}
-      viewer={viewer}
     />
   );
 
@@ -1681,7 +1678,7 @@ export function ChatWorkspace({
           {channelId && (channel || conversation) && panel !== null ? (
             <aside
               className={cn(
-                "flex min-h-0 w-full flex-col border-s border-border bg-background md:w-96 md:shrink-0",
+                "flex min-h-0 w-full flex-col border-border bg-background md:w-[340px] md:border-s md:shrink-0 xl:w-[360px]",
               )}
               aria-label={copy.panel.label}
               data-testid="chat-side-panel"
@@ -1689,7 +1686,12 @@ export function ChatWorkspace({
               <div
                 role="tablist"
                 aria-label={copy.panel.label}
-                className="flex items-center gap-1 border-b border-border px-2 py-1"
+                className={cn(
+                  "flex items-center gap-1 border-b border-border px-2 py-1",
+                  // The thread and the pins draw their own header and close control at every width (Chat-Thread-*, Chat-Pins-*).
+                  (panel.kind === "thread" || panel.kind === "pins") &&
+                    "hidden",
+                )}
               >
                 {conversation ? (
                   <button
@@ -1769,17 +1771,19 @@ export function ChatWorkspace({
                     </span>
                   ) : null}
                 </button>
-                <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="ghost"
-                  className="ms-auto"
-                  aria-label={copy.pins.close}
-                  title={copy.pins.close}
-                  onClick={() => setPanel(null)}
-                >
-                  <X aria-hidden="true" />
-                </Button>
+                {panel.kind === "thread" || panel.kind === "pins" ? null : (
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    className="ms-auto"
+                    aria-label={copy.pins.close}
+                    title={copy.pins.close}
+                    onClick={() => setPanel(null)}
+                  >
+                    <X aria-hidden="true" />
+                  </Button>
+                )}
               </div>
               {panel.kind === "details" && conversation ? (
                 <ChatConversationDetails
@@ -1819,6 +1823,7 @@ export function ChatWorkspace({
                   locale={locale}
                   timeZone={timeZone}
                   pinnedIds={pinnedIds}
+                  spaceLabel={panelSpaceLabel}
                   mentionBase={{
                     selfId: viewerId,
                     people,
@@ -1839,6 +1844,8 @@ export function ChatWorkspace({
                   locale={locale}
                   timeZone={timeZone}
                   authorName={authorName}
+                  spaceLabel={panelSpaceLabel}
+                  onClose={() => setPanel(null)}
                   canUnpin={() => true}
                   unpinBusy={pinner.isPending}
                   onUnpin={(message) => handleTogglePin(message, false)}

@@ -121,7 +121,7 @@ export interface ChatMessageListProps {
 }
 
 /** The width of the conversation column: a comfortable measure on wide screens, fluid below it. */
-export const CHAT_COLUMN = "mx-auto w-full max-w-3xl";
+export const CHAT_COLUMN = "mx-auto w-full max-w-[760px]";
 
 export function dayLabel(
   dayKey: string,
@@ -139,7 +139,7 @@ export function dayLabel(
     weekday: "long",
     day: "numeric",
     month: "long",
-    year: "numeric",
+    ...(year === Number(today.slice(0, 4)) ? {} : { year: "numeric" }),
     timeZone: "UTC",
   }).format(date);
 }
@@ -390,9 +390,9 @@ export function ChatMessageList(props: ChatMessageListProps) {
                   <li
                     key={row.key}
                     role="presentation"
-                    className="mt-6 mb-2 flex justify-center px-4 first:mt-2"
+                    className="my-1.5 flex h-6 items-center gap-3 px-5 before:h-px before:flex-1 before:bg-border before:content-[''] after:h-px after:flex-1 after:bg-border after:content-['']"
                   >
-                    <span className="text-xs font-medium whitespace-nowrap text-muted-foreground">
+                    <span className="text-xs leading-[1.45] font-semibold whitespace-nowrap text-muted-foreground">
                       {dayLabel(row.dayKey, locale, copy, timeZone)}
                     </span>
                   </li>
@@ -403,12 +403,12 @@ export function ChatMessageList(props: ChatMessageListProps) {
                   <li
                     key={row.key}
                     role="presentation"
-                    className="mt-5 mb-1 flex justify-center px-4"
+                    className="mt-3 flex justify-center px-5"
                     data-testid="chat-time-separator"
                   >
                     <time
                       dateTime={row.at}
-                      className="text-xs whitespace-nowrap tabular-nums text-muted-foreground"
+                      className="text-[11.5px] leading-[1.45] font-semibold whitespace-nowrap tabular-nums text-muted-foreground"
                     >
                       {formatClock(row.at, locale, timeZone)}
                     </time>
@@ -422,17 +422,13 @@ export function ChatMessageList(props: ChatMessageListProps) {
                     role="separator"
                     aria-label={copy.list.newDivider}
                     data-unread-divider=""
-                    className="mt-4 mb-1 flex items-center gap-3 px-4 text-xs font-semibold text-destructive"
+                    className="my-1.5 flex h-6 items-center gap-3 px-5 text-xs leading-[1.45] font-[650] text-destructive"
                   >
                     <span
-                      className="h-px flex-1 bg-destructive/40"
+                      className="h-px flex-1 bg-destructive/45"
                       aria-hidden="true"
                     />
                     <span>{copy.list.newDivider}</span>
-                    <span
-                      className="h-px flex-1 bg-destructive/40"
-                      aria-hidden="true"
-                    />
                   </li>
                 );
               }

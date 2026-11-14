@@ -156,18 +156,18 @@ export function formatFullTime(iso: string, locale: string, timeZone?: string) {
   return formatter("full", locale, timeZone).format(new Date(iso));
 }
 
-/**
- * The corner radii of a bubble in its group (Messenger): 18 px all round, with the corners toward the
- * author's edge reduced to 6 px where the bubble touches the one above or below it.
- */
+/** Bubble corners: 14 px all round; only the last bubble of a group gets the 6 px tail on the author's side. */
 export function bubbleShape(
   isOwn: boolean,
-  continued: boolean,
+  _continued: boolean,
   groupEnd: boolean,
 ): string {
-  const top = continued ? (isOwn ? "rounded-se-sm" : "rounded-ss-sm") : null;
-  const bottom = groupEnd ? null : isOwn ? "rounded-ee-sm" : "rounded-es-sm";
-  return cn("rounded-2xl", top, bottom);
+  const tail = groupEnd
+    ? isOwn
+      ? "rounded-ee-[6px]"
+      : "rounded-es-[6px]"
+    : null;
+  return cn("rounded-[14px]", tail);
 }
 
 /** The width a side action bar needs beside the bubble; with less room it sits above the bubble. */
@@ -178,7 +178,8 @@ const LONG_PRESS_MS = 450;
 const LONG_PRESS_SLOP_PX = 10;
 
 /** The avatar column of someone else's messages; rows without the avatar keep the gutter so the bubbles line up. */
-const GUTTER = "w-7 shrink-0";
+const GUTTER =
+  "w-7 shrink-0 group-has-[[data-testid=chat-reactions]]/row:mb-[34px]";
 
 /** A message the server stored: a bubble, a tombstone, or a system line. */
 export function ChatMessageRow({
@@ -412,12 +413,12 @@ export function ChatMessageRow({
     : null;
   const nameLine =
     !continued && !isOwn && showName ? (
-      <p className="mb-0.5 flex max-w-full items-baseline gap-2 ps-3 text-xs font-medium text-muted-foreground">
+      <p className="mb-0.5 flex max-w-full items-baseline gap-2 text-xs leading-[1.45] font-semibold text-muted-foreground">
         <span className="truncate">{author.name}</span>
         <time
           dateTime={message.createdAt}
           title={fullTime}
-          className="shrink-0 font-normal tabular-nums"
+          className="shrink-0 text-[11.5px] font-medium tabular-nums"
         >
           {time}
         </time>
@@ -459,7 +460,7 @@ export function ChatMessageRow({
     bubble = (
       <div
         className={cn(
-          "min-w-0 max-w-full px-3 py-2 text-sm leading-relaxed",
+          "min-w-0 max-w-full px-3 py-2 text-sm leading-[1.45]",
           shape,
           isOwn
             ? "bg-primary text-primary-foreground"
@@ -533,7 +534,7 @@ export function ChatMessageRow({
       ref={rowRef}
       tabIndex={-1}
       className={cn(
-        "relative flex w-full items-end gap-2 px-3 outline-none md:px-4",
+        "group/row relative flex w-full items-end gap-2 px-3.5 outline-none md:px-6 xl:px-5",
         isOwn ? "flex-row-reverse" : "flex-row",
         continued ? "mt-0.5" : "mt-3",
         fresh &&
@@ -676,7 +677,7 @@ export function ChatMessageRow({
         {meta.length > 0 ? (
           <p
             className={cn(
-              "mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground",
+              "mt-0.5 flex items-center gap-1.5 text-xs leading-[1.45] text-muted-foreground",
               isOwn ? "pe-1" : "ps-1",
             )}
             data-testid="chat-message-meta"

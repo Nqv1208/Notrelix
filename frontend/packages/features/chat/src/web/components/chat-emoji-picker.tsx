@@ -337,7 +337,7 @@ export function EmojiPickerButton({
           type="button"
           variant="ghost"
           size="icon-sm"
-          className="mb-0.5 rounded-full text-muted-foreground hover:text-foreground"
+          className="size-10 rounded-full text-muted-foreground hover:text-foreground"
           disabled={disabled}
           aria-label={copy.emoji.open}
           title={copy.emoji.open}

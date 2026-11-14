@@ -29,7 +29,7 @@ export interface ReactionChipsProps {
 }
 
 /**
- * The reaction summary of a message: compact pills that overlap the bottom edge of the bubble (Messenger
+ * The reaction summary of a message: compact pills below the bubble with a small gap, never overlapping it (Messenger
  * style), one toggle per emoji (aria-pressed says whether the caller reacted; the count shows above one),
  * and a "who reacted" popover.
  */
@@ -49,8 +49,8 @@ export function ReactionChips({
       role="group"
       aria-label={copy.reactions.pickerLabel}
       className={cn(
-        "relative z-0 -mt-1.5 flex max-w-full flex-wrap items-center gap-1",
-        align === "end" ? "justify-end pe-2" : "justify-start ps-2",
+        "relative z-0 mt-2 flex max-w-full flex-wrap items-center gap-1.5",
+        align === "end" ? "justify-end" : "justify-start",
       )}
       data-testid="chat-reactions"
       data-align={align}
@@ -73,13 +73,13 @@ export function ReactionChips({
             }
             onClick={() => onToggle(reaction.emoji, !reaction.reactedByMe)}
             className={cn(
-              "inline-flex h-6 items-center gap-1 rounded-full border px-1.5 text-xs font-medium tabular-nums shadow-sm ring-2 ring-background transition-colors focus-visible:ring-focus-ring focus-visible:outline-none motion-reduce:transition-none",
+              "inline-flex h-[26px] items-center gap-[5px] rounded-full border px-[9px] text-[12.5px] leading-[1.45] font-semibold tabular-nums transition-colors focus-visible:ring-focus-ring focus-visible:outline-none motion-reduce:transition-none",
               reaction.reactedByMe
                 ? "border-primary bg-state-selected text-state-selected-foreground"
-                : "border-border bg-popover text-popover-foreground hover:bg-muted",
+                : "border-input bg-card text-muted-foreground hover:bg-muted",
             )}
           >
-            <span aria-hidden="true" className="text-sm leading-none">
+            <span aria-hidden="true" className="leading-none">
               {reaction.emoji}
             </span>
             {reaction.count > 1 || reaction.reactedByMe ? (
@@ -120,7 +120,7 @@ function WhoReactedPopover({
           type="button"
           variant="ghost"
           size="icon-xs"
-          className="rounded-full text-muted-foreground opacity-70 hover:opacity-100 focus-visible:opacity-100"
+          className="size-[22px] rounded-full text-muted-foreground opacity-70 hover:opacity-100 focus-visible:opacity-100"
           aria-label={copy.reactions.who}
           title={copy.reactions.who}
         >
