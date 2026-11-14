@@ -18,7 +18,8 @@ import {
   pluralTableCopy,
   type MainTableCopy,
 } from "./main-table.copy";
-import type { TableEditors } from "./table-cell-editors";
+import type { SystemCellColumn, TableEditors } from "./table-cell-editors";
+import type { TableFieldEditing } from "./table-field-cell";
 import { TableDuePicker } from "./table-due-picker";
 import type {
   TableGroupModel,
@@ -44,6 +45,14 @@ const PRIORITY_CLASS = {
   medium: "text-muted-foreground",
   low: "text-meta-foreground",
 } as const;
+
+const CONFLICT_COLUMNS: readonly SystemCellColumn[] = [
+  "status",
+  "assignee",
+  "due",
+  "priority",
+  "title",
+];
 
 type SheetView = "menu" | "assign" | "due" | "priority";
 
@@ -142,6 +151,7 @@ export function TablePhoneList({
   onGroupToggle,
   onOpenItem,
   onStatusChange,
+  fieldEditing,
   selectedIds,
   onRowSelectedChange,
   topNote,
@@ -177,7 +187,9 @@ export function TablePhoneList({
   onClearFilter: () => void;
   onGroupToggle: (groupId: string) => void;
   onOpenItem: (id: string) => void;
-  onStatusChange: (id: string, optionId: string) => void;
+  onStatusChange: (id: string, optionId: string, inCell?: boolean) => void;
+  /** The open version conflicts of the rows; the first one opens a bottom sheet with both values (UC-WM-B33). */
+  fieldEditing?: TableFieldEditing;
 }) {
   const t = copy.phone;
   const [shown, setShown] = useState<Record<string, number>>({});
@@ -198,6 +210,28 @@ export function TablePhoneList({
   const keyOf = (row: TableRowModel) => row.key ?? row.title;
   const canTick = canEdit && Boolean(doneOption);
   const picking = (selectedIds?.size ?? 0) > 0;
+  // A write that lost to someone else's save: the sheet names who, shows both values and asks (no toast-only path).
+  const conflict = (() => {
+    if (!fieldEditing?.systemConflictOf) return null;
+    for (const row of rows)
+      for (const column of CONFLICT_COLUMNS) {
+        const open = fieldEditing.systemConflictOf(row.id, column);
+        if (open) return { row, column, open };
+      }
+    return null;
+  })();
+  const theirsOf = (row: TableRowModel, column: SystemCellColumn) =>
+    (column === "title"
+      ? row.title
+      : column === "status"
+        ? row.status?.name
+        : column === "assignee"
+          ? (row.assignee?.name ?? copy.row.unassigned)
+          : column === "due"
+            ? row.due.text
+            : row.priority
+              ? copy.row.priority[row.priority]
+              : copy.row.noPriority) || copy.fields.empty;
 
   const actions: TableRowActions | undefined = rowActions
     ? {
@@ -238,7 +272,7 @@ export function TablePhoneList({
             currentLabel={t.current}
             onClick={() => {
               close();
-              editors.onAssignee(row.id, null);
+              editors.onAssignee(row.id, null, true);
             }}
           />
           {editors.members.map((member) => (
@@ -260,7 +294,7 @@ export function TablePhoneList({
               currentLabel={t.current}
               onClick={() => {
                 close();
-                editors.onAssignee(row.id, member.userId);
+                editors.onAssignee(row.id, member.userId, true);
               }}
             />
           ))}
@@ -323,7 +357,7 @@ export function TablePhoneList({
               currentLabel={t.current}
               onClick={() => {
                 close();
-                editors.onPriority(row.id, option.id);
+                editors.onPriority(row.id, option.id, true);
               }}
             />
           ))}
@@ -358,7 +392,7 @@ export function TablePhoneList({
                 onClick={() => {
                   close();
                   if (option.id !== row.status?.id)
-                    onStatusChange(row.id, option.id);
+                    onStatusChange(row.id, option.id, true);
                 }}
               />
             ))}
@@ -625,7 +659,7 @@ export function TablePhoneList({
                           )}
                           onClick={() => {
                             const next = done ? openOption : doneOption;
-                            if (next) onStatusChange(row.id, next.id);
+                            if (next) onStatusChange(row.id, next.id, true);
                           }}
                           className="grid size-11 flex-none cursor-pointer place-items-center rounded-[12px] border-0 bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-default disabled:opacity-60"
                         >
@@ -732,6 +766,69 @@ export function TablePhoneList({
           </section>
         );
       })}
+      <Sheet
+        open={conflict !== null}
+        onOpenChange={(open) =>
+          !open &&
+          conflict &&
+          fieldEditing?.onSystemUseTheirs?.(conflict.row.id, conflict.column)
+        }
+      >
+        <SheetContent
+          side="bottom"
+          showCloseButton={false}
+          role="alertdialog"
+          aria-describedby={undefined}
+          className="gap-0 rounded-t-[14px] bg-popover px-5 pt-1.5 pb-6 text-popover-foreground data-[side=bottom]:border-t-0"
+        >
+          {conflict ? (
+            <>
+              <div
+                aria-hidden="true"
+                className="mx-auto mb-3 h-1.25 w-9 shrink-0 rounded-[3px] bg-line-strong"
+              />
+              <SheetTitle className="m-0 text-[16px] leading-[1.35] font-semibold">
+                {fillTableCopy(copy.fields.conflictTitle, {
+                  who: conflict.open.byName ?? copy.fields.staleSomeone,
+                  field: copy.columns[conflict.column],
+                  value: theirsOf(conflict.row, conflict.column),
+                })}
+              </SheetTitle>
+              <p className="m-0 mt-1 text-compact text-muted-foreground">
+                {fillTableCopy(copy.fields.conflictYours, {
+                  value: conflict.open.mine || copy.fields.empty,
+                })}
+              </p>
+              <div className="mt-4 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    fieldEditing?.onSystemKeepMine?.(
+                      conflict.row.id,
+                      conflict.column,
+                    )
+                  }
+                  className="h-11 cursor-pointer rounded-xl border border-line-strong bg-popover text-[15px] font-medium focus-visible:outline-2 focus-visible:outline-ring dark:bg-card"
+                >
+                  {t.conflictKeep}
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    fieldEditing?.onSystemUseTheirs?.(
+                      conflict.row.id,
+                      conflict.column,
+                    )
+                  }
+                  className="h-11 cursor-pointer rounded-xl border-0 bg-primary text-[15px] font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                >
+                  {t.conflictUse}
+                </button>
+              </div>
+            </>
+          ) : null}
+        </SheetContent>
+      </Sheet>
       <Sheet
         open={target !== undefined}
         onOpenChange={(open) => !open && close()}
