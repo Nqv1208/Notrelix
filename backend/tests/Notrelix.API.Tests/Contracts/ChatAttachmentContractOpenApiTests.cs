@@ -51,7 +51,24 @@ public class ChatAttachmentContractOpenApiTests
     {
         Document.GetProperty("components").GetProperty("schemas").GetProperty(AttachmentSchema).GetProperty("properties")
             .EnumerateObject().Select(p => p.Name)
-            .Should().BeEquivalentTo(["id", "messageId", "fileName", "sizeBytes", "contentType", "uploadedBy", "createdAt", "downloadPath"]);
+            .Should().BeEquivalentTo(["id", "messageId", "fileName", "sizeBytes", "contentType", "uploadedBy", "createdAt", "downloadPath", "width", "height", "durationMs", "waveform"]);
+    }
+
+    [Fact]
+    public void TheImageSize_IsOptionalNullableWholeNumbers()
+    {
+        var properties = Document.GetProperty("components").GetProperty("schemas").GetProperty(AttachmentSchema).GetProperty("properties");
+
+        foreach (var side in new[] { "width", "height" })
+        {
+            var property = properties.GetProperty(side);
+            property.GetProperty("type").GetString().Should().Be("integer", $"{side} is a whole number of pixels");
+            property.GetProperty("nullable").GetBoolean().Should().BeTrue($"{side} is null for a file that is not an image");
+        }
+
+        var required = Document.GetProperty("components").GetProperty("schemas").GetProperty(AttachmentSchema)
+            .TryGetProperty("required", out var list) ? list.EnumerateArray().Select(r => r.GetString()).ToList() : [];
+        required.Should().NotContain(["width", "height"]);
     }
 
     private static JsonElement Load([System.Runtime.CompilerServices.CallerFilePath] string sourceFile = "")

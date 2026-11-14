@@ -139,6 +139,9 @@ export interface ChatAttachmentRecord {
   readonly createdAt: string;
   /** The Idempotency-Key of the upload that stored it, so a retry returns the same file. */
   readonly idempotencyKey: string;
+  /** Voice messages only (UC-CHT-I04): the length in milliseconds and up to 64 peaks, each 0 to 255. */
+  readonly durationMs?: number | null;
+  readonly waveform?: readonly number[] | null;
 }
 
 /** The kinds of a mention (backend MentionKind wire spelling). */

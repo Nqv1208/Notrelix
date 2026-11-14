@@ -1,5 +1,8 @@
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Chat.Voice;
+
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.RateLimits;
 using Notrelix.Application.Features.Chat.Attachments.DTOs;
@@ -30,7 +33,10 @@ public record UploadMessageAttachmentCommand(
     Guid WorkspaceId,
     Guid MessageId,
     string FileName,
-    [property: JsonIgnore, IdempotencyFingerprintIgnore] Stream Content)
+    [property: JsonIgnore, IdempotencyFingerprintIgnore] Stream Content,
+    bool Voice = false,
+    int? DurationHintMs = null,
+    int[]? Waveform = null)
     : ICommand<Result<MessageAttachmentDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ChatMessagePost;
@@ -44,7 +50,8 @@ public class UploadMessageAttachmentCommandHandler(
     ISpaceSequenceAllocator sequences,
     IChatMessageAttachments attachments,
     IDateTimeProvider clock,
-    IChatRateLimiter rateLimits) : IRequestHandler<UploadMessageAttachmentCommand, Result<MessageAttachmentDto>>
+    IChatRateLimiter rateLimits,
+    IOptions<ChatVoiceOptions> voice) : IRequestHandler<UploadMessageAttachmentCommand, Result<MessageAttachmentDto>>
 {
     public async Task<Result<MessageAttachmentDto>> Handle(UploadMessageAttachmentCommand request, CancellationToken cancellationToken)
     {
@@ -70,8 +77,28 @@ public class UploadMessageAttachmentCommandHandler(
         // An upload is counted per person and per space before any byte is stored (UC-CHT-H08).
         await rateLimits.RequireAsync(ChatRateLimitPolicy.Upload, space.Id, userId, cancellationToken);
 
+        // A voice message (UC-CHT-I04) is one audio file within the Workspace voice limit. The byte ceiling is enforced while the bytes
+        // stream; the duration is checked after, on the length read from the header only, never on the client's hint.
+        var voiceOptions = voice.Value;
+        var maxVoiceSeconds = voiceOptions.MaxDurationSeconds;
+        var maxVoiceBytes = (long)maxVoiceSeconds * voiceOptions.MaxBytesPerSecond;
+        ChatMessageAudioUpload? audio = request.Voice
+            ? new ChatMessageAudioUpload(
+                Math.Clamp(request.DurationHintMs ?? 0, 0, ChatLimits.VoiceDurationHintMaxMs),
+                request.Waveform?.Select(peak => (byte)peak).ToArray(),
+                maxVoiceBytes)
+            : null;
+
         // The bytes stream before any lock (a long upload must not hold the space). The file policy runs inside the shared flow.
-        var stored = await attachments.UploadAsync(message.Id, request.FileName, request.Content, cancellationToken);
+        var stored = await attachments.UploadAsync(message.Id, request.FileName, request.Content, audio, cancellationToken);
+        if (request.Voice)
+        {
+            // A refusal here throws before the row is committed; the compensation registered by the shared flow removes the object.
+            if (!stored.ContentType.StartsWith("audio/", StringComparison.Ordinal))
+                throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(ChatRuleCodes.VoiceInvalid, "A voice message is one audio file.");
+            if (stored.VerifiedDurationMs is { } verified && verified > maxVoiceSeconds * 1000L || stored.SizeBytes > maxVoiceBytes)
+                throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(ChatRuleCodes.VoiceTooLong, $"A voice message is at most {maxVoiceSeconds} seconds long.");
+        }
 
         // The row is in the unit of work but not committed. Standing is read again under the space lock: a leave, an archive or a
         // delete that committed during the upload fails this request, and the compensation registered by the shared flow removes the object.
@@ -109,5 +136,8 @@ public class UploadMessageAttachmentCommandValidator : AbstractValidator<UploadM
         RuleFor(x => x.MessageId).NotEmpty();
         RuleFor(x => x.FileName).NotEmpty().MaximumLength(1024);
         RuleFor(x => x.Content).NotNull();
+        RuleFor(x => x.Waveform)
+            .Must(peaks => peaks is null || peaks.Length is >= 1 and <= FileMetadata.MaxWaveformPeaks && peaks.All(peak => peak is >= 0 and <= 255))
+            .WithMessage($"A waveform has 1 to {FileMetadata.MaxWaveformPeaks} peaks, each 0 to 255.");
     }
 }

@@ -26,6 +26,7 @@ import {
 } from "./chat-model";
 import { mentionCountIn, mentionViewsOf } from "./chat-mention-views";
 import type { MentionNotice } from "./chat-mentions";
+import { mockImageSize } from "./mock-image-size";
 
 // ─── Problems ────────────────────────────────────────────────────────────────
 
@@ -546,6 +547,8 @@ export function reactionSummaryOf(
 
 /** MessageAttachmentDto: the metadata of a file and the path that streams its bytes (a permission-checked request). */
 export function attachmentView(row: ChatAttachmentRecord) {
+  // The pixel size of an image is read from its stored header, as the backend does; null for any other file.
+  const size = mockImageSize(row.bytes, row.contentType);
   return {
     id: row.id,
     messageId: row.messageId,
@@ -555,6 +558,10 @@ export function attachmentView(row: ChatAttachmentRecord) {
     uploadedBy: row.uploadedBy,
     createdAt: row.createdAt,
     downloadPath: `/api/v1/workspaces/${row.workspaceId}/chat/messages/${row.messageId}/attachments/${row.id}/content`,
+    width: size?.width ?? null,
+    height: size?.height ?? null,
+    durationMs: row.durationMs ?? null,
+    waveform: row.waveform ? [...row.waveform] : null,
   };
 }
 
@@ -568,6 +575,9 @@ export function messageView(
   message: ChatMessageRecord,
   mentionNotices: readonly MentionNotice[] = [],
 ) {
+  // A root shows the count and the last reply of its stored thread; a reply and a plain message show none.
+  const thread =
+    message.threadRootId === null ? state.threads.get(message.id) : undefined;
   return {
     id: message.id,
     spaceId: message.spaceId,
@@ -599,6 +609,9 @@ export function messageView(
       message.id,
     ),
     mentionNotices: [...mentionNotices],
+    threadReplyCount: thread?.replyCount ?? 0,
+    threadLastReplyAt:
+      thread && thread.replyCount > 0 ? thread.lastReplyAt : null,
   };
 }
 

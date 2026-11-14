@@ -12,6 +12,9 @@ public static class MessageAttachments
     public static string DownloadPath(Guid workspaceId, Guid messageId, Guid attachmentId) =>
         $"/api/v1/workspaces/{workspaceId}/chat/messages/{messageId}/attachments/{attachmentId}/content";
 
+    public static string CommitPath(Guid workspaceId, Guid messageId, Guid uploadId) =>
+        $"/api/v1/workspaces/{workspaceId}/chat/messages/{messageId}/attachments/uploads/{uploadId}/commit";
+
     public static async Task<IReadOnlyDictionary<Guid, IReadOnlyList<MessageAttachmentDto>>> LoadAsync(
         IChatMessageAttachments attachments, Guid workspaceId, IEnumerable<Guid> messageIds, CancellationToken cancellationToken)
     {
@@ -37,5 +40,9 @@ public static class MessageAttachments
         fact.ContentType,
         fact.UploadedBy,
         fact.CreatedAt,
-        DownloadPath(workspaceId, fact.MessageId, fact.Id));
+        DownloadPath(workspaceId, fact.MessageId, fact.Id),
+        fact.Width,
+        fact.Height,
+        fact.DurationMs,
+        fact.Waveform?.Select(peak => (int)peak).ToArray());
 }

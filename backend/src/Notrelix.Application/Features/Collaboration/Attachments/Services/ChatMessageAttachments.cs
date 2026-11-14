@@ -19,15 +19,18 @@ public sealed class ChatMessageAttachments(
     IOptions<AttachmentUploadOptions> options,
     ILogger<ChatMessageAttachments> logger) : IChatMessageAttachments
 {
-    public async Task<ChatMessageAttachmentFact> UploadAsync(Guid messageId, string fileName, Stream content, CancellationToken cancellationToken)
+    public async Task<ChatMessageAttachmentFact> UploadAsync(
+        Guid messageId, string fileName, Stream content, ChatMessageAudioUpload? audio, CancellationToken cancellationToken)
     {
-        var result = await AttachmentTargetOperations.UploadFileAsync(
+        var hints = audio is null ? null : new AudioUploadHints(audio.DurationHintMs, audio.Waveform, audio.MaxBytes);
+        var uploaded = await AttachmentTargetOperations.UploadStoredFileAsync(
             context, requestContext, clock, storage, compensations, targetLock, options.Value,
-            AttachmentTargets.ChatMessage, messageId, fileName, content, cancellationToken);
+            AttachmentTargets.ChatMessage, messageId, fileName, content, hints, cancellationToken);
 
-        var dto = result.Data!;
+        var dto = uploaded.Attachment;
         return new ChatMessageAttachmentFact(
-            dto.Id, messageId, dto.Filename, dto.SizeBytes, dto.ContentType, dto.UploadedBy, new DateTimeOffset(dto.CreatedAt, TimeSpan.Zero));
+            dto.Id, messageId, dto.Filename, dto.SizeBytes, dto.ContentType, dto.UploadedBy, new DateTimeOffset(dto.CreatedAt, TimeSpan.Zero),
+            dto.Width, dto.Height, uploaded.DurationMs, uploaded.Waveform, uploaded.VerifiedDurationMs);
     }
 
     public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<ChatMessageAttachmentFact>>> ListAsync(
@@ -50,7 +53,8 @@ public sealed class ChatMessageAttachments(
                 g => g.Key,
                 g => (IReadOnlyList<ChatMessageAttachmentFact>)g
                     .Select(a => new ChatMessageAttachmentFact(
-                        a.Id, a.Target.ResourceId, a.Metadata.FileName, a.Metadata.Size, a.Metadata.ContentType, a.CreatedBy!.Value, a.CreatedAt))
+                        a.Id, a.Target.ResourceId, a.Metadata.FileName, a.Metadata.Size, a.Metadata.ContentType, a.CreatedBy!.Value, a.CreatedAt,
+                        a.Metadata.Width, a.Metadata.Height, a.Metadata.DurationMs, a.Metadata.Waveform))
                     .ToList());
     }
 

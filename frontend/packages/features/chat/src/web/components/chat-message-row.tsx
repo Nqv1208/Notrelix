@@ -412,8 +412,15 @@ export function ChatMessageRow({
     : null;
   const nameLine =
     !continued && !isOwn && showName ? (
-      <p className="mb-0.5 max-w-full truncate ps-3 text-xs font-medium text-muted-foreground">
-        {author.name}
+      <p className="mb-0.5 flex max-w-full items-baseline gap-2 ps-3 text-xs font-medium text-muted-foreground">
+        <span className="truncate">{author.name}</span>
+        <time
+          dateTime={message.createdAt}
+          title={fullTime}
+          className="shrink-0 font-normal tabular-nums"
+        >
+          {time}
+        </time>
       </p>
     ) : null;
 
@@ -506,7 +513,19 @@ export function ChatMessageRow({
     meta.push(<span key="edited">{copy.list.edited}</span>);
   }
   if (live && isOwn && showSent && groupEnd) {
-    meta.push(<span key="sent">{copy.list.sent}</span>);
+    meta.push(
+      <span key="sent">
+        {copy.list.sent}
+        <span aria-hidden="true"> · </span>
+        <time
+          dateTime={message.createdAt}
+          title={fullTime}
+          className="tabular-nums"
+        >
+          {time}
+        </time>
+      </span>,
+    );
   }
 
   return (

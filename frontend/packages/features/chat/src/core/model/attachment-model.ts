@@ -175,6 +175,13 @@ export interface ChatUploadItem {
   readonly reason: UploadFailureReason | null;
   /** One per file: the same key replays the stored file when a retry follows an answer that was lost. */
   readonly idempotencyKey: string;
+  /**
+   * A voice message with no text (UC-CHT-I04): the message holds nothing but this audio, so dismissing its failed
+   * upload deletes the message too (no empty message is left behind).
+   */
+  readonly voiceOnly?: boolean;
+  /** The message's version, for the delete that goes with dismissing a voice-only upload. */
+  readonly messageVersion?: number;
 }
 
 /** The files of a message, once per id, oldest first. */
@@ -186,4 +193,24 @@ export function mergeAttachment(
   return held.some((item) => item.id === attachment.id)
     ? held
     : [...held, attachment];
+}
+
+/** The narrowest and widest shape a reserved image box takes (3:4 to 2:1); a wider or taller image is cropped to it. */
+export const IMAGE_BOX_MIN_RATIO = 0.75;
+export const IMAGE_BOX_MAX_RATIO = 2;
+
+/**
+ * The width-to-height ratio of an image's reserved box, from its pixel size and clamped to 3:4..2:1, or null when the
+ * size is not known (the layout keeps its square or wide fallback).
+ */
+export function imageBoxRatio(
+  attachment: Pick<ChatAttachment, "width" | "height">,
+): number | null {
+  const { width, height } = attachment;
+  if (typeof width !== "number" || typeof height !== "number") return null;
+  if (!(width >= 1 && height >= 1)) return null;
+  return Math.min(
+    IMAGE_BOX_MAX_RATIO,
+    Math.max(IMAGE_BOX_MIN_RATIO, width / height),
+  );
 }

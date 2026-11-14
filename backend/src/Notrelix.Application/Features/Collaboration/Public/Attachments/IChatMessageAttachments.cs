@@ -14,7 +14,8 @@ public interface IChatMessageAttachments
     /// the size cap (413 or 400) and a message that already holds the maximum number of files (400) before or while the bytes are
     /// streamed; a refused upload leaves no row and no object. The row is added to the request unit of work, not committed here.
     /// </summary>
-    Task<ChatMessageAttachmentFact> UploadAsync(Guid messageId, string fileName, Stream content, CancellationToken cancellationToken);
+    Task<ChatMessageAttachmentFact> UploadAsync(
+        Guid messageId, string fileName, Stream content, ChatMessageAudioUpload? audio, CancellationToken cancellationToken);
 
     /// <summary>The files of many messages in one query, oldest first, keyed by message id. Messages without files are absent.</summary>
     Task<IReadOnlyDictionary<Guid, IReadOnlyList<ChatMessageAttachmentFact>>> ListAsync(IReadOnlyCollection<Guid> messageIds, CancellationToken cancellationToken);
@@ -43,7 +44,18 @@ public sealed record ChatMessageAttachmentFact(
     long SizeBytes,
     string ContentType,
     Guid UploadedBy,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    int? Width = null,
+    int? Height = null,
+    int? DurationMs = null,
+    byte[]? Waveform = null,
+    int? VerifiedDurationMs = null);
+
+/// <summary>
+/// The voice facts of an audio upload that is a voice message (UC-CHT-I04). <see cref="DurationHintMs"/> and <see cref="Waveform"/> are
+/// client data, validated by Chat; <see cref="MaxBytes"/> is the byte ceiling the stored file may not exceed.
+/// </summary>
+public sealed record ChatMessageAudioUpload(int? DurationHintMs, byte[]? Waveform, long MaxBytes);
 
 /// <summary>An opened file. The consumer owns the stream and disposes it.</summary>
 public sealed record ChatMessageAttachmentContent(Stream Content, string FileName, string ContentType, long SizeBytes);

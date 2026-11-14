@@ -338,3 +338,42 @@ describe("ChatMessageList", () => {
     expect(onDiscard).toHaveBeenCalledWith("c-2");
   });
 });
+
+describe("ChatMessageList: the thread chip of a root", () => {
+  it("shows N replies from the count the server sent with the message, with no realtime projection", () => {
+    render(
+      <ChatMessageList
+        {...props({
+          onOpenThread: vi.fn(),
+          messages: [
+            message(1, {
+              threadReplyCount: 3,
+              threadLastReplyAt: "2026-11-10T10:00:00.000Z",
+            }),
+            message(2),
+          ],
+        })}
+      />,
+    );
+    const chips = screen.getAllByTestId("chat-thread-chip");
+    expect(chips).toHaveLength(1);
+    expect(chips[0]!.textContent).toContain("3 replies");
+  });
+
+  it("takes the higher of the realtime projection and the stored count", () => {
+    render(
+      <ChatMessageList
+        {...props({
+          onOpenThread: vi.fn(),
+          messages: [message(1, { threadReplyCount: 2 })],
+          threadCounts: {
+            "m-1": { replyCount: 5, lastReplyAt: "2026-11-10T11:00:00.000Z" },
+          },
+        })}
+      />,
+    );
+    expect(screen.getByTestId("chat-thread-chip").textContent).toContain(
+      "5 replies",
+    );
+  });
+});

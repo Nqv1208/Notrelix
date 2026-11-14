@@ -33,7 +33,8 @@ public record SendMessageCommand(
     string ClientMessageId,
     Guid? ReplyToId,
     IReadOnlyList<MentionInput>? Mentions = null,
-    bool ConfirmBroadcast = false)
+    bool ConfirmBroadcast = false,
+    bool VoiceMessage = false)
     : ICommand<Result<SendMessageResultDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ChatMessagePost;
@@ -125,7 +126,8 @@ public class SendMessageCommandHandler(
             request.Content,
             clientMessageId,
             request.ReplyToId,
-            clock.UtcNow);
+            clock.UtcNow,
+            voiceMessage: request.VoiceMessage);
 
         db.ChatMessages.Add(message);
         await MessageMentions.ReplaceAsync(db, message, resolution.Spans, hadBefore: false, cancellationToken);
@@ -142,9 +144,11 @@ public class SendMessageCommandValidator : AbstractValidator<SendMessageCommand>
     {
         RuleFor(x => x.WorkspaceId).NotEmpty();
         RuleFor(x => x.SpaceId).NotEmpty();
+        // A voice message is sent with no text and its audio attachment follows (UC-CHT-I04); any other message needs text.
         RuleFor(x => x.Content)
             .NotNull()
-            .Must(content => content is not null && content.Trim().Length is >= 1 and <= ChatLimits.MessageMaxLength)
+            .Must((command, content) => content is not null
+                && (content.Trim().Length is >= 1 and <= ChatLimits.MessageMaxLength || (command.VoiceMessage && content.Trim().Length == 0)))
             .WithMessage($"A message has 1 to {ChatLimits.MessageMaxLength} characters after trim.");
         RuleFor(x => x.ClientMessageId)
             .NotNull()

@@ -330,7 +330,7 @@ export function ChatThreadPanel({
         busy={replier.isPending}
         onChange={setDraft}
         onSend={send}
-        attachments={{ draftKey: `thread-${rootId}` }}
+        attachments={{ draftKey: `thread-${rootId}`, voice: false }}
         mentions={
           mentionBase
             ? {

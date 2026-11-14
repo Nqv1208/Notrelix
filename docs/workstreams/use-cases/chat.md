@@ -32,7 +32,7 @@ review_on:
 
 # Use cases: Chat
 
-Dates: this catalog was written on 2026-11-10 as a specification. No Chat code exists yet, so every use case is DEFINED. Evidence lines name the intended endpoints and surfaces; they become real references as lanes build them.
+Dates: this catalog was written on 2026-11-10 as a specification and recounted on 2026-11-13 against the code. A use case is HARDENING only when its backend, mock handler, UI and tests all exist (checked by operation, handler, component and test file); where one is missing the use case stays DEFINED and its State line says what is missing. The owner sets DONE; no agent does.
 
 The product rules are in `docs/product/chat.md` (CHT-001 to CHT-024). The capability letters map to the team capabilities CHT-001 to CHT-008 of `docs/workstreams/teams/chat.md`; these are catalog coordinates, not product rule IDs.
 
@@ -42,34 +42,31 @@ The product rules are in `docs/product/chat.md` (CHT-001 to CHT-024). The capabi
 
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
-| A | CHT-001 Channels and channel groups | 8 | 8 | 0 | 0 | 0 | 0 | 0 |
-| B | CHT-002 Messages | 10 | 10 | 0 | 0 | 0 | 0 | 0 |
-| C | CHT-003 Realtime delivery | 9 | 9 | 0 | 0 | 0 | 0 | 0 |
-| D | CHT-004 Read state and notification levels | 7 | 7 | 0 | 0 | 0 | 0 | 0 |
-| E | CHT-005 Direct and group conversations | 7 | 7 | 0 | 0 | 0 | 0 | 0 |
-| F | CHT-006 Threads, replies and pins | 8 | 8 | 0 | 0 | 0 | 0 | 0 |
-| G | CHT-007 Mentions, reactions, attachments and notification handoff | 9 | 7 | 0 | 0 | 2 | 0 | 0 |
+| A | CHT-001 Channels and channel groups | 8 | 4 | 0 | 0 | 4 | 0 | 0 |
+| B | CHT-002 Messages | 10 | 3 | 0 | 0 | 7 | 0 | 0 |
+| C | CHT-003 Realtime delivery | 9 | 0 | 0 | 0 | 9 | 0 | 0 |
+| D | CHT-004 Read state and notification levels | 7 | 1 | 0 | 0 | 6 | 0 | 0 |
+| E | CHT-005 Direct and group conversations | 7 | 0 | 0 | 0 | 7 | 0 | 0 |
+| F | CHT-006 Threads, replies and pins | 8 | 1 | 0 | 0 | 7 | 0 | 0 |
+| G | CHT-007 Mentions, reactions, attachments and notification handoff | 9 | 0 | 0 | 0 | 9 | 0 | 0 |
 | H | CHT-008 Access, moderation, retention, search and hardening | 10 | 0 | 0 | 0 | 10 | 0 | 0 |
-| I | CHT-009 Rich media | 8 | 8 | 0 | 0 | 0 | 0 | 0 |
+| I | CHT-009 Rich media | 8 | 4 | 0 | 0 | 4 | 0 | 0 |
 | J | CHT-010 Calls | 8 | 8 | 0 | 0 | 0 | 0 | 0 |
-| | Total | 84 | 72 | 0 | 0 | 12 | 0 | 0 |
+| | Total | 84 | 21 | 0 | 0 | 63 | 0 | 0 |
 
-The counts are those of the index below (section 2). Rows A01 to F08 and G01 to G04, G06 to G08 still read DEFINED, "not built", although Phase 1 and Phase 2 code exists; the slices that built them did not update these rows, and this slice did not either.
+The counts are those of the index below (section 2), counted by State on 2026-11-14: 63 HARDENING, 21 DEFINED, none DONE. The nine DEFINED rows of capabilities A to H have built parts but are not complete: A02 (no UI to create, rename or delete a category), A04 (no reorder or collapse UI), A07 (no member removal or channel leave UI), A08 (no unarchive or delete UI), B07 (draft kept in memory only and untested), B08 (plain text only, no markup or autolinks), B10 (no Copy link), D07 (no Mark all as read entry), F05 (no persisted sweep and no archived chip). In capability I, I01, I03, I04 and I05 are HARDENING (the gallery, the viewer, recording and playing a voice message); I02, I06, I07 and I08 are DEFINED. Capability J (calls) is DEFINED and waits on the owner decisions of SYS-ADR-002.
 
 ### 1.2 Gaps
 
-1. No Chat domain, tables, endpoints or events exist.
-2. The realtime gateway is notify-only with a closed scope enum (`Workspace`, `Board`) and no client data frame; Chat needs a Channel scope, message payload frames, typing and presence (SYS-ADR-001 decision 4).
-3. There is no virtual list or emoji picker in the UI package; TipTap is confined to the Documents package.
-4. Moderator delete rules, retention, guest model and limits are owner decisions that are not made yet.
-5. Presence and read state exist in Collaboration as Domain classes with no use cases (UC-COL-E03, G14); Chat defines its own per-space versions and the Collaboration catalog must point here to avoid duplicates.
-6. The mock backend has no Chat handlers and cannot emit realtime events to tests.
-7. Hard-coded context lists in architecture tests and doc tooling must gain Chat.
+1. The nine DEFINED rows above, with what each lacks.
+2. No real e2e, design record, axe record or owner check exists for any Chat use case; the owner tests and sets DONE.
+3. The operations runbook, the performance budgets and the load test (typing and presence included) are not done (see the delivery plan).
+4. A thread's reply count never goes down: a deleted reply keeps its thread sequence and stays counted, so the "N replies" chip counts tombstones.
+5. The category names are read with a separate list call (Chat.ChannelGroups.List) and refreshed on the stale interval, not pushed by a realtime frame.
 
 ### 1.3 Defects in shipped code
 
-- The route `/workspaces/$workspaceId/chat` renders a static "coming soon" page with an unused workspace parameter.
-- The "Chat Rooms" entry in the legacy sidebar metadata points at the Workspace root and the sidebar is not mounted.
+None recorded for Chat at this recount. The static "coming soon" route and the unused legacy sidebar entry named by the first draft of this catalog were replaced by the Chat workspace.
 
 ### 1.4 Enterprise baseline
 
@@ -79,63 +76,63 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 
 | ID | Use case | Capability | Actors | BE | FE | Design | Real e2e | State | Gap |
 |---|---|---|---|---|---|---|---|---|---|
-| UC-CHT-A01 | Create a channel | A | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-A02 | Create and manage a channel group | A | Workspace Owner, Admin, Member with chat.group.manage | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-A03 | Rename a channel and set its topic | A | Channel manager, Workspace Admin, Owner | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-A04 | Reorder channels and groups | A | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-A05 | Browse and join a public channel | A | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-A06 | Create a private channel and invite people | A | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-A07 | Leave a channel or remove a member | A | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-A08 | Archive, unarchive and delete a channel | A | Channel manager, Workspace Admin, Owner | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-B01 | Send a message | B | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-B02 | Load history with a cursor | B | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-B03 | Jump to a message | B | Any member who can view the space | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-B04 | Edit a message | B | Author only | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-B05 | Delete my message | B | Author | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-B06 | Recover from a failed send | B | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-B07 | Keep a draft per space | B | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-B08 | Render content safely | B | Any reader | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-B09 | See system announcements | B | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-B10 | Copy a link to a message | B | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-C01 | Subscribe to a space | C | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-C02 | Receive a new message live | C | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-C03 | Receive an edit or delete live | C | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-C04 | Recover from a gap, duplicate or out-of-order event | C | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-C05 | Reconnect after a network loss | C | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-C06 | Handle a change of access while connected | C | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-C07 | See who is typing | C | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-C08 | See who is online | C | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-C09 | Receive unread and mention badges on a per-user stream | C | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-D01 | See unread counts per space and in total | D | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-D02 | Mark a space as read | D | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-D03 | Open a space at the first unread message | D | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-D04 | See mention badges separately | D | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-D05 | Mute a space | D | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-D06 | Set the notification level for a space | D | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-D07 | Mark everything as read | D | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 1; not built. |
-| UC-CHT-E01 | Start a direct conversation | E | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-E02 | Start a group conversation | E | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-E03 | Add people to a group conversation | E | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-E04 | Leave a group conversation | E | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-E05 | List my conversations | E | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-E06 | Mute or block a person in direct messages | E | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-E07 | Hide and restore a conversation from my list | E | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-F01 | Reply in a thread | F | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-F02 | Quote-reply in the main flow | F | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-F03 | Open a thread and read its replies | F | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-F04 | Follow or mute a thread | F | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-F05 | Archive an inactive thread and reopen it on reply | F | System | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-F06 | Pin a message | F | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-F07 | Unpin and list pins | F | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-F08 | List the threads I follow | F | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-G01 | Mention a person | G | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-G02 | Warn when a mention cannot be seen | G | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-G03 | Broadcast with @channel or @here | G | Workspace Owner, Admin, Member with the broadcast action | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-G04 | Link to another channel with # | G | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
+| UC-CHT-A01 | Create a channel | A | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-A02 | Create and manage a channel group | A | Workspace Owner, Admin, Member with chat.group.manage | yes | partial | no | no | DEFINED | BE and mock exist (Chat.ChannelGroups.Create, Update, Delete, List) and the sidebar shows each category by its real name (UI read of Chat.ChannelGroups.List); the UI has no entry to create, rename or delete a category, and the web service has no write method for them. |
+| UC-CHT-A03 | Rename a channel and set its topic | A | Channel manager, Workspace Admin, Owner | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-A04 | Reorder channels and groups | A | Workspace Owner, Admin, Member | yes | no | no | no | DEFINED | BE and mock exist (Chat.Channels.Reorder, ReorderChannels); the UI has no drag to reorder, no category order and no per-person collapse, and the web service has no reorder method. |
+| UC-CHT-A05 | Browse and join a public channel | A | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-A06 | Create a private channel and invite people | A | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-A07 | Leave a channel or remove a member | A | Workspace Owner, Admin, Member | yes | no | no | no | DEFINED | BE and mock exist (Chat.Members.Remove); the web service has removeMember but no hook or component uses it: no member list with Remove and no Leave channel entry. Leaving a conversation (UC-CHT-E04) is built. |
+| UC-CHT-A08 | Archive, unarchive and delete a channel | A | Channel manager, Workspace Admin, Owner | yes | partial | no | no | DEFINED | BE and mock exist (Chat.Channels.Archive, Chat.Channels.Delete); the UI archives a channel from the channel settings but has no unarchive entry and no delete entry (the web service has no deleteChannel). |
+| UC-CHT-B01 | Send a message | B | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-B02 | Load history with a cursor | B | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-B03 | Jump to a message | B | Any member who can view the space | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-B04 | Edit a message | B | Author only | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-B05 | Delete my message | B | Author | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-B06 | Recover from a failed send | B | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-B07 | Keep a draft per space | B | Workspace Owner, Admin, Member | no | partial | no | no | DEFINED | The per-space draft is kept in memory by the workspace page and returns when the caller re-enters the space, but no test covers it and it is not kept across a reload (the package may not use browser storage; a host-provided store is an owner decision). |
+| UC-CHT-B08 | Render content safely | B | Any reader | yes | partial | no | no | DEFINED | The UI draws message text as plain React text with mention chips (inert by construction) but has no bold, italic, code, lists or quotes, no autolinks and no permitted-host previews for plain URLs, and no test of the script or event-attribute case. |
+| UC-CHT-B09 | See system announcements | B | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-B10 | Copy a link to a message | B | Workspace Owner, Admin, Member | yes | no | no | no | DEFINED | No Copy link action exists in the message menu and the client builds no ?m= link; opening a message by URL is covered by UC-CHT-B03 only. |
+| UC-CHT-C01 | Subscribe to a space | C | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-C02 | Receive a new message live | C | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-C03 | Receive an edit or delete live | C | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-C04 | Recover from a gap, duplicate or out-of-order event | C | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-C05 | Reconnect after a network loss | C | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-C06 | Handle a change of access while connected | C | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-C07 | See who is typing | C | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. No load test with typing and presence. |
+| UC-CHT-C08 | See who is online | C | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. No load test with typing and presence. |
+| UC-CHT-C09 | Receive unread and mention badges on a per-user stream | C | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. The latency budget is not measured. |
+| UC-CHT-D01 | See unread counts per space and in total | D | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-D02 | Mark a space as read | D | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-D03 | Open a space at the first unread message | D | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-D04 | See mention badges separately | D | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-D05 | Mute a space | D | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-D06 | Set the notification level for a space | D | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-D07 | Mark everything as read | D | Workspace Owner, Admin, Member | yes | no | no | no | DEFINED | BE and mock exist (Chat.ReadState.MarkAllRead); the web service and the useMarkAllRead hook exist but no component calls it: there is no Mark all as read entry. |
+| UC-CHT-E01 | Start a direct conversation | E | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-E02 | Start a group conversation | E | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-E03 | Add people to a group conversation | E | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-E04 | Leave a group conversation | E | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-E05 | List my conversations | E | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-E06 | Mute or block a person in direct messages | E | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | Muting a conversation is its notification level (UC-CHT-D05). The block list is read from the server (Chat.Blocks.List); a Guest sees only the blocks of people they share a space with. No real e2e, design record, owner check or axe record. |
+| UC-CHT-E07 | Hide and restore a conversation from my list | E | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-F01 | Reply in a thread | F | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-F02 | Quote-reply in the main flow | F | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-F03 | Open a thread and read its replies | F | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | The root carries threadReplyCount and threadLastReplyAt, read in one batched query per page, so the chip shows after a reload; a deleted reply stays counted (the count is the thread sequence). No real e2e, design record, owner check or axe record. |
+| UC-CHT-F04 | Follow or mute a thread | F | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-F05 | Archive an inactive thread and reopen it on reply | F | System | yes | partial | no | no | DEFINED | No sweep stores the archive: a thread reads as archived by the derived rule (inactive for the configured days) and a reply reopens it (MessageThread.RecordReply, ThreadHandlerTests); the summary carries archived but the UI shows no archived chip. |
+| UC-CHT-F06 | Pin a message | F | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-F07 | Unpin and list pins | F | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-F08 | List the threads I follow | F | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-G01 | Mention a person | G | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-G02 | Warn when a mention cannot be seen | G | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-G03 | Broadcast with @channel or @here | G | Workspace Owner, Admin, Member with the broadcast action | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. An @here gives no Inbox notification (no presence data). |
+| UC-CHT-G04 | Link to another channel with # | G | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
 | UC-CHT-G05 | Link a Board item or Page in a message | G | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | Built (S2.8); the owner tests and sets DONE. |
-| UC-CHT-G06 | React to a message | G | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-G07 | Remove a reaction and see who reacted | G | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
-| UC-CHT-G08 | Attach a file to a message | G | Workspace Owner, Admin, Member | no | no | no | no | DEFINED | Phase 2; not built. |
+| UC-CHT-G06 | React to a message | G | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-G07 | Remove a reaction and see who reacted | G | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
+| UC-CHT-G08 | Attach a file to a message | G | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
 | UC-CHT-G09 | Hand a notification intent to the Inbox | G | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | Built (S2.8); @here gives no Inbox notification (no presence); the owner tests and sets DONE. |
 | UC-CHT-H01 | Override channel permissions by role | H | Workspace Owner, Admin, Channel manager | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. An allow override is accepted but changes nothing (a deny is the only effect); custom-role grants are not in the capability flags. |
 | UC-CHT-H02 | Guest access to chat | H | Owner, Admin | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. Chat search (UC-CHT-H07) is built, so the Guest search check is testable and pinned by tests. Three leaks were found and fixed (see Readings). |
@@ -147,11 +144,11 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 | UC-CHT-H08 | Rate limit and abuse controls | H | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. The limits are the defaults of RateLimiting:Chat, not tuned against load; a thread reply and a reaction show the generic slow-down notice, not the countdown. |
 | UC-CHT-H09 | Email digest for missed mentions | H | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check, axe record or ops runbook. No real mail was sent (the digest is queued on the shared outbox and checked there; the dispatcher send is the existing path and was not run against a real mail server); a Guest gets no digest; one window is reported, with no catch-up of windows the job missed; the link opens the channel, not the message. |
 | UC-CHT-H10 | Link a channel to a Board, Page or Team | H | Channel manager | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. A Team cannot be linked yet (Governance publishes no Team visibility fact); the Discuss entry is wired on the Board header only, the Page header has no slot for it (see Readings). |
-| UC-CHT-I01 | Send several images as a gallery | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
+| UC-CHT-I01 | Send several images as a gallery | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | HARDENING | No real e2e, owner check or axe record. The live attachment frame does not carry width and height yet; image loaders do not read through signed URLs yet. |
 | UC-CHT-I02 | Show upload progress, cancel and retry | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
-| UC-CHT-I03 | View images in a full-screen viewer | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
-| UC-CHT-I04 | Record and send a voice message | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
-| UC-CHT-I05 | Play a voice message | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
+| UC-CHT-I03 | View images in a full-screen viewer | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | HARDENING | No real e2e, owner check or axe record. No zoom or touch swipe. |
+| UC-CHT-I04 | Record and send a voice message | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | HARDENING | No real e2e, owner check or axe record. Not in threads yet; the Ogg duration comes from the client. |
+| UC-CHT-I05 | Play a voice message | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | HARDENING | No real e2e, owner check or axe record. No playback speed. |
 | UC-CHT-I06 | Send a sticker or GIF | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
 | UC-CHT-I07 | Copy a message link and mark unread from here | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
 | UC-CHT-I08 | Create a task from a message | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
@@ -179,8 +176,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-001, CHT-002, CHT-003, CHT-018.
 - Acceptance: Given a Member, when they create a public channel, then every non-Guest member sees it in Browse channels. Given a duplicate name, then 409 and nothing is stored.
-- Evidence: BE planned POST /api/v1/workspaces/{workspaceId}/chat/channels (Chat.Channels.Create) · FE planned chat channel create dialog, sidebar · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE POST /api/v1/workspaces/{workspaceId}/chat/channels (Chat.Channels.Create, CreateChannelCommand) · FE CreateChannelDialog (frontend/packages/features/chat/src/web/components/chat-dialogs.tsx), the sidebar New channel entry · Mock frontend/packages/dev/mock-backend/src/contexts/chat/channels.handlers.ts (chat.channels.create) · Tests backend/tests/Notrelix.Application.Tests/Features/Chat/ChannelHandlerTests.cs, ChatChannelRlsTests, chat-handlers.unit.test.ts · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-A02 Create and manage a channel group
 - Capability: A, CHT-001 Channels and channel groups
@@ -193,8 +190,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-001, CHT-003.
 - Acceptance: Given an Admin, when they create a category and move a channel into it, then the sidebar shows the channel under it for everyone who can see the channel.
-- Evidence: BE planned POST/PATCH/DELETE /api/v1/workspaces/{workspaceId}/chat/channel-groups (Chat.ChannelGroups.*) · FE planned chat sidebar category · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE planned POST/PATCH/DELETE /api/v1/workspaces/{workspaceId}/chat/channel-groups (Chat.ChannelGroups.*) · FE planned chat sidebar category · Design none yet · Tests exist for the built part (see the note); the use case as a whole is not tested · Real e2e none yet
+- State: DEFINED — Not complete: BE and mock exist (Chat.ChannelGroups.Create, Update, Delete, List) and the sidebar shows each category by its real name (UI read of Chat.ChannelGroups.List); the UI has no entry to create, rename or delete a category, and the web service has no write method for them.
 
 ### UC-CHT-A03 Rename a channel and set its topic
 - Capability: A, CHT-001 Channels and channel groups
@@ -207,8 +204,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-001, CHT-018.
 - Acceptance: Given two managers editing at once, then the second save gets 409 and sees the first change.
-- Evidence: BE planned PATCH /api/v1/workspaces/{workspaceId}/chat/channels/{id} (Chat.Channels.Update) · FE planned channel settings panel · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE PATCH /api/v1/workspaces/{workspaceId}/chat/channels/{id} (Chat.Channels.Update, UpdateChannelCommand) · FE RenameChannelDialog (frontend/packages/features/chat/src/web/components/chat-dialogs.tsx) · Mock frontend/packages/dev/mock-backend/src/contexts/chat/channels.handlers.ts (chat.channels.update) · Tests backend/tests/Notrelix.Application.Tests/Features/Chat/ChannelHandlerTests.cs, ChatChannelRlsTests, chat-handlers.unit.test.ts · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-A04 Reorder channels and groups
 - Capability: A, CHT-001 Channels and channel groups
@@ -221,8 +218,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-001.
 - Acceptance: Given a collapsed category, when the page reloads, then it stays collapsed for that person only.
-- Evidence: BE planned PATCH /api/v1/workspaces/{workspaceId}/chat/channels/order, /api/v1/workspaces/{workspaceId}/chat/me/sidebar (Chat.Channels.Reorder) · FE planned sidebar drag and collapse · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE planned PATCH /api/v1/workspaces/{workspaceId}/chat/channels/order, /api/v1/workspaces/{workspaceId}/chat/me/sidebar (Chat.Channels.Reorder) · FE planned sidebar drag and collapse · Design none yet · Tests exist for the built part (see the note); the use case as a whole is not tested · Real e2e none yet
+- State: DEFINED — Not complete: BE and mock exist (Chat.Channels.Reorder, ReorderChannels); the UI has no drag to reorder, no category order and no per-person collapse, and the web service has no reorder method.
 
 ### UC-CHT-A05 Browse and join a public channel
 - Capability: A, CHT-001 Channels and channel groups
@@ -235,8 +232,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-003, CHT-004.
 - Acceptance: Given a public channel, when a Member joins, then the channel appears in their sidebar and its history is readable from the first message.
-- Evidence: BE planned GET /api/v1/workspaces/{workspaceId}/chat/channels, POST /api/v1/workspaces/{workspaceId}/chat/channels/{id}/members/me (Chat.Channels.Join) · FE planned browse channels dialog · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE GET /api/v1/workspaces/{workspaceId}/chat/channels?browse=true (Chat.Channels.List) and PUT .../channels/{id}/members/me (Chat.Members.Join) · FE the browse section of chat-sidebar.tsx and the join action · Mock frontend/packages/dev/mock-backend/src/contexts/chat/channels.handlers.ts, frontend/packages/dev/mock-backend/src/contexts/chat/members.handlers.ts (chat.members.join) · Tests backend/tests/Notrelix.Application.Tests/Features/Chat/ChannelHandlerTests.cs, ChatChannelRlsTests, GuestAccessHandlerTests, chat-sidebar.component.test.tsx, chat-handlers.unit.test.ts · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-A06 Create a private channel and invite people
 - Capability: A, CHT-001 Channels and channel groups
@@ -249,8 +246,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-003, CHT-004, CHT-019.
 - Acceptance: Given a private channel, then Workspace Admins who are not members cannot list it or read its messages.
-- Evidence: BE planned POST /api/v1/workspaces/{workspaceId}/chat/channels/{id}/members (Chat.Members.Add) · FE planned channel invite picker · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE POST /api/v1/workspaces/{workspaceId}/chat/channels/{id}/members (Chat.Members.Add, AddChannelMembersCommand) and kind private on create · FE the invite picker (useAddMembers in chat-workspace.tsx, chat-person-picker.tsx) and the private option of CreateChannelDialog · Mock frontend/packages/dev/mock-backend/src/contexts/chat/members.handlers.ts (chat.members.add) · Tests backend/tests/Notrelix.Application.Tests/Features/Chat/ChannelHandlerTests.cs, ChatChannelRlsTests, chat-handlers.unit.test.ts · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-A07 Leave a channel or remove a member
 - Capability: A, CHT-001 Channels and channel groups
@@ -263,8 +260,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-004, CHT-017.
 - Acceptance: Given a removed member with the channel open, then within one re-authorization interval or at once by access-changed the pane shows lost access and caches are cleared.
-- Evidence: BE planned DELETE /api/v1/workspaces/{workspaceId}/chat/channels/{id}/members/{userId} (Chat.Members.Remove) · FE planned member list, lost-access state · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE planned DELETE /api/v1/workspaces/{workspaceId}/chat/channels/{id}/members/{userId} (Chat.Members.Remove) · FE planned member list, lost-access state · Design none yet · Tests exist for the built part (see the note); the use case as a whole is not tested · Real e2e none yet
+- State: DEFINED — Not complete: BE and mock exist (Chat.Members.Remove); the web service has removeMember but no hook or component uses it: no member list with Remove and no Leave channel entry. Leaving a conversation (UC-CHT-E04) is built.
 
 ### UC-CHT-A08 Archive, unarchive and delete a channel
 - Capability: A, CHT-001 Channels and channel groups
@@ -277,8 +274,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-018, CHT-021.
 - Acceptance: Given an archived channel, then posting returns 409 channel-archived and history remains readable and searchable by members.
-- Evidence: BE planned POST /api/v1/workspaces/{workspaceId}/chat/channels/{id}/archive, DELETE /api/v1/workspaces/{workspaceId}/chat/channels/{id} (Chat.Channels.Archive, Delete) · FE planned channel settings danger zone · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE planned POST /api/v1/workspaces/{workspaceId}/chat/channels/{id}/archive, DELETE /api/v1/workspaces/{workspaceId}/chat/channels/{id} (Chat.Channels.Archive, Delete) · FE planned channel settings danger zone · Design none yet · Tests exist for the built part (see the note); the use case as a whole is not tested · Real e2e none yet
+- State: DEFINED — Not complete: BE and mock exist (Chat.Channels.Archive, Chat.Channels.Delete); the UI archives a channel from the channel settings but has no unarchive entry and no delete entry (the web service has no deleteChannel).
 
 ### Capability B: CHT-002 Messages
 
@@ -293,8 +290,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-001, CHT-005, CHT-006, CHT-008, CHT-020.
 - Acceptance: Given a member, when they send twice with the same ClientMessageId, then one message exists. Given two members sending at once, then both get distinct, gap-free sequences.
-- Evidence: BE planned POST /api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/messages (Chat.Messages.Send) · FE planned chat composer, message list · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE POST /api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/messages (Chat.Messages.Send, SendMessageCommand) · FE chat-composer.tsx and chat-message-list.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/messages.handlers.ts (chat.messages.send) · Tests MessageHandlerTests, ChatMessageConcurrencyIntegrationTests, ChatMessageRlsTests, chat-handlers.unit.test.ts, chat-composer.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-B02 Load history with a cursor
 - Capability: B, CHT-002 Messages
@@ -307,8 +304,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-002, CHT-005.
 - Acceptance: Given 10,000 messages, then the first page loads within the performance budget and older pages load on scroll.
-- Evidence: BE planned GET /api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/messages (Chat.Messages.List) · FE planned virtualized message list, skeleton, empty state · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE GET /api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/messages (Chat.Messages.List, ListMessagesQuery) · FE chat-message-list.tsx (older and newer paging, skeleton and empty states) · Mock frontend/packages/dev/mock-backend/src/contexts/chat/messages.handlers.ts (chat.messages.list) · Tests MessageHandlerTests, chat-handlers.unit.test.ts, chat-message-list.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-B03 Jump to a message
 - Capability: B, CHT-002 Messages
@@ -321,8 +318,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-002, CHT-005.
 - Acceptance: Given a link to a message in a private channel the caller cannot see, then the response is the same NotFound as for a missing one.
-- Evidence: BE planned GET /api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/messages?around= (Chat.Messages.List) · FE planned jump highlight · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE GET .../messages?around= (Chat.Messages.List) · FE chat-highlight-context.tsx and the jump in chat-workspace.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/messages.handlers.ts (around) · Tests MessageHandlerTests, chat-handlers.unit.test.ts, message-cache.unit.test.ts, chat-model.unit.test.ts · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-B04 Edit a message
 - Capability: B, CHT-002 Messages
@@ -335,8 +332,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-007, CHT-008.
 - Acceptance: Given an edit, then readers see the new text and an edited marker, and the sequence is unchanged.
-- Evidence: BE planned PATCH /api/v1/workspaces/{workspaceId}/chat/messages/{id} (Chat.Messages.Edit) · FE planned inline editor, edited marker · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE PATCH /api/v1/workspaces/{workspaceId}/chat/messages/{id} (Chat.Messages.Edit) · FE the inline editor and edited marker (chat-message-list.tsx, chat-message-row.tsx) · Mock frontend/packages/dev/mock-backend/src/contexts/chat/messages.handlers.ts (chat.messages.edit) · Tests MessageHandlerTests, chat-handlers.unit.test.ts, create-chat-hooks.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-B05 Delete my message
 - Capability: B, CHT-002 Messages
@@ -349,8 +346,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-007, CHT-021.
 - Acceptance: Given a deleted root message with replies, then the thread stays visible with a tombstone parent.
-- Evidence: BE planned DELETE /api/v1/workspaces/{workspaceId}/chat/messages/{id} (Chat.Messages.Delete) · FE planned delete confirm, tombstone row · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE DELETE /api/v1/workspaces/{workspaceId}/chat/messages/{id} (Chat.Messages.Delete) · FE ConfirmDialog (frontend/packages/features/chat/src/web/components/chat-dialogs.tsx) and the tombstone row · Mock frontend/packages/dev/mock-backend/src/contexts/chat/messages.handlers.ts (chat.messages.delete) · Tests MessageHandlerTests, chat-handlers.unit.test.ts, chat-message-list.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-B06 Recover from a failed send
 - Capability: B, CHT-002 Messages
@@ -363,8 +360,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-006.
 - Acceptance: Given a send whose response was lost, when the client retries, then one message exists.
-- Evidence: BE planned POST /api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/messages (same key) · FE planned pending, failed, retry states · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE POST .../spaces/{spaceId}/messages with the same clientMessageId (idempotent retry) · FE pending, failed and retry rows (chat-message-list.tsx, ChatPendingRow; onRetryPending) · Mock frontend/packages/dev/mock-backend/src/contexts/chat/messages.handlers.ts, chat-writes.ts (idempotent create) · Tests MessageHandlerTests (retry with the same key), chat-model.unit.test.ts, chat-message-list.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-B07 Keep a draft per space
 - Capability: B, CHT-002 Messages
@@ -377,8 +374,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-008.
 - Acceptance: Given a draft in channel A, when the caller visits B and returns, then the draft is intact.
-- Evidence: BE planned none (client only) · FE planned composer draft · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE planned none (client only) · FE planned composer draft · Design none yet · Tests exist for the built part (see the note); the use case as a whole is not tested · Real e2e none yet
+- State: DEFINED — Not complete: The per-space draft is kept in memory by the workspace page and returns when the caller re-enters the space, but no test covers it and it is not kept across a reload (the package may not use browser storage; a host-provided store is an owner decision).
 
 ### UC-CHT-B08 Render content safely
 - Capability: B, CHT-002 Messages
@@ -391,8 +388,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-008, CHT-010.
 - Acceptance: Given content with script or event attributes, then nothing executes and the text is shown inert.
-- Evidence: BE planned none (render contract) · FE planned message body renderer · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE planned none (render contract) · FE planned message body renderer · Design none yet · Tests exist for the built part (see the note); the use case as a whole is not tested · Real e2e none yet
+- State: DEFINED — Not complete: The UI draws message text as plain React text with mention chips (inert by construction) but has no bold, italic, code, lists or quotes, no autolinks and no permitted-host previews for plain URLs, and no test of the script or event-attribute case.
 
 ### UC-CHT-B09 See system announcements
 - Capability: B, CHT-002 Messages
@@ -405,8 +402,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-005, CHT-018.
 - Acceptance: Given a rename, then a system message names the actor and the new name.
-- Evidence: BE planned (emitted by Chat.Channels.* commands) · FE planned system message row · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE emitted by the Chat.Channels.* and member commands (ChatSystemMessages) · FE the system row of chat-message-row.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/chat-writes.ts (system messages) · Tests ChannelHandlerTests, chat-handlers.unit.test.ts, chat-model.unit.test.ts · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-B10 Copy a link to a message
 - Capability: B, CHT-002 Messages
@@ -419,8 +416,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-002, CHT-004.
 - Acceptance: Given a link shared outside the channel, then a non-member learns nothing about the message.
-- Evidence: BE planned none (client builds URL; GET per UC-CHT-B03) · FE planned message actions menu · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE planned none (client builds URL; GET per UC-CHT-B03) · FE planned message actions menu · Design none yet · Tests exist for the built part (see the note); the use case as a whole is not tested · Real e2e none yet
+- State: DEFINED — Not complete: No Copy link action exists in the message menu and the client builds no ?m= link; opening a message by URL is covered by UC-CHT-B03 only.
 
 ### Capability C: CHT-003 Realtime delivery
 
@@ -435,8 +432,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-015, CHT-001.
 - Acceptance: Given a non-member, then subscribe returns the same error as for an unknown space.
-- Evidence: BE planned WS /api/v1/realtime subscribe (scope channel) · FE planned connection indicator · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE WS /api/v1/realtime subscribe with scope channel (AuthorizeChannelRealtimeSubscription) · FE chat-realtime-adapter.ts, the connection indicator (chat-status-banner.tsx) · Mock packages/dev/mock-backend/src/realtime and frontend/packages/dev/mock-backend/src/contexts/chat/chat-realtime.ts · Tests AuthorizeChannelRealtimeSubscriptionTests, ChatRealtimeGatewayTests, ChatRealtimeTransportTests, chat-scope-subscribe.unit.test.ts, chat-realtime-adapter.unit.test.ts · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-C02 Receive a new message live
 - Capability: C, CHT-003 Realtime delivery
@@ -449,8 +446,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-005, CHT-015.
 - Acceptance: Given two readers, when a third sends, then both show it in under the latency budget.
-- Evidence: BE planned WS event (chat.message.created) · FE planned message list live insert · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE WS event chat.message.created (ChatMessageEventMapper, ChatRealtime message frame) · FE chat-realtime-adapter.ts and the live insert of the message cache · Mock frontend/packages/dev/mock-backend/src/contexts/chat/chat-realtime.ts · Tests ChatMessageEventMapperTests, ChatRealtimeFactsTests, ChatRealtimeIntegrationTests, chat-realtime.unit.test.ts, chat-realtime-adapter.unit.test.ts, chat-realtime-reducers.unit.test.ts · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-C03 Receive an edit or delete live
 - Capability: C, CHT-003 Realtime delivery
@@ -463,8 +460,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-007, CHT-015.
 - Acceptance: Given a delete while the reader scrolls, then the row turns into a tombstone without moving the list.
-- Evidence: BE planned WS event (chat.message.updated, chat.message.deleted) · FE planned in-place update · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE WS events chat.message.updated and chat.message.deleted · FE chat-realtime-adapter.ts and chat-realtime-reducers.ts (in-place update) · Mock frontend/packages/dev/mock-backend/src/contexts/chat/chat-realtime.ts · Tests ChatMessageEventMapperTests, ChatRealtimeFactsTests, chat-realtime.unit.test.ts, chat-realtime-adapter.unit.test.ts · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-C04 Recover from a gap, duplicate or out-of-order event
 - Capability: C, CHT-003 Realtime delivery
@@ -477,8 +474,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-015, CHT-005.
 - Acceptance: Given a dropped frame, then the missing message appears after the recovery query and no message is shown twice.
-- Evidence: BE planned GET /api/v1/workspaces/{workspaceId}/chat/spaces/{id}/messages?after= · FE planned gap recovery · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE GET .../messages?after= (Chat.Messages.List) for the backfill · FE gap, duplicate and out-of-order handling in chat-realtime-adapter.ts and message-cache.ts · Mock frontend/packages/dev/mock-backend/src/contexts/chat/messages.handlers.ts (after) · Tests MessageHandlerTests, chat-realtime-adapter.unit.test.ts, message-cache.unit.test.ts · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-C05 Reconnect after a network loss
 - Capability: C, CHT-003 Realtime delivery
@@ -491,8 +488,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-015.
 - Acceptance: Given an offline minute, then returning shows every missed message once.
-- Evidence: BE planned WS /api/v1/realtime · FE planned offline banner · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE WS /api/v1/realtime (resubscribe and recovery) · FE the offline banner (chat-status-banner.tsx), chat-realtime-adapter.ts recover · Mock packages/dev/mock-backend/src/realtime · Tests ChatRealtimeGatewayTests, chat-realtime-adapter.unit.test.ts, realtime-chat-lifecycle.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-C06 Handle a change of access while connected
 - Capability: C, CHT-003 Realtime delivery
@@ -505,8 +502,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-017.
 - Acceptance: Given a removed member with the channel open, then no event for that channel reaches them after the signal.
-- Evidence: BE planned WS access-changed · FE planned lost-access state · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE WS access-changed (RemoveChannelMember and SuspendMember signal the person) · FE the lost-access state (chat-workspace.tsx) and the recover reasons of chat-realtime-adapter.ts · Mock frontend/packages/dev/mock-backend/src/contexts/chat/chat-realtime.ts · Tests ChatWorkspaceExitTests, GuestAccessHandlerTests, chat-realtime-adapter.unit.test.ts · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-C07 See who is typing
 - Capability: C, CHT-003 Realtime delivery
@@ -519,8 +516,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-016, CHT-020.
 - Acceptance: Given one person typing, then others see one indicator that disappears when they send or stop.
-- Evidence: BE planned WS typing frame · FE planned typing indicator · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE WS typing frame (ChatRealtime) · FE chat-typing-indicator.tsx, use-ephemeral.ts · Mock packages/dev/mock-backend/src/realtime (typing) · Tests ChatRealtimeTransportTests, chat-typing-presence.unit.test.ts, chat-ephemeral.component.test.tsx, chat-ephemeral.unit.test.ts · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record. No load test with typing and presence.
 
 ### UC-CHT-C08 See who is online
 - Capability: C, CHT-003 Realtime delivery
@@ -533,8 +530,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-016.
 - Acceptance: Given a closed tab, then the person shows offline after the expiry and nothing is stored.
-- Evidence: BE planned WS presence frame · FE planned presence dot · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE WS presence frame (ChatRealtime) · FE chat-presence.tsx, use-ephemeral.ts · Mock packages/dev/mock-backend/src/realtime (presence) · Tests ChatRealtimeTransportTests, chat-typing-presence.unit.test.ts, chat-ephemeral.component.test.tsx, chat-ephemeral.unit.test.ts · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record. No load test with typing and presence.
 
 ### UC-CHT-C09 Receive unread and mention badges on a per-user stream
 - Capability: C, CHT-003 Realtime delivery
@@ -547,8 +544,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-009, CHT-015, CHT-019.
 - Acceptance: Given a message in a background channel, then its badge increments within the latency budget.
-- Evidence: BE planned WS user stream (chat.unread.changed) · FE planned rail and sidebar badges · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE WS user stream (chat.unread.changed, ReadStateRealtime) · FE the badges of chat-sidebar.tsx and the unread projection of chat-realtime-adapter.ts · Mock frontend/packages/dev/mock-backend/src/contexts/chat/chat-realtime.ts · Tests ChatRealtimeFactsTests, ReadStateHandlerTests, chat-realtime.unit.test.ts, chat-realtime-adapter.unit.test.ts, chat-sidebar.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record. The latency budget is not measured.
 
 ### Capability D: CHT-004 Read state and notification levels
 
@@ -563,8 +560,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-009.
 - Acceptance: Given 120 unread, then the badge shows 99+ and the divider still finds the first unread.
-- Evidence: BE planned GET /api/v1/workspaces/{workspaceId}/chat/me/unread (Chat.ReadState.Summary) · FE planned badges · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE GET /api/v1/workspaces/{workspaceId}/chat/me/unread (Chat.ReadState.Unread, GetUnreadSummary) · FE the badges of chat-sidebar.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/read-state.handlers.ts (chat.readState.unread) · Tests ReadStateHandlerTests, ChatReadStateIntegrationTests, ChatReadStateRlsTests, chat-sidebar.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-D02 Mark a space as read
 - Capability: D, CHT-004 Read state and notification levels
@@ -577,8 +574,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-009.
 - Acceptance: Given two devices, then reading on one clears the badge on the other.
-- Evidence: BE planned PUT /api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/read (Chat.ReadState.Mark) · FE planned badges · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE PUT /api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/read (Chat.ReadState.MarkRead) · FE useMarkRead in chat-workspace.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/read-state.handlers.ts (chat.readState.markRead) · Tests ReadStateHandlerTests, ChatReadStateIntegrationTests, chat-handlers.unit.test.ts, create-chat-hooks.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-D03 Open a space at the first unread message
 - Capability: D, CHT-004 Read state and notification levels
@@ -591,8 +588,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-009, CHT-005.
 - Acceptance: Given 40 unread, when the person opens the channel, then the divider is on the first unread message.
-- Evidence: BE planned GET /api/v1/workspaces/{workspaceId}/chat/spaces/{id}/messages?around= · FE planned new messages divider · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE GET .../messages?around= with the read boundary (Chat.ReadState.Unread, Chat.Messages.List) · FE the New messages divider (chat-message-list.tsx, buildChatRows firstUnread) · Mock frontend/packages/dev/mock-backend/src/contexts/chat/read-state.handlers.ts, messages.handlers.ts · Tests ReadStateHandlerTests, chat-model.unit.test.ts, chat-message-list.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-D04 See mention badges separately
 - Capability: D, CHT-004 Read state and notification levels
@@ -605,8 +602,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-009, CHT-010.
 - Acceptance: Given a mention in a background channel, then the sidebar shows a distinct mention badge.
-- Evidence: BE planned GET /api/v1/workspaces/{workspaceId}/chat/me/unread · FE planned mention badge · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE GET .../chat/me/unread (mention counts) · FE the mention badge of chat-sidebar.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/read-state.handlers.ts · Tests ReadStateHandlerTests, MentionHandlerTests, chat-sidebar.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-D05 Mute a space
 - Capability: D, CHT-004 Read state and notification levels
@@ -619,8 +616,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-019.
 - Acceptance: Given a muted channel, then a mention shows no push or email but shows in the space's own mention count.
-- Evidence: BE planned PUT /api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/notification-level (Chat.ReadState.SetLevel) · FE planned mute menu · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE PUT .../spaces/{spaceId}/notification-level (Chat.ReadState.SetNotificationLevel, level muted) · FE the mute menu (chat-header.tsx, useSetNotificationLevel) · Mock frontend/packages/dev/mock-backend/src/contexts/chat/read-state.handlers.ts (chat.readState.setNotificationLevel) · Tests ReadStateHandlerTests, chat-handlers.unit.test.ts, chat-sidebar.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-D06 Set the notification level for a space
 - Capability: D, CHT-004 Read state and notification levels
@@ -633,8 +630,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-019.
 - Acceptance: Given level mentions, then plain messages produce no notification and mentions do.
-- Evidence: BE planned PUT /api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/notification-level (Chat.ReadState.SetLevel) · FE planned notification settings · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE PUT .../spaces/{spaceId}/notification-level (Chat.ReadState.SetNotificationLevel) · FE the level selection in chat-header.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/read-state.handlers.ts · Tests ReadStateHandlerTests, chat-handlers.unit.test.ts · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-D07 Mark everything as read
 - Capability: D, CHT-004 Read state and notification levels
@@ -647,8 +644,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-009.
 - Acceptance: Given new messages arriving during the call, then only older ones are marked.
-- Evidence: BE planned POST /api/v1/workspaces/{workspaceId}/chat/me/read-all (Chat.ReadState.MarkAll) · FE planned mark all read · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 1 — not built.
+- Evidence: BE planned POST /api/v1/workspaces/{workspaceId}/chat/me/read-all (Chat.ReadState.MarkAll) · FE planned mark all read · Design none yet · Tests exist for the built part (see the note); the use case as a whole is not tested · Real e2e none yet
+- State: DEFINED — Not complete: BE and mock exist (Chat.ReadState.MarkAllRead); the web service and the useMarkAllRead hook exist but no component calls it: there is no Mark all as read entry.
 
 ### Capability E: CHT-005 Direct and group conversations
 
@@ -663,8 +660,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-003, CHT-014, CHT-004.
 - Acceptance: Given two simultaneous starts between the same pair, then one conversation exists.
-- Evidence: BE planned POST /api/v1/workspaces/{workspaceId}/chat/conversations (Chat.Conversations.Start) · FE planned new message picker, DM list · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE POST /api/v1/workspaces/{workspaceId}/chat/conversations (Chat.Conversations.Start, direct) · FE chat-new-message-dialog.tsx, chat-conversation-list.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/conversations.handlers.ts (chat.conversations.start) · Tests ConversationHandlerTests, ChatConversationIntegrationTests, ChatConversationRlsTests, chat-conversations.unit.test.ts, chat-conversations.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-E02 Start a group conversation
 - Capability: E, CHT-005 Direct and group conversations
@@ -677,8 +674,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-003, CHT-014.
 - Acceptance: Given three people, then each sees the group in their list and no other Admin does.
-- Evidence: BE planned POST /api/v1/workspaces/{workspaceId}/chat/conversations (Chat.Conversations.Start) · FE planned group creation · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE POST .../conversations (Chat.Conversations.Start, group) · FE chat-new-message-dialog.tsx (group name and people) · Mock frontend/packages/dev/mock-backend/src/contexts/chat/conversations.handlers.ts · Tests ConversationHandlerTests, chat-conversations.unit.test.ts, chat-conversations.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-E03 Add people to a group conversation
 - Capability: E, CHT-005 Direct and group conversations
@@ -691,8 +688,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-014, CHT-004.
 - Acceptance: Given an added person, then they cannot read messages before they joined unless the decision allows.
-- Evidence: BE planned POST /api/v1/workspaces/{workspaceId}/chat/conversations/{id}/participants (Chat.Conversations.AddParticipants) · FE planned participants panel · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE POST .../conversations/{id}/participants (Chat.Conversations.AddParticipants) · FE the participants panel (chat-conversation-view.tsx) · Mock frontend/packages/dev/mock-backend/src/contexts/chat/conversations.handlers.ts · Tests ConversationHandlerTests, chat-conversations.unit.test.ts, create-conversation-hooks.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-E04 Leave a group conversation
 - Capability: E, CHT-005 Direct and group conversations
@@ -705,8 +702,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-014, CHT-017.
 - Acceptance: Given a person who left, then no event for the group reaches them.
-- Evidence: BE planned DELETE /api/v1/workspaces/{workspaceId}/chat/conversations/{id}/participants/me (Chat.Conversations.Leave) · FE planned leave confirm · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE DELETE .../conversations/{id}/participants/me (Chat.Conversations.Leave) · FE the leave confirm (chat-workspace.tsx, chat-conversation-view.tsx) · Mock frontend/packages/dev/mock-backend/src/contexts/chat/conversations.handlers.ts · Tests ConversationHandlerTests, chat-conversations.unit.test.ts, create-conversation-hooks.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-E05 List my conversations
 - Capability: E, CHT-005 Direct and group conversations
@@ -719,8 +716,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-014, CHT-009.
 - Acceptance: Given a new message, then its conversation moves to the top.
-- Evidence: BE planned GET /api/v1/workspaces/{workspaceId}/chat/conversations (Chat.Conversations.List) · FE planned DM list · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE GET .../conversations (Chat.Conversations.List) · FE chat-conversation-list.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/conversations.handlers.ts · Tests ConversationHandlerTests, chat-conversations.unit.test.ts, chat-conversations.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-E06 Mute or block a person in direct messages
 - Capability: E, CHT-005 Direct and group conversations
@@ -733,8 +730,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-014, CHT-020.
 - Acceptance: Given a block, then new direct conversation attempts by that person return NotFound.
-- Evidence: BE planned PUT /api/v1/workspaces/{workspaceId}/chat/me/blocks (Chat.Conversations.Block) · FE planned block menu · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE PUT .../chat/me/blocks (Chat.Blocks.Set) and GET .../chat/me/blocks (Chat.Blocks.List) · FE the block and unblock entries (chat-conversation-view.tsx) and the Blocked people dialog (chat-blocked-people.tsx) · Mock frontend/packages/dev/mock-backend/src/contexts/chat/blocks.handlers.ts · Tests ConversationHandlerTests, GuestAccessHandlerTests, PersonBlockListTests, chat-conversations.unit.test.ts, chat-lists.unit.test.ts, chat-blocked-people.component.test.tsx, create-conversation-hooks.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record. Muting a conversation is its notification level (UC-CHT-D05). The block list is read from the server (Chat.Blocks.List); a Guest sees only the blocks of people they share a space with.
 
 ### UC-CHT-E07 Hide and restore a conversation from my list
 - Capability: E, CHT-005 Direct and group conversations
@@ -747,8 +744,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-014.
 - Acceptance: Given a hidden conversation, when a new message arrives, then it returns to the list.
-- Evidence: BE planned PUT /api/v1/workspaces/{workspaceId}/chat/conversations/{id}/visibility (Chat.Conversations.SetVisibility) · FE planned close conversation · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE PUT .../conversations/{id}/visibility (Chat.Conversations.SetVisibility) · FE the hide and show entries (chat-conversation-view.tsx) · Mock frontend/packages/dev/mock-backend/src/contexts/chat/conversations.handlers.ts · Tests ConversationHandlerTests, chat-conversations.unit.test.ts, create-conversation-hooks.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### Capability F: CHT-006 Threads, replies and pins
 
@@ -763,8 +760,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-013, CHT-006.
 - Acceptance: Given a reply, then the root shows 1 reply and followers get a thread-reply intent.
-- Evidence: BE planned POST /api/v1/workspaces/{workspaceId}/chat/messages/{rootId}/replies (Chat.Threads.Reply) · FE planned thread panel · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE POST /api/v1/workspaces/{workspaceId}/chat/messages/{rootId}/replies (Chat.Threads.Reply) · FE chat-thread-panel.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/threads.handlers.ts (chat.threads.reply) · Tests ThreadHandlerTests, ChatThreadIntegrationTests, ChatThreadRlsTests, chat-threads.unit.test.ts, chat-thread-panel.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-F02 Quote-reply in the main flow
 - Capability: F, CHT-006 Threads, replies and pins
@@ -777,8 +774,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-005, CHT-007.
 - Acceptance: Given a quote of a deleted message, then the preview says it was deleted and no content leaks.
-- Evidence: BE planned POST /api/v1/workspaces/{workspaceId}/chat/spaces/{id}/messages (replyTo) · FE planned quote preview · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE POST .../spaces/{id}/messages with replyToId (ReplyPreviews) · FE chat-quote.tsx and the quote preview of chat-message-row.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/messages.handlers.ts · Tests MessageHandlerTests, PinHandlerTests (quote of a deleted message), chat-handlers.unit.test.ts, chat-interactions.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-F03 Open a thread and read its replies
 - Capability: F, CHT-006 Threads, replies and pins
@@ -791,8 +788,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-013.
 - Acceptance: Given a thread with 200 replies, then the panel loads in pages.
-- Evidence: BE planned GET /api/v1/workspaces/{workspaceId}/chat/messages/{rootId}/replies (Chat.Threads.List) · FE planned thread panel list · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE GET .../messages/{rootId}/replies (Chat.Threads.ListReplies) with threadReplyCount and threadLastReplyAt on the root · FE chat-thread-panel.tsx and the N replies chip (chat-message-row.tsx) · Mock frontend/packages/dev/mock-backend/src/contexts/chat/threads.handlers.ts (chat.threads.listReplies) · Tests ThreadHandlerTests, ChatThreadIntegrationTests, chat-threads.unit.test.ts, chat-thread-panel.component.test.tsx, chat-message-list.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record. The root carries threadReplyCount and threadLastReplyAt, read in one batched query per page, so the chip shows after a reload; a deleted reply stays counted (the count is the thread sequence).
 
 ### UC-CHT-F04 Follow or mute a thread
 - Capability: F, CHT-006 Threads, replies and pins
@@ -805,8 +802,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-013, CHT-019.
 - Acceptance: Given a muted thread, then no notification is created for its replies.
-- Evidence: BE planned PUT /api/v1/workspaces/{workspaceId}/chat/threads/{id}/follow (Chat.Threads.Follow) · FE planned follow toggle · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE PUT .../threads/{id}/follow (Chat.Threads.Follow) and PUT .../threads/{id}/read (Chat.Threads.MarkRead) · FE the follow toggle of chat-thread-panel.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/threads.handlers.ts · Tests ThreadHandlerTests, chat-threads.unit.test.ts, chat-thread-panel.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-F05 Archive an inactive thread and reopen it on reply
 - Capability: F, CHT-006 Threads, replies and pins
@@ -819,8 +816,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-013.
 - Acceptance: Given an archived thread, when someone replies, then it is open again.
-- Evidence: BE planned (background sweep, Chat.Threads.Archive) · FE planned archived thread chip · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE planned (background sweep, Chat.Threads.Archive) · FE planned archived thread chip · Design none yet · Tests exist for the built part (see the note); the use case as a whole is not tested · Real e2e none yet
+- State: DEFINED — Not complete: No sweep stores the archive: a thread reads as archived by the derived rule (inactive for the configured days) and a reply reopens it (MessageThread.RecordReply, ThreadHandlerTests); the summary carries archived but the UI shows no archived chip.
 
 ### UC-CHT-F06 Pin a message
 - Capability: F, CHT-006 Threads, replies and pins
@@ -833,8 +830,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-001, CHT-007.
 - Acceptance: Given a pinned message that is later deleted, then the pin is removed.
-- Evidence: BE planned PUT /api/v1/workspaces/{workspaceId}/chat/messages/{id}/pin (Chat.Pins.Pin) · FE planned pin action, pinned list · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE PUT .../messages/{id}/pin (Chat.Pins.Pin) · FE the pin action (chat-message-row.tsx, chat-workspace.tsx) and chat-pins.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/pins.handlers.ts (chat.pins.pin) · Tests PinHandlerTests, ChatPinIntegrationTests, ChatPinRlsTests, chat-pins.unit.test.ts, chat-interactions.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-F07 Unpin and list pins
 - Capability: F, CHT-006 Threads, replies and pins
@@ -847,8 +844,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-001.
 - Acceptance: Given a pin, then every member sees it in the pins panel.
-- Evidence: BE planned GET /api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/pins, DELETE /api/v1/workspaces/{workspaceId}/chat/messages/{id}/pin (Chat.Pins.*) · FE planned pins panel · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE GET .../spaces/{spaceId}/pins (Chat.Pins.List) and DELETE .../messages/{id}/pin (Chat.Pins.Unpin) · FE chat-pins.tsx (pins panel) · Mock frontend/packages/dev/mock-backend/src/contexts/chat/pins.handlers.ts · Tests PinHandlerTests, ChatPinIntegrationTests, chat-pins.unit.test.ts, chat-interactions.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-F08 List the threads I follow
 - Capability: F, CHT-006 Threads, replies and pins
@@ -861,8 +858,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-013, CHT-009.
 - Acceptance: Given a thread with new replies, then it shows an unread dot.
-- Evidence: BE planned GET /api/v1/workspaces/{workspaceId}/chat/me/threads (Chat.Threads.Mine) · FE planned threads view · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE GET .../chat/me/threads (Chat.Threads.Mine, ListFollowedThreads) · FE chat-followed-threads.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/threads.handlers.ts (chat.threads.mine) · Tests ThreadHandlerTests, ChatThreadIntegrationTests, chat-threads.unit.test.ts, chat-thread-panel.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### Capability G: CHT-007 Mentions, reactions, attachments and notification handoff
 
@@ -877,8 +874,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-010.
 - Acceptance: Given a mention, then the target gets a mention badge and notification by their preferences.
-- Evidence: BE planned GET /api/v1/workspaces/{workspaceId}/chat/spaces/{id}/mentionables, POST message with mentions (Chat.Mentions.Resolve) · FE planned mention picker · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE GET .../spaces/{id}/mentionables (Chat.Mentions.ListMentionables) and mentions on send · FE the mention picker of chat-composer.tsx, chat-mention-text.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/mentions.handlers.ts, chat-mentions.ts · Tests MentionHandlerTests, ChatMentionIntegrationTests, ChatMentionRlsTests, chat-mentions.unit.test.ts, chat-mentions.component.test.tsx, mention-model.unit.test.ts · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-G02 Warn when a mention cannot be seen
 - Capability: G, CHT-007 Mentions, reactions, attachments and notification handoff
@@ -891,8 +888,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-010, CHT-004.
 - Acceptance: Given a mention of a non-member, then no notification is created and nothing is granted.
-- Evidence: BE planned POST /api/v1/workspaces/{workspaceId}/chat/spaces/{id}/messages (mention check) · FE planned mention warning · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE mention notices on the send and edit answers (MentionResolver) · FE the sender notices of chat-message-row.tsx and chat-mentions-panel.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/chat-mentions.ts · Tests MentionHandlerTests, chat-mentions.unit.test.ts, chat-mentions.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-G03 Broadcast with @channel or @here
 - Capability: G, CHT-007 Mentions, reactions, attachments and notification handoff
@@ -905,8 +902,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-010, CHT-020.
 - Acceptance: Given a Guest typing @channel, then it is not a broadcast.
-- Evidence: BE planned POST message with broadcast (Chat.Mentions.Broadcast) · FE planned broadcast confirm · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE broadcast through IBroadcastAuthorizer on send (@channel, @here) · FE the broadcast entries of the picker (chat-composer.tsx) · Mock frontend/packages/dev/mock-backend/src/contexts/chat/chat-mentions.ts · Tests MentionHandlerTests, chat-mentions.unit.test.ts, chat-mentions.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record. An @here gives no Inbox notification (no presence data).
 
 ### UC-CHT-G04 Link to another channel with #
 - Capability: G, CHT-007 Mentions, reactions, attachments and notification handoff
@@ -919,8 +916,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-010, CHT-004.
 - Acceptance: Given a link to a private channel, then non-members see only the plain text.
-- Evidence: BE planned GET /api/v1/workspaces/{workspaceId}/chat/channels (picker) · FE planned channel link chip · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE channel links (#) stored as mentions and filtered by the viewer's access (MessageMentions) · FE the # picker and the chip (chat-composer.tsx, chat-mention-text.tsx) · Mock frontend/packages/dev/mock-backend/src/contexts/chat/chat-mention-views.ts · Tests MentionHandlerTests, GuestAccessHandlerTests, chat-mentions.unit.test.ts, mention-model.unit.test.ts, channel-link-model.unit.test.ts · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-G05 Link a Board item or Page in a message
 - Capability: G, CHT-007 Mentions, reactions, attachments and notification handoff
@@ -947,8 +944,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-011.
 - Acceptance: Given a double click, then one reaction exists.
-- Evidence: BE planned PUT /api/v1/workspaces/{workspaceId}/chat/messages/{id}/reactions/{kind} (Chat.Reactions.Add) · FE planned reaction bar, picker · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE PUT .../messages/{id}/reactions/{emoji} (Chat.Reactions.Add) · FE chat-reactions.tsx, chat-emoji-picker.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/reactions.handlers.ts · Tests ReactionHandlerTests, ChatReactionIntegrationTests, ChatReactionRlsTests, chat-reactions.unit.test.ts, create-chat-hooks.reactions.component.test.tsx, chat-emoji-picker.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-G07 Remove a reaction and see who reacted
 - Capability: G, CHT-007 Mentions, reactions, attachments and notification handoff
@@ -961,8 +958,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-011.
 - Acceptance: Given a removal, then the count drops live.
-- Evidence: BE planned DELETE /api/v1/workspaces/{workspaceId}/chat/messages/{id}/reactions/{kind} (Chat.Reactions.Remove) · FE planned reactor list · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE DELETE .../reactions/{emoji} (Chat.Reactions.Remove) and GET .../reactions/{emoji} (Chat.Reactions.ListReactors) · FE chat-reactions.tsx (who reacted) · Mock frontend/packages/dev/mock-backend/src/contexts/chat/reactions.handlers.ts · Tests ReactionHandlerTests, ChatReactionIntegrationTests, chat-reactions.unit.test.ts, create-chat-hooks.reactions.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-G08 Attach a file to a message
 - Capability: G, CHT-007 Mentions, reactions, attachments and notification handoff
@@ -975,8 +972,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-012.
 - Acceptance: Given a blocked extension, then it is refused before upload completes.
-- Evidence: BE planned POST /api/v1/workspaces/{workspaceId}/chat/spaces/{id}/messages (attachments), shared attachments API · FE planned attachment chips · Design none yet · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 2 — not built.
+- Evidence: BE POST .../messages/{id}/attachments (Chat.Attachments.Upload, List, Delete, GetContent) · FE chat-attachments.tsx and the composer file picker · Mock frontend/packages/dev/mock-backend/src/contexts/chat/attachments.handlers.ts · Tests AttachmentHandlerTests, ChatAttachmentRlsTests, ChatAttachmentContractOpenApiTests, chat-attachments.unit.test.ts, chat-attachments.component.test.tsx, chat-composer.attachments.component.test.tsx · Design none yet · Real e2e none yet
+- State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
 ### UC-CHT-G09 Hand a notification intent to the Inbox
 - Capability: G, CHT-007 Mentions, reactions, attachments and notification handoff
@@ -1155,8 +1152,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 4 — not built.
+- Evidence: BE ImageDimensionReader (backend/src/Notrelix.Application/Features/Collaboration/Attachments/Services) reads the pixel width and height at upload, stored by migration 20261113090224_AddChatAttachmentImageSize (expand-only) and returned on the attachment view; the signed upload path IPresignedObjectStorage, PendingAttachmentUpload and AttachmentObjectReaper (#466) · FE ImageGallery and galleryLayout (frontend/packages/features/chat/src/web/components/chat-image-gallery.tsx): up to four tiles, a +N tile, the three-image wide first tile, each tile reserving its box; mock mock-image-size.ts · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), board Chat-Media · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/Attachments/ImageDimensionReaderTests.cs, backend/tests/Notrelix.Domain.Tests/Collaboration/Attachments/PendingAttachmentUploadTests.cs, backend/tests/Notrelix.Integration.Tests/Rls/ChatAttachmentRlsTests.cs, backend/tests/Notrelix.API.Tests/Contracts/ChatAttachmentContractOpenApiTests.cs; frontend/packages/features/chat/src/__tests__/chat-attachments.component.test.tsx, frontend/packages/dev/mock-backend/src/__tests__/mock-image-size.unit.test.ts · Real e2e none yet
+- State: HARDENING — Built to the use case. Not done: real e2e, owner check, axe record; the live attachment frame does not yet carry width and height; the image loaders do not yet read through signed URLs.
 
 ### UC-CHT-I02 Show upload progress, cancel and retry
 - Capability: I, CHT-009 Rich media
@@ -1183,8 +1180,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 4 — not built.
+- Evidence: FE ImageViewer and ViewerImage (frontend/packages/features/chat/src/web/components/chat-image-gallery.tsx): one image at a time, previous and next buttons and the arrow keys, the position as n of total (polite live region), download, Escape and the backdrop close · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), board Chat-Media · Tests frontend/packages/features/chat/src/__tests__/chat-attachments.component.test.tsx · Real e2e none yet
+- State: HARDENING — Built to the use case. Not done: real e2e, owner check, axe record; zoom and swipe on touch are not built.
 
 ### UC-CHT-I04 Record and send a voice message
 - Capability: I, CHT-009 Rich media
@@ -1197,8 +1194,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 4 — not built.
+- Evidence: BE the voice fields of the attachment upload (backend/src/Notrelix.API/Endpoints/Chat/Attachments/ChatVoiceUploadFields.cs: durationMs and waveform), ChatVoiceOptions `Chat:Voice` (MaxDurationSeconds 300, MaxBytesPerSecond, backend/src/Notrelix.Application/Features/Chat/Voice), migration 20261113124451_AddChatVoiceMessage (expand-only); an empty voice-only message is cleaned up · FE the recorder port (frontend/packages/features/chat/src/core/api/chat-voice-recorder.ts), BrowserVoiceRecorder (web/voice/browser-voice-recorder.ts), ChatVoiceRecorder (web/components/chat-voice-recorder.tsx), voice-model.ts · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), board Chat-Media · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Attachments/VoiceFileMetadataTests.cs; frontend/packages/features/chat/src/__tests__/chat-voice-recorder.component.test.tsx, chat-composer.voice.component.test.tsx, voice-model.unit.test.ts · Real e2e none yet
+- State: HARDENING — Built to the use case. Not done: real e2e, owner check, axe record; voice in threads; the duration of an Ogg file is taken from the client.
 
 ### UC-CHT-I05 Play a voice message
 - Capability: I, CHT-009 Rich media
@@ -1211,8 +1208,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 4 — not built.
+- Evidence: BE the attachment view carries durationMs and waveform (migration 20261113124451_AddChatVoiceMessage) · FE ChatVoiceMessage (frontend/packages/features/chat/src/web/components/chat-voice-message.tsx): play and pause, the waveform with progress, the duration · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), board Chat-Media · Tests frontend/packages/features/chat/src/__tests__/chat-voice-message.component.test.tsx, voice-model.unit.test.ts · Real e2e none yet
+- State: HARDENING — Built to the use case. Not done: real e2e, owner check, axe record; playback speed.
 
 ### UC-CHT-I06 Send a sticker or GIF
 - Capability: I, CHT-009 Rich media

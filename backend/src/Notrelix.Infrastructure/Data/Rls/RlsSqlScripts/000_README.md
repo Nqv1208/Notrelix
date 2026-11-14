@@ -9,7 +9,7 @@ It is intentionally split by responsibility. Do **not** use the previous single 
 
 ## Apply order
 
-`000_apply_order.sql` is the authoritative apply order (001 to 028). Use it, or embed the files in exactly that order.
+`000_apply_order.sql` is the authoritative apply order (001 to 029). Use it, or embed the files in exactly that order.
 
 ## Important fixes
 

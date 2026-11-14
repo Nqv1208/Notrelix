@@ -22,17 +22,25 @@ POSTGRES_SERVICE = "postgres"
 REDIS_SERVICE = "redis"
 RABBITMQ_SERVICE = "rabbitmq"
 NGINX_SERVICE = "nginx"
-BACKEND_SERVICE = "backend"
+PGBOUNCER_SERVICE = "pgbouncer"
+BACKEND_SERVICE = "backend-api"
+REALTIME_SERVICE = "backend-realtime"
+WORKER_SERVICE = "backend-worker"
+BACKEND_ROLES = {BACKEND_SERVICE: "api", REALTIME_SERVICE: "realtime", WORKER_SERVICE: "worker"}
 PUBLIC_SERVICES = ("frontend-web", "frontend-marketing", NGINX_SERVICE)
 ALL_REQUIRED_SERVICES = (
     POSTGRES_SERVICE,
     REDIS_SERVICE,
     RABBITMQ_SERVICE,
+    PGBOUNCER_SERVICE,
     BACKEND_SERVICE,
+    REALTIME_SERVICE,
+    WORKER_SERVICE,
     "frontend-web",
     "frontend-marketing",
     NGINX_SERVICE,
 )
+DATA_PROTECTION_KEYS_PATH = "/var/lib/notrelix/dataprotection-keys"
 
 PROD_FILES = (ROOT / "docker-compose.yml", ROOT / "docker-compose.prod.yml")
 STAGING_FILES = (ROOT / "docker-compose.yml", ROOT / "docker-compose.staging.yml")
@@ -43,7 +51,8 @@ WEB_DOCKERFILE = ROOT / "frontend/Dockerfile"
 BACKEND_DOCKERFILE = ROOT / "backend/Dockerfile"
 
 EXPECTED_UPSTREAMS = {
-    BACKEND_SERVICE: "http://backend:8000",
+    BACKEND_SERVICE: "http://backend-api:8000",
+    REALTIME_SERVICE: "http://backend-realtime:8000",
     "frontend-web": "http://frontend-web:8080",
     "frontend-marketing": "http://frontend-marketing:3000",
 }
@@ -91,14 +100,6 @@ def ephemeral_environment() -> dict[str, str]:
         "RESEND_API_KEY": secrets.token_hex(16),
         "NOTRELIX_APP_DB_PASSWORD": app_password,
         "NOTRELIX_WORKER_DB_PASSWORD": worker_password,
-        "CONNECTIONSTRINGS_NOTRELIXDB": (
-            f"Host={POSTGRES_SERVICE};Port=5432;Database=notrelix;"
-            f"Username=notrelix_app;Password={app_password}"
-        ),
-        "CONNECTIONSTRINGS_NOTRELIXWORKERDB": (
-            f"Host={POSTGRES_SERVICE};Port=5432;Database=notrelix;"
-            f"Username=notrelix_worker;Password={worker_password}"
-        ),
         "CONNECTIONSTRINGS_NOTRELIXMIGRATIONDB": (
             f"Host={POSTGRES_SERVICE};Port=5432;Database=notrelix;"
             f"Username=postgres;Password={postgres_password}"
@@ -180,6 +181,126 @@ def check_database_logins(label: str, backend_env: dict[str, str]) -> None:
         fail(f"{label} backend Rls__RoleEnforcement must be 'Enforce', got {backend_env.get('Rls__RoleEnforcement')!r}")
 
 
+def connection_endpoint(connection_string: str) -> tuple[str, str]:
+    """Host and port of a key=value connection string (Npgsql keys, case-insensitive)."""
+    host = port = ""
+    for part in connection_string.split(";"):
+        key, _, value = part.partition("=")
+        name = key.strip().lower()
+        if name in ("host", "server"):
+            host = value.strip()
+        elif name == "port":
+            port = value.strip()
+    return host, port
+
+
+def check_backend_fleet(label: str, services: dict[str, Any], *, read_only_required: bool) -> None:
+    """One image, three roles. Each role has its own network reach; every application login goes through pgbouncer."""
+    images: set[str] = set()
+    for name, role in BACKEND_ROLES.items():
+        if name not in services:
+            fail(f"{label} Compose is missing {name}")
+        service = services[name]
+        env = env_map(service)
+        if env.get("Runtime__Roles") != role:
+            fail(f"{label} {name} must set Runtime__Roles={role!r}, got {env.get('Runtime__Roles')!r}")
+        images.add(str(service.get("image", "")))
+        if read_only_required and service.get("read_only") is not True:
+            fail(f"{label} {name} must be read_only")
+        if "ALL" not in (service.get("cap_drop") or []):
+            fail(f"{label} {name} must cap_drop ALL")
+        if service.get("cap_add"):
+            fail(f"{label} {name} must not add Linux capabilities")
+        if "no-new-privileges:true" not in (service.get("security_opt") or []):
+            fail(f"{label} {name} must enable no-new-privileges")
+
+        nets = network_names(service)
+        if "backend-network" not in nets:
+            fail(f"{label} {name} must join backend-network")
+        if "frontend-network" in nets:
+            fail(f"{label} {name} must not use frontend-network")
+        if name == REALTIME_SERVICE and "backend-egress-network" in nets:
+            fail(f"{label} {name} must not have outbound egress (realtime needs no external integration)")
+        if name != REALTIME_SERVICE and "backend-egress-network" not in nets:
+            fail(f"{label} {name} must join backend-egress-network for approved integrations")
+
+        for key, expected in {
+            "Messaging__Transport": "RabbitMQ",
+            "Messaging__RabbitMQ__Host": RABBITMQ_SERVICE,
+            "Messaging__RabbitMQ__Port": "5672",
+            "ForwardedHeaders__RequireKnownProxyInProduction": "true",
+        }.items():
+            if env.get(key) != expected:
+                fail(f"{label} {name} environment {key} must be {expected!r}, got {env.get(key)!r}")
+        for key in ("Messaging__RabbitMQ__Username", "Messaging__RabbitMQ__Password"):
+            if not env.get(key):
+                fail(f"{label} {name} environment {key} is required")
+
+        depends = service.get("depends_on") or {}
+        for dependency in (PGBOUNCER_SERVICE, RABBITMQ_SERVICE, REDIS_SERVICE):
+            if dependency not in depends:
+                fail(f"{label} {name} must depend on {dependency}")
+
+        app_host, app_port = connection_endpoint(env.get("ConnectionStrings__NotrelixDb", ""))
+        worker_host, worker_port = connection_endpoint(env.get("ConnectionStrings__NotrelixWorkerDb", ""))
+        for key, host, port in (
+            ("ConnectionStrings__NotrelixDb", app_host, app_port),
+            ("ConnectionStrings__NotrelixWorkerDb", worker_host, worker_port),
+        ):
+            if host != PGBOUNCER_SERVICE or port != "6432":
+                fail(f"{label} {name} {key} must connect through {PGBOUNCER_SERVICE}:6432, got {host}:{port}")
+        migration_host, _ = connection_endpoint(env.get("ConnectionStrings__NotrelixMigrationDb", ""))
+        if migration_host != POSTGRES_SERVICE:
+            fail(f"{label} {name} ConnectionStrings__NotrelixMigrationDb must connect straight to {POSTGRES_SERVICE}")
+        check_database_logins(f"{label} {name}", env)
+
+        if env.get("DataProtection__PersistKeys") != "true":
+            fail(f"{label} {name} must persist Data Protection keys so all roles share one key ring")
+        if env.get("DataProtection__KeysPath") != DATA_PROTECTION_KEYS_PATH:
+            fail(f"{label} {name} DataProtection__KeysPath must be {DATA_PROTECTION_KEYS_PATH!r}")
+        targets = {str(mount.get("target")) for mount in service.get("volumes", []) or [] if isinstance(mount, dict)}
+        if DATA_PROTECTION_KEYS_PATH not in targets:
+            fail(f"{label} {name} must mount the shared Data Protection key volume at {DATA_PROTECTION_KEYS_PATH}")
+
+    if len(images) != 1 or "" in images:
+        fail(f"{label} backend roles must run one shared image, got {sorted(images)}")
+
+
+def check_pgbouncer(label: str, services: dict[str, Any], *, read_only_required: bool) -> None:
+    service = services[PGBOUNCER_SERVICE]
+    if ports(service):
+        fail(f"{label} pgbouncer must not publish host ports")
+    if read_only_required and service.get("read_only") is not True:
+        fail(f"{label} pgbouncer must be read_only")
+    if "ALL" not in (service.get("cap_drop") or []):
+        fail(f"{label} pgbouncer must cap_drop ALL")
+    nets = network_names(service)
+    if nets != {"backend-network"}:
+        fail(f"{label} pgbouncer must join only backend-network, got {sorted(nets)}")
+    if POSTGRES_SERVICE not in (service.get("depends_on") or {}):
+        fail(f"{label} pgbouncer must depend on postgres")
+    pooler_image = str(service.get("image", ""))
+    if not pooler_image:
+        fail(f"{label} pgbouncer must have a pinned image")
+
+
+def check_gateway_routes(label: str, conf: str) -> None:
+    """/api/v1/realtime goes to the realtime role; the rest of /api goes to the api role."""
+    routes = {
+        "/api/v1/realtime": REALTIME_SERVICE,
+        "/api/": BACKEND_SERVICE,
+    }
+    for path, service in routes.items():
+        match = re.search(rf"location\s+\^~\s+{re.escape(path)}\s*\{{(.*?)\}}", conf, re.DOTALL)
+        if not match:
+            fail(f"{label} nginx must route {path} explicitly")
+        if f"http://{service}:8000" not in match.group(1):
+            fail(f"{label} nginx {path} must proxy to {service}")
+    realtime_block = re.search(r"location\s+\^~\s+/api/v1/realtime\s*\{(.*?)\}", conf, re.DOTALL)
+    if realtime_block and "proxy_set_header Upgrade $http_upgrade;" not in realtime_block.group(1):
+        fail(f"{label} nginx realtime route must forward the WebSocket upgrade")
+
+
 def main() -> int:
     version = compose_version()
     if version < MIN_COMPOSE_VERSION:
@@ -214,38 +335,8 @@ def main() -> int:
     if services[RABBITMQ_SERVICE].get("profiles"):
         fail("RabbitMQ must not be optional/profile-gated in staging/production")
 
-    backend = services[BACKEND_SERVICE]
-    if backend.get("read_only") is not True:
-        fail("production backend must be read_only")
-    if "ALL" not in (backend.get("cap_drop") or []):
-        fail("production backend must cap_drop ALL")
-    if backend.get("cap_add"):
-        fail("backend must not add Linux capabilities")
-    if "no-new-privileges:true" not in (backend.get("security_opt") or []):
-        fail("backend must enable no-new-privileges")
-    bnet = network_names(backend)
-    if not {"backend-network", "backend-egress-network"}.issubset(bnet):
-        fail("backend must join backend-network and backend-egress-network")
-    if "frontend-network" in bnet:
-        fail("backend must not use frontend-network as egress")
-
-    benv = env_map(backend)
-    required_backend_env = {
-        "Messaging__Transport": "RabbitMQ",
-        "Messaging__RabbitMQ__Host": RABBITMQ_SERVICE,
-        "Messaging__RabbitMQ__Port": "5672",
-        "ForwardedHeaders__RequireKnownProxyInProduction": "true",
-        "ForwardedHeaders__KnownNetworks__0": env["BACKEND_NETWORK_SUBNET"],
-    }
-    for key, expected in required_backend_env.items():
-        if benv.get(key) != expected:
-            fail(f"backend environment {key} must be {expected!r}, got {benv.get(key)!r}")
-    for key in ("Messaging__RabbitMQ__Username", "Messaging__RabbitMQ__Password"):
-        if not benv.get(key):
-            fail(f"backend environment {key} is required")
-    if RABBITMQ_SERVICE not in (backend.get("depends_on") or {}):
-        fail("backend must depend on healthy RabbitMQ")
-    check_database_logins("production", benv)
+    check_backend_fleet("production", services, read_only_required=True)
+    check_pgbouncer("production", services, read_only_required=True)
 
     nginx = services[NGINX_SERVICE]
     if ports(nginx) != {8080}:
@@ -270,6 +361,7 @@ def main() -> int:
     for service, upstream in EXPECTED_UPSTREAMS.items():
         if upstream not in prod_conf:
             fail(f"production nginx missing upstream {upstream} for {service}")
+    check_gateway_routes("production", prod_conf)
 
     web_dockerfile = WEB_DOCKERFILE.read_text(encoding="utf-8")
     web_conf = WEB_NGINX_CONF.read_text(encoding="utf-8")
@@ -300,22 +392,8 @@ def main() -> int:
     missing_staging = sorted(set(ALL_REQUIRED_SERVICES) - set(staging_services))
     if missing_staging:
         fail(f"staging missing services: {missing_staging}")
-    staging_backend = staging_services[BACKEND_SERVICE]
-    if RABBITMQ_SERVICE not in (staging_backend.get("depends_on") or {}):
-        fail("staging backend must depend on RabbitMQ")
-    check_database_logins("staging", env_map(staging_backend))
-    if env_map(staging_backend).get("Messaging__RabbitMQ__Host") != RABBITMQ_SERVICE:
-        fail("staging backend must use resolved RabbitMQ compose service")
-    for key, expected in (
-        ("Rls__Enabled", "true"),
-        ("Rls__SetSessionContext", "true"),
-        ("DataProtection__PersistKeys", "true"),
-    ):
-        if env_map(staging_backend).get(key) != expected:
-            fail(f"staging backend {key} must be {expected!r}")
-    keys_path = env_map(staging_backend).get("DataProtection__KeysPath", "")
-    if not keys_path or keys_path.startswith("/root"):
-        fail("staging backend must persist DataProtection keys under writable non-root path")
+    check_backend_fleet("staging", staging_services, read_only_required=False)
+    check_pgbouncer("staging", staging_services, read_only_required=True)
 
     staging_nginx = staging_services[NGINX_SERVICE]
     if str(staging_nginx.get("user", "")) != "nginx":
@@ -329,6 +407,7 @@ def main() -> int:
         fail("staging nginx pid must live under /tmp")
     if not re.search(r"\blisten\s+8080;", staging_conf):
         fail("staging nginx must listen on 8080")
+    check_gateway_routes("staging", staging_conf)
 
     print("Notrelix infrastructure semantics: OK")
     return 0

@@ -61,13 +61,17 @@ public class Message : AggregateRoot, IWorkspaceScoped
         string content,
         string clientMessageId,
         Guid? replyToId,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        bool voiceMessage = false)
     {
         Guard.NotNullOrWhiteSpace(clientMessageId);
         if (clientMessageId.Trim().Length > ChatLimits.ClientMessageIdMaxLength)
             throw new BusinessRuleException(ChatRuleCodes.MessageContentInvalid, "The client message id is too long.");
 
-        return Create(accountId, workspaceId, spaceId, sequence, authorId, MessageKind.User, content, createdAt, clientMessageId.Trim(), replyToId);
+        // A voice message carries its audio attachment and may have no text (UC-CHT-I04); any other message needs text.
+        return Create(
+            accountId, workspaceId, spaceId, sequence, authorId, MessageKind.User, content, createdAt, clientMessageId.Trim(), replyToId,
+            allowEmptyContent: voiceMessage);
     }
 
     /// <summary>
@@ -123,7 +127,8 @@ public class Message : AggregateRoot, IWorkspaceScoped
         Guid? replyToId = null,
         Guid? threadRootId = null,
         long? threadSequence = null,
-        bool alsoSentToChannel = false)
+        bool alsoSentToChannel = false,
+        bool allowEmptyContent = false)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
@@ -132,7 +137,7 @@ public class Message : AggregateRoot, IWorkspaceScoped
         if (sequence < 1)
             throw new BusinessRuleException(ChatRuleCodes.MessageSequenceInvalid, "A message sequence starts at 1.");
 
-        var normalized = NormalizeContent(content);
+        var normalized = allowEmptyContent && string.IsNullOrWhiteSpace(content) ? string.Empty : NormalizeContent(content);
         var message = new Message
         {
             AccountId = accountId,

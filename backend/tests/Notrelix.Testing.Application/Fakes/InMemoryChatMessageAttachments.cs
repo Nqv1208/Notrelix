@@ -33,7 +33,8 @@ public sealed class InMemoryChatMessageAttachments : IChatMessageAttachments
         return fact;
     }
 
-    public async Task<ChatMessageAttachmentFact> UploadAsync(Guid messageId, string fileName, Stream content, CancellationToken cancellationToken)
+    public async Task<ChatMessageAttachmentFact> UploadAsync(
+        Guid messageId, string fileName, Stream content, ChatMessageAudioUpload? audio, CancellationToken cancellationToken)
     {
         UploadCalls++;
         using var buffer = new MemoryStream();

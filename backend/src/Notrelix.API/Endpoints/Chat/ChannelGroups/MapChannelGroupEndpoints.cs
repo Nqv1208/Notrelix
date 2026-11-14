@@ -3,6 +3,7 @@ using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Chat.ChannelGroups.Commands.CreateChannelGroup;
 using Notrelix.Application.Features.Chat.ChannelGroups.Commands.DeleteChannelGroup;
 using Notrelix.Application.Features.Chat.ChannelGroups.Commands.UpdateChannelGroup;
+using Notrelix.Application.Features.Chat.ChannelGroups.Queries.ListChannelGroups;
 
 namespace Notrelix.API.Endpoints.Chat.ChannelGroups;
 
@@ -15,6 +16,12 @@ public static class MapChannelGroupEndpoints
             .MapGroup("/api/v1/workspaces/{workspaceId:guid}/chat/channel-groups")
             .WithTags("Chat.ChannelGroups")
             .WithOpenApi();
+
+        group.MapWorkspaceGet("/", ListAsync)
+            .WithName("Chat.ChannelGroups.List")
+            .WithSummary("List the sidebar categories with their names")
+            .WithDescription("In sidebar order. Every Workspace member reads all categories; a Guest reads only the categories that hold a channel they are in.")
+            .ProducesProblems(StatusCodes.Status403Forbidden);
 
         group.MapWorkspacePost("/", CreateAsync)
             .WithIdempotencyKey()
@@ -36,6 +43,12 @@ public static class MapChannelGroupEndpoints
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status412PreconditionFailed);
 
         return app;
+    }
+
+    private static async Task<IResult> ListAsync(Guid workspaceId, ISender sender)
+    {
+        var result = await sender.Send(new ListChannelGroupsQuery(workspaceId));
+        return result.ToApiResult();
     }
 
     private static async Task<IResult> CreateAsync(Guid workspaceId, CreateChannelGroupRequest body, ISender sender)

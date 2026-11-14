@@ -625,6 +625,56 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Chat.Attachments.Commands.CommitMessageAttachmentUpload.CommitMessageAttachmentUploadCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Attachments.Commands.CommitMessageAttachmentUpload.CommitMessageAttachmentUploadCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Attachments.Commands.CreateMessageAttachmentUpload.CreateMessageAttachmentUploadCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Attachments.Commands.CreateMessageAttachmentUpload.CreateMessageAttachmentUploadCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Chat.Attachments.Commands.DeleteMessageAttachment.DeleteMessageAttachmentCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -700,6 +750,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Chat.Attachments.Queries.GetMessageAttachmentUrl.GetMessageAttachmentUrlQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Attachments.Queries.GetMessageAttachmentUrl.GetMessageAttachmentUrlQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Chat.Attachments.Queries.ListMessageAttachments.ListMessageAttachmentsQuery",
     "kind": "Query",
     "principalMarkers": [
@@ -747,6 +822,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Chat.Blocks.Commands.SetPersonBlock.SetPersonBlockCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Blocks.Queries.ListPersonBlocks.ListPersonBlocksQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Blocks.Queries.ListPersonBlocks.ListPersonBlocksQueryHandler"
     ]
   },
   {
@@ -822,6 +922,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Chat.ChannelGroups.Commands.UpdateChannelGroup.UpdateChannelGroupCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.ChannelGroups.Queries.ListChannelGroups.ListChannelGroupsQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.ChannelGroups.Queries.ListChannelGroups.ListChannelGroupsQueryHandler"
     ]
   },
   {

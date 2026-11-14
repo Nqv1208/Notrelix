@@ -1,4 +1,6 @@
 import type {
+  ChatBlockedPerson,
+  ChatChannelGroup,
   ChatAddMembersResult,
   ChatAttachment,
   ChatChannel,
@@ -38,7 +40,10 @@ import type {
   ChatThreadRepliesPage,
   ChatUnreadSummary,
   ChatUpdateChannelInput,
+  ChatAttachmentUpload,
+  ChatAttachmentUrl,
 } from "../types/chat";
+import { voiceFactsOf } from "../model/voice-model";
 
 /** The transport the host passes in: the generated client's `api` (`createNotrelixClient`). */
 export interface ChatRequestOptions {
@@ -120,6 +125,20 @@ export interface ChatEndpoints {
       messageId: string,
       attachmentId: string,
     ) => string;
+    messageAttachmentUploads: (
+      workspaceId: string,
+      messageId: string,
+    ) => string;
+    messageAttachmentUploadCommit: (
+      workspaceId: string,
+      messageId: string,
+      uploadId: string,
+    ) => string;
+    messageAttachmentUrl: (
+      workspaceId: string,
+      messageId: string,
+      attachmentId: string,
+    ) => string;
     linkResolve: (workspaceId: string) => string;
     channelLink: (workspaceId: string, channelId: string) => string;
     linkedChannels: (workspaceId: string) => string;
@@ -149,6 +168,7 @@ export interface ChatEndpoints {
       conversationId: string,
     ) => string;
     blocks: (workspaceId: string) => string;
+    channelGroups: (workspaceId: string) => string;
   };
 }
 
@@ -178,6 +198,11 @@ export function createChatService(
     /** `Chat.Channels.List`: the caller's own channels in sidebar order. */
     listChannels(workspaceId: string): Promise<ChatChannel[]> {
       return api.get<ChatChannel[]>(paths.channels(workspaceId));
+    },
+
+    /** `Chat.ChannelGroups.List`: the sidebar categories with their names, in sidebar order. */
+    listChannelGroups(workspaceId: string): Promise<ChatChannelGroup[]> {
+      return api.get<ChatChannelGroup[]>(paths.channelGroups(workspaceId));
     },
 
     /** `Chat.Channels.List` with browse=true: the public channels the caller is not in. */
@@ -298,6 +323,8 @@ export function createChatService(
         content: string;
         clientMessageId: string;
         replyToId?: string | null;
+        /** A voice message carries no text; its audio is uploaded to it next (UC-CHT-I04). */
+        voiceMessage?: boolean;
       } & ChatMentionPayload,
     ): Promise<ChatMessage> {
       return api.post<ChatMessage>(
@@ -431,6 +458,13 @@ export function createChatService(
         return Promise.reject(new Error("The API client cannot upload files."));
       }
       const form = new FormData();
+      // The voice fields go before the file part: the server reads them only ahead of it (UC-CHT-I04).
+      const voice = voiceFactsOf(file);
+      if (voice) {
+        form.append("voice", "true");
+        form.append("durationMs", String(voice.durationMs));
+        form.append("waveform", voice.waveform.join(","));
+      }
       form.append("file", file, file.name);
       return api.upload<ChatAttachment>(
         paths.messageAttachments(workspaceId, messageId),
@@ -453,6 +487,58 @@ export function createChatService(
       }
       return api.getBlob(
         paths.messageAttachmentContent(workspaceId, messageId, attachmentId),
+      );
+    },
+
+    /**
+     * `Chat.Attachments.CreateUpload`: step one of a direct upload. The declared name, size and type are the file's own; a voice
+     * message carries its facts as the streaming upload does. 409 storage-direct-upload-unsupported when the server has no
+     * pre-signed storage, so the caller falls back to `uploadAttachment`.
+     */
+    createAttachmentUpload(
+      workspaceId: string,
+      messageId: string,
+      file: File,
+    ): Promise<ChatAttachmentUpload> {
+      const voice = voiceFactsOf(file);
+      return api.post<ChatAttachmentUpload>(
+        paths.messageAttachmentUploads(workspaceId, messageId),
+        {
+          fileName: file.name,
+          sizeBytes: file.size,
+          contentType: file.type || "application/octet-stream",
+          ...(voice
+            ? {
+                voice: true,
+                durationHintMs: voice.durationMs,
+                waveform: voice.waveform,
+              }
+            : {}),
+        },
+      );
+    },
+
+    /**
+     * `Chat.Attachments.CommitUpload`: step two, after the bytes are stored. Idempotent: a repeat returns the same file.
+     */
+    commitAttachmentUpload(
+      workspaceId: string,
+      messageId: string,
+      uploadId: string,
+    ): Promise<ChatAttachment> {
+      return api.post<ChatAttachment>(
+        paths.messageAttachmentUploadCommit(workspaceId, messageId, uploadId),
+      );
+    },
+
+    /** `Chat.Attachments.GetUrl`: a short-lived pre-signed download URL, or 409 when the server does not sign them. */
+    getAttachmentUrl(
+      workspaceId: string,
+      messageId: string,
+      attachmentId: string,
+    ): Promise<ChatAttachmentUrl> {
+      return api.get<ChatAttachmentUrl>(
+        paths.messageAttachmentUrl(workspaceId, messageId, attachmentId),
       );
     },
 
@@ -819,6 +905,11 @@ export function createChatService(
         paths.conversationVisibility(workspaceId, conversationId),
         { hidden },
       );
+    },
+
+    /** `Chat.Blocks.List`: the people the caller blocked, newest first (the caller's own list only). */
+    listPersonBlocks(workspaceId: string): Promise<ChatBlockedPerson[]> {
+      return api.get<ChatBlockedPerson[]>(paths.blocks(workspaceId));
     },
 
     /** `Chat.Blocks.Set`: blocks or unblocks a person for the caller; idempotent. */

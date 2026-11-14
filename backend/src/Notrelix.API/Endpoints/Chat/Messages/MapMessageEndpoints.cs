@@ -70,7 +70,7 @@ public static class MapMessageEndpoints
     {
         var result = await sender.Send(new SendMessageCommand(
             workspaceId, spaceId, body.Content ?? string.Empty, body.ClientMessageId ?? string.Empty, body.ReplyToId,
-            body.Mentions?.Select(m => m.ToInput()).ToList(), body.ConfirmBroadcast ?? false));
+            body.Mentions?.Select(m => m.ToInput()).ToList(), body.ConfirmBroadcast ?? false, body.VoiceMessage ?? false));
         if (!result.Succeeded)
             return result.ToApiResult();
 

@@ -192,7 +192,7 @@ export interface ChatChannelDetail {
   readonly members: readonly ChatChannelMember[];
 }
 
-/** MessageAttachmentDto: a file of a message. `downloadPath` is the permission-checked content route. */
+/** MessageAttachmentDto: a file of a message. `downloadPath` is the permission-checked content route; width and height are an image's pixel size. */
 export interface ChatAttachment {
   readonly id: string;
   readonly messageId?: string;
@@ -202,6 +202,37 @@ export interface ChatAttachment {
   readonly uploadedBy: string;
   readonly createdAt: string;
   readonly downloadPath: string;
+  /** The pixel size of an image file, read from its header at upload; absent or null for any other file. */
+  readonly width?: number | null;
+  readonly height?: number | null;
+  /** Voice messages only (UC-CHT-I04): the length in milliseconds, from the header or the recorder's hint. */
+  readonly durationMs?: number | null;
+  /** Voice messages only: up to 64 peaks, each 0 to 255. */
+  readonly waveform?: readonly number[] | null;
+}
+
+/**
+ * `Chat.Attachments.CreateUpload` (two-step, UC-CHT-G08): the pending upload and the pre-signed PUT the bytes go to. The URL is a secret
+ * for its window only; it is never stored or shown.
+ */
+export interface ChatAttachmentUpload {
+  readonly uploadId: string;
+  readonly method: string;
+  readonly uploadUrl: string;
+  readonly contentType: string;
+  readonly contentLength: number;
+  readonly expiresAt: string;
+  readonly commitPath: string;
+}
+
+/** `Chat.Attachments.GetUrl`: a pre-signed download of one file, valid until `expiresAt`. */
+export interface ChatAttachmentUrl {
+  readonly attachmentId: string;
+  readonly fileName: string;
+  readonly contentType: string;
+  readonly sizeBytes: number;
+  readonly url: string;
+  readonly expiresAt: string;
 }
 
 /** MessageDto. A tombstone keeps its author, time and sequence, with null content. */
@@ -220,6 +251,10 @@ export interface ChatMessage {
   readonly threadSequence?: number | null;
   /** A thread reply the author also sent to the channel is in the main flow too. */
   readonly alsoSentToChannel?: boolean;
+  /** For a thread root: the replies stored so far (0 for a message with no thread). Never decreases: a deleted reply stays counted. */
+  readonly threadReplyCount?: number;
+  /** For a thread root: the time of the last reply; null when there is none. */
+  readonly threadLastReplyAt?: string | null;
   /** The live quote of `replyToId`; null when the message quotes nothing. */
   readonly replyPreview?: ChatReplyPreview | null;
   /** The reaction summary, one entry per palette emoji that has reactions. */
@@ -468,6 +503,20 @@ export interface ChatStartConversationResult {
 export interface ChatConversationVisibility {
   readonly conversationId: string;
   readonly hidden: boolean;
+}
+
+/** ChannelGroupDto: a sidebar category with its name (`Chat.ChannelGroups.List`). */
+export interface ChatChannelGroup {
+  readonly id: string;
+  readonly name: string;
+  readonly position: number;
+  readonly version: number;
+}
+
+/** BlockedPersonDto: one person the caller blocked (`Chat.Blocks.List`; the caller's own list only). */
+export interface ChatBlockedPerson {
+  readonly userId: string;
+  readonly blockedAt: string;
 }
 
 export interface ChatPersonBlock {

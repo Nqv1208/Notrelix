@@ -404,7 +404,7 @@ export interface paths {
         put?: never;
         /**
          * Attach a file to your own message (multipart/form-data, streamed)
-         * @description Only the author of the message, as an active member of its space, attaches. The shared file policy applies: a blocked extension or an executable file is 415 before any byte is stored, a file over the size cap is 413, a message with the maximum number of files is 409 attachment.limit_exceeded; an empty file is 400. A system or deleted message is 409; an archived channel is 409 channel-archived; another person's message is 403; a space the caller is not a member of is 404. An upload is counted per person and per space (chat.upload): over the limit the answer is 429 with Retry-After and ruleCode rate-limited, before any byte is stored.
+         * @description Only the author of the message, as an active member of its space, attaches. Optional small fields before the file part make it a voice message (voice=true, durationMs hint, waveform as comma-separated peaks; UC-CHT-I04): one audio file within the Workspace voice limit, else 413 voice-too-long or 400 voice-invalid. The shared file policy applies: a blocked extension or an executable file is 415 before any byte is stored, a file over the size cap is 413, a message with the maximum number of files is 409 attachment.limit_exceeded; an empty file is 400. A system or deleted message is 409; an archived channel is 409 channel-archived; another person's message is 403; a space the caller is not a member of is 404. An upload is counted per person and per space (chat.upload): over the limit the answer is 429 with Retry-After and ruleCode rate-limited, before any byte is stored.
          */
         post: operations["Chat.Attachments.Upload"];
         delete?: never;
@@ -425,6 +425,66 @@ export interface paths {
          * @description Permission checked on every request: only a reader of the space opens it. The file must belong to this message; any other attachment id is 404. Inline only for png, jpeg, gif and webp; everything else downloads as an attachment. Never cacheable.
          */
         get: operations["Chat.Attachments.GetContent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/messages/{messageId}/attachments/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a two-step upload of a file to your own message (pre-signed PUT)
+         * @description Step one of the direct upload. The same authorization as the streaming upload applies, and the declared name, size and type are checked against the shared file policy. The answer (201) holds a pending upload id, a short-lived pre-signed PUT for the bytes (bound to contentType and contentLength) and the commit path. No file exists until the bytes are uploaded and the commit succeeds. When the storage provider cannot issue pre-signed URLs the answer is 409 with ruleCode storage-direct-upload-unsupported: the client then uses the streaming upload. Voice fields follow the streaming upload. A blocked type is 415, an oversize declaration 413, a message at its file limit 400, and a rate-limited sender 429.
+         */
+        post: operations["Chat.Attachments.CreateUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/messages/{messageId}/attachments/uploads/{uploadId}/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Commit a two-step upload: verify the stored bytes and attach the file
+         * @description Step two of the direct upload. Verifies the object the client uploaded, sniffs its type and reads the image size and audio duration from its first bytes, then applies the full file policy and the voice rules, and records the file on the message (201). Idempotent: a repeated commit of the same upload returns the same file and records nothing again. A policy refusal deletes the uploaded object and answers with the streaming upload's code (415, 413, 400). An upload that was never uploaded, a size that does not match its declaration, or an upload of another message is 409 or 404; an expired upload is 409 with ruleCode attachment-upload-expired.
+         */
+        post: operations["Chat.Attachments.CommitUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/messages/{messageId}/attachments/{attachmentId}/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a short-lived pre-signed download URL for a file of a message
+         * @description Authorised like the content read: only a reader of the space gets a URL, and the file must belong to this message (any other id is 404). The answer (200) holds the URL and its expiry (five minutes by default). The URL is a secret for that window and must not be stored or shared. When the storage provider cannot issue pre-signed URLs the answer is 409 with ruleCode storage-direct-download-unsupported and the client uses the content endpoint instead.
+         */
+        get: operations["Chat.Attachments.GetUrl"];
         put?: never;
         post?: never;
         delete?: never;
@@ -460,7 +520,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List the people the caller has blocked
+         * @description The caller's own blocks only, newest first. A Guest sees only the blocks of people they share a space with.
+         */
+        get: operations["Chat.Blocks.List"];
         /**
          * Block or unblock a person for the caller
          * @description A block stops a direct conversation between the caller and that person from being started by either side (404). It does not hide channel messages. Idempotent. Blocking yourself is 400; a person who is not in the Workspace is 404.
@@ -480,7 +544,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List the sidebar categories with their names
+         * @description In sidebar order. Every Workspace member reads all categories; a Guest reads only the categories that hold a channel they are in.
+         */
+        get: operations["Chat.ChannelGroups.List"];
         put?: never;
         /**
          * Create a sidebar category
@@ -2446,7 +2514,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Readiness probe — checks database connectivity */
+        /** Readiness probe — checks the dependencies of the roles this process runs (database, Redis, and for the worker the outbox and broker) */
         get: operations["ReadinessProbe"];
         put?: never;
         post?: never;
@@ -7896,6 +7964,16 @@ export interface components {
             /** Format: uuid */
             groupId?: string | null;
         };
+        "Notrelix.API.Contracts.Chat.Requests.CreateChatAttachmentUploadRequest": {
+            fileName?: string | null;
+            /** Format: int64 */
+            sizeBytes?: number;
+            contentType?: string | null;
+            voice?: boolean | null;
+            /** Format: int32 */
+            durationHintMs?: number | null;
+            waveform?: number[] | null;
+        };
         "Notrelix.API.Contracts.Chat.Requests.CreateChatExportRequest": {
             /** Format: uuid */
             subjectUserId?: string | null;
@@ -7963,6 +8041,7 @@ export interface components {
             replyToId?: string | null;
             mentions?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.MentionRequest"][] | null;
             confirmBroadcast?: boolean | null;
+            voiceMessage?: boolean | null;
         };
         "Notrelix.API.Contracts.Chat.Requests.SetChannelPermissionsRequest": {
             entries?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.ChannelPermissionEntryRequest"][] | null;
@@ -8014,6 +8093,9 @@ export interface components {
         "Notrelix.API.Contracts.Chat.Requests.UploadChatAttachmentForm": {
             /** Format: binary */
             file: string | null;
+            voice?: string | null;
+            durationMs?: string | null;
+            waveform?: string | null;
         };
         "Notrelix.API.Contracts.Collaboration.Attachments.Requests.CreateBoardItemAttachmentRequest": {
             filename?: string | null;
@@ -9525,6 +9607,42 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
             downloadPath?: string | null;
+            /** Format: int32 */
+            width?: number | null;
+            /** Format: int32 */
+            height?: number | null;
+            /** Format: int32 */
+            durationMs?: number | null;
+            waveform?: number[] | null;
+        };
+        "Notrelix.Application.Features.Chat.Attachments.DTOs.MessageAttachmentUploadDto": {
+            /** Format: uuid */
+            uploadId?: string;
+            method?: string | null;
+            uploadUrl?: string | null;
+            contentType?: string | null;
+            /** Format: int64 */
+            contentLength?: number;
+            /** Format: date-time */
+            expiresAt?: string;
+            commitPath?: string | null;
+        };
+        "Notrelix.Application.Features.Chat.Attachments.DTOs.MessageAttachmentUrlDto": {
+            /** Format: uuid */
+            attachmentId?: string;
+            fileName?: string | null;
+            contentType?: string | null;
+            /** Format: int64 */
+            sizeBytes?: number;
+            url?: string | null;
+            /** Format: date-time */
+            expiresAt?: string;
+        };
+        "Notrelix.Application.Features.Chat.Blocks.DTOs.BlockedPersonDto": {
+            /** Format: uuid */
+            userId?: string;
+            /** Format: date-time */
+            blockedAt?: string;
         };
         "Notrelix.Application.Features.Chat.Blocks.DTOs.PersonBlockDto": {
             /** Format: uuid */
@@ -9684,6 +9802,10 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
             kind?: string | null;
+            /** Format: int32 */
+            width?: number | null;
+            /** Format: int32 */
+            height?: number | null;
         };
         "Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentAnchorDto": {
             /** Format: uuid */
@@ -13013,6 +13135,225 @@ export interface operations {
             };
         };
     };
+    "Chat.Attachments.CreateUpload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                messageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.CreateChatAttachmentUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Attachments.DTOs.MessageAttachmentUploadDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Attachments.CommitUpload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                messageId: string;
+                uploadId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Attachments.DTOs.MessageAttachmentDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Attachments.GetUrl": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                messageId: string;
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Attachments.DTOs.MessageAttachmentUrlDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
     "Chat.Attachments.Delete": {
         parameters: {
             query?: never;
@@ -13055,6 +13396,37 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Blocks.List": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Blocks.DTOs.BlockedPersonDto"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13108,6 +13480,37 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.ChannelGroups.List": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

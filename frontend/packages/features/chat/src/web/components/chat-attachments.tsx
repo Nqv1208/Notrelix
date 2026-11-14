@@ -16,6 +16,7 @@ import { Button, cn } from "@notrelix/ui-web";
 import {
   formatFileSize,
   glyphOf,
+  imageBoxRatio,
   isInlineImage,
   isRetryableUpload,
   type AttachmentGlyph,
@@ -30,7 +31,14 @@ import {
 import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
 import { ConfirmDialog } from "./chat-dialogs";
+import {
+  ImageGallery,
+  ImageViewer,
+  singleImageBoxStyle,
+} from "./chat-image-gallery";
 import { fillCopy } from "./use-chat-copy";
+import { VoiceMessagePlayer } from "./chat-voice-message";
+import { isAudioAttachment } from "../../core/model/voice-model";
 
 const GLYPHS: Readonly<Record<AttachmentGlyph, typeof FileIcon>> = {
   image: ImageIcon,
@@ -136,6 +144,7 @@ export function MessageAttachments({
   const downloader = hooks.useDownloadAttachment(workspaceId);
   const [removing, setRemoving] = useState<ChatAttachment | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<number | null>(null);
 
   if (message.deleted) return null;
   const attachments = message.attachments ?? [];
@@ -147,7 +156,11 @@ export function MessageAttachments({
 
   const canRemove = isOwn && !readOnly;
   const images = attachments.filter((item) => isInlineImage(item.contentType));
-  const files = attachments.filter((item) => !isInlineImage(item.contentType));
+  // Audio is a voice message (UC-CHT-I04, I05): it plays in its own player, not as a file card.
+  const voices = attachments.filter((item) => isAudioAttachment(item));
+  const files = attachments.filter(
+    (item) => !isInlineImage(item.contentType) && !isAudioAttachment(item),
+  );
 
   function download(attachment: ChatAttachment) {
     setNotice(null);
@@ -198,29 +211,39 @@ export function MessageAttachments({
       aria-label={copy.attachments.listLabel}
       data-testid="chat-attachments"
     >
-      {images.length > 0 ? (
-        <ul
-          className={cn(
-            "flex max-w-full flex-wrap gap-1",
-            align === "end" && "justify-end",
-          )}
-        >
-          {images.map((attachment) => (
-            <li key={attachment.id}>
-              <ImagePreview
-                attachment={attachment}
-                messageId={message.id}
-                workspaceId={workspaceId}
-                hooks={hooks}
-                copy={copy}
-                canRemove={canRemove}
-                onDownload={download}
-                onRemove={setRemoving}
-              />
-            </li>
-          ))}
-        </ul>
+      {images.length === 1 && images[0] ? (
+        <ImagePreview
+          attachment={images[0]}
+          messageId={message.id}
+          workspaceId={workspaceId}
+          hooks={hooks}
+          copy={copy}
+          canRemove={canRemove}
+          onOpen={() => setViewing(0)}
+          onDownload={download}
+          onRemove={setRemoving}
+        />
+      ) : images.length > 1 ? (
+        <ImageGallery
+          images={images}
+          onOpen={setViewing}
+          align={align}
+          messageId={message.id}
+          workspaceId={workspaceId}
+          hooks={hooks}
+          copy={copy}
+        />
       ) : null}
+      {voices.map((voice) => (
+        <VoiceMessagePlayer
+          key={voice.id}
+          attachment={voice}
+          workspaceId={workspaceId}
+          messageId={message.id}
+          hooks={hooks}
+          copy={copy}
+        />
+      ))}
       {files.length > 0 ? (
         <ul
           className={cn(
@@ -259,6 +282,19 @@ export function MessageAttachments({
         <p role="status" className="text-xs text-muted-foreground">
           {notice}
         </p>
+      ) : null}
+      {images.length > 0 ? (
+        <ImageViewer
+          images={images}
+          index={viewing}
+          onIndexChange={setViewing}
+          onClose={() => setViewing(null)}
+          onDownload={download}
+          messageId={message.id}
+          workspaceId={workspaceId}
+          hooks={hooks}
+          copy={copy}
+        />
       ) : null}
       <ConfirmDialog
         open={removing !== null}
@@ -360,6 +396,7 @@ function ImagePreview({
   hooks,
   copy,
   canRemove,
+  onOpen,
   onDownload,
   onRemove,
 }: {
@@ -369,6 +406,7 @@ function ImagePreview({
   readonly hooks: ChatHooks;
   readonly copy: ChatCopy;
   readonly canRemove: boolean;
+  readonly onOpen: () => void;
   readonly onDownload: (attachment: ChatAttachment) => void;
   readonly onRemove: (attachment: ChatAttachment) => void;
 }) {
@@ -400,28 +438,40 @@ function ImagePreview({
       />
     );
   }
+  // A known pixel size reserves the preview box before the bytes arrive; an unknown one keeps the fallback sizes.
+  const ratio = imageBoxRatio(attachment);
+  const box = ratio === null ? null : singleImageBoxStyle(ratio);
   return (
     <figure className="group/image relative m-0 inline-flex max-w-full flex-col gap-1">
       {url ? (
         <button
           type="button"
-          onClick={() => onDownload(attachment)}
-          aria-label={fillCopy(copy.attachments.download, {
+          onClick={onOpen}
+          aria-label={fillCopy(copy.attachments.viewer.open, {
             name: attachment.fileName,
           })}
-          className="block overflow-hidden rounded-2xl border border-border bg-muted focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none"
+          style={box ?? undefined}
+          className="block max-w-full overflow-hidden rounded-2xl border border-border bg-muted focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none"
         >
           <img
             src={url}
             alt={attachment.fileName}
-            className="block max-h-72 min-h-24 max-w-full min-w-24 object-cover sm:max-w-80"
+            className={
+              box
+                ? "block size-full object-cover"
+                : "block max-h-72 min-h-24 max-w-full min-w-24 object-cover sm:max-w-80"
+            }
           />
         </button>
       ) : (
         <div
           role="status"
           aria-label={copy.attachments.previewLoading}
-          className="flex aspect-[4/3] w-56 max-w-full animate-pulse items-center justify-center rounded-2xl border border-border bg-muted text-muted-foreground motion-reduce:animate-none"
+          style={box ?? undefined}
+          className={cn(
+            "flex max-w-full animate-pulse items-center justify-center rounded-2xl border border-border bg-muted text-muted-foreground motion-reduce:animate-none",
+            !box && "aspect-[4/3] w-56",
+          )}
         >
           <ImageIcon className="size-5" aria-hidden="true" />
         </div>

@@ -90,4 +90,10 @@ public static class ChatRuleCodes
 
     /// <summary>A channel link does not name a Board, Page or Team by kind and id, or the space is a conversation (400, UC-CHT-H10).</summary>
     public const string LinkInvalid = "link-invalid";
+
+    /// <summary>A voice message is longer than the Workspace voice limit, or larger than the byte ceiling of that length (413, UC-CHT-I04).</summary>
+    public const string VoiceTooLong = "voice-too-long";
+
+    /// <summary>A voice message is not one audio file, or its waveform or duration does not fit the rule (400, UC-CHT-I04).</summary>
+    public const string VoiceInvalid = "voice-invalid";
 }

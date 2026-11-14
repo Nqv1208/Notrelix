@@ -93,6 +93,13 @@ public static class DependencyInjection
             IValidateOptions<Notrelix.Application.Features.Collaboration.Attachments.AttachmentUploadOptions>,
             Notrelix.Application.Features.Collaboration.Attachments.AttachmentUploadOptionsValidator>();
 
+        // Voice message limits (UC-CHT-I04): the length and the byte ceiling per second.
+        services.AddOptions<Notrelix.Application.Features.Chat.Voice.ChatVoiceOptions>()
+            .Bind(builder.Configuration.GetSection(Notrelix.Application.Features.Chat.Voice.ChatVoiceOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<Notrelix.Application.Features.Chat.Voice.ChatVoiceOptions>,
+            Notrelix.Application.Features.Chat.Voice.ChatVoiceOptionsValidator>();
+
         // Chat rate limits (UC-CHT-H08): per person and per space, on the shared limiter store.
         services.AddOptions<Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitOptions>()
             .Bind(builder.Configuration.GetSection(Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitOptions.SectionName))
@@ -196,6 +203,8 @@ public static class DependencyInjection
             Notrelix.Application.Features.Collaboration.Comments.Services.CommentTargetAccess>();
         services.AddScoped<Notrelix.Application.Features.Collaboration.Public.Attachments.IChatMessageAttachments,
             Notrelix.Application.Features.Collaboration.Attachments.Services.ChatMessageAttachments>();
+        services.AddScoped<Notrelix.Application.Features.Collaboration.Public.Attachments.IChatMessageAttachmentTransfers,
+            Notrelix.Application.Features.Collaboration.Attachments.Services.ChatMessageAttachmentTransfers>();
         services.AddScoped<Notrelix.Application.Features.Documents.Public.PageViewAccess.IPageViewAccess,
             Notrelix.Application.Features.Documents.Pages.Services.PageViewAccess>();
         services.AddScoped<Notrelix.Application.Features.Documents.Versions.Services.IPageVersionRecorder,

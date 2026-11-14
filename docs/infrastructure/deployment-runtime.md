@@ -1188,6 +1188,23 @@ backend/docs/architecture/platform-and-messaging.md
 
 ---
 
+# 114A. Stage 1 deployed roles, probes and pooler
+
+Staging and production run one backend image as three processes selected by `Runtime__Roles` (`backend-api`, `backend-realtime`, `backend-worker`), so the API, the WebSocket gateway and the background work deploy and restart separately while sharing one codebase:
+
+```text
+backend-api       api        /api and /health; edge route /api/ and /health
+backend-realtime  realtime   /api/v1/realtime (WebSocket upgrade); edge route only for that path
+backend-worker    worker     outbox relay, consumers and jobs; no public route
+pgbouncer                    transaction pooling for the two runtime logins; migrations bypass it
+```
+
+Each role serves its own probes: `/health/live` depends on nothing, `/health/ready` checks the database and Redis for every role, plus the outbox and the broker for the worker. The three processes read one Data Protection key ring from a shared volume. Development keeps one process with every role.
+
+Authority: the role split is runtime composition (INFRA-RUN-027). It changes no ownership. Backend detail: `backend/docs/operations/configuration-and-runtime.md` sections 23C to 23G.
+
+---
+
 # 115. Final runtime rule
 
 For every runtime/dependency/topology change, answer:

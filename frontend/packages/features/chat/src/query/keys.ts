@@ -62,7 +62,10 @@ export const chatQueryKeys = {
   /** The caller's direct and group conversations (hidden ones are not in the server list). */
   conversations: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "chat", "conversations"),
-  /** Client-only projection: the people the caller blocked this session (the API has no read of blocks). */
+  /** The sidebar categories with their names. */
+  channelGroups: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "channel-groups"),
+  /** The people the caller blocked (`Chat.Blocks.List`). */
   blocks: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "chat", "blocks"),
   pins: (workspaceId: string, channelId: string) =>

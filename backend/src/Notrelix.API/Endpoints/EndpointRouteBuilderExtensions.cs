@@ -19,6 +19,7 @@ using Notrelix.API.Endpoints.Admin;
 using Notrelix.API.Endpoints.WorkManagement.Limits;
 using Notrelix.API.Endpoints.Identity.Users;
 using Notrelix.API.Realtime;
+using Notrelix.Infrastructure.Options;
 using Notrelix.API.Endpoints.Automation.Executions;
 using Notrelix.API.Endpoints.Automation.Rules;
 using Notrelix.API.Endpoints.Analytics;
@@ -72,17 +73,36 @@ namespace Notrelix.API.Endpoints;
 
 public static class EndpointRouteBuilderExtensions
 {
+    /// <summary>
+    /// Maps the endpoints of the roles this process runs. Health endpoints are mapped in every role;
+    /// the realtime gateway only with <c>realtime</c>; every REST endpoint only with <c>api</c>.
+    /// </summary>
     public static IEndpointRouteBuilder MapEndpoints(this IEndpointRouteBuilder app)
+    {
+        var roles = app.ServiceProvider.GetService<RuntimeRoles>() ?? RuntimeRoles.All;
+
+        app.MapHealthEndpoints();
+
+        if (roles.RunsRealtime)
+        {
+            app.MapRealtimeGateway();
+        }
+
+        if (roles.RunsApi)
+        {
+            app.MapApiEndpoints();
+        }
+
+        return app;
+    }
+
+    private static IEndpointRouteBuilder MapApiEndpoints(this IEndpointRouteBuilder app)
     {
         // Auth & Identity
         app.RegisterAuthEndpoints();
         app.RegisterProfileEndpoints();
         app.RegisterUserAvatarEndpoints();
         app.RegisterApiTokenEndpoints();
-        app.MapHealthEndpoints();
-
-        // Realtime gateway (WebSocket)
-        app.MapRealtimeGateway();
 
         // Accounts
         app.RegisterAccountEndpoints();
