@@ -229,6 +229,8 @@ export interface DocCommentView {
   readonly mine?: boolean;
   /** The viewer started the thread or may edit the page: only they resolve or reopen it. */
   readonly canResolve?: boolean;
+  /** Answers to this comment, oldest first (one level deep). */
+  readonly replies?: readonly DocCommentView[];
 }
 
 export interface DocVersionView {
@@ -504,7 +506,7 @@ export interface DocPageCallbacks {
   readonly onSaveTemplate?: (name: string, description: string) => void;
   readonly onImportOpen?: () => void;
   readonly onImportFile?: (file: File) => void;
-  readonly onCommentCreate?: (body: string) => void;
+  readonly onCommentCreate?: (body: string, parentId?: string) => void;
   /** Starts a comment on the selected text (the panel then asks for the words). */
   readonly onCommentStart?: () => void;
   /** Drops the selection a comment was being written on. */

@@ -14,5 +14,6 @@ export function mapComment(dto: CommentDtoApi, pageId: string): PageComment {
     createdAt: dto.createdAt,
     updatedAt: dto.createdAt,
     version: dto.version,
+    parentId: dto.parentCommentId ?? null,
   };
 }
