@@ -1286,6 +1286,31 @@ export function ChatWorkspace({
     />
   );
 
+  const panelToggles = (
+    <>
+      <Button
+        type="button"
+        size="sm"
+        variant={panel?.kind === "pins" ? "secondary" : "ghost"}
+        aria-pressed={panel?.kind === "pins"}
+        onClick={() => togglePanel({ kind: "pins" })}
+      >
+        <Pin aria-hidden="true" />
+        <span className="max-lg:sr-only">{copy.pins.tab}</span>
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant={panel?.kind === "following" ? "secondary" : "ghost"}
+        aria-pressed={panel?.kind === "following"}
+        onClick={() => togglePanel({ kind: "following" })}
+      >
+        <MessagesSquare aria-hidden="true" />
+        <span className="max-lg:sr-only">{copy.thread.followedTab}</span>
+      </Button>
+    </>
+  );
+
   return (
     <ChatMentionProvider value={mentionContext}>
       <ChatHighlightProvider value={highlightId}>
@@ -1415,6 +1440,7 @@ export function ChatWorkspace({
                       onToggleDetails={() => togglePanel({ kind: "details" })}
                       onHide={() => handleVisibility(true)}
                       onSearch={() => setSearchOpen(true)}
+                      actions={panelToggles}
                     />
                   ) : channel ? (
                     <ChatHeader
@@ -1455,6 +1481,7 @@ export function ChatWorkspace({
                       }
                       onJoin={() => handleJoin(ch)}
                       onSearch={() => setSearchOpen(true)}
+                      actions={panelToggles}
                       onSetLevel={handleLevel}
                     />
                   ) : null}
@@ -1529,30 +1556,6 @@ export function ChatWorkspace({
                     }
                     onOpen={() => togglePanel({ kind: "pins" })}
                   />
-                  <div className="flex items-center justify-end gap-1 border-b border-border px-3 py-1">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={panel?.kind === "pins" ? "secondary" : "ghost"}
-                      aria-pressed={panel?.kind === "pins"}
-                      onClick={() => togglePanel({ kind: "pins" })}
-                    >
-                      <Pin aria-hidden="true" />
-                      {copy.pins.tab}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={
-                        panel?.kind === "following" ? "secondary" : "ghost"
-                      }
-                      aria-pressed={panel?.kind === "following"}
-                      onClick={() => togglePanel({ kind: "following" })}
-                    >
-                      <MessagesSquare aria-hidden="true" />
-                      {copy.thread.followedTab}
-                    </Button>
-                  </div>
                   <ChatMessageList
                     channelName={spaceName}
                     emptyState={

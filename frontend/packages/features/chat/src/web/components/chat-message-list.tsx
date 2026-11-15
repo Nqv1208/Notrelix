@@ -197,7 +197,7 @@ export interface ChatMessageListProps {
 }
 
 /** The width of the conversation column: a comfortable measure on wide screens, fluid below it. */
-export const CHAT_COLUMN = "mx-auto w-full max-w-[760px]";
+export const CHAT_COLUMN = "mx-auto w-full max-w-[760px] 2xl:max-w-[1040px]";
 
 export function dayLabel(
   dayKey: string,
@@ -762,7 +762,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
         onTouchStart={releaseFollow}
         onPointerDown={releaseFollow}
         onKeyDown={releaseFollow}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-3 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-inset"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-3 outline-none focus:outline-none focus-visible:outline-none"
         data-testid="chat-message-list"
       >
         {props.isLoadingOlder ? (
