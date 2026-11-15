@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocale } from "@notrelix/i18n";
@@ -1317,7 +1318,15 @@ export function ChatWorkspace({
         canManageWorkspace && !isGuest ? () => setAdminOpen(true) : undefined
       }
       onSearch={() => setSearchOpen(true)}
-      onMarkAllRead={() => allReader.mutate()}
+      onMarkAllRead={() =>
+        allReader.mutate(undefined, {
+          // The unread counts stay as they were and the button stays usable for a retry.
+          onError: () =>
+            toast.error(copy.sidebar.markAllReadFailed, {
+              id: "chat-mark-all-read",
+            }),
+        })
+      }
       markingAllRead={allReader.isPending}
       onCreate={() => {
         setCreateError(null);
