@@ -10,6 +10,7 @@ using Notrelix.Application.Features.Chat.Conversations.Commands.StartConversatio
 using Notrelix.Application.Features.Chat.Conversations.Queries.ListConversations;
 using Notrelix.Application.Features.Chat.Members.Commands.JoinChannel;
 using Notrelix.Application.Features.Chat.Messages.Commands.SendMessage;
+using Notrelix.Application.Features.Chat.Messages.Queries.ListMessages;
 using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Application.Tests.Features.Collaboration;
@@ -340,6 +341,31 @@ public class ConversationHandlerTests
         result.Data!.Skipped.Should().ContainSingle().Which.Should().Be(_outsider);
         group.IsActiveMember(dave).Should().BeTrue();
         _messages.Should().ContainSingle(m => m.IsSystem && m.Content == ChatSystemMessages.MemberAdded);
+    }
+
+    [Fact]
+    public async Task AddParticipants_TheNewPersonReadsFromTheJoinPointOnly_AndHasNothingUnreadBefore()
+    {
+        var group = Group(_alice, _bob, _carol);
+        var dave = Guid.NewGuid();
+        Fact(dave, "Member", true);
+        Post(group, _bob, "before dave", Now.AddMinutes(10));
+        _clock.Setup(c => c.UtcNow).Returns(Now.AddHours(1));
+        await AddHandler().Handle(new AddConversationParticipantsCommand(_workspaceId, group.Id, [dave]), CancellationToken.None);
+        Post(group, _bob, "after dave", Now.AddHours(2));
+
+        AsCaller(dave, "Member");
+        var page = await new ListMessagesQueryHandler(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments())
+            .Handle(new ListMessagesQuery(_workspaceId, group.Id, null, null, null, 50), CancellationToken.None);
+
+        page.Data!.Items.Select(m => m.Content).Should().NotContain("before dave").And.Contain("after dave");
+        page.Data!.HasOlder.Should().BeFalse("nothing before the join point is offered");
+
+        AsCaller(_alice, "Member");
+        var olderForAlice = await new ListMessagesQueryHandler(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments())
+            .Handle(new ListMessagesQuery(_workspaceId, group.Id, null, null, null, 50), CancellationToken.None);
+        olderForAlice.Data!.Items.Select(m => m.Content).Should().Contain("before dave", "the people who were there keep the whole history");
+        group.GetActiveMembership(dave)!.ReadSequence.Should().BeGreaterThan(0, "the messages before the join are not unread");
     }
 
     [Fact]

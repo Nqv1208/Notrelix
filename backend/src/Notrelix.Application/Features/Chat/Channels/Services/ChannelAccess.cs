@@ -68,6 +68,13 @@ public static class ChannelAccess
     }
 
     /// <summary>
+    /// The earliest moment a person may read in a space: the time they joined a group conversation, so a person added later sees the
+    /// history from their join point only (UC-CHT-E03). Null for a channel and for a direct conversation, whose history is whole.
+    /// </summary>
+    public static DateTimeOffset? HistoryFloor(Space space, Guid userId) =>
+        space.Kind == SpaceKind.Group ? space.GetActiveMembership(userId)?.JoinedAt : null;
+
+    /// <summary>
     /// The SQL twin of <see cref="RequireVisible"/>: the live spaces of the Workspace the caller may see now. A public channel is
     /// seen by every non-guest member, anything else (a private channel, a conversation, and a public channel for a Guest) by an
     /// active member only. Owner and Admin get nothing by role (CHT-004). Search reads through this so it cannot drift from the
