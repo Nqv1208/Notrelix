@@ -1,8 +1,9 @@
-import { Button, Skeleton } from "@notrelix/ui-web";
-import { MessagesSquare } from "lucide-react";
+import { Avatar, AvatarFallback, Button, Skeleton, cn } from "@notrelix/ui-web";
 import type { ChatFollowedThread } from "../../core/types/chat";
 import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
+import { avatarToneOf, initialsOf } from "./chat-initials";
+import { formatClock } from "./chat-message-row";
 import { pluralCopy } from "./use-chat-copy";
 
 export interface FollowedThreadsPanelProps {
@@ -12,6 +13,8 @@ export interface FollowedThreadsPanelProps {
   readonly authorName: (userId: string) => string;
   readonly channelName: (spaceId: string) => string;
   readonly onOpenThread: (rootId: string) => void;
+  readonly locale?: string;
+  readonly timeZone?: string;
 }
 
 /**
@@ -26,6 +29,8 @@ export function FollowedThreadsPanel({
   authorName,
   channelName,
   onOpenThread,
+  locale = "vi",
+  timeZone,
 }: FollowedThreadsPanelProps) {
   const followed = hooks.useFollowedThreads(workspaceId, true);
   const reader = hooks.useMarkThreadRead(workspaceId);
@@ -40,6 +45,18 @@ export function FollowedThreadsPanel({
     >
       <h2 className="border-b border-border px-4 py-2.5 text-sm font-semibold">
         {copy.thread.followedTitle}
+        {items.length > 0 ? (
+          <span className="ms-2 text-xs font-normal text-muted-foreground tabular-nums">
+            {pluralCopy(
+              {
+                one: copy.thread.followedCount,
+                other: copy.thread.followedCount,
+              },
+              items.length,
+              { count: items.length },
+            )}
+          </span>
+        ) : null}
       </h2>
       {followed.isPending ? (
         <div role="status" className="flex flex-col gap-3 p-4">
@@ -67,34 +84,52 @@ export function FollowedThreadsPanel({
         </p>
       ) : (
         <ul
-          className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-2"
+          className="flex min-h-0 flex-1 flex-col overflow-y-auto"
           aria-label={copy.thread.followedTitle}
         >
           {items.map((entry) => {
             const unread = entry.thread.unreadReplies;
+            const author = authorName(entry.root.authorId);
+            const when = entry.thread.lastReplyAt;
             return (
               <li
                 key={entry.root.id}
-                className="flex flex-col gap-1.5 rounded-md border border-border p-2.5"
+                className={cn(
+                  "flex items-start gap-3 border-b border-border px-4 py-3",
+                  entry.thread.archived && "opacity-70",
+                )}
                 data-testid="chat-followed-item"
+                data-unread={unread > 0 ? "true" : "false"}
               >
-                <div className="flex items-baseline gap-2 text-xs text-muted-foreground">
-                  <MessagesSquare
-                    className="size-3.5 shrink-0 self-center"
-                    aria-hidden="true"
-                  />
-                  <span className="min-w-0 truncate">
+                <Avatar className="size-9" aria-hidden="true">
+                  <AvatarFallback
+                    className={cn(
+                      "text-compact font-[650]",
+                      avatarToneOf(entry.root.authorId),
+                    )}
+                  >
+                    {initialsOf(author)}
+                  </AvatarFallback>
+                </Avatar>
+                <button
+                  type="button"
+                  onClick={() => onOpenThread(entry.root.id)}
+                  className="flex min-w-0 flex-1 flex-col rounded-md text-start focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none"
+                >
+                  <span className="truncate text-xs text-muted-foreground">
                     {channelName(entry.root.spaceId)}
                   </span>
-                  <span className="shrink-0 font-semibold text-foreground">
-                    {authorName(entry.root.authorId)}
+                  <span
+                    className={cn(
+                      "line-clamp-1 text-sm break-words",
+                      unread > 0 && "font-[650]",
+                    )}
+                  >
+                    {entry.root.deleted
+                      ? copy.list.deleted
+                      : entry.root.content}
                   </span>
-                </div>
-                <p className="line-clamp-2 whitespace-pre-wrap break-words text-sm">
-                  {entry.root.deleted ? copy.list.deleted : entry.root.content}
-                </p>
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="tabular-nums">
+                  <span className="text-xs text-muted-foreground tabular-nums">
                     {pluralCopy(
                       {
                         one: copy.thread.replies_one,
@@ -103,46 +138,55 @@ export function FollowedThreadsPanel({
                       entry.thread.replyCount,
                       { count: entry.thread.replyCount },
                     )}
+                    {when ? ` · ${formatClock(when, locale, timeZone)}` : null}
+                    {entry.thread.archived
+                      ? ` · ${copy.thread.archived}`
+                      : null}
                   </span>
-                  {unread > 0 ? (
-                    <span className="font-semibold text-primary tabular-nums">
-                      {pluralCopy(
-                        {
-                          one: copy.thread.unread_one,
-                          other: copy.thread.unread_other,
-                        },
-                        unread,
-                        { count: unread },
-                      )}
+                  <span className="sr-only">
+                    {author}
+                    {unread > 0
+                      ? `, ${pluralCopy(
+                          {
+                            one: copy.thread.unread_one,
+                            other: copy.thread.unread_other,
+                          },
+                          unread,
+                          { count: unread },
+                        )}`
+                      : ""}
+                    , {copy.thread.openThread}
+                  </span>
+                </button>
+                {unread > 0 ? (
+                  <span className="flex shrink-0 flex-col items-end gap-1">
+                    <span
+                      data-testid="chat-followed-unread"
+                      className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 text-mark-xs font-bold text-primary-foreground tabular-nums"
+                      aria-hidden="true"
+                    >
+                      {unread}
                     </span>
-                  ) : null}
-                  <span className="ms-auto flex gap-1">
                     <Button
                       type="button"
                       size="xs"
-                      variant="outline"
-                      onClick={() => onOpenThread(entry.root.id)}
+                      variant="ghost"
+                      disabled={reader.isPending}
+                      onClick={() =>
+                        reader.mutate({
+                          threadId: entry.root.id,
+                          upToReplySequence: entry.thread.replyCount,
+                        })
+                      }
                     >
-                      {copy.thread.openThread}
+                      {copy.thread.markRead}
                     </Button>
-                    {unread > 0 ? (
-                      <Button
-                        type="button"
-                        size="xs"
-                        variant="ghost"
-                        disabled={reader.isPending}
-                        onClick={() =>
-                          reader.mutate({
-                            threadId: entry.root.id,
-                            upToReplySequence: entry.thread.replyCount,
-                          })
-                        }
-                      >
-                        {copy.thread.markRead}
-                      </Button>
-                    ) : null}
                   </span>
-                </div>
+                ) : entry.thread.archived ? (
+                  <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-micro text-muted-foreground">
+                    {copy.thread.archivedChip}
+                  </span>
+                ) : null}
               </li>
             );
           })}

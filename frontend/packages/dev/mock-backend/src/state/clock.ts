@@ -48,6 +48,11 @@ export function createMockClock(seed: number = DEFAULT_SEED): MockClock {
 
 export const defaultClock: MockClock = createMockClock(DEFAULT_SEED);
 
+/** An ISO instant moved by whole days (the only place a mock date is built from another). */
+export function addDays(iso: string, days: number): string {
+  return new Date(Date.parse(iso) + days * 86_400_000).toISOString();
+}
+
 /** A UTC instant from calendar parts (the month is 0-based). */
 export function utcInstant(
   year: number,

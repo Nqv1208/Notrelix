@@ -7304,6 +7304,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/spaces/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the deleted spaces that can still be restored (30 days), for a workspace Owner or Admin */
+        get: operations["Workspaces.Spaces.GetDeletedSpaces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}": {
         parameters: {
             query?: never;
@@ -7316,7 +7333,7 @@ export interface paths {
         /** Rename a space */
         put: operations["Workspaces.Spaces.RenameSpace"];
         post?: never;
-        /** Permanently delete a space */
+        /** Delete a space (restorable for 30 days) */
         delete: operations["Workspaces.Spaces.DeleteSpace"];
         options?: never;
         head?: never;
@@ -11830,6 +11847,17 @@ export interface components {
             language?: string | null;
             timeZone?: string | null;
             weekStart?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetDeletedSpaces.DeletedSpaceDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            /** Format: uuid */
+            parentSpaceId?: string | null;
+            /** Format: date-time */
+            deletedAt?: string;
+            /** Format: date-time */
+            restorableUntil?: string;
         };
         "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto": {
             /** Format: uuid */
@@ -30737,6 +30765,28 @@ export interface operations {
             };
         };
     };
+    "Workspaces.Spaces.GetDeletedSpaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetDeletedSpaces.DeletedSpaceDto"][];
+                };
+            };
+        };
+    };
     "Workspaces.Spaces.GetSpace": {
         parameters: {
             query?: never;
@@ -30789,7 +30839,9 @@ export interface operations {
     };
     "Workspaces.Spaces.DeleteSpace": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;

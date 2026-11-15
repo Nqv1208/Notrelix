@@ -25,6 +25,7 @@ public class SystemContextUsageTests
         "RestoreWorkspace.cs",
         "GetDeletedWorkspaces.cs",
         "RestoreSpace.cs",
+        "GetDeletedSpaces.cs",
         "RestoreTeam.cs",
         "RestoreBoard.cs",
         "StaleFieldGuard.cs",
