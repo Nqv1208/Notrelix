@@ -151,6 +151,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm check:architecture
       - run: pnpm check:i18n
+      - run: pnpm check:mock-consumer-surface
       - run: pnpm codegen:check
       - run: pnpm test:node
       - run: pnpm test:web
