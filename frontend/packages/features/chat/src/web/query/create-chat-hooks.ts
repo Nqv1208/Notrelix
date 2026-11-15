@@ -5,6 +5,7 @@ import {
   useInfiniteQuery,
   useMutation,
   useQuery,
+  replaceEqualDeep,
   useQueryClient,
 } from "@tanstack/react-query";
 import { useRef } from "react";
@@ -222,6 +223,7 @@ export function createChatHooks(deps: ChatHookDeps) {
         last.hasNewer && last.items.length > 0
           ? { after: last.items[last.items.length - 1]!.sequence }
           : undefined,
+      structuralSharing: shareMessages,
       enabled: workspaceId.length > 0 && channelId.length > 0,
       staleTime: CHANNEL_STALE_MS,
     });
@@ -1381,6 +1383,29 @@ export function createChatHooks(deps: ChatHookDeps) {
 export type ChatHooks = ReturnType<typeof createChatHooks>;
 
 /** The loaded message pages as one ordered list (oldest first, once per id). */
+/**
+ * Keeps the identity of a message whose content did not change. The default sharing compares pages by position,
+ * so loading an older page shifts every index and clones every loaded message; each clone re-renders its row.
+ */
+export function shareMessages(oldData: unknown, newData: unknown): unknown {
+  const before = oldData as InfiniteData<ChatMessagePage> | undefined;
+  const after = newData as InfiniteData<ChatMessagePage> | undefined;
+  if (!before || !after) return newData;
+  const known = new Map<string, ChatMessage>();
+  for (const page of before.pages)
+    for (const message of page.items) known.set(message.id, message);
+  return {
+    ...after,
+    pages: after.pages.map((page) => ({
+      ...page,
+      items: page.items.map((message) => {
+        const old = known.get(message.id);
+        return old ? replaceEqualDeep(old, message) : message;
+      }),
+    })),
+  };
+}
+
 export function flattenPages(
   data: InfiniteData<ChatMessagePage, ChatMessageCursor> | undefined,
 ): ChatMessage[] {

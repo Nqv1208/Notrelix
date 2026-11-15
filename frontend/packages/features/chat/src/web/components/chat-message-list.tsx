@@ -1,4 +1,10 @@
-import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import {
   ArrowDown,
   ChevronLeft,
@@ -44,6 +50,7 @@ import { ChatTypingBubble } from "./chat-typing-indicator";
 const BOTTOM_SLACK_PX = 48;
 /** Within this many pixels of the top the next older page is requested. */
 const TOP_TRIGGER_PX = 160;
+const NO_REACTIONS: readonly never[] = [];
 
 export type ChatListStatus = "loading" | "ready" | "error" | "no-access";
 
@@ -160,6 +167,28 @@ export function ChatMessageList(props: ChatMessageListProps) {
   const [atBottom, setAtBottom] = useState(true);
   const [activity] = useState(createRowActivityStore);
   const typingIds = props.typingIds ?? [];
+  // The row handlers keep one identity for the life of the list, so memoised rows do not re-render when the
+  // workspace around the list does; each call reaches the newest props.
+  const latest = useRef(props);
+  useLayoutEffect(() => {
+    latest.current = props;
+  });
+  const rowHandlers = useMemo(
+    () => ({
+      onEdit: (m: ChatMessage) => latest.current.onEdit?.(m),
+      onDelete: (m: ChatMessage) => latest.current.onDelete?.(m),
+      onModerate: (m: ChatMessage) => latest.current.onModerate?.(m),
+      onReact: (m: ChatMessage, emoji: string, add: boolean) =>
+        latest.current.onReact?.(m, emoji, add),
+      onReply: (m: ChatMessage) => latest.current.onReply?.(m),
+      onOpenThread: (m: ChatMessage) => latest.current.onOpenThread?.(m),
+      onTogglePin: (m: ChatMessage, pinned: boolean) =>
+        latest.current.onTogglePin?.(m, pinned),
+      onOpenQuote: (id: string) => latest.current.onOpenQuote?.(id),
+      authorName: (id: string) => latest.current.authorName(id),
+    }),
+    [],
+  );
   // Messages newer than the newest one at the first render fade in; the history already there does not.
   const baseline = useRef<{ space: string; sequence: number } | null>(null);
   const firstMessage = rows.find((row) => row.kind === "message");
@@ -484,21 +513,33 @@ export function ChatMessageList(props: ChatMessageListProps) {
                       locale={locale}
                       timeZone={timeZone}
                       copy={copy}
-                      onEdit={props.onEdit}
-                      onDelete={props.onDelete}
-                      onModerate={props.onModerate}
+                      onEdit={props.onEdit ? rowHandlers.onEdit : undefined}
+                      onDelete={
+                        props.onDelete ? rowHandlers.onDelete : undefined
+                      }
+                      onModerate={
+                        props.onModerate ? rowHandlers.onModerate : undefined
+                      }
                       quote={props.quoteOf?.(row.message) ?? null}
                       thread={threadView(props.threadCounts, row.message)}
                       pinned={props.pinnedIds?.has(row.message.id) ?? false}
-                      reactions={row.message.reactions ?? []}
+                      reactions={row.message.reactions ?? NO_REACTIONS}
                       workspaceId={props.workspaceId}
                       hooks={props.hooks}
-                      authorName={props.authorName}
-                      onReact={props.onReact}
-                      onReply={props.onReply}
-                      onOpenThread={props.onOpenThread}
-                      onTogglePin={props.onTogglePin}
-                      onOpenQuote={props.onOpenQuote}
+                      authorName={rowHandlers.authorName}
+                      onReact={props.onReact ? rowHandlers.onReact : undefined}
+                      onReply={props.onReply ? rowHandlers.onReply : undefined}
+                      onOpenThread={
+                        props.onOpenThread
+                          ? rowHandlers.onOpenThread
+                          : undefined
+                      }
+                      onTogglePin={
+                        props.onTogglePin ? rowHandlers.onTogglePin : undefined
+                      }
+                      onOpenQuote={
+                        props.onOpenQuote ? rowHandlers.onOpenQuote : undefined
+                      }
                       attachmentsReadOnly={props.attachmentsReadOnly}
                     />
                   )}
