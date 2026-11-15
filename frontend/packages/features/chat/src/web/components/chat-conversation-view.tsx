@@ -111,7 +111,7 @@ export function ChatConversationHeader({
             {subtitle}
           </span>
           {blocked ? (
-            <span className="shrink-0 rounded-full border border-border px-1.5 text-[11px] font-medium">
+            <span className="shrink-0 rounded-full border border-border px-1.5 text-xs font-medium">
               {copy.dm.details.blockedBadge}
             </span>
           ) : null}
