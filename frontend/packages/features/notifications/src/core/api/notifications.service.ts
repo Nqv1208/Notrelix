@@ -21,7 +21,7 @@ export interface NotificationsEndpoints {
     // PENDING BACKEND
     unreadCount?: string;
     archive?: (notificationId: string) => string;
-    preferences: (workspaceId: string) => string;
+    preferences: string;
   };
 }
 
@@ -104,13 +104,9 @@ export function createNotificationsService(
     },
 
     /** `Collaboration.Preferences.GetNotificationPreferences`. */
-    async getPreferences(
-      workspaceId: string,
-    ): Promise<NotificationPreferences> {
+    async getPreferences(): Promise<NotificationPreferences> {
       return toPreferences(
-        await api.get<PreferencesWire>(
-          endpoints.notifications.preferences(workspaceId),
-        ),
+        await api.get<PreferencesWire>(endpoints.notifications.preferences),
       );
     },
 
@@ -119,20 +115,17 @@ export function createNotificationsService(
      * cells that changed are sent, with the version they were read at. A stale
      * version answers 412; the caller refetches.
      */
-    async updatePreferences(
-      workspaceId: string,
-      input: {
-        readonly expectedVersion: number;
-        readonly rows: readonly {
-          readonly type: string;
-          readonly inApp?: boolean;
-          readonly email?: boolean;
-        }[];
-      },
-    ): Promise<NotificationPreferences> {
+    async updatePreferences(input: {
+      readonly expectedVersion: number;
+      readonly rows: readonly {
+        readonly type: string;
+        readonly inApp?: boolean;
+        readonly email?: boolean;
+      }[];
+    }): Promise<NotificationPreferences> {
       return toPreferences(
         await api.patch<PreferencesWire>(
-          endpoints.notifications.preferences(workspaceId),
+          endpoints.notifications.preferences,
           input,
         ),
       );

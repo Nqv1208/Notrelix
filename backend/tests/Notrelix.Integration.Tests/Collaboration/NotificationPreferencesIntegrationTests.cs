@@ -10,7 +10,7 @@ namespace Notrelix.Integration.Tests.Collaboration;
 
 /// <summary>
 /// The notification preference matrix owned by Collaboration on PostgreSQL through the real pipeline
-/// (NRX-003, NRX-004, NRX-012): a member reads and changes only their own matrix of their own workspace,
+/// (NRX-003, NRX-004, NRX-012): a person reads and changes only their own matrix, one for every workspace,
 /// defaults fill unchanged cells, stale versions are refused and unknown types are rejected atomically.
 /// </summary>
 [Collection("Database")]
@@ -108,7 +108,7 @@ public sealed class NotificationPreferencesIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Preferences_ArePerPerson_AndPerWorkspace()
+    public async Task Preferences_ArePerPerson_AndTheSameInEveryWorkspace()
     {
         var stack = await _host.SeedWorkspaceAsync();
         var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Member");
@@ -116,11 +116,14 @@ public sealed class NotificationPreferencesIntegrationTests : IAsyncLifetime
 
         (await ReadAsync(stack, member)).Rows.Single(r => r.Type == "mention").Should().Be(new NotificationPreferenceRowDto("mention", false, false));
         (await ReadAsync(stack, stack.OwnerId)).Rows.Single(r => r.Type == "mention").Should().Be(new NotificationPreferenceRowDto("mention", true, true),
-            "another member's matrix is never the caller's");
+            "another member's matrix is never the caller's, a workspace admin's included");
 
-        // The same person in a second workspace of the same account has an independent matrix.
+        // The same person reads the one matrix from any other workspace's context.
         var second = await _host.SeedWorkspaceAsync();
-        (await ReadAsync(second, second.OwnerId)).Version.Should().Be(0);
+        var fromSecond = await ReadAsync(second, member);
+        fromSecond.Version.Should().Be(1);
+        fromSecond.Rows.Single(r => r.Type == "mention").Should().Be(new NotificationPreferenceRowDto("mention", false, false));
+        (await _host.ReadAsync(c => c.NotificationPreferenceSets.CountAsync())).Should().Be(1);
     }
 
     [Fact]
@@ -136,54 +139,29 @@ public sealed class NotificationPreferencesIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task NonMembers_AndMembersOfAnotherWorkspace_AreToldNothingExists_ForReadAndUpdate()
+    public async Task APersonWithoutAnyWorkspaceMembership_StillManagesTheirOwnMatrix()
     {
         var stack = await _host.SeedWorkspaceAsync();
-        var other = await _host.SeedWorkspaceAsync();
-        var otherGuest = await _host.AddMemberAsync(other, WorkspaceRole.Guest, "Other guest");
         var outsider = await _host.AddOutsiderAsync(stack);
 
-        foreach (var (accountId, userId) in new[] { (stack.AccountId, outsider), (other.AccountId, other.OwnerId), (other.AccountId, otherGuest) })
-        {
-            using var provider = _host.CreateProvider(accountId, userId);
-            var read = () => OrgTreeTestHost.QueryAsync(provider, new GetNotificationPreferencesQuery(stack.WorkspaceId));
-            var write = () => OrgTreeTestHost.SendAsync(provider,
-                new UpdateNotificationPreferencesCommand(stack.WorkspaceId, 0, [new NotificationPreferenceRowChange("mention", false, null)]));
+        (await ReadAsync(stack, outsider)).Version.Should().Be(0);
+        var saved = await UpdateAsync(stack, outsider, 0, new NotificationPreferenceRowChange("mention", false, null));
 
-            await read.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
-            await write.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
-        }
-
-        (await _host.ReadAsync(c => c.NotificationPreferenceSets.CountAsync())).Should().Be(0);
-    }
-
-    [Fact]
-    public async Task ASuspendedMember_IsToldNothingExists()
-    {
-        var stack = await _host.SeedWorkspaceAsync();
-        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Suspended");
-        await _host.WithSystemContextAsync(async c =>
-        {
-            var row = await c.WorkspaceMembers.SingleAsync(m => m.WorkspaceId == stack.WorkspaceId && m.UserId == member);
-            row.Suspend(stack.OwnerId, OrgTreeTestHost.BaseTime, 1);
-        });
-
-        var read = () => ReadAsync(stack, member);
-
-        await read.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
+        saved.Version.Should().Be(1);
+        (await ReadAsync(stack, stack.OwnerId)).Version.Should().Be(0);
     }
 
     private async Task<NotificationPreferencesDto> ReadAsync(OrgStack stack, Guid userId)
     {
         using var provider = _host.CreateProvider(stack.AccountId, userId);
-        return await OrgTreeTestHost.QueryAsync(provider, new GetNotificationPreferencesQuery(stack.WorkspaceId));
+        return await OrgTreeTestHost.QueryAsync(provider, new GetNotificationPreferencesQuery());
     }
 
     private async Task<NotificationPreferencesDto> UpdateAsync(
         OrgStack stack, Guid userId, long expectedVersion, params NotificationPreferenceRowChange[] rows)
     {
         using var provider = _host.CreateProvider(stack.AccountId, userId);
-        var result = await OrgTreeTestHost.SendAsync(provider, new UpdateNotificationPreferencesCommand(stack.WorkspaceId, expectedVersion, rows));
+        var result = await OrgTreeTestHost.SendAsync(provider, new UpdateNotificationPreferencesCommand(expectedVersion, rows));
         return ((Application.Common.Models.Result<NotificationPreferencesDto>)result!).Data!;
     }
 }

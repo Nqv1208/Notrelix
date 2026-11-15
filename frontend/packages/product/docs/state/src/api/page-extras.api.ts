@@ -1,5 +1,6 @@
 import type { Block } from "@notrelix/docs-core";
 import type { DocsApiClient, PageApiEndpoints } from "./page.api";
+import { readAllCursorPages } from "./read-all-pages";
 
 /**
  * `Documents.Pages.GetPageBacklinks`: the pages that name this page (a page
@@ -208,7 +209,8 @@ export function createPageExtrasApi(
         } catch (error) {
           if ((error as { status?: unknown }).status !== 412) throw error;
           // A retry after the line was already marked: the stored line has the chip.
-          const stored = await api.get<{ id: string }[]>(
+          const stored = await readAllCursorPages<{ id: string }>(
+            api,
             endpoints.pages.blocks(pageId),
           );
           const line = stored.find((candidate) => candidate.id === block.id);

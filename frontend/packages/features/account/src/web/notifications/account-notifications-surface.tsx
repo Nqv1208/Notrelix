@@ -33,8 +33,8 @@ export type AccountNotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
 export type AccountChannelChoice = Record<AccountNotificationChannel, boolean>;
 
 /**
- * The values the notifications page edits and saves: the member's choices in
- * one workspace, with the version the save must quote (`expectedVersion`).
+ * The values the notifications page edits and saves: the person's choices
+ * (one matrix for every workspace), with the version the save must quote (`expectedVersion`).
  */
 export interface AccountNotificationValues {
   readonly version: number;
@@ -249,7 +249,7 @@ function Ready({
 
 /**
  * Account notifications (Final-Account `thong-bao`): the matrix of events by
- * channel (in the app, email) for one workspace and the save. The
+ * channel (in the app, email), the same in every workspace, and the save. The
  * container owns the write and reports it through `save`.
  */
 export function AccountNotificationsSurface({

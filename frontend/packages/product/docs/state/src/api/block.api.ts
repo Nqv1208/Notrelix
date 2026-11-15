@@ -8,12 +8,19 @@ import {
 } from "@notrelix/docs-core";
 import type { BatchBlockItemApi, BlockDtoApi } from "../dto";
 import { mapBlock, toProducerBlockType } from "../model/block.mapper";
+import type { CursorPageDtoApi } from "./read-all-pages";
 import { encodeContent, encodeProperties } from "../model/block-wire";
 import type { DocsApiClient, PageApiEndpoints } from "./page.api";
 
 /** The page numbers blocks by their place in the producer's ordered list. */
-function numbered(blocks: readonly BlockDtoApi[]): Block[] {
-  return blocks.map((dto, index) => mapBlock(dto, (index + 1) * 1000));
+function numbered(blocks: readonly BlockDtoApi[], before = 0): Block[] {
+  return blocks.map((dto, index) => mapBlock(dto, (before + index + 1) * 1000));
+}
+
+/** One window of the block read: the blocks and where the next window starts. */
+export interface BlockWindow {
+  blocks: Block[];
+  nextCursor: string | null;
 }
 
 /** The draft a page-side payload (`type` plus flat properties) stands for. */
@@ -29,11 +36,40 @@ export function createBlockApi(
   endpoints: PageApiEndpoints,
 ) {
   return {
-    /** The blocks in the producer's order, numbered by their place in it. */
-    async getList(pageId: string): Promise<Block[]> {
-      return numbered(
-        await api.get<BlockDtoApi[]>(endpoints.pages.blocks(pageId)),
+    /**
+     * `Documents.Blocks.ListPageBlocks` answers a cursor page of at most 1 000
+     * blocks in the producer's order; `before` is how many blocks come earlier,
+     * so the numbering carries on across windows.
+     */
+    async getWindow(
+      pageId: string,
+      cursor?: string | null,
+      before = 0,
+    ): Promise<BlockWindow> {
+      const url = endpoints.pages.blocks(pageId);
+      const body = await api.get<CursorPageDtoApi<BlockDtoApi>>(
+        cursor ? `${url}?cursor=${encodeURIComponent(cursor)}` : url,
       );
+      return {
+        blocks: numbered(body.items ?? [], before),
+        nextCursor: body.nextCursor ?? null,
+      };
+    },
+
+    /** Every block of the page, every window read to the end. */
+    async getList(pageId: string): Promise<Block[]> {
+      const blocks: Block[] = [];
+      let cursor: string | null = null;
+      do {
+        const window: BlockWindow = await this.getWindow(
+          pageId,
+          cursor,
+          blocks.length,
+        );
+        blocks.push(...window.blocks);
+        cursor = window.nextCursor;
+      } while (cursor);
+      return blocks;
     },
 
     /** `Documents.Blocks.CreateBlock` answers the stored block. */

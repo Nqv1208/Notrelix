@@ -67,7 +67,7 @@ public sealed class FormSubmissionNotificationConsumer : IConsumer<FormSubmissio
         var sets = await _notifications.NotificationPreferenceSets
             .AsNoTracking()
             .Include(s => s.Entries)
-            .Where(s => s.AccountId == msg.AccountIdValue && s.WorkspaceId == msg.WorkspaceIdValue && recipients.Contains(s.UserId))
+            .Where(s => recipients.Contains(s.UserId))
             .ToListAsync(ct);
 
         var now = DateTimeOffset.UtcNow;

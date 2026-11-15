@@ -131,11 +131,10 @@ public sealed class ChatDigestComposer(
         IReadOnlyList<Person> people, ChatDigestWindow window, int maxItems, DateTimeOffset now, CancellationToken cancellationToken)
     {
         var userIds = people.Select(p => p.UserId).Distinct().ToList();
-        var workspaceIds = people.Select(p => p.WorkspaceId).Distinct().ToList();
 
         var sets = await context.NotificationPreferenceSets.AsNoTracking()
             .Include(s => s.Entries)
-            .Where(s => workspaceIds.Contains(s.WorkspaceId) && userIds.Contains(s.UserId))
+            .Where(s => userIds.Contains(s.UserId))
             .ToListAsync(cancellationToken);
 
         var keys = people.ToDictionary(p => p, p => window.DeduplicationKey(p.WorkspaceId, p.UserId));
@@ -156,7 +155,7 @@ public sealed class ChatDigestComposer(
                 continue;
             }
 
-            var set = sets.FirstOrDefault(s => s.WorkspaceId == person.WorkspaceId && s.UserId == person.UserId);
+            var set = sets.FirstOrDefault(s => s.UserId == person.UserId);
             var digestOn = set?.IsEnabled(NotificationTypes.Digest, NotificationChannels.Email)
                 ?? NotificationPreferenceDefaults.IsEnabled(NotificationTypes.Digest, NotificationChannels.Email);
             if (!digestOn)

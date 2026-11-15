@@ -63,7 +63,7 @@ public sealed class ItemFollowerNotifierPreferenceTests
         params NotificationPreferenceChange[] changes)
     {
         var context = CreateContext();
-        context.NotificationPreferenceSets.Add(NotificationPreferenceSet.Create(Account, Workspace, Person, changes, Now)!);
+        context.NotificationPreferenceSets.Add(NotificationPreferenceSet.Create(Person, changes, Now)!);
         // Postgres fills quiet_hours_json from its '{}' column default; the in-memory store needs the value set.
         foreach (var tracked in context.ChangeTracker.Entries())
         {

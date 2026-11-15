@@ -21,7 +21,9 @@ const BLOCKS = [{ id: "b1", pageId: "p1", type: "Text", version: 1 }];
 describe("mobile document read", () => {
   it("reads the page and its blocks with the session cookie", async () => {
     const fetchImpl = vi.fn(async (url: string, _init?: RequestInit) =>
-      jsonResponse(url.endsWith("/blocks") ? BLOCKS : PAGE),
+      jsonResponse(
+        url.endsWith("/blocks") ? { items: BLOCKS, nextCursor: null } : PAGE,
+      ),
     );
     const api = createDocumentApi({
       baseUrl: "https://api.test",
@@ -41,10 +43,27 @@ describe("mobile document read", () => {
     });
   });
 
+  it("follows the block cursor window by window to the end", async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.endsWith("/pages/p1")) return jsonResponse(PAGE);
+      return url.includes("cursor=c1")
+        ? jsonResponse({ items: [{ id: "b2" }], nextCursor: null })
+        : jsonResponse({ items: [{ id: "b1" }], nextCursor: "c1" });
+    });
+    const api = createDocumentApi({
+      baseUrl: "https://api.test",
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    const read = await api.read("w1", "p1");
+    expect(read.blocks.map((block) => block.id)).toEqual(["b1", "b2"]);
+  });
+
   it("answers no access for a page of another workspace", async () => {
     const fetchImpl = vi.fn(async (url: string) =>
       jsonResponse(
-        url.endsWith("/blocks") ? [] : { ...PAGE, workspaceId: "other" },
+        url.endsWith("/blocks")
+          ? { items: [], nextCursor: null }
+          : { ...PAGE, workspaceId: "other" },
       ),
     );
     const api = createDocumentApi({

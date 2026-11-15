@@ -8,6 +8,7 @@ import {
   useCreateItemWithDetails,
   useDeleteCard,
   useForm,
+  useFormSubmissionCounts,
   useFormSubmissions,
   useFormWrites,
   useFullBoard,
@@ -328,6 +329,7 @@ export function FormInboxPage({
   const { locale } = useLocale();
   const formQuery = useForm(formId, workspaceId);
   const submissions = useFormSubmissions(formId, workspaceId);
+  const totals = useFormSubmissionCounts(formId, workspaceId);
   const writes = useFormWrites(boardId, workspaceId);
   const { board, groups, fieldDefinitions } = useFullBoard(
     boardId,
@@ -505,6 +507,7 @@ export function FormInboxPage({
         form={form}
         fields={fields}
         submissions={visible}
+        counts={totals.data}
         hasMore={submissions.hasNextPage}
         loadingMore={submissions.isFetchingNextPage}
         onLoadMore={() => void submissions.fetchNextPage()}

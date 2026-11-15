@@ -15,6 +15,9 @@ interface InboxEntry {
   readonly id: string;
   readonly type: string;
   readonly excerpt: string | null;
+  readonly unread: boolean;
+  readonly needsReply: boolean;
+  readonly snoozedUntil: string | null;
   readonly target: { readonly id: string } | null;
 }
 interface Preferences {
@@ -218,4 +221,127 @@ test("a follower is told once per change, and not while the thread is muted", as
     s.reader.getByText(`After unmute ${s.unique}`).first(),
   ).toBeVisible();
   await s.context.close();
+});
+
+test("the recipient reads, finishes, snoozes and replies to mentions from the Inbox, and each change survives a reload", async ({
+  browser,
+  page,
+}) => {
+  const s = await scene(browser, page);
+  const { reader } = s;
+  const phrase = (step: string) => `${step} ${s.unique}`;
+  const posted = (suffix: RegExp) =>
+    reader.waitForResponse(
+      (response) =>
+        response.request().method() === "POST" && suffix.test(response.url()),
+    );
+  const listed = async (state: "inbox" | "done" | "snoozed", text: string) =>
+    (
+      await apiRead<{ items: InboxEntry[] }>(
+        reader,
+        `/workspaces/${s.workspace.id}/inbox?limit=50&state=${state}`,
+      )
+    ).items.find((entry) => entry.excerpt?.includes(text));
+  const reload = async () => {
+    await reader.goto(`/workspaces/${s.workspace.id}/inbox`);
+    await expect(
+      reader.getByRole("heading", { level: 1, name: "Inbox" }),
+    ).toBeVisible();
+  };
+  const open = async (text: string) => {
+    await reload();
+    await reader.getByText(text).first().click();
+  };
+
+  try {
+    for (const step of ["Read", "Done", "Snooze", "Reply"]) {
+      await s.comment(phrase(step), true);
+      await expect
+        .poll(async () => Boolean(await s.entryWith(phrase(step))), {
+          message: `${step} mention delivered`,
+          timeout: 60_000,
+        })
+        .toBe(true);
+    }
+
+    // Mark read: unread before, read after, and still read after a reload.
+    const read = phrase("Read");
+    expect((await s.entryWith(read))!.unread).toBe(true);
+    await open(read);
+    const marked = posted(/\/inbox\/[^/]+\/read$/);
+    await reader.getByRole("button", { name: /^Mark as read/ }).click();
+    expect((await marked).status()).toBeLessThan(300);
+    await expect
+      .poll(async () => (await s.entryWith(read))!.unread)
+      .toBe(false);
+    await reload();
+    expect((await s.entryWith(read))!.unread).toBe(false);
+    // Needs action lists only what is still open; the All tab keeps the read entry.
+    await reader.getByRole("tab", { name: "All" }).click();
+    await expect(reader.getByText(read).first()).toBeVisible();
+
+    // Mark done leaves the default list and sits under Done; moving it back returns it.
+    const done = phrase("Done");
+    await open(done);
+    const finished = posted(/\/inbox\/[^/]+\/done$/);
+    await reader.getByRole("button", { name: "Mark as done" }).click();
+    expect((await finished).status()).toBeLessThan(300);
+    await expect(reader.getByText(done)).toHaveCount(0);
+    await reload();
+    await expect(reader.getByText(done)).toHaveCount(0);
+    expect(await listed("inbox", done)).toBeUndefined();
+    expect(await listed("done", done)).toBeDefined();
+    await reader.getByRole("button", { name: "Done", exact: true }).click();
+    await reader.getByText(done).first().click();
+    const reopened = posted(/\/inbox\/[^/]+\/reopen$/);
+    await reader.getByRole("button", { name: "Move back to inbox" }).click();
+    expect((await reopened).status()).toBeLessThan(300);
+    await reload();
+    await expect(reader.getByText(done).first()).toBeVisible();
+    expect(await listed("inbox", done)).toBeDefined();
+    expect(await listed("done", done)).toBeUndefined();
+
+    // Snooze: the entry leaves the default list and appears under Snoozed.
+    const snooze = phrase("Snooze");
+    await open(snooze);
+    const snoozed = posted(/\/inbox\/[^/]+\/snooze$/);
+    await reader.getByRole("button", { name: /Remind me later/ }).click();
+    await reader.getByRole("menuitem", { name: "In 1 hour" }).click();
+    expect((await snoozed).status()).toBeLessThan(300);
+    await expect(reader.getByText(snooze)).toHaveCount(0);
+    await reload();
+    await expect(reader.getByText(snooze)).toHaveCount(0);
+    expect(await listed("inbox", snooze)).toBeUndefined();
+    const held = await listed("snoozed", snooze);
+    expect(held?.snoozedUntil).toBeTruthy();
+    await reader.getByRole("button", { name: "Snoozed", exact: true }).click();
+    await expect(reader.getByText(snooze).first()).toBeVisible();
+
+    // Reply: a comment lands on the item and the entry stops needing a reply.
+    const reply = phrase("Reply");
+    expect((await s.entryWith(reply))!.needsReply).toBe(true);
+    await open(reply);
+    await reader
+      .getByRole("textbox", { name: /^Reply/ })
+      .fill(`Answered ${s.unique}`);
+    const sent = posted(/\/board-items\/[^/]+\/comments$/);
+    await reader.getByRole("button", { name: /^Send/ }).click();
+    expect((await sent).status()).toBeLessThan(300);
+    const comments = await apiRead<{ contentMd?: string; content?: string }[]>(
+      page,
+      `/board-items/${s.itemId}/comments`,
+    );
+    expect(
+      comments.some((c) =>
+        (c.contentMd ?? c.content ?? "").includes(`Answered ${s.unique}`),
+      ),
+    ).toBe(true);
+    await expect
+      .poll(async () => (await s.entryWith(reply))?.needsReply)
+      .toBe(false);
+    await reload();
+    expect((await s.entryWith(reply))!.needsReply).toBe(false);
+  } finally {
+    await s.context.close();
+  }
 });

@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Preferences.DTOs;
 using Notrelix.Domain.Collaboration.Preferences;
@@ -6,24 +7,19 @@ using Notrelix.Domain.Collaboration.Preferences;
 namespace Notrelix.Application.Features.Collaboration.Preferences.Commands.UpdateNotificationPreferences;
 
 /// <summary>
-/// Changes the caller's own notification preference matrix in a Workspace (accepted 2026-10-23, owned by
-/// Collaboration). Partial: only the named channels of the named types change, all or nothing; a request
-/// whose every value already holds is a no-op that keeps the version. Any member of the Workspace may do
-/// it (<c>ViewWorkspace</c>); the subject is always the principal.
+/// Changes the caller's own notification preference matrix (accepted 2026-10-23, owned by Collaboration;
+/// one matrix per account applied in every Workspace, owner decision 2026-11-15). Partial: only the named
+/// channels of the named types change, all or nothing; a request whose every value already holds is a
+/// no-op that keeps the version. Any signed-in person may do it; the subject is always the principal.
 /// <see cref="ExpectedVersion"/> is the <c>version</c> of the last read (0 when none was saved). The matrix
 /// has no row before its first change, which the pipeline's tracked-aggregate version binding cannot
 /// express, so the handler compares the version itself and the aggregate's concurrency token closes the
 /// race at the database (the same shape as account preferences).
 /// </summary>
 public record UpdateNotificationPreferencesCommand(
-    Guid WorkspaceId,
     long ExpectedVersion,
     IReadOnlyList<NotificationPreferenceRowChange> Rows)
-    : ICommand<Result<NotificationPreferencesDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
-{
-    PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
-    ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
-}
+    : ICommand<Result<NotificationPreferencesDto>>, IWriteRequest, IAuthenticatedRequest, IGlobalRequest;
 
 public sealed class UpdateNotificationPreferencesCommandValidator : AbstractValidator<UpdateNotificationPreferencesCommand>
 {
@@ -31,7 +27,6 @@ public sealed class UpdateNotificationPreferencesCommandValidator : AbstractVali
 
     public UpdateNotificationPreferencesCommandValidator()
     {
-        RuleFor(x => x.WorkspaceId).NotEmpty();
         RuleFor(x => x.ExpectedVersion)
             .GreaterThanOrEqualTo(0)
             .WithMessage("ExpectedVersion must be the version from the last read (0 when nothing was saved).");
@@ -65,7 +60,7 @@ public class UpdateNotificationPreferencesCommandHandler : IRequestHandler<Updat
 
         var set = await _context.NotificationPreferenceSets
             .Include(s => s.Entries)
-            .FirstOrDefaultAsync(s => s.WorkspaceId == request.WorkspaceId && s.UserId == userId, ct);
+            .FirstOrDefaultAsync(s => s.UserId == userId, ct);
 
         var currentVersion = set?.Version ?? 0;
         if (currentVersion != request.ExpectedVersion)
@@ -77,7 +72,7 @@ public class UpdateNotificationPreferencesCommandHandler : IRequestHandler<Updat
 
         if (set is null)
         {
-            set = NotificationPreferenceSet.Create(_requestContext.RequireAccountId(), request.WorkspaceId, userId, changes, now);
+            set = NotificationPreferenceSet.Create(userId, changes, now);
             if (set is not null)
                 _context.NotificationPreferenceSets.Add(set);
         }

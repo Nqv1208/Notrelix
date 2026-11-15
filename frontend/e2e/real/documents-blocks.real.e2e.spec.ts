@@ -35,7 +35,10 @@ async function createDoc(page: Page, title: string): Promise<string> {
 }
 
 async function blocks(page: Page, pageId: string): Promise<BlockRow[]> {
-  const rows = await apiRead<BlockRow[]>(page, `/pages/${pageId}/blocks`);
+  const { items: rows } = await apiRead<{ items: BlockRow[] }>(
+    page,
+    `/pages/${pageId}/blocks`,
+  );
   return [...rows].sort((a, b) => (a.position < b.position ? -1 : 1));
 }
 
