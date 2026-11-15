@@ -187,8 +187,8 @@ function PermissionMatrix({
         </p>
       </div>
 
-      <Table aria-label={text.matrixLabel}>
-        <TableHeader>
+      <Table aria-label={text.matrixLabel} className="max-sm:block">
+        <TableHeader className="max-sm:sr-only">
           <TableRow>
             <TableHead scope="col">{text.actionHeader}</TableHead>
             {CHAT_PERMISSION_SUBJECTS.map((subject) => (
@@ -198,16 +198,25 @@ function PermissionMatrix({
             ))}
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody className="max-sm:block">
           {CHAT_CHANNEL_ACTIONS.map((action) => (
-            <TableRow key={action}>
-              <TableHead scope="row" className="font-medium">
+            <TableRow key={action} className="max-sm:block max-sm:py-2">
+              <TableHead
+                scope="row"
+                className="font-medium max-sm:block max-sm:h-auto max-sm:pb-1"
+              >
                 {text.actions[action]}
               </TableHead>
               {CHAT_PERMISSION_SUBJECTS.map((subject) => {
                 const value = cellOf(cells, subject, action);
                 return (
-                  <TableCell key={subject} className="px-1 sm:px-2">
+                  <TableCell
+                    key={subject}
+                    className="px-1 max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-3 max-sm:py-1 sm:px-2"
+                  >
+                    <span aria-hidden className="text-sm sm:hidden">
+                      {text.roles[subject]}
+                    </span>
                     <select
                       aria-label={fillCopy(text.cell, {
                         action: text.actions[action],
@@ -222,7 +231,7 @@ function PermissionMatrix({
                           event.target.value as ChatPermissionCell,
                         )
                       }
-                      className="h-8 w-full min-w-[4.75rem] rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60"
+                      className="h-8 w-full min-w-[4.75rem] max-sm:w-40 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60"
                     >
                       {STATES.filter(
                         (state) =>
