@@ -74,7 +74,8 @@ export function previewOf(
   if (!last || last.text === null || last.text === "") {
     return last ? "" : copy.dm.sidebar.noMessages;
   }
-  if (last.kind === "system") return last.text;
+  if (last.kind === "system")
+    return copy.list.systemText[last.text] ?? last.text;
   if (last.authorId === viewerId)
     return `${copy.dm.sidebar.youPrefix}${last.text}`;
   return conversation.kind === "group"
@@ -97,7 +98,7 @@ export function ChatConversationSection({
       className="flex flex-col"
       data-testid="chat-dm-section"
     >
-      <div className="flex items-center justify-between ps-2 pe-1">
+      <div className="flex items-center justify-between pe-1">
         <h3 id="chat-dm-heading" className={HEADING}>
           {copy.dm.sidebar.heading}
         </h3>

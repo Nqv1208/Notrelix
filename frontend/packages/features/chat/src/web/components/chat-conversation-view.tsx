@@ -107,14 +107,15 @@ export function ChatConversationHeader({
           {title}
         </h1>
         <p className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-          <span className="truncate" data-testid="chat-conversation-subtitle">
-            {subtitle}
-          </span>
           {blocked ? (
             <span className="shrink-0 rounded-full border border-border px-1.5 text-xs font-medium">
               {copy.dm.details.blockedBadge}
             </span>
-          ) : null}
+          ) : (
+            <span className="truncate" data-testid="chat-conversation-subtitle">
+              {subtitle}
+            </span>
+          )}
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-1">

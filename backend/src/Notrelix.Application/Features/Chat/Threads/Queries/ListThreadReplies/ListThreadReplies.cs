@@ -46,8 +46,7 @@ public class ListThreadRepliesQueryHandler(
 
         var space = await ChannelAccess.LoadLiveAsync(db, request.WorkspaceId, root.SpaceId, cancellationToken);
         ChannelAccess.RequireVisible(space, caller, userId);
-        if (ChannelAccess.HistoryFloor(space, userId) is { } floor && root.CreatedAt < floor)
-            throw new NotFoundException(nameof(Message), request.RootMessageId);
+        ChannelAccess.RequireInHistory(space, userId, root);
 
         var thread = await db.ChatThreads.AsNoTracking().FirstOrDefaultAsync(t => t.RootMessageId == root.Id, cancellationToken);
         var follower = await db.ChatThreadFollowers.AsNoTracking().FirstOrDefaultAsync(

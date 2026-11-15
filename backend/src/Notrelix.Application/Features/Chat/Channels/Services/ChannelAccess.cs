@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Workspaces.Public.Members;
+using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Rules;
 using Notrelix.Domain.Chat.Spaces;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
@@ -73,6 +74,13 @@ public static class ChannelAccess
     /// </summary>
     public static DateTimeOffset? HistoryFloor(Space space, Guid userId) =>
         space.Kind == SpaceKind.Group ? space.GetActiveMembership(userId)?.JoinedAt : null;
+
+    /// <summary>A message older than the caller's <see cref="HistoryFloor"/> is the same NotFound as a missing one, so its existence is not revealed.</summary>
+    public static void RequireInHistory(Space space, Guid userId, Message message)
+    {
+        if (HistoryFloor(space, userId) is { } floor && message.CreatedAt < floor)
+            throw new NotFoundException(nameof(Message), message.Id);
+    }
 
     /// <summary>
     /// The SQL twin of <see cref="RequireVisible"/>: the live spaces of the Workspace the caller may see now. A public channel is

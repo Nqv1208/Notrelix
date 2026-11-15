@@ -340,7 +340,7 @@ public class ConversationHandlerTests
         result.Data!.Added.Should().ContainSingle().Which.Should().Be(dave);
         result.Data!.Skipped.Should().ContainSingle().Which.Should().Be(_outsider);
         group.IsActiveMember(dave).Should().BeTrue();
-        _messages.Should().ContainSingle(m => m.IsSystem && m.Content == ChatSystemMessages.MemberAdded);
+        _messages.Should().ContainSingle(m => m.IsSystem && m.Content == ChatSystemMessages.GroupMemberAdded);
     }
 
     [Fact]
@@ -413,7 +413,7 @@ public class ConversationHandlerTests
 
         group.IsActiveMember(_alice).Should().BeFalse();
         group.IsDeleted.Should().BeFalse("the others remain");
-        _messages.Should().ContainSingle(m => m.IsSystem && m.Content == ChatSystemMessages.MemberLeft);
+        _messages.Should().ContainSingle(m => m.IsSystem && m.Content == ChatSystemMessages.GroupMemberLeft);
         _access.Verify(a => a.ChannelPerson(_workspaceId, group.Id, _alice), Times.Once);
     }
 

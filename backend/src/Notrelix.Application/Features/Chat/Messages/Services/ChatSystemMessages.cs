@@ -19,6 +19,8 @@ public sealed class ChatSystemMessages(
     public const string MemberLeft = "left the channel";
     public const string MemberRemoved = "was removed from the channel";
     public const string MemberAdded = "added a member to the channel";
+    public const string GroupMemberAdded = "added a member to the group";
+    public const string GroupMemberLeft = "left the group";
     public const string Archived = "archived the channel";
     public const string Unarchived = "unarchived the channel";
     public const string MessagePinned = "pinned a message";

@@ -381,6 +381,24 @@ public class ReactionHandlerTests
     // ---- Who reacted (UC-CHT-G07) -------------------------------------------------------------
 
     [Fact]
+    public async Task A_member_added_to_a_group_later_gets_not_found_for_the_reactors_of_a_message_from_before_the_join()
+    {
+        var group = Space.CreateGroup(_accountId, _workspaceId, "Team", [_member, _otherMember], _owner, Now);
+        group.AddMember(_guest, MembershipRole.Member, Now.AddHours(1));
+        _spaces.Add(group);
+        var before = Text(group);
+        Existing(before, _otherMember, "👍");
+
+        AsUser(_guest);
+        var act = () => ListHandler().Handle(new ListReactorsQuery(_workspaceId, before.Id, null, null, 50), CancellationToken.None);
+        await act.Should().ThrowAsync<AppNotFoundException>();
+
+        AsUser(_otherMember);
+        (await ListHandler().Handle(new ListReactorsQuery(_workspaceId, before.Id, null, null, 50), CancellationToken.None))
+            .Data!.Items.Should().ContainSingle();
+    }
+
+    [Fact]
     public async Task Listing_reactors_returns_the_earliest_reaction_first_with_its_emoji_and_person()
     {
         var space = Channel();

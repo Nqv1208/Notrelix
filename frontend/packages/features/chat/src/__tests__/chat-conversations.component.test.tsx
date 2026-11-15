@@ -21,7 +21,7 @@ import {
 import { ChatConversationDetails } from "../web/components/chat-conversation-view";
 import { ChatWorkspace } from "../web/components/chat-workspace";
 import type { ChatConversation } from "../core/types/chat";
-import { en } from "../web/components/chat.copy";
+import { en, vi as viCopy } from "../web/components/chat.copy";
 
 const WORKSPACE = mockIds.workspaces.primary;
 
@@ -185,6 +185,20 @@ describe("conversation section of the sidebar", () => {
         "UTC",
       ),
     ).toMatch(/09:05/);
+  });
+
+  it("shows a system line in the language of the copy, group or channel", () => {
+    const system = conversation({
+      lastMessage: {
+        sequence: 2,
+        authorId: "x",
+        kind: "system",
+        text: "left the group",
+        createdAt: "2026-11-10T09:05:00Z",
+      },
+    });
+    expect(previewOf(system, "me", nameOf, viCopy)).toBe("đã rời nhóm");
+    expect(previewOf(system, "me", nameOf, en)).toBe("left the group");
   });
 });
 
