@@ -1356,7 +1356,7 @@ export function ChatWorkspace({
   return (
     <ChatMentionProvider value={mentionContext}>
       <ChatHighlightProvider value={highlightId}>
-        <div className="flex h-full min-h-0 w-full">
+        <div className="relative flex h-full min-h-0 w-full">
           {listOnly ? (
             <div className="flex min-h-0 w-full flex-col bg-sidebar">
               {sidebar}
@@ -1769,6 +1769,11 @@ export function ChatWorkspace({
             <aside
               className={cn(
                 "flex min-h-0 w-full flex-col border-border bg-background md:w-[340px] md:border-s md:shrink-0 xl:w-[360px]",
+                // Between a tablet and a laptop the room would be left about 180 px wide beside the shell, the list and
+                // the details, so a conversation's details slide over the room instead of squeezing it.
+                conversation !== null &&
+                  panel.kind === "details" &&
+                  "md:max-xl:absolute md:max-xl:inset-y-0 md:max-xl:end-0 md:max-xl:z-20 md:max-xl:shadow-lg",
               )}
               aria-label={copy.panel.label}
               data-testid="chat-side-panel"
