@@ -301,9 +301,9 @@ describe.each(["vi", "en"] as const)("form builder (%s)", (locale) => {
       dataTransfer: { effectAllowed: "move" },
     });
     fireEvent.dragOver(rows[2]!);
-    expect(
-      list.querySelectorAll('[aria-hidden="true"].h-\\[3px\\]'),
-    ).toHaveLength(1);
+    expect(list.querySelectorAll('[aria-hidden="true"].h-0\\.5')).toHaveLength(
+      1,
+    );
     fireEvent.drop(rows[2]!);
     await waitFor(() =>
       expect(props.onUpdateQuestion).toHaveBeenCalledWith(
@@ -311,9 +311,9 @@ describe.each(["vi", "en"] as const)("form builder (%s)", (locale) => {
         expect.objectContaining({ position: expect.any(String) }),
       ),
     );
-    expect(
-      list.querySelectorAll('[aria-hidden="true"].h-\\[3px\\]'),
-    ).toHaveLength(0);
+    expect(list.querySelectorAll('[aria-hidden="true"].h-0\\.5')).toHaveLength(
+      0,
+    );
   });
 
   it(`${fui("removed-field", locale)}marks a question whose board field was deleted, names it and keeps the form from publishing (${locale})`, () => {
@@ -433,15 +433,20 @@ describe.each(["vi", "en"] as const)("form builder (%s)", (locale) => {
   });
 
   it(`${fui("preview", locale)}previews the member page with the send button locked (${locale})`, () => {
-    render(locale, { preview: true });
-    expect(screen.getByText(b.previewBanner)).toBeTruthy();
+    const props = render(locale, { preview: true });
+    const dialog = screen.getByRole("dialog", { name: b.previewTitle });
+    expect(within(dialog).getByText(b.previewNote)).toBeTruthy();
     expect(
       (
-        screen.getByRole("button", {
+        within(dialog).getByRole("button", {
           name: copy.fill.submit,
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(true);
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: b.closePreview }),
+    );
+    expect(props.onPreview).toHaveBeenCalledWith(false);
   });
 });
 

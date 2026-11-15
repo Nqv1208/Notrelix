@@ -32,14 +32,17 @@ export function FormStatusChip({
 export function Chip({
   tone,
   children,
+  className,
 }: {
   tone: "brand" | "danger" | "neutral";
   children: ReactNode;
+  className?: string;
 }) {
   return (
     <span
       className={cn(
         CHIP,
+        className,
         tone === "brand" && "bg-brand-subtle text-brand-subtle-foreground",
         tone === "danger" && "bg-danger-subtle text-danger-text",
         tone === "neutral" && "bg-state-hover-strong text-muted-foreground",

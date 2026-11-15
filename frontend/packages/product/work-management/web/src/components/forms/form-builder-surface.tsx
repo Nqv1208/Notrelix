@@ -7,10 +7,19 @@ import {
   GripVertical,
   Info,
   Plus,
+  Trash2,
   TriangleAlert,
   X,
 } from "lucide-react";
-import { Skeleton, cn } from "@notrelix/ui-web";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  Skeleton,
+  cn,
+} from "@notrelix/ui-web";
 import {
   FORM_DESCRIPTION_KEY,
   FORM_DUE_KEY,
@@ -66,6 +75,8 @@ export interface FormBuilderSurfaceProps {
   /** "09:42": when the form was last saved. */
   readonly savedAt?: string;
   readonly preview: boolean;
+  /** Who the preview says it would send as. */
+  readonly user?: { readonly name: string; readonly email?: string };
   /** The board is archived: the form stays readable and nothing on it changes. */
   readonly archived?: boolean;
   readonly onPreview: (on: boolean) => void;
@@ -173,23 +184,43 @@ export function FormBuilderSurface(props: FormBuilderSurfaceProps) {
         </p>
       </Page>
     );
-  if (props.preview)
-    return (
-      <FormFillSurface
-        copy={copy}
-        status="ready"
-        form={form}
-        fields={props.fields}
-        boardTitle={props.boardTitle}
-        todayLabel={props.todayLabel}
-        preview
-        canManage
-        onBack={() => props.onPreview(false)}
-        onReload={props.onReload}
-        onSubmit={async () => ({ ok: false, reason: "failed" })}
-      />
-    );
-  return <Builder {...props} form={form} />;
+  return (
+    <>
+      <Builder {...props} form={form} />
+      {props.preview ? (
+        <Dialog open onOpenChange={(open) => !open && props.onPreview(false)}>
+          <DialogContent
+            showCloseButton={false}
+            aria-describedby={undefined}
+            className="max-h-[calc(100dvh-32px)] gap-3.5 overflow-y-auto rounded-[14px] border border-line bg-popover p-[22px] sm:max-w-[660px]"
+          >
+            <DialogHeader className="flex-row items-center gap-2">
+              <DialogTitle className="flex-1 text-[17px] leading-[1.45] font-[650]">
+                {b.previewTitle}
+              </DialogTitle>
+              <DialogClose className={cn(BUTTON_CLASS.outline, "h-7")}>
+                {b.closePreview}
+              </DialogClose>
+            </DialogHeader>
+            <FormFillSurface
+              copy={copy}
+              status="ready"
+              form={form}
+              fields={props.fields}
+              boardTitle={props.boardTitle}
+              todayLabel={props.todayLabel}
+              user={props.user}
+              preview
+              canManage
+              onBack={() => props.onPreview(false)}
+              onReload={props.onReload}
+              onSubmit={async () => ({ ok: false, reason: "failed" })}
+            />
+          </DialogContent>
+        </Dialog>
+      ) : null}
+    </>
+  );
 }
 
 function Page({ children }: { children: React.ReactNode }) {
@@ -245,6 +276,9 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
   const [copied, setCopied] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const [draft, setDraft] = useState<{ id: string; label: string } | null>(
+    null,
+  );
   const syncedVersion = useRef(form.version);
 
   // A newer read replaces the drafts of the name and description.
@@ -405,217 +439,211 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
         : null;
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto bg-background text-foreground">
-      <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-4 py-5 xl:flex-row xl:items-start lg:px-6">
-        <section
-          aria-label={b.aria}
-          className="min-w-0 flex-1 overflow-hidden rounded-[12px] border border-line bg-popover"
-        >
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 border-b border-line px-4 py-3.5 sm:px-5 xl:flex-nowrap">
-            <button
-              type="button"
-              onClick={props.onBack}
-              className={cn(BUTTON_CLASS.ghost, "h-7 px-1.5")}
-            >
-              <ChevronLeft aria-hidden="true" />
-              {copy.common.back}
-            </button>
-            <span
-              aria-hidden="true"
-              className="hidden h-5 w-px bg-line sm:block"
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto bg-background p-6 text-foreground max-md:p-4">
+      <section
+        aria-label={b.aria}
+        className="mx-auto flex w-full max-w-[1100px] min-w-0 flex-col gap-3.5"
+      >
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+          <button
+            type="button"
+            onClick={props.onBack}
+            className={cn(BUTTON_CLASS.ghost, "h-7 px-2.5")}
+          >
+            <ChevronLeft aria-hidden="true" />
+            {copy.common.back}
+          </button>
+          <div className="min-w-[160px] flex-1 sm:max-w-[280px]">
+            <input
+              value={title}
+              disabled={frozen}
+              maxLength={200}
+              aria-label={b.titleLabel}
+              aria-invalid={titleError || undefined}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setTitleError(false);
+              }}
+              onBlur={() => void saveDetails()}
+              className={cn(INPUT_CLASS, "font-semibold")}
             />
-            <div className="min-w-[160px] flex-1 sm:max-w-[300px]">
-              <input
-                value={title}
-                disabled={frozen}
-                maxLength={200}
-                aria-label={b.titleLabel}
-                aria-invalid={titleError || undefined}
-                onChange={(e) => {
-                  setTitle(e.target.value);
-                  setTitleError(false);
-                }}
-                onBlur={() => void saveDetails()}
-                className={cn(INPUT_CLASS, "font-semibold")}
-              />
-            </div>
-            <FormStatusChip status={form.status} copy={copy} />
-            <span
-              className={cn(
-                HINT_CLASS,
-                "min-w-0 flex-1 truncate max-md:basis-full",
-              )}
-            >
-              {props.savedAt
-                ? fillFormsCopy(b.savedAt, { time: props.savedAt })
-                : ""}
-            </span>
+          </div>
+          <FormStatusChip status={form.status} copy={copy} />
+          <span
+            className={cn(
+              HINT_CLASS,
+              "min-w-0 flex-1 truncate max-md:basis-full",
+            )}
+          >
+            {props.savedAt
+              ? fillFormsCopy(b.savedAt, { time: props.savedAt })
+              : ""}
+          </span>
+          <button
+            type="button"
+            onClick={() => props.onPreview(true)}
+            className={BUTTON_CLASS.outline}
+          >
+            <Eye aria-hidden="true" />
+            {b.preview}
+          </button>
+          {form.status === "draft" ? (
             <button
               type="button"
-              onClick={() => props.onPreview(true)}
+              disabled={blocked || conflict !== null || archived}
+              onClick={() => void publish()}
+              className={BUTTON_CLASS.primary}
+            >
+              {b.publish}
+            </button>
+          ) : null}
+          {form.status === "closed" ? (
+            <button
+              type="button"
+              disabled={archived || conflict !== null}
+              onClick={() => void publish()}
+              className={BUTTON_CLASS.primary}
+            >
+              {b.reopen}
+            </button>
+          ) : null}
+          {form.status === "published" ? (
+            <button
+              type="button"
+              disabled={archived}
+              onClick={() => {
+                void props.onClose().then((r) => {
+                  if (!r.ok)
+                    setProblem({
+                      kind: "save",
+                      retry: () => void props.onClose(),
+                    });
+                });
+              }}
               className={BUTTON_CLASS.outline}
             >
-              <Eye aria-hidden="true" />
-              {b.preview}
+              {b.close}
             </button>
-            {form.status === "draft" ? (
-              <button
-                type="button"
-                disabled={blocked || conflict !== null || archived}
-                onClick={() => void publish()}
-                className={BUTTON_CLASS.primary}
-              >
-                {b.publish}
-              </button>
-            ) : null}
-            {form.status === "closed" ? (
-              <button
-                type="button"
-                disabled={archived || conflict !== null}
-                onClick={() => void publish()}
-                className={BUTTON_CLASS.primary}
-              >
-                {b.reopen}
-              </button>
-            ) : null}
-            {form.status === "published" ? (
-              <button
-                type="button"
-                disabled={archived}
-                onClick={() => {
-                  void props.onClose().then((r) => {
-                    if (!r.ok)
-                      setProblem({
-                        kind: "save",
-                        retry: () => void props.onClose(),
-                      });
-                  });
-                }}
-                className={BUTTON_CLASS.outline}
-              >
-                {b.close}
-              </button>
-            ) : null}
-          </div>
-          {titleError ? (
+          ) : null}
+        </div>
+        {titleError ? (
+          <p role="alert" className="m-0 text-crumb text-danger-text">
+            {b.titleRequired}
+          </p>
+        ) : null}
+
+        <div className="flex flex-col gap-3.5">
+          {conflict ? (
+            <FormConflict
+              copy={cn_}
+              form={form}
+              conflict={conflict}
+              questions={questions}
+              timeZone={Intl.DateTimeFormat().resolvedOptions().timeZone}
+              onTakeTheirs={() => void takeTheirs()}
+              onKeepMine={() => void keepMine()}
+            />
+          ) : outcome ? (
             <p
-              role="alert"
-              className="m-0 px-5 pt-2 text-crumb text-danger-text"
+              role="status"
+              className="m-0 flex items-start gap-2 rounded-[10px] border border-line bg-background p-3 text-item-small text-muted-foreground"
             >
-              {b.titleRequired}
+              <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+              {fillFormsCopy(
+                outcome.kind === "mine" ? cn_.savedMine : cn_.tookTheirs,
+                { by: outcome.by ?? cn_.someone },
+              )}
             </p>
           ) : null}
-
-          <div className="flex flex-col gap-4 p-4 sm:p-5">
-            {conflict ? (
-              <FormConflict
-                copy={cn_}
-                form={form}
-                conflict={conflict}
-                questions={questions}
-                timeZone={Intl.DateTimeFormat().resolvedOptions().timeZone}
-                onTakeTheirs={() => void takeTheirs()}
-                onKeepMine={() => void keepMine()}
-              />
-            ) : outcome ? (
-              <p
-                role="status"
-                className="m-0 flex items-start gap-2 rounded-[10px] border border-line bg-background p-3 text-item-small text-muted-foreground"
-              >
-                <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-                {fillFormsCopy(
-                  outcome.kind === "mine" ? cn_.savedMine : cn_.tookTheirs,
-                  { by: outcome.by ?? cn_.someone },
+          {form.status === "published" ? (
+            <div className="flex flex-wrap items-center gap-3 rounded-[10px] border border-line bg-success-subtle/40 p-3">
+              <span className="min-w-[200px] flex-1">
+                <b className="block text-item-ui font-semibold">
+                  {justPublished ? b.justPublished : b.publishedTitle}
+                </b>
+                <span className={HINT_CLASS}>{b.publishedNote}</span>
+              </span>
+              <input
+                readOnly
+                value={props.linkUrl}
+                aria-label={b.linkLabel}
+                className={cn(
+                  INPUT_CLASS,
+                  "min-w-0 flex-[2] max-md:basis-full",
                 )}
-              </p>
-            ) : null}
-            {form.status === "published" ? (
-              <div className="flex flex-wrap items-center gap-3 rounded-[10px] border border-line bg-success-subtle/40 p-3">
-                <span className="min-w-[200px] flex-1">
-                  <b className="block text-item-ui font-semibold">
-                    {justPublished ? b.justPublished : b.publishedTitle}
-                  </b>
-                  <span className={HINT_CLASS}>{b.publishedNote}</span>
-                </span>
-                <input
-                  readOnly
-                  value={props.linkUrl}
-                  aria-label={b.linkLabel}
-                  className={cn(
-                    INPUT_CLASS,
-                    "min-w-0 flex-[2] max-md:basis-full",
-                  )}
-                />
-                <button
-                  type="button"
-                  onClick={() => void copyLink()}
-                  className={BUTTON_CLASS.primary}
-                >
-                  {copied ? b.copied : b.copy}
-                </button>
-              </div>
-            ) : null}
-            {frozen ? (
-              <div className="flex items-start gap-2 rounded-[10px] border border-line bg-background p-3 text-item-small text-muted-foreground">
-                <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-                <span>{archived ? b.archivedNote : b.closedNote}</span>
-              </div>
-            ) : null}
-            {problem?.kind === "stale" ? (
-              <div
-                role="alert"
-                className="flex flex-col gap-2 rounded-[10px] bg-warning-subtle p-3 text-item-small"
+              />
+              <button
+                type="button"
+                onClick={() => void copyLink()}
+                className={BUTTON_CLASS.primary}
               >
-                <span className="flex items-start gap-2">
-                  <TriangleAlert
-                    aria-hidden="true"
-                    className="mt-0.5 size-3.5 shrink-0 text-warning-text"
-                  />
-                  {b.conflict}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setProblem(null);
-                    void props.onReload();
-                  }}
-                  className={cn(BUTTON_CLASS.outline, "h-7 self-start")}
-                >
-                  {b.reload}
-                </button>
-              </div>
-            ) : problem && problem.kind !== "conflict" ? (
-              <FormAlert
-                message={
-                  problem.kind === "publish" ? b.publishFailed : b.saveFailed
-                }
-                onRetry={problem.retry}
-                retryLabel={copy.common.retry}
-              />
-            ) : null}
-
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={`${baseId}-d`} className={FIELD_LABEL_CLASS}>
-                {b.description}
-              </label>
-              <textarea
-                id={`${baseId}-d`}
-                value={description}
-                disabled={frozen}
-                maxLength={2000}
-                onChange={(e) => setDescription(e.target.value)}
-                onBlur={() => void saveDetails()}
-                className={cn(TEXTAREA_CLASS, "h-16")}
-              />
+                {copied ? b.copied : b.copy}
+              </button>
             </div>
+          ) : null}
+          {frozen ? (
+            <div className="flex items-start gap-2 rounded-[10px] border border-line bg-background p-3 text-item-small text-muted-foreground">
+              <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+              <span>{archived ? b.archivedNote : b.closedNote}</span>
+            </div>
+          ) : null}
+          {problem?.kind === "stale" ? (
+            <div
+              role="alert"
+              className="flex flex-col gap-2 rounded-[10px] bg-warning-subtle p-3 text-item-small"
+            >
+              <span className="flex items-start gap-2">
+                <TriangleAlert
+                  aria-hidden="true"
+                  className="mt-0.5 size-3.5 shrink-0 text-warning-text"
+                />
+                {b.conflict}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setProblem(null);
+                  void props.onReload();
+                }}
+                className={cn(BUTTON_CLASS.outline, "h-7 self-start")}
+              >
+                {b.reload}
+              </button>
+            </div>
+          ) : problem && problem.kind !== "conflict" ? (
+            <FormAlert
+              message={
+                problem.kind === "publish" ? b.publishFailed : b.saveFailed
+              }
+              onRetry={problem.retry}
+              retryLabel={copy.common.retry}
+            />
+          ) : null}
 
-            <div className="flex items-center gap-2">
-              <h2 className="m-0 flex-1 text-[16px] font-[650]">
-                {b.questions}{" "}
-                <span className="text-metadata font-medium text-meta-foreground">
-                  {fillFormsCopy(b.questionsCount, { count: questions.length })}
-                </span>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor={`${baseId}-d`} className={FIELD_LABEL_CLASS}>
+              {b.description}
+            </label>
+            <textarea
+              id={`${baseId}-d`}
+              value={description}
+              disabled={frozen}
+              maxLength={2000}
+              onChange={(e) => setDescription(e.target.value)}
+              onBlur={() => void saveDetails()}
+              className={cn(TEXTAREA_CLASS, "h-16")}
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3.5 xl:flex-row xl:items-start">
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5 rounded-[12px] border border-line bg-popover p-3">
+            <div className="flex items-center gap-2 pt-0.5 pr-1 pb-1.5 pl-1">
+              <h2 className="m-0 text-[14px] leading-[1.45] font-bold">
+                {b.questions} <span aria-hidden="true">·</span>{" "}
+                {questions.length}
               </h2>
+              <span className={cn(DRAWN_HINT, "flex-1")}>{b.orderHint}</span>
               {frozen ? null : (
                 <button
                   type="button"
@@ -657,7 +685,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
             ) : (
               <ul
                 aria-label={b.list}
-                className="m-0 flex list-none flex-col gap-2 p-0"
+                className="m-0 flex list-none flex-col gap-1.5 p-0"
                 onDragLeave={() => setDropIndex(null)}
               >
                 {questions.map((q, index) => (
@@ -665,12 +693,12 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
                     {dragId && dropIndex === index ? (
                       <div
                         aria-hidden="true"
-                        className="-my-1 h-[3px] rounded-sm bg-primary"
+                        className="mr-10 -my-1 ml-7 h-0.5 rounded-[2px] bg-primary"
                       />
                     ) : null}
                     <QuestionRow
                       copy={copy}
-                      q={q}
+                      q={draft?.id === q.id ? { ...q, label: draft.label } : q}
                       n={index + 1}
                       first={index === 0}
                       last={index === questions.length - 1}
@@ -681,9 +709,10 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
                       readOnly={frozen}
                       dragging={dragId === q.id}
                       target={targetName(q, fields, copy)}
-                      onSelect={() =>
-                        props.onSelect(q.id === props.selectedId ? null : q.id)
-                      }
+                      onSelect={() => {
+                        setDraft(null);
+                        props.onSelect(q.id === props.selectedId ? null : q.id);
+                      }}
                       onMove={(to) => void move(q, to)}
                       onDragStart={() => setDragId(q.id)}
                       onDragEnd={() => {
@@ -721,46 +750,48 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
               </ul>
             )}
           </div>
-        </section>
 
-        {selected ? (
-          <QuestionPanel
-            key={`${selected.id}:${form.version}`}
-            copy={copy}
-            q={selected}
-            latestLabel={
-              conflict && latestById.get(selected.id)?.label !== selected.label
-                ? (latestById.get(selected.id)?.label ?? null)
-                : null
-            }
-            savedBy={conflict?.byName ?? cn_.someone}
-            n={questions.findIndex((q) => q.id === selected.id) + 1}
-            fields={fields}
-            questions={questions}
-            readOnly={frozen}
-            onSave={async (changes) => {
-              const send = () => props.onUpdateQuestion(selected, changes);
-              return settle(await send(), send, minesOf(selected, changes));
-            }}
-            onRemove={async () => {
-              const send = () => props.onRemoveQuestion(selected);
-              if (
-                settle(await send(), send, [
-                  { id: `q:${selected.id}:gone`, value: cn_.removed },
-                ])
-              )
-                props.onSelect(null);
-            }}
-          />
-        ) : (
-          <aside
-            aria-label={b.panel}
-            className="hidden w-[380px] shrink-0 rounded-[12px] border border-dashed border-line-strong p-5 text-item-small text-meta-foreground xl:block"
-          >
-            {b.pickHere}
-          </aside>
-        )}
-      </div>
+          {selected ? (
+            <QuestionPanel
+              key={`${selected.id}:${form.version}`}
+              copy={copy}
+              q={selected}
+              latestLabel={
+                conflict &&
+                latestById.get(selected.id)?.label !== selected.label
+                  ? (latestById.get(selected.id)?.label ?? null)
+                  : null
+              }
+              savedBy={conflict?.byName ?? cn_.someone}
+              n={questions.findIndex((q) => q.id === selected.id) + 1}
+              fields={fields}
+              questions={questions}
+              readOnly={frozen}
+              onDraft={(label) => setDraft({ id: selected.id, label })}
+              onSave={async (changes) => {
+                const send = () => props.onUpdateQuestion(selected, changes);
+                return settle(await send(), send, minesOf(selected, changes));
+              }}
+              onRemove={async () => {
+                const send = () => props.onRemoveQuestion(selected);
+                if (
+                  settle(await send(), send, [
+                    { id: `q:${selected.id}:gone`, value: cn_.removed },
+                  ])
+                )
+                  props.onSelect(null);
+              }}
+            />
+          ) : (
+            <aside
+              aria-label={b.panel}
+              className="hidden w-[418px] shrink-0 rounded-[12px] border border-dashed border-line-strong p-4 text-item-small text-meta-foreground xl:block"
+            >
+              {b.pickHere}
+            </aside>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
@@ -848,6 +879,12 @@ function AddMenu({
   );
 }
 
+/** The hint lines of the builder cards: 12.5 px. */
+const DRAWN_HINT = "text-[12.5px] leading-[1.45] text-meta-foreground";
+
+/** The chips of a question row: 22 px high, 12 px type (the drawn row). */
+const ROW_CHIP = "h-[22px] px-2 text-[12px]";
+
 function QuestionRow({
   copy,
   q,
@@ -908,72 +945,89 @@ function QuestionRow({
         onDrop();
       }}
       className={cn(
-        "grid min-h-[59px] grid-cols-[22px_28px_minmax(0,1fr)_auto] items-center gap-2 rounded-[10px] border bg-popover px-3 py-2.5",
-        selected
-          ? "border-primary bg-row-selected shadow-[0_0_0_1px_var(--primary)]"
-          : "border-line",
-        dragging && "rotate-[-0.4deg] border-primary shadow-popover",
+        "flex items-center gap-1",
+        dragging && "rotate-[-0.4deg] opacity-80",
       )}
     >
-      <span
-        aria-hidden="true"
-        className="grid cursor-grab place-items-center text-meta-foreground"
-        title={fillFormsCopy(b.drag, { name })}
+      <div
+        className={cn(
+          "flex h-[52px] min-w-0 flex-1 items-center gap-2.5 rounded-[8px] border px-2.5 py-1",
+          selected
+            ? "border-primary bg-row-selected shadow-[0_0_0_1px_var(--primary)]"
+            : "border-line bg-popover",
+          dragging && "border-primary shadow-popover",
+        )}
       >
-        <GripVertical className="size-4" />
-      </span>
-      <span className="grid size-6 place-items-center rounded-[6px] bg-state-hover-strong text-metadata font-semibold text-muted-foreground">
-        {n}
-      </span>
-      <button
-        type="button"
-        onClick={onSelect}
-        aria-pressed={selected}
-        title={name}
-        className="flex min-w-0 cursor-pointer flex-col border-0 bg-transparent p-0 text-left outline-none max-md:min-h-11 max-md:justify-center focus-visible:ring-2 focus-visible:ring-focus-ring"
-      >
-        <b className="truncate text-item-ui font-semibold">{name}</b>
-        <small className="truncate text-metadata text-meta-foreground">
-          {b.types[q.type]} ·{" "}
-          {removed
-            ? b.removedTarget
-            : target
-              ? fillFormsCopy(b.mappedTo, { field: target })
-              : b.noMapping}
-        </small>
-      </button>
-      <span className="flex items-center gap-1">
+        <span
+          aria-hidden="true"
+          className="grid w-[17px] shrink-0 cursor-grab place-items-center text-meta-foreground"
+          title={fillFormsCopy(b.drag, { name })}
+        >
+          <GripVertical className="size-4" />
+        </span>
+        <span className="w-3.5 shrink-0 text-center text-metadata font-semibold text-muted-foreground">
+          {n}
+        </span>
+        <button
+          type="button"
+          onClick={onSelect}
+          aria-pressed={selected}
+          title={name}
+          className="flex min-w-0 flex-1 cursor-pointer flex-col border-0 bg-transparent p-0 text-left outline-none max-md:min-h-11 max-md:justify-center focus-visible:ring-2 focus-visible:ring-focus-ring"
+        >
+          <b className="truncate text-item-ui font-semibold">{name}</b>
+          <small className="truncate text-metadata text-meta-foreground">
+            {b.types[q.type]} ·{" "}
+            {removed
+              ? b.removedTarget
+              : target
+                ? fillFormsCopy(b.mappedTo, { field: target })
+                : b.noMapping}
+          </small>
+        </button>
         {differs ? (
-          <span className="inline-flex h-5 shrink-0 items-center rounded-[6px] bg-warning-subtle px-[7px] text-metadata font-semibold whitespace-nowrap text-warning-text">
+          <span className="inline-flex h-[22px] shrink-0 items-center rounded-[6px] bg-warning-subtle px-2 text-[12px] font-semibold whitespace-nowrap text-warning-text">
             {differs}
           </span>
         ) : null}
-        {q.required ? <Chip tone="brand">{b.required}</Chip> : null}
-        {duplicate ? <Chip tone="danger">{b.duplicate}</Chip> : null}
-        {removed ? <Chip tone="danger">{b.needsFix}</Chip> : null}
-        {readOnly ? null : (
-          <>
-            <button
-              type="button"
-              aria-label={fillFormsCopy(b.moveUp, { name })}
-              aria-disabled={first || undefined}
-              onClick={() => !first && onMove(n - 2)}
-              className={ICON_BUTTON_CLASS}
-            >
-              <ChevronUp aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              aria-label={fillFormsCopy(b.moveDown, { name })}
-              aria-disabled={last || undefined}
-              onClick={() => !last && onMove(n)}
-              className={ICON_BUTTON_CLASS}
-            >
-              <ChevronDown aria-hidden="true" />
-            </button>
-          </>
-        )}
-      </span>
+        {q.required ? (
+          <Chip tone="brand" className={ROW_CHIP}>
+            {b.required}
+          </Chip>
+        ) : null}
+        {duplicate ? (
+          <Chip tone="danger" className={ROW_CHIP}>
+            {b.duplicate}
+          </Chip>
+        ) : null}
+        {removed ? (
+          <Chip tone="danger" className={ROW_CHIP}>
+            {b.needsFix}
+          </Chip>
+        ) : null}
+      </div>
+      {readOnly ? null : (
+        <span className="flex w-[30px] shrink-0 flex-col">
+          <button
+            type="button"
+            aria-label={fillFormsCopy(b.moveUp, { name })}
+            aria-disabled={first || undefined}
+            onClick={() => !first && onMove(n - 2)}
+            className={cn(ICON_BUTTON_CLASS, "h-6")}
+          >
+            <ChevronUp aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            aria-label={fillFormsCopy(b.moveDown, { name })}
+            aria-disabled={last || undefined}
+            onClick={() => !last && onMove(n)}
+            className={cn(ICON_BUTTON_CLASS, "h-6")}
+          >
+            <ChevronDown aria-hidden="true" />
+          </button>
+        </span>
+      )}
     </div>
   );
 }
@@ -987,11 +1041,14 @@ function QuestionPanel({
   fields,
   questions,
   readOnly,
+  onDraft,
   onSave,
   onRemove,
 }: {
   copy: FormsCopy;
   q: FormQuestion;
+  /** The label as typed, before it is saved: the row of the question follows it. */
+  onDraft: (label: string) => void;
   /** The label the other person saved, while a stale save is open and it differs. */
   latestLabel: string | null;
   savedBy: string;
@@ -1061,13 +1118,13 @@ function QuestionPanel({
   return (
     <aside
       aria-label={b.panel}
-      className="flex w-full shrink-0 flex-col gap-3.5 rounded-[12px] border border-line bg-popover p-[18px] xl:w-[380px]"
+      className="flex w-full shrink-0 flex-col gap-3 rounded-[12px] border border-line bg-popover p-4 xl:w-[418px]"
     >
       <div className="flex items-center gap-2">
-        <h2 className="m-0 flex-1 text-[16px] font-[650]">
+        <h2 className="m-0 text-[14px] leading-[1.45] font-bold">
           {fillFormsCopy(b.panelTitle, { n })}
         </h2>
-        <span className={HINT_CLASS}>{b.autosave}</span>
+        <span className={DRAWN_HINT}>{b.autosave}</span>
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -1083,6 +1140,7 @@ function QuestionPanel({
           onChange={(e) => {
             setLabel(e.target.value);
             setLabelError(false);
+            onDraft(e.target.value);
           }}
           onBlur={() => {
             if (label.trim() === "") return setLabelError(true);
@@ -1138,7 +1196,7 @@ function QuestionPanel({
                   ? b.mapDescription
                   : b.mapDue}
             </div>
-            <span className={HINT_CLASS}>
+            <span className={DRAWN_HINT}>
               {fillFormsCopy(b.mapFixed, {
                 field:
                   built === "title"
@@ -1169,7 +1227,7 @@ function QuestionPanel({
                 </option>
               ))}
             </select>
-            <span className={HINT_CLASS}>{b.mappingHint}</span>
+            <span className={DRAWN_HINT}>{b.mappingHint}</span>
           </>
         )}
         {duplicateWith ? (
@@ -1190,7 +1248,7 @@ function QuestionPanel({
         ) : null}
       </div>
 
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2">
         <button
           type="button"
           role="switch"
@@ -1199,19 +1257,19 @@ function QuestionPanel({
           disabled={readOnly}
           onClick={() => void save({ required: !q.required })}
           className={cn(
-            "relative box-border h-5 w-[34px] shrink-0 cursor-pointer rounded-full border-0 outline-none max-md:box-content max-md:border-y-12 max-md:border-solid max-md:border-transparent max-md:bg-clip-content focus-visible:ring-2 focus-visible:ring-focus-ring",
+            "relative box-border h-[18px] w-[30px] shrink-0 cursor-pointer rounded-full border-0 outline-none max-md:box-content max-md:border-y-13 max-md:border-solid max-md:border-transparent max-md:bg-clip-content focus-visible:ring-2 focus-visible:ring-focus-ring",
             q.required ? "bg-primary" : "bg-line-strong",
           )}
         >
           <span
             aria-hidden="true"
             className={cn(
-              "absolute top-0.5 size-4 rounded-full bg-white transition-[left]",
+              "absolute top-0.5 size-3.5 rounded-full bg-white transition-[left]",
               q.required ? "left-4" : "left-0.5",
             )}
           />
         </button>
-        <span className="text-item-small">{b.requiredSwitch}</span>
+        <span className="text-[13.5px] leading-[1.45]">{b.requiredSwitch}</span>
       </div>
 
       {q.type === "text" ||
@@ -1235,7 +1293,7 @@ function QuestionPanel({
             className={INPUT_CLASS}
           />
           {q.type === "email" ? (
-            <span className={HINT_CLASS}>{b.emailHint}</span>
+            <span className={DRAWN_HINT}>{b.emailHint}</span>
           ) : null}
         </div>
       ) : null}
@@ -1439,7 +1497,7 @@ function QuestionPanel({
           </div>
         </div>
       ) : (
-        <div className="mt-1 flex justify-end">
+        <div className="flex border-t border-line pt-2.5">
           <button
             type="button"
             onClick={() => setConfirm(true)}
@@ -1448,6 +1506,7 @@ function QuestionPanel({
               "h-7 border-line-strong bg-popover px-2.5 text-crumb",
             )}
           >
+            <Trash2 aria-hidden="true" />
             {b.removeQuestion}
           </button>
         </div>
