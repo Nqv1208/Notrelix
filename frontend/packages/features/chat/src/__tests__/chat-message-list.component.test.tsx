@@ -147,7 +147,9 @@ describe("ChatMessageList", () => {
       <ChatMessageList {...props({ messages, firstUnread: 2 })} />,
     );
     const divider = screen.getByRole("separator", { name: "New" });
-    expect(divider.hasAttribute("data-unread-divider")).toBe(true);
+    expect(divider.closest("li")?.hasAttribute("data-unread-divider")).toBe(
+      true,
+    );
     expect(container.querySelectorAll("[data-unread-divider]")).toHaveLength(1);
   });
 

@@ -32,6 +32,8 @@ public static class MessagingRegistration
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Collaboration.CommentEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Chat.ChatMessageEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Chat.ChatPinEventMapper>();
+        services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Chat.ChatReactionEventMapper>();
+        services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Chat.ChatMessageAttachmentEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Chat.ChatPermissionsEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Chat.ChatSlowModeEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Chat.ChatLinkEventMapper>();
