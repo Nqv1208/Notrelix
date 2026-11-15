@@ -270,10 +270,11 @@
       "RealtimeTypingClientFrame": {
         "type": "object",
         "x-frame": true,
-        "description": "Client to server (type typing): the caller is typing in the space of a channel subscription. Ephemeral; throttled to one per 3 seconds; ignored without an answer when unauthorized.",
+        "description": "Client to server (type typing): the caller is typing in the space of a channel subscription. Ephemeral; a start is throttled to one per 3 seconds inside a run and a state stop is never throttled and re-arms the next start; ignored without an answer when unauthorized.",
         "properties": {
           "type": { "type": "string", "enum": ["typing"] },
-          "subscriptionId": { "type": "string" }
+          "subscriptionId": { "type": "string" },
+          "state": { "type": "string", "enum": ["start", "stop"] }
         },
         "required": ["type", "subscriptionId"]
       },
@@ -290,7 +291,7 @@
       "RealtimeTypingServerFrame": {
         "type": "object",
         "x-frame": true,
-        "description": "Server to client (type typing): another person is typing in the space of the subscription. The indicator lasts expiresInMs after this frame.",
+        "description": "Server to client (type typing): another person is typing in the space of the subscription. The indicator lasts expiresInMs after this frame; expiresInMs 0 ends it at once (the person stopped typing).",
         "properties": {
           "type": { "type": "string", "enum": ["typing"] },
           "subscriptionId": { "type": "string" },

@@ -282,6 +282,36 @@ describe("ChatRealtimeAdapter: channel frames", () => {
     expect(queryClient.getQueryData<PendingMessage[]>(pendingKey)).toEqual([]);
   });
 
+  it("a created frame of an own send that no loaded window holds keeps the pending bubble", async () => {
+    // The window on screen is an older one (newer pages behind it): the frame cannot join it.
+    const { adapter, context, queryClient } = setup([message(1)], true);
+    const pendingKey = chatQueryKeys.pending(WS, CH);
+    const entry: PendingMessage = {
+      clientMessageId: "cmid-9",
+      spaceId: CH,
+      content: "mine",
+      authorId: "me",
+      createdAt: AT,
+      status: "sending",
+      failure: null,
+    };
+    queryClient.setQueryData<PendingMessage[]>(pendingKey, [entry]);
+    await adapter.validateAndHandle(
+      envelope(
+        "chat.message.created",
+        createMessagePayload(9, {
+          id: "m-9",
+          authorId: "me",
+          clientMessageId: "cmid-9",
+        }),
+      ),
+      context,
+    );
+    expect(queryClient.getQueryData<PendingMessage[]>(pendingKey)).toEqual([
+      entry,
+    ]);
+  });
+
   describe("a send swaps its pending bubble for the stored message in place", () => {
     const stored = (): ChatMessage =>
       message(2, {
@@ -423,6 +453,28 @@ describe("ChatRealtimeAdapter: unread frames", () => {
       totalUnread: 3,
       totalMentions: 1,
     });
+  });
+
+  it("an unread frame of the channel the reader is looking at is skipped, so no badge flashes", async () => {
+    const { adapter, context, queryClient } = setup([message(1)]);
+    queryClient.setQueryData(chatQueryKeys.unread(WS), summary);
+    queryClient.setQueryData(chatQueryKeys.viewing(WS), CH);
+    await adapter.validateAndHandle(
+      envelope("chat.unread.changed", { spaceId: CH, unread: 3, mentions: 1 }),
+      context,
+    );
+    expect(
+      queryClient.getQueryData<ChatUnreadSummary>(chatQueryKeys.unread(WS)),
+    ).toBe(summary);
+    // Another channel still counts.
+    queryClient.setQueryData(chatQueryKeys.viewing(WS), "space-other");
+    await adapter.validateAndHandle(
+      envelope("chat.unread.changed", { spaceId: CH, unread: 3, mentions: 1 }),
+      context,
+    );
+    expect(
+      queryClient.getQueryData<ChatUnreadSummary>(chatQueryKeys.unread(WS)),
+    ).toMatchObject({ totalUnread: 3 });
   });
 
   it("a frame for a space the summary does not list refetches the summary and the channel list", async () => {
