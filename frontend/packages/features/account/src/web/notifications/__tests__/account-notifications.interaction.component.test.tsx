@@ -84,7 +84,7 @@ describe("AccountNotificationsSurface", () => {
     view.unmount();
   });
 
-  it("FUI[account.notifications:scope] says the choices belong to one workspace and quotes the version", () => {
+  it("FUI[account.notifications:scope] says the choices apply in every workspace and quotes the version", () => {
     const copy = notificationsCopyFixture("en");
     const { props, view } = renderNotifications(
       notificationsDefaultScenario("en"),

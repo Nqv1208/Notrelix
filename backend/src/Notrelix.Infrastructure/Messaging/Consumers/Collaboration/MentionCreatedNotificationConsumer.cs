@@ -47,7 +47,7 @@ public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreate
         }
 
         var preferenceType = NotificationTypes.FromProducedType(NotificationTypes.MentionProducedType)!;
-        if (!await IsInAppEnabledAsync(msg.AccountId.Value, msg.WorkspaceId.Value, msg.MentionedUserId, preferenceType, context.CancellationToken))
+        if (!await IsInAppEnabledAsync(msg.MentionedUserId, preferenceType, context.CancellationToken))
         {
             _logger.LogInformation(
                 "Mention {MentionId} -> user {UserId} not notified in-app: the user turned the {Type} in-app preference off in workspace {WorkspaceId}",
@@ -130,16 +130,15 @@ public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreate
     }
 
     /// <summary>
-    /// The mentioned person's own in-app choice for this type in this Workspace, else the default (on). The
-    /// consumer reads under the tenant restored from the event envelope, and addresses the set by that
-    /// (Account, Workspace) and the recipient, never by an ambient request user.
+    /// The mentioned person's own in-app choice for this type in any Workspace (the matrix is the person's, one per account), else the default (on). The
+    /// consumer addresses the set by the recipient, never by an ambient request user.
     /// </summary>
-    private async Task<bool> IsInAppEnabledAsync(Guid accountId, Guid workspaceId, Guid userId, string type, CancellationToken ct)
+    private async Task<bool> IsInAppEnabledAsync(Guid userId, string type, CancellationToken ct)
     {
         var set = await _context.NotificationPreferenceSets
             .AsNoTracking()
             .Include(s => s.Entries)
-            .FirstOrDefaultAsync(s => s.AccountId == accountId && s.WorkspaceId == workspaceId && s.UserId == userId, ct);
+            .FirstOrDefaultAsync(s => s.UserId == userId, ct);
 
         return set?.IsEnabled(type, NotificationChannels.InApp)
             ?? NotificationPreferenceDefaults.IsEnabled(type, NotificationChannels.InApp);

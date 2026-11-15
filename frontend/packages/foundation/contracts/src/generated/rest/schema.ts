@@ -1847,7 +1847,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/workspaces/{workspaceId}/notification-preferences": {
+    "/api/v1/profile/notification-preferences": {
         parameters: {
             query?: never;
             header?: never;
@@ -1855,7 +1855,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get the caller's notification preferences in a workspace
+         * Get the caller's notification preferences (every workspace)
          * @description One row per notification type (assigned, mention, approval, overdue, watching, invitation, digest) with its in-app and email value; a cell the caller never changed has its default. Version is 0 until the first change is saved.
          */
         get: operations["Collaboration.Preferences.GetNotificationPreferences"];
@@ -1865,7 +1865,7 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Change the caller's notification preferences in a workspace
+         * Change the caller's notification preferences (every workspace)
          * @description Partial and all-or-nothing: only the named channels of the named types change. Answers the full matrix, 412 when expectedVersion is stale, 400 or 422 for an unknown type or no change requested. Setting values that already hold changes nothing and keeps the version.
          */
         patch: operations["Collaboration.Preferences.UpdateNotificationPreferences"];
@@ -17539,9 +17539,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                workspaceId: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -17561,9 +17559,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                workspaceId: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody: {

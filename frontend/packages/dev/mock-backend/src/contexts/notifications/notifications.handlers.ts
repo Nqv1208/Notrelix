@@ -7,7 +7,7 @@
  *   notifications.readAll — POST /notifications/read-all
  *
  * Operations with canonical contracts:
- *   notifications.preferences.get/update — GET/PATCH /workspaces/:workspaceId/notification-preferences
+ *   notifications.preferences.get/update — GET/PATCH /profile/notification-preferences
  *                                           (Collaboration.Preferences.*, workspace-scoped, expected version)
  *
  * Operations with CONTRACT-BLOCKED gaps:
@@ -83,33 +83,29 @@ export const notificationsOperations = [
     },
   }),
 
-  // ─── GET /workspaces/:workspaceId/notification-preferences ────────────────
+  // ─── GET /profile/notification-preferences ────────────────────────────────
 
-  defineMockOperation<{ workspaceId: string }>({
+  defineMockOperation({
     id: "notifications.preferences.get",
     contract: {
       kind: "openapi",
       operationId: "Collaboration.Preferences.GetNotificationPreferences",
     },
     method: "GET",
-    route: "/workspaces/:workspaceId/notification-preferences",
-    async handle({ params, store }) {
-      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+    route: "/profile/notification-preferences",
+    async handle({ store }) {
       return ok(
         preferencesBody(
-          store.accountPages.notificationsOf(
-            store.getCurrentUser().id,
-            params.workspaceId,
-          ),
+          store.accountPages.notificationsOf(store.getCurrentUser().id),
         ),
       );
     },
   }),
 
-  // ─── PATCH /workspaces/:workspaceId/notification-preferences ──────────────
+  // ─── PATCH /profile/notification-preferences ──────────────────────────────
 
   defineMockOperation<
-    { workspaceId: string },
+    Record<string, never>,
     {
       expectedVersion?: number;
       rows?: { type?: string; inApp?: boolean; email?: boolean }[];
@@ -121,13 +117,9 @@ export const notificationsOperations = [
       operationId: "Collaboration.Preferences.UpdateNotificationPreferences",
     },
     method: "PATCH",
-    route: "/workspaces/:workspaceId/notification-preferences",
-    async handle({ params, body, store }) {
-      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
-      const set = store.accountPages.notificationsOf(
-        store.getCurrentUser().id,
-        params.workspaceId,
-      );
+    route: "/profile/notification-preferences",
+    async handle({ body, store }) {
+      const set = store.accountPages.notificationsOf(store.getCurrentUser().id);
       const rows = body?.rows ?? [];
       const errors: Record<string, string[]> = {};
       rows.forEach((row, index) => {
