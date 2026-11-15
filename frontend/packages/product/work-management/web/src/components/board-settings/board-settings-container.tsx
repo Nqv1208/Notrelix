@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   useBoardAccess,
   useBoardLabels,
@@ -23,7 +23,7 @@ import {
 } from "@notrelix/work-management-core";
 import { KanbanSettingsPanel } from "../views/kanban/kanban-settings-panel";
 import { useKanbanLaneCopy } from "../views/kanban/use-kanban-lane-copy";
-import { useBoardFormsPanel } from "../forms/forms-containers";
+import { FormBuilderPage, useBoardFormsPanel } from "../forms/forms-containers";
 import { useBoardSettingsCopy } from "./use-board-settings-copy";
 import { BoardSettingsSurface } from "./board-settings-surface";
 import { fillCopy } from "./board-settings-format";
@@ -51,6 +51,15 @@ export interface BoardSettingsHost {
   readonly onOpenForm: (formId: string) => void;
   /** Opens the response inbox of a form. */
   readonly onOpenFormResponses: (formId: string) => void;
+  /** The form open in the builder inside the forms section (from the address), if any. */
+  readonly formId?: string | null;
+  /** The builder's preview dialog is open (from the address). */
+  readonly formPreview?: boolean;
+  readonly onFormPreview?: (on: boolean) => void;
+  /** Back from the builder to the forms list. */
+  readonly onCloseForm?: () => void;
+  /** Who the form preview sends as. */
+  readonly user?: { readonly name: string; readonly email?: string };
 }
 
 export interface BoardSettingsPageProps extends BoardSettingsHost {
@@ -283,6 +292,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
     [props.onOpenForm, props.onOpenFormResponses],
   );
   const forms = useBoardFormsPanel(boardId, workspaceId, formNav);
+  const [questionId, setQuestionId] = useState<string | null>(null);
 
   const boardTemplates = useBoardTemplates(workspaceId);
   const templateWrites = useBoardTemplateWrites(workspaceId);
@@ -391,6 +401,24 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       labels={labels}
       deletedFields={deletedFields}
       forms={forms}
+      formBuilder={
+        props.formId ? (
+          <FormBuilderPage
+            workspaceId={workspaceId}
+            boardId={boardId}
+            formId={props.formId}
+            user={props.user}
+            selectedId={questionId}
+            onSelect={setQuestionId}
+            preview={props.formPreview === true}
+            onPreview={(on) => props.onFormPreview?.(on)}
+            onBack={() => {
+              setQuestionId(null);
+              props.onCloseForm?.();
+            }}
+          />
+        ) : undefined
+      }
       templates={templates}
       kanbanSettings={
         <KanbanSettingsPanel
