@@ -80,10 +80,16 @@ test("an assignee follows the item and is told, as a follower, about a later com
     )
     .toBe(true);
 
+  // An assignment names the item version it was decided on.
+  const seen = await apiRead<{ version: number }>(
+    page,
+    `/board-items/${itemId}`,
+  );
   expect(
     (
       await apiWrite(page, "POST", `/board-items/${itemId}/assignees`, {
         userId: me.userId,
+        expectedVersion: seen.version,
       })
     ).status,
   ).toBeLessThan(300);
@@ -190,8 +196,13 @@ test("a board placed in a department shows under it in My work, and moving the b
     page,
     `/workspaces/${workspace.id}/members/me`,
   );
+  const seenItem = await apiRead<{ version: number }>(
+    page,
+    `/board-items/${item.data!.id}`,
+  );
   await apiWrite(page, "POST", `/board-items/${item.data!.id}/assignees`, {
     userId: me.userId,
+    expectedVersion: seenItem.version,
   });
 
   const departments = async () =>

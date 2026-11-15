@@ -41,7 +41,11 @@ public sealed class PreAuthenticationRateLimitMiddleware
 
         var partitionKey = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         if (policy.PartitionBy == PartitionKey.IpAndForm)
-            partitionKey += "|" + (context.GetRouteValue("formId")?.ToString() ?? "none");
+        {
+            // Canonical "D" form: case, braces and hyphen-less spellings of one id must share one bucket.
+            var formKey = Guid.TryParse(context.GetRouteValue("formId")?.ToString(), out var fid) ? fid.ToString("D") : "none";
+            partitionKey += "|" + formKey;
+        }
 
         if (!await RateLimitEnforcer.TryAcquireAsync(context, attribute.PolicyName, policy, partitionKey))
             return;

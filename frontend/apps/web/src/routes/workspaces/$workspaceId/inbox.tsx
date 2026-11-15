@@ -17,6 +17,7 @@ import { snoozeUntil, toInboxEntries } from "@/shell/workspace/inbox-view";
 import { useNow } from "@/shell/workspace/use-now";
 import { useShellNavigation } from "@/shell/workspace/use-shell-navigation";
 import {
+  type InboxListView,
   useWorkFeedWrites,
   useWorkspaceInbox,
 } from "@/shell/workspace/work-feed-bridge";
@@ -36,8 +37,8 @@ export function InboxPage() {
   const navigate = useNavigate();
   const navigation = useShellNavigation();
   const now = useNow();
-  const [doneView, setDoneView] = useState(false);
-  const query = useWorkspaceInbox(workspaceId, doneView ? "done" : "inbox");
+  const [listView, setListView] = useState<InboxListView>("inbox");
+  const query = useWorkspaceInbox(workspaceId, listView);
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
   const departments = useDepartmentsById(workspaceId);
   const writes = useWorkFeedWrites(workspaceId);
@@ -199,8 +200,14 @@ export function InboxPage() {
         follow: true,
       }}
       done={{
-        active: doneView,
-        onToggle: () => setDoneView((value) => !value),
+        active: listView === "done",
+        onToggle: () =>
+          setListView((view) => (view === "done" ? "inbox" : "done")),
+      }}
+      snoozed={{
+        active: listView === "snoozed",
+        onToggle: () =>
+          setListView((view) => (view === "snoozed" ? "inbox" : "snoozed")),
       }}
       actions={actions}
       counts={
