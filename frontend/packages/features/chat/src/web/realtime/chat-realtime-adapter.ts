@@ -24,6 +24,10 @@ import type {
 } from "../../core/types/chat";
 import type { PendingMessage } from "../../core/model/chat-model";
 import {
+  setConversationUnread,
+  touchConversation,
+} from "../query/conversation-cache";
+import {
   isChatMessageEvent,
   parseChatMessageFrame,
   parseChatAttachmentFrame,
@@ -247,6 +251,21 @@ export function createChatRealtimeAdapter(
       (cache) => (cache ? reduce(cache) : cache),
     );
 
+    // The conversation list shows the newest message of a conversation: it moves in the cache.
+    if (
+      envelope.eventType === "chat.message.created" &&
+      frame.threadRootId === null &&
+      !frame.deleted
+    ) {
+      touchConversation(queryClient, workspaceId, channelId, {
+        sequence: frame.sequence,
+        authorId: frame.authorId,
+        kind: frame.kind,
+        text: frame.content,
+        createdAt: frame.createdAt ?? envelope.timestamp,
+      });
+    }
+
     // The send of this client is stored: its pending entry is confirmed (matched by clientMessageId).
     if (frame.clientMessageId !== null) {
       queryClient.setQueryData<PendingMessage[]>(pendingKey, (entries) =>
@@ -283,6 +302,12 @@ export function createChatRealtimeAdapter(
     const outcome = applyUnreadFrame(summary, frame);
     if (outcome.kind === "applied") {
       queryClient.setQueryData<ChatUnreadSummary>(key, outcome.summary);
+      setConversationUnread(
+        queryClient,
+        workspaceId,
+        frame.spaceId,
+        frame.unread,
+      );
     } else if (outcome.kind === "unknown-space") {
       // A channel the summary does not list yet: revalidate the list and the summary.
       await context.invalidateQueries([
