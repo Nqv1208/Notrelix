@@ -268,18 +268,32 @@ function block(
   return { type, content: richText(runs), properties };
 }
 
+/** Active HTML: script and style elements with their content, and any tag that carries an event handler. */
+const ACTIVE_HTML =
+  /<(script|style)\b[\s\S]*?(<\/\1\s*>|$)|<[a-z][^>]*\son[a-z]+\s*=[^>]*>/gi;
+
+/** Drops active HTML outside fenced code, where it is only text the author wants to keep. */
+function stripActiveHtml(source: string): string {
+  return source
+    .split(/(^```[\s\S]*?^```[^\n]*$)/m)
+    .map((part, index) =>
+      index % 2 === 1 ? part : part.replace(ACTIVE_HTML, ""),
+    )
+    .join("");
+}
+
 /**
  * Reads Markdown (CommonMark with task lists, strikethrough and tables) into
  * blocks. A first top-level `# heading` becomes the title. Nested list items
  * are flattened to top-level items, images are dropped (and counted), and raw
- * HTML is kept as plain text, never interpreted.
+ * HTML is kept as plain text, never interpreted; script and style
+ * elements and tags with event handlers are removed.
  */
 export function parseMarkdown(source: string): ImportedPage {
   const context: Context = { imagesDropped: 0 };
-  const lines = source
-    .replace(/\r\n?/g, "\n")
-    .replace(/^\uFEFF/, "")
-    .split("\n");
+  const lines = stripActiveHtml(
+    source.replace(/\r\n?/g, "\n").replace(/^\uFEFF/, ""),
+  ).split("\n");
   const blocks: ImportedBlock[] = [];
   let title: string | null = null;
   let i = 0;

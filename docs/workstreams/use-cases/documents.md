@@ -129,9 +129,9 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-A08 | Trash or delete a page that has children | A | Editor, Manager | yes | yes | none | real | DONE | none |
 | UC-DCT-A09 | Duplicate a page | A | Editor | partial | yes | none | none | INTEGRATING | Copy is two client calls; the client has no video block; BE is partial; no artboard |
 | UC-DCT-A10 | Save a page as a template | A | Editor | yes | yes | none | none | INTEGRATING | No artboard; template visibility when the viewer cannot read the source is undecided (owner) |
-| UC-DCT-A11 | Create a page from a template | A | Editor of the target | yes | yes | none | none | INTEGRATING | No gallery artboard; replay of create-from-template is not proven |
+| UC-DCT-A11 | Create a page from a template | A | Editor of the target | yes | yes | none | real | INTEGRATING | No gallery artboard |
 | UC-DCT-A12 | Rename, archive or delete a template (enterprise baseline) | A | Template creator, Workspace Admin | none | none | none | none | IMPLEMENTING | Domain archive only; no command or endpoint |
-| UC-DCT-A13 | Import a file as a new page | A | Editor of the target | partial | yes | none | none | INTEGRATING | No dialog artboard; unit tests still assert the 5 MB limit (the constant is 10 MB) |
+| UC-DCT-A13 | Import a file as a new page | A | Editor of the target | partial | yes | none | real | DONE | none |
 | UC-DCT-A14 | Export a page, a subtree or a workspace | A | Viewer; Admin for workspace | none | partial | none | none | INTEGRATING | Subtree and workspace export not built; page export is client-side only |
 | UC-DCT-A15 | Set page visibility | A | Manager | partial | none | none | none | BLOCKED | Public needs the anonymous principal decision |
 | UC-DCT-A16 | Favorite a page | A | Any viewer | none | partial | none | none | BLOCKED | Owner context unknown; FE call is a no-op |
@@ -397,8 +397,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: loading (gallery), empty (no templates), notice, permission denied, error.
 - Rules: product doc section 54 (product rule DCT-018); `DCREQ135`; decisions 14, 17, 23.
 - Acceptance: Given a template with an image and a paragraph, When used, Then the page has the paragraph and the result reports 1 dropped block.
-- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/page-templates`, `POST /api/v1/workspaces/{workspaceId}/page-templates/{templateId}/pages` (requires `Idempotency-Key`, `documents.templates.create-page-from-template.v1`), `CreatePageFromTemplateCommandHandler`, `ListPageTemplatesQueryHandler` · FE `useCreatePageFromTemplate`, `usePageTemplates`, `useCreateResource` (one key per attempt, dropped-block toast) · Design none · Tests `PageTemplateHandlerTests` · Real e2e none
-- State: INTEGRATING — No gallery artboard; replay of create-from-template is not proven.
+- Evidence: BE `GET /api/v1/workspaces/{workspaceId}/page-templates`, `POST /api/v1/workspaces/{workspaceId}/page-templates/{templateId}/pages` (requires `Idempotency-Key`, `documents.templates.create-page-from-template.v1`), `CreatePageFromTemplateCommandHandler`, `ListPageTemplatesQueryHandler` · FE `useCreatePageFromTemplate`, `usePageTemplates`, `useCreateResource` (one key per attempt, dropped-block toast) · Design none · Tests `PageTemplateHandlerTests` · Real e2e `documents-templates.real.e2e.spec.ts`
+- State: INTEGRATING — Replay is proven: `frontend/e2e/real/documents-templates.real.e2e.spec.ts` 1 of 1 on the real stack (one key returns the same result, a conflicting body under the key is refused, a new key makes another page, an unknown template and a foreign workspace are `404`, a guest member is refused as for create page). Gap: no gallery artboard, so the gallery states are not reviewed.
 
 ### UC-DCT-A12 Rename, archive or delete a template (enterprise baseline)
 - Capability: A Page lifecycle
@@ -425,8 +425,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: validation error, progress, notice, permission denied, offline.
 - Rules: product doc sections 82, 84 (product rule DCT-026); `DCREQ142`; decisions 15, 18.
 - Acceptance: Given a Markdown file with a heading and a list, When imported, Then a page titled by the heading with a list block. Given a file with a script tag, Then it is not stored.
-- Evidence: BE `POST /api/v1/workspaces/{workspaceId}/pages`, `POST /api/v1/pages/{pageId}/blocks/batch` · FE `useImportPage` (trashes the page when a block write fails), `read-import-file.ts` (10 MB limit, one constant shared with the dialog), `import-markdown.ts`, `sanitize-import.ts` · Design none · Tests `page-transfer.unit.test.ts`, `import-file.component.test.ts`, `import-page.unit.test.ts` · Real e2e none
-- State: INTEGRATING — No dialog artboard; unit tests still assert the 5 MB limit (the constant is 10 MB).
+- Evidence: BE `POST /api/v1/workspaces/{workspaceId}/pages`, `POST /api/v1/pages/{pageId}/blocks/batch` · FE `useImportPage` (trashes the page when a block write fails), `read-import-file.ts` (10 MB limit, one constant shared with the dialog), `import-markdown.ts`, `sanitize-import.ts` · Design none · Tests `page-transfer.unit.test.ts`, `import-file.component.test.ts`, `import-page.unit.test.ts` · Real e2e `documents-import.real.e2e.spec.ts`
+- State: DONE (2026-11-16) — Real e2e `frontend/e2e/real/documents-import.real.e2e.spec.ts` 1 of 1 on the real stack: a Markdown file with a heading, a list and a script tag makes a page titled by the heading with two list blocks and no script text; a `.pdf` is refused inside the dialog; the undrawn import dialog was measured in 6 of 6 frames (1440, 1024 and 390 px, light and dark, Vietnamese): inside the viewport, no horizontal overflow, 44 px targets at 390 px. The frames were attached to the run, measured and not eyeballed. Defect fixed: the Markdown reader stored a script tag as literal text; `parseMarkdown` now removes script and style elements and event-handler tags outside code fences (`page-transfer.unit.test.ts`). The 5 MB assertion gap was already closed (tests use `IMPORT_MAX_BYTES`, 10 MB).
 
 ### UC-DCT-A14 Export a page, a subtree or a workspace
 - Capability: A Page lifecycle
