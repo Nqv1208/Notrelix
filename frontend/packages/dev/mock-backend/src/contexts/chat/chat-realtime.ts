@@ -49,8 +49,22 @@ type UnreadEventPayload = Extract<
   { eventType: "chat.unread.changed" }
 >["payload"];
 
-/** The compact payload of a message frame, as ChatRealtime.MessageFrame serialises it. */
+/** The server leaves a null field out of a frame (ChatRealtime's serializer ignores nulls); the client reads an absent field as null. */
+function withoutNulls<T extends object>(value: T): T {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, field]) => field !== null),
+  ) as T;
+}
+
+/** The compact payload of a message frame, as ChatRealtime.MessageFrame serialises it (nulls left out). */
 function messagePayload(
+  message: ChatMessageRecord,
+  eventType: ChatMessageEventType,
+): MessageEventPayload {
+  return withoutNulls(fullMessagePayload(message, eventType));
+}
+
+function fullMessagePayload(
   message: ChatMessageRecord,
   eventType: ChatMessageEventType,
 ): MessageEventPayload {
@@ -100,7 +114,7 @@ function messagePayload(
 
 /** Leaves the content out when the frame would exceed the payload limit (ChatRealtime.Fit). */
 function fitMessagePayload(payload: MessageEventPayload): MessageEventPayload {
-  if (payload.content === null) return payload;
+  if (payload.content === undefined || payload.content === null) return payload;
   const size = new TextEncoder().encode(JSON.stringify(payload)).length;
   if (size <= CHAT_LIMITS.realtimePayloadMaxBytes) return payload;
   return { ...payload, content: null, contentOmitted: true };

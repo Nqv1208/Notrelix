@@ -379,6 +379,28 @@ describe("frame parsing", () => {
     expect(parseChatMessageFrame("not an object")).toBeNull();
   });
 
+  it("reads a field the server left out as null (a null field is not sent)", () => {
+    expect(
+      parseChatMessageFrame({
+        id: "m-1",
+        sequence: 4,
+        authorId: "user-b",
+        kind: "user",
+        contentOmitted: false,
+        deleted: true,
+        version: 2,
+      }),
+    ).toMatchObject({
+      content: null,
+      createdAt: null,
+      editedAt: null,
+      replyToId: null,
+      threadRootId: null,
+      threadSequence: null,
+      clientMessageId: null,
+    });
+  });
+
   it("accepts the chat.unread.v1 payload and rejects negative counts", () => {
     expect(
       parseChatUnreadFrame({ spaceId: SPACE, unread: 2, mentions: 0 }),

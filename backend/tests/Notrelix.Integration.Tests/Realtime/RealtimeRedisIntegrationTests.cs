@@ -85,6 +85,46 @@ public sealed class RealtimeRedisIntegrationTests
         received.Should().Equal(1L, 2L, 1L); // client rule: anything but previous + 1 means refetch
     }
 
+    [Fact]
+    public async Task A_batch_publishes_each_fact_on_its_own_stream_with_consecutive_versions_in_one_script()
+    {
+        await _containers.ResetAsync();
+        await using var redis = await ConnectionMultiplexer.ConnectAsync(_containers.RedisConnectionString);
+        var publisher = new RedisRealtimePublisher(redis, NullLogger<RedisRealtimePublisher>.Instance, new MetricsService());
+        var source = new RedisRealtimeNotificationSource(redis, NullLogger<RedisRealtimeNotificationSource>.Instance);
+        var workspaceId = Guid.NewGuid();
+        const int members = 300; // more than one script's chunk
+        var users = Enumerable.Range(0, members).Select(_ => new RealtimeScope(RealtimeScopeKind.User, Guid.NewGuid())).ToList();
+        var received = new ConcurrentDictionary<Guid, ConcurrentQueue<(long Version, Guid ResourceId)>>();
+        var subscriptions = new List<IAsyncDisposable>();
+        foreach (var user in users)
+        {
+            var queue = received.GetOrAdd(user.Id, _ => new());
+            subscriptions.Add(await source.SubscribeAsync(user, n => { queue.Enqueue((n.StreamVersion, n.ResourceId)); return ValueTask.CompletedTask; }, default));
+        }
+
+        try
+        {
+            var batch = users.Select(u => Change(workspaceId, "user", "notifications", u.Id)).ToList();
+            await publisher.PublishManyAsync(batch, default);
+            await publisher.PublishManyAsync(batch, default);
+
+            await WaitUntilAsync(() => received.Values.All(q => q.Count == 2));
+            foreach (var user in users)
+            {
+                received[user.Id].Select(r => r.Version).Should().Equal(1L, 2L);
+                received[user.Id].Select(r => r.ResourceId).Should().AllBeEquivalentTo(user.Id, "a member's frame is delivered only on that member's own stream");
+            }
+        }
+        finally
+        {
+            foreach (var subscription in subscriptions)
+            {
+                await subscription.DisposeAsync();
+            }
+        }
+    }
+
     private static async Task WaitUntilAsync(Func<bool> condition)
     {
         var deadline = DateTime.UtcNow.AddSeconds(15);

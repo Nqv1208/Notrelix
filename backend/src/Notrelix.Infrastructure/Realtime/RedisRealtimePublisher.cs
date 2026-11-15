@@ -37,6 +37,20 @@ public sealed class RedisRealtimePublisher : IRealtimePublisher
         return version
         """;
 
+    /// <summary>The most facts one batch script publishes; keeps one script's run time (about 3 Redis commands per fact) short.</summary>
+    private const int BatchChunk = 256;
+
+    // KEYS = counter key and channel of each fact in turn
+    // ARGV[1] = counter ttl (ms), then the message prefix and suffix of each fact in turn
+    private const string PublishBatchScript = """
+        for i = 1, #KEYS, 2 do
+          local version = redis.call('INCR', KEYS[i])
+          redis.call('PEXPIRE', KEYS[i], ARGV[1])
+          redis.call('PUBLISH', KEYS[i + 1], ARGV[i + 1] .. version .. ARGV[i + 2])
+        end
+        return #KEYS / 2
+        """;
+
     private readonly IConnectionMultiplexer _redis;
     private readonly ILogger<RedisRealtimePublisher> _logger;
     private readonly MetricsService _metrics;
@@ -72,6 +86,65 @@ public sealed class RedisRealtimePublisher : IRealtimePublisher
             return;
         }
 
+        var (counterKey, channel, prefix, suffix, eventType) = Prepare(change, workspaceId);
+
+        _logger.LogTrace(
+            "Publishing realtime event {EventType} to channel {Channel}",
+            eventType, channel);
+
+        var stopwatch = Stopwatch.StartNew();
+        await _redis.GetDatabase().ScriptEvaluateAsync(
+            PublishScript,
+            [counterKey, channel],
+            [prefix, suffix, CounterRetentionMilliseconds]);
+        stopwatch.Stop();
+
+        _metrics.RealtimePublishDuration.Record(stopwatch.Elapsed.TotalMilliseconds);
+    }
+
+    /// <summary>
+    /// Publishes many facts with one script per chunk of <see cref="BatchChunk"/> (the per-member unread frames of a send: each
+    /// member has a stream of their own, so the facts differ, but they need not cost one Redis call each). Every fact still gets its
+    /// own stream counter and channel, in the order given. An access signal or a tenant-less fact takes the single path.
+    /// </summary>
+    public async Task PublishManyAsync(IReadOnlyList<RealtimeResourceChangedV1> changes, CancellationToken cancellationToken)
+    {
+        var batch = new List<(string CounterKey, string Channel, string Prefix, string Suffix)>(changes.Count);
+        foreach (var change in changes)
+        {
+            if (change.WorkspaceId is not { } workspaceId || workspaceId == Guid.Empty || RealtimeAccessSignalMapping.IsAccessSignal(change))
+            {
+                await PublishAsync(change, cancellationToken);
+                continue;
+            }
+
+            var (counterKey, channel, prefix, suffix, _) = Prepare(change, workspaceId);
+            batch.Add((counterKey, channel, prefix, suffix));
+        }
+
+        var database = _redis.GetDatabase();
+        foreach (var chunk in batch.Chunk(BatchChunk))
+        {
+            var keys = new RedisKey[chunk.Length * 2];
+            var values = new RedisValue[chunk.Length * 2 + 1];
+            values[0] = CounterRetentionMilliseconds;
+            for (var i = 0; i < chunk.Length; i++)
+            {
+                keys[2 * i] = chunk[i].CounterKey;
+                keys[2 * i + 1] = chunk[i].Channel;
+                values[2 * i + 1] = chunk[i].Prefix;
+                values[2 * i + 2] = chunk[i].Suffix;
+            }
+
+            var stopwatch = Stopwatch.StartNew();
+            await database.ScriptEvaluateAsync(PublishBatchScript, keys, values);
+            _metrics.RealtimePublishDuration.Record(stopwatch.Elapsed.TotalMilliseconds);
+        }
+    }
+
+    private static (string CounterKey, string Channel, string Prefix, string Suffix, string EventType) Prepare(
+        RealtimeResourceChangedV1 change, Guid workspaceId)
+    {
         var topic = new RealtimeTopic(change.TopicNamespace, change.ResourceKind, change.ResourceId);
         var channel = RealtimeChannelResolver.RedisChannel(RealtimeChannelResolver.ForTopic(topic));
         var draft = new RealtimeNotification(
@@ -91,18 +164,6 @@ public sealed class RedisRealtimePublisher : IRealtimePublisher
             Payload: RealtimeFrameMapping.PayloadOf(change));
 
         var (prefix, suffix) = RealtimeNotificationJson.SerializeForVersionSplice(draft);
-
-        _logger.LogTrace(
-            "Publishing realtime event {EventType} to channel {Channel}",
-            draft.EventType, channel);
-
-        var stopwatch = Stopwatch.StartNew();
-        await _redis.GetDatabase().ScriptEvaluateAsync(
-            PublishScript,
-            [RealtimeChannelResolver.StreamCounterKey(change.StreamKey), channel],
-            [prefix, suffix, CounterRetentionMilliseconds]);
-        stopwatch.Stop();
-
-        _metrics.RealtimePublishDuration.Record(stopwatch.Elapsed.TotalMilliseconds);
+        return (RealtimeChannelResolver.StreamCounterKey(change.StreamKey), channel, prefix, suffix, draft.EventType);
     }
 }
