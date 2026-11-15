@@ -60,19 +60,17 @@ test("a message from another member appears live and is announced politely", asy
   );
 });
 
-test("the unread badge of a background channel moves without opening it", async ({
+test("a background channel shows its unread dot without opening it", async ({
   page,
 }) => {
   await openChannel(page, GENERAL);
   const channels = page.getByRole("navigation", { name: /^(Channels|Kênh)$/ });
   const random = channels.getByRole("button", { name: /random/ });
-  const before = (await random.textContent()) ?? "";
 
   await inject(page, RANDOM, `Badge ${Date.now()}`, RANDOM_MEMBER);
 
-  await expect
-    .poll(async () => (await random.textContent()) ?? "")
-    .not.toBe(before);
+  // A channel shows that it is unread (a dot), never a count.
+  await expect(random.getByTestId("chat-unread-dot")).toBeVisible();
 });
 
 test("a reconnect keeps the open channel current", async ({ page }) => {

@@ -55,7 +55,8 @@ public sealed class ChatUnreadFanOut
         if (audience.Count == 0)
             return;
 
-        var preview = new ChatRealtime.UnreadPreview(
+        // A reply inside a thread is not the newest message of the conversation list, so it carries no preview.
+        var preview = message.ThreadRootId is not null ? null : new ChatRealtime.UnreadPreview(
             message.Sequence, message.AuthorId, message.Kind,
             message.Kind == MessageKindWire.UserKind ? ChatRealtime.PreviewText(message.Content) : null, message.OccurredAt);
         var frames = audience.Select(r => ChatRealtime.Unread(
