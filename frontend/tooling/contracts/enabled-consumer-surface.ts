@@ -4443,6 +4443,27 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "Attach a file to your own message (multipart/form-data, streamed)",
     ],
     [
+      "Chat.Attachments.CreateUpload",
+      "POST",
+      "/workspaces/{workspaceId}/chat/messages/{messageId}/attachments/uploads",
+      true,
+      "Start a direct upload of a file to your own message",
+    ],
+    [
+      "Chat.Attachments.CommitUpload",
+      "POST",
+      "/workspaces/{workspaceId}/chat/messages/{messageId}/attachments/uploads/{uploadId}/commit",
+      true,
+      "Finish a direct upload after the bytes are stored",
+    ],
+    [
+      "Chat.Attachments.GetUrl",
+      "GET",
+      "/workspaces/{workspaceId}/chat/messages/{messageId}/attachments/{attachmentId}/url",
+      false,
+      "Get a short-lived download URL for a file of a message",
+    ],
+    [
       "Chat.Attachments.GetContent",
       "GET",
       "/workspaces/{workspaceId}/chat/messages/{messageId}/attachments/{attachmentId}/content",
