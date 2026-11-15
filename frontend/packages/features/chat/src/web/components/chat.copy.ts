@@ -488,6 +488,9 @@ export const en = {
     followedEmpty: "You follow no threads yet. Follow a thread to see it here.",
     followedError: "Your threads could not load.",
     openThread: "Open thread",
+    archived: "archived after 14 days without a reply",
+    archivedChip: "Archived",
+    followedCount: "{{count}} threads",
     rootOf: "Thread started by {{name}}",
   },
   pins: {
@@ -1274,6 +1277,9 @@ export const vi: ChatCopy = {
       "Bạn chưa theo dõi luồng nào. Theo dõi một luồng để xem ở đây.",
     followedError: "Không tải được các luồng của bạn.",
     openThread: "Mở luồng",
+    archived: "đã lưu trữ do không có phản hồi",
+    archivedChip: "Lưu trữ",
+    followedCount: "{{count}} luồng",
     rootOf: "Luồng do {{name}} bắt đầu",
   },
   pins: {
