@@ -334,19 +334,6 @@ export function ChatWorkspace({
       null)
     : null;
 
-  // A new message in a conversation moves its unread count; the list row (preview, order) follows it.
-  const unreadSignature = unread.data?.totalUnread ?? null;
-  const signatureSeen = useRef(unreadSignature);
-  useEffect(() => {
-    if (!offersConversations || signatureSeen.current === unreadSignature)
-      return;
-    signatureSeen.current = unreadSignature;
-    void queryClient.invalidateQueries({
-      queryKey: chatQueryKeys.conversations(ws),
-      refetchType: "active",
-    });
-  }, [unreadSignature, offersConversations, queryClient, ws]);
-
   // The history opens once per visit: at the first unread message when there is
   // one (D03), otherwise at the newest. The choice does not move while the reader
   // is in the channel, even when the unread summary refreshes.
@@ -488,7 +475,14 @@ export function ChatWorkspace({
 
   // Open the channel at its divider (or the newest) once its history has loaded.
   useEffect(() => {
-    if (!channelId || !messages.isSuccess || !lock) return;
+    // A window kept on screen while the next one loads (placeholder) is not the history to open on.
+    if (
+      !channelId ||
+      !messages.isSuccess ||
+      messages.isPlaceholderData ||
+      !lock
+    )
+      return;
     const key = `${channelId}|${JSON.stringify(anchor)}`;
     if (requestedFor.current === key) return;
     requestedFor.current = key;
@@ -498,7 +492,7 @@ export function ChatWorkspace({
       target: lock.firstUnread !== null ? "divider" : "bottom",
     });
     setAtBottom(true);
-  }, [channelId, messages.isSuccess, lock, anchor]);
+  }, [channelId, messages.isSuccess, messages.isPlaceholderData, lock, anchor]);
 
   // Read state: the boundary moves to the newest message only when it is
   // loaded and on screen (the reader is at the bottom and the page is visible).
