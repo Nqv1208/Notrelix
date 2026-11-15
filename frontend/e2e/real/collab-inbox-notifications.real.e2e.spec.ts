@@ -100,6 +100,8 @@ test("a mention reaches the Inbox only while the in-app mention preference is on
   try {
     await setMention(false);
     await s.comment(`Muted-pref mention ${s.unique}`, true);
+    // The event is delivered asynchronously; the preference is read at delivery, so let it be delivered first.
+    await s.reader.waitForTimeout(10_000);
     await setMention(true);
     await s.comment(`Open-pref mention ${s.unique}`, true);
 
@@ -135,13 +137,42 @@ test("a follower is told once per change, and not while the thread is muted", as
   page,
 }) => {
   const s = await scene(browser, page);
-  expect(
-    (
-      await apiWrite(page, "POST", `/board-items/${s.itemId}/assignees`, {
-        userId: s.me.userId,
-      })
-    ).status,
-  ).toBeLessThan(300);
+  await expect
+    .poll(
+      async () =>
+        (
+          await apiRead<{ following: boolean }>(
+            page,
+            `/board-items/${s.itemId}/following`,
+          )
+        ).following,
+      { message: "the creator follows the item they create", timeout: 30_000 },
+    )
+    .toBe(true);
+  const assigned = await apiWrite(
+    page,
+    "POST",
+    `/board-items/${s.itemId}/assignees`,
+    {
+      userId: s.me.userId,
+      expectedVersion: (
+        await apiRead<{ version: number }>(page, `/board-items/${s.itemId}`)
+      ).version,
+    },
+  );
+  expect(assigned.status, JSON.stringify(assigned.data)).toBeLessThan(300);
+  await expect
+    .poll(
+      async () =>
+        (
+          await apiRead<{ following: boolean }>(
+            s.reader,
+            `/board-items/${s.itemId}/following`,
+          )
+        ).following,
+      { message: "the assignee follows", timeout: 30_000 },
+    )
+    .toBe(true);
 
   await s.comment(`First change ${s.unique}`);
   await expect
@@ -182,6 +213,7 @@ test("a follower is told once per change, and not while the thread is muted", as
   ).toBeUndefined();
 
   await s.reader.goto(`/workspaces/${s.workspace.id}/inbox`);
+  await s.reader.getByRole("tab", { name: "Following" }).click();
   await expect(
     s.reader.getByText(`After unmute ${s.unique}`).first(),
   ).toBeVisible();
