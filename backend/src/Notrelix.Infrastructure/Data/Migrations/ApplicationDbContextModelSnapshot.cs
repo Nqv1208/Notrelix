@@ -3823,10 +3823,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<Guid>("AccountId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("account_id");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -3854,16 +3850,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDefaultValue(1L)
                         .HasColumnName("version");
 
-                    b.Property<Guid>("WorkspaceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("workspace_id");
-
                     b.HasKey("Id")
                         .HasName("pk_notification_preference_sets");
 
-                    b.HasIndex("WorkspaceId", "UserId")
+                    b.HasIndex("UserId")
                         .IsUnique()
-                        .HasDatabaseName("ux_notification_preference_sets_member");
+                        .HasDatabaseName("ux_notification_preference_sets_user");
 
                     b.ToTable("notification_preference_sets", "notifications");
                 });

@@ -323,9 +323,8 @@ export const endpoints = {
     // Collaboration.Inbox.ReadAll (workspace-scoped Inbox).
     readAll: (workspaceId: string) =>
       `/workspaces/${workspaceId}/inbox/read-all`,
-    // Collaboration.Preferences.*: one member's choices in one workspace.
-    preferences: (workspaceId: string) =>
-      `/workspaces/${workspaceId}/notification-preferences`,
+    // Collaboration.Preferences.*: one person's choices, the same in every workspace.
+    preferences: "/profile/notification-preferences",
   },
   // Chat.* (REST prefix /api/v1/workspaces/{workspaceId}/chat). A channel is a space: the same GUID.
   chat: {

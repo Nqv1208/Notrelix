@@ -19,8 +19,7 @@ const endpoints = {
       `/workspaces/${workspaceId}/inbox/read-all`,
     unreadCount: "/notifications/unread-count",
     archive: (id: string) => `/notifications/${id}/archive`,
-    preferences: (workspaceId: string) =>
-      `/workspaces/${workspaceId}/notification-preferences`,
+    preferences: "/profile/notification-preferences",
   },
 };
 
