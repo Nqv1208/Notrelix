@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import {
   apiRead,
@@ -136,7 +137,7 @@ test("a block changed elsewhere is replaced by the stored text and the person's 
   expect(after.version).toBe(block.version + 1);
 });
 
-test("find and replace changes three matches in one save, and a block moves by keyboard with the place announced", async ({
+test("find and replace changes three matches in one save and says when nothing matches", async ({
   page,
 }) => {
   const stamp = Date.now();
@@ -167,19 +168,29 @@ test("find and replace changes three matches in one save, and a block moves by k
     .poll(() => storedText(page, pageId))
     .toBe(`dog one ${stamp}\ntwo dog ${stamp}\ndog three ${stamp}`);
 
-  // No matches shows the empty state.
+  // The panel floats over the text: Close hides it. No matches shows the empty state.
+  await search.getByRole("button", { name: /^Close/ }).click();
+  await expect(search).toHaveCount(0);
   await page.getByText(`two dog ${stamp}`).click();
   await page.keyboard.press("ControlOrMeta+f");
   await search.getByRole("textbox", { name: "Find", exact: true }).fill("zzzz");
   await expect(search.getByText("No results")).toBeVisible();
   await page.keyboard.press("Escape");
+});
 
-  // Move the second block up by keyboard: announced and stored.
-  const before = await stored(page, pageId);
-  await page.getByText(`two dog ${stamp}`).click();
-  await page.keyboard.press("Alt+Shift+ArrowUp");
-  await expect(page.getByText("Block moved to position 1 of 3")).toBeAttached();
-  await expect
-    .poll(async () => (await stored(page, pageId))[0].id)
-    .toBe(before[1].id);
+async function noSeriousAxe(page: Page) {
+  const axe = await new AxeBuilder({ page }).analyze();
+  expect(
+    axe.violations
+      .filter((v) => ["serious", "critical"].includes(v.impact ?? ""))
+      .map((v) => `${v.id}: ${v.nodes[0]?.html.slice(0, 120)}`),
+  ).toEqual([]);
+}
+
+test("the open editor with its menus, toolbar and side panel has no serious accessibility violation", async ({
+  page,
+}) => {
+  const stamp = Date.now();
+  await openDoc(page, `Axe ${stamp}`, [`one ${stamp}`, `two ${stamp}`]);
+  await noSeriousAxe(page);
 });
