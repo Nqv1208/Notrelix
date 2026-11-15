@@ -1550,10 +1550,14 @@ export function createDocPageScreen({
         deleteComment.mutate({ commentId: id, expectedVersion: version ?? 0 });
         if (id === activeCommentId) setActiveCommentId(null);
       },
-      onCommentCreate: (body) => {
-        const anchor = pendingAnchor;
+      onCommentCreate: (body, parentId) => {
+        const anchor = parentId ? null : pendingAnchor;
         if (!anchor) {
-          createComment.mutate({ pageId, body });
+          createComment.mutate({
+            pageId,
+            body,
+            ...(parentId ? { parentId } : {}),
+          });
           return;
         }
         // The block the comment names must be stored before the producer can check it.

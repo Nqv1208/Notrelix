@@ -401,7 +401,7 @@ describe("docs web pure surfaces", () => {
       />,
     );
     const reply = screen.getByRole("textbox", {
-      name: docsCopy.comments.reply,
+      name: docsCopy.comments.compose,
     });
     fireEvent.change(reply, { target: { value: "Đã rà lại" } });
     fireEvent.keyDown(reply, { key: "Enter" });

@@ -114,7 +114,7 @@ public sealed class DocumentsNonMemberNotFoundTests : IAsyncLifetime
         yield return ("save blocks in a batch", HttpMethod.Post, i => $"/api/v1/pages/{i.Page}/blocks/batch",
             i => $"{{\"blocks\":[{{\"id\":\"{Guid.NewGuid()}\",\"type\":\"paragraph\"}}]}}");
         yield return ("edit a block", HttpMethod.Patch, i => $"/api/v1/pages/{i.Page}/blocks/{i.Block}", i => "{\"expectedVersion\":1}");
-        yield return ("delete a block", HttpMethod.Delete, i => $"/api/v1/pages/{i.Page}/blocks/{i.Block}", null);
+        yield return ("delete a block", HttpMethod.Delete, i => $"/api/v1/pages/{i.Page}/blocks/{i.Block}?expectedVersion=1", null);
         yield return ("reorder blocks", HttpMethod.Post, i => "/api/v1/blocks/reorder",
             i => $"{{\"pageId\":\"{i.Page}\",\"items\":[{{\"blockId\":\"{i.Block}\",\"expectedVersion\":1}}]}}");
         yield return ("list versions", HttpMethod.Get, i => $"/api/v1/pages/{i.Page}/versions", null);

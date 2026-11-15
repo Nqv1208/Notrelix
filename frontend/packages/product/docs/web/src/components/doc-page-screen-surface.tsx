@@ -375,7 +375,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
             }
           />
         )}
-        <div className="flex min-h-0 flex-1">
+        <div className="relative flex min-h-0 flex-1">
           <div
             ref={scroller}
             className="flex min-w-0 flex-1 justify-center overflow-auto px-8 pt-9 pb-16"
