@@ -82,6 +82,10 @@ public interface INotificationInbox
     Task<bool> MarkReadAsync(
         Guid workspaceId, Guid userId, Guid notificationId, DateTimeOffset readAt, CancellationToken cancellationToken);
 
+    /// <summary>Marks one of the person's own read entries in the inbox unread again; false when it is not theirs, not read, done or snoozed.</summary>
+    Task<bool> MarkUnreadAsync(
+        Guid workspaceId, Guid userId, Guid notificationId, DateTimeOffset at, CancellationToken cancellationToken);
+
     /// <summary>Marks every unread notification of the person in one Workspace read; answers how many changed.</summary>
     Task<int> MarkAllReadAsync(
         Guid workspaceId, Guid userId, DateTimeOffset readAt, CancellationToken cancellationToken);

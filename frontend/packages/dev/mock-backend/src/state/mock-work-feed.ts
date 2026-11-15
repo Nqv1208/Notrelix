@@ -1472,6 +1472,7 @@ export function markInbox(
   change:
     | { type: "handled" }
     | { type: "done" }
+    | { type: "unread" }
     | { type: "reopen" }
     | { type: "snooze"; until: string }
     | { type: "mute"; muted?: boolean },
@@ -1491,6 +1492,9 @@ export function markInbox(
       record.need = null;
       record.snoozedUntil = null;
       setMentionHandled(feed, record.mentionId, true);
+      break;
+    case "unread":
+      record.unread = true;
       break;
     case "reopen":
       record.done = false;

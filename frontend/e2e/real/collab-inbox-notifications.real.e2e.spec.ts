@@ -254,7 +254,7 @@ test("the recipient reads, finishes, snoozes and replies to mentions from the In
   };
 
   try {
-    for (const step of ["Read", "Done", "Snooze", "Reply"]) {
+    for (const step of ["Read", "Done", "Snooze", "Reply", "Flip", "Undo"]) {
       await s.comment(phrase(step), true);
       await expect
         .poll(async () => Boolean(await s.entryWith(phrase(step))), {
@@ -301,6 +301,49 @@ test("the recipient reads, finishes, snoozes and replies to mentions from the In
     expect(await listed("inbox", done)).toBeDefined();
     expect(await listed("done", done)).toBeUndefined();
 
+    // Mark unread: the read entry stays in the list and shows unread, also after a reload.
+    const unread = phrase("Flip");
+    await open(unread);
+    // The All tab keeps a read entry in the list; the Needs tab lists only what is still open.
+    await reader.getByRole("tab", { name: "All" }).click();
+    const readFirst = posted(/\/inbox\/[^/]+\/read$/);
+    await reader.getByRole("button", { name: /^Mark as read/ }).click();
+    expect((await readFirst).status()).toBeLessThan(300);
+    await expect
+      .poll(async () => (await s.entryWith(unread))!.unread)
+      .toBe(false);
+    const markedUnread = posted(/\/inbox\/[^/]+\/unread$/);
+    await reader.getByRole("button", { name: "Mark as unread" }).click();
+    expect((await markedUnread).status()).toBeLessThan(300);
+    await expect(reader.getByText(unread).first()).toBeVisible();
+    await expect
+      .poll(async () => (await s.entryWith(unread))!.unread)
+      .toBe(true);
+    await reload();
+    await expect(reader.getByText(unread).first()).toBeVisible();
+    await expect(reader.locator("[data-f=ud]").first()).toBeVisible();
+    expect((await s.entryWith(unread))!.unread).toBe(true);
+
+    // Undo after Done: the toast offers it, and it puts the entry back in the inbox.
+    const undo = phrase("Undo");
+    await open(undo);
+    const doneAgain = posted(/\/inbox\/[^/]+\/done$/);
+    await reader.getByRole("button", { name: "Mark as done" }).click();
+    expect((await doneAgain).status()).toBeLessThan(300);
+    await expect(reader.getByText(undo)).toHaveCount(0);
+    expect(await listed("done", undo)).toBeDefined();
+    const undone = posted(/\/inbox\/[^/]+\/reopen$/);
+    await reader
+      .locator("[data-sonner-toast]")
+      .getByRole("button", { name: "Undo" })
+      .click();
+    expect((await undone).status()).toBeLessThan(300);
+    await expect(reader.getByText(undo).first()).toBeVisible();
+    await reload();
+    await expect(reader.getByText(undo).first()).toBeVisible();
+    expect(await listed("inbox", undo)).toBeDefined();
+    expect(await listed("done", undo)).toBeUndefined();
+
     // Snooze: the entry leaves the default list and appears under Snoozed.
     const snooze = phrase("Snooze");
     await open(snooze);
@@ -316,6 +359,9 @@ test("the recipient reads, finishes, snoozes and replies to mentions from the In
     expect(held?.snoozedUntil).toBeTruthy();
     await reader.getByRole("button", { name: "Snoozed", exact: true }).click();
     await expect(reader.getByText(snooze).first()).toBeVisible();
+    await expect(reader.locator("[data-f=snoozed-when]").first()).toContainText(
+      /^Back /,
+    );
 
     // Reply: a comment lands on the item and the entry stops needing a reply.
     const reply = phrase("Reply");
