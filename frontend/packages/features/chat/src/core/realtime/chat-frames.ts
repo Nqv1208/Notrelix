@@ -36,7 +36,7 @@ export interface ChatMessageFramePayload {
   readonly editedAt: string | null;
   readonly replyToId: string | null;
   readonly version: number;
-  /** Not in chat.message.v1 today; read when present so an own send can be reconciled. */
+  /** The sender's key, on a created frame only; the sender's client swaps its pending bubble for the stored message by it. */
   readonly clientMessageId: string | null;
   /** The thread root of a reply (null for the main flow). */
   readonly threadRootId: string | null;

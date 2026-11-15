@@ -80,6 +80,17 @@ public class ChatRealtimeFactsTests
     }
 
     [Fact]
+    public void A_created_frame_carries_the_senders_client_message_id_and_an_edit_or_delete_does_not()
+    {
+        Payload(ChatRealtime.ForCreated(Created("hello"), Now)).GetProperty("clientMessageId").GetString().Should().Be("c-1");
+
+        var edited = new ChatMessageUpdatedIntegrationEvent(
+            Guid.NewGuid(), AccountId, WorkspaceId, MessageId, SpaceId, 7, AuthorId, "fixed", 2, Guid.NewGuid(),
+            ActorUserId: AuthorId, OccurredAt: Now);
+        Payload(ChatRealtime.ForUpdated(edited, Now)).TryGetProperty("clientMessageId", out _).Should().BeFalse();
+    }
+
+    [Fact]
     public void A_channel_message_has_no_thread_fields_in_its_payload()
     {
         var payload = Payload(ChatRealtime.ForCreated(Created("plain"), Now));
