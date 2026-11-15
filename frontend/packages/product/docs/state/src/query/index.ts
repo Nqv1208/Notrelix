@@ -9,6 +9,7 @@ export { useRememberPageAttachment } from "./hooks/use-remember-page-attachment"
 export { createUseAttachmentContent } from "./hooks/use-attachment-content";
 export { createUsePageComments } from "./hooks/use-page-comments";
 export { createUsePageHistory } from "./hooks/use-page-history";
+export { createUsePageActivity } from "./hooks/use-page-activity";
 export { createUsePageBacklinks } from "./hooks/use-page-backlinks";
 export { createUseVersionSnapshot } from "./hooks/use-version-snapshot";
 export { createUsePageVersions } from "./hooks/use-page-versions";

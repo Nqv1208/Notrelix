@@ -291,7 +291,7 @@ export function createChatHooks(deps: ChatHookDeps) {
           voiceMessage: input.voiceMessage ?? false,
         }),
       onMutate: async (input) => {
-        await queryClient.cancelQueries({ queryKey: messagesKey });
+        // The bubble goes in before anything is awaited, so it renders in the render of the keypress.
         const current = readPending(queryClient, pendingKey);
         const exists = current.some(
           (entry) => entry.clientMessageId === input.clientMessageId,
@@ -317,17 +317,37 @@ export function createChatHooks(deps: ChatHookDeps) {
               )
             : [...current, next],
         );
+        await queryClient.cancelQueries({ queryKey: messagesKey });
       },
       onSuccess: (message: ChatMessage, input) => {
-        queryClient.setQueryData<PendingMessage[]>(
-          pendingKey,
-          readPending(queryClient, pendingKey).filter(
-            (entry) => entry.clientMessageId !== input.clientMessageId,
-          ),
-        );
         queryClient.setQueriesData<ChatMessagesCache>(
           { queryKey: messagesKey },
           (cache) => (cache ? appendToNewest(cache, message) : cache),
+        );
+        const landed = queryClient
+          .getQueryCache()
+          .findAll({ queryKey: messagesKey })
+          .some(
+            (query) =>
+              query.isActive() &&
+              (query.state.data as ChatMessagesCache | undefined)?.pages.some(
+                (page) => page.items.some((item) => item.id === message.id),
+              ),
+          );
+        // Sent from an older window the message has no window on screen to join yet: the bubble stays, marked stored,
+        // until a window holds the copy (the list hides a pending entry the history holds) or the channel is left.
+        const entries = readPending(queryClient, pendingKey);
+        queryClient.setQueryData<PendingMessage[]>(
+          pendingKey,
+          landed
+            ? entries.filter(
+                (entry) => entry.clientMessageId !== input.clientMessageId,
+              )
+            : entries.map((entry) =>
+                entry.clientMessageId === input.clientMessageId
+                  ? { ...entry, storedMessageId: message.id }
+                  : entry,
+              ),
         );
         // The message is stored (and shown): its files go to it now, even if one of them fails later.
         const files = filesRef.current.get(input.clientMessageId);
@@ -406,7 +426,26 @@ export function createChatHooks(deps: ChatHookDeps) {
       );
     }
 
-    return { send, retry, discard, isPending: mutation.isPending };
+    /** Drops the stored sends whose bubble still waits for a window: on leaving the channel, or once a window holds them. */
+    function discardStored(onlyIn?: ReadonlySet<string>): void {
+      const entries = readPending(queryClient, pendingKey);
+      const kept = entries.filter(
+        (entry) =>
+          entry.storedMessageId === undefined ||
+          (onlyIn !== undefined && !onlyIn.has(entry.storedMessageId)),
+      );
+      if (kept.length !== entries.length) {
+        queryClient.setQueryData<PendingMessage[]>(pendingKey, kept);
+      }
+    }
+
+    return {
+      send,
+      retry,
+      discard,
+      discardStored,
+      isPending: mutation.isPending,
+    };
   }
 
   /** Edit of the caller's own message; a stale version refetches the history (412). */

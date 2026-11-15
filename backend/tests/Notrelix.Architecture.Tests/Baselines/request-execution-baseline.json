@@ -2225,6 +2225,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Collaboration.Activity.Queries.GetPageActivity.GetPageActivityQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Activity.Queries.GetPageActivity.GetPageActivityQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Collaboration.Activity.Queries.GetResourceActivity.GetResourceActivityQuery",
     "kind": "Query",
     "principalMarkers": [

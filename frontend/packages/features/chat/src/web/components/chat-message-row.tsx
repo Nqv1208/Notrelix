@@ -463,12 +463,13 @@ function ChatMessageRowBase({
         className={cn(
           "min-w-0 max-w-full px-3 py-2 text-sm leading-[1.45]",
           shape,
+          "transition-colors duration-fast ease-out motion-reduce:transition-none",
           isOwn
-            ? "bg-primary text-primary-foreground"
+            ? "bg-primary text-primary-foreground hover:bg-[color-mix(in_oklab,var(--primary),var(--foreground)_8%)] active:bg-[color-mix(in_oklab,var(--primary),var(--foreground)_14%)]"
             : mentionsMe
               ? // A message that mentions the viewer: the warning tint (AA 5.4:1 light, 9.2:1 dark) plus "For you" for readers.
                 "bg-warning-subtle text-warning-subtle-foreground"
-              : "bg-sidebar-accent text-sidebar-accent-foreground",
+              : "bg-sidebar-accent text-sidebar-accent-foreground hover:bg-[color-mix(in_oklab,var(--sidebar-accent),var(--foreground)_6%)] active:bg-[color-mix(in_oklab,var(--sidebar-accent),var(--foreground)_10%)]",
           highlighted &&
             "ring-2 ring-ring ring-offset-2 ring-offset-background",
         )}
@@ -539,7 +540,7 @@ function ChatMessageRowBase({
         isOwn ? "flex-row-reverse" : "flex-row",
         continued ? "mt-0.5" : "mt-3",
         fresh &&
-          "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-150",
+          "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-[160ms]",
       )}
       data-message-id={message.id}
       data-own={isOwn ? "true" : "false"}
@@ -991,9 +992,9 @@ export function ChatPendingRow({
   return (
     <div
       className={cn(
-        "flex w-full flex-row-reverse px-3 md:px-4",
+        "flex w-full flex-row-reverse px-3.5 md:px-6 xl:px-5",
         continued ? "mt-0.5" : "mt-3",
-        "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-150",
+        "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-[160ms]",
       )}
       data-testid="chat-pending-message"
       data-status={pending.status}

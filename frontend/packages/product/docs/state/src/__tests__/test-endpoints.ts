@@ -10,6 +10,7 @@ export const testEndpoints: PageApiEndpoints = {
     comments: (pageId) => `/pages/${pageId}/comments`,
     commentsPage: (pageId) => `/pages/${pageId}/comments/page`,
     history: (pageId) => `/pages/${pageId}/history`,
+    activity: (pageId) => `/pages/${pageId}/activity`,
     search: (workspaceId) => `/workspaces/${workspaceId}/pages/search`,
     move: (pageId) => `/pages/${pageId}/move`,
     moveToSpace: (pageId) => `/pages/${pageId}/move-to-space`,

@@ -39,7 +39,10 @@ public sealed class ItemActivityRecorder
         string? itemTitle,
         IReadOnlyDictionary<string, string?>? data,
         CancellationToken cancellationToken,
-        Guid? automationExecutionId = null)
+        Guid? automationExecutionId = null,
+        string resourceKind = ItemActivityTypes.ResourceKind,
+        string subjectType = ItemActivityTypes.SubjectType,
+        string sourceContext = Work)
     {
         var alreadyRecorded = await _context.WorkspaceActivityLogs.AnyAsync(
             r => r.SourceEventId == sourceEventId && r.ActivityType == activityType, cancellationToken);
@@ -62,9 +65,9 @@ public sealed class ItemActivityRecorder
 
         _context.WorkspaceActivityLogs.Add(WorkspaceActivityLogRecord.Create(
             workspaceId: workspaceId,
-            sourceContext: Work,
+            sourceContext: sourceContext,
             activityType: activityType,
-            subjectType: ItemActivityTypes.SubjectType,
+            subjectType: subjectType,
             subjectId: itemId,
             occurredAt: occurredAt,
             sourceEventId: sourceEventId,
@@ -72,7 +75,7 @@ public sealed class ItemActivityRecorder
             subjectDisplayName: itemTitle,
             targetType: boardId is null ? null : "Board",
             targetId: boardId,
-            resourceType: ItemActivityTypes.ResourceKind,
+            resourceType: resourceKind,
             resourceId: itemId,
             resourceDisplayName: itemTitle,
             title: title.Length <= MaxTitleLength ? title : title[..(MaxTitleLength - 1)] + "…",

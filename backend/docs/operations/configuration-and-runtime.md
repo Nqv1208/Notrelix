@@ -420,6 +420,20 @@ repeat passes add nothing. It runs under the system (worker) context with the RL
 | `BatchSize` | 500 | Items read per batch. Range 1 to 5000. |
 | `OverdueGraceDays` | 3 | Local days after the due day an Item can still be reported overdue. Range 1 to 14. |
 
+`Documents:QuietVersionSweep` (Infrastructure, `PageQuietVersionSweepOptions`, validated on start by
+`PageQuietVersionSweepOptionsValidator`) configures the automatic version taken when editing goes quiet
+(`PageQuietVersionSweepService`, a hosted service; no delayed-message transport exists, so the delay is a sweep): a page
+with no block save for five minutes (`IPageVersionRecorder.QuietPeriod`) gets an Automatic history entry, as the editor of
+its newest block save, unless its content equals the newest entry. It is idempotent, runs beside the ten-minute rule that
+still captures long continuous sessions, and runs under the system (worker) context with the RLS worker scope:
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `true` | When false nothing is captured by the sweep. |
+| `Interval` | `00:01:00` (1 minute) | Time between passes. Range 10 seconds to 1 hour. |
+| `Lookback` | `00:30:00` (30 minutes) | How far past the quiet period a page is still looked at. Range the interval to 1 day. |
+| `BatchSize` | 200 | Pages captured per pass, each in its own transaction. Range 1 to 5000. |
+
 Session cookies: `CookieService` marks the access and refresh cookies `Secure` (and `SameSite=None`)
 only when the environment is `Production`. The staging Compose overlay in this repository serves plain
 HTTP behind its own nginx (default origins `http://localhost`), so staging cookies are intentionally not
