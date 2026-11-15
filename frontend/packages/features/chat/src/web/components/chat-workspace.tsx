@@ -1435,7 +1435,15 @@ export function ChatWorkspace({
               </SheetContent>
             </Sheet>
           ) : (
-            <aside className="flex w-64 shrink-0 flex-col border-e border-border bg-sidebar xl:w-72">
+            <aside
+              className={cn(
+                "flex w-64 shrink-0 flex-col border-e border-border bg-sidebar xl:w-72",
+                // Below 1280 the open side panel needs the room: the channel column would shrink to a sliver.
+                channelId && (channel || conversation) && panel !== null
+                  ? "max-xl:hidden"
+                  : null,
+              )}
+            >
               {sidebar}
             </aside>
           )}

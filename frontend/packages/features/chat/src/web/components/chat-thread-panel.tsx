@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Archive, Check, Loader2 } from "lucide-react";
 import { Button, Skeleton, cn } from "@notrelix/ui-web";
 import type { ChatMentionPayload, ChatMessage } from "../../core/types/chat";
 import type { ChatHooks } from "../query/create-chat-hooks";
@@ -341,6 +341,16 @@ export function ChatThreadPanel({
         </div>
       )}
 
+      {summary?.archived ? (
+        <p
+          role="status"
+          data-testid="chat-thread-archived"
+          className="mx-0 flex items-start gap-2 bg-primary/10 px-4 py-2.5 text-xs leading-[1.45] font-semibold text-link"
+        >
+          <Archive className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+          {copy.thread.archivedBanner}
+        </p>
+      ) : null}
       {info ? (
         <p role="status" className="mx-3 mb-1 text-xs text-muted-foreground">
           {info}
@@ -360,7 +370,11 @@ export function ChatThreadPanel({
         value={draft}
         disabledReason={null}
         copy={copy}
-        labelOverride={copy.thread.composerLabel}
+        labelOverride={
+          summary?.archived
+            ? copy.thread.reopenLabel
+            : copy.thread.composerLabel
+        }
         busy={replier.isPending}
         onChange={setDraft}
         onSend={send}

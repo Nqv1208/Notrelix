@@ -209,6 +209,51 @@ describe("ChatThreadPanel", () => {
   });
 });
 
+describe("an archived thread", () => {
+  it("says it was archived and offers a reply that reopens it", async () => {
+    const { hooks, wrapper } = setup();
+    const root = await rootOfGeneral(hooks);
+    const archivedHooks = {
+      ...hooks,
+      useThreadReplies: (workspaceId: string, rootId: string) => {
+        const query = hooks.useThreadReplies(workspaceId, rootId);
+        return {
+          ...query,
+          data: query.data && {
+            ...query.data,
+            pages: query.data.pages.map((page) => ({
+              ...page,
+              thread: { ...page.thread, archived: true },
+            })),
+          },
+        };
+      },
+    } as unknown as typeof hooks;
+    render(
+      <ChatThreadPanel
+        hooks={archivedHooks}
+        workspaceId={WORKSPACE}
+        rootId={root.id}
+        viewerId="someone"
+        authorName={() => "Author"}
+        copy={en}
+        locale="en"
+        timeZone="UTC"
+        spaceLabel="# general"
+        pinnedIds={new Set()}
+        onClose={vi.fn()}
+      />,
+      { wrapper },
+    );
+    expect(
+      (await screen.findByTestId("chat-thread-archived")).textContent,
+    ).toBe(en.thread.archivedBanner);
+    expect(
+      screen.getByRole("textbox", { name: en.thread.reopenLabel }),
+    ).toBeTruthy();
+  });
+});
+
 describe("threads I follow", () => {
   it("lists the followed threads through the hook (the empty state when none)", async () => {
     const { hooks, wrapper } = setup();

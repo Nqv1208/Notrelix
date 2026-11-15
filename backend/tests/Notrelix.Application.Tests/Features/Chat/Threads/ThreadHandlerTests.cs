@@ -554,6 +554,26 @@ public class ThreadHandlerTests
     }
 
     [Fact]
+    public async Task A_thread_rooted_before_a_group_member_rejoined_is_not_listed_but_a_later_one_is()
+    {
+        var group = Space.CreateGroup(_accountId, _workspaceId, null, [_owner, _member, _other], _owner, Now.AddDays(-1));
+        _spaces.Add(group);
+        var before = Root(group); // Now - 2 h
+        Thread(group, before, replies: 1);
+        group.RemoveMember(_member, Now.AddHours(-90d / 60));
+        group.AddParticipant(_member, Now.AddHours(-1)); // the join point is after the first root
+        var after = Message.CreateUserMessage(_accountId, _workspaceId, group.Id, ++_lastSequence, _other, "later root", $"root-{Guid.NewGuid():N}", null, Now.AddMinutes(-30));
+        _messages.Add(after);
+        Thread(group, after, replies: 1, lastReplyAt: Now.AddMinutes(-10));
+        _followers.Add(ThreadFollower.Follow(_accountId, _workspaceId, before.Id, _member, false));
+        _followers.Add(ThreadFollower.Follow(_accountId, _workspaceId, after.Id, _member, false));
+
+        var result = await FollowedHandler().Handle(new ListFollowedThreadsQuery(_workspaceId, null, 50), CancellationToken.None);
+
+        result.Data!.Items.Select(i => i.Root.Id).Should().Equal(after.Id);
+    }
+
+    [Fact]
     public async Task Followed_threads_page_with_a_cursor()
     {
         var space = Channel();

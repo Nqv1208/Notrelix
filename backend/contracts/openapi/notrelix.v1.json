@@ -10195,7 +10195,7 @@
           "Documents.Pages",
           "Documents.Pages"
         ],
-        "summary": "Rename a page",
+        "summary": "Rename a page or set its icon",
         "operationId": "Documents.Pages.UpdatePage",
         "parameters": [
           {
@@ -35252,6 +35252,10 @@
           "expectedVersion": {
             "type": "integer",
             "format": "int64"
+          },
+          "icon": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

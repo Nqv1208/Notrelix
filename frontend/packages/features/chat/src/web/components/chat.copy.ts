@@ -473,6 +473,9 @@ export const en = {
     empty: "No replies yet.",
     loadMore: "Load more replies",
     composerLabel: "Reply in thread",
+    archivedBanner:
+      "This thread was archived after a period with no replies. Reply to reopen it.",
+    reopenLabel: "Reply to reopen the thread",
     composerPlaceholder: "Reply in thread…",
     alsoSend: "Also send to channel",
     send: "Send reply",
@@ -1286,6 +1289,9 @@ export const vi: ChatCopy = {
     empty: "Chưa có phản hồi nào.",
     loadMore: "Tải thêm phản hồi",
     composerLabel: "Trả lời trong luồng",
+    archivedBanner:
+      "Luồng đã được lưu trữ do không có phản hồi. Trả lời để mở lại.",
+    reopenLabel: "Trả lời để mở lại luồng",
     composerPlaceholder: "Trả lời trong luồng…",
     alsoSend: "Cũng gửi vào kênh",
     send: "Gửi phản hồi",
