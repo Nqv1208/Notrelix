@@ -119,9 +119,9 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 
 | ID | Use case | Capability | Actors | BE | FE | Design | Real e2e | State | Gap |
 |---|---|---|---|---|---|---|---|---|---|
-| UC-DCT-A01 | Create a page | A | Editor of the parent or space, workspace member | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
-| UC-DCT-A02 | Rename a page | A | Editor | partial | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
-| UC-DCT-A03 | Set a page icon | A | Editor | partial | partial | Final-Docs-2 | none | IMPLEMENTING | API drops icon; no endpoint field |
+| UC-DCT-A01 | Create a page | A | Editor of the parent or space, workspace member | yes | yes | Final-Docs-2 | real | DONE | none |
+| UC-DCT-A02 | Rename a page | A | Editor | partial | yes | Final-Docs-2 | real | DONE | none |
+| UC-DCT-A03 | Set a page icon | A | Editor | yes | partial | Final-Docs-2 | none | INTEGRATING | Icon picker UI undrawn; no entry point |
 | UC-DCT-A04 | Move a page to the trash | A | Editor | yes | yes | Final-Docs-2 | real | DONE | none |
 | UC-DCT-A05 | Restore a page from the trash | A | Editor | yes | yes | Final-Docs-2 | real | DONE | none |
 | UC-DCT-A06 | Delete a trashed page permanently | A | Manager | yes | yes | Final-Docs-2 | real | DONE | none |
@@ -258,7 +258,7 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - Rules: product doc sections 7 to 9 (product rules DCT-001, DCT-002, DCT-005); GOV-028 placement authorization.
 - Acceptance: Given an Editor of a Space, When they create a page in it, Then the page exists in that Space and they are its Manager. Given a viewer of the Space, When they post a create, Then the answer is `404` and nothing is stored. Given a parent in another workspace, When posted, Then `404`.
 - Evidence: BE `POST /api/v1/workspaces/{workspaceId}/pages` (requires `Idempotency-Key`; `[IdempotencyOperation("documents.pages.create-page.v1")]` on `CreatePageCommand`, replay for 24 hours), `CreatePageCommandHandler` · FE `useCreatePage`, `DocPageScreen`, `useCreateResource` (one key per creation attempt, reset when the name changes) · Design Final-Docs-2 · Tests `CreatePageTargetPolicyMatrixTests`, `PageTests`, `PageCreatedOutboxEvidenceTests` · Real e2e `documents.real.e2e.spec.ts`
-- State: HARDENING — tests and owner check (replay with one key and a conflicting body, cross-tenant negative test; the real e2e helpers that post a page directly must send `Idempotency-Key`).
+- State: DONE (2026-11-16). Real e2e on the real stack 2026-11-16: `frontend/e2e/real/documents-move-dialogs.real.e2e.spec.ts` 4 of 4 and `frontend/e2e/real/documents-page-lifecycle.real.e2e.spec.ts` 3 of 3 (create replay with one key, conflicting body refused, title bounds 400, rename +1, same title no-op, stale 412, outsider and guest identical 404 with the same body). Unit and handler tests: `CreatePageTargetPolicyMatrixTests`, `UpdatePageHandlerTests`; the Final-Docs-2 frame is held by `frontend/e2e/mock/design-fidelity-docs.mock.e2e.spec.ts` (no new UI).
 
 ### UC-DCT-A02 Rename a page
 - Capability: A Page lifecycle
@@ -272,7 +272,7 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - Rules: product doc section 9 and product rule DCT-025; `DCREQ113`, `DCREQ136`, `DCREQ137`.
 - Acceptance: Given a title change, When patched, Then version +1 and one `PageRenamed`. Given the same title, Then no version change. Given a stale version, Then `412` and the title is unchanged. Given a Viewer, Then `404`.
 - Evidence: BE `PATCH /api/v1/pages/{pageId}` (body `title`, `expectedVersion`; the dead `iconType`, `iconValue`, `coverUrl` fields are gone), `UpdatePageCommand` is authorized as `UpdatePage` and adds `IExpectedVersionRequest` (registered in `ExpectedVersionTargetMap`), `UpdatePageCommandHandler` · FE `useDocEditor.updateTitle` (sends the cached page version; on 412 it reads the page, treats an already applied rename as success, otherwise shows the stored title and the notice `header.titleConflict`) · Design Final-Docs-2 · Tests `PageTests`, `PageRulesTests`, `ExpectedVersionArchitectureTests` · Real e2e `documents.real.e2e.spec.ts`
-- State: HARDENING — tests and owner check (stale-write test, no-op test, Viewer `404`, real e2e for the 412; the handler tests and `GovernanceResourcePermissionFlowTests` still build the old `UpdatePageCommand(pageId, title)`). Rename authorized as UpdatePage (owner decision 2026-10-30).
+- State: DONE (2026-11-16). Real e2e on the real stack 2026-11-16: `frontend/e2e/real/documents-move-dialogs.real.e2e.spec.ts` 4 of 4 and `frontend/e2e/real/documents-page-lifecycle.real.e2e.spec.ts` 3 of 3 (create replay with one key, conflicting body refused, title bounds 400, rename +1, same title no-op, stale 412, outsider and guest identical 404 with the same body). Unit and handler tests: `CreatePageTargetPolicyMatrixTests`, `UpdatePageHandlerTests`; the Final-Docs-2 frame is held by `frontend/e2e/mock/design-fidelity-docs.mock.e2e.spec.ts` (no new UI).
 
 ### UC-DCT-A03 Set a page icon
 - Capability: A Page lifecycle
@@ -285,8 +285,8 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - UI states: loading, validation error, read-only, conflict, pending.
 - Rules: product doc section 7 (Page title and metadata); `DCREQ113`.
 - Acceptance: Given an Editor, When they pick an icon, Then the tree and head show it after reload. Given a Viewer, Then no picker is offered.
-- Evidence: BE `PATCH /api/v1/pages/{pageId}` (request has `icon` and `cover` fields that the endpoint does not forward), `Page.Icon` · FE `UpdatePagePayload` · Design Final-Docs-2 (icon shown, picker not drawn) · Tests none · Real e2e none
-- State: IMPLEMENTING — the API ignores the icon; no setter on the aggregate; no picker artboard.
+- Evidence: BE `PATCH /api/v1/pages/{pageId}` (request has `icon` and `cover` fields that the endpoint does not forward), `Page.Icon` · FE `UpdatePagePayload` · Design Final-Docs-2 (icon shown, picker not drawn) · Tests `UpdatePageHandlerTests`, `page-update-icon.unit.test.ts` · Real e2e `documents-page-lifecycle.real.e2e.spec.ts` (icon steps)
+- State: INTEGRATING — `PATCH /api/v1/pages/{pageId}` now takes `icon` (`Page.SetIcon`: same icon no-op, blank restores the default, 32 characters at most, trashed page refused; `UpdatePageHandlerTests` 4 new tests) and the web client forwards it (`page-update-icon.unit.test.ts`). Gap: the icon picker is not drawn on Final-Docs-2 and the page head draws no icon row, so there is no entry point yet (adding a File menu item or a head row would move drawn frames); needs a board before the UI is built.
 
 ### UC-DCT-A04 Move a page to the trash
 - Capability: A Page lifecycle
