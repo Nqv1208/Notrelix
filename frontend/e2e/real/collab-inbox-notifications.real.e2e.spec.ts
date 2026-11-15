@@ -276,6 +276,8 @@ test("the recipient reads, finishes, snoozes and replies to mentions from the In
       .toBe(false);
     await reload();
     expect((await s.entryWith(read))!.unread).toBe(false);
+    // Needs action lists only what is still open; the All tab keeps the read entry.
+    await reader.getByRole("tab", { name: "All" }).click();
     await expect(reader.getByText(read).first()).toBeVisible();
 
     // Mark done leaves the default list and sits under Done; moving it back returns it.
