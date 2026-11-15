@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocale } from "@notrelix/i18n";
 import {
@@ -76,7 +76,11 @@ import {
   type ChatHookDeps,
 } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
-import { ChatComposer, type ChatComposerMentions } from "./chat-composer";
+import {
+  ChatComposer,
+  type ChatComposerMentions,
+  type ChatComposerProps,
+} from "./chat-composer";
 import {
   ChatMessageList,
   type ChatListStatus,
@@ -218,6 +222,38 @@ function failureText(kind: ChatFailureKind, copy: ChatCopy): string {
  * composer) and the channel dialogs. It owns the server state through the
  * query hooks and only shows what the cache holds.
  */
+/**
+ * The channel composer with its draft. The text lives here, not in the workspace, so a keystroke re-renders the
+ * composer only and not the message list. Drafts are kept per channel while the page is open (UC-CHT-B07).
+ */
+function ChatDraftComposer({
+  draftKey,
+  drafts,
+  onSend,
+  ...rest
+}: Omit<ChatComposerProps, "value" | "onChange"> & {
+  readonly draftKey: string;
+  readonly drafts: RefObject<Record<string, string>>;
+}) {
+  const [value, setValue] = useState(drafts.current[draftKey] ?? "");
+  function change(next: string) {
+    setValue(next);
+    if (next.length === 0) delete drafts.current[draftKey];
+    else drafts.current[draftKey] = next;
+  }
+  return (
+    <ChatComposer
+      {...rest}
+      value={value}
+      onChange={change}
+      onSend={(...args) => {
+        onSend(...args);
+        change("");
+      }}
+    />
+  );
+}
+
 export function ChatWorkspace({
   deps,
   workspaceId,
@@ -411,7 +447,7 @@ export function ChatWorkspace({
   // ─── Local interaction state ──────────────────────────────────────────────
   // Drafts are kept per space while the page is open (UC-CHT-B07). A feature package does not touch browser
   // storage, so keeping them across a reload needs a host-provided store: owner decision, not built here.
-  const [drafts, setDrafts] = useState<Readonly<Record<string, string>>>({});
+  const drafts = useRef<Record<string, string>>({});
   const [scrollRequest, setScrollRequest] = useState<ChatScrollRequest | null>(
     null,
   );
@@ -553,7 +589,6 @@ export function ChatWorkspace({
           : channel.capabilities?.canPost === false
             ? copy.composer.readOnly
             : null;
-  const draft = drafts[ch] ?? "";
   // What the message actions offer here: archived is read-only, and the server's capabilities decide the rest.
   const grants = messageActionGrants({
     archived: channel?.isArchived === true,
@@ -594,16 +629,6 @@ export function ChatWorkspace({
   );
   const notifyTyping = useTypingSignal(ephemeral, channelId);
 
-  function setDraft(value: string) {
-    if (!channelId) return;
-    setDrafts((prev) => {
-      const next = { ...prev };
-      if (value.length === 0) delete next[channelId];
-      else next[channelId] = value;
-      return next;
-    });
-  }
-
   // A reply and an open panel belong to one channel: both close when the channel changes.
   useEffect(() => {
     setReplyTo(null);
@@ -619,7 +644,6 @@ export function ChatWorkspace({
     if (hasNewer) jumpToLatest();
     sender.send(content, replyTo?.id ?? null, payload, files);
     setReplyTo(null);
-    setDraft("");
     request("bottom");
   }
 
@@ -1639,17 +1663,18 @@ export function ChatWorkspace({
                       }}
                     />
                   ) : null}
-                  <ChatComposer
+                  <ChatDraftComposer
+                    key={ch}
+                    draftKey={ch}
+                    drafts={drafts}
                     channelName={spaceName}
                     labelOverride={
                       conversation
                         ? fillCopy(copy.dm.view.composer, { name: spaceName })
                         : undefined
                     }
-                    value={draft}
                     disabledReason={composerDisabledReason}
                     copy={copy}
-                    onChange={setDraft}
                     onTyping={ephemeral ? notifyTyping : undefined}
                     onSend={handleSend}
                     mentions={composerMentions}
