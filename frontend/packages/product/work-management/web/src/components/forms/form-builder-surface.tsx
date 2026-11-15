@@ -406,7 +406,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto bg-background text-foreground">
-      <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-4 py-5 lg:flex-row lg:items-start lg:px-6">
+      <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-4 py-5 xl:flex-row xl:items-start lg:px-6">
         <section
           aria-label={b.aria}
           className="min-w-0 flex-1 overflow-hidden rounded-[12px] border border-line bg-popover"
@@ -755,7 +755,7 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
         ) : (
           <aside
             aria-label={b.panel}
-            className="hidden w-[380px] shrink-0 rounded-[12px] border border-dashed border-line-strong p-5 text-item-small text-meta-foreground lg:block"
+            className="hidden w-[380px] shrink-0 rounded-[12px] border border-dashed border-line-strong p-5 text-item-small text-meta-foreground xl:block"
           >
             {b.pickHere}
           </aside>
@@ -1061,7 +1061,7 @@ function QuestionPanel({
   return (
     <aside
       aria-label={b.panel}
-      className="flex w-full shrink-0 flex-col gap-3.5 rounded-[12px] border border-line bg-popover p-[18px] lg:w-[380px]"
+      className="flex w-full shrink-0 flex-col gap-3.5 rounded-[12px] border border-line bg-popover p-[18px] xl:w-[380px]"
     >
       <div className="flex items-center gap-2">
         <h2 className="m-0 flex-1 text-[16px] font-[650]">
