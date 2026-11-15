@@ -10,16 +10,17 @@ public static class DeleteSpaceEndpoint
         group.MapWorkspaceDelete("/", HandleAsync)
             .WithName("Workspaces.Spaces.DeleteSpace")
             .WithTags("Workspaces.Spaces")
-            .WithSummary("Permanently delete a space");
+            .WithSummary("Delete a space (restorable for 30 days)");
         return group;
     }
 
     private static async Task<IResult> HandleAsync(
         Guid workspaceId,
         Guid spaceId,
+        [FromQuery] long expectedVersion,
         ISender sender)
     {
-        var result = await sender.Send(new DeleteSpaceCommand(workspaceId, spaceId));
+        var result = await sender.Send(new DeleteSpaceCommand(workspaceId, spaceId, expectedVersion));
         return result.ToNoContentResult();
     }
 }

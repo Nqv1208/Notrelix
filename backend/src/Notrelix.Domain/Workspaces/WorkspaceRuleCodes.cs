@@ -83,6 +83,7 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Space_CannotChangeTypeArchived = "Workspaces_Space_CannotChangeTypeArchived";
     public const string Workspaces_Space_CannotUnarchiveNonArchived = "Workspaces_Space_CannotUnarchiveNonArchived";
     public const string Workspaces_Space_ParentInOtherWorkspace = "Workspaces_Space_ParentInOtherWorkspace";
+    public const string Workspaces_Space_RestoreWindowExpired = "Workspaces_Space_RestoreWindowExpired";
     public const string Workspaces_Space_ParentNotActive = "Workspaces_Space_ParentNotActive";
     public const string Workspaces_Space_MoveCreatesCycle = "Workspaces_Space_MoveCreatesCycle";
     public const string Workspaces_Space_DuplicateSiblingName = "Workspaces_Space_DuplicateSiblingName";

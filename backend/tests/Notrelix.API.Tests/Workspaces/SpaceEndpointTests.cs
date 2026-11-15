@@ -119,7 +119,7 @@ public class SpaceEndpointTests : IClassFixture<NotrelixApiFactory>
     [Fact]
     public async Task DeleteSpace_ReturnsSuccess()
     {
-        var response = await _client.DeleteAsync($"/api/v1/workspaces/{WorkspaceId}/spaces/{SpaceId}");
+        var response = await _client.DeleteAsync($"/api/v1/workspaces/{WorkspaceId}/spaces/{SpaceId}?expectedVersion=1");
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.NotFound);
     }
 
