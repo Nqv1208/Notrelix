@@ -217,6 +217,12 @@ export const channelsOperations = [
                 hiddenAt: null,
               },
             );
+            appendSystemMessage(
+              state,
+              space,
+              caller.userId,
+              CHAT_SYSTEM_TEXT.created,
+            );
             return {
               status: 201,
               body: channelViewOf(state, space, caller),

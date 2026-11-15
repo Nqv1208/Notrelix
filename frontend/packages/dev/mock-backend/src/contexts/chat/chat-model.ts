@@ -266,6 +266,7 @@ export const CHAT_REACTION_PALETTE: readonly string[] = [
 
 /** The announcements the backend writes as system messages (ChatSystemMessages). */
 export const CHAT_SYSTEM_TEXT = {
+  created: "created the channel",
   memberJoined: "joined the channel",
   memberLeft: "left the channel",
   memberRemoved: "was removed from the channel",

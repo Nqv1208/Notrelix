@@ -60,6 +60,9 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
 
     private Space() : base() { }
 
+    /// <summary>Takes the next sequence of a space that is not stored yet (the first system message of a new channel); a stored space advances through the allocator.</summary>
+    public long ReserveSequence() => ++LastSequence;
+
     public static Space CreateChannel(
         Guid accountId,
         Guid workspaceId,
