@@ -120,6 +120,7 @@ internal sealed class OrgTreeTestHost
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AccessControlBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
 
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Members.Services.IWorkspaceOwnerUpdateLocker, Notrelix.Infrastructure.Workspaces.Members.WorkspaceOwnerUpdateLocker>();
         services.AddScoped<ApplicationDbContext>(sp => _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IIdentityDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());

@@ -68,6 +68,36 @@ public sealed class TeamWriteConcurrencyIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task TwoCreatesOfOneName_AtTheSameTime_MakeOneTeam()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        using var first = _host.CreateProvider(stack.AccountId, stack.OwnerId);
+        using var second = _host.CreateProvider(stack.AccountId, stack.OwnerId);
+
+        var attempts = await Task.WhenAll(
+            Attempt(first, stack.WorkspaceId, "Platform"),
+            Attempt(second, stack.WorkspaceId, "platform"));
+
+        attempts.Count(failure => failure is null).Should().Be(1, "the second create reads the Team the first one made");
+        attempts.Single(failure => failure is not null).Should().BeOfType<DomainBusinessRuleException>()
+            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Team_DuplicateName);
+        (await _host.ReadAsync(c => c.Teams.CountAsync(t => t.WorkspaceId == stack.WorkspaceId))).Should().Be(1);
+    }
+
+    private static async Task<Exception?> Attempt(ServiceProvider scope, Guid workspaceId, string name)
+    {
+        try
+        {
+            await OrgTreeTestHost.SendAsync(scope, new CreateTeamCommand(workspaceId, name, null));
+            return null;
+        }
+        catch (Exception ex)
+        {
+            return ex;
+        }
+    }
+
+    [Fact]
     public async Task RemoveTeamMember_StaleVersion_Is412_AndMemberStaysActive()
     {
         var stack = await _host.SeedWorkspaceAsync();
