@@ -19,10 +19,13 @@
 -- rule) is left exactly as it is. The apply reruns 008 first on every start, so the plain rule is restored and
 -- rewritten each time. A later script that tightens one of these tables must run after this one.
 --
+-- Tables that carry extra application policies next to the plain p_app_* ones (boards, pages, api_tokens,
+-- calendar_integrations, integration_connections, inbound_webhook_receipts, workspace_invitations, outbox_messages) are
+-- included: their extra arms (invitation, token and webhook bindings) are separate permissive policies with other
+-- names, which this script never reads or alters, so they stay exactly as they were.
+--
 -- Not touched (they keep their policy): tables whose rule is anything other than the plain rule: account-only
--- access, (NULL, workspace_id) scope, own-rows-only, admin checks, parent-row EXISTS scopes, and tables with extra
--- application policies (boards, pages, api_tokens, calendar_integrations, integration_connections,
--- inbound_webhook_receipts, workspace_invitations, outbox_messages).
+-- access, (NULL, workspace_id) scope, own-rows-only, admin checks and parent-row EXISTS scopes.
 -- =============================================================================
 
 DO $$
@@ -61,7 +64,10 @@ BEGIN
         'work.form_submissions', 'work.forms', 'work.item_dependencies', 'work.item_templates', 'work.labels',
         'work.mirror_value_snapshots', 'work.saved_filters', 'work.time_tracking_entries', 'work.workload_allocations',
         'workspace.space_members', 'workspace.space_paths', 'workspace.spaces', 'workspace.team_members',
-        'workspace.teams', 'workspace.workspace_members'
+        'workspace.teams', 'workspace.workspace_members',
+        'docs.pages', 'work.boards', 'identity.api_tokens', 'integration.calendar_integrations',
+        'integration.integration_connections', 'integration.inbound_webhook_receipts',
+        'workspace.workspace_invitations', 'messaging.outbox_messages'
     ]
     LOOP
         IF to_regclass(t) IS NULL THEN
