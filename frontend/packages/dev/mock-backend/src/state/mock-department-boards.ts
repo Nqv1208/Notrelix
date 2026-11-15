@@ -282,10 +282,18 @@ export const BULK_STATE_BOARDS: readonly DepartmentBoard[] = [
   },
 ];
 
+const DUE_DAY_FORMAT = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "numeric",
+  timeZone: "UTC",
+});
+
 /** A day "dd/MM" counted from 10/10/2026, one per row, so the due order is the row order. */
 function dueDay(index: number): string {
-  const day = new Date(Date.UTC(2026, 9, 10 + index));
-  return `${day.getUTCDate()}/${day.getUTCMonth() + 1}`;
+  const parts = DUE_DAY_FORMAT.formatToParts(Date.UTC(2026, 9, 10 + index));
+  const part = (type: string) =>
+    Number(parts.find((p) => p.type === type)?.value);
+  return `${part("day")}/${part("month")}`;
 }
 
 export const LARGE_BOARD_ID = "mock-board-it-large";
