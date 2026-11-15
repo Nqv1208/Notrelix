@@ -57,7 +57,10 @@ export function createVersionApi(
         await api.post<PageVersionDtoApi>(
           endpoints.pages.versions(pageId),
           { name },
-          { skipGlobalErrorToast: true },
+          {
+            skipGlobalErrorToast: true,
+            idempotencyKey: globalThis.crypto.randomUUID(),
+          },
         ),
       );
     },
@@ -76,7 +79,10 @@ export function createVersionApi(
       const dto = await api.post<RestorePageVersionResultDtoApi>(
         endpoints.pages.restoreVersion(pageId, versionId),
         { currentBlocks: seen },
-        { skipGlobalErrorToast: true },
+        {
+          skipGlobalErrorToast: true,
+          idempotencyKey: globalThis.crypto.randomUUID(),
+        },
       );
       return {
         version: mapVersion(dto.version),
