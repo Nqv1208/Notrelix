@@ -190,7 +190,7 @@ Testcontainers or Integration suites, `docker compose`, `pnpm e2e:*`, the full `
 
 Merging belongs to the coordinator session. Every other session opens PRs, gets its checks green and reports.
 
-1. One serial queue: merge `develop` into the PR, push, wait for the checks, squash-merge, then the next PR. Parallel merges keep each other BEHIND and nothing lands.
+1. The coordinator merges each queued PR as soon as its own head is green. No update-branch. A PR that conflicts or has a failing check is dropped and reported, and never blocks the others. After merges, the coordinator watches the develop push CI and fixes forward at once if a combined change breaks it.
 2. Say a PR is mergeable only after every check on the head SHA is green.
 3. Squash with a Conventional Commits title and no trailers or keys:
    `gh pr merge <n> --squash --delete-branch --subject "<type(scope): summary>" --body "<why>" --match-head-commit <sha>`
