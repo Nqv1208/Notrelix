@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
-
-#nullable disable
+﻿#nullable disable
 
 namespace Notrelix.Infrastructure.Data.Migrations
 {
@@ -10,37 +8,25 @@ namespace Notrelix.Infrastructure.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateIndex(
-                name: "ix_messages_content_trgm",
-                schema: "chat",
-                table: "messages",
-                column: "content",
-                filter: "kind = 'User' AND deleted_at IS NULL")
-                .Annotation("Npgsql:IndexMethod", "gin")
-                .Annotation("Npgsql:IndexOperators", new[] { "gin_trgm_ops" });
+            // Built CONCURRENTLY (outside the migration transaction) so chat sends are not blocked while chat.messages is indexed.
+            migrationBuilder.Sql(
+                "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_messages_content_trgm " +
+                "ON chat.messages USING gin (content gin_trgm_ops) " +
+                "WHERE kind = 'User' AND deleted_at IS NULL;",
+                suppressTransaction: true);
 
-            migrationBuilder.CreateIndex(
-                name: "ix_messages_unread_count",
-                schema: "chat",
-                table: "messages",
-                columns: new[] { "space_id", "sequence", "author_id" },
-                descending: new[] { false, true, false },
-                filter: "kind = 'User' AND deleted_at IS NULL")
-                .Annotation("Npgsql:IndexInclude", new[] { "account_id", "workspace_id" });
+            migrationBuilder.Sql(
+                "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_messages_unread_count " +
+                "ON chat.messages (space_id, sequence DESC, author_id) INCLUDE (account_id, workspace_id) " +
+                "WHERE kind = 'User' AND deleted_at IS NULL;",
+                suppressTransaction: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "ix_messages_content_trgm",
-                schema: "chat",
-                table: "messages");
-
-            migrationBuilder.DropIndex(
-                name: "ix_messages_unread_count",
-                schema: "chat",
-                table: "messages");
+            migrationBuilder.Sql("DROP INDEX CONCURRENTLY IF EXISTS chat.ix_messages_content_trgm;", suppressTransaction: true);
+            migrationBuilder.Sql("DROP INDEX CONCURRENTLY IF EXISTS chat.ix_messages_unread_count;", suppressTransaction: true);
         }
     }
 }
