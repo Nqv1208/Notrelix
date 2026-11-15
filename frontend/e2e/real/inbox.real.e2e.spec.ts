@@ -15,30 +15,29 @@ test("a member mentioned in a comment finds it in the inbox and marks it read", 
 }) => {
   // A manager of Workspace 3 mentions the admin in a comment on an item.
   await signIn(page, realUsers.workspaceAdmin);
-  const { workspace, board } = await openBoard(
-    page,
-    "Workspace 3",
-    "Engineering Tasks",
-  );
+  await openBoard(page, "Workspace 3", "Engineering Tasks");
   await page
     .getByRole("button", { name: /Task \d+/ })
     .first()
     .click();
+  // The item has no page of its own: the card popup that opened is where the comment is written.
   await expect(page).toHaveURL(/[?&]item=/);
-  const itemId = new URL(page.url()).searchParams.get("item")!;
-  await page.goto(
-    `/workspaces/${workspace.id}/boards/${board.id}/items/${itemId}`,
-  );
-  const composer = page.getByRole("textbox", { name: "Write a comment" });
+  const card = page.getByRole("dialog");
+  // The composer opens from its one-line prompt.
+  await card.getByRole("button", { name: "Write a comment…" }).click();
+  const composer = card.getByRole("textbox", { name: "Write a comment" });
   await composer.fill("Please look at this ");
-  await page.getByRole("button", { name: "Mention someone" }).click();
-  await page.getByRole("option", { name: "admin", exact: true }).click();
+  await card.getByRole("button", { name: "Mention someone" }).click();
+  await expect(
+    page.getByRole("option", { name: "admin", exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Enter");
   const commented = page.waitForResponse(
     (response) =>
       response.request().method() === "POST" &&
       /\/board-items\/[^/]+\/comments$/.test(response.url()),
   );
-  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await card.getByRole("button", { name: "Comment", exact: true }).click();
   expect((await commented).status()).toBeLessThan(300);
 
   // The admin sees the mention in the inbox once the notification is delivered.

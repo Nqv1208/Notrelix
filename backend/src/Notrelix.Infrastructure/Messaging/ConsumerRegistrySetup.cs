@@ -802,7 +802,17 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-chat-message-realtime-v1",
                 BoundedContext = "Chat",
-                Description = "Publishes a new message to the realtime gateway (channel frame) and fans out unread counts to the per-user stream",
+                Description = "Publishes a new message to the realtime gateway (channel frame)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ChatMessageCreatedUnreadConsumer",
+                EventName = "chat.message.created",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-unread-fan-out-v1",
+                BoundedContext = "Chat",
+                Description = "Fans out the unread and mention counts of a new message to the per-user stream, apart from the channel frame",
                 Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition

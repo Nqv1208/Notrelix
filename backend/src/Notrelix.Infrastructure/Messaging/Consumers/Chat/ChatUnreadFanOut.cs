@@ -11,7 +11,8 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Chat;
 /// The per-user stream of a new message (UC-CHT-C09): every active member of the space except the author, who is not muted,
 /// gets their new unread and mention count for the space. Cost per message: one query for the recipients (bounded by
 /// <see cref="ChatRealtime.MaxUnreadRecipients"/>) and one grouped count for the unread and one for the mentions of all of them, then one realtime publish per
-/// recipient in chunks. Nothing is queried per recipient.
+/// recipient in chunks. Nothing is queried per recipient. Both counts cover the audience only: the cost is the backlog of each counted
+/// recipient, so a muted member adds nothing to it.
 /// </summary>
 public sealed class ChatUnreadFanOut
 {
@@ -59,12 +60,12 @@ public sealed class ChatUnreadFanOut
         var unread = await (
             from m in _db.ChatMemberships.AsNoTracking()
             from msg in _db.ChatMessages.AsNoTracking()
-            where m.SpaceId == message.SpaceId && m.LeftAt == null && m.UserId != message.AuthorId
+            where m.SpaceId == message.SpaceId && m.LeftAt == null && userIds.Contains(m.UserId)
                   && msg.SpaceId == m.SpaceId && msg.Sequence > m.ReadSequence
                   && msg.AuthorId != m.UserId && msg.Kind == MessageKind.User && msg.DeletedAt == null
             group msg by m.UserId into g
             select new { UserId = g.Key, Count = g.Count() }).ToListAsync(cancellationToken);
-        var counts = unread.Where(u => userIds.Contains(u.UserId)).ToDictionary(u => u.UserId, u => u.Count);
+        var counts = unread.ToDictionary(u => u.UserId, u => u.Count);
 
         var mentionCounts = await MentionCounts.ForSpaceAsync(_db, message.SpaceId, userIds, cancellationToken);
 
