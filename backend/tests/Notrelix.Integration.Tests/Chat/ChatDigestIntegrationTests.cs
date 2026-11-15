@@ -93,7 +93,7 @@ public sealed class ChatDigestIntegrationTests
             foreach (var person in people)
             {
                 var set = NotificationPreferenceSet.Create(
-                    stack.AccountId, stack.WorkspaceId, person, [new NotificationPreferenceChange(NotificationTypes.Digest, NotificationChannels.Email, true)], Window0)!;
+                    person, [new NotificationPreferenceChange(NotificationTypes.Digest, NotificationChannels.Email, true)], Window0)!;
                 seed.NotificationPreferenceSets.Add(set);
             }
 

@@ -1,16 +1,16 @@
 using Notrelix.Application.Features.Chat.Abstractions;
-using Notrelix.Application.Features.Chat.Mentions.Services;
 using Notrelix.Application.Features.Chat.ReadState.DTOs;
-using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Spaces;
 
 namespace Notrelix.Application.Features.Chat.ReadState.Services;
 
 /// <summary>
-/// Builds the unread summary of a person in a Workspace (UC-CHT-D01, D04). Three statements: the person's live memberships with
-/// the space names, one grouped count of the messages after each boundary and one grouped count of the mentions of the person
-/// among them (see <see cref="MentionCounts"/>), for one space only when <c>onlySpaceId</c> is given (a caller that announces one space). The counts are computed in the database; no message is loaded. A message counts when it is a user message, is not deleted, is not the person's own, and its
-/// sequence is after the person's read boundary in its space.
+/// Builds the unread summary of a person in a Workspace (UC-CHT-D01, D04) from the stored read state: one statement over the person's
+/// live memberships joined to their spaces, for one space only when <c>onlySpaceId</c> is given (a caller that announces one space).
+/// Nothing is counted. A space is unread when its last sequence is past the person's boundary, the number is the sequence difference
+/// (sequences are dense per space, so it is exact for a conversation where only the people write; it also counts system messages,
+/// tombstones and the person's own messages sent after they fell behind), and the mention count is the stored one (UC-CHT-D04).
+/// The cost does not depend on the backlog.
 /// </summary>
 public static class UnreadSummaryBuilder
 {
@@ -32,44 +32,28 @@ public static class UnreadSummaryBuilder
                 s.Name,
                 m.ReadSequence,
                 s.LastSequence,
+                m.MentionCount,
                 m.NotificationLevel,
                 m.MutedUntil,
             }).ToListAsync(cancellationToken);
 
-        var unread = await (
-            from m in db.ChatMemberships.AsNoTracking()
-            join msg in db.ChatMessages.AsNoTracking() on m.SpaceId equals msg.SpaceId
-            where m.UserId == userId
-                  && m.WorkspaceId == workspaceId
-                  && m.LeftAt == null
-                  && (onlySpaceId == null || m.SpaceId == onlySpaceId)
-                  && msg.Sequence > m.ReadSequence
-                  && msg.AuthorId != userId
-                  && msg.Kind == MessageKind.User
-                  && msg.DeletedAt == null
-            group msg by msg.SpaceId into g
-            select new { SpaceId = g.Key, Count = g.Count(), First = g.Min(x => x.Sequence) }).ToListAsync(cancellationToken);
-
-        var counts = unread.ToDictionary(u => u.SpaceId);
-        var mentions = await MentionCounts.ForUserAsync(db, workspaceId, userId, cancellationToken, onlySpaceId);
         var rows = spaces
             .OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
             .ThenBy(s => s.SpaceId)
             .Select(s =>
             {
                 var level = Membership.EffectiveLevel(s.NotificationLevel, s.MutedUntil, now);
-                var muted = level == NotificationLevel.None;
-                counts.TryGetValue(s.SpaceId, out var count);
+                var behind = (int)Math.Min(Math.Max(s.LastSequence - s.ReadSequence, 0), int.MaxValue);
                 return new SpaceUnreadDto(
                     s.SpaceId,
                     s.Name,
                     s.ReadSequence,
                     s.LastSequence,
-                    count?.Count ?? 0,
-                    count is null ? null : (long?)count.First,
-                    mentions.GetValueOrDefault(s.SpaceId),
+                    behind,
+                    behind == 0 ? null : s.ReadSequence + 1,
+                    s.MentionCount,
                     level.ToWire(),
-                    muted);
+                    level == NotificationLevel.None);
             })
             .ToList();
 

@@ -77,7 +77,7 @@ public class DocumentsOpenApiShapeTests
     [InlineData("Documents.Blocks.UpdateBlock", "200", "BlockDto")]
     [InlineData("Documents.Blocks.CreateBlock", "201", "BlockDto")]
     [InlineData("Documents.Blocks.BatchUpdateBlocks", "200", "BlockDto[]")]
-    [InlineData("Documents.Blocks.ListPageBlocks", "200", "BlockDto[]")]
+    [InlineData("Documents.Blocks.ListPageBlocks", "200", "CursorPageOfBlockDto")]
     public void BlockWrite_DeclaresTheBlocksItReturns(string operationId, string status, string expected)
     {
         var schema = Operation(operationId).GetProperty("responses").GetProperty(status)

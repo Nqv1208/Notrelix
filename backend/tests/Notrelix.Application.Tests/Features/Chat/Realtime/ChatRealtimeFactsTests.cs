@@ -162,6 +162,17 @@ public class ChatRealtimeFactsTests
     }
 
     [Fact]
+    public void The_preview_text_collapses_whitespace_and_stops_at_140_characters_without_splitting_a_pair()
+    {
+        ChatRealtime.PreviewText("  hello \n  world  ").Should().Be("hello world");
+        ChatRealtime.PreviewText("   ").Should().BeNull();
+        ChatRealtime.PreviewText(null).Should().BeNull();
+        ChatRealtime.PreviewText(new string('a', 500)).Should().HaveLength(ChatRealtime.PreviewMaxLength);
+        // 139 letters then an emoji (a surrogate pair): the cut at 140 would split it, so it is dropped whole.
+        ChatRealtime.PreviewText(new string('a', 139) + "\U0001F600 tail").Should().Be(new string('a', 139));
+    }
+
+    [Fact]
     public void A_per_user_unread_fact_names_the_space_and_the_counts_on_the_person_stream()
     {
         var userId = Guid.NewGuid();

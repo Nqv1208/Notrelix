@@ -135,7 +135,7 @@ public class ItemFollowerNotifier
         var sets = await _notifications.NotificationPreferenceSets
             .AsNoTracking()
             .Include(s => s.Entries)
-            .Where(s => s.AccountId == accountId && s.WorkspaceId == workspaceId && recipients.Contains(s.UserId))
+            .Where(s => recipients.Contains(s.UserId))
             .ToListAsync(ct);
 
         var added = false;

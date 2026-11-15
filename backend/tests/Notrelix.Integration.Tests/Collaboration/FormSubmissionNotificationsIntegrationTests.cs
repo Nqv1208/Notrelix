@@ -117,7 +117,7 @@ public sealed class FormSubmissionNotificationsIntegrationTests
         await _host.WithSystemContextAsync(seed =>
         {
             seed.NotificationPreferenceSets.Add(NotificationPreferenceSet.Create(
-                stack.AccountId, stack.WorkspaceId, ana,
+                ana,
                 [new NotificationPreferenceChange(NotificationTypes.Assigned, NotificationChannels.InApp, false)],
                 OrgTreeTestHost.BaseTime)!);
             return Task.CompletedTask;

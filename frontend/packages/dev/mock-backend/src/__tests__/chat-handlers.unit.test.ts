@@ -13,7 +13,8 @@ import { GENERAL_MESSAGE_COUNT } from "../contexts/chat/chat-world";
 const GENERAL = SPACES.general;
 
 /** The unread count the owner has in general at the seed: the messages after 300 by others. */
-const OWNER_GENERAL_UNREAD = 15;
+// The unread number is the sequence difference (last sequence minus the boundary of 300), not a count of rows.
+const OWNER_GENERAL_UNREAD = GENERAL_MESSAGE_COUNT - 300;
 
 describe("MFB-CHAT-S1.6: Chat mock handlers (channels, messages, read state)", () => {
   describe("seed world and privacy", () => {
@@ -475,7 +476,7 @@ describe("MFB-CHAT-S1.6: Chat mock handlers (channels, messages, read state)", (
         unreadCount: OWNER_GENERAL_UNREAD,
         muted: false,
       });
-      expect(general.firstUnreadSequence).toBe(302);
+      expect(general.firstUnreadSequence).toBe(301);
     });
 
     it("keeps a muted space out of the totals, and lists the spaces by name", async () => {
@@ -497,8 +498,15 @@ describe("MFB-CHAT-S1.6: Chat mock handlers (channels, messages, read state)", (
         notificationLevel: "none",
         unreadCount: 2,
       });
-      // erp-rollout: two unread (the Guest's and the member's); general: 15; engineering is muted.
-      expect(res.body.totalUnread).toBe(OWNER_GENERAL_UNREAD + 2);
+      // The total sums the spaces that are not muted (engineering is left out).
+      const unmutedUnread = res.body.spaces
+        .filter((s: { muted: boolean }) => !s.muted)
+        .reduce(
+          (sum: number, s: { unreadCount: number }) => sum + s.unreadCount,
+          0,
+        );
+      expect(res.body.totalUnread).toBe(unmutedUnread);
+      expect(res.body.totalUnread).toBeGreaterThan(OWNER_GENERAL_UNREAD);
       expect(res.body.totalMentions).toBe(0);
     });
 

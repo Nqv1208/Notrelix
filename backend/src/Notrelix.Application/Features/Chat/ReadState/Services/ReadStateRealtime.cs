@@ -21,7 +21,7 @@ public static class ReadStateRealtime
         {
             events.Add(ChatRealtime.Unread(
                 accountId, workspaceId, userId, space.SpaceId, space.UnreadCount, space.MentionCount,
-                correlationId: null, causationId: null, now));
+                correlationId: null, causationId: null, now, lastSequence: space.LastSequence));
         }
     }
 }

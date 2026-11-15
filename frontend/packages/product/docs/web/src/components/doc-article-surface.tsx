@@ -866,7 +866,9 @@ export function DocArticleSurface({
                 title={
                   callbacks?.onTodoConvert
                     ? undefined
-                    : copy.blocks.convertUnavailable
+                    : callbacks?.offline
+                      ? copy.blocks.convertOffline
+                      : copy.blocks.convertUnavailable
                 }
                 onClick={
                   callbacks?.onTodoConvert
@@ -1050,6 +1052,18 @@ export function DocArticleSurface({
         </button>
       ) : null}
       {editor && !compare ? null : rendered}
+      {callbacks?.onRetryBlocks ? (
+        <p role="status" className="my-3 text-compact text-meta-foreground">
+          {copy.blocks.restFailed} ·{" "}
+          <button
+            type="button"
+            onClick={callbacks.onRetryBlocks}
+            className="border-0 bg-transparent p-0 font-semibold text-brand-subtle-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            {copy.blocks.restRetry}
+          </button>
+        </p>
+      ) : null}
     </article>
   );
 }

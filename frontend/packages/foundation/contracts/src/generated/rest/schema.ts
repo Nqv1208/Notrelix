@@ -1847,7 +1847,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/workspaces/{workspaceId}/notification-preferences": {
+    "/api/v1/profile/notification-preferences": {
         parameters: {
             query?: never;
             header?: never;
@@ -1855,7 +1855,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get the caller's notification preferences in a workspace
+         * Get the caller's notification preferences (every workspace)
          * @description One row per notification type (assigned, mention, approval, overdue, watching, invitation, digest) with its in-app and email value; a cell the caller never changed has its default. Version is 0 until the first change is saved.
          */
         get: operations["Collaboration.Preferences.GetNotificationPreferences"];
@@ -1865,7 +1865,7 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Change the caller's notification preferences in a workspace
+         * Change the caller's notification preferences (every workspace)
          * @description Partial and all-or-nothing: only the named channels of the named types change. Answers the full matrix, 412 when expectedVersion is stale, 400 or 422 for an unknown type or no change requested. Setting values that already hold changes nothing and keeps the version.
          */
         patch: operations["Collaboration.Preferences.UpdateNotificationPreferences"];
@@ -1897,7 +1897,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List blocks for a page */
+        /**
+         * List the blocks of a page, 1 000 at a time
+         * @description Position order, at most 1 000 a window. Pass nextCursor back as cursor for the next window.
+         */
         get: operations["Documents.Blocks.ListPageBlocks"];
         put?: never;
         /** Create a new block */
@@ -9233,6 +9236,11 @@ export interface components {
         };
         "Notrelix.Application.Common.Models.CursorPageOfApprovalRequestDto": {
             items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalRequestDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfBlockDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"][] | null;
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
@@ -17569,9 +17577,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                workspaceId: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -17591,9 +17597,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                workspaceId: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -17737,7 +17741,10 @@ export interface operations {
     };
     "Documents.Blocks.ListPageBlocks": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 pageId: string;
@@ -17752,7 +17759,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfBlockDto"];
                 };
             };
         };
