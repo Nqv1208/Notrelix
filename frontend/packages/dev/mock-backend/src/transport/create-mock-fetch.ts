@@ -97,6 +97,39 @@ function applyGoneScript(store: MockStore, request: { method: string }): void {
   for (const id of ids) store.deleteCard(id);
 }
 
+/**
+ * Another person saved the form first: question 3 gets a new label, a sixth question is added, questions 2 and
+ * 4 swap places. The form's version moves on, so the caller's next write is stale.
+ */
+function editFormFirst(store: MockStore, formId: string): boolean {
+  const form = store.forms.find(formId);
+  const [, second, third, fourth] = form?.questions ?? [];
+  if (!form || !second || !third || !fourth) return false;
+  const secondPosition = second.position;
+  second.position = fourth.position;
+  fourth.position = secondPosition;
+  third.label = `${third.label} cao`;
+  form.questions.push({
+    ...third,
+    placeholder: null,
+    helpText: null,
+    maxLength: null,
+    minValue: null,
+    maxValue: null,
+    id: "mock-fq-first-phone",
+    questionKey: "phone",
+    label: "Số điện thoại",
+    questionType: "ShortText",
+    isRequired: false,
+    boardFieldId: null,
+    position: "a9",
+    options: null,
+  });
+  form.questions.sort((a, b) => (a.position < b.position ? -1 : 1));
+  form.version += 1;
+  return true;
+}
+
 // ─── Factory ─────────────────────────────────────────────────────────────────
 
 export function createMockFetch(store: MockStore): typeof fetch {
@@ -112,6 +145,13 @@ export function createMockFetch(store: MockStore): typeof fetch {
     }
   ).__notrelixMockInjectChat = (spaceId, authorId, content) =>
     injectIncomingMessage(store.chat, spaceId, authorId, content) !== null;
+
+  // Dev only: a browser check has another person save a form first (WM-FormConflict "Xem bản mới").
+  (
+    globalThis as {
+      __notrelixMockEditFormFirst?: (formId: string) => boolean;
+    }
+  ).__notrelixMockEditFormFirst = (formId) => editFormFirst(store, formId);
 
   return async function mockFetch(
     input: RequestInfo | URL,

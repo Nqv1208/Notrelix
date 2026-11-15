@@ -589,7 +589,7 @@ public class AttachmentHandlerTests
         _files.Seed(message.Id);
         _files.Seed(kept.Id);
 
-        var result = await new DeleteMessageCommandHandler(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _files)
+        var result = await new DeleteMessageCommandHandler(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _files, Moq.Mock.Of<Notrelix.Application.Features.Chat.Abstractions.IChatReadStateStore>())
             .Handle(new DeleteMessageCommand(_workspaceId, message.Id, message.Version), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();

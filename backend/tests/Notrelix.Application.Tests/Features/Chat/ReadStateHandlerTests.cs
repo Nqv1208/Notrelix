@@ -39,11 +39,11 @@ public class ReadStateHandlerTests
     private readonly List<Space> _spaces = [];
     private readonly List<Message> _messages = [];
     private readonly Mock<IChatDbContext> _db = new();
-    private readonly FakeChatReadStateStore _store;
+    private readonly InMemoryChatReadStateStore _store;
 
     public ReadStateHandlerTests()
     {
-        _store = new FakeChatReadStateStore(_spaces);
+        _store = new InMemoryChatReadStateStore(_db.Object);
 
         _clock.Setup(c => c.UtcNow).Returns(() => Now);
         _context.Setup(c => c.RequireAccountId()).Returns(_accountId);
@@ -147,11 +147,11 @@ public class ReadStateHandlerTests
         summary.Spaces.Select(s => s.Name).Should().Equal(new[] { "alpha", "beta", "delta", "gamma" }, "spaces are ordered by name");
 
         var a = summary.Spaces.Single(s => s.Name == "alpha");
-        a.UnreadCount.Should().Be(2, "seq 3 and seq 6 are other people's live user messages after the boundary of 1");
-        a.FirstUnreadSequence.Should().Be(3);
+        a.UnreadCount.Should().Be(5, "the unread number is the sequence difference (6 - 1): it counts nothing, so own, system and deleted messages are in it");
+        a.FirstUnreadSequence.Should().Be(2, "the first sequence after the boundary");
         a.ReadSequence.Should().Be(1);
         a.LastSequence.Should().Be(6);
-        a.MentionCount.Should().Be(0, "mention facts do not exist before S2.4");
+        a.MentionCount.Should().Be(0, "nothing mentions the caller");
 
         var b = summary.Spaces.Single(s => s.Name == "beta");
         b.UnreadCount.Should().Be(4);
@@ -166,7 +166,7 @@ public class ReadStateHandlerTests
         g.Muted.Should().BeTrue();
         g.NotificationLevel.Should().Be("none");
 
-        summary.TotalUnread.Should().Be(6, "the total is alpha plus beta; the muted gamma is left out");
+        summary.TotalUnread.Should().Be(9, "the total is alpha (5) plus beta (4); the muted gamma is left out");
         summary.TotalMentions.Should().Be(0);
     }
 
@@ -467,32 +467,5 @@ public class ReadStateHandlerTests
 
         validator.TestValidate(new SetNotificationLevelCommand(_workspaceId, Guid.NewGuid(), "none", Now.AddHours(1)))
             .IsValid.Should().BeTrue();
-    }
-
-    /// <summary>The store's rule in memory: the boundary moves to GREATEST(current, target), bounded by what the caller holds.</summary>
-    private sealed class FakeChatReadStateStore(List<Space> spaces) : IChatReadStateStore
-    {
-        public Task<bool> AdvanceAsync(Guid workspaceId, Guid spaceId, Guid userId, long target, CancellationToken cancellationToken)
-        {
-            var space = spaces.SingleOrDefault(s => s.Id == spaceId && s.WorkspaceId == workspaceId);
-            var membership = space?.GetActiveMembership(userId);
-            if (membership is null) return Task.FromResult(false);
-
-            membership.AdvanceReadSequence(target);
-            return Task.FromResult(true);
-        }
-
-        public Task<int> AdvanceAllAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken)
-        {
-            var touched = 0;
-            foreach (var space in spaces.Where(s => s.WorkspaceId == workspaceId && !s.IsDeleted))
-            {
-                var membership = space.GetActiveMembership(userId);
-                if (membership is null) continue;
-                membership.AdvanceReadSequence(space.LastSequence);
-                touched++;
-            }
-            return Task.FromResult(touched);
-        }
     }
 }

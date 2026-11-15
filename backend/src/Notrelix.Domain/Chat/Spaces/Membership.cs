@@ -34,8 +34,9 @@ public sealed class Membership : IWorkspaceScoped
     public long ReadSequence { get; private set; }
 
     /// <summary>
-    /// Reserved column, always 0. Mention counts are computed from the stored mentions (UC-CHT-D04), so a read, an edit or a delete
-    /// can never leave a stale number here; the column stays because the migration is expand-only.
+    /// The unread messages that mention the person or broadcast to the space (UC-CHT-D04), kept as a number so a send and a summary
+    /// cost one row each. A send adds one, a delete or an edit takes the stored mentions off, and a read sets it to the mentions still
+    /// after the new boundary (see IChatReadStateStore); the statements live there, so the property has no setter of its own.
     /// </summary>
     public int MentionCount { get; private set; }
 
@@ -79,6 +80,7 @@ public sealed class Membership : IWorkspaceScoped
         JoinedAt = at;
         LeftAt = null;
         HiddenAt = null;
+        MentionCount = 0;
     }
 
     /// <summary>

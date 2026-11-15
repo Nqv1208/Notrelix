@@ -4,6 +4,7 @@ import {
   BoardSettingsPage,
   type BoardSettingsSection,
 } from "@notrelix/work-management-web";
+import { useCurrentUser } from "@notrelix/features-auth";
 import { useFullBoard } from "@notrelix/work-management-state";
 import type { BoardSettingsSearch } from "../../../../router/schemas/board-settings-search-schema";
 import { useMoveToSpace } from "../../../../shell/workspace/use-move-to-space";
@@ -23,6 +24,7 @@ export function BoardSettingsRoutePage() {
   const { board } = useFullBoard(boardId, workspaceId);
   const headerData = useBoardHeaderData(workspaceId, boardId, board);
   const mover = useMoveToSpace();
+  const user = useCurrentUser();
 
   const boardPath = `/workspaces/${workspaceId}/boards/${encodeURIComponent(boardId)}?view=${search.from ?? "kanban"}`;
 
@@ -59,6 +61,8 @@ export function BoardSettingsRoutePage() {
             section,
             field: undefined,
             view: undefined,
+            form: undefined,
+            preview: undefined,
           })
         }
         fieldId={search.field ?? null}
@@ -84,12 +88,14 @@ export function BoardSettingsRoutePage() {
         onMoveBoard={() =>
           mover.openForBoard({ id: boardId, name: board?.title ?? "" })
         }
+        formId={search.form ?? null}
+        formPreview={search.preview === true}
+        user={user ? { name: user.name, email: user.email } : undefined}
         onOpenForm={(formId) =>
-          void navigate({
-            to: "/workspaces/$workspaceId/boards/$boardId/forms/$formId/edit",
-            params: { workspaceId, boardId, formId },
-          })
+          select({ section: "forms", form: formId, preview: undefined })
         }
+        onFormPreview={(on) => select({ preview: on ? true : undefined }, !on)}
+        onCloseForm={() => select({ form: undefined, preview: undefined })}
         onOpenFormResponses={(formId) =>
           void navigate({
             to: "/workspaces/$workspaceId/boards/$boardId/forms/$formId/responses",

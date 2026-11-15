@@ -120,7 +120,7 @@ public class ThreadHandlerTests
         return reply;
     }
 
-    private ReplyInThreadCommandHandler ReplyHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments(), _limits);
+    private ReplyInThreadCommandHandler ReplyHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments(), _limits, Moq.Mock.Of<Notrelix.Application.Features.Chat.Abstractions.IChatReadStateStore>());
     private FollowThreadCommandHandler FollowHandler() => new(_db.Object, _context.Object, _members.Object);
     private MarkThreadReadCommandHandler MarkHandler() => new(_db.Object, _context.Object, _members.Object, _readStore);
     private ListThreadRepliesQueryHandler RepliesHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, new InMemoryChatMessageAttachments());
