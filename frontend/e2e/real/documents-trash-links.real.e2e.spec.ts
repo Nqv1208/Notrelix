@@ -161,9 +161,13 @@ test("a page reference names another page, and that page lists the referrer as a
     { type: "callout", expectedVersion: text.data?.version },
   );
   expect(retyped.status).toBeLessThan(300);
-  const blocks = await apiRead<
-    { id: string; type: string; content: { runs: { text: string }[] } }[]
-  >(page, `/pages/${target}/blocks`);
+  const { items: blocks } = await apiRead<{
+    items: {
+      id: string;
+      type: string;
+      content: { runs: { text: string }[] };
+    }[];
+  }>(page, `/pages/${target}/blocks`);
   const kept = blocks.find((entry) => entry.id === blockId);
   expect(kept?.type).toBe("Callout");
   expect(kept?.content.runs.map((run) => run.text).join("")).toBe(

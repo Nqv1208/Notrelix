@@ -27,6 +27,26 @@ public static class ListFormSubmissionsEndpoint
         return group;
     }
 
+    public static IEndpointRouteBuilder MapCountFormSubmissions(this IEndpointRouteBuilder group)
+    {
+        group.MapResourceGet("/submissions/counts", HandleCountsAsync)
+            .WithName("WorkManagement.Forms.CountSubmissions")
+            .WithTags("WorkManagement.Forms")
+            .WithSummary("Count the submissions of a form by tab")
+            .WithDescription("Totals over all responses, not one page: new, processed, rejected and spam.")
+            .Produces<FormSubmissionCountsDto>(StatusCodes.Status200OK, "application/json");
+        return group;
+    }
+
+    private static async Task<IResult> HandleCountsAsync(
+        Guid formId,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new CountFormSubmissionsQuery(formId), cancellationToken);
+        return result.ToApiResult();
+    }
+
     private static async Task<IResult> HandlePageAsync(
         Guid formId,
         string? cursor,

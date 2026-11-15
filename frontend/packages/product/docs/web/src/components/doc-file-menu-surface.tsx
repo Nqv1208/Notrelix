@@ -134,7 +134,7 @@ export function DocFileMenuSurface({
         <Item
           label={f.duplicate}
           onClick={callbacks?.onDuplicatePage}
-          unavailable={f.unavailable}
+          unavailable={callbacks?.offline ? f.offline : f.unavailable}
         />
         <Item
           label={f.rename}
@@ -145,7 +145,7 @@ export function DocFileMenuSurface({
           label={f.move}
           popup="dialog"
           onClick={callbacks?.onMovePage}
-          unavailable={f.unavailable}
+          unavailable={callbacks?.offline ? f.offline : f.unavailable}
         />
         <Item
           label={f.share}
@@ -216,7 +216,7 @@ export function DocFileMenuSurface({
           label={f.trash}
           danger
           onClick={callbacks?.onTrashPage}
-          unavailable={f.unavailable}
+          unavailable={callbacks?.offline ? f.offline : f.unavailable}
         />
       </div>
       {downloadOpen ? <DownloadMenu copy={copy} callbacks={callbacks} /> : null}
