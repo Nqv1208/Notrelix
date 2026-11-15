@@ -63,6 +63,9 @@ public record FormSubmissionDto(
     string? Reason = null
 );
 
+/// <summary>The server totals of a form's responses by tab, over all pages.</summary>
+public record FormSubmissionCountsDto(int New, int Processed, int Rejected, int Spam);
+
 public record FormQuestionDto(
     Guid Id,
     string QuestionKey,

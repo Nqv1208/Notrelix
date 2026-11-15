@@ -306,8 +306,9 @@ const LARGE_ASSIGNEES = [
 
 /**
  * The overlay `large-board` adds one board of 5,000 items that the server reads a page at a time (BC-Large): 200 in
- * Đang làm, 8 in Cần làm, 3 in Chờ duyệt and 4,789 done, each lane in due order; one person
- * holds every 16th of them (12 of 200), all 11 of the other open items and the first 14 done ones: 37 on the board.
+ * Đang làm, 22 in Cần làm, 3 in Chờ duyệt and 4,775 done, each lane in due order; one person
+ * holds every 16th of Đang làm (12 of 200) and every item of the two other open lanes: 37 open items, as BC-Large draws
+ * (the table hides the done lane, so the open lanes are what its filtered total counts).
  */
 export const LARGE_STATE_BOARDS: readonly DepartmentBoard[] = [
   {
@@ -324,7 +325,7 @@ export const LARGE_STATE_BOARDS: readonly DepartmentBoard[] = [
     listId: "mock-itl-list-all",
     listTitle: "Tất cả",
     items: [
-      ...Array.from({ length: 8 }, (_, index) => ({
+      ...Array.from({ length: 22 }, (_, index) => ({
         key: `ERP-${500 + index + 1}`,
         title: `Việc cần làm số ${500 + index + 1}`,
         status: "todo" as const,
@@ -351,17 +352,14 @@ export const LARGE_STATE_BOARDS: readonly DepartmentBoard[] = [
         due: dueDay(index),
         assigneeId: ERP_PEOPLE.NA.id,
       })),
-      ...Array.from({ length: 4789 }, (_, index) => ({
+      ...Array.from({ length: 4775 }, (_, index) => ({
         key: `ERP-${1001 + index}`,
         title: `Việc đã xong số ${1001 + index}`,
         status: "done" as const,
         priority: "low" as const,
         due: null,
         completed: "1/10",
-        assigneeId:
-          index < 14
-            ? ERP_PEOPLE.NA.id
-            : LARGE_ASSIGNEES[index % LARGE_ASSIGNEES.length],
+        assigneeId: LARGE_ASSIGNEES[index % LARGE_ASSIGNEES.length],
       })),
     ],
   },

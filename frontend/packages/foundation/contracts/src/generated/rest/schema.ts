@@ -5919,6 +5919,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/forms/{formId}/submissions/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Count the submissions of a form by tab
+         * @description Totals over all responses, not one page: new, processed, rejected and spam.
+         */
+        get: operations["WorkManagement.Forms.CountSubmissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/form-submissions/{submissionId}/process": {
         parameters: {
             query?: never;
@@ -11276,6 +11296,16 @@ export interface components {
             state?: string | null;
             value?: unknown;
             errorCode?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionCountsDto": {
+            /** Format: int32 */
+            new?: number;
+            /** Format: int32 */
+            processed?: number;
+            /** Format: int32 */
+            rejected?: number;
+            /** Format: int32 */
+            spam?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionDto": {
             /** Format: uuid */
@@ -27754,6 +27784,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfFormSubmissionDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Forms.CountSubmissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionCountsDto"];
                 };
             };
         };

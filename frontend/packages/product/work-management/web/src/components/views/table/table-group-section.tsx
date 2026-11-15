@@ -158,7 +158,9 @@ export function TableGroupHeader({
         </button>
         <StatusDot category={group.category} />
         {group.name}
-        <span className="font-medium text-meta-foreground">{count}</span>
+        <span className="text-[13px] leading-[1.45] font-medium text-meta-foreground">
+          {count}
+        </span>
         {group.rows.length === 0 && !group.hasMore ? (
           <span
             data-slot="table-group-empty"
@@ -223,7 +225,7 @@ export function TableShowMoreRow({
     <div
       role="row"
       data-slot="table-show-more"
-      className="flex flex-wrap items-center justify-center gap-3 px-6 py-2.5 text-crumb text-muted-foreground"
+      className="mx-0.5 flex flex-wrap items-center justify-center gap-3 px-6 py-2.5 text-crumb text-muted-foreground"
     >
       <span role="cell">
         {fillTableCopy(copy.group.shownOf, { shown, total })}
