@@ -277,6 +277,7 @@ describe("docs web pure surfaces", () => {
       docsCopy.fileMenu.duplicate,
       docsCopy.fileMenu.move,
       docsCopy.fileMenu.trash,
+      docsCopy.fileMenu.importPage,
     ]) {
       const item = screen.getByRole("menuitem", { name });
       expect(item.getAttribute("aria-disabled")).toBe("true");

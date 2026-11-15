@@ -170,13 +170,13 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-G05 | Show the tasks and boards linked to a page | G | Viewer | partial | yes | Final-Docs-2 | none | INTEGRATING | ResourceLink aggregate fate is undecided (owner decision) |
 | UC-DCT-G06 | Load a very large page (enterprise baseline) | G | Viewer | yes | none | none | none | INTEGRATING | Cap of 5 000 built and tested; cursor of 1 000 and windowed first render not built |
 | UC-DCT-G07 | Search inside page text (enterprise baseline) | G | Workspace member | none | none | none | none | DEFINED | Title search only |
-| UC-DCT-H01 | Autosave edits and show the saved state | H | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Offline state built (UC-DCT-H04); not proven in a real e2e |
-| UC-DCT-H02 | Rebase after a stale save | H | Editor | yes | yes | none | none | INTEGRATING | No conflict artboard; no proof with two sessions |
+| UC-DCT-H01 | Autosave edits and show the saved state | H | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Real e2e passed (autosave, refused write with Retry, offline); axe clean; undrawn bar states only partly reviewed |
+| UC-DCT-H02 | Rebase after a stale save | H | Editor | yes | yes | none | real | HARDENING | Real e2e with a second session passed; conflict notice undrawn and not reviewed |
 | UC-DCT-H03 | Roll back a failed optimistic write | H | Editor | yes | yes | none | none | INTEGRATING | Built: create, delete and reorder hooks patch the list at once and roll back (`block-mutation-rollback.unit.test.ts`). Decision 2026-11-15: the editor keeps a rejected block until Retry; no artboard for the error toast |
-| UC-DCT-H04 | Edit while offline | H | Editor | none | yes | none | none | INTEGRATING | Banner and leave warning and resend built; structural actions stay enabled offline; no real e2e |
-| UC-DCT-H05 | Find and replace in a page | H | Editor | none | yes | none | none | INTEGRATING | No artboard for find and replace |
+| UC-DCT-H04 | Edit while offline | H | Editor | none | yes | none | real | HARDENING | Offline bar, import off and resend proven in a real e2e; bar frames partly reviewed |
+| UC-DCT-H05 | Find and replace in a page | H | Editor | none | yes | none | real | HARDENING | Real e2e passed (replace all in one batch, no matches); undrawn, partly reviewed |
 | UC-DCT-H06 | Read a page on a phone app | H | Viewer | yes | yes | Final-M-Docs | none | HARDENING | Built (verified by reading code 2026-11-09, not run): GetPageEndpoint.cs, ListPageBlocksEndpoint.cs, mobile-document-screen.tsx, docs-mobile-screen.mobile.test.tsx. Remaining: owner tests by hand. |
-| UC-DCT-H07 | Use the 320 px page and its overflow sheet | H | Viewer, Editor | yes | yes | Final-Docs-2-320 | none | INTEGRATING | Measured gaps beyond 1 px (paragraph style select 36 px against 30, status pill 79 against 87); other states undrawn |
+| UC-DCT-H07 | Use the 320 px page and its overflow sheet | H | Viewer, Editor | yes | yes | Final-Docs-2-320 | none | INTEGRATING | Panel closed by default on a phone; 320 chrome measured against the board and does not match (44 px targets, menu row) |
 | UC-DCT-H08 | Edit with keyboard and screen reader | H | Editor | none | yes | none | none | HARDENING | Built (verified by reading code 2026-11-09, not run): shortcut-catalog.ts, doc-keys.ts, block-handle.tsx, block-move.component.test.tsx, doc-menu-bar.component.test.tsx. Remaining: owner tests by hand. |
 | UC-DCT-I01 | See a page only when allowed | I | Viewer | yes | yes | Final-Docs-2 | real | DONE | none |
 | UC-DCT-I02 | Edit only with edit permission | I | Editor | yes | yes | Final-Docs-2 | real | DONE | none |
@@ -999,8 +999,8 @@ Team capability 8 (team id DCT-008). Requirements `DCREQ027` to `DCREQ031`. Deci
 - UI states: saving, saved, not saved with retry, offline, conflict, read-only.
 - Rules: product doc section 99; `DCREQ027`, `DCREQ028`.
 - Acceptance: Given typing, When the person leaves the block, Then the block is stored and the bar says Saved. Given the network drops, Then the bar says Not saved and the text stays.
-- Evidence: BE block routes (D02, D03) · FE `doc-block-saver.ts`, `useDocSaver`, `doc-page-bar-surface.tsx` · Design Final-Docs-2 · Tests `doc-block-saver.unit.test.ts`, `doc-editor.component.test.tsx` · Real e2e `documents.real.e2e.spec.ts`
-- State: HARDENING — offline and failure states in a real e2e, 1-px diff.
+- Evidence: BE block routes (D02, D03) · FE `doc-block-saver.ts`, `useDocSaver`, `doc-page-bar-surface.tsx` · Design Final-Docs-2 · Tests `doc-block-saver.unit.test.ts`, `doc-editor.component.test.tsx` · Real e2e `documents.real.e2e.spec.ts`, `documents-editor-state.real.e2e.spec.ts`
+- State: HARDENING — Real e2e passed 2026-11-16 (`documents-editor-state.real.e2e.spec.ts`, 4 of 4): saved after leaving the block, a refused write says "Not saved" and keeps the text, Retry stores the same text, offline then reconnect stores it; axe finds no serious violation on the open editor (this run found and fixed a side-panel tab list with a non-tab child). Normal state is measured at 1440 light and dark in `design-fidelity-docs.mock.e2e.spec.ts` (12 of 12 with `docs-page.mock.e2e.spec.ts`). Remaining: the saving, not-saved and offline bar states are undrawn and only the offline bar was reviewed (1440 light, 1024 dark); bar states at 1024 and 390 and the dark not-saved frame are not reviewed.
 
 ### UC-DCT-H02 Rebase after a stale save
 - Capability: H Editor state reconciliation
@@ -1013,8 +1013,8 @@ Team capability 8 (team id DCT-008). Requirements `DCREQ027` to `DCREQ031`. Deci
 - UI states: conflict notice with both texts, saving.
 - Rules: product doc sections 31, 32 (product rule DCT-011); `DCREQ030`, `DCREQ031`; decision 3 (no CRDT, no OT).
 - Acceptance: Given two editors on one block, When both save, Then the second sees the first's text, keeps their own in the notice, and no text is lost.
-- Evidence: BE `PageBlockSet.Stale` (`412` with `currentBlock`) · FE `BlockVersionConflict`, `onConflict` in `doc-block-saver.ts` · Design none (notice not drawn) · Tests `doc-block-saver.unit.test.ts`, `BlockEditingHandlerTests` · Real e2e none
-- State: INTEGRATING — No conflict artboard; no proof with two sessions.
+- Evidence: BE `PageBlockSet.Stale` (`412` with `currentBlock`) · FE `BlockVersionConflict`, `onConflict` in `doc-block-saver.ts` · Design none (notice not drawn) · Tests `doc-block-saver.unit.test.ts`, `BlockEditingHandlerTests` · Real e2e `documents-editor-state.real.e2e.spec.ts`
+- State: HARDENING — Real e2e passed 2026-11-16 (`documents-editor-state.real.e2e.spec.ts`): a block changed by another session (stale version) is replaced by the stored text, the person's text stays in the "Your unsaved edit" notice, the stored block is the other session's and its version is +1, nothing typed is lost. Remaining: the notice is not drawn on any board (no fidelity diff, screenshot review of the notice at 1440, 1024 and 390 not done); keep-mine versus take-stored choice is Re-apply, Copy and Dismiss, the 5-rebase stop has a unit test only.
 
 ### UC-DCT-H03 Roll back a failed optimistic write
 - Capability: H Editor state reconciliation
@@ -1028,7 +1028,7 @@ Team capability 8 (team id DCT-008). Requirements `DCREQ027` to `DCREQ031`. Deci
 - Rules: product doc section 99; team spec section 13 "mutation reconciliation"; `DCREQ028`, `DCREQ029`.
 - Acceptance: Given a block create that the server refuses, Then the block vanishes and the person sees the reason.
 - Evidence: BE block routes · FE `useCreateBlock`, `useDeleteBlock`, `useReorderBlocks`, `useRefreshPageBlocks` · Design none · Tests `block-mutation-rollback.unit.test.ts`, `docs-blocks-trash.unit.test.ts`, `doc-block-saver.unit.test.ts` · Real e2e none
-- State: INTEGRATING — Built: `useCreateBlock`, `useDeleteBlock` and `useReorderBlocks` patch the block list at once and roll it back when the producer refuses (`block-mutation-rollback.unit.test.ts`, two cases per hook). Decision 2026-11-15 (lead, night run): the editor screen (`useDocEditor`, `DocBlockSaver`) keeps a rejected block until Retry and does not use these hooks, so typed text is never taken back from the person (UC-DCT-H01 acceptance: the text stays); the rollback hooks serve the list-style surfaces. Missing: real e2e with a refused create, the error toast against a drawing.
+- State: INTEGRATING — Built: `useCreateBlock`, `useDeleteBlock` and `useReorderBlocks` patch the block list at once and roll it back when the producer refuses (`block-mutation-rollback.unit.test.ts`, two cases per hook). Decision 2026-11-15 (lead, night run): the editor screen keeps a rejected block until Retry and does not use these hooks, so typed text is never taken back. Proven 2026-11-16 in `documents-editor-state.real.e2e.spec.ts`: a refused editor write keeps the text and shows "Not saved" with Retry. Missing: a real e2e of a refused create or delete on a list-style surface, the error toast against a drawing.
 
 ### UC-DCT-H04 Edit while offline
 - Capability: H Editor state reconciliation
@@ -1041,8 +1041,8 @@ Team capability 8 (team id DCT-008). Requirements `DCREQ027` to `DCREQ031`. Deci
 - UI states: offline banner, not saved, saving after reconnect.
 - Rules: product doc section 101; `DCREQ031`.
 - Acceptance: Given an offline typing session of one minute, When the connection returns, Then the text is saved or shown as a conflict, never silently dropped.
-- Evidence: BE none · FE `useOnline`, the `offline` save state of `doc-page-bar-surface.tsx`, the `beforeunload` warning and the resend on reconnect in `doc-page-screen.tsx` · Design none (Doc-Page states on the Docs canvas v23) · Tests `use-online.component.test.tsx`, `doc-page-surfaces.interaction.component.test.tsx` (`docs.page.bar:offline`) · Real e2e none
-- State: INTEGRATING — Built: the bar says "Offline, changes not saved yet" while the browser is offline, the browser warns before the tab closes while anything is unsaved, and the reconnect sends the unsent writes again (a stale one follows UC-DCT-H02). Missing: disabling create page, move, trash and import while offline, a real e2e with the network cut, the state measured against the Docs canvas.
+- Evidence: BE none · FE `useOnline`, the `offline` save state of `doc-page-bar-surface.tsx`, the `beforeunload` warning and the resend on reconnect in `doc-page-screen.tsx` · Design none (Doc-Page states on the Docs canvas v23) · Tests `use-online.component.test.tsx`, `doc-page-surfaces.interaction.component.test.tsx` (`docs.page.bar:offline`) · Real e2e `documents-editor-state.real.e2e.spec.ts`
+- State: HARDENING — Built and proven 2026-11-16 in `documents-editor-state.real.e2e.spec.ts`: the bar says "Offline, changes not saved yet" with the network cut, File menu Import is disabled with the connection reason (fixed in this run: it stayed enabled; copy, move, trash and Convert to task were already off), and the typed text is stored once the connection returns. Create page lives in the shell and is not part of the document screen. Remaining: the state is undrawn (offline bar reviewed at 1440 light and 1024 dark only); the stale-after-reconnect path is covered by the conflict journey, not by an offline one.
 
 ### UC-DCT-H05 Find and replace in a page
 - Capability: H Editor state reconciliation
@@ -1055,8 +1055,8 @@ Team capability 8 (team id DCT-008). Requirements `DCREQ027` to `DCREQ031`. Deci
 - UI states: no matches, read-only (replace hidden).
 - Rules: product doc section 99.
 - Acceptance: Given three matches, When Replace all runs, Then three runs change in one save.
-- Evidence: BE batch route · FE `find-replace.ts`, `find-panel.tsx` · Design none · Tests `find-replace.component.test.tsx` · Real e2e none
-- State: INTEGRATING — No artboard for find and replace.
+- Evidence: BE batch route · FE `find-replace.ts`, `find-panel.tsx` · Design none · Tests `find-replace.component.test.tsx` · Real e2e `documents-editor-state.real.e2e.spec.ts`
+- State: HARDENING — Real e2e passed 2026-11-16 (`documents-editor-state.real.e2e.spec.ts`): three matches across mixed case are found, Replace all sends one batch and stores all three lines, a search with no match shows "No results". Remaining: no artboard (screenshot review done at 1440 light and dark and 390 dark only: at 390 the panel overlaps the document and sheet, acceptable but not drawn); the viewer view with Replace hidden has a component test only; stale-block rebase in replace is untested.
 
 ### UC-DCT-H06 Read a page on a phone app
 - Capability: H Editor state reconciliation
@@ -1070,7 +1070,7 @@ Team capability 8 (team id DCT-008). Requirements `DCREQ027` to `DCREQ031`. Deci
 - Rules: product doc sections 100, 102; `DCREQ017`; decisions 25, 26.
 - Acceptance: Given a page with a table and a toggle, When opened on mobile, Then both render and nothing is editable.
 - Evidence: BE `GET /api/v1/pages/{pageId}`, `GET /api/v1/pages/{pageId}/blocks` · FE `MobileDocumentScreen` in `docs-mobile` · Design Final-M-Docs · Tests `docs-mobile-screen.mobile.test.tsx`, `docs-mobile-renderer.mobile.test.tsx`, `docs-mobile-layout.mobile.test.tsx`, `docs-mobile-contract.mobile.test.ts` · Real e2e none · Verified by reading code 2026-11-09 (not run): GetPageEndpoint.cs, ListPageBlocksEndpoint.cs, mobile-document-screen.tsx, docs-mobile-screen.mobile.test.tsx
-- State: HARDENING — Built (verified by reading code 2026-11-09, not run): GetPageEndpoint.cs, ListPageBlocksEndpoint.cs, mobile-document-screen.tsx, docs-mobile-screen.mobile.test.tsx. Remaining: owner tests by hand.
+- State: HARDENING — `docs-mobile` suites ran 2026-11-16: 24 of 24 (screen 5, renderer 14, layout 4, contract 1). Remaining: no Expo run of Final-M-Docs, no real-backend e2e (the host is a native app), owner tests by hand.
 
 ### UC-DCT-H07 Use the 320 px page and its overflow sheet
 - Capability: H Editor state reconciliation
@@ -1084,7 +1084,7 @@ Team capability 8 (team id DCT-008). Requirements `DCREQ027` to `DCREQ031`. Deci
 - Rules: product doc sections 99, 102; decision 75.
 - Acceptance: Given 320 px, When the page opens, Then no horizontal page scroll and the sheet reaches Links, Contents and Comments.
 - Evidence: BE none · FE `doc-side-panel-surface.tsx`, `doc-page-bar-surface.tsx`, `use-doc-panel-open.ts` · Design Final-Docs-2-320, Final-Docs-2-320-Sheet, Final-M-Docs, Final-Docs-2-Notes · Tests `use-doc-panel-open.component.test.tsx`, `doc-page-surfaces.interaction.component.test.tsx`, `design-fidelity-docs.mock.e2e.spec.ts`, `docs-page.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Measured gaps beyond 1 px (paragraph style select 36 px against 30, status pill 79 against 87); other states undrawn.
+- State: INTEGRATING — Fixed 2026-11-16: the side panel is now closed by default below the sm breakpoint (it opened as a sheet over half the page) and its tab list holds only tabs. Measured 2026-11-16 at 320 against Final-Docs-2-320 (box dump): the shipped page is not the drawn one. Header 48 high against 52, menu row 28 against 44, tool row 30 against 44 with 30 px buttons where decision 75 asks for 44, paragraph style select not at 132 by 44, menu labels wrap at 390 and overflow at 320 where the board scrolls the row sideways. Closing this needs the phone chrome rebuilt (menus out of a scroll container first); not started. Sheet states other than the panel are undrawn.
 
 ### UC-DCT-H08 Edit with keyboard and screen reader
 - Capability: H Editor state reconciliation
@@ -1098,7 +1098,7 @@ Team capability 8 (team id DCT-008). Requirements `DCREQ027` to `DCREQ031`. Deci
 - Rules: product doc section 102; `docs/quality/accessibility-standard.md`.
 - Acceptance: Given the editor, When a block moves by keyboard, Then the new place is announced and no axe serious violation is reported.
 - Evidence: BE none · FE `shortcut-catalog.ts`, `doc-keys.ts`, `block-handle.tsx` · Design Final-Docs-2 · Tests `block-move.component.test.tsx`, `doc-menu-bar.component.test.tsx` · Real e2e none · Verified by reading code 2026-11-09 (not run): shortcut-catalog.ts, doc-keys.ts, block-handle.tsx, block-move.component.test.tsx, doc-menu-bar.component.test.tsx
-- State: HARDENING — Built (verified by reading code 2026-11-09, not run): shortcut-catalog.ts, doc-keys.ts, block-handle.tsx, block-move.component.test.tsx, doc-menu-bar.component.test.tsx. Remaining: owner tests by hand.
+- State: HARDENING — Axe finds no serious violation on the open editor in the real stack (2026-11-16, see `documents-editor-state.real.e2e.spec.ts`). Not proven: the keyboard move. `block-move.component.test.tsx` passes and the move works against the mock world and in 1 of 5 real runs (announced "Block moved to position 1 of 3"), but in 4 real runs the caret stayed at the start of the page after clicking the second block, so Alt+Shift+Arrow did not move it; cause not found (possibly a selection reset after load). No keyboard e2e was kept. Remaining: that cause, then owner tests by hand.
 
 ## Capability I: Document permissions
 
