@@ -1,5 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Browser,
+  type Locator,
+  type Page,
+} from "@playwright/test";
 import {
   apiRead,
   apiWrite,
@@ -12,6 +18,7 @@ test.use({ viewport: { width: 1440, height: 900 } });
 test.setTimeout(300_000);
 
 interface Message {
+  version: number;
   id: string;
   content: string | null;
   deleted: boolean;
@@ -40,6 +47,12 @@ const english = () => {
 const log = (page: Page) => page.getByRole("log").first();
 const row = (page: Page, text: string) =>
   page.locator("[data-message-id]", { hasText: text }).first();
+
+async function pick(target: Locator, name: string) {
+  await target.hover();
+  await target.getByRole("button", { name: "More actions" }).click();
+  await target.page().getByRole("menuitem", { name }).click();
+}
 
 async function person(browser: Browser, user: Parameters<typeof signIn>[1]) {
   const context = await browser.newContext({
@@ -101,8 +114,7 @@ test("threads, quotes, follow and mute, the followed list and pins work for memb
   await member.page.goto(`/workspaces/${ws}${"/chat/"}${channelId}`);
   const target = row(member.page, rootText);
   await expect(target).toBeVisible({ timeout: 20_000 });
-  await target.hover();
-  await target.getByRole("button", { name: "Reply in thread" }).click();
+  await pick(target, "Reply in thread");
   const panel = member.page.getByTestId("chat-thread-panel");
   await expect(panel).toBeVisible();
   const replyText = `reply ${unique}`;
@@ -140,8 +152,14 @@ test("threads, quotes, follow and mute, the followed list and pins work for memb
     body,
     key,
   );
-  expect([first.status, again.status]).toEqual([201, 200]);
+  // The idempotency layer replays the stored answer (same status and body); nothing is stored twice.
+  expect([first.status, again.status]).toEqual([201, 201]);
   expect(again.data!.id).toBe(first.data!.id);
+  const stored = await apiRead<{ items: Message[] }>(
+    page,
+    `${chat}/messages/${root.id}/replies?limit=50`,
+  );
+  expect(stored.items.filter((m) => m.content === "retry")).toHaveLength(1);
   const nested = await apiWrite(
     page,
     "POST",
@@ -161,7 +179,13 @@ test("threads, quotes, follow and mute, the followed list and pins work for memb
   });
   expect(quoting.replyToId).toBe(quoted.id);
   expect(
-    (await apiWrite(page, "DELETE", `${chat}/messages/${quoted.id}`)).status,
+    (
+      await apiWrite(
+        page,
+        "DELETE",
+        `${chat}/messages/${quoted.id}?expectedVersion=${quoted.version}`,
+      )
+    ).status,
   ).toBeLessThan(300);
   const afterDelete = await apiRead<{ items: Message[] }>(
     member.page,
@@ -178,11 +202,7 @@ test("threads, quotes, follow and mute, the followed list and pins work for memb
   // in the owner's list only when read; the followed list shows the unread count and mark-as-read clears it.
   await page.goto(`/workspaces/${ws}/chat/${channelId}`);
   const ownerRoot = row(page, rootText);
-  await ownerRoot.hover();
-  await ownerRoot
-    .getByRole("button", { name: /Open thread|1 reply|2 replies/ })
-    .first()
-    .click();
+  await ownerRoot.getByTestId("chat-thread-chip").click();
   const ownerPanel = page.getByTestId("chat-thread-panel");
   await expect(ownerPanel).toBeVisible();
   const followBtn = ownerPanel.getByRole("button", {
@@ -252,8 +272,7 @@ test("threads, quotes, follow and mute, the followed list and pins work for memb
   const pinned = await send(page, pinText);
   await member.page.reload();
   const pinRow = row(member.page, pinText);
-  await pinRow.hover();
-  await pinRow.getByRole("button", { name: "Pin message" }).click();
+  await pick(pinRow, "Pin message");
   await expect
     .poll(async () =>
       (
@@ -287,7 +306,13 @@ test("threads, quotes, follow and mute, the followed list and pins work for memb
   );
   expect(again2.status).toBeLessThan(300);
   expect(
-    (await apiWrite(page, "DELETE", `${chat}/messages/${pinned.id}`)).status,
+    (
+      await apiWrite(
+        page,
+        "DELETE",
+        `${chat}/messages/${pinned.id}?expectedVersion=${pinned.version}`,
+      )
+    ).status,
   ).toBeLessThan(300);
   const left = await apiRead<{ items: { message: Message }[] }>(
     page,
@@ -329,7 +354,16 @@ test("threads, quotes, follow and mute, the followed list and pins work for memb
     ];
     for (const [method, path, payload] of writes) {
       const r = await apiWrite(who, method as "POST", path, payload);
-      expect(r.status, `${method} ${path}`).toBe(404);
+      // The answer is the same for a message that does not exist: a role without the action is refused
+      // (403) before any lookup, everyone else gets NotFound, and neither tells whether the id exists.
+      const ghost = await apiWrite(
+        who,
+        method as "POST",
+        path.replace(root.id, crypto.randomUUID()),
+        payload,
+      );
+      expect(r.status, `${method} ${path}`).toBe(ghost.status);
+      expect([403, 404], `${method} ${path}`).toContain(r.status);
     }
   }
 
