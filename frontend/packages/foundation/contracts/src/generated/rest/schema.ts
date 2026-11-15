@@ -8806,6 +8806,7 @@ export interface components {
             answers?: {
                 [key: string]: unknown;
             } | null;
+            website?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.UpdateFormDetailsRequest": {
             title?: string | null;
@@ -27883,7 +27884,9 @@ export interface operations {
     };
     "WorkManagement.Forms.ReopenSubmission": {
         parameters: {
-            query?: never;
+            query?: {
+                clearItem?: boolean;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;

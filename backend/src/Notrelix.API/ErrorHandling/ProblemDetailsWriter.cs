@@ -33,13 +33,13 @@ public static class ProblemDetailsWriter
             cancellationToken: ct);
     }
 
-    public static Task WriteTooManyRequestsAsync(HttpContext context, int retryAfterSeconds, int limit, int remaining, DateTimeOffset resetAt, CancellationToken ct)
+    public static Task WriteTooManyRequestsAsync(HttpContext context, int retryAfterSeconds, int limit, int remaining, DateTimeOffset resetAt, CancellationToken ct, string? detail = null)
     {
         var problemDetails = new ProblemDetails
         {
             Type = "https://docs.notrelix.com/problems/rate-limit-exceeded",
             Title = "Too Many Requests",
-            Detail = "Rate limit exceeded. Please try again later.",
+            Detail = detail ?? "Rate limit exceeded. Please try again later.",
             Status = StatusCodes.Status429TooManyRequests,
             Instance = context.Request.Path,
         };

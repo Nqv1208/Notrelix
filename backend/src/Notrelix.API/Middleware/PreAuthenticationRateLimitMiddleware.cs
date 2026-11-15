@@ -33,13 +33,15 @@ public sealed class PreAuthenticationRateLimitMiddleware
                 .LogError("Endpoint declares rate-limit policy {PolicyName}, which is not configured; the request is not limited", attribute.PolicyName);
         }
 
-        if (policy is null || policy.PartitionBy != PartitionKey.Ip)
+        if (policy is null || policy.PartitionBy is not (PartitionKey.Ip or PartitionKey.IpAndForm))
         {
             await _next(context);
             return;
         }
 
         var partitionKey = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        if (policy.PartitionBy == PartitionKey.IpAndForm)
+            partitionKey += "|" + (context.GetRouteValue("formId")?.ToString() ?? "none");
 
         if (!await RateLimitEnforcer.TryAcquireAsync(context, attribute.PolicyName, policy, partitionKey))
             return;

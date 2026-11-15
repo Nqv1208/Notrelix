@@ -56,14 +56,35 @@ test("a manager turns one response into an item, rejects one with a reason and m
   // Process: the ordinary add-item dialog opens prefilled, and saving links the response to the item.
   await page.getByRole("option", { name: /Process me/ }).click();
   await page.getByRole("button", { name: "Create item from response" }).click();
-  // The dialog is named by the item it will create, prefilled from the answer.
-  const dialog = page.getByRole("dialog", { name: "Process me" });
-  await expect(dialog.getByRole("textbox", { name: "Card title" })).toHaveValue(
+  const dialog = page.getByRole("dialog", {
+    name: "Create item from response",
+  });
+  await expect(dialog.getByRole("textbox", { name: /Item name/ })).toHaveValue(
     "Process me",
   );
   const processed = written(page, /\/form-submissions\/[^/]+\/process$/);
   await dialog.getByRole("button", { name: "Create item" }).click();
   expect((await processed).status()).toBeLessThan(300);
+  await expect(page.getByRole("tab", { name: /Processed\s*1/ })).toBeVisible();
+
+  // Undo reverses both: the item is removed and the response is back under New.
+  const reopened = written(page, /\/form-submissions\/[^/]+\/reopen/);
+  await page.getByRole("button", { name: "Undo" }).click();
+  expect((await reopened).status()).toBeLessThan(300);
+  await expect(page.getByRole("tab", { name: /New\s*3/ })).toBeVisible();
+  expect(
+    (await submissionsOf(page, form.id)).filter((s) => s.createdItemId),
+  ).toHaveLength(0);
+
+  // Create it again and keep it.
+  await page.getByRole("option", { name: /Process me/ }).click();
+  await page.getByRole("button", { name: "Create item from response" }).click();
+  const again = written(page, /\/form-submissions\/[^/]+\/process$/);
+  await page
+    .getByRole("dialog", { name: "Create item from response" })
+    .getByRole("button", { name: "Create item" })
+    .click();
+  expect((await again).status()).toBeLessThan(300);
   await expect(page.getByRole("tab", { name: /Processed\s*1/ })).toBeVisible();
 
   // Reject: the reason is kept, no item is made.

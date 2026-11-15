@@ -4,6 +4,9 @@ import { useLocale } from "@notrelix/i18n";
 import {
   useBoardAccess,
   useBoardForms,
+  useBoardLabels,
+  useCreateItemWithDetails,
+  useDeleteCard,
   useForm,
   useFormSubmissions,
   useFormWrites,
@@ -16,7 +19,10 @@ import type {
   FormSubmissionStatus,
 } from "@notrelix/work-management-core";
 import { findItemFields } from "../card-detail/item-field-editors";
-import { CardCreatePopup } from "../card-popup/create/card-create-popup";
+import {
+  ResponseItemDialog,
+  type ResponseItemValues,
+} from "./response-item-dialog";
 import { FormBuilderSurface } from "./form-builder-surface";
 import { FormFillSurface } from "./form-fill-surface";
 import { FormInboxSurface, whenLong } from "./form-inbox-surface";
@@ -337,6 +343,85 @@ export function FormInboxPage({
   const [conflict, setConflict] = useState(false);
   const [failed, setFailed] = useState<{ retry: () => void } | null>(null);
   const [creating, setCreating] = useState<FormSubmission | null>(null);
+  const [createFailed, setCreateFailed] = useState(false);
+  const createItem = useCreateItemWithDetails(boardId, workspaceId);
+  const deleteItem = useDeleteCard(boardId, workspaceId);
+  const createPending = createItem.isPending;
+  const boardLabels = useBoardLabels(boardId, workspaceId, Boolean(creating));
+
+  /**
+   * "Tạo việc từ phản hồi": creates the item, marks the response processed, and offers an undo that removes the
+   * item and returns the response to New.
+   */
+  async function createFromResponse(
+    response: FormSubmission,
+    values: ResponseItemValues,
+  ) {
+    if (!board) return;
+    setCreateFailed(false);
+    const fieldsOfBoard = findItemFields(board);
+    let created;
+    try {
+      created = await createItem.mutateAsync({
+        listId: values.groupId,
+        title: values.title.trim(),
+        descriptionMd: values.description.trim() || undefined,
+        startDate: values.startDay
+          ? `${values.startDay}T00:00:00.000Z`
+          : undefined,
+        assigneeIds: values.assigneeIds,
+        labelIds: values.labelIds,
+        dueDate: values.dueDay ? `${values.dueDay}T00:00:00.000Z` : undefined,
+        statusOptionId:
+          values.statusOptionId ?? fieldsOfBoard.status?.options[0]?.id ?? null,
+        priority:
+          fieldsOfBoard.priority && values.priorityOptionId
+            ? {
+                fieldDefinitionId: fieldsOfBoard.priority.id,
+                value: values.priorityOptionId,
+              }
+            : null,
+      });
+    } catch {
+      setCreateFailed(true);
+      return;
+    }
+    setCreating(null);
+    if (!created.itemId) return;
+    const itemId = created.itemId;
+    const result = await writes.process(formId, response.id, itemId);
+    if (!result.ok) {
+      if (result.reason === "conflict") setConflict(true);
+      else toast.error(copy.inbox.createFailedProcess);
+      return;
+    }
+    setSelectedId(null);
+    toastDecisionWithUndo(
+      copy.inbox.createdToast,
+      {
+        undo: copy.common.undo,
+        undoFailed: copy.createFromResponse.undoFailed,
+      },
+      async () => {
+        const reopened = await writes.reopenSubmission(
+          formId,
+          response.id,
+          true,
+        );
+        if (!reopened.ok) return reopened;
+        try {
+          await deleteItem.mutateAsync({
+            cardId: itemId,
+            expectedVersion: created.version,
+          });
+        } catch {
+          return { ok: false, reason: "failed" } as FormWriteResult;
+        }
+        toast(copy.createFromResponse.undone);
+        return reopened;
+      },
+    );
+  }
   const people = useMemo(
     () =>
       Object.fromEntries((board?.members ?? []).map((m) => [m.userId, m.name])),
@@ -467,54 +552,45 @@ export function FormInboxPage({
         backLabel={manager ? undefined : copy.inbox.backToBoard}
       />
       {board && creating && form && prefill ? (
-        <CardCreatePopup
-          open
-          onOpenChange={(next) => {
-            if (!next) setCreating(null);
+        <ResponseItemDialog
+          copy={copy}
+          boardTitle={board.title}
+          notice={fillFormsCopy(copy.createFromResponse.prefilled, {
+            name: nameOf(creating),
+            when: whenLong(creating.submittedAt, locale, tz),
+          })}
+          initial={{
+            title: prefill.title,
+            description: prefill.description,
+            groupId: groups[0]?.id ?? "",
+            priorityOptionId: prefill.priorityOptionId,
+            statusOptionId:
+              findItemFields(board).status?.options[0]?.id ?? null,
+            startDay: "",
+            dueDay: prefill.dueDay,
+            assigneeIds: [],
+            labelIds: [],
           }}
-          workspaceId={workspaceId}
-          board={board}
-          groups={groups}
-          defaultGroupId={groups[0]?.id ?? ""}
-          defaultStatusId={null}
-          defaultTitle={prefill.title}
-          defaultDescription={prefill.description}
-          defaultPriorityId={prefill.priorityOptionId}
-          defaultDueDay={prefill.dueDay}
+          statuses={findItemFields(board).status?.options ?? []}
+          members={board.members ?? []}
           currentUserId={currentUserId}
-          submitLabel={copy.createFromResponse.submit}
-          successMessage={copy.inbox.createdToast}
-          hideAnother
-          intro={
-            <>
-              <span className="mr-1.5 inline-flex rounded-md bg-brand-subtle px-1.5 py-0.5 text-metadata font-semibold text-brand-subtle-foreground">
-                {fillFormsCopy(copy.createFromResponse.addTo, {
-                  board: board.title,
-                })}
-              </span>
-              {fillFormsCopy(copy.createFromResponse.prefilled, {
-                name: nameOf(creating),
-                when: whenLong(creating.submittedAt, locale, tz),
-              })}
-              {prefill.left.length > 0
-                ? prefill.left
-                    .map((entry) =>
-                      fillFormsCopy(copy.createFromResponse.unmapped, entry),
-                    )
-                    .join(" ")
-                : null}
-            </>
-          }
-          onCreated={async ({ itemId }) => {
-            const response = creating;
+          labels={boardLabels.data ?? []}
+          today={new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(
+            now ?? new Date(),
+          )}
+          from={prefill.from}
+          groups={groups}
+          priorities={findItemFields(board).priority?.options ?? []}
+          left={prefill.left.map((entry) =>
+            fillFormsCopy(copy.createFromResponse.unmapped, entry),
+          )}
+          pending={createPending}
+          failed={createFailed}
+          onClose={() => {
+            setCreateFailed(false);
             setCreating(null);
-            if (!itemId) return;
-            const result = await writes.process(formId, response.id, itemId);
-            if (!result.ok) {
-              if (result.reason === "conflict") setConflict(true);
-              else toast.error(copy.inbox.createFailedProcess);
-            }
           }}
+          onSubmit={(values) => void createFromResponse(creating, values)}
         />
       ) : null}
     </>
