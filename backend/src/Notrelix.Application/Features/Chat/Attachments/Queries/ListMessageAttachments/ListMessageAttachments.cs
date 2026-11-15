@@ -37,6 +37,7 @@ public class ListMessageAttachmentsQueryHandler(
 
         var space = await ChannelAccess.LoadLiveAsync(db, request.WorkspaceId, message.SpaceId, cancellationToken);
         ChannelAccess.RequireVisible(space, caller, userId);
+        ChannelAccess.RequireInHistory(space, userId, message);
 
         return Result<IReadOnlyList<MessageAttachmentDto>>.Success(
             await MessageAttachments.ForMessageAsync(attachments, request.WorkspaceId, message.Id, cancellationToken));

@@ -42,6 +42,8 @@ public class ListMessagesQueryHandler(
         // Thread replies stay in their thread; only a reply the author also sent to the channel is in the main flow (UC-CHT-F01).
         var messages = db.ChatMessages.AsNoTracking()
             .Where(m => m.SpaceId == space.Id && (m.ThreadRootId == null || m.AlsoSentToChannel));
+        if (ChannelAccess.HistoryFloor(space, userId) is { } floor)
+            messages = messages.Where(m => m.CreatedAt >= floor);
         var limit = request.Limit;
 
         if (request.Before is { } before)

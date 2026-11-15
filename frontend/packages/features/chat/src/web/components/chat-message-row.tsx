@@ -254,7 +254,9 @@ function ChatMessageRowBase({
         <p className="inline-flex max-w-full flex-wrap items-center justify-center gap-x-1.5 rounded-full bg-muted px-3 py-1 text-center text-xs text-muted-foreground">
           <span className="sr-only">{copy.list.systemLabel}: </span>
           <span className="font-medium">{author.name}</span>
-          <span className="wrap-anywhere">{message.content}</span>
+          <span className="wrap-anywhere">
+            {copy.list.systemText[message.content ?? ""] ?? message.content}
+          </span>
           <time
             dateTime={message.createdAt}
             className="whitespace-nowrap tabular-nums"

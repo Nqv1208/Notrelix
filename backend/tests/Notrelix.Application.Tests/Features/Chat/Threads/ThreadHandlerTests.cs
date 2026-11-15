@@ -133,6 +133,22 @@ public class ThreadHandlerTests
     // ---- Reply (UC-CHT-F01) ----------------------------------------------------------------------
 
     [Fact]
+    public async Task A_member_added_to_a_group_later_cannot_reply_in_the_thread_of_a_message_from_before_the_join()
+    {
+        var group = Space.CreateGroup(_accountId, _workspaceId, "Team", [_member, _owner], Guid.NewGuid(), Now.AddHours(-3));
+        group.AddMember(_outsider, MembershipRole.Member, Now);
+        _spaces.Add(group);
+        var before = Root(group);
+
+        AsUser(_outsider);
+        var act = () => ReplyHandler().Handle(Command(_workspaceId, before.Id), CancellationToken.None);
+        await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
+
+        AsUser(_member);
+        (await ReplyHandler().Handle(Command(_workspaceId, before.Id), CancellationToken.None)).Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task A_reply_takes_the_space_sequence_and_the_thread_sequence_and_the_lock_comes_first()
     {
         var space = Channel();
