@@ -149,7 +149,7 @@ test.describe("1440 (Chat-Main)", () => {
     const nd = await box(page, "[data-unread-divider]");
     expect(nd.h).toBeCloseTo(24, 0);
     expect(nd.x + nd.w / 2).toBeCloseTo(col.x + col.w / 2, 0);
-    const ds = await box(page, "[role=log] li[role=presentation]:has(span)");
+    const ds = await box(page, "[role=log] li[data-testid=chat-day-separator]");
     expect(ds.h).toBeCloseTo(24, 0);
   });
 

@@ -95,7 +95,12 @@ describe("ChatMessageList: a long history", () => {
     const items = log.querySelectorAll("li");
     expect(items.length).toBeGreaterThan(0);
     expect(items.length).toBeLessThan(80);
-    const sizeOfSet = Number(items[0]!.getAttribute("aria-setsize"));
-    expect(sizeOfSet).toBe(listProps(500).rows.length);
+    const positioned = log.querySelectorAll("li[aria-setsize]");
+    expect(positioned.length).toBeGreaterThan(0);
+    expect(Number(positioned[0]!.getAttribute("aria-setsize"))).toBe(
+      listProps(500).rows.length,
+    );
+    // A list may hold only list items (axe list rule): no row drops its role.
+    expect(log.querySelectorAll('li[role="presentation"]')).toHaveLength(0);
   });
 });
