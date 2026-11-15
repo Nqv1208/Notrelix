@@ -221,12 +221,18 @@ export const spacePageEn = {
     archiveConfirmAction: "Archive",
     cancel: "Cancel",
     deleteTitle: "Delete the department",
-    deleteHint: "This can't be undone.",
+    deleteHint: "Restorable for {{days}} days.",
     delete: "Delete department",
-    deleteUnavailable: "Deleting a department isn't available yet.",
+    deleting: "Deleting…",
+    deleteUnavailable: "You can't delete this department.",
+    deleteBlocked:
+      "This department still has {{content}}. Move or delete them first; deleting never takes work with it.",
+    deleteBlockedUnknown:
+      "The server refused: this department still has departments, Boards or Docs inside, some of which you may not see. Ask a workspace admin.",
+    deleteTrash: "Deleted departments",
     deleteConfirmTitle: "Delete {{name}} from {{workspace}}?",
     deleteConfirmText:
-      "{{content}} are not deleted with it; they stay as they are and show under Unplaced.",
+      "It goes to Deleted departments for {{days}} days; a workspace Owner or Admin can restore it.",
     deleteConfirmLabel: 'Type "{{name}}" to confirm',
     childSpaces_one: "{{count}} sub-department",
     childSpaces_other: "{{count}} sub-departments",
@@ -235,6 +241,29 @@ export const spacePageEn = {
     docs_one: "{{count}} Doc",
     docs_other: "{{count}} Docs",
     and: " and ",
+  },
+  trash: {
+    title: "Deleted departments",
+    intro:
+      "A deleted department can be restored by a workspace Owner or Admin for {{days}} days, then it is gone for good.",
+    deletedOn: "Deleted {{date}}",
+    restorableUntil: "Restorable until {{date}}",
+    restore: "Restore",
+    restoring: "Restoring…",
+    empty: "No deleted department in the last {{days}} days.",
+    loading: "Loading deleted departments",
+    error: "Deleted departments couldn't load.",
+    retry: "Try again",
+    forbidden:
+      "Only a workspace Owner or Admin can see and restore deleted departments.",
+    back: "Back to Home",
+    failures: {
+      conflict:
+        "Someone changed this department first. The list was reloaded; check it and try again.",
+      forbidden: "Only a workspace Owner or Admin can restore a department.",
+      gone: "This department no longer exists. The list was reloaded.",
+      failed: "That didn't work and nothing changed. Try again.",
+    },
   },
 };
 
@@ -454,12 +483,18 @@ export const spacePageVi: SpacePageCopy = {
     archiveConfirmAction: "Lưu trữ",
     cancel: "Huỷ",
     deleteTitle: "Xoá phòng ban",
-    deleteHint: "Không hoàn tác được.",
+    deleteHint: "Khôi phục được trong {{days}} ngày.",
     delete: "Xoá phòng ban",
-    deleteUnavailable: "Chưa xoá được phòng ban.",
+    deleting: "Đang xoá…",
+    deleteUnavailable: "Bạn không xoá được phòng ban này.",
+    deleteBlocked:
+      "Phòng ban này còn {{content}}. Hãy chuyển hoặc xoá chúng trước; xoá không kéo theo việc nào.",
+    deleteBlockedUnknown:
+      "Máy chủ từ chối: phòng ban này còn phòng ban, board hoặc tài liệu bên trong, có thể có cái bạn không thấy. Hãy hỏi quản trị workspace.",
+    deleteTrash: "Phòng ban đã xoá",
     deleteConfirmTitle: "Xoá {{name}} khỏi {{workspace}}?",
     deleteConfirmText:
-      "{{content}} không bị xoá theo; chúng giữ nguyên và hiện ở mục Chưa xếp phòng.",
+      "Phòng ban vào mục Phòng ban đã xoá {{days}} ngày; Owner hoặc Admin khôi phục được.",
     deleteConfirmLabel: 'Gõ "{{name}}" để xác nhận',
     childSpaces_one: "{{count}} phòng ban con",
     childSpaces_other: "{{count}} phòng ban con",
@@ -468,5 +503,29 @@ export const spacePageVi: SpacePageCopy = {
     docs_one: "{{count}} tài liệu",
     docs_other: "{{count}} tài liệu",
     and: " và ",
+  },
+  trash: {
+    title: "Phòng ban đã xoá",
+    intro:
+      "Phòng ban đã xoá được Owner hoặc Admin của workspace khôi phục trong {{days}} ngày, sau đó mất hẳn.",
+    deletedOn: "Xoá {{date}}",
+    restorableUntil: "Khôi phục được đến {{date}}",
+    restore: "Khôi phục",
+    restoring: "Đang khôi phục…",
+    empty: "Không có phòng ban nào bị xoá trong {{days}} ngày qua.",
+    loading: "Đang tải phòng ban đã xoá",
+    error: "Chưa tải được phòng ban đã xoá.",
+    retry: "Thử lại",
+    forbidden:
+      "Chỉ Owner hoặc Admin của workspace mới xem và khôi phục được phòng ban đã xoá.",
+    back: "Về Trang chủ",
+    failures: {
+      conflict:
+        "Người khác vừa thay đổi phòng ban này trước. Danh sách đã được tải lại, hãy xem rồi thử lại.",
+      forbidden:
+        "Chỉ Owner hoặc Admin của workspace mới khôi phục được phòng ban.",
+      gone: "Phòng ban này không còn nữa. Danh sách đã được tải lại.",
+      failed: "Chưa làm được và chưa có gì thay đổi. Hãy thử lại.",
+    },
   },
 };

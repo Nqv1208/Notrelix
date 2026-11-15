@@ -8,6 +8,7 @@ import {
   describeWorkspaceFailure,
   identityToneFor,
   markToneFor,
+  SPACE_RESTORE_DAYS,
   spaceMemberKey,
   spacePath,
   type SpaceMemberEntry,
@@ -146,11 +147,13 @@ export function SpacePage() {
   } | null>(null);
   const [saveStatus, setSaveStatus] = useState<SpaceSaveStatus>("idle");
   const [archiveRefused, setArchiveRefused] = useState(false);
+  const [deleteRefused, setDeleteRefused] = useState(false);
 
   // A different Space is a new page: drop its transient write state.
   useEffect(() => {
     setSaveStatus("idle");
     setArchiveRefused(false);
+    setDeleteRefused(false);
     setAddError(null);
     setExpandedTeams([]);
   }, [spaceId]);
@@ -768,6 +771,38 @@ export function SpacePage() {
     );
   }, [copy, hint, mutations.archive, node, spaceId]);
 
+  const onDelete = useCallback(() => {
+    if (!node) return;
+    setDeleteRefused(false);
+    mutations.remove.mutate(
+      { spaceId, expectedVersion: node.version },
+      {
+        onSuccess: () => {
+          toast.success(
+            formatCopy(copy.toasts.deleted, {
+              name: node.name,
+              days: String(SPACE_RESTORE_DAYS),
+            }),
+          );
+          // The department is gone from the tree: land where it can be restored.
+          void navigate({
+            to: "/workspaces/$workspaceId/deleted-spaces",
+            params: { workspaceId },
+          });
+        },
+        onError: (error) => {
+          const failure = toastFailure(
+            formatCopy(copy.toasts.deleteFailed, { name: node.name }),
+            error,
+            hint,
+          );
+          // WSP-022: content the member cannot see can still block it.
+          if (failure.kind === "rule") setDeleteRefused(true);
+        },
+      },
+    );
+  }, [copy, hint, mutations.remove, navigate, node, spaceId, workspaceId]);
+
   const onUnarchive = useCallback(() => {
     if (!node) return;
     mutations.unarchive.mutate(
@@ -863,7 +898,15 @@ export function SpacePage() {
         onUnarchive={onUnarchive}
         onSave={onSave}
         onArchive={onArchive}
-        onDelete={null}
+        onDelete={onDelete}
+        deleting={mutations.remove.isPending}
+        deleteRefused={deleteRefused}
+        onOpenTrash={() =>
+          void navigate({
+            to: "/workspaces/$workspaceId/deleted-spaces",
+            params: { workspaceId },
+          })
+        }
         onAddMembers={onAddMembers}
         onChangeMemberRole={onChangeMemberRole}
         onRemoveMember={onRemoveMember}

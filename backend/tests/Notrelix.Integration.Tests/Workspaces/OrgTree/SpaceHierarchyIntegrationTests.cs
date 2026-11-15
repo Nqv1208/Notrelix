@@ -7,6 +7,8 @@ using Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceVisibi
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.CreateSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.DeleteSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.MoveSpace;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.RestoreSpace;
+using Notrelix.Application.Features.Workspaces.Spaces.Queries.GetDeletedSpaces;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.RemoveSpaceMember;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.RenameSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.UnarchiveSpace;
@@ -242,10 +244,104 @@ public sealed class SpaceHierarchyIntegrationTests : IAsyncLifetime
         await OrgTreeTestHost.SendAsync(owner, new ArchiveSpaceCommand(stack.WorkspaceId, it, await _host.SpaceVersionAsync(it)));
         (await SpaceAsync(it)).Status.Should().Be(SpaceStatus.Archived, "only archived children remain");
 
-        var deleteWithArchivedChild = () => OrgTreeTestHost.SendAsync(owner, new DeleteSpaceCommand(stack.WorkspaceId, it));
+        var deleteWithArchivedChild = async () => await OrgTreeTestHost.SendAsync(owner, new DeleteSpaceCommand(stack.WorkspaceId, it, await _host.SpaceVersionAsync(it)));
         (await deleteWithArchivedChild.Should().ThrowAsync<DomainBusinessRuleException>()).Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Space_CannotDeleteWithContent);
         (await _host.ReadAsync(c => c.Spaces.IgnoreQueryFilters().Where(s => s.Id == security).Select(s => s.DeletedAt).SingleAsync()))
             .Should().BeNull("nothing is deleted by cascade");
+    }
+
+    // ── Delete and restore (trash window) ─────────────────────────────────
+
+    [Fact]
+    public async Task DeleteAndRestore_RoundTripAnEmptySpace_AndTheTrashListsItInsideThirtyDays()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        using var owner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
+        var parent = await CreateAsync(owner, stack, "IT");
+        var child = await CreateAsync(owner, stack, "Security", parent);
+        var before = await VersionAsync(child);
+
+        var stale = async () => await OrgTreeTestHost.SendAsync(owner, new DeleteSpaceCommand(stack.WorkspaceId, child, before + 5));
+        await stale.Should().ThrowAsync<PreconditionFailed>("a stale delete changes nothing");
+        (await SpaceAsync(child)).IsDeleted.Should().BeFalse();
+
+        await OrgTreeTestHost.SendAsync(owner, new DeleteSpaceCommand(stack.WorkspaceId, child, before));
+        var deletedVersion = await _host.SpaceVersionAsync(child);
+        deletedVersion.Should().Be(before + 1);
+        (await OrgTreeTestHost.QueryAsync(owner, new GetSpaceTreeQuery(stack.WorkspaceId))).Items.Should().NotContain(n => n.Id == child);
+
+        var trash = await OrgTreeTestHost.QueryAsync(owner, new GetDeletedSpacesQuery(stack.WorkspaceId));
+        var row = trash.Should().ContainSingle(d => d.Id == child).Subject;
+        (row.RestorableUntil - row.DeletedAt).Should().Be(TimeSpan.FromDays(30));
+
+        // A repeat of the same delete finds nothing to delete: NotFound, and nothing bumps.
+        var repeat = async () => await OrgTreeTestHost.SendAsync(owner, new DeleteSpaceCommand(stack.WorkspaceId, child, before));
+        await repeat.Should().ThrowAsync<AppNotFound>();
+        (await _host.SpaceVersionAsync(child)).Should().Be(deletedVersion);
+
+        await OrgTreeTestHost.SendAsync(owner, new RestoreSpaceCommand(stack.WorkspaceId, child));
+        (await _host.SpaceVersionAsync(child)).Should().Be(deletedVersion + 1);
+        (await OrgTreeTestHost.QueryAsync(owner, new GetSpaceTreeQuery(stack.WorkspaceId))).Items.Should().Contain(n => n.Id == child);
+        (await OrgTreeTestHost.QueryAsync(owner, new GetDeletedSpacesQuery(stack.WorkspaceId))).Should().BeEmpty();
+
+        // Restoring a live Space is a no-op.
+        await OrgTreeTestHost.SendAsync(owner, new RestoreSpaceCommand(stack.WorkspaceId, child));
+        (await _host.SpaceVersionAsync(child)).Should().Be(deletedVersion + 1);
+    }
+
+    [Fact]
+    public async Task Restore_UnderADeletedParent_OrAfterTheWindow_IsRefused_AndTheTrashDropsWhatPassedTheWindow()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        using var owner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
+        var parent = await CreateAsync(owner, stack, "IT");
+        var child = await CreateAsync(owner, stack, "Security", parent);
+        var old = await CreateAsync(owner, stack, "Legacy");
+
+        await OrgTreeTestHost.SendAsync(owner, new DeleteSpaceCommand(stack.WorkspaceId, child, await VersionAsync(child)));
+        await OrgTreeTestHost.SendAsync(owner, new DeleteSpaceCommand(stack.WorkspaceId, parent, await VersionAsync(parent)));
+        var underDeleted = async () => await OrgTreeTestHost.SendAsync(owner, new RestoreSpaceCommand(stack.WorkspaceId, child));
+        (await underDeleted.Should().ThrowAsync<DomainBusinessRuleException>()).Which.RuleCode
+            .Should().Be(WorkspaceRuleCodes.Workspaces_Space_ParentNotActive);
+
+        await OrgTreeTestHost.SendAsync(owner, new DeleteSpaceCommand(stack.WorkspaceId, old, await VersionAsync(old)));
+        _host.Now = OrgTreeTestHost.BaseTime + Space.RestoreWindow + TimeSpan.FromDays(1);
+        var late = async () => await OrgTreeTestHost.SendAsync(owner, new RestoreSpaceCommand(stack.WorkspaceId, old));
+        (await late.Should().ThrowAsync<DomainBusinessRuleException>()).Which.RuleCode
+            .Should().Be(WorkspaceRuleCodes.Workspaces_Space_RestoreWindowExpired);
+        (await OrgTreeTestHost.QueryAsync(owner, new GetDeletedSpacesQuery(stack.WorkspaceId))).Should().BeEmpty("nothing past the window is listed");
+    }
+
+    [Fact]
+    public async Task Trash_IsForManagers_AndOutsidersAndOtherWorkspacesSeeNothing()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        using var owner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
+        var space = await CreateAsync(owner, stack, "IT");
+        await OrgTreeTestHost.SendAsync(owner, new DeleteSpaceCommand(stack.WorkspaceId, space, await VersionAsync(space)));
+
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Member");
+        using var memberProvider = _host.CreateProvider(stack.AccountId, member);
+        var memberList = async () => await OrgTreeTestHost.QueryAsync(memberProvider, new GetDeletedSpacesQuery(stack.WorkspaceId));
+        await memberList.Should().ThrowAsync<Exception>("a plain member cannot manage Spaces");
+        var memberRestore = async () => await OrgTreeTestHost.SendAsync(memberProvider, new RestoreSpaceCommand(stack.WorkspaceId, space));
+        await memberRestore.Should().ThrowAsync<Exception>();
+        (await _host.SpaceVersionAsync(space)).Should().BeGreaterThan(0);
+        (await _host.ReadAsync(c => c.Spaces.IgnoreQueryFilters().Where(s => s.Id == space).Select(s => s.DeletedAt).SingleAsync()))
+            .Should().NotBeNull("the refused restore changed nothing");
+
+        var outsider = await _host.AddOutsiderAsync(stack);
+        using var outsiderProvider = _host.CreateProvider(stack.AccountId, outsider);
+        var outsiderList = async () => await OrgTreeTestHost.QueryAsync(outsiderProvider, new GetDeletedSpacesQuery(stack.WorkspaceId));
+        await outsiderList.Should().ThrowAsync<AppNotFound>("a non-member of the Workspace gets NotFound");
+        var outsiderRestore = async () => await OrgTreeTestHost.SendAsync(outsiderProvider, new RestoreSpaceCommand(stack.WorkspaceId, space));
+        await outsiderRestore.Should().ThrowAsync<AppNotFound>();
+
+        var other = await _host.SeedWorkspaceAsync();
+        using var otherOwner = _host.CreateProvider(other.AccountId, other.OwnerId);
+        var cross = async () => await OrgTreeTestHost.SendAsync(otherOwner, new RestoreSpaceCommand(other.WorkspaceId, space));
+        await cross.Should().ThrowAsync<AppNotFound>("another workspace cannot reach this Space");
+        (await OrgTreeTestHost.QueryAsync(otherOwner, new GetDeletedSpacesQuery(other.WorkspaceId))).Should().BeEmpty();
     }
 
     // ── Membership (WSP-024) ──────────────────────────────────────────────

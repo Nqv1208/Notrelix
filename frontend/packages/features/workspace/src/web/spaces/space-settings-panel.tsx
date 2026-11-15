@@ -12,6 +12,7 @@ import {
 } from "@notrelix/ui-web";
 import {
   archiveBlocked,
+  SPACE_RESTORE_DAYS,
   type SpaceContentCounts,
   type SpaceNode,
   type SpaceType,
@@ -53,8 +54,13 @@ export interface SpaceSettingsPanelProps {
   readonly onSave: (changes: Partial<SpaceDetailsValues>) => void;
   readonly onMove: () => void;
   readonly onArchive: () => void;
-  /** `null`: there is no delete write, the button is drawn inert. */
+  /** `null`: the person cannot delete, the button is drawn inert. */
   readonly onDelete: (() => void) | null;
+  readonly deleting?: boolean;
+  /** The producer refused a delete the visible content did not explain. */
+  readonly deleteRefused?: boolean;
+  /** Opens the deleted departments (where a deleted one is restored). */
+  readonly onOpenTrash?: (() => void) | null;
   /** Starts with the delete confirmation open (stories, tests). */
   readonly initialDeleteOpen?: boolean;
 }
@@ -98,8 +104,9 @@ const RADIO_OPTIONS = ["Private", "Workspace"] as const;
  * the tree, then Archive and Delete. Visibility saves when chosen. Archive
  * never cascades (WSP-022): while the member can see active departments,
  * Boards or Docs inside, the action is unavailable and the reason shown; the
- * producer still decides for content the member cannot see. Delete has no
- * write behind it, so it is drawn inert.
+ * producer still decides for content the member cannot see. Delete follows
+ * the same rule, asks for the department's name, and the department stays
+ * restorable for 30 days (Deleted departments).
  */
 export function SpaceSettingsPanel({
   copy,
@@ -116,6 +123,9 @@ export function SpaceSettingsPanel({
   onMove,
   onArchive,
   onDelete,
+  deleting = false,
+  deleteRefused = false,
+  onOpenTrash = null,
   initialDeleteOpen = false,
 }: SpaceSettingsPanelProps) {
   const s = copy.settings;
@@ -175,21 +185,17 @@ export function SpaceSettingsPanel({
         })
       : s.placeHintNoChildren;
 
-  const deleteScope = [
-    ...childNames,
-    ...(content !== null && content.boards > 0
-      ? [
-          pluralForm(
-            { one: s.boards_one, other: s.boards_other },
-            content.boards,
-          ),
-        ]
-      : []),
-  ];
-  const deleteContent =
-    deleteScope.length <= 1
-      ? deleteScope.join("")
-      : `${deleteScope.slice(0, -1).join(", ")}${s.and}${deleteScope[deleteScope.length - 1]}`;
+  // WSP-022: like Archive, Delete takes nothing with it, so visible content blocks it.
+  const deleteBlocked = content !== null && archiveBlocked(content);
+  const canDelete = canManage && onDelete !== null && !deleteBlocked;
+  const days = String(SPACE_RESTORE_DAYS);
+  const deleteNote = deleteBlocked
+    ? formatCopy(s.deleteBlocked, { content: contentPhrase(copy, content) })
+    : deleteRefused
+      ? s.deleteBlockedUnknown
+      : onDelete
+        ? formatCopy(s.deleteHint, { days })
+        : s.deleteUnavailable;
   const deleteMatches = deleteName.trim() === space.name;
 
   const selectVisibility = (value: SpaceVisibility) => {
@@ -467,18 +473,33 @@ export function SpaceSettingsPanel({
               data-f="dsm"
               className="mt-0.5 block text-crumb leading-normal text-meta-foreground"
             >
-              {onDelete ? s.deleteHint : s.deleteUnavailable}
+              {deleteNote}
+              {onOpenTrash && canManage ? (
+                <>
+                  {" "}
+                  <button
+                    type="button"
+                    onClick={onOpenTrash}
+                    className={cn(
+                      "cursor-pointer border-0 bg-transparent p-0 text-crumb text-primary underline",
+                      FOCUS,
+                    )}
+                  >
+                    {s.deleteTrash}
+                  </button>
+                </>
+              ) : null}
             </small>
           </span>
           <button
             data-f="btn-sm"
             type="button"
-            aria-expanded={onDelete ? deleteOpen : undefined}
-            aria-controls={onDelete ? "space-delete-confirm" : undefined}
-            aria-disabled={onDelete && canManage ? undefined : true}
+            aria-expanded={canDelete ? deleteOpen : undefined}
+            aria-controls={canDelete ? "space-delete-confirm" : undefined}
+            aria-disabled={canDelete && !deleting ? undefined : true}
             title={onDelete ? undefined : s.deleteUnavailable}
             onClick={
-              onDelete && canManage
+              canDelete && !deleting
                 ? () => setDeleteOpen((open) => !open)
                 : undefined
             }
@@ -491,7 +512,7 @@ export function SpaceSettingsPanel({
             {s.delete}
           </button>
         </div>
-        {onDelete && deleteOpen ? (
+        {canDelete && deleteOpen ? (
           <div
             id="space-delete-confirm"
             data-f="confirm"
@@ -505,9 +526,7 @@ export function SpaceSettingsPanel({
                 workspace: workspaceName,
               })}
             </b>
-            <span>
-              {formatCopy(s.deleteConfirmText, { content: deleteContent })}
-            </span>
+            <span>{formatCopy(s.deleteConfirmText, { days })}</span>
             <label htmlFor="space-delete-name" className="font-semibold">
               {formatCopy(s.deleteConfirmLabel, { name: space.name })}
             </label>
@@ -535,14 +554,14 @@ export function SpaceSettingsPanel({
               <button
                 data-f="btn-sm"
                 type="button"
-                aria-disabled={deleteMatches ? undefined : true}
-                onClick={deleteMatches ? onDelete : undefined}
+                aria-disabled={deleteMatches && !deleting ? undefined : true}
+                onClick={deleteMatches && !deleting ? onDelete : undefined}
                 className={cn(
                   "inline-flex h-7 items-center rounded-[7px] border border-danger-text bg-danger-text px-2.5 text-crumb leading-[1.45] font-semibold whitespace-nowrap text-danger-foreground aria-disabled:cursor-default",
                   FOCUS,
                 )}
               >
-                {s.delete}
+                {deleting ? s.deleting : s.delete}
               </button>
             </div>
           </div>

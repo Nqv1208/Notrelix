@@ -127,8 +127,11 @@ export interface WorkspaceSpaceSurfaceProps {
   readonly onUnarchive: () => void;
   readonly onSave: (changes: Partial<SpaceDetailsValues>) => void;
   readonly onArchive: () => void;
-  /** `null`: no delete write exists, the button is drawn inert. */
+  /** `null`: the person cannot delete, the button is drawn inert. */
   readonly onDelete: (() => void) | null;
+  readonly deleting?: boolean;
+  readonly deleteRefused?: boolean;
+  readonly onOpenTrash?: (() => void) | null;
   readonly onAddMembers: (inputs: readonly AddSpaceMemberInput[]) => void;
   /** Closes the add dialog after the host finished adding. */
   readonly addDialogKey: number;
@@ -526,6 +529,9 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
             onMove={props.onMoveSpace}
             onArchive={props.onArchive}
             onDelete={props.onDelete}
+            deleting={props.deleting}
+            deleteRefused={props.deleteRefused}
+            onOpenTrash={props.onOpenTrash}
             initialDeleteOpen={props.initialDeleteOpen}
           />
         )}

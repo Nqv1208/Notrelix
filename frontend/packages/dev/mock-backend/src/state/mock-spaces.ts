@@ -99,12 +99,23 @@ export function accessAtLeast(
   return access !== null && ACCESS_RANK[access] >= ACCESS_RANK[needed];
 }
 
+/** A deleted Space is restorable for this long (the Board and Workspace window, 30 days). */
+export const MOCK_SPACE_RESTORE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+
+export interface MockDeletedSpace {
+  readonly record: MockSpaceRecord;
+  readonly deletedAt: string;
+}
+
 export class MockSpaceState {
   private spaces = new Map<string, MockSpaceRecord>();
+  /** Deleted Spaces by id; every read of the live tree leaves them out. */
+  private trash = new Map<string, MockDeletedSpace>();
   private members = new Map<string, MockSpaceMemberRecord[]>();
   private teams = new Map<string, MockTeamRecord>();
 
   clear(): void {
+    this.trash.clear();
     this.spaces.clear();
     this.members.clear();
     this.teams.clear();
@@ -497,6 +508,97 @@ export class MockSpaceState {
     space.archived = true;
     space.version += 1;
     return { kind: "ok" };
+  }
+
+  /** Delete needs Manager on the Space, the version last read, and nothing inside (WSP-022). */
+  delete(
+    workspaceId: string,
+    spaceId: string,
+    viewer: MockSpaceViewer,
+    placed: { boards: number; pages: number },
+    expectedVersion: unknown,
+    now: string,
+  ): MockSpaceWrite {
+    const space = this.manageable(workspaceId, spaceId, viewer);
+    if ("kind" in space) return space;
+    if (expectedVersion !== space.version) return { kind: "stale" };
+    if (
+      this.siblings(workspaceId, space.id).length > 0 ||
+      placed.boards > 0 ||
+      placed.pages > 0
+    ) {
+      return {
+        kind: "rule",
+        message:
+          "Cannot delete a space that still has child spaces, boards or pages. Move or delete them first.",
+      };
+    }
+    this.spaces.delete(space.id);
+    this.trash.set(space.id, {
+      record: { ...space, version: space.version + 1 },
+      deletedAt: now,
+    });
+    return { kind: "ok" };
+  }
+
+  /** Restore is a workspace Owner or Admin decision, on a deleted Space inside its window. */
+  restore(
+    workspaceId: string,
+    spaceId: string,
+    viewer: MockSpaceViewer,
+    now: string,
+  ): MockSpaceWrite {
+    const live = this.spaces.get(spaceId);
+    const deleted = this.trash.get(spaceId);
+    const known = live ?? deleted?.record;
+    if (
+      !known ||
+      known.workspaceId !== workspaceId ||
+      viewer.workspaceRole === null
+    )
+      return { kind: "not-found" };
+    if (viewer.workspaceRole !== "owner" && viewer.workspaceRole !== "admin")
+      return live ? { kind: "forbidden" } : { kind: "not-found" };
+    if (live || !deleted) return { kind: "ok" };
+    if (
+      Date.parse(now) - Date.parse(deleted.deletedAt) >
+      MOCK_SPACE_RESTORE_WINDOW_MS
+    )
+      return {
+        kind: "rule",
+        message: "The restore window of this department has passed.",
+      };
+    const record = deleted.record;
+    const parent = record.parentId ? this.spaces.get(record.parentId) : null;
+    if (record.parentId && (!parent || parent.archived))
+      return {
+        kind: "rule",
+        message: "Cannot restore a space under a parent that is not active.",
+      };
+    try {
+      this.ensureUniqueName(workspaceId, record.parentId, record.name);
+    } catch (error) {
+      if (error instanceof MockSpaceRuleError)
+        return { kind: "rule", message: error.message };
+      throw error;
+    }
+    const order = this.siblings(workspaceId, record.parentId).map((s) => s.id);
+    this.trash.delete(spaceId);
+    this.spaces.set(spaceId, { ...record, version: record.version + 1 });
+    this.renumber([...order, spaceId]);
+    return { kind: "ok" };
+  }
+
+  /** The deleted Spaces of a workspace that can still be restored, newest first. */
+  deletedOf(workspaceId: string, now: string): MockDeletedSpace[] {
+    return [...this.trash.values()]
+      .filter(
+        (d) =>
+          d.record.workspaceId === workspaceId &&
+          Date.parse(now) - Date.parse(d.deletedAt) <=
+            MOCK_SPACE_RESTORE_WINDOW_MS,
+      )
+      .sort((a, b) => (a.deletedAt < b.deletedAt ? 1 : -1));
   }
 
   unarchive(

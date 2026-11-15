@@ -114,7 +114,10 @@ export const endpoints = {
       `/workspaces/${workspaceId}/spaces/${spaceId}/archive`,
     spaceUnarchive: (workspaceId: string, spaceId: string) =>
       `/workspaces/${workspaceId}/spaces/${spaceId}/unarchive`,
-    // Workspaces.Spaces.RestoreSpace (POST, no expected version; DELETE on `space` is Workspaces.Spaces.DeleteSpace).
+    // Workspaces.Spaces.GetDeletedSpaces: the deleted Spaces inside the 30-day restore window.
+    spacesDeleted: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/spaces/deleted`,
+    // Workspaces.Spaces.RestoreSpace (POST, no expected version; DELETE on `space` is Workspaces.Spaces.DeleteSpace and sends `?expectedVersion=`).
     spaceRestore: (workspaceId: string, spaceId: string) =>
       `/workspaces/${workspaceId}/spaces/${spaceId}/restore`,
     spaceMove: (workspaceId: string, spaceId: string) =>
