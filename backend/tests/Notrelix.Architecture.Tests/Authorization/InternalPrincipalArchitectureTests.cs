@@ -126,7 +126,7 @@ public class InternalPrincipalArchitectureTests
         ("ops.record_security_event", "text, text, text, integer, text, text, text, uuid, text, uuid, text, jsonb, timestamptz", "notrelix_app, notrelix_worker"),
         ("ops.upsert_access_grant", "uuid, uuid, uuid, text, timestamptz", "notrelix_app"),
         ("ops.revoke_access_grant", "uuid, uuid, uuid, timestamptz", "notrelix_app"),
-        ("ops.disclosable_member_emails", "uuid, uuid[]", "notrelix_app"),
+        ("ops.disclosable_member_emails", "uuid, uuid[]", "notrelix_app, notrelix_worker"),
         ("ops.shared_member_phones", "uuid, uuid[]", "notrelix_app"),
         ("ops.has_api_token_binding", "uuid, uuid", "notrelix_app"),
     ];

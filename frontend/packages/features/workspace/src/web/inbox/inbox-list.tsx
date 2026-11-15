@@ -207,6 +207,15 @@ export function InboxRow({
             <span className="truncate">{item.context.label}</span>
           </span>
         ) : null}
+        {item.snoozedWhen ? (
+          <span
+            data-f="snoozed-when"
+            className="mt-[5px] inline-flex h-5 items-center gap-1 rounded-full bg-state-selected px-[7px] text-micro leading-[1.45] font-semibold text-state-selected-foreground"
+          >
+            <Clock aria-hidden="true" className="size-3" />
+            {formatCopy(copy.snoozedBack, { when: item.snoozedWhen })}
+          </span>
+        ) : null}
         {item.need ? (
           <span
             data-f="need"
@@ -472,17 +481,53 @@ export function InboxTabs({
   );
 }
 
+function FilterToggle({
+  filter,
+  label,
+  icon,
+  "data-f": dataF,
+}: {
+  filter: { active: boolean; onToggle: () => void };
+  label: string;
+  /** Draws the toggle as an icon with the label as its name (the filter bar has no width for a third word). */
+  icon?: ReactNode;
+  "data-f": string;
+}) {
+  return (
+    <button
+      data-f={dataF}
+      type="button"
+      aria-pressed={filter.active}
+      aria-label={icon ? label : undefined}
+      title={icon ? label : undefined}
+      onClick={filter.onToggle}
+      className={cn(
+        "box-border inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-[7px] border px-[9px] text-crumb leading-[1.45] outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+        filter.active
+          ? "border-transparent bg-state-selected font-semibold text-state-selected-foreground"
+          : "border-line-strong bg-popover font-medium text-muted-foreground dark:bg-card",
+        icon ? "w-7 justify-center px-0" : "",
+      )}
+    >
+      {icon ?? label}
+    </button>
+  );
+}
+
 export function InboxToolbar({
   copy,
   unreadOnly,
   onToggleUnread,
   done,
+  snoozed,
 }: {
   copy: WorkspaceInboxCopy;
   unreadOnly: boolean;
   onToggleUnread: () => void;
   /** The Done filter; `null` or omitted draws no such toggle. */
   done?: { active: boolean; onToggle: () => void } | null;
+  /** The Snoozed filter; `null` or omitted draws no such toggle. */
+  snoozed?: { active: boolean; onToggle: () => void } | null;
 }) {
   return (
     <div
@@ -504,20 +549,17 @@ export function InboxToolbar({
         {copy.unreadOnly}
       </button>
       {done ? (
-        <button
-          data-f="tog-done"
-          type="button"
-          aria-pressed={done.active}
-          onClick={done.onToggle}
-          className={cn(
-            "box-border inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-[7px] border px-[9px] text-crumb leading-[1.45] outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
-            done.active
-              ? "border-transparent bg-state-selected font-semibold text-state-selected-foreground"
-              : "border-line-strong bg-popover font-medium text-muted-foreground dark:bg-card",
-          )}
-        >
-          {copy.doneFilter}
-        </button>
+        <FilterToggle data-f="tog-done" filter={done} label={copy.doneFilter} />
+      ) : null}
+      {snoozed ? (
+        <FilterToggle
+          data-f="tog-snoozed"
+          filter={snoozed}
+          label={copy.snoozedFilter}
+          icon={
+            <Clock aria-hidden="true" className="size-4" strokeWidth={1.8} />
+          }
+        />
       ) : null}
       <span className="flex-1" />
       <span className="text-xs leading-[1.45] text-meta-foreground">
