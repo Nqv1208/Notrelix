@@ -408,6 +408,7 @@ export function ChatWorkspace({
   const linker = hooks.useLinkChannel(ws, ch);
   const unlinker = hooks.useUnlinkChannel(ws, ch);
   const reader = hooks.useMarkRead(ws);
+  const allReader = hooks.useMarkAllRead(ws);
   const levelWriter = hooks.useSetNotificationLevel(ws);
   const starter = hooks.useStartConversation(ws);
   const participantAdder = hooks.useAddParticipants(ws, ch);
@@ -1316,6 +1317,8 @@ export function ChatWorkspace({
         canManageWorkspace && !isGuest ? () => setAdminOpen(true) : undefined
       }
       onSearch={() => setSearchOpen(true)}
+      onMarkAllRead={() => allReader.mutate()}
+      markingAllRead={allReader.isPending}
       onCreate={() => {
         setCreateError(null);
         setCreateOpen(true);

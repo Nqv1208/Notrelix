@@ -68,6 +68,7 @@ export const en = {
   },
   sidebar: {
     navLabel: "Channels",
+    markAllRead: "Mark all as read",
     listTitle: "Channels",
     guestEmpty: "Channels you are added to appear here.",
     unreadLabel: "Unread messages",
@@ -843,6 +844,7 @@ export const vi: ChatCopy = {
   },
   sidebar: {
     navLabel: "Kênh",
+    markAllRead: "Đánh dấu tất cả đã đọc",
     listTitle: "Kênh",
     guestEmpty: "Các kênh bạn được thêm vào sẽ hiện ở đây.",
     unreadLabel: "Có tin chưa đọc",
