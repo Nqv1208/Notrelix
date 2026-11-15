@@ -1,6 +1,7 @@
 import {
   Check,
   CircleAlert,
+  LoaderCircle,
   MoreHorizontal,
   PanelRight,
   WifiOff,
@@ -116,6 +117,11 @@ export function DocPageBarSurface({
             <WifiOff
               aria-hidden="true"
               className="size-[13px] shrink-0 stroke-[1.8]"
+            />
+          ) : saveState === "saving" ? (
+            <LoaderCircle
+              aria-hidden="true"
+              className="size-[13px] shrink-0 stroke-[1.8] motion-safe:animate-spin"
             />
           ) : (
             <Check
