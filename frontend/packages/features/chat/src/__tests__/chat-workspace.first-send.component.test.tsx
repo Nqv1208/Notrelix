@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@notrelix/testing";
+import { act, fireEvent, render, screen, waitFor } from "@notrelix/testing";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createNotrelixClient } from "@notrelix/contracts";
 import { I18nProvider } from "@notrelix/i18n";
@@ -11,6 +11,7 @@ import {
   mockIds,
 } from "@notrelix/dev-mock-backend";
 import { chatCatalog } from "../web/components/chat.catalog";
+import { en } from "../web/components/chat.copy";
 import { ChatWorkspace } from "../web/components/chat-workspace";
 import { createChatHooks } from "../web/query/create-chat-hooks";
 import { chatQueryKeys } from "../query/keys";
@@ -24,9 +25,24 @@ beforeAll(() => {
 // The owner's first unread message in `general` is 301; 8 more messages put the newest page out of that window.
 async function setup() {
   const store = new MockStore({ ...defaultConfig });
+  // A test sets `hold` to keep a request back until it opens the gate, or `failNextSend` to refuse one send.
+  const net = {
+    hold: null as ((url: string, method: string) => boolean) | null,
+    gate: null as Promise<void> | null,
+    failNextSend: false,
+  };
   const client = createNotrelixClient({
     baseUrl: "http://localhost:8000/api/v1",
-    fetchImpl: (input, init) => createMockFetch(store)(input, init),
+    fetchImpl: async (input, init) => {
+      const url = typeof input === "string" ? input : (input as Request).url;
+      const method = (init?.method ?? "GET").toUpperCase();
+      if (net.failNextSend && method === "POST" && url.endsWith("/messages")) {
+        net.failNextSend = false;
+        throw new TypeError("network down");
+      }
+      if (net.hold?.(url, method) && net.gate) await net.gate;
+      return createMockFetch(store)(input, init);
+    },
   });
   const deps = { api: client.api, endpoints: client.endpoints };
   const hooks = createChatHooks(deps);
@@ -48,11 +64,20 @@ async function setup() {
       </I18nProvider>
     </QueryClientProvider>
   );
-  return { deps, hooks, general, queryClient, wrapper, store };
+  return {
+    deps,
+    hooks,
+    general,
+    queryClient,
+    wrapper,
+    store,
+    net,
+    unmount: (): void => undefined,
+  };
 }
 
 async function openGeneral(s: Awaited<ReturnType<typeof setup>>) {
-  render(
+  const view = render(
     <ChatWorkspace
       deps={s.deps}
       workspaceId={WORKSPACE}
@@ -72,6 +97,7 @@ async function openGeneral(s: Awaited<ReturnType<typeof setup>>) {
   // The window opened around the first unread message: the newest ones are not in it.
   await screen.findByText(/Tin nhắn 301\./);
   expect(screen.queryByText("newer 8")).toBeNull();
+  s.unmount = view.unmount;
   return box;
 }
 
@@ -138,5 +164,86 @@ describe("ChatWorkspace first send from an older window", () => {
     watch.stop();
     expect(watch.seen.shown).toBe(true);
     expect(watch.seen.blinks).toBe(0);
+  });
+
+  it("keeps the bubble past 10 s while the newest window is late, then shows the stored message once", async () => {
+    const s = await setup();
+    const box = await openGeneral(s);
+    vi.useFakeTimers();
+    try {
+      // The newest window is not read yet, and its next read waits for the gate.
+      s.queryClient.removeQueries({
+        queryKey: [
+          ...chatQueryKeys.messages(WORKSPACE, s.general.id),
+          "latest",
+        ],
+      });
+      let open!: () => void;
+      s.net.gate = new Promise<void>((resolve) => (open = resolve));
+      s.net.hold = (url, method) =>
+        method === "GET" &&
+        url.includes("/messages") &&
+        !url.includes("around=");
+
+      fireEvent.change(box, { target: { value: "late window" } });
+      fireEvent.keyDown(box, { key: "Enter" });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(15_000);
+      });
+      // Stored and 15 s later still one bubble, in the window on screen.
+      expect(copies("late window")).toBe(1);
+      expect(screen.queryByText("newer 8")).toBeNull();
+      vi.useRealTimers();
+
+      open();
+      await screen.findByText("newer 8");
+      await waitFor(() => expect(copies("late window")).toBe(1));
+      expect(screen.queryByTestId("chat-pending-message")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("shows a refused send as not sent, and Resend stores it once", async () => {
+    const s = await setup();
+    const box = await openGeneral(s);
+    s.net.failNextSend = true;
+
+    fireEvent.change(box, { target: { value: "will fail once" } });
+    fireEvent.keyDown(box, { key: "Enter" });
+    fireEvent.click(
+      await screen.findByRole("button", { name: en.list.retrySend }),
+    );
+
+    await screen.findByText("newer 8");
+    await waitFor(() => expect(copies("will fail once")).toBe(1));
+    expect(screen.queryByTestId("chat-pending-message")).toBeNull();
+    expect(screen.queryByText(en.list.notSent)).toBeNull();
+  });
+
+  it("drops a stored send's bubble when the channel is left before any window holds it", async () => {
+    const s = await setup();
+    const box = await openGeneral(s);
+    s.queryClient.removeQueries({
+      queryKey: [...chatQueryKeys.messages(WORKSPACE, s.general.id), "latest"],
+    });
+    s.net.gate = new Promise<void>(() => undefined);
+    s.net.hold = (url, method) =>
+      method === "GET" && url.includes("/messages") && !url.includes("around=");
+
+    fireEvent.change(box, { target: { value: "left behind" } });
+    fireEvent.keyDown(box, { key: "Enter" });
+    const pendingKey = chatQueryKeys.pending(WORKSPACE, s.general.id);
+    await waitFor(() =>
+      expect(
+        (
+          s.queryClient.getQueryData<{ storedMessageId?: string }[]>(
+            pendingKey,
+          ) ?? []
+        ).some((entry) => entry.storedMessageId !== undefined),
+      ).toBe(true),
+    );
+    s.unmount();
+    expect(s.queryClient.getQueryData(pendingKey)).toEqual([]);
   });
 });

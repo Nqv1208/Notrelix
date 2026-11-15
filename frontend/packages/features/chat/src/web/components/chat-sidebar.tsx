@@ -329,7 +329,7 @@ function ChannelButton({
         "flex h-8 w-full items-center gap-[9px] rounded-[8px] px-2.5 text-start text-sm outline-none max-md:h-auto max-md:min-h-12 max-md:gap-3 max-md:rounded-none max-md:px-4 max-md:py-3 transition-colors focus-visible:ring-2 focus-visible:ring-focus-ring motion-reduce:transition-none",
         active
           ? "bg-state-selected font-[650] text-state-selected-foreground"
-          : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
+          : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground active:bg-sidebar-accent/70",
         unreadHere && !active && "font-[650] text-foreground",
         muted && !active && "opacity-60",
       )}

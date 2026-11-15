@@ -165,7 +165,12 @@ describe("ChatSidebar", () => {
 
   it("has no account footer: the caller lives only in the app rail", () => {
     render(<ChatSidebar {...props()} />);
+    const nav = screen.getByRole("navigation", { name: en.sidebar.navLabel });
     expect(screen.queryByText("Nguyễn Thu Hà")).toBeNull();
+    expect(nav.querySelector("footer")).toBeNull();
+    expect(nav.querySelector("[data-slot=avatar]")).toBeNull();
+    // The last block of the column is the channel list, never an account strip.
+    expect(nav.lastElementChild?.querySelector("ul")).not.toBeNull();
   });
 });
 
