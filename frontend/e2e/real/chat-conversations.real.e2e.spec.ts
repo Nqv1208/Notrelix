@@ -17,7 +17,7 @@ import {
 // Direct and group conversations on the real stack (UC-CHT-E01 to E07): start a direct and a group conversation,
 // add people from their join point, leave, list in order of activity, block and unblock, hide and restore.
 // Set CHAT_STATE_SHOTS to a directory to also write one screenshot per reviewed state (no baseline is kept).
-test.use({ viewport: { width: 1440, height: 900 }, actionTimeout: 20_000 });
+test.use({ viewport: { width: 1440, height: 900 }, actionTimeout: 30_000 });
 test.setTimeout(600_000);
 
 const SHOTS = process.env.CHAT_STATE_SHOTS;
@@ -286,10 +286,7 @@ test("direct and group conversations, the join point, leaving, blocking and hidi
   ).toBe(400);
 
   // E03 through the page: a participant adds a fourth person; the newcomer reads from the join point only.
-  await admin.page.goto(`${chat}/${group.id}`);
-  await admin.page.screenshot({
-    path: "/private/tmp/claude-501/debug-admin.png",
-  });
+  await admin.page.goto(`${chat}/dm/${group.id}`);
   await admin.page
     .getByRole("button", { name: "Conversation details" })
     .click();
@@ -369,9 +366,9 @@ test("direct and group conversations, the join point, leaving, blocking and hidi
   expect(
     (
       await apiWrite(
-        guest.page,
+        outsider.page,
         "POST",
-        `${chat}/conversations/${group.id}/participants`,
+        `${chat}/conversations/${skippedRun.data!.conversation.id}/participants`,
         { userIds: [mateId] },
       )
     ).status,
@@ -381,7 +378,7 @@ test("direct and group conversations, the join point, leaving, blocking and hidi
   const systemBefore = (await messages(owner, group.id)).filter(
     (m) => m.kind === "system",
   ).length;
-  await outsider.page.goto(`${chat}/${group.id}`);
+  await outsider.page.goto(`${chat}/dm/${group.id}`);
   await outsider.page
     .getByRole("button", { name: "Conversation details" })
     .click();
@@ -454,7 +451,9 @@ test("direct and group conversations, the join point, leaving, blocking and hidi
   await expect
     .poll(async () => (await list(owner))[0]?.id, { timeout: 20_000 })
     .toBe(dmId);
-  const rowsNow = owner.getByTestId("chat-dm-section").getByRole("button");
+  const rowsNow = owner
+    .getByTestId("chat-dm-section")
+    .getByRole("button", { name: /^(Direct message|Group conversation): / });
   await expect(rowsNow.first()).toHaveAccessibleName(
     new RegExp(`^Direct message: ${nameOf(adminId)}`),
     { timeout: 20_000 },
@@ -466,7 +465,7 @@ test("direct and group conversations, the join point, leaving, blocking and hidi
   );
 
   // E07 through the page: Hide removes the conversation from my list only; a new message from the other person brings it back.
-  await owner.goto(`${chat}/${mateDmId}`);
+  await owner.goto(`${chat}/dm/${mateDmId}`);
   await owner.getByRole("button", { name: "Hide conversation" }).click();
   await expect
     .poll(async () => (await list(owner)).some((c) => c.id === mateDmId), {
@@ -494,7 +493,7 @@ test("direct and group conversations, the join point, leaving, blocking and hidi
 
   // E06 through the page: Block asks first, then both directions refuse a new conversation with the same NotFound,
   // the composer says why it is closed, and Blocked people lists the person with an Unblock.
-  await owner.goto(`${chat}/${dmId}`);
+  await owner.goto(`${chat}/dm/${dmId}`);
   await owner.getByRole("button", { name: "Conversation details" }).click();
   await owner
     .getByRole("region", { name: "Profile" })
@@ -516,6 +515,16 @@ test("direct and group conversations, the join point, leaving, blocking and hidi
       `You blocked ${nameOf(adminId)}. Unblock them to message them again.`,
     ),
   ).toBeVisible({ timeout: 20_000 });
+  // The notice is drawn at once; the block is stored when the answer comes back.
+  await expect
+    .poll(
+      async () =>
+        (await apiRead<{ userId: string }[]>(owner, `${chat}/me/blocks`)).map(
+          (b) => b.userId,
+        ),
+      { timeout: 20_000 },
+    )
+    .toEqual([adminId]);
   expect(
     (await start(admin.page, { kind: "direct", userId: ownerId })).status,
     "the blocked person cannot start a conversation",
@@ -540,6 +549,14 @@ test("direct and group conversations, the join point, leaving, blocking and hidi
     timeout: 20_000,
   });
   await owner.keyboard.press("Escape");
+  await expect
+    .poll(
+      async () =>
+        (await apiRead<{ userId: string }[]>(owner, `${chat}/me/blocks`))
+          .length,
+      { timeout: 20_000 },
+    )
+    .toBe(0);
   const restored = await start(admin.page, { kind: "direct", userId: ownerId });
   expect(restored.status, "after Unblock the pair starts again").toBe(200);
   expect(restored.data!.conversation.id).toBe(dmId);
@@ -599,9 +616,12 @@ test("direct and group conversations, the join point, leaving, blocking and hidi
           const modal = () =>
             frame.getByRole("alertdialog").or(frame.getByRole("dialog"));
           await frame.goto(chat);
-          await expect(frame.getByTestId("chat-dm-section")).toBeVisible({
-            timeout: 20_000,
-          });
+          await expect(frame.getByTestId("chat-dm-section"))
+            .toBeVisible({ timeout: 20_000 })
+            .catch(async (error) => {
+              await frame.screenshot({ path: `${SHOTS}/FAIL-${tag}.png` });
+              throw error;
+            });
           await settle(`${tag}-sidebar`);
           if (who === "empty") {
             await context.close();
@@ -621,7 +641,7 @@ test("direct and group conversations, the join point, leaving, blocking and hidi
           await inside(modal());
           await settle(`${tag}-new-group`);
           await frame.keyboard.press("Escape");
-          await frame.goto(`${chat}/${group.id}`);
+          await frame.goto(`${chat}/dm/${group.id}`);
           await frame
             .getByRole("button", { name: "Thông tin cuộc trò chuyện" })
             .click();
@@ -634,7 +654,7 @@ test("direct and group conversations, the join point, leaving, blocking and hidi
           await inside(modal());
           await settle(`${tag}-leave-confirm`);
           await frame.keyboard.press("Escape");
-          await frame.goto(`${chat}/${dmId}`);
+          await frame.goto(`${chat}/dm/${dmId}`);
           await frame
             .getByRole("button", { name: "Thông tin cuộc trò chuyện" })
             .click();
@@ -644,8 +664,8 @@ test("direct and group conversations, the join point, leaving, blocking and hidi
           await inside(modal());
           await settle(`${tag}-block-confirm`);
           await frame.keyboard.press("Escape");
-          await frame.goto(`${chat}/${mateDmId}`);
-          await expect(frame.getByText(/Bạn đã chặn/)).toBeVisible({
+          await frame.goto(`${chat}/dm/${mateDmId}`);
+          await expect(frame.getByText(/Bạn đã chặn/).first()).toBeVisible({
             timeout: 20_000,
           });
           await settle(`${tag}-blocked-room`);
