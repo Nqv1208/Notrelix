@@ -186,13 +186,13 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-I06 | Read-only and trashed page states | I | Viewer | partial | partial | Final-Docs-2 | none | INTEGRATING | Decided (night run): a trashed page stays readable to anyone with `ViewPage` and every write is refused with `Documents_Page_CannotEditArchived` (section 77, Doc-Page-Var-Trashed). Built: the read-only note. Missing: the trashed banner, which needs the page read to carry its trash date |
 | UC-DCT-I07 | Lose access while the page is open | I | Editor | none | yes | Doc-Page-Var-LostAccess | none | INTEGRATING | Built: a refused save (403, 404) locks the editor and keeps the unsaved text copyable (`doc-block-saver.unit.test.ts`, `doc-page-surfaces.interaction.component.test.tsx`). Missing: real e2e, and stopping live updates |
 | UC-DCT-J01 | Announce a saved or created page | J | System | yes | none | none | none | INTEGRATING | Only three integration events are announced; reorder does not announce |
-| UC-DCT-J02 | Announce rename, move, restore and delete | J | System | partial | none | none | none | DEFINED | Domain events have no integration event |
-| UC-DCT-J03 | Capture an automatic version | J | System | yes | yes | none | none | INTEGRATING | Owner question: the last-editor-leaves trigger |
+| UC-DCT-J02 | Announce rename, move, restore and delete | J | System | yes | none | none | none | INTEGRATING | Built: page events reach the outbox and the Collaboration activity consumer; not run on the real stack |
+| UC-DCT-J03 | Capture an automatic version | J | System | yes | yes | none | none | INTEGRATING | Built: 10-minute rule and the five-quiet-minutes capture; no real-stack run, no artboard for the Automatic marker |
 | UC-DCT-J04 | Save a named version | J | Editor | yes | yes | none | none | INTEGRATING | No dialog artboard |
 | UC-DCT-J05 | Browse the version history | J | Viewer | yes | yes | none | none | HARDENING | Built: cursor paging; real e2e owner |
 | UC-DCT-J06 | View a version | J | Viewer | yes | yes | none | none | INTEGRATING | No artboard for the version view |
 | UC-DCT-J07 | Compare two versions (enterprise baseline) | J | Viewer | none | none | none | none | DEFINED | Not built |
-| UC-DCT-J08 | Read page activity | J | Viewer | partial | partial | none | none | IMPLEMENTING | History endpoint always empty |
+| UC-DCT-J08 | Read page activity | J | Viewer | yes | partial | none | none | INTEGRATING | Feed endpoint and typed hook built; no feed UI, the empty history endpoint is not retired yet |
 | UC-DCT-K01 | See other people's changes on an open page | K | Viewer | partial | yes | none | none | INTEGRATING | Backend frame producer not proven |
 | UC-DCT-K02 | Recover after a dropped connection | K | Viewer | partial | yes | none | none | HARDENING | Built (verified by reading code 2026-11-09, not run): GetPageBlocks.cs, use-doc-live.ts, docs-collaboration.ts (refetch when the connection comes back), docs-collaboration.unit.test.ts. Remaining: owner tests by hand. |
 | UC-DCT-K03 | Edit together with live cursors | K | Editor | none | none | none | none | BLOCKED | Needs an ADR |
@@ -220,6 +220,7 @@ Every route under `backend/src/Notrelix.API/Endpoints/Documents/` appears in at 
 | `DELETE /api/v1/pages/{pageId}` | UC-DCT-A06, A08 |
 | `GET /api/v1/pages/{pageId}/breadcrumb` | UC-DCT-B03 |
 | `GET /api/v1/pages/{pageId}/history` | UC-DCT-J08 |
+| `GET /api/v1/pages/{pageId}/activity` | UC-DCT-J08 |
 | `GET /api/v1/pages/{pageId}/backlinks` | UC-DCT-G04, E07 |
 | `POST /api/v1/pages/{pageId}/move` | UC-DCT-C02, B04, B05 |
 | `POST /api/v1/pages/{pageId}/move-to-space` | UC-DCT-C01, C03 |
@@ -1224,29 +1225,29 @@ Team capability 10 (team id DCT-010). Requirements `DCREQ128` to `DCREQ134`, `DC
 - Actors and permission: system.
 - Preconditions: a committed change.
 - Input: page rename, move, space change, restore, permanent delete; block create, change, move, delete.
-- Output: integration events with stable names and versions for the facts Automation, Analytics and Collaboration activity consume. The Domain raises the page events; no integration event exists for them.
+- Output: integration events with stable names and versions for the facts Automation, Analytics and Collaboration activity consume. Page rename, move, space change, restore and permanent delete are mapped to versioned integration events through the outbox (commit 38d08681d).
 - Main flow: map each domain event to a versioned integration event with a consumer list.
 - No-op / rejection / concurrency / retry: contracts follow the compatibility policy of NRX-007 and NRX-008.
 - UI states: none.
 - Rules: product doc section 72; `DCREQ137`; team spec section 15.
 - Acceptance: Given a rename, When committed, Then `PageRenamed` is published once with old and new title.
-- Evidence: BE Domain `Page*DomainEvent` files only · FE none · Design none · Tests `PageTests` (domain events) · Real e2e none
-- State: DEFINED — event contracts, mapper, pinning test, first consumer decision with Automation and Collaboration.
+- Evidence: BE `PageEventMapper`, the pinned event contracts under `backend/contracts/events`, the Collaboration page-activity consumer · FE none · Design none · Tests `PageTests` (domain events), the Collaboration event pinning architecture test · Real e2e none
+- State: INTEGRATING — Built and pinned; proof on the real stack is the remaining step.
 
 ### UC-DCT-J03 Capture an automatic version
 - Capability: J Document events and activity
 - Actors and permission: system, as the editor of the save.
-- Preconditions: the page has unsnapshotted edits and at least 10 minutes passed since the last entry (decision 13).
-- Input: a `PageBlocksSaved` message.
-- Output: an Automatic history entry holding the page title and live blocks; no entry when the content equals the newest entry; history is kept in full for now (decision 16). The "last editor leaves" trigger waits for a presence signal (decision 19).
-- Main flow: the consumer calls `CaptureAutomaticAsync`.
+- Preconditions: the page has unsnapshotted edits and either at least 10 minutes passed since the last entry (decision 13) or the page got no block save for 5 minutes (lead decision 2026-11-15).
+- Input: a `PageBlocksSaved` message (10-minute rule), and the quiet-version sweep (5-minute rule).
+- Output: an Automatic history entry holding the page title and live blocks; no entry when the content equals the newest entry; history is kept in full for now (decision 16). The 5-minute rule is the session-end signal; when Collaboration presence (UC-COL-E03) ships, "last viewer left" may trigger the same capture earlier with no rule change.
+- Main flow: the consumer calls `CaptureAutomaticAsync`; `PageQuietVersionSweeper` (a hosted sweep every minute, `Documents:QuietVersionSweep`) names pages whose newest block save is 5 to 35 minutes old and calls `CaptureWhenQuietAsync`, which captures as the editor of that save.
 - No-op / rejection / concurrency / retry: duplicate messages create no second entry for the same content.
 - UI states: the entry appears in history marked Automatic.
 - Rules: product doc sections 46 to 51 (product rules DCT-016, DCT-017); `DCREQ128` to `DCREQ131`; decisions 13, 16, 19.
-- Acceptance: Given edits after 10 quiet minutes, When saved, Then one Automatic entry; given identical content, Then none.
-- Evidence: BE `PageBlocksSavedConsumers`, `PageVersionRecorder.CaptureAutomaticAsync` · FE history list shows it · Design none · Tests `PageVersionHandlerTests`, `PageBlocksSavedConsumersTests`, `DocumentVersionTests` · Real e2e none
-- Owner question: should the "last editor leaves" trigger take a snapshot, and on what signal? The product text (sections 46 to 51) does not state the rule. Decision 19 waits for a presence signal, and Documents stores no presence (section 35), so only the 10-minute rule captures today. No rule built.
-- State: INTEGRATING — Owner question: the last-editor-leaves trigger.
+- Acceptance: Given edits after 10 quiet minutes, When saved, Then one Automatic entry; given identical content, Then none. Given edits and then 5 minutes without a block save, Then one Automatic entry even when the last entry is younger than 10 minutes; a second pass adds none.
+- Evidence: BE `PageBlocksSavedConsumers`, `PageVersionRecorder.CaptureAutomaticAsync`, `CaptureWhenQuietAsync`, `PageQuietVersionSweeper` · FE history list shows it · Design none · Tests `PageVersionHandlerTests`, `PageQuietVersionTests` (7: quiet window, newest save keeps a page out, idempotent repeat, ten-minute rule untouched), `PageQuietVersionSweepOptionsTests`, `PageQuietVersionSweepIntegrationTests` (PostgreSQL, worker scope), `PageBlocksSavedConsumersTests`, `DocumentVersionTests` · Real e2e none
+- Decision (lead, 2026-11-15, owner decisions file §3): Google Docs groups edits into revisions by editing session and time, Figma checkpoints after activity and on close, Notion snapshots periodically while a page is edited; all approximate "session end" without live presence. A page with no block save for 5 minutes after unsnapshotted edits gets an Automatic version, idempotent and skipped when the content equals the newest entry. No delayed-message transport exists (in-memory and RabbitMQ run without a scheduler), so the delay is the hosted sweep, as every other timed rule.
+- State: INTEGRATING — Built and unit-proved; remaining: real-stack run, and a Doc-Ver artboard for the Automatic marker.
 
 ### UC-DCT-J04 Save a named version
 - Capability: J Document events and activity
@@ -1310,13 +1311,13 @@ Team capability 10 (team id DCT-010). Requirements `DCREQ128` to `DCREQ134`, `DC
 - Preconditions: none.
 - Input: page id.
 - Output (lead decision LD20): a short feed of who renamed, moved, trashed or restored the page, owned by Collaboration activity like the item history, built from the facts of UC-DCT-J02. The shipped `GET /pages/{pageId}/history` always returns an empty list and is retired; content history is the version list (J05).
-- Main flow: not built.
+- Main flow: the Collaboration activity consumer records the J02 facts; `GET /pages/{pageId}/activity` serves them with page view access (commits 239c321ba, 6a6ff2864); the frontend reads them with `usePageActivity`. The feed UI is not built.
 - No-op / rejection / concurrency / retry: unreadable pages give `404`.
 - UI states: loading, empty, error.
 - Rules: product doc sections 97, 98 (product rule DCT-031: history is not audit); `DCREQ132`, `DCREQ134`.
 - Acceptance: Given a rename, When the feed loads, Then a line "X renamed the page".
-- Evidence: BE `GET /api/v1/pages/{pageId}/history`, `GetPageHistoryQueryHandler` (empty list) · FE `createHistoryApi`, `usePageHistory` · Design none · Tests `PageHistoryAndTemplatesContractOpenApiTests` · Real e2e none
-- State: IMPLEMENTING — retire the empty endpoint, deliver through Collaboration activity.
+- Evidence: BE `GET /api/v1/pages/{pageId}/activity` (`GetPageActivityEndpoint`), the Collaboration page-activity consumer; the empty `GET /api/v1/pages/{pageId}/history` still exists · FE `usePageActivity` (`use-page-activity.ts`) · Design none · Tests `PageHistoryAndTemplatesContractOpenApiTests`, `page-activity.unit.test.ts` · Real e2e none
+- State: INTEGRATING — Remaining: the feed UI, then retire the empty history endpoint.
 
 ## Capability K: Document realtime
 
@@ -1458,7 +1459,7 @@ Owner decisions come from the lead's decision record of 2026-10-26 (item 75 date
 - Product decision (owner, 2026-10-26): item 16, the restore request carries `currentBlocks [{blockId, version}]` for every live block; any mismatch is `412` and nothing is restored; a "before restoring" entry is recorded first; all versions are kept for now (UC-DCT-L01, J03).
 - Product decision (owner, 2026-10-26): item 17, templates copy text, table and embed blocks only; image, file and video blocks are not copied and `droppedBlockCount` is returned; this supersedes the re-link part of item 14 (UC-DCT-A09, A11).
 - Product decision (owner, 2026-10-26): item 18, Word import drops images with a notice; nested Markdown lists flatten; `.txt` imports as Markdown; a leading `# heading` becomes the page title (UC-DCT-A13).
-- Product decision (owner, 2026-10-26): item 19, the "last editor leaves" snapshot waits for a presence signal; the 10-minute rule on the next save covers it until then (UC-DCT-J03).
+- Product decision (owner, 2026-10-26): item 19, the "last editor leaves" snapshot waits for a presence signal; the 10-minute rule on the next save covers it until then (UC-DCT-J03). Superseded 2026-11-15 by lead decision: the snapshot is taken when no block save arrives for 5 minutes after unsnapshotted edits (UC-DCT-J03).
 - Product decision (owner, 2026-10-26): item 20, comment delete is offered only to the author in the docs panel; resolved threads hide behind "Show resolved"; reopen mirrors resolve (Collaboration use cases; see [collaboration.md](collaboration.md)).
 - Product decision (owner, 2026-10-26): item 21, page reference chips: plain click navigates in read-only mode; while editing Cmd or Ctrl+click navigates; Alt+Enter opens the chip under the caret (UC-DCT-E07, H08).
 - Product decision (owner, 2026-10-26): item 22, block reorder uses a hover grip outside the tab order and Alt+Shift+Arrow Up or Down; moves are announced in a live region; touch drag later (UC-DCT-F02, H08).

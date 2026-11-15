@@ -197,7 +197,7 @@ public sealed class TenantPolicyFastPathRlsTests : IAsyncLifetime
         }
     }
 
-    private enum Scope { App, Token, WorkerOnApp, WorkerLogin }
+    private enum Scope { App, Token, TokenOnly, WorkerOnApp, WorkerLogin }
 
     private sealed record Caller(string Name, Guid? User, AppRoleTenant Tenant, Scope Scope = Scope.App);
 
@@ -234,16 +234,19 @@ public sealed class TenantPolicyFastPathRlsTests : IAsyncLifetime
             await scope.ExecuteNonQueryAsync();
         }
 
-        if (caller.Scope == Scope.Token)
+        if (caller.Scope is Scope.Token or Scope.TokenOnly)
         {
             await using var enter = new NpgsqlCommand(
                 "SELECT count(*) FROM ops.enter_token_scope('workspace-invitation', @h, @v)", connection, transaction);
             enter.Parameters.AddWithValue("h", caller.Tenant.InvitationTokenHash);
             enter.Parameters.AddWithValue("v", caller.Tenant.InvitationHashVersion);
             ((long)(await enter.ExecuteScalarAsync())!).Should().Be(1, "the invitation token scope must open");
-            await using var invitee = new NpgsqlCommand("SELECT ops.enter_invitee_scope(@u)", connection, transaction);
-            invitee.Parameters.AddWithValue("u", caller.User!.Value);
-            ((bool)(await invitee.ExecuteScalarAsync())!).Should().BeTrue("the invitee scope must open");
+            if (caller.Scope == Scope.Token)
+            {
+                await using var invitee = new NpgsqlCommand("SELECT ops.enter_invitee_scope(@u)", connection, transaction);
+                invitee.Parameters.AddWithValue("u", caller.User!.Value);
+                ((bool)(await invitee.ExecuteScalarAsync())!).Should().BeTrue("the invitee scope must open");
+            }
         }
 
         return (connection, transaction);
@@ -399,12 +402,12 @@ public sealed class TenantPolicyFastPathRlsTests : IAsyncLifetime
     }
 
     /// <summary>For each caller and extra-arm table: rows read in each workspace, and whether an INSERT into A is refused by the policy.</summary>
-    private async Task<List<string>> OutcomesAsync(Dictionary<string, string> inserts)
+    private async Task<List<string>> OutcomesAsync(Dictionary<string, string> inserts, string[]? tables = null, IEnumerable<Caller>? callers = null)
     {
         var outcomes = new List<string>();
-        foreach (var table in ExtraArm)
+        foreach (var table in tables ?? ExtraArm)
         {
-            foreach (var caller in Callers())
+            foreach (var caller in callers ?? Callers())
             {
                 var (c, tx) = await OpenAsync(caller);
                 await using var _ = c;
@@ -474,5 +477,82 @@ public sealed class TenantPolicyFastPathRlsTests : IAsyncLifetime
         after.Should().Equal(before, "the fast path may change how fast rows are found, never which rows are read or written");
         before.Should().Contain(o => o.Contains("A=1") && o.Contains("active member of A"), "the positive control: members read their rows");
         before.Should().Contain(o => o.Contains("insert into A denied by policy"), "the negative control: some caller is refused");
+    }
+
+    [Fact]
+    public async Task PrefilteringTheInvitationArmChangesNothingAnyCallerShowsOrWritesAndAnAnonymousPreviewStillSeesExactlyTheNamedResource()
+    {
+        string[] tables = ["work.boards", "docs.pages"];
+        await using var owner = new NpgsqlConnection(_fixture.OwnerConnectionString);
+        await owner.OpenAsync();
+        var inserts = new Dictionary<string, string>();
+        foreach (var table in tables) inserts[table] = await BuildInsertAsync(owner, table);
+        var callers = Callers().Append(new Caller("anonymous invitation preview", null, _a, Scope.TokenOnly)).ToList();
+
+        var assembly = typeof(Notrelix.Infrastructure.Data.Rls.RlsPolicyApplier).Assembly;
+        async Task<string> Script(string name)
+        {
+            await using var stream = assembly.GetManifestResourceStream($"Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.{name}")!;
+            using var reader = new StreamReader(stream);
+            return await reader.ReadToEndAsync();
+        }
+
+        var prefilter = await Script("032_invitation_arm_prefilter.sql");
+        var kinds = new Dictionary<string, string> { ["work.boards"] = "work-management.board", ["docs.pages"] = "documents.page" };
+        var allOutcomes = new List<string>();
+
+        foreach (var table in tables)
+        {
+            // The invitation of workspace A names one row of this table.
+            Guid named;
+            await using (var pick = new NpgsqlCommand(
+                table == "work.boards" ? "SELECT @b" : "SELECT id FROM docs.pages WHERE workspace_id = @w LIMIT 1", owner))
+            {
+                pick.Parameters.AddWithValue("b", _a.BoardId);
+                pick.Parameters.AddWithValue("w", _a.WorkspaceId);
+                named = (Guid)(await pick.ExecuteScalarAsync())!;
+            }
+
+            await using (var name = new NpgsqlCommand(
+                "UPDATE workspace.workspace_invitations SET resource_kind = @k, resource_id = @id, resource_level = 'Viewer', role = 'Guest' WHERE token_hash = @h", owner))
+            {
+                name.Parameters.AddWithValue("k", kinds[table]);
+                name.Parameters.AddWithValue("id", named);
+                name.Parameters.AddWithValue("h", _a.InvitationTokenHash);
+                (await name.ExecuteNonQueryAsync()).Should().Be(1);
+            }
+
+            List<string> before, after;
+            try
+            {
+                await using (var revert = new NpgsqlCommand(
+                    "DO $$ BEGIN PERFORM set_config('search_path', 'pg_catalog, pg_temp', true); " +
+                    $"EXECUTE format('ALTER POLICY p_app_select_invitation_resource ON {table} USING (ops.invitation_names_resource(%L, account_id, workspace_id, id))', '{kinds[table]}'); END $$", owner))
+                    await revert.ExecuteNonQueryAsync();
+                before = await OutcomesAsync(inserts, [table], callers);
+            }
+            finally
+            {
+                await using var apply = new NpgsqlCommand(prefilter, owner);
+                await apply.ExecuteNonQueryAsync();
+            }
+
+            after = await OutcomesAsync(inserts, [table], callers);
+            after.Should().Equal(before, $"{table}: the prefilter may only skip a call that returns false");
+            after.Should().Contain(o => o.Contains("anonymous invitation preview") && o.Contains("A=1 B=0"),
+                $"{table}: the anonymous preview reads exactly the named row of its workspace and nothing of another");
+            allOutcomes.AddRange(after);
+
+            await using var clear = new NpgsqlCommand("UPDATE workspace.workspace_invitations SET resource_kind = NULL, resource_id = NULL, resource_level = NULL, role = 'Member' WHERE token_hash = @h", owner);
+            clear.Parameters.AddWithValue("h", _a.InvitationTokenHash);
+            await clear.ExecuteNonQueryAsync();
+        }
+
+        await using var shape = new NpgsqlCommand(
+            "SELECT count(*) FROM pg_policies WHERE policyname = 'p_app_select_invitation_resource' AND qual LIKE '%CASE%current_request_scope%invitation_names_resource%'", owner);
+        ((long)(await shape.ExecuteScalarAsync())!).Should().Be(2, "both invitation policies carry the prefilter after 032");
+        allOutcomes.Where(o => o.Contains("anonymous invitation preview")).Should().OnlyContain(o => o.Contains("A=1 B=0"));
+        allOutcomes.Where(o => o.Contains("| no user |") || o.Contains("suspended") || o.Contains("removed") || o.Contains("revoked"))
+            .Should().OnlyContain(o => o.Contains("A=0 B=0"), "callers without access still read nothing");
     }
 }

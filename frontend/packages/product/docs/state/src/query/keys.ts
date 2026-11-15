@@ -32,6 +32,8 @@ export const docsQueryKeys = {
     workspaceQueryKey(workspaceId, "documents", "comments", pageId),
   history: (workspaceId: string, pageId: string) =>
     workspaceQueryKey(workspaceId, "documents", "history", pageId),
+  activity: (workspaceId: string, pageId: string, page: number) =>
+    workspaceQueryKey(workspaceId, "documents", "activity", pageId, page),
   permissions: (workspaceId: string, pageId: string) =>
     workspaceQueryKey(workspaceId, "documents", "permissions", pageId),
   backlinks: (workspaceId: string, pageId: string) =>
