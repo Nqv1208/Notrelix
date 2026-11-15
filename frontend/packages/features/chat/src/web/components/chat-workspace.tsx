@@ -344,6 +344,9 @@ export function ChatWorkspace({
   // one (D03), otherwise at the newest. The choice does not move while the reader
   // is in the channel, even when the unread summary refreshes.
   const lockRef = useRef<ChannelLock | null>(null);
+  /** Cancels the send's deferred jump to the newest window (frames, then a task). */
+  const jumpWorkRef = useRef<(() => void) | null>(null);
+  useEffect(() => () => jumpWorkRef.current?.(), []);
   if (
     channelId &&
     lockRef.current?.channelId !== channelId &&
@@ -680,14 +683,24 @@ export function ChatWorkspace({
     if (hasNewer) {
       const sentIn = channelId;
       // The bubble's frame is produced first: the work starts a task after the second frame callback.
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() =>
-          setTimeout(() => {
+      jumpWorkRef.current?.();
+      let frame2 = 0;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const frame1 = requestAnimationFrame(() => {
+        frame2 = requestAnimationFrame(() => {
+          timer = setTimeout(() => {
+            jumpWorkRef.current = null;
             if (lockRef.current?.channelId !== sentIn) return;
             jumpToLatest();
-          }, 0),
-        ),
-      );
+          }, 0);
+        });
+      });
+      // Unmount cancels whichever step is still waiting, so nothing runs after the page is gone.
+      jumpWorkRef.current = () => {
+        cancelAnimationFrame(frame1);
+        cancelAnimationFrame(frame2);
+        clearTimeout(timer);
+      };
     }
   }
 
