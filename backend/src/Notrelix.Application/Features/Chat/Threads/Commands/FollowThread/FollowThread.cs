@@ -40,6 +40,9 @@ public class FollowThreadCommandHandler(
         ChannelAccess.RequireVisible(space, caller, userId);
         if (!space.IsActiveMember(userId))
             throw new NotFoundException(nameof(Space), thread.SpaceId);
+        var threadRoot = await db.ChatMessages.AsNoTracking().FirstOrDefaultAsync(m => m.Id == thread.RootMessageId && m.SpaceId == thread.SpaceId, cancellationToken)
+            ?? throw new NotFoundException(nameof(Message), thread.RootMessageId);
+        ChannelAccess.RequireInHistory(space, userId, threadRoot);
 
         var follower = await db.ChatThreadFollowers.FirstOrDefaultAsync(
             f => f.RootMessageId == request.ThreadId && f.UserId == userId, cancellationToken);

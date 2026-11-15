@@ -19,6 +19,8 @@ public sealed class ChatSystemMessages(
     public const string MemberLeft = "left the channel";
     public const string MemberRemoved = "was removed from the channel";
     public const string MemberAdded = "added a member to the channel";
+    public const string GroupMemberAdded = "added a member to the group";
+    public const string GroupMemberLeft = "left the group";
     public const string Archived = "archived the channel";
     public const string Unarchived = "unarchived the channel";
     public const string MessagePinned = "pinned a message";
@@ -32,7 +34,7 @@ public sealed class ChatSystemMessages(
             space.AccountId, space.WorkspaceId, space.Id, space.ReserveSequence(), actorId, Created, clock.UtcNow));
     }
 
-    public async Task AnnounceAsync(Space space, Guid actorId, string content, CancellationToken cancellationToken)
+    public async Task<long> AnnounceAsync(Space space, Guid actorId, string content, CancellationToken cancellationToken)
     {
         var sequence = await sequences.NextAsync(space.Id, cancellationToken);
         var message = Message.CreateSystemMessage(
@@ -45,5 +47,6 @@ public sealed class ChatSystemMessages(
             clock.UtcNow);
 
         db.ChatMessages.Add(message);
+        return sequence;
     }
 }

@@ -325,6 +325,23 @@ describe("docs web pure surfaces", () => {
     expect(screen.queryByText(docsCopy.header.saved)).toBeNull();
   });
 
+  it("FUI[docs.page.bar:saving] shows a spinner while saving and a check only once saved", () => {
+    const saving = renderPureUi(
+      <DocPageBarSurface copy={docsCopy} header={HEADER} saveState="saving" />,
+    );
+    const status = screen.getByRole("status");
+    expect(status.textContent).toContain(docsCopy.header.saving);
+    expect(status.querySelector("svg.lucide-check")).toBeNull();
+    expect(status.querySelector("svg.lucide-loader-circle")).not.toBeNull();
+    saving.unmount();
+    renderPureUi(
+      <DocPageBarSurface copy={docsCopy} header={HEADER} saveState="saved" />,
+    );
+    expect(
+      screen.getByRole("status").querySelector("svg.lucide-check"),
+    ).not.toBeNull();
+  });
+
   it("FUI[docs.page.toolbar:menus] opens the File menu and routes its actions through callbacks", () => {
     const onOpenFileMenu = vi.fn();
     const onNewDoc = vi.fn();

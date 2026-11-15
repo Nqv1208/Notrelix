@@ -41,6 +41,8 @@ export const workspaceQueryKeys = {
     workspaceQueryKey(workspaceId, "workspace", "spaces"),
   spaceTree: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "spaces", "tree"),
+  deletedSpaces: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "spaces", "deleted"),
   spaceMembers: (workspaceId: string, spaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "spaces", spaceId, "members"),
   teams: (workspaceId: string) =>
