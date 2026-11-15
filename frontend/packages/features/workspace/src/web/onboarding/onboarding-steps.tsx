@@ -169,7 +169,7 @@ export function WorkspaceStep({
                 <button
                   type="button"
                   onClick={() => onUseSuggestion(address.suggestion ?? "")}
-                  className="inline-flex h-7 cursor-pointer items-center rounded-[6px] border border-line-strong bg-popover px-2.5 text-item-small font-medium text-foreground hover:bg-state-hover"
+                  className="inline-flex h-[30px] cursor-pointer items-center rounded-[6px] border border-line-strong bg-popover px-2.5 text-item-small font-medium text-foreground hover:bg-state-hover"
                 >
                   {fillOnboarding(t.useSuggestion, {
                     suggestion: address.suggestion,
