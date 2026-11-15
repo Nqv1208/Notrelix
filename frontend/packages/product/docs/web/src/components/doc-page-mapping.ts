@@ -341,12 +341,25 @@ export function toVersionViews(
   personFor: (userId: string) => DocPerson,
 ): DocVersionView[] {
   return [...versions]
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .map((entry) => {
+    .sort((a, b) => b.versionNumber - a.versionNumber)
+    .map((entry, index) => {
       const date = new Date(entry.createdAt);
       const day = relativeDay(date, now);
+      // The producer names a restore's two entries after the version they cite.
+      const cited = /^(?:Restored from|Before restoring) version (\d+)$/.exec(
+        entry.name ?? "",
+      )?.[1];
+      const tag =
+        entry.kind === "restore"
+          ? cited
+            ? fillDocCopy(copy.versions.restoredFrom, { n: cited })
+            : (entry.name ?? "")
+          : entry.kind === "automatic" && cited
+            ? fillDocCopy(copy.versions.beforeRestore, { n: cited })
+            : copy.versions.automatic;
       return {
         id: entry.id,
+        number: entry.versionNumber,
         kind: entry.kind,
         author: personFor(entry.createdBy ?? ""),
         time: clock(date),
@@ -355,10 +368,11 @@ export function toVersionViews(
             ? copy.versions.today
             : day === "yesterday"
               ? copy.versions.yesterday
-              : dayMonth(date),
-        stamp: `${dayMonth(date)} ${clock(date)}`,
+              : `${dayMonth(date)}/${date.getFullYear()}`,
+        stamp: `${clock(date)} ${copy.versions.dayWord} ${dayMonth(date)}`,
+        tag,
+        ...(index === 0 ? { current: true } : {}),
         // Only a version a person named carries that name; the others read by kind.
-        summary: copy.versions.kinds[entry.kind],
         ...(entry.kind === "named" && entry.name ? { name: entry.name } : {}),
       };
     });
