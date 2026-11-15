@@ -10,7 +10,6 @@ using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Features.Documents.Pages.Queries.GetPage;
 using Notrelix.Application.Features.Documents.Pages.Services;
-using Notrelix.Application.Features.Governance.Authorization;
 using Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Collaboration;
