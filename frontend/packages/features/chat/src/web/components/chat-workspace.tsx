@@ -635,10 +635,23 @@ export function ChatWorkspace({
     files?: readonly File[],
   ) {
     if (!channelId) return;
-    if (hasNewer) jumpToLatest();
     sender.send(content, replyTo?.id ?? null, payload, files);
     setReplyTo(null);
     request("bottom");
+    // From an older window the bubble paints at the end of the window on screen; the newest window loads after
+    // that frame, so the keypress does not wait for a cold render of a whole page of rows.
+    if (hasNewer) {
+      const sentIn = channelId;
+      // The bubble's frame is produced first: the work starts a task after the second frame callback.
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() =>
+          setTimeout(() => {
+            if (lockRef.current?.channelId !== sentIn) return;
+            jumpToLatest();
+          }, 0),
+        ),
+      );
+    }
   }
 
   function handleReact(message: ChatMessage, emoji: string, add: boolean) {
