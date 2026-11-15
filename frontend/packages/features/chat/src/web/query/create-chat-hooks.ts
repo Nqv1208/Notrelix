@@ -85,6 +85,8 @@ export interface ChatHookDeps {
 }
 
 const CHANNEL_STALE_MS = 30_000;
+/** How long a stored send waits for a window that can show it before its pending bubble is dropped. */
+const UNPLACED_PENDING_MS = 10_000;
 /** The badge refreshes on this interval until the realtime stream (S1.8) pushes it. */
 /** The counters follow the realtime frames; this safety read is rare because the server's count costs the whole unread backlog. */
 const UNREAD_REFRESH_MS = 300_000;
@@ -291,7 +293,7 @@ export function createChatHooks(deps: ChatHookDeps) {
           voiceMessage: input.voiceMessage ?? false,
         }),
       onMutate: async (input) => {
-        await queryClient.cancelQueries({ queryKey: messagesKey });
+        // The bubble goes in before anything is awaited, so it renders in the render of the keypress.
         const current = readPending(queryClient, pendingKey);
         const exists = current.some(
           (entry) => entry.clientMessageId === input.clientMessageId,
@@ -317,18 +319,34 @@ export function createChatHooks(deps: ChatHookDeps) {
               )
             : [...current, next],
         );
+        await queryClient.cancelQueries({ queryKey: messagesKey });
       },
       onSuccess: (message: ChatMessage, input) => {
-        queryClient.setQueryData<PendingMessage[]>(
-          pendingKey,
-          readPending(queryClient, pendingKey).filter(
-            (entry) => entry.clientMessageId !== input.clientMessageId,
-          ),
-        );
+        const dropPending = () =>
+          queryClient.setQueryData<PendingMessage[]>(
+            pendingKey,
+            readPending(queryClient, pendingKey).filter(
+              (entry) => entry.clientMessageId !== input.clientMessageId,
+            ),
+          );
         queryClient.setQueriesData<ChatMessagesCache>(
           { queryKey: messagesKey },
           (cache) => (cache ? appendToNewest(cache, message) : cache),
         );
+        const landed = queryClient
+          .getQueryCache()
+          .findAll({ queryKey: messagesKey })
+          .some(
+            (query) =>
+              query.isActive() &&
+              (query.state.data as ChatMessagesCache | undefined)?.pages.some(
+                (page) => page.items.some((item) => item.id === message.id),
+              ),
+          );
+        // Sent from an older window the message has no window on screen to join yet: the bubble stays until the newest
+        // window brings the stored copy (the list hides a pending entry the history holds), so it never blinks out.
+        if (landed) dropPending();
+        else setTimeout(dropPending, UNPLACED_PENDING_MS);
         // The message is stored (and shown): its files go to it now, even if one of them fails later.
         const files = filesRef.current.get(input.clientMessageId);
         if (files) {
