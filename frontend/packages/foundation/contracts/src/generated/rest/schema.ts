@@ -10005,6 +10005,7 @@ export interface components {
             /** Format: uuid */
             spaceId?: string | null;
             parentTitle?: string | null;
+            canEdit?: boolean | null;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageFromTemplateDto": {
             /** Format: uuid */

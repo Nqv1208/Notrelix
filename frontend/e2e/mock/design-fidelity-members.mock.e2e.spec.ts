@@ -276,7 +276,8 @@ test.describe("Department members geometry at 1440 px (owner)", () => {
       "row menu",
     );
     expect(await style(more, "border-radius")).toBe("7px");
-    // Member and Viewer tags carry their colours.
+    // Member and Viewer tags carry their colours; the people past the first page sit behind "Hiện N người khác".
+    await page.getByRole("button", { name: /^Hiện \d+ người khác$/ }).click();
     const rows = f(page, "mr");
     expect(
       await colour(

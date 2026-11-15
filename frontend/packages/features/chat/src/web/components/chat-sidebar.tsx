@@ -1,5 +1,6 @@
 import {
   BellOff,
+  CheckCheck,
   Hash,
   Lock,
   Plus,
@@ -45,6 +46,9 @@ export interface ChatSidebarProps {
   readonly onOpenSettings?: () => void;
   /** Opens the message search (UC-CHT-H07). */
   readonly onSearch?: () => void;
+  /** Marks every space as read (UC-CHT-D07); the button shows only while something is unread. */
+  readonly onMarkAllRead?: () => void;
+  readonly markingAllRead?: boolean;
   readonly onJoin: (channelId: string) => void;
   readonly onRetry: () => void;
   readonly joiningId: string | null;
@@ -113,6 +117,8 @@ export function ChatSidebar({
   onCreate,
   onOpenSettings,
   onSearch,
+  onMarkAllRead,
+  markingAllRead = false,
   onJoin,
   onRetry,
   joiningId,
@@ -120,6 +126,11 @@ export function ChatSidebar({
   groupNames,
 }: ChatSidebarProps) {
   const groups = groupChannels(channels);
+  const anyUnread =
+    [...unreadBySpace.values()].some((u) => !u.muted && u.count > 0) ||
+    (conversations?.conversations ?? []).some(
+      (c) => c.notificationLevel !== "none" && conversations!.unreadOf(c) > 0,
+    );
 
   return (
     <nav
@@ -131,6 +142,18 @@ export function ChatSidebar({
           {copy.sidebar.listTitle}
         </h2>
         <div className="flex items-center gap-1">
+          {onMarkAllRead && anyUnread ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={copy.sidebar.markAllRead}
+              title={copy.sidebar.markAllRead}
+              disabled={markingAllRead}
+              onClick={onMarkAllRead}
+            >
+              <CheckCheck aria-hidden="true" />
+            </Button>
+          ) : null}
           {onSearch ? (
             <Button
               variant="ghost"

@@ -17,9 +17,11 @@ public class GetPageQueryHandler : IRequestHandler<GetPageQuery, Result<PageDto>
     private readonly IDocumentDbContext _context;
     private readonly IResourceVisibility _visibility;
     private readonly ICurrentRequestContext _requestContext;
+    private readonly Pages.Services.IPageEditAccess _editAccess;
 
-    public GetPageQueryHandler(IDocumentDbContext context, IResourceVisibility visibility, ICurrentRequestContext requestContext)
+    public GetPageQueryHandler(IDocumentDbContext context, IResourceVisibility visibility, ICurrentRequestContext requestContext, Pages.Services.IPageEditAccess editAccess)
     {
+        _editAccess = editAccess;
         _context = context;
         _visibility = visibility;
         _requestContext = requestContext;
@@ -34,6 +36,9 @@ public class GetPageQueryHandler : IRequestHandler<GetPageQuery, Result<PageDto>
         IReadOnlyCollection<Guid> spaces = page.SpaceId is null
             ? []
             : await _visibility.VisibleSpaceIdsAsync(page.WorkspaceId, _requestContext.UserId, ct);
-        return Result<PageDto>.Success(DocumentDtoMapper.ToPageDto(page, spaces));
+        // A trashed page takes no write whatever the caller's level (Documents_Page_CannotEditArchived).
+        var canEdit = page.Status != Notrelix.Domain.Documents.Pages.PageStatus.Archived
+            && await _editAccess.CanEditAsync(page.Id, ct);
+        return Result<PageDto>.Success(DocumentDtoMapper.ToPageDto(page, spaces) with { CanEdit = canEdit });
     }
 }

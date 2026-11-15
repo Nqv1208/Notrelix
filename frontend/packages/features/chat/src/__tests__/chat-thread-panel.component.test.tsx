@@ -158,6 +158,49 @@ describe("ChatThreadPanel", () => {
     );
     expect((box as HTMLTextAreaElement).value).toBe("keep me");
   });
+
+  it("keeps the caller's text and says to wait when the reply is rate limited", async () => {
+    const { hooks, wrapper } = setup();
+    const root = await rootOfGeneral(hooks);
+    const failing = {
+      ...hooks,
+      useReplyInThread: () => ({
+        mutate: (
+          _input: unknown,
+          options?: { onError?: (error: unknown) => void },
+        ) => options?.onError?.({ status: 429 }),
+        isPending: false,
+      }),
+    } as unknown as typeof hooks;
+    render(
+      <ChatThreadPanel
+        hooks={failing}
+        workspaceId={WORKSPACE}
+        rootId={root.id}
+        viewerId="someone"
+        authorName={() => "Author"}
+        copy={en}
+        locale="en"
+        timeZone="UTC"
+        spaceLabel="# general"
+        pinnedIds={new Set()}
+        onClose={vi.fn()}
+        onReact={vi.fn()}
+        onTogglePin={vi.fn()}
+      />,
+      { wrapper },
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("chat-thread-replies")).toBeTruthy(),
+    );
+    const box = screen.getByRole("textbox", { name: "Reply in thread" });
+    fireEvent.change(box, { target: { value: "keep me too" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      en.feedback.rateLimited,
+    );
+    expect((box as HTMLTextAreaElement).value).toBe("keep me too");
+  });
 });
 
 describe("threads I follow", () => {

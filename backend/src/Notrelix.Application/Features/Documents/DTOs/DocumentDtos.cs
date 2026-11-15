@@ -17,7 +17,10 @@ public record PageDto(
     Guid? SpaceId = null,
     // The title of the parent page when the caller can see it, so a picker can say where a page sits;
     // null at the top of a Space or when the parent is not visible (never disclosed). Set by the list read.
-    string? ParentTitle = null
+    string? ParentTitle = null,
+    // Whether the caller may edit the page (the decision a write of it gets); set by the single-page read
+    // only, null on lists. Derived state for a read-only editor: the server still authorizes every write.
+    bool? CanEdit = null
 );
 
 /// <summary>

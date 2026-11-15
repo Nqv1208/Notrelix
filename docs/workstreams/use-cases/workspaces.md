@@ -191,16 +191,16 @@ Products compared and what was taken:
 | UC-WSP-K01 | Create a Space (department) | K | Owner, Admin | yes | yes | Final-Space, Final-M-Space | workspace-spaces.real.e2e.spec.ts | DONE | accepted 2026-11-02, see the Evidence line |
 | UC-WSP-K02 | Read the Space tree and list Spaces | K | Any non-Guest member | yes | yes | Final-Space | workspace-spaces.real.e2e.spec.ts | DONE | closed 2026-11-03, see the Evidence line |
 | UC-WSP-K03 | Read one Space | K | Any member who can see the Space | yes | yes | Final-Space | none | INTEGRATING | No screen found that reads one Space by id; the only caller is the version re-read inside the settings save. |
-| UC-WSP-K04 | Rename a Space or edit its description | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | HARDENING | Built: expected version on rename and description; a stale one is 412. Real e2e: owner tests by hand. |
+| UC-WSP-K04 | Rename a Space or edit its description | K | Owner, Admin, Space Admin | yes | yes | Final-Space | workspace-space-manage.real.e2e.spec.ts | DONE | closed 2026-11-16, see the Evidence line |
 | UC-WSP-K05 | Change a Space's type | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | INTEGRATING | No control to change a Space's type (no artboard shows one): owner question. |
-| UC-WSP-K06 | Change a Space's visibility | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | HARDENING | Built: expected version on the visibility write; a stale one is 412. Real e2e: owner tests by hand. |
+| UC-WSP-K06 | Change a Space's visibility | K | Owner, Admin, Space Admin | yes | yes | Final-Space | workspace-space-manage.real.e2e.spec.ts | DONE | closed 2026-11-16, see the Evidence line |
 | UC-WSP-K07 | Move or reorder a Space | K | Owner, Admin, Space Admin | yes | partial | Final-Space | none | INTEGRATING | Tree drag not built (no artboard shows it); the Move picker is the only control. |
-| UC-WSP-K08 | Archive or unarchive a Space | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | HARDENING | Built: expected version on archive and unarchive; a stale one is 412. Real e2e: owner tests by hand. |
+| UC-WSP-K08 | Archive or unarchive a Space | K | Owner, Admin, Space Admin | yes | yes | Final-Space | workspace-space-manage.real.e2e.spec.ts | DONE | closed 2026-11-16, see the Evidence line |
 | UC-WSP-K09 | Delete or restore a Space | K | Owner, Admin, Space Admin | yes | no | Final-Space | none | IMPLEMENTING | Built: `remove` and `restore` service calls and mutation hooks (`use-space-mutations.ts`), unit tests `space-team-delete-restore.unit.test.ts`; the producer takes no version. Still open: no screen calls them (Delete stays inert on the Space page); the trash and retention rule (LD-16) is an owner decision. |
 | UC-WSP-K10 | See who is in a Space | K | Owner, Admin, Space members | yes | yes | Final-Space, Final-M-Space | none | INTEGRATING | Members-extra is not paged: the tab filters and counts client-side, so it needs a server filter and search contract (owner call). Owner question: the Space members read already pages (default 50, max 200) and could take a role and kind filter, but a name search needs names held by Identity, which the Workspaces read cannot filter on. Should search stay on the loaded page, and should the tab counts keep coming from the members-extra summary? |
-| UC-WSP-K11 | Add a person or Team to a Space | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | HARDENING | Built (verified by reading code 2026-11-09, not run): AddSpaceMember.cs, SpaceRulesTests.cs, SpaceAccessMatrixIntegrationTests.cs, space-members-dialogs.tsx, spaces.service.ts. Remaining: owner tests by hand. |
-| UC-WSP-K12 | Change a Space member's role | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | HARDENING | Built (verified by reading code 2026-11-09, not run): ChangeSpaceMemberRole.cs, SpaceRulesTests.cs, SpaceVersionTests.cs, space-members-view.tsx, spaces.service.ts. Remaining: owner tests by hand. |
-| UC-WSP-K13 | Remove a person or Team from a Space | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | HARDENING | Built (verified by reading code 2026-11-09, not run): RemoveSpaceMember.cs, SpaceRulesTests.cs, space-members-view.tsx, space-members-dialogs.tsx, spaces.service.ts. Remaining: owner tests by hand. |
+| UC-WSP-K11 | Add a person or Team to a Space | K | Owner, Admin, Space Admin | yes | yes | Final-Space | workspace-space-manage.real.e2e.spec.ts | DONE | closed 2026-11-16, see the Evidence line |
+| UC-WSP-K12 | Change a Space member's role | K | Owner, Admin, Space Admin | yes | yes | Final-Space | workspace-space-manage.real.e2e.spec.ts | DONE | closed 2026-11-16, see the Evidence line |
+| UC-WSP-K13 | Remove a person or Team from a Space | K | Owner, Admin, Space Admin | yes | yes | Final-Space | workspace-space-manage.real.e2e.spec.ts | DONE | closed 2026-11-16, see the Evidence line |
 | UC-WSP-K14 | Open the department page overview | K | Owner, Admin, Space members | yes | yes | Final-Space, Final-M-Space | none | INTEGRATING | Department page overflows at 390 px (the phong frame, measured in K02); no scale test for large Spaces. |
 | UC-WSP-K15 | Place a Board or Page in a Space (facts only) | K | Work Management and Documents | yes | yes | Final-Space | workspace-spaces.real.e2e.spec.ts | DONE | closed 2026-11-03, see the Evidence line |
 | UC-WSP-L01 | Create a Team | L | Owner, Admin | yes | yes | Final-Teams | workspace-teams.real.e2e.spec.ts | DONE | closed 2026-11-15, see the Evidence line |
@@ -1049,8 +1049,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Inline edit, validation, pending, conflict.
 - Rules: [workspaces](../../product/workspaces.md) section 43.1; WGREQ038, WGREQ039; WX-SPACE-003.
 - Acceptance: Given a rename to a taken sibling name, Then refused.
-- Evidence: BE `PUT .../spaces/{spaceId}`, `PUT .../spaces/{spaceId}/description`, `RenameSpaceCommandHandler`, `UpdateSpaceDescriptionCommandHandler` · FE `space-settings-panel.tsx`, `spaces.service.ts` · Design `Final-Space` · Tests `SpaceTests`, `SpaceVersionTests`, `SpaceHierarchyIntegrationTests` (stale-version case, CI), `space-page.mock.e2e.spec.ts` · Real e2e none
-- State: HARDENING — Built: `expectedVersion` on rename and description (body), mapped in the expected-version target map and the request baseline; the Space page sends the node version and re-reads it between the writes. A stale version answers 412 and changes nothing (`SpaceVersionTests`; the stale-version case in `SpaceHierarchyIntegrationTests`, which runs in CI). Real e2e: owner tests by hand.
+- Evidence: BE `PUT .../spaces/{spaceId}`, `PUT .../spaces/{spaceId}/description`, `RenameSpaceCommandHandler`, `UpdateSpaceDescriptionCommandHandler` · FE `space-settings-panel.tsx`, `spaces.service.ts` · Design `Final-Space` · Tests `SpaceTests`, `SpaceVersionTests`, `SpaceHierarchyIntegrationTests` (stale-version case, CI), `space-page.mock.e2e.spec.ts` · Real e2e workspace-space-manage.real.e2e.spec.ts · Line 1: Domain `SpaceTests` (25), `SpaceVersionTests` (4), Integration `SpaceHierarchyIntegrationTests` (`AStaleExpectedVersion_IsRejected_ForEveryVersionedSpaceEdit_WithoutChanging`, `SiblingNames_AreUniqueCaseInsensitively_PerParent`, 13 in the class), API `SpaceEndpointTests`; on the real stack the first test of `workspace-space-manage.real.e2e.spec.ts` (a stale rename is 412, a sibling name in another case is refused, a Member is refused and an outsider gets 404, the same name, description and visibility bump no version, the repeat of a guarded write is a 412 with no second effect). Line 2: `space-page.mock.e2e.spec.ts` 13 passed (rename saves and the sidebar follows). Line 3: `design-fidelity-space.mock.e2e.spec.ts` 10 passed (the settings tab). Line 4: `workspace-space-manage.real.e2e.spec.ts` 2 passed on the real stack, 2026-11-16.
+- State: DONE — closed 2026-11-16; see the Evidence line.
 
 ### UC-WSP-K05 Change a Space's type
 - Capability: K Spaces (added by this catalog)
@@ -1077,8 +1077,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Choice with consequence text, pending, success.
 - Rules: [workspaces](../../product/workspaces.md) sections 44.1; WSP-023; GOV-025.
 - Acceptance: Given a Workspace Space, When set Private, Then a non-member loses it from the tree.
-- Evidence: BE `PUT .../spaces/{spaceId}/visibility`, `ChangeSpaceVisibilityCommandHandler` · FE `space-settings-panel.tsx` · Design `Final-Space` · Tests `SpaceAccessMatrixIntegrationTests`, `SpaceHierarchyIntegrationTests` (stale-version case, CI), `space-page.mock.e2e.spec.ts` · Real e2e none
-- State: HARDENING — Built: `expectedVersion` on the visibility write (same path as K04; the stale-version case in `SpaceHierarchyIntegrationTests` runs in CI). Real e2e: owner tests by hand.
+- Evidence: BE `PUT .../spaces/{spaceId}/visibility`, `ChangeSpaceVisibilityCommandHandler` · FE `space-settings-panel.tsx` · Design `Final-Space` · Tests `SpaceAccessMatrixIntegrationTests`, `SpaceHierarchyIntegrationTests` (stale-version case, CI), `space-page.mock.e2e.spec.ts` · Real e2e workspace-space-manage.real.e2e.spec.ts · Line 1: as K04, plus `SpaceAccessMatrixIntegrationTests` (5); the real test sets a Private department Open, a stale write is 412 and keeps it, narrowing to Private makes it 404 for a Member who was not added. Line 2: `space-page.mock.e2e.spec.ts` (visibility chosen with a click or the arrow keys, saved at once). Line 3: `design-fidelity-space.mock.e2e.spec.ts` 10 passed. Line 4: `workspace-space-manage.real.e2e.spec.ts` 2 passed on the real stack, 2026-11-16.
+- State: DONE — closed 2026-11-16; see the Evidence line.
 
 ### UC-WSP-K07 Move or reorder a Space
 - Capability: K Spaces (added by this catalog)
@@ -1105,8 +1105,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Confirmation, blocked state with reason, pending.
 - Rules: [workspaces](../../product/workspaces.md) section 43.2; WSP-022; WGREQ039.
 - Acceptance: Given a Space with one Board, When archived, Then refused naming the Board.
-- Evidence: BE `POST .../archive`, `POST .../unarchive`, `ArchiveSpaceCommandHandler`, `UnarchiveSpaceCommandHandler` · FE `space-settings-panel.tsx` · Design `Final-Space` · Tests `ArchiveSpaceCommandHandlerTests`, `SpaceHierarchyIntegrationTests` (stale-version case, CI), `space-page.mock.e2e.spec.ts` · Real e2e none
-- State: HARDENING — Built: `expectedVersion` on archive and unarchive (body), sent by the Space page; a stale one answers 412 (the stale-version case in `SpaceHierarchyIntegrationTests` runs in CI). Real e2e: owner tests by hand.
+- Evidence: BE `POST .../archive`, `POST .../unarchive`, `ArchiveSpaceCommandHandler`, `UnarchiveSpaceCommandHandler` · FE `space-settings-panel.tsx` · Design `Final-Space` · Tests `ArchiveSpaceCommandHandlerTests`, `SpaceHierarchyIntegrationTests` (stale-version case, CI), `space-page.mock.e2e.spec.ts` · Real e2e workspace-space-manage.real.e2e.spec.ts · Line 1: `ArchiveSpaceCommandHandlerTests` (2), `SpaceHierarchyIntegrationTests.ArchiveAndDelete_AreBlockedByActiveChildrenAndPlacedBoards_WithoutCascade`; the real test refuses to archive a department that holds a Board (nothing changes), archives an empty one through the confirm dialog (version +1), refuses a stale archive and a stale unarchive (412), treats a repeat as a no-op, refuses a rename while archived, and unarchives (version +1). Line 2: `space-page.mock.e2e.spec.ts` (blocked with the reason, confirm with focus return). Line 3: `design-fidelity-space.mock.e2e.spec.ts` 10 passed. Line 4: `workspace-space-manage.real.e2e.spec.ts` 2 passed on the real stack, 2026-11-16.
+- State: DONE — closed 2026-11-16; see the Evidence line.
 
 ### UC-WSP-K09 Delete or restore a Space
 - Capability: K Spaces (added by this catalog)
@@ -1147,8 +1147,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Add dialog, per-row skip reason, pending, conflict.
 - Rules: [workspaces](../../product/workspaces.md) sections 22.1, 44.3; WSP-014, WSP-024, WSP-026.
 - Acceptance: Given an active member, When added as Member, Then they appear once. Given a foreign user id, Then refused.
-- Evidence: BE `POST .../spaces/{spaceId}/members`, `AddSpaceMemberCommandHandler` · FE `space-members-dialogs.tsx`, `spaces.service.ts` · Design `Final-Space` · Tests `SpaceRulesTests`, `SpaceAccessMatrixIntegrationTests` · Real e2e none
-- State: HARDENING — Built (verified by reading code 2026-11-09, not run): AddSpaceMember.cs, SpaceRulesTests.cs, SpaceAccessMatrixIntegrationTests.cs, space-members-dialogs.tsx, spaces.service.ts. Remaining: owner tests by hand.
+- Evidence: BE `POST .../spaces/{spaceId}/members`, `AddSpaceMemberCommandHandler` · FE `space-members-dialogs.tsx`, `spaces.service.ts` · Design `Final-Space` · Tests `SpaceRulesTests`, `SpaceAccessMatrixIntegrationTests` · Real e2e workspace-space-manage.real.e2e.spec.ts · Line 1: `SpaceRulesTests` (4), `SpaceAccessMatrixIntegrationTests` (5), `SpaceHierarchyIntegrationTests.Membership_AcceptsSameWorkspaceUsersAndTeams_AndKeepsALastAdmin`; the real test adds a person through the dialog (appears once, Viewer) and a Team, and refuses a foreign user id and a missing Team (404), a stale version (412), a Member and another role for an existing entry; the same role again is a no-op. Line 2: `space-members.mock.e2e.spec.ts` 11 passed (add by keyboard, outsider email skipped with the reason). Line 3: `design-fidelity-members.mock.e2e.spec.ts` 9 passed (the list, the add dialog). Line 4: `workspace-space-manage.real.e2e.spec.ts` second test, 2 passed on the real stack, 2026-11-16.
+- State: DONE — closed 2026-11-16; see the Evidence line.
 
 ### UC-WSP-K12 Change a Space member's role
 - Capability: K Spaces (added by this catalog)
@@ -1161,8 +1161,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Role menu, conflict, reason when blocked.
 - Rules: [workspaces](../../product/workspaces.md) section 44.3; WSP-024; WGREQ040.
 - Acceptance: Given one Space Admin, When lowered, Then refused with the reason.
-- Evidence: BE `PATCH .../members/{subjectType}/{subjectId}`, `ChangeSpaceMemberRoleCommandHandler` · FE `space-members-view.tsx` (role menu), `spaces.service.ts` · Design `Final-Space` · Tests `SpaceRulesTests`, `SpaceVersionTests` · Real e2e none
-- State: HARDENING — Built (verified by reading code 2026-11-09, not run): ChangeSpaceMemberRole.cs, SpaceRulesTests.cs, SpaceVersionTests.cs, space-members-view.tsx, spaces.service.ts. Remaining: owner tests by hand.
+- Evidence: BE `PATCH .../members/{subjectType}/{subjectId}`, `ChangeSpaceMemberRoleCommandHandler` · FE `space-members-view.tsx` (role menu), `spaces.service.ts` · Design `Final-Space` · Tests `SpaceRulesTests`, `SpaceVersionTests` · Real e2e workspace-space-manage.real.e2e.spec.ts · Line 1: `SpaceRulesTests`, `SpaceVersionTests`; the real test lifts a person with the role menu (version +1), refuses lowering the only Admin (400), a stale role (412), a Member, and an absent entry; the same role is a no-op. Line 2: `space-members.mock.e2e.spec.ts` (role menu keyboard, the only admin cannot be lowered, with the reason). Line 3: `design-fidelity-members.mock.e2e.spec.ts` 9 passed (the role menu). Line 4: `workspace-space-manage.real.e2e.spec.ts` second test, 2 passed on the real stack, 2026-11-16.
+- State: DONE — closed 2026-11-16; see the Evidence line.
 
 ### UC-WSP-K13 Remove a person or Team from a Space
 - Capability: K Spaces (added by this catalog)
@@ -1175,8 +1175,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Confirmation listing consequences, pending.
 - Rules: [workspaces](../../product/workspaces.md) section 44.3; WSP-024.
 - Acceptance: Given a Team entry, When removed, Then its members lose the Space role unless they have another entry.
-- Evidence: BE `DELETE .../members/{subjectType}/{subjectId}`, `RemoveSpaceMemberCommandHandler` · FE `space-members-view.tsx`, `space-members-dialogs.tsx`, `spaces.service.ts` · Design `Final-Space` · Tests `SpaceRulesTests` · Real e2e none
-- State: HARDENING — Built (verified by reading code 2026-11-09, not run): RemoveSpaceMember.cs, SpaceRulesTests.cs, space-members-view.tsx, space-members-dialogs.tsx, spaces.service.ts. Remaining: owner tests by hand.
+- Evidence: BE `DELETE .../members/{subjectType}/{subjectId}`, `RemoveSpaceMemberCommandHandler` · FE `space-members-view.tsx`, `space-members-dialogs.tsx`, `spaces.service.ts` · Design `Final-Space` · Tests `SpaceRulesTests` · Real e2e workspace-space-manage.real.e2e.spec.ts · Line 1: `SpaceRulesTests`; the real test removes a person through the confirm dialog (version +1), refuses removing the last Admin (400), a stale remove (412) and a Member, treats an absent entry as a no-op without a version, and removes a Team. Line 2: `space-members.mock.e2e.spec.ts` (confirm lists who loses access when a Team goes). Line 3: `design-fidelity-members.mock.e2e.spec.ts` 9 passed (the remove dialog). Line 4: `workspace-space-manage.real.e2e.spec.ts` second test, 2 passed on the real stack, 2026-11-16.
+- State: DONE — closed 2026-11-16; see the Evidence line.
 
 ### UC-WSP-K14 Open the department page overview
 - Capability: K Spaces (added by this catalog)

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import type { BlockType } from "@notrelix/docs-core";
-import { Skeleton } from "@notrelix/ui-web";
+import { Button, NotFoundState, Skeleton } from "@notrelix/ui-web";
 import type { DocPageCopy } from "./doc-page.copy";
 import {
   DocArticleSurface,
@@ -193,8 +193,18 @@ export function DocPageScreenSurface(props: DocPageScreenSurfaceProps) {
 
   if (status === "notFound") {
     return (
-      <div className="grid h-full min-h-0 flex-1 place-items-center bg-doc-page p-8 text-center text-compact leading-[1.45] text-meta-foreground">
-        {copy.notFound}
+      <div className="grid h-full min-h-0 flex-1 place-items-center bg-doc-page p-8">
+        <NotFoundState
+          title={copy.notFoundTitle}
+          description={copy.notFound}
+          action={
+            props.callbacks?.onLeavePage ? (
+              <Button variant="outline" onClick={props.callbacks.onLeavePage}>
+                {copy.notFoundBack}
+              </Button>
+            ) : undefined
+          }
+        />
       </div>
     );
   }

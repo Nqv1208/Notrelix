@@ -91,6 +91,7 @@ export const en = {
     leadNote:
       "At least 1 Team lead is required. To change it, promote someone else to Team lead first.",
     addPlaceholder: "Add a person: type a name or email in {{workspace}}",
+    addPlaceholderShort: "Add a person: name or email",
     addHint:
       "Only active members of the workspace can be added. Guests and people who left the workspace are not listed; people outside need an invitation to the workspace first.",
     addNoMatch: "No active member matches “{{query}}”.",
@@ -441,6 +442,7 @@ export const vi: WorkspaceTeamsCopy = {
     leadNote:
       "Phải còn ít nhất 1 trưởng nhóm. Muốn đổi, nâng một người khác lên Trưởng nhóm trước.",
     addPlaceholder: "Thêm người: gõ tên hoặc email trong {{workspace}}",
+    addPlaceholderShort: "Thêm người: tên hoặc email",
     addHint:
       "Chỉ thêm được thành viên đang hoạt động của workspace. Khách và người đã rời workspace không có trong danh sách; người ngoài cần lời mời vào workspace trước.",
     addNoMatch: "Không có thành viên nào khớp “{{query}}”.",

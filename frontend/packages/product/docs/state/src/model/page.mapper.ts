@@ -38,6 +38,7 @@ export function mapPage(dto: PageDtoApi): Page {
     version:
       typeof dto.version === "number" && dto.version > 0 ? dto.version : null,
     spaceId: dto.spaceId ?? null,
+    ...(typeof dto.canEdit === "boolean" ? { canEdit: dto.canEdit } : {}),
     people: dto.people ?? [],
   };
 }

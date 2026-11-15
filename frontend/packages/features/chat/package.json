@@ -26,7 +26,8 @@
     "@notrelix/ui-web": "workspace:*",
     "@tanstack/react-query": "^5.95.2",
     "@tanstack/react-virtual": "3.13.12",
-    "lucide-react": "^0.562.0"
+    "lucide-react": "^0.562.0",
+    "sonner": "catalog:"
   },
   "devDependencies": {
     "@notrelix/dev-mock-backend": "workspace:*",

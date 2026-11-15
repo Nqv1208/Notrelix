@@ -329,7 +329,7 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
                 showResults && active >= 0 ? optionId(active) : undefined
               }
               aria-describedby={`${ids}-hint`}
-              className="h-full min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 shadow-none ring-0 focus-visible:border-0 focus-visible:ring-0 [&::-webkit-search-cancel-button]:hidden"
+              className="h-full min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 shadow-none ring-0 dark:bg-transparent focus-visible:border-0 focus-visible:ring-0 [&::-webkit-search-cancel-button]:hidden"
               onChange={(event) => setTyped(event.target.value)}
               onKeyDown={handleKey}
             />
@@ -386,7 +386,7 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
               onChange={(event) =>
                 setDraft({ ...draft, spaceId: event.target.value })
               }
-              className={cn(CHIP, "max-w-44", draft.spaceId && CHIP_ON)}
+              className={cn(CHIP, "max-w-60", draft.spaceId && CHIP_ON)}
             >
               <option value="">{text.allSpaces}</option>
               {spaces.map((space) => (
