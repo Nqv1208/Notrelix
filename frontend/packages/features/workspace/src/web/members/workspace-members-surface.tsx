@@ -228,7 +228,7 @@ function MemberRow({
             />
             <span className="flex min-w-0 flex-col">
               <span className="flex min-w-0 items-center gap-2">
-                <span className="truncate text-label text-foreground max-md:line-clamp-2 max-md:whitespace-normal max-md:break-words">
+                <span className="truncate text-label text-foreground @max-2xl:line-clamp-2 @max-2xl:whitespace-normal @max-2xl:break-words">
                   {member.name}
                 </span>
                 {isSelf ? (
@@ -238,14 +238,14 @@ function MemberRow({
                 ) : null}
               </span>
               {member.jobTitle ? (
-                <span className="truncate text-metadata text-muted-foreground max-md:whitespace-normal max-md:break-words">
+                <span className="truncate text-metadata text-muted-foreground @max-2xl:whitespace-normal @max-2xl:break-words">
                   {member.jobTitle}
                 </span>
               ) : null}
               {blockedReason ? (
                 <span
                   id={reasonId}
-                  className="flex items-start gap-1 text-metadata text-muted-foreground max-md:hidden"
+                  className="flex items-start gap-1 text-metadata text-muted-foreground @max-2xl:hidden"
                 >
                   <Info
                     aria-hidden="true"
@@ -306,7 +306,7 @@ function MemberRow({
         </td>
         <td
           role="cell"
-          className="hidden px-2 py-2.5 align-middle whitespace-nowrap text-metadata tabular-nums text-muted-foreground md:table-cell"
+          className="hidden px-2 py-2.5 align-middle whitespace-nowrap text-metadata tabular-nums text-muted-foreground @2xl:table-cell"
         >
           {member.joinedAt
             ? formatters.date(member.joinedAt, DATE_FORMAT)
@@ -393,7 +393,7 @@ function MemberRow({
       {blockedReason ? (
         // On a phone the member column is too narrow for the sentence: it takes the full row width below.
         // The cell above keeps the hidden copy the role is described by.
-        <tr aria-hidden="true" className="md:hidden">
+        <tr aria-hidden="true" className="@2xl:hidden">
           <td colSpan={5} className="px-4 pb-3">
             <span className="flex items-start gap-1 text-metadata text-muted-foreground">
               <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
@@ -692,7 +692,7 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
               {formatCopy(copy.filter.noResults, { query: filter.trim() })}
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-border bg-surface-panel">
+            <div className="@container overflow-x-auto rounded-lg border border-border bg-surface-panel">
               <table
                 role="table"
                 className="w-full border-collapse text-left max-sm:block"
@@ -716,7 +716,7 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                     <th
                       role="columnheader"
                       scope="col"
-                      className="hidden h-9 px-2 text-metadata font-medium text-muted-foreground md:table-cell"
+                      className="hidden h-9 px-2 text-metadata font-medium text-muted-foreground @2xl:table-cell"
                     >
                       {copy.columns.joined}
                     </th>
