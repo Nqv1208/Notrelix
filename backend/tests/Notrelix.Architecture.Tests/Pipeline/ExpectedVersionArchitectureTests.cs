@@ -140,6 +140,7 @@ public static class ExpectedVersionInventory
             ["ChangeSpaceVisibilityCommand"] = "workspaces.space",
             ["ArchiveSpaceCommand"] = "workspaces.space",
             ["UnarchiveSpaceCommand"] = "workspaces.space",
+            ["DeleteSpaceCommand"] = "workspaces.space",
             ["SuspendMemberCommand"] = "workspaces.workspace-member",
             ["ActivateMemberCommand"] = "workspaces.workspace-member",
             ["RemoveMemberCommand"] = "workspaces.workspace-member",

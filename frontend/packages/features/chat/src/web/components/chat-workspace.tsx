@@ -2005,6 +2005,8 @@ export function ChatWorkspace({
                   copy={copy}
                   authorName={authorName}
                   channelName={channelNameOf}
+                  locale={locale}
+                  timeZone={timeZone}
                   onOpenThread={(rootId) =>
                     setPanel({ kind: "thread", rootId })
                   }

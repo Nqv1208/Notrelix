@@ -18,6 +18,15 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
     /// <summary>Order among the non-deleted siblings under the same parent.</summary>
     public FractionalIndex Position { get; private set; } = FractionalIndex.Initial();
 
+    /// <summary>
+    /// How long a deleted Space can be restored. The same 30 days as a deleted Board
+    /// (<c>Board.RestoreWindow</c>, Notrelix.Domain/WorkManagement/Boards/Board.cs) and Workspace.
+    /// </summary>
+    public static readonly TimeSpan RestoreWindow = TimeSpan.FromDays(30);
+
+    /// <summary>The instant after which a deleted Space can no longer be restored.</summary>
+    public DateTimeOffset? RestorableUntil => DeletedAt + RestoreWindow;
+
     private readonly List<SpaceMember> _members = new();
 
     /// <summary>User and Team entries with a Space role (WSP-024).</summary>
@@ -234,6 +243,11 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
         Guard.NotEmpty(restoredBy);
         Guard.NotNull(placement);
         if (!IsDeleted) return;
+
+        if (restoredAt > RestorableUntil)
+            throw new BusinessRuleException(
+                WorkspaceRuleCodes.Workspaces_Space_RestoreWindowExpired,
+                "The restore window of this department has passed.");
 
         if (placement.Parent?.SpaceId != ParentSpaceId)
             throw new ArgumentException("The restore placement must describe the space's current parent.", nameof(placement));

@@ -18,6 +18,7 @@ import {
   type MockHttpResult,
 } from "../../transport/create-response";
 import type { MockStore } from "../../state/mock-store";
+import { addDays } from "../../state/clock";
 import type {
   MockSpaceRole,
   MockSpaceSubjectType,
@@ -391,6 +392,79 @@ export const spacesOperations = [
           store.countPlacedInSpace(params.spaceId),
           body?.expectedVersion,
         ),
+      );
+    },
+  }),
+
+  defineMockOperation<{ workspaceId: string; spaceId: string }, never, void>({
+    id: "workspace.spaces.delete",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Spaces.DeleteSpace",
+    },
+    method: "DELETE",
+    route: "/workspaces/:workspaceId/spaces/:spaceId",
+    async handle({ params, request, store }) {
+      const version = Number(request.searchParams.get("expectedVersion"));
+      if (!Number.isInteger(version) || version < 1)
+        return validationError({
+          ExpectedVersion: ["Send the version last read."],
+        });
+      return writeResult(
+        store.spaces.delete(
+          params.workspaceId,
+          params.spaceId,
+          store.spaceViewer(params.workspaceId),
+          store.countPlacedInSpace(params.spaceId),
+          version,
+          store.now(),
+        ),
+      );
+    },
+  }),
+
+  defineMockOperation<{ workspaceId: string; spaceId: string }, never, void>({
+    id: "workspace.spaces.restore",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Spaces.RestoreSpace",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/spaces/:spaceId/restore",
+    async handle({ params, store }) {
+      return writeResult(
+        store.spaces.restore(
+          params.workspaceId,
+          params.spaceId,
+          store.spaceViewer(params.workspaceId),
+          store.now(),
+        ),
+      );
+    },
+  }),
+
+  defineMockOperation<{ workspaceId: string }, never, unknown>({
+    id: "workspace.spaces.deleted",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Spaces.GetDeletedSpaces",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/spaces/deleted",
+    async handle({ params, store }) {
+      const denied = guard(store, params.workspaceId);
+      if (denied) return denied;
+      const role = store.spaceViewer(params.workspaceId).workspaceRole;
+      if (role !== "owner" && role !== "admin") return forbidden();
+      const now = store.now();
+      return ok(
+        store.spaces.deletedOf(params.workspaceId, now).map((d) => ({
+          id: d.record.id,
+          name: d.record.name,
+          parentSpaceId: d.record.parentId,
+          deletedAt: d.deletedAt,
+          restorableUntil: addDays(d.deletedAt, 30),
+        })),
       );
     },
   }),
