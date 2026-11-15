@@ -128,7 +128,7 @@ export function OnboardingPreview({
               <b className="block text-micro leading-[1.3] font-semibold">
                 {company.name}
               </b>
-              <small className="block truncate text-rail-label leading-[1.45] font-normal text-meta-foreground">
+              <small className="block min-h-[1.45em] truncate text-rail-label leading-[1.45] font-normal text-meta-foreground">
                 {company.sub}
               </small>
             </span>
@@ -157,11 +157,11 @@ export function OnboardingPreview({
           ) : (
             departments.map((department) => (
               <div key={department.name} className="flex flex-col gap-0.5">
-                <span className="flex items-center gap-2 px-1.5 py-0.5 text-micro font-medium">
+                <span className="flex h-6 items-center gap-[7px] rounded-[5px] px-1.5 text-micro font-medium">
                   <span
                     aria-hidden="true"
                     className={cn(
-                      "grid size-3.5 shrink-0 place-items-center rounded-[4px] text-mark-2xs font-bold",
+                      "grid size-3.75 shrink-0 place-items-center rounded-[4px] text-mark-4xs font-bold",
                       DEPARTMENT_TONE_CLASS[department.color],
                     )}
                   >
@@ -181,7 +181,7 @@ export function OnboardingPreview({
                   <span
                     key={board.name}
                     className={cn(
-                      "truncate rounded-[6px] py-0.5 pr-1.5 pl-6.5 text-micro",
+                      "h-[22px] truncate rounded-[5px] pr-1.5 pl-7 text-micro leading-[22px]",
                       board.isNew || board.name === activeBoard
                         ? "bg-brand-subtle font-semibold text-brand-subtle-foreground"
                         : "text-muted-foreground",
@@ -238,69 +238,89 @@ export function OnboardingPreview({
             </>
           ) : main.kind === "home" ? (
             <>
-              <b className="text-dialog-title font-semibold">{main.greeting}</b>
-              <small className="text-note-small text-meta-foreground">
+              <b className="text-body leading-[1.45] font-[650]">
+                {main.greeting}
+              </b>
+              <small className="-mt-1.5 text-rail-label leading-[1.45] font-normal text-meta-foreground">
                 {main.date}
               </small>
-              <div className="flex flex-col gap-1.5 rounded-[8px] border border-line p-2.5">
-                <span className="flex items-baseline justify-between text-micro font-semibold">
+              <div className="flex flex-col gap-1.5 rounded-[8px] border border-line bg-popover px-2.5 py-[9px]">
+                <span className="flex items-center justify-between text-micro font-bold">
                   {main.startTitle}
-                  <span className="font-normal text-meta-foreground">0/3</span>
+                  <span className="text-rail-label font-normal text-meta-foreground">
+                    0/3
+                  </span>
                 </span>
-                <span className="h-0.75 rounded-full bg-state-hover-strong" />
+                <span className="h-1.25 rounded-[3px] bg-state-hover-strong" />
                 {main.items.map((item) => (
                   <span
                     key={item}
-                    className="flex items-center gap-2 text-note-small"
+                    className="flex items-center gap-[7px] text-micro"
                   >
                     <span
                       aria-hidden="true"
-                      className="size-2.5 shrink-0 rounded-full border border-line-strong"
+                      className="size-3 shrink-0 rounded-full border-[1.5px] border-line-strong"
                     />
                     {item}
                   </span>
                 ))}
               </div>
-              <div className="flex flex-col gap-1.5 rounded-[8px] border border-line p-2.5">
-                <Skeleton className="h-1.75 w-3/5" />
-                <Skeleton className="h-1.75 w-2/5" />
+              <div className="flex flex-col gap-[7px] rounded-[8px] border border-line bg-popover p-2.5">
+                <Skeleton className="w-[70%]" />
+                <Skeleton className="w-[45%]" />
               </div>
             </>
           ) : (
             <>
-              <div className="flex items-center justify-between">
-                <b className="text-dialog-title font-semibold">{main.title}</b>
-                <span className="rounded-[6px] bg-primary px-2 py-0.5 text-micro font-semibold text-primary-foreground">
+              <div className="flex items-center gap-2">
+                <b className="text-item-small leading-[1.45] font-[650]">
+                  {main.title}
+                </b>
+                <span className="ml-auto rounded-[6px] bg-primary px-[9px] py-1 text-rail-label leading-[1.45] font-semibold text-primary-foreground">
                   {t.join.add}
                 </span>
               </div>
-              <div className="flex gap-3 border-b border-line text-micro text-muted-foreground">
-                <span className="pb-1">{t.join.views.table}</span>
-                <span className="border-b-2 border-primary pb-1 font-semibold text-foreground">
+              <div className="flex gap-3 border-b border-line text-mark-md leading-[1.45] font-normal text-meta-foreground">
+                <span className="pb-[5px]">{t.join.views.table}</span>
+                <span className="pb-[5px] font-semibold text-foreground shadow-[inset_0_-2px_0_0_var(--color-primary)]">
                   {t.join.views.kanban}
                 </span>
-                <span className="pb-1">{t.join.views.calendar}</span>
+                <span className="pb-[5px]">{t.join.views.calendar}</span>
               </div>
-              {main.lanes.map((lane) => (
-                <div key={lane.label} className="flex flex-col gap-1.5">
-                  <span className="flex items-center gap-1.5 text-micro font-semibold">
+              {main.lanes.map((lane, index) => (
+                <div key={lane.label} className="contents">
+                  <span className="flex items-center gap-1.5 text-rail-label leading-[1.45] font-semibold text-muted-foreground">
                     <span
                       aria-hidden="true"
-                      className="size-1.5 rounded-full bg-primary"
+                      className={cn(
+                        "size-[7px] shrink-0 rounded-full",
+                        index === 0
+                          ? "bg-work-status-doing"
+                          : "bg-work-status-review",
+                      )}
                     />
                     {lane.label}
                   </span>
-                  <div className="flex flex-col gap-1 rounded-[8px] border border-line p-2">
-                    <span className="text-micro leading-snug font-medium">
+                  <div className="flex flex-col gap-1.5 rounded-[8px] border border-line bg-popover px-2.5 py-[9px]">
+                    <b className="text-micro leading-[1.45] font-medium">
                       {lane.card}
-                    </span>
-                    <span className="flex items-center gap-2 text-note-small text-meta-foreground">
+                    </b>
+                    <span className="flex items-center gap-[7px] text-mark-sm leading-[1.45] font-normal text-meta-foreground">
                       {lane.late ? (
-                        <span className="rounded-[4px] bg-danger-subtle px-1.5 py-0.5 font-semibold text-danger-subtle-foreground">
+                        <span className="inline-flex items-center gap-1 rounded-[4px] bg-danger-subtle px-1.5 py-px font-semibold text-danger-text">
                           {lane.late}
                         </span>
                       ) : null}
-                      {lane.meta}
+                      {lane.meta.split(" · ").map((part, at, parts) => (
+                        <span
+                          key={part}
+                          className={
+                            at === parts.length - 1 ? "font-mono" : undefined
+                          }
+                        >
+                          {part}
+                        </span>
+                      ))}
                     </span>
                   </div>
                 </div>

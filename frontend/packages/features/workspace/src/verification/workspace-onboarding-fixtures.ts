@@ -44,7 +44,7 @@ export const SAO_MAI_CATALOG: OnboardingCatalog = {
       stages: ["Ứng tuyển", "Phỏng vấn", "Đề nghị", "Nhận việc"],
       fields: [],
       sample: [],
-      bars: [100, 96, 40, 20],
+      bars: [100, 58, 30, 14],
     },
     {
       id: "support",
