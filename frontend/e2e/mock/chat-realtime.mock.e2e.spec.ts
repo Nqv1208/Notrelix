@@ -9,8 +9,10 @@ import { expect, test, type Page } from "@playwright/test";
 
 const WORKSPACE = "mock-workspace-primary";
 const GENERAL = "c1000000-0000-4000-8000-000000000001";
-const ENGINEERING = "c1000000-0000-4000-8000-000000000002";
+// The owner muted engineering in the seed (no badge, no unread frame): the badge test watches random, where the owner is a member.
+const RANDOM = "c1000000-0000-4000-8000-000000000005";
 const OTHER_MEMBER = "mock-user-member";
+const RANDOM_MEMBER = "mock-user-admin";
 
 type MockHost = {
   __notrelixMockInjectChat?: (
@@ -21,7 +23,12 @@ type MockHost = {
   __notrelixMockRealtime?: { simulateState(state: string): void };
 };
 
-async function inject(page: Page, spaceId: string, content: string) {
+async function inject(
+  page: Page,
+  spaceId: string,
+  content: string,
+  authorId = OTHER_MEMBER,
+) {
   const ok = await page.evaluate(
     ([space, author, text]) =>
       (globalThis as MockHost).__notrelixMockInjectChat?.(
@@ -29,7 +36,7 @@ async function inject(page: Page, spaceId: string, content: string) {
         author!,
         text!,
       ) ?? false,
-    [spaceId, OTHER_MEMBER, content] as const,
+    [spaceId, authorId, content] as const,
   );
   expect(ok).toBe(true);
 }
@@ -58,13 +65,13 @@ test("the unread badge of a background channel moves without opening it", async 
 }) => {
   await openChannel(page, GENERAL);
   const channels = page.getByRole("navigation", { name: /^(Channels|Kênh)$/ });
-  const engineering = channels.getByRole("button", { name: /engineering/ });
-  const before = (await engineering.textContent()) ?? "";
+  const random = channels.getByRole("button", { name: /random/ });
+  const before = (await random.textContent()) ?? "";
 
-  await inject(page, ENGINEERING, `Badge ${Date.now()}`);
+  await inject(page, RANDOM, `Badge ${Date.now()}`, RANDOM_MEMBER);
 
   await expect
-    .poll(async () => (await engineering.textContent()) ?? "")
+    .poll(async () => (await random.textContent()) ?? "")
     .not.toBe(before);
 });
 

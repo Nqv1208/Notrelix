@@ -196,6 +196,8 @@ export interface InboxEntryDto {
   readonly muted: boolean;
   /** The member marked it done; only the Done list holds such entries. */
   readonly done: boolean;
+  /** It is hidden until `snoozedUntil`; only the Snoozed list holds such entries. */
+  readonly snoozed?: boolean;
   /** When a snoozed entry returns, if it is snoozed. */
   readonly snoozedUntil: string | null;
   readonly target: InboxTargetDto;
@@ -460,7 +462,7 @@ export const inboxQueryKey = (workspaceId: string) =>
   workspaceQueryKey(workspaceId, "workspace-feed", "inbox");
 
 /** Which list of the inbox the page shows: the default one or the done entries. */
-export type InboxListView = "inbox" | "done";
+export type InboxListView = "inbox" | "done" | "snoozed";
 
 const QUIET = { skipGlobalErrorToast: true } as const;
 
@@ -588,7 +590,8 @@ export function toInboxDto(
       approval,
       following: type.startsWith("followed_"),
       muted: entry.muted === true,
-      done: view === "done",
+      done: view !== "inbox",
+      snoozed: view === "snoozed",
       snoozedUntil: entry.snoozedUntil ?? null,
       target: {
         kind:
@@ -645,7 +648,7 @@ export function useWorkspaceInbox(
     queryFn: async ({ pageParam }) =>
       client.api.get<WorkspaceInboxResponse | null>(
         `${path.inbox(workspaceId)}?limit=${INBOX_PAGE_LIMIT}${
-          view === "done" ? "&state=done" : ""
+          view === "inbox" ? "" : `&state=${view}`
         }${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ""}`,
       ),
     getNextPageParam: (last) => last?.nextCursor || undefined,

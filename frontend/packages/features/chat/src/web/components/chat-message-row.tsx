@@ -1,4 +1,5 @@
 import {
+  memo,
   useEffect,
   useRef,
   useState,
@@ -182,7 +183,7 @@ const GUTTER =
   "w-7 shrink-0 group-has-[[data-testid=chat-reactions]]/row:mb-[34px]";
 
 /** A message the server stored: a bubble, a tombstone, or a system line. */
-export function ChatMessageRow({
+function ChatMessageRowBase({
   message,
   author,
   continued,
@@ -940,6 +941,39 @@ export interface ChatPendingRowProps {
   readonly continued?: boolean;
   readonly groupEnd?: boolean;
 }
+
+const shallowEqual = (a: unknown, b: unknown): boolean => {
+  if (Object.is(a, b)) return true;
+  if (typeof a !== "object" || typeof b !== "object" || !a || !b) return false;
+  const x = a as Record<string, unknown>;
+  const y = b as Record<string, unknown>;
+  const keys = Object.keys(x);
+  return (
+    keys.length === Object.keys(y).length &&
+    keys.every((key) => Object.is(x[key], y[key]))
+  );
+};
+
+/** Props that arrive as fresh objects each render (author, quote, thread) compare by content, the rest by identity. */
+function rowPropsEqual(
+  prev: ChatMessageRowProps,
+  next: ChatMessageRowProps,
+): boolean {
+  const a = prev as unknown as Record<string, unknown>;
+  const b = next as unknown as Record<string, unknown>;
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const key of keys) {
+    const same =
+      key === "author" || key === "quote" || key === "thread"
+        ? shallowEqual(a[key], b[key])
+        : Object.is(a[key], b[key]);
+    if (!same) return false;
+  }
+  return true;
+}
+
+/** A row re-renders only when its own message or view changed, not when the list around it does. */
+export const ChatMessageRow = memo(ChatMessageRowBase, rowPropsEqual);
 
 /** A send the user made that the server has not stored: an own bubble with "Sending", or "Not sent" with Resend and Discard. */
 export function ChatPendingRow({

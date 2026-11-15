@@ -68,7 +68,7 @@ Collaboration has no dedicated capability for inbox, preferences, attachments, w
 
 1. Fixed: edit, delete, resolve and reopen of a comment, and delete of an attachment, were authorized as `UpdateItem` on the kinds `collaboration.comment` and `collaboration.attachment`, which Governance does not resolve, so only the workspace Owner passed. They now pass a membership gate and the handler decides from the target: author for edit and delete, thread starter or editor for resolve and reopen, editor of the target for attachment delete. Still open: expected version, moderator delete (UC-COL-C02), a real e2e.
 2. No Collaboration fact is published to realtime: comments, reactions, Inbox counts and presence all need a manual refetch (UC-COL-E01 to E03).
-3. Competing writes: comment create has no idempotency key, and resolve and reopen have no expected version (UC-COL-H01, H02). Edit and delete now carry an expected version (UC-COL-A05, A06). Reactions and watchers have no unique index (UC-COL-H03).
+3. Competing writes: comment create has no idempotency key, and resolve and reopen have no expected version (UC-COL-H01, H02). Edit and delete now carry an expected version (UC-COL-A05, A06). Reactions and watchers have unique indexes (UC-COL-H03).
 4. Pages are second-class: no page reactions, no page followers, no page notifications, no page activity (UC-COL-A11, B17, D09, D12).
 5. Target deletion has no Collaboration rule: no purge, no restore link, no test (UC-COL-F01, F02, F05).
 6. Fixed: page comments have cursor paging and are authorized under ViewPage (UC-COL-G01); the unpaged GET routes remain.
@@ -156,7 +156,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-B10 | List and open attachments of an item or page | B | Anyone who can view the item (ViewBoard) or page (ViewPage) | yes | yes | yes | no | HARDENING | Built: the item list needs Viewer and a user with no access gets NotFound (AttachmentFileAuthorizationTests). Owner tests by hand. |
 | UC-COL-B11 | Delete an attachment from an item | B | A person with UpdateItem on the item (Lead decision) | yes | yes | yes | no | HARDENING | Built: Delete in a file's options is shown to editors only, after a confirmation (component test). Owner tests by hand. |
 | UC-COL-B12 | Delete an attachment from a page | B | A person with UpdatePage on the page (Lead decision) | yes | partial | yes | no | HARDENING | Built: the page's file block offers Delete to editors only (soft delete; the block stays). Remains: no artboard draws this control, so its placement needs an owner check. Owner tests by hand. |
-| UC-COL-B13 | Follow a board item | B | Anyone who can view the item's board (ViewBoard) | yes | yes | yes | yes | HARDENING | No unique index on (user, target): concurrent calls can store two watchers. |
+| UC-COL-B13 | Follow a board item | B | Anyone who can view the item's board (ViewBoard) | yes | yes | yes | yes | HARDENING | Concurrent calls store one watcher: unique index ux_resource_watchers_user_target (migration AddResourceWatcherUniqueness) plus the watcher lock (see UC-COL-H03). Remaining: real e2e run and design line. |
 | UC-COL-B14 | Unfollow a board item | B | The follower | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
 | UC-COL-B15 | See whether I follow an item | B | Anyone who can view the item | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
 | UC-COL-B16 | Follow automatically after creating, being assigned or commenting | B | System, acting for the person | yes | partial | no | yes | HARDENING | No unit test of the follow consumers found; reason for following is not shown. |
@@ -171,8 +171,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-D01 | Read an item's activity history | D | Anyone with ViewBoard on the item | yes | yes | yes | no | INTEGRATING | History UI not found: cited task-activity-tab.tsx and item-page-activity.tsx do not exist; no real e2e. |
 | UC-COL-D02 | Item facts become activity rows | D | System (consumers) | yes | no | no | no | INTEGRATING | No integration test through the real outbox for every fact kind; events before release have no rows (decision 56). |
 | UC-COL-D03 | A comment becomes a workspace activity row | D | System | yes | partial | no | no | HARDENING | Built: the Activity title is the event key collab.comment-created; the label key and target type are structured parameters (tests cover both). Edit and delete add no rows (product section 88). Real e2e: owner tests by hand; the workspace feed still shows no entries (WX-HOME-001). |
-| UC-COL-D04 | A mention becomes an Inbox notification | D | System | yes | yes | yes | yes | HARDENING | The consumer does not re-check that the person can view the source at delivery (COL-030 says it must); the Inbox list hides unreadable entri |
-| UC-COL-D05 | Followers are told about changes | D | System | yes | yes | yes | yes | HARDENING | No unit tests of the notifier; follower view access is not re-checked at delivery. |
+| UC-COL-D04 | A mention becomes an Inbox notification | D | System | yes | yes | yes | yes | DONE | Real stack 2026-11-15: collab-inbox-notifications.real.e2e.spec.ts 2 of 2 passed (a mention reaches the Inbox only while the in-app mention preference is on; the preference is saved with PATCH). Backend and design lines hold as above. |
+| UC-COL-D05 | Followers are told about changes | D | System | yes | yes | yes | yes | DONE | Real stack 2026-11-15: collab-inbox-notifications.real.e2e.spec.ts 2 of 2 passed (an assignee follower gets one entry per comment, none while the thread is muted, and the Following tab draws it). Backend and design lines hold as above. |
 | UC-COL-D06 | Approval requested and decided notify the right person | D | System | yes | yes | yes | yes | HARDENING | Built: the approval consumers go through ItemFollowerNotifier, which reads the approval in-app cell (the earlier text said they did not). Email is D13. |
 | UC-COL-D07 | Due-soon notification | D | System (daily job) | yes | yes | yes | no | HARDENING | Built (verified by reading code 2026-11-09, not run): ItemFollowerNotifier.cs, DueDateNotificationsIntegrationTests.cs, inbox-list.tsx. Remaining: owner tests by hand. |
 | UC-COL-D08 | Nudge an assignee | D | A person with view access, never to self (decision 35); Work Management owns the action | yes | yes | yes | no | HARDENING | Built: the reminder consumer sends to each assignee and never to the sender, even when listed. The 24-hour limit is tested in Work Management. Owner tests by hand. |
@@ -196,14 +196,14 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-F07 | Restore a deleted comment | F | A moderator or the author within a window (undecided) | partial | no | no | no | BLOCKED | Depends on UC-COL-C02 (who may restore). |
 | UC-COL-G01 | List the comments of an item or page | G | ViewBoard on the item or view on the page | yes | yes | yes | partial | HARDENING | Built: page comments have cursor paging (default 50, max 200) under the ViewPage action; the page view follows nextCursor until done. The unpaged GET routes remain without a UI caller. Real e2e: owner tests by hand. |
 | UC-COL-G02 | Comment counts on cards and lists | G | Anyone who can see the card | yes | yes | yes | no | INTEGRATING | Owner question: which comments does the card count? Code counts live comments (replies and resolved threads included, deleted ones not); proposed: keep that rule and write it into the product text. Not changed. |
-| UC-COL-G03 | Open the Inbox list | G | Any active member | yes | yes | yes | yes | HARDENING | The handler lives in the Work Management feature although Collaboration owns the Inbox; no design-fidelity spec for Inbox. |
+| UC-COL-G03 | Open the Inbox list | G | Any active member | yes | yes | yes | yes | HARDENING | Design line holds: design-fidelity-inbox mock spec (2 passed). Remaining: the list handler still lives in the Work Management feature (a move, no behaviour change); real e2e not run. |
 | UC-COL-G04 | Unread count per workspace (bell) | G | Any signed-in person | yes | yes | yes | no | INTEGRATING | Count is not live (depends on UC-COL-E02, DEFINED); no real e2e. |
-| UC-COL-G05 | Mark one notification read | G | The recipient | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
+| UC-COL-G05 | Mark one notification read | G | The recipient | yes | yes | yes | yes | HARDENING | Design line holds 2026-11-15: frontend/e2e/mock/design-fidelity-inbox.mock.e2e.spec.ts (2 passed, 1440 light and dark, boxes within 1 px of Final-Inbox) and the Inbox copy follows Col-Inbox (Đã xử lý, Đưa về Hộp thư). Remaining: no real e2e covers this action yet (collab-inbox-notifications.real.e2e.spec.ts, 2 passed 2026-11-15, covers mention delivery, follower fan-out and mute). |
 | UC-COL-G06 | Mark every notification read | G | The recipient | yes | yes | yes | no | HARDENING | Built (verified by reading code 2026-11-09, not run): MapInboxEndpoints.cs, InboxStatesIntegrationTests.cs, the inbox route. Remaining: owner tests by hand. |
-| UC-COL-G07 | Mark done and take back into the Inbox | G | The recipient | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
-| UC-COL-G08 | Snooze a notification | G | The recipient | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
-| UC-COL-G09 | Mute and unmute a thread | G | The recipient | yes | yes | yes | yes | HARDENING | Follower and approval consumers' honouring of mute not proven by test. |
-| UC-COL-G10 | Reply to a mention from the Inbox | G | The recipient with CreateComment on the target | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
+| UC-COL-G07 | Mark done and take back into the Inbox | G | The recipient | yes | yes | yes | yes | HARDENING | Design line holds 2026-11-15: frontend/e2e/mock/design-fidelity-inbox.mock.e2e.spec.ts (2 passed, 1440 light and dark, boxes within 1 px of Final-Inbox) and the Inbox copy follows Col-Inbox (Đã xử lý, Đưa về Hộp thư). Remaining: no real e2e covers this action yet (collab-inbox-notifications.real.e2e.spec.ts, 2 passed 2026-11-15, covers mention delivery, follower fan-out and mute). |
+| UC-COL-G08 | Snooze a notification | G | The recipient | yes | yes | yes | yes | HARDENING | Design line holds 2026-11-15: frontend/e2e/mock/design-fidelity-inbox.mock.e2e.spec.ts (2 passed, 1440 light and dark, boxes within 1 px of Final-Inbox) and the Inbox copy follows Col-Inbox (Đã xử lý, Đưa về Hộp thư). A Snoozed filter now lists snoozed entries and stops a snooze (two component tests). Drawn but not built: the "Quay lại" time pill on a snoozed row. Remaining: no real e2e covers this action yet (collab-inbox-notifications.real.e2e.spec.ts, 2 passed 2026-11-15, covers mention delivery, follower fan-out and mute). |
+| UC-COL-G09 | Mute and unmute a thread | G | The recipient | yes | yes | yes | yes | DONE | Real stack 2026-11-15: collab-inbox-notifications.real.e2e.spec.ts 2 of 2 passed (mute stops follower entries, unmute resumes them). Backend and design lines hold as above. |
+| UC-COL-G10 | Reply to a mention from the Inbox | G | The recipient with CreateComment on the target | yes | yes | yes | yes | HARDENING | Design line holds 2026-11-15: frontend/e2e/mock/design-fidelity-inbox.mock.e2e.spec.ts (2 passed, 1440 light and dark, boxes within 1 px of Final-Inbox) and the Inbox copy follows Col-Inbox (Đã xử lý, Đưa về Hộp thư). Remaining: no real e2e covers this action yet (collab-inbox-notifications.real.e2e.spec.ts, 2 passed 2026-11-15, covers mention delivery, follower fan-out and mute). |
 | UC-COL-G11 | Read my notification preferences | G | An active member, only for themself in that Workspace | yes | yes | yes | no | HARDENING | Built (verified by reading code 2026-11-09, not run): NotificationPreferencesHandlerTests.cs, GetNotificationPreferences.cs, use-notification-preferences.ts. Remaining: owner tests by hand. |
 | UC-COL-G12 | Save my notification preferences | G | The person, only their own matrix | yes | yes | yes | no | HARDENING | Built: a switched-off approval or assigned in-app cell suppresses that kind only (notifier test). Email cells are saved but not sent (D13). Owner tests by hand. |
 | UC-COL-G13 | Quiet hours and pause (enterprise baseline) | G | The person | no | no | no | no | DEFINED | Meaningful only after UC-COL-D13. |
@@ -559,7 +559,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-016, Watchers; decision 78.1; spec DCREQ175, DCREQ177, DCREQ178.
 - Acceptance: Given a reader, when they follow, then the item appears under Following in My work and they get follower notifications.
 - Evidence: BE PUT /api/v1/board-items/{boardItemId}/following (Collaboration.Watchers.Follow), FollowBoardItemCommandHandler · FE frontend/packages/product/work-management/web/src/components/card-detail/use-item-sheet-extras.ts · Design Final-Detail · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/FollowBoardItemTests.cs; backend/tests/Notrelix.Domain.Tests/Collaboration/Watchers/ · Real e2e frontend/e2e/real/following.real.e2e.spec.ts
-- State: HARDENING — No unique index on (user, target): concurrent calls can store two watchers.
+- State: HARDENING — Concurrent calls store one watcher: unique index ux_resource_watchers_user_target (migration AddResourceWatcherUniqueness) plus the watcher lock (see UC-COL-H03). Remaining: real e2e run and design line.
 
 ### UC-COL-B14 Unfollow a board item
 - Capability: B, COL-002 Comment target contract
@@ -773,7 +773,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-008, COL-017, COL-018, COL-030, Preferences (producers); spec DCREQ156, DCREQ180 to DCREQ184.
 - Acceptance: Given a mention, then one Inbox entry exists; given a redelivery, still one; given the preference off, none.
 - Evidence: BE backend/src/Notrelix.Infrastructure/Messaging/Consumers/Collaboration/MentionCreatedNotificationConsumer.cs · FE frontend/packages/features/workspace/src/web/inbox/, frontend/apps/web/src/routes/workspaces/$workspaceId/inbox.tsx · Design Final-Inbox, Final-M-Inbox · Tests backend/tests/Notrelix.Integration.Tests/Collaboration/NotificationPreferencesIntegrationTests.cs; backend/tests/Notrelix.Application.Tests/Features/Collaboration/NotificationExcerptTests.cs · Real e2e frontend/e2e/real/inbox.real.e2e.spec.ts
-- State: HARDENING — The consumer does not re-check that the person can view the source at delivery (COL-030 says it must); the Inbox list hides unreadable entries.
+- State: HARDENING — Backend done: delivery re-checks view access (item via the Board audience, page via ViewPage), drops a self-mention, a muted thread and an off preference; MentionCreatedNotificationConsumerTests (10 passed, 2026-11-15). Gaps: real e2e run for mention delivery (inbox.real.e2e.spec.ts is being fixed elsewhere; a new collab-inbox-notifications spec is planned); the Inbox design line holds (design-fidelity-inbox mock spec, 2 passed).
 
 ### UC-COL-D05 Followers are told about changes
 - Capability: D, COL-004 Comment activity/events
@@ -787,7 +787,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product Audience fan-out, COL-017; decision 78.2; spec DCREQ184.
 - Acceptance: Given a follower and a later comment by another member, then the follower has one Inbox entry.
 - Evidence: BE ItemFollowerConsumers.cs (BoardItemStatusChangedFollowConsumer, CommentCreatedFollowConsumer, BoardItemMemberAssignedFollowConsumer), ItemFollowerNotifier.cs · FE frontend/packages/features/workspace/src/web/inbox/, frontend/apps/web/src/routes/workspaces/$workspaceId/inbox.tsx · Design Final-Inbox · Tests covered by e2e only · Real e2e frontend/e2e/real/follow-notifications.real.e2e.spec.ts
-- State: HARDENING — No unit tests of the notifier; follower view access is not re-checked at delivery.
+- State: HARDENING — Backend done: fan-out skips the actor, a muter and a person who lost the Board; redelivery adds nothing; ItemFollowerNotifierFanOutTests (4 passed) and ItemFollowerNotifierPreferenceTests (3 passed), 2026-11-15. Gaps: real e2e (follow-notifications spec is being fixed elsewhere); the Inbox design line holds (design-fidelity-inbox mock spec, 2 passed).
 
 ### UC-COL-D06 Approval requested and decided notify the right person
 - Capability: D, COL-004 Comment activity/events
@@ -1129,7 +1129,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-017, COL-023, Notification privacy (74); decision 34; spec DCREQ180, DCREQ183.
 - Acceptance: Given 25 notifications, then the first page has 20 and a cursor; given a revoked board, then its entries do not show.
 - Evidence: BE GET /api/v1/workspaces/{workspaceId}/inbox (Collaboration.Notifications.GetWorkspaceInbox), GetWorkspaceInboxQueryHandler (backend/src/Notrelix.Application/Features/WorkManagement/BoardItems/Queries/GetWorkspaceInbox/) · FE frontend/packages/features/workspace/src/web/inbox/, frontend/apps/web/src/routes/workspaces/$workspaceId/inbox.tsx · Design Final-Inbox, Final-M-Inbox · Tests backend/tests/Notrelix.Application.Tests/Features/WorkManagement/BoardItems/WorkspaceInboxTests.cs; backend/tests/Notrelix.Integration.Tests/Collaboration/InboxStatesIntegrationTests.cs; frontend/packages/features/workspace/src/web/inbox/__tests__/workspace-inbox.interaction.component.test.tsx · Real e2e frontend/e2e/real/inbox.real.e2e.spec.ts, inbox-states.real.e2e.spec.ts
-- State: HARDENING — The handler lives in the Work Management feature although Collaboration owns the Inbox; no design-fidelity spec for Inbox.
+- State: HARDENING — Design line holds: design-fidelity-inbox mock spec (2 passed). Remaining: the list handler still lives in the Work Management feature (a move, no behaviour change); real e2e not run.
 
 ### UC-COL-G04 Unread count per workspace (bell)
 - Capability: G, COL-007 Collaboration query/state
@@ -1157,7 +1157,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product Notification read/dismiss (59), COL-014; mutates Collaboration state only; spec DCREQ212.
 - Acceptance: Given an unread entry, when opened, then it shows read and the badge drops.
 - Evidence: BE POST /api/v1/workspaces/{workspaceId}/inbox/{notificationId}/read (Collaboration.Notifications.MarkInboxEntryRead), backend/src/Notrelix.Application/Features/Collaboration/Notifications/Commands/MarkInboxEntryRead/ · FE frontend/packages/features/workspace/src/web/inbox/, frontend/apps/web/src/routes/workspaces/$workspaceId/inbox.tsx · Design Final-Inbox · Tests backend/tests/Notrelix.Integration.Tests/Collaboration/InboxStatesIntegrationTests.cs · Real e2e frontend/e2e/real/inbox.real.e2e.spec.ts
-- State: HARDENING — No recorded owner check or design diff.
+- State: HARDENING — Design line holds 2026-11-15: frontend/e2e/mock/design-fidelity-inbox.mock.e2e.spec.ts (2 passed, 1440 light and dark, boxes within 1 px of Final-Inbox) and the Inbox copy follows Col-Inbox (Đã xử lý, Đưa về Hộp thư). Remaining: real e2e not run (the heavy-run lock was held by other lanes).
 
 ### UC-COL-G06 Mark every notification read
 - Capability: G, COL-007 Collaboration query/state
@@ -1185,7 +1185,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product Notification read/dismiss, Delivery channels separate from read state (57); decision 34.
 - Acceptance: Given a mention, when done, then it shows under Done; when reopened, it returns.
 - Evidence: BE POST .../inbox/{notificationId}/done and /reopen (Collaboration.Notifications.MarkInboxEntryDone, ReopenInboxEntry) · FE frontend/packages/features/workspace/src/web/inbox/, frontend/apps/web/src/routes/workspaces/$workspaceId/inbox.tsx · Design Final-Inbox · Tests backend/tests/Notrelix.Integration.Tests/Collaboration/InboxStatesIntegrationTests.cs · Real e2e frontend/e2e/real/inbox-states.real.e2e.spec.ts
-- State: HARDENING — No recorded owner check or design diff.
+- State: HARDENING — Design line holds 2026-11-15: frontend/e2e/mock/design-fidelity-inbox.mock.e2e.spec.ts (2 passed, 1440 light and dark, boxes within 1 px of Final-Inbox) and the Inbox copy follows Col-Inbox (Đã xử lý, Đưa về Hộp thư). Remaining: real e2e not run (the heavy-run lock was held by other lanes).
 
 ### UC-COL-G08 Snooze a notification
 - Capability: G, COL-007 Collaboration query/state
@@ -1199,7 +1199,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product Notification read/dismiss; Linear returns a snoozed entry unread.
 - Acceptance: Given a snooze to tomorrow, then it is hidden today and shows unread tomorrow.
 - Evidence: BE POST /api/v1/workspaces/{workspaceId}/inbox/{notificationId}/snooze (Collaboration.Notifications.SnoozeInboxEntry), SnoozeInboxEntryCommandHandler · FE frontend/packages/features/workspace/src/web/inbox/, frontend/apps/web/src/routes/workspaces/$workspaceId/inbox.tsx; apps/web/src/shell/workspace/inbox-view.ts (snoozeUntil) · Design Final-Inbox · Tests backend/tests/Notrelix.Integration.Tests/Collaboration/InboxStatesIntegrationTests.cs; frontend inbox-view.unit.test.ts · Real e2e frontend/e2e/real/inbox-states.real.e2e.spec.ts
-- State: HARDENING — No recorded owner check or design diff.
+- State: HARDENING — Design line holds 2026-11-15: frontend/e2e/mock/design-fidelity-inbox.mock.e2e.spec.ts (2 passed, 1440 light and dark, boxes within 1 px of Final-Inbox) and the Inbox copy follows Col-Inbox (Đã xử lý, Đưa về Hộp thư). A Snoozed filter now lists snoozed entries and stops a snooze (two component tests). Drawn but not built: the "Quay lại" time pill on a snoozed row. Remaining: real e2e not run (the heavy-run lock was held by other lanes).
 
 ### UC-COL-G09 Mute and unmute a thread
 - Capability: G, COL-007 Collaboration query/state
@@ -1213,7 +1213,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product Preferences (type by channel), Notification read/dismiss.
 - Acceptance: Given a muted item, then a later comment adds no entry.
 - Evidence: BE POST .../inbox/{notificationId}/mute and /unmute (Collaboration.Notifications.MuteInboxThread, UnmuteInboxThread) · FE frontend/packages/features/workspace/src/web/inbox/, frontend/apps/web/src/routes/workspaces/$workspaceId/inbox.tsx · Design Final-Inbox · Tests backend/tests/Notrelix.Integration.Tests/Collaboration/InboxStatesIntegrationTests.cs · Real e2e frontend/e2e/real/inbox-states.real.e2e.spec.ts
-- State: HARDENING — Follower and approval consumers' honouring of mute not proven by test.
+- State: HARDENING — Backend done: mute is honoured by the follower notifier (ItemFollowerNotifierFanOutTests) and the mention consumer (AMutedThread_CreatesNothing), 2026-11-15. Design line holds (design-fidelity-inbox mock spec, 2 passed). Gap: real e2e run of mute and unmute.
 
 ### UC-COL-G10 Reply to a mention from the Inbox
 - Capability: G, COL-007 Collaboration query/state
@@ -1227,7 +1227,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Decision 34; product COL-017.
 - Acceptance: Given a mention, when the person replies, then a comment exists on the item and the entry is read and no longer needs a reply.
 - Evidence: BE A01 and A02 routes; MarkMentionsRepliedAsync in ItemFollowerNotifier · FE frontend/packages/features/workspace/src/web/inbox/, frontend/apps/web/src/routes/workspaces/$workspaceId/inbox.tsx · Design Final-Inbox · Tests see A01 · Real e2e frontend/e2e/real/inbox-page-reply.real.e2e.spec.ts
-- State: HARDENING — No recorded owner check or design diff.
+- State: HARDENING — Design line holds 2026-11-15: frontend/e2e/mock/design-fidelity-inbox.mock.e2e.spec.ts (2 passed, 1440 light and dark, boxes within 1 px of Final-Inbox) and the Inbox copy follows Col-Inbox (Đã xử lý, Đưa về Hộp thư). Remaining: real e2e not run (the heavy-run lock was held by other lanes).
 
 ### UC-COL-G11 Read my notification preferences
 - Capability: G, COL-007 Collaboration query/state

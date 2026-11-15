@@ -20,20 +20,26 @@ internal static class ChatMessageRealtimePartitioning
 public sealed class ChatMessageCreatedRealtimeConsumer : IConsumer<ChatMessageCreatedIntegrationEvent>
 {
     private readonly IRealtimePublisher _publisher;
+
+    public ChatMessageCreatedRealtimeConsumer(IRealtimePublisher publisher) => _publisher = publisher;
+
+    public Task Consume(ConsumeContext<ChatMessageCreatedIntegrationEvent> context) =>
+        _publisher.PublishAsync(ChatRealtime.ForCreated(context.Message, DateTimeOffset.UtcNow), context.CancellationToken);
+}
+
+/// <summary>
+/// The per-user unread frames of a new message (UC-CHT-C09), on their own endpoint. They count each recipient's backlog, which can take
+/// seconds in a busy channel, and the channel frame of the message must not wait behind that count (nor the next message's frame behind this one).
+/// </summary>
+[OrderingNotApplicable("Each frame carries the absolute unread and mention count read at delivery, so a later delivery supersedes an earlier one; the definition partitions by space so one space's counts are computed one after the other.")]
+public sealed class ChatMessageCreatedUnreadConsumer : IConsumer<ChatMessageCreatedIntegrationEvent>
+{
     private readonly ChatUnreadFanOut _unread;
 
-    public ChatMessageCreatedRealtimeConsumer(IRealtimePublisher publisher, ChatUnreadFanOut unread)
-    {
-        _publisher = publisher;
-        _unread = unread;
-    }
+    public ChatMessageCreatedUnreadConsumer(ChatUnreadFanOut unread) => _unread = unread;
 
-    public async Task Consume(ConsumeContext<ChatMessageCreatedIntegrationEvent> context)
-    {
-        var now = DateTimeOffset.UtcNow;
-        await _publisher.PublishAsync(ChatRealtime.ForCreated(context.Message, now), context.CancellationToken);
-        await _unread.NotifyCreatedAsync(context.Message, now, context.CancellationToken);
-    }
+    public Task Consume(ConsumeContext<ChatMessageCreatedIntegrationEvent> context) =>
+        _unread.NotifyCreatedAsync(context.Message, DateTimeOffset.UtcNow, context.CancellationToken);
 }
 
 [OrderingNotApplicable("Messages of one space are delivered in outbox commit order: the definition partitions by space on a shared endpoint, and each frame carries the message sequence and version so a client orders by them.")]
@@ -63,6 +69,18 @@ public sealed class ChatMessageCreatedRealtimeConsumerDefinition : ConsumerDefin
     protected override void ConfigureConsumer(
         IReceiveEndpointConfigurator endpointConfigurator,
         IConsumerConfigurator<ChatMessageCreatedRealtimeConsumer> consumerConfigurator,
+        IRegistrationContext context) =>
+        consumerConfigurator.Message<ChatMessageCreatedIntegrationEvent>(m =>
+            m.UsePartitioner(ChatMessageRealtimePartitioning.PartitionCount, c => ChatMessageRealtimePartitioning.Key(c.Message.SpaceId)));
+}
+
+public sealed class ChatMessageCreatedUnreadConsumerDefinition : ConsumerDefinition<ChatMessageCreatedUnreadConsumer>
+{
+    public ChatMessageCreatedUnreadConsumerDefinition() => EndpointName = "notrelix-chat-message-unread-fan-out-v1";
+
+    protected override void ConfigureConsumer(
+        IReceiveEndpointConfigurator endpointConfigurator,
+        IConsumerConfigurator<ChatMessageCreatedUnreadConsumer> consumerConfigurator,
         IRegistrationContext context) =>
         consumerConfigurator.Message<ChatMessageCreatedIntegrationEvent>(m =>
             m.UsePartitioner(ChatMessageRealtimePartitioning.PartitionCount, c => ChatMessageRealtimePartitioning.Key(c.Message.SpaceId)));

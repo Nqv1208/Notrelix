@@ -51,7 +51,7 @@ internal static class RateLimitEnforcer
 
         var retryAfter = Math.Max(1, (int)Math.Ceiling(decision.RetryAfter?.TotalSeconds ?? policy.WindowSeconds));
         await ProblemDetailsWriter.WriteTooManyRequestsAsync(
-            context, retryAfter, decision.Limit, decision.Remaining, decision.ResetAt, context.RequestAborted);
+            context, retryAfter, decision.Limit, decision.Remaining, decision.ResetAt, context.RequestAborted, policy.Message);
         return false;
     }
 }

@@ -22,26 +22,25 @@ test("a mention can be marked done, found under Done, moved back, snoozed and mu
   // A manager mentions the admin in a comment on an item.
   const phrase = `States check ${Date.now().toString(36)}`;
   await signIn(page, realUsers.workspaceAdmin);
-  const { workspace, board } = await openBoard(
-    page,
-    "Workspace 3",
-    "Engineering Tasks",
-  );
+  await openBoard(page, "Workspace 3", "Engineering Tasks");
   await page
     .getByRole("button", { name: /Task \d+/ })
     .first()
     .click();
+  // The item has no page of its own: the card popup that opened is where the comment is written.
   await expect(page).toHaveURL(/[?&]item=/);
-  const itemId = new URL(page.url()).searchParams.get("item")!;
-  await page.goto(
-    `/workspaces/${workspace.id}/boards/${board.id}/items/${itemId}`,
-  );
-  const composer = page.getByRole("textbox", { name: "Write a comment" });
+  const card = page.getByRole("dialog");
+  // The composer opens from its one-line prompt.
+  await card.getByRole("button", { name: "Write a comment…" }).click();
+  const composer = card.getByRole("textbox", { name: "Write a comment" });
   await composer.fill(`${phrase} `);
-  await page.getByRole("button", { name: "Mention someone" }).click();
-  await page.getByRole("option", { name: "admin", exact: true }).click();
+  await card.getByRole("button", { name: "Mention someone" }).click();
+  await expect(
+    page.getByRole("option", { name: "admin", exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Enter");
   const commented = postedTo(page, /\/board-items\/[^/]+\/comments$/);
-  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await card.getByRole("button", { name: "Comment", exact: true }).click();
   expect((await commented).status()).toBeLessThan(300);
 
   const context = await browser.newContext();

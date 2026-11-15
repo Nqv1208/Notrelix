@@ -9,13 +9,13 @@ namespace Notrelix.Application.Features.Chat.ReadState.Services;
 /// <summary>
 /// Builds the unread summary of a person in a Workspace (UC-CHT-D01, D04). Three statements: the person's live memberships with
 /// the space names, one grouped count of the messages after each boundary and one grouped count of the mentions of the person
-/// among them (see <see cref="MentionCounts"/>). The counts are computed in the database; no message is loaded. A message counts when it is a user message, is not deleted, is not the person's own, and its
+/// among them (see <see cref="MentionCounts"/>), for one space only when <c>onlySpaceId</c> is given (a caller that announces one space). The counts are computed in the database; no message is loaded. A message counts when it is a user message, is not deleted, is not the person's own, and its
 /// sequence is after the person's read boundary in its space.
 /// </summary>
 public static class UnreadSummaryBuilder
 {
     public static async Task<UnreadSummaryDto> BuildAsync(
-        IChatDbContext db, Guid workspaceId, Guid userId, DateTimeOffset now, CancellationToken cancellationToken)
+        IChatDbContext db, Guid workspaceId, Guid userId, DateTimeOffset now, CancellationToken cancellationToken, Guid? onlySpaceId = null)
     {
         var spaces = await (
             from m in db.ChatMemberships.AsNoTracking()
@@ -25,6 +25,7 @@ public static class UnreadSummaryBuilder
                   && s.WorkspaceId == workspaceId
                   && m.LeftAt == null
                   && s.DeletedAt == null
+                  && (onlySpaceId == null || m.SpaceId == onlySpaceId)
             select new
             {
                 m.SpaceId,
@@ -41,6 +42,7 @@ public static class UnreadSummaryBuilder
             where m.UserId == userId
                   && m.WorkspaceId == workspaceId
                   && m.LeftAt == null
+                  && (onlySpaceId == null || m.SpaceId == onlySpaceId)
                   && msg.Sequence > m.ReadSequence
                   && msg.AuthorId != userId
                   && msg.Kind == MessageKind.User
@@ -49,7 +51,7 @@ public static class UnreadSummaryBuilder
             select new { SpaceId = g.Key, Count = g.Count(), First = g.Min(x => x.Sequence) }).ToListAsync(cancellationToken);
 
         var counts = unread.ToDictionary(u => u.SpaceId);
-        var mentions = await MentionCounts.ForUserAsync(db, workspaceId, userId, cancellationToken);
+        var mentions = await MentionCounts.ForUserAsync(db, workspaceId, userId, cancellationToken, onlySpaceId);
         var rows = spaces
             .OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
             .ThenBy(s => s.SpaceId)
