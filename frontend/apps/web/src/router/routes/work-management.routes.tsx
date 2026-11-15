@@ -5,7 +5,6 @@ import { BoardRouteError } from "../../routes/workspaces/$workspaceId/boards/boa
 import { BoardPage } from "../../routes/workspaces/$workspaceId/boards/$boardId";
 import { BoardSettingsRoutePage } from "../../routes/workspaces/$workspaceId/boards/$boardId.settings";
 import { BoardFormFillPage } from "../../routes/workspaces/$workspaceId/boards/$boardId.forms.$formId";
-import { BoardFormBuilderRoutePage } from "../../routes/workspaces/$workspaceId/boards/$boardId.forms.$formId.edit";
 import { BoardFormInboxRoutePage } from "../../routes/workspaces/$workspaceId/boards/$boardId.forms.$formId.responses";
 import { boardSettingsSearchSchema } from "../schemas/board-settings-search-schema";
 
@@ -50,10 +49,18 @@ export const boardFormRoute = createRoute({
   component: BoardFormFillPage,
 });
 
+/** The builder lives in the board settings; the old address still opens it, so shared links keep working. */
 export const boardFormBuilderRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/boards/$boardId/forms/$formId/edit",
-  component: BoardFormBuilderRoutePage,
+  beforeLoad: ({ params }) => {
+    throw redirect({
+      to: "/workspaces/$workspaceId/boards/$boardId/settings",
+      params: { workspaceId: params.workspaceId, boardId: params.boardId },
+      search: { section: "forms", form: params.formId },
+      replace: true,
+    });
+  },
 });
 
 export const boardFormInboxRoute = createRoute({

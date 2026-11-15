@@ -80,6 +80,17 @@ public class ChatRealtimeFactsTests
     }
 
     [Fact]
+    public void A_created_frame_carries_the_senders_client_message_id_and_an_edit_or_delete_does_not()
+    {
+        Payload(ChatRealtime.ForCreated(Created("hello"), Now)).GetProperty("clientMessageId").GetString().Should().Be("c-1");
+
+        var edited = new ChatMessageUpdatedIntegrationEvent(
+            Guid.NewGuid(), AccountId, WorkspaceId, MessageId, SpaceId, 7, AuthorId, "fixed", 2, Guid.NewGuid(),
+            ActorUserId: AuthorId, OccurredAt: Now);
+        Payload(ChatRealtime.ForUpdated(edited, Now)).TryGetProperty("clientMessageId", out _).Should().BeFalse();
+    }
+
+    [Fact]
     public void A_channel_message_has_no_thread_fields_in_its_payload()
     {
         var payload = Payload(ChatRealtime.ForCreated(Created("plain"), Now));
@@ -148,6 +159,17 @@ public class ChatRealtimeFactsTests
 
         payload.GetProperty("content").GetString().Should().Be(content);
         payload.GetProperty("contentOmitted").GetBoolean().Should().BeFalse();
+    }
+
+    [Fact]
+    public void The_preview_text_collapses_whitespace_and_stops_at_140_characters_without_splitting_a_pair()
+    {
+        ChatRealtime.PreviewText("  hello \n  world  ").Should().Be("hello world");
+        ChatRealtime.PreviewText("   ").Should().BeNull();
+        ChatRealtime.PreviewText(null).Should().BeNull();
+        ChatRealtime.PreviewText(new string('a', 500)).Should().HaveLength(ChatRealtime.PreviewMaxLength);
+        // 139 letters then an emoji (a surrogate pair): the cut at 140 would split it, so it is dropped whole.
+        ChatRealtime.PreviewText(new string('a', 139) + "\U0001F600 tail").Should().Be(new string('a', 139));
     }
 
     [Fact]

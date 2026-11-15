@@ -7,6 +7,7 @@
  *
  * Pure data: `MockStore.seedDepartmentBoards` inserts it.
  */
+import { ERP_PEOPLE } from "./mock-erp-board";
 import { mockIds } from "./mock-ids";
 
 export interface DepartmentItem {
@@ -278,6 +279,91 @@ export const BULK_STATE_BOARDS: readonly DepartmentBoard[] = [
       priority: "medium" as const,
       due: null,
     })),
+  },
+];
+
+const DUE_DAY_FORMAT = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "numeric",
+  timeZone: "UTC",
+});
+
+/** A day "dd/MM" counted from 10/10/2026, one per row, so the due order is the row order. */
+function dueDay(index: number): string {
+  const parts = DUE_DAY_FORMAT.formatToParts(Date.UTC(2026, 9, 10 + index));
+  const part = (type: string) =>
+    Number(parts.find((p) => p.type === type)?.value);
+  return `${part("day")}/${part("month")}`;
+}
+
+export const LARGE_BOARD_ID = "mock-board-it-large";
+
+const LARGE_ASSIGNEES = [
+  ERP_PEOPLE.MQ.id,
+  ERP_PEOPLE.HP.id,
+  ERP_PEOPLE.TT.id,
+] as const;
+
+/**
+ * The overlay `large-board` adds one board of 5,000 items that the server reads a page at a time (BC-Large): 200 in
+ * Đang làm, 8 in Cần làm, 3 in Chờ duyệt and 4,789 done, each lane in due order; one person
+ * holds every 16th of them (12 of 200), all 11 of the other open items and the first 14 done ones: 37 on the board.
+ */
+export const LARGE_STATE_BOARDS: readonly DepartmentBoard[] = [
+  {
+    id: LARGE_BOARD_ID,
+    title: "Triển khai ERP Q4 (board lớn)",
+    description: "Board 5.000 việc, đọc từng trang.",
+    prefix: "ERP",
+    color: "#1E6FD0",
+    spaceId: mockIds.spaces.engineering,
+    statusColumnId: "mock-itl-col-status",
+    statusPrefix: "mock-itl-status",
+    priorityColumnId: "mock-itl-col-priority",
+    ownerColumnId: "mock-itl-col-owner",
+    listId: "mock-itl-list-all",
+    listTitle: "Tất cả",
+    items: [
+      ...Array.from({ length: 8 }, (_, index) => ({
+        key: `ERP-${500 + index + 1}`,
+        title: `Việc cần làm số ${500 + index + 1}`,
+        status: "todo" as const,
+        priority: "medium" as const,
+        due: dueDay(index),
+        assigneeId: ERP_PEOPLE.NA.id,
+      })),
+      ...Array.from({ length: 200 }, (_, index) => ({
+        key: `ERP-${101 + index}`,
+        title: `Việc trong nhóm lớn số ${101 + index}`,
+        status: "doing" as const,
+        priority: "medium" as const,
+        due: dueDay(index),
+        assigneeId:
+          (index + 1) % 16 === 0
+            ? ERP_PEOPLE.NA.id
+            : LARGE_ASSIGNEES[index % LARGE_ASSIGNEES.length],
+      })),
+      ...Array.from({ length: 3 }, (_, index) => ({
+        key: `ERP-${600 + index + 1}`,
+        title: `Việc chờ duyệt số ${600 + index + 1}`,
+        status: "review" as const,
+        priority: "medium" as const,
+        due: dueDay(index),
+        assigneeId: ERP_PEOPLE.NA.id,
+      })),
+      ...Array.from({ length: 4789 }, (_, index) => ({
+        key: `ERP-${1001 + index}`,
+        title: `Việc đã xong số ${1001 + index}`,
+        status: "done" as const,
+        priority: "low" as const,
+        due: null,
+        completed: "1/10",
+        assigneeId:
+          index < 14
+            ? ERP_PEOPLE.NA.id
+            : LARGE_ASSIGNEES[index % LARGE_ASSIGNEES.length],
+      })),
+    ],
   },
 ];
 

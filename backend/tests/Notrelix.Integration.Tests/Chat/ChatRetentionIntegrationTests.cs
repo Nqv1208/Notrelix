@@ -72,7 +72,7 @@ public sealed class ChatRetentionIntegrationTests : IAsyncLifetime
     {
         await using var ctx = _db.CreateOwnerContext(SystemTenant());
         var clock = FakeDateTimeProvider.WithFixedTime(Now);
-        var applier = new ChatRetentionApplier(ctx, new InMemoryChatMessageAttachments(), new ChatSystemAudit(ctx, clock), clock);
+        var applier = new ChatRetentionApplier(ctx, new InMemoryChatMessageAttachments(), new ChatSystemAudit(ctx, clock), new Notrelix.Infrastructure.Data.Chat.ChatReadStateStore(ctx), clock);
         var result = await applier.ApplyBatchAsync(new RetentionTarget(_accountId, _workspaceId, 90, mode, _owner), _spaceId, CancellationToken.None);
         await ctx.SaveChangesAsync();
         return result;

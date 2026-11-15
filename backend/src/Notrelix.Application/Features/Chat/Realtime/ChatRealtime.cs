@@ -51,7 +51,9 @@ public static class ChatRealtime
     /// <summary>
     /// The message payload of the channel stream (contract <see cref="MessagePayloadContract"/>). ThreadRootId is set for a
     /// thread reply (UC-CHT-F01): the frame still goes to the channel stream, and ThreadSequence lets a client that holds the
-    /// root count its replies without a round trip (the count is the highest sequence it has seen).
+    /// root count its replies without a round trip (the count is the highest sequence it has seen). A created frame also
+    /// carries the sender's ClientMessageId, so the sender's own client swaps its pending bubble for the stored message
+    /// in place; the frame goes to the channel's members only, as the rest of the payload does.
     /// </summary>
     public sealed record MessageFrame(
         Guid Id,
@@ -66,17 +68,46 @@ public static class ChatRealtime
         Guid? ReplyToId,
         long Version,
         Guid? ThreadRootId = null,
-        long? ThreadSequence = null);
+        long? ThreadSequence = null,
+        [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+        string? ClientMessageId = null);
 
-    /// <summary>The per-user unread payload (contract <see cref="UnreadPayloadContract"/>).</summary>
-    public sealed record UnreadFrame(Guid SpaceId, int Unread, int Mentions);
+    /// <summary>The longest preview text of an unread frame, in characters.</summary>
+    public const int PreviewMaxLength = 140;
+
+    /// <summary>
+    /// The per-user unread payload (contract <see cref="UnreadPayloadContract"/>): the read state of one space after a change.
+    /// Unread is the sequence difference (0 when the space is read), Mentions the stored mention count, LastSequence the newest
+    /// sequence the frame knows. Preview is the new message, when the frame is for one, so a client can show a background
+    /// conversation without reading it.
+    /// </summary>
+    public sealed record UnreadFrame(Guid SpaceId, int Unread, int Mentions, long? LastSequence = null, UnreadPreview? Preview = null);
+
+    /// <summary>The newest message of a space as a short preview (text is at most <see cref="PreviewMaxLength"/> characters).</summary>
+    public sealed record UnreadPreview(long Sequence, Guid AuthorId, string Kind, string? Text, DateTimeOffset CreatedAt);
+
+    /// <summary>The text of a preview: whitespace collapsed, cut at <see cref="PreviewMaxLength"/> characters without splitting a surrogate pair.</summary>
+    public static string? PreviewText(string? content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return null;
+
+        var text = string.Join(' ', content.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        if (text.Length <= PreviewMaxLength)
+            return text;
+
+        var cut = PreviewMaxLength;
+        if (char.IsHighSurrogate(text[cut - 1]))
+            cut--;
+        return text[..cut];
+    }
 
     public static RealtimeResourceChangedV1 ForCreated(ChatMessageCreatedIntegrationEvent e, DateTimeOffset now)
     {
         var frame = new MessageFrame(
             e.MessageId, e.Sequence, e.AuthorId, e.Kind, e.Content, ContentOmitted: false, Deleted: false,
             CreatedAt: e.OccurredAt, EditedAt: null, ReplyToId: e.ReplyToId, Version: e.Version,
-            ThreadRootId: e.ThreadRootId, ThreadSequence: e.ThreadSequence);
+            ThreadRootId: e.ThreadRootId, ThreadSequence: e.ThreadSequence, ClientMessageId: e.ClientMessageId);
         return Channel(e.EventId, e.AccountId, e.WorkspaceId, e.SpaceId, e.ActorUserId, e.CorrelationId, e.CausationId,
             e.OccurredAt, MessageCreatedEvent, Fit(frame), now);
     }
@@ -167,7 +198,7 @@ public static class ChatRealtime
     /// <summary>One space's unread counts for one person, for the per-user stream (the badge refresh).</summary>
     public static RealtimeResourceChangedV1 Unread(
         Guid? accountId, Guid workspaceId, Guid userId, Guid spaceId, int unread, int mentions,
-        Guid? correlationId, Guid? causationId, DateTimeOffset now)
+        Guid? correlationId, Guid? causationId, DateTimeOffset now, long? lastSequence = null, UnreadPreview? preview = null)
     {
         var scope = new RealtimeScope(RealtimeScopeKind.User, userId);
         return new RealtimeResourceChangedV1(
@@ -185,7 +216,7 @@ public static class ChatRealtime
             RealtimeStreamClock.Next(now),
             UnreadChangedEvent,
             UnreadPayloadContract,
-            Serialize(new UnreadFrame(spaceId, unread, mentions)));
+            Serialize(new UnreadFrame(spaceId, unread, mentions, lastSequence, preview)));
     }
 
     /// <summary>

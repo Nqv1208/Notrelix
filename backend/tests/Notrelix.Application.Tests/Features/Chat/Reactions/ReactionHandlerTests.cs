@@ -123,7 +123,7 @@ public class ReactionHandlerTests
     private AddReactionCommandHandler AddHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _limits);
     private RemoveReactionCommandHandler RemoveHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object);
     private ListReactorsQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object);
-    private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments());
+    private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments(), Moq.Mock.Of<Notrelix.Application.Features.Chat.Abstractions.IChatReadStateStore>());
 
     private static ReactionSummaryDto Summary(MessageReactionsDto dto, string kind) =>
         dto.Reactions.Single(r => r.Emoji == kind);

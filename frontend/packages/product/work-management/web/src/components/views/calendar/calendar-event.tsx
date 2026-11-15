@@ -98,6 +98,8 @@ export interface CalendarEventProps {
   row: number;
   /** Week view: the title wraps and the chip grows with it. */
   wrap?: boolean;
+  /** Final-T-Calendar month: a 40 px chip with an 8 px radius. */
+  tall?: boolean;
   /** Being dragged: the chip stays in place, dimmed. */
   lifting?: boolean;
   canDrag: boolean;
@@ -133,6 +135,7 @@ export function CalendarEvent({
   span,
   row,
   wrap = false,
+  tall = false,
   lifting = false,
   canDrag,
   onOpen,
@@ -147,8 +150,14 @@ export function CalendarEvent({
   const text = entryText(entry);
   const style = { gridColumn: `${col} / span ${span}`, gridRow: row + 2 };
   const base = cn(
-    "mx-1 flex min-w-0 items-center gap-1.5 overflow-hidden rounded-[6px] border border-transparent px-1.5 text-xs leading-[1.45] font-medium whitespace-nowrap text-foreground",
-    wrap ? "h-auto min-h-6.5 items-start py-1 whitespace-normal" : "h-6",
+    tall ? "mx-[3px]" : "mx-1",
+    "flex min-w-0 items-center gap-1.5 overflow-hidden border border-transparent px-1.5 leading-[1.45] font-medium whitespace-nowrap text-foreground",
+    tall ? "rounded-[8px] text-[12.5px]" : "rounded-[6px] text-xs",
+    wrap
+      ? "h-auto min-h-6.5 items-start py-1 whitespace-normal"
+      : tall
+        ? "h-10"
+        : "h-6",
     TONE_CLASS[entry.tone],
     (entry.kind !== "item" || entry.tone === "overdue") && "font-semibold",
     lifting && "opacity-40",

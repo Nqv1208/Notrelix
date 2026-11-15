@@ -143,8 +143,14 @@ function versionRefusal(form: MockForm, expected: number | string | undefined) {
     return validationError({
       expectedVersion: ["ExpectedVersion must be a positive value."],
     });
-  if (version !== form.version)
-    return conflict("The form changed since it was read.");
+  if (version !== form.version) {
+    // The producer names who saved first (changedByName), as a stale view or saved-filter write does.
+    const refused = conflict("The form changed since it was read.");
+    return {
+      ...refused,
+      body: { ...refused.body, changedByName: "Hà Nguyễn" },
+    };
+  }
   return null;
 }
 

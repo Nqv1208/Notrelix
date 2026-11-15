@@ -59,6 +59,23 @@ public class ChatMessageConfiguration : IEntityTypeConfiguration<Message>
             .IsUnique()
             .HasDatabaseName("ux_messages_thread_sequence");
 
+        // The unread and mention counts read every live user message after a read boundary. The index holds the columns they
+        // filter on, so the count is an index-only scan (no heap fetch per message): the shape of ChatUnreadFanOut,
+        // UnreadSummaryBuilder and MentionCounts.
+        builder.HasIndex(x => new { x.SpaceId, x.Sequence, x.AuthorId })
+            .IsDescending(false, true, false)
+            .IncludeProperties(x => new { x.AccountId, x.WorkspaceId })
+            .HasFilter("kind = 'User' AND deleted_at IS NULL")
+            .HasDatabaseName("ix_messages_unread_count");
+
+        // Message search matches the folded phrase as a regular expression (SearchTextFolding.ToPattern); a trigram index lets
+        // Postgres find the few candidate rows instead of reading and testing every message of the Workspace.
+        builder.HasIndex(x => x.Content)
+            .HasMethod("gin")
+            .HasOperators("gin_trgm_ops")
+            .HasFilter("kind = 'User' AND deleted_at IS NULL")
+            .HasDatabaseName("ix_messages_content_trgm");
+
         builder.HasOne<Notrelix.Domain.Chat.Spaces.Space>()
             .WithMany()
             .HasForeignKey(x => x.SpaceId)

@@ -46,6 +46,7 @@ test("Calendar and Timeline draw the board's dated items without asking for plan
     {
       startDate: start.toISOString(),
       dueDate: due.toISOString(),
+      expectedVersion: 1,
     },
   );
   expect(dated.status).toBeLessThan(300);

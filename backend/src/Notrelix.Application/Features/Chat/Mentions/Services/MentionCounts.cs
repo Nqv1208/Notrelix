@@ -15,9 +15,12 @@ namespace Notrelix.Application.Features.Chat.Mentions.Services;
 /// </summary>
 public static class MentionCounts
 {
-    /// <summary>The count per space for one person, over every live membership they hold in the Workspace.</summary>
+    /// <summary>
+    /// The count per space for one person, over every live membership they hold in the Workspace, or in <paramref name="onlySpaceId"/> alone.
+    /// A mention carries the space of its message; naming it in the join lets the planner start from the person's spaces instead of every mention.
+    /// </summary>
     public static async Task<IReadOnlyDictionary<Guid, int>> ForUserAsync(
-        IChatDbContext db, Guid workspaceId, Guid userId, CancellationToken cancellationToken)
+        IChatDbContext db, Guid workspaceId, Guid userId, CancellationToken cancellationToken, Guid? onlySpaceId = null)
     {
         var rows = await (
             from m in db.ChatMemberships.AsNoTracking()
@@ -25,12 +28,13 @@ public static class MentionCounts
             where m.UserId == userId
                   && m.WorkspaceId == workspaceId
                   && m.LeftAt == null
+                  && (onlySpaceId == null || m.SpaceId == onlySpaceId)
                   && msg.Sequence > m.ReadSequence
                   && msg.CreatedAt >= m.JoinedAt
                   && msg.AuthorId != userId
                   && msg.Kind == MessageKind.User
                   && msg.DeletedAt == null
-                  && db.ChatMessageMentions.Any(x => x.MessageId == msg.Id
+                  && db.ChatMessageMentions.Any(x => x.MessageId == msg.Id && x.SpaceId == msg.SpaceId
                       && ((x.Kind == MentionKind.User && x.TargetId == userId)
                           || x.Kind == MentionKind.BroadcastChannel
                           || x.Kind == MentionKind.BroadcastHere))
@@ -57,7 +61,7 @@ public static class MentionCounts
                   && msg.AuthorId != m.UserId
                   && msg.Kind == MessageKind.User
                   && msg.DeletedAt == null
-                  && db.ChatMessageMentions.Any(x => x.MessageId == msg.Id
+                  && db.ChatMessageMentions.Any(x => x.MessageId == msg.Id && x.SpaceId == msg.SpaceId
                       && ((x.Kind == MentionKind.User && x.TargetId == m.UserId)
                           || x.Kind == MentionKind.BroadcastChannel
                           || x.Kind == MentionKind.BroadcastHere))

@@ -316,7 +316,7 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
   else if (section === "labels" && props.labels)
     content = <LabelsSection panel={props.labels} />;
   else if (section === "forms" && props.forms)
-    content = <FormsListPanel {...props.forms} />;
+    content = props.formBuilder ?? <FormsListPanel {...props.forms} />;
   else if (section === "templates" && props.templates)
     content = <TemplatesSection panel={props.templates} />;
   else if (section === "automations" && props.workspaceRules)

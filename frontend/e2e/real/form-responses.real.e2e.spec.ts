@@ -123,12 +123,12 @@ test("a manager turns one response into an item, rejects one with a reason and m
   await expect(page.getByRole("option", { name: /Spam me/ })).toBeVisible();
 
   // Rejection: a handled response cannot be handled again, and its first result stays.
-  const again = await apiWrite(
+  const repeated = await apiWrite(
     page,
     "POST",
     `/form-submissions/${byTitle("Reject me").id}/spam`,
   );
-  expect([400, 409, 422]).toContain(again.status);
+  expect([400, 409, 422]).toContain(repeated.status);
   const reprocess = await apiWrite(
     page,
     "POST",

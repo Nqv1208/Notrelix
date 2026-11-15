@@ -38,7 +38,8 @@ public class EditMessageCommandHandler(
     IWorkspaceMemberFacts members,
     IDateTimeProvider clock,
     IBroadcastAuthorizer broadcast,
-    IChatMessageAttachments attachments) : IRequestHandler<EditMessageCommand, Result<MessageDto>>
+    IChatMessageAttachments attachments,
+    IChatReadStateStore readStates) : IRequestHandler<EditMessageCommand, Result<MessageDto>>
 {
     public async Task<Result<MessageDto>> Handle(EditMessageCommand request, CancellationToken cancellationToken)
     {
@@ -62,6 +63,11 @@ public class EditMessageCommandHandler(
             db, members, broadcast, space, caller, request.Content, request.Mentions, request.ConfirmBroadcast, cancellationToken);
         if (message.Edit(request.Content, userId, clock.UtcNow))
         {
+            // The old mentions come off the counts and the new ones go on: a person kept in the text nets to zero.
+            await readStates.RemoveMentionsAsync(message.WorkspaceId, [message.Id], cancellationToken);
+            await readStates.AddMentionsAsync(
+                message.WorkspaceId, message.SpaceId, message.Sequence, message.CreatedAt, message.AuthorId,
+                MentionAudience.From(resolution.Spans), cancellationToken);
             await MessageMentions.ReplaceAsync(db, message, resolution.Spans, hadBefore: true, cancellationToken);
             return Result<MessageDto>.Success(await ReplyPreviews.DtoAsync(db, attachments, request.WorkspaceId, userId, ChannelAccess.IsGuest(caller), message, cancellationToken, resolution));
         }
