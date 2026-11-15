@@ -118,3 +118,20 @@ test("a message while the reader is scrolled up does not move the list; the jump
   await jump.click();
   await expect(log.getByText(text)).toBeInViewport();
 });
+
+test("a message over the 1300-byte frame cap arrives with its full text, never as an empty bubble", async ({
+  page,
+}) => {
+  await openChannel(page, GENERAL);
+  const stamp = Date.now();
+  const head = `Long ${stamp} start`;
+  const tail = `end ${stamp} marker`;
+  // 1600 bytes of text: the mock leaves it out of the frame (same cap as the backend) and the client fetches it by sequence.
+  const text = `${head} ${"filler words ".repeat(120)}${tail}`;
+  expect(new TextEncoder().encode(text).length).toBeGreaterThan(1300);
+  await inject(page, GENERAL, text);
+
+  const log = page.getByRole("log");
+  await expect(log.getByText(tail)).toBeVisible();
+  await expect(log.getByText(head)).toBeVisible();
+});

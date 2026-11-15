@@ -188,6 +188,75 @@ describe("ChatRealtimeAdapter: channel frames", () => {
     expect(ids()).toEqual([1, 2, 3, 4]);
   });
 
+  it("a contentOmitted created frame holds the row back (no blank bubble), fetches it by sequence and renders the full text", async () => {
+    const { adapter, context, listMessages, read, ids } = setup([
+      message(1),
+      message(2),
+    ]);
+    const full = "long text ".repeat(200);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    listMessages.mockImplementationOnce(async () => {
+      await gate;
+      return page([{ ...message(3), content: full }]);
+    });
+    const handled = adapter.validateAndHandle(
+      envelope(
+        "chat.message.created",
+        createMessagePayload(3, { content: null, contentOmitted: true }),
+      ),
+      context,
+    );
+    await Promise.resolve();
+    // While the fetch is in flight no row exists, so no frame can show an empty bubble.
+    expect(ids()).toEqual([1, 2]);
+    expect(
+      read()
+        .pages.flatMap((p) => p.items)
+        .filter((m) => !m.content),
+    ).toEqual([]);
+    release();
+    await handled;
+    expect(listMessages.mock.calls[0]![2]).toEqual({ after: 2 });
+    expect(ids()).toEqual([1, 2, 3]);
+    expect(read().pages[0]!.items[2]!.content).toBe(full);
+  });
+
+  it("a contentOmitted edit keeps the old text until the fetch brings the new full text", async () => {
+    const { adapter, context, listMessages, read } = setup([
+      message(1),
+      message(2),
+    ]);
+    const full = "edited long text ".repeat(100);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    listMessages.mockImplementationOnce(async () => {
+      await gate;
+      return page([{ ...message(2), content: full, version: 2, edited: true }]);
+    });
+    const handled = adapter.validateAndHandle(
+      envelope(
+        "chat.message.updated",
+        createMessagePayload(2, {
+          content: null,
+          contentOmitted: true,
+          version: 2,
+          editedAt: AT,
+        }),
+      ),
+      context,
+    );
+    await Promise.resolve();
+    expect(read().pages[0]!.items[1]!.content).toBe("text 2");
+    release();
+    await handled;
+    expect(read().pages[0]!.items[1]!.content).toBe(full);
+  });
+
   it("a contentOmitted edit fetches the message's range and does not patch with null text", async () => {
     const { adapter, context, listMessages, read } = setup([
       message(1),

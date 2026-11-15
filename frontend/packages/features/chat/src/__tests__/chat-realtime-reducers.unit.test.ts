@@ -185,6 +185,19 @@ describe("applyMessageCreated", () => {
   });
 });
 
+describe("applyMessageCreated, text left out of the frame", () => {
+  it("never inserts a blank row: it asks for the range before the message", () => {
+    const cache = cacheOf([[message(1), message(2)]]);
+    const out = applyMessageCreated(
+      cache,
+      frame({ id: "m-3", sequence: 3, content: null, contentOmitted: true }),
+      SPACE,
+      AT,
+    );
+    expect(out).toEqual({ kind: "omitted", cache, after: 2 });
+  });
+});
+
 describe("applyMessageUpdated", () => {
   it("replaces the content of the loaded message with a newer version", () => {
     const cache = cacheOf([[message(1), message(2)]]);
