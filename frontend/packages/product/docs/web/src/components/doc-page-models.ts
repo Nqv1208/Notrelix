@@ -178,7 +178,7 @@ export interface DocSpaceView {
 
 export interface DocChip {
   readonly id: string;
-  readonly kind: "scope" | "date" | "board";
+  readonly kind: "scope" | "date" | "board" | "version";
   readonly label: string;
   readonly href?: string;
 }
@@ -235,16 +235,18 @@ export interface DocCommentView {
 
 export interface DocVersionView {
   readonly id: string;
-  /** Why the entry exists; names it when it has no name of its own. */
+  /** The number the history gives the entry ("phiên bản 12"). */
+  readonly number: number;
   readonly kind: "automatic" | "named" | "restore";
   readonly author: DocPerson;
   readonly time: string;
-  /** Day group heading ("Hôm qua", "10/10"). */
+  /** Day group heading ("Hôm qua", "03/11/2026"). */
   readonly day: string;
-  /** Full stamp for the compare bar ("10/10 15:42"). */
+  /** The moment as the viewing bar says it ("11:05 ngày 03/11"). */
   readonly stamp: string;
+  /** What the entry is, beside its time ("Tự động", "Trước khi khôi phục phiên bản 9"). */
+  readonly tag: string;
   readonly name?: string;
-  readonly summary: string;
   readonly current?: boolean;
 }
 
@@ -362,6 +364,10 @@ export interface DocHistoryActionView {
   readonly restoring: boolean;
   /** `conflict` = the page changed since it was read (nothing was restored). */
   readonly restoreFailed: "conflict" | "failed" | null;
+  /** How many blocks changed since the page was read, when a restore found a conflict. */
+  readonly conflictCount?: number;
+  /** The clock time the conflict was found, as the dialog says it. */
+  readonly conflictTime?: string;
 }
 
 /** The "Save as template" dialog's write state. */
@@ -503,6 +509,8 @@ export interface DocPageCallbacks {
   readonly onPrint?: () => void;
   readonly onOpenVersions?: () => void;
   readonly onCloseVersions?: () => void;
+  /** Leaves the version being viewed and shows the current page again. */
+  readonly onCloseVersionView?: () => void;
   readonly onSelectVersion?: (id: string) => void;
   /** "Save version": opens the name dialog. */
   readonly onSaveVersionOpen?: () => void;

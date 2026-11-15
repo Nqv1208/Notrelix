@@ -1,4 +1,6 @@
 import { useId, useRef, useState, type FormEvent } from "react";
+import { cn } from "@notrelix/ui-web";
+import { CircleAlert, Lock } from "lucide-react";
 import { DialogFrame, FIELD, OUTLINE, PRIMARY } from "./doc-dialogs-surface";
 import { IMPORT_MAX_BYTES } from "../import/read-import-file";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
@@ -7,6 +9,7 @@ import type {
   DocImportView,
   DocPageCallbacks,
   DocTemplateActionView,
+  DocVersionView,
 } from "./doc-page-models";
 
 /** The accepted size of an imported file, in MB. */
@@ -20,7 +23,23 @@ export interface DocSaveVersionDialogSurfaceProps {
   readonly callbacks?: DocPageCallbacks;
 }
 
-/** Names the page as it is now ("Save version"). */
+/** The footer of the version dialogs: a rule above, actions at the right (Doc-Ver `.df`). */
+const VERSION_BUTTON =
+  "relative max-sm:h-8 max-sm:after:absolute max-sm:after:-inset-1.5 max-sm:after:content-['']";
+
+const VERSION_FOOTER =
+  "mt-3.5 flex items-center justify-end gap-2 border-t border-border px-5 py-3.5";
+
+const VERSION_FIELD =
+  "box-border h-9 w-full rounded-[8px] border border-line-strong bg-doc-panel px-2.5 text-nav leading-[1.45] font-semibold text-foreground outline-none placeholder:font-semibold placeholder:text-meta-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-focus-ring aria-invalid:border-danger-text";
+
+export interface DocSaveVersionDialogSurfaceProps {
+  readonly copy: DocPageCopy;
+  readonly action: DocHistoryActionView;
+  readonly callbacks?: DocPageCallbacks;
+}
+
+/** Names the page as it is now ("Save a named version"). */
 export function DocSaveVersionDialogSurface({
   copy,
   action,
@@ -35,14 +54,16 @@ export function DocSaveVersionDialogSurface({
   const message =
     touched && trimmed === ""
       ? d.required
-      : action.saveFailed
-        ? d.failed
-        : null;
+      : trimmed.length > 200
+        ? d.tooLong
+        : action.saveFailed
+          ? d.failed
+          : null;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setTouched(true);
-    if (trimmed === "" || action.saving) return;
+    if (trimmed === "" || trimmed.length > 200 || action.saving) return;
     callbacks?.onSaveVersion?.(trimmed);
   };
 
@@ -50,53 +71,61 @@ export function DocSaveVersionDialogSurface({
     <DialogFrame
       title={d.title}
       closeLabel={d.close}
-      width={460}
+      width={440}
+      sheet
       onClose={callbacks?.onCloseOverlay}
     >
-      <form
-        onSubmit={submit}
-        noValidate
-        className="flex flex-col gap-3 px-5 pt-2 pb-5"
-      >
-        <p className="m-0 text-crumb leading-[1.5] text-meta-foreground">
-          {d.note}
-        </p>
-        <label
-          htmlFor={inputId}
-          className="flex flex-col gap-1 text-metadata font-semibold text-meta-foreground"
-        >
-          {d.label}
-          <input
-            id={inputId}
-            value={name}
-            autoFocus
-            maxLength={200}
-            placeholder={d.placeholder}
-            aria-invalid={message ? true : undefined}
-            aria-describedby={message ? errorId : undefined}
-            onChange={(event) => setName(event.target.value)}
-            className={FIELD}
-          />
-        </label>
-        {message ? (
-          <p
-            id={errorId}
-            role="alert"
-            className="m-0 text-crumb font-semibold text-danger-text"
-          >
-            {message}
+      <form onSubmit={submit} noValidate className="flex flex-col">
+        <div className="flex flex-col gap-4 px-5 pt-4 pb-1.5">
+          <div>
+            <label
+              htmlFor={inputId}
+              className="flex flex-col gap-1.5 text-crumb font-semibold text-muted-foreground"
+            >
+              {d.label}
+              <input
+                id={inputId}
+                value={name}
+                autoFocus
+                placeholder={d.placeholder}
+                aria-invalid={message ? true : undefined}
+                aria-describedby={message ? errorId : undefined}
+                onChange={(event) => setName(event.target.value)}
+                className={VERSION_FIELD}
+              />
+            </label>
+            {message ? (
+              <span
+                id={errorId}
+                role="alert"
+                className="mt-2.5 flex items-center gap-[5px] text-crumb text-danger-text"
+              >
+                <CircleAlert
+                  aria-hidden="true"
+                  className="size-[13px] shrink-0 stroke-[1.8]"
+                />
+                {message}
+              </span>
+            ) : null}
+          </div>
+          <p className="m-0 text-crumb leading-[1.45] text-meta-foreground">
+            {d.note}
           </p>
-        ) : null}
-        <div className="flex justify-end gap-2">
+        </div>
+        <div className={VERSION_FOOTER}>
           <button
             type="button"
             onClick={callbacks?.onCloseOverlay}
-            className={OUTLINE}
+            className={cn(OUTLINE, VERSION_BUTTON)}
           >
             {d.cancel}
           </button>
-          <button type="submit" disabled={action.saving} className={PRIMARY}>
-            {action.saving ? d.saving : d.save}
+          <button
+            type="submit"
+            disabled={action.saving}
+            className={cn(PRIMARY, VERSION_BUTTON)}
+          >
+            {d.save}
           </button>
         </div>
       </form>
@@ -106,8 +135,8 @@ export function DocSaveVersionDialogSurface({
 
 export interface DocRestoreVersionDialogSurfaceProps {
   readonly copy: DocPageCopy;
-  /** The compared version's stamp ("10/10 15:42"). */
-  readonly stamp: string;
+  /** The version being restored. */
+  readonly version: DocVersionView;
   readonly action: DocHistoryActionView;
   readonly callbacks?: DocPageCallbacks;
 }
@@ -115,48 +144,93 @@ export interface DocRestoreVersionDialogSurfaceProps {
 /** Confirms a restore (never the browser's confirm): says what it does and keeps the history. */
 export function DocRestoreVersionDialogSurface({
   copy,
-  stamp,
+  version,
   action,
   callbacks,
 }: DocRestoreVersionDialogSurfaceProps) {
   const d = copy.versions.restoreDialog;
+  const conflict = action.restoreFailed === "conflict";
+  const denied = !action.canRestore;
+  const values = { n: version.number, stamp: version.stamp };
   return (
     <DialogFrame
-      title={d.title}
+      title={fillDocCopy(d.title, values)}
       closeLabel={d.close}
-      width={460}
+      width={440}
+      sheet
       onClose={callbacks?.onCloseOverlay}
     >
-      <div className="flex flex-col gap-3 px-5 pt-2 pb-5">
-        <p className="m-0 text-compact leading-[1.5] text-foreground">
-          {fillDocCopy(d.body, { stamp })}
-        </p>
-        {action.restoreFailed ? (
-          <p
+      <p className="m-0 px-5 pt-1.5 text-nav leading-[1.55] font-normal tracking-normal text-doc-body">
+        {fillDocCopy(d.body, values)}
+      </p>
+      {conflict ? (
+        <div className="px-5 pt-4 pb-1.5">
+          <div
             role="alert"
-            className="m-0 text-crumb font-semibold text-danger-text"
+            className="flex items-start gap-2 rounded-[8px] border border-danger-text bg-danger-subtle px-3 py-2 text-compact leading-[1.45] text-foreground"
           >
-            {action.restoreFailed === "conflict" ? d.conflict : d.failed}
-          </p>
-        ) : null}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={callbacks?.onCloseOverlay}
-            className={OUTLINE}
-          >
-            {d.cancel}
-          </button>
+            <CircleAlert
+              aria-hidden="true"
+              className="mt-0.5 size-4 shrink-0 stroke-[1.8] text-danger-text"
+            />
+            <div>
+              <b className="font-bold">{d.conflictTitle}</b>
+              <small className="mt-0.5 block text-crumb text-muted-foreground">
+                {fillDocCopy(d.conflictBody, {
+                  count: action.conflictCount ?? 0,
+                  time: action.conflictTime ?? "",
+                })}
+              </small>
+            </div>
+          </div>
+        </div>
+      ) : action.restoreFailed === "failed" ? (
+        <p
+          role="alert"
+          className="m-0 px-5 pt-4 pb-1.5 text-crumb font-semibold text-danger-text"
+        >
+          {d.failed}
+        </p>
+      ) : null}
+      {denied ? (
+        <div className="px-5 pt-4 pb-1.5">
+          <div className="flex items-start gap-[9px] rounded-[9px] bg-info-subtle px-3 py-2.5 text-crumb leading-[1.5] text-doc-body">
+            <Lock
+              aria-hidden="true"
+              className="mt-px size-[15px] shrink-0 stroke-[1.8] text-brand-solid"
+            />
+            {d.denied}
+          </div>
+        </div>
+      ) : null}
+      <div className={VERSION_FOOTER}>
+        <button
+          type="button"
+          onClick={callbacks?.onCloseOverlay}
+          className={cn(OUTLINE, VERSION_BUTTON)}
+        >
+          {d.cancel}
+        </button>
+        {conflict ? (
           <button
             type="button"
             autoFocus
-            disabled={action.restoring || action.restoreFailed === "conflict"}
+            onClick={callbacks?.onCloseVersionView}
+            className={cn(PRIMARY, VERSION_BUTTON)}
+          >
+            {d.review}
+          </button>
+        ) : (
+          <button
+            type="button"
+            autoFocus
+            disabled={action.restoring || denied}
             onClick={callbacks?.onRestoreVersion}
-            className={PRIMARY}
+            className={cn(PRIMARY, VERSION_BUTTON)}
           >
             {action.restoring ? d.restoring : d.confirm}
           </button>
-        </div>
+        )}
       </div>
     </DialogFrame>
   );

@@ -73,9 +73,15 @@ import {
 
 export interface DocVersionsState {
   readonly list: readonly DocVersionView[];
+  /** The version the page shows; null while it shows its current content. */
   readonly selectedId: string | null;
   readonly namedOnly: boolean;
   readonly onNamedOnlyChange?: (value: boolean) => void;
+  /** Whether the viewer may save a named version. */
+  readonly canSave?: boolean;
+  /** The chosen version's content: `loading` and `error` replace the page. */
+  readonly snapshotStatus?: "ready" | "loading" | "error";
+  readonly onSnapshotRetry?: () => void;
   /** The list read: `loading` and `error` replace the entries. */
   readonly status?: "ready" | "loading" | "error";
   readonly onRetry?: () => void;
@@ -165,7 +171,7 @@ export interface DocPageTools {
 /**
  * The document page (Final-Docs-2): the document bar, the menu bar and
  * formatting toolbar, the page sheet and the side panel; version history
- * swaps the toolbar for a compare banner and the side tabs for the list.
+ * swaps the toolbar for nothing, shows the page read-only, and adds the version bar while a version is open.
  */
 export function DocPageScreenSurface(props: DocPageScreenSurfaceProps) {
   const { copy, status = "ready" } = props;
@@ -268,9 +274,11 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     return () => element.removeEventListener("scroll", update);
   }, [tocIds]);
 
-  const viewing = versions
-    ? (versions.list.find((entry) => entry.id === versions.selectedId) ?? null)
-    : null;
+  const viewing =
+    versions && versions.selectedId
+      ? (versions.list.find((entry) => entry.id === versions.selectedId) ??
+        null)
+      : null;
   const shareOpen = overlay.kind === "share" && share !== undefined;
   const dialogOpen =
     shareOpen ||
@@ -316,6 +324,13 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
         aria-hidden={dialogOpen || undefined}
         inert={dialogOpen || undefined}
       >
+        {focusMode || !viewing ? null : (
+          <DocVersionBarSurface
+            copy={copy}
+            version={viewing}
+            callbacks={callbacks}
+          />
+        )}
         {focusMode || versions ? null : (
           <DocAccessNoticeSurface
             copy={copy}
@@ -344,16 +359,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
             callbacks={callbacks}
           />
         )}
-        {focusMode ? null : versions ? (
-          viewing ? (
-            <DocVersionBarSurface
-              copy={copy}
-              version={viewing}
-              canRestore={history?.canRestore ?? false}
-              callbacks={callbacks}
-            />
-          ) : null
-        ) : (
+        {focusMode || versions ? null : (
           <DocToolbarSurface
             copy={copy}
             current={toolbar}
@@ -383,7 +389,30 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
             ref={scroller}
             className="flex min-w-0 flex-1 justify-center overflow-auto px-8 pt-9 pb-16"
           >
-            <DocArticleSurface {...articleProps} />
+            {viewing && versions?.snapshotStatus === "loading" ? (
+              <p
+                role="status"
+                className="m-0 text-compact text-meta-foreground"
+              >
+                {copy.versions.snapshotLoading}
+              </p>
+            ) : viewing && versions?.snapshotStatus === "error" ? (
+              <div
+                role="alert"
+                className="flex flex-col items-start gap-2 text-compact text-meta-foreground"
+              >
+                <p className="m-0">{copy.versions.snapshotError}</p>
+                <button
+                  type="button"
+                  onClick={versions.onSnapshotRetry}
+                  className="inline-flex h-7.5 items-center rounded-[7px] border border-line-strong bg-doc-panel px-3 font-medium text-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring"
+                >
+                  {copy.versions.retry}
+                </button>
+              </div>
+            ) : (
+              <DocArticleSurface {...articleProps} />
+            )}
           </div>
           {versions ? (
             <DocVersionPanelSurface
@@ -391,6 +420,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
               versions={versions.list}
               selectedId={versions.selectedId}
               namedOnly={versions.namedOnly}
+              canSave={versions.canSave}
               onNamedOnlyChange={versions.onNamedOnlyChange}
               status={versions.status}
               onRetry={versions.onRetry}
@@ -446,7 +476,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
       {overlay.kind === "restoreVersion" && history && viewing ? (
         <DocRestoreVersionDialogSurface
           copy={copy}
-          stamp={viewing.stamp}
+          version={viewing}
           action={history}
           callbacks={callbacks}
         />

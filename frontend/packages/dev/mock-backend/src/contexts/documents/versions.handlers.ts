@@ -109,6 +109,20 @@ function toVersionBlockDto(
   };
 }
 
+/**
+ * Test hooks of the history panel, set by a spec init script. `globalThis.__mockVersions`: "empty" answers no
+ * entries, "fail" fails the list with a 500, "hold" never answers it (loading), or a list of entries the page
+ * shows instead of its own (any of them can be opened). `globalThis.__mockRestore`: "conflict" answers 412 as if
+ * the page changed since it was read.
+ */
+type VersionsHook = "empty" | "fail" | "hold" | readonly Json[];
+function versionsHook(): VersionsHook | undefined {
+  return (globalThis as { __mockVersions?: VersionsHook }).__mockVersions;
+}
+function restoreHook(): "conflict" | undefined {
+  return (globalThis as { __mockRestore?: "conflict" }).__mockRestore;
+}
+
 interface SeenBlock {
   blockId: string;
   version: number;
@@ -130,6 +144,13 @@ export const versionsOperations = [
     async handle({ params, query, store }) {
       const page = store.getPage(params.pageId);
       if (!page || page.trashedAt) return notFound("Page not found");
+      const hook = versionsHook();
+      if (hook === "fail") {
+        return problem(500, "internal.error", "The history is unavailable.");
+      }
+      if (hook === "hold") return new Promise<never>(() => undefined);
+      if (hook === "empty") return ok({ items: [], nextCursor: null });
+      if (hook) return ok({ items: [...hook], nextCursor: null });
       // The producer's cursor is opaque; here it is the offset of the next entry.
       const limit = Math.min(Number(query.limit) || 50, 200);
       const from = Number(query.cursor) || 0;
@@ -152,6 +173,29 @@ export const versionsOperations = [
     async handle({ params, store }) {
       const page = store.getPage(params.pageId);
       if (!page || page.trashedAt) return notFound("Page not found");
+      // Test hook: `globalThis.__mockSnapshot` "fail" refuses the read of one entry, "hold" never answers it.
+      const snapshot = (globalThis as { __mockSnapshot?: "fail" | "hold" })
+        .__mockSnapshot;
+      if (snapshot === "fail") {
+        return problem(500, "internal.error", "The version is unavailable.");
+      }
+      if (snapshot === "hold") return new Promise<never>(() => undefined);
+      const hook = versionsHook();
+      const fed = Array.isArray(hook)
+        ? (hook as readonly Json[]).find((item) => item.id === params.versionId)
+        : undefined;
+      if (fed) {
+        // A fed entry shows the page as it stands.
+        return ok<Json>({
+          version: fed,
+          title: page.title,
+          blocks: store
+            .getPageBlocks(params.pageId)
+            .slice()
+            .sort((a, b) => a.position - b.position)
+            .map(toVersionBlockDto),
+        });
+      }
       const entry = store.docsHistory.getVersion(
         params.pageId,
         params.versionId,
@@ -214,6 +258,20 @@ export const versionsOperations = [
     async handle({ params, body, store }) {
       const page = store.getPage(params.pageId);
       if (!page || page.trashedAt) return notFound("Page not found");
+      if (restoreHook() === "conflict") {
+        return problem(
+          412,
+          "documents.version.restore-conflict",
+          "The page changed since you looked at it.",
+          {
+            currentBlocks: store
+              .getPageBlocks(params.pageId)
+              .map((block) =>
+                toBlockDto({ ...block, version: block.version + 1 }),
+              ),
+          },
+        );
+      }
       const result = store.docsHistory.restoreVersion(
         params.pageId,
         params.versionId,
