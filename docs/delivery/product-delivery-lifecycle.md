@@ -99,6 +99,7 @@ A use case is DONE only when all four hold on the same commit. [`definition-of-d
 # 5. DEL-005 — The pull request sets DONE; the lead merges
 
 - The lane's pull request moves each use case to DONE in the catalog when DEL-003 holds, and applies the use case's "Canonical updates required" text to the owning product document.
+- A pull request that moves any use-case state runs `make uc-counts` and commits the regenerated count table in the use-case README section 8. It never edits that table by hand; `make docs-check` fails when it is stale.
 - The lead reads the diff and the Evidence lines, and merges. There is no separate acceptance round and no second agent re-runs the use case.
 - If the lead finds a line that does not hold, the use case stays at its state, the lead says which line, and the lane fixes it in the same pull request.
 - The owner does not gate individual use cases. The owner accepts versions (DEL-012).
