@@ -78,11 +78,20 @@ for (const size of WIDTHS)
       const hide = card.getByRole("button", { name: "Ẩn danh sách" });
       await hide.focus();
       await expect(hide).toBeFocused();
-      if (size.width === 390)
-        expect((await hide.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      if (size.width === 390) {
+        // A 44 px target on one line: the words "Ẩn danh sách" do not wrap.
+        const target = (await hide.boundingBox())!;
+        expect(target.height).toBeGreaterThanOrEqual(44);
+        expect(target.height).toBeLessThanOrEqual(48);
+      }
 
       await testInfo.attach(`card-${size.width}-${dark ? "dark" : "light"}`, {
-        body: await card.screenshot(),
+        body: await card.screenshot({
+          // CARD_SHOTS=<dir> keeps the shots for a reviewer.
+          path: process.env.CARD_SHOTS
+            ? `${process.env.CARD_SHOTS}/card-${size.width}-${dark ? "dark" : "light"}.png`
+            : undefined,
+        }),
         contentType: "image/png",
       });
 

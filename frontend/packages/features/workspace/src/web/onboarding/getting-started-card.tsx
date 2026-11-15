@@ -128,12 +128,12 @@ export function GettingStartedCard({
           </li>
         ))}
       </ul>
-      <div className="flex items-center justify-between gap-3 text-item-note text-meta-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-item-note text-meta-foreground">
         <span>{t.note}</span>
         <button
           type="button"
           onClick={onHide}
-          className="inline-flex cursor-pointer items-center border-0 bg-transparent p-0 text-item-note font-medium text-brand-subtle-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring max-md:min-h-touch max-md:px-2"
+          className="inline-flex shrink-0 cursor-pointer items-center whitespace-nowrap border-0 bg-transparent p-0 text-item-note font-medium text-brand-subtle-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus-ring max-md:min-h-touch max-md:px-2"
         >
           {t.hide}
         </button>

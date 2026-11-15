@@ -210,6 +210,7 @@ export const en = {
       inviteMoreNote:
         "{{count}} are waiting to accept. The {{department}} department has no one but you",
       inviteMoreNoneNote: "Nobody has been invited yet",
+      inviteMoreDoneNote: "Invitations have gone out",
       inviteMoreWaiting: "{{count}} are waiting to accept",
       mobile: "Get the mobile app",
       mobileNote: "iOS and Android, sign in with the same account",
@@ -540,6 +541,7 @@ export const vi: OnboardingCopy = {
       inviteMoreNote:
         "{{count}} người đang chờ nhận lời. Phòng {{department}} chưa có ai ngoài bạn",
       inviteMoreNoneNote: "Chưa mời ai",
+      inviteMoreDoneNote: "Lời mời đã được gửi",
       inviteMoreWaiting: "{{count}} người đang chờ nhận lời",
       mobile: "Tải ứng dụng di động",
       mobileNote: "iOS và Android, đăng nhập bằng cùng tài khoản",
