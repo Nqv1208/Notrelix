@@ -105,10 +105,7 @@ test("a message, an edit, a delete, typing, unread badges, a lost connection and
   await owner.goto(`${base}/chat/${idA}`);
   await expect(composer(owner, nameA)).toBeVisible({ timeout: 20_000 });
 
-  // Known gap (kept out of this journey on purpose): sending while the first window is still loading can leave the sender's list on
-  // "Loading messages" on a cold stack although both windows answer 200; the journey waits for the list so the rest stays stable.
-  await expect(log(owner)).toBeVisible({ timeout: 20_000 });
-  await expect(log(reader)).toBeVisible({ timeout: 20_000 });
+  // The owner sends while the first window may still be loading: the own bubble must show at once.
 
   // A new message arrives live (subscribe, fan-out, insert by sequence), once, with no reload.
   const first = `Live ${unique}`;
