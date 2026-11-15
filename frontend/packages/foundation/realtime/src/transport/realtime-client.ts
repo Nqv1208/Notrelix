@@ -181,8 +181,11 @@ export interface RealtimeTransport {
     filter: { readonly workspaceId: string; readonly channelId: string },
     listener: RealtimeEphemeralListener,
   ): () => void;
-  /** Tells the channel's subscribers the caller is typing. The caller throttles (one per 3 s). */
-  sendTyping(channelId: string): void;
+  /**
+   * Tells the channel's subscribers the caller is typing (a start; the caller throttles it, one per 3 s) or, with
+   * `stopped`, that the caller stopped (never throttled: the indicator ends at once).
+   */
+  sendTyping(channelId: string, stopped?: boolean): void;
   /** Reports the caller's presence (heartbeat about every 30 s). */
   sendPresence(state: RealtimePresenceState): void;
   subscribeState(listener: RealtimeStateListener): () => void;
@@ -1094,10 +1097,14 @@ export class RealtimeClient implements RealtimeTransport {
     };
   }
 
-  public sendTyping(channelId: string): void {
+  public sendTyping(channelId: string, stopped = false): void {
     const wire = this.wireSubscriptions.get(`channel:${channelId}`);
     if (!wire || wire.status !== "active") return;
-    this.sendFrame({ type: "typing", subscriptionId: wire.id });
+    this.sendFrame(
+      stopped
+        ? { type: "typing", subscriptionId: wire.id, state: "stop" as const }
+        : { type: "typing", subscriptionId: wire.id },
+    );
   }
 
   public sendPresence(state: RealtimePresenceState): void {

@@ -123,6 +123,7 @@ export interface RealtimePresenceServerFrame {
 }
 
 export interface RealtimeTypingClientFrame {
+  "state"?: "start" | "stop";
   "subscriptionId": string;
   "type": "typing";
 }

@@ -13,6 +13,12 @@ public static class RealtimeEphemeralKinds
     public const string PresenceRequest = "presence-request";
 }
 
+/// <summary>The <see cref="RealtimeEphemeralSignal.State"/> of a typing signal that ends the indicator.</summary>
+public static class RealtimeEphemeralStates
+{
+    public const string TypingStop = "stop";
+}
+
 /// <summary>The presence states a client can report.</summary>
 public static class RealtimePresenceStates
 {
