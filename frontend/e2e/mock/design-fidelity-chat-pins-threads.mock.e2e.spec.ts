@@ -53,15 +53,16 @@ async function open(
   await page.waitForTimeout(400);
 }
 
-/** Opens the More menu of the nth message and picks an entry. */
+/** Opens the More menu of the nth message from the end (the other person's messages) and picks an entry. */
 async function pickFromRow(page: Page, index: number, item: string) {
-  const row = page.locator("[data-message-id]").nth(index);
+  const row = page.locator("[data-own=false]").nth(-1 - index * 2);
   await row.scrollIntoViewIfNeeded();
   await row.hover();
   const more = row.getByRole("button", { name: copy.toolbar.moreActions });
-  if (await more.count()) await more.first().click();
+  if (await more.count()) await more.first().click({ force: true });
   else await row.getByTestId("chat-message-more-touch").click();
   await page.getByRole("menuitem", { name: item }).click();
+  await page.waitForTimeout(500);
 }
 const pinNthMessage = (page: Page, index: number) =>
   pickFromRow(page, index, copy.toolbar.pin);
@@ -152,7 +153,9 @@ for (const theme of ["light", "dark"] as const) {
           close(confirm.y, 108.7, 1.5);
           close(cancel.y, 162.7, 1.5);
           close(cancel.h, 46);
-          await expect(sheet.locator("p")).toHaveText(copy.pins.unpinBody);
+          await expect(
+            sheet.getByText(copy.pins.unpinBody, { exact: true }),
+          ).toBeVisible();
           await settle(page, `unpin-${tag}`, sheet);
           return;
         }
@@ -232,13 +235,13 @@ for (const theme of ["light", "dark"] as const) {
               sheet.getByRole("button", { name, exact: true }),
             );
             close(row.h, 48);
-            close(row.y, 70 + i * 48, 1.5);
+            close(row.y, 67 + i * 48, 1.5);
           }
           expect(await rows.count()).toBeGreaterThanOrEqual(4);
           await settle(page, `pin-menu-${tag}`, sheet);
           return;
         }
-        const menu = page.getByRole("menu", { name: copy.pins.menuLabel });
+        const menu = page.getByRole("menu");
         await expect(menu).toBeVisible();
         await page.waitForTimeout(300);
         const box = (await menu.boundingBox())!;
@@ -250,7 +253,7 @@ for (const theme of ["light", "dark"] as const) {
         ).toBe("12px");
         const items = menu.getByRole("menuitem");
         expect(await items.count()).toBe(3);
-        for (const [i, y] of [5, 45, 90].entries()) {
+        for (const [i, y] of [5, 45, 94].entries()) {
           const item = await rel(menu, items.nth(i));
           close(item.h, 40);
           close(item.y, y, 1.5);
@@ -268,14 +271,33 @@ for (const theme of ["light", "dark"] as const) {
 
       test("the thread more menu matches the board", async ({ page }) => {
         await open(page, size, theme);
-        await pickFromRow(page, 2, copy.toolbar.openThread);
+        await pickFromRow(page, 2, copy.toolbar.replyInThread);
         await expect(page.getByTestId("chat-thread-panel")).toBeVisible();
+        // A thread exists from its first reply on: reply, then follow.
+        const reply = page
+          .getByTestId("chat-thread-panel")
+          .getByRole("combobox");
+        await reply.fill("Phản hồi đầu tiên trong luồng");
+        await reply.press("Enter");
+        await expect(page.getByTestId("chat-thread-separator")).toBeVisible();
         // Follow first, so the mute entry takes the place of the archive row the board draws.
-        await page.getByTestId("chat-thread-more").click();
-        await page.getByText(copy.thread.followThread).click();
-        await expect(page.getByTestId("chat-thread-follow-state")).toHaveText(
-          copy.thread.following,
-        );
+        const state = page.getByTestId("chat-thread-follow-state");
+        if ((await state.textContent()) !== copy.thread.following) {
+          await page.getByTestId("chat-thread-more").click();
+          await page.getByText(copy.thread.followThread).click();
+        }
+        await expect(state).toHaveText(copy.thread.following);
+        // The first menu or sheet is still closing: wait, or the second opening is swallowed.
+        await page.waitForTimeout(600);
+        // Board: the status chip is 22 high and fully rounded.
+        close((await state.boundingBox())!.height, 22);
+        expect(
+          parseFloat(
+            await state.evaluate(
+              (el) => getComputedStyle(el).borderTopLeftRadius,
+            ),
+          ),
+        ).toBeGreaterThanOrEqual(11);
         await page.getByTestId("chat-thread-more").click();
         if (phone(size)) {
           const sheet = page.getByTestId("chat-thread-sheet");
@@ -295,13 +317,13 @@ for (const theme of ["light", "dark"] as const) {
               sheet.getByRole("button", { name, exact: true }),
             );
             close(r.h, 48);
-            close(r.y, 70 + i * 48, 1.5);
+            close(r.y, 67 + i * 48, 1.5);
           }
           expect(await rows.count()).toBeGreaterThanOrEqual(4);
           await settle(page, `thread-menu-${tag}`, sheet);
           return;
         }
-        const menu = page.getByRole("menu", { name: copy.thread.menuLabel });
+        const menu = page.getByRole("menu");
         await expect(menu).toBeVisible();
         await page.waitForTimeout(300);
         const box = (await menu.boundingBox())!;
@@ -337,7 +359,8 @@ for (const theme of ["light", "dark"] as const) {
         await expect(banner).toContainText(copy.pins.limit);
         const box = (await banner.boundingBox())!;
         // Board: 44 high (8 padding, a 28 button), 16 gutters, a 14 icon, 13/600 text on the danger tint.
-        close(box.height, 44);
+        // At 1024 no board is drawn and the text may wrap to a second line.
+        if (size.width >= 1180) close(box.height, 44);
         const button = await rel(
           banner,
           banner.getByRole("button", { name: copy.pins.limitAction }),

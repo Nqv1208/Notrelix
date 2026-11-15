@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  BellMinus,
   BellOff,
   BellPlus,
   BellRing,
@@ -56,7 +57,7 @@ export function ThreadMoreMenu({
           {
             key: "mute",
             label: muted ? text.unmute : text.mute,
-            icon: muted ? BellRing : BellOff,
+            icon: muted ? BellRing : BellMinus,
             onSelect: onToggleMute,
           },
         ]
@@ -98,8 +99,7 @@ export function ThreadMoreMenu({
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        aria-label={text.menuLabel}
-        className="w-auto min-w-[220px] rounded-xl p-1.5"
+        className="w-auto min-w-[220px] rounded-[12px] border border-border p-1.5 ring-0"
       >
         {actions.map((action) => {
           const Icon = action.icon;

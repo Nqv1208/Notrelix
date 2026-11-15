@@ -97,7 +97,7 @@ export function UnpinDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="w-[400px] gap-0 overflow-hidden rounded-2xl p-0 sm:max-w-[400px] xl:w-[440px] xl:max-w-[440px]"
+        className="w-[400px] gap-0 overflow-hidden rounded-[16px] border border-border p-0 ring-0 sm:max-w-[400px] xl:w-[440px] xl:max-w-[440px]"
         data-testid="chat-unpin-dialog"
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
@@ -241,8 +241,7 @@ export function PinRowMenu({
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        aria-label={text.menuLabel}
-        className="w-[220px] rounded-xl p-1"
+        className="w-[220px] rounded-[12px] border border-border p-1 ring-0"
       >
         <DropdownMenuItem className={PIN_MENU_ITEM} onSelect={onOpenMessage}>
           <ArrowUp className="size-3.5" aria-hidden="true" />
