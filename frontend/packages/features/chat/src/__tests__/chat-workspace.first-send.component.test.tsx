@@ -247,3 +247,40 @@ describe("ChatWorkspace first send from an older window", () => {
     expect(s.queryClient.getQueryData(pendingKey)).toEqual([]);
   });
 });
+
+describe("ChatWorkspace send while the first window loads", () => {
+  it("paints the own bubble at once and keeps one copy when the window lands", async () => {
+    const s = await setup();
+    let open!: () => void;
+    s.net.gate = new Promise<void>((resolve) => (open = resolve));
+    s.net.hold = (url, method) =>
+      method === "GET" && /\/messages(\?|$)/.test(url);
+    render(
+      <ChatWorkspace
+        deps={s.deps}
+        workspaceId={WORKSPACE}
+        viewerId={s.store.getCurrentUser().id}
+        viewerRole="owner"
+        channelId={s.general.id}
+        conversationId={null}
+        onOpenConversation={vi.fn()}
+        onOpenChannel={vi.fn()}
+        people={new Map()}
+      />,
+      { wrapper: s.wrapper },
+    );
+    const box = await screen.findByRole("combobox", {
+      name: /Message #general/,
+    });
+    fireEvent.change(box, { target: { value: "sent while loading" } });
+    fireEvent.keyDown(box, { key: "Enter" });
+
+    await waitFor(() => expect(copies("sent while loading")).toBe(1));
+    const watch = watchBlink("sent while loading");
+    open();
+    await screen.findByText(/Tin nhắn 301\./);
+    await waitFor(() => expect(copies("sent while loading")).toBe(1));
+    watch.stop();
+    expect(watch.seen.blinks).toBe(0);
+  });
+});

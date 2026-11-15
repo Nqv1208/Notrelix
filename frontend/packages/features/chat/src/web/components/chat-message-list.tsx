@@ -652,19 +652,19 @@ export function ChatMessageList(props: ChatMessageListProps) {
     }
     if (row.kind === "unread") {
       return (
-        <li
-          {...extra}
-          key={row.key}
-          data-unread-divider=""
-          className="my-1.5 flex h-6 items-center gap-3 px-5 text-xs leading-[1.45] font-[650] text-destructive"
-        >
-          {/* The row stays a plain list item (a list holds only items); the rule inside carries the separator role. */}
-          <span
+        <li {...extra} key={row.key}>
+          <div
             role="separator"
+            data-unread-divider=""
             aria-label={copy.list.newDivider}
-            className="h-px flex-1 bg-destructive/45"
-          />
-          <span aria-hidden="true">{copy.list.newDivider}</span>
+            className="my-1.5 flex h-6 items-center gap-3 px-5 text-xs leading-[1.45] font-[650] text-destructive"
+          >
+            <span
+              className="h-px flex-1 bg-destructive/45"
+              aria-hidden="true"
+            />
+            <span aria-hidden="true">{copy.list.newDivider}</span>
+          </div>
         </li>
       );
     }
