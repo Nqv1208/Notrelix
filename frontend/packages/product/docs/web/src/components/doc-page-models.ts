@@ -434,6 +434,10 @@ export interface DocPageCallbacks {
   readonly onRecoveryCopy?: (id: string) => void;
   readonly onRecoveryReapply?: (id: string) => void;
   readonly onRecoveryDismiss?: (id: string) => void;
+  /** Copies the text that was never stored after the right to edit was lost. */
+  readonly onAccessLostCopy?: () => void;
+  /** Leaves the page after the right to edit was lost; omitted offers no button. */
+  readonly onLeavePage?: () => void;
   readonly onTitleCommit?: (title: string) => void;
   readonly onBlockCommit?: (blockId: string, text: string) => void;
   readonly onBlockTrigger?: (
