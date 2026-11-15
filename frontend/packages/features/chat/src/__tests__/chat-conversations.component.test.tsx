@@ -122,6 +122,28 @@ describe("conversation section of the sidebar", () => {
     expect(within(groupRow).getByText("Lê Hoài An: Đã cập nhật")).toBeTruthy();
   });
 
+  it("shows the exact count of a direct conversation up to 99 and 99+ from 100", () => {
+    const render1 = (count: number) =>
+      render(
+        <ChatConversationSection
+          copy={en}
+          view={listView({
+            conversations: [conversation({ unreadCount: count })],
+          })}
+        />,
+      );
+    const first = render1(99);
+    expect(screen.getByText("99", { exact: true })).toBeTruthy();
+    first.unmount();
+    render1(120);
+    expect(screen.getByText("99+", { exact: true })).toBeTruthy();
+    expect(
+      screen
+        .getByRole("button", { name: /^Direct message: / })
+        .getAttribute("aria-label"),
+    ).toContain("120 unread messages");
+  });
+
   it("opens a conversation and starts a new message from its buttons", () => {
     const view = listView({ conversations: [conversation()] });
     render(<ChatConversationSection copy={en} view={view} />);
