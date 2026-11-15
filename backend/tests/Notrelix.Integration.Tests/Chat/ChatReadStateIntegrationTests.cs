@@ -201,6 +201,18 @@ public sealed class ChatReadStateIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ASummaryOfOneSpace_IsThatSpacesRowOfTheFullSummary()
+    {
+        await AdvanceInOwnTransactionAsync(_alpha, _member, 2);
+
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
+        var full = await UnreadSummaryBuilder.BuildAsync(probe, _workspaceId, _member, Now, CancellationToken.None);
+        var one = await UnreadSummaryBuilder.BuildAsync(probe, _workspaceId, _member, Now, CancellationToken.None, _alpha);
+
+        one.Spaces.Should().ContainSingle().Which.Should().BeEquivalentTo(full.Spaces.Single(s => s.SpaceId == _alpha));
+    }
+
+    [Fact]
     public async Task MutedSpace_KeepsItsCount_ButLeavesTheTotal()
     {
         await using (var context = _db.CreateOwnerContext(SystemTenant()))

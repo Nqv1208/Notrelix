@@ -49,7 +49,7 @@ public class MarkSpaceReadCommandHandler(
             .FirstAsync(cancellationToken);
 
         // The person's other devices learn the new count of this space (UC-CHT-C09).
-        var summary = await UnreadSummaryBuilder.BuildAsync(db, request.WorkspaceId, userId, clock.UtcNow, cancellationToken);
+        var summary = await UnreadSummaryBuilder.BuildAsync(db, request.WorkspaceId, userId, clock.UtcNow, cancellationToken, space.Id);
         ReadStateRealtime.Announce(events, requestContext.RequireAccountId(), request.WorkspaceId, userId,
             summary.Spaces.Where(s => s.SpaceId == space.Id), clock.UtcNow);
 
