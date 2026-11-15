@@ -57,13 +57,11 @@ describe("unreadBadge", () => {
 });
 
 describe("ChatSidebar", () => {
-  it("marks the open channel as the current page and names unread counts for a screen reader", () => {
+  it("marks the open channel as the current page and names its unread state for a screen reader", () => {
     render(<ChatSidebar {...props()} />);
     const open = screen.getByRole("button", { name: /general/ });
     expect(open.getAttribute("aria-current")).toBe("page");
-    expect(open.getAttribute("aria-label") ?? "").toContain(
-      "120 unread messages",
-    );
+    expect(open.getAttribute("aria-label") ?? "").toContain("Unread messages");
     expect(
       screen
         .getByRole("button", { name: /leadership/ })

@@ -143,8 +143,14 @@ function versionRefusal(form: MockForm, expected: number | string | undefined) {
     return validationError({
       expectedVersion: ["ExpectedVersion must be a positive value."],
     });
-  if (version !== form.version)
-    return conflict("The form changed since it was read.");
+  if (version !== form.version) {
+    // The producer names who saved first (changedByName), as a stale view or saved-filter write does.
+    const refused = conflict("The form changed since it was read.");
+    return {
+      ...refused,
+      body: { ...refused.body, changedByName: "Hà Nguyễn" },
+    };
+  }
   return null;
 }
 
@@ -568,6 +574,33 @@ export const formsOperations = [
         items: store.forms.submissions(form.id).map(submissionRow),
         nextCursor: null,
       });
+    },
+  }),
+
+  defineMockOperation<
+    FormParams,
+    never,
+    { new: number; processed: number; rejected: number; spam: number }
+  >({
+    id: "forms.submissions.counts",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Forms.CountSubmissions",
+    },
+    method: "GET",
+    route: "/forms/:formId/submissions/counts",
+    async handle({ params, store }) {
+      const { form, refusal } = readable(store, params.formId);
+      if (!form) return refusal;
+      if (!canEditBoard(form.boardId, store)) return forbidden();
+      const counts = { new: 0, processed: 0, rejected: 0, spam: 0 };
+      for (const s of store.forms.submissions(form.id)) {
+        if (s.status === "Rejected") counts.rejected += 1;
+        else if (s.status === "Spam") counts.spam += 1;
+        else if (s.status !== "Deleted")
+          counts[s.createdItemId ? "processed" : "new"] += 1;
+      }
+      return ok(counts);
     },
   }),
 

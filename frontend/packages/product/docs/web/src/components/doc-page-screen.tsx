@@ -1,4 +1,5 @@
 import { useDocLive } from "./use-doc-live";
+import { useOnline } from "./use-online";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AttachmentUploads,
@@ -38,7 +39,6 @@ import {
   createUsePageHistory,
   type Block,
   type BlockType,
-  type DocSaveState,
   type DocsApiClient,
   type PageApiEndpoints,
 } from "@notrelix/docs-state";
@@ -80,7 +80,7 @@ import type {
   DocPerson,
   DocMarkTargets,
 } from "./doc-page-models";
-import { isRestrictedTask } from "./doc-page-models";
+import { isRestrictedTask, type DocSaveState } from "./doc-page-models";
 import { readImportFile } from "../import/read-import-file";
 import { DocPageScreenSurface } from "./doc-page-screen-surface";
 import { useDocPanelOpen } from "./use-doc-panel-open";
@@ -245,6 +245,7 @@ export function createDocPageScreen({
     const blocksQuery = usePageBlocks(workspaceId, pageId) as {
       data: Block[] | undefined;
       isLoading: boolean;
+      retryRest?: () => void;
     };
     const breadcrumbQuery = usePageBreadcrumb(workspaceId, pageId);
     const commentsQuery = usePageComments(workspaceId, pageId);
@@ -518,7 +519,20 @@ export function createDocPageScreen({
       null,
     );
     const toastedRef = useRef(false);
+    // The right to edit was lost while the page was open: saving stopped and
+    // what was never stored waits here to copy.
+    const [accessLost, setAccessLost] = useState<{
+      readonly text: string;
+      readonly copied: boolean;
+    } | null>(null);
+    const online = useOnline();
+    const unsavedRef = useRef(false);
     const saver = useDocSaver(workspaceId, pageId, blocksQuery.data, {
+      onAccessLost: (unsaved) =>
+        setAccessLost({
+          text: unsaved.map(draftRecoveryText).filter(Boolean).join("\n\n"),
+          copied: false,
+        }),
       onConflict: ({ blockId, local, server }) => {
         const changed = !local || !draftEquals(local, server);
         if (!changed) return;
@@ -533,6 +547,27 @@ export function createDocPageScreen({
       },
       onRebased: (drafts) => richRef.current?.applyDrafts(drafts),
     });
+    // Unsent typing stays in the open tab: the browser warns before it closes, and
+    // the connection coming back sends it with its expected versions (conflicts follow the rebase).
+    useEffect(() => {
+      const warn = (event: BeforeUnloadEvent) => {
+        if (!unsavedRef.current) return;
+        event.preventDefault();
+        event.returnValue = "";
+      };
+      window.addEventListener("beforeunload", warn);
+      return () => window.removeEventListener("beforeunload", warn);
+    }, []);
+    const wasOnlineRef = useRef(online);
+    const { retry: retryEditor } = editor;
+    const { retry: retrySaver } = saver;
+    useEffect(() => {
+      if (online && !wasOnlineRef.current) {
+        retryEditor();
+        void retrySaver();
+      }
+      wasOnlineRef.current = online;
+    }, [online, retryEditor, retrySaver]);
     const initialDrafts = useMemo(
       () =>
         [...blocks].sort((a, b) => a.position - b.position).map(draftOfBlock),
@@ -540,7 +575,14 @@ export function createDocPageScreen({
     );
     const contextKey = useMemo(
       () => ({}),
-      [host.tasks, host.tasksReady, host.board, host.boards, readablePages],
+      [
+        host.tasks,
+        host.tasksReady,
+        host.board,
+        host.boards,
+        readablePages,
+        online,
+      ],
     );
     // The page's files: uploads in flight, the stored files and their bytes.
     const rememberAttachment = useRememberPageAttachment(workspaceId, pageId);
@@ -629,14 +671,14 @@ export function createDocPageScreen({
       pageId,
       ready: !pageQuery.isLoading && !blocksQuery.isLoading && page !== null,
       initial: initialDrafts,
-      editable: host.canEdit,
+      editable: host.canEdit && !accessLost,
       placeholder: copy.blockPlaceholder,
       emptyPlaceholder: copy.blocks.emptyDoc,
       label: copy.blockPlaceholder,
       contextKey,
       context: {
         copy,
-        readOnly: !host.canEdit,
+        readOnly: !host.canEdit || !!accessLost,
         media,
         callbacks: {
           onOpenPagePicker: (blockId) =>
@@ -645,9 +687,10 @@ export function createDocPageScreen({
             callbacksRef.current?.onOpenBoardPicker?.(blockId),
           onOpenComment: (id) => callbacksRef.current?.onOpenComment?.(id),
           onTodoConvert:
-            host.canEdit && host.canConvertTodo !== false
+            host.canEdit && host.canConvertTodo !== false && online
               ? (blockId) => callbacksRef.current?.onTodoConvert?.(blockId)
               : undefined,
+          offline: !online,
           onEditorCommand: (command) =>
             callbacksRef.current?.onEditorCommand?.(command),
         },
@@ -961,7 +1004,8 @@ export function createDocPageScreen({
           );
         },
       });
-    const callbacks: DocPageCallbacks = {
+    const liveCallbacks: DocPageCallbacks = {
+      onRetryBlocks: blocksQuery.retryRest,
       onTitleCommit: host.canEdit ? editor.updateTitle : undefined,
       onBlockCommit: host.canEdit
         ? (blockId, text) => {
@@ -1375,6 +1419,15 @@ export function createDocPageScreen({
           });
         }
       },
+      onAccessLostCopy: () => {
+        const text = accessLost?.text;
+        if (!text) return;
+        void navigator.clipboard
+          ?.writeText(text)
+          .then(() => setAccessLost((c) => (c ? { ...c, copied: true } : c)))
+          .catch(() => undefined);
+      },
+      onLeavePage: host.leaveDoc,
       onRecoveryCopy: (id) => {
         const text = recoveries.find((entry) => entry.id === id)?.draft;
         if (!text) return;
@@ -1552,13 +1605,29 @@ export function createDocPageScreen({
       },
     };
 
+    // Typing stays on while offline; moving, trashing, copying and converting wait for the connection.
+    const callbacks: DocPageCallbacks = online
+      ? liveCallbacks
+      : {
+          ...liveCallbacks,
+          offline: true,
+          onTodoConvert: undefined,
+          onTrashPage: undefined,
+          onConfirmTrashPage: undefined,
+          onMovePage: undefined,
+          onMovePageTo: undefined,
+          onDuplicatePage: undefined,
+        };
     callbacksRef.current = callbacks;
     const saveState: DocSaveState =
       editor.saveState === "error" || saver.saveState === "error"
         ? "error"
-        : editor.saveState === "saving" || saver.saveState === "saving"
-          ? "saving"
-          : "saved";
+        : !online
+          ? "offline"
+          : editor.saveState === "saving" || saver.saveState === "saving"
+            ? "saving"
+            : "saved";
+    unsavedRef.current = saveState !== "saved";
 
     return (
       <DocPageScreenSurface
@@ -1568,6 +1637,7 @@ export function createDocPageScreen({
         editor={richEditor.editor}
         recoveries={recoveryViews}
         copiedRecoveryId={copiedRecoveryId}
+        accessLost={accessLost ?? undefined}
         chips={chips}
         why={why}
         blocks={blockViews}
@@ -1711,7 +1781,7 @@ export function createDocPageScreen({
             ? convertTodoFailedStep(convertTodo.error)
             : null,
         }}
-        readOnly={!host.canEdit}
+        readOnly={!host.canEdit || !!accessLost}
         canComment
         canFormat={host.canEdit}
         callbacks={callbacks}

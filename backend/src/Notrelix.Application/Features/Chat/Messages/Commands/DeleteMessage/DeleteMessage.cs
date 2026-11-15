@@ -29,7 +29,8 @@ public class DeleteMessageCommandHandler(
     IWorkspaceMemberFacts members,
     ISpaceSequenceAllocator sequences,
     IDateTimeProvider clock,
-    IChatMessageAttachments attachments) : IRequestHandler<DeleteMessageCommand, Result>
+    IChatMessageAttachments attachments,
+    IChatReadStateStore readStates) : IRequestHandler<DeleteMessageCommand, Result>
 {
     public async Task<Result> Handle(DeleteMessageCommand request, CancellationToken cancellationToken)
     {
@@ -56,7 +57,7 @@ public class DeleteMessageCommandHandler(
 
         var now = clock.UtcNow;
         if (message.Delete(userId, now))
-            await MessageTombstones.ClearAttachedAsync(db, attachments, message, userId, now, cancellationToken);
+            await MessageTombstones.ClearAttachedAsync(db, attachments, readStates, message, userId, now, cancellationToken);
         return Result.Success();
     }
 }

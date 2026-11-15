@@ -1,11 +1,13 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocale } from "@notrelix/i18n";
+import { cn } from "@notrelix/ui-web";
 import {
   useBoardKanban,
   useBoardPlanItems,
   useBoardView,
   useCreateDatedItem,
+  useFullBoard,
   useUpdateCard,
 } from "@notrelix/work-management-state";
 import {
@@ -45,10 +47,12 @@ import {
   formatDayMonth,
   toDayKey,
   calendarDateFields,
+  calendarReadWindow,
   resolveCalendarDateBasis,
   type CalendarDateBasis,
   type CalendarEntry,
   type CalendarRange,
+  type CalendarStatusMenu,
   type DayKey,
 } from "./calendar-model";
 import { useCalendarCopy } from "./use-calendar-copy";
@@ -124,6 +128,7 @@ export function BoardCalendarView({
   // edit the view picks one for this visit only.
   const { viewConfig, updateViewConfig } = useBoardView(boardId, workspaceId);
   const [localBasis, setLocalBasis] = useState<CalendarDateBasis | null>(null);
+  const savedBasis = resolveCalendarDateField(viewConfig);
   const todayParts = calendarParts(now, timeZone);
   const today = toDayKey(todayParts.year, todayParts.month, todayParts.day);
   const nowMinutes = todayParts.hour * 60 + todayParts.minute;
@@ -155,11 +160,28 @@ export function BoardCalendarView({
     [now, timeZone],
   );
 
+  // The server reads only the items that touch the month on screen (and the undated tray), so a large board
+  // stays paged. The basis is resolved against the board's own Date fields before the first read.
+  const { fieldDefinitions } = useFullBoard(boardId, workspaceId);
+  const wantedBasis = localBasis ?? savedBasis;
+  const readBasis =
+    wantedBasis === "span" ||
+    wantedBasis === "due" ||
+    fieldDefinitions.some(
+      (field) => field.id === wantedBasis && field.fieldType === "date",
+    )
+      ? wantedBasis
+      : "span";
+  const readMonth = anchorDay.slice(0, 7);
+  const dateWindow = useMemo(
+    () => ({ basis: readBasis, ...calendarReadWindow(`${readMonth}-01`) }),
+    [readBasis, readMonth],
+  );
   const kanban = useBoardKanban(boardId, workspaceId, {
     filter: noLegacyFilter,
     view: kanbanView,
     isOverdue,
-    allCards: true,
+    dateWindow,
   });
   const { capabilities } = useBoardCapabilities(boardId, workspaceId);
   const canEdit = capabilities.canMoveCard && capabilities.canCreateCard;
@@ -169,11 +191,13 @@ export function BoardCalendarView({
     () => calendarDateFields(kanban.filterFields),
     [kanban.filterFields],
   );
-  const savedBasis = resolveCalendarDateField(viewConfig);
   const dateBasis = resolveCalendarDateBasis(
     localBasis ?? savedBasis,
     dateFields,
   );
+  // A saved field that no longer exists falls back to Start → Due, and the member is told (product section 48).
+  const basisFellBack =
+    board !== undefined && (localBasis ?? savedBasis) !== dateBasis;
   const setDateBasis = (basis: CalendarDateBasis) => {
     if (capabilities.canEditFields) {
       setLocalBasis(null);
@@ -226,12 +250,13 @@ export function BoardCalendarView({
           }),
     [built.entries, unsaved],
   );
-  const undatedTotal = useMemo(
+  const loadedUndated = useMemo(
     () =>
       buildCalendarEntries({ lanes: kanban.allLanes, today, copy, timeZone })
         .undated.length,
     [kanban.allLanes, today, copy, timeZone],
   );
+  const undatedTotal = Math.max(kanban.undatedTotal ?? 0, loadedUndated);
   const cardsById = useMemo(
     () =>
       new Map(
@@ -396,14 +421,22 @@ export function BoardCalendarView({
   };
 
   /** An undated item gets one day: start and due are both that day. */
-  const handleSetDue = (id: string, day: DayKey) => {
+  const handleSetDue = (id: string, day: DayKey, minutes?: number) => {
     const card = cardsById.get(id);
     if (!card || !canEdit) return;
     writeDates(
       card,
       {
         startDate: zonedInstant(day, DEFAULT_START_HOUR, 0, timeZone),
-        dueDate: zonedInstant(day, DEFAULT_DUE_HOUR, 0, timeZone),
+        dueDate:
+          minutes === undefined
+            ? zonedInstant(day, DEFAULT_DUE_HOUR, 0, timeZone)
+            : zonedInstant(
+                day,
+                Math.floor(minutes / 60),
+                minutes % 60,
+                timeZone,
+              ),
       },
       datesOf(card),
       { startDay: day, endDay: day },
@@ -413,6 +446,27 @@ export function BoardCalendarView({
       }),
     );
   };
+
+  const statusField = kanban.statusField;
+  const statusMenu: CalendarStatusMenu | undefined =
+    canEdit && statusField?.options?.length
+      ? {
+          options: statusField.options.map((option) => ({
+            id: option.id,
+            label: option.label,
+            color: option.color ?? "currentColor",
+          })),
+          currentOf: (itemId) => {
+            const value = cardsById.get(itemId)?.fieldValues[statusField.id];
+            return typeof value === "string" ? value : null;
+          },
+          onChange: (entry, optionId) =>
+            kanban.updateStatus.mutate({
+              cardId: entry.id,
+              statusOptionId: optionId,
+            }),
+        }
+      : undefined;
 
   const handleCreate = (title: string, day: DayKey) => {
     const listId = [...kanban.groups].sort((a, b) => a.position - b.position)[0]
@@ -452,62 +506,76 @@ export function BoardCalendarView({
     <div
       ref={rootRef}
       tabIndex={-1}
-      className="relative h-full focus:outline-hidden"
+      className={cn(
+        "relative h-full focus:outline-hidden",
+        basisFellBack && "flex flex-col",
+      )}
     >
-      <BoardCalendarSurface
-        copy={copy}
-        locale={locale}
-        range={range}
-        onRangeChange={setRange}
-        anchorDay={anchorDay}
-        onAnchorChange={setAnchorDay}
-        today={today}
-        nowMinutes={nowMinutes}
-        zoneLabel={zoneLabel}
-        zoneName={zoneName}
-        dateBasis={dateBasis}
-        onDateBasisChange={setDateBasis}
-        dateFields={dateFields}
-        entries={shownEntries}
-        undatedTotal={undatedTotal}
-        undated={built.undated}
-        filterActive={kanban.filterActive}
-        onClearFilter={() =>
-          view.setFilter({ ...view.state.filter, conditions: [] })
-        }
-        viewBar={
-          <ViewStateBar
-            canSave={capabilities.canEditFields}
-            copy={filtersCopy}
-            view={view}
-            fields={kanban.filterFields}
-            memberName={kanban.memberName}
-            people={kanban.filterChoices.assignees}
-            counts={{ shown: kanban.visibleCount, total: kanban.totalCount }}
-            now={now}
-            savedFilters={(save) => (
-              <SavedFiltersControl
-                compact
-                workspaceId={workspaceId}
-                boardId={boardId}
-                filter={serializeCompoundFilter(view.applied.filter)}
-                canEdit={capabilities.canEditFields}
-                onApply={view.applyCriteria}
-                {...save}
-              />
-            )}
-          />
-        }
-        hiddenCount={Math.max(0, kanban.totalCount - kanban.visibleCount)}
-        canEdit={canEdit}
-        onOpenItem={(id) => onSelectedItemChange?.(id)}
-        onReschedule={handleReschedule}
-        onSetDue={handleSetDue}
-        onChangeDates={handleChangeDates}
-        onUnschedule={handleUnschedule}
-        onCreateItem={handleCreate}
-        onAddItem={setCreateDay}
-      />
+      {basisFellBack ? (
+        <p
+          role="status"
+          className="mx-4 mt-3 shrink-0 rounded-[10px] bg-warning-subtle px-3 py-2 text-[12.5px] leading-[1.45] text-warning-subtle-foreground ring-1 ring-warning/50 ring-inset sm:mx-6"
+        >
+          {copy.basis.fallbackNotice}
+        </p>
+      ) : null}
+      <div className={basisFellBack ? "min-h-0 flex-1" : "h-full"}>
+        <BoardCalendarSurface
+          copy={copy}
+          locale={locale}
+          range={range}
+          onRangeChange={setRange}
+          anchorDay={anchorDay}
+          onAnchorChange={setAnchorDay}
+          today={today}
+          nowMinutes={nowMinutes}
+          zoneLabel={zoneLabel}
+          zoneName={zoneName}
+          dateBasis={dateBasis}
+          onDateBasisChange={setDateBasis}
+          dateFields={dateFields}
+          entries={shownEntries}
+          undatedTotal={undatedTotal}
+          undated={built.undated}
+          filterActive={kanban.filterActive}
+          onClearFilter={() =>
+            view.setFilter({ ...view.state.filter, conditions: [] })
+          }
+          viewBar={
+            <ViewStateBar
+              canSave={capabilities.canEditFields}
+              copy={filtersCopy}
+              view={view}
+              fields={kanban.filterFields}
+              memberName={kanban.memberName}
+              people={kanban.filterChoices.assignees}
+              counts={{ shown: kanban.visibleCount, total: kanban.totalCount }}
+              now={now}
+              savedFilters={(save) => (
+                <SavedFiltersControl
+                  compact
+                  workspaceId={workspaceId}
+                  boardId={boardId}
+                  filter={serializeCompoundFilter(view.applied.filter)}
+                  canEdit={capabilities.canEditFields}
+                  onApply={view.applyCriteria}
+                  {...save}
+                />
+              )}
+            />
+          }
+          hiddenCount={Math.max(0, kanban.totalCount - kanban.visibleCount)}
+          canEdit={canEdit}
+          onOpenItem={(id) => onSelectedItemChange?.(id)}
+          onReschedule={handleReschedule}
+          onSetDue={handleSetDue}
+          onChangeDates={handleChangeDates}
+          onUnschedule={handleUnschedule}
+          statusMenu={statusMenu}
+          onCreateItem={handleCreate}
+          onAddItem={setCreateDay}
+        />
+      </div>
       {board && capabilities.canCreateCard ? (
         <CardCreatePopup
           open={createDay !== null}

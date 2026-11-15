@@ -2108,6 +2108,11 @@
           "maturity": "Implemented"
         },
         {
+          "name": "ChatMessageCreatedUnreadConsumer",
+          "context": "Chat",
+          "maturity": "Implemented"
+        },
+        {
           "name": "ChatNotificationIntentConsumer",
           "context": "Chat",
           "maturity": "Implemented"

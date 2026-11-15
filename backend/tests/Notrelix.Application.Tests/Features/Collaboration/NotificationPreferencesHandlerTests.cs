@@ -40,15 +40,15 @@ public sealed class NotificationPreferencesHandlerTests
     private static NotificationPreferenceRowChange R(string type, bool? inApp, bool? email) => new(type, inApp, email);
 
     private static NotificationPreferenceSet SetOf(Guid user, params NotificationPreferenceChange[] changes) =>
-        NotificationPreferenceSet.Create(AccountId, WorkspaceId, user, changes, Now)!;
+        NotificationPreferenceSet.Create(user, changes, Now)!;
 
     private static UpdateNotificationPreferencesCommand Update(long version, params NotificationPreferenceRowChange[] rows) =>
-        new(WorkspaceId, version, rows);
+        new(version, rows);
 
     [Fact]
     public async Task Get_WithoutASavedChange_ReturnsTheSevenDefaultRowsAtVersionZero()
     {
-        var result = await Reader().Handle(new GetNotificationPreferencesQuery(WorkspaceId), CancellationToken.None);
+        var result = await Reader().Handle(new GetNotificationPreferencesQuery(), CancellationToken.None);
 
         var dto = result.Data!;
         dto.Version.Should().Be(0);
@@ -58,18 +58,17 @@ public sealed class NotificationPreferencesHandlerTests
     }
 
     [Fact]
-    public async Task Get_ReturnsTheCallersOwnChoices_NeverAnotherUsersOrAnotherWorkspaces()
+    public async Task Get_ReturnsTheCallersOwnChoices_NeverAnotherUsers()
     {
         _rows.Add(SetOf(UserId, C("mention", "in_app", false)));
         _rows.Add(SetOf(Guid.NewGuid(), C("assigned", "in_app", false)));
-        _rows.Add(NotificationPreferenceSet.Create(AccountId, Guid.NewGuid(), UserId, [C("approval", "in_app", false)], Now)!);
+        _rows.Add(NotificationPreferenceSet.Create(UserId, [C("approval", "in_app", false)], Now)!);
 
-        var dto = (await Reader().Handle(new GetNotificationPreferencesQuery(WorkspaceId), CancellationToken.None)).Data!;
+        var dto = (await Reader().Handle(new GetNotificationPreferencesQuery(), CancellationToken.None)).Data!;
 
         dto.Version.Should().Be(1);
         dto.Rows.Single(r => r.Type == "mention").InApp.Should().BeFalse();
         dto.Rows.Single(r => r.Type == "assigned").InApp.Should().BeTrue("another person's choice is not the caller's");
-        dto.Rows.Single(r => r.Type == "approval").InApp.Should().BeTrue("another Workspace's choice is not this one's");
     }
 
     [Fact]
@@ -79,8 +78,6 @@ public sealed class NotificationPreferencesHandlerTests
 
         _rows.Should().ContainSingle();
         _rows[0].UserId.Should().Be(UserId);
-        _rows[0].AccountId.Should().Be(AccountId);
-        _rows[0].WorkspaceId.Should().Be(WorkspaceId);
         var dto = result.Data!;
         dto.Version.Should().Be(1);
         dto.Rows.Single(r => r.Type == "mention").InApp.Should().BeFalse();
@@ -150,8 +147,8 @@ public sealed class NotificationPreferencesHandlerTests
     {
         var validator = new UpdateNotificationPreferencesCommandValidator();
 
-        validator.Validate(new UpdateNotificationPreferencesCommand(WorkspaceId, 0, Array.Empty<NotificationPreferenceRowChange>())).IsValid.Should().BeFalse();
-        validator.Validate(new UpdateNotificationPreferencesCommand(WorkspaceId, -1, [R("mention", true, null)])).IsValid.Should().BeFalse();
-        validator.Validate(new UpdateNotificationPreferencesCommand(WorkspaceId, 0, [R("mention", true, null)])).IsValid.Should().BeTrue();
+        validator.Validate(new UpdateNotificationPreferencesCommand(0, Array.Empty<NotificationPreferenceRowChange>())).IsValid.Should().BeFalse();
+        validator.Validate(new UpdateNotificationPreferencesCommand(-1, [R("mention", true, null)])).IsValid.Should().BeFalse();
+        validator.Validate(new UpdateNotificationPreferencesCommand(0, [R("mention", true, null)])).IsValid.Should().BeTrue();
     }
 }

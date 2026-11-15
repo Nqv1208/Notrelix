@@ -6,7 +6,7 @@
  */
 export const en = {
   title: "Notifications",
-  description: "Choose how you want to be notified in each workspace.",
+  description: "Choose where you receive each kind of notification.",
   loading: "Loading your notification preferences…",
   loadError: "We couldn't load your notification preferences.",
   retry: "Try again",
@@ -16,7 +16,7 @@ export const en = {
     inApp: "In the app",
     email: "Email",
   },
-  workspaceScope: "These choices apply to this workspace only.",
+  workspaceScope: "Applies in every workspace you belong to.",
   cellLabel: "{{event}}: {{channel}}",
   events: {
     assigned: "Assigned to you",
@@ -47,7 +47,7 @@ export type AccountNotificationsCopy = typeof en;
 
 export const vi: AccountNotificationsCopy = {
   title: "Thông báo",
-  description: "Chọn cách bạn muốn nhận thông báo trong từng workspace.",
+  description: "Chọn nơi nhận từng loại thông báo.",
   loading: "Đang tải tùy chọn thông báo của bạn…",
   loadError: "Không thể tải tùy chọn thông báo của bạn.",
   retry: "Thử lại",
@@ -57,7 +57,7 @@ export const vi: AccountNotificationsCopy = {
     inApp: "Trong ứng dụng",
     email: "Email",
   },
-  workspaceScope: "Lựa chọn này chỉ áp dụng cho workspace này.",
+  workspaceScope: "Áp dụng cho mọi workspace của bạn.",
   cellLabel: "{{event}}: {{channel}}",
   events: {
     assigned: "Được giao việc",

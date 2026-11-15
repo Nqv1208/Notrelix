@@ -5,8 +5,8 @@ import { mainTableCopy, type MainTableCopy } from "./main-table.copy";
 /** Row 36 px; columns select, key, title, status, due (BC-Shell L). */
 const ROW =
   "grid h-9 grid-cols-[40px_84px_minmax(0,1fr)_140px_120px] items-center border-b";
-/** The drawn bars grow and shrink from row to row. */
-const TITLE_BARS = [226, 300, 374, 249, 323];
+/** The drawn bars grow and shrink from row to row, as a share of the title cell (BC-Shell L at 1280, BC-Large at 1440). */
+const TITLE_BARS = [40, 53, 66, 44, 57];
 
 /**
  * The table while it loads (BC-Shell L): the toolbar switched off, the grid
@@ -66,7 +66,7 @@ export function MainTableSkeleton({
               <Skeleton className="h-2.5 w-12.5" />
             </span>
             <span className="px-2.5">
-              <Skeleton className="h-2.5" style={{ width: title }} />
+              <Skeleton className="h-2.5" style={{ width: `${title}%` }} />
             </span>
             <span className="px-2.5">
               <Skeleton className="h-2.5 w-17.5" />

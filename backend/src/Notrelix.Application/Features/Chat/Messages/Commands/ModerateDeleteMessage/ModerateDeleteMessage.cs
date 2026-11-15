@@ -33,6 +33,7 @@ public class ModerateDeleteMessageCommandHandler(
     ISpaceSequenceAllocator sequences,
     IDateTimeProvider clock,
     IChatMessageAttachments attachments,
+    IChatReadStateStore readStates,
     ChatAuditFacts audit) : IRequestHandler<ModerateDeleteMessageCommand, Result>
 {
     public async Task<Result> Handle(ModerateDeleteMessageCommand request, CancellationToken cancellationToken)
@@ -58,7 +59,7 @@ public class ModerateDeleteMessageCommandHandler(
         var now = clock.UtcNow;
         if (message.DeleteAsModerator(userId, now))
         {
-            await MessageTombstones.ClearAttachedAsync(db, attachments, message, userId, now, cancellationToken);
+            await MessageTombstones.ClearAttachedAsync(db, attachments, readStates, message, userId, now, cancellationToken);
             await audit.MessageModeratedAsync(space, message.Id, message.AuthorId, request.Reason.Trim(), cancellationToken);
         }
         return Result.Success();

@@ -8,6 +8,7 @@ import {
   useCreateItemWithDetails,
   useDeleteCard,
   useForm,
+  useFormSubmissionCounts,
   useFormSubmissions,
   useFormWrites,
   useFullBoard,
@@ -151,11 +152,13 @@ export function FormBuilderPage({
   onSelect,
   preview,
   onPreview,
+  user,
   onBack,
 }: {
   readonly workspaceId: string;
   readonly boardId: string;
   readonly formId: string;
+  readonly user?: { readonly name: string; readonly email?: string };
   readonly selectedId: string | null;
   readonly onSelect: (questionId: string | null) => void;
   readonly preview: boolean;
@@ -201,6 +204,7 @@ export function FormBuilderPage({
           : undefined
       }
       preview={preview}
+      user={user}
       archived={board?.isArchived === true}
       onPreview={onPreview}
       linkUrl={formLink(workspaceId, boardId, formId)}
@@ -325,6 +329,7 @@ export function FormInboxPage({
   const { locale } = useLocale();
   const formQuery = useForm(formId, workspaceId);
   const submissions = useFormSubmissions(formId, workspaceId);
+  const totals = useFormSubmissionCounts(formId, workspaceId);
   const writes = useFormWrites(boardId, workspaceId);
   const { board, groups, fieldDefinitions } = useFullBoard(
     boardId,
@@ -502,6 +507,7 @@ export function FormInboxPage({
         form={form}
         fields={fields}
         submissions={visible}
+        counts={totals.data}
         hasMore={submissions.hasNextPage}
         loadingMore={submissions.isFetchingNextPage}
         onLoadMore={() => void submissions.fetchNextPage()}

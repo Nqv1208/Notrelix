@@ -2856,12 +2856,12 @@
       "IAuthenticatedRequest"
     ],
     "scopeMarkers": [
-      "IWorkspaceRequest"
+      "IGlobalRequest"
     ],
     "dataMarkers": [
       "IWriteRequest"
     ],
-    "requiresPermission": true,
+    "requiresPermission": false,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
     "requiresFeature": false,
@@ -2881,12 +2881,12 @@
       "IAuthenticatedRequest"
     ],
     "scopeMarkers": [
-      "IWorkspaceRequest"
+      "IGlobalRequest"
     ],
     "dataMarkers": [
       "IReadRequest"
     ],
-    "requiresPermission": true,
+    "requiresPermission": false,
     "requiresVerifiedEmail": false,
     "requiresSubscription": false,
     "requiresFeature": false,
@@ -9297,6 +9297,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.WorkManagement.Forms.Queries.GetForm.GetFormQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.WorkManagement.Forms.Queries.ListFormSubmissions.CountFormSubmissionsQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IResourceScopedRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.WorkManagement.Forms.Queries.ListFormSubmissions.CountFormSubmissionsQueryHandler"
     ]
   },
   {

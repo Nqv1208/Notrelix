@@ -67,9 +67,50 @@ public sealed class FormSubmitRateLimitTests
         received.Take(ShippedPermitLimit).Should().OnlyContain(c => c.Honeypot == "http://bot.example");
     }
 
-    private static Task<HttpResponseMessage> PostAsync(HttpClient client, Guid formId, string json)
+    [Fact]
+    public async Task Submit_SpellingsOfOneFormId_ShareOneBucket()
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/forms/{formId}/submissions")
+        await using var factory = new ShippedRateLimitsApiFactory().WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IResourceLocator>();
+            services.AddScoped<IResourceLocator>(_ =>
+            {
+                var locator = new Mock<IResourceLocator>();
+                locator.Setup(x => x.LocateAsync(It.IsAny<ResourceRef>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync((ResourceRef resource, Guid _, CancellationToken _) =>
+                        new ResourceLocation(resource.Kind, resource.ResourceId, AccountId, AccountId));
+                return locator.Object;
+            });
+            services.RemoveAll<IRequestHandler<SubmitFormCommand, Result<Guid>>>();
+            services.AddScoped<IRequestHandler<SubmitFormCommand, Result<Guid>>>(_ =>
+            {
+                var handler = new Mock<IRequestHandler<SubmitFormCommand, Result<Guid>>>();
+                handler.Setup(h => h.Handle(It.IsAny<SubmitFormCommand>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(Result<Guid>.Success(Guid.NewGuid()));
+                return handler.Object;
+            });
+        }));
+        var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-Auth", "true");
+        var formId = Guid.NewGuid();
+        string[] spellings = [formId.ToString("D"), formId.ToString("D").ToUpperInvariant(), formId.ToString("N"), formId.ToString("B")];
+
+        for (var attempt = 0; attempt < ShippedPermitLimit; attempt++)
+        {
+            var ok = await PostAsync(client, spellings[attempt % spellings.Length], """{"answers":{}}""");
+            ok.StatusCode.Should().NotBe(HttpStatusCode.TooManyRequests);
+        }
+
+        var limited = await PostAsync(client, formId.ToString("D").ToUpperInvariant(), """{"answers":{}}""");
+        limited.StatusCode.Should().Be(HttpStatusCode.TooManyRequests, "every spelling of one form id counts against one bucket");
+    }
+
+    private static Task<HttpResponseMessage> PostAsync(HttpClient client, Guid formId, string json) =>
+        PostAsync(client, formId.ToString(), json);
+
+    private static Task<HttpResponseMessage> PostAsync(HttpClient client, string formId, string json)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/forms/{Uri.EscapeDataString(formId)}/submissions")
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };

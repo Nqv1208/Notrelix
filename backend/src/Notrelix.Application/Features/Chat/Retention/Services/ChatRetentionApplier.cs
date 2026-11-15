@@ -28,14 +28,15 @@ public sealed record RetentionTarget(Guid AccountId, Guid WorkspaceId, int Reten
 /// Tombstone mode turns the message into a tombstone (the author, time and sequence stay) and removes its pin, reactions, mentions and
 /// files. Purge mode deletes the row with the same things; a thread is purged as a whole, and only when its last reply is also past the
 /// window, so a live conversation never loses its root. The sequence counter of the space is untouched, so a message sent later still takes
-/// the next number and a reader sees a gap where purged messages were. Unread counts are counted from the rows that remain, so they stay
-/// right. A space that is deleted (inside its recovery window, CHT-018) is not touched: the recovery hold.
+/// the next number and a reader sees a gap where purged messages were. Mention counts come off the members who had them unread; a number
+/// that is a sequence difference (a direct conversation) still counts the purged messages, as the gap shows. A space that is deleted (inside its recovery window, CHT-018) is not touched: the recovery hold.
 /// One fact per batch tells the clients of the space to refetch (chat.space.changed), so a batch of 200 is not 200 frames.
 /// </remarks>
 public sealed class ChatRetentionApplier(
     IChatDbContext db,
     IChatMessageAttachments attachments,
     IChatSystemAudit audit,
+    IChatReadStateStore readStates,
     IDateTimeProvider clock)
 {
     /// <summary>Every rule that has a window, so the job knows which Workspaces to work on.</summary>
@@ -122,7 +123,7 @@ public sealed class ChatRetentionApplier(
         foreach (var message in batch)
             message.ExpireByRetention(now);
 
-        await RemoveAttachedAsync(ids, target.ConfiguredBy, cancellationToken);
+        await RemoveAttachedAsync(ids, target.WorkspaceId, target.ConfiguredBy, cancellationToken);
         return new RetentionBatchResult(batch.Count, 0);
     }
 
@@ -152,7 +153,7 @@ public sealed class ChatRetentionApplier(
 
         var all = roots.Concat(replies).ToList();
         var ids = all.Select(m => m.Id).ToList();
-        await RemoveAttachedAsync(ids, target.ConfiguredBy, cancellationToken);
+        await RemoveAttachedAsync(ids, target.WorkspaceId, target.ConfiguredBy, cancellationToken);
 
         foreach (var follower in followers)
             db.ChatThreadFollowers.Remove(follower);
@@ -165,8 +166,10 @@ public sealed class ChatRetentionApplier(
     }
 
     /// <summary>The pins, reactions, mentions and files that hang on the messages. No fact each: the batch has one.</summary>
-    private async Task RemoveAttachedAsync(IReadOnlyCollection<Guid> messageIds, Guid deletedBy, CancellationToken cancellationToken)
+    private async Task RemoveAttachedAsync(IReadOnlyCollection<Guid> messageIds, Guid workspaceId, Guid deletedBy, CancellationToken cancellationToken)
     {
+        // The stored mentions come off the members' mention counts while the rows still exist.
+        await readStates.RemoveMentionsAsync(workspaceId, messageIds, cancellationToken);
         foreach (var pin in await db.ChatPins.Where(p => messageIds.Contains(p.MessageId)).ToListAsync(cancellationToken))
             db.ChatPins.Remove(pin);
         foreach (var reaction in await db.ChatReactions.Where(r => messageIds.Contains(r.MessageId)).ToListAsync(cancellationToken))

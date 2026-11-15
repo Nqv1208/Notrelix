@@ -70,7 +70,10 @@ function messagePayload(
     threadSequence: message.threadSequence,
   };
   if (eventType === "chat.message.created") {
-    return base;
+    // The sender's key travels with the created frame so the sender swaps its pending bubble in place.
+    return message.clientMessageId
+      ? { ...base, clientMessageId: message.clientMessageId }
+      : base;
   }
   if (eventType === "chat.message.updated") {
     // Only a user message is edited, so the kind is fixed; the reply link is not carried.
@@ -189,8 +192,9 @@ function unreadFrame(
   spaceId: string,
   unread: number,
   mentions: number,
+  extra: { lastSequence?: number; preview?: ChatUnreadPreview } = {},
 ): void {
-  const payload: UnreadEventPayload = { spaceId, unread, mentions };
+  const payload = { spaceId, unread, mentions, ...extra } as UnreadEventPayload;
   publishMockScopeFrame(
     frame({
       state,
@@ -369,7 +373,7 @@ export function announceMessageCreated(
       space.workspaceId,
       row.userId,
       space.id,
-      unreadIn(state, space.id, row.userId, row.readSequence).count,
+      unreadIn(space.lastSequence, row.readSequence).count,
       mentionCountIn(
         state,
         space.id,
@@ -377,8 +381,34 @@ export function announceMessageCreated(
         row.readSequence,
         row.joinedAt,
       ),
+      {
+        lastSequence: space.lastSequence,
+        // A reply inside a thread is not the newest message of the list: no preview (ChatUnreadFanOut).
+        ...(message.threadRootId === null
+          ? {
+              preview: {
+                sequence: message.sequence,
+                authorId: message.authorId,
+                kind: message.kind,
+                ...(message.kind === "user"
+                  ? { text: previewText(message.content ?? "") }
+                  : {}),
+                createdAt: message.createdAt,
+              },
+            }
+          : {}),
+      },
     );
   }
+}
+
+type ChatUnreadPreview = NonNullable<UnreadEventPayload["preview"]>;
+
+/** Whitespace collapsed and cut at 140 characters (ChatRealtime.PreviewText). */
+function previewText(content: string): string | undefined {
+  const text = content.split(/\s+/).filter(Boolean).join(" ");
+  if (text.length === 0) return undefined;
+  return Array.from(text).slice(0, 140).join("");
 }
 
 /** The caller's other devices learn the new count of each space that moved (UC-CHT-C09). */

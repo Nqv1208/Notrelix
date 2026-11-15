@@ -36,7 +36,7 @@ export interface ChatMessageFramePayload {
   readonly editedAt: string | null;
   readonly replyToId: string | null;
   readonly version: number;
-  /** Not in chat.message.v1 today; read when present so an own send can be reconciled. */
+  /** The sender's key, on a created frame only; the sender's client swaps its pending bubble for the stored message by it. */
   readonly clientMessageId: string | null;
   /** The thread root of a reply (null for the main flow). */
   readonly threadRootId: string | null;
@@ -84,8 +84,19 @@ export interface ChatSpaceFramePayload {
 /** The unread payload (chat.unread.v1): the counts of one space for this person. */
 export interface ChatUnreadFramePayload {
   readonly spaceId: string;
+  /** The space's last sequence minus this person's boundary: above 0 means unread (a channel shows a dot, a direct conversation the number). */
   readonly unread: number;
+  /** The stored count of unread messages that mention this person or broadcast to the space. */
   readonly mentions: number;
+  readonly lastSequence?: number;
+  /** The new message as a short preview (at most 140 characters); absent on a read change. */
+  readonly preview?: {
+    readonly sequence: number;
+    readonly authorId: string;
+    readonly kind: string;
+    readonly text: string | null;
+    readonly createdAt: string;
+  };
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -224,15 +235,41 @@ export function parseChatSpaceFrame(
   return { messageId, change };
 }
 
+function parseUnreadPreview(
+  value: unknown,
+): ChatUnreadFramePayload["preview"] | null {
+  if (!isRecord(value)) return null;
+  if (
+    !isCount(value.sequence) ||
+    !isNonEmpty(value.authorId) ||
+    !isNonEmpty(value.kind) ||
+    !isNonEmpty(value.createdAt)
+  ) {
+    return null;
+  }
+  return {
+    sequence: value.sequence,
+    authorId: value.authorId,
+    kind: value.kind,
+    text: typeof value.text === "string" ? value.text : null,
+    createdAt: value.createdAt,
+  };
+}
+
 export function parseChatUnreadFrame(
   payload: unknown,
 ): ChatUnreadFramePayload | null {
   if (!isRecord(payload)) return null;
   if (!isNonEmpty(payload.spaceId)) return null;
   if (!isCount(payload.unread) || !isCount(payload.mentions)) return null;
+  const preview = parseUnreadPreview(payload.preview);
   return {
     spaceId: payload.spaceId,
     unread: payload.unread,
     mentions: payload.mentions,
+    ...(isCount(payload.lastSequence)
+      ? { lastSequence: payload.lastSequence }
+      : {}),
+    ...(preview ? { preview } : {}),
   };
 }

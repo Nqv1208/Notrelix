@@ -9076,25 +9076,14 @@
         ]
       }
     },
-    "/api/v1/workspaces/{workspaceId}/notification-preferences": {
+    "/api/v1/profile/notification-preferences": {
       "get": {
         "tags": [
           "Collaboration.Preferences"
         ],
-        "summary": "Get the caller's notification preferences in a workspace",
+        "summary": "Get the caller's notification preferences (every workspace)",
         "description": "One row per notification type (assigned, mention, approval, overdue, watching, invitation, digest) with its in-app and email value; a cell the caller never changed has its default. Version is 0 until the first change is saved.",
         "operationId": "Collaboration.Preferences.GetNotificationPreferences",
-        "parameters": [
-          {
-            "name": "workspaceId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -9120,20 +9109,9 @@
         "tags": [
           "Collaboration.Preferences"
         ],
-        "summary": "Change the caller's notification preferences in a workspace",
+        "summary": "Change the caller's notification preferences (every workspace)",
         "description": "Partial and all-or-nothing: only the named channels of the named types change. Answers the full matrix, 412 when expectedVersion is stale, 400 or 422 for an unknown type or no change requested. Setting values that already hold changes nothing and keeps the version.",
         "operationId": "Collaboration.Preferences.UpdateNotificationPreferences",
-        "parameters": [
-          {
-            "name": "workspaceId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -9361,7 +9339,8 @@
           "Documents.Blocks",
           "Documents.Blocks"
         ],
-        "summary": "List blocks for a page",
+        "summary": "List the blocks of a page, 1 000 at a time",
+        "description": "Position order, at most 1 000 a window. Pass nextCursor back as cursor for the next window.",
         "operationId": "Documents.Blocks.ListPageBlocks",
         "parameters": [
           {
@@ -9372,6 +9351,21 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -9380,10 +9374,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.BlockDto"
-                  }
+                  "$ref": "#/components/schemas/Notrelix.Application.Common.Models.CursorPageOfBlockDto"
                 }
               }
             }
@@ -26537,6 +26528,48 @@
         ]
       }
     },
+    "/api/v1/forms/{formId}/submissions/counts": {
+      "get": {
+        "tags": [
+          "WorkManagement.Forms",
+          "WorkManagement.Forms"
+        ],
+        "summary": "Count the submissions of a form by tab",
+        "description": "Totals over all responses, not one page: new, processed, rejected and spam.",
+        "operationId": "WorkManagement.Forms.CountSubmissions",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionCountsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/form-submissions/{submissionId}/process": {
       "post": {
         "tags": [
@@ -38025,6 +38058,27 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Common.Models.CursorPageOfBlockDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Documents.DTOs.BlockDto"
+            },
+            "nullable": true
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Common.Models.CursorPageOfCommentDto": {
         "type": "object",
         "properties": {
@@ -44115,6 +44169,28 @@
           "errorCode": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionCountsDto": {
+        "type": "object",
+        "properties": {
+          "new": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "processed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rejected": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "spam": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
