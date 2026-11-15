@@ -72,6 +72,10 @@ public sealed class BoardItemCriteriaIntegrationTests : IAsyncLifetime
         var beta = Item("Beta", "a1");
         var gamma = Item("Gamma", "a2");
         var delta = Item("Delta", "a3");
+        // Item dates for the span window: Alpha runs 10-28 to 11-03, Beta is due 12-15, Delta only starts 11-20, Gamma has none.
+        alpha.SetTimeline(new DateTimeOffset(2026, 10, 28, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 11, 3, 0, 0, 0, TimeSpan.Zero), _userId, Now);
+        beta.SetTimeline(null, new DateTimeOffset(2026, 12, 15, 0, 0, 0, TimeSpan.Zero), _userId, Now);
+        delta.SetTimeline(new DateTimeOffset(2026, 11, 20, 0, 0, 0, TimeSpan.Zero), null, _userId, Now);
         Set(alpha, _status, Q(Category(WorkStatusCategory.Todo)));
         Set(delta, _status, Q(Category(WorkStatusCategory.Todo)));
         Set(beta, _status, Q(Category(WorkStatusCategory.InProgress)));
@@ -139,6 +143,27 @@ public sealed class BoardItemCriteriaIntegrationTests : IAsyncLifetime
     {
         Names(await ReadAsync(Filter($"{Id("Hạn")}.between.2026-11-01.2026-11-05"))).Should().Equal("Alpha", "Delta");
         Names(await ReadAsync(Filter($"{Id("Hạn")}.between.2026-11-01"))).Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("2026-11-01", "2026-11-30", "Alpha,Delta")]
+    [InlineData("2026-11-04", "2026-11-19", "")]
+    [InlineData("2026-11-20", "2026-11-20", "Delta")]
+    [InlineData("2026-12-15", "2026-12-31", "Beta")]
+    [InlineData("2027-01-01", "2027-01-31", "")]
+    public async Task Filter_SpanOverlaps_KeepsTheItemsWhoseDaysTouchTheWindow_AndNeverTheUndated(string from, string to, string expected)
+    {
+        Names(await ReadAsync(Filter($"$span.overlaps.{from}.{to}"))).Should().Equal(Split(expected));
+    }
+
+    [Fact]
+    public async Task Filter_SpanOverlaps_WithAnIncompleteWindowMatchesNothing_AndAnotherOperatorIsRefused()
+    {
+        Names(await ReadAsync(Filter("$span.overlaps.2026-11-01"))).Should().BeEmpty();
+        Names(await ReadAsync(Filter("$span.is_empty"))).Should().Equal("Gamma");
+        var act = () => ReadAsync(Filter("$span.contains.x"));
+        (await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ValidationException>())
+            .Which.Errors.Keys.Should().Contain("filter");
     }
 
     [Theory]

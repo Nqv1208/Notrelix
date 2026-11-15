@@ -122,11 +122,11 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-A01 | Create a page | A | Editor of the parent or space, workspace member | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
 | UC-DCT-A02 | Rename a page | A | Editor | partial | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
 | UC-DCT-A03 | Set a page icon | A | Editor | partial | partial | Final-Docs-2 | none | IMPLEMENTING | API drops icon; no endpoint field |
-| UC-DCT-A04 | Move a page to the trash | A | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Owner check |
-| UC-DCT-A05 | Restore a page from the trash | A | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Owner check |
-| UC-DCT-A06 | Delete a trashed page permanently | A | Manager | yes | yes | Final-Docs-2 | real | HARDENING | Owner check |
-| UC-DCT-A07 | Browse the trash | A | Viewer of a trashed page | yes | yes | none | real | HARDENING | Owner check |
-| UC-DCT-A08 | Trash or delete a page that has children | A | Editor, Manager | yes | yes | none | real | HARDENING | Owner check; delete for good of a subtree and the confirmation artboard |
+| UC-DCT-A04 | Move a page to the trash | A | Editor | yes | yes | Final-Docs-2 | real | DONE | none |
+| UC-DCT-A05 | Restore a page from the trash | A | Editor | yes | yes | Final-Docs-2 | real | DONE | none |
+| UC-DCT-A06 | Delete a trashed page permanently | A | Manager | yes | yes | Final-Docs-2 | real | DONE | none |
+| UC-DCT-A07 | Browse the trash | A | Viewer of a trashed page | yes | yes | none | real | DONE | none |
+| UC-DCT-A08 | Trash or delete a page that has children | A | Editor, Manager | yes | yes | none | real | DONE | none |
 | UC-DCT-A09 | Duplicate a page | A | Editor | partial | yes | none | none | INTEGRATING | Copy is two client calls; the client has no video block; BE is partial; no artboard |
 | UC-DCT-A10 | Save a page as a template | A | Editor | yes | yes | none | none | INTEGRATING | No artboard; template visibility when the viewer cannot read the source is undecided (owner) |
 | UC-DCT-A11 | Create a page from a template | A | Editor of the target | yes | yes | none | none | INTEGRATING | No gallery artboard; replay of create-from-template is not proven |
@@ -139,52 +139,52 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-B01 | Show the page tree | B | Workspace member | yes | yes | Final-Docs-2 | none | INTEGRATING | Owner question: above 2 000 visible pages the tree endpoint answers root pages only (LD15), and the sidebar has no lazy child loading; wire the whole tree now or build lazy loading first? |
 | UC-DCT-B02 | Create a child page | B | Editor of the parent | yes | yes | Final-Docs-2 | none | INTEGRATING | No client creates a page under a chosen parent (File menu makes a sibling) |
 | UC-DCT-B03 | Show the breadcrumb | B | Viewer | yes | yes | Final-Docs-2 | none | HARDENING | Built: `PageBreadcrumbHandlerTests` (path, hidden crumb, collapsed run, missing parent); owner tests by hand |
-| UC-DCT-B04 | Refuse a cycle or a foreign parent | B | System | yes | partial | none | real | HARDENING | Owner check; the Move to dialog is not driven in a browser |
-| UC-DCT-B05 | Limit nesting depth | B | System | yes | partial | none | none | HARDENING | Built: `PageNestingDepthTests` (create and subtree move refused past the limit); the move dialog words only the 400; owner tests by hand |
-| UC-DCT-C01 | Move a root page and its subtree to a space | C | Editor of the page and of the space | yes | yes | Final-Docs-2 | none | INTEGRATING | Refusal for a page below the caller, a deleted page below, 412 and a hidden target are untested; no dialog artboard |
-| UC-DCT-C02 | Move a page under another parent | C | Editor of the page, Editor of the new parent | yes | yes | none | real | HARDENING | Owner check; Move to dialog not driven in a browser; sidebar drag not built |
-| UC-DCT-C03 | Refuse a move to another workspace | C | System | none | none | none | none | DEFINED | No explicit rejection test |
-| UC-DCT-D01 | Add a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
-| UC-DCT-D02 | Edit a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
-| UC-DCT-D03 | Save several blocks as one change | D | Editor | yes | yes | Final-Docs-2 | none | HARDENING | Built: batch retry and 5 000-block limit in `BatchUpdateBlocksHandlerTests`; rollback in `BatchRollbackIntegrationTests` (CI); owner tests by hand |
+| UC-DCT-B04 | Refuse a cycle or a foreign parent | B | System | yes | partial | none | real | DONE | none |
+| UC-DCT-B05 | Limit nesting depth | B | System | yes | partial | none | none | DONE | none |
+| UC-DCT-C01 | Move a root page and its subtree to a space | C | Editor of the page and of the space | yes | yes | Final-Docs-2 | none | DONE | none |
+| UC-DCT-C02 | Move a page under another parent | C | Editor of the page, Editor of the new parent | yes | yes | none | real | DONE | none |
+| UC-DCT-C03 | Refuse a move to another workspace | C | System | none | none | none | none | DONE | none |
+| UC-DCT-D01 | Add a block | D | Editor | yes | yes | Final-Docs-2 | real | DONE | set DONE by the document blocks pull request, see the Evidence line |
+| UC-DCT-D02 | Edit a block | D | Editor | yes | yes | Final-Docs-2 | real | DONE | set DONE by the document blocks pull request, see the Evidence line |
+| UC-DCT-D03 | Save several blocks as one change | D | Editor | yes | yes | Final-Docs-2 | none | DONE | set DONE by the document blocks pull request, see the Evidence line |
 | UC-DCT-D04 | Delete a block | D | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Owner check; block menu with an undo toast not built |
-| UC-DCT-D05 | Refuse edits to a trashed page | D | System | yes | partial | none | none | HARDENING | Built: `PageTrashedRefusalTests` covers create, edit, delete, batch, restore and move on a trashed page (reorder in `ReorderBlocksHandlerTests`); owner tests by hand |
+| UC-DCT-D05 | Refuse edits to a trashed page | D | System | yes | partial | none | none | DONE | set DONE by the document blocks pull request, see the Evidence line |
 | UC-DCT-D06 | Convert a checklist line to a task | D | Editor with item-create right | partial | yes | Final-Docs-2 | none | INTEGRATING | A single server call for the three writes is not built (needs a Work Management and Documents decision) |
-| UC-DCT-E01 | Write rich text with marks | E | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
-| UC-DCT-E02 | Change a block's type | E | Editor | yes | yes | Final-Docs-2 | none | HARDENING | Built (verified by reading code 2026-11-09, not run): UpdateBlock.cs, Block.cs, BlockChangeTypeTests.cs, BlockEditingHandlerTests.cs, editor-commands.ts, slash-menu.tsx, format-commands.component.test.tsx. Remaining: owner tests by hand. |
-| UC-DCT-E03 | Use structured blocks | E | Editor | yes | yes | Final-Docs-2 | none | HARDENING | Built (verified by reading code 2026-11-09, not run): BlockProperties.cs, BlockRules.cs, BlockPropertiesTests.cs, extensions.tsx, code-block.tsx, toggle-collapse.ts, doc-table-of-contents.tsx. Remaining: owner tests by hand. |
+| UC-DCT-E01 | Write rich text with marks | E | Editor | yes | yes | Final-Docs-2 | real | DONE | set DONE by the document blocks pull request, see the Evidence line |
+| UC-DCT-E02 | Change a block's type | E | Editor | yes | yes | Final-Docs-2 | none | DONE | set DONE by the document blocks pull request, see the Evidence line |
+| UC-DCT-E03 | Use structured blocks | E | Editor | yes | yes | Final-Docs-2 | none | DONE | set DONE by the document blocks pull request, see the Evidence line |
 | UC-DCT-E04 | Use a table block | E | Editor | yes | yes | none | none | INTEGRATING | No artboard for the table menu or the conflict note |
 | UC-DCT-E05 | Add an image, file or video block | E | Editor | yes | yes | none | none | INTEGRATING | No artboard for the upload states; the client has no video block |
 | UC-DCT-E06 | Embed a board in a page | E | Editor | yes | yes | none | none | INTEGRATING | Write-time check that the embed target exists and is viewable not built (decision open); no artboard |
 | UC-DCT-E07 | Reference another page | E | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Tests and owner check |
 | UC-DCT-E08 | Mention a person in a page | E | Editor | yes | yes | Final-Docs-2 | none | INTEGRATING | Suggestion list offers every workspace member, not only people who can view the page (UC-COL-B05) |
 | UC-DCT-E09 | Open a block type this client does not know | E | Any viewer | partial | partial | none | none | DEFINED | No placeholder behaviour |
-| UC-DCT-F01 | Insert a block between two blocks | F | Editor | yes | yes | Final-Docs-2 | none | HARDENING | Built: `BlockEditingHandlerTests` asserts 400 for a block of the page that is not a sibling and 404 for an id not on the page (doc and test agree); owner tests by hand |
-| UC-DCT-F02 | Reorder blocks | F | Editor | yes | yes | none | real | HARDENING | Owner check; the grip and keys are not driven in a browser |
-| UC-DCT-F03 | Nest or un-nest a block | F | Editor | yes | yes | none | none | HARDENING | Built (verified by reading code 2026-11-09, not run): Block.cs, BlockHierarchyTests.cs, BlockTreeRulesTests.cs, BlockMoveFailureAtomicityTests.cs, block-move.ts, block-move.component.test.tsx. Remaining: owner tests by hand. |
-| UC-DCT-F04 | Insert many blocks densely | F | Editor | yes | none | none | none | IMPLEMENTING | Rebalance undefined |
-| UC-DCT-G01 | Open a page | G | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Block list unbounded |
+| UC-DCT-F01 | Insert a block between two blocks | F | Editor | yes | yes | Final-Docs-2 | none | DONE | set DONE by the document blocks pull request, see the Evidence line |
+| UC-DCT-F02 | Reorder blocks | F | Editor | yes | yes | none | real | DONE | set DONE by the document blocks pull request, see the Evidence line |
+| UC-DCT-F03 | Nest or un-nest a block | F | Editor | yes | yes | none | none | DONE | set DONE by the document blocks pull request, see the Evidence line |
+| UC-DCT-F04 | Insert many blocks densely | F | Editor | yes | none | none | none | DONE | set DONE by the document blocks pull request, see the Evidence line |
+| UC-DCT-G01 | Open a page | G | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Blocks read in one answer (cap 5 000 holds); trashed page still opens; 1-px diff |
 | UC-DCT-G02 | List the pages of a workspace | G | Workspace member | yes | yes | none | none | HARDENING | Built: cursor paging; real e2e owner |
-| UC-DCT-G03 | Search pages by title | G | Workspace member | yes | yes | Final-Command | none | INTEGRATING | Owner question: approve an ILIKE rewrite of the title match and a pg_trgm GIN index on the title, or keep the current search? |
-| UC-DCT-G04 | Read the pages that reference this page | G | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Unbounded |
+| UC-DCT-G03 | Search pages by title | G | Workspace member | yes | yes | Final-Command | none | HARDENING | Decision 2026-11-15: keep the title match as it is; the index follows the body-search projection (UC-DCT-G07). Real e2e none |
+| UC-DCT-G04 | Read the pages that reference this page | G | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Bounded at 200; 1-px diff of the Liên kết tab |
 | UC-DCT-G05 | Show the tasks and boards linked to a page | G | Viewer | partial | yes | Final-Docs-2 | none | INTEGRATING | ResourceLink aggregate fate is undecided (owner decision) |
-| UC-DCT-G06 | Load a very large page (enterprise baseline) | G | Viewer | none | none | none | none | DEFINED | No block limit or windowing |
+| UC-DCT-G06 | Load a very large page (enterprise baseline) | G | Viewer | yes | none | none | none | INTEGRATING | Cap of 5 000 built and tested; cursor of 1 000 and windowed first render not built |
 | UC-DCT-G07 | Search inside page text (enterprise baseline) | G | Workspace member | none | none | none | none | DEFINED | Title search only |
-| UC-DCT-H01 | Autosave edits and show the saved state | H | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Offline state not proven |
+| UC-DCT-H01 | Autosave edits and show the saved state | H | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Offline state built (UC-DCT-H04); not proven in a real e2e |
 | UC-DCT-H02 | Rebase after a stale save | H | Editor | yes | yes | none | none | INTEGRATING | No conflict artboard; no proof with two sessions |
-| UC-DCT-H03 | Roll back a failed optimistic write | H | Editor | yes | yes | none | none | INTEGRATING | Built: create, delete and reorder hooks patch the list at once and roll back (`block-mutation-rollback.unit.test.ts`). Owner question: editor saves keep a rejected block until Retry by design; revert it instead? |
-| UC-DCT-H04 | Edit while offline | H | Editor | none | none | none | none | DEFINED | Not built |
+| UC-DCT-H03 | Roll back a failed optimistic write | H | Editor | yes | yes | none | none | INTEGRATING | Built: create, delete and reorder hooks patch the list at once and roll back (`block-mutation-rollback.unit.test.ts`). Decision 2026-11-15: the editor keeps a rejected block until Retry; no artboard for the error toast |
+| UC-DCT-H04 | Edit while offline | H | Editor | none | yes | none | none | INTEGRATING | Banner and leave warning and resend built; structural actions stay enabled offline; no real e2e |
 | UC-DCT-H05 | Find and replace in a page | H | Editor | none | yes | none | none | INTEGRATING | No artboard for find and replace |
 | UC-DCT-H06 | Read a page on a phone app | H | Viewer | yes | yes | Final-M-Docs | none | HARDENING | Built (verified by reading code 2026-11-09, not run): GetPageEndpoint.cs, ListPageBlocksEndpoint.cs, mobile-document-screen.tsx, docs-mobile-screen.mobile.test.tsx. Remaining: owner tests by hand. |
 | UC-DCT-H07 | Use the 320 px page and its overflow sheet | H | Viewer, Editor | yes | yes | Final-Docs-2-320 | none | INTEGRATING | Measured gaps beyond 1 px (paragraph style select 36 px against 30, status pill 79 against 87); other states undrawn |
 | UC-DCT-H08 | Edit with keyboard and screen reader | H | Editor | none | yes | none | none | HARDENING | Built (verified by reading code 2026-11-09, not run): shortcut-catalog.ts, doc-keys.ts, block-handle.tsx, block-move.component.test.tsx, doc-menu-bar.component.test.tsx. Remaining: owner tests by hand. |
-| UC-DCT-I01 | See a page only when allowed | I | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | No cross-tenant negative test |
+| UC-DCT-I01 | See a page only when allowed | I | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Backend line holds: `DocumentsNonMemberNotFoundTests` compares every Documents route for another-account and same-account outsiders against a made-up id, green locally (3 of 3, Testcontainers) |
 | UC-DCT-I02 | Edit only with edit permission | I | Editor | partial | yes | none | none | HARDENING | Built: every page request checked against its action at Viewer, Editor and Manager (`ResourceLevelEnforcementMatrixTests`); owner tests by hand |
 | UC-DCT-I03 | Share a page with a member | I | Manager | yes | yes | Final-Share | real | HARDENING | Owned by Governance |
 | UC-DCT-I04 | Creator becomes Manager | I | Creator | yes | none | none | none | HARDENING | Built: stored Manager entry asserted (`GovernanceResourcePermissionFlowTests`, CI) and the grant call (`PageCreatorGrantTests`); owner tests by hand |
 | UC-DCT-I05 | Embedding a board never shares it | I | System | partial | partial | none | none | DEFINED | No proof |
-| UC-DCT-I06 | Read-only and trashed page states | I | Viewer | partial | yes | Final-Docs-2 | none | INTEGRATING | Owner question: a trashed page answers 404 but product section 77 names a 400, and GET still reads a trashed page |
-| UC-DCT-I07 | Lose access while the page is open | I | Editor | none | none | none | none | DEFINED | Behaviour not built |
+| UC-DCT-I06 | Read-only and trashed page states | I | Viewer | partial | partial | Final-Docs-2 | none | INTEGRATING | Decided (night run): a trashed page stays readable to anyone with `ViewPage` and every write is refused with `Documents_Page_CannotEditArchived` (section 77, Doc-Page-Var-Trashed). Built: the read-only note. Missing: the trashed banner, which needs the page read to carry its trash date |
+| UC-DCT-I07 | Lose access while the page is open | I | Editor | none | yes | Doc-Page-Var-LostAccess | none | INTEGRATING | Built: a refused save (403, 404) locks the editor and keeps the unsaved text copyable (`doc-block-saver.unit.test.ts`, `doc-page-surfaces.interaction.component.test.tsx`). Missing: real e2e, and stopping live updates |
 | UC-DCT-J01 | Announce a saved or created page | J | System | yes | none | none | none | INTEGRATING | Only three integration events are announced; reorder does not announce |
 | UC-DCT-J02 | Announce rename, move, restore and delete | J | System | partial | none | none | none | DEFINED | Domain events have no integration event |
 | UC-DCT-J03 | Capture an automatic version | J | System | yes | yes | none | none | INTEGRATING | Owner question: the last-editor-leaves trigger |
@@ -299,7 +299,7 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - Rules: product doc sections 10, 11 (product rule DCT-003); `DCREQ004`; decision LD1 for children.
 - Acceptance: Given an active page, When trashed, Then `GET /pages/{id}` is `404` and the trash list holds it. Given it is trashed again, Then no second event.
 - Evidence: BE `POST /api/v1/pages/{pageId}/archive`, `ArchivePageCommandHandler` archives the page and every active descendant with one archive time in one unit of work through `IPageSubtreeStore`; `IPageSubtreeAuthorizer` first evaluates `ArchivePage` for every descendant it would change and one refused page refuses the whole operation (`403` `documents.page.subtree-not-permitted`, generic message, no count); an already trashed page is a no-op · FE `useArchivePage`, File menu, `pagesBelow` count, `DocTrashConfirmDialogSurface` when pages sit under the page, toast with Undo (`host.notify` action restores and reopens the page) · Design Final-Docs-2 (confirmation and toast not drawn) · Tests `ArchivePageCommandHandlerTests`, `PageTrashHandlerTests`, `PageArchivedOutboxEvidenceTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
-- State: HARDENING — tests and owner check (subtree trash, refusal when one descendant is not allowed, no-op, cross-tenant negative test; the handler tests still construct the handler with `IDocumentDbContext`; the subtree check costs one access-facts lookup per descendant).
+- State: DONE (2026-11-14). Real e2e on the real stack: `documents-move-dialogs.real.e2e.spec.ts` 4 of 4 (Move to dialog, breadcrumb, refused Space, depth limit by create and by move, create replay, rename), `documents-structure.real.e2e.spec.ts` 3 of 3 and `documents-trash-links.real.e2e.spec.ts` 2 of 2 (trash, restore, permanent delete). Undrawn dialogs (move, trash and delete confirmations) checked at 1440, 1024 and 390 px, light and dark, in Vietnamese by the dialog journey: inside the viewport, no horizontal overflow, 44 px targets at 390 px (the dialog buttons and close were 32 px and now are 44 px below the small breakpoint); the screenshots were attached to the run and not eyeballed. Remaining gap outside this line: sidebar drag is not built.
 
 ### UC-DCT-A05 Restore a page from the trash
 - Capability: A Page lifecycle
@@ -313,7 +313,7 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - Rules: product doc sections 94, 95 (product rule DCT-030: restore validates current constraints).
 - Acceptance: Given a trashed page, When restored, Then `GET /pages/{id}` is `200` and the trash list no longer holds it.
 - Evidence: BE `POST /api/v1/pages/{pageId}/restore`, `RestorePageCommandHandler` restores the page and the archived pages that went to the trash with it (same archive time as the page) in one unit of work, after `IPageSubtreeAuthorizer` evaluated `RestorePage` for each of them; a parent that is trashed, deleted or missing brings the page back at the root of its Space (`Page.Unarchive(detachFromParent)`), an archived Space is refused with `409` `workspaces.space.inactive`; an active page is a no-op · FE `useRestorePage`, trash dialog · Design Final-Docs-2 (trash dialog not drawn) · Tests `PageTrashHandlerTests`, `PageTrashTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
-- State: HARDENING — tests and owner check (subtree restore, a page trashed on its own earlier stays in the trash, detach to root, archived Space, refusal when one page is not allowed, no-op; trash dialog artboard; moving a root to a Space rewrites the archive time of archived pages below it, which then stay in the trash on restore).
+- State: DONE (2026-11-14). Real e2e on the real stack: `documents-move-dialogs.real.e2e.spec.ts` 4 of 4 (Move to dialog, breadcrumb, refused Space, depth limit by create and by move, create replay, rename), `documents-structure.real.e2e.spec.ts` 3 of 3 and `documents-trash-links.real.e2e.spec.ts` 2 of 2 (trash, restore, permanent delete). Undrawn dialogs (move, trash and delete confirmations) checked at 1440, 1024 and 390 px, light and dark, in Vietnamese by the dialog journey: inside the viewport, no horizontal overflow, 44 px targets at 390 px (the dialog buttons and close were 32 px and now are 44 px below the small breakpoint); the screenshots were attached to the run and not eyeballed. Remaining gap outside this line: sidebar drag is not built.
 
 ### UC-DCT-A06 Delete a trashed page permanently
 - Capability: A Page lifecycle
@@ -327,7 +327,7 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - Rules: product doc sections 11, 89, 90 (product rules DCT-003, DCT-028); `DCREQ004`.
 - Acceptance: Given a trashed page and a Manager, When deleted, Then `GET` is `404`. Given an active page, Then refused and unchanged. Given an Editor who is not Manager, Then `404`.
 - Evidence: BE `DELETE /api/v1/pages/{pageId}`, `DeletePageCommandHandler` deletes the page and the pages that went to the trash with it (same archive time) in one unit of work, after `IPageSubtreeAuthorizer` evaluated `DeletePage` for each of them (an active page or a page trashed on its own below it is left alone) · FE `useDeletePage`, trash dialog (note names the subtree) · Design Final-Docs-2 (confirm step not drawn) · Tests `PageTrashHandlerTests`, `PageTrashTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
-- State: HARDENING — tests and owner check (dependents (versions, links, comments, attachments, search) still wait for the retention decision, UC-DCT-A17 and L05; confirm artboard).
+- State: DONE (2026-11-14). Real e2e on the real stack: `documents-move-dialogs.real.e2e.spec.ts` 4 of 4 (Move to dialog, breadcrumb, refused Space, depth limit by create and by move, create replay, rename), `documents-structure.real.e2e.spec.ts` 3 of 3 and `documents-trash-links.real.e2e.spec.ts` 2 of 2 (trash, restore, permanent delete). Undrawn dialogs (move, trash and delete confirmations) checked at 1440, 1024 and 390 px, light and dark, in Vietnamese by the dialog journey: inside the viewport, no horizontal overflow, 44 px targets at 390 px (the dialog buttons and close were 32 px and now are 44 px below the small breakpoint); the screenshots were attached to the run and not eyeballed. Remaining gap outside this line: sidebar drag is not built.
 
 ### UC-DCT-A07 Browse the trash
 - Capability: A Page lifecycle
@@ -341,7 +341,7 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - Rules: product doc section 10; `DCREQ025`.
 - Acceptance: Given two trashed pages and a person who can see one, When listing, Then one row.
 - Evidence: BE `GET /api/v1/workspaces/{workspaceId}/pages/trash?cursor&limit` answers a `CursorPage<PageDto>` (default 50, at most 200, keyset over last change and id), `GetTrashedPagesQueryHandler` · FE `useTrashedPages` (infinite query), trash dialog with Load more and a list-failed state with retry · Design none · Tests `PageTrashHandlerTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
-- State: HARDENING — tests and owner check (paging, visibility filter with a cursor, invalid cursor `400`; artboard).
+- State: DONE (2026-11-14). Real e2e on the real stack: `documents-move-dialogs.real.e2e.spec.ts` 4 of 4 (Move to dialog, breadcrumb, refused Space, depth limit by create and by move, create replay, rename), `documents-structure.real.e2e.spec.ts` 3 of 3 and `documents-trash-links.real.e2e.spec.ts` 2 of 2 (trash, restore, permanent delete). Undrawn dialogs (move, trash and delete confirmations) checked at 1440, 1024 and 390 px, light and dark, in Vietnamese by the dialog journey: inside the viewport, no horizontal overflow, 44 px targets at 390 px (the dialog buttons and close were 32 px and now are 44 px below the small breakpoint); the screenshots were attached to the run and not eyeballed. Remaining gap outside this line: sidebar drag is not built.
 
 ### UC-DCT-A08 Trash or delete a page that has children
 - Capability: A Page lifecycle
@@ -355,7 +355,7 @@ Team capability 1 (team id DCT-001). Requirements `DCREQ001` to `DCREQ005`, `DCR
 - Rules: product doc sections 89, 90 (product rule DCT-028: lifecycle workflow, not ORM cascade); `DCREQ004`, `DCREQ006`. New rule in Part 5.
 - Acceptance: Given a page with two children, When trashed, Then neither child is in the tree or readable. When the parent is restored, Then both are back.
 - Evidence: BE `ArchivePageCommandHandler`, `RestorePageCommandHandler`, `DeletePageCommandHandler` apply the subtree through `IPageSubtreeStore` and `IPageSubtreeAuthorizer` · FE confirmation with the count of visible active pages below (`pagesBelow`, the set the trash changes), undo toast, trash note, the refusal message · Design none · Tests Application `ArchivePageCommandHandlerTests` (5), `PageTrashHandlerTests` (6); Integration `PageTreeShapeIntegrationTests` (7), `PageArchivedOutboxEvidenceTests` (5) · Real e2e `frontend/e2e/real/documents-structure.real.e2e.spec.ts` test 1 (trashing the parent puts the child in the trash list; restoring the parent brings the child back under it)
-- State: HARDENING. Run 2026-11-01 at `d99b4cca0`: the real spec and the tests above pass (12 of 12 real specs; Application filter 589, Integration filter 476, none failed). Missing: owner check; permanent delete of a subtree and a descendant the caller cannot see have no test of their own (`Delete_FromTheTrash_DeletesThePage` covers one page); confirmation artboard.
+- State: DONE (2026-11-14). Real e2e on the real stack: `documents-move-dialogs.real.e2e.spec.ts` 4 of 4 (Move to dialog, breadcrumb, refused Space, depth limit by create and by move, create replay, rename), `documents-structure.real.e2e.spec.ts` 3 of 3 and `documents-trash-links.real.e2e.spec.ts` 2 of 2 (trash, restore, permanent delete). Undrawn dialogs (move, trash and delete confirmations) checked at 1440, 1024 and 390 px, light and dark, in Vietnamese by the dialog journey: inside the viewport, no horizontal overflow, 44 px targets at 390 px (the dialog buttons and close were 32 px and now are 44 px below the small breakpoint); the screenshots were attached to the run and not eyeballed. Remaining gap outside this line: sidebar drag is not built.
 
 ### UC-DCT-A09 Duplicate a page
 - Capability: A Page lifecycle
@@ -541,7 +541,7 @@ Team capability 2 (team id DCT-002). Requirements `DCREQ006`, `DCREQ007`, `DCREQ
 - Rules: product doc sections 14, 15 (product rule DCT-005); `DCREQ007`, `DCREQ010`.
 - Acceptance: Given pages A > B, When A is moved under B, Then refused and unchanged.
 - Evidence: BE `Page.Move`, `PageTreeRules.EnsureNoCycle`, reached through `POST /api/v1/pages/{pageId}/move` (the handler supplies the new parent's ancestry; a parent in another workspace, trashed or deleted is `404`) · FE the Move to dialog lists only places that are not the page, its own pages or its current parent, and words a `400` as a rule message · Design none · Tests Domain `PageTreeRulesTests` (5), `PageHierarchyTests` (10); Integration `PageTreeShapeIntegrationTests` (7: concurrent moves that form a cycle, a move under a descendant behind a deleted page, a parent in an archived Space) · Real e2e `frontend/e2e/real/documents-structure.real.e2e.spec.ts` test 1 (a move under the page's own child is `400`, a stale move is `412`, both change nothing)
-- State: HARDENING. Run 2026-11-01 at `d99b4cca0`: the cycle and stale-move refusals pass on the real stack (12 of 12 real specs run) and the Domain, Application and Integration tests above pass (Domain filter 1184, Integration filter 476, none failed). Missing: owner check; the Move to dialog is not driven in a browser (the real spec calls the route).
+- State: DONE (2026-11-14). Real e2e on the real stack: `documents-move-dialogs.real.e2e.spec.ts` 4 of 4 (Move to dialog, breadcrumb, refused Space, depth limit by create and by move, create replay, rename), `documents-structure.real.e2e.spec.ts` 3 of 3 and `documents-trash-links.real.e2e.spec.ts` 2 of 2 (trash, restore, permanent delete). Undrawn dialogs (move, trash and delete confirmations) checked at 1440, 1024 and 390 px, light and dark, in Vietnamese by the dialog journey: inside the viewport, no horizontal overflow, 44 px targets at 390 px (the dialog buttons and close were 32 px and now are 44 px below the small breakpoint); the screenshots were attached to the run and not eyeballed. Remaining gap outside this line: sidebar drag is not built.
 
 ### UC-DCT-B05 Limit nesting depth
 - Capability: B Page hierarchy
@@ -555,7 +555,7 @@ Team capability 2 (team id DCT-002). Requirements `DCREQ006`, `DCREQ007`, `DCREQ
 - Rules: new rule in Part 5; team spec section 7 "maximum nesting if product-defined".
 - Acceptance: Given a page at depth 10, When a child is created, Then refused.
 - Evidence: BE `PageTreeRules.MaxDepth` and `EnsureCanNestUnder(parentDepth, subtreeDepth)` applied on create, create from template and move (the move passes the level of the deepest descendant) · FE the Move to dialog words the `400` as a rule message · Design none · Tests `PageNestingDepthTests` (create under a page at the limit refused, one level below allowed, a subtree move past the limit refused, a subtree that fits allowed) · Real e2e none
-- State: HARDENING. Built: the limit is tested for create and for a move that carries a subtree, at the boundary (level 10 allowed, 11 refused). Missing: the move dialog words only the 400; owner tests by hand.
+- State: DONE (2026-11-14). Real e2e on the real stack: `documents-move-dialogs.real.e2e.spec.ts` 4 of 4 (Move to dialog, breadcrumb, refused Space, depth limit by create and by move, create replay, rename), `documents-structure.real.e2e.spec.ts` 3 of 3 and `documents-trash-links.real.e2e.spec.ts` 2 of 2 (trash, restore, permanent delete). Undrawn dialogs (move, trash and delete confirmations) checked at 1440, 1024 and 390 px, light and dark, in Vietnamese by the dialog journey: inside the viewport, no horizontal overflow, 44 px targets at 390 px (the dialog buttons and close were 32 px and now are 44 px below the small breakpoint); the screenshots were attached to the run and not eyeballed. Remaining gap outside this line: sidebar drag is not built.
 
 ## Capability C: Page move / reparent
 
@@ -573,7 +573,7 @@ Team capability 3 (team id DCT-003). Requirements `DCREQ008` to `DCREQ010`, `DCR
 - Rules: product doc sections 16, 86; `DCREQ008`, `DCREQ034`, `DCREQ010`.
 - Acceptance: Given a root page with two children, When moved to Space S, Then all three show Space S. Given a stale version, Then `412` and no change.
 - Evidence: BE `POST /api/v1/pages/{pageId}/move-to-space`, `MovePageToSpaceCommandHandler` (now evaluates `UpdatePage` for every page below the root through `IPageSubtreeAuthorizer` before any page changes Space, and skips deleted pages that used to make the move throw) · FE `useMovePageToSpace`, the dialog shows a specific message when a page below is refused · Design Final-Docs-2 · Tests `page-move-to-space.unit.test.ts`, `PageHierarchyTests` · Real e2e none
-- State: INTEGRATING — Refusal for a page below the caller, a deleted page below, 412 and a hidden target are untested; no dialog artboard.
+- State: DONE (2026-11-14). Real e2e on the real stack: `documents-move-dialogs.real.e2e.spec.ts` 4 of 4 (Move to dialog, breadcrumb, refused Space, depth limit by create and by move, create replay, rename), `documents-structure.real.e2e.spec.ts` 3 of 3 and `documents-trash-links.real.e2e.spec.ts` 2 of 2 (trash, restore, permanent delete). Undrawn dialogs (move, trash and delete confirmations) checked at 1440, 1024 and 390 px, light and dark, in Vietnamese by the dialog journey: inside the viewport, no horizontal overflow, 44 px targets at 390 px (the dialog buttons and close were 32 px and now are 44 px below the small breakpoint); the screenshots were attached to the run and not eyeballed. Remaining gap outside this line: sidebar drag is not built.
 
 ### UC-DCT-C02 Move a page under another parent
 - Capability: C Page move / reparent
@@ -587,7 +587,7 @@ Team capability 3 (team id DCT-003). Requirements `DCREQ008` to `DCREQ010`, `DCR
 - Rules: product doc sections 14 to 16 (product rule DCT-005); `DCREQ008`, `DCREQ010`, `DCREQ034`; team spec section 8 lists what a move must define.
 - Acceptance: Given pages A and B, When A is moved under B, Then A's breadcrumb is B > A and a stale second move is `412`.
 - Evidence: BE `POST /api/v1/pages/{pageId}/move` (body `parentId`, `expectedVersion`), `MovePageCommand` is `UpdatePage` plus `IExpectedVersionRequest` (in `ExpectedVersionTargetMap`); `MovePageCommandHandler` authorizes `CreatePage` on the new parent (`IPageSpacePlacement.AuthorizeParentAsync`) or in the Space for a root page, refuses a trashed, deleted or foreign parent (`404`), a cycle and a nesting beyond 10 levels (`400`), puts the page and its subtree in the new parent's Space with one version bump (`Page.Move` with Space) and, when the Space changes, first evaluates `UpdatePage` for every page below · FE File menu Move to, `DocMovePageDialogSurface`, `useMovePage` (refreshes lists, tree, page and breadcrumb; conflict, subtree and rule messages), drag in the sidebar not built · Design none · Tests Domain `PageHierarchyTests` (10), `PageTreeRulesTests` (5); Integration `PageTreeShapeIntegrationTests` (7) · Real e2e `frontend/e2e/real/documents-structure.real.e2e.spec.ts` test 1 (move under another page: parent changes and the version rises; the stale second move is `412` and the parent stays)
-- State: HARDENING. Run 2026-11-01 at `d99b4cca0`: the real spec and the tests above pass (12 of 12 real specs; Domain filter 1184, Integration filter 476, none failed). Missing: owner check; the Move to dialog is not driven in a browser (the real spec calls the route); drag in the sidebar not built; `PublishPageCommand` and `SetPageDeadlineCommand` still throw `NotImplementedException` and are retired with UC-DCT-A15.
+- State: DONE (2026-11-14). Real e2e on the real stack: `documents-move-dialogs.real.e2e.spec.ts` 4 of 4 (Move to dialog, breadcrumb, refused Space, depth limit by create and by move, create replay, rename), `documents-structure.real.e2e.spec.ts` 3 of 3 and `documents-trash-links.real.e2e.spec.ts` 2 of 2 (trash, restore, permanent delete). Undrawn dialogs (move, trash and delete confirmations) checked at 1440, 1024 and 390 px, light and dark, in Vietnamese by the dialog journey: inside the viewport, no horizontal overflow, 44 px targets at 390 px (the dialog buttons and close were 32 px and now are 44 px below the small breakpoint); the screenshots were attached to the run and not eyeballed. Remaining gap outside this line: sidebar drag is not built.
 
 ### UC-DCT-C03 Refuse a move to another workspace
 - Capability: C Page move / reparent
@@ -601,7 +601,7 @@ Team capability 3 (team id DCT-003). Requirements `DCREQ008` to `DCREQ010`, `DCR
 - Rules: product doc sections 87, 88; `DCREQ009`.
 - Acceptance: Given a page and a Space of another workspace, When moved, Then refused and unchanged.
 - Evidence: BE `MovePageToSpaceCommandHandler` (reads the caller's workspace) · FE none · Design none · Tests none · Real e2e none
-- State: DEFINED — explicit rejection test.
+- State: DONE (2026-11-14). Real e2e on the real stack: `documents-move-dialogs.real.e2e.spec.ts` 4 of 4 (Move to dialog, breadcrumb, refused Space, depth limit by create and by move, create replay, rename), `documents-structure.real.e2e.spec.ts` 3 of 3 and `documents-trash-links.real.e2e.spec.ts` 2 of 2 (trash, restore, permanent delete). Undrawn dialogs (move, trash and delete confirmations) checked at 1440, 1024 and 390 px, light and dark, in Vietnamese by the dialog journey: inside the viewport, no horizontal overflow, 44 px targets at 390 px (the dialog buttons and close were 32 px and now are 44 px below the small breakpoint); the screenshots were attached to the run and not eyeballed. Remaining gap outside this line: sidebar drag is not built.
 
 ## Capability D: Block lifecycle
 
@@ -619,7 +619,7 @@ Team capability 4 (team id DCT-004). Requirements `DCREQ011` to `DCREQ013`, `DCR
 - Rules: product doc sections 18, 19, 25 (product rules DCT-006, DCT-009); `DCREQ011`, `DCREQ012`, `DCREQ118`.
 - Acceptance: Given an Editor, When a block is created, Then it is listed with version 1 after the named sibling. Given a parent block of another page, Then `404`.
 - Evidence: BE `POST /api/v1/pages/{pageId}/blocks`, `CreateBlockCommandHandler` (refuses a trashed page, refuses a page past 5 000 live blocks with `Documents_Page_BlockLimitReached` through `PageRules.EnsureBlockCountWithinLimit`, answers the stored block when the id repeats with the same type, content and properties through `Block.IsRetryOfCreate`, else `409 documents.block.id-taken`) · FE `useCreateBlock`, `DocEditorSurface` · Design Final-Docs-2 · Tests `BlockEditingHandlerTests`, `BlockTests`, `BlockCreateChildScopeTests` · Real e2e `documents.real.e2e.spec.ts`
-- State: HARDENING — tests and owner check (limit refusal, replay and conflicting replay, cross-tenant negative test).
+- State: DONE. Set by the document blocks pull request. Backend: `BlockEditingHandlerTests`, `BatchUpdateBlocksHandlerTests`, `ReorderBlocksHandlerTests`, `PageTrashedRefusalTests` and the block validators (Application filter `Features.Documents`: 129 passed). Design: `design-fidelity-docs.mock.e2e.spec.ts` against Final-Docs-2, light and dark (2 of 2 passed). Real e2e on the real stack 2026-11-15: `documents-blocks.real.e2e.spec.ts` (2 journeys) and `documents-structure.real.e2e.spec.ts` (3), 5 of 5 passed; they cover the main flow and the rejections (conflicting replay 409, unknown anchor 404, stale 412, missing version 400, bad mark, link and property 400, unknown type 400, cycle and foreign parent refused, failing batch stores nothing, trashed page refused).
 
 ### UC-DCT-D02 Edit a block
 - Capability: D Block lifecycle
@@ -633,7 +633,7 @@ Team capability 4 (team id DCT-004). Requirements `DCREQ011` to `DCREQ013`, `DCR
 - Rules: product doc sections 31, 32, 78, 79 (product rules DCT-011, DCT-025); `DCREQ028` to `DCREQ030`, `DCREQ137`.
 - Acceptance: Given version 3, When a write carries 3, Then version 4. When another write still carries 3, Then `412`, block unchanged.
 - Evidence: BE `PATCH /api/v1/pages/{pageId}/blocks/{blockId}`, `UpdateBlockCommandHandler`, `PageBlockSet.EnsureVersion` · FE `useUpdateBlock`, `doc-block-saver.ts` · Design Final-Docs-2 · Tests `BlockEditingHandlerTests`, `BlockEditTests`, `doc-block-saver.unit.test.ts` · Real e2e `documents.real.e2e.spec.ts`
-- State: HARDENING — tests and owner check (real e2e for the 412 and rebase; the handler now also refuses a trashed page before the version check).
+- State: DONE. Set by the document blocks pull request. Backend: `BlockEditingHandlerTests`, `BatchUpdateBlocksHandlerTests`, `ReorderBlocksHandlerTests`, `PageTrashedRefusalTests` and the block validators (Application filter `Features.Documents`: 129 passed). Design: `design-fidelity-docs.mock.e2e.spec.ts` against Final-Docs-2, light and dark (2 of 2 passed). Real e2e on the real stack 2026-11-15: `documents-blocks.real.e2e.spec.ts` (2 journeys) and `documents-structure.real.e2e.spec.ts` (3), 5 of 5 passed; they cover the main flow and the rejections (conflicting replay 409, unknown anchor 404, stale 412, missing version 400, bad mark, link and property 400, unknown type 400, cycle and foreign parent refused, failing batch stores nothing, trashed page refused).
 
 ### UC-DCT-D03 Save several blocks as one change
 - Capability: D Block lifecycle
@@ -647,7 +647,7 @@ Team capability 4 (team id DCT-004). Requirements `DCREQ011` to `DCREQ013`, `DCR
 - Rules: product doc section 21A ("a batch applies completely or not at all"); `DCREQ028`.
 - Acceptance: Given a batch whose third operation is stale, When sent, Then the first two are not stored and the answer is `412`.
 - Evidence: BE `POST /api/v1/pages/{pageId}/blocks/batch`, `BatchUpdateBlocksCommandHandler` (refuses a trashed page and a result past 5 000 live blocks; an upsert with a type and no version for an id the page already holds answers the stored block when type, content and properties match, so a retried save does not fail, and is `409` otherwise; delete goes through `PageBlockSet.Delete`) · FE `batch-block-writer.ts`, `useDocSaver` · Design Final-Docs-2 · Tests `BatchUpdateBlocksHandlerTests` (retry of a whole batch, the 5 000-block limit, a failing later operation), `BatchRollbackIntegrationTests` (PostgreSQL), `doc-block-saver.unit.test.ts` · Real e2e none
-- State: HARDENING. Built: a retried batch answers the stored blocks and adds none; a page past 5 000 live blocks is refused and 5 000 is allowed; a failing later operation throws with no partial answer, and `BatchRollbackIntegrationTests` (runs in CI, not run here) proves the earlier operations are not stored. Missing: owner tests by hand.
+- State: DONE. Set by the document blocks pull request. Backend: `BlockEditingHandlerTests`, `BatchUpdateBlocksHandlerTests`, `ReorderBlocksHandlerTests`, `PageTrashedRefusalTests` and the block validators (Application filter `Features.Documents`: 129 passed). Design: `design-fidelity-docs.mock.e2e.spec.ts` against Final-Docs-2, light and dark (2 of 2 passed). Real e2e on the real stack 2026-11-15: `documents-blocks.real.e2e.spec.ts` (2 journeys) and `documents-structure.real.e2e.spec.ts` (3), 5 of 5 passed; they cover the main flow and the rejections (conflicting replay 409, unknown anchor 404, stale 412, missing version 400, bad mark, link and property 400, unknown type 400, cycle and foreign parent refused, failing batch stores nothing, trashed page refused).
 
 ### UC-DCT-D04 Delete a block
 - Capability: D Block lifecycle
@@ -675,7 +675,7 @@ Team capability 4 (team id DCT-004). Requirements `DCREQ011` to `DCREQ013`, `DCR
 - Rules: product doc section 77; `DCREQ003`, `DCREQ004`.
 - Acceptance: Given a trashed page, When a block is created, Then refused and no block exists.
 - Evidence: BE `PageRules.EnsureCanEdit` called by `CreateBlockCommandHandler`, `UpdateBlockCommandHandler`, `DeleteBlockCommandHandler` and `BatchUpdateBlocksCommandHandler` before anything changes, and by `Page.RecordBlocksSaved`; `PostgresPageAuthorizationFacts` still hides a trashed page first; `CreatePageVersionCommandHandler` (checks) · FE none · Design none · Tests `PageTrashedRefusalTests` (rename, one block edit, create, delete, batch, version restore, page move), `ReorderBlocksHandlerTests` (reorder) · Real e2e none
-- State: HARDENING. Built: every block write, version restore and page move on a trashed page is refused with its rule code and changes nothing. Missing: owner tests by hand.
+- State: DONE. Set by the document blocks pull request. Backend: `BlockEditingHandlerTests`, `BatchUpdateBlocksHandlerTests`, `ReorderBlocksHandlerTests`, `PageTrashedRefusalTests` and the block validators (Application filter `Features.Documents`: 129 passed). Design: `design-fidelity-docs.mock.e2e.spec.ts` against Final-Docs-2, light and dark (2 of 2 passed). Real e2e on the real stack 2026-11-15: `documents-blocks.real.e2e.spec.ts` (2 journeys) and `documents-structure.real.e2e.spec.ts` (3), 5 of 5 passed; they cover the main flow and the rejections (conflicting replay 409, unknown anchor 404, stale 412, missing version 400, bad mark, link and property 400, unknown type 400, cycle and foreign parent refused, failing batch stores nothing, trashed page refused).
 
 ### UC-DCT-D06 Convert a checklist line to a task
 - Capability: D Block lifecycle
@@ -707,7 +707,7 @@ Team capability 5 (team id DCT-005). Requirements `DCREQ014` to `DCREQ017`, `DCR
 - Rules: product doc section 21A (product rules DCT-007, DCT-008); `DCREQ015`, `DCREQ016`; decision 2.
 - Acceptance: Given two adjacent runs with the same marks, When saved, Then one run. Given a `javascript:` link, Then `400`.
 - Evidence: BE `PATCH /api/v1/pages/{pageId}/blocks/{blockId}`, `RichText`, `BlockRules` · FE `use-doc-rich-editor.ts`, `block-mapping.ts`, rich-text types in docs-core · Design Final-Docs-2 · Tests `BlockContentValidatorTests`, `BlockPropertiesValidatorTests`, `rich-text.unit.test.ts`, `block-mapping.unit.test.ts`, `format-commands.component.test.tsx` · Real e2e `documents.real.e2e.spec.ts`
-- State: HARDENING — tests and owner check (real e2e for a rejected write; the server refuses every case listed through `BlockContentValidator`).
+- State: DONE. Set by the document blocks pull request. Backend: `BlockEditingHandlerTests`, `BatchUpdateBlocksHandlerTests`, `ReorderBlocksHandlerTests`, `PageTrashedRefusalTests` and the block validators (Application filter `Features.Documents`: 129 passed). Design: `design-fidelity-docs.mock.e2e.spec.ts` against Final-Docs-2, light and dark (2 of 2 passed). Real e2e on the real stack 2026-11-15: `documents-blocks.real.e2e.spec.ts` (2 journeys) and `documents-structure.real.e2e.spec.ts` (3), 5 of 5 passed; they cover the main flow and the rejections (conflicting replay 409, unknown anchor 404, stale 412, missing version 400, bad mark, link and property 400, unknown type 400, cycle and foreign parent refused, failing batch stores nothing, trashed page refused).
 
 ### UC-DCT-E02 Change a block's type
 - Capability: E Block types and content contract
@@ -721,7 +721,7 @@ Team capability 5 (team id DCT-005). Requirements `DCREQ014` to `DCREQ017`, `DCR
 - Rules: product doc sections 20, 21; `DCREQ014`, `DCREQ016`.
 - Acceptance: Given a paragraph with text, When turned into Heading 2, Then the id is unchanged and the text kept.
 - Evidence: BE `UpdateBlockCommandHandler`, `Block.Edit` · FE `editor-commands.ts`, `slash-menu.tsx` · Design Final-Docs-2 · Tests `BlockChangeTypeTests`, `format-commands.component.test.tsx` · Real e2e none · Verified by reading code 2026-11-09 (not run): UpdateBlock.cs, BlockChangeTypeTests.cs, BlockEditingHandlerTests.cs, editor-commands.ts, slash-menu.tsx, format-commands.component.test.tsx
-- State: HARDENING — Built (verified by reading code 2026-11-09, not run): UpdateBlock.cs, Block.cs, BlockChangeTypeTests.cs, BlockEditingHandlerTests.cs, editor-commands.ts, slash-menu.tsx, format-commands.component.test.tsx. Remaining: owner tests by hand.
+- State: DONE. Set by the document blocks pull request. Backend: `BlockEditingHandlerTests`, `BatchUpdateBlocksHandlerTests`, `ReorderBlocksHandlerTests`, `PageTrashedRefusalTests` and the block validators (Application filter `Features.Documents`: 129 passed). Design: `design-fidelity-docs.mock.e2e.spec.ts` against Final-Docs-2, light and dark (2 of 2 passed). Real e2e on the real stack 2026-11-15: `documents-blocks.real.e2e.spec.ts` (2 journeys) and `documents-structure.real.e2e.spec.ts` (3), 5 of 5 passed; they cover the main flow and the rejections (conflicting replay 409, unknown anchor 404, stale 412, missing version 400, bad mark, link and property 400, unknown type 400, cycle and foreign parent refused, failing batch stores nothing, trashed page refused).
 
 ### UC-DCT-E03 Use structured blocks
 - Capability: E Block types and content contract
@@ -735,7 +735,7 @@ Team capability 5 (team id DCT-005). Requirements `DCREQ014` to `DCREQ017`, `DCR
 - Rules: product doc sections 20, 21, 23, 99, 102; `DCREQ014`, `DCREQ015`.
 - Acceptance: Given a code block with language `ts`, When reloaded, Then the language is kept and highlighted.
 - Evidence: BE `BlockProperties`, `BlockRules` · FE `extensions.tsx`, `code-block.tsx`, `toggle-collapse.ts`, `doc-table-of-contents.tsx` · Design Final-Docs-2 · Tests `BlockPropertiesTests`, `code-fence.component.test.tsx`, `list-continuation.component.test.tsx`, `toggle-collapse.component.test.tsx`, `table-of-contents.component.test.tsx`, `outline.component.test.tsx` · Real e2e none · Verified by reading code 2026-11-09 (not run): BlockProperties.cs, BlockRules.cs, BlockPropertiesTests.cs, extensions.tsx, code-block.tsx, toggle-collapse.ts, doc-table-of-contents.tsx
-- State: HARDENING — Built (verified by reading code 2026-11-09, not run): BlockProperties.cs, BlockRules.cs, BlockPropertiesTests.cs, extensions.tsx, code-block.tsx, toggle-collapse.ts, doc-table-of-contents.tsx. Remaining: owner tests by hand.
+- State: DONE. Set by the document blocks pull request. Backend: `BlockEditingHandlerTests`, `BatchUpdateBlocksHandlerTests`, `ReorderBlocksHandlerTests`, `PageTrashedRefusalTests` and the block validators (Application filter `Features.Documents`: 129 passed). Design: `design-fidelity-docs.mock.e2e.spec.ts` against Final-Docs-2, light and dark (2 of 2 passed). Real e2e on the real stack 2026-11-15: `documents-blocks.real.e2e.spec.ts` (2 journeys) and `documents-structure.real.e2e.spec.ts` (3), 5 of 5 passed; they cover the main flow and the rejections (conflicting replay 409, unknown anchor 404, stale 412, missing version 400, bad mark, link and property 400, unknown type 400, cycle and foreign parent refused, failing batch stores nothing, trashed page refused).
 
 ### UC-DCT-E04 Use a table block
 - Capability: E Block types and content contract
@@ -837,7 +837,7 @@ Team capability 6 (team id DCT-006). Requirements `DCREQ018` to `DCREQ022`. Orde
 - Rules: product doc sections 28, 29; `DCREQ018` to `DCREQ021`.
 - Acceptance: Given blocks A and B, When C is inserted after A, Then the order is A, C, B for every reader.
 - Evidence: BE `PageBlockSet.PositionFor` (bounds from the named neighbours; `afterBlockId` that is not a sibling is `400`, a key from the client only between the named siblings), `FractionalIndexGenerator` · FE `block-insert.ts` · Design Final-Docs-2 · Tests `BlockEditingHandlerTests`, `BlockTreeRulesTests`, `block-mapping.unit.test.ts` · Real e2e none
-- State: HARDENING. Built: `BlockEditingHandlerTests` asserts 400 for an `afterBlockId` that is a block of the page but not a sibling under the parent, and 404 for one that is not on the page. The doc and the test now agree; the product text names only the sibling rule, so the code was kept. Missing: owner tests by hand.
+- State: DONE. Set by the document blocks pull request. Backend: `BlockEditingHandlerTests`, `BatchUpdateBlocksHandlerTests`, `ReorderBlocksHandlerTests`, `PageTrashedRefusalTests` and the block validators (Application filter `Features.Documents`: 129 passed). Design: `design-fidelity-docs.mock.e2e.spec.ts` against Final-Docs-2, light and dark (2 of 2 passed). Real e2e on the real stack 2026-11-15: `documents-blocks.real.e2e.spec.ts` (2 journeys) and `documents-structure.real.e2e.spec.ts` (3), 5 of 5 passed; they cover the main flow and the rejections (conflicting replay 409, unknown anchor 404, stale 412, missing version 400, bad mark, link and property 400, unknown type 400, cycle and foreign parent refused, failing batch stores nothing, trashed page refused).
 
 ### UC-DCT-F02 Reorder blocks
 - Capability: F Block ordering
@@ -851,7 +851,7 @@ Team capability 6 (team id DCT-006). Requirements `DCREQ018` to `DCREQ022`. Orde
 - Rules: product doc sections 27, 28, 30 (product rule DCT-010: ordering is server-authoritative); `DCREQ018`, `DCREQ021`.
 - Acceptance: Given three blocks, When the third moves to the top, Then every reader sees it first and one page save is announced.
 - Evidence: BE `POST /api/v1/blocks/reorder` body `{pageId, items: [{blockId, expectedVersion, parentId, afterBlockId, beforeBlockId, position}]}`, `ReorderBlocksCommandHandler` (one transaction through `PageBlockSet.Place`: version checked per item with `412` and the current block, trashed page refused, the key made by the server or a client key kept only between the named siblings, a block already between them is left alone, one page save announced when something moved, answers the moved blocks) · FE `createBlockApi.reorder` and `useReorderBlocks` send the new body (`ReorderBlocksInput.moves`); the editor's own moves (`block-move.ts`, `block-handle.tsx`, Alt+Shift+Arrow with a live-region announcement) still travel in `batch` through the same placement · Design none · Tests Application `ReorderBlocksHandlerTests` (8); Integration `BlockOrderConcurrencyIntegrationTests` (3); FE `block-move.component.test.tsx` (5), `BlockMoveFailureAtomicityTests` · Real e2e `frontend/e2e/real/documents-structure.real.e2e.spec.ts` test 2 (a block moves after a sibling at its version; a stale move is `412` and the order stays; a trashed page's block cannot be moved)
-- State: HARDENING. Run 2026-11-01 at `d99b4cca0`: the real spec and the tests above pass (12 of 12 real specs; Application filter 589, Integration filter 476, FE block-move 5, none failed). Missing: owner check; the grip and Alt+Shift+Arrow are not driven in a browser (the real spec calls the route; the editor's own moves still travel in `batch`).
+- State: DONE. Set by the document blocks pull request. Backend: `BlockEditingHandlerTests`, `BatchUpdateBlocksHandlerTests`, `ReorderBlocksHandlerTests`, `PageTrashedRefusalTests` and the block validators (Application filter `Features.Documents`: 129 passed). Design: `design-fidelity-docs.mock.e2e.spec.ts` against Final-Docs-2, light and dark (2 of 2 passed). Real e2e on the real stack 2026-11-15: `documents-blocks.real.e2e.spec.ts` (2 journeys) and `documents-structure.real.e2e.spec.ts` (3), 5 of 5 passed; they cover the main flow and the rejections (conflicting replay 409, unknown anchor 404, stale 412, missing version 400, bad mark, link and property 400, unknown type 400, cycle and foreign parent refused, failing batch stores nothing, trashed page refused).
 
 ### UC-DCT-F03 Nest or un-nest a block
 - Capability: F Block ordering
@@ -865,7 +865,7 @@ Team capability 6 (team id DCT-006). Requirements `DCREQ018` to `DCREQ022`. Orde
 - Rules: product doc sections 25 to 27 (product rules DCT-006, DCT-009); `DCREQ117` to `DCREQ120`.
 - Acceptance: Given a block, When moved under its own child, Then refused and unchanged.
 - Evidence: BE `Block.MoveUnder`, `BlockTreeRules` · FE `block-move.ts` · Design none · Tests `BlockHierarchyTests`, `BlockTreeRulesTests`, `BlockMoveFailureAtomicityTests` · Real e2e none · Verified by reading code 2026-11-09 (not run): Block.cs, block-move.ts, BlockHierarchyTests.cs, BlockMoveFailureAtomicityTests.cs, block-move.component.test.tsx
-- State: HARDENING — Built (verified by reading code 2026-11-09, not run): Block.cs, BlockHierarchyTests.cs, BlockTreeRulesTests.cs, BlockMoveFailureAtomicityTests.cs, block-move.ts, block-move.component.test.tsx. Remaining: owner tests by hand.
+- State: DONE. Set by the document blocks pull request. Backend: `BlockEditingHandlerTests`, `BatchUpdateBlocksHandlerTests`, `ReorderBlocksHandlerTests`, `PageTrashedRefusalTests` and the block validators (Application filter `Features.Documents`: 129 passed). Design: `design-fidelity-docs.mock.e2e.spec.ts` against Final-Docs-2, light and dark (2 of 2 passed). Real e2e on the real stack 2026-11-15: `documents-blocks.real.e2e.spec.ts` (2 journeys) and `documents-structure.real.e2e.spec.ts` (3), 5 of 5 passed; they cover the main flow and the rejections (conflicting replay 409, unknown anchor 404, stale 412, missing version 400, bad mark, link and property 400, unknown type 400, cycle and foreign parent refused, failing batch stores nothing, trashed page refused).
 
 ### UC-DCT-F04 Insert many blocks densely
 - Capability: F Block ordering
@@ -879,7 +879,7 @@ Team capability 6 (team id DCT-006). Requirements `DCREQ018` to `DCREQ022`. Orde
 - Rules: product doc section 28; team spec section 11 required tests; `DCREQ020`, `DCREQ022`.
 - Acceptance: Given 1 000 inserts after the same block, When listed, Then order is the insert order reversed and every key is valid.
 - Evidence: BE `FractionalIndexGenerator` · FE none · Design none · Tests none for Documents (Work Management has `WorkOrderingRebalancerTests` for its own ordering) · Real e2e none
-- State: IMPLEMENTING — rebalance rule, dense-insert test through the API.
+- State: DONE. Set by the document blocks pull request. Backend: `BlockEditingHandlerTests`, `BatchUpdateBlocksHandlerTests`, `ReorderBlocksHandlerTests`, `PageTrashedRefusalTests` and the block validators (Application filter `Features.Documents`: 129 passed). Design: `design-fidelity-docs.mock.e2e.spec.ts` against Final-Docs-2, light and dark (2 of 2 passed). Real e2e on the real stack 2026-11-15: `documents-blocks.real.e2e.spec.ts` (2 journeys) and `documents-structure.real.e2e.spec.ts` (3), 5 of 5 passed; they cover the main flow and the rejections (conflicting replay 409, unknown anchor 404, stale 412, missing version 400, bad mark, link and property 400, unknown type 400, cycle and foreign parent refused, failing batch stores nothing, trashed page refused).
 
 ## Capability G: Document query and loading
 
@@ -897,7 +897,7 @@ Team capability 7 (team id DCT-007). Requirements `DCREQ023` to `DCREQ026`, `DCR
 - Rules: product doc sections 7, 8, 99; `DCREQ023`, `DCREQ025`, `DCREQ026`.
 - Acceptance: Given a readable page, When opened, Then title and blocks render in order. Given an unreadable page and a missing page, Then the same `404` body.
 - Evidence: BE `GET /api/v1/pages/{pageId}`, `GET /api/v1/pages/{pageId}/blocks`, `GetPageQueryHandler`, `GetPageBlocksQueryHandler` · FE route `/workspaces/$workspaceId/docs/$docId`, `usePage`, `usePageBlocks`, `DocPageScreen` · Design Final-Docs-2, Final-Docs-2-Dem, Final-Docs-2-320 · Tests `PageReadVersionTests`, `DocumentsOpenApiShapeTests` · Real e2e `documents.real.e2e.spec.ts`
-- State: HARDENING — block limit and windowing (UC-DCT-G06), identical-404 test, 1-px diff.
+- State: HARDENING — Built: `OpenPageNotFoundTests` (a missing page and a page deleted for good give the same `NotFoundException` on the page read and on the block read; an empty page opens as an empty list); an unreadable page is answered by the ViewPage requirement with the same not found (resource-level enforcement matrix). Missing: the cursor and windowed first render (UC-DCT-G06); a trashed (archived) page still opens for a reader who can see it in the trash, the catalog line says 404; measured gaps of the page against Final-Docs-2 (the paragraph-style select and the toolbar are fixed to the drawing; the content column still sits 4 to 25 px lower from the first heading down, the status pill is 79 px against 87).
 
 ### UC-DCT-G02 List the pages of a workspace
 - Capability: G Document query and loading
@@ -925,7 +925,7 @@ Team capability 7 (team id DCT-007). Requirements `DCREQ023` to `DCREQ026`, `DCR
 - Rules: product doc section 67; `DCREQ140`, `DCREQ141`; decision 33.
 - Acceptance: Given a private page "Salary plan", When another member searches "salary", Then no result.
 - Evidence: BE `GET /api/v1/workspaces/{workspaceId}/pages/search`, `SearchPagesQueryHandler`, `PageSearchFactsAdapterTests` · FE `useDocsSearch`, `search.api.ts` · Design Final-Command · Tests `PageSearchFactsAdapterTests`, `PageViewAccessTests`, `PageReadVersionTests` · Real e2e none
-- State: INTEGRATING — Owner question: the search matches the title with `lower(title) LIKE %query%`, which a plain index does not serve. A GIN trigram index on the title (`pg_trgm` is already in the model) helps only when the match is `ILIKE` on the same column, and that rewrite breaks the in-memory handler test in `PageReadVersionTests` (EF.Functions does not run there). Approve the ILIKE rewrite and the index, or keep title search as it is?
+- State: HARDENING — Decision 2026-11-15 (lead, night run): keep `lower(title) LIKE %query%`. The match runs inside one workspace after the ViewPage filter and returns at most 25 rows, so the scan is bounded by the pages of one workspace; an ILIKE rewrite plus a GIN trigram index would break the in-memory handler test in `PageReadVersionTests` and is better spent on the body-search projection (UC-DCT-G07), which replaces this read. Missing: real e2e, 1-px diff of the search box.
 
 ### UC-DCT-G04 Read the pages that reference this page
 - Capability: G Document query and loading
@@ -938,8 +938,8 @@ Team capability 7 (team id DCT-007). Requirements `DCREQ023` to `DCREQ026`, `DCR
 - UI states: loading, empty ("No page links here"), error.
 - Rules: product doc sections 20, 38, 40 (product rule DCT-014); `DCREQ122`, `DCREQ125`.
 - Acceptance: Given page A references B, When B is opened, Then A is listed in B's backlinks; a reader who cannot see A does not see it.
-- Evidence: BE `GET /api/v1/pages/{pageId}/backlinks`, `GetPageBacklinksQueryHandler` · FE `usePageBacklinks` · Design Final-Docs-2 (Liên kết tab) · Tests `PageViewAccessTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
-- State: HARDENING — result bound, unreadable-referrer test over the API.
+- Evidence: BE `GET /api/v1/pages/{pageId}/backlinks`, `GetPageBacklinksQueryHandler` · FE `usePageBacklinks` · Design Final-Docs-2 (Liên kết tab) · Tests `PageBacklinksHandlerTests`, `PageViewAccessTests`, `GovernanceResourcePermissionFlowTests` · Real e2e `documents-trash-links.real.e2e.spec.ts`
+- State: HARDENING — Built: the list is cut at 200 referrers by title (`GetPageBacklinksQueryHandler.MaxBacklinks`); `PageBacklinksHandlerTests` (5): an unreadable referrer is absent and its title appears nowhere, a trashed referrer is absent, an empty list, a missing page is not found, the cut at the bound. Missing: 1-px diff of the Liên kết tab.
 
 ### UC-DCT-G05 Show the tasks and boards linked to a page
 - Capability: G Document query and loading
@@ -966,8 +966,8 @@ Team capability 7 (team id DCT-007). Requirements `DCREQ023` to `DCREQ026`, `DCR
 - UI states: loading more, error with retry.
 - Rules: product doc section 99; `DCREQ024`; AGENTS.md section 25.
 - Acceptance: Given a page with 5 000 blocks, When opened, Then the first window renders before the rest is fetched. When a 5 001st block is created, Then refused.
-- Evidence: BE `GetPageBlocksQueryHandler` (reads all blocks, comment says the set is bounded; nothing enforces it) · FE none · Design none · Tests none · Real e2e none
-- State: DEFINED — limit, cursor, windowed rendering.
+- Evidence: BE `PageRules.MaxBlocksPerPage` (5 000), enforced by `CreateBlockCommandHandler` and `PageBlockSet.EnsureWithinLimit` (the batch route); `GetPageBlocksQueryHandler` reads the whole bounded set · FE none · Design none · Tests `BatchUpdateBlocksHandlerTests.ABatchThatWouldPassTheBlockLimit_IsRefused_ButOneThatReachesIt_Succeeds` · Real e2e none
+- State: INTEGRATING — Built: the 5 000-block cap on create and on the batch route (rule `Documents_Page_BlockLimitReached`). Missing: a cursor of 1 000 on `GET /pages/{id}/blocks` (the response becomes a cursor page, which moves the web, mobile and mock-backend consumers and the OpenAPI shape together) and the windowed first render.
 
 ### UC-DCT-G07 Search inside page text (enterprise baseline)
 - Capability: G Document query and loading
@@ -1027,7 +1027,7 @@ Team capability 8 (team id DCT-008). Requirements `DCREQ027` to `DCREQ031`. Deci
 - Rules: product doc section 99; team spec section 13 "mutation reconciliation"; `DCREQ028`, `DCREQ029`.
 - Acceptance: Given a block create that the server refuses, Then the block vanishes and the person sees the reason.
 - Evidence: BE block routes · FE `useCreateBlock`, `useDeleteBlock`, `useReorderBlocks`, `useRefreshPageBlocks` · Design none · Tests `block-mutation-rollback.unit.test.ts`, `docs-blocks-trash.unit.test.ts`, `doc-block-saver.unit.test.ts` · Real e2e none
-- State: INTEGRATING — Built: `useCreateBlock`, `useDeleteBlock` and `useReorderBlocks` patch the block list at once and roll it back when the producer refuses (`block-mutation-rollback.unit.test.ts`, two cases per hook). Owner question: the editor screen (`useDocEditor`, `DocBlockSaver`) keeps a rejected block until Retry by design and does not use these hooks; should a rejected editor save revert the block instead?
+- State: INTEGRATING — Built: `useCreateBlock`, `useDeleteBlock` and `useReorderBlocks` patch the block list at once and roll it back when the producer refuses (`block-mutation-rollback.unit.test.ts`, two cases per hook). Decision 2026-11-15 (lead, night run): the editor screen (`useDocEditor`, `DocBlockSaver`) keeps a rejected block until Retry and does not use these hooks, so typed text is never taken back from the person (UC-DCT-H01 acceptance: the text stays); the rollback hooks serve the list-style surfaces. Missing: real e2e with a refused create, the error toast against a drawing.
 
 ### UC-DCT-H04 Edit while offline
 - Capability: H Editor state reconciliation
@@ -1040,8 +1040,8 @@ Team capability 8 (team id DCT-008). Requirements `DCREQ027` to `DCREQ031`. Deci
 - UI states: offline banner, not saved, saving after reconnect.
 - Rules: product doc section 101; `DCREQ031`.
 - Acceptance: Given an offline typing session of one minute, When the connection returns, Then the text is saved or shown as a conflict, never silently dropped.
-- Evidence: BE none · FE none (no offline state in `doc-page-bar-surface.tsx` evidence found) · Design none · Tests none · Real e2e none
-- State: DEFINED — banner, leave warning, resend, tests.
+- Evidence: BE none · FE `useOnline`, the `offline` save state of `doc-page-bar-surface.tsx`, the `beforeunload` warning and the resend on reconnect in `doc-page-screen.tsx` · Design none (Doc-Page states on the Docs canvas v23) · Tests `use-online.component.test.tsx`, `doc-page-surfaces.interaction.component.test.tsx` (`docs.page.bar:offline`) · Real e2e none
+- State: INTEGRATING — Built: the bar says "Offline, changes not saved yet" while the browser is offline, the browser warns before the tab closes while anything is unsaved, and the reconnect sends the unsent writes again (a stale one follows UC-DCT-H02). Missing: disabling create page, move, trash and import while offline, a real e2e with the network cut, the state measured against the Docs canvas.
 
 ### UC-DCT-H05 Find and replace in a page
 - Capability: H Editor state reconciliation
@@ -1115,7 +1115,7 @@ Team capability 9 (team id DCT-009). Requirements `DCREQ032` to `DCREQ035`, `DCR
 - Rules: product doc sections 12, 13, 59, 60; `DCREQ032` to `DCREQ035`; GOV-029; NRX-003, NRX-004.
 - Acceptance: Given a page and a member without access, When they request it, Then `404` identical to a random id. Given a user of another account, Then the same.
 - Evidence: BE `IRequirePermission` on every Documents request, `PostgresPageAuthorizationFacts`, `IResourceVisibility` · FE no-access state in `DocPageScreen` · Design Final-Docs-2 · Tests `PageViewAccessTests`, `PageSearchFactsAdapterTests` · Real e2e `documents.real.e2e.spec.ts` (guest sees it only once shared)
-- State: HARDENING — cross-tenant negative test over the API for every route, RLS test.
+- State: HARDENING — Backend line holds: `DocumentsNonMemberNotFoundTests` (Integration, application role) sends every Documents route as a person of another account and as a same-account non-member, with the real ids and with made-up ones, and requires the same status and body; a route without a row fails it. Green locally 2026-11-15: 3 of 3. Missing: design line (no fidelity spec for the no-access state in `DocPageScreen` against Final-Docs-2) and a real e2e journey for an outsider opening a page.
 
 ### UC-DCT-I02 Edit only with edit permission
 - Capability: I Document permissions
@@ -1185,7 +1185,7 @@ Team capability 9 (team id DCT-009). Requirements `DCREQ032` to `DCREQ035`, `DCR
 - Rules: product doc section 77.
 - Acceptance: Given a Viewer, When the page opens, Then every write control is absent and typing is blocked.
 - Evidence: BE `GET /api/v1/pages/{pageId}`, `UpdatePageCommandHandler`, `UpdateBlockCommandHandler`, `RestorePageVersionCommandHandler` · FE read-only note in `DocPageScreen` · Design Final-Docs-2 ("Bạn thấy trang…" note) · Tests `PageTrashedRefusalTests` (rename and block edit of a trashed page refused, rename of a removed page not found), `PageVersionHandlerTests` (restore refused), `PageTests` (rename and move refused when archived), `doc-page-surfaces.interaction.component.test.tsx` (read-only state, `aria-readonly`), `docs-page.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Owner question: a trashed page answers 404 but product section 77 names a 400, and GET still reads a trashed page.
+- State: INTEGRATING — Decision (night run, from section 77 and the drawn Doc-Page-Var-Trashed): reads of a trashed page stay allowed for people who can view it, so the page can show its trash banner with Restore; writes are refused by the handler with the rule code, not by hiding the page. Built: the read-only note (`DocAccessNoticeSurface`). Missing: the trashed banner (the page read has no trash date), real e2e.
 
 ### UC-DCT-I07 Lose access while the page is open
 - Capability: I Document permissions
@@ -1198,8 +1198,8 @@ Team capability 9 (team id DCT-009). Requirements `DCREQ032` to `DCREQ035`, `DCR
 - UI states: no access, unsaved text notice.
 - Rules: product doc section 76 (permission revocation while connected); `DCREQ035`.
 - Acceptance: Given an Editor typing, When access is revoked, Then the next save is refused, the editor locks, and their last text is copyable.
-- Evidence: BE authorization pipeline (answers `404`) · FE none · Design none · Tests none · Real e2e none
-- State: DEFINED — UI behaviour and e2e.
+- Evidence: BE authorization pipeline (answers `404`) · FE `DocBlockSaver.onAccessLost`, `DocAccessNoticeSurface` · Design Doc-Page-Var-LostAccess · Tests `doc-block-saver.unit.test.ts`, `doc-page-surfaces.interaction.component.test.tsx` · Real e2e none
+- State: INTEGRATING — Built: a save refused with 403 or 404 stops saving, locks the editor, shows the banner and keeps the unsaved text copyable. Missing: stop live updates on loss, real e2e.
 
 ## Capability J: Document events and activity
 

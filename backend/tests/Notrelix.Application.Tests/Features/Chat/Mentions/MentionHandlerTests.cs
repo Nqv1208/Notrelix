@@ -106,10 +106,10 @@ public class MentionHandlerTests
         return space;
     }
 
-    private SendMessageCommandHandler SendHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments(), _limits);
-    private EditMessageCommandHandler EditHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments());
-    private ReplyInThreadCommandHandler ReplyHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments(), _limits);
-    private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments());
+    private SendMessageCommandHandler SendHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments(), _limits, new InMemoryChatReadStateStore(_db.Object));
+    private EditMessageCommandHandler EditHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments(), new InMemoryChatReadStateStore(_db.Object));
+    private ReplyInThreadCommandHandler ReplyHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments(), _limits, new InMemoryChatReadStateStore(_db.Object));
+    private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments(), new InMemoryChatReadStateStore(_db.Object));
     private ListMessagesQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments());
     private ListMentionablesQueryHandler MentionablesHandler() => new(_db.Object, _context.Object, _members.Object, _broadcast.Object);
 
@@ -577,7 +577,7 @@ public class MentionHandlerTests
     {
         var space = Channel();
         await Send(space, "hi @Bob", [Person(3, 4, _bob)]);
-        space.GetActiveMembership(_bob)!.AdvanceReadSequence(_lastSequence);
+        await new InMemoryChatReadStateStore(_db.Object).AdvanceAsync(_workspaceId, space.Id, _bob, _lastSequence, CancellationToken.None);
 
         (await MentionsOf(_bob, space)).Should().Be(0);
     }

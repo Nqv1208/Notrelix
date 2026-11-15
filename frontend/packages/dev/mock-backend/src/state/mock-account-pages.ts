@@ -240,16 +240,12 @@ export class MockAccountPages {
     return value;
   }
 
-  /** A member's choices in one workspace (never read across workspaces). */
-  notificationsOf(
-    userId: string,
-    workspaceId: string,
-  ): NotificationPreferenceSet {
-    const key = `${userId}|${workspaceId}`;
-    let value = this.notificationSets.get(key);
+  /** A person's choices: one matrix for the account, read in every workspace. */
+  notificationsOf(userId: string): NotificationPreferenceSet {
+    let value = this.notificationSets.get(userId);
     if (!value) {
       value = defaultNotificationSet();
-      this.notificationSets.set(key, value);
+      this.notificationSets.set(userId, value);
     }
     return value;
   }

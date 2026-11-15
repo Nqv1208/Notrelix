@@ -9,7 +9,7 @@ public sealed record NotificationPreferenceRowChange(string Type, bool? InApp, b
 public sealed record NotificationPreferenceRowDto(string Type, bool InApp, bool Email);
 
 /// <summary>
-/// The caller's notification preference matrix in one Workspace: one row per notification type in the
+/// The caller's notification preference matrix, the same in every Workspace: one row per notification type in the
 /// canonical order, the effective value on each channel (an explicit choice, else the default).
 /// <paramref name="Version"/> is 0 until the first change is saved and is the expected version of the next update.
 /// </summary>

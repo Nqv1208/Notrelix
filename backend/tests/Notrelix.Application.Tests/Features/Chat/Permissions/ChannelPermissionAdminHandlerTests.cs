@@ -105,7 +105,7 @@ public class ChannelPermissionAdminHandlerTests
     private ClearChannelPermissionsCommandHandler ClearHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, Audit());
     private GetChannelPermissionsQueryHandler GetHandler() => new(_db.Object, _context.Object, _members.Object);
     private ModerateDeleteMessageCommandHandler ModerateHandler() =>
-        new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments(), Audit());
+        new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments(), Moq.Mock.Of<Notrelix.Application.Features.Chat.Abstractions.IChatReadStateStore>(), Audit());
 
     private static ChannelPermissionEntryDto E(string subject, string action, string effect) => new(subject, action, effect);
 

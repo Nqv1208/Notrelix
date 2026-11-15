@@ -182,13 +182,13 @@ public sealed class ChatReadStateIntegrationTests : IAsyncLifetime
         var summary = await UnreadSummaryBuilder.BuildAsync(probe, _workspaceId, _member, Now, CancellationToken.None);
 
         var alpha = summary.Spaces.Single(s => s.SpaceId == _alpha);
-        alpha.UnreadCount.Should().Be(2, "seq 3 (other) and seq 6 (owner) are after the boundary of 2; seq 4 is system, seq 5 is deleted");
+        alpha.UnreadCount.Should().Be(4, "the unread number is the sequence difference 6 - 2: it counts no rows, so the system and the deleted message are in it");
         alpha.FirstUnreadSequence.Should().Be(3);
         alpha.ReadSequence.Should().Be(2);
         alpha.LastSequence.Should().Be(6);
 
         var beta = summary.Spaces.Single(s => s.SpaceId == _beta);
-        beta.UnreadCount.Should().Be(4, "nothing was read; the four messages are other people's");
+        beta.UnreadCount.Should().Be(4, "nothing was read: 4 - 0");
         beta.FirstUnreadSequence.Should().Be(1);
 
         var gamma = summary.Spaces.Single(s => s.SpaceId == _gamma);
@@ -197,7 +197,19 @@ public sealed class ChatReadStateIntegrationTests : IAsyncLifetime
 
         summary.Spaces.Should().NotContain(s => s.SpaceId == _secret, "the member is not in the private space");
         summary.Spaces.Should().HaveCount(3, "the channel of another Workspace is not in this summary");
-        summary.TotalUnread.Should().Be(6, "2 from alpha plus 4 from beta; gamma has none");
+        summary.TotalUnread.Should().Be(8, "4 from alpha plus 4 from beta; gamma has none");
+    }
+
+    [Fact]
+    public async Task ASummaryOfOneSpace_IsThatSpacesRowOfTheFullSummary()
+    {
+        await AdvanceInOwnTransactionAsync(_alpha, _member, 2);
+
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
+        var full = await UnreadSummaryBuilder.BuildAsync(probe, _workspaceId, _member, Now, CancellationToken.None);
+        var one = await UnreadSummaryBuilder.BuildAsync(probe, _workspaceId, _member, Now, CancellationToken.None, _alpha);
+
+        one.Spaces.Should().ContainSingle().Which.Should().BeEquivalentTo(full.Spaces.Single(s => s.SpaceId == _alpha));
     }
 
     [Fact]
@@ -219,7 +231,7 @@ public sealed class ChatReadStateIntegrationTests : IAsyncLifetime
         var beta = summary.Spaces.Single(s => s.SpaceId == _beta);
         beta.UnreadCount.Should().Be(4);
         beta.Muted.Should().BeTrue();
-        summary.TotalUnread.Should().Be(5, "beta is muted and left out; alpha has 3 unread (seq 1, 3, 6) and gamma 2 (seq 1, 2) with no boundary yet");
+        summary.TotalUnread.Should().Be(8, "beta is muted and left out; alpha is 6 behind and gamma 2 behind with no boundary yet");
     }
 
     [Fact]

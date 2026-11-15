@@ -42,6 +42,7 @@ export function createCommentApi(
         {
           contentMd: payload.body,
           ...(payload.anchor ? { anchor: payload.anchor } : {}),
+          ...(payload.parentId ? { parentCommentId: payload.parentId } : {}),
         },
       );
       const now = new Date().toISOString();

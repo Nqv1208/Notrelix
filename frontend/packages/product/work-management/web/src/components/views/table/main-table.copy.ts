@@ -330,6 +330,8 @@ export const en = {
     readOnly: "You can only view this board",
     assignSheet: "Assign to",
     prioritySheet: "Priority",
+    conflictKeep: "Keep mine",
+    conflictUse: "Use the new one",
   },
   footer: {
     summary: "{{shown}} items shown · {{hidden}} hidden by filters",
@@ -771,6 +773,8 @@ export const vi: MainTableCopy = {
     readOnly: "Bạn chỉ xem được board này",
     assignSheet: "Giao cho",
     prioritySheet: "Mức ưu tiên",
+    conflictKeep: "Giữ của bạn",
+    conflictUse: "Dùng bản mới",
   },
   footer: {
     summary: "{{shown}} công việc đang hiện · {{hidden}} ẩn bởi bộ lọc",

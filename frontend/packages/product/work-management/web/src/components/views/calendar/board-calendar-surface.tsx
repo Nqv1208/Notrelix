@@ -28,6 +28,7 @@ import {
   weekDays,
   type CalendarDateBasis,
   type CalendarEntry,
+  type CalendarStatusMenu,
   type CalendarRange,
   type CalendarUndated,
   type DayKey,
@@ -79,7 +80,7 @@ export interface BoardCalendarSurfaceProps {
   /** An item was dropped on, or moved to, `toDay` (its due day). */
   onReschedule: (entry: CalendarEntry, toDay: DayKey) => void;
   /** An undated item got `day` as its due day. */
-  onSetDue: (id: string, day: DayKey) => void;
+  onSetDue: (id: string, day: DayKey, minutes?: number) => void;
   onCreateItem: (title: string, day: DayKey) => void;
   /** A handle or "Đổi ngày…" gave the item new start and due days. */
   onChangeDates?: (
@@ -88,6 +89,8 @@ export interface BoardCalendarSurfaceProps {
   ) => void;
   /** "Chuyển về Chưa lên lịch": the item loses both dates. */
   onUnschedule?: (entry: CalendarEntry) => void;
+  /** "Chuyển sang…" in the phone's row sheet. */
+  statusMenu?: CalendarStatusMenu;
   /**
    * The toolbar's "Add item" opens the full form with this day prefilled;
    * without it the toolbar adds inline on that day.
@@ -132,6 +135,7 @@ export function BoardCalendarSurface({
   onCreateItem,
   onChangeDates,
   onUnschedule,
+  statusMenu,
   onAddItem,
   defaultDrag = null,
   defaultQuickCreateDay = null,
@@ -397,6 +401,10 @@ export function BoardCalendarSurface({
           canEdit={canEdit}
           onOpenItem={onOpenItem}
           onSetDue={onSetDue}
+          nowMinutes={nowMinutes}
+          zoneName={zoneName}
+          zoneLabel={zoneLabel}
+          statusMenu={statusMenu}
           onEditDates={
             canEdit && onChangeDates ? (entry) => setDatesFor(entry) : undefined
           }
@@ -481,6 +489,7 @@ export function BoardCalendarSurface({
             </>
           ) : (
             <CalendarGrid
+              tall={touch && range === "month"}
               copy={copy}
               range={range}
               weeks={weeks}

@@ -518,10 +518,10 @@ export const TodoItem = Node.create<{ context: ContextHolder }>({
       dom.dataset.docNode = "todoItem";
       dom.dataset.block = String(node.attrs.blockId ?? "");
       const apply = (checked: boolean) => {
-        dom.className = `group relative -mx-2 flex min-h-9 items-start gap-2.5 rounded-[8px] px-2 py-1 text-doc-check text-doc-body ${checked ? "[&_.doc-todo-text]:text-meta-foreground [&_.doc-todo-text]:line-through" : ""}`;
+        dom.className = `group relative -mx-2 flex min-h-9 items-center gap-2.5 rounded-[8px] px-2 text-doc-check text-doc-body ${checked ? "[&_.doc-todo-text]:text-meta-foreground [&_.doc-todo-text]:line-through" : ""}`;
         box.setAttribute("aria-checked", String(checked));
         box.dataset.checked = String(checked);
-        box.className = `mt-[3px] box-border grid size-[17px] shrink-0 cursor-pointer place-items-center rounded-[5px] border-[1.5px] p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${checked ? "border-work-status-done bg-work-status-done text-white" : "border-line-strong bg-transparent"}`;
+        box.className = `box-border grid size-[17px] shrink-0 cursor-pointer place-items-center rounded-[5px] border-[1.5px] p-0 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${checked ? "border-work-status-done bg-work-status-done text-white" : "border-line-strong bg-transparent"}`;
         box.textContent = checked ? "✓" : "";
       };
       const box = document.createElement("button");
@@ -529,13 +529,13 @@ export const TodoItem = Node.create<{ context: ContextHolder }>({
       box.setAttribute("role", "checkbox");
       box.contentEditable = "false";
       const content = document.createElement("div");
-      content.className = "doc-todo-text min-w-0 flex-1";
+      content.className = "doc-todo-text my-[7px] min-w-0 flex-1";
       // "Chuyển thành việc": offered on an open line that is not a task yet.
       const convert = document.createElement("button");
       convert.type = "button";
       convert.contentEditable = "false";
       convert.className =
-        "ml-auto inline-flex h-7 shrink-0 items-center rounded-[7px] border border-line-strong bg-doc-panel px-2.5 text-crumb leading-[1.45] font-semibold text-brand-subtle-foreground opacity-0 outline-none group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default";
+        "ml-auto inline-flex h-7 shrink-0 items-center gap-[5px] rounded-[7px] border border-line-strong bg-doc-panel px-2.5 text-crumb leading-[1.45] font-semibold text-brand-subtle-foreground opacity-0 outline-none group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:ring-2 focus-visible:ring-focus-ring aria-disabled:cursor-default";
       convert.addEventListener("mousedown", (event) => event.preventDefault());
       convert.addEventListener("click", () => {
         const id = String(dom.dataset.block ?? "");
@@ -569,13 +569,30 @@ export const TodoItem = Node.create<{ context: ContextHolder }>({
           "aria-label",
           fillDocCopy(copy.blocks.convertToTaskNamed, { name }),
         );
-        convert.textContent = copy.blocks.convertToTask;
+        const icon = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "svg",
+        );
+        icon.setAttribute("viewBox", "0 0 24 24");
+        icon.setAttribute("aria-hidden", "true");
+        icon.setAttribute(
+          "class",
+          "size-[13px] shrink-0 fill-none stroke-current stroke-2",
+        );
+        icon.innerHTML =
+          '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>';
+        convert.replaceChildren(
+          icon,
+          document.createTextNode(copy.blocks.convertToTask),
+        );
         if (callbacks?.onTodoConvert) {
           convert.removeAttribute("aria-disabled");
           convert.removeAttribute("title");
         } else {
           convert.setAttribute("aria-disabled", "true");
-          convert.title = copy.blocks.convertUnavailable;
+          convert.title = callbacks?.offline
+            ? copy.blocks.convertOffline
+            : copy.blocks.convertUnavailable;
         }
       };
       let latest = node;

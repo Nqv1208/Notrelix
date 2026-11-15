@@ -46,9 +46,12 @@ export type MockOverlay =
   | "board-states"
   /** BC-Bulk `bk-grp` and `bk-cap`: a board whose one group holds 301 items. */
   | "bulk-states"
+  /** BC-Large: a board of 5,000 items read a page at a time (`mock-board-it-large`). */
+  | "large-board"
   | "deleted-fields"
   | "field-restored-elsewhere"
-  | "item-blockers";
+  | "item-blockers"
+  | "calendar-deleted-date-field";
 
 export type MockLatency = "instant" | "fast" | "normal" | "slow";
 
@@ -200,9 +203,11 @@ const VALID_OVERLAYS = new Set<string>([
   "many-cards",
   "board-states",
   "bulk-states",
+  "large-board",
   "deleted-fields",
   "field-restored-elsewhere",
   "item-blockers",
+  "calendar-deleted-date-field",
 ]);
 
 const VALID_FAULTS = new Set<string>([

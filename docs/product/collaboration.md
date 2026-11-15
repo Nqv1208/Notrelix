@@ -502,8 +502,13 @@ Channel delivery state is separate from Notification read state.
 Notification preferences may depend on User, Account policy, type, and urgency.
 
 Owner decision (D15, accepted 2026-10-23): the notification preference matrix is Collaboration-owned. It is
-personal state of one person in one Workspace: notification type by channel, readable and changeable only by that
-person, who must be an active member of the Workspace.
+personal state of one person: notification type by channel, readable and changeable only by that person.
+
+Owner decision (2026-11-15): the matrix is one per account, applied in every Workspace the person belongs to, replacing
+the per-Workspace matrix. It is addressed by the person alone (`GET` and `PATCH /api/v1/profile/notification-preferences`),
+no Workspace role reaches it (RLS on the owner's user id, administrators included), and every producer that reads a
+preference reads this one matrix. Linear and Notion keep notification settings at account level; Slack keeps them per
+workspace, and the owner chose the account model.
 
 Vocabulary (stable codes, never renamed or reused):
 

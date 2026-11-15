@@ -76,6 +76,49 @@ public sealed class PageTrashHandlerTests
     }
 
     [Fact]
+    public async Task Delete_OfATrashedParent_DeletesTheSubtreeTrashedWithIt_AndLeavesTheRest()
+    {
+        var parent = NewPage();
+        var child = Page.Create(parent.AccountId, parent.WorkspaceId, "Child", Guid.CreateVersion7(), Now, parentId: parent.Id);
+        var earlier = Page.Create(parent.AccountId, parent.WorkspaceId, "Earlier", Guid.CreateVersion7(), Now.AddDays(-3), parentId: parent.Id);
+        var active = Page.Create(parent.AccountId, parent.WorkspaceId, "Active", Guid.CreateVersion7(), Now, parentId: parent.Id);
+        earlier.Archive(Guid.CreateVersion7(), Now.AddDays(-1));
+        child.Archive(Guid.CreateVersion7(), Now);
+        parent.Archive(Guid.CreateVersion7(), Now);
+        var subtree = new RecordingSubtreeAuthorizer();
+        var sut = new DeletePageCommandHandler(new InMemoryPageSubtreeStore(parent, child, earlier, active), subtree, PageRequestContext.For(parent), new FixedClock());
+
+        var result = await sut.Handle(new DeletePageCommand(parent.Id), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        parent.IsDeleted.Should().BeTrue();
+        child.IsDeleted.Should().BeTrue();
+        earlier.IsDeleted.Should().BeFalse("a page trashed on its own earlier stays in the trash");
+        active.IsDeleted.Should().BeFalse();
+        subtree.Checked.Should().Equal(child.Id);
+    }
+
+    [Fact]
+    public async Task Delete_IsRefusedAsAWhole_WhenTheCallerMayNotDeleteOneDescendant_AndItIsNotNamed()
+    {
+        var parent = NewPage();
+        var hidden = Page.Create(parent.AccountId, parent.WorkspaceId, "Private secret", Guid.CreateVersion7(), Now, parentId: parent.Id);
+        hidden.Archive(Guid.CreateVersion7(), Now);
+        parent.Archive(Guid.CreateVersion7(), Now);
+        var refusing = new Mock<IPageSubtreeAuthorizer>();
+        refusing.Setup(s => s.EnsureAllowedAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<Func<Guid, DeletePageCommand>>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Notrelix.Application.Common.Exceptions.ForbiddenException("Not permitted.", PageSubtreeAuthorizer.SubtreeNotPermittedCode));
+        var sut = new DeletePageCommandHandler(new InMemoryPageSubtreeStore(parent, hidden), refusing.Object, PageRequestContext.For(parent), new FixedClock());
+
+        var act = () => sut.Handle(new DeletePageCommand(parent.Id), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ForbiddenException>())
+            .Which.Message.Should().NotContain("Private secret");
+        parent.IsDeleted.Should().BeFalse();
+        hidden.IsDeleted.Should().BeFalse();
+    }
+
+    [Fact]
     public void DeleteForGood_NeedsTheManagerAction_WhileTrashAndRestoreStayEditorLevel()
     {
         new DeletePageCommand(Guid.CreateVersion7()).Action.Should().Be(PermissionAction.DeletePage);

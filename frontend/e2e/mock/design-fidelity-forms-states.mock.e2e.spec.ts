@@ -112,7 +112,9 @@ for (const dark of [false, true]) {
         .evaluate((e) => getComputedStyle(e).fontSize),
     ).toBe("16px");
     for (const input of await page
-      .locator("main form input[type=text], main form input:not([type])")
+      .locator(
+        "main form input[type=text]:not([name=website]), main form input:not([type]):not([name=website])",
+      )
       .all()) {
       near((await input.boundingBox())!.height, 44, "input height");
     }

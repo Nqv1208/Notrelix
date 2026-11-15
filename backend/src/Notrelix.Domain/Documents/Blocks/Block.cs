@@ -208,6 +208,14 @@ public class Block : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new BlockPropertiesUpdatedDomainEvent(AccountId, WorkspaceId, Id, PageId, updatedBy, updatedAt));
     }
 
+    /// <summary>Replaces the sort key with one that keeps the same order among the siblings: not an edit, so no version bump and no event.</summary>
+    public void Rekey(FractionalIndex newPosition)
+    {
+        EnsureNotDeleted();
+        Guard.NotNull(newPosition);
+        Position = newPosition;
+    }
+
     public void MoveToRoot(FractionalIndex newPosition, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();

@@ -117,6 +117,8 @@ public class CommandMarkerArchitectureTests
             "User updates own profile — permission is identity-based, not resource-based", "Keep as-is"),
         ["UpdateAccountPreferencesCommand"] = new("UpdateAccountPreferencesCommand", AllowlistClassification.Intentional,
             "User updates own account preferences — permission is identity-based (the subject is always the principal), not resource-based", "Keep as-is"),
+        ["UpdateNotificationPreferencesCommand"] = new("UpdateNotificationPreferencesCommand", AllowlistClassification.Intentional,
+            "A person changes their own notification matrix, one per account for every workspace — permission is identity-based (the subject is always the principal), not resource-based", "Keep as-is"),
         ["RemoveAvatarCommand"] = new("RemoveAvatarCommand", AllowlistClassification.Intentional,
             "User removes own profile photo — permission is identity-based (the subject is always the principal), not resource-based", "Keep as-is"),
         ["UpdateEmailCommand"] = new("UpdateEmailCommand", AllowlistClassification.Intentional,

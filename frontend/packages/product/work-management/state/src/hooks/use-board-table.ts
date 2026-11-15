@@ -18,6 +18,9 @@ import {
 } from "../queries/use-item-conflict";
 import { useBoardReadNeed } from "../queries/board-read";
 
+/** Rows of a table group the first read brings and each "Show more" adds (the table surface's own window). */
+const TABLE_PAGE_SIZE = 50;
+
 /**
  * The sort the server can order a page of rows by for a table sort: the built-in columns that are a field's
  * value (title, status, due date) and a custom field. Anything else (the item key, the people, the counts)
@@ -111,6 +114,8 @@ export function useBoardTable(
     full: readSort === null,
     filter: "",
     sort: readSort ?? "",
+    // The table draws a group 50 rows at a time (its "Show more" row), not 10 as a scrolled lane does.
+    pageSize: TABLE_PAGE_SIZE,
   });
   const setSort = useCallback(
     (next: TableSort) =>

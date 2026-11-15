@@ -289,8 +289,11 @@ export function applyUnreadFrame(
           ...entry,
           unreadCount: payload.unread,
           mentionCount: payload.mentions,
+          lastSequence: payload.lastSequence ?? entry.lastSequence,
           firstUnreadSequence:
-            payload.unread === 0 ? null : entry.firstUnreadSequence,
+            payload.unread === 0
+              ? null
+              : (entry.firstUnreadSequence ?? entry.readSequence + 1),
         }
       : entry,
   );

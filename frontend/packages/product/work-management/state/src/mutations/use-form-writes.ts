@@ -29,6 +29,7 @@ function failure(error: unknown): FormWriteResult {
   };
   if (caught.status === 403) return { ok: false, reason: "forbidden" };
   if (caught.status === 404) return { ok: false, reason: "missing" };
+  if (caught.status === 429) return { ok: false, reason: "limited" };
   if (caught.status === 409 || caught.status === 412)
     return { ok: false, reason: "conflict", conflict: conflictOf(error) };
   if (
@@ -172,8 +173,16 @@ export function useFormWrites(boardId: string, workspaceId: string) {
         write(() => forms.reject(submissionId, reason), formId, true),
       markSpam: (formId: string, submissionId: string) =>
         write(() => forms.markSpam(submissionId), formId, true),
-      reopenSubmission: (formId: string, submissionId: string) =>
-        write(() => forms.reopenSubmission(submissionId), formId, true),
+      reopenSubmission: (
+        formId: string,
+        submissionId: string,
+        clearItem = false,
+      ) =>
+        write(
+          () => forms.reopenSubmission(submissionId, clearItem),
+          formId,
+          true,
+        ),
       removeSubmission: (formId: string, submissionId: string) =>
         write(() => forms.removeSubmission(submissionId), formId, true),
     }),
@@ -189,9 +198,15 @@ export function useSubmitForm(formId: string, workspaceId: string) {
     async (
       answers: Readonly<Record<string, unknown>>,
       idempotencyKey: string,
+      honeypot = "",
     ): Promise<FormWriteResult> => {
       try {
-        const id = await forms.submit(formId, answers, idempotencyKey);
+        const id = await forms.submit(
+          formId,
+          answers,
+          idempotencyKey,
+          honeypot,
+        );
         await queryClient.invalidateQueries({
           queryKey: wmQueryKeys.formSubmissions(workspaceId, formId),
         });

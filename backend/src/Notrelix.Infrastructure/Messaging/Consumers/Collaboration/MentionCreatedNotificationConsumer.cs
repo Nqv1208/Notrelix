@@ -1,6 +1,9 @@
 using Notrelix.Application.Events.Collaboration;
 using Notrelix.Application.Features.Collaboration.Notifications;
+using Notrelix.Application.Features.Documents.Public.PageViewAccess;
+using Notrelix.Application.Common.Exceptions;
 using Notrelix.Domain.Collaboration.Preferences;
+using Notrelix.Domain.Common.Exceptions;
 using Notrelix.Infrastructure.Data.Abstractions;
 using Notrelix.Infrastructure.Data.Notifications;
 
@@ -9,14 +12,23 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Collaboration;
 [OrderingNotApplicable("Each mention creates one notification guarded by a per-mention-and-user deduplication key; notifications are independent and never supersede each other.")]
 public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreatedIntegrationEvent>
 {
+    private const string BoardItemKind = ItemFollowerNotifier.BoardItemKind;
+    private const string PageKind = "documents.page";
+
     private readonly INotificationDbContext _context;
+    private readonly ItemAudience _itemAudience;
+    private readonly IPageViewAccess _pageAccess;
     private readonly ILogger<MentionCreatedNotificationConsumer> _logger;
 
     public MentionCreatedNotificationConsumer(
         INotificationDbContext context,
+        ItemAudience itemAudience,
+        IPageViewAccess pageAccess,
         ILogger<MentionCreatedNotificationConsumer> logger)
     {
         _context = context;
+        _itemAudience = itemAudience;
+        _pageAccess = pageAccess;
         _logger = logger;
     }
 
@@ -33,6 +45,9 @@ public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreate
             return;
         }
 
+        // A person never hears about their own mention.
+        if (msg.MentionedUserId == msg.MentionedByUserId) return;
+
         var deduplicationKey = $"mention-created:{msg.MentionId}:{msg.MentionedUserId}";
 
         var existing = await _context.NotificationItems
@@ -47,7 +62,7 @@ public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreate
         }
 
         var preferenceType = NotificationTypes.FromProducedType(NotificationTypes.MentionProducedType)!;
-        if (!await IsInAppEnabledAsync(msg.AccountId.Value, msg.WorkspaceId.Value, msg.MentionedUserId, preferenceType, context.CancellationToken))
+        if (!await IsInAppEnabledAsync(msg.MentionedUserId, preferenceType, context.CancellationToken))
         {
             _logger.LogInformation(
                 "Mention {MentionId} -> user {UserId} not notified in-app: the user turned the {Type} in-app preference off in workspace {WorkspaceId}",
@@ -61,6 +76,15 @@ public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreate
         {
             _logger.LogInformation(
                 "Mention {MentionId} -> user {UserId} not notified: the user muted the thread in workspace {WorkspaceId}",
+                msg.MentionId, msg.MentionedUserId, msg.WorkspaceId);
+            return;
+        }
+
+        // COL-030: the person may have lost access between the comment and this delivery; tell nobody who cannot open the source now.
+        if (!await CanViewSourceAsync(msg, context.CancellationToken))
+        {
+            _logger.LogInformation(
+                "Mention {MentionId} -> user {UserId} not notified: the user cannot view the source in workspace {WorkspaceId}",
                 msg.MentionId, msg.MentionedUserId, msg.WorkspaceId);
             return;
         }
@@ -112,6 +136,23 @@ public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreate
             msg.MentionId, msg.MentionedUserId, msg.WorkspaceId);
     }
 
+    /// <summary>Item and Page sources are re-checked; any other source kind keeps the producer's check.</summary>
+    private async Task<bool> CanViewSourceAsync(MentionCreatedIntegrationEvent msg, CancellationToken ct)
+    {
+        var workspaceId = msg.WorkspaceId!.Value;
+        if (msg.TargetType == BoardItemKind)
+            return (await _itemAudience.WhoCanSeeAsync(workspaceId, msg.TargetId, [msg.MentionedUserId], ct)).Count > 0;
+        if (msg.TargetType != PageKind) return true;
+        try
+        {
+            return await _pageAccess.CanViewAsync(msg.AccountId!.Value, workspaceId, msg.TargetId, msg.MentionedUserId, ct);
+        }
+        catch (Exception ex) when (ex is DomainException or NotFoundException or ForbiddenException)
+        {
+            return false;
+        }
+    }
+
     private const string DeduplicationIndexName = "ux_notifications_items_dedup";
 
     /// <summary>
@@ -130,16 +171,15 @@ public sealed class MentionCreatedNotificationConsumer : IConsumer<MentionCreate
     }
 
     /// <summary>
-    /// The mentioned person's own in-app choice for this type in this Workspace, else the default (on). The
-    /// consumer reads under the tenant restored from the event envelope, and addresses the set by that
-    /// (Account, Workspace) and the recipient, never by an ambient request user.
+    /// The mentioned person's own in-app choice for this type in any Workspace (the matrix is the person's, one per account), else the default (on). The
+    /// consumer addresses the set by the recipient, never by an ambient request user.
     /// </summary>
-    private async Task<bool> IsInAppEnabledAsync(Guid accountId, Guid workspaceId, Guid userId, string type, CancellationToken ct)
+    private async Task<bool> IsInAppEnabledAsync(Guid userId, string type, CancellationToken ct)
     {
         var set = await _context.NotificationPreferenceSets
             .AsNoTracking()
             .Include(s => s.Entries)
-            .FirstOrDefaultAsync(s => s.AccountId == accountId && s.WorkspaceId == workspaceId && s.UserId == userId, ct);
+            .FirstOrDefaultAsync(s => s.UserId == userId, ct);
 
         return set?.IsEnabled(type, NotificationChannels.InApp)
             ?? NotificationPreferenceDefaults.IsEnabled(type, NotificationChannels.InApp);

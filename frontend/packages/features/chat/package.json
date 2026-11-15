@@ -25,15 +25,16 @@
     "@notrelix/query": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
     "@tanstack/react-query": "^5.95.2",
+    "@tanstack/react-virtual": "3.13.12",
     "lucide-react": "^0.562.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "@notrelix/dev-mock-backend": "workspace:*",
+    "@notrelix/eslint-config": "workspace:*",
+    "@notrelix/testing": "workspace:*",
     "@types/react": "^19.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@notrelix/dev-mock-backend": "workspace:*",
-    "@notrelix/testing": "workspace:*",
-    "@notrelix/eslint-config": "workspace:*"
+    "typescript": "^5.0.0"
   }
 }

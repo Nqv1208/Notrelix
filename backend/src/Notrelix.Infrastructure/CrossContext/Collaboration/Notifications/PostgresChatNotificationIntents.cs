@@ -62,7 +62,7 @@ public sealed class PostgresChatNotificationIntents : IChatNotificationIntents
         var sets = await _notifications.NotificationPreferenceSets
             .AsNoTracking()
             .Include(s => s.Entries)
-            .Where(s => s.AccountId == source.AccountId && s.WorkspaceId == source.WorkspaceId && recipients.Contains(s.UserId))
+            .Where(s => recipients.Contains(s.UserId))
             .ToListAsync(cancellationToken);
 
         var preview = NotificationExcerpt.From(source.Preview);
