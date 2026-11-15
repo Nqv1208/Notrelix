@@ -254,7 +254,7 @@ export function ChatSidebar({
                 {browse.channels.map((channel) => (
                   <li
                     key={channel.id}
-                    className="flex h-8 items-center gap-2 px-2 text-sm text-muted-foreground"
+                    className="flex h-8 items-center gap-[9px] px-2.5 text-sm text-muted-foreground max-md:-mx-2 max-md:min-h-12 max-md:gap-3 max-md:px-4"
                   >
                     <Hash className="size-3.5 shrink-0" aria-hidden="true" />
                     <span className="min-w-0 flex-1 truncate">
@@ -263,6 +263,7 @@ export function ChatSidebar({
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="max-md:min-h-11"
                       disabled={joiningId === channel.id}
                       aria-label={`${copy.sidebar.join} #${channel.name}`}
                       onClick={() => onJoin(channel.id)}

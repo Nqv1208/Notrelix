@@ -88,7 +88,7 @@ public class ChannelHandlerTests
         return space;
     }
 
-    private CreateChannelCommandHandler CreateHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, AuditFacts());
+    private CreateChannelCommandHandler CreateHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, AuditFacts(), SystemMessages());
     private readonly Mock<IAuditService> _auditService = new();
     private ChatAuditFacts AuditFacts() => new(_auditService.Object, _context.Object);
     private void VerifyAudit(string action, Times times) =>
@@ -118,6 +118,9 @@ public class ChannelHandlerTests
         result.Data!.IsMember.Should().BeTrue();
         result.Data!.Role.Should().Be("manager");
         _spaces.Should().ContainSingle(s => s.Name == "design" && s.IsPublic);
+        var created = _spaces.Single(s => s.Name == "design");
+        created.LastSequence.Should().Be(1);
+        _messages.Should().ContainSingle(m => m.SpaceId == created.Id && m.Sequence == 1 && m.Content == ChatSystemMessages.Created);
     }
 
     [Fact]
@@ -190,6 +193,20 @@ public class ChannelHandlerTests
         var result = await ListHandler().Handle(new ListChannelsQuery(_workspaceId, Browse: true), CancellationToken.None);
 
         result.Data!.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ListChannels_BrowseLeavesOutThePublicChannelsTheCallerIsIn()
+    {
+        var mine = PublicChannel("mine");
+        var other = PublicChannel("other");
+        mine.AddMember(_member, MembershipRole.Member, Now);
+        _memberships.AddRange(mine.Memberships);
+        AsCaller(_member);
+
+        var result = await ListHandler().Handle(new ListChannelsQuery(_workspaceId, Browse: true), CancellationToken.None);
+
+        result.Data!.Select(c => c.Id).Should().BeEquivalentTo([other.Id]);
     }
 
     [Fact]

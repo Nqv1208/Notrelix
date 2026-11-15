@@ -624,6 +624,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
         <li
           {...extra}
           key={row.key}
+          data-testid="chat-day-separator"
           className="my-1.5 flex h-6 items-center gap-3 px-5 before:h-px before:flex-1 before:bg-border before:content-[''] after:h-px after:flex-1 after:bg-border after:content-['']"
         >
           <span className="text-xs leading-[1.45] font-semibold whitespace-nowrap text-muted-foreground">

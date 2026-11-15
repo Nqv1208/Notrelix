@@ -102,7 +102,7 @@ for (const mode of ["light", "dark"] as const) {
 
         const sep = await box(
           page,
-          "[role=log] li[role=presentation]:has(span)",
+          "[role=log] li[data-testid=chat-day-separator]",
         );
         expect(sep.h).toBeCloseTo(24, 0);
 
