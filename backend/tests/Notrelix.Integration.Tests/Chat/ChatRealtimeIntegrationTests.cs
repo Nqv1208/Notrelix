@@ -96,11 +96,16 @@ public sealed class ChatRealtimeIntegrationTests : IAsyncLifetime
         reader.TopicNamespace.Should().Be("user");
         reader.StreamKey.Should().Be($"user:notifications:{_reader:N}");
         reader.PayloadContract.Should().Be("chat.unread.v1");
-        // The reader has not read anything: message 1 (owner) and message 3 (owner) are unread; message 2 is deleted.
+        // The reader has not read anything: the space is 3 sequences ahead of the boundary (the number is a difference, not a count).
         reader.Payload.GetProperty("spaceId").GetGuid().Should().Be(_space.Id);
-        reader.Payload.GetProperty("unread").GetInt32().Should().Be(2);
+        reader.Payload.GetProperty("unread").GetInt32().Should().Be(3);
         reader.Payload.GetProperty("mentions").GetInt32().Should().Be(0);
-        reader.Payload.ToString().Should().NotContain("three", "the per-user frame carries no message content");
+        reader.Payload.GetProperty("lastSequence").GetInt64().Should().Be(3);
+        var preview = reader.Payload.GetProperty("preview");
+        preview.GetProperty("text").GetString().Should().Be("three");
+        preview.GetProperty("sequence").GetInt64().Should().Be(3);
+        preview.GetProperty("authorId").GetGuid().Should().Be(_owner);
+        published.Should().OnlyContain(f => !f.Payload.ToString().Contains("two"), "no frame goes to the muted member or the member who left, so none carries a preview for them");
     }
 
     private sealed class CapturingPublisher(List<RealtimeResourceChangedV1> sink) : IRealtimePublisher

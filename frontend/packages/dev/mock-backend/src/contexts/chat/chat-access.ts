@@ -378,27 +378,16 @@ export function effectiveLevel(
   return stored;
 }
 
-/** The unread messages of a person in a space: other people's user messages after the boundary, not deleted. */
+/**
+ * The unread state of a person in a space as the backend stores it: the sequence difference between the space's last message and the
+ * person's boundary (no rows are counted, so own, system and deleted messages are in it), and the sequence after the boundary.
+ */
 export function unreadIn(
-  state: MockChatState,
-  spaceId: string,
-  userId: string,
+  lastSequence: number,
   readSequence: number,
 ): { count: number; first: number | null } {
-  let count = 0;
-  let first: number | null = null;
-  for (const message of state.messagesOf(spaceId)) {
-    if (
-      message.sequence > readSequence &&
-      message.authorId !== userId &&
-      message.kind === "user" &&
-      message.deletedAt === null
-    ) {
-      count += 1;
-      first ??= message.sequence;
-    }
-  }
-  return { count, first };
+  const count = Math.max(lastSequence - readSequence, 0);
+  return { count, first: count > 0 ? readSequence + 1 : null };
 }
 
 export interface ChatSpaceUnreadRow {
@@ -437,12 +426,7 @@ export function unreadRow(
     membership.mutedUntil,
     now,
   );
-  const unread = unreadIn(
-    state,
-    space.id,
-    membership.userId,
-    membership.readSequence,
-  );
+  const unread = unreadIn(space.lastSequence, membership.readSequence);
   return {
     spaceId: space.id,
     name: space.name,

@@ -296,6 +296,16 @@ export function createChatRealtimeAdapter(
       await queryClient.invalidateQueries({ queryKey: key });
       return;
     }
+    // A background conversation shows its newest message without being read: the frame's preview patches the list in place.
+    if (frame.preview) {
+      touchConversation(queryClient, workspaceId, frame.spaceId, {
+        sequence: frame.preview.sequence,
+        authorId: frame.preview.authorId,
+        kind: frame.preview.kind === "system" ? "system" : "user",
+        text: frame.preview.text,
+        createdAt: frame.preview.createdAt,
+      });
+    }
     const summary = queryClient.getQueryData<ChatUnreadSummary>(key);
     // Nothing loaded yet: the summary fetches on its first read.
     if (!summary) return;
