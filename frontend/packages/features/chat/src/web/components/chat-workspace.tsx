@@ -230,27 +230,33 @@ function ChatDraftComposer({
   draftKey,
   drafts,
   onSend,
+  onTypingStop,
   ...rest
 }: Omit<ChatComposerProps, "value" | "onChange"> & {
   readonly draftKey: string;
   readonly drafts: RefObject<Record<string, string>>;
+  /** The caller stopped typing: the draft emptied, was sent, or lost the focus. */
+  readonly onTypingStop?: () => void;
 }) {
   const [value, setValue] = useState(drafts.current[draftKey] ?? "");
   function change(next: string) {
     setValue(next);
     if (next.length === 0) delete drafts.current[draftKey];
     else drafts.current[draftKey] = next;
+    if (next.trim().length === 0) onTypingStop?.();
   }
   return (
-    <ChatComposer
-      {...rest}
-      value={value}
-      onChange={change}
-      onSend={(...args) => {
-        onSend(...args);
-        change("");
-      }}
-    />
+    <div className="contents" onBlur={() => onTypingStop?.()}>
+      <ChatComposer
+        {...rest}
+        value={value}
+        onChange={change}
+        onSend={(...args) => {
+          onSend(...args);
+          change("");
+        }}
+      />
+    </div>
   );
 }
 
@@ -509,6 +515,25 @@ export function ChatWorkspace({
     // reader is stable per hook call; the sequence and the position are the inputs.
   }, [channelId, newest?.sequence, hasNewer, atBottom]);
 
+  // The reader is looking at this channel's newest message: its unread frames add nothing (the read boundary moves
+  // with the message above), so neither sidebar flashes a badge for a message that is read as it arrives.
+  const hasNewest = newest !== undefined;
+  useEffect(() => {
+    if (!channelId || !hasNewest || hasNewer || !atBottom) return;
+    const viewingKey = chatQueryKeys.viewing(ws);
+    const publish = () =>
+      queryClient.setQueryData<string | null>(
+        viewingKey,
+        document.visibilityState === "hidden" ? null : channelId,
+      );
+    publish();
+    document.addEventListener("visibilitychange", publish);
+    return () => {
+      document.removeEventListener("visibilitychange", publish);
+      queryClient.setQueryData<string | null>(viewingKey, null);
+    };
+  }, [channelId, hasNewest, hasNewer, atBottom, ws, queryClient]);
+
   function jumpToLatest() {
     if (channelId) {
       lockRef.current = { channelId, anchor: LATEST, firstUnread: null };
@@ -621,7 +646,7 @@ export function ChatWorkspace({
       ? { id: newestMessage.id, authorId: newestMessage.authorId }
       : null,
   );
-  const notifyTyping = useTypingSignal(ephemeral, channelId);
+  const typingSignal = useTypingSignal(ephemeral, channelId);
 
   // A reply and an open panel belong to one channel: both close when the channel changes.
   useEffect(() => {
@@ -1697,7 +1722,8 @@ export function ChatWorkspace({
                     }
                     disabledReason={composerDisabledReason}
                     copy={copy}
-                    onTyping={ephemeral ? notifyTyping : undefined}
+                    onTyping={ephemeral ? typingSignal.start : undefined}
+                    onTypingStop={ephemeral ? typingSignal.stop : undefined}
                     onSend={handleSend}
                     mentions={composerMentions}
                     attachments={{ draftKey: ch }}

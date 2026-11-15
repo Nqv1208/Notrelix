@@ -94,7 +94,7 @@ public static class RealtimeProtocol
     public sealed record PongMessage : ClientMessage;
 
     /// <summary>The caller is typing in the space of the named subscription.</summary>
-    public sealed record TypingMessage(string SubscriptionId) : ClientMessage;
+    public sealed record TypingMessage(string SubscriptionId, bool Stopped = false) : ClientMessage;
 
     /// <summary>The caller's presence heartbeat (state online, idle or offline).</summary>
     public sealed record PresenceMessage(string State) : ClientMessage;
@@ -142,8 +142,9 @@ public static class RealtimeProtocol
                 case ClientTypes.Pong:
                     return new PongMessage();
                 case ClientTypes.Typing:
-                    return IsValidSubscriptionId(subscriptionId)
-                        ? new TypingMessage(subscriptionId!)
+                    // An optional state: "stop" ends the indicator at once; absent or "start" is a keystroke.
+                    return IsValidSubscriptionId(subscriptionId) && ReadString(root, "state") is null or "start" or "stop"
+                        ? new TypingMessage(subscriptionId!, ReadString(root, "state") == "stop")
                         : new InvalidMessage(ErrorCodes.InvalidMessage);
                 case ClientTypes.Presence:
                     return ReadString(root, "state") is { } state && RealtimePresenceStates.IsValid(state)

@@ -91,15 +91,15 @@ describe("useTypingSignal", () => {
       const { port } = fakePort();
       const { result } = renderHook(() => useTypingSignal(port, "space-1"));
       act(() => {
-        result.current();
-        result.current();
+        result.current.start();
+        result.current.start();
       });
       expect(port.sendTyping).toHaveBeenCalledTimes(1);
       vi.setSystemTime(new Date("2026-01-01T00:00:02Z"));
-      act(() => result.current());
+      act(() => result.current.start());
       expect(port.sendTyping).toHaveBeenCalledTimes(1);
       vi.setSystemTime(new Date("2026-01-01T00:00:03.100Z"));
-      act(() => result.current());
+      act(() => result.current.start());
       expect(port.sendTyping).toHaveBeenCalledTimes(2);
       expect(port.sendTyping).toHaveBeenLastCalledWith("space-1");
     } finally {
@@ -109,7 +109,29 @@ describe("useTypingSignal", () => {
 
   it("sends nothing without a port or a space", () => {
     const { result } = renderHook(() => useTypingSignal(undefined, "s"));
-    expect(() => result.current()).not.toThrow();
+    expect(() => result.current.start()).not.toThrow();
+    expect(() => result.current.stop()).not.toThrow();
+  });
+
+  it("a stop goes at once, and the next keystroke after it is a new start inside the 3 seconds", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+      const { port } = fakePort();
+      const { result } = renderHook(() => useTypingSignal(port, "space-1"));
+      act(() => result.current.stop());
+      expect(port.sendTyping).not.toHaveBeenCalled(); // nothing was started
+      act(() => result.current.start());
+      vi.setSystemTime(new Date("2026-01-01T00:00:00.400Z"));
+      act(() => result.current.stop());
+      expect(port.sendTyping).toHaveBeenLastCalledWith("space-1", true);
+      vi.setSystemTime(new Date("2026-01-01T00:00:00.600Z"));
+      act(() => result.current.start());
+      expect(port.sendTyping).toHaveBeenCalledTimes(3);
+      expect(port.sendTyping).toHaveBeenLastCalledWith("space-1");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -143,6 +165,21 @@ describe("useChatEphemeral", () => {
     unmount();
     expect(fake.listenerCount("a")).toBe(0);
     expect(fake.listenerCount("b")).toBe(0);
+  });
+
+  it("a frame that expires at once hides the dots at once", () => {
+    const fake = fakePort();
+    const { result } = renderHook(() => useChatEphemeral(fake.port, ["a"]));
+    const typing = (expiresInMs: number): ChatEphemeralEvent => ({
+      kind: "typing",
+      channelId: "a",
+      userId: "ann",
+      expiresInMs,
+    });
+    act(() => fake.emit("a", typing(5000)));
+    expect(result.current.typing.typingIn("a")).toEqual(["ann"]);
+    act(() => fake.emit("a", typing(0)));
+    expect(result.current.typing.typingIn("a")).toEqual([]);
   });
 
   it("does nothing without a port", () => {
