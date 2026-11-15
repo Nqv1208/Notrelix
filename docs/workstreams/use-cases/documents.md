@@ -1256,12 +1256,12 @@ Team capability 10 (team id DCT-010). Requirements `DCREQ128` to `DCREQ134`, `DC
 - Input: `name` (required, at most the domain limit).
 - Output: a Named entry with the next number holding the page as it is now.
 - Main flow: File menu, Save version; name it.
-- No-op / rejection / concurrency / retry: empty or too long name is `400` (`Documents_Version_NameRequired`, `Documents_Version_NameTooLong`); a trashed page is refused. Saving twice makes two entries.
+- No-op / rejection / concurrency / retry: empty or too long name is `400` (`Documents_Version_NameRequired`, `Documents_Version_NameTooLong`); a trashed page is refused. A retry with the same `Idempotency-Key` returns the same entry and adds none; a new key adds a new entry (built, proven on PostgreSQL).
 - UI states: validation error, pending, permission denied.
 - Rules: product doc sections 48, 49; `DCREQ129`, `DCREQ130`; decision 13.
 - Acceptance: Given a page, When "Before launch" is saved, Then the list shows it newest first.
-- Evidence: BE `POST /api/v1/pages/{pageId}/versions`, `CreatePageVersionCommandHandler` · FE `useCreateVersion`, `doc-history-dialogs-surface.tsx` · Design none · Tests `PageVersionHandlerTests`, `page-versions.unit.test.ts`, `doc-history-dialogs.interaction.component.test.tsx` · Real e2e none
-- State: INTEGRATING — No dialog artboard.
+- Evidence: BE `POST /api/v1/pages/{pageId}/versions` (requires `Idempotency-Key`; `[IdempotencyOperation("documents.versions.create-page-version.v1")]`), `CreatePageVersionCommandHandler` · FE `useCreateVersion`, `doc-history-dialogs-surface.tsx` · Design none · Tests `PageVersionHandlerTests`, `PageVersionRestoreIntegrationTests` (same key twice, one entry; other key, a new one), `page-versions.unit.test.ts`, `doc-history-dialogs.interaction.component.test.tsx` · Real e2e none
+- State: INTEGRATING — Backend retry is built; the frontend must send one `Idempotency-Key` per save attempt (follow-up once the history UI merges); no dialog artboard.
 
 ### UC-DCT-J05 Browse the version history
 - Capability: J Document events and activity
@@ -1376,12 +1376,12 @@ Team capability 12 (team id DCT-012). Requirements `DCREQ133`, `DCREQ136`, `DCRE
 - Input: `currentBlocks`: `[{blockId, version}]` for every live block the editor saw (decision 16).
 - Output: the page's blocks are put back to the entry; a "Before restoring version N" Automatic entry is recorded first unless the newest entry already holds the current content; a Restore entry is added; history is never rewritten; the page announces a save.
 - Main flow: 1. History, choose an entry, Restore. 2. Confirm. 3. The client sends the seen blocks. 4. The editor shows the restored page.
-- No-op / rejection / concurrency / retry: any live block that changed, appeared or vanished since is `412` carrying the current blocks, and nothing is restored; the client rereads and asks again. A trashed page is refused. Retry after success restores again and adds entries.
+- No-op / rejection / concurrency / retry: any live block that changed, appeared or vanished since is `412` carrying the current blocks, and nothing is restored; the client rereads and asks again. A trashed page is refused. A retry with the same `Idempotency-Key` returns the first answer and restores nothing again; a new key restores again. Rule DCT-030: a captured block whose type, content or properties are no longer valid under today's schema refuses the whole restore (`Documents_Version_BlockTypeInvalid`, `Documents_Block_ContentInvalid` or `Documents_Block_PropertiesInvalid`), checked before anything is written, so the page and history stay as they were. Product decision: the primary button of the restore-conflict dialog stays enabled (the board draws it disabled; a dead primary with no way out is worse), so this is not a gap.
 - UI states: confirmation, pending, conflict, permission denied, error.
 - Rules: product doc sections 52, 95 (product rules DCT-016, DCT-030); `DCREQ133`; decisions 13, 16.
 - Acceptance: Given a block edited after the client's read, When restore is sent, Then `412` and no block changed. Given a matching set, Then the blocks equal the entry and two entries are added.
-- Evidence: BE `POST /api/v1/pages/{pageId}/versions/{versionId}/restore`, `RestorePageVersionCommandHandler` · FE `useRestoreVersion`, `doc-history-dialogs-surface.tsx` · Design none · Tests `PageVersionHandlerTests`, `page-versions.unit.test.ts`, `doc-history-dialogs.interaction.component.test.tsx` · Real e2e none
-- State: INTEGRATING — Restore does not prove that a restored block type is valid under today's schema (DCT-030); no artboard.
+- Evidence: BE `POST /api/v1/pages/{pageId}/versions/{versionId}/restore` (requires `Idempotency-Key`; `[IdempotencyOperation("documents.versions.restore-page-version.v1")]`), `RestorePageVersionCommandHandler` · FE `useRestoreVersion`, `doc-history-dialogs-surface.tsx` · Design none · Tests `PageVersionHandlerTests` (DCT-030, three refusals, nothing changed), `PageVersionRestoreIntegrationTests` (one restore and one "Before restoring" entry per key), `page-versions.unit.test.ts`, `doc-history-dialogs.interaction.component.test.tsx` · Real e2e none
+- State: INTEGRATING — Backend line is built and proven; the frontend must send one `Idempotency-Key` per restore attempt (follow-up once the history UI merges); no artboard.
 
 ### UC-DCT-L02 Refuse a stale block write
 - Capability: L Recovery and conflict hardening

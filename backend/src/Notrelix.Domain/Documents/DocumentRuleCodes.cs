@@ -17,6 +17,7 @@ public static class DocumentRuleCodes
     // ── Version ───────────────────────────────────────────────────────────
     public const string Documents_Version_NameRequired = "Documents_Version_NameRequired";
     public const string Documents_Version_NameTooLong = "Documents_Version_NameTooLong";
+    public const string Documents_Version_BlockTypeInvalid = "Documents_Version_BlockTypeInvalid";
 
     // ── PageTree ──────────────────────────────────────────────────────────
     public const string Documents_PageTree_CannotBeOwnParent = "Documents_PageTree_CannotBeOwnParent";
