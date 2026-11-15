@@ -152,18 +152,25 @@ export function createPageApi(api: DocsApiClient, endpoints: PageApiEndpoints) {
     },
 
     /**
-     * `Documents.Pages.UpdatePage` renames, guarded by the page version the
-     * editor read: a stale `expectedVersion` answers 412 and changes nothing.
-     * The icon and cover are not stored yet.
+     * `Documents.Pages.UpdatePage` renames and/or sets the icon (a blank icon
+     * restores the default), guarded by the page version the editor read: a
+     * stale `expectedVersion` answers 412 and changes nothing. The cover is
+     * not stored yet.
      */
     async update(
       pageId: string,
       payload: UpdatePagePayload,
     ): Promise<PageDetail> {
-      if (payload.title === undefined || !payload.expectedVersion)
-        throw new Error("A rename needs the new title and the page version.");
+      if (
+        (payload.title === undefined && payload.icon === undefined) ||
+        !payload.expectedVersion
+      )
+        throw new Error(
+          "An update needs a title or an icon and the page version.",
+        );
       await api.patch<void>(endpoints.pages.detail(pageId), {
-        title: payload.title,
+        ...(payload.title !== undefined ? { title: payload.title } : {}),
+        ...(payload.icon !== undefined ? { icon: payload.icon ?? "" } : {}),
         expectedVersion: payload.expectedVersion,
       });
       return this.getDetail(pageId);
