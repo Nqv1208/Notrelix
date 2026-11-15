@@ -22,13 +22,41 @@ test("opens a channel, sends a message and sees it at the end of the list", asyn
   const log = page.getByRole("log");
   await expect(log).toBeVisible();
 
-  const composer = page.getByRole("textbox", {
+  const composer = page.getByRole("combobox", {
     name: /^(Message #general|Tin nhắn tới #general)$/,
   });
   const text = `Chat e2e ${Date.now()}`;
   await composer.fill(text);
+  // Count the copies of the text on every DOM change, so a moment with two copies cannot pass unseen.
+  await page.evaluate((needle) => {
+    const w = window as unknown as { __maxCopies: number };
+    w.__maxCopies = 0;
+    const count = () =>
+      Array.from(document.querySelectorAll('[role="log"] *')).filter(
+        (el) =>
+          (el.textContent ?? "").includes(needle) &&
+          !Array.from(el.children).some((c) =>
+            (c.textContent ?? "").includes(needle),
+          ),
+      ).length;
+    new MutationObserver(() => {
+      w.__maxCopies = Math.max(w.__maxCopies, count());
+    }).observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+  }, text);
   await composer.press("Enter");
 
+  // The pending bubble is replaced in place by the stored message: never two copies.
+  await expect(log.getByText(text)).toHaveCount(1);
+  await expect(page.getByTestId("chat-pending-message")).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { __maxCopies: number }).__maxCopies,
+    ),
+  ).toBe(1);
   await expect(log.getByText(text)).toBeVisible();
   await expect(composer).toHaveValue("");
 });
@@ -37,11 +65,16 @@ test("a message over 4000 characters is refused in the composer", async ({
   page,
 }) => {
   await page.goto(`/workspaces/${WORKSPACE}/chat`);
-  const composer = page.getByRole("textbox", {
+  const composer = page.getByRole("combobox", {
     name: /^(Message #general|Tin nhắn tới #general)$/,
   });
   await composer.fill("a".repeat(4001));
-  await expect(
-    page.getByRole("button", { name: /^(Send|Gửi)$/ }),
-  ).toBeDisabled();
+  // Past the limit the composer is invalid and offers no Send button (the microphone stays); Enter sends nothing.
+  await expect(composer).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByRole("button", { name: /^(Send|Gửi)$/ })).toHaveCount(
+    0,
+  );
+  await composer.press("Enter");
+  await expect(composer).toHaveValue("a".repeat(4001));
+  await expect(page.getByTestId("chat-pending-message")).toHaveCount(0);
 });

@@ -1,5 +1,6 @@
 using Notrelix.API.Contracts.WorkManagement.Forms.Requests;
 using Notrelix.API.Extensions;
+using Notrelix.API.RateLimiting;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.SubmitForm;
 
 namespace Notrelix.API.Endpoints.WorkManagement.Forms.Commands;
@@ -10,6 +11,7 @@ public static class SubmitFormEndpoint
     {
         group.MapResourcePost("/submissions", HandleAsync)
             .WithIdempotencyKey()
+            .WithMetadata(new RateLimitPolicyAttribute("FormSubmitByIpAndForm"))
             .WithName("WorkManagement.Forms.Submit")
             .WithTags("WorkManagement.Forms")
             .WithSummary("Submit answers to a published form as the signed-in member");
@@ -22,7 +24,7 @@ public static class SubmitFormEndpoint
         ISender sender,
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new SubmitFormCommand(formId, body.Answers), cancellationToken);
+        var result = await sender.Send(new SubmitFormCommand(formId, body.Answers, body.Website), cancellationToken);
         return result.ToCreatedResult();
     }
 }

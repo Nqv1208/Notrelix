@@ -25,7 +25,7 @@ public sealed class AuthenticatedRateLimitMiddleware
         var provider = context.RequestServices.GetRequiredService<IRateLimitPolicyProvider>();
         var policy = provider.GetPolicy(attribute.PolicyName);
 
-        if (policy is null || policy.PartitionBy == PartitionKey.Ip)
+        if (policy is null || policy.PartitionBy is PartitionKey.Ip or PartitionKey.IpAndForm)
         {
             await _next(context);
             return;

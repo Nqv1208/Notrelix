@@ -48,6 +48,21 @@ public class SubmitFormCommandTests : WorkManagementHandlerTestBase
         Mock.Get(set).Verify(s => s.Add(It.Is<FormSubmission>(x => x.FormId == form.Id && x.BoardId == form.BoardId && x.SubmitterUserId == TestUserId && x.Status == FormSubmissionStatus.Accepted)), Times.Once);
     }
 
+    [Fact]
+    public async Task Handle_FilledHoneypot_AnswersSuccessAndStoresNothing()
+    {
+        var form = FormWithQuestions();
+        SetupForms(form);
+        var added = new List<FormSubmission>();
+        var set = CreateAsyncDbSet(added);
+        DbContextMock.Setup(c => c.FormSubmissions).Returns(set);
+
+        var result = await _handler.Handle(new SubmitFormCommand(form.Id, Answers("{\"title\":\"x\"}"), "http://spam.example"), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        Mock.Get(set).Verify(s => s.Add(It.IsAny<FormSubmission>()), Times.Never);
+    }
+
     [Theory]
     [InlineData("{}", "title")]                                  // required missing
     [InlineData("{\"title\":\"  \"}", "title")]                  // required blank

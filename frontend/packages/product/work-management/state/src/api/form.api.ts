@@ -299,10 +299,11 @@ export function createFormApi(client: NotrelixClient) {
       formId: string,
       answers: Readonly<Record<string, unknown>>,
       idempotencyKey: string,
+      honeypot = "",
     ): Promise<string> {
       return api.post<string>(
         endpoints.forms.submissions(formId),
-        { answers },
+        honeypot ? { answers, website: honeypot } : { answers },
         { idempotencyKey },
       );
     },
@@ -324,8 +325,14 @@ export function createFormApi(client: NotrelixClient) {
     },
 
     /** Returns a rejected, spam or deleted response to the New tab: the undo of that decision. */
-    async reopenSubmission(submissionId: string): Promise<void> {
-      await api.post<void>(endpoints.forms.reopen(submissionId), {});
+    async reopenSubmission(
+      submissionId: string,
+      clearItem = false,
+    ): Promise<void> {
+      await api.post<void>(
+        `${endpoints.forms.reopen(submissionId)}${clearItem ? "?clearItem=true" : ""}`,
+        {},
+      );
     },
 
     async removeSubmission(submissionId: string): Promise<void> {

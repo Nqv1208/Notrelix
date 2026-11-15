@@ -6,7 +6,8 @@ namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.ReopenForm
 /// <summary>Returns a rejected, spam or deleted response to the New tab: the undo of those decisions.</summary>
 [IdempotencyOperation("work-management.forms.reopen-form-submission.v1")]
 public record ReopenFormSubmissionCommand(
-    Guid SubmissionId)
+    Guid SubmissionId,
+    bool ClearItem = false)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
@@ -28,7 +29,7 @@ public class ReopenFormSubmissionCommandHandler : IRequestHandler<ReopenFormSubm
             .FirstOrDefaultAsync(s => s.Id == request.SubmissionId, ct);
         if (submission is null) throw new NotFoundException("FormSubmission", request.SubmissionId);
 
-        submission.Reopen();
+        submission.Reopen(request.ClearItem);
 
         return Result.Success();
     }

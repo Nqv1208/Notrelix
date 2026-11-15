@@ -676,9 +676,14 @@ export const formsOperations = [
     },
     method: "POST",
     route: "/form-submissions/:submissionId/reopen",
-    async handle({ params, store }) {
+    async handle({ params, query, store }) {
       const { submission, refusal } = submissionOf(store, params.submissionId);
       if (!submission) return refusal;
+      // The undo of "create item from response": the response forgets its item.
+      if (query.clearItem === "true" && submission.createdItemId) {
+        submission.createdItemId = null;
+        submission.processedAt = null;
+      }
       // The undo of a rejection, a spam mark or a delete: back to the New tab.
       if (submission.status === "Accepted") return noContent();
       submission.status = "Accepted";

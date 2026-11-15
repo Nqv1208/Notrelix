@@ -70,7 +70,10 @@ function messagePayload(
     threadSequence: message.threadSequence,
   };
   if (eventType === "chat.message.created") {
-    return base;
+    // The sender's key travels with the created frame so the sender swaps its pending bubble in place.
+    return message.clientMessageId
+      ? { ...base, clientMessageId: message.clientMessageId }
+      : base;
   }
   if (eventType === "chat.message.updated") {
     // Only a user message is edited, so the kind is fixed; the reply link is not carried.

@@ -89,20 +89,21 @@ test("the card actions menu lists one ordered set and an item deleted by someone
   expect(positions).toEqual([...positions].sort((a, b) => a - b));
   await page.keyboard.press("Escape");
 
-  // Another member deletes the item while the card is open: the card names them and shows nothing of the item.
+  // Another member deletes the item while the card is open: a notice over the card names them and offers
+  // Restore and the way back to the board (the deleted-notice change, 07cd96a65, kept the card behind it).
   const deleter = await otherMember(browser);
   expect((await deleteItem(deleter.other, item)).status).toBe(204);
   await deleter.close();
-  const gone = page.getByRole("dialog", { name: "Card" });
-  await expect(gone.getByText(`${deleter.name} deleted this card`)).toBeVisible(
-    { timeout: 15_000 },
-  );
+  const notice = dialog.getByRole("alert");
   await expect(
-    gone.getByText("The card is gone, or you no longer have access"),
+    notice.getByText(`${deleter.name} deleted this card`),
+  ).toBeVisible({ timeout: 15_000 });
+  await expect(notice.getByRole("button", { name: "Restore" })).toBeVisible();
+  await expect(
+    dialog.getByText("The card is gone, or you no longer have access"),
   ).toHaveCount(0);
-  await expect(gone.getByText(`Open then gone ${unique}`)).toHaveCount(0);
-  await gone.getByRole("button", { name: "Back to the board" }).click();
-  await expect(gone).toHaveCount(0);
+  await notice.getByRole("button", { name: "Back to the board" }).click();
+  await expect(dialog).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: `Open then gone ${unique}` }),
   ).toHaveCount(0);
@@ -268,7 +269,7 @@ test("a bulk change with one stale item changes nothing, names that item, and th
     await route.continue({ postData: JSON.stringify(body) });
   });
   const bar = page.getByRole("toolbar", { name: /Actions for 2 selected/ });
-  await bar.getByRole("button", { name: "Set due date" }).click();
+  await bar.getByRole("button", { name: "Due date", exact: true }).click();
   await page.getByLabel("Due date", { exact: true }).fill("2026-12-01");
   // The API calls above renewed the CSRF token, so the page first meets a 403 and retries with a fresh token.
   const answered = page.waitForResponse(
@@ -514,6 +515,8 @@ test("a description save that lost the race keeps my text, names who saved first
   browser,
   page,
 }) => {
+  // Six axe passes (three widths, light and dark) after the two writers' setup.
+  test.setTimeout(120_000);
   await signIn(page, realUsers.workspaceAdmin);
   const { workspace, board } = await openBoard(
     page,
@@ -592,6 +595,8 @@ test("a description save that lost the race keeps my text, names who saved first
         document.documentElement.classList.remove("light", "dark");
         document.documentElement.classList.add(mode ? "dark" : "light");
       }, dark);
+      // Colours cross-fade on a theme change: judge contrast once the fade has ended.
+      await page.waitForTimeout(500);
       await notice.scrollIntoViewIfNeeded();
       const box = (await notice.boundingBox())!;
       const label = `${width} ${dark ? "dark" : "light"}`;

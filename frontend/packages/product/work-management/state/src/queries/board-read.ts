@@ -34,6 +34,8 @@ export interface BoardReadNeed {
   readonly windowed?: boolean;
   /** The Select field the view lays the board out by (its option lanes are paged); absent: the Status field. */
   readonly groupBy?: string;
+  /** Items of each lane the first read brings and each later page adds (a view that draws more per lane than a scrolled lane does); absent: 10. */
+  readonly pageSize?: number;
 }
 
 /** The criteria a paged read is read under (what a later page repeats). */
@@ -78,6 +80,7 @@ export function resolveReadNeed(
   let search = "";
   let searchMembers = "";
   let groupBy = "";
+  let pageSize = BOARD_FIRST_PAGE;
   // A view brings the filter, another the sort (the table sorts by its own columns): each is the last one set.
   // Two views laying the board out by different fields cannot share the pages: the board is read whole.
   for (const need of needsByBoard
@@ -85,6 +88,7 @@ export function resolveReadNeed(
     ?.values() ?? []) {
     if (need.full) full = true;
     if (need.windowed) windowed = true;
+    pageSize = Math.max(pageSize, need.pageSize ?? 0);
     if (need.filter) filter = need.filter;
     if (need.sort) sort = need.sort;
     if (need.search) {
@@ -100,7 +104,7 @@ export function resolveReadNeed(
   const refusedHere = refused.has(
     `${boardKey(workspaceId, boardId)}|${criteriaKeyOf(resolved)}`,
   );
-  return { full: full || refusedHere, windowed, ...resolved };
+  return { full: full || refusedHere, windowed, pageSize, ...resolved };
 }
 
 /** Whether the server refused to read a board under these criteria. */
@@ -129,7 +133,7 @@ export async function readBoard(
   try {
     read = await boards.getFullBoard(boardId, {
       workspaceId,
-      page: { size: BOARD_FIRST_PAGE, ...sentCriteria(need) },
+      page: { size: need.pageSize ?? BOARD_FIRST_PAGE, ...sentCriteria(need) },
     });
   } catch (error) {
     if (
@@ -196,7 +200,16 @@ export function useBoardReadNeed(
 ): void {
   const owner = useId();
   const queryClient = useQueryClient();
-  const { full, windowed, filter, sort, search, searchMembers, groupBy } = need;
+  const {
+    full,
+    windowed,
+    filter,
+    sort,
+    search,
+    searchMembers,
+    groupBy,
+    pageSize,
+  } = need;
   useEffect(() => {
     if (!boardId || !workspaceId) return;
     const key = boardKey(workspaceId, boardId);
@@ -210,6 +223,7 @@ export function useBoardReadNeed(
       search,
       searchMembers,
       groupBy,
+      pageSize,
     });
     const queryKey = wmQueryKeys.fullBoard(workspaceId, boardId);
     const cached = queryClient.getQueryData<FullBoardResponse>(queryKey);
@@ -235,6 +249,7 @@ export function useBoardReadNeed(
     search,
     searchMembers,
     groupBy,
+    pageSize,
     queryClient,
   ]);
 }
@@ -277,10 +292,7 @@ export function useLanePager(
         failed: flip(current.failed, change.failed),
       };
     });
-  const loadMore = async (
-    laneKey: string,
-    limit: number = BOARD_LANE_PAGE,
-  ): Promise<void> => {
+  const loadMore = async (laneKey: string, limit?: number): Promise<void> => {
     if (!boardId || !workspaceId || busy.current.has(laneKey)) return;
     const queryKey = wmQueryKeys.fullBoard(workspaceId, boardId);
     const board = queryClient.getQueryData<FullBoardResponse>(queryKey);
@@ -291,7 +303,10 @@ export function useLanePager(
     try {
       const page = await boards.getLanePage(boardId, laneKey, {
         cursor: lane.nextCursor,
-        limit,
+        limit:
+          limit ??
+          resolveReadNeed(workspaceId, boardId).pageSize ??
+          BOARD_LANE_PAGE,
         ...sentCriteria(board.paging.criteria),
         board: board.board,
         fieldDefinitions: board.fieldDefinitions,

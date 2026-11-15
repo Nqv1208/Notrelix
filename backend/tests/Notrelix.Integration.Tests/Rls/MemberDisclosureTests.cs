@@ -84,9 +84,9 @@ public sealed class MemberDisclosureTests : IAsyncLifetime
     private Guid[] Everyone => [_a.User.Id, _admin.Id, _member.Id, _guest.Id, _suspended.Id, _optedOut.Id, _b.User.Id];
 
     /// <summary>Runs a function query as <paramref name="reader"/> in the tenant scope of tenant A's workspace.</summary>
-    private async Task<IReadOnlyCollection<Guid>> AsAsync(Guid? reader, string function, Guid workspace, string scope = "app")
+    private async Task<IReadOnlyCollection<Guid>> AsAsync(Guid? reader, string function, Guid workspace, string scope = "app", bool asWorker = false)
     {
-        await using var c = new NpgsqlConnection(_fixture.AppConnectionString);
+        await using var c = new NpgsqlConnection(asWorker ? _fixture.WorkerConnectionString : _fixture.AppConnectionString);
         await c.OpenAsync();
         await using var tx = await c.BeginTransactionAsync();
         await using (var set = new NpgsqlCommand(
@@ -151,6 +151,18 @@ public sealed class MemberDisclosureTests : IAsyncLifetime
         (await AsAsync(_a.User.Id, "ops.disclosable_member_emails", _a.WorkspaceId, "token")).Should().BeEmpty();
         (await AsAsync(_a.User.Id, "ops.disclosable_member_emails", _a.WorkspaceId, "worker")).Should().BeEmpty(
             "a forged worker scope reads nothing");
+    }
+
+    [Fact]
+    public async Task Email_IsReadableByTheWorkerLogin_OnlyForActiveNonGuestMembersOfTheWorkspace()
+    {
+        // The board import job resolves Person columns by e-mail on the worker login.
+        var seen = await AsAsync(null, "ops.disclosable_member_emails", _a.WorkspaceId, "worker", asWorker: true);
+        seen.Should().BeEquivalentTo(new[] { _a.User.Id, _admin.Id, _member.Id, _optedOut.Id });
+        (await AsAsync(null, "ops.disclosable_member_emails", _b.WorkspaceId, "worker", asWorker: true))
+            .Should().NotContain(new[] { _a.User.Id, _member.Id }, "a Workspace names only its own members");
+        (await AsAsync(null, "ops.disclosable_member_emails", _a.WorkspaceId, "app", asWorker: true))
+            .Should().BeEmpty("the worker login without the worker scope is no administrator");
     }
 
     [Fact]

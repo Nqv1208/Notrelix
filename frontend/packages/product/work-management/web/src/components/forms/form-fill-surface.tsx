@@ -66,6 +66,8 @@ export interface FormFillSurfaceProps {
   readonly onSubmit: (
     answers: Readonly<Record<string, unknown>>,
     key: string,
+    /** The hidden honeypot field: empty for a person. */
+    honeypot: string,
   ) => Promise<FormWriteResult>;
 }
 
@@ -269,7 +271,7 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
   const [failure, setFailure] = useState<
-    "network" | "offline" | "forbidden" | "closed" | null
+    "network" | "offline" | "forbidden" | "closed" | "limited" | null
   >(null);
   const [copiedAnswers, setCopiedAnswers] = useState(false);
   const attempt = useRef<string | null>(null);
@@ -289,6 +291,8 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
     attempt.current = null;
   }
 
+  const [honeypot, setHoneypot] = useState("");
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (sending || preview) return;
@@ -298,7 +302,7 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
     attempt.current ??= crypto.randomUUID();
     setSending(true);
     setFailure(null);
-    const result = await props.onSubmit(answers, attempt.current);
+    const result = await props.onSubmit(answers, attempt.current, honeypot);
     setSending(false);
     if (result.ok) {
       attempt.current = null;
@@ -316,6 +320,7 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
     } else if (result.reason === "conflict") setFailure("closed");
     else if (result.reason === "forbidden" || result.reason === "missing")
       setFailure("forbidden");
+    else if (result.reason === "limited") setFailure("limited");
     else if (typeof navigator !== "undefined" && navigator.onLine === false)
       setFailure("offline");
     else setFailure("network");
@@ -406,6 +411,16 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
         noValidate
         className="flex flex-col gap-4.5 rounded-[12px] border border-line bg-popover p-5 max-sm:gap-3.5 max-sm:border-0 max-sm:bg-transparent max-sm:p-0 sm:p-7"
       >
+        <input
+          type="text"
+          name="website"
+          value={honeypot}
+          onChange={(e) => setHoneypot(e.target.value)}
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-[9999px] size-px opacity-0"
+        />
         <div className="-order-2 flex flex-col gap-1 max-sm:gap-3.5">
           <h1 className="m-0 text-[22px] leading-[1.3] font-[650] tracking-[-0.01em] max-sm:text-[16px]">
             {form.title}
@@ -487,6 +502,8 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
             </span>
           </div>
         ) : null}
+
+        {failure === "limited" ? <FormAlert message={f.limitedError} /> : null}
 
         {failure === "forbidden" ? (
           <FormAlert message={f.forbiddenError} />
