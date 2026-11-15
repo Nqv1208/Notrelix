@@ -51,8 +51,8 @@ public sealed class PageQuietVersionSweepIntegrationTests
         var stack = await _host.SeedWorkspaceAsync();
         var quiet = await _host.SeedPageAsync(stack, "Quiet");
         var typing = await _host.SeedPageAsync(stack, "Typing");
-        await AddBlockAsync(stack, quiet, "one", DateTimeOffset.UtcNow.AddMinutes(-6));
-        await AddBlockAsync(stack, typing, "two", DateTimeOffset.UtcNow.AddMinutes(-1));
+        await AddBlockAsync(stack, quiet, "one", _host.Now.AddMinutes(-6));
+        await AddBlockAsync(stack, typing, "two", _host.Now.AddMinutes(-1));
 
         using var provider = ProviderFor(stack);
         (await RunAsync(provider)).Should().Be(1);
