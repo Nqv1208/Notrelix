@@ -105,12 +105,16 @@ export const pinsOperations = [
         // A message already pinned answers with its pin and changes nothing.
         const existing = state.pins.get(message.id);
         if (existing) return ok(pinView(state, existing, caller.userId));
-        if (state.pinsOfSpace(space.id).length >= CHAT_LIMITS.pinLimit) {
+        // The e2e specs lower the limit (`globalThis.__mockChatPinLimit`) to reach the refusal without 50 pins.
+        const pinLimit =
+          (globalThis as { __mockChatPinLimit?: number }).__mockChatPinLimit ??
+          CHAT_LIMITS.pinLimit;
+        if (state.pinsOfSpace(space.id).length >= pinLimit) {
           fail(
             422,
             CHAT_ERROR.limitReached,
             "Limit reached",
-            `A channel holds at most ${CHAT_LIMITS.pinLimit} pins.`,
+            `A channel holds at most ${pinLimit} pins.`,
           );
         }
         const pin: ChatPinRecord = {
@@ -157,7 +161,14 @@ export const pinsOperations = [
         if (space.archivedAt !== null) archivedProblem();
         requireChannelAction(state, space, caller, "pin");
         // A message that is not pinned is a success that changes nothing.
-        removePin(state, space, message.id);
+        if (removePin(state, space, message.id)) {
+          appendSystemMessage(
+            state,
+            space,
+            caller.userId,
+            CHAT_SYSTEM_TEXT.unpinned,
+          );
+        }
         return { status: 204 };
       });
     },

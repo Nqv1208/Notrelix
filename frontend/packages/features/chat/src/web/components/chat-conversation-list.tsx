@@ -7,7 +7,7 @@ import {
 import type { ChatConversation } from "../../core/types/chat";
 import type { ChatCopy } from "./chat.copy";
 import { avatarToneOf, initialsOf } from "./chat-initials";
-import { pluralCopy } from "./use-chat-copy";
+import { pluralCopy, systemTextOf } from "./use-chat-copy";
 import type { ChatPresenceState } from "../../core/model/ephemeral-model";
 import { PresenceDot, presenceText } from "./chat-presence";
 
@@ -74,8 +74,7 @@ export function previewOf(
   if (!last || last.text === null || last.text === "") {
     return last ? "" : copy.dm.sidebar.noMessages;
   }
-  if (last.kind === "system")
-    return copy.list.systemText[last.text] ?? last.text;
+  if (last.kind === "system") return systemTextOf(copy, last.text);
   if (last.authorId === viewerId)
     return `${copy.dm.sidebar.youPrefix}${last.text}`;
   return conversation.kind === "group"

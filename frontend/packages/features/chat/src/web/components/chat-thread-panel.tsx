@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BellOff, BellRing, Check, Loader2 } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { Button, Skeleton, cn } from "@notrelix/ui-web";
 import type { ChatMentionPayload, ChatMessage } from "../../core/types/chat";
 import type { ChatHooks } from "../query/create-chat-hooks";
@@ -7,6 +7,7 @@ import type { ChatCopy } from "./chat.copy";
 import { ChatComposer, type ChatComposerMentions } from "./chat-composer";
 import { ChatMessageRow } from "./chat-message-row";
 import { ChatPanelHeader } from "./chat-panel-header";
+import { ThreadMoreMenu } from "./chat-thread-menu";
 import { chatFailureOf } from "../../core/api/chat-failure";
 import { AUTHOR_RUN_MINUTES } from "../../core/model/chat-model";
 import {
@@ -73,6 +74,7 @@ export function ChatThreadPanel({
   const [draft, setDraft] = useState("");
   const [alsoSend, setAlsoSend] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [activity] = useState(createRowActivityStore);
 
   const root = thread.data?.pages[0]?.root ?? null;
@@ -117,20 +119,31 @@ export function ChatThreadPanel({
 
   function toggleFollow() {
     if (!summary) return;
-    follower.mutate({
-      threadId: rootId,
-      following: !summary.following,
-      muted: false,
-    });
+    setNotice(null);
+    follower.mutate(
+      { threadId: rootId, following: !summary.following, muted: false },
+      { onError: () => setNotice(copy.thread.actionFailed) },
+    );
   }
 
   function toggleMute() {
     if (!summary) return;
-    follower.mutate({
-      threadId: rootId,
-      following: true,
-      muted: !summary.muted,
-    });
+    setNotice(null);
+    follower.mutate(
+      { threadId: rootId, following: true, muted: !summary.muted },
+      { onError: () => setNotice(copy.thread.actionFailed) },
+    );
+  }
+
+  /** There is no per-reply address yet, so the link is the channel's own address. */
+  function copyLink() {
+    setNotice(null);
+    const write = navigator.clipboard?.writeText(window.location.href);
+    if (!write) return setNotice(copy.thread.linkFailed);
+    void write.then(
+      () => setInfo(copy.thread.linkCopied),
+      () => setNotice(copy.thread.linkFailed),
+    );
   }
 
   return (
@@ -146,39 +159,30 @@ export function ChatThreadPanel({
         onClose={onClose}
       >
         {summary ? (
-          <button
-            type="button"
-            aria-pressed={summary.following}
-            onClick={toggleFollow}
-            disabled={follower.isPending}
+          <span
             className={cn(
-              "inline-flex h-[22px] shrink-0 items-center rounded-full px-[9px] text-xs font-semibold focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none disabled:opacity-60",
+              "inline-flex h-[22px] shrink-0 items-center rounded-full px-[9px] text-xs font-semibold",
               summary.following
                 ? "bg-primary/10 text-link"
                 : "bg-muted text-muted-foreground",
             )}
+            data-testid="chat-thread-follow-state"
           >
-            {summary.following ? copy.thread.following : copy.thread.follow}
-          </button>
+            {summary.following
+              ? copy.thread.following
+              : copy.thread.notFollowing}
+          </span>
         ) : null}
-        {summary?.following ? (
-          <Button
-            type="button"
-            size="icon-sm"
-            variant="ghost"
-            className="text-muted-foreground"
-            aria-pressed={summary.muted}
-            aria-label={summary.muted ? copy.thread.unmute : copy.thread.mute}
-            title={summary.muted ? copy.thread.unmute : copy.thread.mute}
-            onClick={toggleMute}
-            disabled={follower.isPending}
-          >
-            {summary.muted ? (
-              <BellOff aria-hidden="true" />
-            ) : (
-              <BellRing aria-hidden="true" />
-            )}
-          </Button>
+        {summary ? (
+          <ThreadMoreMenu
+            copy={copy}
+            following={summary.following}
+            muted={summary.muted}
+            busy={follower.isPending}
+            onToggleFollow={toggleFollow}
+            onToggleMute={toggleMute}
+            onCopyLink={copyLink}
+          />
         ) : null}
       </ChatPanelHeader>
 
@@ -337,6 +341,11 @@ export function ChatThreadPanel({
         </div>
       )}
 
+      {info ? (
+        <p role="status" className="mx-3 mb-1 text-xs text-muted-foreground">
+          {info}
+        </p>
+      ) : null}
       {notice ? (
         <p role="alert" className="mx-3 mb-1 text-xs text-destructive">
           {notice}

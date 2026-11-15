@@ -7,6 +7,7 @@ import {
 import { buildChatRows, type PendingMessage } from "../core/model/chat-model";
 import type { ChatMessage } from "../core/types/chat";
 import { en, vi as viCopy } from "../web/components/chat.copy";
+import { systemTextOf } from "../web/components/use-chat-copy";
 
 const ME = "user-me";
 const OTHER = "user-other";
@@ -192,6 +193,35 @@ describe("ChatMessageList", () => {
     );
     expect(viCopy.list.systemText["left the group"]).toMatch(/nhóm/);
     expect(viCopy.list.systemText["left the channel"]).toMatch(/kênh/);
+  });
+
+  it("renders every system message kind through the copy files, in both languages", () => {
+    // The lines the backend stores (ChatSystemMessages); each must read in Vietnamese and keep its English twin.
+    const stored = [
+      "created the channel",
+      "joined the channel",
+      "left the channel",
+      "was removed from the channel",
+      "added a member to the channel",
+      "archived the channel",
+      "unarchived the channel",
+      "pinned a message",
+      "unpinned a message",
+      "added a member to the group",
+      "left the group",
+      "renamed the channel to erp-rollout",
+    ];
+    for (const line of stored) {
+      expect(systemTextOf(en, line)).toBe(line);
+      const vietnamese = systemTextOf(viCopy, line);
+      expect(vietnamese, line).not.toBe(line);
+      expect(vietnamese, line).toMatch(/^đã /);
+    }
+    expect(systemTextOf(viCopy, "renamed the channel to erp-rollout")).toBe(
+      "đã đổi tên kênh thành erp-rollout",
+    );
+    // A line the copy does not know shows as stored, never blank.
+    expect(systemTextOf(viCopy, "something new")).toBe("something new");
   });
 
   it("offers edit and delete in the More menu only on the caller's own message", async () => {

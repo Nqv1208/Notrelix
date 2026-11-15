@@ -324,14 +324,14 @@ test.describe("390 side panels (Chat-Pins-M, Chat-Thread-M, Chat-Search-M)", () 
     await openThread(page);
     expect((await box(page, HEADER)).h).toBeCloseTo(56, 0);
     expect(await css(page, `${HEADER} h2`, "font-size")).toBe("17px");
-    const chip = await box(page, `${HEADER} button[aria-pressed]`);
+    const chip = await box(page, `${HEADER} [data-testid=chat-thread-follow-state]`);
     expect(chip.h).toBeCloseTo(22, 0);
     expect(
       parseFloat(
-        await css(page, `${HEADER} button[aria-pressed]`, "border-radius"),
+        await css(page, `${HEADER} [data-testid=chat-thread-follow-state]`, "border-radius"),
       ),
     ).toBeGreaterThanOrEqual(11);
-    expect(await css(page, `${HEADER} button[aria-pressed]`, "font-size")).toBe(
+    expect(await css(page, `${HEADER} [data-testid=chat-thread-follow-state]`, "font-size")).toBe(
       "12px",
     );
     const sep = await box(page, "[data-testid=chat-thread-separator]");
