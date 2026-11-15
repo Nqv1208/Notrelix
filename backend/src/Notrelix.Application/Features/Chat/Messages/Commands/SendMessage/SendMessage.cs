@@ -101,8 +101,9 @@ public class SendMessageCommandHandler(
 
         if (request.ReplyToId is { } replyToId)
         {
+            var floor = ChannelAccess.HistoryFloor(space, userId);
             var quoted = await db.ChatMessages.AsNoTracking().AnyAsync(
-                m => m.Id == replyToId && m.SpaceId == space.Id, cancellationToken);
+                m => m.Id == replyToId && m.SpaceId == space.Id && (floor == null || m.CreatedAt >= floor), cancellationToken);
             if (!quoted)
                 throw new NotFoundException(nameof(Message), replyToId);
         }

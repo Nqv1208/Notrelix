@@ -114,6 +114,22 @@ public class PinHandlerTests
     // ---- Pin (UC-CHT-F06) ----------------------------------------------------------------------
 
     [Fact]
+    public async Task A_member_added_to_a_group_later_cannot_pin_a_message_from_before_the_join()
+    {
+        var group = Space.CreateGroup(_accountId, _workspaceId, "Team", [_member, _owner], Guid.NewGuid(), Now);
+        group.AddMember(_outsider, MembershipRole.Member, Now.AddHours(1));
+        _spaces.Add(group);
+        var before = Text(group);
+
+        AsUser(_outsider);
+        var act = () => PinHandler().Handle(new PinMessageCommand(_workspaceId, before.Id), CancellationToken.None);
+        await act.Should().ThrowAsync<AppNotFoundException>();
+
+        AsUser(_member);
+        (await PinHandler().Handle(new PinMessageCommand(_workspaceId, before.Id), CancellationToken.None)).Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Pinning_stores_the_pin_announces_it_and_takes_the_lock_first()
     {
         var space = Channel();

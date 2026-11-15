@@ -65,6 +65,7 @@ public class ReplyInThreadCommandHandler(
         var space = await ChannelAccess.LoadLiveAsync(db, request.WorkspaceId, root.SpaceId, cancellationToken);
         if (!space.IsActiveMember(userId))
             throw new NotFoundException(nameof(Space), root.SpaceId);
+        ChannelAccess.RequireInHistory(space, userId, root);
         if (space.IsArchived)
             throw new ConflictException("The channel is archived and read-only.", ChatRuleCodes.ChannelArchived);
         if (root.IsThreadReply || root.IsSystem)
