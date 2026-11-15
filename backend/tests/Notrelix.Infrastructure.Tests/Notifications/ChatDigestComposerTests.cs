@@ -75,7 +75,7 @@ public sealed class ChatDigestComposerTests
     {
         var changes = new List<NotificationPreferenceChange> { new(NotificationTypes.Digest, NotificationChannels.Email, true) };
         changes.AddRange(more);
-        _context.NotificationPreferenceSets.Add(NotificationPreferenceSet.Create(Account, Workspace, person, changes, Sent)!);
+        _context.NotificationPreferenceSets.Add(NotificationPreferenceSet.Create(person, changes, Sent)!);
         FixQuietHours(_context);
         await _context.SaveChangesAsync();
     }
@@ -154,7 +154,7 @@ public sealed class ChatDigestComposerTests
     public async Task TheDigestCellOnEmailMustBeOn_AnotherTypesEmailCellIsNotEnough()
     {
         _context.NotificationPreferenceSets.Add(NotificationPreferenceSet.Create(
-            Account, Workspace, Ana, [new NotificationPreferenceChange(NotificationTypes.Watching, NotificationChannels.Email, true)], Sent)!);
+            Ana, [new NotificationPreferenceChange(NotificationTypes.Watching, NotificationChannels.Email, true)], Sent)!);
         FixQuietHours(_context);
         await _context.SaveChangesAsync();
         await Mention(Ana);

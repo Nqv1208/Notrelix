@@ -6,7 +6,7 @@ namespace Notrelix.Infrastructure.Data.Configurations.Notifications;
 
 /// <summary>
 /// Maps the Collaboration notification preference matrix: one <c>notification_preference_sets</c> row per
-/// person and Workspace (the version and the scope) and the person's explicit choices in the existing
+/// person (the version; the matrix is the person's, applied in every Workspace) and the person's explicit choices in the existing
 /// <c>notification_preferences</c> table. The columns of that table that the matrix does not use yet
 /// (delivery mode, digest interval, quiet hours, time zone) stay as shadow properties so the table is only
 /// extended, never reshaped.
@@ -20,8 +20,6 @@ public sealed class NotificationPreferenceSetConfiguration : IEntityTypeConfigur
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
 
-        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
-        builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id").IsRequired();
         builder.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
@@ -34,7 +32,7 @@ public sealed class NotificationPreferenceSetConfiguration : IEntityTypeConfigur
             .OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(x => x.Entries).UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.HasIndex(x => new { x.WorkspaceId, x.UserId }).IsUnique().HasDatabaseName("ux_notification_preference_sets_member");
+        builder.HasIndex(x => x.UserId).IsUnique().HasDatabaseName("ux_notification_preference_sets_user");
     }
 }
 
@@ -48,7 +46,7 @@ public sealed class NotificationPreferenceEntryConfiguration : IEntityTypeConfig
         builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
 
         builder.Property(x => x.SetId).HasColumnName("set_id");
-        builder.Property(x => x.WorkspaceId).HasColumnName("workspace_id");
+        builder.Property<Guid?>("WorkspaceId").HasColumnName("workspace_id"); // legacy column, always null for a set's entries
         builder.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(x => x.NotificationType).HasColumnName("notification_type").IsRequired().HasMaxLength(160);
         builder.Property(x => x.Channel).HasColumnName("channel").IsRequired().HasMaxLength(50);
@@ -64,8 +62,8 @@ public sealed class NotificationPreferenceEntryConfiguration : IEntityTypeConfig
 
         builder.HasIndex(x => new { x.UserId, x.NotificationType, x.Channel }).IsUnique().HasDatabaseName("ux_notifications_preferences_global")
             .HasFilter("\"workspace_id\" IS NULL");
-        builder.HasIndex(x => new { x.WorkspaceId, x.UserId, x.NotificationType, x.Channel }).IsUnique().HasDatabaseName("ux_notifications_preferences_workspace")
+        builder.HasIndex("WorkspaceId", nameof(NotificationPreferenceEntry.UserId), nameof(NotificationPreferenceEntry.NotificationType), nameof(NotificationPreferenceEntry.Channel)).IsUnique().HasDatabaseName("ux_notifications_preferences_workspace")
             .HasFilter("\"workspace_id\" IS NOT NULL");
-        builder.HasIndex(x => new { x.UserId, x.WorkspaceId }).HasDatabaseName("ix_notifications_preferences_user");
+        builder.HasIndex(nameof(NotificationPreferenceEntry.UserId), "WorkspaceId").HasDatabaseName("ix_notifications_preferences_user");
     }
 }

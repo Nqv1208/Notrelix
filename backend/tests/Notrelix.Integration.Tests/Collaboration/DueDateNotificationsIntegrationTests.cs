@@ -129,7 +129,7 @@ public sealed class DueDateNotificationsIntegrationTests
             seed.NotificationThreadMutes.Add(NotificationThreadMuteRecord.Create(
                 stack.AccountId, stack.WorkspaceId, ana, "work-management.board-item", item, OrgTreeTestHost.BaseTime));
             seed.NotificationPreferenceSets.Add(NotificationPreferenceSet.Create(
-                stack.AccountId, stack.WorkspaceId, ben,
+                ben,
                 [new NotificationPreferenceChange(NotificationTypes.Overdue, NotificationChannels.InApp, false)],
                 OrgTreeTestHost.BaseTime)!);
             return Task.CompletedTask;

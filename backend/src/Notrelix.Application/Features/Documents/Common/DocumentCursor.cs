@@ -24,6 +24,21 @@ internal static class DocumentCursor
             && Guid.TryParseExact(raw["id:".Length..], "N", out id);
     }
 
+    /// <summary>The block read pages by 1 000 (LD14); a request may ask for fewer, never more.</summary>
+    public const int BlockPageSize = 1000;
+
+    public static int ClampBlockLimit(int? limit) => Math.Clamp(limit ?? BlockPageSize, 1, BlockPageSize);
+
+    public static string EncodePosition(string position) => Encode($"p:{position}");
+
+    public static bool TryDecodePosition(string? value, out string position)
+    {
+        position = string.Empty;
+        if (!TryRaw(value, out var raw) || !raw.StartsWith("p:", StringComparison.Ordinal)) return false;
+        position = raw["p:".Length..];
+        return position.Length > 0;
+    }
+
     public static string EncodeNumber(int number) => Encode($"n:{number.ToString(CultureInfo.InvariantCulture)}");
 
     public static bool TryDecodeNumber(string? value, out int number)
