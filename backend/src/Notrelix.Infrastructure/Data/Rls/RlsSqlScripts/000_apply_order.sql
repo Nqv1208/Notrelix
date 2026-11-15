@@ -27,3 +27,4 @@
 \i 027_operator_console.sql
 \i 028_deleted_workspaces.sql
 \i 029_attachment_pending_uploads.sql
+\i 030_chat_policy_fast_path.sql

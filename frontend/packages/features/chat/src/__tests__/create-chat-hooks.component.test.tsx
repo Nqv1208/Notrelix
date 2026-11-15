@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { act, renderHook, waitFor } from "@notrelix/testing";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createNotrelixClient } from "@notrelix/contracts";
 import {
   MockStore,
@@ -219,9 +219,45 @@ describe("useMarkRead", () => {
       result.current.read.markRead(general, 250);
     });
     expect(boundaryOf()).toBe(310);
+    // The request is held for a second; leaving the page sends it at once.
+    act(() => {
+      result.current.read.flush();
+    });
+    await waitFor(async () => {
+      const sent = await hooks.service.getUnread(WORKSPACE);
+      expect(
+        sent.spaces.find((row) => row.spaceId === general)?.readSequence,
+      ).toBe(310);
+    });
     const server = await hooks.service.getUnread(WORKSPACE);
     expect(
       server.spaces.find((row) => row.spaceId === general)?.readSequence,
     ).toBe(310);
+  });
+
+  it("holds the read request for a run of boundaries and sends the highest one when the page is left", async () => {
+    const { hooks, wrapper } = setup();
+    const general = await channelIdNamed(hooks, "general");
+    const markRead = vi.spyOn(hooks.service, "markRead");
+    const { result } = renderHook(
+      () => ({
+        unread: hooks.useUnreadSummary(WORKSPACE),
+        read: hooks.useMarkRead(WORKSPACE),
+      }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.unread.isSuccess).toBe(true));
+
+    act(() => {
+      result.current.read.markRead(general, 305);
+      result.current.read.markRead(general, 310);
+    });
+    expect(markRead).not.toHaveBeenCalled();
+
+    act(() => {
+      window.dispatchEvent(new Event("blur"));
+    });
+    await waitFor(() => expect(markRead).toHaveBeenCalledTimes(1));
+    expect(markRead).toHaveBeenCalledWith(WORKSPACE, general, 310);
   });
 });
