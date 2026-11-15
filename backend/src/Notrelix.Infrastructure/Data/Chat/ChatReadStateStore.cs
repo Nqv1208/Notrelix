@@ -15,6 +15,16 @@ public sealed class ChatReadStateStore(ApplicationDbContext db) : IChatReadState
     {
         // The mention count is the mentions after the new boundary (see the class summary). The messages it counts are those of the
         // rule in MentionCounts: live user messages of someone else, sent after the member joined, that mention them or everyone.
+        // The row is locked in a statement of its own: the UPDATE below then takes a fresh snapshot, so its recount sees every mention a
+        // send committed while this request waited for the lock (under READ COMMITTED one statement keeps its first snapshot).
+        var locked = await db.Database.SqlQuery<int>($"""
+            SELECT 1 AS "Value" FROM chat.memberships
+            WHERE space_id = {spaceId} AND user_id = {userId} AND workspace_id = {workspaceId} AND left_at IS NULL
+            FOR UPDATE
+            """).ToListAsync(cancellationToken);
+        if (locked.Count == 0)
+            return false;
+
         var touched = await db.ChatMemberships
             .Where(m => m.SpaceId == spaceId && m.UserId == userId && m.WorkspaceId == workspaceId && m.LeftAt == null)
             .ExecuteUpdateAsync(s => s
@@ -33,6 +43,14 @@ public sealed class ChatReadStateStore(ApplicationDbContext db) : IChatReadState
     {
         // Each space's last sequence is read from the statement's snapshot: a message committed after the statement
         // started is not marked, so it stays unread and keeps its mention.
+        // Locked first, in space order (so two requests never wait on each other), then updated from a fresh snapshot; see AdvanceAsync.
+        await db.Database.SqlQuery<int>($"""
+            SELECT 1 AS "Value" FROM chat.memberships
+            WHERE user_id = {userId} AND workspace_id = {workspaceId} AND left_at IS NULL
+            ORDER BY space_id
+            FOR UPDATE
+            """).ToListAsync(cancellationToken);
+
         return await db.ChatMemberships
             .Where(m => m.UserId == userId && m.WorkspaceId == workspaceId && m.LeftAt == null
                         && db.ChatSpaces.Any(s => s.Id == m.SpaceId && s.WorkspaceId == workspaceId && s.DeletedAt == null))

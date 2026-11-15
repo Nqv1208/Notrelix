@@ -202,6 +202,73 @@ public sealed class ChatMentionIntegrationTests : IAsyncLifetime
         (await BoundaryOfAsync(_author)).Should().Be(1, "the author never read Bob's message, so their own later message does not move the boundary");
     }
 
+    [Fact]
+    public async Task AMarkReadThatWaitsForAMentionSend_DoesNotOverwriteItsCount()
+    {
+        await SendAsync("plain", "m-1");
+
+        // T1 stores message 2 with a mention of Bob and holds its +1 on Bob's row, uncommitted.
+        await using var sendContext = _db.CreateOwnerContext(SystemTenant());
+        await using var sendTransaction = await sendContext.Database.BeginTransactionAsync();
+        await new SendMessageCommandHandler(
+                sendContext, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(sendContext), new FixedClock(Now), Broadcasters(true),
+                new InMemoryChatMessageAttachments(), Moq.Mock.Of<Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter>(), new ChatReadStateStore(sendContext))
+            .Handle(new SendMessageCommand(_workspaceId, _spaceId, "hi @Bob", "m-2", null, [Person(3, 4, _bob)]), CancellationToken.None);
+        await sendContext.SaveChangesAsync();
+
+        // T2 marks sequence 1 read while T1 is open: its statement snapshot predates T1's commit and it waits on the row lock.
+        var read = Task.Run(async () =>
+        {
+            await using var readContext = _db.CreateOwnerContext(SystemTenant());
+            await using var readTransaction = await readContext.Database.BeginTransactionAsync();
+            await new ChatReadStateStore(readContext).AdvanceAsync(_workspaceId, _spaceId, _bob, 1, CancellationToken.None);
+            await readTransaction.CommitAsync();
+        });
+        await Task.Delay(1000);
+        read.IsCompleted.Should().BeFalse("the mark-read waits for the send that holds the row");
+
+        await sendTransaction.CommitAsync();
+        await read;
+
+        (await StoredCountsAsync())[_bob].Should().Be(1, "message 2 is after the boundary and mentions Bob");
+        await AssertStoredEqualsRecountAsync();
+    }
+
+    [Fact]
+    public async Task AMentionSendThatWaitsForAMarkRead_AddsItsOneOnTopOfTheRecount()
+    {
+        await SendAsync("plain", "m-1");
+
+        // T2 holds Bob's row after marking sequence 1 read, uncommitted.
+        await using var readContext = _db.CreateOwnerContext(SystemTenant());
+        await using var readTransaction = await readContext.Database.BeginTransactionAsync();
+        await new ChatReadStateStore(readContext).AdvanceAsync(_workspaceId, _spaceId, _bob, 1, CancellationToken.None);
+
+        var send = SendAsync("hi @Bob", "m-2", Person(3, 4, _bob));
+        await Task.Delay(1000);
+        send.IsCompleted.Should().BeFalse("the send waits for the mark-read that holds the row");
+
+        await readTransaction.CommitAsync();
+        await send;
+
+        (await StoredCountsAsync())[_bob].Should().Be(1);
+        await AssertStoredEqualsRecountAsync();
+    }
+
+    [Fact]
+    public async Task TheStoredMessageKind_IsTheLiteralOfThePartialIndexPredicates()
+    {
+        await SendAsync("plain", "m-1");
+
+        await using var context = _db.CreateOwnerContext(SystemTenant());
+        var kind = (await context.Database.SqlQuery<string>($"SELECT kind AS \"Value\" FROM chat.messages WHERE space_id = {_spaceId} LIMIT 1").ToListAsync()).Single();
+        foreach (var index in new[] { "ix_messages_unread_count", "ix_messages_content_trgm" })
+        {
+            var definition = (await context.Database.SqlQuery<string>($"SELECT indexdef AS \"Value\" FROM pg_indexes WHERE schemaname = 'chat' AND indexname = {index}").ToListAsync()).Single();
+            definition.Should().Contain($"(kind)::text = '{kind}'::text", $"{index} only serves queries when its predicate matches the stored kind; if the stored spelling changes the index goes dead silently");
+        }
+    }
+
     private async Task<Dictionary<Guid, int>> StoredCountsAsync()
     {
         await using var context = _db.CreateOwnerContext(SystemTenant());
