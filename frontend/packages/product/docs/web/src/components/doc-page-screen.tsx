@@ -892,7 +892,14 @@ export function createDocPageScreen({
       return <DocPageScreenSurface status="loading" copy={copy} {...EMPTY} />;
     }
     if (!page) {
-      return <DocPageScreenSurface status="notFound" copy={copy} {...EMPTY} />;
+      return (
+        <DocPageScreenSurface
+          status="notFound"
+          copy={copy}
+          callbacks={{ onLeavePage: host.leaveDoc }}
+          {...EMPTY}
+        />
+      );
     }
 
     const title = page.title;

@@ -136,7 +136,27 @@ describe("docs web pure surfaces", () => {
       <DocPageScreenSurface {...docsPageScreenNotFoundScenario()} />,
     );
     expect(screen.getByText(docsCopy.notFound)).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: docsCopy.notFoundTitle }),
+    ).toBeTruthy();
+    // Nothing to leave to: no button.
+    expect(screen.queryByRole("button", { name: docsCopy.notFoundBack })).toBe(
+      null,
+    );
     missing.unmount();
+
+    const onLeavePage = vi.fn();
+    const withWayBack = renderPureUi(
+      <DocPageScreenSurface
+        {...docsPageScreenNotFoundScenario()}
+        callbacks={{ onLeavePage }}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: docsCopy.notFoundBack }),
+    );
+    expect(onLeavePage).toHaveBeenCalledTimes(1);
+    withWayBack.unmount();
 
     const empty = renderPureUi(
       <DocPageScreenSurface {...docsPageScreenEmptyScenario()} />,
