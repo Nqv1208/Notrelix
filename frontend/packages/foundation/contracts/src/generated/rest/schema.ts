@@ -2070,7 +2070,7 @@ export interface paths {
         delete: operations["Documents.Pages.DeletePage"];
         options?: never;
         head?: never;
-        /** Rename a page */
+        /** Rename a page or set its icon */
         patch: operations["Documents.Pages.UpdatePage"];
         trace?: never;
     };
@@ -8305,6 +8305,7 @@ export interface components {
             title?: string | null;
             /** Format: int64 */
             expectedVersion?: number;
+            icon?: string | null;
         };
         "Notrelix.API.Contracts.Documents.Templates.Requests.CreatePageFromTemplateRequest": {
             title?: string | null;
