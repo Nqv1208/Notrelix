@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type WebSocketRoute } from "@playwright/test";
 import {
   apiRead,
   apiWrite,
@@ -74,6 +74,17 @@ test("a message, an edit, a delete, typing, unread badges, a lost connection and
   const readerContext = await browser.newContext({
     viewport: { width: 1440, height: 900 },
   });
+  // The reader's WebSocket goes through a route, so the spec can cut it and refuse reconnects.
+  let cut = false;
+  const sockets: WebSocketRoute[] = [];
+  await readerContext.routeWebSocket(/\/realtime/, (ws) => {
+    if (cut) {
+      void ws.close({ code: 1006 });
+      return;
+    }
+    ws.connectToServer();
+    sockets.push(ws);
+  });
   const reader = await readerContext.newPage();
   await english(reader);
   await signIn(reader, realUsers.workspaceAdmin);
@@ -93,6 +104,8 @@ test("a message, an edit, a delete, typing, unread badges, a lost connection and
   await expect(composer(reader, nameA)).toBeVisible({ timeout: 20_000 });
   await owner.goto(`${base}/chat/${idA}`);
   await expect(composer(owner, nameA)).toBeVisible({ timeout: 20_000 });
+  await expect(log(owner)).toBeVisible({ timeout: 20_000 });
+  await expect(log(reader)).toBeVisible({ timeout: 20_000 });
 
   // A new message arrives live (subscribe, fan-out, insert by sequence), once, with no reload.
   const first = `Live ${unique}`;
@@ -101,7 +114,9 @@ test("a message, an edit, a delete, typing, unread badges, a lost connection and
   await expect(log(reader).getByText(first)).toHaveCount(1, {
     timeout: 20_000,
   });
-  await expect(log(owner).getByText(first)).toHaveCount(1);
+  await expect(log(owner).getByText(first)).toHaveCount(1, {
+    timeout: 20_000,
+  });
 
   // An edit patches the bubble in place and a delete turns it into a tombstone, both live.
   const edited = `${first} edited`;
@@ -146,9 +161,23 @@ test("a message, an edit, a delete, typing, unread badges, a lost connection and
     timeout: 20_000,
   });
 
+  // Opening B once reads its join notice, so the badge below counts only what follows.
+  await channelButton(reader, nameB).click();
+  await expect(composer(reader, nameB)).toBeVisible({ timeout: 20_000 });
+  await expect(log(reader).getByText("joined the channel")).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(channelButton(reader, nameB)).not.toHaveAccessibleName(
+    /unread/i,
+    { timeout: 20_000 },
+  );
+  await channelButton(reader, nameA).click();
+  await expect(composer(reader, nameA)).toBeVisible({ timeout: 20_000 });
+
   // The per-user stream: a message in channel B moves the reader's badge on B without a reload, and opening B clears it.
   await expect(channelButton(reader, nameB)).not.toHaveAccessibleName(
     /unread/i,
+    { timeout: 20_000 },
   );
   const ping = `Badge ${unique}`;
   const sentB = await apiWrite(
@@ -172,7 +201,8 @@ test("a message, an edit, a delete, typing, unread badges, a lost connection and
 
   // A lost connection: the reader goes offline, two messages are sent meanwhile, and on return both
   // are there once (gap recovery and dedupe) with the reconnect notice gone.
-  await readerContext.setOffline(true);
+  cut = true;
+  for (const ws of sockets.splice(0)) await ws.close({ code: 1006 });
   await expect(
     reader.getByText("Reconnecting. New messages may not show yet."),
   ).toBeVisible({ timeout: 30_000 });
@@ -187,7 +217,7 @@ test("a message, an edit, a delete, typing, unread badges, a lost connection and
     );
     expect(r.status).toBeLessThan(300);
   }
-  await readerContext.setOffline(false);
+  cut = false;
   await expect(log(reader).getByText(missedOne)).toHaveCount(1, {
     timeout: 60_000,
   });
@@ -209,6 +239,7 @@ test("a message, an edit, a delete, typing, unread badges, a lost connection and
     { kind: "direct", userId: readerMe.userId },
   );
   expect(dm.status).toBeLessThan(300);
+  await reader.goto(`${base}/chat/dm/${dm.data!.id}`);
   await owner.goto(`${base}/chat/dm/${dm.data!.id}`);
   await expect(owner.locator('[data-presence="online"]').first()).toBeVisible({
     timeout: 30_000,
@@ -226,20 +257,18 @@ test("a message, an edit, a delete, typing, unread badges, a lost connection and
     ),
   ).toEqual([]);
 
-  // A change of access while connected: removing the reader closes the channel on their screen, with the same
-  // answer as a channel that does not exist, and nothing more is delivered to them.
+  // A change of access while connected: removing the reader changes their open channel at once (a public
+  // channel stays readable, but they can no longer post and are offered Join).
   await reader.goto(`${base}/chat/${idA}`);
-  await expect(composer(reader, nameA)).toBeVisible({ timeout: 20_000 });
+  await expect(composer(reader, nameA)).toBeEnabled({ timeout: 20_000 });
   const removed = await apiWrite(
     owner,
     "DELETE",
     `/workspaces/${ws}/chat/channels/${idA}/members/${readerMe.userId}`,
   );
   expect(removed.status).toBeLessThan(300);
-  await expect(reader.getByText("You cannot see this channel")).toBeVisible({
-    timeout: 30_000,
-  });
-  await expect(composer(reader, nameA)).toHaveCount(0);
+  await expect(composer(reader, nameA)).toBeDisabled({ timeout: 30_000 });
+  await expect(reader.getByText("Join the channel to post.")).toBeVisible();
 
   await readerContext.close();
 });
