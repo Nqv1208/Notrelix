@@ -193,6 +193,20 @@ public class ChannelHandlerTests
     }
 
     [Fact]
+    public async Task ListChannels_BrowseLeavesOutThePublicChannelsTheCallerIsIn()
+    {
+        var mine = PublicChannel("mine");
+        var other = PublicChannel("other");
+        mine.AddMember(_member, MembershipRole.Member, Now);
+        _memberships.AddRange(mine.Memberships);
+        AsCaller(_member);
+
+        var result = await ListHandler().Handle(new ListChannelsQuery(_workspaceId, Browse: true), CancellationToken.None);
+
+        result.Data!.Select(c => c.Id).Should().BeEquivalentTo([other.Id]);
+    }
+
+    [Fact]
     public async Task UpdateChannel_RefusesAPlainMemberOfAPublicChannel()
     {
         var general = PublicChannel();
