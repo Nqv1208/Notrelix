@@ -64,7 +64,7 @@ export function ChatTypingBubble({
   const names = ids.map((id) => authorName(id));
   return (
     <div
-      className="mt-3 flex items-end gap-2 px-3 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150 md:px-4"
+      className="mt-3 flex items-end gap-2 px-3.5 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150 md:px-6 xl:px-5"
       data-testid="chat-typing-bubble"
       title={typingText(names, copy)}
     >

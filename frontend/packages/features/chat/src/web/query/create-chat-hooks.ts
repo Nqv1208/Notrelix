@@ -317,7 +317,12 @@ export function createChatHooks(deps: ChatHookDeps) {
               )
             : [...current, next],
         );
-        await queryClient.cancelQueries({ queryKey: messagesKey });
+        // Only a loaded list needs its in-flight refetch stopped (it could overwrite the stored copy that
+        // joins it). Cancelling the very first load would leave the list pending with nothing to retry it.
+        const loaded = queryClient
+          .getQueriesData({ queryKey: messagesKey })
+          .some(([, data]) => data !== undefined);
+        if (loaded) await queryClient.cancelQueries({ queryKey: messagesKey });
       },
       onSuccess: (message: ChatMessage, input) => {
         queryClient.setQueriesData<ChatMessagesCache>(

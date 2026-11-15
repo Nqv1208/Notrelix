@@ -1154,12 +1154,13 @@ export function ChatWorkspace({
   const messagesFailure = messages.isError
     ? chatFailureOf(messages.error).kind
     : null;
+  // An own send shows its bubble at once, even while the first window is still loading.
   const listStatus: ChatListStatus =
     detailFailure === "not-found" || detailFailure === "forbidden"
       ? "no-access"
       : messagesFailure === "not-found" || messagesFailure === "forbidden"
         ? "no-access"
-        : messages.isPending || !channelId
+        : !channelId || (messages.isPending && pendingHere.length === 0)
           ? "loading"
           : messages.isError
             ? "error"
