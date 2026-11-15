@@ -25,7 +25,7 @@
     "@notrelix/query": "workspace:*",
     "@notrelix/ui-web": "workspace:*",
     "@tanstack/react-query": "^5.95.2",
-    "@tanstack/react-virtual": "3.13.12",
+    "@tanstack/react-virtual": "3.14.26",
     "lucide-react": "^0.562.0"
   },
   "devDependencies": {
