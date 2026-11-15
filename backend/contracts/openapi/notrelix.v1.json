@@ -40355,6 +40355,10 @@
           "parentTitle": {
             "type": "string",
             "nullable": true
+          },
+          "canEdit": {
+            "type": "boolean",
+            "nullable": true
           }
         },
         "additionalProperties": false

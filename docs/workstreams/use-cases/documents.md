@@ -178,10 +178,10 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-H06 | Read a page on a phone app | H | Viewer | yes | yes | Final-M-Docs | none | HARDENING | Built (verified by reading code 2026-11-09, not run): GetPageEndpoint.cs, ListPageBlocksEndpoint.cs, mobile-document-screen.tsx, docs-mobile-screen.mobile.test.tsx. Remaining: owner tests by hand. |
 | UC-DCT-H07 | Use the 320 px page and its overflow sheet | H | Viewer, Editor | yes | yes | Final-Docs-2-320 | none | INTEGRATING | Measured gaps beyond 1 px (paragraph style select 36 px against 30, status pill 79 against 87); other states undrawn |
 | UC-DCT-H08 | Edit with keyboard and screen reader | H | Editor | none | yes | none | none | HARDENING | Built (verified by reading code 2026-11-09, not run): shortcut-catalog.ts, doc-keys.ts, block-handle.tsx, block-move.component.test.tsx, doc-menu-bar.component.test.tsx. Remaining: owner tests by hand. |
-| UC-DCT-I01 | See a page only when allowed | I | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Backend line holds: `DocumentsNonMemberNotFoundTests` compares every Documents route for another-account and same-account outsiders against a made-up id, green locally (3 of 3, Testcontainers) |
-| UC-DCT-I02 | Edit only with edit permission | I | Editor | partial | yes | none | none | HARDENING | Built: every page request checked against its action at Viewer, Editor and Manager (`ResourceLevelEnforcementMatrixTests`); owner tests by hand |
+| UC-DCT-I01 | See a page only when allowed | I | Viewer | yes | yes | Final-Docs-2 | real | DONE | none |
+| UC-DCT-I02 | Edit only with edit permission | I | Editor | yes | yes | Final-Docs-2 | real | HARDENING | Read-only note not yet measured at three widths, light and dark |
 | UC-DCT-I03 | Share a page with a member | I | Manager | yes | yes | Final-Share | real | HARDENING | Owned by Governance |
-| UC-DCT-I04 | Creator becomes Manager | I | Creator | yes | none | none | none | HARDENING | Built: stored Manager entry asserted (`GovernanceResourcePermissionFlowTests`, CI) and the grant call (`PageCreatorGrantTests`); owner tests by hand |
+| UC-DCT-I04 | Creator becomes Manager | I | Creator | yes | none | none | real | DONE | none |
 | UC-DCT-I05 | Embedding a board never shares it | I | System | partial | partial | none | none | DEFINED | No proof |
 | UC-DCT-I06 | Read-only and trashed page states | I | Viewer | partial | partial | Final-Docs-2 | none | INTEGRATING | Decided (night run): a trashed page stays readable to anyone with `ViewPage` and every write is refused with `Documents_Page_CannotEditArchived` (section 77, Doc-Page-Var-Trashed). Built: the read-only note. Missing: the trashed banner, which needs the page read to carry its trash date |
 | UC-DCT-I07 | Lose access while the page is open | I | Editor | none | yes | Doc-Page-Var-LostAccess | none | INTEGRATING | Built: a refused save (403, 404) locks the editor and keeps the unsaved text copyable (`doc-block-saver.unit.test.ts`, `doc-page-surfaces.interaction.component.test.tsx`). Missing: real e2e, and stopping live updates |
@@ -1116,21 +1116,21 @@ Team capability 9 (team id DCT-009). Requirements `DCREQ032` to `DCREQ035`, `DCR
 - Rules: product doc sections 12, 13, 59, 60; `DCREQ032` to `DCREQ035`; GOV-029; NRX-003, NRX-004.
 - Acceptance: Given a page and a member without access, When they request it, Then `404` identical to a random id. Given a user of another account, Then the same.
 - Evidence: BE `IRequirePermission` on every Documents request, `PostgresPageAuthorizationFacts`, `IResourceVisibility` · FE no-access state in `DocPageScreen` · Design Final-Docs-2 · Tests `PageViewAccessTests`, `PageSearchFactsAdapterTests` · Real e2e `documents.real.e2e.spec.ts` (guest sees it only once shared)
-- State: HARDENING — Backend line holds: `DocumentsNonMemberNotFoundTests` (Integration, application role) sends every Documents route as a person of another account and as a same-account non-member, with the real ids and with made-up ones, and requires the same status and body; a route without a row fails it. Green locally 2026-11-15: 3 of 3. Missing: design line (no fidelity spec for the no-access state in `DocPageScreen` against Final-Docs-2) and a real e2e journey for an outsider opening a page.
+- State: DONE. Line 1: `DocumentsNonMemberNotFoundTests` (every Documents route as another-account and same-account outsiders, same status and body as a made-up id; 3 of 3, Integration). Line 2: the no-access state is the shared not-found state with a title and a back button (`doc-page-screen-surface.tsx`); component test `doc-page-surfaces.interaction.component.test.tsx` (19 of 19). Line 3: Final-Docs-2 draws no such state; `docs-no-access.mock.e2e.spec.ts` (7 of 7) at 1440, 1024 and 390 px, light and dark, in Vietnamese: fits the viewport, no sideways scroll, axe finds nothing serious or critical; all 6 frames were viewed (6 of 6). Line 4: `documents-permissions.real.e2e.spec.ts` (1 of 1 on the real stack, 2026-11-16): a Guest with no access reads the same 404 as a made-up id (identical body apart from the trace and correlation ids), sees the no-access state with the way back, and reads the page once it is shared.
 
 ### UC-DCT-I02 Edit only with edit permission
 - Capability: I Document permissions
 - Actors and permission: Editor (`UpdatePage`).
 - Preconditions: none.
 - Input: any block write, version save or restore, template save, move to space.
-- Output: refused with `404` for people without the right; read-only editor for Viewers.
+- Output: refused with `403` for a person who can read the page but not edit it, and `404` for a person who cannot read it; read-only editor for Viewers.
 - Main flow: the pipeline authorizes; the client hides write controls from the permission state (UX only).
 - No-op / rejection / concurrency / retry: stale gap, checked: rename (`UpdatePageCommand`) already asks `UpdatePage` (lead decision LD6), the Editor right, and so does `MovePage`. `PublishPage` and `SetPageDeadline` still ask for `ManageBoard` but throw before use.
 - UI states: read-only, permission denied.
 - Rules: product doc section 59; `DCREQ032`, `DCREQ033`, `DCREQ191`.
 - Acceptance: Given a Viewer, When they patch a block, Then `404` and no change. Given an Editor who is not a board manager, When they rename the page, Then it succeeds.
 - Evidence: BE `UpdatePageCommand`, `CreateBlockCommand` and the other commands (`Action`) · FE permission state in `usePagePermissions` · Design none · Tests `ResourceLevelEnforcementMatrixTests` (every page request against its action; rename: Editor allowed, Viewer forbidden), `ArchivePageCommandHandlerTests`, `BlockEditingHandlerTests` · Real e2e none
-- State: HARDENING. Built: `EveryPageRequest_IsAllowedExactlyFromTheLevelOfItsAction` checks each of the page requests against its action at Viewer, Editor and Manager, and fails when a new page request has no row. Missing: owner tests by hand.
+- State: HARDENING. Built: `EveryPageRequest_IsAllowedExactlyFromTheLevelOfItsAction` (Viewer, Editor, Manager); the page read now carries `canEdit`, the decision a write of the page gets (`PageEditAccess`, `PageEditAccessTests`: allowed, each refusal, trashed page; Application filter `Features.Documents` 173 passed), and the editor takes it instead of the workspace role (`use-doc-page-host.ts`; `page-can-edit.unit.test.ts`). `documents-permissions.real.e2e.spec.ts` (1 of 1 on the real stack, 2026-11-16): a Viewer Guest reads `canEdit` false, sees the read-only note, the editor is not editable, and block create, block edit and rename answer 403 with nothing changed; a plain Member (Editor by default) edits and reads `canEdit` true. Missing: a measured review of the read-only note (Final-Docs-2 "Chỉ xem") at 1440, 1024 and 390 px, light and dark, in Vietnamese.
 
 ### UC-DCT-I03 Share a page with a member
 - Capability: I Document permissions
@@ -1158,7 +1158,7 @@ Team capability 9 (team id DCT-009). Requirements `DCREQ032` to `DCREQ035`, `DCR
 - Rules: product doc section 59; `DCREQ032`.
 - Acceptance: Given a new page, When the creator opens its Share dialog, Then they are Manager.
 - Evidence: BE `IResourceCreatorGrant.GrantManager` in `CreatePageCommandHandler`, `CreatePageFromTemplateCommandHandler` · FE none · Design none · Tests `CreatePageTargetPolicyMatrixTests`, `PageCreatorGrantTests`, Integration `GovernanceResourcePermissionFlowTests` (the stored Manager entry) · Real e2e none
-- State: HARDENING. Built: the stored Manager entry is asserted by `CreatePage_GivesTheCreatorAManagerEntry...` (integration, runs in CI, not run here; the assertion the gap named already existed) and the grant call by `PageCreatorGrantTests`. Missing: owner tests by hand.
+- State: DONE. Line 1: the stored Manager entry is asserted by `GovernanceResourcePermissionFlowTests` (CI) and the grant call by `PageCreatorGrantTests`. Lines 2 and 3 do not apply (no UI). Line 4: `documents-permissions.real.e2e.spec.ts` (1 of 1 on the real stack, 2026-11-16): a plain workspace Member creates a page, the stored Manager entry is listed for them, and a person without access cannot share it (404).
 
 ### UC-DCT-I05 Embedding a board never shares it
 - Capability: I Document permissions
