@@ -386,6 +386,14 @@ Identity's `IMemberDeliveryAddresses` (a Guest has none). It runs under the syst
 
 The chat search (UC-CHT-H07) reads `Search` (`RateLimiting:Chat:Search`, default 30 per minute per person and 300 per minute per Workspace). It has no other options: it reads the live message table, with no index and no worker.
 
+`Workspaces:Spaces:Purge` (Infrastructure, `DeletedSpacePurgeOptions`, validated on start by
+`DeletedSpacePurgeOptionsValidator`) configures the purge of deleted Spaces (`DeletedSpacePurgeService`, a hosted
+service; the window is `Space.RestoreWindow`, 30 days after the delete). On by default (`Enabled` true, `Interval`
+1 hour, `BatchSize` 20, same ranges as the board purge). Each pass claims, under the system context with the RLS
+worker scope, one Space deleted more than 30 days ago that has no child Space row (`FOR UPDATE SKIP LOCKED`) and, in
+one transaction, removes its member entries, its closure rows (`space_paths`), the Space row, and writes an audit fact
+`PurgeSpace` (actor type System, Critical). A Space holds no content when deleted, so nothing else is removed.
+
 `WorkManagement:Boards:Purge` (Infrastructure, `DeletedBoardPurgeOptions`, validated on start by
 `DeletedBoardPurgeOptionsValidator`) configures the purge of deleted boards (`DeletedBoardPurgeService`, a hosted
 service; the window is the Domain constant of 30 days after the delete, `Board.RestoreWindow`, and restore after it is
