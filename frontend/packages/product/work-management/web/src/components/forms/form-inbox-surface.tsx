@@ -51,6 +51,8 @@ export interface FormInboxSurfaceProps {
   readonly fields: readonly FormBoardField[];
   readonly submissions: readonly FormSubmission[];
   /** More responses are on the server: the list shows "Xem thêm phản hồi" at its foot. */
+  /** Server totals by tab over all responses; without them the tabs count the loaded ones. */
+  readonly counts?: Readonly<Record<FormSubmissionStatus, number>>;
   readonly hasMore?: boolean;
   readonly loadingMore?: boolean;
   readonly onLoadMore?: () => void;
@@ -171,6 +173,7 @@ export function FormInboxSurface(props: FormInboxSurfaceProps) {
     spam: 0,
   };
   for (const s of props.submissions) counts[s.status] += 1;
+  if (props.counts) Object.assign(counts, props.counts);
   const inTab = props.submissions.filter((s) => s.status === props.tab);
   const selected = inTab.find((s) => s.id === props.selectedId) ?? null;
 

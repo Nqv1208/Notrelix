@@ -31,6 +31,7 @@ public static class MapFormEndpoints
         group.MapGetForm();
         group.MapListFormSubmissions();
         group.MapListFormSubmissionsPage();
+        group.MapCountFormSubmissions();
         group.MapSubmitForm();
 
         var submissionGroup = app

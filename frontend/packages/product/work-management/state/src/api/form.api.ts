@@ -13,6 +13,7 @@ import {
   type FormDetail,
   type FormQuestion,
   type FormSubmission,
+  type FormSubmissionStatus,
 } from "@notrelix/work-management-core";
 
 // The producer's form reads have no typed body in the contract (it types them as void): the wire shapes are read here.
@@ -289,6 +290,24 @@ export function createFormApi(client: NotrelixClient) {
         ];
       });
       return { items, nextCursor: page?.nextCursor ?? null };
+    },
+
+    /** The totals of all responses by tab, whatever pages are loaded. */
+    async submissionCounts(
+      formId: string,
+    ): Promise<Record<FormSubmissionStatus, number>> {
+      const wire = await api.get<{
+        new?: number;
+        processed?: number;
+        rejected?: number;
+        spam?: number;
+      }>(endpoints.forms.submissionCounts(formId));
+      return {
+        new: wire?.new ?? 0,
+        processed: wire?.processed ?? 0,
+        rejected: wire?.rejected ?? 0,
+        spam: wire?.spam ?? 0,
+      };
     },
 
     /**

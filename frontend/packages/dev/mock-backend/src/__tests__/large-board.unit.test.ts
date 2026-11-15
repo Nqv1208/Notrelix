@@ -39,7 +39,7 @@ describe("the large-board overlay", () => {
       filteredCount: 200,
       nextCursor: "10",
     });
-    expect(dto.lists?.[0]?.boardItems).toHaveLength(8 + 10 + 3 + 10);
+    expect(dto.lists?.[0]?.boardItems).toHaveLength(10 + 10 + 3 + 10);
   });
 
   it("counts a person's items 12 of 200 in a lane and 37 on the board, and pages a lane on", async () => {

@@ -168,6 +168,17 @@ describe("createFormApi", () => {
     expect(second.nextCursor).toBeNull();
   });
 
+  it("reads the tab totals from the server, not from the loaded pages", async () => {
+    const get = vi.fn(async () => ({ new: 1200, processed: 3, spam: 2 }));
+    expect(await apiWith({ get }).submissionCounts("f-1")).toEqual({
+      new: 1200,
+      processed: 3,
+      rejected: 0,
+      spam: 2,
+    });
+    expect(get).toHaveBeenCalledWith("/forms/f-1/submissions/counts");
+  });
+
   it("undoes a decision by returning the response to the New tab", async () => {
     const post = vi.fn(async () => undefined);
     await apiWith({ post }).reopenSubmission("s-9");
