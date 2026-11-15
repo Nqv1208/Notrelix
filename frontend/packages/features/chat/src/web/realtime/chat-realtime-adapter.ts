@@ -180,7 +180,14 @@ export function createChatRealtimeAdapter(
       threadRootId: rootId,
       threadSequence: frame.threadSequence,
     };
-    applyStoredReply(queryClient, workspaceId, reply);
+    if (frame.contentOmitted) {
+      // The reply's text did not fit the frame: the open thread refetches instead of showing a blank reply.
+      void queryClient.invalidateQueries({
+        queryKey: chatQueryKeys.thread(workspaceId, rootId),
+      });
+    } else {
+      applyStoredReply(queryClient, workspaceId, reply);
+    }
     return backfill(workspaceId, channelId, frame.sequence - 1);
   }
 
@@ -202,25 +209,31 @@ export function createChatRealtimeAdapter(
       if (envelope.eventType === "chat.message.created") {
         return applyThreadReplyCreated(frame, envelope, workspaceId, channelId);
       }
-      queryClient.setQueriesData(
-        { queryKey: chatQueryKeys.thread(workspaceId, frame.threadRootId) },
-        (data: unknown) =>
-          patchMessageInData(data, frame.id, (message) =>
-            message.version >= frame.version
-              ? message
-              : {
-                  ...message,
-                  content: frame.deleted ? null : frame.content,
-                  edited: frame.editedAt !== null || message.edited,
-                  editedAt: frame.editedAt ?? message.editedAt,
-                  deleted: frame.deleted,
-                  deletedAt: frame.deleted
-                    ? (message.deletedAt ?? envelope.timestamp)
-                    : message.deletedAt,
-                  version: frame.version,
-                },
-          ),
-      );
+      if (frame.contentOmitted) {
+        // An edit whose text did not fit keeps the old text until the thread refetches.
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.thread(workspaceId, frame.threadRootId),
+        });
+      } else
+        queryClient.setQueriesData(
+          { queryKey: chatQueryKeys.thread(workspaceId, frame.threadRootId) },
+          (data: unknown) =>
+            patchMessageInData(data, frame.id, (message) =>
+              message.version >= frame.version
+                ? message
+                : {
+                    ...message,
+                    content: frame.deleted ? null : frame.content,
+                    edited: frame.editedAt !== null || message.edited,
+                    editedAt: frame.editedAt ?? message.editedAt,
+                    deleted: frame.deleted,
+                    deletedAt: frame.deleted
+                      ? (message.deletedAt ?? envelope.timestamp)
+                      : message.deletedAt,
+                    version: frame.version,
+                  },
+            ),
+        );
     }
 
     let refetchFrom: number | null = null;
@@ -255,7 +268,8 @@ export function createChatRealtimeAdapter(
     if (
       envelope.eventType === "chat.message.created" &&
       frame.threadRootId === null &&
-      !frame.deleted
+      !frame.deleted &&
+      !frame.contentOmitted
     ) {
       touchConversation(queryClient, workspaceId, channelId, {
         sequence: frame.sequence,

@@ -197,7 +197,7 @@ export const CHAT_LIMITS = {
   /** Days without a reply after which a thread is archived (backend ChatLimits.ThreadInactivityDays). */
   threadInactivityDays: 7,
   /** The largest message payload of a realtime frame, in UTF-8 bytes (ChatRealtime.MaxPayloadBytes). */
-  realtimePayloadMaxBytes: 3000,
+  realtimePayloadMaxBytes: 1300,
   /** Recipients of one message's unread fan-out (ChatRealtime.MaxUnreadRecipients). */
   unreadRecipientsMax: 2000,
   /** The most mentions one message holds (ChatLimits.MentionsPerMessageMax). */

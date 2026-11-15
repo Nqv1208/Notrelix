@@ -141,6 +141,14 @@ export function applyMessageCreated(
     return { kind: "unchanged", cache, reason: "duplicate" };
   }
   const existing = locate(cache, frame.id);
+  // The text did not fit the frame: the row is held back (never a blank bubble) and the range is fetched.
+  if (frame.contentOmitted && windowIsLive(cache)) {
+    return {
+      kind: "omitted",
+      cache,
+      after: Math.min(frame.sequence - 1, newestSequence(cache)),
+    };
+  }
   const message = messageFromCreatedFrame(frame, spaceId, occurredAt);
   if (existing) {
     if (existing.version >= frame.version) {

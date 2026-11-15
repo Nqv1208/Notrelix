@@ -34,11 +34,11 @@ public static class ChatRealtime
     public const string AttachmentPayloadContract = "chat.attachment.v1";
 
     /// <summary>
-    /// The largest message payload in bytes. The frame envelope (ids, stream key, names, timestamps) is under 1 KiB,
-    /// so a payload this size keeps the whole frame under the 4096-byte limit. Content that does not fit is left out
-    /// (contentOmitted = true) and the client fetches it by sequence.
+    /// The largest message payload in bytes. The frame envelope (ids, stream key, names, timestamps) is about 650 bytes,
+    /// so a payload this size keeps the whole frame under 2 KiB (the gateway limit is 4096). Content that does not fit
+    /// is left out (contentOmitted = true) and the client fetches it by sequence.
     /// </summary>
-    public const int MaxPayloadBytes = 3000;
+    public const int MaxPayloadBytes = 1300;
 
     /// <summary>
     /// The most recipients one message's unread fan-out reaches (one realtime publish each). A channel above it is
@@ -46,7 +46,13 @@ public static class ChatRealtime
     /// </summary>
     public const int MaxUnreadRecipients = 2000;
 
-    private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web);
+    // A null field is left out (the client reads an absent field as null) and '+' and non-ASCII text are not escaped, so a
+    // payload is as small as its content allows; the payload is JSON text in a websocket frame, never embedded in HTML.
+    private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     /// <summary>
     /// The message payload of the channel stream (contract <see cref="MessagePayloadContract"/>). ThreadRootId is set for a
@@ -69,7 +75,6 @@ public static class ChatRealtime
         long Version,
         Guid? ThreadRootId = null,
         long? ThreadSequence = null,
-        [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         string? ClientMessageId = null);
 
     /// <summary>The longest preview text of an unread frame, in characters.</summary>
