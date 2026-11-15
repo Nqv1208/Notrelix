@@ -10,7 +10,10 @@ import type {
   ChatMessagePage,
   ChatUnreadSummary,
 } from "../core/types/chat";
-import type { ChatMessagesCache } from "../web/query/message-cache";
+import {
+  appendToNewest,
+  type ChatMessagesCache,
+} from "../web/query/message-cache";
 import type { PendingMessage } from "../core/model/chat-model";
 
 const WS = "ws-1";
@@ -277,6 +280,75 @@ describe("ChatRealtimeAdapter: channel frames", () => {
       context,
     );
     expect(queryClient.getQueryData<PendingMessage[]>(pendingKey)).toEqual([]);
+  });
+
+  describe("a send swaps its pending bubble for the stored message in place", () => {
+    const stored = (): ChatMessage =>
+      message(2, {
+        id: "m-2",
+        authorId: "me",
+        content: "mine",
+        clientMessageId: "cmid-9",
+      });
+    const frame = () =>
+      envelope(
+        "chat.message.created",
+        createMessagePayload(2, {
+          authorId: "me",
+          content: "mine",
+          clientMessageId: "cmid-9",
+        }),
+      );
+    function withPending() {
+      const rig = setup([message(1)]);
+      const pendingKey = chatQueryKeys.pending(WS, CH);
+      rig.queryClient.setQueryData<PendingMessage[]>(pendingKey, [
+        {
+          clientMessageId: "cmid-9",
+          spaceId: CH,
+          content: "mine",
+          authorId: "me",
+          createdAt: AT,
+          status: "sending",
+          failure: null,
+        },
+      ]);
+      // What the send mutation does when the 201 arrives.
+      const respond = () => {
+        rig.queryClient.setQueryData<PendingMessage[]>(pendingKey, (entries) =>
+          (entries ?? []).filter((e) => e.clientMessageId !== "cmid-9"),
+        );
+        rig.queryClient.setQueriesData<ChatMessagesCache>(
+          { queryKey: chatQueryKeys.messages(WS, CH) },
+          (cache) => (cache ? appendToNewest(cache, stored()) : cache),
+        );
+      };
+      const copies = () =>
+        rig
+          .read()
+          .pages.flatMap((p) => p.items)
+          .filter((m) => m.clientMessageId === "cmid-9").length +
+        (rig.queryClient.getQueryData<PendingMessage[]>(pendingKey) ?? [])
+          .length;
+      return { ...rig, respond, copies };
+    }
+
+    it("the frame first, then the response: one copy at every step", async () => {
+      const { adapter, context, respond, copies } = withPending();
+      expect(copies()).toBe(1);
+      await adapter.validateAndHandle(frame(), context);
+      expect(copies()).toBe(1);
+      respond();
+      expect(copies()).toBe(1);
+    });
+
+    it("the response first, then the frame: one copy at every step", async () => {
+      const { adapter, context, respond, copies } = withPending();
+      respond();
+      expect(copies()).toBe(1);
+      await adapter.validateAndHandle(frame(), context);
+      expect(copies()).toBe(1);
+    });
   });
 
   it("a window that is behind the newest message is not patched by a gap", async () => {

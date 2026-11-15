@@ -51,7 +51,9 @@ public static class ChatRealtime
     /// <summary>
     /// The message payload of the channel stream (contract <see cref="MessagePayloadContract"/>). ThreadRootId is set for a
     /// thread reply (UC-CHT-F01): the frame still goes to the channel stream, and ThreadSequence lets a client that holds the
-    /// root count its replies without a round trip (the count is the highest sequence it has seen).
+    /// root count its replies without a round trip (the count is the highest sequence it has seen). A created frame also
+    /// carries the sender's ClientMessageId, so the sender's own client swaps its pending bubble for the stored message
+    /// in place; the frame goes to the channel's members only, as the rest of the payload does.
     /// </summary>
     public sealed record MessageFrame(
         Guid Id,
@@ -66,7 +68,9 @@ public static class ChatRealtime
         Guid? ReplyToId,
         long Version,
         Guid? ThreadRootId = null,
-        long? ThreadSequence = null);
+        long? ThreadSequence = null,
+        [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+        string? ClientMessageId = null);
 
     /// <summary>The longest preview text of an unread frame, in characters.</summary>
     public const int PreviewMaxLength = 140;
@@ -103,7 +107,7 @@ public static class ChatRealtime
         var frame = new MessageFrame(
             e.MessageId, e.Sequence, e.AuthorId, e.Kind, e.Content, ContentOmitted: false, Deleted: false,
             CreatedAt: e.OccurredAt, EditedAt: null, ReplyToId: e.ReplyToId, Version: e.Version,
-            ThreadRootId: e.ThreadRootId, ThreadSequence: e.ThreadSequence);
+            ThreadRootId: e.ThreadRootId, ThreadSequence: e.ThreadSequence, ClientMessageId: e.ClientMessageId);
         return Channel(e.EventId, e.AccountId, e.WorkspaceId, e.SpaceId, e.ActorUserId, e.CorrelationId, e.CausationId,
             e.OccurredAt, MessageCreatedEvent, Fit(frame), now);
     }
