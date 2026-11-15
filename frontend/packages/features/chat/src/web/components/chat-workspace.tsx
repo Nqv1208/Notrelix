@@ -1230,9 +1230,12 @@ export function ChatWorkspace({
     [viewerId, people, channels.data, browse.data, onOpenChannel],
   );
 
-  // On a narrow screen with no channel open, the list is the page.
+  // On a narrow screen with no channel open, the list is the page. A person with direct messages and no channel needs it
+  // too: it is where they open a conversation and start a new one.
   const listOnly =
-    isMobile && channelId === null && (channels.data?.length ?? 0) > 0;
+    isMobile &&
+    channelId === null &&
+    ((channels.data?.length ?? 0) > 0 || offersConversations);
   const openList = () => (onBackToList ? onBackToList() : setListOpen(true));
 
   const conversationList: ChatConversationListView | null = offersConversations

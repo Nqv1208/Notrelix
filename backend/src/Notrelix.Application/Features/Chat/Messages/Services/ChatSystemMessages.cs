@@ -32,7 +32,7 @@ public sealed class ChatSystemMessages(
             space.AccountId, space.WorkspaceId, space.Id, space.ReserveSequence(), actorId, Created, clock.UtcNow));
     }
 
-    public async Task AnnounceAsync(Space space, Guid actorId, string content, CancellationToken cancellationToken)
+    public async Task<long> AnnounceAsync(Space space, Guid actorId, string content, CancellationToken cancellationToken)
     {
         var sequence = await sequences.NextAsync(space.Id, cancellationToken);
         var message = Message.CreateSystemMessage(
@@ -45,5 +45,6 @@ public sealed class ChatSystemMessages(
             clock.UtcNow);
 
         db.ChatMessages.Add(message);
+        return sequence;
     }
 }

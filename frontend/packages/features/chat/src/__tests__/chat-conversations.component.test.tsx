@@ -368,11 +368,17 @@ describe("conversation details panel", () => {
 
 // ─── The workspace with a conversation open (mock backend) ──────────────────
 
-function workspaceSetup() {
+function workspaceSetup(
+  intercept?: (
+    input: RequestInfo | URL,
+    init: RequestInit | undefined,
+  ) => Response | null,
+) {
   const store = new MockStore({ ...defaultConfig });
   const client = createNotrelixClient({
     baseUrl: "http://localhost:8000/api/v1",
-    fetchImpl: (input, init) => createMockFetch(store)(input, init),
+    fetchImpl: async (input, init) =>
+      intercept?.(input, init) ?? createMockFetch(store)(input, init),
   });
   const viewerId = store.getCurrentUser().id;
   const members = store.getWorkspaceMembers(WORKSPACE);
@@ -490,5 +496,61 @@ describe("ChatWorkspace with a conversation", () => {
     expect(
       screen.getAllByRole("button", { name: "New message" }).length,
     ).toBeGreaterThan(1);
+  });
+
+  it("on a phone a person with direct messages and no channel lands on the list, where they open a conversation", async () => {
+    const noChannels = (input: RequestInfo | URL, init?: RequestInit) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+      return /\/chat\/channels(\?|$)/.test(url) &&
+        (init?.method ?? "GET") === "GET"
+        ? new Response("[]", {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          })
+        : null;
+    };
+    const { deps, viewerId, people, others, wrapper } =
+      workspaceSetup(noChannels);
+    const service = (
+      await import("../web/query/create-chat-hooks")
+    ).createChatHooks(deps).service;
+    await service.startConversation(
+      WORKSPACE,
+      { kind: "direct", userId: others[0]! },
+      "phone-list-key",
+    );
+    const width = window.innerWidth;
+    window.innerWidth = 390;
+    try {
+      render(
+        <ChatWorkspace
+          deps={deps}
+          workspaceId={WORKSPACE}
+          viewerId={viewerId}
+          viewerRole="owner"
+          channelId={null}
+          conversationId={null}
+          onOpenConversation={vi.fn()}
+          onOpenChannel={vi.fn()}
+          people={people}
+        />,
+        { wrapper },
+      );
+      expect(
+        await screen.findByRole("heading", { name: "Direct messages" }),
+      ).toBeTruthy();
+      expect(
+        await screen.findByRole("button", {
+          name: `Direct message: ${people.get(others[0]!)!}`,
+        }),
+      ).toBeTruthy();
+    } finally {
+      window.innerWidth = width;
+    }
   });
 });

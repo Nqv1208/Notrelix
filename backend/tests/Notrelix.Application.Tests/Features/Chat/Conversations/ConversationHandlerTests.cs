@@ -365,7 +365,7 @@ public class ConversationHandlerTests
         var olderForAlice = await new ListMessagesQueryHandler(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments())
             .Handle(new ListMessagesQuery(_workspaceId, group.Id, null, null, null, 50), CancellationToken.None);
         olderForAlice.Data!.Items.Select(m => m.Content).Should().Contain("before dave", "the people who were there keep the whole history");
-        group.GetActiveMembership(dave)!.ReadSequence.Should().BeGreaterThan(0, "the messages before the join are not unread");
+        group.GetActiveMembership(dave)!.ReadSequence.Should().Be(_messages.Single(m => m.IsSystem).Sequence, "everything up to the join announcement is read");
     }
 
     [Fact]
