@@ -27,6 +27,8 @@ export interface PageComment {
   updatedAt: string;
   /** The version the server holds; edit and delete quote it. */
   version?: number;
+  /** The top-level comment this one answers; absent for a thread starter. */
+  parentId?: ID | null;
 }
 
 export interface CreateCommentPayload {
@@ -34,6 +36,8 @@ export interface CreateCommentPayload {
   blockId?: ID | null;
   body: string;
   mentionIds?: ID[];
+  /** Answers this comment (a reply joins its top-level thread). */
+  parentId?: ID;
   /** Comment on a selection of one block; only for a top-level comment. */
   anchor?: CommentAnchor;
 }
