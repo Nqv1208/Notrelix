@@ -206,7 +206,7 @@ Merging belongs to the coordinator session. Every other session opens PRs, gets 
 ## 9. Counts
 
 1. A PR edits only the catalog `State` cells and `- State:` lines. It never edits a count table (README §8).
-2. Counts come from `make uc-counts`, which prints them from the catalogs. This target lands with the pull request that adds it (#505); until that merges, take no count by hand and leave the tables alone.
+2. Counts come from `make uc-counts`, which prints them from the catalogs; the CI job summary shows them too. Never take a count by hand. `make docs-check` fails on an unknown State value or a duplicate use case id.
 3. A recount for a release uses the same command.
 
 ---

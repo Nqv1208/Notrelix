@@ -62,8 +62,8 @@ public class ChatAttachmentRealtimeTests
 
         change.Payload.GetProperty("change").GetString().Should().Be("removed");
         change.Payload.GetProperty("attachmentId").GetGuid().Should().Be(fact.AttachmentId);
-        change.Payload.GetProperty("fileName").ValueKind.Should().Be(System.Text.Json.JsonValueKind.Null);
-        change.Payload.GetProperty("downloadPath").ValueKind.Should().Be(System.Text.Json.JsonValueKind.Null);
+        change.Payload.TryGetProperty("fileName", out _).Should().BeFalse("a null field is left out of the frame");
+        change.Payload.TryGetProperty("downloadPath", out _).Should().BeFalse("a null field is left out of the frame");
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public class ChatAttachmentRealtimeTests
 
         Encoding.UTF8.GetByteCount(change.Payload.GetRawText()).Should().BeLessThan(4096);
         change.Payload.GetProperty("detailsOmitted").GetBoolean().Should().BeTrue();
-        change.Payload.GetProperty("fileName").ValueKind.Should().Be(System.Text.Json.JsonValueKind.Null);
+        change.Payload.TryGetProperty("fileName", out _).Should().BeFalse("a null field is left out of the frame");
         change.Payload.GetProperty("change").GetString().Should().Be("added");
     }
 }
