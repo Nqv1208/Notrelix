@@ -299,6 +299,15 @@ describe("WorkspaceSpaceSurface", () => {
     ).toBe("/workspaces/ws-product");
   });
 
+  it("FUI[workspace.space-page:space-error] offers a retry when the department cannot be read", () => {
+    const { props } = renderPage(spacePageNotFoundScenario(), {
+      space: { status: "error" },
+    });
+    expect(screen.getByText(copy.page.error)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: copy.page.retry }));
+    expect(props.onRetry).toHaveBeenCalledTimes(1);
+  });
+
   it("FUI[workspace.space-page:members-render] lists teams with their people, then people with role, source and activity", () => {
     renderMembers();
     const list = screen.getByRole("table", {
