@@ -155,6 +155,8 @@ export const endpoints = {
     list: (workspaceId: string) => `/workspaces/${workspaceId}/pages`,
     tree: (workspaceId: string) => `/workspaces/${workspaceId}/pages/tree`,
     detail: (pageId: string) => `/pages/${pageId}`,
+    duplicate: (workspaceId: string, pageId: string) =>
+      `/workspaces/${workspaceId}/pages/${pageId}/duplicate`,
     breadcrumb: (pageId: string) => `/pages/${pageId}/breadcrumb`,
     blocks: (pageId: string) => `/pages/${pageId}/blocks`,
     comments: (pageId: string) => `/pages/${pageId}/comments`,

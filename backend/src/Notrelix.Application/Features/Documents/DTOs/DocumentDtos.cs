@@ -146,5 +146,11 @@ public record PageFromTemplateDto(
     int DroppedBlockCount
 );
 
+/// <summary>A duplicated page; <c>DroppedBlockCount</c> counts the image, file and video blocks that were not copied.</summary>
+public record DuplicatedPageDto(
+    Guid PageId,
+    int DroppedBlockCount
+);
+
 /// <summary>The version of one block as the caller last read it (what a restore is checked against).</summary>
 public record SeenBlockVersion(Guid BlockId, long Version);
