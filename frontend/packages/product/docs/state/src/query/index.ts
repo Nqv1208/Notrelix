@@ -20,6 +20,7 @@ export {
 } from "./hooks/use-restore-version";
 export { createUsePageTemplates } from "./hooks/use-page-templates";
 export { createUseCreatePageTemplate } from "./hooks/use-create-page-template";
+export { createUseManagePageTemplates } from "./hooks/use-manage-page-templates";
 export { createUseCreatePageFromTemplate } from "./hooks/use-create-page-from-template";
 export { createUseImportPage } from "./hooks/use-import-page";
 

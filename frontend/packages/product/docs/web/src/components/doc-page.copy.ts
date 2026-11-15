@@ -176,6 +176,7 @@ export const vi = {
     makeCopyDropped:
       "Đã tạo bản sao. {{count}} khối ảnh, tệp hoặc video chưa được sao chép.",
     makeCopyFailed: "Chưa tạo được bản sao.",
+    templates: "Mẫu trang…",
     importPage: "Nhập từ Markdown hoặc Word…",
   },
   menubar: {
@@ -726,6 +727,42 @@ export const vi = {
     failed: "Chưa lưu được mẫu. Thử lại.",
     saved: "Đã lưu mẫu “{{name}}”.",
   },
+  templates: {
+    title: "Mẫu trang",
+    note: "Mẫu là bản sao nội dung của một trang, dùng chung cho cả workspace. Người lưu mẫu hoặc quản trị viên workspace được đổi tên, lưu trữ hoặc xóa mẫu.",
+    close: "Đóng hộp thoại mẫu trang",
+    loading: "Đang tải các mẫu…",
+    loadFailed: "Chưa tải được các mẫu.",
+    retry: "Thử lại",
+    emptyTitle: "Chưa có mẫu nào",
+    emptyBody:
+      "Mở một trang, chọn Tệp, Lưu thành mẫu để tạo mẫu đầu tiên cho workspace.",
+    blocks: "{{count}} khối",
+    nameLabel: "Tên mẫu",
+    descriptionLabel: "Mô tả (không bắt buộc)",
+    rename: "Đổi tên",
+    renameLabel: "Đổi tên mẫu {{name}}",
+    archive: "Lưu trữ",
+    archiveLabel: "Lưu trữ mẫu {{name}}",
+    archiveBody:
+      "Mẫu “{{name}}” sẽ rời khỏi danh sách. Các trang đã tạo từ mẫu này không đổi.",
+    archiveConfirm: "Lưu trữ mẫu",
+    delete: "Xóa",
+    deleteLabel: "Xóa mẫu {{name}}",
+    deleteBody:
+      "Xóa vĩnh viễn mẫu “{{name}}”? Không thể hoàn tác. Các trang đã tạo từ mẫu này vẫn còn.",
+    deleteConfirm: "Xóa mẫu",
+    save: "Lưu",
+    saving: "Đang lưu…",
+    cancel: "Hủy",
+    required: "Nhập tên mẫu để lưu.",
+    conflict:
+      "Mẫu này vừa được người khác thay đổi. Danh sách đã được làm mới; hãy thử lại.",
+    forbidden:
+      "Chỉ người lưu mẫu hoặc quản trị viên workspace được sửa mẫu này.",
+    gone: "Mẫu này không còn nữa. Danh sách đã được làm mới.",
+    failed: "Chưa thực hiện được. Thử lại.",
+  },
   importDialog: {
     title: "Nhập vào trang mới",
     note: "Tạo một trang mới từ tệp Markdown (.md) hoặc Word (.docx). Nội dung được làm sạch theo định dạng của trang; trang đang mở không đổi.",
@@ -984,6 +1021,7 @@ export const en: DocPageCopy = {
     makeCopyDropped:
       "Copy created. {{count}} image, file or video blocks were not copied.",
     makeCopyFailed: "The copy could not be created.",
+    templates: "Page templates…",
     importPage: "Import from Markdown or Word…",
   },
   menubar: {
@@ -1534,6 +1572,42 @@ export const en: DocPageCopy = {
     required: "Enter a template name to save.",
     failed: "The template could not be saved. Try again.",
     saved: "Saved template “{{name}}”.",
+  },
+  templates: {
+    title: "Page templates",
+    note: "A template is a copy of a page's content shared by the whole workspace. The person who saved it or a Workspace Admin can rename, archive or delete it.",
+    close: "Close page templates",
+    loading: "Loading templates…",
+    loadFailed: "The templates could not be loaded.",
+    retry: "Try again",
+    emptyTitle: "No templates yet",
+    emptyBody:
+      "Open a page, choose File, Save as template to make the workspace's first one.",
+    blocks: "{{count}} blocks",
+    nameLabel: "Template name",
+    descriptionLabel: "Description (optional)",
+    rename: "Rename",
+    renameLabel: "Rename template {{name}}",
+    archive: "Archive",
+    archiveLabel: "Archive template {{name}}",
+    archiveBody:
+      "“{{name}}” will leave the list. Pages already made from it do not change.",
+    archiveConfirm: "Archive template",
+    delete: "Delete",
+    deleteLabel: "Delete template {{name}}",
+    deleteBody:
+      "Delete “{{name}}” for good? This cannot be undone. Pages already made from it stay.",
+    deleteConfirm: "Delete template",
+    save: "Save",
+    saving: "Saving…",
+    cancel: "Cancel",
+    required: "Enter a template name to save.",
+    conflict:
+      "Someone just changed this template. The list is up to date; try again.",
+    forbidden:
+      "Only the person who saved this template or a Workspace Admin can change it.",
+    gone: "This template no longer exists. The list is up to date.",
+    failed: "That did not work. Try again.",
   },
   importDialog: {
     title: "Import into a new page",

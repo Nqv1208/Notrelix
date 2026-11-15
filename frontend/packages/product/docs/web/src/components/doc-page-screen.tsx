@@ -22,6 +22,8 @@ import {
   createUseCreateVersion,
   createUseRestoreVersion,
   createUseCreatePageTemplate,
+  createUseManagePageTemplates,
+  createUsePageTemplates,
   createUseImportPage,
   createUsePage,
   createUsePageBlocks,
@@ -79,6 +81,7 @@ import type {
   DocTaskResolution,
   DocPerson,
   DocMarkTargets,
+  DocTemplatesView,
 } from "./doc-page-models";
 import { isRestrictedTask, type DocSaveState } from "./doc-page-models";
 import { readImportFile } from "../import/read-import-file";
@@ -117,6 +120,16 @@ const REPEATING: ReadonlySet<BlockType> = new Set([
   "bulleted_list",
   "todo",
 ]);
+
+/** Why a template write was refused, as its row words it. */
+function templateWriteFailure(
+  error: unknown,
+): "conflict" | "forbidden" | "notFound" | "failed" {
+  const { status } = (error ?? {}) as { status?: unknown };
+  if (status === 412) return "conflict";
+  if (status === 403) return "forbidden";
+  return status === 404 ? "notFound" : "failed";
+}
 
 /** Why a move was refused, as the dialog words it. */
 function moveFailure(
@@ -246,6 +259,8 @@ export function createDocPageScreen({
   const useCreateVersion = createUseCreateVersion(api, endpoints);
   const useRestoreVersion = createUseRestoreVersion(api, endpoints);
   const useCreatePageTemplate = createUseCreatePageTemplate(api, endpoints);
+  const usePageTemplates = createUsePageTemplates(api, endpoints);
+  const useManagePageTemplates = createUseManagePageTemplates(api, endpoints);
   const useImportPage = createUseImportPage(api, endpoints);
   const usePageList = createUsePageList(api, endpoints);
   const useArchivePage = createUseArchivePage(api, endpoints);
@@ -287,6 +302,10 @@ export function createDocPageScreen({
     const createVersion = useCreateVersion(workspaceId, pageId);
     const restoreVersion = useRestoreVersion(workspaceId, pageId);
     const createTemplate = useCreatePageTemplate(workspaceId);
+    const manageTemplates = useManagePageTemplates(workspaceId);
+    const [templateFailure, setTemplateFailure] =
+      useState<DocTemplatesView["failure"]>(null);
+    const [templateBusy, setTemplateBusy] = useState<string | null>(null);
     const importPage = useImportPage(workspaceId);
     const [importing, setImporting] = useState<DocImportView>(IDLE_IMPORT);
 
@@ -294,6 +313,25 @@ export function createDocPageScreen({
     const blocks = useMemo(() => blocksQuery.data ?? [], [blocksQuery.data]);
 
     const [overlay, setOverlay] = useState<DocOverlay>(NONE);
+    const templatesQuery = usePageTemplates(
+      workspaceId,
+      overlay.kind === "templates",
+    );
+    /** One template write: it quotes the version the list holds, and a refusal says why on that row. */
+    const runTemplateWrite = (
+      id: string,
+      write: (version: number) => Promise<unknown>,
+    ) => {
+      const template = templatesQuery.data?.find((item) => item.id === id);
+      if (!template) return;
+      setTemplateFailure(null);
+      setTemplateBusy(id);
+      void write(template.version)
+        .catch((error: unknown) =>
+          setTemplateFailure({ id, kind: templateWriteFailure(error) }),
+        )
+        .finally(() => setTemplateBusy(null));
+    };
     const [panelTab, setPanelTab] = useState<DocPanelTab>("links");
     const [focusedId, setFocusedId] = useState<string | null>(null);
     const [versions, setVersions] = useState<{
@@ -1295,6 +1333,34 @@ export function createDocPageScreen({
           ),
         );
       },
+      onTemplatesOpen: () => {
+        setTemplateFailure(null);
+        setOverlay({ kind: "templates" });
+      },
+      onTemplatesRetry: () => void templatesQuery.refetch(),
+      onTemplateRename: (id, name, description) =>
+        runTemplateWrite(id, (version) =>
+          manageTemplates.rename.mutateAsync({
+            templateId: id,
+            name,
+            description: description || undefined,
+            expectedVersion: version,
+          }),
+        ),
+      onTemplateArchive: (id) =>
+        runTemplateWrite(id, (version) =>
+          manageTemplates.archive.mutateAsync({
+            templateId: id,
+            expectedVersion: version,
+          }),
+        ),
+      onTemplateDelete: (id) =>
+        runTemplateWrite(id, (version) =>
+          manageTemplates.remove.mutateAsync({
+            templateId: id,
+            expectedVersion: version,
+          }),
+        ),
       onImportOpen: host.canEdit
         ? () => {
             setImporting(IDLE_IMPORT);
@@ -1774,6 +1840,22 @@ export function createDocPageScreen({
         templateAction={{
           saving: createTemplate.isPending,
           failed: createTemplate.isError,
+        }}
+        templates={{
+          status: templatesQuery.isError
+            ? "error"
+            : templatesQuery.isPending
+              ? "loading"
+              : "ready",
+          templates: (templatesQuery.data ?? []).map((template) => ({
+            id: template.id,
+            name: template.name,
+            description: template.description,
+            blockCount: template.blockCount,
+            canManage: template.canManage,
+          })),
+          busyId: templateBusy,
+          failure: templateFailure,
         }}
         share={
           host.share

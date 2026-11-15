@@ -29,7 +29,10 @@ export const PRIMARY = cn(
   "border-primary bg-brand-solid font-semibold text-brand-solid-foreground hover:bg-brand-solid",
 );
 
-const DANGER = cn(OUTLINE, "border-danger-text font-semibold text-danger-text");
+export const DANGER = cn(
+  OUTLINE,
+  "border-danger-text font-semibold text-danger-text",
+);
 
 export const FIELD =
   "box-border h-9.5 w-full rounded-[9px] border border-line-strong bg-doc-panel px-2.5 text-compact leading-[1.45] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring";

@@ -182,6 +182,8 @@ export type PageTemplateDtoApi = {
   blockCount: number;
   createdBy?: string | null;
   createdAt: string;
+  version: number;
+  canManage: boolean;
 };
 
 /** `Documents.Templates.CreatePageFromTemplate`. */

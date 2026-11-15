@@ -10,15 +10,21 @@
  *   docs.templates.list     — GET  /workspaces/:workspaceId/page-templates
  *   docs.templates.create   — POST /workspaces/:workspaceId/page-templates
  *   docs.templates.createPage — POST /workspaces/:workspaceId/page-templates/:templateId/pages
+ *   docs.templates.update   — PATCH /workspaces/:workspaceId/page-templates/:templateId
+ *   docs.templates.archive  — POST /workspaces/:workspaceId/page-templates/:templateId/archive
+ *   docs.templates.delete   — DELETE /workspaces/:workspaceId/page-templates/:templateId
  */
 
 import { defineMockOperation } from "../../operations/types";
 import {
   created,
+  forbidden,
+  noContent,
   notFound,
   ok,
   type MockHttpResult,
 } from "../../transport/create-response";
+import type { MockStore } from "../../state/mock-store";
 import type {
   MockPageTemplateRecord,
   MockPageVersionRecord,
@@ -78,7 +84,10 @@ function toVersionDto(entry: MockPageVersionRecord): Json {
   };
 }
 
-function toTemplateDto(template: MockPageTemplateRecord): Json {
+function toTemplateDto(
+  template: MockPageTemplateRecord,
+  canManage: boolean,
+): Json {
   return {
     id: template.id,
     name: template.name,
@@ -88,7 +97,23 @@ function toTemplateDto(template: MockPageTemplateRecord): Json {
     blockCount: template.blocks.length,
     createdBy: template.createdBy,
     createdAt: template.createdAt,
+    version: template.version,
+    canManage,
   };
+}
+
+/** The creator or a Workspace Owner or Admin manages a template. */
+function canManageTemplate(
+  store: MockStore,
+  workspaceId: string,
+  template: MockPageTemplateRecord,
+): boolean {
+  const role = store.getCurrentMemberRole(workspaceId);
+  return (
+    template.createdBy === store.getCurrentUser().id ||
+    role === "owner" ||
+    role === "admin"
+  );
 }
 
 /** A captured block: the producer's block shape without a concurrency version. */
@@ -307,7 +332,14 @@ export const versionsOperations = [
         return notFound("Workspace not found");
       }
       return ok<Json[]>(
-        store.docsHistory.listTemplates(params.workspaceId).map(toTemplateDto),
+        store.docsHistory
+          .listTemplates(params.workspaceId)
+          .map((template) =>
+            toTemplateDto(
+              template,
+              canManageTemplate(store, params.workspaceId, template),
+            ),
+          ),
       );
     },
   }),
@@ -342,7 +374,7 @@ export const versionsOperations = [
         description: body?.description,
         userId: store.getCurrentUser().id,
       });
-      return created<Json>(toTemplateDto(template!));
+      return created<Json>(toTemplateDto(template!, true));
     },
   }),
 
@@ -394,4 +426,109 @@ export const versionsOperations = [
       );
     },
   }),
+
+  defineMockOperation<
+    { workspaceId: string; templateId: string },
+    { name?: string; description?: string | null; expectedVersion?: number },
+    Json
+  >({
+    id: "docs.templates.update",
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Templates.UpdatePageTemplate",
+    },
+    method: "PATCH",
+    route: "/workspaces/:workspaceId/page-templates/:templateId",
+    async handle({ params, body, store }) {
+      const found = manageTarget(store, params);
+      if ("result" in found) return found.result;
+      const name = body?.name?.trim() ?? "";
+      if (!name || name.length > 256) {
+        return problem(
+          400,
+          "validation.failed",
+          "A template needs a name of at most 256 characters.",
+        );
+      }
+      if (body?.expectedVersion !== found.template.version) {
+        return stale();
+      }
+      store.docsHistory.renameTemplate(found.template, {
+        name,
+        description: body?.description,
+      });
+      return ok<Json>(toTemplateDto(found.template, true));
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; templateId: string },
+    { expectedVersion?: number },
+    never
+  >({
+    id: "docs.templates.archive",
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Templates.ArchivePageTemplate",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/page-templates/:templateId/archive",
+    async handle({ params, body, store }) {
+      const found = manageTarget(store, params);
+      if ("result" in found) return found.result;
+      if (body?.expectedVersion !== found.template.version) return stale();
+      store.docsHistory.archiveTemplate(found.template);
+      return noContent();
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; templateId: string },
+    never,
+    never
+  >({
+    id: "docs.templates.delete",
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Templates.DeletePageTemplate",
+    },
+    method: "DELETE",
+    route: "/workspaces/:workspaceId/page-templates/:templateId",
+    async handle({ params, query, store }) {
+      const found = manageTarget(store, params);
+      if ("result" in found) return found.result;
+      if (Number(query?.expectedVersion) !== found.template.version) {
+        return stale();
+      }
+      store.docsHistory.deleteTemplate(found.template.id);
+      return noContent();
+    },
+  }),
 ];
+
+/** An outsider and an unknown template are the same NotFound; a member who may not manage it is refused. */
+function manageTarget(
+  store: MockStore,
+  params: { workspaceId: string; templateId: string },
+): { template: MockPageTemplateRecord } | { result: MockHttpResult<unknown> } {
+  if (!store.isCurrentMemberOf(params.workspaceId)) {
+    return { result: notFound("Workspace not found") };
+  }
+  const template = store.docsHistory.findTemplate(
+    params.workspaceId,
+    params.templateId,
+  );
+  if (!template) return { result: notFound("Template not found") };
+  if (!canManageTemplate(store, params.workspaceId, template)) {
+    return { result: forbidden() };
+  }
+  return { template };
+}
+
+function stale(): MockHttpResult<unknown> {
+  return problem(
+    412,
+    "common.precondition-failed",
+    "The template was changed by another request. Reload and retry.",
+  );
+}

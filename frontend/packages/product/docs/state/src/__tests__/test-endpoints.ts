@@ -27,6 +27,10 @@ export const testEndpoints: PageApiEndpoints = {
     list: (workspaceId) => `/workspaces/${workspaceId}/page-templates`,
     createPage: (workspaceId, templateId) =>
       `/workspaces/${workspaceId}/page-templates/${templateId}/pages`,
+    detail: (workspaceId, templateId) =>
+      `/workspaces/${workspaceId}/page-templates/${templateId}`,
+    archive: (workspaceId, templateId) =>
+      `/workspaces/${workspaceId}/page-templates/${templateId}/archive`,
   },
   resourcePermissions: {
     list: (kind, id) => `/resources/${kind}/${id}/permissions`,

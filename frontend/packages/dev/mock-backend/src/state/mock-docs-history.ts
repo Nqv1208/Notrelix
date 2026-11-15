@@ -152,7 +152,10 @@ export class MockDocsHistoryState {
 
   listTemplates(workspaceId: string): MockPageTemplateRecord[] {
     return Array.from(this.templates.values())
-      .filter((template) => template.workspaceId === workspaceId)
+      .filter(
+        (template) =>
+          template.workspaceId === workspaceId && !template.archived,
+      )
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
@@ -161,7 +164,47 @@ export class MockDocsHistoryState {
     templateId: string,
   ): MockPageTemplateRecord | null {
     const template = this.templates.get(templateId);
+    return template &&
+      template.workspaceId === workspaceId &&
+      !template.archived
+      ? template
+      : null;
+  }
+
+  /** A template of the workspace, archived or not (a manager can still reach it). */
+  findTemplate(
+    workspaceId: string,
+    templateId: string,
+  ): MockPageTemplateRecord | null {
+    const template = this.templates.get(templateId);
     return template && template.workspaceId === workspaceId ? template : null;
+  }
+
+  /** Changes the name and description; the same values change nothing and bump no version. */
+  renameTemplate(
+    template: MockPageTemplateRecord,
+    input: { name: string; description?: string | null },
+  ): void {
+    const description = input.description?.trim()
+      ? input.description.trim()
+      : null;
+    if (template.name === input.name && template.description === description) {
+      return;
+    }
+    template.name = input.name;
+    template.description = description;
+    template.version += 1;
+  }
+
+  /** Archiving an archived template changes nothing. */
+  archiveTemplate(template: MockPageTemplateRecord): void {
+    if (template.archived) return;
+    template.archived = true;
+    template.version += 1;
+  }
+
+  deleteTemplate(templateId: string): void {
+    this.templates.delete(templateId);
   }
 
   createTemplate(
@@ -180,6 +223,8 @@ export class MockDocsHistoryState {
       createdBy: input.userId,
       createdAt: this.store.now(),
       blocks: copyBlocks(this.store.getPageBlocks(pageId)),
+      version: 2,
+      archived: false,
     };
     this.templates.set(template.id, template);
     return template;

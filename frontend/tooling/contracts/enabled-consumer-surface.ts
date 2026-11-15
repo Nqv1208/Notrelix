@@ -3652,6 +3652,36 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     mutation: true,
   },
   {
+    context: "Documents",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "TODO",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/api/template.api.ts",
+    capability: "Documents.Templates.UpdatePageTemplate",
+    operationId: "Documents.Templates.UpdatePageTemplate",
+    mutation: true,
+  },
+  {
+    context: "Documents",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "TODO",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/api/template.api.ts",
+    capability: "Documents.Templates.ArchivePageTemplate",
+    operationId: "Documents.Templates.ArchivePageTemplate",
+    mutation: true,
+  },
+  {
+    context: "Documents",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "TODO",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/api/template.api.ts",
+    capability: "Documents.Templates.DeletePageTemplate",
+    operationId: "Documents.Templates.DeletePageTemplate",
+    mutation: true,
+  },
+  {
     context: "Analytics",
     classification: "COMPATIBILITY_GAP_MOCKED",
     consumerSymbol: "createReportsApi",
