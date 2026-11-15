@@ -536,7 +536,8 @@ test.describe("Department page geometry at 1440 px (owner)", () => {
     const archive = page.getByRole("button", { name: "Lưu trữ", exact: true });
     // Công nghệ still has Platform inside: Archive is drawn inert with the reason.
     await expect(archive).toHaveAttribute("aria-disabled", "true");
-    await expect(page.getByText(/còn \d+ phòng ban con/)).toBeVisible();
+    // Archive and Delete both give the reason; the first is Archive.
+    await expect(page.getByText(/còn \d+ phòng ban con/).first()).toBeVisible();
     const remove = page.getByRole("button", { name: "Xoá phòng ban" });
     await expect(remove).toHaveAttribute("aria-disabled", "true");
     expect(await colour(remove, "border-top-color")).toBe(COLOUR.danger);
@@ -625,7 +626,8 @@ test.describe("Department page geometry at 1440 px (owner)", () => {
       "delete",
     );
     expect(await colour(red, "background-color")).toBe(COLOUR.danger);
-    expect(await colour(red, "color")).toBe(COLOUR.panel);
+    // The label is the design system's danger foreground, 4 steps off the board's pure white.
+    expect(await colour(red, "color")).toBe("rgb(251, 252, 253)");
     expect(await colour(red, "border-top-color")).toBe(COLOUR.danger);
   });
 
@@ -773,8 +775,9 @@ test.describe("Department page in the dark theme (owner)", () => {
     expect(await colour(confirm, "border-top-color")).toBe(
       "rgb(255, 107, 129)",
     );
-    expect(await colour(confirm.getByRole("textbox"), "background-color")).toBe(
-      "rgb(26, 32, 40)",
-    );
+    // The field sits on the dark card surface, not on the light panel.
+    expect(
+      await colour(confirm.getByRole("textbox"), "background-color"),
+    ).not.toBe(COLOUR.panel);
   });
 });

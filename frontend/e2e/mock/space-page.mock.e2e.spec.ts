@@ -200,7 +200,8 @@ test.describe("Department page (owner)", () => {
     await open(page, `${ENGINEERING}?tab=settings`, "Công nghệ");
     const archive = page.getByRole("button", { name: "Lưu trữ", exact: true });
     await expect(archive).toHaveAttribute("aria-disabled", "true");
-    await expect(page.getByText(/còn \d+ phòng ban con/)).toBeVisible();
+    // Archive and Delete both give the reason; the first is Archive.
+    await expect(page.getByText(/còn \d+ phòng ban con/).first()).toBeVisible();
     await archive.click({ force: true });
     await expect(page.getByRole("alertdialog")).toBeHidden();
   });
@@ -255,12 +256,12 @@ test.describe("Department page (owner)", () => {
     ).toBeVisible();
     await expect(page.getByText("Nhân sự", { exact: true })).toBeVisible();
     await expect(page.getByText(/Khôi phục được đến/)).toBeVisible();
+    const inTree = page.getByRole("treeitem", { name: /^Nhân sự/ });
+    await expect(inTree).toHaveCount(0);
     await page.getByRole("button", { name: "Khôi phục" }).click();
     await expect(page.getByText(/Không có phòng ban nào bị xoá/)).toBeVisible();
-    await page
-      .getByRole("link", { name: /Nhân sự/ })
-      .first()
-      .click();
+    await expect(inTree).toBeVisible();
+    await inTree.click();
     await expect(
       page.getByRole("heading", { level: 1, name: "Nhân sự" }),
     ).toBeVisible();
