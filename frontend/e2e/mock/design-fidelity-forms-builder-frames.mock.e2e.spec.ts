@@ -9,8 +9,8 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * The artboard frame holds the builder alone while the app adds the board shell, so positions are read
  * inside the question card, the settings card or the dialog. The mock's form "Yêu cầu hỗ trợ IT" is
  * published (the artboard's is a draft), so the published notice sits above the description; only boxes
- * inside the cards are compared. The deleted-field frame (truong_xoa) needs a board field deleted by
- * another person and is not driven here. The artboards draw no 390 px builder frame: the phone layout of
+ * inside the cards are compared. The deleted-field frame (truong_xoa) deletes the
+ * mapped board field in the fields section first. The artboards draw no 390 px builder frame: the phone layout of
  * the builder is a screenshot review, not a measurement.
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
@@ -291,6 +291,46 @@ for (const dark of [false, true]) {
       rows.nth(2).getByText("Trùng trường", { exact: true }),
     );
     near(second.x - (first.x + first.width), 10, "chip gap");
+  });
+}
+
+for (const dark of [false, true]) {
+  const mode = dark ? "dark" : "light";
+
+  test(`deleted field chip, 1440, ${mode}`, async ({ page }) => {
+    await open(page, dark, 1440);
+    const { panel, rows } = parts(page);
+    // The board field "Ưu tiên" that question 3 is mapped to is deleted in the fields section.
+    await page.getByRole("button", { name: "Trường dữ liệu" }).click();
+    await page.getByRole("button", { name: "Sửa trường Ưu tiên" }).click();
+    await page.getByRole("button", { name: "Xoá trường" }).first().click();
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Xoá trường" })
+      .click();
+    await expect(page.getByRole("alertdialog")).toBeHidden();
+    await page.getByRole("button", { name: "Biểu mẫu" }).first().click();
+    await page
+      .getByRole("button", { name: "Mở trình soạn của Yêu cầu hỗ trợ IT" })
+      .click();
+    const chip = rows.nth(2).getByText("Cần sửa", { exact: true });
+    await expect(chip).toBeVisible();
+    const c = await box(chip);
+    near(c.height, 22, "chip height");
+    near(c.width, 64.4, "chip width", 6);
+    await expectType(
+      chip,
+      { size: "12px", weight: "600", radius: "6px" },
+      "chip",
+    );
+    await expect(rows.nth(2).locator("small")).toContainText("trường đã");
+    await rows.nth(2).getByRole("button").first().click();
+    near(
+      (await box(panel)).y,
+      (await box(parts(page).card)).y,
+      "cards level",
+      1,
+    );
   });
 }
 
