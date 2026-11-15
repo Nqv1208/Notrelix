@@ -30,4 +30,6 @@ public sealed class RateLimitPolicy
     public string Algorithm { get; init; } = "SlidingWindow";
     public string FailMode { get; init; } = "Open";
     public PartitionKey PartitionBy { get; init; } = PartitionKey.Ip;
+    /// <summary>Optional text shown to the caller when the limit is hit, in place of the English default.</summary>
+    public string? Message { get; init; }
 }
