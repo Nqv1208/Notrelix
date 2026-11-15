@@ -115,8 +115,15 @@ public class FormSubmission : Entity, IWorkspaceScoped
     /// An accepted response is left as it is, so a repeated undo changes nothing. A processed response keeps its
     /// item and its processing time.
     /// </summary>
-    public void Reopen()
+    public void Reopen(bool clearItem = false)
     {
+        // The undo of "create item from response": the response forgets its item (the caller removes the item).
+        if (clearItem && CreatedItemId is not null)
+        {
+            CreatedItemId = null;
+            ProcessedAt = null;
+        }
+
         if (Status == FormSubmissionStatus.Accepted) return;
 
         Status = FormSubmissionStatus.Accepted;
