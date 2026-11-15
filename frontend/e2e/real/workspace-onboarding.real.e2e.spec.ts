@@ -247,35 +247,47 @@ test("an invited person joins, sets a name and the mail choice, and the profile 
   await expect(guest.getByRole("alert")).toBeVisible();
   await expect(guest).toHaveURL(/\/welcome\//);
 
+  type Matrix = {
+    version: number;
+    rows: { type: string; email: boolean }[];
+  };
+  const digestOf = (m: Matrix) =>
+    m.rows.find((row) => row.type === "digest")!.email;
+  const start = await apiRead<Matrix>(
+    guest,
+    "/profile/notification-preferences",
+  );
+  const choice = (digest: boolean) =>
+    digest ? "Daily summary" : "Only when someone mentions me";
+
   const newName = `Joiner ${Date.now()}`.slice(0, 40);
   await name.fill(newName);
-  await guest
-    .getByRole("radio", { name: "Only when someone mentions me" })
-    .click();
+  // Pick the choice the person does not have yet, so the save changes something.
+  await guest.getByRole("radio", { name: choice(!digestOf(start)) }).click();
   await guest.getByRole("button", { name: "Start", exact: true }).click();
   await expect(guest).not.toHaveURL(/\/welcome\//);
 
   const me = await apiRead<{ name: string }>(guest, "/auth/me");
   expect(me.name).toBe(newName);
-  const matrix = await apiRead<{
-    version: number;
-    rows: { type: string; email: boolean }[];
-  }>(guest, "/profile/notification-preferences");
-  expect(matrix.version).toBeGreaterThan(0);
-  expect(matrix.rows.find((row) => row.type === "digest")?.email).toBe(false);
+  const matrix = await apiRead<Matrix>(
+    guest,
+    "/profile/notification-preferences",
+  );
+  expect(digestOf(matrix)).toBe(!digestOf(start));
+  expect(matrix.version).toBeGreaterThan(start.version);
   expect(matrix.rows.find((row) => row.type === "mention")?.email).toBe(true);
 
-  // Back to the digest: a second save carries the version the first one made.
+  // Back to what it was: a second save carries the version the first one made.
   await guest.goto(`/welcome/${workspace.id}`);
-  await guest.getByRole("radio", { name: "Daily summary" }).click();
+  await guest.getByRole("radio", { name: choice(digestOf(start)) }).click();
   await guest.getByRole("button", { name: "Start", exact: true }).click();
   await expect(guest).not.toHaveURL(/\/welcome\//);
-  const second = await apiRead<{
-    version: number;
-    rows: { type: string; email: boolean }[];
-  }>(guest, "/profile/notification-preferences");
+  const second = await apiRead<Matrix>(
+    guest,
+    "/profile/notification-preferences",
+  );
   expect(second.version).toBeGreaterThan(matrix.version);
-  expect(second.rows.find((row) => row.type === "digest")?.email).toBe(true);
+  expect(digestOf(second)).toBe(digestOf(start));
   // The seeded account is shared with other specs: give it its name back.
   const restored = await apiWrite(guest, "PATCH", "/profile", {
     name: original,
