@@ -75,8 +75,10 @@ export interface WorkspaceTeamsSurfaceProps {
 
 const TAV =
   "grid shrink-0 place-items-center rounded-[9px] text-mark-sm font-bold tracking-[0.02em]";
+// Below 800 px of room the lead and where-used columns drop (the Team's own page carries them).
 const COLS =
-  "grid grid-cols-[minmax(0,1fr)_130px_172px_224px_76px] items-center gap-3.5 px-3.5";
+  "grid grid-cols-[minmax(0,1fr)_76px] items-center gap-3.5 px-3.5 @min-[480px]:grid-cols-[minmax(0,1fr)_130px_76px] @min-[800px]:grid-cols-[minmax(0,1fr)_130px_172px_224px_76px]";
+const WIDE = "hidden @min-[800px]:flex";
 
 function Stack({ row }: { row: TeamRowView }) {
   return (
@@ -97,7 +99,7 @@ function Stack({ row }: { row: TeamRowView }) {
             data-f="av"
             className="-ml-[5px] grid size-6 shrink-0 place-items-center rounded-full bg-state-hover-strong text-mark-xs font-bold text-muted-foreground"
           >
-            +{row.people.more}
+            {`+${row.people.more}`}
           </span>
         ) : null}
       </span>
@@ -170,6 +172,7 @@ function TeamRow({
   canManage,
   menuOpen,
   pending,
+  first,
   onToggleMenu,
   onCloseMenu,
   onArchive,
@@ -181,6 +184,8 @@ function TeamRow({
   canManage: boolean;
   menuOpen: boolean;
   pending: boolean;
+  /** The first row of a table has no rule above it. */
+  first: boolean;
   onToggleMenu: () => void;
   onCloseMenu: () => void;
   onArchive: () => void;
@@ -193,7 +198,8 @@ function TeamRow({
       role="row"
       className={cn(
         COLS,
-        "relative box-border min-h-16 border-t border-line py-2 hover:bg-background",
+        "relative box-content min-h-16 hover:bg-background",
+        !first && "border-t border-line",
         row.archived && "text-meta-foreground",
         menuOpen && "bg-state-selected hover:bg-state-selected",
       )}
@@ -246,7 +252,7 @@ function TeamRow({
       <span
         data-f="ppl"
         role="cell"
-        className="flex items-center gap-2 text-compact"
+        className="hidden items-center gap-2 text-compact @min-[480px]:flex"
       >
         {row.archived ? null : <Stack row={row} />}
         {formatCopy(copy.page.peopleCount, { count: row.people.count })}
@@ -254,7 +260,7 @@ function TeamRow({
       <span
         data-f="lead"
         role="cell"
-        className="flex min-w-0 items-center gap-2 text-compact"
+        className={cn(WIDE, "min-w-0 items-center gap-2 text-compact")}
       >
         {row.lead ? (
           <>
@@ -272,7 +278,7 @@ function TeamRow({
       <span
         data-f="src"
         role="cell"
-        className="flex flex-wrap gap-1 text-xs text-muted-foreground"
+        className={cn(WIDE, "flex-wrap gap-1 text-xs text-muted-foreground")}
       >
         {row.usage.length === 0 ? (
           <span data-f="none" className="text-meta-foreground">
@@ -295,8 +301,9 @@ function TeamRow({
               ) : (
                 <Glyph name="kanban" className="size-3" />
               )}
-              {usage.text}
-              {row.archived ? ` · ${copy.page.paused}` : ""}
+              {row.archived
+                ? `${usage.text} · ${copy.page.paused}`
+                : usage.text}
             </span>
           ))
         )}
@@ -398,28 +405,31 @@ export function WorkspaceTeamsSurface(props: WorkspaceTeamsSurfaceProps) {
         <section
           data-f="deny"
           aria-labelledby="teams-deny"
-          className="grid flex-1 place-items-center p-6"
+          className="-mt-[22px] -mb-8 grid flex-1 place-items-center p-6"
         >
           <div className="flex max-w-[440px] flex-col items-center gap-3 text-center">
-            <span className="grid size-11 place-items-center rounded-[12px] bg-state-hover-strong text-muted-foreground">
-              <Glyph name="lock" className="size-5" />
+            <span className="box-content grid size-11 place-items-center rounded-[12px] border border-line bg-popover text-muted-foreground dark:bg-card">
+              <Glyph name="lock" />
             </span>
-            <h2 id="teams-deny" className="m-0 text-subheading text-foreground">
+            <h2
+              id="teams-deny"
+              className="m-0 text-lg leading-[1.45] font-[650] text-foreground"
+            >
               {d.title}
             </h2>
-            <p className="m-0 text-compact leading-[1.55] text-muted-foreground">
+            <p className="m-0 text-nav leading-[1.55] font-normal text-muted-foreground">
               {d.text}
             </p>
             <ul
               aria-label={formatCopy(d.adminsLabel, {
                 workspace: props.frame.workspaceName,
               })}
-              className="m-0 flex w-full list-none flex-col gap-2 p-0 text-left"
+              className="m-0 my-1 box-content flex w-full list-none flex-col rounded-[10px] border border-line bg-popover p-0 text-left dark:bg-card"
             >
               {props.admins.map((admin) => (
                 <li
                   key={admin.id}
-                  className="flex items-center gap-2.5 rounded-[10px] border border-line px-3 py-2"
+                  className="flex items-center gap-2.5 border-t border-line px-3 py-2.5 first:border-t-0"
                 >
                   <SpaceAvatar
                     person={{
@@ -430,10 +440,10 @@ export function WorkspaceTeamsSurface(props: WorkspaceTeamsSurfaceProps) {
                     className="size-[30px] text-avatar-lg"
                   />
                   <span className="min-w-0 flex-1">
-                    <b className="block text-compact font-semibold text-foreground">
+                    <b className="block text-nav leading-[1.45] font-semibold text-foreground">
                       {admin.name}
                     </b>
-                    <small className="block truncate text-xs text-meta-foreground">
+                    <small className="block truncate text-xs leading-[1.45] text-meta-foreground">
                       {[admin.role === "owner" ? d.owner : d.admin, admin.email]
                         .filter(Boolean)
                         .join(" · ")}
@@ -454,6 +464,7 @@ export function WorkspaceTeamsSurface(props: WorkspaceTeamsSurfaceProps) {
               navigation={navigation}
               className={cn(BTN, FOCUS)}
             >
+              <Glyph name="chevronLeft" />
               {d.home}
             </ShellLink>
           </div>
@@ -479,9 +490,15 @@ export function WorkspaceTeamsSurface(props: WorkspaceTeamsSurfaceProps) {
       )}
     >
       <span role="columnheader">{copy.page.head.team}</span>
-      <span role="columnheader">{copy.page.head.people}</span>
-      <span role="columnheader">{copy.page.head.lead}</span>
-      <span role="columnheader">{copy.page.head.usage}</span>
+      <span role="columnheader" className="hidden @min-[480px]:inline">
+        {copy.page.head.people}
+      </span>
+      <span role="columnheader" className="hidden @min-[800px]:inline">
+        {copy.page.head.lead}
+      </span>
+      <span role="columnheader" className="hidden @min-[800px]:inline">
+        {copy.page.head.usage}
+      </span>
       <span role="columnheader">
         <span className="sr-only">{copy.page.head.actions}</span>
       </span>
@@ -490,8 +507,11 @@ export function WorkspaceTeamsSurface(props: WorkspaceTeamsSurfaceProps) {
 
   return (
     <WorkspaceSetupFrame copy={copy} frame={props.frame}>
-      <section aria-labelledby="teams-title" className="flex flex-col gap-4">
-        <div data-f="ph" className="flex items-start gap-4">
+      <section
+        aria-labelledby="teams-title"
+        className="@container flex flex-col gap-4"
+      >
+        <div data-f="ph" className="flex flex-wrap items-start gap-4">
           <div>
             <h2
               id="teams-title"
@@ -581,8 +601,9 @@ export function WorkspaceTeamsSurface(props: WorkspaceTeamsSurfaceProps) {
                     : copy.page.noMatches}
                 </p>
               ) : (
-                shownActive.map((row) => (
+                shownActive.map((row, index) => (
                   <TeamRow
+                    first={index === 0}
                     key={row.id}
                     copy={copy}
                     row={row}
@@ -624,8 +645,9 @@ export function WorkspaceTeamsSurface(props: WorkspaceTeamsSurfaceProps) {
                   aria-label={copy.page.archivedTableLabel}
                   className="rounded-[12px] border border-line bg-popover dark:bg-card"
                 >
-                  {shownArchived.map((row) => (
+                  {shownArchived.map((row, index) => (
                     <TeamRow
+                      first={index === 0}
                       key={row.id}
                       copy={copy}
                       row={row}
