@@ -1,8 +1,11 @@
 namespace Notrelix.Application.Features.Chat.ReadState.DTOs;
 
 /// <summary>
-/// The unread state of one space for the caller (UC-CHT-D01, D03, D04). UnreadCount counts messages after the boundary
-/// that another person wrote and that are not deleted or system messages. MentionCount counts the unread messages that mention the caller or broadcast to the space (UC-CHT-D04); a mention in a muted space counts but the space does not badge.
+/// The unread state of one space for the caller (UC-CHT-D01, D03, D04). A space is unread when UnreadCount is above 0: the last
+/// sequence of the space minus the caller's boundary, so it costs no count over the messages. A direct conversation shows it as a number
+/// (99+ from 100); a channel shows only that it is unread. FirstUnreadSequence is the sequence after the boundary. MentionCount is the
+/// stored count of the unread messages that mention the caller or broadcast to the space (UC-CHT-D04); a mention in a muted space counts
+/// but the space does not badge.
 /// </summary>
 public sealed record SpaceUnreadDto(
     Guid SpaceId,

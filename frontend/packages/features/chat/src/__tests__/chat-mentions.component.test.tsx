@@ -457,15 +457,16 @@ describe("sidebar mention badges", () => {
     );
   }
 
-  it("shows the mention count apart from the unread count and names both for a screen reader", () => {
+  it("shows the mention count and an unread dot (never an unread count) and names both for a screen reader", () => {
     sidebar(new Map([["c-a", { count: 5, muted: false, mentions: 2 }]]));
     const button = screen.getByRole("button", { name: /alpha/ });
     expect(within(button).getByTestId("chat-mention-badge").textContent).toBe(
       "@2",
     );
-    expect(button.textContent).toContain("5");
+    expect(within(button).getByTestId("chat-unread-dot")).toBeTruthy();
+    expect(button.textContent).not.toContain("5");
     const label = button.getAttribute("aria-label") ?? "";
-    expect(label).toContain("5 unread messages");
+    expect(label).toContain("Unread messages");
     expect(label).toContain("2 unread mentions");
   });
 

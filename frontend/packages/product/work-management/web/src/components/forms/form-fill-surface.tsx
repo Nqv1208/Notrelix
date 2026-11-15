@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   Check,
   CircleAlert,
+  Eye,
   Info,
   Lock,
   TriangleAlert,
@@ -167,6 +168,8 @@ export function FormFillSurface(props: FormFillSurfaceProps) {
         />
       </Frame>
     );
+  // The manager's preview sits in the builder's dialog: the form alone, with no page column.
+  if (props.preview) return <FillForm key={form.id} {...props} form={form} />;
   return (
     <Frame {...props}>
       <FillForm key={form.id} {...props} form={form} />
@@ -376,20 +379,14 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
 
   const errorQuestions = questions.filter((q) => errors[q.key]);
   return (
-    <div className="flex flex-col gap-4">
+    <div className={cn("flex flex-col gap-4", preview && "gap-3.5")}>
       {preview ? (
         <div
           role="status"
-          className="flex items-center gap-3 rounded-[10px] bg-warning-subtle px-3.5 py-2.5 text-item-small font-medium text-foreground"
+          className="flex items-center gap-2.5 rounded-[10px] bg-brand-subtle px-3.5 py-2.5 text-[13px] leading-[1.45] text-brand-subtle-foreground"
         >
-          <span className="flex-1">{copy.builder.previewBanner}</span>
-          <button
-            type="button"
-            onClick={props.onBack}
-            className={cn(BUTTON_CLASS.outline, "h-7")}
-          >
-            {copy.builder.backToEdit}
-          </button>
+          <Eye aria-hidden="true" className="size-4 shrink-0" />
+          <span className="flex-1">{copy.builder.previewNote}</span>
         </div>
       ) : null}
       {props.canManage && hidden.length > 0 ? (
@@ -409,7 +406,10 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
       <form
         onSubmit={(event) => void submit(event)}
         noValidate
-        className="flex flex-col gap-4.5 rounded-[12px] border border-line bg-popover p-5 max-sm:gap-3.5 max-sm:border-0 max-sm:bg-transparent max-sm:p-0 sm:p-7"
+        className={cn(
+          "flex flex-col gap-4.5 rounded-[12px] border border-line bg-popover p-5 max-sm:gap-3.5 max-sm:border-0 max-sm:bg-transparent max-sm:p-0 sm:p-7",
+          preview && "gap-4 border-0 bg-transparent p-0 sm:p-0",
+        )}
       >
         <input
           type="text"
@@ -421,7 +421,12 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
           aria-hidden="true"
           className="pointer-events-none absolute -left-[9999px] size-px opacity-0"
         />
-        <div className="-order-2 flex flex-col gap-1 max-sm:gap-3.5">
+        <div
+          className={cn(
+            "-order-2 flex flex-col gap-1 max-sm:gap-3.5",
+            preview && "hidden",
+          )}
+        >
           <h1 className="m-0 text-[22px] leading-[1.3] font-[650] tracking-[-0.01em] max-sm:text-[16px]">
             {form.title}
           </h1>
@@ -471,6 +476,7 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
             error={errors[q.key]}
             fields={fields}
             todayLabel={props.todayLabel}
+            preview={preview}
             onChange={(value) => set(q.key, value)}
           />
         ))}
@@ -519,7 +525,12 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
           />
         ) : null}
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div
+          className={cn(
+            "flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3",
+            preview && "sm:flex-col sm:items-start sm:gap-3.5",
+          )}
+        >
           <button
             type="submit"
             disabled={sending || preview || failure === "closed"}
@@ -530,9 +541,7 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
           >
             {sending ? f.sending : f.submit}
           </button>
-          {preview ? (
-            <span className={HINT_CLASS}>{copy.builder.previewSubmit}</span>
-          ) : props.user ? (
+          {props.user ? (
             <span className={HINT_CLASS}>
               {props.user.email
                 ? fillFormsCopy(f.asUser, {
@@ -541,6 +550,8 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
                   })
                 : fillFormsCopy(f.asUserNoEmail, { name: props.user.name })}
             </span>
+          ) : preview ? (
+            <span className={HINT_CLASS}>{copy.builder.previewSubmit}</span>
           ) : null}
         </div>
       </form>
@@ -558,11 +569,14 @@ function Question({
   error,
   fields,
   todayLabel,
+  preview,
   onChange,
 }: {
   copy: FormsCopy;
   q: FormQuestion;
   id: string;
+  /** In the builder's preview dialog: the drawn 13.5 px labels, the 3-row long answer and its hint. */
+  preview?: boolean;
   value: unknown;
   error?: string;
   fields: readonly FormBoardField[];
@@ -587,12 +601,15 @@ function Question({
       control = (
         <textarea
           {...common}
-          rows={4}
+          rows={preview ? 3 : 4}
           value={text}
           maxLength={q.maxLength ?? 2000}
           placeholder={q.placeholder ?? undefined}
           onChange={(e) => onChange(e.target.value)}
-          className={cn(TEXTAREA_CLASS, "h-21 max-md:h-17.5")}
+          className={cn(
+            TEXTAREA_CLASS,
+            preview ? "h-[76.7px]" : "h-21 max-md:h-17.5",
+          )}
         />
       );
       break;
@@ -706,7 +723,11 @@ function Question({
       <label
         id={`${id}-l`}
         htmlFor={q.type === "multiselect" ? undefined : id}
-        className={cn(FIELD_LABEL_CLASS, "text-item-small text-foreground")}
+        className={cn(
+          FIELD_LABEL_CLASS,
+          "text-item-small text-foreground",
+          preview && "text-[13.5px]",
+        )}
       >
         {q.label}
         {q.required ? (
@@ -721,6 +742,11 @@ function Question({
       {q.type === "date" && todayLabel ? (
         <span className={HINT_CLASS}>
           {fillFormsCopy(f.todayIs, { date: todayLabel })}
+        </span>
+      ) : null}
+      {preview && q.type === "longtext" && !q.helpText ? (
+        <span className={HINT_CLASS}>
+          {fillFormsCopy(f.longTextHint, { max: q.maxLength ?? 2000 })}
         </span>
       ) : null}
       {q.helpText ? (

@@ -225,6 +225,13 @@ function storeMessage(
   },
 ): ChatMessageRecord {
   space.lastSequence += 1;
+  // The author's own message is not their unread when they had read everything before it (ChatReadStateStore).
+  const authorRow = state.memberships.get(
+    state.membershipKey(space.id, fields.authorId),
+  );
+  if (authorRow && authorRow.readSequence === space.lastSequence - 1) {
+    authorRow.readSequence = space.lastSequence;
+  }
   const message: ChatMessageRecord = {
     id: state.nextId("message"),
     workspaceId: space.workspaceId,
