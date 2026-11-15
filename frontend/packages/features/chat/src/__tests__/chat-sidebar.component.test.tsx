@@ -174,6 +174,58 @@ describe("ChatSidebar", () => {
   });
 });
 
+describe("ChatSidebar mark all as read", () => {
+  it("offers the button only while something is unread, calls once and is disabled while pending", () => {
+    const onMarkAllRead = vi.fn();
+    const quiet = render(
+      <ChatSidebar
+        {...props({
+          unreadBySpace: new Map([["c-general", { count: 0, muted: false }]]),
+          onMarkAllRead,
+        })}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Mark all as read" }),
+    ).toBeNull();
+    quiet.unmount();
+
+    const mutedOnly = render(
+      <ChatSidebar
+        {...props({
+          unreadBySpace: new Map([["c-general", { count: 5, muted: true }]]),
+          onMarkAllRead,
+        })}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Mark all as read" }),
+    ).toBeNull();
+    mutedOnly.unmount();
+
+    const busy = render(<ChatSidebar {...props({ onMarkAllRead })} />);
+    fireEvent.click(screen.getByRole("button", { name: "Mark all as read" }));
+    expect(onMarkAllRead).toHaveBeenCalledTimes(1);
+    busy.rerender(
+      <ChatSidebar {...props({ onMarkAllRead, markingAllRead: true })} />,
+    );
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Mark all as read",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+  });
+
+  it("is absent without a handler", () => {
+    render(<ChatSidebar {...props()} />);
+    expect(
+      screen.queryByRole("button", { name: "Mark all as read" }),
+    ).toBeNull();
+  });
+});
+
 describe("groupChannels", () => {
   it("keeps the ungrouped channels first and each group as one run, in order", () => {
     const groups = groupChannels([

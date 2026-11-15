@@ -163,6 +163,8 @@ Frontend (from `frontend/`):
 6. The full `pnpm test:node`
 7. If a check needs `node_modules`, run `pnpm install` in your worktree's `frontend/`. Never symlink it.
 
+Write file paths in catalog lines inside backticks: prettier turns a bare `__tests__` into bold text and corrupts the path, and `make docs-check` fails on it.
+
 Docs: `make docs-check` from the repo root, and prettier on every changed `.md` file. Run `make docs-generate` when you add or rename a document.
 
 CI's determinism guard (`pnpm check:ui-fixtures`) rejects argument-less `new Date()` and `Date.now()` in mock data. Use fixed dates in fixtures.

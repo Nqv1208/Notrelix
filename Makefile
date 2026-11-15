@@ -147,6 +147,7 @@ docs-check:
 	node scripts/docs/check-metadata.mjs
 	node scripts/docs/check-authority.mjs
 	node scripts/docs/check-rule-ids.mjs
+	node scripts/docs/check-mangled-paths.mjs
 	node scripts/docs/check-source-inventory.mjs
 	node scripts/docs/check-generated.mjs
 	node scripts/docs/uc-counts.mjs --validate
