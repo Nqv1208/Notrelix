@@ -2,8 +2,8 @@
   "asyncapi": "2.6.0",
   "info": {
     "title": "Notrelix Realtime Protocol Specification",
-    "version": "1.1.1",
-    "description": "Realtime gateway protocol, schema version 1 (protocol v1.1). Event frames are notify-only, except the chat channel stream (payloadContract chat.message.v1) and the per-user stream (payloadContract chat.unread.v1), which carry a compact payload. The chat channel stream also carries chat.space.changed (payloadContract chat.space.v1: the change and the message id), a small pin frame that readers apply or answer by refetching the pins. The chat channel stream also carries chat.reaction.changed (payloadContract chat.reaction.v1: the message, the palette kind, the change added or removed and the person; no counts), a compact frame that readers apply or answer by refetching the message reactions. The chat channel stream also carries chat.message.attachment.changed (payloadContract chat.attachment.v1: the message, the change added or removed, the file id and, for an added file, its metadata and authorized download route; never bytes), a compact frame that readers apply by file id or answer by refetching the message files (detailsOmitted true). A payload that does not fit the 4096-byte frame limit is dropped and the frame carries payloadOmitted true; the client refetches over REST. Two ephemeral frames travel on the channel scope and are never stored: the client frames typing (at most one per 3 seconds per subscription; the gateway drops faster ones and ignores a subscription it does not hold or a space it no longer authorizes) and presence (state online, idle or offline, a heartbeat about every 30 seconds), and the server frames typing (expiresInMs 5000) and presence (ttlMs; a state with no heartbeat for that long counts as offline) sent to the other subscribers of the space, never to the sender. They count in the 4096-byte and 20-frames-per-second limits, carry no resource data and never grant access. Board frames stay hand-written in the client and are not produced by the gateway contract yet."
+    "version": "1.1.2",
+    "description": "Realtime gateway protocol, schema version 1 (protocol v1.1). Event frames are notify-only, except the chat channel stream (payloadContract chat.message.v1) and the per-user stream (payloadContract chat.unread.v1), which carry a compact payload. The chat channel stream also carries chat.space.changed (payloadContract chat.space.v1: the change and the message id), a small pin frame that readers apply or answer by refetching the pins. The chat channel stream also carries chat.reaction.changed (payloadContract chat.reaction.v1: the message, the palette kind, the change added or removed and the person; no counts), a compact frame that readers apply or answer by refetching the message reactions. The chat channel stream also carries chat.message.attachment.changed (payloadContract chat.attachment.v1: the message, the change added or removed, the file id and, for an added file, its metadata and authorized download route; never bytes), a compact frame that readers apply by file id or answer by refetching the message files (detailsOmitted true). A null field of a chat payload is left out of the frame (a reader treats an absent field as null), and a chat message payload is at most 1300 bytes so the whole event frame stays under 2048 bytes; a longer text is dropped (contentOmitted true) and the reader fetches the message by sequence. A payload that does not fit the 4096-byte frame limit is dropped and the frame carries payloadOmitted true; the client refetches over REST. Two ephemeral frames travel on the channel scope and are never stored: the client frames typing (at most one per 3 seconds per subscription; the gateway drops faster ones and ignores a subscription it does not hold or a space it no longer authorizes) and presence (state online, idle or offline, a heartbeat about every 30 seconds), and the server frames typing (expiresInMs 5000) and presence (ttlMs; a state with no heartbeat for that long counts as offline) sent to the other subscribers of the space, never to the sender. They count in the 4096-byte and 20-frames-per-second limits, carry no resource data and never grant access. Board frames stay hand-written in the client and are not produced by the gateway contract yet."
   },
   "channels": {
     "workspace/{workspaceId}": {
@@ -105,7 +105,7 @@
             "clientMessageId": { "type": "string", "maxLength": 128 },
             "version": { "type": "integer" }
           },
-          "required": ["id", "sequence", "authorId", "kind", "content", "contentOmitted", "deleted", "createdAt", "editedAt", "replyToId", "threadRootId", "threadSequence", "version"]
+          "required": ["id", "sequence", "authorId", "kind", "contentOmitted", "deleted", "version"]
         }
       },
       "ChatMessageUpdated": {
@@ -129,7 +129,7 @@
             "threadSequence": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
             "version": { "type": "integer" }
           },
-          "required": ["id", "sequence", "authorId", "kind", "content", "contentOmitted", "deleted", "createdAt", "editedAt", "replyToId", "threadRootId", "threadSequence", "version"]
+          "required": ["id", "sequence", "authorId", "kind", "contentOmitted", "deleted", "version"]
         }
       },
       "ChatMessageDeleted": {
@@ -153,7 +153,7 @@
             "threadSequence": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
             "version": { "type": "integer" }
           },
-          "required": ["id", "sequence", "authorId", "kind", "content", "contentOmitted", "deleted", "createdAt", "editedAt", "replyToId", "threadRootId", "threadSequence", "version"]
+          "required": ["id", "sequence", "authorId", "kind", "contentOmitted", "deleted", "version"]
         }
       },
       "ChatSpaceChanged": {
@@ -270,10 +270,11 @@
       "RealtimeTypingClientFrame": {
         "type": "object",
         "x-frame": true,
-        "description": "Client to server (type typing): the caller is typing in the space of a channel subscription. Ephemeral; throttled to one per 3 seconds; ignored without an answer when unauthorized.",
+        "description": "Client to server (type typing): the caller is typing in the space of a channel subscription. Ephemeral; a start is throttled to one per 3 seconds inside a run and a state stop is never throttled and re-arms the next start; ignored without an answer when unauthorized.",
         "properties": {
           "type": { "type": "string", "enum": ["typing"] },
-          "subscriptionId": { "type": "string" }
+          "subscriptionId": { "type": "string" },
+          "state": { "type": "string", "enum": ["start", "stop"] }
         },
         "required": ["type", "subscriptionId"]
       },
@@ -290,7 +291,7 @@
       "RealtimeTypingServerFrame": {
         "type": "object",
         "x-frame": true,
-        "description": "Server to client (type typing): another person is typing in the space of the subscription. The indicator lasts expiresInMs after this frame.",
+        "description": "Server to client (type typing): another person is typing in the space of the subscription. The indicator lasts expiresInMs after this frame; expiresInMs 0 ends it at once (the person stopped typing).",
         "properties": {
           "type": { "type": "string", "enum": ["typing"] },
           "subscriptionId": { "type": "string" },

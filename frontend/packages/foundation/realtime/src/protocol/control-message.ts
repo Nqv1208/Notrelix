@@ -112,6 +112,11 @@ export type RealtimeClientMessage =
   | { readonly type: "ping"; readonly sentAt: string }
   | { readonly type: "pong" }
   /** Ephemeral: the caller is typing in the channel of this subscription. At most one per 3 s. */
-  | { readonly type: "typing"; readonly subscriptionId: string }
+  | {
+      readonly type: "typing";
+      readonly subscriptionId: string;
+      /** `stop` ends the indicator at once (never throttled); absent is a keystroke. */
+      readonly state?: "stop";
+    }
   /** Ephemeral: the caller's presence heartbeat. */
   | { readonly type: "presence"; readonly state: RealtimePresenceState };

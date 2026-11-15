@@ -57,7 +57,7 @@ public class ChatRealtimeFactsTests
         payload.GetProperty("contentOmitted").GetBoolean().Should().BeFalse();
         payload.GetProperty("deleted").GetBoolean().Should().BeFalse();
         payload.GetProperty("createdAt").GetDateTimeOffset().Should().Be(Now);
-        payload.GetProperty("editedAt").ValueKind.Should().Be(JsonValueKind.Null);
+        payload.TryGetProperty("editedAt", out _).Should().BeFalse("a null field is left out of the frame");
         payload.GetProperty("replyToId").GetGuid().Should().Be(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
         payload.GetProperty("version").GetInt64().Should().Be(1);
     }
@@ -95,8 +95,8 @@ public class ChatRealtimeFactsTests
     {
         var payload = Payload(ChatRealtime.ForCreated(Created("plain"), Now));
 
-        payload.GetProperty("threadRootId").ValueKind.Should().Be(JsonValueKind.Null);
-        payload.GetProperty("threadSequence").ValueKind.Should().Be(JsonValueKind.Null);
+        payload.TryGetProperty("threadRootId", out _).Should().BeFalse("a null field is left out of the frame");
+        payload.TryGetProperty("threadSequence", out _).Should().BeFalse("a null field is left out of the frame");
     }
 
     [Fact]
@@ -128,7 +128,7 @@ public class ChatRealtimeFactsTests
 
         change.ChangeKind.Should().Be("chat.message.deleted");
         var payload = Payload(change);
-        payload.GetProperty("content").ValueKind.Should().Be(JsonValueKind.Null);
+        payload.TryGetProperty("content", out _).Should().BeFalse("a null field is left out of the frame");
         payload.GetProperty("deleted").GetBoolean().Should().BeTrue();
         payload.GetProperty("id").GetGuid().Should().Be(MessageId);
         payload.GetProperty("sequence").GetInt64().Should().Be(7);
@@ -144,7 +144,7 @@ public class ChatRealtimeFactsTests
         var change = ChatRealtime.ForCreated(Created(content), Now);
 
         var payload = Payload(change);
-        payload.GetProperty("content").ValueKind.Should().Be(JsonValueKind.Null);
+        payload.TryGetProperty("content", out _).Should().BeFalse("a null field is left out of the frame");
         payload.GetProperty("contentOmitted").GetBoolean().Should().BeTrue();
         payload.GetProperty("sequence").GetInt64().Should().Be(7, "the client refetches by sequence");
         Encoding.UTF8.GetByteCount(payload.GetRawText()).Should().BeLessThanOrEqualTo(ChatRealtime.MaxPayloadBytes);

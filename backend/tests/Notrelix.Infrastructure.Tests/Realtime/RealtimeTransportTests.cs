@@ -143,6 +143,42 @@ public sealed class RedisRealtimePublisherTests
     }
 
     [Fact]
+    public async Task Many_facts_with_their_own_streams_go_out_in_one_script_each_with_its_own_counter_and_channel()
+    {
+        var (publisher, _, calls) = Create();
+        var workspaceId = Guid.NewGuid();
+        var users = Enumerable.Range(0, 3).Select(_ => Guid.NewGuid()).ToList();
+        var changes = users.Select(u => Change(workspaceId, "user", "notifications", u)).ToList();
+
+        await publisher.PublishManyAsync(changes, CancellationToken.None);
+
+        var (keys, values) = calls.Should().ContainSingle("one round trip for the whole audience").Subject;
+        keys.Should().HaveCount(6);
+        values.Should().HaveCount(7);
+        for (var i = 0; i < users.Count; i++)
+        {
+            var scope = new RealtimeScope(RealtimeScopeKind.User, users[i]);
+            keys[2 * i].ToString().Should().Be(RealtimeChannelResolver.StreamCounterKey(scope.StreamKey));
+            keys[2 * i + 1].ToString().Should().Be(RealtimeChannelResolver.RedisChannel(RealtimeChannelResolver.ForScope(scope)));
+            RealtimeNotificationJson.TryDeserialize(values[2 * i + 1].ToString() + 9 + values[2 * i + 2], out var parsed).Should().BeTrue();
+            parsed.ResourceId.Should().Be(users[i], "each member's frame stays on that member's own stream");
+        }
+    }
+
+    [Fact]
+    public async Task A_batch_larger_than_a_chunk_is_split_and_a_tenantless_fact_is_still_dropped()
+    {
+        var (publisher, _, calls) = Create();
+        var workspaceId = Guid.NewGuid();
+        var changes = Enumerable.Range(0, 300).Select(_ => Change(workspaceId, "user", "notifications", Guid.NewGuid())).ToList();
+        changes.Add(Change(null, "user", "notifications", Guid.NewGuid()));
+
+        await publisher.PublishManyAsync(changes, CancellationToken.None);
+
+        calls.Select(c => c.Keys.Length / 2).Should().Equal(256, 44);
+    }
+
+    [Fact]
     public async Task Tenantless_events_are_never_published()
     {
         var (publisher, _, calls) = Create();

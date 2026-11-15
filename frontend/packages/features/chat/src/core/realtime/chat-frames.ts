@@ -105,8 +105,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isNonEmpty = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0;
 
-const isNullableString = (value: unknown): value is string | null =>
-  value === null || typeof value === "string";
+/** The server leaves a null field out of the frame, so an absent field reads as null. */
+const isNullableString = (value: unknown): value is string | null | undefined =>
+  value === null || value === undefined || typeof value === "string";
 
 const isCount = (value: unknown): value is number =>
   typeof value === "number" && Number.isInteger(value) && value >= 0;
@@ -139,12 +140,12 @@ export function parseChatMessageFrame(
     sequence,
     authorId,
     kind,
-    content,
+    content: content ?? null,
     contentOmitted,
     deleted,
-    createdAt: payload.createdAt,
-    editedAt: payload.editedAt,
-    replyToId: payload.replyToId,
+    createdAt: payload.createdAt ?? null,
+    editedAt: payload.editedAt ?? null,
+    replyToId: payload.replyToId ?? null,
     version: payload.version,
     clientMessageId: isNonEmpty(payload.clientMessageId)
       ? payload.clientMessageId
