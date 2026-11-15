@@ -37,7 +37,7 @@ import {
   type PendingMessage,
 } from "../../core/model/chat-model";
 import type { ChatCopy } from "./chat.copy";
-import { fillCopy } from "./use-chat-copy";
+import { fillCopy, pluralCopy } from "./use-chat-copy";
 import {
   ChatMessageRow,
   ChatPendingRow,
@@ -197,7 +197,7 @@ export interface ChatMessageListProps {
 }
 
 /** The width of the conversation column: a comfortable measure on wide screens, fluid below it. */
-export const CHAT_COLUMN = "mx-auto w-full max-w-[760px]";
+export const CHAT_COLUMN = "mx-auto w-full max-w-[760px] 2xl:max-w-[1040px]";
 
 export function dayLabel(
   dayKey: string,
@@ -234,6 +234,8 @@ export function ChatMessageList(props: ChatMessageListProps) {
   } = props;
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [atBottom, setAtBottom] = useState(true);
+  // The newest sequence the reader had in view the last time they were at the bottom: what lies beyond it is new to them.
+  const seenSequence = useRef(0);
   const [activity] = useState(createRowActivityStore);
   const typingIds = props.typingIds ?? [];
   // The row handlers keep one identity for the life of the list, so memoised rows do not re-render when the
@@ -277,6 +279,20 @@ export function ChatMessageList(props: ChatMessageListProps) {
       baseline.current = { space, sequence: newestSequence };
     }
   }, [status, space, newestSequence]);
+  useLayoutEffect(() => {
+    if (atBottom) seenSequence.current = newestSequence;
+  }, [atBottom, newestSequence, space]);
+  let unseenCount = 0;
+  if (!atBottom) {
+    for (const row of rows) {
+      if (
+        row.kind === "message" &&
+        row.message.sequence > seenSequence.current &&
+        row.message.authorId !== props.viewerId
+      )
+        unseenCount += 1;
+    }
+  }
   quietObserverLoopNotice();
   const hasTyping = typingIds.length > 0;
   const count = rows.length + (hasTyping ? 1 : 0);
@@ -762,7 +778,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
         onTouchStart={releaseFollow}
         onPointerDown={releaseFollow}
         onKeyDown={releaseFollow}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-3 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-inset"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-3 outline-none focus:outline-none focus-visible:outline-none"
         data-testid="chat-message-list"
       >
         {props.isLoadingOlder ? (
@@ -816,11 +832,36 @@ export function ChatMessageList(props: ChatMessageListProps) {
       <JumpLatest
         visible={!atBottom || props.hasNewer}
         label={copy.list.jumpLatest}
+        count={unseenCount}
+        countLabel={
+          unseenCount > 0
+            ? pluralCopy(
+                {
+                  one: copy.list.jumpLatestNew_one,
+                  other: copy.list.jumpLatestNew_other,
+                },
+                unseenCount,
+              )
+            : null
+        }
         onClick={() => {
           props.onJumpLatest();
           const el = scrollRef.current;
           memo.current.follow = true;
-          if (el) el.scrollTop = el.scrollHeight;
+          if (!el) return;
+          // Far away: land one screen above the end first, then glide the last screen.
+          const left = el.scrollHeight - el.scrollTop - el.clientHeight;
+          if (left > el.clientHeight * 2) {
+            el.scrollTop = el.scrollHeight - el.clientHeight * 2;
+          }
+          const calm = window.matchMedia?.(
+            "(prefers-reduced-motion: reduce)",
+          ).matches;
+          el.scrollTo({
+            top: el.scrollHeight,
+            behavior: calm ? "auto" : "smooth",
+          });
+          el.focus({ preventScroll: true });
         }}
       />
     </div>
@@ -918,31 +959,48 @@ function isAtBottom(el: HTMLElement): boolean {
 }
 
 /**
- * The jump-to-latest control sits in the flow between the message log and the
- * composer, so it never covers a message: a small floating pill, centred on the
- * conversation column, that takes its own line while it shows.
+ * The jump-to-latest control: a floating pill laid over the bottom of the message
+ * list (no layout space, so the list never shifts when it shows), centred on the
+ * list. It fades and rises 8 px in 160 ms; hidden it is inert.
  */
 function JumpLatest({
   visible,
   label,
+  count,
+  countLabel,
   onClick,
 }: {
   readonly visible: boolean;
   readonly label: string;
+  readonly count: number;
+  readonly countLabel: string | null;
   readonly onClick: () => void;
 }) {
-  if (!visible) return null;
   return (
-    <div className="flex shrink-0 justify-center px-4 pt-1 pb-1.5">
+    <div
+      className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center px-4"
+      data-testid="chat-jump-latest-layer"
+    >
       <Button
         type="button"
         variant="secondary"
         size="sm"
-        className="max-w-full rounded-full border border-border bg-popover text-popover-foreground shadow-md hover:bg-muted motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150"
+        aria-label={label}
+        title={label}
+        tabIndex={visible ? 0 : -1}
+        aria-hidden={visible ? undefined : true}
+        data-visible={visible ? "true" : "false"}
+        data-count={count > 0 ? count : undefined}
+        className={cn(
+          "h-[34px] max-w-full rounded-full border border-border bg-popover text-popover-foreground shadow-md transition-[opacity,transform,visibility,background-color] duration-[160ms] ease-out hover:bg-muted active:scale-95 active:bg-muted motion-reduce:transition-none",
+          visible
+            ? "pointer-events-auto visible translate-y-0 opacity-100"
+            : "invisible translate-y-2 opacity-0",
+        )}
         onClick={onClick}
       >
         <ArrowDown aria-hidden="true" />
-        <span className="truncate">{label}</span>
+        <span className="truncate">{countLabel ?? label}</span>
       </Button>
     </div>
   );

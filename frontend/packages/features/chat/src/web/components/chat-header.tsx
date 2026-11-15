@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   Archive,
   ArchiveRestore,
@@ -68,6 +69,8 @@ export interface ChatHeaderProps {
   readonly onJoin: () => void;
   /** Opens the message search (UC-CHT-H07). Without it the header has no search button. */
   readonly onSearch?: () => void;
+  /** Panel toggles (Pins, Following) drawn in the header actions so no row of their own is needed. */
+  readonly actions?: ReactNode;
   readonly onSetLevel: (level: ChatNotificationLevel) => void;
 }
 
@@ -98,6 +101,7 @@ export function ChatHeader({
   onUnlinkResource,
   onJoin,
   onSearch,
+  actions,
   onSetLevel,
 }: ChatHeaderProps) {
   const isPrivate = channel.kind === "channel_private";
@@ -155,6 +159,8 @@ export function ChatHeader({
             {copy.header.join}
           </Button>
         ) : null}
+
+        {actions}
 
         {onSearch ? (
           <Button

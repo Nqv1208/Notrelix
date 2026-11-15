@@ -10,13 +10,11 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Chat;
 /// The per-user stream of a new message (UC-CHT-C09): every active member of the space except the author, who is not muted,
 /// gets the new read state of the space: the unread number (sequence difference), the stored mention count and a preview of the
 /// message. Cost per message: one query for the recipients (bounded by <see cref="ChatRealtime.MaxUnreadRecipients"/>, with their
-/// stored boundary and mention count), then one realtime publish per recipient in chunks. Nothing is counted: the mention count
+/// stored boundary and mention count), then one batched realtime publish for all recipients. Nothing is counted: the mention count
 /// was raised by the send itself, in one UPDATE, before this runs. A muted, removed or left member gets no frame and no preview.
 /// </summary>
 public sealed class ChatUnreadFanOut
 {
-    private const int PublishChunk = 64;
-
     private readonly IChatDbContext _db;
     private readonly IRealtimePublisher _publisher;
     private readonly ILogger<ChatUnreadFanOut> _logger;
@@ -64,9 +62,6 @@ public sealed class ChatUnreadFanOut
             (int)Math.Min(Math.Max(message.Sequence - r.ReadSequence, 0), int.MaxValue), r.MentionCount,
             message.CorrelationId, message.EventId, now, message.Sequence, preview)).ToList();
 
-        foreach (var chunk in frames.Chunk(PublishChunk))
-        {
-            await Task.WhenAll(chunk.Select(frame => _publisher.PublishAsync(frame, cancellationToken)));
-        }
+        await _publisher.PublishManyAsync(frames, cancellationToken);
     }
 }

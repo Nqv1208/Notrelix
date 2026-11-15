@@ -85,8 +85,6 @@ export interface ChatHookDeps {
 }
 
 const CHANNEL_STALE_MS = 30_000;
-/** How long a stored send waits for a window that can show it before its pending bubble is dropped. */
-const UNPLACED_PENDING_MS = 10_000;
 /** The badge refreshes on this interval until the realtime stream (S1.8) pushes it. */
 /** The counters follow the realtime frames; this safety read is rare because the server's count costs the whole unread backlog. */
 const UNREAD_REFRESH_MS = 300_000;
@@ -322,13 +320,6 @@ export function createChatHooks(deps: ChatHookDeps) {
         await queryClient.cancelQueries({ queryKey: messagesKey });
       },
       onSuccess: (message: ChatMessage, input) => {
-        const dropPending = () =>
-          queryClient.setQueryData<PendingMessage[]>(
-            pendingKey,
-            readPending(queryClient, pendingKey).filter(
-              (entry) => entry.clientMessageId !== input.clientMessageId,
-            ),
-          );
         queryClient.setQueriesData<ChatMessagesCache>(
           { queryKey: messagesKey },
           (cache) => (cache ? appendToNewest(cache, message) : cache),
@@ -343,10 +334,21 @@ export function createChatHooks(deps: ChatHookDeps) {
                 (page) => page.items.some((item) => item.id === message.id),
               ),
           );
-        // Sent from an older window the message has no window on screen to join yet: the bubble stays until the newest
-        // window brings the stored copy (the list hides a pending entry the history holds), so it never blinks out.
-        if (landed) dropPending();
-        else setTimeout(dropPending, UNPLACED_PENDING_MS);
+        // Sent from an older window the message has no window on screen to join yet: the bubble stays, marked stored,
+        // until a window holds the copy (the list hides a pending entry the history holds) or the channel is left.
+        const entries = readPending(queryClient, pendingKey);
+        queryClient.setQueryData<PendingMessage[]>(
+          pendingKey,
+          landed
+            ? entries.filter(
+                (entry) => entry.clientMessageId !== input.clientMessageId,
+              )
+            : entries.map((entry) =>
+                entry.clientMessageId === input.clientMessageId
+                  ? { ...entry, storedMessageId: message.id }
+                  : entry,
+              ),
+        );
         // The message is stored (and shown): its files go to it now, even if one of them fails later.
         const files = filesRef.current.get(input.clientMessageId);
         if (files) {
@@ -424,7 +426,26 @@ export function createChatHooks(deps: ChatHookDeps) {
       );
     }
 
-    return { send, retry, discard, isPending: mutation.isPending };
+    /** Drops the stored sends whose bubble still waits for a window: on leaving the channel, or once a window holds them. */
+    function discardStored(onlyIn?: ReadonlySet<string>): void {
+      const entries = readPending(queryClient, pendingKey);
+      const kept = entries.filter(
+        (entry) =>
+          entry.storedMessageId === undefined ||
+          (onlyIn !== undefined && !onlyIn.has(entry.storedMessageId)),
+      );
+      if (kept.length !== entries.length) {
+        queryClient.setQueryData<PendingMessage[]>(pendingKey, kept);
+      }
+    }
+
+    return {
+      send,
+      retry,
+      discard,
+      discardStored,
+      isPending: mutation.isPending,
+    };
   }
 
   /** Edit of the caller's own message; a stale version refetches the history (412). */
