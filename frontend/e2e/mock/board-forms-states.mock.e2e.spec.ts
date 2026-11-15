@@ -263,7 +263,7 @@ test.describe("Keyboard journeys at 1440 px", () => {
     await expect(name).toBeFocused();
     await page.keyboard.type("Yêu cầu cấp quyền");
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/\/forms\/[^/]+\/edit$/);
+    await expect(page).toHaveURL(/\/settings\?section=forms&form=[^&]+$/);
     await expect(
       page.getByRole("textbox", { name: "Tên biểu mẫu" }),
     ).toHaveValue("Yêu cầu cấp quyền");

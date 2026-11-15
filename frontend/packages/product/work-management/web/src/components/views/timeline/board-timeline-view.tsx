@@ -26,7 +26,11 @@ import {
   shiftInstant,
   zonedInstant,
 } from "../calendar/calendar-entries";
-import { toDayKey, type DayKey } from "../calendar/calendar-model";
+import {
+  fromDayNumber,
+  toDayKey,
+  type DayKey,
+} from "../calendar/calendar-model";
 import { useBoardViewState } from "../../filters/use-board-view-state";
 import { ViewStateBar } from "../../filters/view-state-bar";
 import { SavedFiltersControl } from "../../saved-filters/saved-filters-control";
@@ -42,7 +46,7 @@ import type {
   TimelineScale,
   TimelineTone,
 } from "./timeline-model";
-import { criticalIds, fill } from "./timeline-model";
+import { criticalIds, fill, scaleSpec } from "./timeline-model";
 import { useTimelineCopy } from "./use-timeline-copy";
 
 const NEVER_OVERDUE = () => false;
@@ -151,15 +155,24 @@ export function BoardTimelineView({
     routeFilter: filterValue,
     onRouteFilterChange: setFilterValue,
   });
+  const { viewConfig, updateViewConfig } = useBoardView(boardId, workspaceId);
+  const { groupBy, barSpan } = resolveTimelinePresentation(viewConfig);
+  // The server reads only the items whose start-to-due days touch the chart on screen (and the undated tray),
+  // so a large board stays paged. Bars from the creation day cannot be said to the server: the board is read whole.
+  const chart = scaleSpec(scale, anchorDay);
+  const chartFrom = fromDayNumber(chart.from - 1);
+  const chartTo = fromDayNumber(chart.end + 1);
+  const dateWindow = useMemo(
+    () => ({ basis: "span", from: chartFrom, to: chartTo }),
+    [chartFrom, chartTo],
+  );
   const kanban = useBoardKanban(boardId, workspaceId, {
     filter: noLegacyFilter,
     view: kanbanView,
     isOverdue: NEVER_OVERDUE,
-    allCards: true,
+    ...(barSpan === "created-due" ? { allCards: true } : { dateWindow }),
   });
   const { capabilities } = useBoardCapabilities(boardId, workspaceId);
-  const { viewConfig, updateViewConfig } = useBoardView(boardId, workspaceId);
-  const { groupBy, barSpan } = resolveTimelinePresentation(viewConfig);
   const canEdit = capabilities.canMoveCard && capabilities.canCreateCard;
   const updateCard = useUpdateCard(boardId, workspaceId);
   const dependencies = useTimelineDependencies(boardId, workspaceId);

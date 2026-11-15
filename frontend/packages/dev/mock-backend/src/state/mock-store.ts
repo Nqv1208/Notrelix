@@ -158,6 +158,8 @@ import {
 import {
   BOARD_STATE_BOARDS,
   BULK_STATE_BOARDS,
+  LARGE_BOARD_ID,
+  LARGE_STATE_BOARDS,
   DEPARTMENT_BOARDS,
   TECH_SIDE_BOARDS,
   departmentItemId,
@@ -1342,7 +1344,9 @@ export class MockStore {
     });
     this.boardViewsByBoardId.set(boardId, {
       boardId,
-      viewMode: "kanban",
+      viewMode: this.config.overlays.includes("calendar-deleted-date-field")
+        ? "calendar"
+        : "kanban",
       viewConfig: JSON.stringify({
         cardFieldIds: [
           ERP_READY_COLUMN_ID,
@@ -1354,6 +1358,10 @@ export class MockStore {
           ERP_ACCEPT_COLUMN_ID,
           ERP_VOTE_COLUMN_ID,
         ],
+        // The Calendar's saved date field is gone: the notice shows and items sit by Bắt đầu → Hạn.
+        ...(this.config.overlays.includes("calendar-deleted-date-field")
+          ? { calendarDateField: "mock-erp-col-deleted-date" }
+          : {}),
       }),
     });
     if (
@@ -1755,6 +1763,9 @@ export class MockStore {
       ...(this.config.overlays.includes("bulk-states")
         ? BULK_STATE_BOARDS
         : []),
+      ...(this.config.overlays.includes("large-board")
+        ? LARGE_STATE_BOARDS
+        : []),
     ]) {
       this.insertBoard({
         id: dept.id,
@@ -1773,7 +1784,25 @@ export class MockStore {
       this.boardViewsByBoardId.set(dept.id, {
         boardId: dept.id,
         viewMode: "table",
-        viewConfig: "{}",
+        // The large board's table draws the five columns of BC-Large.
+        viewConfig:
+          dept.id === LARGE_BOARD_ID
+            ? JSON.stringify({
+                hiddenFields: [
+                  "start",
+                  "created",
+                  "completed",
+                  "checklist",
+                  "comments",
+                  "files",
+                  "priority",
+                  "label",
+                  "progress",
+                  "updated",
+                  "mock-itl-col-due",
+                ],
+              })
+            : "{}",
       });
       this.insertColumn({
         id: dept.statusColumnId,
@@ -1804,6 +1833,15 @@ export class MockStore {
           name: "Người thực hiện",
           fieldType: "user",
           position: 3,
+        });
+      // The table asks the server to order a page by the due date only when the board has a date field.
+      if (dept.id === LARGE_BOARD_ID)
+        this.insertColumn({
+          id: "mock-itl-col-due",
+          boardId: dept.id,
+          name: "Hạn chót",
+          fieldType: "date",
+          position: 4,
         });
       if (!dept.noList)
         this.insertList({
@@ -4101,6 +4139,13 @@ export class MockStore {
   }
 
   /** True when the current member belongs to the workspace. */
+  /** Whether the server reads this board a page at a time (the `large-board` overlay's board). */
+  isPagedBoard(boardId: string): boolean {
+    return (
+      boardId === LARGE_BOARD_ID && this.config.overlays.includes("large-board")
+    );
+  }
+
   isCurrentMemberOf(workspaceId: string): boolean {
     // A deleted workspace answers NotFound to everyone: nobody is a member of it any more.
     if (this.isWorkspaceDeleted(workspaceId)) return false;

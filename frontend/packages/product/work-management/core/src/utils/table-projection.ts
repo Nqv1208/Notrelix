@@ -261,10 +261,16 @@ export function projectTableLanes({
     const kept = hideDone
       ? lane.cards.filter((card) => !isTableCardDone(card))
       : lane.cards;
-    doneHiddenCount += lane.cards.length - kept.length;
+    // A paged lane of a finished status holds only finished items: the server's count says how many are left out.
+    const wholeLaneDone =
+      hideDone && lane.category === "done" && lane.filteredTotal !== undefined;
+    doneHiddenCount += wholeLaneDone
+      ? lane.filteredTotal!
+      : lane.cards.length - kept.length;
     // A paged lane shows how many items pass the filter, not how many are loaded so far.
-    const laneShown =
-      lane.filteredTotal === undefined
+    const laneShown = wholeLaneDone
+      ? 0
+      : lane.filteredTotal === undefined
         ? kept.length
         : Math.max(
             kept.length,
