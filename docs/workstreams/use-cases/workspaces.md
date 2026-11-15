@@ -1416,7 +1416,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - No-op / rejection / concurrency / retry: No preference contract of its own in Workspaces; Guests may set them.
 - UI states: Join form, success.
 - Rules: [workspaces](../../product/workspaces.md) section 48.4; see [collaboration](collaboration.md).
-- Acceptance: Given a new member, Then preferences exist for the workspace.
+- Acceptance: Given a new member, Then one notification matrix per person exists, applying to every workspace.
 - Evidence: BE notification preference endpoints (`MapNotificationPreferenceEndpoints.cs`) and the profile update · FE `onboarding-join-surface.tsx`, `welcome-page.tsx`, `onboarding-api.ts` `saveJoin` · Design `Final-Onboarding` · Tests `NotificationPreferencesIntegrationTests`, `onboarding.mock.e2e.spec.ts`, `design-fidelity-onboarding-states.mock.e2e.spec.ts` · Real e2e `workspace-onboarding.real.e2e.spec.ts`
 - State: DONE — lines 1–4 proven in the lane pull request (2026-11-16, branch feat/onboarding-screens-match-boards). Real stack: `workspace-onboarding.real.e2e.spec.ts` journey 2, 2 passed again after the screens changed (an empty name is refused, the name reaches the profile and the mail choice the notification matrix, a second save carries the version of the first). Design: the `tham-gia` artboard matches within 1 px in `design-fidelity-onboarding-states.mock.e2e.spec.ts` (light and dark, 2 of the 14 passed; the mock world's access list is cut to the drawn department and its three boards, the person's name and the lead are set to the drawn words, named in the file header), with the 1024 and 390 px screenshots reviewed. The matrix is one per person for every workspace (owner decision 2026-11-15).
 
