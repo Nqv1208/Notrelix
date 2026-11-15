@@ -30,6 +30,9 @@ import { sectionState } from "@/shell/workspace/section-state";
  * mutes or unmutes its thread, replies on its item and approves or rejects an
  * approval request that names them.
  */
+/** How long a Done can be taken back (DESIGN.md §62: undo only where the backend truly restores). */
+const INBOX_UNDO_MS = 5000;
+
 export function InboxPage() {
   const { workspaceId, workspace } = useWorkspaceContext();
   const copy = useWorkspaceInboxCopy();
@@ -88,10 +91,37 @@ export function InboxPage() {
   );
 
   const act = useCallback(
-    (id: string, job: () => Promise<void>, success: string) => {
+    (
+      id: string,
+      job: () => Promise<void>,
+      success: string,
+      undo?: { label: string; run: () => Promise<void> },
+    ) => {
       setPending((previous) => new Set(previous).add(id));
       void job()
-        .then(() => toast.success(success))
+        .then(() =>
+          toast.success(
+            success,
+            undo
+              ? {
+                  duration: INBOX_UNDO_MS,
+                  action: {
+                    label: undo.label,
+                    onClick: () =>
+                      void undo
+                        .run()
+                        .catch((error: unknown) =>
+                          toastFailure(
+                            copy.toasts2.failed,
+                            error,
+                            copy.toasts2.failedHint,
+                          ),
+                        ),
+                  },
+                }
+              : undefined,
+          ),
+        )
         .catch((error: unknown) =>
           toastFailure(copy.toasts2.failed, error, copy.toasts2.failedHint),
         )
@@ -155,7 +185,16 @@ export function InboxPage() {
           copy.toasts2.handled,
         ),
       onDone: (item) =>
-        act(item.id, () => writes.inbox.done(item.id), copy.toasts2.done),
+        act(item.id, () => writes.inbox.done(item.id), copy.toasts2.done, {
+          label: copy.toasts2.undo,
+          run: () => writes.inbox.reopen(item.id),
+        }),
+      onMarkUnread: (item) =>
+        act(
+          item.id,
+          () => writes.inbox.markUnread(item.id),
+          copy.toasts2.markedUnread,
+        ),
       onReopen: (item) =>
         act(item.id, () => writes.inbox.reopen(item.id), copy.toasts2.reopened),
       onSnooze: (item, option) =>

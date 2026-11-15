@@ -79,6 +79,24 @@ public sealed class InboxStatesIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task MarkUnread_KeepsTheEntryInTheListUnread_AndTouchesOnlyTheCallersOwnRows()
+    {
+        var (account, ws, user, other) = (Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        var id = await SeedAsync(account, ws, user, Guid.NewGuid());
+        var inbox = InboxAt(T0.AddMinutes(1));
+        await inbox.MarkReadAsync(ws, user, id, T0, CancellationToken.None);
+
+        (await inbox.MarkUnreadAsync(ws, other, id, T0.AddMinutes(1), CancellationToken.None)).Should().BeFalse("it is not theirs");
+        (await inbox.MarkUnreadAsync(ws, user, id, T0.AddMinutes(1), CancellationToken.None)).Should().BeTrue();
+
+        var listed = (await inbox.ListAsync(ws, user, InboxView.Inbox, null, null, 50, CancellationToken.None)).Should().ContainSingle().Subject;
+        listed.NotificationId.Should().Be(id);
+        listed.Unread.Should().BeTrue();
+        (await inbox.UnreadByWorkspaceAsync(user, CancellationToken.None)).Should().ContainSingle(c => c.Unread == 1);
+        (await inbox.MarkUnreadAsync(ws, user, id, T0.AddMinutes(2), CancellationToken.None)).Should().BeFalse("already unread");
+    }
+
+    [Fact]
     public async Task Snooze_HidesTheEntryUntilItsTime_ThenItReturnsUnread()
     {
         var (account, ws, user) = (Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());

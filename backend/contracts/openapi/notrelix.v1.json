@@ -8493,6 +8493,56 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/unread": {
+      "post": {
+        "tags": [
+          "Collaboration.Notifications"
+        ],
+        "summary": "Mark one notification of the caller unread again",
+        "description": "The entry stays in the list, unread. A notification that is not the caller's, already unread, done or snoozed, changes nothing and still answers success.",
+        "operationId": "Collaboration.Notifications.MarkInboxEntryUnread",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/done": {
       "post": {
         "tags": [
