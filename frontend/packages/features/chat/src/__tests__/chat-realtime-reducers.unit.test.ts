@@ -185,6 +185,19 @@ describe("applyMessageCreated", () => {
   });
 });
 
+describe("applyMessageCreated, text left out of the frame", () => {
+  it("never inserts a blank row: it asks for the range before the message", () => {
+    const cache = cacheOf([[message(1), message(2)]]);
+    const out = applyMessageCreated(
+      cache,
+      frame({ id: "m-3", sequence: 3, content: null, contentOmitted: true }),
+      SPACE,
+      AT,
+    );
+    expect(out).toEqual({ kind: "omitted", cache, after: 2 });
+  });
+});
+
 describe("applyMessageUpdated", () => {
   it("replaces the content of the loaded message with a newer version", () => {
     const cache = cacheOf([[message(1), message(2)]]);
@@ -377,6 +390,28 @@ describe("frame parsing", () => {
       }),
     ).toBeNull();
     expect(parseChatMessageFrame("not an object")).toBeNull();
+  });
+
+  it("reads a field the server left out as null (a null field is not sent)", () => {
+    expect(
+      parseChatMessageFrame({
+        id: "m-1",
+        sequence: 4,
+        authorId: "user-b",
+        kind: "user",
+        contentOmitted: false,
+        deleted: true,
+        version: 2,
+      }),
+    ).toMatchObject({
+      content: null,
+      createdAt: null,
+      editedAt: null,
+      replyToId: null,
+      threadRootId: null,
+      threadSequence: null,
+      clientMessageId: null,
+    });
   });
 
   it("accepts the chat.unread.v1 payload and rejects negative counts", () => {

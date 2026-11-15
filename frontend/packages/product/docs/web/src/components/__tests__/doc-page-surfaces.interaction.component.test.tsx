@@ -202,20 +202,20 @@ describe("docs web pure surfaces", () => {
     ).toBeNull();
   });
 
-  it("FUI[docs.page.screen:versions] swaps the tools and side tabs for the compare banner and version list", () => {
+  it("FUI[docs.page.screen:versions] swaps the tools and side tabs for the version bar and version list", () => {
     renderPureUi(
       <DocPageScreenSurface {...docsPageScreenVersionsScenario()} />,
     );
 
     expect(
-      screen.getByRole("region", { name: docsCopy.versions.bar }),
-    ).toBeTruthy();
+      screen
+        .getAllByRole("status")
+        .some((node) => node.textContent?.includes("phiên bản 5")),
+    ).toBe(true);
     expect(screen.queryByRole("toolbar")).toBeNull();
     expect(
       screen.getByRole("heading", { name: docsCopy.versions.title }),
     ).toBeTruthy();
-    expect(document.querySelectorAll("ins").length).toBeGreaterThan(0);
-    expect(document.querySelectorAll("del").length).toBeGreaterThan(0);
   });
 
   it("FUI[docs.page.bar:actions] routes retry and share through callbacks and states the unavailable actions", () => {

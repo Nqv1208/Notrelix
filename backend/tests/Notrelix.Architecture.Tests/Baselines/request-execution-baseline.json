@@ -2725,6 +2725,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryUnread.MarkInboxEntryUnreadCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryUnread.MarkInboxEntryUnreadCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead.MarkWorkspaceInboxReadCommand",
     "kind": "Command",
     "principalMarkers": [

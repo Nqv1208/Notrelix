@@ -77,6 +77,8 @@ public static class RealtimeProtocol
     internal static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        // Frames are JSON text in a websocket, never HTML: '+' (a UTC offset) and non-ASCII text go out as they are, not as \uXXXX.
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
     // ── Client → server ─────────────────────────────────────

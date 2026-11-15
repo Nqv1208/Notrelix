@@ -440,6 +440,8 @@ const path = {
     `/workspaces/${workspaceId}/inbox/read-all`,
   inboxEntryRead: (workspaceId: string, id: string) =>
     `/workspaces/${workspaceId}/inbox/${id}/read`,
+  inboxEntryUnread: (workspaceId: string, id: string) =>
+    `/workspaces/${workspaceId}/inbox/${id}/unread`,
   inboxEntryDone: (workspaceId: string, id: string) =>
     `/workspaces/${workspaceId}/inbox/${id}/done`,
   inboxEntryReopen: (workspaceId: string, id: string) =>
@@ -766,6 +768,7 @@ export interface WorkFeedWrites {
   readonly inbox: {
     readonly markRead: (id: string) => Promise<void>;
     readonly readAll: () => Promise<void>;
+    readonly markUnread: (id: string) => Promise<void>;
     readonly done: (id: string) => Promise<void>;
     readonly reopen: (id: string) => Promise<void>;
     readonly snooze: (id: string, until: string) => Promise<void>;
@@ -926,6 +929,10 @@ export function useWorkFeedWrites(workspaceId: string): WorkFeedWrites {
         markRead: (id) =>
           perform(() =>
             api.post<void>(path.inboxEntryRead(workspaceId, id), {}, QUIET),
+          ),
+        markUnread: (id) =>
+          perform(() =>
+            api.post<void>(path.inboxEntryUnread(workspaceId, id), {}, QUIET),
           ),
         readAll: () =>
           perform(() =>

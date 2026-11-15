@@ -1678,6 +1678,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/unread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark one notification of the caller unread again
+         * @description The entry stays in the list, unread. A notification that is not the caller's, already unread, done or snoozed, changes nothing and still answers success.
+         */
+        post: operations["Collaboration.Notifications.MarkInboxEntryUnread"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/done": {
         parameters: {
             query?: never;
@@ -17263,6 +17283,29 @@ export interface operations {
         };
     };
     "Collaboration.Notifications.MarkInboxEntryRead": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                notificationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Collaboration.Notifications.MarkInboxEntryUnread": {
         parameters: {
             query?: never;
             header?: never;

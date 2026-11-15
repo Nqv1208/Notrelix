@@ -92,7 +92,7 @@ describe("page versions", () => {
     expect(api.post).toHaveBeenCalledWith(
       "/pages/p1/versions",
       { name: "Before review" },
-      { skipGlobalErrorToast: true },
+      { skipGlobalErrorToast: true, idempotencyKey: expect.any(String) },
     );
     expect(saved.kind).toBe("named");
   });
@@ -130,7 +130,7 @@ describe("page versions", () => {
     expect(api.post).toHaveBeenCalledWith(
       "/pages/p1/versions/v2/restore",
       { currentBlocks: [{ blockId: "b1", version: 4 }] },
-      { skipGlobalErrorToast: true },
+      { skipGlobalErrorToast: true, idempotencyKey: expect.any(String) },
     );
     expect(restored.version.kind).toBe("restore");
     expect(restored.blocks[0]?.version).toBe(5);

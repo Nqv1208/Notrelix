@@ -12,7 +12,7 @@ describe("document version history panel states", () => {
     expect(screen.getByRole("status").textContent).toBe(
       docsCopy.versions.loading,
     );
-    expect(screen.queryByText(docsCopy.versions.empty)).toBeNull();
+    expect(screen.queryByText(docsCopy.versions.emptyTitle)).toBeNull();
   });
 
   it("shows the error with a retry that rereads the list", () => {
@@ -21,7 +21,7 @@ describe("document version history panel states", () => {
       <DocVersionPanelSurface {...base} status="error" onRetry={onRetry} />,
     );
     expect(screen.getByRole("alert").textContent).toContain(
-      docsCopy.versions.error,
+      docsCopy.versions.errorTitle,
     );
     fireEvent.click(
       screen.getByRole("button", { name: docsCopy.versions.retry }),
@@ -31,6 +31,6 @@ describe("document version history panel states", () => {
 
   it("shows the empty text only for a loaded empty list", () => {
     renderPureUi(<DocVersionPanelSurface {...base} />);
-    expect(screen.getByText(docsCopy.versions.empty)).toBeTruthy();
+    expect(screen.getByText(docsCopy.versions.emptyTitle)).toBeTruthy();
   });
 });

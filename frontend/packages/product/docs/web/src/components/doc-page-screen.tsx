@@ -55,6 +55,7 @@ import { useDocPageCopy } from "./use-doc-page-copy";
 import type { UseDocPageHost } from "./doc-page-host";
 import {
   blockText,
+  clock,
   dayMonth,
   editedAtLabel,
   referencesOf,
@@ -64,7 +65,6 @@ import {
   toHtml,
   toTocEntries,
   toVersionViews,
-  markVersionDiff,
   toolbarCurrent,
 } from "./doc-page-mapping";
 import type {
@@ -129,6 +129,27 @@ function moveFailure(
   if (status === 412) return "conflict";
   if (code === "documents.page.subtree-not-permitted") return "subtree";
   return status === 400 ? "rule" : "failed";
+}
+
+/** How many blocks a refused restore found changed, added or gone since the person read the page. */
+function conflictCountOf(error: unknown, seen: readonly Block[]): number {
+  const details = (error as { details?: { extensions?: unknown } } | null)
+    ?.details;
+  const current = (
+    details?.extensions as { currentBlocks?: unknown } | undefined
+  )?.currentBlocks;
+  if (!Array.isArray(current)) return 0;
+  const was = new Map(seen.map((block) => [block.id, block.version]));
+  const now = new Map(
+    (current as Array<{ id: string; version: number }>).map((block) => [
+      block.id,
+      block.version,
+    ]),
+  );
+  let changed = 0;
+  for (const [id, version] of now) if (was.get(id) !== version) changed += 1;
+  for (const id of was.keys()) if (!now.has(id)) changed += 1;
+  return changed;
 }
 
 /** The producer refused a trash, restore or delete because some page under the page is not the caller's to change. */
@@ -386,10 +407,10 @@ export function createDocPageScreen({
       () => toVersionViews(versionsQuery.data ?? [], copy, now, host.personFor),
       [copy, versionsQuery.data, host.personFor, now],
     );
-    // The version compared with the page: the newest one unless another is chosen.
-    const selectedVersionId = versions
-      ? (versions.selectedId ?? versionList[0]?.id ?? null)
-      : null;
+    // The version the page shows: none while it shows its current content.
+    const selectedVersionId = versions?.selectedId ?? null;
+    // The blocks the viewer saw when a restore was asked (a conflict counts what changed).
+    const restoreSeen = useRef<readonly Block[]>([]);
     const snapshotQuery = useVersionSnapshot(
       workspaceId,
       pageId,
@@ -434,23 +455,27 @@ export function createDocPageScreen({
     const pickerBoards = host.boardChoices;
 
     const blockViews = useMemo(() => {
-      const views = toBlockViews(blocks, {
-        boards: host.boards,
-        resolveTask,
-        pages: readablePages,
-        pageHref: host.pageHref,
-        board: host.board,
-        quotes:
-          panelTab === "comments" && !versions
-            ? comments.flatMap((comment) =>
-                comment.quote ? [comment.quote] : [],
-              )
-            : [],
-      });
-      return versions && snapshotQuery.data
-        ? markVersionDiff(views, blocks, snapshotQuery.data.blocks)
-        : views;
+      const views = toBlockViews(
+        selectedVersionId && snapshotQuery.data
+          ? snapshotQuery.data.blocks
+          : blocks,
+        {
+          boards: host.boards,
+          resolveTask,
+          pages: readablePages,
+          pageHref: host.pageHref,
+          board: host.board,
+          quotes:
+            panelTab === "comments" && !versions
+              ? comments.flatMap((comment) =>
+                  comment.quote ? [comment.quote] : [],
+                )
+              : [],
+        },
+      );
+      return views;
     }, [
+      selectedVersionId,
       blocks,
       comments,
       host.board,
@@ -881,8 +906,11 @@ export function createDocPageScreen({
     const latestActivity = (historyQuery.data ?? [])
       .slice()
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    const viewedVersion = selectedVersionId
+      ? (versionList.find((entry) => entry.id === selectedVersionId) ?? null)
+      : null;
     const header: DocHeaderView = {
-      title,
+      title: snapshotQuery.data?.title ?? title,
       crumbs,
       editedBy: latestActivity
         ? host.personFor(latestActivity.actorId).name
@@ -936,6 +964,17 @@ export function createDocPageScreen({
               kind: "board" as const,
               label: boardChipSource.name,
               href: boardChipSource.href,
+            },
+          ]
+        : []),
+      ...(viewedVersion
+        ? [
+            {
+              id: "version",
+              kind: "version" as const,
+              label: fillDocCopy(copy.versions.viewingChip, {
+                n: viewedVersion.number,
+              }),
             },
           ]
         : []),
@@ -1207,17 +1246,17 @@ export function createDocPageScreen({
           }),
         );
       },
-      onRestoreVersionOpen: host.canEdit
-        ? () => {
-            restoreVersion.reset();
-            setOverlay({ kind: "restoreVersion" });
-          }
-        : undefined,
+      // A viewer may open the dialog: it says who can restore.
+      onRestoreVersionOpen: () => {
+        restoreVersion.reset();
+        setOverlay({ kind: "restoreVersion" });
+      },
       onRestoreVersion: () => {
-        if (!selectedVersionId) return;
+        if (!selectedVersionId || !host.canEdit) return;
         const stamp = versionList.find(
           (entry) => entry.id === selectedVersionId,
         )?.stamp;
+        restoreSeen.current = blocks;
         void saver.flush().then(() =>
           restoreVersion.mutate(selectedVersionId, {
             onSuccess: () => {
@@ -1401,6 +1440,13 @@ export function createDocPageScreen({
         setVersions({ selectedId: null, namedOnly: false });
       },
       onCloseVersions: () => setVersions(null),
+      onCloseVersionView: () => {
+        setOverlay(NONE);
+        setVersions((current) =>
+          current ? { ...current, selectedId: null } : current,
+        );
+      },
+      // Even the newest entry opens as a copy: the page may have changed since it was captured.
       onSelectVersion: (id) =>
         setVersions((current) =>
           current ? { ...current, selectedId: id } : current,
@@ -1678,6 +1724,15 @@ export function createDocPageScreen({
                 list: versionList,
                 selectedId: selectedVersionId,
                 namedOnly: versions.namedOnly,
+                canSave: host.canEdit,
+                snapshotStatus: !selectedVersionId
+                  ? "ready"
+                  : snapshotQuery.isError
+                    ? "error"
+                    : snapshotQuery.isPending
+                      ? "loading"
+                      : "ready",
+                onSnapshotRetry: () => void snapshotQuery.refetch(),
                 status: versionsQuery.isError
                   ? "error"
                   : versionsQuery.isPending
@@ -1701,6 +1756,11 @@ export function createDocPageScreen({
               ? "conflict"
               : "failed"
             : null,
+          conflictCount: conflictCountOf(
+            restoreVersion.error,
+            restoreSeen.current,
+          ),
+          conflictTime: clock(now),
         }}
         importState={importing}
         templateAction={{
