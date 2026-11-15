@@ -8,7 +8,8 @@ import {
   replaceEqualDeep,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
+import { setConversationUnread, touchConversation } from "./conversation-cache";
 import {
   createChatService,
   type ChatApiClient,
@@ -85,7 +86,8 @@ export interface ChatHookDeps {
 
 const CHANNEL_STALE_MS = 30_000;
 /** The badge refreshes on this interval until the realtime stream (S1.8) pushes it. */
-const UNREAD_REFRESH_MS = 60_000;
+/** The counters follow the realtime frames; this safety read is rare because the server's count costs the whole unread backlog. */
+const UNREAD_REFRESH_MS = 300_000;
 
 function anchorKey(anchor: ChatHistoryAnchor): string {
   return anchor.kind === "latest" ? "latest" : `around-${anchor.sequence}`;
@@ -107,6 +109,9 @@ function readPending(
  * The Chat hooks of one host. Built once per runtime (`useMemo` on the client),
  * the same way the other feature packages expose their hooks.
  */
+/** The read request waits this long, so a run of new messages sends one boundary. */
+const READ_DEBOUNCE_MS = 1000;
+
 export function createChatHooks(deps: ChatHookDeps) {
   const service = createChatService(deps.api, deps.endpoints);
 
@@ -175,7 +180,7 @@ export function createChatHooks(deps: ChatHookDeps) {
       queryKey: chatQueryKeys.unread(workspaceId),
       queryFn: () => service.getUnread(workspaceId),
       refetchInterval: UNREAD_REFRESH_MS,
-      refetchOnWindowFocus: true,
+      refetchOnWindowFocus: false,
       enabled: workspaceId.length > 0,
     });
   }
@@ -190,6 +195,7 @@ export function createChatHooks(deps: ChatHookDeps) {
     channelId: string,
     anchor: ChatHistoryAnchor,
   ) {
+    const messagesBase = chatQueryKeys.messages(workspaceId, channelId);
     return useInfiniteQuery<
       ChatMessagePage,
       Error,
@@ -197,10 +203,7 @@ export function createChatHooks(deps: ChatHookDeps) {
       QueryKey,
       ChatMessageCursor
     >({
-      queryKey: [
-        ...chatQueryKeys.messages(workspaceId, channelId),
-        anchorKey(anchor),
-      ],
+      queryKey: [...messagesBase, anchorKey(anchor)],
       queryFn: ({ pageParam }) =>
         service.listMessages(
           workspaceId,
@@ -224,6 +227,16 @@ export function createChatHooks(deps: ChatHookDeps) {
           ? { after: last.items[last.items.length - 1]!.sequence }
           : undefined,
       structuralSharing: shareMessages,
+      // A jump to the newest messages keeps the window on screen until the new one arrives, so a send made from
+      // an older window shows its bubble at once instead of a skeleton.
+      placeholderData: (previous, previousQuery) =>
+        previousQuery &&
+        previousQuery.queryKey.length === messagesBase.length + 1 &&
+        messagesBase.every(
+          (part, index) => previousQuery.queryKey[index] === part,
+        )
+          ? previous
+          : undefined,
       enabled: workspaceId.length > 0 && channelId.length > 0,
       staleTime: CHANNEL_STALE_MS,
     });
@@ -322,10 +335,13 @@ export function createChatHooks(deps: ChatHookDeps) {
           filesRef.current.delete(input.clientMessageId);
           enqueueUploads({ queryClient, service, workspaceId }, message, files);
         }
-        // A conversation's list row shows its newest message: refresh it (a no-op when no list is mounted).
-        void queryClient.invalidateQueries({
-          queryKey: chatQueryKeys.conversations(workspaceId),
-          refetchType: "active",
+        // A conversation's list row shows its newest message: it moves in the cache, the list is not read again.
+        touchConversation(queryClient, workspaceId, channelId, {
+          sequence: message.sequence,
+          authorId: message.authorId,
+          kind: message.kind,
+          text: message.content,
+          createdAt: message.createdAt,
         });
       },
       onError: (error, input) => {
@@ -611,32 +627,23 @@ export function createChatHooks(deps: ChatHookDeps) {
 
   /**
    * Mark read (UC-CHT-D02). The boundary only moves forward: a candidate at or
-   * below the cached or the already-sent boundary is not sent at all.
+   * below the cached or the already-sent boundary is not sent at all. The unread
+   * badge drops at once; the request is held for READ_DEBOUNCE_MS so a stream of
+   * new messages sends one boundary, and goes out early when the page is left
+   * (blur, hidden, pagehide) or the list unmounts.
    */
   function useMarkRead(workspaceId: string) {
     const queryClient = useQueryClient();
     const unreadKey = chatQueryKeys.unread(workspaceId);
-    /** The highest boundary this hook has sent per channel (the cache may lag behind). */
+    /** The highest boundary this hook has queued or sent per channel (the cache may lag behind). */
     const sentRef = useRef(new Map<string, number>());
+    /** Boundaries waiting for the debounce, by channel. */
+    const queuedRef = useRef(new Map<string, number>());
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const mutation = useMutation({
       mutationFn: (input: { spaceId: string; upToSequence: number }) =>
         service.markRead(workspaceId, input.spaceId, input.upToSequence),
-      onMutate: async (input) => {
-        await queryClient.cancelQueries({ queryKey: unreadKey });
-        queryClient.setQueryData<ChatUnreadSummary>(unreadKey, (summary) =>
-          summary
-            ? {
-                ...summary,
-                spaces: summary.spaces.map((row) =>
-                  row.spaceId === input.spaceId
-                    ? unreadAfterRead(row, input.upToSequence)
-                    : row,
-                ),
-              }
-            : summary,
-        );
-      },
       onSuccess: (boundary) => {
         queryClient.setQueryData<ChatUnreadSummary>(unreadKey, (summary) =>
           summary
@@ -662,6 +669,37 @@ export function createChatHooks(deps: ChatHookDeps) {
       },
     });
 
+    /** Sends the queued boundaries now. */
+    function flush(): void {
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      const queued = [...queuedRef.current];
+      queuedRef.current.clear();
+      for (const [spaceId, upToSequence] of queued) {
+        mutation.mutate({ spaceId, upToSequence });
+      }
+    }
+    const flushRef = useRef(flush);
+    flushRef.current = flush;
+
+    useEffect(() => {
+      const run = () => flushRef.current();
+      const onHidden = () => {
+        if (document.visibilityState === "hidden") run();
+      };
+      window.addEventListener("blur", run);
+      window.addEventListener("pagehide", run);
+      document.addEventListener("visibilitychange", onHidden);
+      return () => {
+        window.removeEventListener("blur", run);
+        window.removeEventListener("pagehide", run);
+        document.removeEventListener("visibilitychange", onHidden);
+        run();
+      };
+    }, []);
+
     /** Reports the sequence the user has seen; a no-op when it would not move the boundary. */
     function markRead(spaceId: string, upToSequence: number): boolean {
       const summary = queryClient.getQueryData<ChatUnreadSummary>(unreadKey);
@@ -672,11 +710,36 @@ export function createChatHooks(deps: ChatHookDeps) {
       };
       if (!shouldReportRead(upToSequence, known)) return false;
       sentRef.current.set(spaceId, nextReadBoundary(known.sent, upToSequence));
-      mutation.mutate({ spaceId, upToSequence });
+      queuedRef.current.set(
+        spaceId,
+        nextReadBoundary(queuedRef.current.get(spaceId) ?? 0, upToSequence),
+      );
+      // The badge does not wait for the request.
+      let unreadNow: number | null = null;
+      queryClient.setQueryData<ChatUnreadSummary>(unreadKey, (current) =>
+        current
+          ? {
+              ...current,
+              spaces: current.spaces.map((entry) => {
+                if (entry.spaceId !== spaceId) return entry;
+                const next = unreadAfterRead(entry, upToSequence);
+                unreadNow = next.unreadCount;
+                return next;
+              }),
+            }
+          : current,
+      );
+      if (unreadNow !== null) {
+        setConversationUnread(queryClient, workspaceId, spaceId, unreadNow);
+      }
+      timerRef.current ??= setTimeout(
+        () => flushRef.current(),
+        READ_DEBOUNCE_MS,
+      );
       return true;
     }
 
-    return { markRead, isPending: mutation.isPending };
+    return { markRead, flush, isPending: mutation.isPending };
   }
 
   /** Mark every channel as read (UC-CHT-D07). */
