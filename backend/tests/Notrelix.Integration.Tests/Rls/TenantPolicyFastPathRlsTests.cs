@@ -46,12 +46,14 @@ public sealed class TenantPolicyFastPathRlsTests : IAsyncLifetime
         "workspace.teams", "workspace.workspace_members",
     ];
 
-    /// <summary>Class B tables that carry the workspace rule next to something else: they keep their old policy.</summary>
-    private static readonly string[] ClassBWithWorkspaceRule =
+    /// <summary>Tables with the plain p_app_* policies plus extra permissive arms (invitation, token, webhook bindings).</summary>
+    private static readonly string[] ExtraArm =
     [
         "docs.pages", "identity.api_tokens", "integration.calendar_integrations", "integration.inbound_webhook_receipts",
         "integration.integration_connections", "messaging.outbox_messages", "work.boards", "workspace.workspace_invitations",
     ];
+
+    private static readonly string[] All = [.. ClassA, .. ExtraArm];
 
     /// <summary>Columns whose generic value breaks a check constraint or a unique index, per table.</summary>
     private static readonly Dictionary<string, Dictionary<string, string>> Overrides = new()
@@ -86,7 +88,7 @@ public sealed class TenantPolicyFastPathRlsTests : IAsyncLifetime
         revoke.Parameters.AddWithValue("u", _revoked);
         (await revoke.ExecuteNonQueryAsync()).Should().BeGreaterThan(0, "the revoked member must hold a grant that is revoked");
 
-        foreach (var table in ClassA)
+        foreach (var table in All)
         {
             foreach (var tenant in new[] { _a, _b })
             {
@@ -103,6 +105,28 @@ public sealed class TenantPolicyFastPathRlsTests : IAsyncLifetime
     /// check constraint takes the first literal the constraint names.
     /// </summary>
     private static async Task SeedRowAsync(NpgsqlConnection owner, string table, AppRoleTenant tenant)
+    {
+        var sql = await BuildInsertAsync(owner, table);
+        await using var tx = await owner.BeginTransactionAsync();
+        await using (var replica = new NpgsqlCommand("SET LOCAL session_replication_role = replica", owner, tx))
+            await replica.ExecuteNonQueryAsync();
+        await using var insert = new NpgsqlCommand(sql, owner, tx);
+        insert.Parameters.AddWithValue("a", tenant.AccountId);
+        insert.Parameters.AddWithValue("w", tenant.WorkspaceId);
+        try
+        {
+            await insert.ExecuteNonQueryAsync();
+        }
+        catch (PostgresException ex)
+        {
+            throw new InvalidOperationException($"Could not seed {table}: {ex.MessageText} (constraint {ex.ConstraintName}). Add an override. SQL: {sql}", ex);
+        }
+
+        await tx.CommitAsync();
+    }
+
+    /// <summary>The INSERT of one generic row of the table; @a and @w carry the account and the workspace.</summary>
+    private static async Task<string> BuildInsertAsync(NpgsqlConnection owner, string table)
     {
         var (schema, name) = (table.Split('.')[0], table.Split('.')[1]);
         var columns = new List<(string Name, string Type, string Udt, int? Length)>();
@@ -140,23 +164,7 @@ public sealed class TenantPolicyFastPathRlsTests : IAsyncLifetime
             };
         }).ToList();
 
-        var sql = $"INSERT INTO {table} ({string.Join(", ", columns.Select(c => $"\"{c.Name}\""))}) VALUES ({string.Join(", ", values)})";
-        await using var tx = await owner.BeginTransactionAsync();
-        await using (var replica = new NpgsqlCommand("SET LOCAL session_replication_role = replica", owner, tx))
-            await replica.ExecuteNonQueryAsync();
-        await using var insert = new NpgsqlCommand(sql, owner, tx);
-        insert.Parameters.AddWithValue("a", tenant.AccountId);
-        insert.Parameters.AddWithValue("w", tenant.WorkspaceId);
-        try
-        {
-            await insert.ExecuteNonQueryAsync();
-        }
-        catch (PostgresException ex)
-        {
-            throw new InvalidOperationException($"Could not seed {table}: {ex.MessageText} (constraint {ex.ConstraintName}). Add an override. SQL: {sql}", ex);
-        }
-
-        await tx.CommitAsync();
+        return $"INSERT INTO {table} ({string.Join(", ", columns.Select(c => $"\"{c.Name}\""))}) VALUES ({string.Join(", ", values)})";
     }
 
     private static string ValueFor((string Name, string Type, string Udt, int? Length) c, List<string> checks)
@@ -278,13 +286,7 @@ public sealed class TenantPolicyFastPathRlsTests : IAsyncLifetime
         await using (var r = await q.ExecuteReaderAsync())
             while (await r.ReadAsync()) withFastPath.Add(r.GetString(0));
 
-        withFastPath.Should().BeEquivalentTo(ClassA, "031 touches exactly the class A tables, and every one of them was rewritten");
-
-        await using var plain = new NpgsqlCommand(
-            "SELECT count(*) FROM pg_policies WHERE roles::text LIKE '%notrelix_app%' AND schemaname || '.' || tablename = ANY (@t) " +
-            "AND (qual LIKE '%accessible_workspace_pairs%' OR with_check LIKE '%accessible_workspace_pairs%')", owner);
-        plain.Parameters.AddWithValue("t", ClassBWithWorkspaceRule);
-        ((long)(await plain.ExecuteScalarAsync())!).Should().Be(0, "a table with anything beyond the plain rule keeps its old policy");
+        withFastPath.Should().BeEquivalentTo(All, "031 touches exactly the plain-rule tables, and every one of them was rewritten");
 
         // Every application policy of a class A table is the fast rule in full: no policy was left half rewritten.
         await using var halves = new NpgsqlCommand(
@@ -292,7 +294,7 @@ public sealed class TenantPolicyFastPathRlsTests : IAsyncLifetime
             "AND schemaname || '.' || tablename = ANY (@t) AND policyname IN ('p_app_select','p_app_insert','p_app_update','p_app_delete') " +
             "AND NOT ((qual IS NULL OR qual LIKE '%accessible_workspace_pairs%has_workspace_access%') " +
             "AND (with_check IS NULL OR with_check LIKE '%accessible_workspace_pairs%has_workspace_access%'))", owner);
-        halves.Parameters.AddWithValue("t", ClassA);
+        halves.Parameters.AddWithValue("t", All);
         var notRewritten = new List<string>();
         await using var hr = await halves.ExecuteReaderAsync();
         while (await hr.ReadAsync()) notRewritten.Add(hr.GetString(0));
@@ -305,7 +307,9 @@ public sealed class TenantPolicyFastPathRlsTests : IAsyncLifetime
         var failures = new List<string>();
         var positiveControls = 0;
 
-        foreach (var table in ClassA)
+        // outbox_messages has no application SELECT policy (insert only), so there is no read to compare; its insert
+        // behaviour is compared before and after in the test below.
+        foreach (var table in All.Except(["messaging.outbox_messages"]))
         {
             var (accounts, workspaces) = await PairsAsync(table);
             foreach (var tenant in new[] { _a, _b })
@@ -359,6 +363,116 @@ public sealed class TenantPolicyFastPathRlsTests : IAsyncLifetime
         }
 
         failures.Should().BeEmpty();
-        positiveControls.Should().BeGreaterThan(ClassA.Length, "the positive controls ran for the members and the invitee on every table");
+        positiveControls.Should().BeGreaterThan(All.Length - 1, "the positive controls ran for the members and the invitee on every table");
+    }
+
+    private const string RevertToPlain = """
+        DO $$
+        DECLARE t text; pol record; plain constant text := 'ops.has_workspace_access(account_id, workspace_id)';
+        BEGIN
+            PERFORM set_config('search_path', 'pg_catalog, pg_temp', true);
+            FOREACH t IN ARRAY @tables LOOP
+                FOR pol IN SELECT p.polname, pg_get_expr(p.polqual, p.polrelid) AS u, pg_get_expr(p.polwithcheck, p.polrelid) AS c
+                             FROM pg_policy p WHERE p.polrelid = to_regclass(t)
+                              AND p.polname IN ('p_app_select', 'p_app_insert', 'p_app_update', 'p_app_delete')
+                LOOP
+                    EXECUTE format('ALTER POLICY %I ON %s %s', pol.polname, to_regclass(t), concat_ws(' ',
+                        CASE WHEN pol.u IS NOT NULL THEN 'USING (' || plain || ')' END,
+                        CASE WHEN pol.c IS NOT NULL THEN 'WITH CHECK (' || plain || ')' END));
+                END LOOP;
+            END LOOP;
+        END $$;
+        """;
+
+    private async Task<List<string>> NonAppPoliciesAsync(NpgsqlConnection owner)
+    {
+        await using var q = new NpgsqlCommand(
+            "SELECT p.polrelid::regclass || ' ' || p.polname || ' ' || p.polcmd::text || ' ' || p.polroles::text || ' ' || " +
+            "coalesce(pg_get_expr(p.polqual, p.polrelid), '-') || ' ' || coalesce(pg_get_expr(p.polwithcheck, p.polrelid), '-') " +
+            "FROM pg_policy p WHERE p.polrelid = ANY (SELECT to_regclass(t) FROM unnest(@t) t) " +
+            "AND p.polname NOT IN ('p_app_select', 'p_app_insert', 'p_app_update', 'p_app_delete') ORDER BY 1", owner);
+        q.Parameters.AddWithValue("t", ExtraArm);
+        var rows = new List<string>();
+        await using var r = await q.ExecuteReaderAsync();
+        while (await r.ReadAsync()) rows.Add(r.GetString(0));
+        return rows;
+    }
+
+    /// <summary>For each caller and extra-arm table: rows read in each workspace, and whether an INSERT into A is refused by the policy.</summary>
+    private async Task<List<string>> OutcomesAsync(Dictionary<string, string> inserts)
+    {
+        var outcomes = new List<string>();
+        foreach (var table in ExtraArm)
+        {
+            foreach (var caller in Callers())
+            {
+                var (c, tx) = await OpenAsync(caller);
+                await using var _ = c;
+                await using var __ = tx;
+                var inA = await CountAsync(c, tx, $"SELECT count(*) FROM {table} WHERE workspace_id = @w", ("w", _a.WorkspaceId));
+                var inB = await CountAsync(c, tx, $"SELECT count(*) FROM {table} WHERE workspace_id = @w", ("w", _b.WorkspaceId));
+                var verdict = "allowed";
+                await using (var save = new NpgsqlCommand("SAVEPOINT s", c, tx)) await save.ExecuteNonQueryAsync();
+                try
+                {
+                    await using var insert = new NpgsqlCommand(inserts[table], c, tx);
+                    insert.Parameters.AddWithValue("a", _a.AccountId);
+                    insert.Parameters.AddWithValue("w", _a.WorkspaceId);
+                    await insert.ExecuteNonQueryAsync();
+                }
+                catch (PostgresException ex) when (ex.SqlState == "42501")
+                {
+                    verdict = "denied by policy";
+                }
+                catch (PostgresException)
+                {
+                    // refused for another reason (key, grant, unique): the policy let the row through
+                }
+
+                outcomes.Add($"{table} | {caller.Name} | A={inA} B={inB} | insert into A {verdict}");
+            }
+        }
+
+        return outcomes;
+    }
+
+    [Fact]
+    public async Task RewritingTheExtraArmTablesChangesNothingTheyShowOrAcceptAndLeavesTheirOtherPoliciesByteIdentical()
+    {
+        await using var owner = new NpgsqlConnection(_fixture.OwnerConnectionString);
+        await owner.OpenAsync();
+        var inserts = new Dictionary<string, string>();
+        foreach (var table in ExtraArm) inserts[table] = await BuildInsertAsync(owner, table);
+
+        var assembly = typeof(Notrelix.Infrastructure.Data.Rls.RlsPolicyApplier).Assembly;
+        await using var stream = assembly.GetManifestResourceStream("Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.031_tenant_policy_fast_path.sql")!;
+        using var reader = new StreamReader(stream);
+        var script = await reader.ReadToEndAsync();
+
+        List<string> extrasBefore, before, extrasAfter, after;
+        try
+        {
+            // Back to the state 008 and the scripts after it leave: the plain p_app_* policies and the extra arms.
+            await using (var revert = new NpgsqlCommand(RevertToPlain.Replace("@tables", "ARRAY['" + string.Join("','", ExtraArm) + "']"), owner))
+                await revert.ExecuteNonQueryAsync();
+
+            extrasBefore = await NonAppPoliciesAsync(owner);
+            extrasBefore.Should().NotBeEmpty("the extra arms exist");
+            before = await OutcomesAsync(inserts);
+        }
+        finally
+        {
+            // Whatever happened above, leave the database as the apply leaves it for the tests that follow.
+            await using var apply = new NpgsqlCommand(script, owner);
+            await apply.ExecuteNonQueryAsync();
+        }
+
+        extrasAfter = await NonAppPoliciesAsync(owner);
+        after = await OutcomesAsync(inserts);
+
+        extrasAfter.Should().Equal(extrasBefore, "031 never touches a policy other than the plain p_app_* ones");
+        after.Should().Equal(before, "the fast path may change how fast rows are found, never which rows are read or written");
+        before.Should().Contain(o => o.Contains("A=1") && o.Contains("active member of A"), "the positive control: members read their rows");
+        before.Should().Contain(o => o.Contains("insert into A denied by policy"), "the negative control: some caller is refused");
     }
 }
