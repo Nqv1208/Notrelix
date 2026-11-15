@@ -36,6 +36,7 @@ export interface ChatMessageAttachmentChangedPayload {
 
 export interface ChatMessageCreatedPayload {
   "authorId": string;
+  "clientMessageId"?: string;
   "content": string | null;
   "contentOmitted": boolean;
   "createdAt": string | null;

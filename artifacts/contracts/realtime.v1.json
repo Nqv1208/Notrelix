@@ -102,6 +102,7 @@
             "replyToId": { "oneOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }] },
             "threadRootId": { "oneOf": [{ "type": "string", "format": "uuid" }, { "type": "null" }] },
             "threadSequence": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
+            "clientMessageId": { "type": "string", "maxLength": 128 },
             "version": { "type": "integer" }
           },
           "required": ["id", "sequence", "authorId", "kind", "content", "contentOmitted", "deleted", "createdAt", "editedAt", "replyToId", "threadRootId", "threadSequence", "version"]
