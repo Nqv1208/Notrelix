@@ -93,7 +93,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 | UC-CHT-B09 | See system announcements | B | Workspace Owner, Admin, Member | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. |
 | UC-CHT-B10 | Copy a link to a message | B | Workspace Owner, Admin, Member | yes | no | no | no | DEFINED | No Copy link action exists in the message menu and the client builds no ?m= link; opening a message by URL is covered by UC-CHT-B03 only. |
 | UC-CHT-C01 | Subscribe to a space | C | Workspace Owner, Admin, Member | yes | yes | yes | yes | DONE | Owner check pending. |
-| UC-CHT-C02 | Receive a new message live | C | Workspace Owner, Admin, Member | yes | yes | yes | yes | DONE | Owner check pending. |
+| UC-CHT-C02 | Receive a new message live | C | Workspace Owner, Admin, Member | yes | yes | yes | no | HARDENING | The sender's own bubble can stay missing on a cold stack when the send happens while the first message window loads. |
 | UC-CHT-C03 | Receive an edit or delete live | C | Workspace Owner, Admin, Member | yes | yes | yes | yes | DONE | Owner check pending. |
 | UC-CHT-C04 | Recover from a gap, duplicate or out-of-order event | C | Workspace Owner, Admin, Member | yes | yes | yes | yes | DONE | Owner check pending. |
 | UC-CHT-C05 | Reconnect after a network loss | C | Workspace Owner, Admin, Member | yes | yes | yes | yes | DONE | Owner check pending. |
