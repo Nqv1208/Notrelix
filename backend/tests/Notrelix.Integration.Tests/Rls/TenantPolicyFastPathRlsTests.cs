@@ -402,21 +402,12 @@ public sealed class TenantPolicyFastPathRlsTests : IAsyncLifetime
     }
 
     /// <summary>For each caller and extra-arm table: rows read in each workspace, and whether an INSERT into A is refused by the policy.</summary>
-<<<<<<< HEAD
     private async Task<List<string>> OutcomesAsync(Dictionary<string, string> inserts, string[]? tables = null, IEnumerable<Caller>? callers = null)
     {
         var outcomes = new List<string>();
         foreach (var table in tables ?? ExtraArm)
         {
             foreach (var caller in callers ?? Callers())
-=======
-    private async Task<List<string>> OutcomesAsync(Dictionary<string, string> inserts)
-    {
-        var outcomes = new List<string>();
-        foreach (var table in ExtraArm)
-        {
-            foreach (var caller in Callers())
->>>>>>> origin/develop
             {
                 var (c, tx) = await OpenAsync(caller);
                 await using var _ = c;
@@ -486,7 +477,6 @@ public sealed class TenantPolicyFastPathRlsTests : IAsyncLifetime
         after.Should().Equal(before, "the fast path may change how fast rows are found, never which rows are read or written");
         before.Should().Contain(o => o.Contains("A=1") && o.Contains("active member of A"), "the positive control: members read their rows");
         before.Should().Contain(o => o.Contains("insert into A denied by policy"), "the negative control: some caller is refused");
-<<<<<<< HEAD
     }
 
     [Fact]
@@ -564,7 +554,5 @@ public sealed class TenantPolicyFastPathRlsTests : IAsyncLifetime
         allOutcomes.Where(o => o.Contains("anonymous invitation preview")).Should().OnlyContain(o => o.Contains("A=1 B=0"));
         allOutcomes.Where(o => o.Contains("| no user |") || o.Contains("suspended") || o.Contains("removed") || o.Contains("revoked"))
             .Should().OnlyContain(o => o.Contains("A=0 B=0"), "callers without access still read nothing");
-=======
->>>>>>> origin/develop
     }
 }
