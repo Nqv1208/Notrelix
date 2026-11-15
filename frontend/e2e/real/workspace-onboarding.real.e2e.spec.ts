@@ -1,5 +1,4 @@
 import { expect, test, type Page } from "@playwright/test";
-import { confirmEmailOf, registerPerson } from "./support/fresh-person";
 import { apiRead, apiWrite, realUsers, signIn } from "./support/real-session";
 import {
   createOwnedWorkspace,
@@ -53,8 +52,9 @@ test("a new company is set up in four steps: a taken or reserved address is refu
   browser,
   page,
 }) => {
-  const person = await registerPerson(page, "onb");
-  await confirmEmailOf(page, person.email);
+  // The seeded admin: confirmed, and allowed to create workspaces in its Account.
+  const person = realUsers.admin;
+  await signIn(page, person);
   const { accountId } = await apiRead<{ accountId: string }>(
     page,
     "/auth/bootstrap",
@@ -184,7 +184,7 @@ test("a new company is set up in four steps: a taken or reserved address is refu
   // M06 rejection: a person outside the workspace is told it does not exist.
   const outsiderContext = await browser.newContext();
   const outsider = await outsiderContext.newPage();
-  await registerPerson(outsider, "onb-outsider");
+  await signIn(outsider, realUsers.guest);
   const refused = await outsider.request.get(
     `${process.env.VITE_API_URL ?? "http://127.0.0.1:58000/api/v1"}/workspaces/${workspaceId}/getting-started`,
   );
