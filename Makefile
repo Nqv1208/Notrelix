@@ -149,7 +149,7 @@ docs-check:
 	node scripts/docs/check-rule-ids.mjs
 	node scripts/docs/check-source-inventory.mjs
 	node scripts/docs/check-generated.mjs
-	node scripts/docs/uc-counts.mjs --check
+	node scripts/docs/uc-counts.mjs --validate
 
 uc-counts:
 	node scripts/docs/uc-counts.mjs

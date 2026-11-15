@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// Rewrites the section 8 count table of docs/workstreams/use-cases/README.md from the catalogs.
-//   node scripts/docs/uc-counts.mjs           rewrite in place
-//   node scripts/docs/uc-counts.mjs --check   exit 1 with a short diff when the table is stale
+// Prints the use-case count table (Markdown) from the catalogs in docs/workstreams/use-cases; writes no file.
+//   node scripts/docs/uc-counts.mjs             print the table (CI appends it to the job summary)
+//   node scripts/docs/uc-counts.mjs --validate  exit 1 on an unknown State value or a duplicate UC id
 // The State cell is found from each table's own header row (the index table has State as cell 9),
 // so extra pipes in later prose cells do not move it. Rows in a table without a State column (retired lists) are skipped.
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -27,8 +27,6 @@ const CONTEXTS = [
   ["Analytics", "analytics.md", "ANA"],
   ["Platform and Foundation", "platform-foundation.md", "PLT"],
 ];
-const START = "<!-- uc-counts:start -->";
-const END = "<!-- uc-counts:end -->";
 
 const cells = (line) => line.split("|").slice(1).map((c) => c.trim());
 
@@ -90,21 +88,12 @@ function main() {
   for (const [, file] of CONTEXTS) rowsByFile[file] ??= parseRows(readFileSync(join(DIR, file), "utf8"));
   const notes = [];
   const table = tally(rowsByFile, notes);
-  notes.forEach((m) => console.log(`[uc-counts] note: ${m}`));
-  const readme = join(DIR, "README.md");
-  const text = readFileSync(readme, "utf8");
-  const a = text.indexOf(START), b = text.indexOf(END);
-  if (a < 0 || b < a) { console.error(`[uc-counts] markers ${START} / ${END} missing in README.md`); process.exit(2); }
-  const next = `${text.slice(0, a + START.length)}\n${table}\n${text.slice(b)}`;
-  if (next === text) return console.log("[uc-counts] table is current");
-  if (process.argv.includes("--check")) {
-    const old = text.slice(a + START.length + 1, b - 1).split("\n");
-    const cur = table.split("\n");
-    console.error("[uc-counts] FAIL: README.md section 8 is stale; run `make uc-counts`");
-    cur.forEach((l, i) => l !== old[i] && console.error(`- ${old[i] ?? ""}\n+ ${l}`));
-    process.exit(1);
+  if (process.argv.includes("--validate")) {
+    notes.forEach((m) => console.error(`[uc-counts] ${m}`));
+    if (notes.length) process.exit(1);
+    return console.log("[uc-counts] PASS - catalog states are known and use case ids are unique");
   }
-  writeFileSync(readme, next);
-  console.log("[uc-counts] README.md section 8 rewritten");
+  notes.forEach((m) => console.error(`[uc-counts] note: ${m}`));
+  console.log(table);
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) main();

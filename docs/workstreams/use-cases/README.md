@@ -115,28 +115,8 @@ The design canvas holding the artboards is the owner's claude.ai artifact `18L4j
 
 ## 8. System assessment
 
-The counts below are generated from the State cell of every catalog row by `make uc-counts` (`scripts/docs/uc-counts.mjs`); never edit them by hand. `make docs-check` fails when they are stale. A pull request that moves a use-case state runs `make uc-counts` and commits the result.
+Counts are generated: run `make uc-counts`. CI shows them in the job summary.
 
-<!-- uc-counts:start -->
-| Context | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
-|---|---|---|---|---|---|---|---|
-| Accounts | 42 | 16 | 22 | 2 | 2 | 0 | 0 |
-| Identity | 61 | 6 | 9 | 1 | 11 | 30 | 4 |
-| Workspaces | 91 | 6 | 13 | 9 | 33 | 28 | 2 |
-| Governance | 75 | 15 | 17 | 8 | 19 | 10 | 6 |
-| Work Management | 171 | 6 | 1 | 2 | 4 | 157 | 1 |
-| Documents | 82 | 7 | 2 | 29 | 20 | 21 | 3 |
-| Collaboration | 85 | 19 | 5 | 9 | 28 | 19 | 5 |
-| Chat | 68 | 9 | 0 | 0 | 59 | 0 | 0 |
-| Automation | 79 | 11 | 19 | 11 | 37 | 0 | 1 |
-| Integrations | 55 | 13 | 14 | 4 | 24 | 0 | 0 |
-| Billing | 99 | 56 | 26 | 7 | 8 | 1 | 1 |
-| Analytics | 61 | 28 | 13 | 3 | 15 | 0 | 2 |
-| Platform and Foundation | 58 | 4 | 16 | 1 | 19 | 17 | 1 |
-| **Total** | **1027** | **196** | **157** | **86** | **279** | **283** | **26** |
-<!-- uc-counts:end -->
-
-The per-pull-request list of DONE changes that used to follow the table is removed: it grew on every merge and conflicted between parallel pull requests, and git history plus each use case's Evidence line already record who set which state and on what proof.
 Patterns that repeat across contexts, each detailed with file paths in the context files:
 
 - Competing writes without an expected version, so a stale write silently overwrites (Work Management items, workspace members, automation rules, page rename, comments, billing plan change, account rename).
