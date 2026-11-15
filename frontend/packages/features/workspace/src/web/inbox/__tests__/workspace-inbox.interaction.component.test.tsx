@@ -346,6 +346,35 @@ describe("WorkspaceInboxSurface", () => {
     expect(actions.onReopen).toHaveBeenCalledTimes(1);
   });
 
+  it("FUI[workspace.inbox:snoozed-filter] lists the snoozed entries under the Snoozed toggle and stops the snooze from the reading pane", () => {
+    const actions = actionsFixture();
+    const onToggle = vi.fn();
+    const scenario = inboxDoneScenario();
+    const data =
+      scenario.state.status === "ready"
+        ? scenario.state.data.map((item) => ({ ...item, snoozed: true }))
+        : [];
+    renderInbox(scenario, {
+      actions,
+      state: { status: "ready", data },
+      snoozed: { active: true, onToggle },
+    });
+    const toggle = screen.getByRole("button", { name: copy.snoozedFilter });
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(toggle);
+    expect(onToggle).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: copy.read.unsnooze }));
+    expect(actions.onReopen).toHaveBeenCalledTimes(1);
+  });
+
+  it("FUI[workspace.inbox:snoozed-empty] says nothing is snoozed when the Snoozed list is empty", () => {
+    renderInbox(inboxDoneScenario(), {
+      state: { status: "ready", data: [] },
+      snoozed: { active: true, onToggle: vi.fn() },
+    });
+    expect(screen.getByText(copy.snoozedEmpty.title)).toBeTruthy();
+  });
+
   it("FUI[workspace.inbox:done-empty] says nothing is done yet when the Done list is empty", () => {
     renderInbox(inboxDoneScenario(), {
       state: { status: "ready", data: [] },

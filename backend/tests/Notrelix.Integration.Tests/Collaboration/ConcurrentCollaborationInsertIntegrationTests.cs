@@ -6,7 +6,15 @@ using Notrelix.Application.Features.Collaboration.Reactions.Commands.AddReaction
 using Notrelix.Application.Features.Collaboration.Watchers.Commands.FollowBoardItem;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.Collaboration.Comments;
+using Microsoft.Extensions.Options;
+using Notrelix.Application.Common.Requests.Execution;
+using Notrelix.Application.Features.Documents.Pages.Queries.GetPage;
+using Notrelix.Application.Features.Documents.Pages.Services;
+using Notrelix.Infrastructure.CrossContext.Collaboration.WorkManagement;
+using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Collaboration;
+using Notrelix.Infrastructure.Data.Rls;
+using Notrelix.Infrastructure.Services;
 using Notrelix.Infrastructure.Messaging.Consumers.Collaboration;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
@@ -163,7 +171,22 @@ public sealed class ConcurrentCollaborationInsertIntegrationTests : IAsyncLifeti
     private async Task DeliverAsync(MentionCreatedIntegrationEvent message)
     {
         await using var context = _db.CreateOwnerContext(SystemTenant());
-        var consumer = new MentionCreatedNotificationConsumer(context, NullLogger<MentionCreatedNotificationConsumer>.Instance);
+        var tenant = SystemTenant();
+        var rls = new RlsSessionContext(
+            context,
+            Options.Create(new RlsOptions { Enabled = true, SetSessionContext = true }),
+            tenant);
+        // The production classes, composed by hand as the DI wiring composes them.
+        var pageAccess = new PageViewAccess(
+            new ResourceLocator(context, context, context, context, context, context, rls),
+            RequestDescriptorRegistry.Create(typeof(GetPageQuery).Assembly),
+            new PostgresAccessFactsProvider(
+                context, TimeProvider.System, new PostgresPageAuthorizationFacts(context), new FakeBillingSubscriptionFacts()),
+            new AccessPolicyEngine());
+        var audience = new ItemAudience(
+            new WorkItemNotificationFactsAdapter(context), new PostgresResourceVisibility(context, TimeProvider.System));
+        var consumer = new MentionCreatedNotificationConsumer(
+            context, audience, pageAccess, NullLogger<MentionCreatedNotificationConsumer>.Instance);
 
         var consumeContext = new Mock<ConsumeContext<MentionCreatedIntegrationEvent>>();
         consumeContext.SetupGet(c => c.Message).Returns(message);
