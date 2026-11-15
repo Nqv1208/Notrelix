@@ -43,8 +43,10 @@ public class ListChannelsQueryHandler(
             if (string.Equals(caller.Role, ChannelAccess.GuestRole, StringComparison.Ordinal))
                 return Result<IReadOnlyList<ChannelDto>>.Success([]);
 
+            var joined = mine.Keys.ToArray();
             spaces = await db.ChatSpaces
-                .Where(s => s.WorkspaceId == request.WorkspaceId && s.DeletedAt == null && s.Kind == SpaceKind.ChannelPublic)
+                .Where(s => s.WorkspaceId == request.WorkspaceId && s.DeletedAt == null && s.Kind == SpaceKind.ChannelPublic
+                    && !joined.Contains(s.Id))
                 .ToListAsync(cancellationToken);
         }
         else
