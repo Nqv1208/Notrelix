@@ -280,7 +280,10 @@ test("outsiders, a Member, a Guest, a foreign user, a clashing name and a repeat
     role: "Member",
     expectedVersion: team.version,
   });
-  expect(addGuest.status).toBeGreaterThanOrEqual(400);
+  expect(addGuest.status).toBe(400);
+  expect(JSON.stringify(addGuest.data)).toContain(
+    "Workspaces_Team_GuestCannotJoin",
+  );
   const addStranger = await apiWrite(
     page,
     "POST",
@@ -291,7 +294,7 @@ test("outsiders, a Member, a Guest, a foreign user, a clashing name and a repeat
       expectedVersion: team.version,
     },
   );
-  expect(addStranger.status).toBeGreaterThanOrEqual(400);
+  expect(addStranger.status).toBe(404);
   expect(await peopleOf(page, workspace.id, teamId)).toHaveLength(1);
   expect((await teamOf(page, workspace.id, teamId)).version).toBe(team.version);
 

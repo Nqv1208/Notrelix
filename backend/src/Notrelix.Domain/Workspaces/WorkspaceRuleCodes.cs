@@ -70,6 +70,7 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Team_CannotDowngradeLastLead = "Workspaces_Team_CannotDowngradeLastLead";
     public const string Workspaces_Team_LastLeadCannotLeave = "Workspaces_Team_LastLeadCannotLeave";
     public const string Workspaces_Team_DuplicateName = "Workspaces_Team_DuplicateName";
+    public const string Workspaces_Team_GuestCannotJoin = "Workspaces_Team_GuestCannotJoin";
 
     // ── TeamMember ────────────────────────────────────────────────────────
     public const string Workspaces_TeamMember_AlreadyActive = "Workspaces_TeamMember_AlreadyActive";
