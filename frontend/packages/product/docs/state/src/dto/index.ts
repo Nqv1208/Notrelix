@@ -12,6 +12,8 @@ export type PageDtoApi = {
   /** The Page aggregate version, sent back as `expectedVersion` by a versioned write. */
   version?: number;
   spaceId?: string | null;
+  /** Whether the caller may edit the page (the decision a write gets); the single-page read only. */
+  canEdit?: boolean | null;
   /**
    * Beyond the producer's `PageDto` (gap `CTR-GAP-DOCS-PAGE-EXT`): the review
    * state, who is on the page and the short tree name. A producer that does

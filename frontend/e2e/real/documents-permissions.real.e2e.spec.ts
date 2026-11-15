@@ -11,10 +11,13 @@ test.setTimeout(240_000);
 
 const apiUrl = process.env.VITE_API_URL ?? "http://127.0.0.1:58000/api/v1";
 
-// Workspace 3: `admin` is a plain Member (not its Owner or Admin), `guest` (user5) a Member, and
-// `workspaceGuest` (user6) a Guest. A plain member's only rights on a page come from the page itself.
+// Workspace 3: `admin` is a plain Member (not its Owner or Admin); a Guest has no right to a page until given.
 const creator = realUsers.admin;
-const viewerMember = realUsers.guest;
+// Two Guests of Workspace 3 (user7 is seeded like user6): a Guest has no right to a page until it is given.
+const viewerMember = {
+  email: "user7@notrelix.io",
+  password: realUsers.workspaceGuest.password,
+};
 const guest = realUsers.workspaceGuest;
 
 interface Grant {
@@ -38,6 +41,16 @@ async function userId(page: Page): Promise<string> {
   const me = await apiRead<{ id: string }>(page, "/auth/me");
   return me.id;
 }
+
+// The answer without what differs per request (trace and correlation ids) and with the asked id named.
+const sameAnswer = (body: string, id: string) => {
+  const { traceId, correlationId, ...rest } = JSON.parse(
+    body.replaceAll(id, "<id>"),
+  );
+  void traceId;
+  void correlationId;
+  return rest;
+};
 
 const read = async (page: Page, path: string) => {
   const response = await page.request.get(`${apiUrl}${path}`);
@@ -83,6 +96,7 @@ test("a plain member who creates a page is its Manager and shares it; a person w
 
   // A person with no access (a Guest, and a Member who is not the creator) gets the answer of a made-up id.
   const guestPage = await as(browser, guest);
+  const editorPage = await as(browser, realUsers.guest);
   const memberPage = await as(browser, viewerMember);
   const madeUp = crypto.randomUUID();
   for (const outsider of [guestPage, memberPage]) {
@@ -90,7 +104,9 @@ test("a plain member who creates a page is its Manager and shares it; a person w
     const hidden = await read(outsider, `/pages/${pageId}`);
     expect(none.status).toBe(404);
     expect(hidden.status).toBe(404);
-    expect(hidden.body.replaceAll(pageId, madeUp)).toBe(none.body);
+    expect(sameAnswer(hidden.body, pageId)).toEqual(
+      sameAnswer(none.body, madeUp),
+    );
   }
   // Nor may they share it: no one but a Manager grants.
   const outsiderGrant = await apiWrite(
@@ -116,7 +132,7 @@ test("a plain member who creates a page is its Manager and shares it; a person w
     guestPage.getByRole("button", { name: /Back to home|Về trang chủ/ }),
   ).toBeVisible();
 
-  // The creator shares it as a Viewer with the member and as an Editor with the guest.
+  // The creator shares it as a Viewer with a Guest; a plain Member (user5) is an Editor by default.
   const share = (subject: string, level: string) =>
     apiWrite(owner, "POST", `/resources/documents.page/${pageId}/permissions`, {
       subjectType: "User",
@@ -124,11 +140,35 @@ test("a plain member who creates a page is its Manager and shares it; a person w
       level,
     });
   expect((await share(await userId(memberPage), "Viewer")).status).toBe(201);
-  expect((await share(await userId(guestPage), "Editor")).status).toBe(201);
 
-  // The Viewer reads the page and its blocks; every write answers 404 and changes nothing.
+  // The Viewer reads the page and its blocks; every write answers 403 and changes nothing.
+  // The page read carries the caller's own decision for a write: false for the Viewer, true for the
+  // Editor and the creator; the Viewer's editor is read-only on screen.
+  const canEdit = async (who: Page) =>
+    (
+      JSON.parse((await read(who, `/pages/${pageId}`)).body) as {
+        canEdit: boolean;
+      }
+    ).canEdit;
+  expect(await canEdit(memberPage)).toBe(false);
+  await memberPage.goto(`/workspaces/${workspace.id}/docs/${pageId}`);
+  await expect(
+    memberPage.getByText(/You can only read this page|Bạn chỉ có quyền xem/),
+  ).toBeVisible({ timeout: 20_000 });
+  await expect(
+    memberPage
+      .getByRole("textbox", {
+        name: /Type \/ to insert a block|Gõ \/ để chèn khối/,
+      })
+      .first(),
+  ).toHaveAttribute("contenteditable", "false");
   expect((await read(memberPage, `/pages/${pageId}`)).status).toBe(200);
   const blocksBefore = (await read(memberPage, `/pages/${pageId}/blocks`)).body;
+  const pageVersion = (
+    JSON.parse((await read(memberPage, `/pages/${pageId}`)).body) as {
+      version: number;
+    }
+  ).version;
   const body = {
     expectedVersion: block.data!.version,
     content: { v: 1, runs: [{ text: "viewer edit", marks: [] }] },
@@ -145,9 +185,11 @@ test("a plain member who creates a page is its Manager and shares it; a person w
     }),
     await apiWrite(memberPage, "PATCH", `/pages/${pageId}`, {
       title: "viewer rename",
+      expectedVersion: pageVersion,
     }),
   ]) {
-    expect(attempt.status).toBe(404);
+    // The Viewer can read the page, so its existence is no secret: the refusal is a plain 403.
+    expect(attempt.status).toBe(403);
   }
   expect((await read(memberPage, `/pages/${pageId}/blocks`)).body).toBe(
     blocksBefore,
@@ -155,7 +197,7 @@ test("a plain member who creates a page is its Manager and shares it; a person w
 
   // The Editor changes the block, and the Viewer reads the change.
   const edited = await apiWrite<{ version: number }>(
-    guestPage,
+    editorPage,
     "PATCH",
     `/pages/${pageId}/blocks/${block.data!.id}`,
     { ...body, content: { v: 1, runs: [{ text: "editor edit", marks: [] }] } },
@@ -165,4 +207,18 @@ test("a plain member who creates a page is its Manager and shares it; a person w
   expect((await read(memberPage, `/pages/${pageId}/blocks`)).body).toContain(
     "editor edit",
   );
+
+  // A plain Member holds Editor by the workspace default and edits on screen; a Guest is capped at Viewer.
+  await editorPage.goto(`/workspaces/${workspace.id}/docs/${pageId}`);
+  await expect(
+    editorPage
+      .getByRole("textbox", {
+        name: /Type \/ to insert a block|Gõ \/ để chèn khối/,
+      })
+      .first(),
+  ).not.toHaveAttribute("contenteditable", "false");
+
+  // The Editor, who has just written, and the creator both read canEdit true.
+  expect(await canEdit(editorPage)).toBe(true);
+  expect(await canEdit(owner)).toBe(true);
 });

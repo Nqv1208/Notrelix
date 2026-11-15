@@ -541,7 +541,8 @@ export const useDocPageHost: UseDocPageHost = (
     realtime: runtime.realtime,
     pageHref: (targetId) =>
       `/workspaces/${workspaceId}/docs/${encodeURIComponent(targetId)}`,
-    canEdit: role !== "guest",
+    // The server's decision for a write of this page; a producer that does not say falls back to the role.
+    canEdit: page?.canEdit ?? role !== "guest",
     blockTypes: CREATABLE_BLOCK_TYPES,
     canConvertTodo: convertBoards.length > 0,
     convertBoards,
