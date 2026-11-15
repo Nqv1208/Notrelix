@@ -41,6 +41,11 @@ export const workspaceQueryKeys = {
     workspaceQueryKey(workspaceId, "workspace", "spaces"),
   spaceTree: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "spaces", "tree"),
+  /** One Space read by id; every Space write invalidates the whole prefix. */
+  spaceDetails: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "spaces", "detail"),
+  spaceDetail: (workspaceId: string, spaceId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "spaces", "detail", spaceId),
   deletedSpaces: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "spaces", "deleted"),
   spaceMembers: (workspaceId: string, spaceId: string) =>

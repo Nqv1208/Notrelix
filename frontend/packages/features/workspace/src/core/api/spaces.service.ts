@@ -134,6 +134,12 @@ export function parseSpaceMembers(items: unknown): SpaceMemberEntry[] {
   return entries;
 }
 
+/** The fields the single-Space read owns; the tree keeps position and my access. */
+export type SpaceDetail = Pick<
+  SpaceNode,
+  "name" | "description" | "type" | "visibility" | "isArchived" | "version"
+>;
+
 export interface CreateSpaceInput {
   readonly name: string;
   readonly type: SpaceType;
@@ -192,6 +198,23 @@ export function createSpacesService(
         cursor = page?.nextCursor ?? null;
       } while (cursor);
       return nodes;
+    },
+
+    /** The live record of one Space; an outsider and a missing id both answer NotFound (thrown). */
+    async get(workspaceId: string, spaceId: string): Promise<SpaceDetail> {
+      const raw = await api.get<SpaceDetailDto>(e.space(workspaceId, spaceId));
+      const type = parseSpaceType(raw?.spaceType);
+      const visibility = parseSpaceVisibility(raw?.visibility);
+      if (!raw?.id || !type || !visibility)
+        throw new Error("The Space record is incomplete.");
+      return {
+        name: raw.name ?? "",
+        description: raw.description ?? null,
+        type,
+        visibility,
+        isArchived: raw.isArchived === true,
+        version: typeof raw.version === "number" ? raw.version : 0,
+      };
     },
 
     /**
