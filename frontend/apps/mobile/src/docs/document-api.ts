@@ -53,6 +53,27 @@ export function createDocumentApi(config: DocumentApiConfig) {
     return (await response.json()) as T;
   }
 
+  /** Every window of the block read, 1 000 blocks each, followed to the end. */
+  async function readBlocks(
+    id: string,
+    signal?: AbortSignal,
+  ): Promise<BlockWireDto[]> {
+    const blocks: BlockWireDto[] = [];
+    let cursor: string | null = null;
+    do {
+      const query: string = cursor
+        ? `?cursor=${encodeURIComponent(cursor)}`
+        : "";
+      const window: {
+        items?: BlockWireDto[] | null;
+        nextCursor?: string | null;
+      } = await getJson(`/pages/${id}/blocks${query}`, signal);
+      blocks.push(...(window.items ?? []));
+      cursor = window.nextCursor ?? null;
+    } while (cursor);
+    return blocks;
+  }
+
   return {
     async read(
       workspaceId: string,
@@ -62,7 +83,7 @@ export function createDocumentApi(config: DocumentApiConfig) {
       const id = encodeURIComponent(pageId);
       const [page, blocks] = await Promise.all([
         getJson<PageWireDto>(`/pages/${id}`, signal),
-        getJson<BlockWireDto[]>(`/pages/${id}/blocks`, signal),
+        readBlocks(id, signal),
       ]);
       // A page of another workspace is out of scope for this route.
       if (page.workspaceId !== workspaceId) throw new DocumentRequestError(404);

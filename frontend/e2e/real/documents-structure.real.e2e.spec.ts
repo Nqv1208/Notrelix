@@ -39,7 +39,10 @@ async function addBlock(page: Page, pageId: string, text: string) {
 }
 
 async function order(page: Page, pageId: string) {
-  const blocks = await apiRead<BlockRow[]>(page, `/pages/${pageId}/blocks`);
+  const { items: blocks } = await apiRead<{ items: BlockRow[] }>(
+    page,
+    `/pages/${pageId}/blocks`,
+  );
   return [...blocks]
     .sort((a, b) => (a.position < b.position ? -1 : 1))
     .map((block) => block.id);
@@ -144,9 +147,11 @@ test("a block moves after a sibling against its version, a stale move changes no
   expect(
     (await apiWrite(page, "POST", `/pages/${doc}/archive`, {})).status,
   ).toBeLessThan(300);
-  const current = await apiRead<BlockRow[]>(page, `/pages/${doc}/blocks`).catch(
-    () => [] as BlockRow[],
-  );
+  const current = (
+    await apiRead<{ items: BlockRow[] }>(page, `/pages/${doc}/blocks`).catch(
+      () => ({ items: [] as BlockRow[] }),
+    )
+  ).items;
   const trashedMove = await apiWrite(page, "POST", "/blocks/reorder", {
     pageId: doc,
     items: [
