@@ -55,6 +55,7 @@ const ROLE_CLASS: Record<keyof typeof textRoles, string> = {
   crumb: "text-crumb",
   micro: "text-micro",
   "mark-3xs": "text-mark-3xs",
+  "mark-4xs": "text-mark-4xs",
   "avatar-sm": "text-avatar-sm",
   "avatar-md": "text-avatar-md",
   "avatar-xs": "text-avatar-xs",

@@ -1,4 +1,5 @@
 import {
+  ArrowRight,
   Check,
   Contrast,
   LayoutPanelTop,
@@ -24,6 +25,7 @@ import {
   Hint,
   OPTION_CLASS,
   OnboardingFrame,
+  StepTitle,
 } from "./onboarding-frame";
 import { OnboardingPreview } from "./onboarding-preview";
 import {
@@ -156,7 +158,9 @@ export function OnboardingJoinSurface(props: OnboardingJoinSurfaceProps) {
       aside={aside}
       footer={
         <>
-          <span className="text-item-ui text-muted-foreground">{t.foot}</span>
+          <span className="flex-1 text-crumb leading-[1.45] text-meta-foreground">
+            {t.foot}
+          </span>
           <button
             type="button"
             disabled={props.pending}
@@ -164,6 +168,7 @@ export function OnboardingJoinSurface(props: OnboardingJoinSurfaceProps) {
             className={BUTTON_PRIMARY_CLASS}
           >
             {props.pending ? t.starting : t.start}
+            <ArrowRight aria-hidden="true" className="size-4" />
           </button>
         </>
       }
@@ -171,20 +176,21 @@ export function OnboardingJoinSurface(props: OnboardingJoinSurfaceProps) {
       <div className="flex items-start gap-3.5">
         <span
           aria-hidden="true"
-          className="grid size-11 shrink-0 place-items-center rounded-[11px] bg-primary text-body font-bold text-primary-foreground"
+          className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-primary text-body font-bold text-primary-foreground"
         >
           {props.org.initials}
         </span>
-        <div className="flex flex-col gap-1.5">
-          <h1 className="m-0 text-item-title leading-tight tracking-tight">
-            {fillOnboarding(t.title, { name: firstName, org: props.org.name })}
-          </h1>
-          <p className="m-0 text-item-prose leading-normal text-muted-foreground">
-            {props.inviterName
+        <StepTitle
+          title={fillOnboarding(t.title, {
+            name: firstName,
+            org: props.org.name,
+          })}
+          lead={
+            props.inviterName
               ? fillOnboarding(t.lead, { inviter: props.inviterName })
-              : t.leadNoInviter}
-          </p>
-        </div>
+              : t.leadNoInviter
+          }
+        />
       </div>
       {props.error === "unreachable" ? (
         <p
@@ -195,58 +201,58 @@ export function OnboardingJoinSurface(props: OnboardingJoinSurfaceProps) {
         </p>
       ) : null}
 
-      <section aria-labelledby="join-access" className="flex flex-col gap-2.5">
-        <h2 id="join-access" className="m-0 text-item-prose font-semibold">
+      <section aria-labelledby="join-access">
+        <h2
+          id="join-access"
+          className="m-0 mb-2 text-body leading-[1.45] font-[650]"
+        >
           {t.accessTitle}
         </h2>
-        <div className="overflow-hidden rounded-[12px] border border-line">
+        <div className="overflow-hidden rounded-[12px] border border-line bg-popover">
           {mine.length === 0 ? (
-            <p className="m-0 px-4 py-3 text-item-ui text-muted-foreground">
+            <p className="m-0 px-3.5 py-3 text-item-ui text-muted-foreground">
               {t.noAccess}
             </p>
           ) : (
             mine.map((space) => (
-              <div
-                key={space.id}
-                className="border-b border-line last:border-b-0"
-              >
-                <div className="flex items-center gap-2.5 px-4 py-3">
+              <div key={space.id}>
+                <div className="flex items-center gap-2.5 border-b border-line px-3.5 py-3">
                   <span
                     aria-hidden="true"
                     className={cn(
-                      "grid size-5.5 place-items-center rounded-[6px] text-mark-xs font-bold",
+                      "grid size-6 shrink-0 place-items-center rounded-[7px] text-avatar-md font-bold",
                       DEPARTMENT_TONE_CLASS[space.color ?? "blue"],
                     )}
                   >
                     {departmentInitials(space.name)}
                   </span>
-                  <b className="flex-1 text-item-prose font-semibold">
+                  <b className="text-body leading-[1.45] font-semibold">
                     {space.name}
                   </b>
-                  <span className="rounded-full bg-state-hover-strong px-2.5 py-0.5 text-item-small font-semibold">
+                  <span className="ml-auto inline-flex h-[22px] items-center rounded-full bg-state-hover-strong px-2 text-item-note leading-[1.45] font-semibold">
                     {t.memberBadge}
                   </span>
                 </div>
                 {space.boards.map((board) => (
                   <div
                     key={board.id}
-                    className="flex items-center gap-2.5 border-t border-line px-4 py-2.5 pl-5.5 text-item-prose"
+                    className="flex items-center gap-2.5 py-2 pr-3.5 pl-12 text-item-ui leading-[1.45]"
                   >
                     <LayoutPanelTop
                       aria-hidden="true"
-                      className="size-3.5 shrink-0 text-meta-foreground"
+                      className="-ml-6 size-3.5 shrink-0 text-meta-foreground"
                     />
-                    <span className="flex-1">{board.title}</span>
-                    <span className="text-item-ui text-muted-foreground">
+                    {board.title}
+                    <small className="ml-auto text-crumb leading-[1.45] text-meta-foreground">
                       {t.levels[board.level]}
-                    </span>
+                    </small>
                   </div>
                 ))}
               </div>
             ))
           )}
           {open.length > 0 ? (
-            <p className="m-0 border-t border-line bg-state-hover px-4 py-3 text-item-ui leading-normal text-muted-foreground">
+            <p className="m-0 border-t border-line bg-background px-3.5 py-[9px] text-crumb leading-[1.45] text-meta-foreground">
               {fillOnboarding(t.openNote, {
                 names: open.map((space) => space.name).join(", "),
               })}
@@ -255,18 +261,21 @@ export function OnboardingJoinSurface(props: OnboardingJoinSurfaceProps) {
         </div>
       </section>
 
-      <section aria-labelledby="join-profile" className="flex flex-col gap-3">
-        <h2 id="join-profile" className="m-0 text-item-prose font-semibold">
+      <section aria-labelledby="join-profile">
+        <h2
+          id="join-profile"
+          className="m-0 mb-2 text-body leading-[1.45] font-[650]"
+        >
           {t.profileTitle}
         </h2>
-        <div className="flex items-end gap-4">
+        <div className="flex flex-wrap items-end gap-3.5">
           <span
             aria-hidden="true"
-            className="grid size-13 shrink-0 place-items-center rounded-full bg-mark-crimson text-doc-heading font-bold text-mark-crimson-foreground"
+            className="grid size-13 shrink-0 place-items-center rounded-full bg-mark-crimson text-prose font-bold text-mark-crimson-foreground"
           >
             {props.initials}
           </span>
-          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <div className="flex min-w-48 flex-1 flex-col gap-1.5">
             <FieldLabel htmlFor="join-name">{t.nameLabel}</FieldLabel>
             <input
               id="join-name"
@@ -290,7 +299,7 @@ export function OnboardingJoinSurface(props: OnboardingJoinSurfaceProps) {
             <button
               type="button"
               aria-disabled="true"
-              className="inline-flex h-10 max-md:h-touch items-center gap-2 rounded-[8px] border border-line-strong bg-popover px-3.5 text-body font-medium text-foreground opacity-70"
+              className="inline-flex h-10 max-md:h-touch items-center gap-1.5 rounded-[8px] border border-line-strong bg-popover px-4 text-body font-medium text-foreground opacity-70"
             >
               <Upload aria-hidden="true" className="size-4" />
               {t.upload}
@@ -299,97 +308,110 @@ export function OnboardingJoinSurface(props: OnboardingJoinSurfaceProps) {
         </div>
       </section>
 
-      <section aria-labelledby="join-look" className="flex flex-col gap-3">
-        <h2 id="join-look" className="m-0 text-item-prose font-semibold">
+      <section aria-labelledby="join-look">
+        <h2
+          id="join-look"
+          className="m-0 mb-2 text-body leading-[1.45] font-[650]"
+        >
           {t.appearanceTitle}
         </h2>
-        <div className="flex flex-wrap items-center gap-2.5">
-          <span
-            id="join-mode"
-            className="w-18 shrink-0 text-item-ui font-semibold text-muted-foreground"
-          >
-            {t.modeLabel}
-          </span>
-          <div
-            role="radiogroup"
-            aria-labelledby="join-mode"
-            className="flex flex-wrap gap-2"
-          >
-            {THEME_MODES.map((mode) => {
-              const Icon = MODE_ICONS[mode];
-              return (
-                <label key={mode} className={cn(OPTION_CLASS, "h-9 px-3")}>
-                  <input
-                    type="radio"
-                    name="join-mode"
-                    value={mode}
-                    checked={props.mode === mode}
-                    onChange={() => props.onMode(mode)}
-                    className="size-4 accent-primary"
-                  />
-                  <Icon aria-hidden="true" className="hidden size-4" />
-                  {t.modes[mode]}
-                </label>
-              );
-            })}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              id="join-mode"
+              className="w-18 shrink-0 text-crumb leading-normal font-semibold text-muted-foreground"
+            >
+              {t.modeLabel}
+            </span>
+            <div
+              role="radiogroup"
+              aria-labelledby="join-mode"
+              className="flex flex-wrap gap-2"
+            >
+              {THEME_MODES.map((mode) => {
+                const Icon = MODE_ICONS[mode];
+                return (
+                  <label key={mode} className={cn(OPTION_CLASS, "h-9")}>
+                    <input
+                      type="radio"
+                      name="join-mode"
+                      value={mode}
+                      checked={props.mode === mode}
+                      onChange={() => props.onMode(mode)}
+                      className="size-4 accent-primary"
+                    />
+                    <Icon aria-hidden="true" className="hidden size-4" />
+                    {t.modes[mode]}
+                  </label>
+                );
+              })}
+            </div>
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2.5">
-          <span
-            id="join-accent"
-            className="w-18 shrink-0 text-item-ui font-semibold text-muted-foreground"
-          >
-            {t.accentLabel}
-          </span>
-          <div
-            role="radiogroup"
-            aria-labelledby="join-accent"
-            className="flex flex-wrap gap-2"
-          >
-            {THEME_ACCENT_OPTIONS.map(({ id, swatch }) => {
-              const on = props.accent === id;
-              return (
-                <label
-                  key={id}
-                  className={cn(
-                    OPTION_CLASS,
-                    "h-9 gap-2 border-transparent bg-transparent px-2 has-[:checked]:border-line-strong has-[:checked]:bg-state-hover",
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="join-accent"
-                    value={id}
-                    checked={on}
-                    onChange={() => props.onAccent(id)}
-                    className="sr-only"
-                  />
-                  <span
-                    aria-hidden="true"
-                    className="grid size-5 place-items-center rounded-full text-primary-foreground"
-                    style={{ backgroundColor: swatch }}
+          <div className="flex flex-wrap items-center gap-1">
+            <span
+              id="join-accent"
+              className="w-18 shrink-0 text-crumb leading-normal font-semibold text-muted-foreground"
+            >
+              {t.accentLabel}
+            </span>
+            <div
+              role="radiogroup"
+              aria-labelledby="join-accent"
+              className="flex flex-wrap gap-1"
+            >
+              {THEME_ACCENT_OPTIONS.map(({ id, swatch }) => {
+                const on = props.accent === id;
+                return (
+                  <label
+                    key={id}
+                    className={cn(
+                      "box-content inline-flex h-[34px] cursor-pointer items-center gap-[7px] rounded-[9px] border pr-2.5 pl-[5px] text-crumb has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-focus-ring",
+                      on
+                        ? "border-line-strong bg-state-hover font-semibold text-foreground"
+                        : "border-transparent font-medium text-muted-foreground hover:bg-state-hover",
+                    )}
                   >
-                    {on ? <Check className="size-3.5" strokeWidth={3} /> : null}
-                  </span>
-                  {t.accents[id]}
-                </label>
-              );
-            })}
+                    <input
+                      type="radio"
+                      name="join-accent"
+                      value={id}
+                      checked={on}
+                      onChange={() => props.onAccent(id)}
+                      className="sr-only"
+                    />
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "grid size-5.5 place-items-center rounded-full",
+                        id === "amber" ? "text-black" : "text-white",
+                      )}
+                      style={{ backgroundColor: swatch }}
+                    >
+                      <Check
+                        className={cn("size-3.25", !on && "opacity-0")}
+                        strokeWidth={3}
+                      />
+                    </span>
+                    {t.accents[id]}
+                  </label>
+                );
+              })}
+            </div>
           </div>
+          <Hint>
+            {fillOnboarding(t.accentNote, {
+              org: props.org.name,
+              accent: accentName,
+            })}
+          </Hint>
         </div>
-        <Hint>
-          {fillOnboarding(t.accentNote, {
-            org: props.org.name,
-            accent: accentName,
-          })}
-        </Hint>
       </section>
 
-      <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
-        <legend className="mb-1 p-0 text-item-prose font-semibold">
+      <fieldset className="m-0 min-w-0 border-0 p-0">
+        <legend className="mb-2 p-0 text-compact leading-[1.45] font-semibold">
           {t.emailTitle}
         </legend>
-        <div className="flex flex-wrap gap-2.5">
+        <div className="flex flex-wrap gap-2">
           {(["digest", "mentions"] as const).map((value) => (
             <label key={value} className={OPTION_CLASS}>
               <input

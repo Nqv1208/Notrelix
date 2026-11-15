@@ -41,6 +41,7 @@ export const fontSizeScale = {
  * {@link fontSizeScale} alone. Keys are the size in px, `p` for the point.
  */
 export const fontSizeDense = {
+  "6p5": 0.40625,
   "7": 0.4375,
   "9": 0.5625,
   "10": 0.625,
@@ -261,6 +262,14 @@ export const textRoles = {
   /** Initials in an 18px mark (item sheet breadcrumb). */
   "mark-3xs": {
     size: "8",
+    lineHeight: 1,
+    weight: weights.bold,
+    letterSpacing: "0em",
+    family: "sans",
+  },
+  /** Initials in a 15px department mark of the onboarding preview (mockup 6.5px / 700). */
+  "mark-4xs": {
+    size: "6p5",
     lineHeight: 1,
     weight: weights.bold,
     letterSpacing: "0em",
