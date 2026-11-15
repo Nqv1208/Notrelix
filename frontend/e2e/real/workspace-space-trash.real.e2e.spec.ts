@@ -200,18 +200,16 @@ test("an Admin deletes a department from its settings and restores it from the d
   expect(underDeleted.status).toBeGreaterThanOrEqual(400);
   expect(underDeleted.status).toBeLessThan(500);
   await page.goto(`${w}/deleted-spaces`);
-  const kidRow = page.getByRole("listitem").filter({ hasText: "Kid" });
+  const rowOf = (name: string) =>
+    page
+      .getByRole("listitem")
+      .filter({ has: page.getByText(name, { exact: true }) });
+  const kidRow = rowOf("Kid");
   await kidRow.getByRole("button", { name: "Restore" }).click();
   await expect(kidRow.getByRole("alert")).toBeVisible();
   expect(await statusOf(page, url(kid))).toBe(404);
-  await page
-    .getByRole("listitem")
-    .filter({ hasText: "Parent" })
-    .getByRole("button", { name: "Restore" })
-    .click();
-  await expect(
-    page.getByRole("listitem").filter({ hasText: "Parent" }),
-  ).toHaveCount(0);
+  await rowOf("Parent").getByRole("button", { name: "Restore" }).click();
+  await expect(rowOf("Parent")).toHaveCount(0);
   await kidRow.getByRole("button", { name: "Restore" }).click();
   await expect(
     page.getByText(/No deleted department in the last 30 days/),

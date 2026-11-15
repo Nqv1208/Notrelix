@@ -197,7 +197,8 @@ test("an Admin renames and describes a department, switches its visibility, arch
   await expect(
     page.getByRole("button", { name: "Archive", exact: true }),
   ).toHaveAttribute("aria-disabled", "true");
-  await expect(page.getByText(/still has 1 Board/)).toBeVisible();
+  // Archive and Delete both give the reason; the first is Archive.
+  await expect(page.getByText(/still has 1 Board/).first()).toBeVisible();
 
   const empty = await makeSpace(page, workspace.id, "Empty");
   const before = await spaceOf(page, workspace.id, empty);
