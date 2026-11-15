@@ -5,9 +5,11 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  Ellipsis,
 } from "lucide-react";
 import { cn, useMediaQuery } from "@notrelix/ui-web";
-import { CalendarAside } from "./calendar-aside";
+import { CalendarPhoneDay } from "./calendar-phone-day";
+import { CalendarActionSheet, CalendarDueSheet } from "./calendar-phone-sheets";
 import {
   CalendarNarrowAgenda,
   CalendarUndatedSheet,
@@ -25,6 +27,7 @@ import {
   weekDays,
   type CalendarEntry,
   type CalendarRange,
+  type CalendarStatusMenu,
   type CalendarTone,
   type CalendarUndated,
   type DayKey,
@@ -110,9 +113,16 @@ export interface CalendarPhoneProps {
   filterActive: boolean;
   canEdit: boolean;
   onOpenItem: (id: string) => void;
-  onSetDue: (id: string, day: DayKey) => void;
+  onSetDue: (id: string, day: DayKey, minutes?: number) => void;
+  /** Minutes of the day now, for the day's now line. */
+  nowMinutes: number;
+  /** "Giờ Hà Nội" and "Giờ Hà Nội (GMT+7)". */
+  zoneName: string;
+  zoneLabel: string;
   /** "Đổi ngày…" of a 320 px agenda row: the container opens the dates dialog. */
   onEditDates?: ((entry: CalendarEntry) => void) | undefined;
+  /** "Chuyển sang…" of the row's action sheet. */
+  statusMenu?: CalendarStatusMenu | undefined;
 }
 
 /** Below this width the Calendar is `WM-TLCal-320`'s agenda (no grid), above it `Final-M-Calendar`. */
@@ -141,27 +151,35 @@ export function CalendarPhone({
   canEdit,
   onOpenItem,
   onSetDue,
+  nowMinutes,
+  zoneName,
+  zoneLabel,
   onEditDates,
+  statusMenu,
 }: CalendarPhoneProps) {
   const [undatedOpen, setUndatedOpen] = useState(false);
+  const [actionFor, setActionFor] = useState<CalendarEntry | null>(null);
   const narrow = useMediaQuery(NARROW_PHONE_QUERY);
   const month = range === "month";
+  const dayRange = range === "day";
   const t = copy.phone;
-  const heading = month
-    ? calendarHeading("month", anchorDay, copy, locale)
-    : (() => {
-        const start = startOfWeek(anchorDay);
-        const end = addDays(start, 6);
-        return `${parseDayKey(start).day} – ${formatDayMonth(end)}/${parseDayKey(end).year}`;
-      })();
+  const heading =
+    month || dayRange
+      ? calendarHeading(range, anchorDay, copy, locale)
+      : (() => {
+          const start = startOfWeek(anchorDay);
+          const end = addDays(start, 6);
+          return `${parseDayKey(start).day} – ${formatDayMonth(end)}/${parseDayKey(end).year}`;
+        })();
   const selected = anchorDay;
   const onDay = entries.filter(
     (entry) => entry.startDay <= selected && entry.endDay >= selected,
   );
   const overdue = entries.filter((entry) => entry.tone === "overdue");
-  const pick = (day: DayKey) => {
-    if (month && day === anchorDay) onRangeChange("week");
-    onAnchorChange(day);
+  const pick = (target: DayKey) => {
+    if (month && target === anchorDay) onRangeChange("week");
+    else if (!month && target === anchorDay) onRangeChange("day");
+    onAnchorChange(target);
   };
   const cell = (day: DayKey, outside: boolean) => {
     const marks = markersOn(entries, day);
@@ -256,7 +274,20 @@ export function CalendarPhone({
         </button>
       </div>
 
-      {narrow ? null : month ? (
+      {narrow ? null : dayRange ? (
+        <CalendarPhoneDay
+          copy={copy}
+          locale={locale}
+          day={anchorDay}
+          today={today}
+          nowMinutes={nowMinutes}
+          zoneName={
+            zoneName.charAt(0).toLocaleLowerCase(locale) + zoneName.slice(1)
+          }
+          entries={entries}
+          onOpenItem={onOpenItem}
+        />
+      ) : month ? (
         <div role="grid" aria-label={heading} className="shrink-0 px-3">
           <div role="row" className="grid h-5.5 grid-cols-7">
             {WEEKDAYS.map((key) => t.weekdaysShort[key]).map((label) => (
@@ -415,7 +446,7 @@ export function CalendarPhone({
           onSetDue={(id) => onSetDue(id, anchorDay)}
         />
       ) : null}
-      {narrow ? null : (
+      {narrow || dayRange ? null : (
         <div className="min-h-0 flex-1 overflow-y-auto px-4">
           <h3 className="m-0 flex h-11 items-center gap-2 text-[15px] leading-[1.45] font-[650] text-foreground">
             {`${weekdayName(selected, locale)} ${formatDayMonth(selected)}`}
@@ -439,14 +470,14 @@ export function CalendarPhone({
               {onDay.map((entry) => (
                 <li
                   key={entry.id}
-                  className="border-b border-line last:border-b-0"
+                  className="flex items-start border-b border-line last:border-b-0"
                 >
                   <button
                     type="button"
                     data-calendar-event={entry.id}
                     aria-label={entryLabel(entry)}
                     onClick={() => onOpenItem(entry.id)}
-                    className="flex w-full cursor-pointer items-start gap-0 border-0 bg-transparent p-0 text-left"
+                    className="flex min-w-0 flex-1 cursor-pointer items-start gap-0 border-0 bg-transparent p-0 text-left"
                   >
                     <span className="w-17 shrink-0 px-3 pt-2 text-[13px] font-semibold text-meta-foreground">
                       {entry.dueMinutes !== null &&
@@ -454,7 +485,7 @@ export function CalendarPhone({
                         ? `${String(Math.floor(entry.dueMinutes / 60)).padStart(2, "0")}:${String(entry.dueMinutes % 60).padStart(2, "0")}`
                         : copy.agenda.allDay}
                     </span>
-                    <span className="min-w-0 flex-1 py-2 pr-3 text-[15px] leading-[1.45] font-medium text-foreground">
+                    <span className="min-w-0 flex-1 py-2 pr-1 text-[15px] leading-[1.45] font-medium text-foreground">
                       {entry.itemKey ? (
                         <span className="mr-1.5 font-mono text-[12px] text-meta-foreground">
                           {entry.itemKey}
@@ -463,31 +494,56 @@ export function CalendarPhone({
                       {entry.title}
                     </span>
                   </button>
+                  {canEdit && (onEditDates || statusMenu) ? (
+                    <button
+                      type="button"
+                      data-calendar-more={entry.id}
+                      aria-haspopup="dialog"
+                      aria-label={fill(t.moreLabel, {
+                        key: entry.itemKey ?? entry.title,
+                      })}
+                      onClick={() => setActionFor(entry)}
+                      className="mt-1.5 grid size-11 flex-none cursor-pointer place-items-center rounded-[12px] border-0 bg-transparent p-0 text-meta-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                    >
+                      <Ellipsis className="size-5" aria-hidden="true" />
+                    </button>
+                  ) : null}
                 </li>
               ))}
             </ul>
           )}
-          {undatedOpen && !narrow ? (
-            <div className="pb-4">
-              <CalendarAside
-                copy={copy}
-                undatedTotal={undatedTotal}
-                undated={undated}
-                filterActive={filterActive}
-                canEdit={canEdit}
-                onSetDue={(id) => onSetDue(id, anchorDay)}
-                onDragStart={() => {}}
-                onDragEnd={() => {}}
-              />
-            </div>
-          ) : null}
         </div>
       )}
 
+      {narrow ? null : (
+        <CalendarDueSheet
+          copy={copy}
+          locale={locale}
+          today={today}
+          zoneLabel={zoneLabel}
+          open={undatedOpen}
+          onOpenChange={setUndatedOpen}
+          undatedTotal={undatedTotal}
+          undated={undated}
+          filterActive={filterActive}
+          canEdit={canEdit}
+          onSetDue={onSetDue}
+        />
+      )}
+      <CalendarActionSheet
+        copy={copy}
+        locale={locale}
+        entry={actionFor}
+        canEdit={canEdit}
+        onClose={() => setActionFor(null)}
+        onOpenItem={onOpenItem}
+        onChangeDue={onEditDates}
+        statusMenu={statusMenu}
+      />
       <button
         type="button"
         aria-expanded={undatedOpen}
-        aria-haspopup={narrow ? "dialog" : undefined}
+        aria-haspopup="dialog"
         onClick={() => setUndatedOpen((open) => !open)}
         className="flex h-12 shrink-0 cursor-pointer items-center gap-2.5 border-0 border-t border-line bg-popover px-4 text-left text-[14px] text-foreground dark:bg-card"
       >
