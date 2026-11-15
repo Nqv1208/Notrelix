@@ -103,7 +103,7 @@ A fix to one screen stays on that screen. Never turn it into a system-wide rule,
 
 ## 4. Branches and workspace
 
-1. The main checkout `/Users/nqvinh/Documents/projects/todo-app` stays on `develop`. It is the owner's test bench. Never work, commit or switch branches there.
+1. The main checkout (the repository's primary clone) stays on `develop`. It is the owner's test bench. Never work, commit or switch branches there.
 2. Create your own branch from `origin/develop` in a worktree under `.claude/worktrees/`:
    `git worktree add .claude/worktrees/<lane> -b <branch> origin/develop`
 3. Never check out `develop` in a worktree. Never commit or push to `develop` or `main`.
