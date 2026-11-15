@@ -288,35 +288,48 @@ export function toCommentViews(
   viewerId?: string,
   canEdit = false,
 ): DocCommentView[] {
-  return [...comments]
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+  const sorted = [...comments].sort((a, b) =>
+    a.createdAt.localeCompare(b.createdAt),
+  );
+  const ids = new Set(sorted.map((comment) => comment.id));
+  // A reply whose thread starter is gone from the list stands as a thread of its own.
+  const isReply = (comment: PageComment) =>
+    !!comment.parentId && ids.has(comment.parentId);
+  const view = (comment: PageComment): DocCommentView => {
+    // A stored anchor wins; a "> quote" body is the older way to say it.
+    const { quote: legacyQuote, text } = comment.anchor
+      ? { quote: null, text: comment.body.trim() }
+      : splitQuote(comment.body);
+    const quote = comment.anchor?.quote ?? legacyQuote;
+    const date = new Date(comment.createdAt);
+    const day = relativeDay(date, now);
+    return {
+      id: comment.id,
+      author: personFor(comment.authorId),
+      quote,
+      ...(comment.anchor ? { anchored: true } : {}),
+      ...(comment.resolved ? { resolved: true } : {}),
+      ...(viewerId && comment.authorId === viewerId ? { mine: true } : {}),
+      // Comments here are top-level, so the author is the thread starter.
+      ...(canEdit || (viewerId && comment.authorId === viewerId)
+        ? { canResolve: true }
+        : {}),
+      body: text,
+      when:
+        day === "today"
+          ? copy.comments.today
+          : day === "yesterday"
+            ? copy.comments.yesterday
+            : dayMonth(date),
+    };
+  };
+  return sorted
+    .filter((comment) => !isReply(comment))
     .map((comment) => {
-      // A stored anchor wins; a "> quote" body is the older way to say it.
-      const { quote: legacyQuote, text } = comment.anchor
-        ? { quote: null, text: comment.body.trim() }
-        : splitQuote(comment.body);
-      const quote = comment.anchor?.quote ?? legacyQuote;
-      const date = new Date(comment.createdAt);
-      const day = relativeDay(date, now);
-      return {
-        id: comment.id,
-        author: personFor(comment.authorId),
-        quote,
-        ...(comment.anchor ? { anchored: true } : {}),
-        ...(comment.resolved ? { resolved: true } : {}),
-        ...(viewerId && comment.authorId === viewerId ? { mine: true } : {}),
-        // Comments here are top-level, so the author is the thread starter.
-        ...(canEdit || (viewerId && comment.authorId === viewerId)
-          ? { canResolve: true }
-          : {}),
-        body: text,
-        when:
-          day === "today"
-            ? copy.comments.today
-            : day === "yesterday"
-              ? copy.comments.yesterday
-              : dayMonth(date),
-      };
+      const replies = sorted
+        .filter((reply) => reply.parentId === comment.id)
+        .map(view);
+      return replies.length > 0 ? { ...view(comment), replies } : view(comment);
     });
 }
 
