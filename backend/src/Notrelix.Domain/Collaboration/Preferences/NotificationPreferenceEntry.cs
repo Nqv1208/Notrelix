@@ -7,7 +7,6 @@ namespace Notrelix.Domain.Collaboration.Preferences;
 public sealed class NotificationPreferenceEntry : Entity
 {
     public Guid? SetId { get; private set; }
-    public Guid? WorkspaceId { get; private set; }
     public Guid UserId { get; private set; }
     public string NotificationType { get; private set; } = null!;
     public string Channel { get; private set; } = null!;
@@ -22,7 +21,6 @@ public sealed class NotificationPreferenceEntry : Entity
         new()
         {
             SetId = set.Id,
-            WorkspaceId = set.WorkspaceId,
             UserId = set.UserId,
             NotificationType = type,
             Channel = channel,

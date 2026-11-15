@@ -79,8 +79,7 @@ vi.mock("@notrelix/runtime-web", () => ({
           list: "/notifications",
           read: (id: string) => `/notifications/${id}/read`,
           readAll: (id: string) => `/workspaces/${id}/inbox/read-all`,
-          preferences: (id: string) =>
-            `/workspaces/${id}/notification-preferences`,
+          preferences: "/profile/notification-preferences",
         },
       },
     },
@@ -1206,15 +1205,15 @@ describe("AccountNotificationsPage container", () => {
       { type: "digest", inApp: false, email: false },
     ],
   };
-  const url = "/workspaces/w-1/notification-preferences";
+  const url = "/profile/notification-preferences";
   const table = { "/auth/me": profile, [url]: prefsOf };
   const cell = (name: string) =>
     host?.querySelector<HTMLElement>(`[role="checkbox"][aria-label="${name}"]`);
 
-  it("passes the Vietnamese copy and the saved choices of the route's workspace to the surface", async () => {
+  it("passes the Vietnamese copy and the saved choices of the account to the surface", async () => {
     runtime.get = reads(table);
     await mount(<AccountNotificationsPage />, "vi");
-    await until(() => expect(text()).toContain("workspace này"));
+    await until(() => expect(text()).toContain("mọi workspace của bạn"));
     expect(text()).toContain("@Ada Lovelace");
     // Mobile and quiet hours are not offered.
     expect(text()).not.toContain("Di động");
@@ -1254,7 +1253,7 @@ describe("AccountNotificationsPage container", () => {
       throw Object.assign(new Error("stale"), { status: 412 });
     };
     await mount(<AccountNotificationsPage />, "vi");
-    await until(() => expect(text()).toContain("workspace này"));
+    await until(() => expect(text()).toContain("mọi workspace của bạn"));
     await act(async () => cell("Tóm tắt hằng ngày: Email")?.click());
     await clickButton("Lưu tùy chọn");
     await until(() =>
@@ -1271,7 +1270,7 @@ describe("AccountNotificationsPage container", () => {
     );
     runtime.get = reads(table);
     await clickButton("Thử lại");
-    await until(() => expect(text()).toContain("workspace này"));
+    await until(() => expect(text()).toContain("mọi workspace của bạn"));
   });
 });
 

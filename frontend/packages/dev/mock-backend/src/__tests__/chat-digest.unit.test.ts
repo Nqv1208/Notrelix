@@ -15,8 +15,7 @@ type Store = ReturnType<typeof storeAs>;
 
 /** The owner turns the digest e-mail on for the given persona's own matrix. */
 function digestOn(store: Store, userId: string, on = true) {
-  store.accountPages.notificationsOf(userId, WORKSPACE_ID).rows.digest.email =
-    on;
+  store.accountPages.notificationsOf(userId).rows.digest.email = on;
 }
 
 async function say(store: Store, label: string, content: string) {

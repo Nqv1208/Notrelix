@@ -48,6 +48,7 @@ import {
   type RemoveOptionChoice,
 } from "../../status-option/remove-option-dialog";
 import type { StatusOptionFormCopy } from "../../status-option/status-option-form.copy";
+import { pageButtonClass } from "../table/table-chrome";
 import { KanbanAddCard } from "./kanban-add-card";
 import { KanbanCard } from "./kanban-card";
 import type { KanbanCardActions } from "./kanban-card-quick-actions";
@@ -178,7 +179,7 @@ export interface KanbanColumnProps {
 }
 
 /** Cards each step of a lane read in pages adds (they load as the lane is scrolled to its end) (the first window is the lane's card limit). */
-export const KANBAN_LANE_PAGE = 10;
+export const KANBAN_LANE_PAGE = 50;
 /** Cards of one lane drawn at once; the others stand in as spacers of their estimated height. */
 export const KANBAN_LANE_DOM_CAP = 80;
 const KANBAN_CARD_ESTIMATE = 96;
@@ -896,41 +897,75 @@ export function KanbanColumn({
       ) : null}
 
       {pagedMore && loadFailed && lane.hasMore ? (
-        <div
-          role="alert"
-          className="flex items-start gap-2.5 rounded-[10px] bg-danger-subtle px-3.5 py-2.5 text-label text-danger-text"
-        >
-          <TriangleAlert
-            aria-hidden="true"
-            className="mt-0.5 size-4 shrink-0"
-          />
-          <span className="flex min-w-0 flex-1 flex-col">
-            <b className="font-semibold text-foreground">
-              {copy.loadMoreFailed}
-            </b>
-            <span>{copy.loadMoreFailedBody}</span>
-          </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onLoadMore}
+        <div data-lane-load-error="" className="py-0.5">
+          <div
+            role="alert"
+            className="flex items-start gap-2.5 rounded-[10px] bg-danger-subtle px-3.5 py-2.5 text-[13px] leading-[1.4] text-danger-text"
           >
-            {copy.loadMoreRetry}
-          </Button>
+            <TriangleAlert
+              aria-hidden="true"
+              className="mt-0.5 size-4 shrink-0"
+            />
+            <span className="flex min-w-0 flex-1 flex-col gap-px">
+              <b className="font-semibold text-foreground">
+                {copy.loadMoreFailed}
+              </b>
+              <span>{copy.loadMoreFailedBody}</span>
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className={pageButtonClass}
+              onClick={onLoadMore}
+            >
+              {copy.loadMoreRetry}
+            </Button>
+          </div>
         </div>
-      ) : pagedMore && loadingMore ? (
-        <div
-          role="status"
-          aria-busy="true"
-          className="flex flex-col gap-2 px-1 pb-1"
-        >
-          <span className="sr-only">{copy.loadingMore}</span>
-          <span
-            aria-hidden="true"
-            className="block h-16 rounded-xl bg-card/70 motion-safe:animate-pulse"
-          />
-        </div>
+      ) : pagedMore ? (
+        <>
+          {loadingMore ? (
+            <div
+              role="status"
+              aria-busy="true"
+              className="flex flex-col gap-2 px-1 pb-1"
+            >
+              <span className="sr-only">{copy.loadingMore}</span>
+              <span
+                aria-hidden="true"
+                className="block h-16 rounded-xl bg-card/70 motion-safe:animate-pulse"
+              />
+            </div>
+          ) : null}
+          <div
+            data-lane-foot=""
+            className="flex flex-wrap items-center justify-center gap-3 px-6 py-2.5 text-crumb text-muted-foreground"
+          >
+            <span>
+              {fillCopy(copy.shownOf, {
+                shown: visibleCards.length,
+                total: count,
+              })}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className={pageButtonClass}
+              disabled={loadingMore}
+              onClick={() => revealMore.current()}
+            >
+              {pluralCopy(
+                {
+                  one: copy.pageMore_one,
+                  other: copy.pageMore_other,
+                },
+                Math.min(KANBAN_LANE_PAGE, count - visibleCards.length),
+              )}
+            </Button>
+          </div>
+        </>
       ) : null}
 
       {canAdd ? (

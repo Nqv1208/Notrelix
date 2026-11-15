@@ -41,13 +41,13 @@ public sealed class PageVersionRestoreIntegrationTests : IAsyncLifetime
 
         await OrgTreeTestHost.SendAsync(owner, new DeleteBlockCommand(pageId, b.Id, b.Version));
         var live = await OrgTreeTestHost.QueryAsync(owner, new GetPageBlocksQuery(pageId));
-        live.Select(x => x.Id).Should().Equal(a.Id);
+        live.Items.Select(x => x.Id).Should().Equal(a.Id);
 
         var restored = await OrgTreeTestHost.QueryAsync(owner,
-            new RestorePageVersionCommand(pageId, version.Id, live.Select(x => new SeenBlockVersion(x.Id, x.Version)).ToList()));
+            new RestorePageVersionCommand(pageId, version.Id, live.Items.Select(x => new SeenBlockVersion(x.Id, x.Version)).ToList()));
 
         restored.Blocks.Select(x => x.Id).Should().Equal(a.Id, b.Id);
         var after = await OrgTreeTestHost.QueryAsync(owner, new GetPageBlocksQuery(pageId));
-        after.Select(x => x.Id).Should().Equal(new[] { a.Id, b.Id });
+        after.Items.Select(x => x.Id).Should().Equal(new[] { a.Id, b.Id });
     }
 }

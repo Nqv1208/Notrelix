@@ -128,6 +128,8 @@ public class WorkspaceNamespaceArchitectureTests
 
     private static readonly Dictionary<string, AllowlistEntry> CollaborationMissingWorkspaceRequest = new()
     {
+        ["UpdateNotificationPreferencesCommand"] = new("UpdateNotificationPreferencesCommand", AllowlistClassification.Intentional,
+            "The person's own notification matrix is one per account, applied in every workspace: a Global request whose subject is always the principal, RLS keeps it to its owner", "Keep as-is"),
     };
 
     // --- Allowlists for commands missing IRequirePermission ---
@@ -162,6 +164,8 @@ public class WorkspaceNamespaceArchitectureTests
 
     private static readonly Dictionary<string, AllowlistEntry> CollaborationMissingPermission = new()
     {
+        ["UpdateNotificationPreferencesCommand"] = new("UpdateNotificationPreferencesCommand", AllowlistClassification.Intentional,
+            "The person's own notification matrix is one per account, applied in every workspace: a Global request whose subject is always the principal, RLS keeps it to its owner", "Keep as-is"),
     };
 
     // --- Allowlists for workspace commands ---

@@ -1,4 +1,10 @@
-import { Check, CircleAlert, MoreHorizontal, PanelRight } from "lucide-react";
+import {
+  Check,
+  CircleAlert,
+  MoreHorizontal,
+  PanelRight,
+  WifiOff,
+} from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import type {
@@ -106,11 +112,22 @@ export function DocPageBarSurface({
           role="status"
           className="inline-flex items-center gap-[5px] text-crumb text-meta-foreground"
         >
-          <Check
-            aria-hidden="true"
-            className="size-[13px] shrink-0 stroke-[1.8]"
-          />
-          {saveState === "saving" ? h.saving : h.saved}
+          {saveState === "offline" ? (
+            <WifiOff
+              aria-hidden="true"
+              className="size-[13px] shrink-0 stroke-[1.8]"
+            />
+          ) : (
+            <Check
+              aria-hidden="true"
+              className="size-[13px] shrink-0 stroke-[1.8]"
+            />
+          )}
+          {saveState === "saving"
+            ? h.saving
+            : saveState === "offline"
+              ? h.offline
+              : h.saved}
         </span>
       )}
       {stats ? (

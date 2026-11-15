@@ -38,6 +38,21 @@ export function useForm(formId: string, workspaceId: string, enabled = true) {
   });
 }
 
+/** The tab totals of a form's responses from the server, over all pages; writes invalidate it with the pages. */
+export function useFormSubmissionCounts(
+  formId: string,
+  workspaceId: string,
+  enabled = true,
+) {
+  const { forms } = useWorkManagementServices();
+  return useQuery({
+    queryKey: [...wmQueryKeys.formSubmissions(workspaceId, formId), "counts"],
+    queryFn: () => forms.submissionCounts(formId),
+    enabled: enabled && Boolean(formId && workspaceId),
+    staleTime: 10_000,
+  });
+}
+
 /**
  * The responses of a form, a page at a time (newest first); `data` stays the flat list. Use `hasNextPage` and
  * `fetchNextPage` for "Xem thêm phản hồi". Writes invalidate the key, so the pages are read again from the first.

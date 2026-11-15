@@ -1847,7 +1847,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/workspaces/{workspaceId}/notification-preferences": {
+    "/api/v1/profile/notification-preferences": {
         parameters: {
             query?: never;
             header?: never;
@@ -1855,7 +1855,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get the caller's notification preferences in a workspace
+         * Get the caller's notification preferences (every workspace)
          * @description One row per notification type (assigned, mention, approval, overdue, watching, invitation, digest) with its in-app and email value; a cell the caller never changed has its default. Version is 0 until the first change is saved.
          */
         get: operations["Collaboration.Preferences.GetNotificationPreferences"];
@@ -1865,7 +1865,7 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Change the caller's notification preferences in a workspace
+         * Change the caller's notification preferences (every workspace)
          * @description Partial and all-or-nothing: only the named channels of the named types change. Answers the full matrix, 412 when expectedVersion is stale, 400 or 422 for an unknown type or no change requested. Setting values that already hold changes nothing and keeps the version.
          */
         patch: operations["Collaboration.Preferences.UpdateNotificationPreferences"];
@@ -1897,7 +1897,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List blocks for a page */
+        /**
+         * List the blocks of a page, 1 000 at a time
+         * @description Position order, at most 1 000 a window. Pass nextCursor back as cursor for the next window.
+         */
         get: operations["Documents.Blocks.ListPageBlocks"];
         put?: never;
         /** Create a new block */
@@ -5916,6 +5919,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/forms/{formId}/submissions/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Count the submissions of a form by tab
+         * @description Totals over all responses, not one page: new, processed, rejected and spam.
+         */
+        get: operations["WorkManagement.Forms.CountSubmissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/form-submissions/{submissionId}/process": {
         parameters: {
             query?: never;
@@ -9216,6 +9239,11 @@ export interface components {
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
+        "Notrelix.Application.Common.Models.CursorPageOfBlockDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
         "Notrelix.Application.Common.Models.CursorPageOfCommentDto": {
             items?: components["schemas"]["Notrelix.Application.Features.Collaboration.Comments.DTOs.CommentDto"][] | null;
             nextCursor?: string | null;
@@ -11268,6 +11296,16 @@ export interface components {
             state?: string | null;
             value?: unknown;
             errorCode?: string | null;
+        };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionCountsDto": {
+            /** Format: int32 */
+            new?: number;
+            /** Format: int32 */
+            processed?: number;
+            /** Format: int32 */
+            rejected?: number;
+            /** Format: int32 */
+            spam?: number;
         };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionDto": {
             /** Format: uuid */
@@ -17539,9 +17577,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                workspaceId: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -17561,9 +17597,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                workspaceId: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -17707,7 +17741,10 @@ export interface operations {
     };
     "Documents.Blocks.ListPageBlocks": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 pageId: string;
@@ -17722,7 +17759,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfBlockDto"];
                 };
             };
         };
@@ -27747,6 +27784,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfFormSubmissionDto"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Forms.CountSubmissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionCountsDto"];
                 };
             };
         };

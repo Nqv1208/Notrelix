@@ -1,10 +1,10 @@
-import { accountQueryKey, workspaceQueryKey } from "@notrelix/query";
+import { accountQueryKey } from "@notrelix/query";
 
 export const notificationsQueryKeys = {
   all: (accountId: string) => accountQueryKey(accountId, "notifications"),
   unreadCount: (accountId: string) =>
     accountQueryKey(accountId, "notifications", "unread-count"),
-  /** A member's choices belong to one workspace, not to the account. */
-  preferences: (workspaceId: string) =>
-    workspaceQueryKey(workspaceId, "notification-preferences"),
+  /** One person's choices, the same in every workspace. */
+  preferences: (accountId: string) =>
+    accountQueryKey(accountId, "notification-preferences"),
 } as const;
