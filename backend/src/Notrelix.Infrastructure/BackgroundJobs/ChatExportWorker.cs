@@ -41,10 +41,15 @@ internal sealed class ChatExportRunner(
         {
             await using var claim = await context.Database.BeginTransactionAsync(cancellationToken);
             await rls.ApplyAsync(cancellationToken);
+            // The column holds what the model's converter writes (the context applies its own enum-to-text rule), so the raw
+            // query asks the model for the stored text of Queued instead of assuming the wire spelling.
+            var queued = context.Model.FindEntityType(typeof(ChatExportJob))!
+                .FindProperty(nameof(ChatExportJob.Status))!.GetValueConverter()!
+                .ConvertToProvider(ChatExportStatus.Queued);
             job = (await context.ChatExportJobs
                 .FromSql($"""
                     SELECT * FROM chat.export_jobs
-                    WHERE status = 'queued'
+                    WHERE status = {queued}
                     ORDER BY created_at
                     LIMIT 1
                     FOR UPDATE SKIP LOCKED
