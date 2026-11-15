@@ -266,3 +266,50 @@ test.describe("motion", () => {
     expect(parseFloat(d)).toBeLessThan(0.001);
   });
 });
+
+test.describe("jump to latest pill", () => {
+  test("floats over the list with no layout space, 34 high, fades and rises in 160 ms, and glides to the end", async ({
+    page,
+  }) => {
+    await open(page, 1440, 900, "light");
+    const log = page.getByRole("log");
+    const pill = page.getByRole("button", { name: "Jump to latest" });
+    const layer = "[data-testid=chat-jump-latest-layer]";
+    await log.evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+    await expect(pill).toBeHidden();
+    const hidden = await box(page, "[data-testid=chat-message-list]");
+    await log.evaluate((el) => {
+      el.scrollTop = 0;
+    });
+    await expect(pill).toBeVisible();
+    // No layout space: the list keeps its box when the pill shows.
+    const shown = await box(page, "[data-testid=chat-message-list]");
+    expect(shown.h).toBeCloseTo(hidden.h, 0);
+    expect(shown.y).toBeCloseTo(hidden.y, 0);
+    expect(await css(page, layer, "position")).toBe("absolute");
+    const p = await box(page, "button[data-visible=true]");
+    expect(p.h).toBeCloseTo(34, 0);
+    expect(p.y + p.h).toBeLessThanOrEqual(shown.y + shown.h);
+    expect(p.x + p.w / 2).toBeCloseTo(shown.x + shown.w / 2, 0);
+    const sel = "button[data-visible]";
+    expect(await css(page, sel, "transition-duration")).toContain("0.16s");
+    const props = (await css(page, sel, "transition-property"))
+      .split(",")
+      .map((x) => x.trim());
+    expect(props).toContain("opacity");
+    expect(props).toContain("transform");
+    for (const l of ["width", "height", "margin", "top", "bottom"]) {
+      expect(props).not.toContain(l);
+    }
+    await pill.click();
+    await expect
+      .poll(() =>
+        log.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight),
+      )
+      .toBeLessThan(40);
+    await expect(pill).toBeHidden();
+    await expect(page.locator("textarea").first()).toBeEnabled();
+  });
+});

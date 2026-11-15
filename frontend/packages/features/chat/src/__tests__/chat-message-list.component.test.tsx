@@ -377,3 +377,63 @@ describe("ChatMessageList: the thread chip of a root", () => {
     );
   });
 });
+
+describe("ChatMessageList jump to latest", () => {
+  function scrolledUp(top: number) {
+    const log = screen.getByRole("log");
+    Object.defineProperty(log, "scrollHeight", {
+      configurable: true,
+      value: 5000,
+    });
+    Object.defineProperty(log, "clientHeight", {
+      configurable: true,
+      value: 500,
+    });
+    log.scrollTop = top;
+    const scrollTo = vi.fn();
+    log.scrollTo = scrollTo as unknown as typeof log.scrollTo;
+    fireEvent.scroll(log);
+    return { log, scrollTo };
+  }
+
+  it("is a floating pill that is hidden at the bottom and counts new messages while scrolled up", () => {
+    const { rerender } = render(
+      <ChatMessageList {...props({ messages: [message(1)] })} />,
+    );
+    const layer = screen.getByTestId("chat-jump-latest-layer");
+    expect(layer.className).toContain("absolute");
+    expect(layer.querySelector("button")?.getAttribute("data-visible")).toBe(
+      "false",
+    );
+    scrolledUp(0);
+    expect(
+      screen
+        .getByRole("button", { name: en.list.jumpLatest })
+        .getAttribute("data-visible"),
+    ).toBe("true");
+    rerender(
+      <ChatMessageList
+        {...props({ messages: [message(1), message(2), message(3)] })}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: en.list.jumpLatest }).textContent,
+    ).toBe("2 new messages");
+  });
+
+  it("glides to the newest message and hands focus to the log; far away it lands one screen above first", () => {
+    const onJumpLatest = vi.fn();
+    render(
+      <ChatMessageList {...props({ messages: [message(1)], onJumpLatest })} />,
+    );
+    const { log, scrollTo } = scrolledUp(0);
+    fireEvent.click(screen.getByRole("button", { name: en.list.jumpLatest }));
+    expect(onJumpLatest).toHaveBeenCalledTimes(1);
+    expect(log.scrollTop).toBe(4000);
+    expect(scrollTo).toHaveBeenCalledWith({
+      top: 5000,
+      behavior: expect.stringMatching(/smooth|auto/),
+    });
+    expect(document.activeElement).toBe(log);
+  });
+});
